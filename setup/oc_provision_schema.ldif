@@ -1,0 +1,439 @@
+#
+# msExchBaseClass
+# description: The base auxiliary class that is applied to all classes 
+# that are extended by CDO for Exchange 2000 Server (CDOEX) and the base 
+# Microsoft Windows classes that are used.
+#
+
+dn: CN=msExchBaseClass,CN=Schema,CN=Configuration,${BASEDN}
+cn: msExchBaseClass
+objectClass: top
+objectClass: classSchema
+lDAPDisplayName: msExchBaseClass
+adminDescription: msExchBaseClass
+adminDisplayName: msExchBaseClass
+defaultHidingValue: TRUE
+defaultObjectCategory: CN=msExchBaseClass,CN=Schema,CN=Configuration,${BASEDN}
+governsID: 1.2.840.113556.1.5.7000.62.14
+instanceType: 4
+mayContain: legacyExchangeDN
+distinguishedName: CN=msExchBaseClass,CN=Schema,CN=Configuration,${BASEDN}
+objectClassCategory: 3
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+rDNAttID: cn
+schemaIDGUID: d8782c34-46ca-11d3-aa72-00c04f8eedd8 
+showInAdvancedViewOnly: TRUE
+subClassOf: top
+systemOnly: FALSE
+
+#
+# msExchAdminGroupContainer
+# description: An administrative group container. Used for extended rights and roles.
+#
+
+dn: CN=msExchAdminGroupContainer,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: msExchAdminGroupContainer
+adminDisplayName: msExchAdminGroupContainer
+auxiliaryClass: msExchBaseClass
+cn: msExchAdminGroupContainer
+defaultHidingValue: TRUE
+defaultObjectCategory: CN=msExchAdminGroupContainer,CN=Schema,CN=Configuration,${BASEDN}
+defaultSecurityDescriptor: D:S:
+governsID: 1.2.840.113556.1.5.7000.62.50019
+instanceType: 4
+lDAPDisplayName: msExchAdminGroupContainer
+distinguishedName: CN=msExchAdminGroupContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: classSchema
+objectClassCategory: 1
+rDNAttID: cn
+schemaIDGUID:: e7a44058-a980-11d2-a9ff-00c04f8eedd8
+showInAdvancedViewOnly: TRUE
+subClassOf: container
+systemOnly: FALSE
+
+
+#
+# msExchAdminGroup
+# objectCategory for cn=First Administrative Group
+# description: An administrative group.
+#
+
+dn: CN=msExchAdminGroup,CN=Schema,CN=Configuration,${BASEDN}
+cn: msExchAdminGroup
+objectClass: top
+objectClass: classSchema
+lDAPDisplayName: msExchAdminGroup
+adminDescription: msExchAdminGroup
+adminDisplayName: msExchAdminGroup
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClassCategory: 1
+governsID: 1.2.840.113556.1.5.7000.62.50011
+instanceType: 4
+distinguishedName: CN=msExchAdminGroup,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=msExchAdminGroup,CN=Schema,CN=Configuration,${BASEDN}
+defaultHidingValue: TRUE
+defaultSecurityDescriptor: D:S:
+auxiliaryClass: msExchBaseClass
+possSuperiors: msExchAdminGroupContainer
+rDNAttID: cn
+schemaIDGUID: e768a58e-a980-11d2-a9ff-00c04f8eedd8 
+showInAdvancedViewOnly: TRUE
+subClassOf: top
+systemOnly: FALSE
+
+#
+# msExchOrganizationContainer
+# objectCategory for cn=First Organization (/o=MyCompany)
+# description: An organization container. Used for extended rights and roles.
+#
+
+dn: CN=msExchOrganizationContainer,CN=Schema,CN=Configuration,${BASEDN}
+cn: msExchOrganizationContainer
+objectClass: top
+objectClass: classSchema
+lDAPDisplayName: msExchOrganizationContainer
+adminDescription: msExchOrganizationContainer
+adminDisplayName: msExchOrganizationContainer
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClassCategory: 1
+governsID: 1.2.840.113556.1.5.7000.62.50020
+instanceType: 4
+distinguishedName: CN=msExchOrganizationContainer,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=msExchOrganizationContainer,CN=Schema,CN=Configuration,${BASEDN}
+defaultHidingValue: TRUE
+defaultSecurityDescriptor: D:S:
+auxiliaryClass: msExchBaseClass
+rDNAttID: cn
+schemaIDGUID: 366a319c-a982-11d2-a9ff-00c04f8eedd8 
+showInAdvancedViewOnly: TRUE
+subClassOf: container
+systemOnly: FALSE
+
+#
+# msExchConfigurationContainer
+# description: This container stores configuration information for the Exchange server.
+#
+
+# msExchConfigurationContainer, Schema, Configuration, openchange.local
+dn: CN=msExchConfigurationContainer,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: msExchConfigurationContainer
+adminDisplayName: msExchConfigurationContainer
+auxiliaryClass: msExchBaseClass
+cn: msExchConfigurationContainer
+defaultHidingValue: TRUE
+defaultObjectCategory: CN=msExchConfigurationContainer,CN=Schema,CN=Configuration,${BASEDN}
+defaultSecurityDescriptor: D:S:
+governsID: 1.2.840.113556.1.5.176
+instanceType: 4
+lDAPDisplayName: msExchConfigurationContainer
+distinguishedName: CN=msExchConfigurationContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: classSchema
+objectClassCategory: 1
+rDNAttID: cn
+schemaIDGUID: d03d6858-06f4-11d2-aa53-00c04fd7d83a
+showInAdvancedViewOnly: TRUE
+subClassOf: container
+systemFlags: 16
+systemOnly: FALSE
+
+#
+# msExchServersContainer
+# description: A container used to hold servers. Used for extended
+# rights and roles.
+#
+
+dn: CN=msExchServersContainer,CN=Schema,CN=Configuration,${BASEDN}
+cn: msExchServersContainer
+objectClass: top
+objectClass: classSchema
+lDAPDisplayName: msExchServersContainer
+adminDescription: msExchServersContainer
+adminDisplayName: msExchServersContainer
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClassCategory: 1
+governsID: 1.2.840.113556.1.5.7000.62.50013
+instanceType: 4
+distinguishedName: CN=msExchServersContainer,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=msExchServersContainer,CN=Schema,CN=Configuration,${BASEDN}
+defaultHidingValue: TRUE
+defaultSecurityDescriptor: D:(A;;LC;;;AU)
+auxiliaryClass: msExchBaseClass
+possSuperiors: msExchAdminGroup
+rDNAttID: cn
+schemaIDGUID: 346e5cba-a982-11d2-a9ff-00c04f8eedd8
+showInAdvancedViewOnly: TRUE
+subClassOf: container
+systemOnly: FALSE
+
+#
+# msExchExchangeServer
+# description: A representation of an Exchange server object
+#
+
+dn: CN=msExchExchangeServer,CN=Schema,CN=Configuration,${BASEDN}
+cn: msExchExchangeServer
+objectClass: top
+objectClass: classSchema
+lDAPDisplayName: msExchExchangeServer
+adminDescription: msExchExchangeServer
+adminDisplayName: msExchExchangeServer
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClassCategory: 1
+governsID: 1.2.840.113556.1.5.7000.62.50009
+instanceType: 4
+distinguishedName: CN=msExchExchangeServer,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=msExchExchangeServer,CN=Schema,CN=Configuration,${BASEDN}
+defaultHidingValue: TRUE
+defaultSecurityDescriptor: D:(A;;RP;;;AU)
+auxiliaryClass: msExchBaseClass
+possSuperiors: msExchServersContainer
+rDNAttID: cn
+schemaIDGUID: 01a9aa9c-a981-11d2-a9ff-00c04f8eedd8
+showInAdvancedViewOnly: TRUE
+subClassOf: server
+systemOnly: FALSE
+
+#
+# msExchMailNickname
+# description: Exchange mailbox nickname for users
+#
+
+dn: CN=msExchMailNickname,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: msExchMailNickname
+adminDisplayName: msExchMailNickname
+attributeID: 1.2.840.113556.1.2.447
+attributeSyntax: 2.5.5.12
+cn: msExchMailNickname
+instanceType: 4
+isSingleValued: TRUE
+lDAPDisplayName: mailNickname
+distinguishedName: CN=msExchMailNickname,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=AttributeSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: attributeSchema
+schemaIDGUID:: bf9679b3-0de6-11d0-a285-00aa003049e2
+showInAdvancedViewOnly: TRUE
+
+#
+# msExchStorageGroup
+# description: The list of stores for this Microsoft Jet instance
+#
+
+dn: CN=msExchStorageGroup,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: msExchStorageGroup
+adminDisplayName: msExchStorageGroup
+auxiliaryClass: msExchBaseClass
+cn: msExchStorageGroup
+defaultHidingValue: TRUE
+defaultObjectCategory: CN=msExchStorageGroup,CN=Schema,CN=Configuration,${BASEDN}
+defaultSecurityDescriptor: D:S:
+governsID: 1.2.840.113556.1.5.7000.62.11006
+instanceType: 4
+lDAPDisplayName: msExchStorageGroup
+mayContain: displayName
+mustContain: cn
+distinguishedName: CN=msExchStorageGroup,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: classSchema
+objectClassCategory: 1
+possSuperiors: computer
+rDNAttID: cn
+schemaIDGUID: 3435244a-a982-11d2-a9ff-00c04f8eedd8
+showInAdvancedViewOnly: TRUE
+subClassOf: container
+systemOnly: FALSE
+
+#
+# msExchDeliveryMechanism
+# description: 	
+#
+
+dn: CN=msExchDeliveryMechanism,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: msExchDeliveryMechanism
+adminDisplayName: msExchDeliveryMechanism
+attributeID: 1.2.840.113556.1.2.241
+attributeSyntax: 2.5.5.9
+cn: msExchDeliveryMechanism
+instanceType: 4
+isSingleValued: TRUE
+lDAPDisplayName: deliveryMechanism
+distinguishedName: CN=msExchDeliveryMechanism,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=AttributeSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: attributeSchema
+schemaIDGUID: bf96794e-0de6-11d0-a285-00aa003049e2
+showInAdvancedViewOnly: TRUE
+
+#
+# msExchMDB
+# description: Used for generic database configuration.
+#
+
+dn: CN=msExchMDB,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: msExchMDB
+adminDisplayName: msExchMDB
+auxiliaryClass: msExchBaseClass
+cn: msExchMDB
+defaultHidingValue: TRUE
+defaultObjectCategory: CN=msExchMDB,CN=Schema,CN=Configuration,${BASEDN}
+defaultSecurityDescriptor: D:S:
+governsID: 1.2.840.113556.1.5.7000.62.11002
+instanceType: 4
+lDAPDisplayName: msExchMDB
+mayContain: displayName
+mustContain: deliveryMechanism
+mustContain: cn
+distinguishedName: CN=msExchMDB,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: classSchema
+objectClassCategory: 1
+possSuperiors: msExchStorageGroup
+possSuperiors: msExchExchangeServer
+possSuperiors: container
+possSuperiors: computer
+rDNAttID: cn
+schemaIDGUID: 03d069d2-a981-11d2-a9ff-00c04f8eedd8
+showInAdvancedViewOnly: TRUE
+subClassOf: top
+systemOnly: FALSE
+
+#
+# msExchPrivateMDB
+# description: A private database configuration
+#
+
+dn: CN=msExchPrivateMDB,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: msExchPrivateMDB
+adminDisplayName: msExchPrivateMDB
+auxiliaryClass: msExchBaseClass
+cn: msExchPrivateMDB
+defaultHidingValue: TRUE
+defaultObjectCategory: CN=msExchPrivateMDB,CN=Schema,CN=Configuration,${BASEDN}
+defaultSecurityDescriptor: D:S:
+governsID: 1.2.840.113556.1.5.7000.62.11004
+instanceType: 4
+lDAPDisplayName: msExchPrivateMDB
+distinguishedName: CN=msExchPrivateMDB,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: classSchema
+objectClassCategory: 1
+possSuperiors: container
+possSuperiors: computer
+rDNAttID: cn
+schemaIDGUID: 36145cf4-a982-11d2-a9ff-00c04f8eedd8
+showInAdvancedViewOnly: TRUE
+subClassOf: msExchMDB
+systemOnly: FALSE
+
+#
+# msExchMailStorage
+# description: The auxiliary class for objects that require store-specific information.
+#
+
+dn: CN=msExchMailStorage,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: msExchMailStorage
+adminDisplayName: msExchMailStorage
+cn: msExchMailStorage
+defaultHidingValue: TRUE
+defaultObjectCategory: CN=msExchMailStorage,CN=Schema,CN=Configuration,${BASEDN}
+governsID: 1.2.840.113556.1.5.7000.62.5
+instanceType: 4
+lDAPDisplayName: msExchMailStorage
+mayContain: homeMDB
+distinguishedName: CN=msExchMailStorage,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: classSchema
+objectClassCategory: 3
+rDNAttID: cn
+schemaIDGUID: 03652000-a981-11d2-a9ff-00c04f8eedd8
+showInAdvancedViewOnly: TRUE
+subClassOf: top
+systemOnly: FALSE
+
+#
+# msExchInformationStore
+# description: The Information Store configuration
+#
+
+dn: CN=msExchInformationStore,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: msExchInformationStore
+adminDisplayName: msExchInformationStore
+auxiliaryClass: msExchBaseClass
+cn: msExchInformationStore
+defaultObjectCategory: CN=msExchInformationStore,CN=Schema,CN=Configuration,${BASEDN}
+defaultSecurityDescriptor: D:S:
+governsID: 1.2.840.113556.1.5.7000.62.11001
+instanceType: 4
+lDAPDisplayName: msExchInformationStore
+mustContain: cn
+distinguishedName: CN=msExchInformationStore,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: classSchema
+objectClassCategory: 1
+possSuperiors: msExchExchangeServer
+rDNAttID: cn
+schemaIDGUID: 031b371a-a981-11d2-a9ff-00c04f8eedd8
+showInAdvancedViewOnly: TRUE
+subClassOf: container
+systemOnly: FALSE
+
+#
+# PurportedSearch
+# description: search argument for an address book view
+#
+
+dn: CN=PurportedSearch,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: PurportedSearch
+adminDisplayName: PurportedSearch
+attributeID: 1.2.840.113556.1.4.886
+attributeSyntax: 2.5.5.12
+cn: PurportedSearch
+instanceType: 4
+lDAPDisplayName: purportedSearch
+distinguishedName: CN=PurportedSearch,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=AttributeSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: attributeSchema
+schemaIDGUID: b4b54e50-943a-11d1-aebd-0000f80367c1
+showInAdvancedViewOnly: TRUE
+systemOnly: FALSE
+
+#
+# AddressBookContainer
+# description: holding members of an address book view
+#
+
+dn: CN=AddressBookContainer,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: AddressBookContainer
+adminDisplayName: AddressBookContainer
+cn: AddressBookContainer
+defaultHidingValue: TRUE
+defaultObjectCategory: CN=AddressBookContainer,CN=Schema,CN=Configuration,${BASEDN}
+governsID: 1.2.840.113556.1.5.125
+instanceType: 4
+lDAPDisplayName: addressBookContainer
+distinguishedName: CN=AddressBookContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: classSchema
+objectClassCategory: 1
+possSuperiors: msExchConfigurationContainer
+possSuperiors: container
+rDNAttID: cn
+schemaIDGUID: 3e74f60f-3e73-11d1-a9c0-0000f80367c1
+showInAdvancedViewOnly: TRUE
+subClassOf: top
+systemMayContain: purportedSearch
+systemMustContain: displayName
+systemOnly: FALSE
+systemPossSuperiors: addressBookContainer
+systemPossSuperiors: configuration

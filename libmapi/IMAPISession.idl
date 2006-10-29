@@ -1,0 +1,45 @@
+[
+	version(0.1),
+	helpstring("Open MAPI Session")
+] interface IMAPISession
+{
+	typedef [public] enum
+	{
+		op_OpenMsgStore = 0xFE
+	} mapi_opcodes;
+
+	/************************* CALLS **********************************/
+	typedef struct {
+		uint8	col;
+		uint8	row;
+		uint32	locale_id;
+		uint32	padding;
+		[value(strlen(profile_info) + 1)] uint16 profile_info_length;
+		[charset(DOS),string] uint8 profile_info[];
+	} OpenMsgStore_req;
+
+	typedef struct {
+
+	} OpenMsgStore_repl;
+
+	/***************************** UNIONS *****************************/
+	typedef union {
+		[case(op_OpenMsgStore)] OpenMsgStore_req openmsgstore;
+	} MAPI_REQ_UNION;
+
+	typedef union {
+		[case(op_OpenMsgStore)] OpenMsgStore_repl openmsgstore;
+	} MAPI_REPL_UNION;
+
+	typedef [public] struct
+	{
+		uint16 opcode;
+		[switch_is(opcode)] MAPI_REQ_UNION u;
+	} MAPI_REQ;
+
+	typedef [public] struct
+	{
+		uint16 opcode;
+		[switch_is(opcode)] MAPI_REPL_UNION u;
+	} MAPI_REPL;
+}

@@ -1,0 +1,10 @@
+dn: CN=User,CN=Schema,CN=Configuration,${BASEDN}
+changetype: modify
+add: auxiliaryClass
+auxiliaryClass: msExchBaseClass
+auxiliaryClass: msExchMailStorage
+
+dn: CN=server,CN=Schema,CN=Configuration,${BASEDN}
+changetype: modify
+add: mayContain
+mayContain: networkAddress

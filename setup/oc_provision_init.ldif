@@ -1,0 +1,23 @@
+dn: @INDEXLIST
+@IDXATTR: objectClass
+@IDXATTR: entryID
+@IDXATTR: member
+
+
+dn: @ATTRIBUTES
+objectClass: CASE_INSENSITIVE
+cn: CASE_INSENSITIVE
+entryID: CASE_INSENSITIVE
+containerID: INTEGER
+dnsDomain: CASE_INSENSITIVE
+member: CASE_INSENSITIVE
+memberOf: CASE_INSENSITIVE
+containerFlags: INTEGER
+IsMaster: CASE_INSENSITIVE
+
+dn: @SUBCLASSES
+top: domain
+top: container
+container: recipient
+
+template: containerTemplate

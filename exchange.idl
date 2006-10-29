@@ -1,0 +1,620 @@
+#include "idl_types.h"
+
+/*
+   http://support.microsoft.com/default.aspx?scid=KB;en-us;q159298
+   Any UUID starting with:
+   A4 - store
+   F5 - directory
+ */
+
+[
+  uuid("99e64010-b032-11d0-97a4-00c04fd6551d"),
+  pointer_default(unique),
+  version(3.0)
+] interface exchange_store_admin3
+{
+	void ec_store_admin3_dummy();
+}
+
+
+[
+  uuid("89742ace-a9ed-11cf-9c0c-08002be7ae86"),
+  pointer_default(unique),
+  version(2.0)
+] interface exchange_store_admin2
+{
+	void ec_store_admin2_dummy();
+}
+
+[
+  uuid("a4f1db00-ca47-1067-b31e-00dd010662da"),
+  pointer_default(unique),
+  version(1.0)
+] interface exchange_store_admin1
+{
+	void ec_store_admin1_dummy();
+}
+
+
+[
+  uuid("1544f5e0-613c-11d1-93df-00c04fd7bd09"),
+  pointer_default(unique),
+  version(1.0),
+  helpstring("Exchange 2003 Directory Request For Response")
+] interface exchange_ds_rfr
+{
+	/*****************/
+	/* Function 0x00 */
+	void RfrGetNewDSA();
+
+	/*****************/
+	/* Function 0x01 */
+	void RfrGetFQDNFromLegacyDN();
+}
+
+[
+  uuid("f930c514-1215-11d3-99a5-00a0c9b61b04"),
+  helpstring("System Attendant Cluster Interface"),
+  pointer_default(unique),
+  version(1.0)
+] interface exchange_sysatt_cluster
+{
+	void sysatt_cluster_dummy();
+}
+
+/*
+[83d72bf0-0d89-11ce-b13f-00aa003bac6c] MS Exchange
+System Attendant Private Interface
+*/
+
+[
+  uuid("469d6ec0-0d87-11ce-b13f-00aa003bac6c"),
+  pointer_default(unique),
+  helpstring("Exchange 5.5 System Attendant Request for Response")
+] interface exchange_system_attendant
+{
+	void sysatt_dummy();
+}
+
+[
+  uuid("9e8ee830-4559-11ce-979b-00aa005ffebe"),
+  pointer_default(unique),
+  version(2.0),
+  helpstring("Exchange 5.5 MTA")
+] interface exchange_mta
+{
+	/*****************/
+	/* Function 0x00 */
+	void MtaBind();
+
+	/*****************/
+	/* Function 0x01 */
+	void MtaBindAck();
+}
+
+[
+  uuid("f5cc59b4-4264-101a-8c59-08002b2f8426"),
+  pointer_default(unique),
+  version(21.0),
+  helpstring("Exchange 5.5 DRS")
+] interface exchange_drs
+{
+	/*****************/
+	/* Function 0x00 */
+	void ds_abandon();
+
+	/*****************/
+	/* Function 0x01 */
+	void ds_add_entry();
+
+	void ds_bind();
+	void ds_compare();
+	void ds_list();
+	void ds_modify_entry();
+	void ds_modify_rdn();
+	void ds_read();
+	void ds_receive_result();
+	void ds_remove_entry();
+	void ds_search();
+	void ds_unbind();
+	void ds_wait();
+	void dra_replica_add();
+	void dra_replica_delete();
+	void dra_replica_synchronize();
+	void dra_reference_update();
+	void dra_authorize_replica();
+	void dra_unauthorize_replica();
+	void dra_adopt();
+	void dra_set_status();
+	void dra_modify_entry();
+	void dra_delete_subref();
+}
+
+[
+  uuid("f5cc5a7c-4264-101a-8c59-08002b2f8426"),
+  version(21.0),
+  pointer_default(unique),
+  helpstring("Exchange 5.5 XDS")
+] interface exchange_xds
+{
+	void xds_dummy();
+}
+
+[
+  uuid("38a94e72-a9bc-11d2-8faf-00c04fa378ff"),
+  pointer_default(unique),
+  version(1.0)
+] interface exchange_mta_qadmin
+{
+	void exchange_mta_qadmin();
+}
+
+
+[
+  uuid("0e4a0156-dd5d-11d2-8c2f-00c04fb6bcde"),
+  pointer_default(unique),
+  version(1.0)
+] interface exchange_store_information
+{
+	void exchange_store_information_dummy();
+}
+
+[
+  uuid("f5cc5a18-4264-101a-8c59-08002b2f8426"),
+  endpoint("ncacn_np:[\\pipe\\exchange_nsp]", "ncacn_ip_tcp:"),
+  pointer_default(unique),
+  version(56.0),
+  helpstring("Exchange 5.5 Name Service Provider"),
+  helper("ndr_mapi.h"),
+  keepref
+] interface exchange_nsp
+{
+	/*
+	  Abstract way to represent MAPI content
+	*/
+
+	typedef [public,nopull,nopush,noprint] struct {
+		uint32 		mapi_len;	/* whole mapi_data length */
+		uint16		length;		/* content length */
+		uint16		opnum;		/* mapi operation number */
+		uint8		*content;	/* content */
+		uint8		*remaining;	/* remaining bytes / non content */
+	} MAPI_DATA;
+
+#include "mapitags_enum.h"
+#include "mapicodes_enum.h"
+
+	/*****************/
+	/* Function 0x00 */
+
+	/*
+	** MAPIUID explanation:
+	** http://msdn.microsoft.com/library/default.asp?url=/library/en-us/mapi/html/c42065c2-b1f5-4930-84a6-6ef90c6162d0.asp
+	*/
+
+	typedef struct _MAPIUID{
+		uint8 ab[16];
+	} MAPIUID;
+
+	/* 
+	** input locale combination: 
+	** http://www.microsoft.com/globaldev/reference/win2k/setup/lcid.mspx
+	*/
+
+	typedef struct {
+		uint32 language;
+		uint32 method;
+	} input_locale;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32	        handle;
+		uint32		flag;
+		MAPIUID		service_provider;
+		uint32		codepage;	/* CPID */
+		input_locale	input_locale;	/* LCID */
+	} MAPI_SETTINGS;
+
+	typedef struct {
+		[unique, length_is(cValues - 1), size_is(cValues - 1)] MAPITAGS *aulPropTag;
+		uint32 cValues;
+	} SPropTagArray;
+	
+	typedef struct {
+		[length_is(cValues - 1), size_is(cValues - 1)] uint32 *value;
+		uint32 cValues;
+	} instance_key;
+
+
+
+	/*****************/
+	/* Function 0x00 */
+	MAPISTATUS NspiBind(
+		[in] uint32			unknown,
+		[in] MAPI_SETTINGS		*settings,
+		[in,out,unique] GUID		*mapiuid,
+		[out] policy_handle		*handle
+		);
+
+	/*****************/
+	/* Function 0x01 */
+	MAPISTATUS NspiUnbind(
+		[in, out] policy_handle	*handle,
+		[in] uint32	       	status
+		);
+
+
+	void NspiUpdateStat();
+
+	/*****************/
+	/* Function 0x03 */
+	MAPISTATUS NspiQueryRows(
+		[in]				policy_handle	*handle,
+		[in]				uint32		flag,
+		[in,out]			MAPI_SETTINGS	*settings,
+		[in]				uint32		lRows,
+		[in][size_is(lRows)][unique]	uint32		*instance_key,
+		[in]				uint32		unknown,
+		[in]				SPropTagArray	*REQ_properties,
+		[out]				SRowSet		**RowSet
+		);
+
+	void NspiSeekEntries();
+
+	/*****************/
+	/* Function 0x05 */
+
+	
+
+	typedef struct {
+		[unique] MAPIUID *lpguid;
+		uint32 ulKind;
+		uint32 lID; /* this is actually a union in mapidefs.h */
+	} MAPINAMEID;
+
+/* Restriction types */
+#define RES_AND            0
+#define RES_OR             1
+#define RES_NOT            2
+#define RES_CONTENT        3
+#define RES_PROPERTY       4
+#define RES_COMPAREPROPS   5
+#define RES_BITMASK        6
+#define RES_SIZE           7
+#define RES_EXIST          8
+#define RES_SUBRESTRICTION 9
+#define RES_COMMENT        10
+
+	typedef struct {
+		uint32 relop;
+		MAPITAGS ulPropTag;
+		SPropValue *lpProp;
+	} SPropertyRestriction;
+
+	typedef struct {
+		uint32	cRes;
+		[size_is(cRes)][unique]SRestriction *lpRes;
+	} SAndRestriction;
+
+	typedef [switch_type(uint32)] union {
+		[case(RES_AND)           ] SAndRestriction resAnd;
+//     [case(RES_OR)            ] SOrRestriction resOr;
+//     [case(RES_NOT)           ] SNotRestriction resNot;
+//     [case(RES_CONTENT)       ] SContentRestriction resContent;
+		[case(RES_PROPERTY)      ] SPropertyRestriction resProperty;
+//     [case(RES_COMPAREPROPS)  ] SComparePropsRestriction resCompareProps;
+//     [case(RES_BITMASK)       ] SBitMaskRestriction resBitMask;
+//     [case(RES_SUBRESTRICTION)] SSubRestriction resSub;
+//     [case(RES_SIZE)          ] SSizeRestriction resSize;
+//     [case(RES_EXIST)         ] SExistRestriction resExist;
+  } SRestriction_CTR;
+
+	typedef [public] struct _SRestriction{
+		uint32 rt;
+		[switch_is(rt)] SRestriction_CTR res;
+	} SRestriction;
+
+/* Sort type */
+#define TABLE_SORT_ASCEND	0
+#define TABLE_SORT_DESCEND	0
+
+	typedef [public] struct _SSortOrder{
+		uint32 ulPropTag;
+		uint32 ulOrder;
+	} SSortOrder;
+
+	typedef [public] struct _SSortOrderSet{
+		uint32 cSorts;
+		uint32 cCategories;
+		uint32 cExpanded;
+		[size_is(cSorts)][unique]SSortOrder *aSort;
+	} SSortOrderSet;
+
+	MAPISTATUS NspiGetMatches(
+		[in]		policy_handle	*handle,
+		[in]		uint32		unknown1,
+		[in,out]	MAPI_SETTINGS	*settings,
+		[in][unique]	SPropTagArray	*PropTagArray,
+		[in]		uint32	       	unknown2,
+		[in][unique]	SRestriction	*restrictions,
+		[in]		uint32		unknown3,
+		[out]		instance_key	*instance_key,
+		[in][unique]	SPropTagArray	*REQ_properties,
+		[out]		SRowSet		**RowSet
+		);
+
+
+	void NspiResortRestriction();
+
+	/*****************/
+	/* Function 0x07 */
+
+	typedef struct {
+ 		[string,charset(DOS)] uint8	*str;
+	} NAME_STRING;
+
+	MAPISTATUS NspiDNToEph(
+		[in] policy_handle	*handle,
+		[in] uint32		flag,
+		[in] uint32		size,
+ 		[in][size_is(size)] NAME_STRING	server_dn[],
+		[out] instance_key	*instance_key
+		);
+
+	void NspiGetPropList();
+
+	/*****************/
+	/* Function 0x09 */
+	MAPISTATUS NspiGetProps(
+		[in]   	policy_handle		*handle,
+		[in]   	uint32			flag,
+		[in]	MAPI_SETTINGS		*settings,
+		[in]	SPropTagArray		*REQ_properties,
+		[out]	SRow			**REPL_values
+		);
+
+
+	void NspiCompareDNTs();
+	void NspiModProps();
+
+#define	PT_UNSPECIFIED	0x0000
+#define	PT_NULL		0x0001
+#define	PT_I2		0x0002
+#define	PT_LONG		0x0003
+#define	PT_R4		0x0004
+#define	PT_DOUBLE	0x0005
+#define	PT_CURRENCY	0x0006
+#define	PT_APPTIME	0x0007
+#define	PT_ERROR	0x000a /* means the given attr contains no value */
+#define	PT_BOOLEAN	0x000b
+#define	PT_OBJECT	0x000d
+#define	PT_I8		0x0014
+#define	PT_STRING8	0x001e
+#define	PT_UNICODE	0x001f
+#define	PT_SYSTIME	0x0040
+#define	PT_CLSID       	0x0048
+#define	PT_BINARY	0x0102
+
+/* Multi-valued properties */
+
+#define	PT_MV_I2       	0x1002
+#define	PT_MV_LONG     	0x1003
+#define	PT_MV_R4       	0x1004
+#define	PT_MV_DOUBLE   	0x1005
+#define	PT_MV_CURRENCY 	0x1006
+#define	PT_MV_APPTIME  	0x1007
+#define	PT_MV_I8       	0x1014
+#define	PT_MV_STRING8	0x101e
+#define	PT_MV_TSTRING	0x101e
+#define	PT_MV_UNICODE	0x101f
+#define	PT_MV_SYSTIME	0x1040
+#define	PT_MV_CLSID	0x1048
+#define	PT_MV_BINARY	0x1102
+
+	/*****************/
+	/* Function 0x0c */
+
+	typedef struct {
+		uint32				cb;
+		[size_is(cb)][unique] uint8    	*lpb;
+	} SBinary;
+
+	typedef struct {
+		uint32 dwLowDateTime;
+		uint32 dwHighDateTime;
+	} FILETIME;
+
+	typedef struct {
+		uint32 cValues;
+		[size_is(cValues)] uint16 *lpi;
+	} SShortArray;
+
+	typedef struct {
+		uint32 cValues;
+		[size_is(cValues)] uint32 *lpl; 
+	} MV_LONG_STRUCT;
+
+	typedef struct {
+		ascstr_noterm lppszA;
+	} LPSTR;
+
+	typedef struct {
+		uint32 cValues;
+		[size_is(cValues)] LPSTR **strings; 
+	} SLPSTRArray;
+
+	typedef struct {
+		uint32 cValues;
+		[size_is(cValues)] SBinary *lpbin;
+	} SBinaryArray;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32 cValues;
+		[size_is(cValues)] uint32 *lpguid; 
+	} SGuidArray;
+
+	typedef struct {
+		uint32 cValues;
+		[size_is(cValues)] uint32 *lpi;
+	} MV_UNICODE_STRUCT;
+	
+	typedef struct {
+		uint32 cValues;
+		[size_is(cValues)] FILETIME *lpft;
+	} SDateTimeArray;
+
+	typedef [switch_type(uint32)] union {
+		[case(PT_I2)]			uint16			i;
+		[case(PT_LONG)]			uint32			l;
+		[case(PT_BOOLEAN)]		uint16			b;
+		[case(PT_STRING8)][unique][string,charset(DOS)] uint8	*lpszA;
+		[case(PT_BINARY)]		SBinary			bin;
+		[case(PT_UNICODE)]		[string,charset(UTF16)] uint16	*lpszW;
+		[case(PT_CLSID)]		MAPIUID			*lpguid;
+		[case(PT_SYSTIME)]		FILETIME		ft;
+		[case(PT_ERROR)]		MAPISTATUS		err;
+		[case(PT_MV_I2)]		SShortArray		MVi;
+		[case(PT_MV_LONG)]		MV_LONG_STRUCT		MVl;
+		[case(PT_MV_STRING8)]		SLPSTRArray		MVszA;
+		[case(PT_MV_BINARY)]		SBinaryArray		MVbin;
+		[case(PT_MV_CLSID)]		SGuidArray		MVguid;
+		[case(PT_MV_UNICODE)]		MV_UNICODE_STRUCT	MVszW;
+		[case(PT_MV_SYSTIME)]		SDateTimeArray		MVft;
+		[case(PT_NULL)]			uint32			null;
+		[case(PT_OBJECT)]		uint32			object;
+	} SPropValue_CTR;
+
+	typedef [public]struct {
+		MAPITAGS ulPropTag;
+		uint32 dwAlignPad;
+		[switch_is(ulPropTag & 0xFFFF)] SPropValue_CTR value; 
+	} SPropValue;
+	
+	typedef struct {
+		uint32 ulAdrEntryPad;
+		uint32 cValues;
+		[size_is(cValues)][unique] SPropValue *lpProps;
+	} SRow;
+
+
+	typedef [public] struct {
+		uint32 cRows;
+		[size_is(cRows)] SRow aRow[*];
+	} SRowSet;
+	
+	MAPISTATUS NspiGetHierarchyInfo(
+		[in] policy_handle	*handle,
+		[in] uint32		unknown1,
+		[in] MAPI_SETTINGS	*settings,
+ 		[in,out] uint32		*unknown2,
+ 		[out] SRowSet		**RowSet
+		);
+
+	void NspiGetTemplateInfo();
+	void NspiModLInkAtt();
+	void NspiDeleteEntries();
+	void NspiQueryColumns();
+	void NspiGetNamesFromIDs();
+	void NspiGetIDsFromNames();
+	void NspiResolveNames();
+	void NspiResolveNamesW();
+}
+
+[
+  uuid("a4f1db00-ca47-1067-b31f-00dd010662da"),
+  pointer_default(unique),
+  version(0.82),
+  helpstring("Exchange 5.5 EMSMDB")
+] interface exchange_emsmdb
+{
+	/*****************/
+	/* Function 0x00 */
+
+	MAPISTATUS EcDoConnect(
+ 		[out]				policy_handle	*handle,
+                [in,string,charset(DOS)]	uint8		name[],
+		[in]				uint32		unknown1[3],
+                [in]				uint32		code_page,
+		[in]				input_locale	input_locale,
+                [in]				uint32          unknown2,
+                [in]				uint16          unknown3,
+		[out]				uint32		unknown4[3],
+                [out]				uint16          *session_nb,
+                [out,unique,string,charset(DOS)]uint8		*org_group,
+                [out,unique,string,charset(DOS)]uint8		*user,
+                [out]				uint16          store_version[3],
+		[in,out]       			uint16          emsmdb_client_version[3],
+                [in,out]			uint32		*alloc_space
+		);
+
+	/*****************/
+	/* Function 0x01 */
+	MAPISTATUS EcDoDisconnect(
+		[in,out]   policy_handle   *handle
+		);
+
+	/*****************/
+	/* Function 0x02 */
+
+	typedef [flag(NDR_NOALIGN)]struct {
+		uint32 max_data;
+		uint32 offset;
+	  	[subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] MAPI_DATA blob;
+	} EcDoRpcBlob;
+	
+	[flag(NDR_NOALIGN)] MAPISTATUS  EcDoRpc(
+		[in,out]	policy_handle	*handle,
+	       	[in,out]      	EcDoRpcBlob	data,
+		[in,out]	uint16		*length,
+		[in]		uint16		max_data
+		);
+
+	/*****************/
+	/* Function 0x03 */
+	void EcGetMoreRpc();
+
+	/*****************/
+	/* Function 0x04 */
+	MAPISTATUS EcRRegisterPushNotification(
+		[in,out]	policy_handle		*handle,
+		[in]		uint32			unknown,
+		[in]		DATA_BLOB		blob1,
+		[in]		uint16			unknown1,
+		[in]		uint32			unknown2,
+		[in]		DATA_BLOB		blob2,
+		[in]		uint16			unknown3,
+		[out]		uint32			*unknown4
+		);
+
+	/*****************/
+	/* Function 0x05 */
+	MAPISTATUS EcRUnregisterPushNotification(
+		[in,out]	policy_handle		*handle,
+		[in]		uint32			unknown[2]
+		);
+
+	/*****************/
+	/* Function 0x06 */
+	void EcDummyRpc();
+
+	/*****************/
+	/* Function 0x07 */
+	void EcRGetDCName();
+
+	/*****************/
+	/* Function 0x08 */
+	void EcRNetGetDCName();
+
+	/*****************/
+	/* Function 0x09 */
+	void EcDoRpcExt();
+}
+
+[
+  uuid("c840a7dc-42c0-1a10-b4b9-08002b2fe182"),
+  pointer_default(unique),
+  helpstring("Unknown")
+] interface exchange_unknown
+{
+	void unknown_dummy();
+}
+

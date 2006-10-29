@@ -1,0 +1,80 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
+/*
+	provision an OpenChange Exchange store
+	Copyright Andrew Tridgell 2005
+	Copyright Julien Kerihuel 2005
+	Released under the GNU GPL v2 or later
+*/
+
+options = GetOptions(ARGV,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		"POPT_COMMON_CREDENTIALS",
+		'domain=s',
+		'realm=s',
+		'blank');
+
+if (options == undefined) {
+   println("Failed to parse options");
+   return -1;
+}
+
+libinclude("base.js");
+libinclude("oc_provision.js");
+
+function message() 
+{
+	if (options["quiet"] == undefined) {
+		print(vsprintf(arguments));
+	}
+}
+
+function ShowHelp()
+{
+	print("
+OpenChange provisioning
+
+provision [options]
+ --domain	DOMAIN		set the domain
+ --realm	REALM		set the realm
+ --quiet			Be quiet
+ --blank			do not add containers, just the structure
+
+You must provide at least a domain
+
+");
+	exit(1);
+}
+
+/*
+   main program
+   1- We set default values
+*/
+
+if ((options["domain"] == undefined) && (options["realm"] == undefined)) {
+	ShowHelp();
+}
+
+var subobj = provision_guess();
+for (r in options) {
+	var key = strupper(join("", split("-", r)));
+	subobj[key] = options[r];
+}
+
+var blank = (options["blank"] != undefined);
+
+if (!provision_validate(subobj, message)) {
+	return -1;
+}
+
+var creds = options.get_credentials();
+var system_session = system_session();
+
+provision_schema(subobj, message, blank, provision_default_paths(subobj), creds, system_session);
+
+message("Provisioning for Administrative Group %s\n", subobj.DOMAIN);
+provision(subobj, message, blank, provision_default_paths(subobj));
+message("All OK\n");
+return 0;

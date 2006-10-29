@@ -1,0 +1,62 @@
+#!/bin/sh
+exec smbscript "$0" ${1+"$@"}
+/*
+	add a new user to a Samba4 server
+	Copyright Andrew Tridgell 2005
+	Released under the GNU GPL v2 or later
+*/
+
+options = GetOptions(ARGV,
+		"POPT_AUTOHELP",
+		"POPT_COMMON_SAMBA",
+		"POPT_COMMON_VERSION",
+		"POPT_COMMON_CREDENTIALS",
+		'username=s',
+		'quiet');
+
+if (options == undefined) {
+   println("Failed to parse options");
+   return -1;
+}
+
+libinclude("base.js");
+libinclude("oc_provision.js");
+
+
+/*
+  print a message if quiet is not set
+*/
+function message() 
+{
+	if (options["quiet"] == undefined) {
+		print(vsprintf(arguments));
+	}
+}
+
+/*
+ show some help
+*/
+function ShowHelp()
+{
+	print("
+Samba4 newuser
+
+newuser [options]
+  --username  USERNAME     choose new username
+
+You must provide at least a username
+");
+	exit(1);
+}
+
+if (options['username'] == undefined) {
+	ShowHelp();
+}
+
+var creds = options.get_credentials();
+var system_session = system_session();
+
+
+oc_newuser(options.username, message, system_session, creds);
+
+return 0;

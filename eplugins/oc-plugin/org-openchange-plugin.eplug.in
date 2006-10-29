@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<e-plugin-list>
+  <e-plugin
+    type="shlib"
+    id="org.gnome.evolution.plugin.openchange"
+    location="@PLUGINDIR@/liborg-openchange-plugin.so"
+    name="OpenChange Plugin">
+    <description>OpenChange plugin to be compliant with the groupware server.</description>
+    <author name="Calvez Loic" email="l.calvez@openchange.org"/>
+    <!-- hook into the uri popup menu -->
+    <hook class="org.gnome.evolution.mail.config:1.0">
+	<group
+		target="account"
+		id="org.gnome.evolution.mail.config.accountEditor"/>
+                <item type="page"
+                        path="40.oof"
+                        label="Openchange Settings"
+                        factory="org_gnome_openchange_settings"/>
+                <item type="item_table"
+                        path="10.receive/10.config/20.owa"
+                        factory="org_gnome_openchange_url"/>
+                <item type="section"
+                        path="10.receive/30.auth/00.exchange_auth"
+                        factory="org_gnome_openchange_auth_section"/>
+        </group>
+    </hook>
+  </e-plugin>
+</e-plugin-list>

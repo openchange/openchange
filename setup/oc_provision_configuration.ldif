@@ -1,0 +1,272 @@
+#
+# Exchange configuration information object
+# This object stores configuration information for the Exchange Server 
+#
+
+dn: CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+adminDisplayName: Microsoft Exchange
+cn: Microsoft Exchange
+distinguishedName: CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+objectCategory: CN=msExchConfigurationContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+objectClass: msExchConfigurationContainer
+showInAdvancedViewOnly: TRUE
+
+
+#
+# First Organization
+#
+#
+
+dn: CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+adminDisplayName: First Organization
+cn: First Organization
+distinguishedName: CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+legacyExchangeDN: /o=First Organization
+objectCategory: CN=msExchOrganizationContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+objectClass: msExchOrganizationContainer
+showInAdvancedViewOnly: TRUE
+
+#
+# Administrative Groups
+#
+#
+
+dn: CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+cn: Administrative Groups
+displayName: Administrative Groups
+distinguishedName: CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+objectCategory: CN=msExchAdminGroupContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+objectClass: msExchAdminGroupContainer
+showInAdvancedViewOnly: TRUE
+
+#
+# First Administrative Group
+#
+#
+
+dn: CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+cn: First Administrative Group
+displayName: First Administrative Group
+distinguishedName: CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+legacyExchangeDN: /o=First Organization/ou=First Administrative Group
+objectCategory: CN=msExchAdminGroup,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: msExchAdminGroup
+showInAdvancedViewOnly: TRUE
+
+#
+# Servers
+#
+#
+
+dn: CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+adminDisplayName: Servers
+cn: Servers
+containerInfo: 8
+distinguishedName: CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+objectCategory: CN=msExchServersContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+objectClass: msExchServersContainer
+showInAdvancedViewOnly: TRUE
+
+#
+# The OpenChange Server object
+#
+#
+
+dn: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+adminDisplayName: ${NETBIOSNAME}
+cn: ${NETBIOSNAME}
+distinguishedName: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+legacyExchangeDN: /o=First Organization/ou=First Administrative Group/cn=Configuration/cn=Servers/cn=${NETBIOSNAME}
+networkAddress: ncacn_vns_spp:${NETBIOSNAME}
+networkAddress: netbios:${NETBIOSNAME}
+networkAddress: ncacn_np:${NETBIOSNAME}
+networkAddress: ncacn_spx:${NETBIOSNAME}
+networkAddress: ncacn_ip_tcp:${REALM}
+networkAddress: ncalrpc:${NETBIOSNAME}
+objectCategory: CN=msExchExchangeServer,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: server
+objectClass: msExchExchangeServer
+serialNumber: Version 6.5 (Build 6944.4)
+serverRole: 0
+showInAdvancedViewOnly: TRUE
+
+#
+# InformationStore
+#
+#
+
+dn: CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+adminDisplayName: InformationStore
+cn: InformationStore
+distinguishedName: CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+objectCategory: CN=msExchInformationStore,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+objectClass: msExchInformationStore
+showInAdvancedViewOnly: TRUE
+
+#
+# First Storage Group
+#
+#
+
+dn: CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+adminDisplayName: First Storage Group
+cn: First Storage Group
+distinguishedName: CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+objectCategory: CN=msExchStorageGroup,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+objectClass: msExchStorageGroup
+showInAdvancedViewOnly: TRUE
+systemFlags: 1610612736
+
+#
+# Mailbox Store (OPENCHANGE) (${NETBIOSNAME})
+#
+#
+
+dn: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+adminDisplayName: Mailbox Store (${NETBIOSNAME})
+cn: Mailbox Store (${NETBIOSNAME})
+deliveryMechanism: 1
+displayName: Mailbox Store (${NETBIOSNAME})
+distinguishedName: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+legacyExchangeDN: /o=First Organization/ou=First Administrative Group/cn=Configuration/cn=Servers/cn=${NETBIOSNAME}/cn=Microsoft Private MDB
+objectCategory: CN=msExchPrivateMDB,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: msExchMDB
+objectClass: msExchPrivateMDB
+showInAdvancedViewOnly: TRUE
+systemFlags: 1610612736
+
+#
+# All Address Lists Containers
+# description: Address book root recipient
+#
+#
+
+dn: CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+cn: Address Lists Container
+displayName: Address Lists Container
+distinguishedName: CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+objectCategory: CN=ms-Exch-Container,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: container
+objectClass: msExchContainer
+showInAdvancedViewOnly: TRUE
+
+
+#
+# All Address Lists
+# description: Address book recipient
+#
+#
+
+dn: CN=All Address Lists,CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+objectGUID: 5ddd64bc-24a9-694b-a8f4-3d3501e25e14
+cn: All Address Lists
+displayName: All Address Lists
+distinguishedName: CN=All Address Lists,CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+objectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: addressBookContainer
+showInAdvancedViewOnly: TRUE
+systemFlags: 1610612736
+
+#
+# Public Folders
+# description: Address book recipient
+#
+
+dn: CN=Public Folders,CN=All Address Lists,CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+objectGUID: b1433d91-db2f-354d-bfbf-b0624440e2bd
+cn: Public Folders
+displayName: Public Folders
+distinguishedName: CN=Public Folders,CN=All Address Lists,CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+objectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: addressBookContainer
+purportedSearch: (& (mailnickname=*) (| (objectCategory=publicFolder) ))
+showInAdvancedViewOnly: TRUE
+systemFlags: 1610612736
+
+
+#
+# All Contacts
+# description: Address book recipient
+#
+#
+
+dn: CN=All Contacts,CN=All Address Lists,CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+objectGUID: c5d1e733-a356-c14b-a1a5-c63c15fd20bb
+cn: All Contacts
+displayName: All Contacts
+distinguishedName: CN=All Contacts,CN=All Address Lists,CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+name: All Contacts
+objectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: addressBookContainer
+purportedSearch: (& (mailnickname=*) (| (&(objectCategory=person)(objectClass=contact)) ))
+showInAdvancedViewOnly: TRUE
+systemFlags: 1610612736
+
+#
+# All Users
+# description: Address book recipient
+#
+
+dn: CN=All Users,CN=All Address Lists,CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+objectGUID: c06a9f3f-7c20-3a42-af83-02cb9a09bcf2
+cn: All Users
+displayName: All Users
+distinguishedName: CN=All Users,CN=All Address Lists,CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+name: All Users
+objectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: addressBookContainer
+purportedSearch: (& (mailnickname=*) (| (&(objectCategory=person)(objectClass=user)(!(homeMDB=*))(!(msExchHomeServerName=*)))(&(objectCategory=person)(objectClass=user)(|(homeMDB=*)(msExchHomeServerName=*))) ))
+showInAdvancedViewOnly: TRUE
+systemFlags: 1610612736
+
+#
+# All Groups
+# description: Address book recipient
+#
+
+dn: CN=All Groups,CN=All Address Lists,CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+objectGUID: 9156f1a9-e9ec-5a4f-97c9-982ebcb84e5f
+cn: All Groups
+displayName: All Groups
+distinguishedName: CN=All Groups,CN=All Address Lists,CN=Address Lists Container,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
+instanceType: 4
+name: All Groups
+objectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
+objectClass: top
+objectClass: addressBookContainer
+purportedSearch: (& (mailnickname=*) (| (objectCategory=group) ))
+showInAdvancedViewOnly: TRUE
+systemFlags: 1610612736

@@ -1,0 +1,239 @@
+# Makefile for OpenChange
+# Written by Jelmer Vernooij <jelmer@samba.org>, 2005.
+
+CC=@CC@
+CFLAGS=@CFLAGS@ -I. -Wall
+PIDL=@PIDL@
+PERL=@PERL@
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+libdir=@libdir@
+datadir=@datadir@
+
+top_builddir=${PWD}
+
+TORTURE_MODULESDIR=@TORTURE_MODULESDIR@
+SERVER_MODULESDIR=@SERVER_MODULESDIR@
+
+# Evolution plugin compilation rule
+EPLUGINS=@EPLUGINS@
+EPLUGINS_INSTALL=@EPLUGINS_INSTALL@
+EPLUGINS_UNINSTALL=@EPLUGINS_UNINSTALL@
+INTLTOOL_MERGE=@INTLTOOL_MERGE@
+plugindir=@plugindir@
+
+EPLUGINS_LIBS=@EPLUGINS_LIBS@ 
+EPLUGINS_CFLAGS=@EPLUGINS_CFLAGS@
+
+# This value should be determined by configure at some point
+SHLIBEXT=so
+
+LIBS+=-lpopt
+
+# Portability hack...
+CFLAGS+=-Duint_t="unsigned int" 
+
+CFLAGS+=@SAMBA_CFLAGS@
+LIBS+=@SAMBA_LIBS@
+
+CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
+LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
+
+all: proto.h mapi_proto.h torture_proto.h bin/schemaIDGUID bin/mapidump bin/store bin/locale_codepage torture/openchange.$(SHLIBEXT) \
+	server/dcesrv_exchange.$(SHLIBEXT) $(EPLUGINS)
+
+install: all $(EPLUGINS_INSTALL)
+	@echo "=============================="
+	@echo "Installing OpenChange plugin"
+	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)
+	cp bin/schemaIDGUID $(DESTDIR)$(bindir)
+	cp bin/mapidump $(DESTDIR)$(bindir)
+	cp bin/store $(DESTDIR)$(bindir)
+	cp bin/locale_codepage $(DESTDIR)$(bindir)
+	cp libmapi.$(SHLIBEXT) $(DESTDIR)$(libdir)
+	cp torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
+	cp server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
+	cp scripting/libjs/*.js $(DESTDIR)$(datadir)/js/
+	cp setup/*.ldif $(DESTDIR)$(datadir)/setup/
+	@echo "OpenChange plugin installed"
+
+uninstall: $(EPLUGINS_UNINSTALL)
+	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
+	rm -f $(DESTDIR)$(bindir)/mapidump
+	rm -f $(DESTDIR)$(bindir)/store
+	rm -f $(DESTDIR)$(bindir)/locale_codepage
+	rm -f $(DESTDIR)$(libdir)/libmapi.*
+	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
+	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_exchange.*
+	rm -f $(DESTDIR)$(datadir)/js/oc_provision.js
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_containers.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_init.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision.ldif
+
+re: clean install
+
+# Evolution plugin compilation
+
+eplugins-all: openchange-plugin
+
+eplugins-install: eplugins-all
+	cp eplugins/oc-plugin/org-openchange-plugin.eplug $(plugindir)
+	cp eplugins/oc-plugin/liborg-openchange-plugin.$(SHLIBEXT) $(plugindir)
+
+eplugins-uninstall:
+	rm -f $(plugindir)/org-openchange-plugin.eplug
+	rm -f $(plugindir)/liborg-openchange-plugin.$(SHLIBEXT)
+
+openchange-plugin: eplugins/oc-plugin/org-openchange-plugin.eplug eplugins/oc-plugin/liborg-openchange-plugin.$(SHLIBEXT) 
+
+eplugins/oc-plugin/%.o: CFLAGS+=$(EPLUGINS_CFLAGS)
+eplugins/oc-plugin/liborg-openchange-plugin.$(SHLIBEXT):  eplugins/oc-plugin/openchange-plugin.o
+	@echo "Linking $<"
+	@$(CC) -o $@ -shared $^ -L. $(EPLUGINS_LIBS)
+
+%.eplug: %.eplug.in
+	sed -e 's|\@PLUGINDIR\@|$(plugindir)|' -e 's|\@SOEXT\@|.$(SHLIBEXT)|' $< > $@
+
+torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/emsmdb.o torture/exchange.o torture/nspi.o torture/nspi_profile.o torture/openchange.o torture/nspi_scantags.o 
+	@echo "Compiling $<"
+	@$(CC) -o $@ -shared $^ -L. $(LIBS) -lmapi
+
+server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.o server/dcesrv_exchange.o
+	@echo "Compiling $<"
+	@$(CC) -o $@ -shared $^ -L. -lmapi $(LIBS)
+
+exchange.idl: mapitags_enum.h mapicodes_enum.h
+
+%.h: %.idl
+	@echo "Compiling $<"
+	@$(PIDL) --outputdir=$(@D) --header -- $<
+
+.c.o:
+	@echo "Compiling $<"
+	@$(CC) $(EPLUGINS_UI_CFLAGS) $(CFLAGS) -c $< -o $@
+
+ndr_%.h ndr_%.c: %.idl %.h
+	@echo "Compiling $<"
+	@$(PIDL) --outputdir=$(@D) --ndr-parser -- $<
+
+ndr_%_c.h ndr_%_c.c: %.idl %.h
+	@echo "Compiling $<"
+	@$(PIDL) --outputdir=$(@D) --client -- $<
+
+tdr_%.h tdr_%.c: %.idl
+	@echo "Compiling $<"
+	@$(PIDL) --outputdir=$(@D) --tdr-parser -- $<
+
+ndr_%_s.c: %.idl
+	@echo "Compiling $<"
+	@$(PIDL) --outputdir=$(@D) --server -- $<
+
+libmapi/util/mapidump.c: ndr_exchange.h
+
+server/dcesrv_exchange.c: providers_proto.h ndr_exchange_s.c
+
+libmapi/emsmdb.c: libmapi/include/emsmdb.h libmapi/tdr_IMAPISession.h ndr_exchange_c.h
+
+libmapi/include/emsmdb.h: libmapi/IMAPISession.h
+
+libmapi/mapitables.c: libmapi/include/mapitables.h
+
+libmapi/mapitags.c libmapi/tag_to_ad_name.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mparse.pl
+	@./libmapi/conf/build.sh
+
+bin/schemaIDGUID: utils/schemaIDGUID.o
+	@echo "Compiling $<"
+	@$(CC) -o $@ $^ $(LIBS)
+
+bin/mapidump: libmapi/util/mapidump.o libmapi.$(SHLIBEXT)
+	@echo "Compiling $<"
+	@$(CC) -o $@ $^
+
+bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT)
+	@echo "Compiling $<"
+	@$(CC) -o $@ $^ $(LIBS)
+
+bin/store: libmapi/tests/store.o libmapi/storedb/storedb.o libmapi.$(SHLIBEXT)
+	@echo "Compiling $<"
+	@$(CC) -o $@ $^ $(LIBS)
+
+distclean: clean
+	rm -rf autom4te.cache
+	rm -f Makefile config.status config.log
+	rm -f intltool-extract intltool-merge intltool-update
+
+realdistclean: distclean
+	rm -f libmapi.so
+	rm -f torture/openchange.so
+	rm -f server/dcesrv_exchange.so
+	rm -f eplugins/*/*.so
+
+clean:
+	rm -f libmapi/generated/*
+	rm -f libmapi/*.o
+	rm -f libmapi/tests/*.o
+	rm -f libmapi/util/*.o
+	rm -f libmapi/storedb/*.o
+	rm -f tests/*.o
+	rm -f bin/*
+	rm -f server/*.o
+	rm -f providers/*.o
+	rm -f torture/*.o
+	rm -f utils/*.o
+	rm -f ndr_exchange* exchange.h
+	rm -f libmapi/tdr_*
+	rm -f libmapi/mapicode.{c,h}
+	rm -f libmapi/mapitags.{c,h}
+	rm -f libmapi/include/proto.h
+	rm -f libmapi/include/mapi_proto.h
+	rm -f libmapi/IMAPISession.h
+	rm -f providers/providers_proto.h
+	rm -f torture/*.$(SHLIBEXT) server/*.$(SHLIBEXT)
+	rm -f torture/torture_proto.h
+	rm -f ndr_mapi.o
+	rm -f mapicodes_enum.h
+	rm -f mapitags_enum.h
+	rm -f eplugins/*/*.o eplugins/*/*.eplug
+	rm -f *~
+	rm -f */*~
+	rm -f */*/*~
+
+proto.h: libmapi/mapitags.c libmapi/mapicode.c
+	@echo "Generating proto.h"
+	@./script/mkproto.pl --private=libmapi/include/proto.h --public=libmapi/include/proto.h \
+	libmapi/mapi.c libmapi/x500.c libmapi/mapitags.c libmapi/mapicode.c libmapi/mapitables.c libmapi/utils.c \
+	libmapi/util/locale.c libmapi/util/codepage.c libmapi/storedb/storedb.c
+
+mapi_proto.h: libmapi/IMAPISession.h
+	@echo "Generating mapi_proto.h"
+	@./script/mkproto.pl --private=libmapi/include/mapi_proto.h --public=libmapi/include/mapi_proto.h \
+	libmapi/property.c libmapi/container.c libmapi/nspi.c libmapi/emsmdb.c
+
+providers_proto.h: providers/emsabp.c
+	@echo "Generating providers_proto.h"
+	@./script/mkproto.pl --private=providers/providers_proto.h --public=providers/providers_proto.h \
+	providers/emsabp.c
+
+torture_proto.h:
+	@echo "Generating torture_proto.h"
+	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h torture/testjoin_exchange.c
+
+libmapi.$(SHLIBEXT): libmapi/mapi.o libmapi/utils.o libmapi/property.o \
+				libmapi/container.o libmapi/mapitags.o libmapi/mapicode.o \
+				libmapi/emsmdb.o libmapi/nspi.o ndr_exchange.o \
+				libmapi/storedb/storedb.o libmapi/util/locale.o \
+				libmapi/util/codepage.o libmapi/tdr_IMAPISession.o \
+				ndr_mapi.o ndr_exchange_c.o libmapi/x500.o \
+				libmapi/tag_to_ad_name.o libmapi/mapitables.o
+	@echo "Compiling $<"
+	@$(CC) -shared -o $@ $^ $(LIBS)
+
+tags:
+	ctags -R .
+
+.PRECIOUS: exchange.h ndr_exchange.h ndr_exchange.c ndr_exchange_c.c ndr_exchange_c.h libmapi/tdr_IMAPISession.h libmapi/tdr_IMAPISession.c
+
+Makefile: Makefile.in config.status
+	./config.status

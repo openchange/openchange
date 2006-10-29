@@ -1,0 +1,55 @@
+[kerihu_j@zion source]$ ldapsearch -x -D "nspitestuser@openchange.info" -b "dc=openchange,dc=info" -W -h 192.168.0.20 "cn=nspitestuser"
+Enter LDAP Password:
+# extended LDIF
+#
+# LDAPv3
+# base <dc=openchange,dc=info> with scope sub
+# filter: cn=nspitestuser
+# requesting: ALL
+#
+
+# nspitestuser, Users, openchange.info
+dn: CN=nspitestuser,CN=Users,DC=openchange,DC=info
+accountExpires: 9223372036854775807
+badPasswordTime: 0
+badPwdCount: 0
+codePage: 0
+cn: nspitestuser
+countryCode: 0
+description: Samba4 torture account created by host ZION: Tue Feb 14 05:55:42
+ 2006 CET
+displayName: nspitestuser
+instanceType: 4
+lastLogoff: 0
+lastLogon: 0
+logonCount: 0
+distinguishedName: CN=nspitestuser,CN=Users,DC=openchange,DC=info
+objectCategory: CN=Person,CN=Schema,CN=Configuration,DC=openchange,DC=info
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectGUID:: d1yAQ4ZMLUKC7ub144ao0Q==
+objectSid:: AQUAAAAAAAUVAAAAuiGiegJc4YptIAj0fwQAAA==
+primaryGroupID: 513
+pwdLastSet: 127843668777335000
+name: nspitestuser
+sAMAccountName: nspitestuser
+sAMAccountType: 805306368
+userAccountControl: 512
+comment: Tortured by Samba4: Tue Feb 14 05:55:42 2006 CET
+uSNChanged: 43746
+uSNCreated: 43741
+whenChanged: 20060214050117.0Z
+whenCreated: 20060214044908.0Z
+
+# search reference
+ref: ldap://openchange.info/CN=Configuration,DC=openchange,DC=info
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 1
+# numReferences: 1

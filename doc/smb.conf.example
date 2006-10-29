@@ -1,0 +1,25 @@
+[globals]
+	netbios name		= zion
+	workgroup		= OPENCHANGE
+	realm			= openchange.local
+	server role		= pdc
+
+dcerpc endpoint servers		= exchange_nsp exchange_emsmdb epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup
+
+	locale:codepage		= 0x4e4
+	locale:language		= 0x40c
+	locale:method		= 0x409
+
+	exchange:server		= EXCHANGE-2000
+	exchange:organization	= OpenChange
+	exchange:GUID		= 1b940e13-14d3-4e2a-9711-e06a2def5dfd
+	exchange:store		= /usr/local/samba/private/store.ldb
+	exchange:dbtype		= tdb
+
+	PR_TAGS:tags_conf_path	= trunk/OpenChange/torture/scantags/nspi_scantags.conf
+        PR_TAGS:tags_path	= trunk/OpenChange/torture/scantags/proptags.conf
+
+
+[test]
+	path			= /tmp
+	read only		= no

@@ -1,0 +1,141 @@
+OpenChange developer howto
+--------------------------
+
+j.kerihuel@openchange.org, October 2005
+Updates by Jelmer Vernooij <jelmer@samba.org>, March 2006.
+Updates by Gregory Schiro <g.schiro@openchange.org>, April 2006.
+Updates by Julien Kerihuel <j.kerihuel@openchange.org>, May 2006.
+
+First of all, install Samba 4 correctly (see howto.txt in the Samba4 package).
+Make sure you build with shared library support enabled 
+(./configure --enable-dso). You will also need to install pidl 
+(run 'make installpidl' from the Samba source dir).
+
+Since the libraries will be installed in /usr/local/samba/lib, make 
+sure that path is listed in /etc/ld.so.conf and run 'ldconfig'.
+
+After that, make sure the right PKG_CONFIG_PATH is set if you installed 
+Samba4 to a weird location. For example, if you installed to /usr/local/samba
+(default if building from source), run:
+
+$ export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/samba/lib/pkgconfig
+
+pkg-config >= 0.20 is required.
+
+If you are running out of Subversion, run autogen.sh now:
+
+$ ./autogen.sh
+
+Now, run configure:
+
+$ ./configure --prefix=path_where_samba_is_installed
+
+At this point, you should be able to build and install openchange:
+
+$ make && make install
+
+Once this is done, you need to provision OpenChange:
+
+You need to run the "oc_provision" script to set up a basic OpenChange store.
+
+$ cd source
+$ ./libmapi/setup/oc_provision --domain=YOURDOM
+
+In order to run OpenChange, you need so set up additional parameters
+in the [global] section of smb.conf. A sample smb.conf for OpenChange can be 
+found
+in doc/smb.conf.
+
+You need to activate the exchange dcerpc endpoints servers. The
+following options overwrite the default endpoints list, we need to add
+them anew:
+
+       dcerpc endpoint servers = exchange_nsp exchange_emsmdb epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup
+
+You also need to fill information about your locale ID. 3 information are requested:
+- codepage
+- input locale language
+- input locale method
+
+You can easily find the locale language and method for your country using ./bin/locale_codepage we developed:
+
+1. Select your Region
+
+  $ ./bin/locale_codepage -l
+Language groups:
+                CP_WESTERN_EUROPE_AND_US
+                CP_CENTRAL_EUROPE
+                CP_BALTIC
+                CP_GREEK
+                CP_CYRILLIC
+                CP_TURKIC
+                CP_JAPANESE
+                CP_KOREAN
+                CP_TRADITIONAL_CHINESE
+                CP_SIMPLIFIED_CHINESE
+                CP_THAI
+                CP_HEBREW
+                CP_ARABIC
+                CP_VIETNAMESE
+                CP_INDIC
+                CP_GEORGIAN
+                CP_ARMENIAN
+
+
+
+2. List languages in your region
+
+  $ ./bin/locale_codepage -G CP_WESTERN_EUROPE_AND_US
+	        [...]
+		French_Standard
+		[...]
+
+
+3. Display language and method for your language
+
+  $ ./bin/locale_codepage -i French_Standard
+######### BEGIN: (copy and paste into smb.conf) #########
+locale:language = 0x40c
+locale:method = 0x409
+######### END:   (copy and paste into smb.conf) #########
+
+You can choose the codepage you want and check it using:
+
+  $ ./bin/locale_codepage -c 0x4e4
+        codepage                 : 0x4e4
+        codepage name            : cpWindows1252
+        codepage description     : ANSI - Latin I, Western European (Windows), Charset Label:Windows-1252, Aliases:ANSI_X3.4-1968, ANSI_X3.4-1986, ascii, cp367, cp819, csASCII, IBM367, ibm819, ISO_646.irv:1991, iso_8859-1, iso_8859-1:1987, ISO646-US, iso8859-1, iso-8859-1, iso-ir-100, i...
+
+
+  If you intend to run RPC-NSPI_PROFILE torture test and you have
+  configured OpenChange to run as a server, you'll need to specify the
+  exchange server you want to connect to. This can be specified on
+  command-line, but it's generally easier to add it into your smb.conf
+  file.
+
+  exchange:server = EXCHANGE
+
+  Your OpenChange server needs a unique GUID that identifies it:
+
+  exchange:GUID = 1b940e13-14d3-4e2a-9711-e06a2def5dfd
+
+
+The simplest is to just run "smbd", but as a developer you may find
+the following more useful:
+
+   # smbd -d3 -i -M single
+
+that means "start smbd without messages in stdout, and running a
+single process. That mode of operation makes debugging smbd with gdb
+particularly easy.
+
+Evolution Plugins
+-----------------
+
+To enable openchange evolution plugins compilation run:
+
+./configure --prefix=path_where_samba_is_installed --enable-eplugins=yes
+
+eplugins are disabled by default. If enabled, you'll need evolution-plugin-2.2
+package
+

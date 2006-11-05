@@ -165,8 +165,7 @@ System Attendant Private Interface
   pointer_default(unique),
   version(56.0),
   helpstring("Exchange 5.5 Name Service Provider"),
-  helper("ndr_mapi.h"),
-  keepref
+  helper("ndr_mapi.h")
 ] interface exchange_nsp
 {
 	/*

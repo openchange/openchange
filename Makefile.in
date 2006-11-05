@@ -15,7 +15,7 @@ datadir=@datadir@
 top_builddir=${PWD}
 
 TORTURE_MODULESDIR=@TORTURE_MODULESDIR@
-SERVER_MODULESDIR=@SERVER_MODULESDIR@
+SERVER_MODULESDIR=${prefix}/modules/dcerpc_server
 
 # Evolution plugin compilation rule
 EPLUGINS=@EPLUGINS@
@@ -30,7 +30,7 @@ EPLUGINS_CFLAGS=@EPLUGINS_CFLAGS@
 # This value should be determined by configure at some point
 SHLIBEXT=so
 
-LIBS+=-lpopt
+LIBS+=-lpopt -ldynconfig
 
 # Portability hack...
 CFLAGS+=-Duint_t="unsigned int" 

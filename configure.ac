@@ -36,6 +36,9 @@ dnl *****************************
 
 AC_CHECK_LIB(popt, poptFreeContext, , [ AC_MSG_ERROR([Popt is required]) ])
 
+CPPFLAGS="-I$prefix/include"
+AC_CHECK_HEADERS(torture/ui.h param/share.h param/share_proto.h, , [ AC_MSG_ERROR([Install this header file from Samba4 manually])])
+
 PKG_PROG_PKG_CONFIG([0.20])
 PKG_CHECK_MODULES(TALLOC, talloc)
 PKG_CHECK_MODULES(SAMBA, dcerpc ndr tdr samba-util samba-config)
@@ -43,9 +46,6 @@ PKG_CHECK_MODULES(LDB, ldb)
 
 TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`
 AC_SUBST(TORTURE_MODULESDIR)
-
-SERVER_MODULESDIR=`$PKG_CONFIG --variable=modulesdir dcerpc_server`
-AC_SUBST(SERVER_MODULESDIR)
 
 AC_CHECK_TYPE(uint_t, unsigned int)
 

@@ -60,11 +60,13 @@ function ldb_erase(ldb)
 		ldb.del(res[i].dn);
 	}
 	res = ldb.search("(objectclass=*)", attrs);
-	if (res.length != 0) {
-		ldb_delete(ldb);
-		return;
+	if (typeof(res) != "undefined") {
+		if (res.length != 0) {
+			ldb_delete(ldb);
+			return;
+		}
+		assert(res.length == 0);
 	}
-	assert(res.length == 0);
 }
 
 /*

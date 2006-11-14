@@ -33,7 +33,7 @@
  */
 
 #include "openchange.h"
-#include <torture.h>
+#include <torture/torture.h>
 #include "ndr_exchange.h"
 #include "libmapi/include/emsmdb.h"
 #include "libmapi/include/mapi_proto.h"

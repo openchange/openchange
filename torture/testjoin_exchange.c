@@ -216,7 +216,7 @@ NTSTATUS	torture_create_exchangeuser(TALLOC_CTX *mem_ctx, const struct dom_sid *
 	req->op.search.base = res[0]->dn;
 	req->op.search.scope = LDB_SCOPE_BASE;
 	req->op.search.tree = ldb_parse_tree(remote_ldb, "(objectclass=*)");
-	if (req->op.search.tree == NULL) return -1;
+/* 	if (req->op.search.tree == NULL) return -1; */
 	req->op.search.attrs = NULL;
 	req->controls = ctrl;
 	req->context = tce_ctx;

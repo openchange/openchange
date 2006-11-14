@@ -21,7 +21,7 @@
 */
 
 #include "openchange.h"
-#include <torture.h>
+#include <torture/torture.h>
 #include "ndr_exchange.h"
 #include "ndr_exchange_c.h"
 #include "libmapi/mapicode.h"

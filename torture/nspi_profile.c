@@ -21,7 +21,7 @@
 */
 
 #include "openchange.h"
-#include <torture.h>
+#include <torture/torture.h>
 #include "ndr_exchange.h"
 #include "libmapi/include/nspi.h"
 #include "libmapi/IMAPISession.h"

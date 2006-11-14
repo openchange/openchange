@@ -41,7 +41,7 @@ AC_CHECK_HEADERS(torture/ui.h param/share.h param/share_proto.h, , [ AC_MSG_ERRO
 
 PKG_PROG_PKG_CONFIG([0.20])
 PKG_CHECK_MODULES(TALLOC, talloc)
-PKG_CHECK_MODULES(SAMBA, dcerpc ndr tdr samba-util samba-config)
+PKG_CHECK_MODULES(SAMBA, dcerpc ndr tdr samba-config)
 PKG_CHECK_MODULES(LDB, ldb)
 
 TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`

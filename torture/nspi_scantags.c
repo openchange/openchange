@@ -49,7 +49,7 @@
  */
 
 #include "openchange.h"
-#include <torture.h>
+#include <torture/torture.h>
 #include "torture_proto.h"
 #include "libmapi/include/nspi.h"
 #include "exchange.h"

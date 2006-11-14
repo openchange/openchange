@@ -19,7 +19,7 @@
 */
 
 #include "openchange.h"
-#include <torture.h>
+#include <torture/torture.h>
 
 BOOL torture_rpc_emsmdb(struct torture_context *);
 BOOL torture_rpc_exchange(struct torture_context *);
@@ -29,12 +29,19 @@ BOOL torture_rpc_scantags(struct torture_context *);
 
 NTSTATUS init_module(void)
 {
-	DEBUG(0, ("Loading openchange torture test\n"));
-	register_torture_op("RPC-EMSMDB", torture_rpc_emsmdb);
-	register_torture_op("RPC-EXCHANGE", torture_rpc_exchange);
-	register_torture_op("RPC-NSPI", torture_rpc_nspi);
-	register_torture_op("RPC-NSPI-PROFILE", torture_rpc_nspi_profile);
-	register_torture_op("RPC-NSPI-SCANTAGS", torture_rpc_scantags);
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "OPENCHANGE");
 
+	DEBUG(0, ("Loading openchange torture test\n"));
+
+	/* OpenChange torture tests */
+	torture_suite_add_simple_test(suite, "EMSMDB", torture_rpc_emsmdb);
+	torture_suite_add_simple_test(suite, "EXCHANGE", torture_rpc_exchange);
+	torture_suite_add_simple_test(suite, "NSPI", torture_rpc_nspi);
+	torture_suite_add_simple_test(suite, "NSPI-PROFILE", torture_rpc_nspi_profile);
+	torture_suite_add_simple_test(suite, "NSPI-SCANTAGS", torture_rpc_scantags);
+
+	suite->description = talloc_strdup(suite, "Exchange protocols tests (NSPI and EMSMDB)");
+
+	torture_register_suite(suite);
 	return NT_STATUS_OK;
 }

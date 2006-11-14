@@ -37,7 +37,6 @@ dnl *****************************
 AC_CHECK_LIB(popt, poptFreeContext, , [ AC_MSG_ERROR([Popt is required]) ])
 
 CPPFLAGS="-I$prefix/include"
-AC_CHECK_HEADERS(torture/ui.h param/share.h param/share_proto.h, , [ AC_MSG_ERROR([Install this header file from Samba4 manually])])
 
 PKG_PROG_PKG_CONFIG([0.20])
 PKG_CHECK_MODULES(TALLOC, talloc)

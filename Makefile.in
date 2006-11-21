@@ -42,7 +42,7 @@ CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
 LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 
 all: proto.h mapi_proto.h torture_proto.h bin/schemaIDGUID bin/mapidump bin/store bin/locale_codepage torture/openchange.$(SHLIBEXT) \
-	server/dcesrv_exchange.$(SHLIBEXT) $(EPLUGINS)
+	server/dcesrv_exchange.$(SHLIBEXT) server/dcesrv_exchange_remote.$(SHLIBEXT) $(EPLUGINS)
 
 install: all $(EPLUGINS_INSTALL)
 	@echo "=============================="
@@ -57,6 +57,7 @@ install: all $(EPLUGINS_INSTALL)
 	cp libmapi.$(SHLIBEXT) $(DESTDIR)$(libdir)
 	cp torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
 	cp server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
+	cp server/dcesrv_exchange_remote.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
 	cp scripting/libjs/*.js $(DESTDIR)$(datadir)/js/
 	cp setup/*.ldif $(DESTDIR)$(datadir)/setup/
 	@echo "OpenChange plugin installed"
@@ -106,6 +107,10 @@ server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.o server/dcesrv_exchange.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ -shared $^ -L. -lmapi $(LIBS)
 
+server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.o
+	@echo "Compiling $<"
+	@$(CC) -o $@ -shared $^ -L. -lmapi $(LIBS)
+
 exchange.idl: mapitags_enum.h mapicodes_enum.h
 
 %.h: %.idl
@@ -134,7 +139,7 @@ ndr_%_s.c: %.idl
 
 libmapi/util/mapidump.c: ndr_exchange.h
 
-server/dcesrv_exchange.c: providers_proto.h ndr_exchange_s.c
+server/dcesrv_exchange.c: providers_proto.h ndr_exchange_s.c ndr_exchange.c
 
 libmapi/emsmdb.c: libmapi/include/emsmdb.h libmapi/tdr_IMAPISession.h ndr_exchange_c.h
 
@@ -170,6 +175,7 @@ realdistclean: distclean
 	rm -f libmapi.so
 	rm -f torture/openchange.so
 	rm -f server/dcesrv_exchange.so
+	rm -f server/dcesrv_exchange_remote.so
 	rm -f eplugins/*/*.so
 
 clean:

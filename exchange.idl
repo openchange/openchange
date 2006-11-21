@@ -161,24 +161,12 @@ System Attendant Private Interface
 
 [
   uuid("f5cc5a18-4264-101a-8c59-08002b2f8426"),
-  endpoint("ncacn_np:[\\pipe\\exchange_nsp]", "ncacn_ip_tcp:"),
+  endpoint("ncacn_np:[\\pipe\\lsass]", "ncacn_ip_tcp:"),
   pointer_default(unique),
   version(56.0),
-  helpstring("Exchange 5.5 Name Service Provider"),
-  helper("ndr_mapi.h")
+  helpstring("Exchange 5.5 Name Service Provider")
 ] interface exchange_nsp
 {
-	/*
-	  Abstract way to represent MAPI content
-	*/
-
-	typedef [public,nopull,nopush,noprint] struct {
-		uint32 		mapi_len;	/* whole mapi_data length */
-		uint16		length;		/* content length */
-		uint16		opnum;		/* mapi operation number */
-		uint8		*content;	/* content */
-		uint8		*remaining;	/* remaining bytes / non content */
-	} MAPI_DATA;
 
 #include "mapitags_enum.h"
 #include "mapicodes_enum.h"
@@ -525,6 +513,18 @@ System Attendant Private Interface
   helpstring("Exchange 5.5 EMSMDB")
 ] interface exchange_emsmdb
 {
+	/*
+	  Abstract way to represent MAPI content
+	*/
+
+	typedef [public,nopull,nopush,noprint] struct {
+		uint32 		mapi_len;	/* whole mapi_data length */
+		uint16		length;		/* content length */
+		uint16		opnum;		/* mapi operation number */
+		uint8		*content;	/* content */
+		uint8		*remaining;	/* remaining bytes / non content */
+	} MAPI_DATA;
+
 	/*****************/
 	/* Function 0x00 */
 

@@ -238,8 +238,11 @@ libmapi.$(SHLIBEXT): libmapi/mapi.o libmapi/utils.o libmapi/property.o \
 	@echo "Compiling $<"
 	@$(CC) -shared -o $@ $^ $(LIBS)
 
-tags:
-	ctags -R .
+etags:
+	etags `find $(srcdir) -name "*.[ch]"`
+
+ctags:
+	ctags `find $(srcdir) -name "*.[ch]"`
 
 .PRECIOUS: exchange.h ndr_exchange.h ndr_exchange.c ndr_exchange_c.c ndr_exchange_c.h libmapi/tdr_IMAPISession.h libmapi/tdr_IMAPISession.c
 

@@ -30,7 +30,7 @@ EPLUGINS_CFLAGS=@EPLUGINS_CFLAGS@
 # This value should be determined by configure at some point
 SHLIBEXT=so
 
-LIBS+=-lpopt -ldynconfig
+LIBS+=-lpopt 
 
 # Portability hack...
 CFLAGS+=-Duint_t="unsigned int" 
@@ -48,7 +48,7 @@ install: all $(EPLUGINS_INSTALL)
 	@echo "=============================="
 	@echo "Installing OpenChange plugin"
 	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)
-	mkdir -p $(DESTDIR)$(TORTURE_MODULESDIR)
+	mkdir -p $(TORTURE_MODULESDIR)
 	mkdir -p $(DESTDIR)$(SERVER_MODULESDIR)
 	cp bin/schemaIDGUID $(DESTDIR)$(bindir)
 	cp bin/mapidump $(DESTDIR)$(bindir)

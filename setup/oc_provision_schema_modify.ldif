@@ -4,7 +4,7 @@ add: auxiliaryClass
 auxiliaryClass: msExchBaseClass
 auxiliaryClass: msExchMailStorage
 
-dn: CN=server,CN=Schema,CN=Configuration,${BASEDN}
+dn: CN=Server,CN=Schema,CN=Configuration,${BASEDN}
 changetype: modify
 add: mayContain
 mayContain: networkAddress

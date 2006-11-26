@@ -8,7 +8,7 @@ adminDisplayName: Microsoft Exchange
 cn: Microsoft Exchange
 distinguishedName: CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
 instanceType: 4
-objectCategory: CN=msExchConfigurationContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ms-Exch-Configuration-Container,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: container
 objectClass: msExchConfigurationContainer
@@ -26,7 +26,7 @@ cn: First Organization
 distinguishedName: CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
 instanceType: 4
 legacyExchangeDN: /o=First Organization
-objectCategory: CN=msExchOrganizationContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ms-Exch-Organization-Container,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: container
 objectClass: msExchOrganizationContainer
@@ -42,7 +42,7 @@ cn: Administrative Groups
 displayName: Administrative Groups
 distinguishedName: CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
 instanceType: 4
-objectCategory: CN=msExchAdminGroupContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ms-Exch-Admin-Group-Container,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: container
 objectClass: msExchAdminGroupContainer
@@ -59,7 +59,7 @@ displayName: First Administrative Group
 distinguishedName: CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
 instanceType: 4
 legacyExchangeDN: /o=First Organization/ou=First Administrative Group
-objectCategory: CN=msExchAdminGroup,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ms-Exch-Admin-Group,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: msExchAdminGroup
 showInAdvancedViewOnly: TRUE
@@ -75,7 +75,7 @@ cn: Servers
 containerInfo: 8
 distinguishedName: CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
 instanceType: 4
-objectCategory: CN=msExchServersContainer,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ms-Exch-Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: container
 objectClass: msExchServersContainer
@@ -98,7 +98,7 @@ networkAddress: ncacn_np:${NETBIOSNAME}
 networkAddress: ncacn_spx:${NETBIOSNAME}
 networkAddress: ncacn_ip_tcp:${REALM}
 networkAddress: ncalrpc:${NETBIOSNAME}
-objectCategory: CN=msExchExchangeServer,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ms-Exch-Exchange-Server,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: server
 objectClass: msExchExchangeServer
@@ -116,7 +116,7 @@ adminDisplayName: InformationStore
 cn: InformationStore
 distinguishedName: CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
 instanceType: 4
-objectCategory: CN=msExchInformationStore,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ms-Exch-Information-Store,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: container
 objectClass: msExchInformationStore
@@ -132,7 +132,7 @@ adminDisplayName: First Storage Group
 cn: First Storage Group
 distinguishedName: CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
 instanceType: 4
-objectCategory: CN=msExchStorageGroup,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ms-Exch-Storage-Group,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: container
 objectClass: msExchStorageGroup
@@ -151,7 +151,7 @@ deliveryMechanism: 1
 displayName: Mailbox Store (${NETBIOSNAME})
 distinguishedName: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
 legacyExchangeDN: /o=First Organization/ou=First Administrative Group/cn=Configuration/cn=Servers/cn=${NETBIOSNAME}/cn=Microsoft Private MDB
-objectCategory: CN=msExchPrivateMDB,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=ms-Exch-Private-MDB,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: msExchMDB
 objectClass: msExchPrivateMDB
@@ -208,7 +208,7 @@ instanceType: 4
 objectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: addressBookContainer
-purportedSearch: (& (mailnickname=*) (| (objectCategory=publicFolder) ))
+#purportedSearch: (& (mailnickname=*) (| (objectCategory=publicFolder) ))
 showInAdvancedViewOnly: TRUE
 systemFlags: 1610612736
 
@@ -229,7 +229,7 @@ name: All Contacts
 objectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: addressBookContainer
-purportedSearch: (& (mailnickname=*) (| (&(objectCategory=person)(objectClass=contact)) ))
+#purportedSearch: (& (mailnickname=*) (| (&(objectCategory=person)(objectClass=contact)) ))
 showInAdvancedViewOnly: TRUE
 systemFlags: 1610612736
 
@@ -248,7 +248,7 @@ name: All Users
 objectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: addressBookContainer
-purportedSearch: (& (mailnickname=*) (| (&(objectCategory=person)(objectClass=user)(!(homeMDB=*))(!(msExchHomeServerName=*)))(&(objectCategory=person)(objectClass=user)(|(homeMDB=*)(msExchHomeServerName=*))) ))
+#purportedSearch: (& (mailnickname=*) (| (&(objectCategory=person)(objectClass=user)(!(homeMDB=*))(!(msExchHomeServerName=*)))(&(objectCategory=person)(objectClass=user)(|(homeMDB=*)(msExchHomeServerName=*))) ))
 showInAdvancedViewOnly: TRUE
 systemFlags: 1610612736
 
@@ -267,6 +267,6 @@ name: All Groups
 objectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: addressBookContainer
-purportedSearch: (& (mailnickname=*) (| (objectCategory=group) ))
+#purportedSearch: (& (mailnickname=*) (| (objectCategory=group) ))
 showInAdvancedViewOnly: TRUE
 systemFlags: 1610612736

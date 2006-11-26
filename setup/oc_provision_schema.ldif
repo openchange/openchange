@@ -1,25 +1,25 @@
 #
-# msExchBaseClass
+# ms-Exch-Base-Class
 # description: The base auxiliary class that is applied to all classes 
 # that are extended by CDO for Exchange 2000 Server (CDOEX) and the base 
 # Microsoft Windows classes that are used.
 #
 
-dn: CN=msExchBaseClass,CN=Schema,CN=Configuration,${BASEDN}
-cn: msExchBaseClass
+dn: CN=ms-Exch-Base-Class,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Base-Class
+adminDisplayName: ms-Exch-Base-Class
+cn: ms-Exch-Base-Class
 objectClass: top
 objectClass: classSchema
 lDAPDisplayName: msExchBaseClass
-adminDescription: msExchBaseClass
-adminDisplayName: msExchBaseClass
 defaultHidingValue: TRUE
-defaultObjectCategory: CN=msExchBaseClass,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Base-Class,CN=Schema,CN=Configuration,${BASEDN}
 governsID: 1.2.840.113556.1.5.7000.62.14
 instanceType: 4
 mayContain: legacyExchangeDN
-distinguishedName: CN=msExchBaseClass,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Base-Class,CN=Schema,CN=Configuration,${BASEDN}
 objectClassCategory: 3
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 rDNAttID: cn
 schemaIDGUID: d8782c34-46ca-11d3-aa72-00c04f8eedd8 
 showInAdvancedViewOnly: TRUE
@@ -27,23 +27,23 @@ subClassOf: top
 systemOnly: FALSE
 
 #
-# msExchAdminGroupContainer
+# ms-Exch-Admin-Group-Container
 # description: An administrative group container. Used for extended rights and roles.
 #
 
-dn: CN=msExchAdminGroupContainer,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: msExchAdminGroupContainer
-adminDisplayName: msExchAdminGroupContainer
+dn: CN=ms-Exch-Admin-Group-Container,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Admin-Group-Container
+adminDisplayName: ms-Exch-Admin-Group-Container
 auxiliaryClass: msExchBaseClass
-cn: msExchAdminGroupContainer
+cn: ms-Exch-Admin-Group-Container
 defaultHidingValue: TRUE
-defaultObjectCategory: CN=msExchAdminGroupContainer,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Admin-Group-Container,CN=Schema,CN=Configuration,${BASEDN}
 defaultSecurityDescriptor: D:S:
 governsID: 1.2.840.113556.1.5.7000.62.50019
 instanceType: 4
 lDAPDisplayName: msExchAdminGroupContainer
-distinguishedName: CN=msExchAdminGroupContainer,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Admin-Group-Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: classSchema
 objectClassCategory: 1
@@ -55,24 +55,24 @@ systemOnly: FALSE
 
 
 #
-# msExchAdminGroup
+# ms-Exch-Admin-Group
 # objectCategory for cn=First Administrative Group
 # description: An administrative group.
 #
 
-dn: CN=msExchAdminGroup,CN=Schema,CN=Configuration,${BASEDN}
-cn: msExchAdminGroup
+dn: CN=ms-Exch-Admin-Group,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Admin-Group
+adminDisplayName: ms-Exch-Admin-Group
+cn: ms-Exch-Admin-Group
 objectClass: top
 objectClass: classSchema
 lDAPDisplayName: msExchAdminGroup
-adminDescription: msExchAdminGroup
-adminDisplayName: msExchAdminGroup
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClassCategory: 1
 governsID: 1.2.840.113556.1.5.7000.62.50011
 instanceType: 4
-distinguishedName: CN=msExchAdminGroup,CN=Schema,CN=Configuration,${BASEDN}
-defaultObjectCategory: CN=msExchAdminGroup,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Admin-Group,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Admin-Group,CN=Schema,CN=Configuration,${BASEDN}
 defaultHidingValue: TRUE
 defaultSecurityDescriptor: D:S:
 auxiliaryClass: msExchBaseClass
@@ -84,27 +84,27 @@ subClassOf: top
 systemOnly: FALSE
 
 #
-# msExchOrganizationContainer
+# ms-Exch-Organization-Container
 # objectCategory for cn=First Organization (/o=MyCompany)
 # description: An organization container. Used for extended rights and roles.
 #
 
-dn: CN=msExchOrganizationContainer,CN=Schema,CN=Configuration,${BASEDN}
-cn: msExchOrganizationContainer
+dn: CN=ms-Exch-Organization-Container,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Organization-Container
+adminDisplayName: ms-Exch-Organization-Container
+cn: ms-Exch-Organization-Container
 objectClass: top
 objectClass: classSchema
 lDAPDisplayName: msExchOrganizationContainer
-adminDescription: msExchOrganizationContainer
-adminDisplayName: msExchOrganizationContainer
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClassCategory: 1
 governsID: 1.2.840.113556.1.5.7000.62.50020
 instanceType: 4
-distinguishedName: CN=msExchOrganizationContainer,CN=Schema,CN=Configuration,${BASEDN}
-defaultObjectCategory: CN=msExchOrganizationContainer,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Organization-Container,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Organization-Container,CN=Schema,CN=Configuration,${BASEDN}
 defaultHidingValue: TRUE
 defaultSecurityDescriptor: D:S:
-auxiliaryClass: msExchBaseClass
+auxiliaryClass: ms-Exch-Base-Class
 rDNAttID: cn
 schemaIDGUID: 366a319c-a982-11d2-a9ff-00c04f8eedd8 
 showInAdvancedViewOnly: TRUE
@@ -112,24 +112,24 @@ subClassOf: container
 systemOnly: FALSE
 
 #
-# msExchConfigurationContainer
+# ms-Exch-Configuration-Container
 # description: This container stores configuration information for the Exchange server.
 #
 
-# msExchConfigurationContainer, Schema, Configuration, openchange.local
-dn: CN=msExchConfigurationContainer,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: msExchConfigurationContainer
-adminDisplayName: msExchConfigurationContainer
+# ms-Exch-Configuration-Container, Schema, Configuration, openchange.local
+dn: CN=ms-Exch-Configuration-Container,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Configuration-Container
+adminDisplayName: ms-Exch-Configuration-Container
+cn: ms-Exch-Configuration-Container
 auxiliaryClass: msExchBaseClass
-cn: msExchConfigurationContainer
 defaultHidingValue: TRUE
-defaultObjectCategory: CN=msExchConfigurationContainer,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Configuration-Container,CN=Schema,CN=Configuration,${BASEDN}
 defaultSecurityDescriptor: D:S:
 governsID: 1.2.840.113556.1.5.176
 instanceType: 4
 lDAPDisplayName: msExchConfigurationContainer
-distinguishedName: CN=msExchConfigurationContainer,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Configuration-Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: classSchema
 objectClassCategory: 1
@@ -141,24 +141,24 @@ systemFlags: 16
 systemOnly: FALSE
 
 #
-# msExchServersContainer
+# ms-Exch-Servers-Container
 # description: A container used to hold servers. Used for extended
 # rights and roles.
 #
 
-dn: CN=msExchServersContainer,CN=Schema,CN=Configuration,${BASEDN}
-cn: msExchServersContainer
+dn: CN=ms-Exch-Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Servers-Container
+adminDisplayName: ms-Exch-Servers-Container
+cn: ms-Exch-Servers-Container
 objectClass: top
 objectClass: classSchema
 lDAPDisplayName: msExchServersContainer
-adminDescription: msExchServersContainer
-adminDisplayName: msExchServersContainer
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClassCategory: 1
 governsID: 1.2.840.113556.1.5.7000.62.50013
 instanceType: 4
-distinguishedName: CN=msExchServersContainer,CN=Schema,CN=Configuration,${BASEDN}
-defaultObjectCategory: CN=msExchServersContainer,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
 defaultHidingValue: TRUE
 defaultSecurityDescriptor: D:(A;;LC;;;AU)
 auxiliaryClass: msExchBaseClass
@@ -170,23 +170,23 @@ subClassOf: container
 systemOnly: FALSE
 
 #
-# msExchExchangeServer
+# ms-Exch-Exchange-Server
 # description: A representation of an Exchange server object
 #
 
-dn: CN=msExchExchangeServer,CN=Schema,CN=Configuration,${BASEDN}
-cn: msExchExchangeServer
+dn: CN=ms-Exch-Exchange-Server,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Exchange-Server
+adminDisplayName: ms-Exch-Exchange-Server
+cn: ms-Exch-Exchange-Server
 objectClass: top
 objectClass: classSchema
 lDAPDisplayName: msExchExchangeServer
-adminDescription: msExchExchangeServer
-adminDisplayName: msExchExchangeServer
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClassCategory: 1
 governsID: 1.2.840.113556.1.5.7000.62.50009
 instanceType: 4
-distinguishedName: CN=msExchExchangeServer,CN=Schema,CN=Configuration,${BASEDN}
-defaultObjectCategory: CN=msExchExchangeServer,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Exchange-Server,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Exchange-Server,CN=Schema,CN=Configuration,${BASEDN}
 defaultHidingValue: TRUE
 defaultSecurityDescriptor: D:(A;;RP;;;AU)
 auxiliaryClass: msExchBaseClass
@@ -198,46 +198,46 @@ subClassOf: server
 systemOnly: FALSE
 
 #
-# msExchMailNickname
+# ms-Exch-Mail-Nickname
 # description: Exchange mailbox nickname for users
 #
 
-dn: CN=msExchMailNickname,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: msExchMailNickname
-adminDisplayName: msExchMailNickname
+dn: CN=ms-Exch-Mail-Nickname,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Mail-Nickname
+adminDisplayName: ms-Exch-Mail-Nickname
 attributeID: 1.2.840.113556.1.2.447
 attributeSyntax: 2.5.5.12
-cn: msExchMailNickname
+cn: ms-Exch-Mail-Nickname
 instanceType: 4
 isSingleValued: TRUE
 lDAPDisplayName: mailNickname
-distinguishedName: CN=msExchMailNickname,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=AttributeSchema,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Mail-Nickname,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: attributeSchema
 schemaIDGUID:: bf9679b3-0de6-11d0-a285-00aa003049e2
 showInAdvancedViewOnly: TRUE
 
 #
-# msExchStorageGroup
+# ms-Exch-Storage-Group
 # description: The list of stores for this Microsoft Jet instance
 #
 
-dn: CN=msExchStorageGroup,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: msExchStorageGroup
-adminDisplayName: msExchStorageGroup
+dn: CN=ms-Exch-Storage-Group,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Storage-Group
+adminDisplayName: ms-Exch-Storage-Group
+cn: ms-Exch-Storage-Group
 auxiliaryClass: msExchBaseClass
-cn: msExchStorageGroup
 defaultHidingValue: TRUE
-defaultObjectCategory: CN=msExchStorageGroup,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Storage-Group,CN=Schema,CN=Configuration,${BASEDN}
 defaultSecurityDescriptor: D:S:
 governsID: 1.2.840.113556.1.5.7000.62.11006
 instanceType: 4
 lDAPDisplayName: msExchStorageGroup
 mayContain: displayName
 mustContain: cn
-distinguishedName: CN=msExchStorageGroup,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Storage-Group,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: classSchema
 objectClassCategory: 1
@@ -249,38 +249,38 @@ subClassOf: container
 systemOnly: FALSE
 
 #
-# msExchDeliveryMechanism
+# ms-Exch-Delivery-Mechanism
 # description: 	
 #
 
-dn: CN=msExchDeliveryMechanism,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: msExchDeliveryMechanism
-adminDisplayName: msExchDeliveryMechanism
+dn: CN=ms-Exch-Delivery-Mechanism,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Delivery-Mechanism
+adminDisplayName: ms-Exch-Delivery-Mechanism
+cn: ms-Exch-Delivery-Mechanism
 attributeID: 1.2.840.113556.1.2.241
 attributeSyntax: 2.5.5.9
-cn: msExchDeliveryMechanism
 instanceType: 4
 isSingleValued: TRUE
 lDAPDisplayName: deliveryMechanism
-distinguishedName: CN=msExchDeliveryMechanism,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=AttributeSchema,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Delivery-Mechanism,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Attribute-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: attributeSchema
 schemaIDGUID: bf96794e-0de6-11d0-a285-00aa003049e2
 showInAdvancedViewOnly: TRUE
 
 #
-# msExchMDB
+# ms-Exch-MDB
 # description: Used for generic database configuration.
 #
 
-dn: CN=msExchMDB,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: msExchMDB
-adminDisplayName: msExchMDB
+dn: CN=ms-Exch-MDB,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-MDB
+adminDisplayName: ms-Exch-MDB
+cn: ms-Exch-MDB
 auxiliaryClass: msExchBaseClass
-cn: msExchMDB
 defaultHidingValue: TRUE
-defaultObjectCategory: CN=msExchMDB,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-MDB,CN=Schema,CN=Configuration,${BASEDN}
 defaultSecurityDescriptor: D:S:
 governsID: 1.2.840.113556.1.5.7000.62.11002
 instanceType: 4
@@ -288,8 +288,8 @@ lDAPDisplayName: msExchMDB
 mayContain: displayName
 mustContain: deliveryMechanism
 mustContain: cn
-distinguishedName: CN=msExchMDB,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-MDB,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: classSchema
 objectClassCategory: 1
@@ -304,23 +304,23 @@ subClassOf: top
 systemOnly: FALSE
 
 #
-# msExchPrivateMDB
+# ms-Exch-Private-MDB
 # description: A private database configuration
 #
 
-dn: CN=msExchPrivateMDB,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: msExchPrivateMDB
-adminDisplayName: msExchPrivateMDB
+dn: CN=ms-Exch-Private-MDB,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Private-MDB
+adminDisplayName: ms-Exch-Private-MDB
+cn: ms-Exch-Private-MDB
 auxiliaryClass: msExchBaseClass
-cn: msExchPrivateMDB
 defaultHidingValue: TRUE
-defaultObjectCategory: CN=msExchPrivateMDB,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Private-MDB,CN=Schema,CN=Configuration,${BASEDN}
 defaultSecurityDescriptor: D:S:
 governsID: 1.2.840.113556.1.5.7000.62.11004
 instanceType: 4
 lDAPDisplayName: msExchPrivateMDB
-distinguishedName: CN=msExchPrivateMDB,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Private-MDB,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: classSchema
 objectClassCategory: 1
@@ -333,22 +333,22 @@ subClassOf: msExchMDB
 systemOnly: FALSE
 
 #
-# msExchMailStorage
+# ms-Exch-Mail-Storage
 # description: The auxiliary class for objects that require store-specific information.
 #
 
-dn: CN=msExchMailStorage,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: msExchMailStorage
-adminDisplayName: msExchMailStorage
-cn: msExchMailStorage
+dn: CN=ms-Exch-Mail-Storage,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Mail-Storage
+adminDisplayName: ms-Exch-Mail-Storage
+cn: ms-Exch-Mail-Storage
 defaultHidingValue: TRUE
-defaultObjectCategory: CN=msExchMailStorage,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Mail-Storage,CN=Schema,CN=Configuration,${BASEDN}
 governsID: 1.2.840.113556.1.5.7000.62.5
 instanceType: 4
 lDAPDisplayName: msExchMailStorage
 mayContain: homeMDB
-distinguishedName: CN=msExchMailStorage,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Mail-Storage,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: classSchema
 objectClassCategory: 3
@@ -359,23 +359,23 @@ subClassOf: top
 systemOnly: FALSE
 
 #
-# msExchInformationStore
+# ms-Exch-Information-Store
 # description: The Information Store configuration
 #
 
-dn: CN=msExchInformationStore,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: msExchInformationStore
-adminDisplayName: msExchInformationStore
+dn: CN=ms-Exch-Information-Store,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: ms-Exch-Information-Store
+adminDisplayName: ms-Exch-Information-Store
+cn: ms-Exch-Information-Store
 auxiliaryClass: msExchBaseClass
-cn: msExchInformationStore
-defaultObjectCategory: CN=msExchInformationStore,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=ms-Exch-Information-Store,CN=Schema,CN=Configuration,${BASEDN}
 defaultSecurityDescriptor: D:S:
 governsID: 1.2.840.113556.1.5.7000.62.11001
 instanceType: 4
 lDAPDisplayName: msExchInformationStore
 mustContain: cn
-distinguishedName: CN=msExchInformationStore,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=ms-Exch-Information-Store,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: classSchema
 objectClassCategory: 1
@@ -391,38 +391,38 @@ systemOnly: FALSE
 # description: search argument for an address book view
 #
 
-dn: CN=PurportedSearch,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: PurportedSearch
-adminDisplayName: PurportedSearch
-attributeID: 1.2.840.113556.1.4.886
-attributeSyntax: 2.5.5.12
-cn: PurportedSearch
-instanceType: 4
-lDAPDisplayName: purportedSearch
-distinguishedName: CN=PurportedSearch,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=AttributeSchema,CN=Schema,CN=Configuration,${BASEDN}
-objectClass: top
-objectClass: attributeSchema
-schemaIDGUID: b4b54e50-943a-11d1-aebd-0000f80367c1
-showInAdvancedViewOnly: TRUE
-systemOnly: FALSE
+#dn: CN=PurportedSearch,CN=Schema,CN=Configuration,${BASEDN}
+#adminDescription: PurportedSearch
+#adminDisplayName: PurportedSearch
+#attributeID: 1.2.840.113556.1.4.886
+#attributeSyntax: 2.5.5.12
+#cn: PurportedSearch
+#instanceType: 4
+#lDAPDisplayName: purportedSearch
+#distinguishedName: CN=PurportedSearch,CN=Schema,CN=Configuration,${BASEDN}
+#objectCategory: CN=AttributeSchema,CN=Schema,CN=Configuration,${BASEDN}
+#objectClass: top
+#objectClass: attributeSchema
+#schemaIDGUID: b4b54e50-943a-11d1-aebd-0000f80367c1
+#showInAdvancedViewOnly: TRUE
+#systemOnly: FALSE
 
 #
-# AddressBookContainer
+# Address-Book-Container
 # description: holding members of an address book view
 #
 
-dn: CN=AddressBookContainer,CN=Schema,CN=Configuration,${BASEDN}
-adminDescription: AddressBookContainer
-adminDisplayName: AddressBookContainer
-cn: AddressBookContainer
+dn: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
+adminDescription: Address-Book-Container
+adminDisplayName: Address-Book-Container
+cn: Address-Book-Container
 defaultHidingValue: TRUE
-defaultObjectCategory: CN=AddressBookContainer,CN=Schema,CN=Configuration,${BASEDN}
+defaultObjectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
 governsID: 1.2.840.113556.1.5.125
 instanceType: 4
 lDAPDisplayName: addressBookContainer
-distinguishedName: CN=AddressBookContainer,CN=Schema,CN=Configuration,${BASEDN}
-objectCategory: CN=ClassSchema,CN=Schema,CN=Configuration,${BASEDN}
+distinguishedName: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
+objectCategory: CN=Class-Schema,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top
 objectClass: classSchema
 objectClassCategory: 1
@@ -432,7 +432,7 @@ rDNAttID: cn
 schemaIDGUID: 3e74f60f-3e73-11d1-a9c0-0000f80367c1
 showInAdvancedViewOnly: TRUE
 subClassOf: top
-systemMayContain: purportedSearch
+#systemMayContain: purportedSearch
 systemMustContain: displayName
 systemOnly: FALSE
 systemPossSuperiors: addressBookContainer

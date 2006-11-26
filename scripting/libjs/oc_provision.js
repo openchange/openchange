@@ -101,7 +101,7 @@ function update_ldb(ldif, dbname, subobj, credentials, session_info, operation)
 		var ok = ldb.add(data);
 	}
 	if (ok != true) {
-	info.message("ldb commit failed: " + ldb.errstring() + "\n");
+		message("ldb commit failed: " + ldb.errstring() + "\n");
 	}
 	assert(ok);
 
@@ -170,18 +170,18 @@ function provision_schema(subobj, message, blank, paths, creds, system_session)
 
 	provision_next_usn = 1;
 
-	message("[OpenChange] Adding new Active Directory classes\n");
+	message("[OpenChange] Adding new Active Directory attributes schemas\n");
+
+	message("[OpenChange] Adding new Active Directory classes schemas\n");
 	update_ldb("oc_provision_schema.ldif", paths.samdb, subobj, creds, system_session, "");	
-	message("[OpenChange] Extending existing Active Directory Schema\n");
+	message("[OpenChange] Extending existing Active Directory Schemas\n");
 	update_ldb("oc_provision_schema_modify.ldif", paths.samdb, subobj, creds, system_session, "modify");
-	message("[OpenChange] Adding Configuration objects\n");
-	update_ldb("oc_provision_configuration.ldif", paths.samdb, subobj, creds, system_session, "");
 }
 
 /*
   provision openchange - caution, this wipes all existing data!
 */
-function provision(subobj, message, blank, paths)
+function provision(subobj, message, blank, paths, creds, system_session)
 {
 	var data = "";
 	var lp = loadparm_init();
@@ -196,14 +196,8 @@ function provision(subobj, message, blank, paths)
 
 	provision_next_usn = 1;
 
-	message("[OpenChange] Setting up store.ldb attributes\n");
-       	setup_ldb("oc_provision_init.ldif", paths.store, subobj);
-
-	message("[OpenChange] Setting up store.ldb data\n");
-	setup_ldb("oc_provision.ldif", paths.store, subobj, NULL, false);
-
-	message("[OpenChange] Setting up store.ldb containers\n");
-	setup_ldb("oc_provision_containers.ldif", paths.store, subobj, NULL, false);
+	message("[OpenChange] Adding Configuration objects\n");
+	update_ldb("oc_provision_configuration.ldif", paths.samdb, subobj, creds, system_session, "");
 }
 
 /*

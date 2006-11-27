@@ -529,7 +529,6 @@ static void NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 static enum MAPISTATUS NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiQueryRows *r)
 {
-	struct SRowSet  *rowSet;
 	struct dcesrv_handle	*h;
 	uint8_t			*instance_key;
 	struct emsabp_ctx	*emsabp_context;
@@ -549,17 +548,17 @@ static enum MAPISTATUS NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_
 	instance_key = talloc_size(mem_ctx, sizeof(uint8_t) * 4);
 	memcpy(instance_key, r->in.instance_key, 4);
 
-        /* RowSet */
-        rowSet = talloc(mem_ctx, struct SRowSet);
-        rowSet->cRows = 0x1;
-	rowSet->aRow = talloc_size(mem_ctx, sizeof(struct SRow));
-	status = emsabp_fetch_attrs(mem_ctx, emsabp_context, rowSet->aRow, instance_key, r->in.REQ_properties);
+        /* Row Set */
+        r->out.RowSet = talloc(mem_ctx, struct SRowSet *);
+	r->out.RowSet[0] = talloc(mem_ctx, struct SRowSet);
+        r->out.RowSet[0]->cRows = 0x1;
+	r->out.RowSet[0]->aRow = talloc_size(mem_ctx, sizeof(struct SRow));
+	status = emsabp_fetch_attrs(mem_ctx, emsabp_context, r->out.RowSet[0]->aRow, instance_key, r->in.REQ_properties);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* FIXME */
 		return MAPI_E_LOGON_FAILED;
 	}
 
-        r->out.RowSet = &rowSet;
         r->out.result = MAPI_E_SUCCESS;
 
 	DEBUG(0, ("NspiQueryRows : Success\n"));

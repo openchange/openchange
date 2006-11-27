@@ -96,10 +96,10 @@ struct ldb_result		*storedb_search_v(struct ldb_context		*ldb_ctx,
 
 	if (result) talloc_steal(mem_ctx, result);
 	
-	DEBUG(4, ("storedb_search_v: %s %s -> %d (%s)\n",
-		  basedn?ldb_dn_linearize(mem_ctx, basedn):"NULL",
-		  expr?expr:"NULL", count,
-		  count==-1?ldb_errstring(ldb_ctx):"OK"));
+/* 	DEBUG(4, ("storedb_search_v: %s %s -> %d (%s)\n", */
+/* 		  basedn?ldb_dn_linearize(mem_ctx, basedn):"NULL", */
+/* 		  expr?expr:"NULL", count, */
+/* 		  count==-1?ldb_errstring(ldb_ctx):"OK")); */
 
 	free(expr);
 
@@ -256,7 +256,7 @@ struct SRowSet *storedb_search_container_tree(struct ldb_context	*ldb_ctx,
 		if (memberOf) {
 		  set_SPropValue_proptag(&SRowSet->aRow[i].lpProps[6], PR_EMS_AB_PARENT_ENTRYID, (void *)parentID);
 		}
-		DEBUG(4, ("dn = %s\n", ldb_dn_linearize(mem_ctx, (*result)->msgs[i]->dn)));
+/* 		DEBUG(4, ("dn = %s\n", ldb_dn_linearize(mem_ctx, (*result)->msgs[i]->dn))); */
 		DEBUG(4, ("cn = %s\n", display_name));
 		DEBUG(4, ("containerID = 0x%x\n", containerID));
 		DEBUG(4, ("containerFlags = 0x%x\n", *containerFlags));

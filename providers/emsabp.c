@@ -32,13 +32,6 @@
 
 struct mapitags_x500 emsabp_single_x500_tags[] =
 {
-	/* GetHierarchyInfo property tags */
-
-	{ PR_CONTAINER_FLAGS,		"containerFlags"	},
-	{ PR_EMS_AB_CONTAINERID,	"containerID"		},
-	{ PR_EMS_AB_IS_MASTER,		"IsMaster"		},
-	{ PR_EMS_AB_PARENT_ENTRYID,	"parentID"		},
-
 	/* GetMatches property tags */
 
         { PR_DISPLAY_NAME,		"displayName"		},
@@ -63,6 +56,7 @@ struct mapitags_x500 emsabp_single_x500_tags[] =
 struct mapitags_x500 emsabp_multi_x500_tags[] =
 {
 	{ PR_EMS_AB_HOME_MDB,		"homeMDB"		},
+
         { 0,				NULL			}
 };
 
@@ -88,13 +82,33 @@ struct emsabp_ctx *emsabp_init(TALLOC_CTX *mem_ctx, struct dcesrv_call_state *dc
 	if (!emsabp_ctx) return NULL;
 	emsabp_ctx->mem_ctx = talloc_init(EMSABP_CTX);
 
-	/* return an opaque context pointer on samdb database */
-	emsabp_ctx->sam_ctx = samdb_connect(emsabp_ctx->mem_ctx, dce_call->conn->auth_state.session_info); 
-	if (emsabp_ctx->sam_ctx == NULL) {
-		talloc_free(emsabp_ctx);
-		return NULL;
-	}	
-	
+	/* return an opaque context pointer on the configuration database */
+	emsabp_ctx->conf_ctx = ldb_init(emsabp_ctx->mem_ctx);
+	if (ldb_connect(emsabp_ctx->conf_ctx, 
+			private_path(emsabp_ctx->mem_ctx, "configuration.ldb"), 
+			LDB_FLG_RDONLY, NULL) != LDB_SUCCESS) {
+		DEBUG(0, ("Connection to the configuration database failed\n"));
+		exit (-1);
+	}
+
+	/* return an opaque context pointer on the samdb database */
+	emsabp_ctx->sam_ctx = ldb_init(emsabp_ctx->mem_ctx);
+	if (ldb_connect(emsabp_ctx->sam_ctx, 
+			private_path(emsabp_ctx->mem_ctx, "sam.ldb"),
+			LDB_FLG_RDONLY, NULL) != LDB_SUCCESS) {
+		DEBUG(0, ("Connection to the sam database failed\n"));
+		exit (-1);
+	}
+
+	/* return an opaque context pointer on the users database*/
+	emsabp_ctx->users_ctx = ldb_init(emsabp_ctx->mem_ctx);
+	if (ldb_connect(emsabp_ctx->users_ctx, 
+			private_path(emsabp_ctx->mem_ctx, "users.ldb"),
+			LDB_FLG_RDONLY, NULL) != LDB_SUCCESS) {
+		DEBUG(0, ("Connection to the users database failed\n"));
+		exit (-1);
+	}
+
 	emsabp_ctx->entry_ids = NULL;
 
 	return emsabp_ctx;
@@ -164,7 +178,7 @@ NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, uint8_t *instance_key, str
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	ret = gendb_search(emsabp_ctx->sam_ctx,
+	ret = gendb_search(emsabp_ctx->users_ctx,
 			   emsabp_ctx, NULL, &ldb_recipient, recipient_attrs,
 			   ldb_filter);
 	if (ret != 1) {
@@ -186,9 +200,10 @@ NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, uint8_t *instance_key, str
 
 NTSTATUS emsabp_search_dn(struct emsabp_ctx *emsabp_ctx, struct ldb_message **ldb_res, uint8_t *instance_key, const char *dn)
 {
-	const struct ldb_dn	*ldb_dn = NULL;
+	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
+	struct ldb_dn		*ldb_dn = NULL;
+	struct ldb_result	*res = NULL;
 	const char * const	recipient_attrs[] = { "*", NULL};
-	struct ldb_message	**ldb_recipient;
 	char			*ldb_filter;
 	int			ret;
 
@@ -196,24 +211,21 @@ NTSTATUS emsabp_search_dn(struct emsabp_ctx *emsabp_ctx, struct ldb_message **ld
 		return NT_STATUS_INVALID_PARAMETER;
 	}	
 	/* Search for an Active Directory dn */
-	ldb_dn = ldb_dn_explode(emsabp_ctx->mem_ctx, dn);
-	 if (ldb_dn != NULL) {
-		 ret = gendb_search_dn(emsabp_ctx->sam_ctx, emsabp_ctx, ldb_dn,
-				       &ldb_recipient, recipient_attrs);
+	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->conf_ctx, dn);
+	if (ldb_dn_validate(ldb_dn)) {
+		 ret = ldb_search(emsabp_ctx->conf_ctx, ldb_dn, scope, "", recipient_attrs, &res);
 	 } else {
 		 /* Search for an x400 dn which identifies an Exchange object on the Active Directory */
 		 ldb_filter = talloc_asprintf(emsabp_ctx->mem_ctx, "(legacyExchangeDN=%s)", dn);
-		 ret = gendb_search(emsabp_ctx->sam_ctx,
-				    emsabp_ctx, NULL, &ldb_recipient, recipient_attrs,
-				    ldb_filter);
+		 ret = ldb_search(emsabp_ctx->conf_ctx, ldb_get_default_basedn(emsabp_ctx->conf_ctx), scope, ldb_filter, recipient_attrs, &res);
 	 }
-	if (ret != 1) {
+	if (ret != LDB_SUCCESS) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	if (ldb_res) {
-		*ldb_res = ldb_recipient[0];
+	if ((ldb_res != NULL) && (res != NULL)) {
+		*ldb_res = res->msgs[0];
 	}
-	if (!emsabp_add_entry(emsabp_ctx, instance_key, ldb_recipient[0])) {
+	if (!emsabp_add_entry(emsabp_ctx, instance_key, res->msgs[0])) {
 		/* FIXME: Change NTSTATUS value */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -556,12 +568,14 @@ NTSTATUS emsabp_hierarchy_fetch_attrs(TALLOC_CTX *mem_ctx,
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	*lpProps;
 	uint32_t		ulPropTag, i;
+	const char		*attribute = NULL;
 	void			*data;
 	
 	SRow->ulAdrEntryPad = 0x0;
+	attribute = ldb_msg_find_attr_as_string(ldb_recipient, "displayName", NULL);
 
-	if (!strcmp(ldb_msg_find_attr_as_string(ldb_recipient, "displayName", NULL), "All Address Lists") ||
-	    !strcmp(ldb_msg_find_attr_as_string(ldb_recipient, "displayName", NULL), "Address Lists Container")) {
+	if (!strcmp(attribute, "All Address Lists") ||
+	    !strcmp(attribute, "Address Lists Container")) {
 		SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
 						  PR_ENTRYID,
 						  PR_CONTAINER_FLAGS,
@@ -626,34 +640,39 @@ uint32_t emsabp_get_containers(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ct
 			       struct SRow **SRows, struct ldb_message **ldb_recipient_parent,
 			       const char *dn, const char *filter)
 {
+	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 	const char * const	recipient_attrs[] = { "*", NULL};
-	struct ldb_message	**ldb_recipient;
-	struct ldb_dn		*basedn;
-	uint32_t	       	i, count;
+	struct ldb_result	*res = NULL;
+	struct ldb_dn		*basedn = NULL;
+	uint32_t	       	i, ret;
 
-	basedn = ldb_dn_explode(mem_ctx, dn);
+	basedn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->conf_ctx, dn);
+	if (basedn == NULL)
+		basedn = ldb_get_default_basedn(emsabp_ctx->conf_ctx);
+	if ( ! ldb_dn_validate(basedn)) {
+		DEBUG(3, ("Invalid Base DN format\n"));
+		return -1;
+	}
 
-	/* search subcontainers */
-	count = gendb_search(emsabp_ctx->sam_ctx,
-			     emsabp_ctx, basedn, &ldb_recipient, recipient_attrs,
-			     filter);
-	if (!count) {
+	ret = ldb_search(emsabp_ctx->conf_ctx, basedn, scope, filter, recipient_attrs, &res);
+
+	if ((ret != LDB_SUCCESS) || ((res != NULL) && (res->count == 0))) {
 		return 0;
 	}
-	
-	*SRows = talloc_array(mem_ctx, struct SRow, count);
 
-	for (i = 0; i < count; i++) {
-	  emsabp_hierarchy_fetch_attrs(mem_ctx, flags, &((*SRows)[i]), ldb_recipient[i], *ldb_recipient_parent);
+	*SRows = talloc_array(mem_ctx, struct SRow, res->count);
+
+	for (i = 0; i < res->count; i++) {
+	  emsabp_hierarchy_fetch_attrs(mem_ctx, flags, &((*SRows)[i]), res->msgs[i], *ldb_recipient_parent);
 	}
 
-	if (count == 1) {
-		*ldb_recipient_parent = ldb_recipient[0];
+	if (res->count == 1) {
+		*ldb_recipient_parent = res->msgs[0];
 	} else {
 		*ldb_recipient_parent = NULL;
 	}
 
-	return count;
+	return res->count;
 }
 
 NTSTATUS emsabp_get_hierarchytable(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, uint32_t flags, 

@@ -192,6 +192,8 @@ function provision(subobj, message, blank, paths, creds, system_session)
 	*/
 	subobj.DOMAIN       = strupper(subobj.DOMAIN);
 	subobj.REALM	    = strupper(subobj.REALM);
+	subobj.SERVER 	    = lp.get("exchange:server");
+
 	assert(valid_netbios_name(subobj.DOMAIN));
 
 	provision_next_usn = 1;

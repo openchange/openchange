@@ -57,7 +57,10 @@ struct entry_id {
 };
 
 struct emsabp_ctx {
+	void		*conf_ctx;
 	void		*sam_ctx;
+	void		*users_ctx;
+	void		*ldb_ctx;
 	TALLOC_CTX	*mem_ctx;
 	struct entry_id	*entry_ids;
 };

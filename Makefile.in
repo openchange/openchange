@@ -41,7 +41,7 @@ LIBS+=@SAMBA_LIBS@
 CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
 LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 
-all: proto.h mapi_proto.h torture_proto.h bin/schemaIDGUID bin/mapidump bin/store bin/locale_codepage torture/openchange.$(SHLIBEXT) \
+all: proto.h mapi_proto.h torture_proto.h bin/schemaIDGUID bin/mapidump bin/locale_codepage torture/openchange.$(SHLIBEXT) \
 	server/dcesrv_exchange.$(SHLIBEXT) server/dcesrv_exchange_remote.$(SHLIBEXT) $(EPLUGINS)
 
 install: all $(EPLUGINS_INSTALL)
@@ -52,7 +52,6 @@ install: all $(EPLUGINS_INSTALL)
 	mkdir -p $(DESTDIR)$(SERVER_MODULESDIR)
 	cp bin/schemaIDGUID $(DESTDIR)$(bindir)
 	cp bin/mapidump $(DESTDIR)$(bindir)
-	cp bin/store $(DESTDIR)$(bindir)
 	cp bin/locale_codepage $(DESTDIR)$(bindir)
 	cp libmapi.$(SHLIBEXT) $(DESTDIR)$(libdir)
 	cp torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
@@ -65,15 +64,14 @@ install: all $(EPLUGINS_INSTALL)
 uninstall: $(EPLUGINS_UNINSTALL)
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
 	rm -f $(DESTDIR)$(bindir)/mapidump
-	rm -f $(DESTDIR)$(bindir)/store
 	rm -f $(DESTDIR)$(bindir)/locale_codepage
 	rm -f $(DESTDIR)$(libdir)/libmapi.*
 	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
 	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_exchange.*
 	rm -f $(DESTDIR)$(datadir)/js/oc_provision.js
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_containers.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_init.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
 
 re: clean install
 
@@ -162,10 +160,6 @@ bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT)
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS)
 
-bin/store: libmapi/tests/store.o libmapi/storedb/storedb.o libmapi.$(SHLIBEXT)
-	@echo "Compiling $<"
-	@$(CC) -o $@ $^ $(LIBS)
-
 distclean: clean
 	rm -rf autom4te.cache
 	rm -f Makefile config.status config.log
@@ -183,7 +177,6 @@ clean:
 	rm -f libmapi/*.o
 	rm -f libmapi/tests/*.o
 	rm -f libmapi/util/*.o
-	rm -f libmapi/storedb/*.o
 	rm -f tests/*.o
 	rm -f bin/*
 	rm -f server/*.o
@@ -212,12 +205,12 @@ proto.h: libmapi/mapitags.c libmapi/mapicode.c
 	@echo "Generating proto.h"
 	@./script/mkproto.pl --private=libmapi/include/proto.h --public=libmapi/include/proto.h \
 	libmapi/mapi.c libmapi/x500.c libmapi/mapitags.c libmapi/mapicode.c libmapi/mapitables.c libmapi/utils.c \
-	libmapi/util/locale.c libmapi/util/codepage.c libmapi/storedb/storedb.c
+	libmapi/util/locale.c libmapi/util/codepage.c 
 
 mapi_proto.h: libmapi/IMAPISession.h
 	@echo "Generating mapi_proto.h"
 	@./script/mkproto.pl --private=libmapi/include/mapi_proto.h --public=libmapi/include/mapi_proto.h \
-	libmapi/property.c libmapi/container.c libmapi/nspi.c libmapi/emsmdb.c
+	libmapi/property.c libmapi/nspi.c libmapi/emsmdb.c
 
 providers_proto.h: providers/emsabp.c
 	@echo "Generating providers_proto.h"
@@ -229,9 +222,9 @@ torture_proto.h:
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h torture/testjoin_exchange.c
 
 libmapi.$(SHLIBEXT): libmapi/mapi.o libmapi/utils.o libmapi/property.o \
-				libmapi/container.o libmapi/mapitags.o libmapi/mapicode.o \
+				libmapi/mapitags.o libmapi/mapicode.o \
 				libmapi/emsmdb.o libmapi/nspi.o ndr_exchange.o \
-				libmapi/storedb/storedb.o libmapi/util/locale.o \
+				libmapi/util/locale.o \
 				libmapi/util/codepage.o libmapi/tdr_IMAPISession.o \
 				ndr_mapi.o ndr_exchange_c.o libmapi/x500.o \
 				libmapi/tag_to_ad_name.o libmapi/mapitables.o

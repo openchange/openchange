@@ -91,7 +91,7 @@ adminDisplayName: ${NETBIOSNAME}
 cn: ${NETBIOSNAME}
 distinguishedName: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=First Organization,CN=Microsoft Exchange,CN=Services,CN=Configuration,${BASEDN}
 instanceType: 4
-legacyExchangeDN: /o=First Organization/ou=First Administrative Group/cn=Configuration/cn=Servers/cn=${SERVER}
+legacyExchangeDN: /o=First Organization/ou=First Administrative Group/cn=Configuration/cn=Servers/cn=${NETBIOSNAME}
 networkAddress: ncacn_vns_spp:${NETBIOSNAME}
 networkAddress: netbios:${NETBIOSNAME}
 networkAddress: ncacn_np:${NETBIOSNAME}

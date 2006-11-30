@@ -220,12 +220,13 @@ NTSTATUS emsabp_search_dn(struct emsabp_ctx *emsabp_ctx, struct ldb_message **ld
 		 ret = ldb_search(emsabp_ctx->conf_ctx, ldb_get_default_basedn(emsabp_ctx->conf_ctx), scope, ldb_filter, recipient_attrs, &res);
 	 }
 	if (ret != LDB_SUCCESS) {
+		/* FIXME: Change NTSTATUS value */
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	if ((ldb_res != NULL) && (res != NULL)) {
+	if ((ldb_res != NULL) && (res != NULL) && res->msgs) {
 		*ldb_res = res->msgs[0];
 	}
-	if (!emsabp_add_entry(emsabp_ctx, instance_key, res->msgs[0])) {
+	if (!res->msgs || !emsabp_add_entry(emsabp_ctx, instance_key, res->msgs[0])) {
 		/* FIXME: Change NTSTATUS value */
 		return NT_STATUS_INVALID_PARAMETER;
 	}

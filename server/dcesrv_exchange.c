@@ -529,10 +529,11 @@ static void NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 static enum MAPISTATUS NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiQueryRows *r)
 {
+	struct emsabp_ctx	*emsabp_context;
 	struct dcesrv_handle	*h;
 	uint8_t			*instance_key;
-	struct emsabp_ctx	*emsabp_context;
 	NTSTATUS		status;
+	int			row_nb, i = 0;
 
 	DEBUG(0, ("##### in NspiQueryRows ####\n"));
 
@@ -544,19 +545,24 @@ static enum MAPISTATUS NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_
 	r->out.settings->service_provider.ab[0] = (uint8_t)((*r->in.instance_key) & 0xFF);
 	r->out.settings->service_provider.ab[1] = (uint8_t)(((*r->in.instance_key) >> 8) & 0xFF);
 
-	/* Convert instance_key */
-	instance_key = talloc_size(mem_ctx, sizeof(uint8_t) * 4);
-	memcpy(instance_key, r->in.instance_key, 4);
+	row_nb = r->in.lRows;
 
-        /* Row Set */
-        r->out.RowSet = talloc(mem_ctx, struct SRowSet *);
+	/* Row Set */
+	r->out.RowSet = talloc(mem_ctx, struct SRowSet *);
 	r->out.RowSet[0] = talloc(mem_ctx, struct SRowSet);
-        r->out.RowSet[0]->cRows = 0x1;
-	r->out.RowSet[0]->aRow = talloc_size(mem_ctx, sizeof(struct SRow));
-	status = emsabp_fetch_attrs(mem_ctx, emsabp_context, r->out.RowSet[0]->aRow, instance_key, r->in.REQ_properties);
-	if (!NT_STATUS_IS_OK(status)) {
-		/* FIXME */
-		return MAPI_E_LOGON_FAILED;
+	r->out.RowSet[0]->cRows = row_nb;
+	r->out.RowSet[0]->aRow = talloc_size(mem_ctx, sizeof(struct SRow) * row_nb);
+	while (i < row_nb) {
+		/* Convert instance_key */
+		instance_key = talloc_size(mem_ctx, sizeof(uint8_t) * 4);
+		memset(instance_key, 0, 4);
+		instance_key[0] |= r->in.instance_key[i];
+		instance_key[1] |= r->in.instance_key[i] >> 8;
+		
+		status = emsabp_fetch_attrs(mem_ctx, emsabp_context, &(r->out.RowSet[0]->aRow[i]), instance_key, r->in.REQ_properties);
+		if (!NT_STATUS_IS_OK(status))  /* FIXME */
+			return MAPI_E_LOGON_FAILED;
+		i++;
 	}
 
         r->out.result = MAPI_E_SUCCESS;
@@ -583,10 +589,11 @@ static void NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_
 static enum MAPISTATUS NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct NspiGetMatches *r)
 {
-	uint8_t			*instance_key;
 	struct dcesrv_handle	*h;
 	struct emsabp_ctx	*emsabp_context;
+	uint8_t			**instance_keys;
 	NTSTATUS		status;
+	int			nbrows = 0;
 
 	DEBUG(0, ("##### in NspiGetMatches ####\n"));
 
@@ -597,38 +604,45 @@ static enum MAPISTATUS NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC
         r->out.settings = r->in.settings;
 
 	/* Search the provider for the requested recipient */
-	instance_key = talloc_size(mem_ctx, sizeof (uint8_t) * 4);
-	status = emsabp_search(emsabp_context, instance_key, r->in.restrictions);
+	status = emsabp_search(emsabp_context, &instance_keys, r->in.restrictions);
 	if (!NT_STATUS_IS_OK(status)) {
 		return MAPI_E_LOGON_FAILED;
 	}
-
-	DEBUG(0,("NspiGetMatches before set: instance_key = 0x%.2x%.2x%.2x%.2x\n", instance_key[0], instance_key[1], instance_key[2], instance_key[3]));
-
+	
         /* Row Set */
+	while (instance_keys[nbrows])
+		nbrows++;
         r->out.RowSet = talloc(mem_ctx, struct SRowSet *);
 	r->out.RowSet[0] = talloc(mem_ctx, struct SRowSet);
-        r->out.RowSet[0]->cRows = 0x1;
-	r->out.RowSet[0]->aRow = talloc_size(mem_ctx, sizeof(struct SRow));
-        status = emsabp_fetch_attrs(mem_ctx, emsabp_context, r->out.RowSet[0]->aRow, instance_key, r->in.REQ_properties);
-	if (!NT_STATUS_IS_OK(status)) {
-		/* FIXME */
-		return MAPI_E_LOGON_FAILED;
+	r->out.RowSet[0]->cRows = nbrows;
+	r->out.RowSet[0]->aRow = talloc_size(mem_ctx, sizeof(struct SRow) * nbrows);
+	/* Instance keys */
+        r->out.instance_key = talloc(mem_ctx, struct instance_key);
+        r->out.instance_key->value = talloc_size(mem_ctx, sizeof(uint32_t) * nbrows);
+
+	DEBUG(0,("All NspiGetMatches instance_keys(%d)\n", nbrows));
+	nbrows = 0;
+	while (instance_keys[nbrows]) {
+		DEBUG(0,("instance_keys[%d] = 0x%.2x%.2x%.2x%.2x\n", nbrows,
+			 instance_keys[nbrows][0],
+			 instance_keys[nbrows][1],
+			 instance_keys[nbrows][2],
+			 instance_keys[nbrows][3]));
+
+		status = emsabp_fetch_attrs(mem_ctx, emsabp_context, &(r->out.RowSet[0]->aRow[nbrows]), instance_keys[nbrows], r->in.REQ_properties);
+		if (!NT_STATUS_IS_OK(status))	/* FIXME */
+			return MAPI_E_LOGON_FAILED;
+		
+		r->out.instance_key->value[nbrows] = 0;
+		r->out.instance_key->value[nbrows] |= instance_keys[nbrows][1];
+		r->out.instance_key->value[nbrows] = r->out.instance_key->value[nbrows] << 8;
+		r->out.instance_key->value[nbrows] |= instance_keys[nbrows][0];
+		DEBUG(0,("NspiGetMatches after set: instance_keys[%d] = 0x%x\n", nbrows, r->out.instance_key->value[nbrows]));
+
+		nbrows++;
 	}
 
-	/* Instance key */
-        r->out.instance_key = talloc(mem_ctx, struct instance_key);
-	DEBUG(0,("%p\n", r->out.instance_key));
-        r->out.instance_key->value = talloc_size(mem_ctx, sizeof(uint32_t));
-	*(r->out.instance_key->value) = 0;
-	*(r->out.instance_key->value) |= instance_key[1];
-	*(r->out.instance_key->value) = r->out.instance_key->value[0] << 8;
-	*(r->out.instance_key->value) |= instance_key[0];
-
-	DEBUG(0,("NspiGetMatches after set: instance_key = 0x%x\n", *r->out.instance_key->value));
-
-        r->out.instance_key->cValues = 0x2;
-
+        r->out.instance_key->cValues = nbrows + 1;
         r->out.result = MAPI_E_SUCCESS;
 	
 	DEBUG(0, ("NspiGetMatches : Success\n"));
@@ -777,6 +791,9 @@ static enum MAPISTATUS NspiGetHierarchyInfo(struct dcesrv_call_state *dce_call, 
 
 	r->out.unknown2 = talloc(mem_ctx, uint32_t);
 	*(r->out.unknown2) = 0x1;
+	
+	r->out.RowSet = talloc(mem_ctx, struct SRowSet *);
+	r->out.RowSet[0] = talloc(mem_ctx, struct SRowSet);
 	emsabp_get_hierarchytable(mem_ctx, emsabp_context, r->in.unknown1, r->out.RowSet);
 
 	DEBUG(0, ("NspiGetHierarchyInfo : success\n"));

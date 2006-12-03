@@ -153,42 +153,49 @@ BOOL emsabp_add_entry(struct emsabp_ctx *emsabp_ctx, uint8_t *instance_key,
   PR_ACCOUNT_NAME is represented in the AD by the samrAccountName attribute
 */
 
-NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, uint8_t *instance_key, struct SRestriction *res)
+NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, uint8_t ***instance_keys, struct SRestriction *restriction)
 {
+	enum ldb_scope			scope = LDB_SCOPE_SUBTREE;
 	struct SPropertyRestriction	*res_prop = NULL;
-	struct ldb_message		**ldb_recipient;
+	struct ldb_result		*res = NULL;
 	struct SPropValue		*lpProp = NULL;
 	const char * const		recipient_attrs[] = { "*", NULL};
 	char				*recipient;
 	char				*ldb_filter;
 	int				ret;
+	int				i;
 
-	if (((uint32_t)(res->rt)) != RES_PROPERTY) {
+	if (((uint32_t)(restriction->rt)) != RES_PROPERTY) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	res_prop = (struct SPropertyRestriction *)&(res->res);
+	res_prop = (struct SPropertyRestriction *)&(restriction->res);
 	if ((res_prop->ulPropTag != PR_ANR) && (res_prop->ulPropTag != PR_ANR_UNICODE)) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	lpProp = res_prop->lpProp;
 	if ((recipient = (char *)((res_prop->ulPropTag == PR_ANR) ? lpProp->value.lpszA : lpProp->value.lpszW))) {
-		ldb_filter = talloc_asprintf(emsabp_ctx->mem_ctx, "(sAMAccountName=%s)", recipient);
+		ldb_filter = talloc_asprintf(emsabp_ctx->mem_ctx, "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))", recipient);
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	ret = gendb_search(emsabp_ctx->users_ctx,
-			   emsabp_ctx, NULL, &ldb_recipient, recipient_attrs,
-			   ldb_filter);
-	if (ret != 1) {
+	ret = ldb_search(emsabp_ctx->users_ctx, ldb_get_default_basedn(emsabp_ctx->users_ctx), scope, ldb_filter, recipient_attrs, &res);
+
+	if (ret != LDB_SUCCESS || !res->count) {
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (!emsabp_add_entry(emsabp_ctx, instance_key, ldb_recipient[0])) {
-		/* FIXME: Change NTSTATUS value */
-		return NT_STATUS_INVALID_PARAMETER;
+	*instance_keys = talloc_size(emsabp_ctx->mem_ctx, sizeof(*instance_keys) * (res->count + 1));
+
+	for (i = 0; i < res->count; i++) {
+		(*instance_keys)[i] = talloc_size(emsabp_ctx->mem_ctx, sizeof (uint8_t) * 4);
+		if (!emsabp_add_entry(emsabp_ctx, (*instance_keys)[i], res->msgs[i])) {
+			/* FIXME: Change NTSTATUS value */
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
+	(*instance_keys)[res->count] = NULL;
 	
 	return NT_STATUS_OK;
 }
@@ -219,14 +226,17 @@ NTSTATUS emsabp_search_dn(struct emsabp_ctx *emsabp_ctx, struct ldb_message **ld
 		 ldb_filter = talloc_asprintf(emsabp_ctx->mem_ctx, "(legacyExchangeDN=%s)", dn);
 		 ret = ldb_search(emsabp_ctx->conf_ctx, ldb_get_default_basedn(emsabp_ctx->conf_ctx), scope, ldb_filter, recipient_attrs, &res);
 	 }
-	if (ret != LDB_SUCCESS) {
+
+	if (ret != LDB_SUCCESS || !res->count) {
 		/* FIXME: Change NTSTATUS value */
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	if ((ldb_res != NULL) && (res != NULL) && res->msgs) {
+
+	if (ldb_res != NULL) {
 		*ldb_res = res->msgs[0];
 	}
-	if (!res->msgs || !emsabp_add_entry(emsabp_ctx, instance_key, res->msgs[0])) {
+
+	if (!emsabp_add_entry(emsabp_ctx, instance_key, res->msgs[0])) {
 		/* FIXME: Change NTSTATUS value */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -684,7 +694,7 @@ NTSTATUS emsabp_get_hierarchytable(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsab
 	int			i, count;
 	char			*dn;
 
-	RowSet[0] = talloc(mem_ctx, struct SRowSet);
+/* 	RowSet[0] = talloc(mem_ctx, struct SRowSet); */
 
 	/* Set 'Address Lists Container' object */
 	count = emsabp_get_containers(mem_ctx, emsabp_ctx, flags, &SRow_root, &ldb_recipient_parent,

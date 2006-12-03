@@ -421,7 +421,7 @@ System Attendant Private Interface
 	} MV_LONG_STRUCT;
 
 	typedef struct {
-		ascstr_noterm lppszA;
+		ascstr lppszA;
 	} LPSTR;
 
 	typedef struct {

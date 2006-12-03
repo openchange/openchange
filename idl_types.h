@@ -56,12 +56,6 @@
 #define ascstr_noterm	[flag(STR_NOTERM|STR_ASCII|STR_SIZE4|STR_LEN4)] string
 
 /*
-  an ascii string prefixed with [size] [offset] [length], all 32 bits
-  null terminated
-*/
-#define ascstr		[flag(STR_ASCII|STR_SIZE4|STR_LEN4)] string
-
-/*
   a null terminated ascii string
 */
 #define astring		[flag(STR_ASCII|STR_NULLTERM)] string

@@ -69,9 +69,8 @@ BOOL test_EcDoConnect(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		r.in.emsmdb_client_version[2] = 0x1013;
 		*r.in.alloc_space = 0x0163000;
 
-		r.out.unknown4[0] = talloc(mem_ctx, uint32_t);
-		r.out.unknown4[1] = talloc(mem_ctx, uint32_t);
-		r.out.unknown4[2] = talloc(mem_ctx, uint32_t);
+		*r.out.unknown4 = (uint32_t)talloc_size(mem_ctx, sizeof(uint32_t) * 3);
+		r.out.alloc_space = talloc(mem_ctx, uint32_t);
 		r.out.session_nb = talloc(mem_ctx, uint16_t);
 		r.out.handle = talloc(mem_ctx, struct policy_handle);
 

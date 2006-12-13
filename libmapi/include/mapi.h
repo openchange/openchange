@@ -29,21 +29,11 @@
 #define	OPNUM_Unknown		"Unknown opnum"
 #define	OPNUM_LEN		2
 
-#define	OPNUM_OpenMsgStore	0x00FE
+#define	OPNUM_MAPI_RPC_LOGON	0xFE
 
 struct	opnums {
-	uint16_t	opnum;
+	uint8_t		opnum;
 	const char	*name;
 };
-
-/*
-  OpenMsgStore Data structure
- */
-
-typedef struct SOpenMsgStore {
-	uint8_t		*unknown;		/* unknown bytes	*/
-	uint16_t	proflen;		/* profile info length	*/
-	const char	*profile_info;		/* profile info string	*/
-} MSG_STORE;
 
 #endif /*!_MAPI_H */

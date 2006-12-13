@@ -91,14 +91,14 @@ uint8_t EcDoRpc_7_content[] = "\x00\x00\x08\x00\x14\x00\x48\x67\x14\x00\x4A\x67\
 uint8_t EcDoRpc_8_content[] = "\x00\x00\x08\x00\x14\x00\x48\x67\x14\x00\x4A\x67\x14\x00\x4D\x67\x03\x00\x4E\x67\x1E\x00\x37\x00\x1E\x00\x1A\x00\x1E\x00\xEB\x65\x1E\x00\xEC\x65\x08\x00\x01\x00\x00\x00\x00";
 
 struct MAPI_DATA RootFolder[] = {
- 	{ 118,	80,	0x0029,	EcDoRpc_2_content, 0 },
-	{ 200,	166,	0x0029,	EcDoRpc_3_content, 0 },
-	{ 15,	5,	0x0004,	EcDoRpc_4_content, 0 },
-	{ 27,	21,	0x0012,	EcDoRpc_5_content, 0 },
-	{ 15,	5,	0x0005,	EcDoRpc_6_content, 0 },
-	{ 57,	43,	0x0012,	EcDoRpc_7_content, 0 },
-	{ 55,	45,	0x0012,	EcDoRpc_8_content, 0 },
-	{0,	0,	0,		   0 }
+	{ 118,	80,	0x29, 0x0, EcDoRpc_2_content, 0 },
+	{ 200,	166,	0x29, 0x0, EcDoRpc_3_content, 0 },
+	{ 15,	5,	0x04, 0x0, EcDoRpc_4_content, 0 },
+	{ 27,	21,	0x12, 0x0, EcDoRpc_5_content, 0 },
+	{ 15,	5,	0x05, 0x0, EcDoRpc_6_content, 0 },
+	{ 57,	43,	0x12, 0x0, EcDoRpc_7_content, 0 },
+	{ 55,	45,	0x12, 0x0, EcDoRpc_8_content, 0 },
+	{0,	0,	0,    0,   0,		      0 }
 };
 
 
@@ -123,14 +123,14 @@ uint8_t EcDoRpc_14_content[] = "\x00\x00\x08\x00\x14\x00\x48\x67\x14\x00\x4A\x67
 uint8_t EcDoRpc_15_content[] = "\x00\x00\x08\x00\x14\x00\x48\x67\x14\x00\x4A\x67\x14\x00\x4D\x67\x03\x00\x4E\x67\x1E\x00\x37\x00\x1E\x00\x1A\x00\x1E\x00\xEB\x65\x1E\x00\xEC\x65\x08\x00\x01\x00\x00\x00\x00";
 
 struct MAPI_DATA	IPMSubTree[] = {
-	{ 118,	80,	0x0029,	EcDoRpc_9_content,	0 },
-	{ 200,	166,	0x0029,	EcDoRpc_10_content,	0 },
-	{ 15,	5,	0x0004,	EcDoRpc_11_content,	0 },
-	{ 27,	21,	0x0012,	EcDoRpc_12_content,	0 },
-	{ 15,	5,	0x0005,	EcDoRpc_13_content,	0 },
-	{ 57,	43,	0x0012,	EcDoRpc_14_content,	0 },
-	{ 55,	45,	0x0012,	EcDoRpc_15_content,	0 },
-	{ 0,	0,	0,			0 }
+	{ 118,	80,	0x29, 0x0, EcDoRpc_9_content,	0 },
+	{ 200,	166,	0x29, 0x0, EcDoRpc_10_content,	0 },
+	{ 15,	5,	0x04, 0x0, EcDoRpc_11_content,	0 },
+	{ 27,	21,	0x12, 0x0, EcDoRpc_12_content,	0 },
+	{ 15,	5,	0x05, 0x0, EcDoRpc_13_content,	0 },
+	{ 57,	43,	0x12, 0x0, EcDoRpc_14_content,	0 },
+	{ 55,	45,	0x12, 0x0, EcDoRpc_15_content,	0 },
+	{ 0,	0,	0,    0x0, 0,		0 }
 
 };
 
@@ -154,12 +154,12 @@ BOOL OpenMessageStore(struct emsmdb_context *emsmdb)
 
 	DEBUG(0, ("\nStep 2: OpenMessageStore\n"));
 
-	req.opcode = op_OpenMsgStore;
-	req.u.openmsgstore.col = 0x0;
-	req.u.openmsgstore.row = 0x1;
-	req.u.openmsgstore.locale_id = 0x40c;
-	req.u.openmsgstore.padding = 0x0;
-	req.u.openmsgstore.profile_info = "/o=OpenChange Organization/ou=First Administrative Group/cn=Recipients/cn=Administrator";
+	req.opcode = op_MAPI_RPC_LOGON;
+	req.u.mapi_rpc_logon.col = 0x0;
+	req.u.mapi_rpc_logon.row = 0x1;
+	req.u.mapi_rpc_logon.locale_id = 0x40c;
+	req.u.mapi_rpc_logon.padding = 0x0;
+	req.u.mapi_rpc_logon.profile_info = "/o=OpenChange Organization/ou=First Administrative Group/cn=Recipients/cn=Administrator";
 	
 	blob.mapi_len = EcDoRpc_1_mapilen;
 

@@ -509,6 +509,7 @@ System Attendant Private Interface
 [
   uuid("a4f1db00-ca47-1067-b31f-00dd010662da"),
   pointer_default(unique),
+  endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]","ncacn_ip_tcp:"),
   version(0.82),
   helpstring("Exchange 5.5 EMSMDB")
 ] interface exchange_emsmdb
@@ -517,10 +518,16 @@ System Attendant Private Interface
 	  Abstract way to represent MAPI content
 	*/
 
+	typedef [public, enum8bit, flag(NDR_PAHEX)] enum {
+		REQUEST		= 0x0,
+		RESPONSE	= 0x1
+	} EcDoRpc_action;
+
 	typedef [public,nopull,nopush,noprint] struct {
 		uint32 		mapi_len;	/* whole mapi_data length */
 		uint16		length;		/* content length */
-		uint16		opnum;		/* mapi operation number */
+		uint8		opnum;		/* mapi operation number */
+		EcDoRpc_action	action;		/* request (0x0) or response (0x1) */
 		uint8		*content;	/* content */
 		uint8		*remaining;	/* remaining bytes / non content */
 	} MAPI_DATA;

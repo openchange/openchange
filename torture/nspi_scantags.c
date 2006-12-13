@@ -70,6 +70,8 @@ FILE	*stream;
 
 BOOL get_special_props(struct nspi_context *);
 
+void torture_leave_domain(void *);
+
 struct tagsScenarios
 {
 	const char	*server;

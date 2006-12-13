@@ -103,9 +103,9 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p
 	r.in.alloc_space = talloc(mem_ctx, uint32_t);
 	*r.in.alloc_space = 0;
 
-	r.out.unknown4[0] = talloc(mem_ctx, uint32_t);
-	r.out.unknown4[1] = talloc(mem_ctx, uint32_t);
-	r.out.unknown4[2] = talloc(mem_ctx, uint32_t);
+	r.out.unknown4[0] = (uint32_t)talloc(mem_ctx, uint32_t);
+	r.out.unknown4[1] = (uint32_t)talloc(mem_ctx, uint32_t);
+	r.out.unknown4[2] = (uint32_t)talloc(mem_ctx, uint32_t);
 	r.out.session_nb = talloc(mem_ctx, uint16_t);
 	r.out.alloc_space = talloc(mem_ctx, uint32_t);
 	r.out.handle = &ret->handle;

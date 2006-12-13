@@ -50,7 +50,8 @@ void ndr_print_MAPI_DATA(struct ndr_print *ndr, const char *name, const struct M
 	rlength = r->mapi_len - r->length;
 
 	ndr->print(ndr, "%-25s: MAPI_DATA (content) length=%u", name, r->length);
-	ndr->print(ndr, "%-25s: MAPI DATA opnum = %s (0x%.04X)", name, get_mapi_opname(r->opnum), r->opnum);
+	ndr->print(ndr, "%-25s: MAPI_DATA (content) opnum=%s (0x%.02X)", name, get_mapi_opname(r->opnum), r->opnum);
+	ndr_print_EcDoRpc_action(ndr, "blob", r->action);
 	if (r->length) {
 		dump_data(10, r->content, r->length);
 	}
@@ -82,8 +83,11 @@ NTSTATUS ndr_push_MAPI_DATA(struct ndr_push *ndr, int ndr_flags, const struct MA
 
 	blob.mapi_len -= 2;
 	blob.length -= 2;
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, blob.opnum));
-	/* opnum is extracted from content and is 2 bytes long */
+	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, blob.opnum));
+	NDR_CHECK(ndr_push_EcDoRpc_action(ndr, NDR_SCALARS, blob.action));
+	/* opnum + action (request/response) are extracted from content
+	   and are 2 bytes long 
+	*/
 	NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, blob.content, blob.length - 2));
 
 	remaining_length = blob.mapi_len - blob.length;
@@ -116,8 +120,11 @@ NTSTATUS ndr_pull_MAPI_DATA(struct ndr_pull *ndr, int ndr_flags, struct MAPI_DAT
 	/* length includes length field, we have to substract it */
 	blob->length -= 2;
 	
-	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &blob->opnum));
-	/* opnum is extracted from content and is 2 bytes long */
+	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &blob->opnum));
+	NDR_CHECK(ndr_pull_EcDoRpc_action(ndr, NDR_SCALARS, &blob->action));
+	/* opnum + action are extracted from content and are 2 bytes
+	   long 
+	*/
 	blob->content = talloc_size(NULL, blob->length - 2);
 	NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, blob->content, (uint32_t)blob->length - 2));
 

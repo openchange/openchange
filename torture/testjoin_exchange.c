@@ -75,9 +75,9 @@ NTSTATUS	torture_create_exchangeuser(TALLOC_CTX *mem_ctx, const struct dom_sid *
 /* 	struct ldb_control **ctrl = talloc_array(tmp_ctx, struct ldb_control *, 2); */
 
 	struct ldb_control **ctrl;
-	struct ldb_paged_control *control;
+/* 	struct ldb_paged_control *control; */
 	struct ldb_request *req;
-	struct tce_async_context *actx = talloc_zero(tmp_ctx, struct tce_async_context);
+/* 	struct tce_async_context *actx = talloc_zero(tmp_ctx, struct tce_async_context); */
 /* 	struct test_schema_ctx *actx; */
 
 	tmp_ctx = talloc_named(mem_ctx, 0, "torture_create_exchangeuser temp context");

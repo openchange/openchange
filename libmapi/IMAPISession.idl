@@ -3,9 +3,9 @@
 	helpstring("Open MAPI Session")
 ] interface IMAPISession
 {
-	typedef [public] enum
+  typedef [public, enum8bit] enum
 	{
-		op_OpenMsgStore = 0xFE
+		op_MAPI_RPC_LOGON = 0xFE
 	} mapi_opcodes;
 
 	/************************* CALLS **********************************/
@@ -16,30 +16,32 @@
 		uint32	padding;
 		[value(strlen(profile_info) + 1)] uint16 profile_info_length;
 		[charset(DOS),string] uint8 profile_info[];
-	} OpenMsgStore_req;
+	} MAPI_RPC_LOGON_req;
 
 	typedef struct {
 
-	} OpenMsgStore_repl;
+	} MAPI_RPC_LOGON_repl;
 
 	/***************************** UNIONS *****************************/
 	typedef union {
-		[case(op_OpenMsgStore)] OpenMsgStore_req openmsgstore;
+		[case(op_MAPI_RPC_LOGON)] MAPI_RPC_LOGON_req mapi_rpc_logon;
 	} MAPI_REQ_UNION;
 
 	typedef union {
-		[case(op_OpenMsgStore)] OpenMsgStore_repl openmsgstore;
+		[case(op_MAPI_RPC_LOGON)] MAPI_RPC_LOGON_repl mapi_rpc_logon;
 	} MAPI_REPL_UNION;
 
 	typedef [public] struct
 	{
-		uint16 opcode;
+		uint8 opcode;
+		uint8 action;
 		[switch_is(opcode)] MAPI_REQ_UNION u;
 	} MAPI_REQ;
 
 	typedef [public] struct
 	{
-		uint16 opcode;
+		uint8 opcode;
+		uint8 action;
 		[switch_is(opcode)] MAPI_REPL_UNION u;
 	} MAPI_REPL;
 }

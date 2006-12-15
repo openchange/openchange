@@ -13,7 +13,7 @@
 
 #include <e-util/e-plugin.h>
 #include <e-util/e-config.h>
-#include <e-util/e-account.h>
+/* #include <e-util/e-account.h> */
 
 
 #include <libintl.h>

@@ -143,7 +143,7 @@ struct MAPI_DATA	IPMSubTree[] = {
 #define	OpenInbox_EcDoRpc_1_opnum	0x0018
 uint8_t OpenInbox_EcDoRpc_1_content[] = "\x00\x00\x00\x00\x00\x00\x00\x15\x00\x00\x00\x01\x01\x00";
 
-BOOL OpenMessageStore(struct emsmdb_context *emsmdb)
+static BOOL OpenMessageStore(struct emsmdb_context *emsmdb)
 {
 	struct MAPI_DATA		blob;
 	DATA_BLOB		blob1;
@@ -179,7 +179,7 @@ BOOL OpenMessageStore(struct emsmdb_context *emsmdb)
 	return True;
 }
 
-BOOL OpenRootFolder(struct emsmdb_context *emsmdb)
+static BOOL OpenRootFolder(struct emsmdb_context *emsmdb)
 {
 	BOOL		ret = True;
 	struct MAPI_DATA	blob;
@@ -199,7 +199,7 @@ BOOL OpenRootFolder(struct emsmdb_context *emsmdb)
 	return ret;
 }
 
-BOOL OpenIPMSubTree(struct emsmdb_context *emsmdb)
+static BOOL OpenIPMSubTree(struct emsmdb_context *emsmdb)
 {
         BOOL            ret = True;
         struct MAPI_DATA       blob;
@@ -219,7 +219,7 @@ BOOL OpenIPMSubTree(struct emsmdb_context *emsmdb)
 	return ret;
 }
 
-BOOL OpenInbox(struct emsmdb_context *emsmdb)
+static BOOL OpenInbox(struct emsmdb_context *emsmdb)
 {
         BOOL            ret = True;
         struct MAPI_DATA       blob;

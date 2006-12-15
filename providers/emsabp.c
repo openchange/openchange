@@ -510,7 +510,7 @@ void *emsabp_hierarchy_query(TALLOC_CTX *mem_ctx,
 			     uint32_t mapitag)
 {
 	void		*data = (void *) NULL;
-	char		*displayName;
+	const char	*displayName;
 	struct GUID	guid;
 
 	switch (mapitag) {
@@ -541,7 +541,7 @@ void *emsabp_hierarchy_query(TALLOC_CTX *mem_ctx,
 		break;
 	case PR_DISPLAY_NAME:
 	case PR_DISPLAY_NAME_UNICODE:
-		displayName = (void *)ldb_msg_find_attr_as_string(ldb_recipient, "displayName", NULL);
+		displayName = ldb_msg_find_attr_as_string(ldb_recipient, "displayName", NULL);
 		if (strcmp(displayName, "Address Lists Container")) {
 			data = talloc_strdup(mem_ctx, displayName);
 		} else {
@@ -692,7 +692,7 @@ NTSTATUS emsabp_get_hierarchytable(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsab
 	struct ldb_message	*ldb_recipient_parent = NULL;
 	struct SRow		*SRow_root, *SRow_subroot, *SRow_containers;
 	int			i, count;
-	char			*dn;
+	const char		*dn;
 
 /* 	RowSet[0] = talloc(mem_ctx, struct SRowSet); */
 
@@ -705,7 +705,7 @@ NTSTATUS emsabp_get_hierarchytable(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsab
 
 	/* Set 'All Address Lists' object */
 
-	dn = (char *)ldb_msg_find_attr_as_string(ldb_recipient_parent, "dn", NULL);
+	dn = ldb_msg_find_attr_as_string(ldb_recipient_parent, "dn", NULL);
 	ldb_recipient_parent = NULL;
 
 	count = emsabp_get_containers(mem_ctx, emsabp_ctx, flags, &SRow_subroot, &ldb_recipient_parent,

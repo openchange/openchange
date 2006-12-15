@@ -3,7 +3,7 @@
   <e-plugin
     type="shlib"
     id="org.gnome.evolution.plugin.openchange"
-    location="@PLUGINDIR@/liborg-openchange-plugin.so"
+    location="@PLUGINDIR@/liborg-gnome-openchange-plugin.so"
     name="OpenChange Plugin">
     <description>OpenChange plugin to be compliant with the groupware server.</description>
     <author name="Calvez Loic" email="l.calvez@openchange.org"/>
@@ -11,7 +11,7 @@
     <hook class="org.gnome.evolution.mail.config:1.0">
 	<group
 		target="account"
-		id="org.gnome.evolution.mail.config.accountEditor"/>
+		id="org.gnome.evolution.mail.config.accountEditor">
                 <item type="page"
                         path="40.oof"
                         label="Openchange Settings"

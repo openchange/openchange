@@ -5,6 +5,7 @@ CC=@CC@
 CFLAGS=@CFLAGS@ -I. -Wall
 PIDL=@PIDL@
 PERL=@PERL@
+DSOOPT=-shared -fPIC
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
@@ -18,14 +19,15 @@ TORTURE_MODULESDIR=@TORTURE_MODULESDIR@
 SERVER_MODULESDIR=${prefix}/modules/dcerpc_server
 
 # Evolution plugin compilation rule
-EPLUGINS=@EPLUGINS@
-EPLUGINS_INSTALL=@EPLUGINS_INSTALL@
-EPLUGINS_UNINSTALL=@EPLUGINS_UNINSTALL@
+EVOLUTION_PLUGIN=@EVOLUTION_PLUGIN@
+EVOLUTION_PLUGIN_INSTALL=@EVOLUTION_PLUGIN_INSTALL@
+EVOLUTION_PLUGIN_UNINSTALL=@EVOLUTION_PLUGIN_UNINSTALL@
 INTLTOOL_MERGE=@INTLTOOL_MERGE@
 plugindir=@plugindir@
+camel_providerdir=@camel_providerdir@
 
-EPLUGINS_LIBS=@EPLUGINS_LIBS@ 
-EPLUGINS_CFLAGS=@EPLUGINS_CFLAGS@
+EVOLUTION_PLUGIN_LIBS=@EVOLUTION_PLUGIN_LIBS@
+EVOLUTION_PLUGIN_CFLAGS=@EVOLUTION_PLUGIN_CFLAGS@
 
 # This value should be determined by configure at some point
 SHLIBEXT=so
@@ -41,17 +43,18 @@ LIBS+=@SAMBA_LIBS@
 CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
 LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 
-all: proto.h mapi_proto.h torture_proto.h bin/schemaIDGUID bin/mapidump bin/locale_codepage torture/openchange.$(SHLIBEXT) \
-	server/dcesrv_exchange.$(SHLIBEXT) server/dcesrv_exchange_remote.$(SHLIBEXT) $(EPLUGINS)
+all: 	proto.h mapi_proto.h torture_proto.h ndr_exchange.h bin/schemaIDGUID \
+	bin/locale_codepage torture/openchange.$(SHLIBEXT) \
+	server/dcesrv_exchange.$(SHLIBEXT) \
+	server/dcesrv_exchange_remote.$(SHLIBEXT) $(EVOLUTION_PLUGIN)
 
-install: all $(EPLUGINS_INSTALL)
+install: all $(EVOLUTION_PLUGIN_INSTALL)
 	@echo "=============================="
 	@echo "Installing OpenChange plugin"
 	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)
 	mkdir -p $(TORTURE_MODULESDIR)
 	mkdir -p $(DESTDIR)$(SERVER_MODULESDIR)
 	cp bin/schemaIDGUID $(DESTDIR)$(bindir)
-	cp bin/mapidump $(DESTDIR)$(bindir)
 	cp bin/locale_codepage $(DESTDIR)$(bindir)
 	cp libmapi.$(SHLIBEXT) $(DESTDIR)$(libdir)
 	cp torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
@@ -61,9 +64,8 @@ install: all $(EPLUGINS_INSTALL)
 	cp setup/*.ldif $(DESTDIR)$(datadir)/setup/
 	@echo "OpenChange plugin installed"
 
-uninstall: $(EPLUGINS_UNINSTALL)
+uninstall: $(EVOLUTION_PLUGIN_UNINSTALL)
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
-	rm -f $(DESTDIR)$(bindir)/mapidump
 	rm -f $(DESTDIR)$(bindir)/locale_codepage
 	rm -f $(DESTDIR)$(libdir)/libmapi.*
 	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
@@ -77,37 +79,44 @@ re: clean install
 
 # Evolution plugin compilation
 
-eplugins-all: openchange-plugin
+evolution-plugin-all: client/evolution/camelprovider/libcamel-openchange.$(SHLIBEXT) client/evolution/eplugin/org-gnome-openchange-plugin.eplug client/evolution/eplugin/liborg-gnome-openchange-plugin.$(SHLIBEXT)
 
-eplugins-install: eplugins-all
-	cp eplugins/oc-plugin/org-openchange-plugin.eplug $(plugindir)
-	cp eplugins/oc-plugin/liborg-openchange-plugin.$(SHLIBEXT) $(plugindir)
+evolution-plugin-install: evolution-plugin-all
+	cp client/evolution/camelprovider/libcamelopenchange.urls $(camel_providerdir)
+	cp client/evolution/camelprovider/libcamel-openchange.$(SHLIBEXT) $(camel_providerdir)
+	cp client/evolution/eplugin/org-gnome-openchange-plugin.eplug $(plugindir)
+	cp client/evolution/eplugin/liborg-gnome-openchange-plugin.$(SHLIBEXT) $(plugindir)
 
-eplugins-uninstall:
-	rm -f $(plugindir)/org-openchange-plugin.eplug
-	rm -f $(plugindir)/liborg-openchange-plugin.$(SHLIBEXT)
+evolution-plugin-uninstall:
+	rm -f $(camel_providerdir)/libcamelopenchange.urls
+	rm -f $(camel_providerdir)/libcamel-openchange.$(SHLIBEXT)
+	rm -f $(plugindir)/org-gnome-openchange-plugin.eplug
+	rm -f $(plugindir)/liborg-gnome-openchange-plugin.$(SHLIBEXT)
 
-openchange-plugin: eplugins/oc-plugin/org-openchange-plugin.eplug eplugins/oc-plugin/liborg-openchange-plugin.$(SHLIBEXT) 
-
-eplugins/oc-plugin/%.o: CFLAGS+=$(EPLUGINS_CFLAGS)
-eplugins/oc-plugin/liborg-openchange-plugin.$(SHLIBEXT):  eplugins/oc-plugin/openchange-plugin.o
+client/evolution/eplugin/%.o: CFLAGS+=$(EVOLUTION_PLUGIN_CFLAGS)
+client/evolution/eplugin/liborg-gnome-openchange-plugin.$(SHLIBEXT):  client/evolution/eplugin/openchange-plugin.o
 	@echo "Linking $<"
-	@$(CC) -o $@ -shared $^ -L. $(EPLUGINS_LIBS)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(EVOLUTION_PLUGIN_LIBS)
 
 %.eplug: %.eplug.in
 	sed -e 's|\@PLUGINDIR\@|$(plugindir)|' -e 's|\@SOEXT\@|.$(SHLIBEXT)|' $< > $@
 
+client/evolution/camelprovider/%.o: CFLAGS+=$(EVOLUTION_PLUGIN_CFLAGS)
+client/evolution/camelprovider/libcamel-openchange.$(SHLIBEXT): client/evolution/camelprovider/camel-openchange-transport.o client/evolution/camelprovider/camel-openchange-provider.o
+	@echo "Linking $<"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(EVOLUTION_PLUGIN_LIBS)
+
 torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/emsmdb.o torture/exchange.o torture/nspi.o torture/nspi_profile.o torture/openchange.o torture/nspi_scantags.o 
 	@echo "Compiling $<"
-	@$(CC) -o $@ -shared $^ -L. $(LIBS) -lmapi
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -lmapi
 
 server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.o server/dcesrv_exchange.o
 	@echo "Compiling $<"
-	@$(CC) -o $@ -shared $^ -L. -lmapi $(LIBS)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. -lmapi $(LIBS)
 
 server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.o
 	@echo "Compiling $<"
-	@$(CC) -o $@ -shared $^ -L. -lmapi $(LIBS)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. -lmapi $(LIBS)
 
 exchange.idl: mapitags_enum.h mapicodes_enum.h
 
@@ -135,8 +144,6 @@ ndr_%_s.c: %.idl
 	@echo "Compiling $<"
 	@$(PIDL) --outputdir=$(@D) --server -- $<
 
-libmapi/util/mapidump.c: ndr_exchange.h
-
 server/dcesrv_exchange.c: providers_proto.h ndr_exchange_s.c ndr_exchange.c
 
 libmapi/emsmdb.c: libmapi/include/emsmdb.h libmapi/tdr_IMAPISession.h ndr_exchange_c.h
@@ -152,10 +159,6 @@ bin/schemaIDGUID: utils/schemaIDGUID.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS)
 
-bin/mapidump: libmapi/util/mapidump.o libmapi.$(SHLIBEXT)
-	@echo "Compiling $<"
-	@$(CC) -o $@ $^
-
 bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT)
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS)
@@ -170,7 +173,7 @@ realdistclean: distclean
 	rm -f torture/openchange.so
 	rm -f server/dcesrv_exchange.so
 	rm -f server/dcesrv_exchange_remote.so
-	rm -f eplugins/*/*.so
+	rm -f client/evolution/*/*.so
 
 clean:
 	rm -f libmapi/generated/*
@@ -196,7 +199,7 @@ clean:
 	rm -f ndr_mapi.o
 	rm -f mapicodes_enum.h
 	rm -f mapitags_enum.h
-	rm -f eplugins/*/*.o eplugins/*/*.eplug
+	rm -f client/evolution/*/*.o client/evolution/*/*.eplug
 	rm -f *~
 	rm -f */*~
 	rm -f */*/*~
@@ -229,7 +232,7 @@ libmapi.$(SHLIBEXT): libmapi/mapi.o libmapi/utils.o libmapi/property.o \
 				ndr_mapi.o ndr_exchange_c.o libmapi/x500.o \
 				libmapi/tag_to_ad_name.o libmapi/mapitables.o
 	@echo "Compiling $<"
-	@$(CC) -shared -o $@ $^ $(LIBS)
+	@$(CC) $(DSOOPT) -o $@ $^ $(LIBS)
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]"`

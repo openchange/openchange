@@ -126,7 +126,7 @@ BOOL	get_special_props(struct nspi_context *nspi)
 	return (ret);
 }
 
-BOOL	do_nspi_function(const char *nspiFunction, struct nspi_context *nspi, struct SPropTagArray *SPropTagArray)
+static BOOL do_nspi_function(const char *nspiFunction, struct nspi_context *nspi, struct SPropTagArray *SPropTagArray)
 {
 	int	i;
 	
@@ -137,7 +137,7 @@ BOOL	do_nspi_function(const char *nspiFunction, struct nspi_context *nspi, struc
 	exit(EXIT_FAILURE);
 }
 
-void	chdir_scenarios(const char *path)
+static void chdir_scenarios(const char *path)
 {
 	if (chdir(path) < 0)
 	{
@@ -146,13 +146,13 @@ void	chdir_scenarios(const char *path)
 	}
 }
 
-BOOL	start_process(const char *section, void *other)
+static BOOL start_process(const char *section, void *other)
 {
 	DEBUG(0, ("-------------------------------\n- Scenarios creation -\n"));
 	return (True);
 }
 
-BOOL	init_scenarios(const char *param, const char *value, void *other)
+static BOOL init_scenarios(const char *param, const char *value, void *other)
 {
 	struct tagsScenarios	*scenarios;
 	
@@ -174,7 +174,7 @@ BOOL	init_scenarios(const char *param, const char *value, void *other)
 	return (True);
 }
 
-BOOL	setup_directory(const char *path)
+static BOOL setup_directory(const char *path)
 {
 	DIR	*dir;
 	
@@ -193,7 +193,7 @@ BOOL	setup_directory(const char *path)
 	return (True);
 }
 
-struct tagsScenarios	*setupScenarios(TALLOC_CTX *mem_ctx)
+static struct tagsScenarios *setupScenarios(TALLOC_CTX *mem_ctx)
 {
 	struct tagsScenarios   	*scenarios;
 	const char	       	*conf_path =

@@ -118,27 +118,24 @@ struct emsabp_ctx *emsabp_init(TALLOC_CTX *mem_ctx, struct dcesrv_call_state *dc
   Add an entry in the chain list
 */
 
-BOOL emsabp_add_entry(struct emsabp_ctx *emsabp_ctx, uint8_t *instance_key,
+BOOL emsabp_add_entry(struct emsabp_ctx *emsabp_ctx, uint32_t *instance_key,
 		      struct ldb_message *ldb_recipient)
 {
 	struct entry_id		*entry;
 
 	entry = talloc(emsabp_ctx->mem_ctx, struct entry_id);
+	memset(entry, 0, sizeof(struct entry_id));
 	entry->guid = samdb_result_guid(ldb_recipient, "objectGUID");
 	
-	entry->instance_key =  talloc_size(emsabp_ctx->mem_ctx, 4 * sizeof (uint8_t));
-	
-	memset(entry->instance_key, 0, 4);
-	entry->instance_key[0] = entry->guid.node[4];
-	entry->instance_key[1] = entry->guid.node[5];
+	entry->instance_key = entry->guid.node[4];
+	entry->instance_key <<= 8;
+	entry->instance_key |= entry->guid.node[5];
 
 	entry->msg = ldb_recipient;
 	entry->next = emsabp_ctx->entry_ids;
 
 	if (instance_key) {
-		memset(instance_key, 0, 4);
-		instance_key[0] = entry->instance_key[0];
-		instance_key[1] = entry->instance_key[1];
+		*instance_key = entry->instance_key;
 	}
 
 	emsabp_ctx->entry_ids = entry;
@@ -153,7 +150,7 @@ BOOL emsabp_add_entry(struct emsabp_ctx *emsabp_ctx, uint8_t *instance_key,
   PR_ACCOUNT_NAME is represented in the AD by the samrAccountName attribute
 */
 
-NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, uint8_t ***instance_keys, struct SRestriction *restriction)
+NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, struct instance_key *instance_keys, struct SRestriction *restriction)
 {
 	enum ldb_scope			scope = LDB_SCOPE_SUBTREE;
 	struct SPropertyRestriction	*res_prop = NULL;
@@ -186,17 +183,17 @@ NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, uint8_t ***instance_keys, 
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	*instance_keys = talloc_size(emsabp_ctx->mem_ctx, sizeof(*instance_keys) * (res->count + 1));
+	instance_keys->value = talloc_size(emsabp_ctx->mem_ctx, sizeof(uint32_t) * res->count);
 
 	for (i = 0; i < res->count; i++) {
-		(*instance_keys)[i] = talloc_size(emsabp_ctx->mem_ctx, sizeof (uint8_t) * 4);
-		if (!emsabp_add_entry(emsabp_ctx, (*instance_keys)[i], res->msgs[i])) {
+		if (!emsabp_add_entry(emsabp_ctx, &(instance_keys->value[i]), res->msgs[i])) {
 			/* FIXME: Change NTSTATUS value */
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
-	(*instance_keys)[res->count] = NULL;
-	
+
+	instance_keys->cValues = res->count + 1;
+
 	return NT_STATUS_OK;
 }
 
@@ -205,7 +202,7 @@ NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, uint8_t ***instance_keys, 
   according to the given dn
 */
 
-NTSTATUS emsabp_search_dn(struct emsabp_ctx *emsabp_ctx, struct ldb_message **ldb_res, uint8_t *instance_key, const char *dn)
+NTSTATUS emsabp_search_dn(struct emsabp_ctx *emsabp_ctx, struct ldb_message **ldb_res, uint32_t *instance_key, const char *dn)
 {
 	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
 	struct ldb_dn		*ldb_dn = NULL;
@@ -252,12 +249,12 @@ NTSTATUS emsabp_search_dn(struct emsabp_ctx *emsabp_ctx, struct ldb_message **ld
 
 void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct entry_id *entry, uint32_t mapitag)
 {
-	const char	       		*guid_str;
-	struct GUID			*guid;
 	struct ldb_message_element	*ldb_element;
 	struct ldb_message		*ldb_res;
 	struct SLPSTRArray		*mv_string;
 	struct SBinary			*bin;
+	struct GUID			*guid;
+	const char	       		*guid_str;
 	const char			*ldb_str;
 	const char			*x500 = NULL;
 	NTSTATUS			status;
@@ -265,7 +262,7 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 	uint32_t			ldb_int;
 	uint32_t			i;
 	uint32_t			*num;
-	uint8_t				*instance_key;
+	uint32_t			instance_key;
 	void				*data = (void *) NULL;
 
 	switch (mapitag) {
@@ -320,7 +317,9 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 		bin = talloc(mem_ctx, struct SBinary);
 		bin->cb = 4;
 		bin->lpb = talloc_size(mem_ctx, sizeof(uint8_t) * bin->cb);
-		memcpy(bin->lpb, entry->instance_key, 4);
+		memset(bin->lpb, 0, bin->cb);
+		bin->lpb[0] = entry->instance_key & 0x000000FF;
+		bin->lpb[1] = (entry->instance_key >> 8) & 0x000000FF; 
 		return (bin);
 	}
 
@@ -349,8 +348,7 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 	case PT_UNICODE:
 		ldb_str = ldb_msg_find_attr_as_string(entry->msg, x500, NULL);
 		if (ismultix500) {
-			instance_key = talloc_size(mem_ctx, sizeof (uint8_t) * 4);
-			status = emsabp_search_dn(emsabp_ctx, &ldb_res, instance_key, ldb_str);
+			status = emsabp_search_dn(emsabp_ctx, &ldb_res, &(instance_key), ldb_str);
 			if (!NT_STATUS_IS_OK(status)) {
 				return NULL;
 			}
@@ -396,7 +394,7 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
  */
 
 NTSTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx,
-			    struct SRow *SRow, uint8_t *instance_key,
+			    struct SRow *SRow, uint32_t instance_key,
 			    struct SPropTagArray *SPropTagArray)
 {
 	struct entry_id		*entry;
@@ -407,13 +405,8 @@ NTSTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx,
 	
 	entry = emsabp_ctx->entry_ids;
 	while (entry != NULL) {
-		DEBUG(3, ("emsabp_fetch_attrs: Comparing instance_key 0x%.2x%.2x%.2x%.2x with 0x%.2x%.2x%.2x%.2x\n",
-			  instance_key[0], instance_key[1], instance_key[2], instance_key[3], entry->instance_key[0],
-			  entry->instance_key[1],entry->instance_key[2],entry->instance_key[3]));
-		if ((instance_key[0] == entry->instance_key[0]) &&
-		    (instance_key[1] == entry->instance_key[1]) &&
-		    (instance_key[2] == entry->instance_key[2]) &&
-		    (instance_key[3] == entry->instance_key[3])) {
+		DEBUG(3, ("emsabp_fetch_attrs: Comparing instance_key 0x%x with 0x%x\n", instance_key, entry->instance_key));
+ 		if (instance_key == entry->instance_key) {
 			DEBUG(3, ("emsabp_fetch_attrs: INSTANCE_KEY matches\n"));
 			break;
 		}
@@ -693,8 +686,6 @@ NTSTATUS emsabp_get_hierarchytable(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsab
 	struct SRow		*SRow_root, *SRow_subroot, *SRow_containers;
 	int			i, count;
 	const char		*dn;
-
-/* 	RowSet[0] = talloc(mem_ctx, struct SRowSet); */
 
 	/* Set 'Address Lists Container' object */
 	count = emsabp_get_containers(mem_ctx, emsabp_ctx, flags, &SRow_root, &ldb_recipient_parent,

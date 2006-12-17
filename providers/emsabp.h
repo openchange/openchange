@@ -51,7 +51,7 @@ struct entry_id {
 	uint8_t			abFlags;	/* bitmask of flags that provide information describing the object. */
 	uint8_t			ab;		/* specifies the binary data used by service providers */
 	struct GUID		guid;
-	uint8_t			*instance_key;
+	uint32_t		instance_key;
 	struct ldb_message	*msg;
 	struct entry_id		*next;
 };

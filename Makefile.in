@@ -150,8 +150,6 @@ libmapi/emsmdb.c: libmapi/include/emsmdb.h libmapi/tdr_IMAPISession.h ndr_exchan
 
 libmapi/include/emsmdb.h: libmapi/IMAPISession.h
 
-libmapi/mapitables.c: libmapi/include/mapitables.h
-
 libmapi/mapitags.c libmapi/tag_to_ad_name.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mparse.pl
 	@./libmapi/conf/build.sh
 
@@ -207,7 +205,7 @@ clean:
 proto.h: libmapi/mapitags.c libmapi/mapicode.c
 	@echo "Generating proto.h"
 	@./script/mkproto.pl --private=libmapi/include/proto.h --public=libmapi/include/proto.h \
-	libmapi/mapi.c libmapi/x500.c libmapi/mapitags.c libmapi/mapicode.c libmapi/mapitables.c libmapi/utils.c \
+	libmapi/mapi.c libmapi/x500.c libmapi/mapitags.c libmapi/mapicode.c libmapi/utils.c \
 	libmapi/util/locale.c libmapi/util/codepage.c 
 
 mapi_proto.h: libmapi/IMAPISession.h
@@ -230,7 +228,7 @@ libmapi.$(SHLIBEXT): libmapi/mapi.o libmapi/utils.o libmapi/property.o \
 				libmapi/util/locale.o \
 				libmapi/util/codepage.o libmapi/tdr_IMAPISession.o \
 				ndr_mapi.o ndr_exchange_c.o libmapi/x500.o \
-				libmapi/tag_to_ad_name.o libmapi/mapitables.o
+				libmapi/tag_to_ad_name.o
 	@echo "Compiling $<"
 	@$(CC) $(DSOOPT) -o $@ $^ $(LIBS)
 

@@ -70,8 +70,39 @@ struct emsabp_containerID emsabp_containerID[] =
 	{ NULL,			0x0    }
 };
 
+/* 
+   Imported function from Samba4 trunk (dsdb/samdb/samdb.c)
+   Originally named samdb_result_guid and renamed samdb_result_guid for
+   convenience purpose and avoid useless dependencies to samdb
+*/
+
+static struct GUID emsabp_result_guid(const struct ldb_message *msg, const char *attr)
+{
+	const struct ldb_val *v;
+	NTSTATUS status;
+	struct GUID guid;
+	TALLOC_CTX *mem_ctx;
+
+	ZERO_STRUCT(guid);
+
+	v = ldb_msg_find_ldb_val(msg, attr);
+	if (!v) return guid;
+
+	mem_ctx = talloc_named_const(NULL, 0, "result_guid");
+	if (!mem_ctx) return guid;
+	status = ndr_pull_struct_blob(v, mem_ctx, &guid, 
+				      (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	talloc_free(mem_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return guid;
+	}
+
+	return guid;
+}
+
 /*
-  Initialize the context data structure and open a connection on samdb database
+  Initialize the context data structure and open a connection on samba
+  databases
 */
 
 struct emsabp_ctx *emsabp_init(TALLOC_CTX *mem_ctx, struct dcesrv_call_state *dce_call)
@@ -88,15 +119,6 @@ struct emsabp_ctx *emsabp_init(TALLOC_CTX *mem_ctx, struct dcesrv_call_state *dc
 			private_path(emsabp_ctx->mem_ctx, "configuration.ldb"), 
 			LDB_FLG_RDONLY, NULL) != LDB_SUCCESS) {
 		DEBUG(0, ("Connection to the configuration database failed\n"));
-		exit (-1);
-	}
-
-	/* return an opaque context pointer on the samdb database */
-	emsabp_ctx->sam_ctx = ldb_init(emsabp_ctx->mem_ctx);
-	if (ldb_connect(emsabp_ctx->sam_ctx, 
-			private_path(emsabp_ctx->mem_ctx, "sam.ldb"),
-			LDB_FLG_RDONLY, NULL) != LDB_SUCCESS) {
-		DEBUG(0, ("Connection to the sam database failed\n"));
 		exit (-1);
 	}
 
@@ -125,7 +147,7 @@ BOOL emsabp_add_entry(struct emsabp_ctx *emsabp_ctx, uint32_t *instance_key,
 
 	entry = talloc(emsabp_ctx->mem_ctx, struct entry_id);
 	memset(entry, 0, sizeof(struct entry_id));
-	entry->guid = samdb_result_guid(ldb_recipient, "objectGUID");
+	entry->guid = emsabp_result_guid(ldb_recipient, "objectGUID");
 	
 	entry->instance_key = entry->guid.node[4];
 	entry->instance_key <<= 8;
@@ -508,7 +530,7 @@ void *emsabp_hierarchy_query(TALLOC_CTX *mem_ctx,
 
 	switch (mapitag) {
 	case PR_ENTRYID:
-		guid = samdb_result_guid(ldb_recipient, "objectGUID");
+		guid = emsabp_result_guid(ldb_recipient, "objectGUID");
 		data = emsabp_hierarchy_get_entryID(mem_ctx,
 						    &guid,
 						    !strcmp(ldb_msg_find_attr_as_string(ldb_recipient, "displayName", NULL), "Address Lists Container"));
@@ -547,7 +569,7 @@ void *emsabp_hierarchy_query(TALLOC_CTX *mem_ctx,
 		*((uint16_t *)data) = 0x0;
 		break;
 	case PR_EMS_AB_PARENT_ENTRYID:
-		guid = samdb_result_guid(ldb_recipient_parent, "objectGUID");
+		guid = emsabp_result_guid(ldb_recipient_parent, "objectGUID");
 		data = emsabp_hierarchy_get_entryID(mem_ctx,
 						    &guid,
 						    !strcmp(ldb_msg_find_attr_as_string(ldb_recipient_parent, "displayName", NULL), "Address Lists Container"));

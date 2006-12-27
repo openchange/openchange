@@ -37,7 +37,6 @@
 #include "libmapi/include/proto.h"
 #include "libmapi/IMAPISession.h"
 #include "libmapi/include/mapi_proto.h"
-#include "libmapi/include/mapitables.h"
 #include "providers/emsabp.h"
 #include "providers/providers_proto.h"
 

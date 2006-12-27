@@ -38,13 +38,13 @@
 #include <dcerpc_server.h>
 
 #include <gen_ndr/misc.h>
+#include <gen_ndr/ndr_misc.h>
 #include <gen_ndr/security.h>
 #include <gen_ndr/samr.h>
 
 #include <ldap.h>
 #include <ldb.h>
 #include <ldb_errors.h>
-#include <samdb.h>
 
 #include <db_wrap.h>
 

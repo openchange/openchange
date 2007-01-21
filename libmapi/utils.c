@@ -22,6 +22,8 @@
 
 #include "openchange.h"
 #include "ndr_exchange.h"
+#include <tdr.h>
+#include "libmapi/mapi.h"
 
 /*
   Constructs a PR_ENTRYID value for recipients.
@@ -95,3 +97,4 @@ struct SBinary *generate_recipient_entryid(TALLOC_CTX *mem_ctx, const char *reci
 	
 	return entryid;
 }
+

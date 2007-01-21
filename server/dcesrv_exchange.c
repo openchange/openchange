@@ -35,7 +35,7 @@
 #include <dcerpc_server/common.h>
 #include "ndr_mapi.h"
 #include "libmapi/include/proto.h"
-#include "libmapi/IMAPISession.h"
+#include "libmapi/mapi.h"
 #include "libmapi/include/mapi_proto.h"
 #include "providers/emsabp.h"
 #include "providers/providers_proto.h"

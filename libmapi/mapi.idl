@@ -1,21 +1,38 @@
+#define TDR_PAHEX TDR_PRINT_ARRAY_HEX
+
 [
 	version(0.1),
 	helpstring("Open MAPI Session")
-] interface IMAPISession
+] interface MAPI
 {
-  typedef [public, enum8bit] enum
+
+  typedef [public, enum8bit, flag(TDR_PAHEX)] enum
 	{
+		op_MAPI_SETCOLUMNS = 0x12,
 		op_MAPI_RPC_LOGON = 0xFE
 	} mapi_opcodes;
 
 	/************************* CALLS **********************************/
+
+	/* 0x12 setcolumns */
+
+	typedef struct {
+		uint8				handle;
+		uint8				unknown;
+		uint16				prop_nb;
+//  	        MAPITAGS	       		properties[prop_nb];
+      	        uint32				properties[prop_nb];
+	} MAPI_SETCOLUMNS_req;
+
+	/* 0xFE rpc logon */
+
 	typedef struct {
 		uint8	col;
 		uint8	row;
 		uint32	locale_id;
 		uint32	padding;
 		[value(strlen(profile_info) + 1)] uint16 profile_info_length;
-		[charset(DOS),string] uint8 profile_info[];
+		[charset(DOS), string] uint8 profile_info[-1];
 	} MAPI_RPC_LOGON_req;
 
 	typedef struct {
@@ -23,25 +40,26 @@
 	} MAPI_RPC_LOGON_repl;
 
 	/***************************** UNIONS *****************************/
-	typedef union {
+	typedef [public] union {
+		[case(op_MAPI_SETCOLUMNS)] MAPI_SETCOLUMNS_req mapi_setcolumns;
 		[case(op_MAPI_RPC_LOGON)] MAPI_RPC_LOGON_req mapi_rpc_logon;
 	} MAPI_REQ_UNION;
 
-	typedef union {
+	typedef [public] union {
 		[case(op_MAPI_RPC_LOGON)] MAPI_RPC_LOGON_repl mapi_rpc_logon;
 	} MAPI_REPL_UNION;
 
 	typedef [public] struct
 	{
-		uint8 opcode;
-		uint8 action;
+		mapi_opcodes opcode;
+		uint8 mapi_flags;
 		[switch_is(opcode)] MAPI_REQ_UNION u;
 	} MAPI_REQ;
 
 	typedef [public] struct
 	{
-		uint8 opcode;
-		uint8 action;
+		mapi_opcodes opcode;
+		uint8 mapi_flags;
 		[switch_is(opcode)] MAPI_REPL_UNION u;
 	} MAPI_REPL;
 }

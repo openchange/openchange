@@ -24,7 +24,7 @@
 #include <torture/torture.h>
 #include "ndr_exchange.h"
 #include "libmapi/include/nspi.h"
-#include "libmapi/IMAPISession.h"
+#include "libmapi/mapi.h"
 #include "libmapi/include/mapi_proto.h"
 
 /* FIXME: Should be part of Samba's data: */

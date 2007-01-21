@@ -43,7 +43,7 @@ LIBS+=@SAMBA_LIBS@
 CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
 LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 
-all: 	proto.h mapi_proto.h torture_proto.h ndr_exchange.h bin/schemaIDGUID \
+all: 	ndr_exchange.h proto.h mapi_proto.h torture_proto.h bin/schemaIDGUID \
 	bin/locale_codepage torture/openchange.$(SHLIBEXT) \
 	server/dcesrv_exchange.$(SHLIBEXT) \
 	server/dcesrv_exchange_remote.$(SHLIBEXT) $(EVOLUTION_PLUGIN)
@@ -146,9 +146,9 @@ ndr_%_s.c: %.idl
 
 server/dcesrv_exchange.c: providers_proto.h ndr_exchange_s.c ndr_exchange.c
 
-libmapi/emsmdb.c: libmapi/include/emsmdb.h libmapi/tdr_IMAPISession.h ndr_exchange_c.h
+libmapi/emsmdb.c: libmapi/include/emsmdb.h libmapi/tdr_mapi.h ndr_exchange_c.h
 
-libmapi/include/emsmdb.h: libmapi/IMAPISession.h
+libmapi/include/emsmdb.h: libmapi/mapi.h
 
 libmapi/mapitags.c libmapi/tag_to_ad_name.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mparse.pl
 	@./libmapi/conf/build.sh
@@ -190,7 +190,7 @@ clean:
 	rm -f libmapi/mapitags.{c,h}
 	rm -f libmapi/include/proto.h
 	rm -f libmapi/include/mapi_proto.h
-	rm -f libmapi/IMAPISession.h
+	rm -f libmapi/mapi.h
 	rm -f providers/providers_proto.h
 	rm -f torture/*.$(SHLIBEXT) server/*.$(SHLIBEXT)
 	rm -f torture/torture_proto.h
@@ -208,7 +208,7 @@ proto.h: libmapi/mapitags.c libmapi/mapicode.c
 	libmapi/mapi.c libmapi/x500.c libmapi/mapitags.c libmapi/mapicode.c libmapi/utils.c \
 	libmapi/util/locale.c libmapi/util/codepage.c 
 
-mapi_proto.h: libmapi/IMAPISession.h
+mapi_proto.h: libmapi/mapi.h
 	@echo "Generating mapi_proto.h"
 	@./script/mkproto.pl --private=libmapi/include/mapi_proto.h --public=libmapi/include/mapi_proto.h \
 	libmapi/property.c libmapi/nspi.c libmapi/emsmdb.c
@@ -226,7 +226,7 @@ libmapi.$(SHLIBEXT): libmapi/mapi.o libmapi/utils.o libmapi/property.o \
 				libmapi/mapitags.o libmapi/mapicode.o \
 				libmapi/emsmdb.o libmapi/nspi.o ndr_exchange.o \
 				libmapi/util/locale.o \
-				libmapi/util/codepage.o libmapi/tdr_IMAPISession.o \
+				libmapi/util/codepage.o libmapi/tdr_mapi.o \
 				ndr_mapi.o ndr_exchange_c.o libmapi/x500.o \
 				libmapi/tag_to_ad_name.o
 	@echo "Compiling $<"
@@ -238,7 +238,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-.PRECIOUS: exchange.h ndr_exchange.h ndr_exchange.c ndr_exchange_c.c ndr_exchange_c.h libmapi/tdr_IMAPISession.h libmapi/tdr_IMAPISession.c
+.PRECIOUS: libmapi/tdr_mapi.h libmapi/tdr_mapi.c exchange.h ndr_exchange.h ndr_exchange.c ndr_exchange_c.c ndr_exchange_c.h
 
 Makefile: Makefile.in config.status
 	./config.status

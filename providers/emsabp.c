@@ -24,7 +24,7 @@
 #include "openchange.h"
 #include "ndr_exchange.h"
 #include "libmapi/include/mapidefs.h"
-#include "libmapi/IMAPISession.h"
+#include "libmapi/mapi.h"
 #include "libmapi/include/mapi_proto.h"
 #include "libmapi/include/proto.h"
 #include "libmapi/mapitags.h"

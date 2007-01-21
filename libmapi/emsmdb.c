@@ -22,7 +22,7 @@
 #include "openchange.h"
 #include "ndr_exchange_c.h"
 #include "libmapi/include/emsmdb.h"
-#include "libmapi/tdr_IMAPISession.h"
+#include "libmapi/tdr_mapi.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/include/proto.h"
 
@@ -42,7 +42,7 @@ static void debug_print_infos(const char *info, struct MAPI_DATA blob)
 		length = blob.length;
 	}
 
-  	printf("\n\n[%s][%d]:\t0x%.04X\n", info, idx, blob.opnum);
+/*   	printf("\n\n[%s][%d]:\t0x%.04X\n", info, idx, blob.opnum); */
 	printf("\t\tmapi_len = %d\n", blob.mapi_len);
 	printf("\t\tlength = %d\n", blob.length);
 	printf("\t\tcontent:\n");
@@ -145,7 +145,7 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct MAPI_DATA blob
 	r.in.data.offset = 0x0;
 
 	r.in.data.blob.mapi_len = blob.mapi_len;
-	r.in.data.blob.opnum = req->opcode;
+/* 	r.in.data.blob.opnum = req->opcode; */
 
 	TDR_CHECK(tdr_push_MAPI_REQ(push, req));
 
@@ -188,7 +188,7 @@ NTSTATUS emsmdb_transaction_unknown(struct emsmdb_context *emsmdb, struct MAPI_D
 
 	r.in.data.blob.mapi_len = blob.mapi_len;
 	r.in.data.blob.length = blob.length;
-	r.in.data.blob.opnum = blob.opnum;
+/* 	r.in.data.blob.opnum = blob.opnum; */
 	r.in.data.blob.content = blob.content;
 	r.in.data.blob.remaining = fill_remaining_blob(r.in.data.blob, previous, plength);
 

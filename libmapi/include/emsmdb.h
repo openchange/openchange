@@ -21,7 +21,7 @@
 #ifndef __EMSMDB_H__
 #define	__EMSMDB_H__
 
-#include "libmapi/IMAPISession.h"
+#include "libmapi/mapi.h"
 
 struct emsmdb_context {
   struct dcerpc_pipe *rpc_connection;

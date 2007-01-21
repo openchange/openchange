@@ -526,8 +526,6 @@ System Attendant Private Interface
 	typedef [public,nopull,nopush,noprint] struct {
 		uint32 		mapi_len;	/* whole mapi_data length */
 		uint16		length;		/* content length */
-		uint8		opnum;		/* mapi operation number */
-		EcDoRpc_action	action;		/* request (0x0) or response (0x1) */
 		uint8		*content;	/* content */
 		uint8		*remaining;	/* remaining bytes / non content */
 	} MAPI_DATA;

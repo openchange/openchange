@@ -95,103 +95,104 @@ uint8_t *remaining_blob_alloc(size_t bnumber)
 uint8_t *fill_remaining_blob(struct MAPI_DATA current, uint8_t *previous, uint32_t length)
 {
 	uint8_t			*reqr = NULL;
-	static uint16_t		opnum;
-	static uint8_t		remcode[3];
-	static uint8_t		remcode_0x5[3];
-	uint16_t		copnum;
-	static BOOL    		lock = False;
+/* 	static uint16_t		opnum; */
+/* 	static uint8_t		remcode[3]; */
+/* 	static uint8_t		remcode_0x5[3]; */
+/* 	uint16_t		copnum; */
+/* 	static BOOL    		lock = False; */
 
-	if (!previous)
-	{
-		reqr = remaining_blob_alloc(1);
-	}
-	else {
-/* 		copnum = (current.content[1] << 8) | current.content[0]; */
-		copnum = current.opnum;
-		printf("current opnum = 0x%.04x\n", copnum);
-		printf("previous remaining length = %d\n", length);
-		switch (copnum)
-		{
-		case 0x4:
-		{
-			reqr = remaining_blob_alloc(2);
-			FILL_FIRST_BYTE(reqr, previous, length);
-			FILL_FIRST_BYTE(remcode, previous, length);
-/* 			printf("------------------\n"); */
-/* 			dump_data(1, remcode, 4); */
-/* 			printf("------------------\n"); */
-			break;
-		}
-		case 0x5:
-		{
-			reqr = remaining_blob_alloc(2);
-			FILL_FIRST_BYTE(reqr, remcode, 4);
-			break;
-		}
-		case 0x12:
-		{
-			if (opnum == 0x4) {
-				reqr = remaining_blob_alloc(1);
-				FILL_FIRST_BYTE(reqr, previous, length);
-			}
-			if (opnum == 0x5) {
-				reqr = remaining_blob_alloc(3);
-				SWAP_BYTES(reqr, previous, length);
-			}
-			if (opnum == 0x12) {
-				reqr = remaining_blob_alloc(2);
-				SWAP_BYTES(reqr, previous, length);
-			}
-			break;
-		}
-		case 0x18:
-		{
-			reqr = remaining_blob_alloc(1);
-			FILL_WITH_FIRST_BYTE(reqr, previous);
+/* 	if (!previous) */
+/* 	{ */
+/* 		reqr = remaining_blob_alloc(1); */
+/* 	} */
+/* 	else { */
+/* /\* 		copnum = (current.content[1] << 8) | current.content[0]; *\/ */
+/* 		copnum = current.opnum; */
+/* 		printf("current opnum = 0x%.04x\n", copnum); */
+/* 		printf("previous remaining length = %d\n", length); */
+/* 		switch (copnum) */
+/* 		{ */
+/* 		case 0x4: */
+/* 		{ */
+/* 			reqr = remaining_blob_alloc(2); */
 /* 			FILL_FIRST_BYTE(reqr, previous, length); */
+/* 			FILL_FIRST_BYTE(remcode, previous, length); */
+/* /\* 			printf("------------------\n"); *\/ */
+/* /\* 			dump_data(1, remcode, 4); *\/ */
+/* /\* 			printf("------------------\n"); *\/ */
+/* 			break; */
+/* 		} */
+/* 		case 0x5: */
+/* 		{ */
+/* 			reqr = remaining_blob_alloc(2); */
+/* 			FILL_FIRST_BYTE(reqr, remcode, 4); */
+/* 			break; */
+/* 		} */
+/* 		case 0x12: */
+/* 		{ */
+/* 			if (opnum == 0x4) { */
+/* 				reqr = remaining_blob_alloc(1); */
+/* 				FILL_FIRST_BYTE(reqr, previous, length); */
+/* 			} */
+/* 			if (opnum == 0x5) { */
+/* 				reqr = remaining_blob_alloc(3); */
+/* 				SWAP_BYTES(reqr, previous, length); */
+/* 			} */
+/* 			if (opnum == 0x12) { */
+/* 				reqr = remaining_blob_alloc(2); */
+/* 				SWAP_BYTES(reqr, previous, length); */
+/* 			} */
+/* 			break; */
+/* 		} */
+/* 		case 0x18: */
+/* 		{ */
+/* 			reqr = remaining_blob_alloc(1); */
+/* 			FILL_WITH_FIRST_BYTE(reqr, previous); */
+/* /\* 			FILL_FIRST_BYTE(reqr, previous, length); *\/ */
 
-			printf("--------0x5----------\n");
-			dump_data(1, remcode_0x5, 4);
-			printf("------------------\n");
-/* 			FILL_FIRST_BYTE(reqr, remcode_0x5, 4); */
-			break;
-		}
-		case 0x29:
-		{
-			if (opnum == 0xFE || opnum == 0x12) {
-				reqr = remaining_blob_alloc(9);
-				FILL_FIRST_BYTE(reqr, previous, length);
-			}
-			else {
-				if (lock != True) {
-					FILL_FIRST_BYTE(remcode_0x5, previous, length);
-					printf("--------0x5----------\n");
-					dump_data(1, remcode_0x5, 4);
-					printf("------------------\n");
-					lock = True;
-				}
-				reqr = remaining_blob_alloc(8);
-				CONCAT_BYTES(reqr, previous, length, (8 * 4));
-				FILL_FIRST_BYTE(remcode, previous, length);
-				printf("------------------\n");
-				dump_data(1, remcode, 4);
-				printf("------------------\n");
-			}
-			break;
-		}
-		}
-	}
+/* 			printf("--------0x5----------\n"); */
+/* 			dump_data(1, remcode_0x5, 4); */
+/* 			printf("------------------\n"); */
+/* /\* 			FILL_FIRST_BYTE(reqr, remcode_0x5, 4); *\/ */
+/* 			break; */
+/* 		} */
+/* 		case 0x29: */
+/* 		{ */
+/* 			if (opnum == 0xFE || opnum == 0x12) { */
+/* 				reqr = remaining_blob_alloc(9); */
+/* 				FILL_FIRST_BYTE(reqr, previous, length); */
+/* 			} */
+/* 			else { */
+/* 				if (lock != True) { */
+/* 					FILL_FIRST_BYTE(remcode_0x5, previous, length); */
+/* 					printf("--------0x5----------\n"); */
+/* 					dump_data(1, remcode_0x5, 4); */
+/* 					printf("------------------\n"); */
+/* 					lock = True; */
+/* 				} */
+/* 				reqr = remaining_blob_alloc(8); */
+/* 				CONCAT_BYTES(reqr, previous, length, (8 * 4)); */
+/* 				FILL_FIRST_BYTE(remcode, previous, length); */
+/* 				printf("------------------\n"); */
+/* 				dump_data(1, remcode, 4); */
+/* 				printf("------------------\n"); */
+/* 			} */
+/* 			break; */
+/* 		} */
+/* 		} */
+/* 	} */
 
-	/* For the moment we store the previous "opnum" in order to define the next remaining data size */
-	printf("opnum = 0x%.04x\n", opnum);
-/* 	opnum = (current.content[1] << 8) | current.content[0]; */
-	opnum = current.opnum;
+/* 	/\* For the moment we store the previous "opnum" in order to define the next remaining data size *\/ */
+/* 	printf("opnum = 0x%.04x\n", opnum); */
+/* /\* 	opnum = (current.content[1] << 8) | current.content[0]; *\/ */
+/* 	opnum = current.opnum; */
 
 	return (reqr);
 }
 
 static struct opnums mapi_opnums[] = {
 	{OPNUM_MAPI_RPC_LOGON,	"MAPI_RPC_LOGON"},
+	{OPNUM_MAPI_QUERYROWS,	"MAPI_QUERYROWS"},
 	{0x0,			NULL}
 };
 
@@ -200,7 +201,7 @@ static struct opnums mapi_opnums[] = {
   retrieves mapi opnum name
  */
 
-const char *get_mapi_opname(uint16_t opnum)
+const char *get_mapi_opname(uint8_t opnum)
 {
 	uint32_t		i;
 
@@ -213,10 +214,26 @@ const char *get_mapi_opname(uint16_t opnum)
 }
 
 /*
+  check if the given mapi opnum is supported
+*/
+
+BOOL check_mapi_opnum(uint8_t opnum)
+{
+	uint32_t		i;
+
+	for (i = 0; mapi_opnums[i].name != NULL; i++) {
+		if (mapi_opnums[i].opnum == opnum) {
+			return True;
+		}
+	}
+	return False;
+}
+
+/*
   retrieves mapi opnum
  */
 
-uint16_t get_mapi_opnum(const char *name)
+uint8_t get_mapi_opnum(const char *name)
 {
 	uint32_t		i;
 

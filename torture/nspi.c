@@ -23,7 +23,7 @@
 #include "openchange.h"
 #include <torture/torture.h>
 #include "ndr_exchange.h"
-#include "libmapi/IMAPISession.h"
+#include "libmapi/mapi.h"
 #include "libmapi/include/nspi.h"
 #include "libmapi/include/mapi_proto.h"
 

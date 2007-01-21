@@ -463,9 +463,9 @@ static enum MAPISTATUS NspiBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	emsabp_context = emsabp_init((void *)dce_call->conn, dce_call);
+	emsabp_context = emsabp_init();
 	if (!emsabp_context) {
-	  return MAPI_E_FAILONEPROVIDER;
+		return MAPI_E_FAILONEPROVIDER;
 	}
 
 	/* check if a valid CPID has been provided */
@@ -508,6 +508,16 @@ static enum MAPISTATUS NspiUnbind(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		       struct NspiUnbind *r)
 {
 /* 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR); */
+	struct dcesrv_handle	*h;
+	struct emsabp_ctx	*emsabp_context;
+
+	DEBUG(0, ("##### in NspiUnbind ####\n"));
+
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	emsabp_context = (struct emsabp_ctx *) h->data;
+
+	talloc_free(emsabp_context->mem_ctx);
+
 	return MAPI_E_SUCCESS;
 }
 
@@ -596,7 +606,7 @@ static enum MAPISTATUS NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC
         r->out.settings = r->in.settings;
 
 	/* Search the provider for the requested recipient */
-	instance_keys = talloc(emsabp_context->mem_ctx, struct instance_key);
+	instance_keys = talloc(mem_ctx, struct instance_key);
 	status = emsabp_search(emsabp_context, instance_keys, r->in.restrictions);
 	if (!NT_STATUS_IS_OK(status)) {
 		return MAPI_E_LOGON_FAILED;

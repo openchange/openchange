@@ -105,13 +105,15 @@ static struct GUID emsabp_result_guid(const struct ldb_message *msg, const char 
   databases
 */
 
-struct emsabp_ctx *emsabp_init(TALLOC_CTX *mem_ctx, struct dcesrv_call_state *dce_call)
+struct emsabp_ctx *emsabp_init()
 {
+	TALLOC_CTX		*mem_ctx;
 	struct emsabp_ctx	*emsabp_ctx;
 
-	emsabp_ctx = talloc_named(mem_ctx, sizeof (struct emsabp_ctx), EMSABP_CTX);
+	mem_ctx = talloc_init(EMSABP_CTX);
+	emsabp_ctx = talloc(mem_ctx, struct emsabp_ctx);
 	if (!emsabp_ctx) return NULL;
-	emsabp_ctx->mem_ctx = talloc_init(EMSABP_CTX);
+	emsabp_ctx->mem_ctx = mem_ctx;
 
 	/* return an opaque context pointer on the configuration database */
 	emsabp_ctx->conf_ctx = ldb_init(emsabp_ctx->mem_ctx);
@@ -165,6 +167,49 @@ BOOL emsabp_add_entry(struct emsabp_ctx *emsabp_ctx, uint32_t *instance_key,
 	return True;
 }
 
+
+/*
+  set an entry id
+*/
+
+NTSTATUS emsabp_setEntryId(TALLOC_CTX *mem_ctx, struct entry_id *entry, struct SBinary *bin)
+{
+	struct GUID	*guid;
+	const char	*guid_str;
+
+	guid_str = lp_parm_string(-1, "exchange", "GUID");
+	guid = talloc(mem_ctx, struct GUID);
+	GUID_from_string(guid_str, guid);
+	
+	bin->cb = 32;
+	bin->lpb = talloc_size(mem_ctx, sizeof(uint8_t) * bin->cb);
+	memset(bin->lpb, 0, bin->cb);
+	bin->lpb[0] = 0x87;	/* Maybe a mask of bits */
+	
+	bin->lpb[4]  = (guid->time_low & 0xFF);
+	bin->lpb[5]  = ((guid->time_low >>  8) & 0xFF);
+	bin->lpb[6]  = ((guid->time_low >> 16) & 0xFF);
+	bin->lpb[7]  = ((guid->time_low >> 24) & 0xFF);
+	bin->lpb[8]  = (guid->time_mid &0xFF);
+	bin->lpb[9]  = ((guid->time_mid >>  8) & 0xFF);
+	bin->lpb[10] = (guid->time_hi_and_version & 0xFF);
+	bin->lpb[11] = ((guid->time_hi_and_version >> 8) & 0xFF); 
+
+	memcpy(bin->lpb + 12, guid->clock_seq, sizeof(uint8_t) * 2);
+
+	memcpy(bin->lpb + 14, guid->node, sizeof(uint8_t) * 6);
+	
+	bin->lpb[20] = 0x01;
+	/* 21 -> 27 0 bytes */
+
+	memcpy(bin->lpb + 28, guid->node + 4, sizeof(uint8_t) * 2);
+
+	/* 30 -> 31 0 bytes */
+	
+	talloc_free(guid);
+
+	return NT_STATUS_OK;
+}
 
 /*
   search and open an entry in the Active Directory
@@ -275,8 +320,6 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 	struct ldb_message		*ldb_res;
 	struct SLPSTRArray		*mv_string;
 	struct SBinary			*bin;
-	struct GUID			*guid;
-	const char	       		*guid_str;
 	const char			*ldb_str;
 	const char			*x500 = NULL;
 	NTSTATUS			status;
@@ -292,40 +335,8 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 		data = talloc_strdup(mem_ctx, EMSABP_ADDRTYPE);
 		return (data);
 	case PR_ENTRYID:
-		guid_str = lp_parm_string(-1, "exchange", "GUID");
-		guid = talloc(mem_ctx, struct GUID);
-		GUID_from_string(guid_str, guid);
 		bin = talloc(mem_ctx, struct SBinary);
-
-		bin->cb = 32;
-		bin->lpb = talloc_size(mem_ctx, sizeof(uint8_t) * bin->cb);
-		memset(bin->lpb, 0, bin->cb);
-		bin->lpb[0] = 0x87;	/* Maybe a mask of bits */
-		
-		bin->lpb[4]  = (guid->time_low & 0xFF);
-		bin->lpb[5]  = ((guid->time_low >>  8) & 0xFF);
-		bin->lpb[6]  = ((guid->time_low >> 16) & 0xFF);
-		bin->lpb[7]  = ((guid->time_low >> 24) & 0xFF);
-		bin->lpb[8]  = (guid->time_mid &0xFF);
-		bin->lpb[9]  = ((guid->time_mid >>  8) & 0xFF);
-		bin->lpb[10] = (guid->time_hi_and_version & 0xFF);
-		bin->lpb[11] = ((guid->time_hi_and_version >> 8) & 0xFF); 
-		bin->lpb[12] = (guid->clock_seq[0] & 0xFF);
-		bin->lpb[13] = (guid->clock_seq[1] & 0xFF);
-		bin->lpb[14] = guid->node[0];
-		bin->lpb[15] = guid->node[1];
-		bin->lpb[16] = guid->node[2];
-		bin->lpb[17] = guid->node[3];
-		bin->lpb[18] = guid->node[4];
-		bin->lpb[19] = guid->node[5];
-
-		bin->lpb[20] = 0x01;
-		/* 21 -> 27 0 bytes */
-		bin->lpb[28] = entry->guid.node[4];
-		bin->lpb[29] = entry->guid.node[5];
-		/* 30 -> 31 0 bytes */
-		
-		talloc_free(guid);
+		emsabp_setEntryId(mem_ctx, entry, bin);
 		return (bin);
 	case PR_OBJECT_TYPE:
 		data = talloc(mem_ctx, uint32_t);

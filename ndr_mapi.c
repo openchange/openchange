@@ -167,18 +167,16 @@ NTSTATUS ndr_pull_MAPI_DATA(struct ndr_pull *ndr, int ndr_flags, struct MAPI_DAT
 	} else {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &length));
 	}
+	blob->mapi_len = length;
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &blob->length));
-	blob->mapi_len = length - 2;
 
 	/* length includes length field, we have to substract it */
-	blob->length -= 2;
 	blob->content = talloc_size(NULL, blob->length - 2);
 	NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, blob->content, (uint32_t)blob->length - 2));
 
 	remaining_length = blob->mapi_len - blob->length;
 	count = remaining_length / sizeof(uint32_t);
 	blob->handles = talloc_array(NULL, uint32_t, count);
-	printf("ndr_pull_MAPI_DATA: count = %d\n", count);
 	for (i=0; i < count; i++) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &blob->handles[i]));
 	}

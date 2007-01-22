@@ -191,9 +191,10 @@ uint8_t *fill_remaining_blob(struct MAPI_DATA current, uint8_t *previous, uint32
 }
 
 static struct opnums mapi_opnums[] = {
-	{OPNUM_MAPI_RPC_LOGON,	"MAPI_RPC_LOGON"},
-	{OPNUM_MAPI_QUERYROWS,	"MAPI_QUERYROWS"},
-	{0x0,			NULL}
+	{OPNUM_MAPI_SETCOLUMNS,		"MAPI_SETCOLUMNS"},
+	{OPNUM_MAPI_QUERYROWS,		"MAPI_QUERYROWS"},
+	{OPNUM_MAPI_OPEN_MSGSTORE,	"MAPI_OPEN_MSGSTORE"},
+	{0x0,				NULL}
 };
 
 

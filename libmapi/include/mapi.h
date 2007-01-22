@@ -29,9 +29,9 @@
 #define	OPNUM_Unknown		"Unknown opnum"
 #define	OPNUM_LEN		1
 
-#define	OPNUM_MAPI_RPC_LOGON	0xFE
-#define	OPNUM_MAPI_SETCOLUMNS	0x12
-#define	OPNUM_MAPI_QUERYROWS	0x15
+#define	OPNUM_MAPI_OPEN_MSGSTORE	0xFE
+#define	OPNUM_MAPI_SETCOLUMNS		0x12
+#define	OPNUM_MAPI_QUERYROWS		0x15
 
 struct	opnums {
 	uint8_t		opnum;

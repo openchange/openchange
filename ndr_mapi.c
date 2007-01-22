@@ -103,17 +103,14 @@ void ndr_print_MAPI_DATA(struct ndr_print *ndr, const char *name, const struct M
 	ndr->print(ndr, "%-25s: MAPI_DATA (handles) number=%u", name, rlength / 4);
 	
 	if (rlength) {
-	  uint32_t	number, i;
-	  uint32_t	*handles;
+		uint32_t i;
 
-	  number = rlength / 4;
-	  handles = (uint32_t *)r->remaining;
-	  ndr->depth++;
+		ndr->depth++;
 
-	  for (i = 0; i < number; i++) {
-		  ndr_print_uint32(ndr, "handle ID", handles[i]);
-	  }
-	  ndr->depth--;
+		for (i = 0; i < (rlength / 4); i++) {
+			ndr_print_uint32(ndr, "handle id", r->handles[i]);
+		}
+		ndr->depth--;
 	}
 }
 
@@ -130,6 +127,7 @@ NTSTATUS ndr_push_MAPI_DATA(struct ndr_push *ndr, int ndr_flags, const struct MA
 {
 	uint32_t	remaining_length;
 	struct MAPI_DATA blob = *_blob;
+	uint32_t i,count;
 
 	if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.mapi_len));
@@ -139,16 +137,14 @@ NTSTATUS ndr_push_MAPI_DATA(struct ndr_push *ndr, int ndr_flags, const struct MA
 
 	blob.mapi_len -= 2;
 	blob.length -= 2;
-/* 	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, blob.opnum)); */
-/* 	NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, blob.mapi_flags)); */
-	/* opnum + action (request/response) are extracted from content
-	   and are 2 bytes long 
-	*/
 	NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, blob.content, blob.length - 2));
 
 	remaining_length = blob.mapi_len - blob.length;
-	NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, blob.remaining, remaining_length));
 
+	count = remaining_length / sizeof(uint32_t);
+	for (i=0; i < count; i++) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.handles[i]));
+	}
 	obfuscate_data(ndr->data, ndr->alloc_size, 0xA5);
 
 	return NT_STATUS_OK;
@@ -162,6 +158,7 @@ NTSTATUS ndr_pull_MAPI_DATA(struct ndr_pull *ndr, int ndr_flags, struct MAPI_DAT
 {
 	uint32_t length;
 	uint32_t remaining_length;
+	uint32_t i,count;
 
 	obfuscate_data(ndr->data, ndr->data_size, 0xA5);
 
@@ -175,18 +172,16 @@ NTSTATUS ndr_pull_MAPI_DATA(struct ndr_pull *ndr, int ndr_flags, struct MAPI_DAT
 
 	/* length includes length field, we have to substract it */
 	blob->length -= 2;
-	
-/* 	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &blob->opnum)); */
-/* 	NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &blob->mapi_flags)); */
-	/* opnum + action are extracted from content and are 2 bytes
-	   long 
-	*/
 	blob->content = talloc_size(NULL, blob->length - 2);
 	NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, blob->content, (uint32_t)blob->length - 2));
 
 	remaining_length = blob->mapi_len - blob->length;
-	blob->remaining = talloc_size(NULL, remaining_length);
-	NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, blob->remaining, remaining_length));
+	count = remaining_length / sizeof(uint32_t);
+	blob->handles = talloc_array(NULL, uint32_t, count);
+	printf("ndr_pull_MAPI_DATA: count = %d\n", count);
+	for (i=0; i < count; i++) {
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &blob->handles[i]));
+	}
 
 	return NT_STATUS_OK;
 }

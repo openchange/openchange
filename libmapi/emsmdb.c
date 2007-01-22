@@ -47,8 +47,8 @@ static void debug_print_infos(const char *info, struct MAPI_DATA blob)
 	printf("\t\tlength = %d\n", blob.length);
 	printf("\t\tcontent:\n");
 	dump_data(1, blob.content, blob.length);
-	printf("\t\tremaining:\n");
-	dump_data(1, blob.remaining, blob.mapi_len - length);
+/* 	printf("\t\tremaining:\n"); */
+/* 	dump_data(1, blob.remaining, blob.mapi_len - length); */
 	idx++;
 }
 
@@ -153,7 +153,7 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct MAPI_DATA blob
 	r.in.data.blob.content = talloc_zero_array(emsmdb->mem_ctx, uint8_t, push->data.length - 1);
 	memcpy(r.in.data.blob.content, push->data.data + 2, push->data.length - 2);
 
-	r.in.data.blob.remaining = fill_remaining_blob(r.in.data.blob, previous, plength);
+/* 	r.in.data.blob.remaining = fill_remaining_blob(r.in.data.blob, previous, plength); */
 
 	debug_print_infos("request", r.in.data.blob);
 
@@ -165,7 +165,7 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct MAPI_DATA blob
 		mapi_errstr("EcDoRpc", r.out.result);
 	}
 	else {
-		previous = r.out.data.blob.remaining;
+/* 		previous = r.out.data.blob.remaining; */
 		plength = r.out.data.blob.mapi_len - r.out.data.blob.length;
 	}
 
@@ -190,7 +190,7 @@ NTSTATUS emsmdb_transaction_unknown(struct emsmdb_context *emsmdb, struct MAPI_D
 	r.in.data.blob.length = blob.length;
 /* 	r.in.data.blob.opnum = blob.opnum; */
 	r.in.data.blob.content = blob.content;
-	r.in.data.blob.remaining = fill_remaining_blob(r.in.data.blob, previous, plength);
+/* 	r.in.data.blob.remaining = fill_remaining_blob(r.in.data.blob, previous, plength); */
 
 	printf("---------------------------------------\n");
 	dump_data(0, r.in.data.blob.content, r.in.data.blob.length);
@@ -205,7 +205,7 @@ NTSTATUS emsmdb_transaction_unknown(struct emsmdb_context *emsmdb, struct MAPI_D
         if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
 		mapi_errstr("EcDoRpc", r.out.result);
         } else {
-		previous = r.out.data.blob.remaining;
+/* 		previous = r.out.data.blob.remaining; */
 		plength = r.out.data.blob.mapi_len - r.out.data.blob.length;
 	}
 

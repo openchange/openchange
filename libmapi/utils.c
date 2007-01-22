@@ -22,8 +22,6 @@
 
 #include "openchange.h"
 #include "ndr_exchange.h"
-#include <tdr.h>
-#include "libmapi/mapi.h"
 
 /*
   Constructs a PR_ENTRYID value for recipients.

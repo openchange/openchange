@@ -518,16 +518,11 @@ System Attendant Private Interface
 	  Abstract way to represent MAPI content
 	*/
 
-	typedef [public, enum8bit, flag(NDR_PAHEX)] enum {
-		REQUEST		= 0x0,
-		RESPONSE	= 0x1
-	} EcDoRpc_action;
-
-	typedef [public,nopull,nopush,noprint] struct {
+  	typedef [public,nopull,nopush,noprint] struct {
 		uint32 		mapi_len;	/* whole mapi_data length */
 		uint16		length;		/* content length */
 		uint8		*content;	/* content */
-		uint8		*remaining;	/* remaining bytes / non content */
+		[size_is((mapi_len - length))] uint32       	handles[];	/* handles id array */
 	} MAPI_DATA;
 
 	/*****************/

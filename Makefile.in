@@ -144,7 +144,7 @@ server/dcesrv_exchange.c: providers_proto.h ndr_exchange_s.c ndr_exchange.c
 
 libmapi/emsmdb.c: libmapi/include/emsmdb.h ndr_exchange_c.h
 
-libmapi/mapitags.c libmapi/tag_to_ad_name.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mparse.pl
+libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mparse.pl
 	@./libmapi/conf/build.sh
 
 bin/schemaIDGUID: utils/schemaIDGUID.o
@@ -180,7 +180,6 @@ clean:
 	rm -f utils/*.o
 	rm -f ndr_exchange* exchange.h
 	rm -f libmapi/mapicode.{c,h}
-	rm -f libmapi/tag_to_ad_name.c
 	rm -f libmapi/mapitags.{c,h}
 	rm -f libmapi/include/proto.h
 	rm -f libmapi/include/mapi_proto.h
@@ -221,7 +220,7 @@ libmapi.$(SHLIBEXT): libmapi/utils.o libmapi/property.o	\
 				ndr_exchange.o libmapi/util/locale.o	\
 				libmapi/util/codepage.o			\
 				ndr_mapi.o ndr_exchange_c.o		\
-				libmapi/x500.o libmapi/tag_to_ad_name.o
+				libmapi/x500.o
 	@echo "Compiling $<"
 	@$(CC) $(DSOOPT) -o $@ $^ $(LIBS)
 

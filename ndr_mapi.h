@@ -20,6 +20,6 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-void ndr_print_MAPI_DATA(struct ndr_print *ndr, const char *name, const struct MAPI_DATA *r);
-NTSTATUS ndr_push_MAPI_DATA(struct ndr_push *ndr, int ndr_flags, const struct MAPI_DATA *blob);
-NTSTATUS ndr_pull_MAPI_DATA(struct ndr_pull *ndr, int ndr_flags, struct MAPI_DATA *blob);
+/* void ndr_print_MAPI_DATA(struct ndr_print *ndr, const char *name, const struct MAPI_DATA *r); */
+/* NTSTATUS ndr_push_MAPI_DATA(struct ndr_push *ndr, int ndr_flags, const struct MAPI_DATA *blob); */
+/* NTSTATUS ndr_pull_MAPI_DATA(struct ndr_pull *ndr, int ndr_flags, struct MAPI_DATA *blob); */

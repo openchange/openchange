@@ -136,19 +136,13 @@ ndr_%_c.h ndr_%_c.c: %.idl %.h
 	@echo "Compiling $<"
 	@$(PIDL) --outputdir=$(@D) --client -- $<
 
-tdr_%.h tdr_%.c: %.idl
-	@echo "Compiling $<"
-	@$(PIDL) --outputdir=$(@D) --tdr-parser -- $<
-
 ndr_%_s.c: %.idl
 	@echo "Compiling $<"
 	@$(PIDL) --outputdir=$(@D) --server -- $<
 
 server/dcesrv_exchange.c: providers_proto.h ndr_exchange_s.c ndr_exchange.c
 
-libmapi/emsmdb.c: libmapi/include/emsmdb.h libmapi/tdr_mapi.h ndr_exchange_c.h
-
-libmapi/include/emsmdb.h: libmapi/mapi.h
+libmapi/emsmdb.c: libmapi/include/emsmdb.h ndr_exchange_c.h
 
 libmapi/mapitags.c libmapi/tag_to_ad_name.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mparse.pl
 	@./libmapi/conf/build.sh
@@ -185,12 +179,11 @@ clean:
 	rm -f torture/*.o
 	rm -f utils/*.o
 	rm -f ndr_exchange* exchange.h
-	rm -f libmapi/tdr_*
 	rm -f libmapi/mapicode.{c,h}
+	rm -f libmapi/tag_to_ad_name.c
 	rm -f libmapi/mapitags.{c,h}
 	rm -f libmapi/include/proto.h
 	rm -f libmapi/include/mapi_proto.h
-	rm -f libmapi/mapi.h
 	rm -f providers/providers_proto.h
 	rm -f torture/*.$(SHLIBEXT) server/*.$(SHLIBEXT)
 	rm -f torture/torture_proto.h
@@ -205,10 +198,10 @@ clean:
 proto.h: libmapi/mapitags.c libmapi/mapicode.c
 	@echo "Generating proto.h"
 	@./script/mkproto.pl --private=libmapi/include/proto.h --public=libmapi/include/proto.h \
-	libmapi/mapi.c libmapi/x500.c libmapi/mapitags.c libmapi/mapicode.c libmapi/utils.c \
+	libmapi/x500.c libmapi/mapitags.c libmapi/mapicode.c libmapi/utils.c \
 	libmapi/util/locale.c libmapi/util/codepage.c 
 
-mapi_proto.h: libmapi/mapi.h
+mapi_proto.h:
 	@echo "Generating mapi_proto.h"
 	@./script/mkproto.pl --private=libmapi/include/mapi_proto.h --public=libmapi/include/mapi_proto.h \
 	libmapi/property.c libmapi/nspi.c libmapi/emsmdb.c
@@ -222,13 +215,13 @@ torture_proto.h:
 	@echo "Generating torture_proto.h"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h torture/testjoin_exchange.c
 
-libmapi.$(SHLIBEXT): libmapi/mapi.o libmapi/utils.o libmapi/property.o \
-				libmapi/mapitags.o libmapi/mapicode.o \
-				libmapi/emsmdb.o libmapi/nspi.o ndr_exchange.o \
-				libmapi/util/locale.o \
-				libmapi/util/codepage.o libmapi/tdr_mapi.o \
-				ndr_mapi.o ndr_exchange_c.o libmapi/x500.o \
-				libmapi/tag_to_ad_name.o
+libmapi.$(SHLIBEXT): libmapi/utils.o libmapi/property.o	\
+				libmapi/mapitags.o libmapi/mapicode.o	\
+				libmapi/emsmdb.o libmapi/nspi.o		\
+				ndr_exchange.o libmapi/util/locale.o	\
+				libmapi/util/codepage.o			\
+				ndr_mapi.o ndr_exchange_c.o		\
+				libmapi/x500.o libmapi/tag_to_ad_name.o
 	@echo "Compiling $<"
 	@$(CC) $(DSOOPT) -o $@ $^ $(LIBS)
 
@@ -238,7 +231,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-.PRECIOUS: libmapi/tdr_mapi.h libmapi/tdr_mapi.c exchange.h ndr_exchange.h ndr_exchange.c ndr_exchange_c.c ndr_exchange_c.h
+.PRECIOUS: exchange.h ndr_exchange.h ndr_exchange.c ndr_exchange_c.c ndr_exchange_c.h
 
 Makefile: Makefile.in config.status
 	./config.status

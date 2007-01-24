@@ -21,15 +21,13 @@
 #ifndef __EMSMDB_H__
 #define	__EMSMDB_H__
 
-#include "libmapi/mapi.h"
-
 struct emsmdb_context {
   struct dcerpc_pipe *rpc_connection;
   struct policy_handle handle;
   TALLOC_CTX *mem_ctx;
 };
 
-NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct MAPI_DATA blob, struct MAPI_REQ *req);
-NTSTATUS emsmdb_transaction_unknown(struct emsmdb_context *emsmdb, struct MAPI_DATA blob);
+/* NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct MAPI_DATA blob, struct MAPI_REQ *req); */
+/* NTSTATUS emsmdb_transaction_unknown(struct emsmdb_context *emsmdb, struct MAPI_DATA blob); */
 
 #endif /* __EMSMDB_H__ */

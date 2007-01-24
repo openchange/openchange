@@ -24,7 +24,6 @@
 #include "libmapi/include/mapidefs.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/include/proto.h"
-#include "libmapi/mapi.h"
 #include "libmapi/include/mapi_proto.h"
 
 /*

@@ -27,7 +27,6 @@
 #include "libmapi/include/mapidefs.h"
 #include "libmapi/include/property.h"
 #include "server/dcesrv_exchange.h"
-#include "libmapi/mapi.h"
 #include "libmapi/include/proto.h"
 #include "libmapi/include/mapi_proto.h"
 

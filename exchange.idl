@@ -579,11 +579,21 @@ System Attendant Private Interface
 		} MAPI_OPNUM;
 
 
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint16				cb;
+		[flag(NDR_BUFFERS)]uint8	lpb[cb];
+	} SBinary_short;
+	
+
 	/**************************/
 	/* EcDoRpc Function 0x1   */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
 	} Release_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown;
+	} Release_repl;
 
 	/**************************/
 	/* EcDoRpc Function 0x2   */
@@ -609,13 +619,21 @@ System Attendant Private Interface
 	} OpenMessage_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8	unknown[11];
-		uint16	properties_count;
-		MAPITAGS properties[properties_count];
-		uint16	unknown2;
-		uint32	codepage;
-		uint16	msg_len;
-		[flag(NDR_REMAINING)]DATA_BLOB message;		
+		uint32		unknown;
+		uint8		unknown2[3];
+		astring		subject;
+		uint16		unknown6;
+		uint16		prop_count;
+		MAPITAGS	properties[prop_count];
+ 		uint16		unknown3;
+ 		uint32		codepage;
+		uint8		unknown4[6];
+		astring		username;
+		astring		full_name;
+		astring		username2;
+ 		uint16		prop_number;
+		uint8		unknown5;
+		[flag(NDR_REMAINING)]DATA_BLOB	message;		
 	} OpenMessage_repl;
 
 	/**************************/
@@ -649,8 +667,8 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle;
 		uint8		unknown;
-		uint16		prop_nb;
-		MAPITAGS	SPropValue[prop_nb];
+		uint16		prop_count;
+		MAPITAGS	properties[prop_count];
 	} SetColumns_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -712,7 +730,7 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenFolder)] OpenFolder_req mapi_OpenFolder;
 		[case(op_MAPI_OpenMessage)] OpenMessage_req mapi_OpenMessage;
 		[case(op_MAPI_GetContentsTable)] GetContentsTable_req mapi_GetContentsTable;
-		[case(op_MAPI_GetProps)] GetProps_req mapi_GetPropsSpecific;
+		[case(op_MAPI_GetProps)] GetProps_req mapi_GetProps;
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_req mapi_GetReceiveFolder;
@@ -720,10 +738,11 @@ System Attendant Private Interface
 	} EcDoRpc_MAPI_REQ_UNION;
 
 	typedef [public, nodiscriminant] union {
+		[case(op_MAPI_Release)] Release_repl mapi_Release;
 		[case(op_MAPI_OpenFolder)] OpenFolder_repl mapi_OpenFolder;
 		[case(op_MAPI_OpenMessage)] OpenMessage_repl mapi_OpenMessage;
 		[case(op_MAPI_GetContentsTable)] GetContentsTable_repl mapi_GetContentsTable;
-		[case(op_MAPI_GetProps)] GetProps_repl mapi_GetPropsSpecific;
+		[case(op_MAPI_GetProps)] GetProps_repl mapi_GetProps;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
 		[case(op_MAPI_QueryRows)] QueryRows_repl mapi_QueryRows;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_repl mapi_GetReceiveFolder;
@@ -752,7 +771,7 @@ System Attendant Private Interface
 		uint32			mapi_len;	/* whole mapi_data length */
 		uint16			length;		/* content length */
 		EcDoRpc_MAPI_REQ	*mapi_req;
-		uint32			*handles;	/* handles id array */
+		uint32			**handles;	/* handles id array */
 	} mapi_request;
 
 	typedef [public,nopull,nopush,noprint] struct {
@@ -763,7 +782,7 @@ System Attendant Private Interface
 	} mapi_response;
 	
 
-	[flag(NDR_NOALIGN)] MAPISTATUS  EcDoRpc(
+	[public,flag(NDR_NOALIGN)] MAPISTATUS  EcDoRpc(
 		[in,out]	policy_handle	*handle,
 		[in,out]	uint32 size,
 		[in,out]	uint32 offset,

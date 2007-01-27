@@ -44,7 +44,7 @@ CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
 LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 
 all: 	ndr_exchange.h proto.h mapi_proto.h torture_proto.h bin/schemaIDGUID \
-	bin/locale_codepage torture/openchange.$(SHLIBEXT) \
+	bin/mapidump bin/locale_codepage torture/openchange.$(SHLIBEXT) \
 	server/dcesrv_exchange.$(SHLIBEXT) \
 	server/dcesrv_exchange_remote.$(SHLIBEXT) $(EVOLUTION_PLUGIN)
 
@@ -55,6 +55,7 @@ install: all $(EVOLUTION_PLUGIN_INSTALL)
 	mkdir -p $(TORTURE_MODULESDIR)
 	mkdir -p $(DESTDIR)$(SERVER_MODULESDIR)
 	cp bin/schemaIDGUID $(DESTDIR)$(bindir)
+	cp bin/mapidump $(DESTDIR)$(bindir)
 	cp bin/locale_codepage $(DESTDIR)$(bindir)
 	cp libmapi.$(SHLIBEXT) $(DESTDIR)$(libdir)
 	cp torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
@@ -66,6 +67,7 @@ install: all $(EVOLUTION_PLUGIN_INSTALL)
 
 uninstall: $(EVOLUTION_PLUGIN_UNINSTALL)
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
+	rm -f $(DESTDIR)$(bindir)/mapidump
 	rm -f $(DESTDIR)$(bindir)/locale_codepage
 	rm -f $(DESTDIR)$(libdir)/libmapi.*
 	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
@@ -152,6 +154,10 @@ bin/schemaIDGUID: utils/schemaIDGUID.o
 	@$(CC) -o $@ $^ $(LIBS)
 
 bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT)
+	@echo "Compiling $<"
+	@$(CC) -o $@ $^ $(LIBS)
+
+bin/mapidump: utils/mapidump.o libmapi.$(SHLIBEXT)
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS)
 

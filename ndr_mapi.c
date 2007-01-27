@@ -3,7 +3,7 @@
 
    libndr mapi support
 
-   Copyright (C) Julien Kerihuel 2005
+   Copyright (C) Julien Kerihuel 2005-2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -202,6 +202,12 @@ NTSTATUS ndr_pull_mapi_request(struct ndr_pull *ndr, int ndr_flags, struct mapi_
 	r->mapi_req = talloc_size(_mem_save_mapi_req_0, _ndr_mapi_req->data_size + sizeof(*(r->mapi_req))+4);
 	for (cntr_mapi_req_0 = 0; _ndr_mapi_req->offset < _ndr_mapi_req->data_size - 2; cntr_mapi_req_0++) {
 		NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REQ(_ndr_mapi_req, NDR_SCALARS, &r->mapi_req[cntr_mapi_req_0]));
+	}
+	if (_ndr_mapi_req->offset > r->length - 2) {
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
+	}
+	if (_ndr_mapi_req->offset < r->length - 2) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 	r->mapi_req[cntr_mapi_req_0].opnum = 0;
 	NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_mapi_req, 4, -1));

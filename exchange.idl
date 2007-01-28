@@ -604,8 +604,8 @@ System Attendant Private Interface
 	} OpenFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
+		MAPISTATUS	error_code;
 		uint16		unknown;
-		uint32		handle;
 	} OpenFolder_repl;
 	
 	/**************************/
@@ -619,7 +619,7 @@ System Attendant Private Interface
 	} OpenMessage_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32		unknown;
+		MAPISTATUS	error_code;
 		uint8		unknown2[3];
 		astring		subject;
 		uint16		unknown6;
@@ -644,7 +644,7 @@ System Attendant Private Interface
 	} GetContentsTable_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32		unknown;
+		MAPISTATUS	error_code;
 		uint32		unknown2;
 	} GetContentsTable_repl;
 
@@ -658,7 +658,8 @@ System Attendant Private Interface
 	} GetProps_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8	unknown[5];
+		MAPISTATUS			error_code;
+		uint8				unknown;
 		[flag(NDR_REMAINING)] DATA_BLOB prop_data;
 	} GetProps_repl;
 
@@ -672,7 +673,8 @@ System Attendant Private Interface
 	} SetColumns_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown[5];
+		MAPISTATUS	error_code;
+		uint8		unknown;
 	} SetColumns_repl;
 
 	/**************************/
@@ -683,8 +685,8 @@ System Attendant Private Interface
 	} QueryRows_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
+		MAPISTATUS	error_code;
 		uint8		unknown;
-		uint32		handle;
 		uint16		results_count;
 		uint8		unknown2;
 		[flag(NDR_REMAINING)]DATA_BLOB	inbox;
@@ -697,7 +699,7 @@ System Attendant Private Interface
 	} GetReceiveFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32		unknown;
+		MAPISTATUS	error_code;
 		hyper		folder_id;
 	} GetReceiveFolder_repl;
 
@@ -712,7 +714,7 @@ System Attendant Private Interface
 	} OpenMsgStore_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32		unknown;
+		MAPISTATUS     	error_code;
 		MAPI_OBJTYPE	PR_OBJECT_TYPE;
  		hyper		folder_id[13];
 		uint8		unknown3;

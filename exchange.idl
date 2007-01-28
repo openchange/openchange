@@ -771,7 +771,7 @@ System Attendant Private Interface
 		uint32			mapi_len;	/* whole mapi_data length */
 		uint16			length;		/* content length */
 		EcDoRpc_MAPI_REQ	*mapi_req;
-		uint32			**handles;	/* handles id array */
+		uint32			*handles;	/* handles id array */
 	} mapi_request;
 
 	typedef [public,nopull,nopush,noprint] struct {
@@ -786,8 +786,8 @@ System Attendant Private Interface
 		[in,out]	policy_handle	*handle,
 		[in,out]	uint32 size,
 		[in,out]	uint32 offset,
-	  	[in][subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] mapi_request  mapi_request,
-		[out][subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] mapi_response mapi_response,
+	  	[in][subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] mapi_request  *mapi_request,
+		[out][subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] mapi_response *mapi_response,
 		[in,out]	uint16		*length,
 		[in]		uint16		max_data
 		);

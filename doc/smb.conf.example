@@ -2,7 +2,6 @@
 	netbios name		= zion
 	workgroup		= OPENCHANGE
 	realm			= openchange.local
-	server role		= pdc
 
 dcerpc endpoint servers		= exchange_nsp exchange_emsmdb epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup
 
@@ -11,7 +10,8 @@ dcerpc endpoint servers		= exchange_nsp exchange_emsmdb epmapper srvsvc wkssvc r
 	locale:method		= 0x409
 
 	exchange:server		= EXCHANGE-2000
-	exchange:organization	= OpenChange
+	exchange:ou		= First Administrative Group
+	exchange:organization	= OpenChange Organization
 	exchange:GUID		= 1b940e13-14d3-4e2a-9711-e06a2def5dfd
 	exchange:store		= /usr/local/samba/private/store.ldb
 	exchange:dbtype		= tdb

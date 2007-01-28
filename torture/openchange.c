@@ -21,6 +21,7 @@
 #include "openchange.h"
 #include <torture/torture.h>
 
+BOOL torture_rpc_mapi_fetchmail(struct torture_context *);
 BOOL torture_rpc_emsmdb(struct torture_context *);
 BOOL torture_rpc_exchange(struct torture_context *);
 BOOL torture_rpc_nspi(struct torture_context *);
@@ -39,6 +40,8 @@ NTSTATUS init_module(void)
 	torture_suite_add_simple_test(suite, "NSPI", torture_rpc_nspi);
 	torture_suite_add_simple_test(suite, "NSPI-PROFILE", torture_rpc_nspi_profile);
 	torture_suite_add_simple_test(suite, "NSPI-SCANTAGS", torture_rpc_scantags);
+	/* MAPI torture tests */
+	torture_suite_add_simple_test(suite, "MAPI-FETCHMAIL", torture_rpc_mapi_fetchmail);
 
 	suite->description = talloc_strdup(suite, "Exchange protocols tests (NSPI and EMSMDB)");
 

@@ -46,9 +46,11 @@ void ndr_print_mapi_request(struct ndr_print *ndr, const char *name, const struc
 
 	rlength = r->mapi_len - r->length;
 
+	ndr_print_uint32(ndr, "mapi_len", r->mapi_len);
 	if (r->length) {
 		uint32_t cntr_mapi_req_0;
 
+		ndr_print_uint16(ndr, "length", r->length);
 		ndr->depth++;
 		for (cntr_mapi_req_0=0; r->mapi_req[cntr_mapi_req_0].opnum; cntr_mapi_req_0++) {
 			char *idx_0=NULL;
@@ -121,29 +123,21 @@ void ndr_print_mapi_response(struct ndr_print *ndr, const char *name, const stru
   (uint16_t) and next substract when pushing the content blob
 */
 
-NTSTATUS ndr_push_mapi_request(struct ndr_push *ndr, int ndr_flags, const struct mapi_request *_blob)
+NTSTATUS ndr_push_mapi_request(struct ndr_push *ndr, int ndr_flags, const struct mapi_request *r)
 {
-	uint32_t	remaining_length;
-	struct mapi_request blob = *_blob;
-	uint32_t i,count;
+	uint32_t		cntr_mapi_req_0;
+	uint32_t		count;
 
-	if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.mapi_len));
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->length));
+	NDR_CHECK(ndr_push_EcDoRpc_MAPI_REQ(ndr, NDR_SCALARS, &r->mapi_req[0]));
+
+	count = (r->mapi_len - r->length) / sizeof(uint32_t);
+	for (cntr_mapi_req_0=0; cntr_mapi_req_0 < count; cntr_mapi_req_0++) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->handles[cntr_mapi_req_0]));
 	}
-	blob.length += 2;
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, blob.length));
 
-	blob.mapi_len -= 2;
-	blob.length -= 2;
-/* 	NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, blob.content, blob.length - 2)); */
-
-	remaining_length = blob.mapi_len - blob.length;
-
-	count = remaining_length / sizeof(uint32_t);
-	for (i=0; i < count; i++) {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.handles[i]));
-	}
-	obfuscate_data(ndr->data, ndr->alloc_size, 0xA5);
+	obfuscate_data(ndr->data, ndr->offset, 0xA5);
 
 	return NT_STATUS_OK;
 }
@@ -162,7 +156,6 @@ NTSTATUS ndr_push_mapi_response(struct ndr_push *ndr, int ndr_flags, const struc
 
 	blob.mapi_len -= 2;
 	blob.length -= 2;
-/* 	NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, blob.content, blob.length - 2)); */
 
 	remaining_length = blob.mapi_len - blob.length;
 

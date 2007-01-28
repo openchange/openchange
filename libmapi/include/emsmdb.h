@@ -27,7 +27,7 @@ struct emsmdb_context {
   TALLOC_CTX *mem_ctx;
 };
 
-/* NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct MAPI_DATA blob, struct MAPI_REQ *req); */
+NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *);
 /* NTSTATUS emsmdb_transaction_unknown(struct emsmdb_context *emsmdb, struct MAPI_DATA blob); */
 
 #endif /* __EMSMDB_H__ */

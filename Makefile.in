@@ -2,7 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@samba.org>, 2005.
 
 CC=@CC@
-CFLAGS=@CFLAGS@ -I. -Wall
+CFLAGS=@CFLAGS@ -I. -Wall -g3
 PIDL=@PIDL@
 PERL=@PERL@
 DSOOPT=-shared -fPIC
@@ -108,7 +108,7 @@ client/evolution/camelprovider/libcamel-openchange.$(SHLIBEXT): client/evolution
 	@echo "Linking $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(EVOLUTION_PLUGIN_LIBS)
 
-torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/emsmdb.o torture/exchange.o torture/nspi.o torture/nspi_profile.o torture/openchange.o torture/nspi_scantags.o 
+torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/emsmdb.o torture/exchange.o torture/nspi.o torture/nspi_profile.o torture/openchange.o torture/nspi_scantags.o torture/mapi_fetchmail.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -lmapi
 
@@ -209,7 +209,7 @@ proto.h: libmapi/mapitags.c libmapi/mapicode.c
 mapi_proto.h:
 	@echo "Generating mapi_proto.h"
 	@./script/mkproto.pl --private=libmapi/include/mapi_proto.h --public=libmapi/include/mapi_proto.h \
-	libmapi/property.c libmapi/nspi.c libmapi/emsmdb.c
+	libmapi/property.c libmapi/nspi.c libmapi/emsmdb.c libmapi/mapi.c
 
 providers_proto.h: providers/emsabp.c
 	@echo "Generating providers_proto.h"
@@ -221,6 +221,7 @@ torture_proto.h:
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h torture/testjoin_exchange.c
 
 libmapi.$(SHLIBEXT): libmapi/utils.o libmapi/property.o	\
+				libmapi/mapi.o				\
 				libmapi/mapitags.o libmapi/mapicode.o	\
 				libmapi/emsmdb.o libmapi/nspi.o		\
 				ndr_exchange.o libmapi/util/locale.o	\

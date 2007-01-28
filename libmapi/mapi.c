@@ -20,16 +20,20 @@
 
 #include "openchange.h"
 #include "exchange.h"
+#include "ndr_exchange.h"
 #include "libmapi/include/emsmdb.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/include/proto.h"
+#include "libmapi/include/mapi_proto.h"
 
 MAPISTATUS	OpenMsgStore(struct emsmdb_context *emsmdb, uint32_t ulFlags, 
 			     uint32_t *handle_id, const char *mailbox)
 {
 	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct OpenMsgStore_req	request;
+	NTSTATUS		status;
 	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
 
@@ -38,8 +42,8 @@ MAPISTATUS	OpenMsgStore(struct emsmdb_context *emsmdb, uint32_t ulFlags,
 	/* Fill the OpenMsgStore operation */
 	request.col = 0x0;
 	request.row = 0x1;
-	request.folderID_count = 0xc;
-	request.padding = 0x0;
+ 	request.folderID_count = 0xc;
+	request.padding = 0;
 	request.mailbox_path = talloc_strdup(mem_ctx, mailbox);
 	size = 10 + strlen(mailbox) + 1;
 
@@ -58,9 +62,13 @@ MAPISTATUS	OpenMsgStore(struct emsmdb_context *emsmdb, uint32_t ulFlags,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = 0xffffffff;
 
-	emsmdb_transaction(emsmdb, mapi_request);
+	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
+
+	if (mapi_response->mapi_repl->u.mapi_OpenMsgStore.error_code != MAPI_E_SUCCESS) {
+		return mapi_response->mapi_repl->u.mapi_OpenMsgStore.error_code;
+	}
 
 	talloc_free(mem_ctx);
-
+	
 	return MAPI_E_SUCCESS;
 }

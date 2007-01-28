@@ -111,7 +111,7 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p
 	return ret;
 }
 
-NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *req)
+NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *req, struct mapi_response **repl)
 {
 	struct EcDoRpc	r;
 	struct mapi_response *mapi_response;
@@ -136,6 +136,8 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *
 	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
 		mapi_errstr("EcDoRpc", r.out.result);
 	}
+
+	*repl = r.out.mapi_response;
 
 	return status;
 }

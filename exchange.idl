@@ -751,8 +751,8 @@ System Attendant Private Interface
 		[switch_is(opnum)] EcDoRpc_MAPI_REQ_UNION u;
 	} EcDoRpc_MAPI_REQ;
 
-	typedef [public,flag(NDR_NOALIGN)] struct {
-		uint8		opnum;
+	typedef [public,nopull,noprint,flag(NDR_NOALIGN)] struct {
+		uint8     	opnum;
 		uint8		mapi_flags;
 		MAPISTATUS	error_code;
 		[switch_is(opnum)] EcDoRpc_MAPI_REPL_UNION u;

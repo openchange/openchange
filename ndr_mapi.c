@@ -251,3 +251,48 @@ NTSTATUS ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, struct mapi
 
 	return NT_STATUS_OK;
 }
+
+/*
+  We stop processing the IDL if MAPISTATUS is different from MAPI_E_SUCCESS
+ */
+
+NTSTATUS ndr_pull_EcDoRpc_MAPI_REPL(struct ndr_pull *ndr, int ndr_flags, struct EcDoRpc_MAPI_REPL *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 8));
+			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->opnum));
+			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->mapi_flags));
+			NDR_CHECK(ndr_pull_MAPISTATUS(ndr, NDR_SCALARS, &r->error_code));
+			if ( r->error_code == MAPI_E_SUCCESS) {
+				NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->u, r->opnum));
+				NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
+			}
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			ndr->flags = _flags_save_STRUCT;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
+void ndr_print_EcDoRpc_MAPI_REPL(struct ndr_print *ndr, const char *name, const struct EcDoRpc_MAPI_REPL *r)
+{
+	ndr_print_struct(ndr, name, "EcDoRpc_MAPI_REPL");
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		ndr_print_uint8(ndr, "opnum", r->opnum);
+		ndr_print_uint8(ndr, "mapi_flags", r->mapi_flags);
+		ndr_print_MAPISTATUS(ndr, "error_code", r->error_code);
+		if (r->error_code == MAPI_E_SUCCESS) {
+			ndr_print_set_switch_value(ndr, &r->u, r->opnum);
+			ndr_print_EcDoRpc_MAPI_REPL_UNION(ndr, "u", &r->u);
+		}
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}

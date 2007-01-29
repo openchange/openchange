@@ -675,10 +675,12 @@ System Attendant Private Interface
 	/* EcDoRpc Function 0x15  */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
-		uint32		instance_key;
+		uint8		flag_noadvance;
+		uint8		unknown1;
+		uint16		row_count;
 	} QueryRows_req;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [noprint,nopull,flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
 		uint16		results_count;
 		uint8		unknown2;

@@ -22,9 +22,12 @@
 #define	__EMSMDB_H__
 
 struct emsmdb_context {
-  struct dcerpc_pipe *rpc_connection;
-  struct policy_handle handle;
-  TALLOC_CTX *mem_ctx;
+  struct dcerpc_pipe		*rpc_connection;
+  struct policy_handle		handle;
+  TALLOC_CTX			*mem_ctx;
+  struct EcDoRpc_MAPI_REQ	**cache_requests;
+  uint32_t			cache_size;
+  uint8_t			cache_count;
 };
 
 #endif /* __EMSMDB_H__ */

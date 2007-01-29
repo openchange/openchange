@@ -112,6 +112,8 @@ MAPISTATUS	GetReceiveFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uin
 	DEBUG(3, ("folder id = 0x%.16llx\n", mapi_response->mapi_repl->u.mapi_GetReceiveFolder.folder_id));
 	*folder_id = mapi_response->mapi_repl->u.mapi_GetReceiveFolder.folder_id;
 
+	DEBUG(3, ("GetReceiveFolder: handles[0] = 0x%.8x\n", mapi_response->handles[0]));
+
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -130,7 +132,7 @@ MAPISTATUS	OpenFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t 
 	mem_ctx = talloc_init("GetReceiveFolder");
 
 	/* Fill the OpenFolder operation */
-	request.handle = 0x1;
+	request.handle = 0x100;
 	request.folder_id = folder_id;
 	request.unknown = 0x0;
 	size += sizeof (uint16_t) + sizeof(uint64_t) + sizeof(uint8_t);
@@ -166,6 +168,9 @@ MAPISTATUS	OpenFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t 
 	}
 
 	*obj_id = mapi_response->handles[1];
+
+	DEBUG(3, ("OpenFolder: handles[0] = 0x%.8x\n", mapi_response->handles[0]));
+	DEBUG(3, ("OpenFolder: handles[1] = 0x%.8x\n", mapi_response->handles[1]));
 
 	talloc_free(mem_ctx);
 
@@ -221,6 +226,93 @@ MAPISTATUS	GetContentsTable(struct emsmdb_context *emsmdb, uint32_t ulFlags,
 	}
 
 	*table_id = mapi_response->handles[1];
+
+	DEBUG(3, ("GetContentsTable: handles[0] = 0x%.8x\n", mapi_response->handles[0]));
+	DEBUG(3, ("GetContentsTable: handles[1] = 0x%.8x\n", mapi_response->handles[1]));
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/*
+  SetColumns set a *cache* in emsmdb_context. The call will be
+  processed with another request such as QueryRows
+*/
+
+MAPISTATUS	SetColumns(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPropTagArray *properties)
+{
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct SetColumns_req	request;
+
+	/* Fill the SetColumns operation */
+	request.handle = 0;
+	request.unknown = 0;
+	request.prop_count = properties->cValues - 2;
+	request.properties = properties->aulPropTag;
+	emsmdb->cache_size = 4 + request.prop_count * sizeof (uint32_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(emsmdb->mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetColumns;
+	mapi_req->mapi_flags = ulFlags;
+	mapi_req->u.mapi_SetColumns = request;
+	emsmdb->cache_size += 2;
+	
+	emsmdb->cache_requests[0] = mapi_req;
+	emsmdb->cache_count += 1;
+
+	return MAPI_E_SUCCESS;
+	
+}
+
+MAPISTATUS	QueryRows(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t folder_id, uint16_t row_count)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct QueryRows_req	request;
+	NTSTATUS		status;
+	uint32_t		size = 0;
+	TALLOC_CTX		*mem_ctx;
+
+	mem_ctx = talloc_init("QueryRows");
+
+	/* Fill the QueryRows operation */
+	request.unknown = 0;
+	request.flag_noadvance = 1;
+	request.unknown1 = 0;
+	request.row_count = row_count;
+	size += 5;
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_QueryRows;
+	mapi_req->mapi_flags = ulFlags;
+	mapi_req->u.mapi_QueryRows = request;
+	size += 4;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = folder_id;
+
+	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
+
+	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
+		struct ndr_print *ndr_print;
+
+		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
+		ndr_print->print = ndr_print_debug_helper;
+
+		ndr_print_MAPISTATUS(ndr_print, "error code",
+				     mapi_response->mapi_repl->error_code);
+
+		return mapi_response->mapi_repl->error_code;
+	}
 
 	talloc_free(mem_ctx);
 
@@ -279,6 +371,8 @@ MAPISTATUS	OpenMsgStore(struct emsmdb_context *emsmdb, uint32_t ulFlags,
 	}
 
 	*handle_id = mapi_response->handles[0];
+
+	DEBUG(3, ("OpenMsgStore: handles[0] = 0x%.8x\n", mapi_response->handles[0]));
 	
 	talloc_free(mem_ctx);
 

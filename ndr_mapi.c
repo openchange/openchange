@@ -130,7 +130,13 @@ NTSTATUS ndr_push_mapi_request(struct ndr_push *ndr, int ndr_flags, const struct
 
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->length));
-	NDR_CHECK(ndr_push_EcDoRpc_MAPI_REQ(ndr, NDR_SCALARS, &r->mapi_req[0]));
+
+	printf("[0] ndr->offset = %d\n", ndr->offset);
+	printf("mapi_len = %d and length = %d\n", r->mapi_len, r->length);
+	for (count = 0; ndr->offset < r->length - 2; count++) {
+		NDR_CHECK(ndr_push_EcDoRpc_MAPI_REQ(ndr, NDR_SCALARS, &r->mapi_req[count]));
+		printf("[1] ndr->offset = %d\n", ndr->offset);
+	}
 
 	count = (r->mapi_len - r->length) / sizeof(uint32_t);
 	for (cntr_mapi_req_0=0; cntr_mapi_req_0 < count; cntr_mapi_req_0++) {
@@ -291,6 +297,56 @@ void ndr_print_EcDoRpc_MAPI_REPL(struct ndr_print *ndr, const char *name, const 
 		if (r->error_code == MAPI_E_SUCCESS) {
 			ndr_print_set_switch_value(ndr, &r->u, r->opnum);
 			ndr_print_EcDoRpc_MAPI_REPL_UNION(ndr, "u", &r->u);
+		}
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
+/*
+  We need to pull QueryRows replies on our own:
+  If we have no results, do not pull/print the DATA_BLOB
+*/
+
+NTSTATUS ndr_pull_QueryRows_repl(struct ndr_pull *ndr, int ndr_flags, struct QueryRows_repl *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->unknown));
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->results_count));
+
+			if (r->results_count)
+			{
+				uint32_t _flags_save_DATA_BLOB = ndr->flags;
+
+				NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->unknown2));
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+				NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->inbox));
+				ndr->flags = _flags_save_DATA_BLOB;
+			}
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ void ndr_print_QueryRows_repl(struct ndr_print *ndr, const char *name, const struct QueryRows_repl *r)
+{
+	ndr_print_struct(ndr, name, "QueryRows_repl");
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		ndr_print_uint8(ndr, "unknown", r->unknown);
+		ndr_print_uint16(ndr, "results_count", r->results_count);
+		ndr_print_uint8(ndr, "unknown2", r->unknown2);
+		if (r->results_count) {
+			ndr_print_DATA_BLOB(ndr, "inbox", r->inbox);
 		}
 		ndr->depth--;
 		ndr->flags = _flags_save_STRUCT;

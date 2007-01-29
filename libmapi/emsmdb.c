@@ -1,7 +1,7 @@
 /*
  *  OpenChange MAPI implementation.
  *
- *  Copyright (C) Julien Kerihuel 2005.
+ *  Copyright (C) Julien Kerihuel 2005 - 2007.
  *  Copyright (C) Jelmer Vernooij 2005.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -64,9 +64,11 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p
 		return NULL;
 	}
 
-	ret = talloc(mem_ctx, struct emsmdb_context);
+	ret = talloc_zero(mem_ctx, struct emsmdb_context);
 	ret->rpc_connection = p;
 	ret->mem_ctx = mem_ctx;
+
+	ret->cache_requests = talloc(mem_ctx, struct EcDoRpc_MAPI_REQ *);
 	
 	session = talloc_asprintf(mem_ctx, ECDOCONNECT_FORMAT, organization, group, username);
 	length = strlen(session);
@@ -113,74 +115,50 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p
 
 NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *req, struct mapi_response **repl)
 {
-	struct EcDoRpc	r;
-	struct mapi_response *mapi_response;
-	uint16_t	*length;
-	NTSTATUS	status;
-
+	struct EcDoRpc		r;
+	struct mapi_response	*mapi_response;
+	uint16_t		*length;
+	NTSTATUS		status;
+	struct EcDoRpc_MAPI_REQ	*multi_req;
+	
 	r.in.handle = r.out.handle = &emsmdb->handle;
 	r.in.size = 0x200;
 	r.in.offset = 0x0;
-	r.in.mapi_request = req;
 
+	mapi_response = talloc_zero(emsmdb->mem_ctx, struct mapi_response);	
+	r.out.mapi_response = mapi_response;
+
+	/* process cached data */
+	if (emsmdb->cache_count) {
+		uint8_t	i;
+		
+		multi_req = talloc_array(emsmdb->mem_ctx, struct EcDoRpc_MAPI_REQ, emsmdb->cache_count + 2);
+		for (i = 0; i < emsmdb->cache_count; i++) {
+			multi_req[i] = *emsmdb->cache_requests[i];
+		}
+		multi_req[i] = req->mapi_req[0];
+		req->mapi_req = multi_req;
+	} 
+
+	r.in.mapi_request = req;
+	r.in.mapi_request->mapi_len += emsmdb->cache_size;
+	r.in.mapi_request->length += emsmdb->cache_size;
 	length = talloc_zero(emsmdb->mem_ctx, uint16_t);
 	*length = r.in.mapi_request->mapi_len;
 	r.in.length = r.out.length = length;
 	r.in.max_data = 0x200;
-
-	mapi_response = talloc_zero(emsmdb->mem_ctx, struct mapi_response);	
-	r.out.mapi_response = mapi_response;
 
 	status = dcerpc_EcDoRpc(emsmdb->rpc_connection, emsmdb->mem_ctx, &r);
 
 	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
 		mapi_errstr("EcDoRpc", r.out.result);
 	}
+	emsmdb->cache_size = emsmdb->cache_count = 0;
 
 	*repl = r.out.mapi_response;
 
 	return status;
 }
-
-/* NTSTATUS emsmdb_transaction_unknown(struct emsmdb_context *emsmdb, struct MAPI_DATA blob) */
-/* { */
-/* 	struct EcDoRpc	r; */
-/* 	NTSTATUS	status; */
-/* 	uint16_t	length = blob.mapi_len; */
-
-/* 	r.in.handle = r.out.handle = &emsmdb->handle; */
-/* 	r.in.max_data = 0x7fff; */
-/* 	r.in.length = &length; */
-/* 	r.out.length = &length; */
-
-/* 	r.in.data.max_data = 0x7fff; */
-/* 	r.in.data.offset = 0x0; */
-
-/* 	r.in.data.blob.mapi_len = blob.mapi_len; */
-/* 	r.in.data.blob.length = blob.length; */
-/* /\* 	r.in.data.blob.opnum = blob.opnum; *\/ */
-/* 	r.in.data.blob.content = blob.content; */
-/* /\* 	r.in.data.blob.remaining = fill_remaining_blob(r.in.data.blob, previous, plength); *\/ */
-
-/* 	printf("---------------------------------------\n"); */
-/* 	dump_data(0, r.in.data.blob.content, r.in.data.blob.length); */
-/* 	printf("---------------------------------------\n"); */
-
-/* 	debug_print_infos("request", r.in.data.blob); */
-
-/* 	status = dcerpc_EcDoRpc(emsmdb->rpc_connection, emsmdb->mem_ctx, &r); */
-
-/* 	debug_print_infos("response", r.out.data.blob); */
-
-/*         if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) { */
-/* 		mapi_errstr("EcDoRpc", r.out.result); */
-/*         } else { */
-/* /\* 		previous = r.out.data.blob.remaining; *\/ */
-/* 		plength = r.out.data.blob.mapi_len - r.out.data.blob.length; */
-/* 	} */
-
-/* 	return status; */
-/* } */
 
 /* BOOL emsmdb_registernotify(struct emsmdb_context *emsmdb, DATA_BLOB blob1, DATA_BLOB blob2)  */
 /* { */

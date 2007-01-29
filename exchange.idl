@@ -617,9 +617,17 @@ System Attendant Private Interface
 		hyper		message_id;
 	} OpenMessage_req;
 
+	typedef [public, nodiscriminant]union {
+		[case(0x1)];
+		[case(0x3)] astring subject;
+	} OpenMessage_repl_UNION;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown2[3];
-		astring		subject;
+		uint8		unknown;
+		uint8		type_prefix;
+		[switch_is(type_prefix)] OpenMessage_repl_UNION prefix;
+		uint8		type_subject;
+		[switch_is(type_subject)] OpenMessage_repl_UNION subject;
 		uint16		subject_count;
 		uint16		prop_count;
 		MAPITAGS	properties[prop_count];
@@ -705,9 +713,7 @@ System Attendant Private Interface
 		uint8	col;
 		uint32	codepage;
 		uint32 padding;
-// 		uint32	codepage;
 		uint8	row;
-// 		uint32	padding;
 		ascstr3	mailbox_path;
 	} OpenMsgStore_req;
 

@@ -23,6 +23,7 @@
 #include "openchange.h"
 #include <torture/torture.h>
 #include "ndr_exchange.h"
+#include "libmapi/mapicode.h"
 #include "libmapi/include/emsmdb.h"
 #include "libmapi/include/mapi_proto.h"
 
@@ -34,6 +35,7 @@ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 {
 	NTSTATUS		status;
+	MAPISTATUS		mapistatus;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
@@ -100,21 +102,25 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	SRowSet = talloc(mem_ctx, struct SRowSet);
 	QueryRows(emsmdb, 0, table_id, 0xa, &SRowSet);
 
-	props = set_SPropTagArray(emsmdb->mem_ctx, 0x3,
-				  PR_BODY,
-				  PR_SENDER_NAME,
-				  PR_SENDER_EMAIL_ADDRESS);
-
 	for (i = 0; i < SRowSet[0].cRows; i++) {
 		printf("[STEP 07-%i] mapi call: OpenMessage\n", i);
-		OpenMessage(emsmdb, 0, hid_msgstore,
+		mapistatus = OpenMessage(emsmdb, 0, hid_msgstore,
 			    SRowSet[0].aRow[i].lpProps[0].value.d,
 			    SRowSet[0].aRow[i].lpProps[1].value.d,
 			    &hid_msg);
-		printf("[STEP 08-%i] mapi call: GetProps\n", i);
-		GetProps(emsmdb, 0, hid_msg, props);
+		
+		if (mapistatus == MAPI_E_SUCCESS) {
+			printf("[STEP 08-%i] mapi call: GetProps\n", i);
+			props = set_SPropTagArray(emsmdb->mem_ctx, 0x4,
+						  PR_SUBJECT,
+						  PR_BODY,
+						  PR_SENDER_NAME,
+						  PR_SENDER_EMAIL_ADDRESS);
+		
+			GetProps(emsmdb, 0, hid_msg, props);
+			talloc_free(props);
+		}
 	}
-
 
 	talloc_free(mem_ctx);
 	

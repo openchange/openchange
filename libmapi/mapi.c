@@ -228,7 +228,14 @@ MAPISTATUS	OpenMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t
 	}
 
 	*hid_msg = mapi_response->handles[1];
-	printf("-- message subject: %s\n", mapi_response->mapi_repl->u.mapi_OpenMessage.subject);
+
+	{
+		struct ndr_print *ndr;
+
+		ndr = talloc_zero(mem_ctx, struct ndr_print);
+		ndr->print = ndr_print_debug_helper;
+		ndr_print_mapi_response(ndr, "mapi_response", mapi_response);
+	}
 
 	talloc_free(mem_ctx);
 

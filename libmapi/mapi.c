@@ -177,6 +177,65 @@ MAPISTATUS	OpenFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t 
 	return MAPI_E_SUCCESS;
 }
 
+MAPISTATUS	OpenMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t store_id, uint64_t folder_id, uint64_t message_id, uint32_t *hid_msg)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct OpenMessage_req	request;
+	NTSTATUS		status;
+	uint32_t		size = 0;
+	TALLOC_CTX		*mem_ctx;
+ 
+	mem_ctx = talloc_init("OpenMessage");
+
+	/* Fill the OpenFolder operation */
+	request.unknown = 0x100;
+	request.max_data = 0xfff;
+	request.folder_id = folder_id;
+	request.padding = 0;
+	request.message_id = message_id;
+	size = sizeof (uint16_t) + sizeof(uint16_t) + sizeof(uint64_t) + sizeof(uint8_t) + sizeof(uint64_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_OpenMessage;
+	mapi_req->mapi_flags = ulFlags;
+	mapi_req->u.mapi_OpenMessage = request;
+	size += 4;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = store_id;
+	mapi_request->handles[1] = 0xffffffff;
+
+	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
+
+	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
+		struct ndr_print *ndr_print;
+
+		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
+		ndr_print->print = ndr_print_debug_helper;
+
+		ndr_print_MAPISTATUS(ndr_print, "error code",
+				     mapi_response->mapi_repl->error_code);
+
+		return mapi_response->mapi_repl->error_code;
+	}
+
+	*hid_msg = mapi_response->handles[1];
+	printf("-- message subject: %s\n", mapi_response->mapi_repl->u.mapi_OpenMessage.subject);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
 MAPISTATUS	GetContentsTable(struct emsmdb_context *emsmdb, uint32_t ulFlags, 
 				 uint32_t folder_id, uint32_t *table_id)
 {
@@ -235,6 +294,75 @@ MAPISTATUS	GetContentsTable(struct emsmdb_context *emsmdb, uint32_t ulFlags,
 	return MAPI_E_SUCCESS;
 }
 
+MAPISTATUS     GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_message, struct SPropTagArray* properties)
+{
+       struct mapi_request	*mapi_request;
+       struct mapi_response	*mapi_response;
+       struct EcDoRpc_MAPI_REQ	*mapi_req;
+       struct GetProps_req	request;
+       NTSTATUS			status;
+       uint32_t			size = 0;
+       TALLOC_CTX		*mem_ctx;
+       struct SRow		*aRow;
+ 
+       mem_ctx = talloc_init("GetProps");
+
+       /* Fill the GetProps operation */
+       properties->cValues -= 1;
+       request.unknown = 0x0;
+       request.unknown2 = 0x0;
+       request.prop_count = (uint16_t)properties->cValues;
+       request.properties = properties->aulPropTag;
+       size = sizeof (uint8_t) + sizeof(uint32_t) + sizeof(uint16_t) + properties->cValues * sizeof(uint32_t);
+
+       /* Fill the MAPI_REQ request */
+       mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+       mapi_req->opnum = op_MAPI_GetProps;
+       mapi_req->mapi_flags = ulFlags;
+       mapi_req->u.mapi_GetProps = request;
+       size += 4;
+
+       /* Fill the mapi_request structure */
+       mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+       mapi_request->mapi_len = size + sizeof (uint32_t);
+       mapi_request->length = size;
+       mapi_request->mapi_req = mapi_req;
+       mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+       mapi_request->handles[0] = hdl_message;
+
+       status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
+
+       if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
+               struct ndr_print *ndr_print;
+
+               ndr_print = talloc_zero(mem_ctx, struct ndr_print);
+               ndr_print->print = ndr_print_debug_helper;
+
+               ndr_print_MAPISTATUS(ndr_print, "error code",
+                                    mapi_response->mapi_repl->error_code);
+
+               return mapi_response->mapi_repl->error_code;
+       }
+
+       emsmdb->prop_count = properties->cValues;
+       emsmdb->properties = properties->aulPropTag;
+       aRow = emsmdb_set_SRow(emsmdb, 1, mapi_response->mapi_repl->u.mapi_GetProps.prop_data);
+
+       {
+	 struct ndr_print *ndr;
+	 
+	 ndr = talloc_zero(mem_ctx, struct ndr_print);
+	 ndr->print = ndr_print_debug_helper;
+
+	 ndr_print_SRow(ndr, "GetProps", aRow);
+       }
+
+       talloc_free(mem_ctx);
+
+       return MAPI_E_SUCCESS;
+}
+
+
 /*
   SetColumns set a *cache* in emsmdb_context. The call will be
   processed with another request such as QueryRows
@@ -248,9 +376,15 @@ MAPISTATUS	SetColumns(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SP
 	/* Fill the SetColumns operation */
 	request.handle = 0;
 	request.unknown = 0;
-	request.prop_count = properties->cValues - 2;
+	request.prop_count = properties->cValues - 1;
 	request.properties = properties->aulPropTag;
 	emsmdb->cache_size = 4 + request.prop_count * sizeof (uint32_t);
+
+	/* Store the property tag array internally for further
+	   decoding purpose 
+	*/
+	emsmdb->prop_count = properties->cValues - 1;
+	emsmdb->properties = properties->aulPropTag;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(emsmdb->mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -266,12 +400,17 @@ MAPISTATUS	SetColumns(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SP
 	
 }
 
-MAPISTATUS	QueryRows(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t folder_id, uint16_t row_count)
+/*
+  QueryRows returns a RowSet with the properties returned by Exchange Server
+*/
+
+MAPISTATUS	QueryRows(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t folder_id, uint16_t row_count, struct SRowSet **rowSet)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct QueryRows_req	request;
+	struct QueryRows_repl	*reply;
 	NTSTATUS		status;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
@@ -280,8 +419,8 @@ MAPISTATUS	QueryRows(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t f
 
 	/* Fill the QueryRows operation */
 	request.unknown = 0;
-	request.flag_noadvance = 1;
-	request.unknown1 = 0;
+	request.flag_noadvance = 0;
+	request.unknown1 = 1;
 	request.row_count = row_count;
 	size += 5;
 
@@ -314,6 +453,13 @@ MAPISTATUS	QueryRows(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t f
 		return mapi_response->mapi_repl->error_code;
 	}
 
+	/* Fill in the SRowSet array */
+	reply = &(mapi_response->mapi_repl[1].u.mapi_QueryRows);
+
+	if (emsmdb->prop_count) {
+		rowSet[0]->cRows = reply->results_count;		
+		rowSet[0]->aRow = emsmdb_set_SRow(emsmdb, rowSet[0]->cRows, reply->inbox);
+	}
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;

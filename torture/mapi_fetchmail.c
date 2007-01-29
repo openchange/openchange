@@ -38,10 +38,16 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
 	struct emsmdb_context	*emsmdb;
-	uint32_t		hid_msgstore;
-	uint32_t		obj_id, table_id;
+	const char		*organization = lp_parm_string(-1, "exchange", "organization");
+	const char		*group = lp_parm_string(-1, "exchange", "ou");
+	const char		*username;
+	char			*mailbox_path;
+	uint32_t		hid_msgstore, hid_folder1, hid_msg;
+	uint32_t		table_id;
 	uint64_t		folder_id;
-	struct SPropTagArray	*SPropTagArray;
+	struct SPropTagArray	*SPropTagArray, *props;	
+	struct SRowSet		*SRowSet;
+	uint32_t		i;
 
 	mem_ctx = talloc_init("torture_rpc_mapi_fetchmail");
 
@@ -60,23 +66,28 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	
 	emsmdb->mem_ctx = mem_ctx;
 
-	/* handles = 0xffffffff -> returns handle_id on msgstore */
-	DEBUG(0, ("mapi call: OpenMsgStore\n"));
-	OpenMsgStore(emsmdb, 0, &hid_msgstore, "/o=OpenChange Organization/ou=First Administrative Group/cn=Recipients/cn=Administrator");
-	
-	/* handles_id received in msgstore response */
-	DEBUG(0, ("mapi call: GetReceiveFolder\n"));
-	printf("#### handle_id = 0x%x\n", hid_msgstore);
+	DEBUG(0, ("[STEP 01] mapi call: OpenMsgStore\n"));
+	if (!organization) {
+	  organization = cli_credentials_get_domain(cmdline_credentials);
+	}
+	username = cli_credentials_get_username(cmdline_credentials);
+	if (!organization || !username) {
+		DEBUG(1,("mapi_fetchmail: username and domain required"));
+		return NULL;
+	}
+	mailbox_path = talloc_asprintf(emsmdb->mem_ctx, "/o=%s/ou=%s/cn=Recipients/cn=%s", organization, group, username);
+	OpenMsgStore(emsmdb, 0, &hid_msgstore, mailbox_path);
+
+	DEBUG(0, ("[STEP 02] mapi call: GetReceiveFolder\n"));
 	GetReceiveFolder(emsmdb, 0, hid_msgstore, &folder_id);
 
-	/* handles_id + 0xffffffff -> returns handles[1] */
-	DEBUG(0, ("mapi call: OpenFolder\n"));
-	OpenFolder(emsmdb, 0, hid_msgstore, folder_id, &obj_id);
+	DEBUG(0, ("[STEP 03] mapi call: OpenFolder\n"));
+	OpenFolder(emsmdb, 0, hid_msgstore, folder_id, &hid_folder1);
 
-	DEBUG(0, ("mapi call: GetContentsTable\n"));
-	GetContentsTable(emsmdb, 0, obj_id, &table_id);
+	DEBUG(0, ("[STEP 05] mapi call: GetContentsTable\n"));
+	GetContentsTable(emsmdb, 0, hid_folder1, &table_id);
 
-	SPropTagArray = set_SPropTagArray(emsmdb->mem_ctx, 0x6,
+	SPropTagArray = set_SPropTagArray(emsmdb->mem_ctx, 0x5,
 					  PR_FID,
 					  PR_MID,
 					  PR_INST_ID,
@@ -84,9 +95,26 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 					  PR_SUBJECT);
 	SetColumns(emsmdb, 0, SPropTagArray);
 
-	DEBUG(0, ("mapi call: GetContentsTable\n"));
+	DEBUG(0, ("[STEP 06] mapi call: GetContentsTable\n"));
 	printf("#### handle_id = 0x%x\n", table_id);
-	QueryRows(emsmdb, 0, table_id, 0xa);
+	SRowSet = talloc(mem_ctx, struct SRowSet);
+	QueryRows(emsmdb, 0, table_id, 0xa, &SRowSet);
+
+	props = set_SPropTagArray(emsmdb->mem_ctx, 0x3,
+				  PR_BODY,
+				  PR_SENDER_NAME,
+				  PR_SENDER_EMAIL_ADDRESS);
+
+	for (i = 0; i < SRowSet[0].cRows; i++) {
+		printf("[STEP 07-%i] mapi call: OpenMessage\n", i);
+		OpenMessage(emsmdb, 0, hid_msgstore,
+			    SRowSet[0].aRow[i].lpProps[0].value.d,
+			    SRowSet[0].aRow[i].lpProps[1].value.d,
+			    &hid_msg);
+		printf("[STEP 08-%i] mapi call: GetProps\n", i);
+		GetProps(emsmdb, 0, hid_msg, props);
+	}
+
 
 	talloc_free(mem_ctx);
 	

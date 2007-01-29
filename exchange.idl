@@ -468,6 +468,7 @@ System Attendant Private Interface
 		[case(PT_MV_SYSTIME)]		SDateTimeArray		MVft;
 		[case(PT_NULL)]			uint32			null;
 		[case(PT_OBJECT)]		uint32			object;
+		[case(PT_I8)]			hyper			d;
 	} SPropValue_CTR;
 
 	typedef [public]struct {
@@ -619,7 +620,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown2[3];
 		astring		subject;
-		uint16		unknown6;
+		uint16		subject_count;
 		uint16		prop_count;
 		MAPITAGS	properties[prop_count];
  		uint16		unknown3;
@@ -641,7 +642,8 @@ System Attendant Private Interface
 	} GetContentsTable_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32		unknown;
+		uint16          cn_rows;
+		uint16          unknown;
 	} GetContentsTable_repl;
 
 	/*************************/

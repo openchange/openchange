@@ -131,11 +131,8 @@ NTSTATUS ndr_push_mapi_request(struct ndr_push *ndr, int ndr_flags, const struct
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->length));
 
-	printf("[0] ndr->offset = %d\n", ndr->offset);
-	printf("mapi_len = %d and length = %d\n", r->mapi_len, r->length);
 	for (count = 0; ndr->offset < r->length - 2; count++) {
 		NDR_CHECK(ndr_push_EcDoRpc_MAPI_REQ(ndr, NDR_SCALARS, &r->mapi_req[count]));
-		printf("[1] ndr->offset = %d\n", ndr->offset);
 	}
 
 	count = (r->mapi_len - r->length) / sizeof(uint32_t);

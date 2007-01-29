@@ -28,6 +28,8 @@ struct emsmdb_context {
   struct EcDoRpc_MAPI_REQ	**cache_requests;
   uint32_t			cache_size;
   uint8_t			cache_count;
+  uint16_t			prop_count;
+  enum MAPITAGS			*properties;
 };
 
 #endif /* __EMSMDB_H__ */

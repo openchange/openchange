@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2005-2006
+   Copyright (C) Julien Kerihuel 2005-2007
    Copyright (C) Gregory Schiro 2006
 
    This program is free software; you can redistribute it and/or modify
@@ -158,7 +158,7 @@ BOOL set_SPropValue_proptag(struct SPropValue* lpProps, uint32_t aulPropTag, voi
 	lpProps->ulPropTag = aulPropTag;
 	lpProps->dwAlignPad = 0x0;
 
-	return set_SPropValue(lpProps, data);
+	return (set_SPropValue(lpProps, data));
 }
 
 BOOL set_SPropValue(struct SPropValue* lpProps, void *data)
@@ -173,6 +173,9 @@ BOOL set_SPropValue(struct SPropValue* lpProps, void *data)
 		break;
 	case PT_LONG:
 		lpProps->value.l = *((uint32_t *)data);
+		break;
+	case PT_I8:
+		lpProps->value.d = *((uint64_t *)data);
 		break;
 	case PT_BOOLEAN:
 		lpProps->value.b = *((uint16_t *)data);

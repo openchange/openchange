@@ -20,9 +20,12 @@
  */
 
 #include "openchange.h"
+#include "exchange.h"
+#include "ndr_exchange.h"
 #include "ndr_exchange_c.h"
 #include "libmapi/include/emsmdb.h"
 #include "libmapi/mapicode.h"
+#include "libmapi/include/mapidefs.h"
 #include "libmapi/include/proto.h"
 
 #define	ECDOCONNECT_FORMAT	"/o=%s/ou=%s/cn=Recipients/cn=%s"
@@ -158,6 +161,80 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *
 	*repl = r.out.mapi_response;
 
 	return status;
+}
+
+void *pull_emsmdb_property(struct emsmdb_context *emsmdb, uint32_t *offset, uint32_t property, DATA_BLOB data)
+{
+	struct ndr_pull		*ndr;
+	const char		*pt_string8;
+	uint64_t		*pt_i8;
+	uint32_t		*pt_long;
+	struct SBinary_short	pt_binary;
+	struct SBinary		*sbin;
+
+	ndr = talloc_zero(emsmdb->mem_ctx, struct ndr_pull);
+	ndr->offset = *offset;
+	ndr->data = data.data;
+	ndr->data_size = data.length;
+
+	switch(property & 0xFFFF) {
+	case PT_LONG:
+		pt_long = talloc_zero(emsmdb->mem_ctx, uint32_t);
+		ndr_pull_uint32(ndr, NDR_SCALARS, pt_long);
+		*offset = ndr->offset;
+		return (void *) pt_long;
+	case PT_I8:
+		pt_i8 = talloc_zero(emsmdb->mem_ctx, uint64_t);
+		ndr_pull_hyper(ndr, NDR_SCALARS, pt_i8);
+		*offset = ndr->offset;
+		return (void *) pt_i8;
+	case PT_STRING8:
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+		ndr_pull_string(ndr, NDR_SCALARS, &pt_string8);
+		*offset = ndr->offset;
+		return (void *) pt_string8;
+	case PT_BINARY:
+		ndr_pull_SBinary_short(ndr, NDR_SCALARS, &pt_binary);
+		*offset = ndr->offset;
+		sbin = talloc_zero(emsmdb->mem_ctx, struct SBinary);
+		sbin->cb = pt_binary.cb;
+		*sbin->lpb = pt_binary.cb;
+		return (void *) sbin;
+	default:
+		return NULL;
+	}	
+}
+
+struct SRow *emsmdb_set_SRow(struct emsmdb_context *emsmdb, uint32_t row_count, DATA_BLOB content)
+{
+	struct SRow	*SRow;
+	struct SPropValue *lpProps;
+	uint32_t	idx;
+	uint32_t	prop;
+	uint32_t	offset = 0;
+	void		*data;
+	struct ndr_print *ndr;
+
+	ndr = talloc_zero(emsmdb->mem_ctx, struct ndr_print);
+	ndr->print = ndr_print_debug_helper;
+	SRow = talloc_array(emsmdb->mem_ctx, struct SRow, row_count);
+
+	for (idx = 0; idx < row_count; idx++) {
+		lpProps = talloc_size(emsmdb->mem_ctx, sizeof(struct SPropValue) * emsmdb->prop_count);
+
+		for (prop = 0; prop < emsmdb->prop_count; prop++) {
+			data = pull_emsmdb_property(emsmdb, &offset, emsmdb->properties[prop], content);
+			lpProps[prop].ulPropTag = emsmdb->properties[prop];
+			lpProps[prop].dwAlignPad = 0x0;
+			set_SPropValue(&lpProps[prop], data);
+		}
+
+		SRow[idx].ulAdrEntryPad = 0;
+		SRow[idx].cValues = emsmdb->prop_count;
+		SRow[idx].lpProps = lpProps;
+	}
+	
+	return SRow;
 }
 
 /* BOOL emsmdb_registernotify(struct emsmdb_context *emsmdb, DATA_BLOB blob1, DATA_BLOB blob2)  */

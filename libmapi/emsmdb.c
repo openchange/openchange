@@ -176,6 +176,7 @@ void *pull_emsmdb_property(struct emsmdb_context *emsmdb, uint32_t *offset, uint
 	ndr->offset = *offset;
 	ndr->data = data.data;
 	ndr->data_size = data.length;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 
 	switch(property & 0xFFFF) {
 	case PT_LONG:
@@ -198,14 +199,14 @@ void *pull_emsmdb_property(struct emsmdb_context *emsmdb, uint32_t *offset, uint
 		*offset = ndr->offset;
 		sbin = talloc_zero(emsmdb->mem_ctx, struct SBinary);
 		sbin->cb = pt_binary.cb;
-		*sbin->lpb = pt_binary.cb;
+		sbin->lpb = pt_binary.lpb;
 		return (void *) sbin;
 	default:
 		return NULL;
 	}	
 }
 
-struct SRow *emsmdb_set_SRow(struct emsmdb_context *emsmdb, uint32_t row_count, DATA_BLOB content)
+struct SRow *emsmdb_set_SRow(struct emsmdb_context *emsmdb, uint32_t row_count, DATA_BLOB content, uint8_t align)
 {
 	struct SRow	*SRow;
 	struct SPropValue *lpProps;
@@ -213,10 +214,7 @@ struct SRow *emsmdb_set_SRow(struct emsmdb_context *emsmdb, uint32_t row_count, 
 	uint32_t	prop;
 	uint32_t	offset = 0;
 	void		*data;
-	struct ndr_print *ndr;
 
-	ndr = talloc_zero(emsmdb->mem_ctx, struct ndr_print);
-	ndr->print = ndr_print_debug_helper;
 	SRow = talloc_array(emsmdb->mem_ctx, struct SRow, row_count);
 
 	for (idx = 0; idx < row_count; idx++) {
@@ -227,6 +225,9 @@ struct SRow *emsmdb_set_SRow(struct emsmdb_context *emsmdb, uint32_t row_count, 
 			lpProps[prop].ulPropTag = emsmdb->properties[prop];
 			lpProps[prop].dwAlignPad = 0x0;
 			set_SPropValue(&lpProps[prop], data);
+		}
+		if (align) {
+			offset += align;
 		}
 
 		SRow[idx].ulAdrEntryPad = 0;

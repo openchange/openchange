@@ -102,6 +102,15 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	SRowSet = talloc(mem_ctx, struct SRowSet);
 	QueryRows(emsmdb, 0, table_id, 0xa, &SRowSet);
 
+	{
+		struct ndr_print *ndr;
+
+		ndr = talloc_zero(mem_ctx, struct ndr_print);
+		ndr->print = ndr_print_debug_helper;
+
+		ndr_print_SRowSet(ndr, "QueryRows", SRowSet);
+	}
+
 	for (i = 0; i < SRowSet[0].cRows; i++) {
 		printf("[STEP 07-%i] mapi call: OpenMessage\n", i);
 		mapistatus = OpenMessage(emsmdb, 0, hid_msgstore,

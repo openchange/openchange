@@ -73,8 +73,11 @@ MAPISTATUS	GetReceiveFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uin
 	NTSTATUS		status;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
+	struct ndr_print	*ndr;
 
 	mem_ctx = talloc_init("GetReceiveFolder");
+	ndr = talloc_zero(mem_ctx, struct ndr_print);
+	ndr->print = ndr_print_debug_helper;
 
 	/* Fill the GetReceiveFolder operation */
 	request.handle_id = 0x0;
@@ -98,21 +101,14 @@ MAPISTATUS	GetReceiveFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uin
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
+		ndr_print_MAPISTATUS(ndr, "error code", mapi_response->mapi_repl->error_code);
 
 		return mapi_response->mapi_repl->error_code;
 	}
 
-	DEBUG(3, ("folder id = 0x%.16llx\n", mapi_response->mapi_repl->u.mapi_GetReceiveFolder.folder_id));
 	*folder_id = mapi_response->mapi_repl->u.mapi_GetReceiveFolder.folder_id;
-
-	DEBUG(3, ("GetReceiveFolder: handles[0] = 0x%.8x\n", mapi_response->handles[0]));
+	
+	ndr_print_mapi_response(ndr, "GetReceiveFolder reply", mapi_response);
 
 	talloc_free(mem_ctx);
 
@@ -168,9 +164,6 @@ MAPISTATUS	OpenFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t 
 	}
 
 	*obj_id = mapi_response->handles[1];
-
-	DEBUG(3, ("OpenFolder: handles[0] = 0x%.8x\n", mapi_response->handles[0]));
-	DEBUG(3, ("OpenFolder: handles[1] = 0x%.8x\n", mapi_response->handles[1]));
 
 	talloc_free(mem_ctx);
 
@@ -293,9 +286,6 @@ MAPISTATUS	GetContentsTable(struct emsmdb_context *emsmdb, uint32_t ulFlags,
 
 	*table_id = mapi_response->handles[1];
 
-	DEBUG(3, ("GetContentsTable: handles[0] = 0x%.8x\n", mapi_response->handles[0]));
-	DEBUG(3, ("GetContentsTable: handles[1] = 0x%.8x\n", mapi_response->handles[1]));
-
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -311,8 +301,11 @@ MAPISTATUS     GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_
        uint32_t			size = 0;
        TALLOC_CTX		*mem_ctx;
        struct SRow		*aRow;
+       struct ndr_print		*ndr;
  
        mem_ctx = talloc_init("GetProps");
+       ndr = talloc_zero(mem_ctx, struct ndr_print);
+       ndr->print = ndr_print_debug_helper;
 
        /* Fill the GetProps operation */
        properties->cValues -= 1;
@@ -340,29 +333,15 @@ MAPISTATUS     GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_
        status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
        if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-               struct ndr_print *ndr_print;
-
-               ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-               ndr_print->print = ndr_print_debug_helper;
-
-               ndr_print_MAPISTATUS(ndr_print, "error code",
-                                    mapi_response->mapi_repl->error_code);
+               ndr_print_MAPISTATUS(ndr, "error code", mapi_response->mapi_repl->error_code);
 
                return mapi_response->mapi_repl->error_code;
        }
 
        emsmdb->prop_count = properties->cValues;
        emsmdb->properties = properties->aulPropTag;
-       aRow = emsmdb_set_SRow(emsmdb, 1, mapi_response->mapi_repl->u.mapi_GetProps.prop_data);
-
-       {
-	 struct ndr_print *ndr;
-	 
-	 ndr = talloc_zero(mem_ctx, struct ndr_print);
-	 ndr->print = ndr_print_debug_helper;
-
-	 ndr_print_SRow(ndr, "GetProps", aRow);
-       }
+       aRow = emsmdb_set_SRow(emsmdb, 1, mapi_response->mapi_repl->u.mapi_GetProps.prop_data, 0);
+       ndr_print_SRow(ndr, "GetProps", aRow);
 
        talloc_free(mem_ctx);
 
@@ -465,8 +444,9 @@ MAPISTATUS	QueryRows(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t f
 
 	if (emsmdb->prop_count) {
 		rowSet[0]->cRows = reply->results_count;		
-		rowSet[0]->aRow = emsmdb_set_SRow(emsmdb, rowSet[0]->cRows, reply->inbox);
+		rowSet[0]->aRow = emsmdb_set_SRow(emsmdb, rowSet[0]->cRows, reply->inbox, 1);
 	}
+
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -525,8 +505,6 @@ MAPISTATUS	OpenMsgStore(struct emsmdb_context *emsmdb, uint32_t ulFlags,
 
 	*handle_id = mapi_response->handles[0];
 
-	DEBUG(3, ("OpenMsgStore: handles[0] = 0x%.8x\n", mapi_response->handles[0]));
-	
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;

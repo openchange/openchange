@@ -574,9 +574,11 @@ System Attendant Private Interface
 			op_MAPI_CreateMessage		= 0x6,
 			op_MAPI_GetProps		= 0x7,
 			op_MAPI_SetProps		= 0xa,
+			op_MAPI_ModifyRecipients	= 0xe,
 			op_MAPI_SetColumns		= 0x12,
 			op_MAPI_QueryRows		= 0x15,
 			op_MAPI_GetReceiveFolder	= 0x27,
+			op_MAPI_SubmitMessage		= 0x32,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
 			op_MAPI_OpenMsgStore		= 0xFE
 		} MAPI_OPNUM;
@@ -704,19 +706,60 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8				unknown;
  		[subcontext(2)] mapi_SPropValue_array values;
- 		uint8				align[3];
- 		uint16				prop_count;
- 		MAPITAGS			properties[prop_count];
-		[flag(NDR_REMAINING)] DATA_BLOB	content;
 	} SetProps_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 
 	} SetProps_repl;
 
+	/*************************/
+	/* EcDoRpc Function 0xe  */
+
+	/* 
+	 * MODRECIP_NULL and INVALID are not part of the msdn flags
+	 * but are added for printing support 
+	 */
+	typedef [enum8bit,flag(NDR_PAHEX)] enum {
+		MODRECIP_NULL		= 0x0,
+		MODRECIP_INVALID	= 0x1,
+		MODRECIP_ADD		= 0x2,
+		MODRECIP_MODIFY		= 0x4,
+		MODRECIP_REMOVE		= 0x8
+	} modrecip;
+
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32				unknown;
+		astring				display_name;
+		astring				full_name;
+		astring				username;
+		uint16				prop_count;
+		uint8				padding;
+		[flag(NDR_REMAINING)] DATA_BLOB prop_values;
+	} recipients_headers;
+
+
+	typedef [flag(NDR_NOALIGN)]struct {
+		uint8		idx;
+		uint32		reserved;
+		[subcontext(2),flag(NDR_REMAINING)] recipients_headers headers;
+	} recipients;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		modrecip			flags;
+ 		uint16				prop_count;
+ 		MAPITAGS			properties[prop_count];
+		uint16				cValues;
+		recipients			recipient[cValues];
+	} ModifyRecipients_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+
+	} ModifyRecipients_repl;
+
 
 	/*************************/
-	/* EcDoRpc Function 0x12 */
+	/* Ecdorpc Function 0x12 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle;
 		uint8		unknown;
@@ -755,6 +798,16 @@ System Attendant Private Interface
 	} GetReceiveFolder_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x32 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		unknown;
+	} SubmitMessage_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown[3];
+	} SubmitMessage_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0xFE */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8	col;
@@ -786,8 +839,10 @@ System Attendant Private Interface
 		[case(op_MAPI_GetProps)] GetProps_req mapi_GetProps;
 		[case(op_MAPI_SetProps)] SetProps_req mapi_SetProps;
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
+		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_req mapi_ModifyRecipients;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_req mapi_GetReceiveFolder;
+		[case(op_MAPI_SubmitMessage)] SubmitMessage_req mapi_SubmitMessage;
 		[case(op_MAPI_OpenMsgStore)]	OpenMsgStore_req mapi_OpenMsgStore;
 	} EcDoRpc_MAPI_REQ_UNION;
 
@@ -799,9 +854,11 @@ System Attendant Private Interface
 		[case(op_MAPI_CreateMessage)] CreateMessage_repl mapi_CreateMessage;
 		[case(op_MAPI_GetProps)] GetProps_repl mapi_GetProps;
 		[case(op_MAPI_SetProps)] SetProps_repl mapi_SetProps;
+		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
 		[case(op_MAPI_QueryRows)] QueryRows_repl mapi_QueryRows;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_repl mapi_GetReceiveFolder;
+		[case(op_MAPI_SubmitMessage)] SubmitMessage_repl mapi_SubmitMessage;
 		[case(op_MAPI_OpenMsgStore)]	OpenMsgStore_repl mapi_OpenMsgStore;
 
 	} EcDoRpc_MAPI_REPL_UNION;

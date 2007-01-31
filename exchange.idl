@@ -571,7 +571,9 @@ System Attendant Private Interface
 			op_MAPI_OpenFolder		= 0x2,
 			op_MAPI_OpenMessage		= 0x3,
 			op_MAPI_GetContentsTable	= 0x5,
+			op_MAPI_CreateMessage		= 0x6,
 			op_MAPI_GetProps		= 0x7,
+			op_MAPI_SetProps		= 0xa,
 			op_MAPI_SetColumns		= 0x12,
 			op_MAPI_QueryRows		= 0x15,
 			op_MAPI_GetReceiveFolder	= 0x27,
@@ -654,6 +656,19 @@ System Attendant Private Interface
 		uint16          unknown;
 	} GetContentsTable_repl;
 
+	/**************************/
+	/* EcDoRpc Function 0x6   */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		unknown;
+		uint16		max_data;
+		hyper		folder_id;
+		uint8		padding;
+	} CreateMessage_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		padding;
+	} CreateMessage_repl;
+
 	/*************************/
 	/* EcDoRpc Function 0x7  */
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -667,6 +682,38 @@ System Attendant Private Interface
 		uint8				unknown;
 		[flag(NDR_REMAINING)] DATA_BLOB prop_data;
 	} GetProps_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0xa  */
+
+	typedef [public,nodiscriminant] union {
+		[case(PT_LONG)]     	uint32	       	l;
+		[case(PT_STRING8)]	astring	       	lpszA;
+	} mapi_SPropValue_CTR;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		MAPITAGS ulPropTag;
+		[switch_is(ulPropTag & 0xFFFF)] mapi_SPropValue_CTR value; 
+	} mapi_SPropValue;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		sprop_count;
+		[flag(NDR_REMAINING)]mapi_SPropValue	sprop_array[sprop_count];
+	} mapi_SPropValue_array;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8				unknown;
+ 		[subcontext(2)] mapi_SPropValue_array values;
+ 		uint8				align[3];
+ 		uint16				prop_count;
+ 		MAPITAGS			properties[prop_count];
+		[flag(NDR_REMAINING)] DATA_BLOB	content;
+	} SetProps_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+
+	} SetProps_repl;
+
 
 	/*************************/
 	/* EcDoRpc Function 0x12 */
@@ -735,7 +782,9 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenFolder)] OpenFolder_req mapi_OpenFolder;
 		[case(op_MAPI_OpenMessage)] OpenMessage_req mapi_OpenMessage;
 		[case(op_MAPI_GetContentsTable)] GetContentsTable_req mapi_GetContentsTable;
+		[case(op_MAPI_CreateMessage)] CreateMessage_req mapi_CreateMessage;
 		[case(op_MAPI_GetProps)] GetProps_req mapi_GetProps;
+		[case(op_MAPI_SetProps)] SetProps_req mapi_SetProps;
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_req mapi_GetReceiveFolder;
@@ -747,7 +796,9 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenFolder)] OpenFolder_repl mapi_OpenFolder;
 		[case(op_MAPI_OpenMessage)] OpenMessage_repl mapi_OpenMessage;
 		[case(op_MAPI_GetContentsTable)] GetContentsTable_repl mapi_GetContentsTable;
+		[case(op_MAPI_CreateMessage)] CreateMessage_repl mapi_CreateMessage;
 		[case(op_MAPI_GetProps)] GetProps_repl mapi_GetProps;
+		[case(op_MAPI_SetProps)] SetProps_repl mapi_SetProps;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
 		[case(op_MAPI_QueryRows)] QueryRows_repl mapi_QueryRows;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_repl mapi_GetReceiveFolder;

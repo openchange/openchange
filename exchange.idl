@@ -161,7 +161,7 @@ System Attendant Private Interface
 
 [
   uuid("f5cc5a18-4264-101a-8c59-08002b2f8426"),
-  endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]","ncacn_ip_tcp:[1025]"),
+  endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]","ncacn_ip_tcp:[]"),
   pointer_default(unique),
   version(56.0),
   helpstring("Exchange 5.5 Name Service Provider")
@@ -230,7 +230,14 @@ System Attendant Private Interface
 		);
 
 
-	void NspiUpdateStat();
+	/*****************/
+	/* Function 0x02 */
+	MAPISTATUS NspiUpdateStat(
+		[in] policy_handle	*handle,
+		[in] uint32		dwAlignPad,
+		[in,out] MAPI_SETTINGS	settings,
+		[in,out] uint32		unknown
+		);
 
 	/*****************/
 	/* Function 0x03 */

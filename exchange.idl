@@ -460,6 +460,7 @@ System Attendant Private Interface
 		[case(PT_I2)]			uint16			i;
 		[case(PT_LONG)]			uint32			l;
 		[case(PT_BOOLEAN)]		uint16			b;
+		[case(PT_I8)]			dlong			d;
 		[case(PT_STRING8)][unique][string,charset(DOS)] uint8	*lpszA;
 		[case(PT_BINARY)]		SBinary			bin;
 		[case(PT_UNICODE)]		[string,charset(UTF16)] uint16	*lpszW;
@@ -475,7 +476,6 @@ System Attendant Private Interface
 		[case(PT_MV_SYSTIME)]		SDateTimeArray		MVft;
 		[case(PT_NULL)]			uint32			null;
 		[case(PT_OBJECT)]		uint32			object;
-		[case(PT_I8)]			hyper			d;
 	} SPropValue_CTR;
 
 	typedef [public]struct {

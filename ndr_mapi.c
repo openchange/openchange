@@ -238,7 +238,7 @@ NTSTATUS ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, struct mapi
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->length));
 	NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_mapi_repl, 0, r->length - 2));
 	_mem_save_mapi_repl_0 = NDR_PULL_GET_MEM_CTX(_ndr_mapi_repl);
-	r->mapi_repl = talloc_size(_mem_save_mapi_repl_0, _ndr_mapi_repl->data_size + sizeof(*r->mapi_repl));
+	r->mapi_repl = talloc_size(_mem_save_mapi_repl_0, _ndr_mapi_repl->data_size + sizeof(*(r->mapi_repl)) + 8);
 	for (cntr_mapi_repl_0 = 0; _ndr_mapi_repl->offset < _ndr_mapi_repl->data_size - 2; cntr_mapi_repl_0++) {
 		NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL(_ndr_mapi_repl, NDR_SCALARS, &r->mapi_repl[cntr_mapi_repl_0]));
 	}

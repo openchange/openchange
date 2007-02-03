@@ -108,7 +108,7 @@ client/evolution/camelprovider/libcamel-openchange.$(SHLIBEXT): client/evolution
 	@echo "Linking $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(EVOLUTION_PLUGIN_LIBS)
 
-torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/emsmdb.o torture/exchange.o torture/nspi.o torture/nspi_profile.o torture/openchange.o torture/nspi_scantags.o torture/mapi_fetchmail.o
+torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/emsmdb.o torture/exchange.o torture/nspi.o torture/nspi_profile.o torture/nspi_resolvenames.o torture/nspi_scantags.o torture/mapi_fetchmail.o torture/openchange.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -lmapi
 

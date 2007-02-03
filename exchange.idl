@@ -510,7 +510,41 @@ System Attendant Private Interface
 	void NspiQueryColumns();
 	void NspiGetNamesFromIDs();
 	void NspiGetIDsFromNames();
-	void NspiResolveNames();
+
+	/*****************/
+	/* Function 0x13 */
+
+	typedef [v1_enum, flag(NDR_PAHEX)] enum {
+		MAPI_UNRESOLVED	= 0x0,
+		MAPI_AMBIGUOUS	= 0x1,
+		MAPI_RESOLVED	= 0x2
+	} flaglist_flags;
+
+	typedef struct {
+ 		uint32		dwAlignPad;
+		uint32		size;
+		uint32		offset;
+		uint32		length;
+		flaglist_flags 	flags[size];
+	} FlagList;
+
+ 	typedef struct {
+		uint32		cEntries;
+ 		uint32		count;
+ 		[flag(STR_ASCII|STR_SIZE4|STR_LEN4)]string *recipient[count];
+ 	} names;
+
+	MAPISTATUS NspiResolveNames(
+		[in] policy_handle	*handle,
+		[in] uint32		dwAlignPad,
+		[in,ref] MAPI_SETTINGS	*settings,
+		[in,ref] SPropTagArray *SPropTagArray,
+ 		[in,ref] names		*recipients,
+		[out,ref]FlagList	**flags,
+		[out,ref]SRowSet        **RowSet
+	);
+
+
 	void NspiResolveNamesW();
 }
 

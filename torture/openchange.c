@@ -27,6 +27,8 @@ BOOL torture_rpc_exchange(struct torture_context *);
 BOOL torture_rpc_nspi(struct torture_context *);
 BOOL torture_rpc_nspi_profile(struct torture_context *);
 BOOL torture_rpc_scantags(struct torture_context *);
+BOOL torture_rpc_nspi_check_recipients(struct torture_context *);
+BOOL torture_rpc_nspi_resolvenames(struct torture_context *);
 
 NTSTATUS init_module(void)
 {
@@ -38,8 +40,10 @@ NTSTATUS init_module(void)
 	torture_suite_add_simple_test(suite, "EMSMDB", torture_rpc_emsmdb);
 	torture_suite_add_simple_test(suite, "EXCHANGE", torture_rpc_exchange);
 	torture_suite_add_simple_test(suite, "NSPI", torture_rpc_nspi);
-	torture_suite_add_simple_test(suite, "NSPI-PROFILE", torture_rpc_nspi_profile);
 	torture_suite_add_simple_test(suite, "NSPI-SCANTAGS", torture_rpc_scantags);
+	/* Address Book name resolution */
+	torture_suite_add_simple_test(suite, "NSPI-PROFILE", torture_rpc_nspi_profile);
+	torture_suite_add_simple_test(suite, "NSPI-RESOLVENAMES", torture_rpc_nspi_resolvenames);
 	/* MAPI torture tests */
 	torture_suite_add_simple_test(suite, "MAPI-FETCHMAIL", torture_rpc_mapi_fetchmail);
 

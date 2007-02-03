@@ -1,7 +1,7 @@
 /*
  *  OpenChange NSPI implementation.
  *
- *  Copyright (C) Julien Kerihuel 2005-2006
+ *  Copyright (C) Julien Kerihuel 2005-2007
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p, struc
 	r.in.unknown = 0;
 
 	r.in.settings = ret->settings;
-	r.in.settings->flag = 0xffffffff;
+	r.in.settings->flag = 0x0;
 
 	memset(r.in.settings->service_provider.ab, 0, 16);
 	r.in.settings->service_provider.ab[12] = 0xd6;
@@ -141,6 +141,34 @@ BOOL nspi_unbind(struct nspi_context *nspi)
 	return True;
 }
 
+/*
+ * nspi_UpdateStat
+ *
+ */
+
+BOOL nspi_UpdateStat(struct nspi_context *nspi)
+{
+	struct NspiUpdateStat		r;
+	NTSTATUS			status;
+
+	r.in.handle = &nspi->handle;
+
+	r.in.settings = *nspi->settings;
+	memset(r.in.settings.service_provider.ab, 0, 16);
+	memset(r.in.settings.service_provider.ab + 12, 0xff, 4);
+
+	status = dcerpc_NspiUpdateStat(nspi->rpc_connection, nspi->mem_ctx, &r);
+
+
+	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
+		mapi_errstr("NspiUpdateStat", r.out.result);
+		return False;
+	}
+	
+	mapi_errstr("NspiUpdateStat", r.out.result);
+
+	return True;
+}
 
 /*
  * nspi_QueryRows
@@ -424,6 +452,51 @@ BOOL nspi_GetHierarchyInfo(struct nspi_context *nspi)
 	}
 	
 	mapi_errstr("NspiGetHierarchyInfo", r.out.result);
+
+	return True;
+}
+
+/*
+ * nspi_ResolveNames
+ * query WAB (Windows Address Book) and try to resolve the provided name +
+ * set the requested property tags
+ */
+
+BOOL nspi_ResolveNames(struct nspi_context *nspi, uint32_t count, 
+		       const char **usernames, struct SPropTagArray *props)
+{
+	struct NspiResolveNames r;
+	struct SRowSet		*SRowSet;
+	struct FlagList		*FlagList;
+	struct names		*names;
+	NTSTATUS		status;
+
+	r.in.handle = &nspi->handle;
+
+	r.in.settings = nspi->settings;
+	r.in.dwAlignPad = 0;
+	r.in.SPropTagArray = props;
+
+	names = talloc(nspi->mem_ctx, struct names);
+	names->cEntries = names->count = count;
+	names->recipient = usernames;
+	r.in.recipients = names;
+
+	SRowSet = talloc(nspi->mem_ctx, struct SRowSet);
+	r.out.RowSet = &SRowSet;
+
+	FlagList = talloc(nspi->mem_ctx, struct FlagList);
+	r.out.flags = &FlagList;
+
+	status = dcerpc_NspiResolveNames(nspi->rpc_connection, nspi->mem_ctx, &r);
+
+	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
+		mapi_errstr("NspiResolveNames", r.out.result);
+		return False;
+	}
+	
+	mapi_errstr("NspiResolveNames", r.out.result);
+
 
 	return True;
 }

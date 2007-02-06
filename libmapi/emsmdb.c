@@ -125,6 +125,8 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *
 	uint16_t		*length;
 	NTSTATUS		status;
 	struct EcDoRpc_MAPI_REQ	*multi_req;
+	uint8_t			i = 0;
+		
 	
 	r.in.handle = r.out.handle = &emsmdb->handle;
 	r.in.size = 0x200;
@@ -135,8 +137,6 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *
 
 	/* process cached data */
 	if (emsmdb->cache_count) {
-		uint8_t	i;
-		
 		multi_req = talloc_array(emsmdb->mem_ctx, struct EcDoRpc_MAPI_REQ, emsmdb->cache_count + 2);
 		for (i = 0; i < emsmdb->cache_count; i++) {
 			multi_req[i] = *emsmdb->cache_requests[i];
@@ -144,6 +144,9 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *
 		multi_req[i] = req->mapi_req[0];
 		req->mapi_req = multi_req;
 	} 
+
+	req->mapi_req = talloc_realloc(emsmdb->mem_ctx, req->mapi_req, struct EcDoRpc_MAPI_REQ, emsmdb->cache_count + 2);
+	req->mapi_req[i+1].opnum = 0;
 
 	r.in.mapi_request = req;
 	r.in.mapi_request->mapi_len += emsmdb->cache_size;

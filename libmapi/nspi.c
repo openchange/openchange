@@ -458,18 +458,20 @@ BOOL nspi_GetHierarchyInfo(struct nspi_context *nspi)
 
 /*
  * nspi_ResolveNames
- * query WAB (Windows Address Book) and try to resolve the provided name +
- * set the requested property tags
+ * query WAB (Windows Address Book) and try to resolve the provided
+ * name and return a SRowSet with the requested property tags fetched
+ * values.
  */
 
-BOOL nspi_ResolveNames(struct nspi_context *nspi, uint32_t count, 
-		       const char **usernames, struct SPropTagArray *props)
+BOOL nspi_ResolveNames(struct nspi_context *nspi, const char **usernames, struct SPropTagArray *props, struct SRowSet *rowSet)
 {
 	struct NspiResolveNames r;
-	struct SRowSet		*SRowSet;
 	struct FlagList		*FlagList;
 	struct names		*names;
 	NTSTATUS		status;
+	uint32_t		count;
+
+	for (count = 0; usernames[count]; count++);
 
 	r.in.handle = &nspi->handle;
 
@@ -482,8 +484,7 @@ BOOL nspi_ResolveNames(struct nspi_context *nspi, uint32_t count,
 	names->recipient = usernames;
 	r.in.recipients = names;
 
-	SRowSet = talloc(nspi->mem_ctx, struct SRowSet);
-	r.out.RowSet = &SRowSet;
+	r.out.RowSet = &rowSet;
 
 	FlagList = talloc(nspi->mem_ctx, struct FlagList);
 	r.out.flags = &FlagList;
@@ -496,7 +497,6 @@ BOOL nspi_ResolveNames(struct nspi_context *nspi, uint32_t count,
 	}
 	
 	mapi_errstr("NspiResolveNames", r.out.result);
-
 
 	return True;
 }

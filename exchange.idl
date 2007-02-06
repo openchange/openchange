@@ -618,6 +618,7 @@ System Attendant Private Interface
 			op_MAPI_ModifyRecipients	= 0xe,
 			op_MAPI_SetColumns		= 0x12,
 			op_MAPI_QueryRows		= 0x15,
+			op_MAPI_DeleteMessages		= 0x1e,
 			op_MAPI_GetReceiveFolder	= 0x27,
 			op_MAPI_SubmitMessage		= 0x32,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
@@ -729,7 +730,9 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0xa  */
 
-	typedef [public,nodiscriminant] union {
+	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(PT_BOOLEAN)]	uint16		b;
+		[case(PT_I2)]		uint16		i;
 		[case(PT_LONG)]     	uint32	       	l;
 		[case(PT_STRING8)]	astring	       	lpszA;
 	} mapi_SPropValue_CTR;
@@ -828,6 +831,20 @@ System Attendant Private Interface
 		[flag(NDR_REMAINING)]DATA_BLOB	inbox;
 	} QueryRows_repl;
 
+	/**************************/
+	/* EcDoRpc Function 0x1e  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown;
+		uint16		flags;
+		uint16		cn_ids;
+		hyper		message_ids[cn_ids];
+	} DeleteMessages_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		unknown;
+		[flag(NDR_REMAINING)]DATA_BLOB entries;
+	} DeleteMessages_repl;
+
 	/*************************/
 	/* EcDoRpc Function 0x27 */
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -882,6 +899,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_req mapi_ModifyRecipients;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
+		[case(op_MAPI_DeleteMessages)] DeleteMessages_req mapi_DeleteMessages;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_req mapi_GetReceiveFolder;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_req mapi_SubmitMessage;
 		[case(op_MAPI_OpenMsgStore)]	OpenMsgStore_req mapi_OpenMsgStore;
@@ -898,6 +916,7 @@ System Attendant Private Interface
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
 		[case(op_MAPI_QueryRows)] QueryRows_repl mapi_QueryRows;
+		[case(op_MAPI_DeleteMessages)] DeleteMessages_repl mapi_DeleteMessages;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_repl mapi_GetReceiveFolder;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_repl mapi_SubmitMessage;
 		[case(op_MAPI_OpenMsgStore)]	OpenMsgStore_repl mapi_OpenMsgStore;
@@ -986,6 +1005,7 @@ System Attendant Private Interface
 	/*****************/
 	/* Function 0x09 */
 	void EcDoRpcExt();
+
 }
 
 [

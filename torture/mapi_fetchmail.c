@@ -47,6 +47,7 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	uint32_t		hid_msgstore, hid_folder1, hid_msg;
 	uint32_t		table_id;
 	uint64_t		folder_id;
+	uint64_t		id_outbox;
 	struct SPropTagArray	*SPropTagArray, *props;	
 	struct SRowSet		*SRowSet;
 	uint32_t		i;
@@ -77,8 +78,8 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 		DEBUG(1,("mapi_fetchmail: username and domain required"));
 		return NULL;
 	}
-	mailbox_path = talloc_asprintf(emsmdb->mem_ctx, "/o=%s/ou=%s/cn=Recipients/cn=%s", organization, group, username);
-	OpenMsgStore(emsmdb, 0, &hid_msgstore, mailbox_path);
+	mailbox_path = talloc_asprintf(emsmdb->mem_ctx, MAILBOX_PATH, organization, group, username);
+	OpenMsgStore(emsmdb, 0, &hid_msgstore, &id_outbox, mailbox_path);
 
 	DEBUG(0, ("[STEP 02] mapi call: GetReceiveFolder\n"));
 	GetReceiveFolder(emsmdb, 0, hid_msgstore, &folder_id);

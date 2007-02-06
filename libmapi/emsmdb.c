@@ -112,7 +112,9 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p
 	DEBUG(3, ("\t\t user = %s\n", r.out.user));
 	DEBUG(3, ("\t\t organization = %s\n", r.out.org_group));
 	mapi_errstr("EcDoConnect", r.out.result);
-
+	
+	ret->cred = cred;
+	
 	return ret;
 }
 
@@ -206,7 +208,7 @@ void *pull_emsmdb_property(struct emsmdb_context *emsmdb, uint32_t *offset, uint
 	}	
 }
 
-struct SRow *emsmdb_set_SRow(struct emsmdb_context *emsmdb, uint32_t row_count, DATA_BLOB content, uint8_t align)
+struct SRow *emsmdb_get_SRow(struct emsmdb_context *emsmdb, uint32_t row_count, DATA_BLOB content, uint8_t align)
 {
 	struct SRow	*SRow;
 	struct SPropValue *lpProps;

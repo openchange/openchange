@@ -861,7 +861,7 @@ static void dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLO
 static enum MAPISTATUS dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiResolveNames *r)
 {
-	return MAPI_E_SUCCESS;
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 

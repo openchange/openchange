@@ -2,7 +2,7 @@
  *  OpenChange MAPI implementation.
  *  MAPI definitions
  *
- *  Copyright (C) Julien Kerihuel 2005.
+ *  Copyright (C) Julien Kerihuel 2005-2007.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 /* Property types */
 #define	PT_UNSPECIFIED		0x0
 #define	PT_NULL			0x1
+#define	PT_I2			0x2
 #define	PT_SHORT		0x2
 #define	PT_LONG			0x3
 #define	PT_FLOAT		0x4
@@ -84,6 +85,28 @@
 #define MAPI_STATUS		0xA    	/* Status Object */
 #define MAPI_SESSION		0xB	/* Session */
 #define MAPI_FORMINFO		0xC	/* Form Information */
+
+/* Display Type */
+#define DT_MAILUSER		0x0
+#define DT_DISTLIST		0x1
+#define DT_FORUM		0x2
+#define DT_AGENT		0x3
+#define DT_ORGANIZATION		0x4
+#define DT_PRIVATE_DISTLIST	0x5
+#define DT_REMOTE_MAILUSER	0x6
+
+/* PR_MESSAGE_FLAGS Flags */
+#define MSGFLAG_READ		0x001
+#define MSGFLAG_UNMODIFIED	0x002
+#define MSGFLAG_SUBMIT		0x004
+#define MSGFLAG_UNSENT		0x008
+#define MSGFLAG_HASATTACH	0x010
+#define MSGFLAG_FROMME		0x020
+#define MSGFLAG_ASSOCIATED	0x040
+#define MSGFLAG_RESEND		0x080
+#define MSGFLAG_RN_PENDING	0x100
+#define MSGFLAG_NRN_PENDING	0x200
+
 
 /*
  * ENTRYID flags

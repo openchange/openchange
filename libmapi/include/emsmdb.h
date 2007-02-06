@@ -24,6 +24,8 @@
 struct emsmdb_context {
   struct dcerpc_pipe		*rpc_connection;
   struct policy_handle		handle;
+  struct nspi_context		*nspi;
+  struct cli_credentials	*cred;
   TALLOC_CTX			*mem_ctx;
   struct EcDoRpc_MAPI_REQ	**cache_requests;
   uint32_t			cache_size;
@@ -31,5 +33,7 @@ struct emsmdb_context {
   uint16_t			prop_count;
   enum MAPITAGS			*properties;
 };
+
+#define	MAILBOX_PATH	"/o=%s/ou=%s/cn=Recipients/cn=%s"
 
 #endif /* __EMSMDB_H__ */

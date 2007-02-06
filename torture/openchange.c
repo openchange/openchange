@@ -22,6 +22,8 @@
 #include <torture/torture.h>
 
 BOOL torture_rpc_mapi_fetchmail(struct torture_context *);
+BOOL torture_rpc_mapi_sendmail(struct torture_context *);
+BOOL torture_rpc_mapi_deletemail(struct torture_context *);
 BOOL torture_rpc_emsmdb(struct torture_context *);
 BOOL torture_rpc_exchange(struct torture_context *);
 BOOL torture_rpc_nspi(struct torture_context *);
@@ -46,6 +48,9 @@ NTSTATUS init_module(void)
 	torture_suite_add_simple_test(suite, "NSPI-RESOLVENAMES", torture_rpc_nspi_resolvenames);
 	/* MAPI torture tests */
 	torture_suite_add_simple_test(suite, "MAPI-FETCHMAIL", torture_rpc_mapi_fetchmail);
+	torture_suite_add_simple_test(suite, "MAPI-SENDMAIL", torture_rpc_mapi_sendmail);
+        torture_suite_add_simple_test(suite, "MAPI-DELETEMAIL", torture_rpc_mapi_deletemail);
+
 
 	suite->description = talloc_strdup(suite, "Exchange protocols tests (NSPI and EMSMDB)");
 

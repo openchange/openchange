@@ -153,6 +153,80 @@ struct SPropValue *get_SPropValue_SRowSet(struct SRowSet *RowSet, uint32_t ulPro
 	return NULL;
 }
 
+/*
+  Create a MAPITAGS array from a SRow entry
+ */
+
+enum MAPITAGS *get_MAPITAGS_SRow(TALLOC_CTX *mem_ctx, struct SRow *aRow)
+{
+	enum MAPITAGS	*mapitags;
+	uint32_t	count, idx;
+
+	mapitags = talloc_array(mem_ctx, enum MAPITAGS, aRow->cValues + 1);
+
+	for (count = 0, idx=0; count < aRow->cValues; count++) {
+		if ((aRow->lpProps[count].ulPropTag & 0xFFFF) != PT_ERROR) {
+			mapitags[idx] = aRow->lpProps[count].ulPropTag;
+			idx++;
+		}
+	}
+	mapitags[idx] = 0;
+	return mapitags;
+}
+
+/*
+  Remove MAPITAGS entries from a MAPITAGS array
+*/
+
+uint32_t MAPITAGS_delete_entries(enum MAPITAGS *mapitags, uint32_t prop_nb, ...)
+{
+	va_list			ap;
+	uint32_t		i,j;
+	uint32_t		aulPropTag;
+	uint32_t		count = 0;
+
+	
+	va_start(ap, prop_nb);
+	for (i = 0; i != prop_nb; i++) {
+		aulPropTag = va_arg(ap, uint32_t);
+		for (count = 0; mapitags[count]; count++) {
+			if (aulPropTag == (uint32_t)mapitags[count]) {
+				for (j = count; mapitags[j]; j++) {
+					mapitags[j] = (mapitags[j+1]) ? mapitags[j+1] : 0;
+				}
+			}
+		}
+	}
+	va_end(ap);
+
+	return count;
+}
+
+void *find_SPropValue_data(struct SRow *aRow, uint32_t mapitag)
+{
+	uint32_t i;
+
+	for (i = 0; i < aRow->cValues; i++) {
+		if (aRow->lpProps[i].ulPropTag == mapitag) {
+			return get_SPropValue_data(&(aRow->lpProps[i]));
+		}
+	}
+	return NULL;
+}
+
+void *get_SPropValue_data(struct SPropValue *lpProps)
+{
+	if (lpProps->ulPropTag == 0) {
+		return NULL;
+	}
+	switch(lpProps->ulPropTag & 0xFFFF) {
+	case PT_STRING8:
+		return (void *)lpProps->value.lpszA;
+	default:
+		return NULL;
+	}
+}
+
 BOOL set_SPropValue_proptag(struct SPropValue* lpProps, uint32_t aulPropTag, void *data)
 {
 	lpProps->ulPropTag = aulPropTag;
@@ -235,22 +309,46 @@ BOOL set_SPropValue(struct SPropValue* lpProps, void *data)
 }
 
 /*
-  set_SPropValues : Returns a pointer on struct SPropValue with all data set
+  convenient function which cast a SPropValue structure in a mapi_SPropValue one and return the associated size
 */
-/* struct SPropValue *set_SPropValues(TALLOC_CTX *mem_ctx, struct SPropTagArray* pPropTagArray, void **data) */
-/* { */
-/* 	struct SPropValue	*lpProps; */
-/* 	uint32_t		size; */
-/* 	uint32_t		i; */
 
-/* 	size = (pPropTagArray->cValues) ? pPropTagArray->cValues - 1 : 0; */
-/* 	lpProps = talloc_size(mem_ctx, sizeof(*lpProps) * size); */
-/* 	for (i = 0; i < size; i++) { */
-/* 		lpProps[i].ulPropTag = pPropTagArray->aulPropTag[i]; */
-/* 		lpProps[i].dwAlignPad = 0x0; */
-/* 		set_SPropValue(&(lpProps[i]), data[i]); */
-/* 	} */
+uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPropValue *sprop)
+{
+	mapi_sprop->ulPropTag = sprop->ulPropTag;
 
-/* 	return lpProps; */
-/* } */
+	switch(sprop->ulPropTag & 0xFFFF) {
+	case PT_BOOLEAN:
+		mapi_sprop->value.b = sprop->value.b;
+		return sizeof(uint16_t);
+	case PT_I2:
+		mapi_sprop->value.i = sprop->value.i;
+		return sizeof(uint16_t);
+	case PT_LONG:
+		mapi_sprop->value.l = sprop->value.l;
+		return sizeof(uint32_t);
+	case PT_STRING8:
+		mapi_sprop->value.lpszA = sprop->value.lpszA;
+		return (strlen(sprop->value.lpszA) + 1);
+	}
+	return 0;
 
+}
+
+uint32_t SRowSet_propcpy(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, struct SPropValue SPropValue)
+{
+	uint32_t	rows;
+	uint32_t	cValues;
+	struct SPropValue lpProp;
+
+	for (rows = 0; rows < SRowSet->cRows; rows++) {
+		cValues = SRowSet->aRow[rows].cValues + 1;
+		SRowSet->aRow[rows].lpProps = talloc_realloc(mem_ctx, SRowSet->aRow[rows].lpProps, struct SPropValue, cValues);
+		lpProp = SRowSet->aRow[rows].lpProps[cValues];
+		lpProp.ulPropTag = SPropValue.ulPropTag;
+		lpProp.dwAlignPad = 0;
+		set_SPropValue(&(lpProp), (void *)&SPropValue.value);
+		SRowSet->aRow[rows].cValues = cValues;
+		SRowSet->aRow[rows].lpProps[cValues - 1] = lpProp;
+	}
+	return 0;
+}

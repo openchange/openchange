@@ -10,14 +10,14 @@ dcerpc endpoint servers		= exchange_nsp exchange_emsmdb epmapper srvsvc wkssvc r
 	locale:method		= 0x409
 
 	exchange:server		= EXCHANGE-2000
-	exchange:ou		= First Administrative Group
 	exchange:organization	= OpenChange Organization
-	exchange:GUID		= 1b940e13-14d3-4e2a-9711-e06a2def5dfd
-	exchange:store		= /usr/local/samba/private/store.ldb
-	exchange:dbtype		= tdb
+	exchange:ou		= First Administrative Group
+	exchange:nspi_binding	= ncacn_np:127.0.0.1[]
 
-	PR_TAGS:tags_conf_path	= trunk/OpenChange/torture/scantags/nspi_scantags.conf
-        PR_TAGS:tags_path	= trunk/OpenChange/torture/scantags/proptags.conf
+	FIXME:modifyrecipients	= 0x004a0451
+
+	PR_TAGS:tags_conf_path	= torture/scantags/nspi_scantags.conf
+        PR_TAGS:tags_path	= torture/scantags/proptags.conf
 
 
 [test]

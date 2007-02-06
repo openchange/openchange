@@ -41,15 +41,16 @@ BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	BOOL                    ret = True;
 	struct nspi_context     *nspi;
 	struct SPropTagArray    *SPropTagArray;
+	struct SRowSet		SRowSet;
 	const char *username = lp_parm_string(-1, "exchange", "resolvename");
 	char *tmp;
 	char **usernames;
 	int j;
 
-	mem_ctx = talloc_init("torture_rpc_check_recipients");
+	mem_ctx = talloc_init("torture_rpc_nspi_resolvenames");
 
 	if (!username) {
-		DEBUG(0,("Sepcify the username to resolve with exchange:resolvename\n"));
+		DEBUG(0,("Specify the username to resolve with exchange:resolvename\n"));
 		talloc_free(mem_ctx);
 		return False;
 	}
@@ -69,10 +70,12 @@ BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 
 	nspi->mem_ctx = mem_ctx;
 
-	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0xb,
+	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0xd,
 					  PR_ENTRYID,
 					  PR_DISPLAY_NAME,
 					  PR_ADDRTYPE,
+					  PR_GIVEN_NAME,
+					  PR_SMTP_ADDRESS,
 					  PR_OBJECT_TYPE,
 					  PR_DISPLAY_TYPE,
 					  PR_EMAIL_ADDRESS,
@@ -96,7 +99,17 @@ BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	}
 	usernames[j] = 0;
 
-	ret &= nspi_ResolveNames(nspi, j, (const char **)usernames, SPropTagArray);
+	ret &= nspi_ResolveNames(nspi, (const char **)usernames, SPropTagArray, &SRowSet);
+
+	{
+	  struct ndr_print *ndr;
+
+	  ndr = talloc_zero(mem_ctx, struct ndr_print);
+	  ndr->print = ndr_print_debug_helper;
+
+	  ndr_print_SRowSet(ndr, "RESOLVE", &SRowSet);
+	  
+	}
 
 	ret &= nspi_unbind(nspi);
 

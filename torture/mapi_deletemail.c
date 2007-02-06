@@ -42,6 +42,8 @@ BOOL torture_rpc_mapi_deletemail(struct torture_context *torture)
 	const char		*organization = lp_parm_string(-1, "exchange", "organization");
 	const char		*group = lp_parm_string(-1, "exchange", "ou");
 	const char		*username;
+	const char		*s_subject = lp_parm_string(-1, "mapi", "subject");
+	int			len_subject;
 	char			*mailbox_path;
 	uint32_t		hdl_msgstore;
 	uint32_t		hdl_inbox;
@@ -102,17 +104,22 @@ BOOL torture_rpc_mapi_deletemail(struct torture_context *torture)
 	id_messages = talloc_array(mem_ctx, uint64_t, cn_rows);
 	cn_messages = 0;
 
+	/* default subject */
+	if (s_subject == 0)
+	  s_subject = "";
+	len_subject = strlen(s_subject);
+
 	for (i_row = 0; i_row < cn_rows; ++i_row) {
-		if (strncmp((*rowset).aRow[i_row].lpProps[4].value.lpszA, "delete", sizeof("delete") - 1) == 0) {
-			id_messages[cn_messages] = (*rowset).aRow[i_row].lpProps[1].value.d;
-			++cn_messages;
-			printf("delete(%llx)\n", id_messages[cn_messages - 1]);
-		}
+	  if (strncmp((*rowset).aRow[i_row].lpProps[4].value.lpszA, s_subject, len_subject) == 0) {
+	    id_messages[cn_messages] = (*rowset).aRow[i_row].lpProps[1].value.d;
+	    ++cn_messages;
+	    printf("delete(%llx)\n", id_messages[cn_messages - 1]);
+	  }
 	}
 
 	if (cn_messages) {
-		DeleteMessages(emsmdb, 0, hdl_inbox, id_messages, cn_messages);
-		printf("\n");
+	  DeleteMessages(emsmdb, 0, hdl_inbox, id_messages, cn_messages);
+	  printf("\n");
 	}
 
 	talloc_free(mem_ctx);

@@ -39,6 +39,10 @@ static char **get_cmdline_recipients(TALLOC_CTX *mem_ctx)
 	char		*tmp = NULL;
 	uint32_t	j = 0;
 
+	/* no recipients */
+	if (recipients == 0)
+	  return 0;
+
 	if ((tmp = strtok((char *)recipients, ",")) == NULL){
 		DEBUG(2, ("Invalid mapi:to string format\n"));
 		return NULL;
@@ -107,6 +111,25 @@ BOOL torture_rpc_mapi_sendmail(struct torture_context *torture)
 		exit (1);
 	}
 
+	/* check for null contents */
+	if (organization == 0)
+	  {
+	    printf("organization == (null)\n");
+	    exit(1);
+	  }
+	if (group == 0)
+	  {
+	    printf("group == (null)\n");
+	    exit(1);
+	  }
+
+	/* default if null */
+	if (subject == 0)
+	  subject = "";
+	if (body == 0)
+	  body = "";
+
+
 	/* OpenMsgStore */
 	mailbox_path = talloc_asprintf(emsmdb->mem_ctx, MAILBOX_PATH, organization, group, username);
 	OpenMsgStore(emsmdb, 0, &hdl_msgstore, &id_outbox, mailbox_path);
@@ -127,6 +150,11 @@ BOOL torture_rpc_mapi_sendmail(struct torture_context *torture)
 					  PR_GIVEN_NAME);
 
 	usernames = get_cmdline_recipients(emsmdb->mem_ctx);
+	if (usernames == 0)
+	  {
+	    printf("recipient_names == (null)\n");
+	    exit(1);
+	  }
 
 	SRowSet = ResolveNames(emsmdb, (const char **)usernames, SPropTagArray);
 

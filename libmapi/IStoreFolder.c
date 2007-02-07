@@ -34,7 +34,7 @@
  * be used to read the message body.
  */
 
-MAPISTATUS	OpenMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t store_id, uint64_t folder_id, uint64_t message_id, uint32_t *hid_msg)
+enum MAPISTATUS	OpenMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t store_id, uint64_t folder_id, uint64_t message_id, uint32_t *hid_msg)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;

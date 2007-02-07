@@ -328,7 +328,7 @@ int main(int argc, char *argv[])
 		exit (1);
 	}
 
-	elem_count = get_mapidump_blob(&st_out->out.mapi_response, opnum, &blob);
+	elem_count = get_mapidump_blob((void *)&(st_out->out.mapi_response), opnum, &blob);
 
 	if (elem_count == -1) {
 		printf("mapidump: No data blob found in response\n");

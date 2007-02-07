@@ -34,7 +34,7 @@
  * Creates a new attachment
  */
 
-MAPISTATUS	CreateAttach(struct emsmdb_context *emsmdb, uint32_t ulFlags, 
+enum MAPISTATUS	CreateAttach(struct emsmdb_context *emsmdb, uint32_t ulFlags, 
 			     uint32_t hdl_message, uint32_t *hdl_attach)
 {
 	struct mapi_request	*mapi_request;
@@ -87,7 +87,7 @@ MAPISTATUS	CreateAttach(struct emsmdb_context *emsmdb, uint32_t ulFlags,
  * Adds, deletes, or modifies message recipients.
  */
 
-MAPISTATUS	ModifyRecipients(struct emsmdb_context *emsmdb, uint32_t ulFlags, 
+enum MAPISTATUS	ModifyRecipients(struct emsmdb_context *emsmdb, uint32_t ulFlags, 
 				 struct SRowSet *SRowSet, uint32_t hdl_message)
 {
 	struct mapi_request	*mapi_request;
@@ -233,7 +233,7 @@ MAPISTATUS	ModifyRecipients(struct emsmdb_context *emsmdb, uint32_t ulFlags,
  * Saves all changes to the message and marks it as ready for sending.
  */
 
-MAPISTATUS	SubmitMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_message)
+enum MAPISTATUS	SubmitMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_message)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;

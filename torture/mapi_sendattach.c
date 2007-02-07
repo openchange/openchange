@@ -202,7 +202,7 @@ BOOL torture_rpc_mapi_sendattach(struct torture_context *torture)
 	    props_attach[1].ulPropTag = PR_RENDERING_POSITION;
 	    props_attach[1].value.l = -1;
 	    props_attach[2].ulPropTag = PR_ATTACH_DATA_BIN;
-	    props_attach[2].value.bin.lpb = "super test2";
+	    props_attach[2].value.bin.lpb = (uint8_t *)"super test2";
 	    props_attach[2].value.bin.cb = strlen("super test2") + 1;
 	    props_attach[3].ulPropTag = PR_DISPLAY_NAME;
 	    props_attach[3].value.lpszA = "attach.txt";

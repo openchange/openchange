@@ -37,7 +37,7 @@
  * processed with another request such as QueryRows
  */
 
-MAPISTATUS	SetColumns(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPropTagArray *properties)
+enum MAPISTATUS	SetColumns(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPropTagArray *properties)
 {
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct SetColumns_req	request;
@@ -75,7 +75,7 @@ MAPISTATUS	SetColumns(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SP
  * Server
  */
 
-MAPISTATUS	QueryRows(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t folder_id, uint16_t row_count, struct SRowSet **rowSet)
+enum MAPISTATUS	QueryRows(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t folder_id, uint16_t row_count, struct SRowSet **rowSet)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;

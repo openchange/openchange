@@ -55,7 +55,7 @@ BOOL torture_rpc_mapi_deletemail(struct torture_context *torture)
 	struct SRowSet*		rowset;
 	unsigned long		i_row;
 	unsigned long		cn_rows;
-	struct PropTagArray*	SPropTagArray;
+	struct SPropTagArray	*SPropTagArray;
 
 
 	mem_ctx = talloc_init("torture_rpc_mapi_deletemail");

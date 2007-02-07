@@ -28,7 +28,7 @@
 #include "libmapi/include/mapi_proto.h"
 
 
-MAPISTATUS	Release(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t handle_id)
+enum MAPISTATUS	Release(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t handle_id)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;

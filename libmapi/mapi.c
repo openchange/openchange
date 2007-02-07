@@ -33,7 +33,7 @@
  *
  */
 
-MAPISTATUS MAPIInitialize(struct emsmdb_context *emsmdb, struct cli_credentials *cred)
+enum MAPISTATUS MAPIInitialize(struct emsmdb_context *emsmdb, struct cli_credentials *cred)
 {
 	struct dcerpc_pipe      *p;
         NTSTATUS status;
@@ -68,7 +68,7 @@ MAPISTATUS MAPIInitialize(struct emsmdb_context *emsmdb, struct cli_credentials 
  *
  */
 
-MAPISTATUS MAPIUninitialize(struct emsmdb_context *emsmdb)
+enum MAPISTATUS MAPIUninitialize(struct emsmdb_context *emsmdb)
 {
 	BOOL ret;
 

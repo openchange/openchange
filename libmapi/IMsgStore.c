@@ -35,7 +35,7 @@
  *
  */
 
-MAPISTATUS	OpenFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t handle_id, uint64_t folder_id, uint32_t *obj_id)
+enum MAPISTATUS	OpenFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t handle_id, uint64_t folder_id, uint32_t *obj_id)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -90,7 +90,7 @@ MAPISTATUS	OpenFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t 
  * receive folder for the message store.
  */
 
-MAPISTATUS	GetReceiveFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t handle_id, uint64_t *folder_id)
+enum MAPISTATUS	GetReceiveFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t handle_id, uint64_t *folder_id)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;

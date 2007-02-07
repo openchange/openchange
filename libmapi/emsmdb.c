@@ -26,6 +26,7 @@
 #include "libmapi/include/emsmdb.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/include/mapidefs.h"
+#include "libmapi/include/mapi_proto.h"
 #include "libmapi/include/proto.h"
 
 #define	ECDOCONNECT_FORMAT	"/o=%s/ou=%s/cn=Recipients/cn=%s"

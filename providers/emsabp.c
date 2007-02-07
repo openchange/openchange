@@ -104,7 +104,7 @@ static struct GUID emsabp_result_guid(const struct ldb_message *msg, const char 
   databases
 */
 
-struct emsabp_ctx *emsabp_init()
+struct emsabp_ctx *emsabp_init(void)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct emsabp_ctx	*emsabp_ctx;

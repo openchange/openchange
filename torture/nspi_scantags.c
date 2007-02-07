@@ -50,13 +50,13 @@
 
 #include "openchange.h"
 #include <torture/torture.h>
-#include "torture_proto.h"
 #include "libmapi/include/nspi.h"
 #include "exchange.h"
 #include "ndr_exchange.h"
 #include "libmapi/include/mapidefs.h"
 #include "libmapi/include/proto.h"
 #include "libmapi/include/mapi_proto.h"
+#include "torture/torture_proto.h"
 
 #define FAILED			"Failed"
 #define SUCCEEDED		"Succeeded"

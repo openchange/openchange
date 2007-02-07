@@ -33,7 +33,7 @@
  * returns a pointer to the container's contents table.
  */
 
-MAPISTATUS	GetContentsTable(struct emsmdb_context *emsmdb, uint32_t ulFlags, 
+enum MAPISTATUS	GetContentsTable(struct emsmdb_context *emsmdb, uint32_t ulFlags, 
 				 uint32_t folder_id, uint32_t *table_id)
 {
 	struct mapi_request	*mapi_request;

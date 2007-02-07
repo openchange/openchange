@@ -34,7 +34,7 @@
  * Creates a new message
  */
 
-MAPISTATUS	CreateMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_folder, uint64_t id_folder, uint32_t *hdl_message)
+enum MAPISTATUS	CreateMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_folder, uint64_t id_folder, uint32_t *hdl_message)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -88,7 +88,7 @@ MAPISTATUS	CreateMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32
  * Deletes one or more messages.
  */
 
-MAPISTATUS	DeleteMessages(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_folder, uint64_t* id_messages, uint32_t cn_messages)
+enum MAPISTATUS	DeleteMessages(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_folder, uint64_t* id_messages, uint32_t cn_messages)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;

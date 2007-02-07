@@ -34,7 +34,7 @@
  * object.
  */
 
-MAPISTATUS     GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_message, struct SPropTagArray* properties)
+enum MAPISTATUS GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_message, struct SPropTagArray* properties)
 {
        struct mapi_request	*mapi_request;
        struct mapi_response	*mapi_response;
@@ -90,7 +90,7 @@ MAPISTATUS     GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_
  * updates one or more properties.
  */
 
-MAPISTATUS	SetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPropValue *sprops, unsigned long cn_props, uint32_t hdl_object)
+enum MAPISTATUS	SetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPropValue *sprops, unsigned long cn_props, uint32_t hdl_object)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_request	*mapi_request;
@@ -148,7 +148,7 @@ MAPISTATUS	SetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPro
 
 /* FIXME: My name is SetProps2, I'm a bad function and I should soon disappear. */
 
-MAPISTATUS	SetProps2(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPropValue *sprops, unsigned long cn_props, uint32_t hdl_related, uint32_t hdl_object)
+enum MAPISTATUS	SetProps2(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPropValue *sprops, unsigned long cn_props, uint32_t hdl_related, uint32_t hdl_object)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_request	*mapi_request;
@@ -210,7 +210,7 @@ MAPISTATUS	SetProps2(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPr
  * operation.
  */
 
-MAPISTATUS	SaveChanges(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_related, uint32_t hdl_object)
+enum MAPISTATUS	SaveChanges(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_related, uint32_t hdl_object)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;

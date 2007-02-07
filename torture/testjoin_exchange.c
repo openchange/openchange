@@ -22,6 +22,12 @@
 
 #include "openchange.h"
 
+/* FIXME: We should be using samdb/proto.h */
+int samdb_msg_add_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			 const char *attr_name, const char *str);
+int samdb_modify(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg);
+int samdb_replace(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg);
+
 struct tce_async_context {
 	int found;
 };

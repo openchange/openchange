@@ -20,18 +20,8 @@
 
 #include "openchange.h"
 #include <torture/torture.h>
-
-BOOL torture_rpc_mapi_fetchmail(struct torture_context *);
-BOOL torture_rpc_mapi_sendmail(struct torture_context *);
-BOOL torture_rpc_mapi_sendattach(struct torture_context *);
-BOOL torture_rpc_mapi_deletemail(struct torture_context *);
-BOOL torture_rpc_emsmdb(struct torture_context *);
-BOOL torture_rpc_exchange(struct torture_context *);
-BOOL torture_rpc_nspi(struct torture_context *);
-BOOL torture_rpc_nspi_profile(struct torture_context *);
-BOOL torture_rpc_scantags(struct torture_context *);
-BOOL torture_rpc_nspi_check_recipients(struct torture_context *);
-BOOL torture_rpc_nspi_resolvenames(struct torture_context *);
+#include "libmapi/include/nspi.h"
+#include "torture/torture_proto.h"
 
 NTSTATUS init_module(void)
 {

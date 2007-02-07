@@ -22,7 +22,7 @@
 
 #include "openchange.h"
 
-static void usage()
+static void usage(void)
 {
 	printf("schemaIDGUID <base64 string>\n");
 	exit(0);

@@ -220,14 +220,22 @@ torture_proto.h:
 	@echo "Generating torture_proto.h"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h torture/testjoin_exchange.c
 
-libmapi.$(SHLIBEXT): libmapi/utils.o libmapi/property.o	\
-				libmapi/mapi.o				\
-				libmapi/mapitags.o libmapi/mapicode.o	\
-				libmapi/emsmdb.o libmapi/nspi.o		\
-				ndr_exchange.o libmapi/util/locale.o	\
-				libmapi/util/codepage.o			\
-				ndr_mapi.o ndr_exchange_c.o		\
-				libmapi/x500.o
+libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
+			libmapi/IMAPIContainer.o			\
+			libmapi/IMAPIFolder.o				\
+			libmapi/IMAPIProp.o				\
+			libmapi/IMAPISession.o				\
+			libmapi/IMAPITable.o				\
+			libmapi/IMessage.o				\
+			libmapi/IMsgStore.o				\
+			libmapi/IStoreFolder.o				\
+			libmapi/IUnknown.o				\
+			libmapi/utils.o libmapi/property.o		\
+			libmapi/mapi.o libmapi/mapitags.o		\
+			libmapi/mapicode.o libmapi/emsmdb.o		\
+			libmapi/nspi.o ndr_exchange.o			\
+			libmapi/util/locale.o libmapi/util/codepage.o	\
+			libmapi/x500.o ndr_mapi.o ndr_exchange_c.o	
 	@echo "Compiling $<"
 	@$(CC) $(DSOOPT) -o $@ $^ $(LIBS)
 

@@ -182,32 +182,32 @@ BOOL torture_rpc_mapi_sendattach(struct torture_context *torture)
 	  printf("%08x\n", hdl_attach);
 
 	  /* send by reference */
-	  {
-	    props_attach[0].ulPropTag = PR_ATTACH_METHOD;
-	    props_attach[0].value.l = ATTACH_BY_REFERENCE;
-	    props_attach[1].ulPropTag = PR_RENDERING_POSITION;
-	    props_attach[1].value.l = -1;
-	    props_attach[2].ulPropTag = PR_ATTACH_PATHNAME;
-	    props_attach[2].value.lpszA = "\\\\exchange.local\\tmp\\attachment.file";
-	    props_attach[3].ulPropTag = PR_DISPLAY_NAME;
-	    props_attach[3].value.lpszA = "attachment_display_name";
-	    props_attach[4].ulPropTag = PR_ATTACH_FILENAME;
-	    props_attach[4].value.lpszA = "attachment.file";
-	    cn_props_attach = 5;
-	  }
-	  /* send by value */
 /* 	  { */
 /* 	    props_attach[0].ulPropTag = PR_ATTACH_METHOD; */
-/* 	    props_attach[0].value.l = ATTACH_BY_VALUE; */
+/* 	    props_attach[0].value.l = ATTACH_BY_REFERENCE; */
 /* 	    props_attach[1].ulPropTag = PR_RENDERING_POSITION; */
 /* 	    props_attach[1].value.l = -1; */
-/* 	    props_attach[2].ulPropTag = PR_ATTACH_DATA_BIN; */
-/* 	    props_attach[2].value.bin.lpb = "the_data"; */
-/* 	    props_attach[2].value.bin.cb = sizeof("the_data") - 1; */
+/* 	    props_attach[2].ulPropTag = PR_ATTACH_PATHNAME; */
+/* 	    props_attach[2].value.lpszA = "\\\\exchange.local\\tmp\\attachment.file"; */
 /* 	    props_attach[3].ulPropTag = PR_DISPLAY_NAME; */
-/* 	    props_attach[3].value.lpszA = "attachment.file"; */
-/* 	    cn_props_attach = 4; */
+/* 	    props_attach[3].value.lpszA = "attachment_display_name"; */
+/* 	    props_attach[4].ulPropTag = PR_ATTACH_FILENAME; */
+/* 	    props_attach[4].value.lpszA = "attachment.file"; */
+/* 	    cn_props_attach = 5; */
 /* 	  } */
+	  /* send by value */
+	  {
+	    props_attach[0].ulPropTag = PR_ATTACH_METHOD;
+	    props_attach[0].value.l = ATTACH_BY_VALUE;
+	    props_attach[1].ulPropTag = PR_RENDERING_POSITION;
+	    props_attach[1].value.l = -1;
+	    props_attach[2].ulPropTag = PR_ATTACH_DATA_BIN;
+	    props_attach[2].value.bin.lpb = "super test2";
+	    props_attach[2].value.bin.cb = strlen("super test2") + 1;
+	    props_attach[3].ulPropTag = PR_DISPLAY_NAME;
+	    props_attach[3].value.lpszA = "attach.txt";
+	    cn_props_attach = 4;
+	  }
 
 	  printf("%08x->SetProps2()", hdl_attach); fflush(stdout);
 	  SetProps2(emsmdb, 0, props_attach, cn_props_attach, hdl_message, hdl_attach);

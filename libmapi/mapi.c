@@ -75,11 +75,8 @@ MAPISTATUS	GetReceiveFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uin
 	NTSTATUS		status;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
-	struct ndr_print	*ndr;
 
 	mem_ctx = talloc_init("GetReceiveFolder");
-	ndr = talloc_zero(mem_ctx, struct ndr_print);
-	ndr->print = ndr_print_debug_helper;
 
 	/* Fill the GetReceiveFolder operation */
 	request.handle_id = 0x0;
@@ -103,15 +100,11 @@ MAPISTATUS	GetReceiveFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uin
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		ndr_print_MAPISTATUS(ndr, "error code", mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 
 	*folder_id = mapi_response->mapi_repl->u.mapi_GetReceiveFolder.folder_id;
 	
-	ndr_print_mapi_response(ndr, "GetReceiveFolder reply", mapi_response);
-
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -154,14 +147,6 @@ MAPISTATUS	OpenFolder(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t 
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 
@@ -211,26 +196,10 @@ MAPISTATUS	OpenMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 
 	*hid_msg = mapi_response->handles[1];
-
-	{
-		struct ndr_print *ndr;
-
-		ndr = talloc_zero(mem_ctx, struct ndr_print);
-		ndr->print = ndr_print_debug_helper;
-		ndr_print_mapi_response(ndr, "mapi_response", mapi_response);
-	}
 
 	talloc_free(mem_ctx);
 
@@ -275,14 +244,6 @@ MAPISTATUS	GetContentsTable(struct emsmdb_context *emsmdb, uint32_t ulFlags,
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 
@@ -303,11 +264,8 @@ MAPISTATUS     GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_
        uint32_t			size = 0;
        TALLOC_CTX		*mem_ctx;
        struct SRow		*aRow;
-       struct ndr_print		*ndr;
  
        mem_ctx = talloc_init("GetProps");
-       ndr = talloc_zero(mem_ctx, struct ndr_print);
-       ndr->print = ndr_print_debug_helper;
 
        /* Fill the GetProps operation */
        properties->cValues -= 1;
@@ -335,15 +293,12 @@ MAPISTATUS     GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_
        status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
        if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-               ndr_print_MAPISTATUS(ndr, "error code", mapi_response->mapi_repl->error_code);
-
                return mapi_response->mapi_repl->error_code;
        }
 
        emsmdb->prop_count = properties->cValues;
        emsmdb->properties = properties->aulPropTag;
        aRow = emsmdb_get_SRow(emsmdb, 1, mapi_response->mapi_repl->u.mapi_GetProps.prop_data, 0);
-       ndr_print_SRow(ndr, "GetProps", aRow);
 
        talloc_free(mem_ctx);
 
@@ -430,14 +385,6 @@ MAPISTATUS	QueryRows(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t f
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 
@@ -499,14 +446,6 @@ MAPISTATUS	OpenMsgStore(struct emsmdb_context *emsmdb, uint32_t ulFlags,
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 
@@ -560,26 +499,10 @@ MAPISTATUS	CreateMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 
 	*hdl_message = mapi_response->handles[1];
-
-	{
-		struct ndr_print *ndr;
-
-		ndr = talloc_zero(mem_ctx, struct ndr_print);
-		ndr->print = ndr_print_debug_helper;
-		ndr_print_mapi_response(ndr, "mapi_response", mapi_response);
-	}
 
 	talloc_free(mem_ctx);
 
@@ -770,15 +693,6 @@ MAPISTATUS	SetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPro
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = hdl_object;
 
-
-/* 	{ */
-/* 	  struct ndr_print *ndr_print; */
-/* 	  ndr_print = talloc_zero(mem_ctx, struct ndr_print); */
-/* 	  ndr_print->print = ndr_print_debug_helper; */
-/* 	  ndr_print_mapi_request(ndr_print, "error code", mapi_request); */
-/* 	} */
-/* 	getchar(); */
-
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
@@ -836,14 +750,6 @@ MAPISTATUS	SetProps2(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPr
 	mapi_request->handles[0] = hdl_object;
 	mapi_request->handles[1] = hdl_related;
 
-/* 	{ */
-/* 	  struct ndr_print *ndr_print; */
-/* 	  ndr_print = talloc_zero(mem_ctx, struct ndr_print); */
-/* 	  ndr_print->print = ndr_print_debug_helper; */
-/* 	  ndr_print_mapi_request(ndr_print, "error code", mapi_request); */
-/* 	} */
-/* 	getchar(); */
-
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
@@ -892,14 +798,6 @@ MAPISTATUS	SubmitMessage(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 
@@ -951,14 +849,6 @@ MAPISTATUS	DeleteMessages(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint3
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 
@@ -1005,14 +895,6 @@ MAPISTATUS	CreateAttach(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 
@@ -1062,14 +944,6 @@ MAPISTATUS	SaveChanges(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
-
 		return mapi_response->mapi_repl->error_code;
 	}
 

@@ -332,7 +332,7 @@ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPropVa
 	case PT_BINARY:
 		mapi_sprop->value.bin.cb = sprop->value.bin.cb;
 		mapi_sprop->value.bin.lpb = sprop->value.bin.lpb;
-		return (sprop->value.bin.cb);
+		return (mapi_sprop->value.bin.cb + sizeof(uint16_t));
 
 	}
 	return 0;

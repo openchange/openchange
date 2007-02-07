@@ -107,6 +107,14 @@
 #define MSGFLAG_RN_PENDING	0x100
 #define MSGFLAG_NRN_PENDING	0x200
 
+/* Attachment method */
+#define NO_ATTACHMENT		0
+#define ATTACH_BY_VALUE		1
+#define ATTACH_BY_REFERENCE	2
+#define ATTACH_BY_REF_RESOLVE	3
+#define ATTACH_BY_REF_ONLY	4
+#define ATTACH_EMBEDDED_MSG	5
+#define ATTACH_OLE		6
 
 /*
  * ENTRYID flags

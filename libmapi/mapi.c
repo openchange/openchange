@@ -454,6 +454,9 @@ MAPISTATUS	QueryRows(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t f
 	return MAPI_E_SUCCESS;
 }
 
+
+
+
 MAPISTATUS	OpenMsgStore(struct emsmdb_context *emsmdb, uint32_t ulFlags, 
 			     uint32_t *handle_id, uint64_t *id_outbox, const char *mailbox)
 {
@@ -767,6 +770,80 @@ MAPISTATUS	SetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPro
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = hdl_object;
 
+
+/* 	{ */
+/* 	  struct ndr_print *ndr_print; */
+/* 	  ndr_print = talloc_zero(mem_ctx, struct ndr_print); */
+/* 	  ndr_print->print = ndr_print_debug_helper; */
+/* 	  ndr_print_mapi_request(ndr_print, "error code", mapi_request); */
+/* 	} */
+/* 	getchar(); */
+
+	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
+
+	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
+		return mapi_response->mapi_repl->error_code;
+	}
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+MAPISTATUS	SetProps2(struct emsmdb_context *emsmdb, uint32_t ulFlags, struct SPropValue *sprops, unsigned long cn_props, uint32_t hdl_related, uint32_t hdl_object)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct SetProps_req	request;
+	NTSTATUS		status;
+	uint32_t		size = 0;
+	unsigned long		i_prop;
+	struct mapi_SPropValue	*mapi_props;
+ 
+	mem_ctx = talloc_init("SetProps2");
+
+	/* Fill the SetProps operation */
+	request.unknown = 0x00;
+	size += sizeof(uint8_t);
+
+	/* build the array */
+	request.values.sprop_array = talloc_array(mem_ctx, struct mapi_SPropValue, cn_props);
+	mapi_props = request.values.sprop_array;
+	for (i_prop = 0; i_prop < cn_props; ++i_prop) {
+		size += cast_mapi_SPropValue(&mapi_props[i_prop], &sprops[i_prop]);
+		size += sizeof(uint32_t);
+	  }
+
+	request.values.sprop_count = cn_props;
+	size += sizeof(uint16_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetProps;
+	mapi_req->mapi_flags = ulFlags;
+	mapi_req->u.mapi_SetProps = request;
+	size += 6;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = hdl_object;
+	mapi_request->handles[1] = hdl_related;
+
+/* 	{ */
+/* 	  struct ndr_print *ndr_print; */
+/* 	  ndr_print = talloc_zero(mem_ctx, struct ndr_print); */
+/* 	  ndr_print->print = ndr_print_debug_helper; */
+/* 	  ndr_print_mapi_request(ndr_print, "error code", mapi_request); */
+/* 	} */
+/* 	getchar(); */
+
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
@@ -889,6 +966,119 @@ MAPISTATUS	DeleteMessages(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint3
 
 	return MAPI_E_SUCCESS;
 }
+
+
+MAPISTATUS	CreateAttach(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_message, uint32_t* hdl_attach)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct CreateAttach_req	request;
+	NTSTATUS		status;
+	uint32_t		size = 0;
+	TALLOC_CTX		*mem_ctx;
+
+	*hdl_attach = 0;
+ 
+	mem_ctx = talloc_init("CreateAttach");
+
+	/* Fill the CreateAttach operation */
+	request.flags = 0x100;
+	size = sizeof (uint16_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_CreateAttach;
+	mapi_req->mapi_flags = ulFlags;
+	mapi_req->u.mapi_CreateAttach = request;
+	size += 4;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = hdl_message;
+	mapi_request->handles[1] = 0xffffffff;
+
+	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
+
+	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
+		struct ndr_print *ndr_print;
+
+		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
+		ndr_print->print = ndr_print_debug_helper;
+
+		ndr_print_MAPISTATUS(ndr_print, "error code",
+				     mapi_response->mapi_repl->error_code);
+
+		return mapi_response->mapi_repl->error_code;
+	}
+
+	*hdl_attach = mapi_response->handles[1];
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+MAPISTATUS	SaveChanges(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_related, uint32_t hdl_object)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct SaveChanges_req	request;
+	NTSTATUS		status;
+	uint32_t		size = 0;
+	TALLOC_CTX		*mem_ctx;
+ 
+	mem_ctx = talloc_init("SaveChanges");
+
+	size = 0;
+
+	/* Fill the SaveChanges operation */
+	request.flags = 0x001;
+	request.unknown = 0x0;
+	size += sizeof(uint16_t) + sizeof(uint8_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SaveChanges;
+	mapi_req->mapi_flags = ulFlags;
+	mapi_req->u.mapi_SaveChanges = request;
+	size += 4;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = hdl_object;
+	mapi_request->handles[1] = hdl_related;
+
+	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
+
+	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
+		struct ndr_print *ndr_print;
+
+		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
+		ndr_print->print = ndr_print_debug_helper;
+
+		ndr_print_MAPISTATUS(ndr_print, "error code",
+				     mapi_response->mapi_repl->error_code);
+
+		return mapi_response->mapi_repl->error_code;
+	}
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
 
 /**
  * Wrapper on nspi_ResolveNames

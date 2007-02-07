@@ -329,6 +329,11 @@ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPropVa
 	case PT_STRING8:
 		mapi_sprop->value.lpszA = sprop->value.lpszA;
 		return (strlen(sprop->value.lpszA) + 1);
+	case PT_BINARY:
+		mapi_sprop->value.bin.cb = sprop->value.bin.cb;
+		mapi_sprop->value.bin.lpb = sprop->value.bin.lpb;
+		return (sprop->value.bin.cb);
+
 	}
 	return 0;
 

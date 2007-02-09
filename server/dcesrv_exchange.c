@@ -3,7 +3,7 @@
 
    endpoint server for the exchange_* pipes
 
-   Copyright (C) Julien Kerihuel 2005-2006
+   Copyright (C) Julien Kerihuel 2005-2007
    Copyright (C) Gregory Schiro 2006
    Copyright (C) Pauline Khun 2006
    
@@ -51,7 +51,7 @@ enum exchange_handle {
 /*
   ec_store_admin3_dummy
 */
-static void dcesrv_ec_store_admin3_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ec_store_admin3_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ec_store_admin3_dummy *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -65,7 +65,7 @@ static void dcesrv_ec_store_admin3_dummy(struct dcesrv_call_state *dce_call, TAL
 /*
   ec_store_admin2_dummy
 */
-static void dcesrv_ec_store_admin2_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ec_store_admin2_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ec_store_admin2_dummy *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -79,7 +79,7 @@ static void dcesrv_ec_store_admin2_dummy(struct dcesrv_call_state *dce_call, TAL
 /*
   ec_store_admin1_dummy
 */
-static void dcesrv_ec_store_admin1_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ec_store_admin1_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ec_store_admin1_dummy *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -93,7 +93,7 @@ static void dcesrv_ec_store_admin1_dummy(struct dcesrv_call_state *dce_call, TAL
 /*
   RfrGetNewDSA
 */
-static void dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct RfrGetNewDSA *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -103,7 +103,7 @@ static void dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /*
   RfrGetFQDNFromLegacyDN
 */
-static void dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct RfrGetFQDNFromLegacyDN *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -116,7 +116,7 @@ static void dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *dce_call, TA
 /*
   sysatt_cluster_dummy
 */
-static void dcesrv_sysatt_cluster_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_sysatt_cluster_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct sysatt_cluster_dummy *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -129,7 +129,7 @@ static void dcesrv_sysatt_cluster_dummy(struct dcesrv_call_state *dce_call, TALL
 /*
   sysatt_dummy
 */
-static void dcesrv_sysatt_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_sysatt_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct sysatt_dummy *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -142,7 +142,7 @@ static void dcesrv_sysatt_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /*
   MtaBind
 */
-static void dcesrv_MtaBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_MtaBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct MtaBind *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -152,7 +152,7 @@ static void dcesrv_MtaBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 /*
   MtaBindAck
 */
-static void dcesrv_MtaBindAck(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_MtaBindAck(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct MtaBindAck *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -165,7 +165,7 @@ static void dcesrv_MtaBindAck(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /*
   ds_abandon
 */
-static void dcesrv_ds_abandon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_abandon(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_abandon *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -175,7 +175,7 @@ static void dcesrv_ds_abandon(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /*
   ds_add_entry
 */
-static void dcesrv_ds_add_entry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_add_entry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_add_entry *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -185,7 +185,7 @@ static void dcesrv_ds_add_entry(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /*
   ds_bind
 */
-static void dcesrv_ds_bind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_bind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_bind *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -195,7 +195,7 @@ static void dcesrv_ds_bind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 /*
   ds_compare
 */
-static void dcesrv_ds_compare(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_compare(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_compare *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -205,7 +205,7 @@ static void dcesrv_ds_compare(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /*
   ds_list
 */
-static void dcesrv_ds_list(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_list(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_list *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -215,7 +215,7 @@ static void dcesrv_ds_list(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 /*
   ds_modify_entry
 */
-static void dcesrv_ds_modify_entry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_modify_entry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_modify_entry *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -225,7 +225,7 @@ static void dcesrv_ds_modify_entry(struct dcesrv_call_state *dce_call, TALLOC_CT
 /*
   ds_modify_rdn
 */
-static void dcesrv_ds_modify_rdn(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_modify_rdn(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_modify_rdn *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -235,7 +235,7 @@ static void dcesrv_ds_modify_rdn(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 /*
   ds_read
 */
-static void dcesrv_ds_read(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_read(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_read *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -245,7 +245,7 @@ static void dcesrv_ds_read(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 /*
   ds_receive_result
 */
-static void dcesrv_ds_receive_result(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_receive_result(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_receive_result *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -255,7 +255,7 @@ static void dcesrv_ds_receive_result(struct dcesrv_call_state *dce_call, TALLOC_
 /*
   ds_remove_entry
 */
-static void dcesrv_ds_remove_entry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_remove_entry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_remove_entry *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -265,7 +265,7 @@ static void dcesrv_ds_remove_entry(struct dcesrv_call_state *dce_call, TALLOC_CT
 /*
   ds_search
 */
-static void dcesrv_ds_search(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_search(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_search *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -275,7 +275,7 @@ static void dcesrv_ds_search(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /*
   ds_unbind
 */
-static void dcesrv_ds_unbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_unbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_unbind *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -285,7 +285,7 @@ static void dcesrv_ds_unbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /*
   ds_wait
 */
-static void dcesrv_ds_wait(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_ds_wait(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ds_wait *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -295,7 +295,7 @@ static void dcesrv_ds_wait(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 /*
   dra_replica_add
 */
-static void dcesrv_dra_replica_add(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_dra_replica_add(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct dra_replica_add *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -305,7 +305,7 @@ static void dcesrv_dra_replica_add(struct dcesrv_call_state *dce_call, TALLOC_CT
 /*
   dra_replica_delete
 */
-static void dcesrv_dra_replica_delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_dra_replica_delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct dra_replica_delete *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -315,7 +315,7 @@ static void dcesrv_dra_replica_delete(struct dcesrv_call_state *dce_call, TALLOC
 /*
   dra_replica_synchronize
 */
-static void dcesrv_dra_replica_synchronize(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_dra_replica_synchronize(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct dra_replica_synchronize *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -325,7 +325,7 @@ static void dcesrv_dra_replica_synchronize(struct dcesrv_call_state *dce_call, T
 /*
   dra_reference_update
 */
-static void dcesrv_dra_reference_update(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_dra_reference_update(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct dra_reference_update *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -335,7 +335,7 @@ static void dcesrv_dra_reference_update(struct dcesrv_call_state *dce_call, TALL
 /*
   dra_authorize_replica
 */
-static void dcesrv_dra_authorize_replica(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_dra_authorize_replica(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct dra_authorize_replica *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -345,7 +345,7 @@ static void dcesrv_dra_authorize_replica(struct dcesrv_call_state *dce_call, TAL
 /*
   dra_unauthorize_replica
 */
-static void dcesrv_dra_unauthorize_replica(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_dra_unauthorize_replica(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct dra_unauthorize_replica *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -355,7 +355,7 @@ static void dcesrv_dra_unauthorize_replica(struct dcesrv_call_state *dce_call, T
 /*
   dra_adopt
 */
-static void dcesrv_dra_adopt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_dra_adopt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct dra_adopt *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -365,7 +365,7 @@ static void dcesrv_dra_adopt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /*
   dra_set_status
 */
-static void dcesrv_dra_set_status(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_dra_set_status(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct dra_set_status *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -375,7 +375,7 @@ static void dcesrv_dra_set_status(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /*
   dra_modify_entry
 */
-static void dcesrv_dra_modify_entry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_dra_modify_entry(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct dra_modify_entry *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -385,7 +385,7 @@ static void dcesrv_dra_modify_entry(struct dcesrv_call_state *dce_call, TALLOC_C
 /*
   dra_delete_subref
 */
-static void dcesrv_dra_delete_subref(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_dra_delete_subref(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct dra_delete_subref *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -398,7 +398,7 @@ static void dcesrv_dra_delete_subref(struct dcesrv_call_state *dce_call, TALLOC_
 /*
   xds_dummy
 */
-static void dcesrv_xds_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_xds_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct xds_dummy *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -411,7 +411,7 @@ static void dcesrv_xds_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem
 /*
   exchange_mta_qadmin
 */
-static void dcesrv_exchange_mta_qadmin(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_exchange_mta_qadmin(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct exchange_mta_qadmin *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -424,7 +424,7 @@ static void dcesrv_exchange_mta_qadmin(struct dcesrv_call_state *dce_call, TALLO
 /*
   exchange_store_information_dummy
 */
-static void dcesrv_exchange_store_information_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_exchange_store_information_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct exchange_store_information_dummy *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -438,7 +438,7 @@ static void dcesrv_exchange_store_information_dummy(struct dcesrv_call_state *dc
   NspiBind 
 */
 
-static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiBind *r)
 {
 	struct GUID		*guid = (struct GUID *) NULL;
@@ -503,7 +503,7 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call, TALLO
 /* 
   NspiUnbind 
 */
-static enum MAPISTATUS dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiUnbind *r)
 {
 	struct dcesrv_handle	*h;
@@ -530,7 +530,7 @@ static enum MAPISTATUS dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call, TAL
 /* 
   NspiUpdateStat 
 */
-static enum MAPISTATUS dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiUpdateStat *r)
 {
 	/* FIXME */
@@ -541,7 +541,7 @@ static enum MAPISTATUS dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call,
 /* 
   NspiQueryRows 
 */
-static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiQueryRows *r)
 {
 	struct emsabp_ctx	*emsabp_context;
@@ -584,7 +584,7 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call, 
 /* 
   NspiSeekEntries 
 */
-static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiSeekEntries *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -594,7 +594,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   NspiGetMatches 
 */
-static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				      struct NspiGetMatches *r)
 {
 	struct dcesrv_handle	*h;
@@ -650,7 +650,7 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 /* 
   NspiResortRestriction 
 */
-static void dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiResortRestriction *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -660,7 +660,7 @@ static void dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call, TAL
 /* 
   NspiDNToEph 
 */
-static enum MAPISTATUS dcesrv_NspiDNToEph(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiDNToEph(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiDNToEph *r)
 {
 	uint32_t		instance_key;
@@ -702,7 +702,7 @@ static enum MAPISTATUS dcesrv_NspiDNToEph(struct dcesrv_call_state *dce_call, TA
 /* 
   NspiGetPropList 
 */
-static void dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiGetPropList *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -712,7 +712,7 @@ static void dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   NspiGetProps 
 */
-static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				    struct NspiGetProps *r)
 {
 	uint32_t		instance_key;
@@ -750,7 +750,7 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call, T
 /* 
   NspiCompareDNTs 
 */
-static void dcesrv_NspiCompareDNTs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiCompareDNTs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiCompareDNTs *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -760,7 +760,7 @@ static void dcesrv_NspiCompareDNTs(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   NspiModProps 
 */
-static void dcesrv_NspiModProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiModProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiModProps *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -770,7 +770,7 @@ static void dcesrv_NspiModProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   NspiGetHierarchyInfo 
 */
-static enum MAPISTATUS dcesrv_NspiGetHierarchyInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiGetHierarchyInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiGetHierarchyInfo *r)
 {
 	struct dcesrv_handle    *h;
@@ -798,7 +798,7 @@ static enum MAPISTATUS dcesrv_NspiGetHierarchyInfo(struct dcesrv_call_state *dce
 /* 
   NspiGetTemplateInfo 
 */
-static void dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiGetTemplateInfo *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -808,7 +808,7 @@ static void dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call, TALLO
 /* 
   NspiModLInkAtt 
 */
-static void dcesrv_NspiModLInkAtt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiModLInkAtt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiModLInkAtt *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -818,7 +818,7 @@ static void dcesrv_NspiModLInkAtt(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /* 
   NspiDeleteEntries 
 */
-static void dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiDeleteEntries *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -828,7 +828,7 @@ static void dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   NspiQueryColumns 
 */
-static void dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiQueryColumns *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -838,7 +838,7 @@ static void dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call, TALLOC_C
 /* 
   NspiGetNamesFromIDs 
 */
-static void dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiGetNamesFromIDs *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -848,7 +848,7 @@ static void dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call, TALLO
 /* 
   NspiGetIDsFromNames 
 */
-static void dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiGetIDsFromNames *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -858,7 +858,7 @@ static void dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLO
 /* 
   NspiResolveNames 
 */
-static enum MAPISTATUS dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiResolveNames *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -868,7 +868,7 @@ static enum MAPISTATUS dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_cal
 /* 
   NspiResolveNamesW 
 */
-static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiResolveNamesW *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -881,7 +881,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   EcDoConnect 
 */
-static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcDoConnect *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -891,7 +891,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call, TA
 /* 
   EcDoDisconnect 
 */
-static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcDoDisconnect *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -901,7 +901,7 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 /* 
   EcDoRpc 
 */
-static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcDoRpc *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -911,7 +911,7 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   EcGetMoreRpc 
 */
-static void dcesrv_EcGetMoreRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_EcGetMoreRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcGetMoreRpc *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -921,7 +921,7 @@ static void dcesrv_EcGetMoreRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   EcRRegisterPushNotification 
 */
-static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcRRegisterPushNotification *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -931,7 +931,7 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 /* 
   EcRUnregisterPushNotification 
 */
-static enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcRUnregisterPushNotification *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
@@ -941,7 +941,7 @@ static enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_s
 /* 
   EcDummyRpc 
 */
-static void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcDummyRpc *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -951,7 +951,7 @@ static void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /* 
   EcRGetDCName 
 */
-static void dcesrv_EcRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_EcRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcRGetDCName *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -961,7 +961,7 @@ static void dcesrv_EcRGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 /* 
   EcRNetGetDCName 
 */
-static void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcRNetGetDCName *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -971,7 +971,7 @@ static void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   EcDoRpcExt 
 */
-static void dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcDoRpcExt *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
@@ -984,7 +984,7 @@ static void dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /* 
   unknown_dummy 
 */
-static void dcesrv_unknown_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+void dcesrv_unknown_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct unknown_dummy *r)
 {
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);

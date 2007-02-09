@@ -49,8 +49,8 @@
  */
 
 #include "openchange.h"
-#include <torture/torture.h>
 #include "libmapi/include/nspi.h"
+#include <torture/torture.h>
 #include "exchange.h"
 #include "ndr_exchange.h"
 #include "libmapi/include/mapidefs.h"

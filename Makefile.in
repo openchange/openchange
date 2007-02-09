@@ -108,7 +108,7 @@ client/evolution/camelprovider/libcamel-openchange.$(SHLIBEXT): client/evolution
 	@echo "Linking $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(EVOLUTION_PLUGIN_LIBS)
 
-torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/emsmdb.o torture/exchange.o torture/nspi.o torture/nspi_profile.o torture/nspi_resolvenames.o torture/nspi_scantags.o torture/mapi_fetchmail.o torture/mapi_sendmail.o torture/mapi_deletemail.o torture/mapi_sendattach.o torture/openchange.o
+torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/emsmdb.o torture/exchange.o torture/nspi.o torture/nspi_profile.o torture/nspi_resolvenames.o torture/nspi_scantags.o torture/mapi_fetchmail.o torture/mapi_sendmail.o torture/mapi_deletemail.o torture/mapi_sendattach.o torture/mapi_fetchattach.o torture/openchange.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -lmapi
 
@@ -223,8 +223,8 @@ torture_proto.h:
 	@echo "Generating torture_proto.h"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h \
 	torture/emsmdb.c torture/exchange.c torture/mapi_deletemail.c torture/mapi_fetchmail.c	\
-	torture/mapi_sendattach.c torture/mapi_sendmail.c torture/nspi.c torture/nspi_profile.c	\
-	torture/nspi_resolvenames.c torture/nspi_scantags.c
+	torture/mapi_sendattach.c torture/mapi_fetchattach.c torture/mapi_sendmail.c torture/nspi.c \
+	torture/nspi_profile.c torture/nspi_resolvenames.c torture/nspi_scantags.c
 
 libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
 			libmapi/IMAPIContainer.o			\

@@ -52,5 +52,8 @@ struct				mapitags_x500
 # define DOUBLE_TYPE	(2)
 # define FLOAT_TYPE	(3)
 
+uint32_t SPropValue_read_size_by_tag(enum MAPITAGS, unsigned char*, uint32_t);
+uint32_t SPropValue_read_value(struct SPropValue*, TALLOC_CTX*, unsigned char*, uint32_t);
+
 #endif /* !_PROPERTY_H_ */
 

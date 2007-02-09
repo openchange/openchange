@@ -34,26 +34,32 @@
  * object.
  */
 
-enum MAPISTATUS GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_message, struct SPropTagArray* properties)
+enum MAPISTATUS GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_message,
+			 struct SPropTagArray* tags, struct SPropValue** vals, uint32_t* cn_vals)
 {
        struct mapi_request	*mapi_request;
        struct mapi_response	*mapi_response;
        struct EcDoRpc_MAPI_REQ	*mapi_req;
        struct GetProps_req	request;
        NTSTATUS			status;
-       uint32_t			size = 0;
+       uint32_t			size;
        TALLOC_CTX		*mem_ctx;
-       struct SRow		*aRow;
+       enum MAPISTATUS		mapistatus;
  
        mem_ctx = talloc_init("GetProps");
 
+       /* Reset */
+       *cn_vals = 0;
+       *vals = 0;
+       size = 0;
+
        /* Fill the GetProps operation */
-       properties->cValues -= 1;
+       tags->cValues -= 1;
        request.unknown = 0x0;
        request.unknown2 = 0x0;
-       request.prop_count = (uint16_t)properties->cValues;
-       request.properties = properties->aulPropTag;
-       size = sizeof (uint8_t) + sizeof(uint32_t) + sizeof(uint16_t) + properties->cValues * sizeof(uint32_t);
+       request.prop_count = (uint16_t)tags->cValues;
+       request.properties = tags->aulPropTag;
+       size = sizeof (uint8_t) + sizeof(uint32_t) + sizeof(uint16_t) + request.prop_count * sizeof(uint32_t);
 
        /* Fill the MAPI_REQ request */
        mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -71,18 +77,18 @@ enum MAPISTATUS GetProps(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32
        mapi_request->handles[0] = hdl_message;
 
        status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
-
-       if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-               return mapi_response->mapi_repl->error_code;
+       if ((mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) &&
+	   (mapi_response->mapi_repl->error_code != MAPI_W_ERRORS_RETURNED)) {
+	 return mapi_response->mapi_repl->error_code;
        }
 
-       emsmdb->prop_count = properties->cValues;
-       emsmdb->properties = properties->aulPropTag;
-       aRow = emsmdb_get_SRow(emsmdb, 1, mapi_response->mapi_repl->u.mapi_GetProps.prop_data, 0);
+       /* Read the SPropValue array from data blob.
+	*/
+       mapistatus = emsmdb_get_SPropValue(emsmdb, mapi_response->mapi_repl->u.mapi_GetProps.prop_data, tags, vals, cn_vals);
 
        talloc_free(mem_ctx);
 
-       return MAPI_E_SUCCESS;
+       return mapistatus;
 }
 
 
@@ -305,11 +311,6 @@ enum MAPISTATUS	OpenProperty(struct emsmdb_context *emsmdb, uint32_t ulFlags, ui
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
 		return mapi_response->mapi_repl->error_code;
 	}
 
@@ -363,11 +364,6 @@ enum MAPISTATUS	GetPropList(struct emsmdb_context *emsmdb, uint32_t ulFlags, uin
 	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
 
 	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		struct ndr_print *ndr_print;
-		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-		ndr_print->print = ndr_print_debug_helper;
-		ndr_print_MAPISTATUS(ndr_print, "error code",
-				     mapi_response->mapi_repl->error_code);
 		return mapi_response->mapi_repl->error_code;
 	}
 
@@ -380,17 +376,6 @@ enum MAPISTATUS	GetPropList(struct emsmdb_context *emsmdb, uint32_t ulFlags, uin
 	    memcpy((void*)proptags->aulPropTag, (void*)mapi_response->mapi_repl->u.mapi_GetPropList.tags, size);
 	  }
 
-#ifdef NEVER_DEFINED
-	{
-	  uint32_t i_tag;
-	  struct ndr_print* ndr_print;
-	  ndr_print = talloc_zero(mem_ctx, struct ndr_print);
-	  ndr_print->print = ndr_print_debug_helper;
-	  for (i_tag = 0; i_tag < proptags->cValues; ++i_tag)
-	    ndr_print_MAPITAGS(ndr_print, "mapitags", proptags->aulPropTag[i_tag]);
-	}
-#endif /* 0 */
-	
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;

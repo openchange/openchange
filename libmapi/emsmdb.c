@@ -173,8 +173,11 @@ void *pull_emsmdb_property(struct emsmdb_context *emsmdb, uint32_t *offset, uint
 {
 	struct ndr_pull		*ndr;
 	const char		*pt_string8;
+	uint16_t		*pt_i2;
 	uint64_t		*pt_i8;
 	uint32_t		*pt_long;
+	uint16_t		*pt_boolean;
+	struct FILETIME		*pt_filetime;
 	struct SBinary_short	pt_binary;
 	struct SBinary		*sbin;
 
@@ -185,6 +188,17 @@ void *pull_emsmdb_property(struct emsmdb_context *emsmdb, uint32_t *offset, uint
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 
 	switch(property & 0xFFFF) {
+	case PT_BOOLEAN:
+		pt_boolean = talloc_zero(emsmdb->mem_ctx, uint16_t);
+		ndr_pull_uint16(ndr, NDR_SCALARS, pt_boolean);
+		*offset = ndr->offset;
+		return (void *) pt_boolean;
+	case PT_I2:
+		pt_i2 = talloc_zero(emsmdb->mem_ctx, uint16_t);
+		ndr_pull_uint16(ndr, NDR_SCALARS, pt_i2);
+		*offset = ndr->offset;
+		return (void *) pt_i2;
+	case PT_NULL:
 	case PT_LONG:
 		pt_long = talloc_zero(emsmdb->mem_ctx, uint32_t);
 		ndr_pull_uint32(ndr, NDR_SCALARS, pt_long);
@@ -195,11 +209,18 @@ void *pull_emsmdb_property(struct emsmdb_context *emsmdb, uint32_t *offset, uint
 		ndr_pull_hyper(ndr, NDR_SCALARS, pt_i8);
 		*offset = ndr->offset;
 		return (void *) pt_i8;
+	case PT_SYSTIME:
+		pt_filetime = talloc_zero(emsmdb->mem_ctx, struct FILETIME);
+		ndr_pull_hyper(ndr, NDR_SCALARS, (uint64_t*)pt_filetime);
+		*offset = ndr->offset;
+		return (void*) pt_filetime;
+	case PT_UNICODE:
 	case PT_STRING8:
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 		ndr_pull_string(ndr, NDR_SCALARS, &pt_string8);
 		*offset = ndr->offset;
 		return (void *) pt_string8;
+	case PT_OBJECT:
 	case PT_BINARY:
 		ndr_pull_SBinary_short(ndr, NDR_SCALARS, &pt_binary);
 		*offset = ndr->offset;
@@ -210,6 +231,38 @@ void *pull_emsmdb_property(struct emsmdb_context *emsmdb, uint32_t *offset, uint
 	default:
 		return NULL;
 	}	
+}
+
+enum MAPISTATUS emsmdb_get_SPropValue(struct emsmdb_context *emsmdb,
+				      DATA_BLOB content,
+				      struct SPropTagArray* tags,
+				      struct SPropValue** propvals, uint32_t* cn_propvals)
+{
+	struct SPropValue *p_propval;
+	uint32_t	i_propval;
+	uint32_t	i_tag;
+	uint32_t	cn_tags;
+	uint32_t	offset = 0;
+	void		*data;
+
+	i_propval = 0;
+	cn_tags = tags->cValues;
+	*cn_propvals = 0;
+	*propvals = talloc_array(emsmdb->mem_ctx, struct SPropValue, cn_tags);
+
+	for (i_tag = 0; i_tag < cn_tags; i_tag++) {
+	  data = pull_emsmdb_property(emsmdb, &offset, tags->aulPropTag[i_tag], content);
+	  if (data) {
+	    p_propval = &((*propvals)[i_propval]);
+	    p_propval->ulPropTag = tags->aulPropTag[i_tag];
+	    p_propval->dwAlignPad = 0x0;
+	    set_SPropValue(p_propval, data);
+	    i_propval++;
+	  }
+	}
+
+	*cn_propvals = i_propval;
+	return MAPI_E_SUCCESS;
 }
 
 struct SRow *emsmdb_get_SRow(struct emsmdb_context *emsmdb, uint32_t row_count, DATA_BLOB content, uint8_t align)

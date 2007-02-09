@@ -722,14 +722,14 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x7  */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8 unknown;
-		uint32 unknown2;
-		uint16 prop_count;
-		MAPITAGS properties[prop_count];
+		uint8		unknown;
+		uint32		unknown2;
+		uint16		prop_count;
+		MAPITAGS	properties[prop_count];
 	} GetProps_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8				unknown;
+		uint8		unknown;
 		[flag(NDR_REMAINING)] DATA_BLOB prop_data;
 	} GetProps_repl;
 

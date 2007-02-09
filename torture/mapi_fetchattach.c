@@ -30,12 +30,6 @@
 #include "libmapi/include/mapi_proto.h"
 
 
-/* fixme:
-   . attachment size is unknown
- */
-
-#define SZ_ATTACHMENT	0x2a
-
 static enum MAPISTATUS read_attach_stream(struct emsmdb_context* ctx_emsmdb,
 					  TALLOC_CTX* ctx_mem,
 					  uint32_t hdl_attach,
@@ -47,20 +41,33 @@ static enum MAPISTATUS read_attach_stream(struct emsmdb_context* ctx_emsmdb,
   uint32_t		off_data;
   enum MAPISTATUS	status;
   int			done;
+  struct SPropTagArray	*proptags;
+  struct SPropValue	*vals;
+  uint32_t		cn_vals;
 
-  
-  /* reset */
+  /* Reset 
+   */
   *buf_data = 0;
   *sz_data = 0;
   off_data = 0;
   done = 0;
 
-  *sz_data = SZ_ATTACHMENT;
+  /* Get Attachment size
+   */
+  proptags = set_SPropTagArray(ctx_emsmdb->mem_ctx, 0x1, PR_ATTACH_SIZE);
+  status = GetProps(ctx_emsmdb, 0, hdl_attach, proptags, &vals, &cn_vals);
+  if (status != MAPI_E_SUCCESS)
+    return status;
+
+  /* Alloc buffer
+   */
+  *sz_data = (uint32_t)vals[0].value.b;
   *buf_data = talloc_size(ctx_mem, *sz_data);
   if (*buf_data == 0)
     return -1;
 
-  /* read by blocks */
+  /* Read attachment
+   */
   while (done == 0)
     {
       status = ReadAttach(ctx_emsmdb, 0, hdl_stream,
@@ -78,6 +85,8 @@ static enum MAPISTATUS read_attach_stream(struct emsmdb_context* ctx_emsmdb,
 	    done = 1;
 	}
     }
+
+  *sz_data = off_data;
 
   return status;
 }
@@ -164,7 +173,7 @@ BOOL torture_rpc_mapi_fetchattach(struct torture_context *torture)
 	   foreach attachment, get PR_NUM
 	   foreach PR_NUM, open attachment
 	 */
-	for (i_msg = 0; i_msg < rows_msgs[0].cRows; ++i_msg) {
+	for (i_msg = 0; i_msg < rows_msgs[0].cRows; i_msg++) {
 
 	  /* open message
 	   */
@@ -190,7 +199,7 @@ BOOL torture_rpc_mapi_fetchattach(struct torture_context *torture)
 
 	      /* get a stream on PR_ATTACH_DATA_BIN
 	       */
-	      for (i_row_attach = 0; i_row_attach < rows_attach[0].cRows; ++i_row_attach) {
+	      for (i_row_attach = 0; i_row_attach < rows_attach[0].cRows; i_row_attach++) {
 		num_attach = rows_attach[0].aRow[i_row_attach].lpProps[0].value.l;
 		mapistatus = OpenAttach(emsmdb, 0, hdl_message, num_attach, &hdl_attach);
 		if (mapistatus == MAPI_E_SUCCESS) {

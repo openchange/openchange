@@ -51,6 +51,8 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	struct SPropTagArray	*SPropTagArray, *props;	
 	struct SRowSet		*SRowSet;
 	uint32_t		i;
+	uint32_t		cn_vals;
+	struct SPropValue	*vals;
 
 	mem_ctx = talloc_init("torture_rpc_mapi_fetchmail");
 
@@ -103,15 +105,6 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	SRowSet = talloc(mem_ctx, struct SRowSet);
 	QueryRows(emsmdb, 0, table_id, 0xa, &SRowSet);
 
-	{
-		struct ndr_print *ndr;
-
-		ndr = talloc_zero(mem_ctx, struct ndr_print);
-		ndr->print = ndr_print_debug_helper;
-
-		ndr_print_SRowSet(ndr, "QueryRows", SRowSet);
-	}
-
 	for (i = 0; i < SRowSet[0].cRows; i++) {
 		printf("[STEP 07-%i] mapi call: OpenMessage\n", i);
 		mapistatus = OpenMessage(emsmdb, 0, hid_msgstore,
@@ -126,8 +119,12 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 						  PR_BODY,
 						  PR_SENDER_NAME,
 						  PR_SENDER_EMAIL_ADDRESS);
-		
-			GetProps(emsmdb, 0, hid_msg, props);
+			GetProps(emsmdb, 0, hid_msg, props, &vals, &cn_vals);
+			DEBUG(1, ("-- subject: %s\n", vals[0].value.lpszA));
+			DEBUG(1, ("-- body   : %s\n", vals[1].value.lpszA));
+			DEBUG(1, ("-- from   : %s\n", vals[2].value.lpszA));
+			DEBUG(1, ("-- email  : %s\n", vals[3].value.lpszA));
+
 			talloc_free(props);
 		}
 	}

@@ -319,3 +319,79 @@ enum MAPISTATUS	OpenProperty(struct emsmdb_context *emsmdb, uint32_t ulFlags, ui
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+ * get the property list
+ */
+
+enum MAPISTATUS	GetPropList(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_object, struct SPropTagArray* proptags)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct GetPropList_req	request;
+	NTSTATUS		status;
+	uint32_t		size = 0;
+	TALLOC_CTX		*mem_ctx;
+ 
+	mem_ctx = talloc_init("GetPropList");
+
+	/* Reset */
+	proptags->cValues = 0;
+	size = 0;
+
+	/* Fill the GetPropList operation */
+	request.unknown = 0x0;
+	size += sizeof(uint8_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetPropList;
+	mapi_req->mapi_flags = ulFlags;
+	mapi_req->u.mapi_GetPropList = request;
+	size += 4;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = hdl_object;
+
+	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
+
+	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
+		struct ndr_print *ndr_print;
+		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
+		ndr_print->print = ndr_print_debug_helper;
+		ndr_print_MAPISTATUS(ndr_print, "error code",
+				     mapi_response->mapi_repl->error_code);
+		return mapi_response->mapi_repl->error_code;
+	}
+
+	/* Get the repsonse */
+	proptags->cValues = mapi_response->mapi_repl->u.mapi_GetPropList.count;
+	if (proptags->cValues)
+	  {
+	    size = proptags->cValues * sizeof(enum MAPITAGS);
+	    proptags->aulPropTag = talloc_array(emsmdb->mem_ctx, enum MAPITAGS, proptags->cValues);
+	    memcpy((void*)proptags->aulPropTag, (void*)mapi_response->mapi_repl->u.mapi_GetPropList.tags, size);
+	  }
+
+#ifdef NEVER_DEFINED
+	{
+	  uint32_t i_tag;
+	  struct ndr_print* ndr_print;
+	  ndr_print = talloc_zero(mem_ctx, struct ndr_print);
+	  ndr_print->print = ndr_print_debug_helper;
+	  for (i_tag = 0; i_tag < proptags->cValues; ++i_tag)
+	    ndr_print_MAPITAGS(ndr_print, "mapitags", proptags->aulPropTag[i_tag]);
+	}
+#endif /* 0 */
+	
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}

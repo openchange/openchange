@@ -614,6 +614,7 @@ System Attendant Private Interface
 			op_MAPI_GetContentsTable	= 0x5,
 			op_MAPI_CreateMessage		= 0x6,
 			op_MAPI_GetProps		= 0x7,
+			op_MAPI_GetPropList		= 0x9,
 			op_MAPI_SetProps		= 0xa,
 			op_MAPI_ModifyRecipients	= 0xe,
 			op_MAPI_SetColumns		= 0x12,
@@ -731,6 +732,17 @@ System Attendant Private Interface
 		uint8				unknown;
 		[flag(NDR_REMAINING)] DATA_BLOB prop_data;
 	} GetProps_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x9  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown;
+	} GetPropList_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		count;
+		MAPITAGS	tags[count];
+	} GetPropList_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0xa  */
@@ -955,6 +967,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetContentsTable)] GetContentsTable_req mapi_GetContentsTable;
 		[case(op_MAPI_CreateMessage)] CreateMessage_req mapi_CreateMessage;
 		[case(op_MAPI_GetProps)] GetProps_req mapi_GetProps;
+		[case(op_MAPI_GetPropList)] GetPropList_req mapi_GetPropList;
 		[case(op_MAPI_SetProps)] SetProps_req mapi_SetProps;
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_req mapi_ModifyRecipients;
@@ -977,6 +990,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetContentsTable)] GetContentsTable_repl mapi_GetContentsTable;
 		[case(op_MAPI_CreateMessage)] CreateMessage_repl mapi_CreateMessage;
 		[case(op_MAPI_GetProps)] GetProps_repl mapi_GetProps;
+		[case(op_MAPI_GetPropList)] GetPropList_repl mapi_GetPropList;
 		[case(op_MAPI_SetProps)] SetProps_repl mapi_SetProps;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;

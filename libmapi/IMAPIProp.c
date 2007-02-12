@@ -264,65 +264,6 @@ enum MAPISTATUS	SaveChanges(struct emsmdb_context *emsmdb, uint32_t ulFlags, uin
 
 
 /**
- * open a list of properties.
- */
-
-enum MAPISTATUS	OpenProperty(struct emsmdb_context *emsmdb, uint32_t ulFlags, uint32_t hdl_object, struct SPropTagArray* proptags, uint32_t* hdl_result)
-{
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct OpenProperty_req	request;
-	NTSTATUS		status;
-	uint32_t		size = 0;
-	TALLOC_CTX		*mem_ctx;
- 
-	mem_ctx = talloc_init("OpenProperty");
-
-	*hdl_result = 0;
-	size = 0;
-
-	/* Fill the OpenProperty operation */
-	request.unknown_0 = 0x100;
-	size += sizeof(uint16_t);
-	proptags->cValues -= 1;
-	request.properties.length = proptags->cValues * sizeof(uint32_t);
-	request.properties.data = (uint8_t*)proptags->aulPropTag;
-	size += proptags->cValues * sizeof(uint32_t);
-	request.unknown_1 = 0x0;
-	size += sizeof(uint8_t);
-
-	/* Fill the MAPI_REQ request */
-	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_OpenProperty;
-	mapi_req->mapi_flags = ulFlags;
-	mapi_req->u.mapi_OpenProperty = request;
-	size += 4;
-
-	/* Fill the mapi_request structure */
-	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
-	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
-	mapi_request->length = size;
-	mapi_request->mapi_req = mapi_req;
-	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
-	mapi_request->handles[0] = hdl_object;
-	mapi_request->handles[1] = 0xffffffff;
-
-	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
-
-	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		return mapi_response->mapi_repl->error_code;
-	}
-
-	*hdl_result = mapi_response->handles[1];
-
-	talloc_free(mem_ctx);
-
-	return MAPI_E_SUCCESS;
-}
-
-
-/**
  * get the property list
  */
 

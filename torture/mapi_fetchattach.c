@@ -70,7 +70,7 @@ static enum MAPISTATUS read_attach_stream(struct emsmdb_context* ctx_emsmdb,
    */
   while (done == 0)
     {
-      status = ReadAttach(ctx_emsmdb, 0, hdl_stream,
+      status = ReadStream(ctx_emsmdb, 0, hdl_stream,
 			  (*buf_data) + off_data,
 			  (*sz_data) - off_data,
 			  &cn_read);
@@ -175,47 +175,40 @@ BOOL torture_rpc_mapi_fetchattach(struct torture_context *torture)
 	 */
 	for (i_msg = 0; i_msg < rows_msgs[0].cRows; i_msg++) {
 
-	  /* open message
-	   */
-	  id_folder = rows_msgs[0].aRow[i_msg].lpProps[0].value.d;
-	  id_message = rows_msgs[0].aRow[i_msg].lpProps[1].value.d;
-	  mapistatus = OpenMessage(emsmdb, 0, hdl_msgstore, id_folder, id_message, &hdl_message);
-	  if (mapistatus == MAPI_E_SUCCESS) {
-
-	    /* open attachment table
-	     */
-	    proptags = set_SPropTagArray(emsmdb->mem_ctx, 0x3, 0x1000001e, 0x01000100, 0x02000021);
-	    mapistatus = OpenProperty(emsmdb, 0, hdl_message, proptags, &hdl_tb_attach);
-
-	    /* foreach attachment, open by PR_ATTACH_NUM
-	     */
-	    if (mapistatus == MAPI_E_SUCCESS) {
-	      proptags = set_SPropTagArray(emsmdb->mem_ctx, 0x1, PR_ATTACH_NUM);
-	      SetColumns(emsmdb, 0, proptags);
-	      rows_attach = talloc(mem_ctx, struct SRowSet);
-	      mapistatus = QueryRows(emsmdb, 0, hdl_tb_attach, 0xa, &rows_attach);
-	      if (mapistatus != MAPI_E_SUCCESS)
-		return False;
-
-	      /* get a stream on PR_ATTACH_DATA_BIN
-	       */
-	      for (i_row_attach = 0; i_row_attach < rows_attach[0].cRows; i_row_attach++) {
-		num_attach = rows_attach[0].aRow[i_row_attach].lpProps[0].value.l;
-		mapistatus = OpenAttach(emsmdb, 0, hdl_message, num_attach, &hdl_attach);
+		/* open message
+		 */
+		id_folder = rows_msgs[0].aRow[i_msg].lpProps[0].value.d;
+		id_message = rows_msgs[0].aRow[i_msg].lpProps[1].value.d;
+		mapistatus = OpenMessage(emsmdb, 0, hdl_msgstore, id_folder, id_message, &hdl_message);
 		if (mapistatus == MAPI_E_SUCCESS) {
-		  proptags = set_SPropTagArray(emsmdb->mem_ctx, 0x1, PR_ATTACH_DATA_BIN);
-		  mapistatus = OpenProperty(emsmdb, 0, hdl_attach, proptags, &hdl_stream);
+			mapistatus = OpenStream(emsmdb, 0, PR_BODY, hdl_message, &hdl_tb_attach);
+			mapistatus = GetAttachmentTable(emsmdb,hdl_message, &hdl_tb_attach);
 
-		  /* read stream content
-		   */
-		  if (mapistatus == MAPI_E_SUCCESS)
-		    read_attach_stream(emsmdb, mem_ctx, hdl_attach, hdl_stream, &buf_attach, &sz_attach);
+			/* foreach attachment, open by PR_ATTACH_NUM */
+			if (mapistatus == MAPI_E_SUCCESS) {
+				proptags = set_SPropTagArray(emsmdb->mem_ctx, 0x1, PR_ATTACH_NUM);
+				SetColumns(emsmdb, 0, proptags);
+				rows_attach = talloc(mem_ctx, struct SRowSet);
+				mapistatus = QueryRows(emsmdb, 0, hdl_tb_attach, 0xa, &rows_attach);
+				if (mapistatus != MAPI_E_SUCCESS)
+					return False;
+				
+				/* get a stream on PR_ATTACH_DATA_BIN */
+				for (i_row_attach = 0; i_row_attach < rows_attach[0].cRows; i_row_attach++) {
+					num_attach = rows_attach[0].aRow[i_row_attach].lpProps[0].value.l;
+					mapistatus = OpenAttach(emsmdb, 0, hdl_message, num_attach, &hdl_attach);
+					if (mapistatus == MAPI_E_SUCCESS) {
+						mapistatus = OpenStream(emsmdb, 0, PR_ATTACH_DATA_BIN, hdl_attach, &hdl_stream);
+						
+						/* read stream content */
+						if (mapistatus == MAPI_E_SUCCESS)
+							read_attach_stream(emsmdb, mem_ctx, hdl_attach, hdl_stream, &buf_attach, &sz_attach);
+					}
+				}
+			}
 		}
-	      }
-	    }
-	  }
 	}
-
+	
 	talloc_free(mem_ctx);
 	return (ret);
 }

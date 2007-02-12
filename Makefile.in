@@ -212,7 +212,7 @@ mapi_proto.h:
 	libmapi/property.c libmapi/nspi.c libmapi/emsmdb.c libmapi/mapi.c libmapi/IABContainer.c		\
 	libmapi/IMAPIContainer.c libmapi/IMAPIFolder.c libmapi/IMAPIProp.c libmapi/IMAPISession.c		\
 	libmapi/IMAPITable.c libmapi/IMessage.c libmapi/IMsgStore.c libmapi/IStoreFolder.c			\
-	libmapi/IUnknown.c
+	libmapi/IUnknown.c libmapi/IStream.c
 
 providers_proto.h: providers/emsabp.c
 	@echo "Generating providers_proto.h"
@@ -231,6 +231,7 @@ libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
 			libmapi/IMAPIFolder.o				\
 			libmapi/IMAPIProp.o				\
 			libmapi/IMAPISession.o				\
+			libmapi/IStream.o				\
 			libmapi/IMAPITable.o				\
 			libmapi/IMessage.o				\
 			libmapi/IMsgStore.o				\

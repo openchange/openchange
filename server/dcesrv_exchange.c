@@ -22,22 +22,23 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "openchange.h"
+#include <libmapi/libmapi.h>
+
 #include <dcerpc_server.h>
-#include <talloc.h>
+#include <dcerpc_server/common.h>
+
 #include <core.h>
+#include <core/nterr.h>
+
 #include <util.h>
 #include <param.h>
-#include <core/nterr.h>
-#include <dcerpc.h>
-#include "ndr_exchange.h"
+
+#include <gen_ndr/ndr_exchange.h>
 #include "server/dcesrv_exchange.h"
-#include <dcerpc_server/common.h>
 #include "ndr_mapi.h"
-#include "libmapi/include/proto.h"
-#include "libmapi/include/mapi_proto.h"
 #include "providers/emsabp.h"
 #include "providers/providers_proto.h"
+#include "server/dcesrv_proto.h"
 
 enum exchange_handle {
 	EXCHANGE_HANDLE_NSP,
@@ -992,7 +993,7 @@ void dcesrv_unknown_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
 
 
 /* include the generated boilerplate */
-#include "ndr_exchange_s.c"
+#include "gen_ndr/ndr_exchange_s.c"
 
 NTSTATUS init_module(void)
 {

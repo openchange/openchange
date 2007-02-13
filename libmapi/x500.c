@@ -18,7 +18,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "openchange.h"
+#include <libmapi/libmapi.h>
 
 /*
  * x500_get_element

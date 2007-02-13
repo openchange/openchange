@@ -48,21 +48,25 @@
  **
  */
 
-#include "openchange.h"
-#include "libmapi/include/nspi.h"
+#include <libmapi/libmapi.h>
+#include <gen_ndr/ndr_exchange.h>
+#include <param.h>
+#include <credentials.h>
 #include <torture/torture.h>
-#include "exchange.h"
-#include "ndr_exchange.h"
-#include "libmapi/include/mapidefs.h"
-#include "libmapi/include/proto.h"
-#include "libmapi/include/mapi_proto.h"
-#include "torture/torture_proto.h"
+#include <torture/torture_proto.h>
+#include <samba/popt.h>
+
+#include <sys/stat.h>
+#include <dirent.h>
 
 #define FAILED			"Failed"
 #define SUCCEEDED		"Succeeded"
 #define PARENT			".."
 #define XMLPATTERNBEGIN		"<exchange version='%s'>\n\t<function name='Nspi_%s'>\n\t\t<tag name='%s' value='0x%x'>"
 #define XMLPATTERNEND		"\n\t\t</tag>\n\t</function>\n</exchange>\n"
+
+#define TEST_USER_NAME		"nspitestuser"
+#define	TEST_MACHINE_NAME	"nspitestcomputer"
 
 /* Global vars */
 FILE	*stream;

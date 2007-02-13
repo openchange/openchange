@@ -18,10 +18,10 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "openchange.h"
+#include <libmapi/libmapi.h>
+#include <core/nterr.h>
 #include <torture/torture.h>
-#include "libmapi/include/nspi.h"
-#include "torture/torture_proto.h"
+#include <torture/torture_proto.h>
 
 NTSTATUS init_module(void)
 {
@@ -30,9 +30,6 @@ NTSTATUS init_module(void)
 	DEBUG(0, ("Loading openchange torture test\n"));
 
 	/* OpenChange torture tests */
-	torture_suite_add_simple_test(suite, "EMSMDB", torture_rpc_emsmdb);
-	torture_suite_add_simple_test(suite, "EXCHANGE", torture_rpc_exchange);
-	torture_suite_add_simple_test(suite, "NSPI", torture_rpc_nspi);
 	torture_suite_add_simple_test(suite, "NSPI-SCANTAGS", torture_rpc_scantags);
 	/* Address Book name resolution */
 	torture_suite_add_simple_test(suite, "NSPI-PROFILE", torture_rpc_nspi_profile);

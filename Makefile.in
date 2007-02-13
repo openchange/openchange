@@ -12,6 +12,7 @@ exec_prefix=@exec_prefix@
 bindir=@bindir@
 libdir=@libdir@
 datadir=@datadir@
+includedir=@includedir@
 
 top_builddir=${PWD}
 
@@ -43,10 +44,9 @@ LIBS+=@SAMBA_LIBS@
 CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
 LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 
-all: 	ndr_exchange.h proto.h mapi_proto.h torture_proto.h bin/schemaIDGUID \
-	bin/mapidump bin/locale_codepage torture/openchange.$(SHLIBEXT) \
-	server/dcesrv_exchange.$(SHLIBEXT) \
-	server/dcesrv_exchange_remote.$(SHLIBEXT) $(EVOLUTION_PLUGIN)
+all: 	gen_ndr gen_ndr/ndr_exchange.h proto.h torture_proto.h providers_proto.h dcesrv_proto.h \
+	bin/schemaIDGUID bin/mapidump bin/locale_codepage torture/openchange.$(SHLIBEXT) \
+	server/dcesrv_exchange.$(SHLIBEXT) server/dcesrv_exchange_remote.$(SHLIBEXT) $(EVOLUTION_PLUGIN)
 
 install: all $(EVOLUTION_PLUGIN_INSTALL)
 	@echo "=============================="
@@ -64,6 +64,11 @@ install: all $(EVOLUTION_PLUGIN_INSTALL)
 	cp scripting/libjs/*.js $(DESTDIR)$(datadir)/js/
 	cp setup/*.ldif $(DESTDIR)$(datadir)/setup/
 	@echo "OpenChange plugin installed"
+
+install_lib:
+	@echo "============================="
+	@echo "Installing libmapi library"
+	mkdir -p $(DESTDIR)$(incdir)
 
 uninstall: $(EVOLUTION_PLUGIN_UNINSTALL)
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
@@ -108,7 +113,7 @@ client/evolution/camelprovider/libcamel-openchange.$(SHLIBEXT): client/evolution
 	@echo "Linking $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(EVOLUTION_PLUGIN_LIBS)
 
-torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/emsmdb.o torture/exchange.o torture/nspi.o torture/nspi_profile.o torture/nspi_resolvenames.o torture/nspi_scantags.o torture/mapi_fetchmail.o torture/mapi_sendmail.o torture/mapi_deletemail.o torture/mapi_sendattach.o torture/mapi_fetchattach.o torture/openchange.o
+torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/nspi_profile.o torture/nspi_resolvenames.o torture/nspi_scantags.o torture/mapi_fetchmail.o torture/mapi_sendmail.o torture/mapi_deletemail.o torture/mapi_sendattach.o torture/mapi_fetchattach.o torture/openchange.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -lmapi
 
@@ -120,31 +125,35 @@ server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. -lmapi $(LIBS)
 
+gen_ndr:
+	@echo "Creating the gen_ndr directory"
+	mkdir -p gen_ndr
+
 exchange.idl: mapitags_enum.h mapicodes_enum.h
 
 %.h: %.idl
 	@echo "Compiling $<"
-	@$(PIDL) --outputdir=$(@D) --header -- $<
+	@$(PIDL) --outputdir=gen_ndr --header -- $<
 
 .c.o:
 	@echo "Compiling $<"
 	@$(CC) $(EPLUGINS_UI_CFLAGS) $(CFLAGS) -c $< -o $@
 
-ndr_%.h ndr_%.c: %.idl %.h
+gen_ndr/ndr_%.h gen_ndr/ndr_%.c: %.idl %.h
 	@echo "Compiling $<"
-	@$(PIDL) --outputdir=$(@D) --ndr-parser -- $<
+	@$(PIDL) --outputdir=gen_ndr --ndr-parser -- $<
 
-ndr_%_c.h ndr_%_c.c: %.idl %.h
+gen_ndr/ndr_%_c.h gen_ndr/ndr_%_c.c: %.idl %.h
 	@echo "Compiling $<"
-	@$(PIDL) --outputdir=$(@D) --client -- $<
+	@$(PIDL) --outputdir=gen_ndr --client -- $<
 
-ndr_%_s.c: %.idl
+gen_ndr/ndr_%_s.c: %.idl
 	@echo "Compiling $<"
-	@$(PIDL) --outputdir=$(@D) --server -- $<
+	@$(PIDL) --outputdir=gen_ndr --server -- $<
 
-server/dcesrv_exchange.c: providers_proto.h ndr_exchange_s.c ndr_exchange.c
+server/dcesrv_exchange.c: providers_proto.h gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
 
-libmapi/emsmdb.c: libmapi/include/emsmdb.h ndr_exchange_c.h
+libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
 libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mparse.pl
 	@./libmapi/conf/build.sh
@@ -172,6 +181,7 @@ realdistclean: distclean
 	rm -f server/dcesrv_exchange.so
 	rm -f server/dcesrv_exchange_remote.so
 	rm -f client/evolution/*/*.so
+	rmdir gen_ndr
 
 clean:
 	rm -f libmapi/generated/*
@@ -184,11 +194,12 @@ clean:
 	rm -f providers/*.o
 	rm -f torture/*.o
 	rm -f utils/*.o
-	rm -f ndr_exchange* exchange.h
+	rm -f gen_ndr/ndr_exchange* gen_ndr/exchange.h
 	rm -f libmapi/mapicode.{c,h}
 	rm -f libmapi/mapitags.{c,h}
-	rm -f libmapi/include/proto.h
-	rm -f libmapi/include/mapi_proto.h
+	rm -f libmapi/proto.h
+	rm -f server/dcesrv_proto.h
+	rm -f libmapi/pr
 	rm -f providers/providers_proto.h
 	rm -f torture/*.$(SHLIBEXT) server/*.$(SHLIBEXT)
 	rm -f torture/torture_proto.h
@@ -201,30 +212,46 @@ clean:
 	rm -f */*/*~
 
 proto.h: libmapi/mapitags.c libmapi/mapicode.c
-	@echo "Generating proto.h"
-	@./script/mkproto.pl --private=libmapi/include/proto.h --public=libmapi/include/proto.h \
-	libmapi/x500.c libmapi/mapitags.c libmapi/mapicode.c libmapi/utils.c \
-	libmapi/util/locale.c libmapi/util/codepage.c 
-
-mapi_proto.h:
-	@echo "Generating mapi_proto.h"
-	@./script/mkproto.pl --private=libmapi/include/mapi_proto.h --public=libmapi/include/mapi_proto.h	\
-	libmapi/property.c libmapi/nspi.c libmapi/emsmdb.c libmapi/mapi.c libmapi/IABContainer.c		\
-	libmapi/IMAPIContainer.c libmapi/IMAPIFolder.c libmapi/IMAPIProp.c libmapi/IMAPISession.c		\
-	libmapi/IMAPITable.c libmapi/IMessage.c libmapi/IMsgStore.c libmapi/IStoreFolder.c			\
-	libmapi/IUnknown.c libmapi/IStream.c
+	@echo "Generating libmapi proto.h"
+	@./script/mkproto.pl --private=libmapi/proto.h --public=libmapi/proto.h \
+	libmapi/nspi.c			\
+	libmapi/emsmdb.c		\
+	libmapi/mapi.c			\
+	libmapi/mapitags.c		\
+	libmapi/mapicode.c		\
+	libmapi/property.c		\
+	libmapi/IABContainer.c		\
+	libmapi/IMAPIContainer.c	\
+	libmapi/IMAPIFolder.c 		\
+	libmapi/IMAPIProp.c 		\
+	libmapi/IMAPISession.c		\
+	libmapi/IMAPITable.c 		\
+	libmapi/IMessage.c 		\
+	libmapi/IMsgStore.c 		\
+	libmapi/IStoreFolder.c		\
+	libmapi/IUnknown.c 		\
+	libmapi/IStream.c		\
+	libmapi/x500.c 			\
+	libmapi/utils.c 		\
+	libmapi/util/locale.c 		\
+	libmapi/util/codepage.c 
 
 providers_proto.h: providers/emsabp.c
-	@echo "Generating providers_proto.h"
+	@echo "Generating providers/providers_proto.h"
 	@./script/mkproto.pl --private=providers/providers_proto.h --public=providers/providers_proto.h \
 	providers/emsabp.c
+
+dcesrv_proto.h: server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
+	@echo "Generating server/dcesrv_proto.h"
+	@./script/mkproto.pl --private=server/dcesrv_proto.h --public=server/dcesrv_proto.h \
+	server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
 
 torture_proto.h:
 	@echo "Generating torture_proto.h"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h \
-	torture/emsmdb.c torture/exchange.c torture/mapi_deletemail.c torture/mapi_fetchmail.c	\
-	torture/mapi_sendattach.c torture/mapi_fetchattach.c torture/mapi_sendmail.c torture/nspi.c \
-	torture/nspi_profile.c torture/nspi_resolvenames.c torture/nspi_scantags.c
+	torture/mapi_deletemail.c torture/mapi_fetchmail.c torture/mapi_sendattach.c 		\
+	torture/mapi_fetchattach.c torture/mapi_sendmail.c torture/nspi_profile.c 		\
+	torture/nspi_resolvenames.c torture/nspi_scantags.c torture/openchange.c
 
 libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
 			libmapi/IMAPIContainer.o			\
@@ -240,9 +267,9 @@ libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
 			libmapi/utils.o libmapi/property.o		\
 			libmapi/mapi.o libmapi/mapitags.o		\
 			libmapi/mapicode.o libmapi/emsmdb.o		\
-			libmapi/nspi.o ndr_exchange.o			\
+			libmapi/nspi.o gen_ndr/ndr_exchange.o		\
 			libmapi/util/locale.o libmapi/util/codepage.o	\
-			libmapi/x500.o ndr_mapi.o ndr_exchange_c.o	
+			libmapi/x500.o ndr_mapi.o gen_ndr/ndr_exchange_c.o	
 	@echo "Compiling $<"
 	@$(CC) $(DSOOPT) -o $@ $^ $(LIBS)
 
@@ -252,7 +279,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-.PRECIOUS: exchange.h ndr_exchange.h ndr_exchange.c ndr_exchange_c.c ndr_exchange_c.h
+.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h
 
 Makefile: Makefile.in config.status
 	./config.status

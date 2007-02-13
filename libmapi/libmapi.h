@@ -1,4 +1,7 @@
 /*
+ *  OpenChange MAPI implementation.
+ *  libmapi public header file
+ *
  *  Copyright (C) Julien Kerihuel 2007.
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -16,22 +19,33 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include <libmapi/libmapi.h>
+#ifndef __LIBMAPI_H__
+#define __LIBMAPI_H__
 
-/**
- * Wrapper on nspi_ResolveNames
- * Fill an adrlist and flaglist structure
- *
- */
+#define _GNU_SOURCE 1
 
-struct SRowSet *ResolveNames(struct emsmdb_context *emsmdb, const char **usernames, struct SPropTagArray *props)			
-{
-	struct SRowSet		SRowSet;
-	struct SRowSet		*SRowSet2;
+#include <sys/types.h>
 
-	nspi_ResolveNames(emsmdb->nspi, usernames, props, &SRowSet);
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdarg.h>
 
-	SRowSet2 = talloc_zero(emsmdb->mem_ctx, struct SRowSet);
-	*SRowSet2 = SRowSet;
-	return SRowSet2;
-}
+/* Samba4 includes */
+#include <talloc.h>
+#include <dcerpc.h>
+
+/* OpenChange includes */
+#include <gen_ndr/exchange.h>
+
+#include <libmapi/nspi.h>
+#include <libmapi/emsmdb.h>
+#include <libmapi/mapidefs.h>
+#include <libmapi/mapicode.h>
+#include <libmapi/property.h>
+#include <libmapi/proto.h>
+
+#endif /* __LIBMAPI_H__ */

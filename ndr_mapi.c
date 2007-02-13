@@ -20,12 +20,12 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "openchange.h"
+#include <libmapi/libmapi.h>
 #include <ndr.h>
+#include <ndr_mapi.h>
+#include <gen_ndr/ndr_exchange.h>
 #include <core/nterr.h>
-#include "ndr_exchange.h"
-#include "ndr_mapi.h"
-#include "libmapi/include/proto.h"
+
 
 static void obfuscate_data(uint8_t *data, uint32_t size, uint8_t salt)
 {

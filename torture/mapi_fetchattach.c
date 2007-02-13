@@ -20,15 +20,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "openchange.h"
-#include "libmapi/include/nspi.h"
+#include <libmapi/libmapi.h>
+#include <gen_ndr/ndr_exchange.h>
+#include <param.h>
+#include <credentials.h>
 #include <torture/torture.h>
 #include <torture/torture_proto.h>
-#include "ndr_exchange.h"
-#include "libmapi/mapicode.h"
-#include "libmapi/include/emsmdb.h"
-#include "libmapi/include/mapi_proto.h"
-
+#include <samba/popt.h>
 
 static enum MAPISTATUS read_attach_stream(struct emsmdb_context* ctx_emsmdb,
 					  TALLOC_CTX* ctx_mem,
@@ -181,8 +179,8 @@ BOOL torture_rpc_mapi_fetchattach(struct torture_context *torture)
 		id_message = rows_msgs[0].aRow[i_msg].lpProps[1].value.d;
 		mapistatus = OpenMessage(emsmdb, 0, hdl_msgstore, id_folder, id_message, &hdl_message);
 		if (mapistatus == MAPI_E_SUCCESS) {
-			mapistatus = OpenStream(emsmdb, 0, PR_BODY, hdl_message, &hdl_tb_attach);
-			mapistatus = GetAttachmentTable(emsmdb,hdl_message, &hdl_tb_attach);
+		  //			mapistatus = OpenStream(emsmdb, 0, PR_BODY, hdl_message, &hdl_tb_attach);
+			mapistatus = GetAttachmentTable(emsmdb, hdl_message, &hdl_tb_attach);
 
 			/* foreach attachment, open by PR_ATTACH_NUM */
 			if (mapistatus == MAPI_E_SUCCESS) {

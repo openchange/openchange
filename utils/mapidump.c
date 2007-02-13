@@ -20,10 +20,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "openchange.h"
-#include "exchange.h"
-#include "ndr_exchange.h"
-#include "libmapi/include/mapidefs.h"
+#include <libmapi/libmapi.h>
+#include <gen_ndr/ndr_exchange.h>
+#include <core/nterr.h>
+#include <core/error.h>
+#include <samba/popt.h>
 
 struct mapi_calls
 {
@@ -139,7 +140,7 @@ static uint32_t get_mapidump_properties(void *_r, uint8_t opnum, uint32_t **prop
   retrieve the data blob to decode from the response depending on the response opnum
 */
 
-uint32_t get_mapidump_blob(struct mapi_response *r, uint8_t opnum, DATA_BLOB *blob)
+static uint32_t get_mapidump_blob(struct mapi_response *r, uint8_t opnum, DATA_BLOB *blob)
 {
 	int i;
 

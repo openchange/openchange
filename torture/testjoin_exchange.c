@@ -20,13 +20,28 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "openchange.h"
+#include <libmapi/libmapi.h>
+#include <gen_ndr/ndr_exchange.h>
+#include <core/nterr.h>
+#include <param.h>
+#include <credentials.h>
+#include <torture/torture.h>
+#include <torture/torture_proto.h>
+#include <ldap.h>
+#include <ldb.h>
+#include <ldb_errors.h>
+#include <samba/popt.h>
+#include <db_wrap.h>
+
+#define TEST_USER_NAME		"nspitestuser"
+#define	TEST_MACHINE_NAME	"nspitestcomputer"
 
 /* FIXME: We should be using samdb/proto.h */
-int samdb_msg_add_string(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			 const char *attr_name, const char *str);
-int samdb_modify(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg);
-int samdb_replace(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, struct ldb_message *msg);
+int samdb_msg_add_string(struct ldb_context *, TALLOC_CTX *, 
+			 struct ldb_message *, const char *, const char *);
+int samdb_modify(struct ldb_context *, TALLOC_CTX *, struct ldb_message *);
+int samdb_replace(struct ldb_context *, TALLOC_CTX *, struct ldb_message *);
+NTSTATUS torture_create_exchangeuser(TALLOC_CTX *, const struct dom_sid *);
 
 struct tce_async_context {
 	int found;

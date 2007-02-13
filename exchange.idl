@@ -936,8 +936,7 @@ System Attendant Private Interface
 	} ReadStream_req;
 
 	typedef [flag(NDR_ALIGN2)] struct {
-//		DATA_BLOB data;
-	  [subcontext(2), flag(NDR_REMAINING)] DATA_BLOB data;
+		[subcontext(2), flag(NDR_REMAINING)] DATA_BLOB data;
 	} ReadStream_repl;
 
 	/*************************/

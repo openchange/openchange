@@ -19,16 +19,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "openchange.h"
-#include "exchange.h"
-#include "ndr_exchange.h"
-#include "libmapi/include/mapidefs.h"
-#include "libmapi/include/nspi.h"
-#include "libmapi/include/emsmdb.h"
-#include "libmapi/mapicode.h"
-#include "libmapi/include/proto.h"
-#include "libmapi/include/mapi_proto.h"
-
+#include <libmapi/libmapi.h>
+#include <gen_ndr/ndr_exchange.h>
+#include <param.h>
 
 /**
  * Creates a new attachment
@@ -95,7 +88,7 @@ enum MAPISTATUS GetAttachmentTable(struct emsmdb_context *emsmdb, uint32_t hdl_m
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			size = 0;
 
-	mem_ctx = talloc_init("OpenAttachmentTable");
+	mem_ctx = talloc_init("GetAttachmentTable");
 
 	*hdl_attach_table = 0;
 

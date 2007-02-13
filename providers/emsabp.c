@@ -21,13 +21,18 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "openchange.h"
-#include "ndr_exchange.h"
-#include "libmapi/include/mapidefs.h"
-#include "libmapi/include/mapi_proto.h"
-#include "libmapi/include/proto.h"
-#include "libmapi/mapitags.h"
+#include <libmapi/libmapi.h>
+#include <libmapi/mapitags.h>
+#include <ndr.h>
+#include <core/nterr.h>
+#include <ldb.h>
+#include <ldb_errors.h>
+#include <gen_ndr/ndr_misc.h>
+#include <gen_ndr/ndr_exchange.h>
+#include <param.h>
+
 #include "emsabp.h"
+#include "providers/providers_proto.h"
 
 struct mapitags_x500 emsabp_single_x500_tags[] =
 {

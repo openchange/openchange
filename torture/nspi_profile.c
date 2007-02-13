@@ -20,11 +20,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "openchange.h"
+#include <libmapi/libmapi.h>
+#include <gen_ndr/ndr_exchange.h>
+#include <param.h>
+#include <credentials.h>
 #include <torture/torture.h>
-#include "ndr_exchange.h"
-#include "libmapi/include/nspi.h"
-#include "libmapi/include/mapi_proto.h"
+#include <torture/torture_proto.h>
+#include <samba/popt.h>
 
 /* FIXME: Should be part of Samba's data: */
 NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 

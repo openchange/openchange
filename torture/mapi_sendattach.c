@@ -19,13 +19,13 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#include "openchange.h"
+#include <libmapi/libmapi.h>
+#include <gen_ndr/ndr_exchange.h>
+#include <param.h>
+#include <credentials.h>
 #include <torture/torture.h>
-#include "ndr_exchange.h"
-#include "libmapi/mapicode.h"
-#include "libmapi/include/mapidefs.h"
-#include "libmapi/include/emsmdb.h"
-#include "libmapi/include/mapi_proto.h"
+#include <torture/torture_proto.h>
+#include <samba/popt.h>
 
 #define CN_MSG_PROPS 3
 
@@ -202,10 +202,10 @@ BOOL torture_rpc_mapi_sendattach(struct torture_context *torture)
 	    props_attach[1].ulPropTag = PR_RENDERING_POSITION;
 	    props_attach[1].value.l = -1;
 	    props_attach[2].ulPropTag = PR_ATTACH_DATA_BIN;
-	    props_attach[2].value.bin.lpb = (uint8_t *)"super test2";
-	    props_attach[2].value.bin.cb = strlen("super test2") + 1;
+	    props_attach[2].value.bin.lpb = (uint8_t *)"OpenChange Rocks :p";
+	    props_attach[2].value.bin.cb = strlen("OpenChange Rocks :p") + 1;
 	    props_attach[3].ulPropTag = PR_DISPLAY_NAME;
-	    props_attach[3].value.lpszA = "attach.txt";
+	    props_attach[3].value.lpszA = "attachment.txt";
 	    cn_props_attach = 4;
 	  }
 

@@ -18,16 +18,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
-#include "openchange.h"
-#include "exchange.h"
-#include "ndr_exchange.h"
-#include "libmapi/include/mapidefs.h"
-#include "libmapi/include/nspi.h"
-#include "libmapi/include/emsmdb.h"
-#include "libmapi/mapicode.h"
-#include "libmapi/include/proto.h"
-#include "libmapi/include/mapi_proto.h"
+#include <libmapi/libmapi.h>
 
 /**
  * returns a pointer to the container's contents table.

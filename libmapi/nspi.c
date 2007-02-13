@@ -18,13 +18,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "openchange.h"
-#include "ndr_exchange_c.h"
-#include "libmapi/include/nspi.h"
-#include "libmapi/include/mapidefs.h"
-#include "libmapi/mapicode.h"
-#include "libmapi/include/proto.h"
-#include "libmapi/include/mapi_proto.h"
+#include <libmapi/libmapi.h>
+#include <gen_ndr/ndr_exchange_c.h>
+#include <param.h>
+#include <credentials.h>
 
 /*
  * nspi_set_MAPI_SETTINGS

@@ -19,9 +19,8 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "openchange.h"
-#include "exchange.h"
-#include "libmapi/include/proto.h"
+#include <libmapi/libmapi.h>
+#include <samba/popt.h>
 
 /* command line options */
 static struct {

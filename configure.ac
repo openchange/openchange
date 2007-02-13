@@ -40,7 +40,7 @@ CPPFLAGS="-I$prefix/include"
 
 PKG_PROG_PKG_CONFIG([0.20])
 PKG_CHECK_MODULES(TALLOC, talloc)
-PKG_CHECK_MODULES(SAMBA, dcerpc ndr tdr samba-config cli_smb)
+PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-config cli_smb)
 PKG_CHECK_MODULES(LDB, ldb)
 
 TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`

@@ -24,8 +24,6 @@
 #ifndef __EMSABP_H
 #define __EMSABP_H
 
-#include "libmapi/include/property.h"
-
 /*
  * ENTRY_ID structure for ADDRESS BOOK provider
  * uint8_t		abFlags[4]	// bitmask of flags that provide information describing 

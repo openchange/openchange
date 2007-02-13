@@ -25,8 +25,11 @@
   dcesrv_remote endpoint.
  */
 
-#include "openchange.h"
-#include "ndr_exchange.h"
+#include <libmapi/libmapi.h>
+#include <dcerpc_server.h>
+#include <core/nterr.h>
+#include <gen_ndr/ndr_exchange.h>
+#include "server/dcesrv_proto.h"
 
 NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interface);
 

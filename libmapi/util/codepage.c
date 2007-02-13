@@ -19,8 +19,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "openchange.h"
-#include <core.h>
+#include <libmapi/libmapi.h>
 
 #define	CP_VAL	"codepage"
 #define	CP_NAME	"codepage name"

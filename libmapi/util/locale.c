@@ -19,9 +19,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "openchange.h"
-#include <core.h>
-#include <util.h>
+#include <libmapi/libmapi.h>
 
 #define	CP_WESTERN_EUROPE_AND_US	1	/* 1  (Western Europe & US) */
 #define	CP_CENTRAL_EUROPE		2	/* 2  (Central Europe) */

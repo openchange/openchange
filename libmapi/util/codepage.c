@@ -20,6 +20,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/proto_private.h>
 
 #define	CP_VAL	"codepage"
 #define	CP_NAME	"codepage name"
@@ -194,7 +195,7 @@ static struct codepages codepages[] =
  Check for a valid codepage
 */
 
-BOOL valid_codepage(uint32_t cpid)
+_PUBLIC_ BOOL valid_codepage(uint32_t cpid)
 {
 	uint32_t idx = 0;
 

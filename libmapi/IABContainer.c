@@ -16,22 +16,48 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+
 #include <libmapi/libmapi.h>
+#include <libmapi/proto_private.h>
 
 /**
- * Wrapper on nspi_ResolveNames
+ * Wrapper on nspi_ResolveNames and nspi_ResolveNamesW
+ *
+ * Set flags to MAPI_UNICODE for ResolveNamesW call 
+ * otherwise ResolveNames is called 
+ *
  * Fill an adrlist and flaglist structure
  *
  */
 
-struct SRowSet *ResolveNames(struct emsmdb_context *emsmdb, const char **usernames, struct SPropTagArray *props)			
+_PUBLIC_ enum MAPISTATUS ResolveNames(const char **usernames, struct SPropTagArray *props, struct SRowSet **rowset, struct FlagList **flaglist, uint32_t flags)
 {
-	struct SRowSet		SRowSet;
-	struct SRowSet		*SRowSet2;
+	struct nspi_context	*nspi;
+	enum MAPISTATUS		retval;
+	mapi_ctx_t		*mapi_ctx;
 
-	nspi_ResolveNames(emsmdb->nspi, usernames, props, &SRowSet);
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->session->nspi, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!rowset, MAPI_E_INVALID_PARAMETER, NULL);
 
-	SRowSet2 = talloc_zero(emsmdb->mem_ctx, struct SRowSet);
-	*SRowSet2 = SRowSet;
-	return SRowSet2;
+	mapi_ctx = global_mapi_ctx;
+	nspi = (struct nspi_context *)mapi_ctx->session->nspi->ctx;
+
+	*rowset = talloc_zero(mapi_ctx->session, struct SRowSet);
+	*flaglist = talloc_zero(mapi_ctx->session, struct FlagList);
+
+	switch (flags) {
+	case MAPI_UNICODE:
+		retval = nspi_ResolveNamesW(nspi, usernames, props, &rowset, &flaglist);
+		break;
+	default:
+		retval = nspi_ResolveNames(nspi, usernames, props, &rowset, &flaglist);
+		break;
+	}
+
+	if (retval != MAPI_E_SUCCESS) return retval;
+
+	return MAPI_E_SUCCESS;
 }

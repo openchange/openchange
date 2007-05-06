@@ -71,12 +71,10 @@ if (!provision_validate(subobj, message)) {
 
 var creds = options.get_credentials();
 var system_session = system_session();
-
-message("Setting up OpenChange schemas\n");
-provision_schema(subobj, message, blank, provision_default_paths(subobj), creds, system_session);
+var paths = provision_default_paths(subobj);
 
 message("Provisioning Samba Active Directory with OpenChange Objects for Administrative Group %s\n", subobj.DOMAIN);
-provision(subobj, message, blank, provision_default_paths(subobj), creds, system_session);
+provision(subobj, message, blank, paths, system_session, creds);
 
 message("All OK\n");
 return 0;

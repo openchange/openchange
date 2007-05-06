@@ -1,7 +1,7 @@
 /* 
    OpenChange MAPI implementation testsuite
 
-   fetch mail from an Exchange server
+   Fetch mail from an Exchange server
 
    Copyright (C) Julien Kerihuel 2007
    
@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+
 #include <libmapi/libmapi.h>
 #include <gen_ndr/ndr_exchange.h>
 #include <param.h>
@@ -28,108 +29,123 @@
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
 
-/* FIXME: Should be part of Samba's data: */
-NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
-				struct dcerpc_pipe **p, 
-				const struct dcerpc_interface_table *table);
 
 BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 {
-	NTSTATUS		status;
-	MAPISTATUS		mapistatus;
+	NTSTATUS		nt_status;
+	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
-	struct emsmdb_context	*emsmdb;
-	const char		*organization = lp_parm_string(-1, "exchange", "organization");
-	const char		*group = lp_parm_string(-1, "exchange", "ou");
-	const char		*username;
-	char			*mailbox_path;
-	uint32_t		hid_msgstore, hid_folder1, hid_msg;
-	uint32_t		table_id;
-	uint64_t		folder_id;
-	uint64_t		id_outbox;
-	struct SPropTagArray	*SPropTagArray, *props;	
-	struct SRowSet		*SRowSet;
+	const char		*profname;
+	const char		*profdb;
+	struct mapi_session	*session;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_inbox;
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_table;
+	uint64_t		id_inbox;
+	struct SPropTagArray	*SPropTagArray;
+	struct mapi_SPropValue_array	properties_array;
+	struct SRowSet		rowset;
 	uint32_t		i;
-	uint32_t		cn_vals;
-	struct SPropValue	*vals;
+	uint32_t		count;
 
+	/* init torture */
 	mem_ctx = talloc_init("torture_rpc_mapi_fetchmail");
-
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_exchange_emsmdb);
-
-	if (!NT_STATUS_IS_OK(status)) {
+	nt_status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_exchange_emsmdb);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-
 		return False;
 	}
 
-	emsmdb = emsmdb_connect(mem_ctx, p, cmdline_credentials);
-	if (!emsmdb) {
+	/* init mapi */
+	profdb = lp_parm_string(-1, "mapi", "profile_store");
+	retval = MAPIInitialize(profdb);
+	mapi_errstr("MAPIInitialize", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* profile name */
+	profname = lp_parm_string(-1, "mapi", "profile");
+	if (profname == 0) {
+		DEBUG(0, ("Please specify a valid profile name\n"));
 		return False;
 	}
-	
-	emsmdb->mem_ctx = mem_ctx;
 
-	DEBUG(0, ("[STEP 01] mapi call: OpenMsgStore\n"));
-	if (!organization) {
-	  organization = cli_credentials_get_domain(cmdline_credentials);
-	}
-	username = cli_credentials_get_username(cmdline_credentials);
-	if (!organization || !username) {
-		DEBUG(1,("mapi_fetchmail: username and domain required"));
-		return NULL;
-	}
-	mailbox_path = talloc_asprintf(emsmdb->mem_ctx, MAILBOX_PATH, organization, group, username);
-	OpenMsgStore(emsmdb, 0, &hid_msgstore, &id_outbox, mailbox_path);
+	retval = MapiLogonEx(&session, profname);
+	mapi_errstr("MapiLogonEx", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	DEBUG(0, ("[STEP 02] mapi call: GetReceiveFolder\n"));
-	GetReceiveFolder(emsmdb, 0, hid_msgstore, &folder_id);
+	/* init objects */
+	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_inbox);
+	mapi_object_init(&obj_message);
+	mapi_object_init(&obj_table);
 
-	DEBUG(0, ("[STEP 03] mapi call: OpenFolder\n"));
-	OpenFolder(emsmdb, 0, hid_msgstore, folder_id, &hid_folder1);
+	/* session::OpenMsgStore()
+	 */
+	retval = OpenMsgStore(&obj_store);
+	mapi_errstr("OpenMsgStore", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	DEBUG(0, ("[STEP 05] mapi call: GetContentsTable\n"));
-	GetContentsTable(emsmdb, 0, hid_folder1, &table_id);
+	/* id_inbox = store->GetReceiveFolder
+	 */
+	retval = GetReceiveFolder(&obj_store, &id_inbox);
+	mapi_errstr("GetReceiveFolder", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	SPropTagArray = set_SPropTagArray(emsmdb->mem_ctx, 0x5,
+	/* inbox = store->OpenFolder()
+	 */
+	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
+	mapi_errstr("OpenFolder", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* table = inbox->GetContentsTable()
+	 */
+	retval = GetContentsTable(&obj_inbox, &obj_table);
+	mapi_errstr("GetContentsTable", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
 					  PR_FID,
 					  PR_MID,
 					  PR_INST_ID,
 					  PR_INSTANCE_NUM,
 					  PR_SUBJECT);
-	SetColumns(emsmdb, 0, SPropTagArray);
+	retval = SetColumns(&obj_table, SPropTagArray);
+	talloc_free(SPropTagArray);
+	mapi_errstr("SetColumns", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	DEBUG(0, ("[STEP 06] mapi call: GetContentsTable\n"));
-	printf("#### handle_id = 0x%x\n", table_id);
-	SRowSet = talloc(mem_ctx, struct SRowSet);
-	QueryRows(emsmdb, 0, table_id, 0xa, &SRowSet);
+	/* Iterate through messages
+	 */
+	retval = GetRowCount(&obj_table, &count);
+	mapi_errstr("GetRowCount", GetLastError());
+	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
+		for (i = 0; i < rowset.cRows; i++) {
+			retval = OpenMessage(&obj_store,
+					     rowset.aRow[i].lpProps[0].value.d,
+					     rowset.aRow[i].lpProps[1].value.d,
+					     &obj_message);
 
-	for (i = 0; i < SRowSet[0].cRows; i++) {
-		printf("[STEP 07-%i] mapi call: OpenMessage\n", i);
-		mapistatus = OpenMessage(emsmdb, 0, hid_msgstore,
-			    SRowSet[0].aRow[i].lpProps[0].value.d,
-			    SRowSet[0].aRow[i].lpProps[1].value.d,
-			    &hid_msg);
-		
-		if (mapistatus == MAPI_E_SUCCESS) {
-			printf("[STEP 08-%i] mapi call: GetProps\n", i);
-			props = set_SPropTagArray(emsmdb->mem_ctx, 0x4,
-						  PR_SUBJECT,
-						  PR_BODY,
-						  PR_SENDER_NAME,
-						  PR_SENDER_EMAIL_ADDRESS);
-			GetProps(emsmdb, 0, hid_msg, props, &vals, &cn_vals);
-			DEBUG(1, ("-- subject: %s\n", vals[0].value.lpszA));
-			DEBUG(1, ("-- body   : %s\n", vals[1].value.lpszA));
-			DEBUG(1, ("-- from   : %s\n", vals[2].value.lpszA));
-			DEBUG(1, ("-- email  : %s\n", vals[3].value.lpszA));
-
-			talloc_free(props);
+			if (GetLastError() != MAPI_E_NOT_FOUND) {
+			  retval = GetPropsAll(&obj_message, &properties_array);
+			  mapidump_message(&properties_array);
+			  mapi_object_release(&obj_message);
+			}
 		}
 	}
 
+	/* release mapi objects
+	 */
+	mapi_object_release(&obj_store);
+	mapi_object_release(&obj_inbox);
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_table);
+
+	/* uninitialize mapi
+	 */
+	MAPIUninitialize();
 	talloc_free(mem_ctx);
 	
 	return (ret);

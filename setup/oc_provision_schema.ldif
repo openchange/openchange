@@ -9,6 +9,7 @@ dn: CN=ms-Exch-Base-Class,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-Base-Class
 adminDisplayName: ms-Exch-Base-Class
 cn: ms-Exch-Base-Class
+name: ms-Exch-Base-Class
 objectClass: top
 objectClass: classSchema
 lDAPDisplayName: msExchBaseClass
@@ -36,6 +37,7 @@ adminDescription: ms-Exch-Admin-Group-Container
 adminDisplayName: ms-Exch-Admin-Group-Container
 auxiliaryClass: msExchBaseClass
 cn: ms-Exch-Admin-Group-Container
+name: ms-Exch-Admin-Group-Container
 defaultHidingValue: TRUE
 defaultObjectCategory: CN=ms-Exch-Admin-Group-Container,CN=Schema,CN=Configuration,${BASEDN}
 defaultSecurityDescriptor: D:S:
@@ -64,6 +66,7 @@ dn: CN=ms-Exch-Admin-Group,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-Admin-Group
 adminDisplayName: ms-Exch-Admin-Group
 cn: ms-Exch-Admin-Group
+name: ms-Exch-Admin-Group
 objectClass: top
 objectClass: classSchema
 lDAPDisplayName: msExchAdminGroup
@@ -93,6 +96,7 @@ dn: CN=ms-Exch-Organization-Container,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-Organization-Container
 adminDisplayName: ms-Exch-Organization-Container
 cn: ms-Exch-Organization-Container
+name: ms-Exch-Organization-Container
 objectClass: top
 objectClass: classSchema
 lDAPDisplayName: msExchOrganizationContainer
@@ -116,11 +120,11 @@ systemOnly: FALSE
 # description: This container stores configuration information for the Exchange server.
 #
 
-# ms-Exch-Configuration-Container, Schema, Configuration, openchange.local
 dn: CN=ms-Exch-Configuration-Container,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-Configuration-Container
 adminDisplayName: ms-Exch-Configuration-Container
 cn: ms-Exch-Configuration-Container
+name: ms-Exch-Configuration-Container
 auxiliaryClass: msExchBaseClass
 defaultHidingValue: TRUE
 defaultObjectCategory: CN=ms-Exch-Configuration-Container,CN=Schema,CN=Configuration,${BASEDN}
@@ -150,6 +154,7 @@ dn: CN=ms-Exch-Servers-Container,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-Servers-Container
 adminDisplayName: ms-Exch-Servers-Container
 cn: ms-Exch-Servers-Container
+name: ms-Exch-Servers-Container
 objectClass: top
 objectClass: classSchema
 lDAPDisplayName: msExchServersContainer
@@ -178,6 +183,7 @@ dn: CN=ms-Exch-Exchange-Server,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-Exchange-Server
 adminDisplayName: ms-Exch-Exchange-Server
 cn: ms-Exch-Exchange-Server
+name: ms-Exch-Exchange-Server
 objectClass: top
 objectClass: classSchema
 lDAPDisplayName: msExchExchangeServer
@@ -208,6 +214,7 @@ adminDisplayName: ms-Exch-Mail-Nickname
 attributeID: 1.2.840.113556.1.2.447
 attributeSyntax: 2.5.5.12
 cn: ms-Exch-Mail-Nickname
+name: ms-Exch-Mail-Nickname
 instanceType: 4
 isSingleValued: TRUE
 lDAPDisplayName: mailNickname
@@ -227,6 +234,7 @@ dn: CN=ms-Exch-Storage-Group,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-Storage-Group
 adminDisplayName: ms-Exch-Storage-Group
 cn: ms-Exch-Storage-Group
+name: ms-Exch-Storage-Group
 auxiliaryClass: msExchBaseClass
 defaultHidingValue: TRUE
 defaultObjectCategory: CN=ms-Exch-Storage-Group,CN=Schema,CN=Configuration,${BASEDN}
@@ -257,6 +265,7 @@ dn: CN=ms-Exch-Delivery-Mechanism,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-Delivery-Mechanism
 adminDisplayName: ms-Exch-Delivery-Mechanism
 cn: ms-Exch-Delivery-Mechanism
+name: ms-Exch-Delivery-Mechanism
 attributeID: 1.2.840.113556.1.2.241
 attributeSyntax: 2.5.5.9
 instanceType: 4
@@ -278,6 +287,7 @@ dn: CN=ms-Exch-MDB,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-MDB
 adminDisplayName: ms-Exch-MDB
 cn: ms-Exch-MDB
+name: ms-Exch-MDB
 auxiliaryClass: msExchBaseClass
 defaultHidingValue: TRUE
 defaultObjectCategory: CN=ms-Exch-MDB,CN=Schema,CN=Configuration,${BASEDN}
@@ -312,6 +322,7 @@ dn: CN=ms-Exch-Private-MDB,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-Private-MDB
 adminDisplayName: ms-Exch-Private-MDB
 cn: ms-Exch-Private-MDB
+name: ms-Exch-Private-MDB
 auxiliaryClass: msExchBaseClass
 defaultHidingValue: TRUE
 defaultObjectCategory: CN=ms-Exch-Private-MDB,CN=Schema,CN=Configuration,${BASEDN}
@@ -367,6 +378,7 @@ dn: CN=ms-Exch-Information-Store,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: ms-Exch-Information-Store
 adminDisplayName: ms-Exch-Information-Store
 cn: ms-Exch-Information-Store
+name: ms-Exch-Information-Store
 auxiliaryClass: msExchBaseClass
 defaultObjectCategory: CN=ms-Exch-Information-Store,CN=Schema,CN=Configuration,${BASEDN}
 defaultSecurityDescriptor: D:S:
@@ -416,6 +428,7 @@ dn: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
 adminDescription: Address-Book-Container
 adminDisplayName: Address-Book-Container
 cn: Address-Book-Container
+name: Address-Book-Container
 defaultHidingValue: TRUE
 defaultObjectCategory: CN=Address-Book-Container,CN=Schema,CN=Configuration,${BASEDN}
 governsID: 1.2.840.113556.1.5.125

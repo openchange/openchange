@@ -1,0 +1,66 @@
+.\" OpenChange Project Libraries Man Pages
+.\"
+.\" This manpage is Copyright (C) 2007 Julien Kerihuel;
+.\"
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of this
+.\" manual under the conditions for verbatim copying, provided that the
+.\" entire resulting derived work is distributed under the terms of a
+.\" permission notice identical to this one.
+.\" 
+.\" Since the OpenChange and Samba4 libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+.\" responsibility for errors or omissions, or for damages resulting from
+.\" the use of the information contained herein.  The author(s) may not
+.\" have taken the same level of care in the production of this manual,
+.\" which is licensed free of charge, as they might when working
+.\" professionally.
+.\" 
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\"
+.\" Process this file with
+.\" groff -man -Tascii CreateAttach.3
+.\"
+
+.TH CREATEATTACH 3 2007-04-23 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.SH NAME
+CreateAttach \- Create a new attachment
+
+.SH SYNOPSIS
+.nf
+.B #include <libmapi/libmapi.h>
+.sp
+.BI "enum MAPISTATUS CreateAttach(mapi_object_t *" obj_message ", mapi_object_t *"  obj_attach ");"
+
+.fi
+.SH DESCRIPTION
+The function creates a new attachment to
+.IR obj_message
+and return the attachment object in
+.IR obj_attach .
+
+.SH RETURN VALUE
+The function returns
+.BI MAPI_E_SUCCESS
+on success, otherwise -1. Developers should call
+.B GetLastError()
+to retrieve the latest MAPI error code. Possible MAPI error codes are:
+
+.BR "MAPI_E_NOT_INITIALIZED": 
+MAPI subsystem has not been initialized
+
+.BR "MAPI_E_CALL_FAILED": 
+A network problem was encountered during the transaction
+
+.SH "SEE ALSO"
+.BR CreateMessage (3),
+.BR GetAttachmentTable (3),
+.BR OpenAttach (3),
+.BR GetLastError (3)
+
+.SH AUTHOR
+Julien Kerihuel <j.kerihuel at openchange dot org>

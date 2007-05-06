@@ -1,0 +1,522 @@
+  <units>
+    <unit>
+      <name>OPENCHANGE-MAPI-TABLE</name>
+      <args></args>
+      <tests>
+        <test>
+          <id>0</id>
+          <desc>CreateFolder</desc>
+          <file>torture/mapi_table.c</file>
+          <line>63</line>
+          <pass>true</pass>
+          <reason>(error == 0) is true</reason>
+        </test>
+        <test>
+          <id>1</id>
+          <desc>GetHierarchyTable</desc>
+          <file>torture/mapi_table.c</file>
+          <line>71</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>2</id>
+          <desc>GetRowCount</desc>
+          <file>torture/mapi_table.c</file>
+          <line>78</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>3</id>
+          <desc>GetRowCount</desc>
+          <file>torture/mapi_table.c</file>
+          <line>79</line>
+          <pass>true</pass>
+          <reason>(count &gt;= 3) is true</reason>
+        </test>
+        <test>
+          <id>4</id>
+          <desc>QueryRows(TBL_NOADVANCE)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>86</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>5</id>
+          <desc>QueryRows(TBL_ADVANCE)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>95</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>6</id>
+          <desc>QueryRows(TBL_ADVANCE)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>96</line>
+          <pass>true</pass>
+          <reason>(count == rows.cRows) is true</reason>
+        </test>
+        <test>
+          <id>7</id>
+          <desc>SeekRow(BOOKMARK_BEGINNING)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>107</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>8</id>
+          <desc>SeekRow(BOOKMARK_BEGINNING)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>110</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>9</id>
+          <desc>SeekRow(BOOKMARK_BEGINNING)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>112</line>
+          <pass>true</pass>
+          <reason>(rows.cRows == 1) is true</reason>
+        </test>
+        <test>
+          <id>10</id>
+          <desc>SeekRow(BOOKMARK_END)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>119</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>11</id>
+          <desc>SeekRow(BOOKMARK_END)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>122</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>12</id>
+          <desc>SeekRow(BOOKMARK_END)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>124</line>
+          <pass>true</pass>
+          <reason>(rows.cRows == 2) is true</reason>
+        </test>
+        <test>
+          <id>13</id>
+          <desc>SeekRow(BOOKMARK_CURRENT)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>131</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>14</id>
+          <desc>SeekRow(BOOKMARK_CURRENT)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>135</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>15</id>
+          <desc>SeekRow(BOOKMARK_CURRENT)</desc>
+          <file>torture/mapi_table.c</file>
+          <line>137</line>
+          <pass>true</pass>
+          <reason>(rows.cRows == 3) is true</reason>
+        </test>
+        <test>
+          <id>16</id>
+          <desc>QueryColumns()</desc>
+          <file>torture/mapi_table.c</file>
+          <line>144</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>17</id>
+          <desc>SetColumns()</desc>
+          <file>torture/mapi_table.c</file>
+          <line>152</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+      </tests>
+    </unit>
+    <unit>
+      <name>OPENCHANGE-MAPI-MESSAGE</name>
+      <args></args>
+      <tests>
+        <test>
+          <id>0</id>
+          <desc>empty_inbox</desc>
+          <file>torture/mapi_message.c</file>
+          <line>136</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>1</id>
+          <desc>CreateMessage</desc>
+          <file>torture/mapi_message.c</file>
+          <line>144</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>2</id>
+          <desc>ModifyRecipients</desc>
+          <file>torture/mapi_message.c</file>
+          <line>160</line>
+          <pass>true</pass>
+          <reason>(rows != 0) is true</reason>
+        </test>
+        <test>
+          <id>3</id>
+          <desc>ModifyRecipients</desc>
+          <file>torture/mapi_message.c</file>
+          <line>166</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>4</id>
+          <desc>SetProps</desc>
+          <file>torture/mapi_message.c</file>
+          <line>177</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>5</id>
+          <desc>CreateAttach</desc>
+          <file>torture/mapi_message.c</file>
+          <line>185</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>6</id>
+          <desc>CreateAttach</desc>
+          <file>torture/mapi_message.c</file>
+          <line>199</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>7</id>
+          <desc>SubmitMessage</desc>
+          <file>torture/mapi_message.c</file>
+          <line>210</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>8</id>
+          <desc>check_mail</desc>
+          <file>torture/mapi_message.c</file>
+          <line>223</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>9</id>
+          <desc>check_mail</desc>
+          <file>torture/mapi_message.c</file>
+          <line>232</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>10</id>
+          <desc>check_mail</desc>
+          <file>torture/mapi_message.c</file>
+          <line>235</line>
+          <pass>true</pass>
+          <reason>(nrows &gt;= 1) is true</reason>
+        </test>
+        <test>
+          <id>11</id>
+          <desc>check_mail</desc>
+          <file>torture/mapi_message.c</file>
+          <line>238</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>12</id>
+          <desc>check_mail</desc>
+          <file>torture/mapi_message.c</file>
+          <line>239</line>
+          <pass>true</pass>
+          <reason>(msgrows.cRows == 1) is true</reason>
+        </test>
+        <test>
+          <id>13</id>
+          <desc>check_mail</desc>
+          <file>torture/mapi_message.c</file>
+          <line>246</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>14</id>
+          <desc>check_mail</desc>
+          <file>torture/mapi_message.c</file>
+          <line>252</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>15</id>
+          <desc>check_mail</desc>
+          <file>torture/mapi_message.c</file>
+          <line>253</line>
+          <pass>true</pass>
+          <reason>(nvalues == 2) is true</reason>
+        </test>
+        <test>
+          <id>16</id>
+          <desc>check_mail</desc>
+          <file>torture/mapi_message.c</file>
+          <line>255</line>
+          <pass>true</pass>
+          <reason>(strcmp(values[0].value.lpszA, MSG_SUBJECT) == 0) is true</reason>
+        </test>
+        <test>
+          <id>17</id>
+          <desc>check_mail</desc>
+          <file>torture/mapi_message.c</file>
+          <line>256</line>
+          <pass>true</pass>
+          <reason>(strcmp(values[1].value.lpszA, MSG_BODY) == 0) is true</reason>
+        </test>
+        <test>
+          <id>18</id>
+          <desc>GetAttachmentTable</desc>
+          <file>torture/mapi_message.c</file>
+          <line>265</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>19</id>
+          <desc>GetAttachmentTable</desc>
+          <file>torture/mapi_message.c</file>
+          <line>268</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>20</id>
+          <desc>GetAttachmentTable</desc>
+          <file>torture/mapi_message.c</file>
+          <line>269</line>
+          <pass>true</pass>
+          <reason>(nattachs == 1) is true</reason>
+        </test>
+        <test>
+          <id>21</id>
+          <desc>OpenAttach</desc>
+          <file>torture/mapi_message.c</file>
+          <line>278</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>22</id>
+          <desc>OpenAttach</desc>
+          <file>torture/mapi_message.c</file>
+          <line>281</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>23</id>
+          <desc>OpenAttach</desc>
+          <file>torture/mapi_message.c</file>
+          <line>282</line>
+          <pass>true</pass>
+          <reason>(attachrows.cRows == 1) is true</reason>
+        </test>
+        <test>
+          <id>24</id>
+          <desc>OpenAttach</desc>
+          <file>torture/mapi_message.c</file>
+          <line>286</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>25</id>
+          <desc>ReadAttach</desc>
+          <file>torture/mapi_message.c</file>
+          <line>295</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>26</id>
+          <desc>ReadAttach</desc>
+          <file>torture/mapi_message.c</file>
+          <line>297</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>27</id>
+          <desc>ReadAttach</desc>
+          <file>torture/mapi_message.c</file>
+          <line>298</line>
+          <pass>true</pass>
+          <reason>(!strncmp(buf_attach, MSG_ATTACH, sz_attach)) is true</reason>
+        </test>
+      </tests>
+    </unit>
+    <unit>
+      <name>OPENCHANGE-MAPI-FOLDER</name>
+      <args></args>
+      <tests>
+        <test>
+          <id>0</id>
+          <desc>CreateFolder(parent)</desc>
+          <file>torture/mapi_folder.c</file>
+          <line>51</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>1</id>
+          <desc>CreateFolder(child)</desc>
+          <file>torture/mapi_folder.c</file>
+          <line>60</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>2</id>
+          <desc>EmptyFolder</desc>
+          <file>torture/mapi_folder.c</file>
+          <line>67</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>3</id>
+          <desc>GetHierarchyTable</desc>
+          <file>torture/mapi_folder.c</file>
+          <line>73</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>4</id>
+          <desc>GetRowCount</desc>
+          <file>torture/mapi_folder.c</file>
+          <line>77</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>5</id>
+          <desc>EmptyFolder</desc>
+          <file>torture/mapi_folder.c</file>
+          <line>81</line>
+          <pass>true</pass>
+          <reason>(cn_rows == 0) is true</reason>
+        </test>
+        <test>
+          <id>6</id>
+          <desc>DeleteFolder</desc>
+          <file>torture/mapi_folder.c</file>
+          <line>88</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>7</id>
+          <desc>Release</desc>
+          <file>torture/mapi_folder.c</file>
+          <line>98</line>
+          <pass>true</pass>
+          <reason>always true</reason>
+        </test>
+      </tests>
+    </unit>
+    <unit>
+      <name>OPENCHANGE-MAPI-PROP</name>
+      <args></args>
+      <tests>
+        <test>
+          <id>0</id>
+          <desc>GetPropList</desc>
+          <file>torture/mapi_prop.c</file>
+          <line>53</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>1</id>
+          <desc>GetPropList</desc>
+          <file>torture/mapi_prop.c</file>
+          <line>54</line>
+          <pass>true</pass>
+          <reason>(proptags-&gt;cValues != 0) is true</reason>
+        </test>
+        <test>
+          <id>2</id>
+          <desc>SetProps</desc>
+          <file>torture/mapi_prop.c</file>
+          <line>66</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>3</id>
+          <desc>SetProps</desc>
+          <file>torture/mapi_prop.c</file>
+          <line>70</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>4</id>
+          <desc>SetProps</desc>
+          <file>torture/mapi_prop.c</file>
+          <line>71</line>
+          <pass>true</pass>
+          <reason>(cn_vals == 2) is true</reason>
+        </test>
+        <test>
+          <id>5</id>
+          <desc>SetProps</desc>
+          <file>torture/mapi_prop.c</file>
+          <line>75</line>
+          <pass>true</pass>
+          <reason>(cmp == 0) is true</reason>
+        </test>
+        <test>
+          <id>6</id>
+          <desc>DeleteProps</desc>
+          <file>torture/mapi_prop.c</file>
+          <line>83</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS) is true</reason>
+        </test>
+        <test>
+          <id>7</id>
+          <desc>DeleteProps</desc>
+          <file>torture/mapi_prop.c</file>
+          <line>87</line>
+          <pass>true</pass>
+          <reason>(status == MAPI_E_SUCCESS || status == MAPI_W_ERRORS_RETURNED) is true</reason>
+        </test>
+      </tests>
+    </unit>
+  </units>

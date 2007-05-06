@@ -16,63 +16,79 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+
 #include <libmapi/libmapi.h>
+#include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
+
 
 /**
  * Open the Message Store
  */
 
-enum MAPISTATUS	OpenMsgStore(struct emsmdb_context *emsmdb, uint32_t ulFlags, 
-			     uint32_t *handle_id, uint64_t *id_outbox, const char *mailbox)
+_PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct OpenMsgStore_req	request;
 	NTSTATUS		status;
-	uint32_t		size = 0;
+	enum MAPISTATUS		retval;
+	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
+	mapi_object_store_t	*store;
+	mapi_ctx_t		*mapi_ctx;
+	const char		*mailbox;
 
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
+	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("OpenMsgStore");
 
-	*id_outbox = 0;
+	mailbox = mapi_ctx->session->profile->mailbox;
+
+	size = 0;
 
 	/* Fill the OpenMsgStore operation */
-	request.col = 0x0;
  	request.codepage = 0xc01; /*ok values: 0xc01 0xc09 */
 	request.padding = 0;
 	request.row = 0x0;
 	request.mailbox_path = talloc_strdup(mem_ctx, mailbox);
-	size = 10 + strlen(mailbox) + 1;
+	size += 9 + strlen(mailbox) + 1;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_OpenMsgStore;
-	mapi_req->mapi_flags = ulFlags;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_OpenMsgStore = request;
-	size += 6;
+	size += 5;
 
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
-	mapi_request->mapi_len = size + sizeof (uint32_t);
-	mapi_request->length = size;
+	mapi_request->mapi_len = size + sizeof (uint32_t) + 2;
+	mapi_request->length = size + 2;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = 0xffffffff;
 
-	status = emsmdb_transaction(emsmdb, mapi_request, &mapi_response);
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	if (mapi_response->mapi_repl->error_code != MAPI_E_SUCCESS) {
-		return mapi_response->mapi_repl->error_code;
-	}
+	/* retrieve object handle */
+	mapi_object_set_handle(obj_store, mapi_response->handles[0]);
 
-	*handle_id = mapi_response->handles[0];
+	/* retrieve store content */
+	obj_store->private = talloc((TALLOC_CTX *)obj_store->session, mapi_object_store_t);
+	store = (mapi_object_store_t*)obj_store->private;
+	MAPI_RETVAL_IF(!obj_store->private, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	store->outbox_id = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[3];
+	store->sent_items_id = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[6];
+	store->deleted_items_id = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[7];
 
-	/* get outbox folder id */
-	*id_outbox = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[3];
-
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;

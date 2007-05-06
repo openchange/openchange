@@ -19,6 +19,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange_c.h>
 #include <param.h>
 #include <credentials.h>
@@ -29,12 +30,10 @@
  * or inline)
  */
 
-static struct MAPI_SETTINGS *nspi_set_MAPI_SETTINGS(TALLOC_CTX *mem_ctx)
+static struct MAPI_SETTINGS *nspi_set_MAPI_SETTINGS(TALLOC_CTX *mem_ctx, uint32_t codepage,
+						    uint32_t language, uint32_t method)
 {
 	struct MAPI_SETTINGS	*settings;
-	uint32_t		codepage = lp_parm_int(-1, "locale", "codepage", 0);
-	uint32_t		language = lp_parm_int(-1, "locale", "language", 0);
-	uint32_t		method = lp_parm_int(-1, "locale", "method", 0);
 
 	if (!codepage || !language || !method) {
 		DEBUG(3, ("nspi_set_dflt_settings: Invalid parameter\n"));
@@ -60,7 +59,9 @@ static struct MAPI_SETTINGS *nspi_set_MAPI_SETTINGS(TALLOC_CTX *mem_ctx)
  * structure
  */
 
-struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p, struct cli_credentials *cred)
+_PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
+					struct cli_credentials *cred, uint32_t codepage,
+					uint32_t language, uint32_t method)
 {
 	struct NspiBind		r;
 	NTSTATUS		status;
@@ -71,12 +72,10 @@ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p, struc
 	ret->rpc_connection = p;
 	ret->mem_ctx = mem_ctx;
 	ret->cred = cred;
-	if (!(ret->settings = nspi_set_MAPI_SETTINGS(mem_ctx))) {
+	if (!(ret->settings = nspi_set_MAPI_SETTINGS(mem_ctx, codepage, language, method))) {
 		DEBUG(0, ("nspi_set_MAPI_SETTINGS: Invalid parameter\n"));
 		return NULL;
 	}
-	ret->profile = talloc(mem_ctx, struct mapi_profile);
-	ret->profile->instance_key = talloc(mem_ctx, uint32_t);
 
 	r.in.unknown = 0;
 
@@ -107,9 +106,21 @@ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p, struc
 		return NULL;
 	}
 	
-	mapi_errstr("NspiBind", r.out.result);
-
 	return ret;
+}
+
+
+/**
+ * Destructor
+ */
+
+int nspi_disconnect_dtor(void *data)
+{
+	BOOL res;
+	struct mapi_provider	*provider = (struct mapi_provider *) data;
+
+	res = nspi_unbind(provider->ctx);
+	return 0;
 }
 
 
@@ -118,24 +129,22 @@ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p, struc
  * Unbind from the endpoint
  */
 
-BOOL nspi_unbind(struct nspi_context *nspi)
+_PUBLIC_ enum MAPISTATUS nspi_unbind(struct nspi_context *nspi)
 {
 	struct NspiUnbind	r;
 	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+
+	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
 
 	r.in.handle = r.out.handle = &nspi->handle;
 	r.in.status = 0;
 
 	status = dcerpc_NspiUnbind(nspi->rpc_connection, nspi->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF((retval != 1) && !MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
 
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		mapi_errstr("NspiUnbind", r.out.result);
-		return False;
-	}
-
-	mapi_errstr("NspiUnbind", r.out.result);
-
-	return True;
+	return MAPI_E_SUCCESS;
 }
 
 /*
@@ -143,10 +152,13 @@ BOOL nspi_unbind(struct nspi_context *nspi)
  *
  */
 
-BOOL nspi_UpdateStat(struct nspi_context *nspi)
+_PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi)
 {
 	struct NspiUpdateStat		r;
 	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+
+	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
 
 	r.in.handle = &nspi->handle;
 
@@ -155,16 +167,10 @@ BOOL nspi_UpdateStat(struct nspi_context *nspi)
 	memset(r.in.settings.service_provider.ab + 12, 0xff, 4);
 
 	status = dcerpc_NspiUpdateStat(nspi->rpc_connection, nspi->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
 
-
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		mapi_errstr("NspiUpdateStat", r.out.result);
-		return False;
-	}
-	
-	mapi_errstr("NspiUpdateStat", r.out.result);
-
-	return True;
+	return MAPI_E_SUCCESS;
 }
 
 /*
@@ -173,11 +179,15 @@ BOOL nspi_UpdateStat(struct nspi_context *nspi)
  * NspiGetMatches
  */
 
-BOOL nspi_QueryRows(struct nspi_context *nspi, struct SPropTagArray *SPropTagArray)
+_PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi, struct SPropTagArray *SPropTagArray,
+					struct SRowSet *rowset)
 {
 	struct NspiQueryRows		r;
 	NTSTATUS			status;
+	enum MAPISTATUS			retval;
 	struct MAPI_SETTINGS		*settings;
+
+	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
 
 	r.in.handle = &nspi->handle;
 	r.in.flag = 0x0;
@@ -188,7 +198,7 @@ BOOL nspi_QueryRows(struct nspi_context *nspi, struct SPropTagArray *SPropTagArr
 
 	r.in.lRows = 0x1;
 
-	r.in.instance_key = nspi->profile->instance_key;
+	r.in.instance_key = &(nspi->profile_instance_key);
 	DEBUG(5, ("r.in.instance_key = 0x%x\n", *r.in.instance_key));
 
 	r.in.unknown = 0x1;
@@ -198,19 +208,13 @@ BOOL nspi_QueryRows(struct nspi_context *nspi, struct SPropTagArray *SPropTagArr
 	settings = talloc(nspi->mem_ctx, struct MAPI_SETTINGS);
 	r.out.settings = settings;
 
-	nspi->rowSet = talloc(nspi->mem_ctx, struct SRowSet);
-	r.out.RowSet = &(nspi->rowSet);
+	r.out.RowSet = &rowset;
 
 	status = dcerpc_NspiQueryRows(nspi->rpc_connection, nspi->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
 
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		mapi_errstr("NspiQueryRows", r.out.result);
-		return False;
-	}
-	
-	mapi_errstr("NspiQueryRows", r.out.result);
-
-	return True;
+	return MAPI_E_SUCCESS;
 
 }
 
@@ -221,22 +225,22 @@ BOOL nspi_QueryRows(struct nspi_context *nspi, struct SPropTagArray *SPropTagArr
  *
  */
 
-BOOL nspi_GetMatches(struct nspi_context *nspi, struct SPropTagArray *SPropTagArray)
+_PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi, struct SPropTagArray *SPropTagArray,
+					 struct SRowSet *rowset, const char *username)
 {
 	struct NspiGetMatches		r;
 	NTSTATUS			status;
+	enum MAPISTATUS			retval;
 	struct SPropertyRestriction	*prop_restrictions;
 	struct SPropValue		*lpProp;
 	struct instance_key		*instance_key;
 	struct MAPI_SETTINGS		*settings;
-	const char			*username = lp_parm_string(-1, "exchange", "username");
-	struct SBinary			bin;
+
+	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
 
 	if (!username) {
 		username = cli_credentials_get_username(nspi->cred);
-		if (!username) {
-			DEBUG(0, ("nspi_GetMatches: not loggued on the domain\n"));
-		}
+		MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	}
 		
 	r.in.handle = &nspi->handle;
@@ -275,37 +279,13 @@ BOOL nspi_GetMatches(struct nspi_context *nspi, struct SPropTagArray *SPropTagAr
 	instance_key = talloc(nspi->mem_ctx, struct instance_key);
 	r.out.instance_key = instance_key;
 
-	nspi->rowSet = talloc(nspi->mem_ctx, struct SRowSet);
-	r.out.RowSet = &(nspi->rowSet);
+	r.out.RowSet = &rowset;
 
 	status = dcerpc_NspiGetMatches(nspi->rpc_connection, nspi->mem_ctx, &r);
-
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		mapi_errstr("NspiGetMatches", r.out.result);
-		return False;
-	}
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), MAPI_E_NOT_FOUND, NULL);
 	
-	mapi_errstr("NspiGetMatches", r.out.result);
-	
-	lpProp = get_SPropValue_SRowSet(*r.out.RowSet, PR_INSTANCE_KEY);
-	if (lpProp) {
-	  
-	  bin = lpProp->value.bin;
-          
-	  nspi->profile->instance_key = (uint32_t *)bin.lpb;
-	} else {
-	  nspi->profile->instance_key = 0;
-	}	
-
-	lpProp = get_SPropValue_SRowSet(*r.out.RowSet, PR_EMAIL_ADDRESS);
-	if (lpProp) {
-		DEBUG(3, ("PR_EMAIL_ADDRESS: %s\n", lpProp->value.lpszA));
-		nspi->org = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG);
-		nspi->org_unit = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG_UNIT);
-		if (!nspi->org_unit || !nspi->org) return False;
-	}
-
-	return True;
+	return MAPI_E_SUCCESS;
 }
 
 /*
@@ -315,31 +295,26 @@ BOOL nspi_GetMatches(struct nspi_context *nspi, struct SPropTagArray *SPropTagAr
  * Exchange object in the Active Directory
  */
 
-BOOL nspi_DNToEph(struct nspi_context *nspi)
+_PUBLIC_ enum MAPISTATUS nspi_DNToEph(struct nspi_context *nspi)
 {
 	struct NspiDNToEph	r;
 	NTSTATUS		status;
+	enum MAPISTATUS		retval;
 	struct NAME_STRING	*server_dn;
-	const char		*org = lp_parm_string(-1, "exchange", "org");
-	const char		*org_unit = lp_parm_string(-1, "exchange", "org_unit");
-	const char		*servername = lp_parm_string(-1, "exchange", "server");
 	struct instance_key	*instance_key;
 
-	if (!servername || (!nspi->org && !org) || (!nspi->org_unit && !org_unit)) {
-		DEBUG(0, ("server, organization or organization unit name required\n"));
-		return False;
-	}
-
+	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!nspi->servername, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!nspi->org, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!nspi->org_unit, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi->handle;
 	r.in.flag = 0;
 	r.in.size = 1;
 
 	server_dn = talloc(nspi->mem_ctx, struct NAME_STRING);
-	server_dn->str = talloc_asprintf(nspi->mem_ctx, SERVER_DN,
-					 nspi->org ? nspi->org : org,
-					 nspi->org_unit ? nspi->org_unit : org_unit,
-					 servername);
+	server_dn->str = talloc_asprintf(nspi->mem_ctx, SERVER_DN, nspi->org,
+					 nspi->org_unit, nspi->servername);
 
 	r.in.server_dn = server_dn;
 
@@ -347,17 +322,12 @@ BOOL nspi_DNToEph(struct nspi_context *nspi)
 	r.out.instance_key = instance_key;
 
 	status = dcerpc_NspiDNToEph(nspi->rpc_connection, nspi->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
 
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		mapi_errstr("NspiDNToEph", r.out.result);
-		return False;
-	}
+	nspi->profile_instance_key = *(instance_key->value);
 
-	nspi->profile->instance_key =  instance_key->value;
-
-	mapi_errstr("NspiDNToEph", r.out.result);
-
-	return True;
+	return MAPI_E_SUCCESS;
 }
 
 
@@ -367,47 +337,42 @@ BOOL nspi_DNToEph(struct nspi_context *nspi)
  * is computed with the instance key)
  */
 
-BOOL nspi_GetProps(struct nspi_context *nspi, struct SPropTagArray *SPropTagArray)
+_PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi, 
+				       struct SPropTagArray *SPropTagArray, 
+				       struct SRowSet *rowset)
 {
 	struct NspiGetProps	r;
 	NTSTATUS		status;
+	enum MAPISTATUS		retval;
 	struct SRow		*REPL_values;
+
+	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!nspi->profile_instance_key, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi->handle;
 	r.in.flag = 0;
 
-	if (!nspi->profile->instance_key) {
-		return False;
-	}
-
 	r.in.settings = nspi->settings;
 	memset(r.in.settings->service_provider.ab, 0, 16);
-	r.in.settings->service_provider.ab[0] = *nspi->profile->instance_key;
-	r.in.settings->service_provider.ab[1] = (*nspi->profile->instance_key & 0xFF00) >> 8;
+	r.in.settings->service_provider.ab[0] = nspi->profile_instance_key;
+	r.in.settings->service_provider.ab[1] = (nspi->profile_instance_key & 0xFF00) >> 8;
 
  	r.in.REQ_properties = SPropTagArray;
 
 	REPL_values = talloc(nspi->mem_ctx, struct SRow);
 	r.out.REPL_values = &REPL_values;
 
-	nspi->rowSet = talloc(nspi->mem_ctx, struct SRowSet);
-	nspi->rowSet->cRows = 1;
-	nspi->rowSet->aRow = talloc_size(nspi->rowSet, sizeof(struct SRow));
-
 	status = dcerpc_NspiGetProps(nspi->rpc_connection, nspi->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
 
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		mapi_errstr("NspiGetProps", r.out.result);
-		return False;
-	}
-
-	nspi->rowSet->aRow[0].ulAdrEntryPad = REPL_values->ulAdrEntryPad;
-	nspi->rowSet->aRow[0].cValues = REPL_values->cValues;
-	nspi->rowSet->aRow[0].lpProps = REPL_values->lpProps;
+	rowset->cRows = 1;
+	rowset->aRow = talloc(nspi->mem_ctx, struct SRow);
+	rowset->aRow->ulAdrEntryPad = REPL_values->ulAdrEntryPad;
+	rowset->aRow->cValues = REPL_values->cValues;
+	rowset->aRow->lpProps = REPL_values->lpProps;
 	
-	mapi_errstr("NspiGetProps", r.out.result);
-
-	return True;
+	return MAPI_E_SUCCESS;
 }
 
 /*
@@ -415,12 +380,15 @@ BOOL nspi_GetProps(struct nspi_context *nspi, struct SPropTagArray *SPropTagArra
  * Retrieve the Address Book container hierarchy
  */
 
-BOOL nspi_GetHierarchyInfo(struct nspi_context *nspi)
+_PUBLIC_ enum MAPISTATUS nspi_GetHierarchyInfo(struct nspi_context *nspi, 
+					       struct SRowSet *rowset)
 {
 	struct NspiGetHierarchyInfo	r;
 	NTSTATUS			status;
+	enum MAPISTATUS			retval;
 	uint32_t       			unknown = 0;
-	struct SRowSet			*SRowSet;
+
+	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
 
 	r.in.handle = &nspi->handle;
 	r.in.unknown1 = 0;
@@ -435,22 +403,15 @@ BOOL nspi_GetHierarchyInfo(struct nspi_context *nspi)
 	r.in.settings->service_provider.ab[15] = 0x77;
 
 	r.in.unknown2 = &unknown;
-
 	r.out.unknown2 = &unknown;
 
-	SRowSet = talloc(nspi->mem_ctx, struct SRowSet);
-	r.out.RowSet = &SRowSet;
+	r.out.RowSet = &rowset;
 
 	status = dcerpc_NspiGetHierarchyInfo(nspi->rpc_connection, nspi->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
 
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		mapi_errstr("NspiGetHierarchyInfo", r.out.result);
-		return False;
-	}
-	
-	mapi_errstr("NspiGetHierarchyInfo", r.out.result);
-
-	return True;
+	return MAPI_E_SUCCESS;
 }
 
 /*
@@ -460,13 +421,20 @@ BOOL nspi_GetHierarchyInfo(struct nspi_context *nspi)
  * values.
  */
 
-BOOL nspi_ResolveNames(struct nspi_context *nspi, const char **usernames, struct SPropTagArray *props, struct SRowSet *rowSet)
+_PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi, const char **usernames, 
+					   struct SPropTagArray *props, struct SRowSet ***rowSet,
+					   struct FlagList ***flaglist)
 {
+	TALLOC_CTX		*mem_ctx;
 	struct NspiResolveNames r;
-	struct FlagList		*FlagList;
 	struct names		*names;
 	NTSTATUS		status;
+	enum MAPISTATUS		retval;
 	uint32_t		count;
+
+	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mem_ctx = nspi->mem_ctx;
 
 	for (count = 0; usernames[count]; count++);
 
@@ -475,25 +443,71 @@ BOOL nspi_ResolveNames(struct nspi_context *nspi, const char **usernames, struct
 	r.in.settings = nspi->settings;
 	r.in.dwAlignPad = 0;
 	r.in.SPropTagArray = props;
+	r.in.SPropTagArray->cValues += 1;
 
-	names = talloc(nspi->mem_ctx, struct names);
+	names = talloc(mem_ctx, struct names);
 	names->cEntries = names->count = count;
 	names->recipient = usernames;
 	r.in.recipients = names;
 
-	r.out.RowSet = &rowSet;
+	r.out.flags = *flaglist;
 
-	FlagList = talloc(nspi->mem_ctx, struct FlagList);
-	r.out.flags = &FlagList;
+	status = dcerpc_NspiResolveNames(nspi->rpc_connection, mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, names);
 
-	status = dcerpc_NspiResolveNames(nspi->rpc_connection, nspi->mem_ctx, &r);
+	rowSet[0][0] = r.out.RowSet;
 
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		mapi_errstr("NspiResolveNames", r.out.result);
-		return False;
-	}
-	
-	mapi_errstr("NspiResolveNames", r.out.result);
+	talloc_free(names);
 
-	return True;
+	return MAPI_E_SUCCESS;
+}
+
+/*
+ * nspi_ResolveNames
+ * query WAB (Windows Address Book) and try to resolve the provided
+ * name and return a SRowSet with the requested property tags fetched
+ * values.
+ */
+
+_PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi, const char **usernames, 
+					    struct SPropTagArray *props, struct SRowSet ***rowSet,
+					    struct FlagList ***flaglist)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct NspiResolveNamesW r;
+	struct namesW		*names;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	uint32_t		count;
+
+	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mem_ctx = nspi->mem_ctx;
+
+	for (count = 0; usernames[count]; count++);
+
+	r.in.handle = &nspi->handle;
+
+	r.in.settings = nspi->settings;
+	r.in.dwAlignPad = 0;
+	r.in.SPropTagArray = props;
+	r.in.SPropTagArray->cValues += 1;
+
+	names = talloc(mem_ctx, struct namesW);
+	names->cEntries = names->count = count;
+	names->recipient = usernames;
+	r.in.recipients = names;
+
+	r.out.flags = *flaglist;
+
+	status = dcerpc_NspiResolveNamesW(nspi->rpc_connection, mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, names);
+
+	rowSet[0][0] = r.out.RowSet;
+
+	talloc_free(names);
+
+	return MAPI_E_SUCCESS;
 }

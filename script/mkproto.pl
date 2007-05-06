@@ -162,6 +162,15 @@ sub delete_arguments($)
 	# Remove extra space between type and sep
 	$proto =~ s/([\w]+)([\s]+)([\,\)])/$1$3/g;
 
+	# Remove any spaces between , and the next char
+	$proto =~ s/([\,])(^[\w]+)([\w\)]+)/$1 $3/g;
+	
+	# Remove tabulations
+	$proto =~ s/[\s]{2,}//g;
+
+	# Remove \n
+	$proto =~ s/[\n]+/ /g;
+
 	return $proto;
 }
 

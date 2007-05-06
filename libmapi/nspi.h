@@ -21,10 +21,6 @@
 #ifndef __NSPI_H__
 #define	__NSPI_H__
 
-struct mapi_profile {
-	uint32_t	*instance_key;
-};
-
 struct nspi_context {
 	struct dcerpc_pipe	*rpc_connection;
 	struct policy_handle	handle;
@@ -35,10 +31,13 @@ struct nspi_context {
 	struct SRowSet		*rowSet;
 	char			*org;
 	char			*org_unit;
+	char			*servername;
+	uint32_t		profile_instance_key;
 };
 
 #define	ORG		"/o="
 #define	ORG_UNIT	"/ou="
 #define	SERVER_DN	"/o=%s/ou=%s/cn=Configuration/cn=Servers/cn=%s"
+#define	SERVERNAME	"/cn=Servers/cn="
 
 #endif /* __NSPI_H__ */

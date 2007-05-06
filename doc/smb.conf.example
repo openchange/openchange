@@ -5,21 +5,10 @@
 
 dcerpc endpoint servers		= exchange_nsp exchange_emsmdb epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup
 
-	locale:codepage		= 0x4e4
-	locale:language		= 0x40c
-	locale:method		= 0x409
-
-	exchange:server		= EXCHANGE-2000
-	exchange:organization	= OpenChange Organization
-	exchange:ou		= First Administrative Group
+	exchange:GUID           = 1b940e13-14d3-4e2a-9711-e06a2def5dfd
 	exchange:nspi_binding	= ncacn_np:127.0.0.1[]
 
-	FIXME:modifyrecipients	= 0x004a0451
-
-	PR_TAGS:tags_conf_path	= torture/scantags/nspi_scantags.conf
-        PR_TAGS:tags_path	= torture/scantags/proptags.conf
-
-
-[test]
-	path			= /tmp
-	read only		= no
+        mapi:profile_store      = /path/to/profiles.ldb
+	mapi:codepage		= 0x4e4
+	mapi:language		= 0x40c
+	mapi:method		= 0x409

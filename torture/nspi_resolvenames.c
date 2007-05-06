@@ -37,12 +37,16 @@ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 {
 	NTSTATUS                status;
+	MAPISTATUS		retval;
 	struct dcerpc_pipe      *p;
 	TALLOC_CTX              *mem_ctx;
+	struct mapi_session	*session;
 	BOOL                    ret = True;
-	struct nspi_context     *nspi;
 	struct SPropTagArray    *SPropTagArray;
-	struct SRowSet		SRowSet;
+	struct SRowSet		*rowset = NULL;
+	struct FlagList		*flaglist = NULL;
+	const char		*profdb;
+	const char		*profname;
 	const char *username = lp_parm_string(-1, "exchange", "resolvename");
 	char *tmp;
 	char **usernames;
@@ -51,27 +55,35 @@ BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_nspi_resolvenames");
 
 	if (!username) {
-		DEBUG(0,("Specify the username to resolve with exchange:resolvename\n"));
+		DEBUG(0,("Specify the usernames to resolve with exchange:resolvename\n"));
 		talloc_free(mem_ctx);
 		return False;
 	}
 
 	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_exchange_nsp);
-
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return False;
 	}
 
-	nspi = nspi_bind(mem_ctx, p, cmdline_credentials);
-	if (!nspi) {
-		talloc_free(mem_ctx);
+	/* init mapi */
+	profdb = lp_parm_string(-1, "mapi", "profile_store");
+	retval = MAPIInitialize(profdb);
+	mapi_errstr("MAPIInitialize", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* profile name */
+	profname = lp_parm_string(-1, "mapi", "profile");
+	if (profname == 0) {
+		DEBUG(0, ("Please specify a valid profile name\n"));
 		return False;
 	}
 
-	nspi->mem_ctx = mem_ctx;
+	retval = MapiLogonEx(&session, profname);
+	mapi_errstr("MapiLogonEx", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0xd,
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0xd,
 					  PR_ENTRYID,
 					  PR_DISPLAY_NAME,
 					  PR_ADDRTYPE,
@@ -91,28 +103,28 @@ BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 		exit (1);
 	}
 
-	usernames = talloc_array(nspi->mem_ctx, char *, 2);
+	usernames = talloc_array(mem_ctx, char *, 2);
 	usernames[0] = strdup(tmp);
 
 	for (j = 1; (tmp = strtok(NULL, ",")) != NULL; j++) {
-		     usernames = talloc_realloc(nspi->mem_ctx, usernames, char *, j+2);
+		     usernames = talloc_realloc(mem_ctx, usernames, char *, j+2);
 		     usernames[j] = strdup(tmp);
 	}
 	usernames[j] = 0;
 
-	ret &= nspi_ResolveNames(nspi, (const char **)usernames, SPropTagArray, &SRowSet);
+	retval = ResolveNames((const char **)usernames, SPropTagArray, &rowset, &flaglist, 0);
+	mapi_errstr("ResolveNames", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	{
-	  struct ndr_print *ndr;
+	mapidump_Recipients((const char **)usernames, rowset, flaglist);
 
-	  ndr = talloc_zero(mem_ctx, struct ndr_print);
-	  ndr->print = ndr_print_debug_helper;
-
-	  ndr_print_SRowSet(ndr, "RESOLVE", &SRowSet);
-	  
-	}
-
-	ret &= nspi_unbind(nspi);
+	retval = MAPIFreeBuffer(rowset);
+	mapi_errstr("MAPIFreeBuffer: rowset", GetLastError());
+	
+	retval = MAPIFreeBuffer(flaglist);
+	mapi_errstr("MAPIFreeBuffer: flaglist", GetLastError());
+	
+	MAPIUninitialize();
 
 	talloc_free(mem_ctx);
 

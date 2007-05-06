@@ -2,7 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@samba.org>, 2005.
 
 CC=@CC@
-CFLAGS=@CFLAGS@ -I. -Wall -Wstrict-prototypes -g3
+CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3
 PIDL=@PIDL@
 PERL=@PERL@
 DSOOPT=-shared -fPIC
@@ -11,29 +11,18 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 libdir=@libdir@
+datarootdir=@datarootdir@
 datadir=@datadir@
 includedir=@includedir@
+mandir=@mandir@
 
 top_builddir=${PWD}
 
 TORTURE_MODULESDIR=@TORTURE_MODULESDIR@
 SERVER_MODULESDIR=${prefix}/modules/dcerpc_server
 
-# Evolution plugin compilation rule
-EVOLUTION_PLUGIN=@EVOLUTION_PLUGIN@
-EVOLUTION_PLUGIN_INSTALL=@EVOLUTION_PLUGIN_INSTALL@
-EVOLUTION_PLUGIN_UNINSTALL=@EVOLUTION_PLUGIN_UNINSTALL@
-INTLTOOL_MERGE=@INTLTOOL_MERGE@
-plugindir=@plugindir@
-camel_providerdir=@camel_providerdir@
-
-EVOLUTION_PLUGIN_LIBS=@EVOLUTION_PLUGIN_LIBS@
-EVOLUTION_PLUGIN_CFLAGS=@EVOLUTION_PLUGIN_CFLAGS@
-
 # This value should be determined by configure at some point
 SHLIBEXT=so
-
-LIBS+=-lpopt
 
 # Portability hack...
 CFLAGS+=-Duint_t="unsigned int" 
@@ -44,35 +33,60 @@ LIBS+=@SAMBA_LIBS@
 CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
 LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 
-all: 	gen_ndr gen_ndr/ndr_exchange.h proto.h torture_proto.h providers_proto.h dcesrv_proto.h \
-	bin/schemaIDGUID bin/mapidump bin/locale_codepage torture/openchange.$(SHLIBEXT) \
-	server/dcesrv_exchange.$(SHLIBEXT) server/dcesrv_exchange_remote.$(SHLIBEXT) $(EVOLUTION_PLUGIN)
+all: 	gen_ndr gen_ndr/ndr_exchange.h proto.h			\
+	torture_proto.h	providers_proto.h dcesrv_proto.h	\
+	libmapi.$(SHLIBEXT)					\
+	bin/schemaIDGUID					\
+	bin/mapiprofile						\
+	bin/openchangeclient					\
+	bin/exchange2mbox					\
+	bin/locale_codepage					\
+	torture/openchange.$(SHLIBEXT)				\
+	server/dcesrv_exchange.$(SHLIBEXT)			\
+	server/dcesrv_exchange_remote.$(SHLIBEXT)
 
-install: all $(EVOLUTION_PLUGIN_INSTALL)
-	@echo "=============================="
+install: all installman
 	@echo "Installing OpenChange plugin"
-	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)
-	mkdir -p $(TORTURE_MODULESDIR)
+	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/libmapi $(DESTDIR)$(includedir)/gen_ndr
+	mkdir -p $(DESTDIR)$(TORTURE_MODULESDIR)
 	mkdir -p $(DESTDIR)$(SERVER_MODULESDIR)
 	cp bin/schemaIDGUID $(DESTDIR)$(bindir)
-	cp bin/mapidump $(DESTDIR)$(bindir)
+	cp bin/mapiprofile $(DESTDIR)$(bindir)
+	cp bin/openchangeclient $(DESTDIR)$(bindir)
+	cp bin/exchange2mbox $(DESTDIR)$(bindir)
 	cp bin/locale_codepage $(DESTDIR)$(bindir)
 	cp libmapi.$(SHLIBEXT) $(DESTDIR)$(libdir)
 	cp torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
 	cp server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
 	cp server/dcesrv_exchange_remote.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
+	mkdir -p $(DESTDIR)$(datadir)/js
 	cp scripting/libjs/*.js $(DESTDIR)$(datadir)/js/
+	mkdir -p $(DESTDIR)$(datadir)/setup
 	cp setup/*.ldif $(DESTDIR)$(datadir)/setup/
+	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
+	cp libmapi.pc $(DESTDIR)$(libdir)/pkgconfig
+	cp libmapi/dlinklist.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/libmapi.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/proto.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/nspi.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/emsmdb.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/mapi_ctx.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/mapi_provider.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/mapi_handles.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/mapi_object.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/mapi_profile.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/mapidefs.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/property.h $(DESTDIR)$(includedir)/libmapi/
+	cp gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	@echo "OpenChange plugin installed"
 
-install_lib:
-	@echo "============================="
-	@echo "Installing libmapi library"
-	mkdir -p $(DESTDIR)$(incdir)
-
-uninstall: $(EVOLUTION_PLUGIN_UNINSTALL)
+uninstall:
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapi.pc
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
-	rm -f $(DESTDIR)$(bindir)/mapidump
+	rm -f $(DESTDIR)$(bindir)/mapiprofile
+	rm -f $(DESTDIR)$(bindir)/openchangeclient
+	rm -f $(DESTDIR)$(bindir)/exchange2mbox
 	rm -f $(DESTDIR)$(bindir)/locale_codepage
 	rm -f $(DESTDIR)$(libdir)/libmapi.*
 	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
@@ -81,39 +95,32 @@ uninstall: $(EVOLUTION_PLUGIN_UNINSTALL)
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
+	rm -rf $(DESTDIR)$(includedir)/libmapi
+	rm -f $(DESTDIR)$(includedir)/gen_ndr/exchange.h
 
 re: clean install
 
-# Evolution plugin compilation
-
-evolution-plugin-all: client/evolution/camelprovider/libcamel-openchange.$(SHLIBEXT) client/evolution/eplugin/org-gnome-openchange-plugin.eplug client/evolution/eplugin/liborg-gnome-openchange-plugin.$(SHLIBEXT)
-
-evolution-plugin-install: evolution-plugin-all
-	cp client/evolution/camelprovider/libcamelopenchange.urls $(camel_providerdir)
-	cp client/evolution/camelprovider/libcamel-openchange.$(SHLIBEXT) $(camel_providerdir)
-	cp client/evolution/eplugin/org-gnome-openchange-plugin.eplug $(plugindir)
-	cp client/evolution/eplugin/liborg-gnome-openchange-plugin.$(SHLIBEXT) $(plugindir)
-
-evolution-plugin-uninstall:
-	rm -f $(camel_providerdir)/libcamelopenchange.urls
-	rm -f $(camel_providerdir)/libcamel-openchange.$(SHLIBEXT)
-	rm -f $(plugindir)/org-gnome-openchange-plugin.eplug
-	rm -f $(plugindir)/liborg-gnome-openchange-plugin.$(SHLIBEXT)
-
-client/evolution/eplugin/%.o: CFLAGS+=$(EVOLUTION_PLUGIN_CFLAGS)
-client/evolution/eplugin/liborg-gnome-openchange-plugin.$(SHLIBEXT):  client/evolution/eplugin/openchange-plugin.o
-	@echo "Linking $<"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(EVOLUTION_PLUGIN_LIBS)
-
-%.eplug: %.eplug.in
-	sed -e 's|\@PLUGINDIR\@|$(plugindir)|' -e 's|\@SOEXT\@|.$(SHLIBEXT)|' $< > $@
-
-client/evolution/camelprovider/%.o: CFLAGS+=$(EVOLUTION_PLUGIN_CFLAGS)
-client/evolution/camelprovider/libcamel-openchange.$(SHLIBEXT): client/evolution/camelprovider/camel-openchange-transport.o client/evolution/camelprovider/camel-openchange-provider.o
-	@echo "Linking $<"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(EVOLUTION_PLUGIN_LIBS)
-
-torture/openchange.$(SHLIBEXT): torture/testjoin_exchange.o torture/nspi_profile.o torture/nspi_resolvenames.o torture/nspi_scantags.o torture/mapi_fetchmail.o torture/mapi_sendmail.o torture/mapi_deletemail.o torture/mapi_sendattach.o torture/mapi_fetchattach.o torture/openchange.o
+torture/openchange.$(SHLIBEXT):	torture/testjoin_exchange.o	\
+				torture/nspi_profile.o		\
+				torture/nspi_resolvenames.o	\
+				torture/mapi_prop.o		\
+				torture/mapi_folder.o		\
+				torture/mapi_table.o		\
+				torture/mapi_message.o		\
+				torture/mapi_fetchmail.o	\
+				torture/mapi_sendmail.o		\
+				torture/mapi_sendmail_html.o	\
+				torture/mapi_deletemail.o	\
+				torture/mapi_sendattach.o	\
+				torture/mapi_fetchattach.o	\
+				torture/mapi_fetchappointment.o	\
+				torture/mapi_sendappointment.o	\
+				torture/mapi_fetchcontacts.o	\
+				torture/mapi_sendcontacts.o	\
+				torture/mapi_fetchtasks.o	\
+				torture/mapi_sendtasks.o	\
+				torture/mapi_common.o		\
+				torture/openchange.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -lmapi
 
@@ -137,7 +144,7 @@ exchange.idl: mapitags_enum.h mapicodes_enum.h
 
 .c.o:
 	@echo "Compiling $<"
-	@$(CC) $(EPLUGINS_UI_CFLAGS) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -DDEFAULT_LDIF=\"$(DESTDIR)$(datadir)/setup\" -c $< -o $@
 
 gen_ndr/ndr_%.h gen_ndr/ndr_%.c: %.idl %.h
 	@echo "Compiling $<"
@@ -164,14 +171,25 @@ bin/schemaIDGUID: utils/schemaIDGUID.o
 
 bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT)
 	@echo "Compiling $<"
-	@$(CC) -o $@ $^ $(LIBS)
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
-bin/mapidump: utils/mapidump.o libmapi.$(SHLIBEXT)
+bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT)
+	@echo "Compiling $<"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
+
+bin/openchangeclient: 	utils/openchangeclient.o			\
+			libmapi.$(SHLIBEXT)
+	@echo "Compiling $<"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
+
+bin/exchange2mbox:	utils/exchange2mbox.o				\
+			libmapi.$(SHLIBEXT) -lpopt -lmagic
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS)
 
 distclean: clean
 	rm -rf autom4te.cache
+	rm -f libmapi.pc
 	rm -f Makefile config.status config.log
 	rm -f intltool-extract intltool-merge intltool-update
 
@@ -180,7 +198,6 @@ realdistclean: distclean
 	rm -f torture/openchange.so
 	rm -f server/dcesrv_exchange.so
 	rm -f server/dcesrv_exchange_remote.so
-	rm -f client/evolution/*/*.so
 	rmdir gen_ndr
 
 clean:
@@ -198,6 +215,7 @@ clean:
 	rm -f libmapi/mapicode.{c,h}
 	rm -f libmapi/mapitags.{c,h}
 	rm -f libmapi/proto.h
+	rm -f libmapi/proto_private.h
 	rm -f server/dcesrv_proto.h
 	rm -f libmapi/pr
 	rm -f providers/providers_proto.h
@@ -206,26 +224,29 @@ clean:
 	rm -f ndr_mapi.o
 	rm -f mapicodes_enum.h
 	rm -f mapitags_enum.h
-	rm -f client/evolution/*/*.o client/evolution/*/*.eplug
 	rm -f *~
 	rm -f */*~
 	rm -f */*/*~
 
 proto.h: libmapi/mapitags.c libmapi/mapicode.c
 	@echo "Generating libmapi proto.h"
-	@./script/mkproto.pl --private=libmapi/proto.h --public=libmapi/proto.h \
+	@./script/mkproto.pl --private=libmapi/proto_private.h --public=libmapi/proto.h \
 	libmapi/nspi.c			\
 	libmapi/emsmdb.c		\
-	libmapi/mapi.c			\
+	libmapi/cdo_mapi.c		\
 	libmapi/mapitags.c		\
 	libmapi/mapicode.c		\
+	libmapi/mapidump.c		\
+	libmapi/mapi_object.c		\
 	libmapi/property.c		\
 	libmapi/IABContainer.c		\
+	libmapi/IProfAdmin.c		\
 	libmapi/IMAPIContainer.c	\
 	libmapi/IMAPIFolder.c 		\
 	libmapi/IMAPIProp.c 		\
 	libmapi/IMAPISession.c		\
 	libmapi/IMAPITable.c 		\
+	libmapi/IMSProvider.c		\
 	libmapi/IMessage.c 		\
 	libmapi/IMsgStore.c 		\
 	libmapi/IStoreFolder.c		\
@@ -249,11 +270,29 @@ dcesrv_proto.h: server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
 torture_proto.h:
 	@echo "Generating torture_proto.h"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h \
-	torture/mapi_deletemail.c torture/mapi_fetchmail.c torture/mapi_sendattach.c 		\
-	torture/mapi_fetchattach.c torture/mapi_sendmail.c torture/nspi_profile.c 		\
-	torture/nspi_resolvenames.c torture/nspi_scantags.c torture/openchange.c
+	torture/mapi_deletemail.c	\
+	torture/mapi_fetchmail.c	\
+	torture/mapi_sendattach.c 	\
+	torture/mapi_folder.c		\
+	torture/mapi_table.c		\
+	torture/mapi_prop.c		\
+	torture/mapi_message.c		\
+	torture/mapi_fetchattach.c	\
+	torture/mapi_sendmail.c		\
+	torture/mapi_sendmail_html.c	\
+	torture/nspi_profile.c 		\
+	torture/nspi_resolvenames.c	\
+	torture/mapi_fetchappointment.c	\
+	torture/mapi_sendappointment.c	\
+	torture/mapi_fetchcontacts.c	\
+	torture/mapi_sendcontacts.c	\
+	torture/mapi_fetchtasks.c	\
+	torture/mapi_sendtasks.c	\
+	torture/mapi_common.c		\
+	torture/openchange.c
 
 libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
+			libmapi/IProfAdmin.o				\
 			libmapi/IMAPIContainer.o			\
 			libmapi/IMAPIFolder.o				\
 			libmapi/IMAPIProp.o				\
@@ -264,14 +303,83 @@ libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
 			libmapi/IMsgStore.o				\
 			libmapi/IStoreFolder.o				\
 			libmapi/IUnknown.o				\
+			libmapi/IMSProvider.o				\
 			libmapi/utils.o libmapi/property.o		\
-			libmapi/mapi.o libmapi/mapitags.o		\
+			libmapi/cdo_mapi.o 				\
+			libmapi/mapi_object.o				\
+			libmapi/mapitags.o				\
+			libmapi/mapidump.o				\
 			libmapi/mapicode.o libmapi/emsmdb.o		\
 			libmapi/nspi.o gen_ndr/ndr_exchange.o		\
 			libmapi/util/locale.o libmapi/util/codepage.o	\
 			libmapi/x500.o ndr_mapi.o gen_ndr/ndr_exchange_c.o	
 	@echo "Compiling $<"
 	@$(CC) $(DSOOPT) -o $@ $^ $(LIBS)
+
+manpages = \
+		doc/man/man1/exchange2mbox.1				\
+		doc/man/man1/mapiprofile.1				\
+		doc/man/man1/openchangeclient.1				\
+		doc/man/man3/mapidump.3					\
+		doc/man/man3/mapi_object.3				\
+		doc/man/man3/ChangeProfilePassword.3			\
+		doc/man/man3/CreateAttach.3				\
+		doc/man/man3/CreateFolder.3				\
+		doc/man/man3/CreateMessage.3				\
+		doc/man/man3/CreateProfile.3				\
+		doc/man/man3/CreateProfileStore.3			\
+		doc/man/man3/DeleteFolder.3				\
+		doc/man/man3/DeleteMessage.3				\
+		doc/man/man3/DeleteProfile.3				\
+		doc/man/man3/DeleteProps.3				\
+		doc/man/man3/EmptyFolder.3				\
+		doc/man/man3/GetAttachmentTable.3			\
+		doc/man/man3/GetContentsTable.3				\
+		doc/man/man3/GetDefaultProfile.3			\
+		doc/man/man3/GetHierarchyTable.3			\
+		doc/man/man3/GetLastError.3				\
+		doc/man/man3/GetOutboxFolder.3				\
+		doc/man/man3/GetProfileAttr.3				\
+		doc/man/man3/GetProps.3					\
+		doc/man/man3/GetPropsAll.3				\
+		doc/man/man3/GetPropList.3				\
+		doc/man/man3/GetReceiveFolder.3				\
+		doc/man/man3/GetRowCount.3				\
+		doc/man/man3/LoadProfile.3				\
+		doc/man/man3/MAPIAllocateBuffer.3			\
+		doc/man/man3/MAPIFreeBuffer.3				\
+		doc/man/man3/MAPIInitialize.3				\
+		doc/man/man3/MAPILogonEx.3				\
+		doc/man/man3/MAPILogonProvider.3			\
+		doc/man/man3/MAPIUninitialize.3				\
+		doc/man/man3/ModifyRecipients.3				\
+		doc/man/man3/OpenAttach.3				\
+		doc/man/man3/OpenFolder.3				\
+		doc/man/man3/OpenProfile.3				\
+		doc/man/man3/OpenMessage.3				\
+		doc/man/man3/OpenMsgStore.3				\
+		doc/man/man3/OpenStream.3				\
+		doc/man/man3/ProcessNetworkProfile.3			\
+		doc/man/man3/QueryColumns.3				\
+		doc/man/man3/QueryRows.3				\
+		doc/man/man3/ReadStream.3				\
+		doc/man/man3/Release.3					\
+		doc/man/man3/ResolveNames.3				\
+		doc/man/man3/SaveChanges.3				\
+		doc/man/man3/SeekRow.3					\
+		doc/man/man3/SetColumns.3				\
+		doc/man/man3/SetDefaultProfile.3			\
+		doc/man/man3/SetProps.3					\
+		doc/man/man3/SetRecipientType.3				\
+		doc/man/man3/ShutDown.3					\
+		doc/man/man3/SubmitMessage.3				\
+		doc/man/man3/WriteStream.3
+
+installman:
+	@./script/installman.sh $(DESTDIR)$(mandir) $(manpages)
+
+uninstallman:
+	@./script/uninstallman.sh $(DESTDIR)$(mandir) $(manpages)
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]"`

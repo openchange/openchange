@@ -1,0 +1,219 @@
+#
+# Exchange organization
+#
+dn: CN=Organization
+objectClass: top
+objectClass: attributeSchema
+name: Organization
+CN: Organization
+description: Exchange Organization
+isSingleValued: TRUE
+
+#
+# Exchange organization unit
+#
+dn: CN=OrganizationUnit
+objectClass: top
+objectClass: attributeSchema
+name: OrganizationUnit
+CN: OrganizationUnit
+description: Exchange Organization Unit
+isSingleValued: TRUE
+
+#
+# User display name
+#
+dn: CN=DisplayName
+objectClass: top
+objectClass: attributeSchema
+name: DisplayName
+CN: DisplayName
+description: User display name
+isSingleValued: TRUE
+
+#
+# Office Telephone Number
+#
+dn: CN=OfficeTelephoneNumber
+objectClass: top
+objectClass: attributeSchema
+name: OfficeTelephoneNumber
+CN: OfficeTelephoneNumber
+description: Office Telephone Number
+isSingleValued: TRUE
+
+#
+# Office Location
+#
+dn: CN=OfficeLocation
+objectClass: top
+objectClass: attributeSchema
+name: OfficeLocation
+CN: OfficeLocation
+description: Office Location
+isSingleValued: TRUE
+
+#
+# User title
+#
+dn: CN=Title
+objectClass: top
+objectClass: attributeSchema
+name: Title
+CN: Title
+description: User Title
+isSingleValued: TRUE
+
+#
+# Company Name
+#
+dn: CN=CompanyName
+objectClass: top
+objectClass: attributeSchema
+name: CompanyName
+CN: CompanyName
+description: Company Name
+isSingleValued: TRUE
+
+#
+# User account name
+#
+dn: CN=AccountName
+objectClass: top
+objectClass: attributeSchema
+name: AccountName
+CN: AccountName
+description: User account name
+isSingleValued: TRUE
+
+#
+# User email address
+#
+dn: CN=EmailAddress
+objectClass: top
+objectClass: attributeSchema
+name: EmailAddress
+CN: EmailAddress
+description: User email address
+isSingleValued: TRUE
+
+#
+# Email Address type
+#
+dn: CN=AddrType
+objectClass: top
+objectClass: attributeSchema
+name: AddrType
+CN: AddrType
+description: User Email Address Type
+isSingleValued: TRUE
+
+#
+# Entry ID
+#
+dn: CN=EntryID
+objectClass: top
+objectClass: attributeSchema
+name: EntryID
+CN: ENtryID
+description: Unique identifier for the given object
+isSingleValued: TRUE
+
+#
+# Object Type
+#
+dn: CN=ObjectType
+objectClass: top
+objectClass: attributeSchema
+name: ObjectType
+CN: ObjectType
+description: Object Type
+isSingleValued: TRUE
+
+#
+# Home MDB
+#
+dn: CN=HomeMDB
+objectClass: top
+objectClass: attributeSchema
+name: HomeMDB
+CN: HomeMDB
+description: Path to the user Mailbox
+isSingleValued: TRUE
+
+#
+# User Proxy addresses for different connectors
+#
+dn: CN=ProxyAddress
+objectClass: top
+objectClass: attributeSchema
+name: ProxyAddress
+CN: ProxyAddress
+description: Proxy addresses for other connectors
+isSingleValued: FALSE
+
+#
+# PR_DEFAULT_PROFILE
+#
+dn: CN=PR_DEFAULT_PROFILE
+objectClass: top
+objectClass: attributeSchema
+name: PR_DEFAULT_PROFILE
+CN: PR_DEFAULT_PROFILE
+description: Indicates if the profile is the default one
+isSingleValued: TRUE
+
+########################################################
+# Attributes for Exchange Servers containers
+########################################################
+
+#
+# Exchange server binding strings
+#
+dn: CN=NetworkAddress
+objectClass: top
+objectClass: attributeSchema
+name: NetworkAddress
+CN: NetworkAddress
+description: binding string we can use to connect to the Exchange Server
+isSingleValued: FALSE
+
+#
+# Container flags
+#
+dn: CN=ContainerFlags
+objectClass: top
+objectClass: attributeSchema
+name: ContainerFlags
+CN: ContainerFlags
+isSingleValued: TRUE
+
+#
+# Depth
+#
+dn: CN=Depth
+objectClass: top
+objectClass: attributeSchema
+name: Depth
+CN: Depth
+isSingleValued: TRUE
+
+#
+# AB Container ID
+#
+dn: CN=ABContainerID
+objectClass: top
+objectClass: attributeSchema
+name: ABContainerID
+CN: ABContainerID
+isSingleValued: TRUE
+
+#
+# AB is Master
+#
+dn: CN=ABIsMaster
+objectClass: top
+objectClass: attributeSchema
+name: ABIsMaster
+CN: ABIsMaster
+isSingleValued: TRUE

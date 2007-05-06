@@ -26,7 +26,7 @@
  *
  */
 
-char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const char *element)
+_PUBLIC_ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const char *element)
 {
 	char	*pdn, *p, *str;
 	char	*tmp_dn;
@@ -34,7 +34,7 @@ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const char *eleme
 	if ((dn == NULL) || (dn[0] == '\0') || !element) return NULL;
 
 	tmp_dn = talloc_strdup(mem_ctx, dn);
-	pdn = strstr((const char *)tmp_dn, element);
+	pdn = strcasestr((const char *)tmp_dn, element);
 	if (pdn != NULL) {
 		pdn += strlen(element);
 		p = pdn;
@@ -48,4 +48,27 @@ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const char *eleme
 	
 	talloc_free(tmp_dn);
 	return str;
+}
+
+/**
+ * Retrieve the servername from a string
+ * We should definitively find a better way to handle this
+ */
+
+_PUBLIC_ char *x500_get_servername(TALLOC_CTX *mem_ctx, const char *dn)
+{
+	char *pdn;
+	char *servername;
+
+	if (!dn) {
+		return NULL;
+	}
+
+	pdn = strcasestr(dn, SERVERNAME);
+	if (pdn == NULL) return NULL;
+
+	pdn += strlen(SERVERNAME);
+	servername = strsep(&pdn, "/");
+
+	return (servername);
 }

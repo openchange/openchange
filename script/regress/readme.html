@@ -1,0 +1,215 @@
+	<html>
+	<head>
+	<style type="text/css">
+	#tree
+	{
+	  margin-right: 150px;
+	  margin-left: 20px;
+	}
+	body
+	{
+	  padding: 0;
+	  margin: 0;
+	}
+        ul
+        {
+	  list-style-type: none;
+	  margin: 0;
+	  padding: 0;
+	  margin-left: 20px;
+        }
+        li
+	{
+	    border-bottom: solid;
+	    border-bottom-width: thin;
+	    border-bottom-color: #e0e0ff;
+	    margin-bottom: 10px;
+	}
+	li :first-letter
+	{
+	    text-transform: uppercase;
+	    font-size: 110%;
+	}
+	li .indent_0
+	{
+	    background-color: #e0e0ff;
+	    margin-top: 40px;
+	    padding: 10px;
+	    font-size: 120%;
+	}
+	li .concl
+	{
+	  font-weight: bold;
+	  font-style: italic;
+	}
+
+	.comment
+	{
+	    font-style: italic;
+	    color: grey;
+	}
+
+	.elem_0
+	{
+	}
+
+	</style>
+	</head>
+<body><div id="tree">
+<ul class="indent_0"><div class="elem_0">
+<li>
+<div class=text><div class="indent_0">
+ openchange regression suite</div>
+</div>
+</li>
+</div>
+<div class="elem_0">
+<ul class="indent_1"><div class="elem_1">
+<li>
+<div class=text><div class="indent_1">
+ regress.pl</div>
+</div>
+</li>
+</div>
+<div class="elem_1">
+<ul class="indent_2"><div class="elem_2">
+<li>
+<div class=text><div class="indent_2">
+ 2folds: according to an xml input file (ie. either the base one or thereference one), it runs torture tests and tells if there were errorsor successes in assertions and such.</div>
+</div>
+</li>
+</div>
+<div class="elem_2">
+<ul class="indent_3"><div class="elem_3">
+<li>
+<div class=text><div class="indent_3">
+ if it's run against a reference file (ie. one containing a referenceset of unit outputs), then it will print the diff between the currentoutput and the reference one, thus showing regression or progresssion.</div>
+</div>
+</li>
+</div>
+<div class="elem_3">
+<li>
+<div class=text><div class="indent_3">
+ if it's run against a base file, since there are no reference totest progression / regression, it will only show successes and errors.</div>
+</div>
+</li>
+</div>
+</ul></div>
+<div class="elem_2">
+<li>
+<div class=concl><div class="indent_2">
+ the resulting file can serve as the new reference</div>
+</div>
+</li>
+</div>
+</ul></div>
+<div class="elem_1">
+<li>
+<div class=text><div class="indent_1">
+ oc_test.h</div>
+</div>
+</li>
+</div>
+<div class="elem_1">
+<ul class="indent_2"><div class="elem_2">
+<li>
+<div class=text><div class="indent_2">
+ to be included in targets programs so that they can transparentlyoutput well formatted xml. This is xml is then processable by regress.pl.</div>
+</div>
+</li>
+</div>
+<div class="elem_2">
+<ul class="indent_3"><div class="elem_3">
+<li>
+<div class=text><div class="indent_3">
+ oc_test_begin() // open output file + output xml header</div>
+</div>
+</li>
+</div>
+<div class="elem_3">
+<ul class="indent_4"><div class="elem_4">
+<li>
+<div class=text><div class="indent_4">
+ oc_test_end() // close output file + output xml footer</div>
+</div>
+</li>
+</div>
+</ul></div>
+<div class="elem_3">
+<li>
+<div class=text><div class="indent_3">
+ oc_test_describe(s) // describe the current test</div>
+</div>
+</li>
+</div>
+<div class="elem_3">
+<li>
+<div class=text><div class="indent_3">
+ oc_test_assert(cond) // check the assertion. on failure, returns False</div>
+</div>
+</li>
+</div>
+<div class="elem_3">
+<li>
+<div class=text><div class="indent_3">
+ oc_test_step() // same as above, but always true</div>
+</div>
+</li>
+</div>
+<div class="elem_3">
+<ul class="indent_4"><div class="elem_4">
+<li>
+<div class=text><div class="indent_4">
+ oc_test_skip(n) // skip n tests (useful for conditional branching)</div>
+</div>
+</li>
+</div>
+</ul></div>
+</ul></div>
+<div class="elem_2">
+<li>
+<div class=text><div class="indent_2">
+ test mapi_status: oc_assert(mapi_status == MAPI_E_SUCCESS);</div>
+</div>
+</li>
+</div>
+<div class="elem_2">
+<li>
+<div class=text><div class="indent_2">
+ test row_count: oc_assert(row_count >= 3);</div>
+</div>
+</li>
+</div>
+<div class="elem_2">
+<li>
+<div class=text><div class="indent_2">
+ simple step(checkpoint for output): oc_test_step();</div>
+</div>
+</li>
+</div>
+<div class="elem_2">
+<li>
+<div class=concl><div class="indent_2">
+ for more information, see torture/mapi_xxx.c files</div>
+</div>
+</li>
+</div>
+</ul></div>
+<div class="elem_1">
+<li>
+<div class=text><div class="indent_1">
+ known bugs:</div>
+</div>
+</li>
+</div>
+<div class="elem_1">
+<ul class="indent_2"><div class="elem_2">
+<li>
+<div class=text><div class="indent_2">
+ cannot use && in condition of oc_test assert since XML::Simple does not handle it.Instead, consider affecting the condition evaluation to a variable and asserting thevariable content.</div>
+</div>
+</li>
+</div>
+</ul></div>
+</ul></div>
+</ul></div></body></html>

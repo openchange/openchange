@@ -869,10 +869,10 @@ enum MAPISTATUS dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call, TALL
 /* 
   NspiResolveNamesW 
 */
-void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiResolveNamesW *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 /* 

@@ -1,0 +1,118 @@
+#!/usr/bin/perl -w
+
+##############################################
+# package to dump the mapi call hierarchy and
+# add IDL regression support
+#
+# Copyright Julien Kerihuel 2007.
+# <j.kerihuel@openchange.org>
+#
+# released under GNU GPL
+
+use strict;
+
+use FindBin qw($RealBin $Script);
+use lib "$RealBin";
+use lib "$RealBin/lib";
+#use lib "lib";
+use MAPI::EcDoRpc;
+use Getopt::Long;
+
+my ($opt_help) = 0;
+my ($opt_outputdir) = '.';
+my ($opt_graph) = 0;
+my ($opt_highlight) = 0;
+my ($opt_trace) = 0;
+my ($opt_search_call) = 0;
+my ($opt_dump_call) = 0;
+my ($opt_inout) = 0;
+my ($opt_error) = 0;
+my ($opt_stats) = 0;
+my ($opt_verbose) = 0;
+############################################
+# display help text
+sub ShowHelp()
+{
+    print "mapi call hierarchy tracing tool and IDL regression support
+Copyright (C) Julien Kerihuel <j.kerihuel\@openchange.org>
+
+Usage: $Script [options]
+
+Generic Options:
+--help                 this help page
+--outputdir=OUTDIR     put output in OUTDIR/ []
+--graph                create a png graph
+--trace                dump the mapi call hierarchy on command line
+--verbose	       verbose output
+
+Tracing Options:
+--search-call=CALL     trace a single call through a scenario
+--dump-call            dump all the packets containing the call specified
+--highlight=CALL       highlight a call in the generated graph
+--inout=INOUT	       filter either requests (in) or response (out)
+
+Regression Options:
+--error_report=in,out  Investigate invalid packets
+--stats                Display statistics for a given scenario
+
+\n";
+    exit (0);
+}
+
+# main program
+my $result = GetOptions (
+			 'help|h|?' => \$opt_help,
+			 'outputdir=s' => \$opt_outputdir,
+			 'graph|g' => \$opt_graph,
+			 'highlight=s'=> \$opt_highlight,
+			 'trace|t' => \$opt_trace,
+			 'search-call=s' => \$opt_search_call,
+			 'dump-call|d' => \$opt_dump_call,
+			 'inout=s' => \$opt_inout,
+			 'error_report=s' => \$opt_error,
+			 'stats|s' => \$opt_stats,
+			 'verbose|v' => \$opt_verbose
+			 );
+
+if (not $result) {
+    exit (1);
+}
+
+if ($opt_help) {
+    ShowHelp();
+    exit (0);
+}
+
+sub process_tracing($)
+{
+    my $directory = shift;
+    my $outputdir = $opt_outputdir;
+    
+
+    opendir(DIR,$directory) or die "Unable to process $directory";
+    closedir(DIR);
+
+    my $EcDoRpc = MAPI::EcDoRpc->new($directory, $outputdir, $opt_verbose);
+
+    $EcDoRpc->ndrdump();
+    $EcDoRpc->analyze($opt_trace);
+
+    if ($opt_error) {
+	my @inout = split(/,/, $opt_error);
+
+	foreach (sort @inout) {
+	    $EcDoRpc->error_report($_);
+	}
+    }
+    
+    $EcDoRpc->stats() if ($opt_stats);
+    $EcDoRpc->search_call($opt_search_call, $opt_dump_call, $opt_inout) if ($opt_search_call);
+    $EcDoRpc->graph($outputdir, $opt_highlight) if ($opt_graph);
+}
+
+if (scalar(@ARGV) == 0) {
+    print "$Script: no input directory\n";
+    exit (1);
+}
+
+process_tracing($_) foreach (@ARGV);

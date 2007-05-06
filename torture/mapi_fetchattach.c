@@ -1,7 +1,7 @@
 /* 
    OpenChange MAPI implementation testsuite
 
-   fetch mail from an Exchange server
+   Fetch attach from an Exchange server
 
    Copyright (C) Julien Kerihuel 2007
    
@@ -20,6 +20,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+
 #include <libmapi/libmapi.h>
 #include <gen_ndr/ndr_exchange.h>
 #include <param.h>
@@ -28,10 +29,10 @@
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
 
-static enum MAPISTATUS read_attach_stream(struct emsmdb_context* ctx_emsmdb,
-					  TALLOC_CTX* ctx_mem,
-					  uint32_t hdl_attach,
-					  uint32_t hdl_stream,
+
+static enum MAPISTATUS read_attach_stream(TALLOC_CTX *ctx_mem,
+					  mapi_object_t *obj_attach,
+					  mapi_object_t *obj_stream,
 					  uint8_t** buf_data,
 					  uint32_t* sz_data)
 {
@@ -52,10 +53,10 @@ static enum MAPISTATUS read_attach_stream(struct emsmdb_context* ctx_emsmdb,
 
   /* Get Attachment size
    */
-  proptags = set_SPropTagArray(ctx_emsmdb->mem_ctx, 0x1, PR_ATTACH_SIZE);
-  status = GetProps(ctx_emsmdb, 0, hdl_attach, proptags, &vals, &cn_vals);
-  if (status != MAPI_E_SUCCESS)
-    return status;
+  proptags = set_SPropTagArray(ctx_mem, 0x1, PR_ATTACH_SIZE);
+  status = GetProps(obj_attach, proptags, &vals, &cn_vals);
+  mapi_errstr("GetProps", GetLastError());
+  if (status != MAPI_E_SUCCESS) return status;
 
   /* Alloc buffer
    */
@@ -66,23 +67,21 @@ static enum MAPISTATUS read_attach_stream(struct emsmdb_context* ctx_emsmdb,
 
   /* Read attachment
    */
-  while (done == 0)
-    {
-      status = ReadStream(ctx_emsmdb, 0, hdl_stream,
-			  (*buf_data) + off_data,
-			  (*sz_data) - off_data,
-			  &cn_read);
-      if ((status != MAPI_E_SUCCESS) || (cn_read == 0))
-	{
-	  done = 1;
-	}
-      else
-	{
-	  off_data += cn_read;
-	  if (off_data >= *sz_data)
-	    done = 1;
-	}
-    }
+  while (done == 0) {
+	  status = ReadStream(obj_stream,
+			      (*buf_data) + off_data,
+			      (*sz_data) - off_data,
+			      &cn_read);
+	  mapi_errstr("ReadStream", GetLastError());
+	  if ((status != MAPI_E_SUCCESS) || (cn_read == 0)) {
+		  done = 1;
+	  }
+	  else {
+		  off_data += cn_read;
+		  if (off_data >= *sz_data)
+			  done = 1;
+	  }
+  }
 
   *sz_data = off_data;
 
@@ -91,122 +90,155 @@ static enum MAPISTATUS read_attach_stream(struct emsmdb_context* ctx_emsmdb,
 
 BOOL torture_rpc_mapi_fetchattach(struct torture_context *torture)
 {
-	NTSTATUS		status;
-	MAPISTATUS		mapistatus;
-	struct dcerpc_pipe	*p;
+	MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
-	struct emsmdb_context	*emsmdb;
-	const char		*organization = lp_parm_string(-1, "exchange", "organization");
-	const char		*group = lp_parm_string(-1, "exchange", "ou");
-	const char		*username;
-	char			*mailbox_path;
-	uint32_t		hdl_msgstore;
-	uint32_t		hdl_inbox;
-	uint32_t		hdl_message;
-	uint32_t		hdl_tb_contents;
-	uint32_t		hdl_tb_attach;
-	uint32_t		hdl_attach;
-	uint32_t		hdl_stream;
-	uint64_t		id_inbox;
-	uint64_t		id_outbox;
-	uint64_t		id_folder;
-	uint64_t		id_message;
+	const char		*profname;
+	const char		*profdb;
+	struct mapi_session	*session;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_inbox;
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_tb_contents;
+	mapi_object_t		obj_tb_attach;
+	mapi_object_t		obj_attach;
+	mapi_object_t		obj_stream;
+	mapi_id_t		id_inbox;
+	mapi_id_t		id_folder;
+	mapi_id_t		id_message;
 	struct SPropTagArray	*proptags;
-	struct SRowSet		*rows_msgs;
-	struct SRowSet		*rows_attach;
+	struct SRowSet		rows_msgs;
+	struct SRowSet		rows_attach;
 	uint32_t		i_msg;
 	uint32_t		i_row_attach;
 	uint32_t		num_attach;
 	uint8_t			*buf_attach;
 	uint32_t		sz_attach;
 
+	/* init torture */
 	mem_ctx = talloc_init("torture_rpc_mapi_fetchattach");
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_exchange_emsmdb);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(mem_ctx);
+	/* init mapi */
+	profdb = lp_parm_string(-1, "mapi", "profile_store");
+	retval = MAPIInitialize(profdb);
+	mapi_errstr("MAPIInitialize", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* profile name */
+	profname = lp_parm_string(-1, "mapi", "profile");
+	if (profname == 0) {
+		DEBUG(0, ("[!] lp_parm_string(profile)\n"));
 		return False;
 	}
 
-	emsmdb = emsmdb_connect(mem_ctx, p, cmdline_credentials);
-	if (!emsmdb) {
-	  return False;
-	}
-	
-	emsmdb->mem_ctx = mem_ctx;
+	retval = MapiLogonEx(&session, profname);
+	mapi_errstr("MapiLogonEx", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	if (!organization) {
-	  organization = cli_credentials_get_domain(cmdline_credentials);
-	}
-	username = cli_credentials_get_username(cmdline_credentials);
-	if (!organization || !username) {
-	  return NULL;
-	}
-	mailbox_path = talloc_asprintf(emsmdb->mem_ctx, MAILBOX_PATH, organization, group, username);
+	/* init objects */
+	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_inbox);
+	mapi_object_init(&obj_message);
+	mapi_object_init(&obj_tb_contents);
+	mapi_object_init(&obj_tb_attach);
+	mapi_object_init(&obj_attach);
+	mapi_object_init(&obj_stream);
 
-	/* get inbox content
-	 */
-	OpenMsgStore(emsmdb, 0, &hdl_msgstore, &id_outbox, mailbox_path);
-	GetReceiveFolder(emsmdb, 0, hdl_msgstore, &id_inbox);
-	OpenFolder(emsmdb, 0, hdl_msgstore, id_inbox, &hdl_inbox);
+	/* session::OpenMsgStore() */
+	retval = OpenMsgStore(&obj_store);
+	mapi_errstr("OpenMsgStore", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	/* query contents table rows
-	 */
-	GetContentsTable(emsmdb, 0, hdl_inbox, &hdl_tb_contents);
-	proptags = set_SPropTagArray(emsmdb->mem_ctx, 0x5,
+	/* id_inbox = store->GetReceiveFolder */
+	retval = GetReceiveFolder(&obj_store, &id_inbox);
+	mapi_errstr("GetReceiveFolder", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* inbox = store->OpenFolder() */
+	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
+	mapi_errstr("OpenFolder", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* table = inbox->GetContentsTable() */
+	retval = GetContentsTable(&obj_inbox, &obj_tb_contents);
+	mapi_errstr("GetContentsTable", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	proptags = set_SPropTagArray(mem_ctx, 0x5,
 				     PR_FID,
 				     PR_MID,
 				     PR_INST_ID,
 				     PR_INSTANCE_NUM,
 				     PR_SUBJECT);
-	SetColumns(emsmdb, 0, proptags);
-	rows_msgs = talloc(mem_ctx, struct SRowSet);
-	mapistatus = QueryRows(emsmdb, 0, hdl_tb_contents, 0xa, &rows_msgs);
-	if (mapistatus != MAPI_E_SUCCESS) {
-	  return False;
-	}
+	retval = SetColumns(&obj_tb_contents, proptags);
+	mapi_errstr("SetColumns", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	retval = QueryRows(&obj_tb_contents, 0xa, TBL_ADVANCE, &rows_msgs);
+	mapi_errstr("QueryRows", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
 	/* foreach message get attachment table
 	   foreach attachment, get PR_NUM
 	   foreach PR_NUM, open attachment
 	 */
-	for (i_msg = 0; i_msg < rows_msgs[0].cRows; i_msg++) {
+	
+	for (i_msg = 0; i_msg < rows_msgs.cRows; i_msg++) {
 
 		/* open message
 		 */
-		id_folder = rows_msgs[0].aRow[i_msg].lpProps[0].value.d;
-		id_message = rows_msgs[0].aRow[i_msg].lpProps[1].value.d;
-		mapistatus = OpenMessage(emsmdb, 0, hdl_msgstore, id_folder, id_message, &hdl_message);
-		if (mapistatus == MAPI_E_SUCCESS) {
-		  //			mapistatus = OpenStream(emsmdb, 0, PR_BODY, hdl_message, &hdl_tb_attach);
-			mapistatus = GetAttachmentTable(emsmdb, hdl_message, &hdl_tb_attach);
+		id_folder = rows_msgs.aRow[i_msg].lpProps[0].value.d;
+		id_message = rows_msgs.aRow[i_msg].lpProps[1].value.d;
+		retval = OpenMessage(&obj_store, id_folder, id_message, &obj_message);
+		mapi_errstr("OpenMessage", GetLastError());
+		if (retval == MAPI_E_SUCCESS) {
+
+			/* open attachment table */
+			retval = GetAttachmentTable(&obj_message, &obj_tb_attach);
+			mapi_errstr("GetAttachmentTable", GetLastError());
 
 			/* foreach attachment, open by PR_ATTACH_NUM */
-			if (mapistatus == MAPI_E_SUCCESS) {
-				proptags = set_SPropTagArray(emsmdb->mem_ctx, 0x1, PR_ATTACH_NUM);
-				SetColumns(emsmdb, 0, proptags);
-				rows_attach = talloc(mem_ctx, struct SRowSet);
-				mapistatus = QueryRows(emsmdb, 0, hdl_tb_attach, 0xa, &rows_attach);
-				if (mapistatus != MAPI_E_SUCCESS)
-					return False;
-				
+			if (retval == MAPI_E_SUCCESS) {
+				proptags = set_SPropTagArray(mem_ctx, 0x1, PR_ATTACH_NUM);
+				retval = SetColumns(&obj_tb_attach, proptags);
+				mapi_errstr("SetColumns", GetLastError());
+				if (retval != MAPI_E_SUCCESS) return False;
+
+				retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rows_attach);
+				mapi_errstr("QueryRows", GetLastError());
+				if (retval != MAPI_E_SUCCESS) return False;
+
 				/* get a stream on PR_ATTACH_DATA_BIN */
-				for (i_row_attach = 0; i_row_attach < rows_attach[0].cRows; i_row_attach++) {
-					num_attach = rows_attach[0].aRow[i_row_attach].lpProps[0].value.l;
-					mapistatus = OpenAttach(emsmdb, 0, hdl_message, num_attach, &hdl_attach);
-					if (mapistatus == MAPI_E_SUCCESS) {
-						mapistatus = OpenStream(emsmdb, 0, PR_ATTACH_DATA_BIN, hdl_attach, &hdl_stream);
-						
+				for (i_row_attach = 0; i_row_attach < rows_attach.cRows; i_row_attach++) {
+					num_attach = rows_attach.aRow[i_row_attach].lpProps[0].value.l;
+					retval = OpenAttach(&obj_message, num_attach, &obj_attach);
+					mapi_errstr("OpenAttach", GetLastError());
+					if (retval == MAPI_E_SUCCESS) {
+						retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
+						mapi_errstr("OpenStream", GetLastError());
+
 						/* read stream content */
-						if (mapistatus == MAPI_E_SUCCESS)
-							read_attach_stream(emsmdb, mem_ctx, hdl_attach, hdl_stream, &buf_attach, &sz_attach);
+						if (retval == MAPI_E_SUCCESS) {
+							read_attach_stream(mem_ctx,
+									   &obj_attach, &obj_stream, &buf_attach,
+									   &sz_attach);
+						}
 					}
 				}
 			}
 		}
 	}
-	
+
+	mapi_object_release(&obj_store);
+	mapi_object_release(&obj_inbox);
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_tb_contents);
+	mapi_object_release(&obj_tb_attach);
+	mapi_object_release(&obj_attach);
+	mapi_object_release(&obj_stream);
+
+	MAPIUninitialize();
+
 	talloc_free(mem_ctx);
 	return (ret);
 }

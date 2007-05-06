@@ -459,6 +459,7 @@ System Attendant Private Interface
 	typedef [switch_type(uint32)] union {
 		[case(PT_I2)]			uint16			i;
 		[case(PT_LONG)]			uint32			l;
+		[case(PT_DOUBLE)]		dlong			dbl;
 		[case(PT_BOOLEAN)]		uint16			b;
 		[case(PT_I8)]			dlong			d;
 		[case(PT_STRING8)][unique][string,charset(DOS)] uint8	*lpszA;
@@ -520,12 +521,12 @@ System Attendant Private Interface
 		MAPI_RESOLVED	= 0x2
 	} flaglist_flags;
 
-	typedef struct {
+	typedef [flag(NDR_NOALIGN)]struct {
  		uint32		dwAlignPad;
-		uint32		size;
+		uint32		cFlags;
 		uint32		offset;
 		uint32		length;
-		flaglist_flags 	flags[size];
+		flaglist_flags 	ulFlags[cFlags];
 	} FlagList;
 
  	typedef struct {
@@ -541,11 +542,24 @@ System Attendant Private Interface
 		[in,ref] SPropTagArray *SPropTagArray,
  		[in,ref] names		*recipients,
 		[out,ref]FlagList	**flags,
-		[out,ref]SRowSet        **RowSet
+		[out,ptr]SRowSet        *RowSet
 	);
 
+	typedef struct {
+		uint32		cEntries;
+		uint32		count;
+		[string,charset(UTF16)] uint16	*recipient[count];
+	} namesW;
 
-	void NspiResolveNamesW();
+	MAPISTATUS NspiResolveNamesW(
+		[in] policy_handle	*handle,
+		[in] uint32		dwAlignPad,
+		[in,ref] MAPI_SETTINGS	*settings,
+		[in,ref] SPropTagArray	*SPropTagArray,
+		[in,ref] namesW		*recipients,
+		[out,ref]FlagList	**flags,
+		[out,ptr]SRowSet	*RowSet
+		);
 }
 
 [
@@ -611,23 +625,35 @@ System Attendant Private Interface
 			op_MAPI_Release			= 0x1,
 			op_MAPI_OpenFolder		= 0x2,
 			op_MAPI_OpenMessage		= 0x3,
+			op_MAPI_GetHierarchyTable	= 0x4,
 			op_MAPI_GetContentsTable	= 0x5,
 			op_MAPI_CreateMessage		= 0x6,
 			op_MAPI_GetProps		= 0x7,
+			op_MAPI_GetPropsAll		= 0x8,
 			op_MAPI_GetPropList		= 0x9,
 			op_MAPI_SetProps		= 0xa,
+			op_MAPI_DeleteProps		= 0xb,
+			op_MAPI_SaveChangesMessage	= 0xc,
 			op_MAPI_ModifyRecipients	= 0xe,
 			op_MAPI_SetColumns		= 0x12,
 			op_MAPI_QueryRows		= 0x15,
+			op_MAPI_GetRowCount		= 0x17,
+			op_MAPI_SeekRow			= 0x18,
+			op_MAPI_CreateFolder		= 0x1c,
+			op_MAPI_DeleteFolder		= 0x1d,
 			op_MAPI_DeleteMessages		= 0x1e,
 			op_MAPI_GetAttachmentTable     	= 0x21,
 			op_MAPI_OpenAttach		= 0x22,
 			op_MAPI_CreateAttach		= 0x23,
 			op_MAPI_SaveChanges		= 0x25,
 			op_MAPI_GetReceiveFolder	= 0x27,
+			op_MAPI_Notify			= 0x2a,
 			op_MAPI_OpenStream		= 0x2b,
 			op_MAPI_ReadStream		= 0x2c,
+			op_MAPI_WriteStream		= 0x2d,
 			op_MAPI_SubmitMessage		= 0x32,
+			op_MAPI_QueryColumns		= 0x37,
+			op_MAPI_EmptyFolder		= 0x58,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
 			op_MAPI_OpenMsgStore		= 0xFE
 		} MAPI_OPNUM;
@@ -637,12 +663,50 @@ System Attendant Private Interface
 		uint16				cb;
 		[flag(NDR_BUFFERS)]uint8	lpb[cb];
 	} SBinary_short;
+
+	typedef struct {
+		uint32 cValues;
+		uint32 lpl[cValues]; 
+	} mapi_MV_LONG_STRUCT;
+
+	typedef struct {
+		astring lppszA;
+	} mapi_LPSTR;
+
+	typedef struct {
+		uint32 cValues;
+		mapi_LPSTR strings[cValues]; 
+	} mapi_SLPSTRArray;
 	
+	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(PT_BOOLEAN)]	uint8		b;
+		[case(PT_I2)]		uint16		i;
+		[case(PT_LONG)]     	uint32	       	l;
+		[case(PT_DOUBLE)]	dlong		dbl;
+		[case(PT_I8)]		dlong		d;
+		[case(PT_SYSTIME)]	FILETIME	ft;
+		[case(PT_ERROR)]       	uint32		err;
+		[case(PT_STRING8)]	astring	       	lpszA;
+		[case(PT_UNICODE)][flag(STR_NULLTERM)] string lpszW;
+  		[case(PT_BINARY)]	SBinary_short 	bin;
+		[case(0xFB)]		SBinary_short	bin;
+		[case(PT_MV_LONG)]	mapi_MV_LONG_STRUCT MVl;	
+		[case(PT_MV_STRING8)]	mapi_SLPSTRArray	MVszA;
+	} mapi_SPropValue_CTR;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		MAPITAGS ulPropTag;
+		[switch_is(ulPropTag & 0xFFFF)] mapi_SPropValue_CTR value; 
+	} mapi_SPropValue;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16					cValues;
+		[flag(NDR_REMAINING)]mapi_SPropValue	lpProps[cValues];
+	} mapi_SPropValue_array;
 
 	/**************************/
 	/* EcDoRpc Function 0x1   */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
 	} Release_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -651,7 +715,7 @@ System Attendant Private Interface
 	/**************************/
 	/* EcDoRpc Function 0x2   */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		handle;
+		uint8		handle_idx;
 		hyper		folder_id;
  		uint8		unknown;
 	} OpenFolder_req;
@@ -663,14 +727,100 @@ System Attendant Private Interface
 	/**************************/
 	/* EcDoRpc Function 0x3   */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		unknown;
+		uint8		folder_handle_idx;
 		uint16		max_data;
 		hyper		folder_id;
-		uint8		padding;
+		uint8		message_handle_idx;
 		hyper		message_id;
 	} OpenMessage_req;
 
+	typedef [v1_enum, flag(NDR_PAHEX)] enum {
+		CP_USASCII	= 0x04E4,
+		CP_UNICODE	= 0x04B0,
+		CP_JAUTODETECT	= 0xC6F4,
+		CP_KAUTODETECT	= 0xC705,
+		CP_ISO2022JPESC = 0xC42D,
+		CP_ISO2022JPSIO	= 0xC42E
+	} CODEPAGEID;
+
+	typedef [enum8bit, flag(NDR_PAHEX)] enum {
+		MAPI_ORIG		= 0x0,
+		MAPI_TO			= 0x1,
+		MAPI_CC			= 0x2,
+		MAPI_BCC		= 0x3
+	} ulRecipClass;
+
+	/**************** EXPERIMENTAL ******************/
+
+	typedef [enum8bit, flag(NDR_PAHEX)] enum {
+		SINGLE_RECIPIENT	= 0x0,
+		DISTRIBUTION_LIST	= 0x1
+	} addr_type;
+
+	typedef  [flag(NDR_NOALIGN)]struct {
+		uint8		organization_length;
+		addr_type	addr_type;
+	} RecipExchange;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} RecipSMTP;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)] RecipExchange	EXCHANGE;
+		[case(0xA)] RecipSMTP		SMTP;
+		[default];
+	} recipient_type;
+
+	/* Bit 5: always UTF8 encoded */
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x400)] astring		lpszA;
+		[default];
+	} recipient_displayname_7bit;
+
+	/* Bit 10 */
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x20)] astring				lpszA;
+		[case(0x220)][flag(STR_NULLTERM)] string	lpszW;
+		[default];
+	} recipient_email;
+
+	/* Bit 11 */
+	/* First Name = PR_GIVEN_NAME */
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x10)] astring				lpszA;
+		[case(0x210)][flag(STR_NULLTERM)] string	lpszW;
+		[default];
+	} recipient_firstname;
+
+	/* Bit 15 */
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x1)] astring				lpszA;
+		[case(0x201)][flag(STR_NULLTERM)] string	lpszW;
+		[default];
+	} recipient_displayname;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16							bitmask;
+		[switch_is(bitmask & 0xA)]   recipient_type		type;
+		[switch_is(bitmask & 0x400)] recipient_displayname_7bit	username;
+		[switch_is(bitmask & 0x210)] recipient_firstname       	firstname;
+		[switch_is(bitmask & 0x201)] recipient_displayname	displayname;
+		[switch_is(bitmask & 0x220)] recipient_email   		email_address;
+		uint16							prop_count;
+		uint8							layout;
+		[flag(NDR_REMAINING)] DATA_BLOB				prop_values;
+	} recipients_headers;
+	
+	/**************** EXPERIMENTAL *****************/
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		ulRecipClass	RecipClass;
+		CODEPAGEID	codepage;
+		[subcontext(2)] recipients_headers recipients_headers;
+	} OpenMessage_recipients;
+
 	typedef [public, nodiscriminant]union {
+		[case(0x0)];
 		[case(0x1)];
 		[case(0x3)] astring subject;
 	} OpenMessage_repl_UNION;
@@ -681,25 +831,30 @@ System Attendant Private Interface
 		[switch_is(type_prefix)] OpenMessage_repl_UNION prefix;
 		uint8		type_subject;
 		[switch_is(type_subject)] OpenMessage_repl_UNION subject;
-		uint16		subject_count;
+		uint16		recipient_count;
 		uint16		prop_count;
 		MAPITAGS	properties[prop_count];
- 		uint16		unknown3;
- 		uint32		codepage;
-		uint8		unknown4[6];
-		astring		username;
-		astring		full_name;
-		astring		username2;
- 		uint16		prop_number;
-		uint8		unknown5;
-		[flag(NDR_REMAINING)]DATA_BLOB	message;		
+		uint8		recipient_count_again;
+		OpenMessage_recipients	recipients[recipient_count];
 	} OpenMessage_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x4   */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		handle_idx;
+		uint8		unknown;
+	} GetHierarchyTable_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		cn_rows;
+		uint16		unknown;
+	} GetHierarchyTable_repl;
 
 	/**************************/
 	/* EcDoRpc Function 0x5   */
 	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		handle_idx;
 		uint8		unknown;
-		uint16		unknown2;
 	} GetContentsTable_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -710,7 +865,7 @@ System Attendant Private Interface
 	/**************************/
 	/* EcDoRpc Function 0x6   */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		unknown;
+		uint8		handle_idx;
 		uint16		max_data;
 		hyper		folder_id;
 		uint8		padding;
@@ -723,21 +878,30 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x7  */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
-		uint32		unknown2;
+		uint32		unknown;
 		uint16		prop_count;
 		MAPITAGS	properties[prop_count];
 	} GetProps_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		uint8		layout;
 		[flag(NDR_REMAINING)] DATA_BLOB prop_data;
 	} GetProps_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x8  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16			dwAlignPad;
+		uint16			unknown;
+	} GetPropsAll_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		mapi_SPropValue_array	properties;
+	} GetPropsAll_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x9  */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
 	} GetPropList_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -748,32 +912,36 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0xa  */
 
-	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
-		[case(PT_BOOLEAN)]	uint16		b;
-		[case(PT_I2)]		uint16		i;
-		[case(PT_LONG)]     	uint32	       	l;
-		[case(PT_STRING8)]	astring	       	lpszA;
-  		[case(PT_BINARY)]	SBinary_short 	bin;
-	} mapi_SPropValue_CTR;
-
-	typedef [public,flag(NDR_NOALIGN)] struct {
-		MAPITAGS ulPropTag;
-		[switch_is(ulPropTag & 0xFFFF)] mapi_SPropValue_CTR value; 
-	} mapi_SPropValue;
-
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		sprop_count;
-		[flag(NDR_REMAINING)]mapi_SPropValue	sprop_array[sprop_count];
-	} mapi_SPropValue_array;
-
-	typedef [flag(NDR_NOALIGN)] struct {
-		uint8				unknown;
  		[subcontext(2)] mapi_SPropValue_array values;
 	} SetProps_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		unknown;
 	} SetProps_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0xb  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		count;
+		MAPITAGS	tags[count];
+	} DeleteProps_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		unknown;
+	} DeleteProps_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0xc  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		handle_idx;
+		uint8		prop_nb;
+	} SaveChangesMessage_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown;
+		hyper		message_id;
+	} SaveChangesMessage_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0xe  */
@@ -790,26 +958,13 @@ System Attendant Private Interface
 		MODRECIP_REMOVE		= 0x8
 	} modrecip;
 
-
-	typedef [flag(NDR_NOALIGN)] struct {
-		uint32				unknown;
-		astring				display_name;
-		astring				full_name;
-		astring				username;
-		uint16				prop_count;
-		uint8				padding;
-		[flag(NDR_REMAINING)] DATA_BLOB prop_values;
-	} recipients_headers;
-
-
 	typedef [flag(NDR_NOALIGN)]struct {
-		uint8		idx;
-		uint32		reserved;
+		uint32		idx;
+		ulRecipClass	RecipClass;		
 		[subcontext(2),flag(NDR_REMAINING)] recipients_headers headers;
 	} recipients;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		modrecip			flags;
  		uint16				prop_count;
  		MAPITAGS			properties[prop_count];
 		uint16				cValues;
@@ -824,7 +979,6 @@ System Attendant Private Interface
 	/*************************/
 	/* Ecdorpc Function 0x12 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		handle;
 		uint8		unknown;
 		uint16		prop_count;
 		MAPITAGS	properties[prop_count];
@@ -836,24 +990,83 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x15  */
+
+	typedef [enum8bit] enum {
+		TBL_ADVANCE		= 0x0,
+		TBL_NOADVANCE		= 0x1
+	} tbl_advance;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
-		uint8		flag_noadvance;
-		uint8		unknown1;
+		tbl_advance	flag_advance;
+		uint8		layout;
 		uint16		row_count;
 	} QueryRows_req;
 
 	typedef [noprint,nopull,flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
 		uint16		results_count;
-		uint8		unknown2;
+ 		uint8		layout;
 		[flag(NDR_REMAINING)]DATA_BLOB	inbox;
 	} QueryRows_repl;
 
 	/**************************/
-	/* EcDoRpc Function 0x1e  */
+	/* EcDoRpc Function 0x17  */
+	typedef [flag(NDR_NOALIGN)] struct {
+	} GetRowCount_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32	unknown;
+		uint32	count;
+	} GetRowCount_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x18  */
+	typedef [enum8bit] enum {
+		BOOKMARK_BEGINNING	= 0x0,
+		BOOKMARK_CURRENT	= 0x1,
+		BOOKMARK_END		= 0x2
+	} BOOKMARK;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		BOOKMARK	origin;
+		int32		offset;
+		uint8		unknown_1;
+	} SeekRow_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		row;
+		uint8		unknown;
+	} SeekRow_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x1c  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		handle_idx;
+		uint16		flags_type;
+		uint16		flags_open;
+		astring		name;
+		astring		comment;
+	} CreateFolder_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		folder_id;
+		uint8		unknown;
+	} CreateFolder_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x1d  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		flags;
+		hyper		folder_id;
+	} DeleteFolder_req;
+
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
+	} DeleteFolder_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x1e  */
+	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		flags;
 		uint16		cn_ids;
 		hyper		message_ids[cn_ids];
@@ -868,7 +1081,7 @@ System Attendant Private Interface
 	/* EcDoRpc Function 0x21  */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
-		uint16		unknown;
+		uint8		unknown;
 	} GetAttachmentTable_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {		
@@ -877,8 +1090,8 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x22 */
   	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown_0;
-		uint16		unknown_1;
+		uint8		handle_idx;
+		uint8		unknown;
 		uint32		num_attach;
 	} OpenAttach_req;
 
@@ -888,17 +1101,17 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x23 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16 flags;
+		uint8	handle_idx;
 	} CreateAttach_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32 unknown;
+		uint32	unknown;
 	} CreateAttach_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x25 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16 flags;
+		uint8 handle_idx;
 		uint8 unknown;
 	} SaveChanges_req;
 
@@ -908,7 +1121,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x27 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		handle_id;
+		uint8		unknown;
 	} GetReceiveFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -916,9 +1129,14 @@ System Attendant Private Interface
 	} GetReceiveFolder_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x2a */
+	typedef [flag(NDR_NOALIGN)] struct {
+		[flag(NDR_REMAINING)] DATA_BLOB data;
+	} Notify_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x2b */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		handle_idx;
 		uint8		stream_handle_idx;
 		MAPITAGS	prop;
 		uint8		access_flags;
@@ -931,7 +1149,6 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x2c */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
 		uint16		size;
 	} ReadStream_req;
 
@@ -940,21 +1157,52 @@ System Attendant Private Interface
 	} ReadStream_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x2d */
+	typedef [flag(NDR_NOALIGN)] struct {
+		[subcontext(2), flag(NDR_REMAINING)] DATA_BLOB	data;
+	} WriteStream_req;
+
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		size;
+	} WriteStream_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x32 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		unknown;
+		uint8		unknown;
 	} SubmitMessage_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown[3];
+//		uint8		unknown[3];
 	} SubmitMessage_repl;
 
+
+	/*************************/
+	/* EcDoRpc Function 0x37 */
+	typedef [flag(NDR_NOALIGN)] struct {
+	} QueryColumns_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		count;
+		MAPITAGS	tags[count];
+	} QueryColumns_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x58 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		unknown;
+	} EmptyFolder_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown;
+	} EmptyFolder_repl;
+  
 	/*************************/
 	/* EcDoRpc Function 0xFE */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8	col;
 		uint32	codepage;
-		uint32 padding;
+		uint32	padding;
 		uint8	row;
 		ascstr3	mailbox_path;
 	} OpenMsgStore_req;
@@ -976,14 +1224,22 @@ System Attendant Private Interface
 		[case(op_MAPI_Release)] Release_req mapi_Release;
 		[case(op_MAPI_OpenFolder)] OpenFolder_req mapi_OpenFolder;
 		[case(op_MAPI_OpenMessage)] OpenMessage_req mapi_OpenMessage;
+		[case(op_MAPI_GetHierarchyTable)] GetHierarchyTable_req mapi_GetHierarchyTable;
 		[case(op_MAPI_GetContentsTable)] GetContentsTable_req mapi_GetContentsTable;
 		[case(op_MAPI_CreateMessage)] CreateMessage_req mapi_CreateMessage;
 		[case(op_MAPI_GetProps)] GetProps_req mapi_GetProps;
+		[case(op_MAPI_GetPropsAll)] GetPropsAll_req mapi_GetPropsAll;
 		[case(op_MAPI_GetPropList)] GetPropList_req mapi_GetPropList;
 		[case(op_MAPI_SetProps)] SetProps_req mapi_SetProps;
+		[case(op_MAPI_DeleteProps)] DeleteProps_req mapi_DeleteProps;
+		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_req mapi_SaveChangesMessage;
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_req mapi_ModifyRecipients;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
+		[case(op_MAPI_GetRowCount)] GetRowCount_req mapi_GetRowCount;
+		[case(op_MAPI_SeekRow)] SeekRow_req mapi_SeekRow;
+		[case(op_MAPI_CreateFolder)] CreateFolder_req mapi_CreateFolder;
+		[case(op_MAPI_DeleteFolder)] DeleteFolder_req mapi_DeleteFolder;
 		[case(op_MAPI_DeleteMessages)] DeleteMessages_req mapi_DeleteMessages;
 		[case(op_MAPI_GetAttachmentTable)] GetAttachmentTable_req mapi_GetAttachmentTable;
 		[case(op_MAPI_OpenAttach)] OpenAttach_req mapi_OpenAttach;
@@ -992,43 +1248,59 @@ System Attendant Private Interface
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_req mapi_GetReceiveFolder;
 		[case(op_MAPI_OpenStream)] OpenStream_req mapi_OpenStream;
 		[case(op_MAPI_ReadStream)] ReadStream_req mapi_ReadStream;
+		[case(op_MAPI_WriteStream)] WriteStream_req mapi_WriteStream;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_req mapi_SubmitMessage;
-		[case(op_MAPI_OpenMsgStore)]	OpenMsgStore_req mapi_OpenMsgStore;
+		[case(op_MAPI_QueryColumns)] QueryColumns_req mapi_QueryColumns;
+		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
+		[case(op_MAPI_OpenMsgStore)] OpenMsgStore_req mapi_OpenMsgStore;
 	} EcDoRpc_MAPI_REQ_UNION;
 
 	typedef [public, nodiscriminant] union {
-		[case(op_MAPI_Release)] Release_repl mapi_Release;
+ 		[case(op_MAPI_Release)] Release_repl mapi_Release;
 		[case(op_MAPI_OpenFolder)] OpenFolder_repl mapi_OpenFolder;
 		[case(op_MAPI_OpenMessage)] OpenMessage_repl mapi_OpenMessage;
+		[case(op_MAPI_GetHierarchyTable)] GetHierarchyTable_repl mapi_GetHierarchyTable;
 		[case(op_MAPI_GetContentsTable)] GetContentsTable_repl mapi_GetContentsTable;
 		[case(op_MAPI_CreateMessage)] CreateMessage_repl mapi_CreateMessage;
 		[case(op_MAPI_GetProps)] GetProps_repl mapi_GetProps;
+		[case(op_MAPI_GetPropsAll)] GetPropsAll_repl mapi_GetPropsAll;
 		[case(op_MAPI_GetPropList)] GetPropList_repl mapi_GetPropList;
 		[case(op_MAPI_SetProps)] SetProps_repl mapi_SetProps;
-		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
+		[case(op_MAPI_DeleteProps)] DeleteProps_repl mapi_DeleteProps;
+		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_repl mapi_SaveChangesMessage;		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
 		[case(op_MAPI_QueryRows)] QueryRows_repl mapi_QueryRows;
+		[case(op_MAPI_GetRowCount)] GetRowCount_repl mapi_GetRowCount;
+		[case(op_MAPI_SeekRow)] SeekRow_repl mapi_SeekRow;
+		[case(op_MAPI_CreateFolder)] CreateFolder_repl mapi_CreateFolder;
+		[case(op_MAPI_DeleteFolder)] DeleteFolder_repl mapi_DeleteFolder;
 		[case(op_MAPI_DeleteMessages)] DeleteMessages_repl mapi_DeleteMessages;
-		[case(op_MAPI_GetAttachmentTable)] GetAttachmentTable_repl mapi_GetAttachmentTable;		[case(op_MAPI_OpenAttach)] OpenAttach_repl mapi_OpenAttach;
+		[case(op_MAPI_GetAttachmentTable)] GetAttachmentTable_repl mapi_GetAttachmentTable;
+		[case(op_MAPI_OpenAttach)] OpenAttach_repl mapi_OpenAttach;
 		[case(op_MAPI_CreateAttach)] CreateAttach_repl mapi_CreateAttach;
 		[case(op_MAPI_SaveChanges)] SaveChanges_repl mapi_SaveChanges;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_repl mapi_GetReceiveFolder;
+		[case(op_MAPI_Notify)] Notify_repl mapi_Notify;
 		[case(op_MAPI_OpenStream)] OpenStream_repl mapi_OpenStream;
 		[case(op_MAPI_ReadStream)] ReadStream_repl mapi_ReadStream;
+		[case(op_MAPI_WriteStream)] WriteStream_repl mapi_WriteStream;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_repl mapi_SubmitMessage;
-		[case(op_MAPI_OpenMsgStore)]	OpenMsgStore_repl mapi_OpenMsgStore;
+		[case(op_MAPI_QueryColumns)] QueryColumns_repl mapi_QueryColumns;
+		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;
+		[case(op_MAPI_OpenMsgStore)] OpenMsgStore_repl mapi_OpenMsgStore;
 
 	} EcDoRpc_MAPI_REPL_UNION;
 
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint8		opnum;
 		uint8		mapi_flags;
+		uint8		handle_idx;
 		[switch_is(opnum)] EcDoRpc_MAPI_REQ_UNION u;
 	} EcDoRpc_MAPI_REQ;
 
 	typedef [public,nopull,noprint,flag(NDR_NOALIGN)] struct {
 		uint8     	opnum;
-		uint8		mapi_flags;
+		uint8		handle_idx;
 		MAPISTATUS	error_code;
 		[switch_is(opnum)] EcDoRpc_MAPI_REPL_UNION u;
 	} EcDoRpc_MAPI_REPL;

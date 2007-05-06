@@ -1,0 +1,220 @@
+.\" OpenChange Project Tools Man Pages
+.\"
+.\" This manpage is Copyright (C) 2007 Julien Kerihuel;
+.\"
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of this
+.\" manual under the conditions for verbatim copying, provided that the
+.\" entire resulting derived work is distributed under the terms of a
+.\" permission notice identical to this one.
+.\" 
+.\" Since the OpenChange and Samba4 libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+.\" responsibility for errors or omissions, or for damages resulting from
+.\" the use of the information contained herein.  The author(s) may not
+.\" have taken the same level of care in the production of this manual,
+.\" which is licensed free of charge, as they might when working
+.\" professionally.
+.\" 
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\"
+.\" Process this file with
+.\" groff -man -Tascii mapiprofile.1
+.\"
+
+.TH OPENCHANGECLIENT 1 2007-04-23 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+
+.SH NAME
+openchangeclient \- MAPI command line messaging tool
+
+.SH SYNOPSIS
+.nf
+openchangeclient [-?] [-?|--help] [--usage] [-f|--database STRING]
+        [-p|--profile STRING] [-S|--sendmail] [-F|--fetchmail]
+        [-G|--storemail STRING] [-D|--deletemail] [-A|--attachments STRING]
+        [-I|--html-inline STRING] [-W|--html-file STRING] [-t|--to STRING]
+        [-c|--cc STRING] [-b|--bcc STRING] [-s|--subject STRING]
+        [-B|--body STRING]
+.fi
+
+.SH DESCRIPTION
+openchangeclient is a MAPI command line tool designed to facilitate
+mail send, receive and delete operations using the MAPI protocol.
+
+.SH COMMANDS
+
+.TP
+.B --fetchmail
+.TP
+.B -F
+Fetch Exchange user mails and dump general information on the standard output.
+
+.TP
+.B --storemail=DIRECTORY
+.TP
+.B -G
+Store mail attachments on the local filesystem in the specified directory.
+
+.TP
+.B --sendmail
+.TP
+.B -S
+Send a mail to a user whom belongs to the Exchange organization.
+
+.TP
+.B --deletemail
+.TP
+.B -D
+Delete a mail from the exchange user mailbox 
+
+.SH OPTIONS
+
+.TP
+.B --database=DATABASE
+.TP
+.B -f
+Set the MAPI profile database. If no database is specified, then openchangeclient tries to load the default one: 
+.B $HOME/.openchange/profiles.ldb
+
+.TP
+.B --profile=PROFILE
+.TP
+.B -p
+Set the profile to use. If no profile is specified for any operations different from create or delete, then the default profile is used if it exists.
+
+.TP
+.B --attachments="ATTACHMENT1;ATTACHMENT2"
+.TP
+.B -A
+Set attachments to send when sending a mail. Attached filenames need
+to be separated with
+.B semi-colons
+as specified in the description above.
+
+.TP
+.B --subject=STRING
+.TP
+.B -s
+Specify the mail subject. If no subject is specified, the mail subject will be empty.
+
+.TP
+.B --body=STRING
+.TP
+.B -B
+Set the body with the UTF8 text only content specified on the command
+line.
+
+.TP
+.B --html-inline=STRING
+.TP
+.B -I
+Set the body with the HTML content specified on command line.
+
+.TP
+.B --html-file=FILENAME
+.TP
+.B -W
+Set the body with the content of the specified file.
+
+.TP
+.B --to="USERNAME1,USERNAME2"
+.TP
+.B -t
+Specify
+.B To
+recipients for the mail. Usernames needs to be separated with commas
+as specified in the example above.
+
+.TP
+.B --cc="USERNAME1,USERNAME2"
+.TP
+.B -c
+Specify
+.B Cc
+recipients for the mail. Usernames needs to be separated with commas
+as specified in the example above.
+
+.TP
+.B --bcc="USERNAME1,USERNAME2"
+.TP
+.B -b
+Specify
+.B Bcc
+recipients for the mail. Usernames needs to be separated with commas
+as specified in the example above.
+
+.SH EXAMPLES
+
+.B Fetching emails:
+.nf
+openchangeclient --database=/tmp/profiles.ldb --profile=2000 --fetchmail
+.fi
+
+.B Fetch emails and store attachments:
+.nf
+openchangeclient --database=/tmp/profiles.ldb --profile=2000 --fetchmail --storemail=test
+.fi
+
+All attachments from any mails with indistinctly be stored in the test
+directory. If test doesn't exist, it will automatically be created.
+
+
+.B Send a basic email:
+.nf
+openchangeclient --database=/tmp/profiles.ldb --profile=2000 
+                 --to="Adm,jker" --cc=Paul --bcc=Bill 
+                 --subject="It is working"
+                 --body="This is a sample body" --sendmail
+.fi
+
+A mail with UTF8 (text only) content will be sent with the following recipients:
+
+to = Administrator and jkerihuel
+
+cc = Paul
+
+bcc = Bill
+
+
+.B Send an inline HTML email:
+.nf
+openchangeclient --database=/tmp/profiles.ldb --profile=2000
+                 --to=Adm --subject="Inline HTML sample email"
+                 --html-inline="<body bgcolor=yellow><h1>My first HTML email</h1></body>"
+                 --sendmail
+.fi
+
+Administrator will receive a mail with HTML body - yellow background and a title.
+
+
+.B Send a HTML mail using a file:
+.nf
+openchangeclient --database=/tmp/profiles.ldb --profile=2000
+                 --to=Adm --subject="HTML file email"
+                 --html-file=/tmp/myfile.html
+                 --sendmail
+.fi
+
+The content of /tmp/myfile.html will be used to fill the HTML body. If
+the HTML file exceed a fixed size (0x4000 bytes), then PR_HTML content
+will be sent using MAPI streams.
+
+
+.B Send email with attachments:
+.nf
+openchangeclient --database=/tmp/profiles.ldb --profile=2000
+                 --to=Adm --subject="Attachments"
+                 --attachments="/tmp/file1.jpg;/tmp/file2.jpg;tmp/file2.jpg"
+                 --body="These are sample attachments"
+                 --sendmail
+.fi
+
+The example above will send a UTF8 body mail to Administrator and
+attach file1,jpg, file2.jpg and file3.jpg to the email.
+
+.SH AUTHOR
+Julien Kerihuel <j.kerihuel at openchange dot org>

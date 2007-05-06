@@ -31,6 +31,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <errno.h>
 #include <string.h>
 #include <stdarg.h>
 
@@ -43,9 +44,16 @@
 
 #include <libmapi/nspi.h>
 #include <libmapi/emsmdb.h>
+#include <libmapi/mapi_ctx.h>
+#include <libmapi/mapi_provider.h>
+#include <libmapi/mapi_handles.h>
+#include <libmapi/mapi_object.h>
+#include <libmapi/mapi_profile.h>
 #include <libmapi/mapidefs.h>
 #include <libmapi/mapicode.h>
 #include <libmapi/property.h>
 #include <libmapi/proto.h>
+
+extern struct mapi_ctx *global_mapi_ctx;
 
 #endif /* __LIBMAPI_H__ */

@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+datadir=@datadir@
+
+Name: MAPI
+Description: MAPI Protocol Implementation
+Version: 0.0.1
+Libs: @LIBS@ -lmapi
+Cflags: @CFLAGS@
+Requires: talloc dcerpc ndr samba-config ldb

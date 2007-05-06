@@ -42,7 +42,7 @@ static const uint8_t MAPI_LOCAL_UID_END[] = {
 	0x00, 0x2f
 };
 
-char *guid_delete_dash(TALLOC_CTX *mem_ctx, const char *recipient_id)
+_PUBLIC_ char *guid_delete_dash(TALLOC_CTX *mem_ctx, const char *recipient_id)
 {
 	char		*guid;
 	uint32_t	count,i;
@@ -66,7 +66,7 @@ char *guid_delete_dash(TALLOC_CTX *mem_ctx, const char *recipient_id)
 	return guid;
 }
 
-struct SBinary *generate_recipient_entryid(TALLOC_CTX *mem_ctx, const char *recipient_id)
+_PUBLIC_ struct SBinary *generate_recipient_entryid(TALLOC_CTX *mem_ctx, const char *recipient_id)
 {
 	struct SBinary *entryid;
 	uint32_t	off;

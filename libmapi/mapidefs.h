@@ -25,6 +25,9 @@
 #define PROP_TAG(type, id) (((id << 16))| (type))
 #define MV_FLAG			0x1000
 
+/* UNICODE flags */
+#define	MAPI_UNICODE		0x80000000
+
 /* Property types */
 #define	PT_UNSPECIFIED		0x0
 #define	PT_NULL			0x1
@@ -129,5 +132,45 @@
 
 /* definition for abFlags[1] */
 #define MAPI_COMPOUND           0x80
+
+/**
+ * Priority
+ */
+
+#define	PRIORITY_LOW		-1
+#define	PRIORITY_NORMAL		0
+#define	PRIORITY_HIGH		1
+
+/**
+ * Appointment flags with PR_APPOINTMENT_BUSY_STATUS
+ */
+
+#define	BUSY_STATUS_FREE	0
+#define	BUSY_STATUS_TENTATIVE	1
+#define	BUSY_STATUS_BUSY	2
+#define	BUSY_STATUS_OUTOFOFFICE	3
+
+/**
+ * Appointment meeting status
+ */
+#define MEETING_STATUS_NONMEETING	0
+#define MEETING_STATUS_MEETING		1
+
+/**
+ * Task status
+ */
+
+#define	olTaskNotStarted		0
+#define	olTaskInProgress		1
+#define	olTaskComplete			2
+#define	olTaskWaiting			3
+#define	olTaskDeferred			4
+
+/**
+ * Task OwnerShip
+ */
+#define	olNewTask			0
+#define	olDelegatedTask			1
+#define	olOwnTask			2
 
 #endif /*!__MAPIDEFS_H__ */

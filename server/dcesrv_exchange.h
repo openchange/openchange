@@ -165,8 +165,6 @@ void dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		       struct NspiGetNamesFromIDs *r);
 void dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiGetIDsFromNames *r);
-void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiResolveNamesW *r);
 void dcesrv_EcGetMoreRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcGetMoreRpc *r);
 void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,

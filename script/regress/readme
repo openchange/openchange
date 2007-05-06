@@ -1,0 +1,28 @@
+-> openchange regression suite
+	-> regress.pl
+		-> 2folds: according to an xml input file (ie. either the base one or the
+		reference one), it runs torture tests and tells if there were errors
+		or successes in assertions and such.
+			-> if it's run against a reference file (ie. one containing a reference
+			set of unit outputs), then it will print the diff between the current
+			output and the reference one, thus showing regression or progresssion.
+			-> if it's run against a base file, since there are no reference to
+			test progression / regression, it will only show successes and errors.
+		=> the resulting file can serve as the new reference
+	-> oc_test.h
+		-> to be included in targets programs so that they can transparently
+		output well formatted xml. This is xml is then processable by regress.pl.
+			-> oc_test_begin() // open output file + output xml header
+   			-> oc_test_end() // close output file + output xml footer
+			-> oc_test_describe(s) // describe the current test
+			-> oc_test_assert(cond) // check the assertion. on failure, returns False
+			-> oc_test_step() // same as above, but always true
+   			-> oc_test_skip(n) // skip n tests (useful for conditional branching)
+		-> test mapi_status: oc_assert(mapi_status == MAPI_E_SUCCESS);
+		-> test row_count: oc_assert(row_count >= 3);
+		-> simple step(checkpoint for output): oc_test_step();
+		=> for more information, see torture/mapi_xxx.c files
+	-> known bugs:
+		-> cannot use && in condition of oc_test assert since XML::Simple does not handle it.
+		Instead, consider affecting the condition evaluation to a variable and asserting the
+		variable content.

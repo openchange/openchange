@@ -1,7 +1,9 @@
-/* OpenChange MAPI implementation testsuite
+/*
+   OpenChange MAPI implementation testsuite
 
-   fetch mail from an Exchange server
+   Send attach to an Exchange server
 
+   Copyright (C) Julien Kerihuel 2007
    Copyright (C) Fabien Le Mentec 2007
    
    This program is free software; you can redistribute it and/or modify
@@ -27,121 +29,100 @@
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
 
+#include <sys/stat.h>
+#include <fcntl.h>
+
+
 #define CN_MSG_PROPS 3
-
-/* FIXME: Should be part of Samba's data: */
-NTSTATUS torture_rpc_connection(TALLOC_CTX*, struct dcerpc_pipe**, const struct dcerpc_interface_table *);
-
-static char **get_cmdline_recipients(TALLOC_CTX *mem_ctx)
-{
-	char		**usernames;
-	const char	*recipients = lp_parm_string(-1, "mapi", "to");
-	char		*tmp = NULL;
-	uint32_t	j = 0;
-
-	/* no recipients */
-	if (recipients == 0)
-	  return 0;
-
-	if ((tmp = strtok((char *)recipients, ",")) == NULL){
-		DEBUG(2, ("Invalid mapi:to string format\n"));
-		return NULL;
-	}
-	
-	usernames = talloc_array(mem_ctx, char *, 2);
-	usernames[0] = strdup(tmp);
-	
-	for (j = 1; (tmp = strtok(NULL, ",")) != NULL; j++) {
-		usernames = talloc_realloc(mem_ctx, usernames, char *, j+2);
-		usernames[j] = strdup(tmp);
-	}
-	usernames[j] = 0;
-
-	return (usernames);
-}
 
 BOOL torture_rpc_mapi_sendattach(struct torture_context *torture)
 {
-	NTSTATUS		status;
-	struct dcerpc_pipe	*p;
+	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
-	struct emsmdb_context	*emsmdb;
-	const char		*organization = lp_parm_string(-1, "exchange", "organization");
-	const char		*group = lp_parm_string(-1, "exchange", "ou");
+	const char		*profname;
+	const char		*profdb;
 	const char		*subject = lp_parm_string(-1, "mapi", "subject");
 	const char		*body = lp_parm_string(-1, "mapi", "body");
-	const char		*username;
+	const char		*filename = lp_parm_string(-1, "mapi", "attachment");
 	char			**usernames;
-	char			*mailbox_path;
-	uint32_t		hdl_msgstore, hdl_outbox, hdl_message, hdl_attach;
+	char			**usernames_to;
+	char			**usernames_cc;
+	char			**usernames_bcc;
+	struct mapi_session	*session;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_outbox;
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_attach;
+	mapi_object_t		obj_stream;
 	uint64_t		id_outbox;
-	struct SRowSet		*SRowSet;
+	struct SRowSet		*SRowSet = NULL;
+	struct FlagList		*flaglist = NULL;
+	uint32_t		index = 0;
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	SPropValue;
+	struct SPropValue	props_attach[3];
+	unsigned long		cn_props_attach;
 	struct SPropValue	props[CN_MSG_PROPS];
 	uint32_t		msgflag;
+	DATA_BLOB		blob;
 
+	/* init torture */
+	mem_ctx = talloc_init("torture_rpc_mapi_sendmail");
 
-	mem_ctx = talloc_init("torture_rpc_mapi_sendattach");
+	/* init mapi */
+	profdb = lp_parm_string(-1, "mapi", "profile_store");
+	retval = MAPIInitialize(profdb);
+	mapi_errstr("MAPIInitialize", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_exchange_emsmdb);
-	if (!NT_STATUS_IS_OK(status)) {
-	  talloc_free(mem_ctx);
-	  return False;
+	/* get the attachment filename */
+	if (!filename) {
+		DEBUG(0, ("No filename specified with mapi:attachment\n"));
+		return False;
 	}
 
-	emsmdb = emsmdb_connect(mem_ctx, p, cmdline_credentials);
-	if (!emsmdb) {
-	  return False;
-	}
-	emsmdb->mem_ctx = mem_ctx;
-
-	if (!organization) {
-	  organization = cli_credentials_get_domain(cmdline_credentials);
-	}
-	username = cli_credentials_get_username(cmdline_credentials);
-	if (!organization || !username) {
-		DEBUG(1,("mapi_fetchmail: username and domain required"));
-		return NULL;
+	/* profile name */
+	profname = lp_parm_string(-1, "mapi", "profile");
+	if (profname == 0) {
+		DEBUG(0, ("[!] lp_parm_string(profile)\n"));
+		return False;
 	}
 
-	if (MAPIInitialize(emsmdb, cmdline_credentials) != MAPI_E_SUCCESS) {
-		printf("MAPIInitialize failed\n");	
-		exit (1);
-	}
+	retval = MapiLogonEx(&session, profname);
+	mapi_errstr("MapiLogonEx", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	/* check for null contents */
-	if (organization == 0)
-	  {
-	    printf("organization == (null)\n");
-	    exit(1);
-	  }
-	if (group == 0)
-	  {
-	    printf("group == (null)\n");
-	    exit(1);
-	  }
+	/* init objects */
+	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_outbox);
+	mapi_object_init(&obj_message);
+	mapi_object_init(&obj_attach);
 
 	/* default if null */
-	if (subject == 0)
-	  subject = "";
-	if (body == 0)
-	  body = "";
+	if (subject == 0) subject = "";
+	if (body == 0) body = "";
 
+	/* session::OpenMsgStore() */
+	retval = OpenMsgStore(&obj_store);
+	mapi_errstr("OpenMsgStore", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	/* OpenMsgStore */
-	mailbox_path = talloc_asprintf(emsmdb->mem_ctx, MAILBOX_PATH, organization, group, username);
-	OpenMsgStore(emsmdb, 0, &hdl_msgstore, &id_outbox, mailbox_path);
+	/* id_outbox = store->GeOutboxFolder() */
+	retval = GetOutboxFolder(&obj_store, &id_outbox);
+	mapi_errstr("GetOutboxFodler", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	/* OpenFolder: open outbox */
-	OpenFolder(emsmdb, 0, hdl_msgstore, id_outbox, &hdl_outbox);
+	/* outbox = store->OpenFolder(id_outbox) */
+	retval = OpenFolder(&obj_store, id_outbox, &obj_outbox);
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	/* CreateMessage */
-	CreateMessage(emsmdb, 0, hdl_outbox, id_outbox, &hdl_message);
+	/* message = outbox->CreateMessage() */
+	retval = CreateMessage(&obj_outbox, &obj_message);
+	mapi_errstr("CreateMessage", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	/* ModifyRecipient */	
-	SPropTagArray = set_SPropTagArray(emsmdb->mem_ctx, 0x6,
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
 					  PR_OBJECT_TYPE,
 					  PR_DISPLAY_TYPE,
 					  PR_7BIT_DISPLAY_NAME,
@@ -149,81 +130,122 @@ BOOL torture_rpc_mapi_sendattach(struct torture_context *torture)
 					  PR_SMTP_ADDRESS,
 					  PR_GIVEN_NAME);
 
-	usernames = get_cmdline_recipients(emsmdb->mem_ctx);
-	if (usernames == 0)
-	  {
-	    printf("recipient_names == (null)\n");
-	    exit(1);
-	  }
+	usernames_to = get_cmdline_recipients(mem_ctx, "to");
+	usernames_cc = get_cmdline_recipients(mem_ctx, "cc");
+	usernames_bcc = get_cmdline_recipients(mem_ctx, "bcc");
+	usernames = collapse_recipients(mem_ctx, usernames_to, usernames_cc, usernames_bcc);
 
-	SRowSet = ResolveNames(emsmdb, (const char **)usernames, SPropTagArray);
+	retval = ResolveNames((const char **)usernames, SPropTagArray, &SRowSet, &flaglist, 0);
+	mapi_errstr("ResolveNames", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	if (!SRowSet) {
+		printf("None of the recipients were resolved\n");
+		return False;
+	}
+
+	set_usernames_RecipientType(&index, SRowSet, usernames_to, flaglist, MAPI_TO);
+	set_usernames_RecipientType(&index, SRowSet, usernames_cc, flaglist, MAPI_CC);
+	set_usernames_RecipientType(&index, SRowSet, usernames_bcc, flaglist, MAPI_BCC);
+
 
 	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
 	SPropValue.value.l = 0;
-	SRowSet_propcpy(emsmdb->mem_ctx, &SRowSet[0], SPropValue);
+	SRowSet_propcpy(mem_ctx, &SRowSet[0], SPropValue);
 
-	ModifyRecipients(emsmdb, 0, SRowSet, hdl_message);
+	/* message->ModifyRecipients() */
+	retval = ModifyRecipients(&obj_message, SRowSet);
+	mapi_errstr("ModifyRecipients", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+	
+	retval = MAPIFreeBuffer(SRowSet);
+	mapi_errstr("MAPIFreeBuffer: SRowSet", GetLastError());
 
-	/* SetProps */
+	retval = MAPIFreeBuffer(flaglist);
+	mapi_errstr("MAPIFreeBuffer: flaglist", GetLastError());
+
+	/* message->SetProps()
+	 */
 	msgflag = MSGFLAG_UNSENT;
 	set_SPropValue_proptag(&props[0], PR_SUBJECT, (void *)subject);
 	set_SPropValue_proptag(&props[1], PR_BODY, (void *)body);
 	set_SPropValue_proptag(&props[2], PR_MESSAGE_FLAGS, (void *)&msgflag);
-	SetProps(emsmdb, 0, props, CN_MSG_PROPS, hdl_message);
+	retval = SetProps(&obj_message, props, CN_MSG_PROPS);
+	mapi_errstr("SetProps", GetLastError());
 
-	/* create attachment */
+	/* CreateAttach */
+	retval = CreateAttach(&obj_message, &obj_attach);
+	mapi_errstr("CreateAttach", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* send by value */
+	props_attach[0].ulPropTag = PR_ATTACH_METHOD;
+	props_attach[0].value.l = ATTACH_BY_VALUE;
+	props_attach[1].ulPropTag = PR_RENDERING_POSITION;
+	props_attach[1].value.l = 0;
+	props_attach[2].ulPropTag = PR_ATTACH_FILENAME;
+	props_attach[2].value.lpszA = get_filename(filename);
+	cn_props_attach = 3;
+
+	/* SetProps */
+	retval = SetProps(&obj_attach, props_attach, cn_props_attach);
+	mapi_errstr("SetProps", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* OpenStream on CreateAttach handle */
+	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 2, &obj_stream);
+	mapi_errstr("OpenStream", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* WriteStream */
 	{
-#define CN_ATTACH_PROPS 5
-	  struct SPropValue props_attach[CN_ATTACH_PROPS];
-	  unsigned long cn_props_attach;
+		int		fd;
+		struct stat	sb;
+		uint32_t	read_size;
+		uint8_t		buf[0x7000];
 
-	  printf("%08x->CreateAttach() == ", hdl_message); fflush(stdout);
-	  CreateAttach(emsmdb, 0, hdl_message, &hdl_attach);
-	  printf("%08x\n", hdl_attach);
+		if (stat(filename, &sb) != 0) return False;
 
-	  /* send by reference */
-/* 	  { */
-/* 	    props_attach[0].ulPropTag = PR_ATTACH_METHOD; */
-/* 	    props_attach[0].value.l = ATTACH_BY_REFERENCE; */
-/* 	    props_attach[1].ulPropTag = PR_RENDERING_POSITION; */
-/* 	    props_attach[1].value.l = -1; */
-/* 	    props_attach[2].ulPropTag = PR_ATTACH_PATHNAME; */
-/* 	    props_attach[2].value.lpszA = "\\\\exchange.local\\tmp\\attachment.file"; */
-/* 	    props_attach[3].ulPropTag = PR_DISPLAY_NAME; */
-/* 	    props_attach[3].value.lpszA = "attachment_display_name"; */
-/* 	    props_attach[4].ulPropTag = PR_ATTACH_FILENAME; */
-/* 	    props_attach[4].value.lpszA = "attachment.file"; */
-/* 	    cn_props_attach = 5; */
-/* 	  } */
-	  /* send by value */
-	  {
-	    props_attach[0].ulPropTag = PR_ATTACH_METHOD;
-	    props_attach[0].value.l = ATTACH_BY_VALUE;
-	    props_attach[1].ulPropTag = PR_RENDERING_POSITION;
-	    props_attach[1].value.l = -1;
-	    props_attach[2].ulPropTag = PR_ATTACH_DATA_BIN;
-	    props_attach[2].value.bin.lpb = (uint8_t *)"OpenChange Rocks :p";
-	    props_attach[2].value.bin.cb = strlen("OpenChange Rocks :p") + 1;
-	    props_attach[3].ulPropTag = PR_DISPLAY_NAME;
-	    props_attach[3].value.lpszA = "attachment.txt";
-	    cn_props_attach = 4;
-	  }
-
-	  printf("%08x->SetProps2()", hdl_attach); fflush(stdout);
-	  SetProps2(emsmdb, 0, props_attach, cn_props_attach, hdl_message, hdl_attach);
-	  printf("\n");
-
-	  printf("%08x->SaveChanges()\n", hdl_attach); fflush(stdout);
-	  SaveChanges(emsmdb, 0, hdl_message, hdl_attach);
-
+		if ((fd = open(filename, O_RDONLY)) == -1) {
+			DEBUG(0, ("Error while opening %s\n", filename));
+			return False;
+		}
+	
+		while ((read_size = read(fd, buf, 0x4000))) {
+			/* We reset errno due to read */
+			blob.length = read_size;
+			blob.data = talloc_size(mem_ctx, read_size);
+			memcpy(blob.data, buf, read_size);
+			
+			errno = 0;
+			retval = WriteStream(&obj_stream, &blob);
+			mapi_errstr("WriteStream", GetLastError());
+			talloc_free(blob.data);
+		}
+		close(fd);
 	}
 
-	/* SubmitMessage */
-	SubmitMessage(emsmdb, 0, hdl_message);
+	/* message->SaveChanges() */
+	retval = SaveChanges(&obj_message, &obj_attach);
+	mapi_errstr("SaveChanges", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
 
-	MAPIUninitialize(emsmdb);
+	/* message->SubmitMessage() */
+	retval = SubmitMessage(&obj_message);
+	mapi_errstr("SubmitMessage", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* objects->Release()
+	 */
+	mapi_object_release(&obj_attach);
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_outbox);
+	mapi_object_release(&obj_store);
+	
+	/* session::Uninitialize()
+	 */
+	MAPIUninitialize();
 
 	talloc_free(mem_ctx);
-	
-	return (ret);
+	return ret;
 }

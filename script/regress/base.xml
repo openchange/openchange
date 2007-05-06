@@ -1,0 +1,48 @@
+<units>
+
+
+  <!-- OPENCHANGE-MAPI-TABLE -->
+  <unit>
+    <name>OPENCHANGE-MAPI-TABLE</name>
+    <args></args>
+
+    <tests>
+    </tests>
+
+  </unit>
+
+
+  <!-- OPENCHANGE-MAPI-MESSAGE -->
+  <unit>
+    <name>OPENCHANGE-MAPI-MESSAGE</name>
+    <args></args>
+
+    <tests>
+    </tests>
+
+  </unit>
+
+
+  <!-- OPENCHANGE-MAPI-FOLDER -->
+  <unit>
+    <name>OPENCHANGE-MAPI-FOLDER</name>
+    <args></args>
+
+    <tests>
+    </tests>
+
+  </unit>
+
+
+  <!-- OPENCHANGE-MAPI-PROP -->
+  <unit>
+    <name>OPENCHANGE-MAPI-PROP</name>
+    <args></args>
+
+    <tests>
+    </tests>
+
+  </unit>
+
+
+</units>

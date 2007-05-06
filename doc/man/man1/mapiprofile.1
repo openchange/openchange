@@ -1,0 +1,203 @@
+.\" OpenChange Project Tools Man Pages
+.\"
+.\" This manpage is Copyright (C) 2007 Julien Kerihuel;
+.\"
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of this
+.\" manual under the conditions for verbatim copying, provided that the
+.\" entire resulting derived work is distributed under the terms of a
+.\" permission notice identical to this one.
+.\" 
+.\" Since the OpenChange and Samba4 libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+.\" responsibility for errors or omissions, or for damages resulting from
+.\" the use of the information contained herein.  The author(s) may not
+.\" have taken the same level of care in the production of this manual,
+.\" which is licensed free of charge, as they might when working
+.\" professionally.
+.\" 
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\"
+.\" Process this file with
+.\" groff -man -Tascii mapiprofile.1
+.\"
+
+.TH MAPIPROFILE 1 2007-04-23 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+
+.SH NAME
+mapiprofile \- administrate OpenChange MAPI Profiles databases
+
+.SH SYNOPSIS
+.nf
+mapiprofile [-?] [-?|--help] [--usage] [-L|--ldif STRING]
+        [-G|--getdefault] [-S|--default] [-n|--newdb] [-f|--database STRING]
+        [-P|--profile STRING] [-I|--address STRING] [-M|--workstation STRING]
+        [-D|--domain STRING] [-u|--username STRING] [-s|--pattern STRING]
+        [-p|--password STRING] [-c|--create] [-r|--delete] [-l|--list]
+        [-d|--dump] [-a|--attr STRING]
+.fi
+
+.SH DESCRIPTION
+mapiprofile is a command line tool designed to provide administrative
+support for openchange mapi profiles. It is designed so it provides
+sample code for developers interested in adding openchange mapi
+profile support to their applications.
+
+.SH COMMANDS
+
+.TP
+.B --newdb
+.TP
+.B -n
+Create a new database
+
+.TP
+.B --create
+.TP
+.B -c
+Create a new profile in the database
+
+.TP
+.B --delete
+.TP
+.B -r
+Delete a profile from the database
+
+.TP
+.B --default
+.TP
+.B -S
+Set the default profile in the database
+
+.TP
+.B --getdefault
+.TP
+.B -G
+Get the default profile name in the database
+
+.TP
+.B --dump
+.TP
+.B -d
+Display information from a specific profile stored in the database
+
+.TP
+.B --list
+.TP
+.B -l
+List existing profiles in the database
+
+
+.SH OPTIONS
+
+.TP
+.B --database DATABASE
+.TP
+.B -f
+Path to the profile database. If no path database is specified then the default one will be used
+.B $HOME/.openchange/profiles.ldb
+
+.TP
+.B --ldif LDIF
+.TP
+.B -L
+Path to the ldif files. If no ldif directory is specified then the default one set at compilation time will be used. This option is only used when creating a new profile database.
+
+.TP
+.B --profile PROFILE
+.TP
+.B -p
+Set the profile name
+
+.TP
+.B --address IP_ADDR
+.TP
+.B -A
+Set the Exchange server IP address
+
+.TP
+.B --workstation WORKSTATION
+.TP
+.B -M
+Sets the local computer name
+
+.TP
+.B --domain DOMAIN
+.TP
+.B -D
+Set the Windows domain name
+
+.TP
+.B --username
+.TP
+.B -u
+Set the username to use to log on the Exchange server
+
+.TP
+.B --password
+.TP
+.B -p
+Set the password matching with the username described above
+
+.TP
+.B --pattern
+.TP
+.B -s
+Set a username string pattern mapiprofile should use rather than the
+default username. This option is used during mapi profile creation.
+
+
+.SH EXAMPLES
+
+.B Create a blank MAPI profile database:
+.nf
+mapiprofile --database=/tmp/profiles2.ldb --ldif=/usr/local/samba/share/setup --newdb
+.fi
+
+.B Create a new profile:
+.nf
+mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel
+     --username=jkerihuel --password=secret
+     --address=192.168.194.22 --workstation=LOCALHOST --domain=OPENCHANGE 
+     --create
+Profile jkerihuel completed and added to database /tmp/profiles.ldb
+.fi
+
+.B Delete a profile:
+.nf
+mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel --delete
+Profile jkerihuel deleted from database /tmp/profiles.ldb
+.fi
+
+.B List profiles:
+.nf
+mapiprofile --database=/tmp/profiles.ldb --list
+We have 2 profiles in the database:
+        Profile = exchange-2000
+        Profile = jkerihuel
+.fi
+
+.B Dump a profile:
+.nf
+mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel --dump
+Profile: jkerihuel
+        username       == jkerihuel
+        password       == secret
+        mailbox        == /o=First Organization/ou=First Administrative Group/cn=Recipients/cn=jkerihuel
+        workstation    == LOCALHOST
+        realm          == (null)
+        server         == 192.168.194.22
+.fi
+
+.B Dump profile attribute:
+.nf
+mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel --attr=HomeMDB
+Profile jkerihuel: HomeMDB = /o=First Organization/ou=First Administrative Group/cn=Configuration/cn=Servers/cn=EXCHANGE2000
+.fi
+
+.SH AUTHOR
+Julien Kerihuel <j.kerihuel at openchange dot org>

@@ -20,6 +20,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/proto_private.h>
 #include <samba/popt.h>
 
 /* command line options */

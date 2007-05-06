@@ -20,6 +20,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/proto_private.h>
 
 #define	CP_WESTERN_EUROPE_AND_US	1	/* 1  (Western Europe & US) */
 #define	CP_CENTRAL_EUROPE		2	/* 2  (Central Europe) */

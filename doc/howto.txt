@@ -5,22 +5,111 @@ j.kerihuel@openchange.org, October 2005
 Updates by Jelmer Vernooij <jelmer@samba.org>, March 2006.
 Updates by Gregory Schiro <g.schiro@openchange.org>, April 2006.
 Updates by Julien Kerihuel <j.kerihuel@openchange.org>, May 2006.
+Updates by Julien Kerihuel <j.kerihuel@openchange.org>, March 2007.
+Updates by Julien Kerihuel <j.kerihuel@openchange.org>, April 2007.
+Updates by Dan Shearer <dan@shearer.org>, April 2007.
+Updates by Julien Kerihuel <j.kerihuel@openchange.org>, April 2007.
 
-First of all, install Samba 4 correctly (see howto.txt in the Samba4 package).
-Make sure you build with shared library support enabled 
-(./configure --enable-dso). You will also need to install pidl 
-(run 'make installpidl' from the Samba source dir).
 
-Since the libraries will be installed in /usr/local/samba/lib, make 
-sure that path is listed in /etc/ld.so.conf and run 'ldconfig'.
+###############
+[0x0] CONTENTS
+###############
 
-After that, make sure the right PKG_CONFIG_PATH is set if you installed 
++------------------------------------+
+[0x1] INTRODUCTION
+     [0x1a] What is OpenChange?
+     [0x1b] What is libmapi?
+[0x2] INSTALLATION
+     [0x2a] Samba4 installation
+     [0x2b] Requirements
+     [0x2c] OpenChange installation
+[0x3] POST INSTALLATION
+     [0x3a] Create a profile store
+     [0x3b] Create a profile
+     [0x3c] Test the profile
+[0x4] USING LIBMAPI
+     [0x4a] Man Pages
+     [0x4b] Sample applications
+     [0x4c] External resources
+[0x5] OPENCHANGE SERVER
+     [0x5a] Provision
+     [0x5b] Extending users Samba AD schema
+     [0x5c] Setting smb.conf
+     [0x5d] Running the Address Book Provider (EMSABP)     
++------------------------------------+
+
+
+####################
+[0x1] INTRODUCTION
+####################
+
+
+[0x1a] What is OpenChange?
+==========================
+
+OpenChange both provides an Open Source implementation of Microsoft
+Exchange protocols under unix/linux platforms and a server able to
+replace transparently Exchange in a company environment.
+
+
+[0x1b] What is libmapi?
+=======================
+
+libmapi is the OpenChange MAPI implementation. It is a programming
+interface designed to offer Exchange support to third party
+applications.
+
+
+
+####################
+[0x2] INSTALLATION 
+####################
+
+
+[0x2a] Samba4 Installation
+==========================
+
+[*] First of all, install Samba 4 correctly (see howto.txt in the
+    Samba4 package). This should give you the libraries, headers and
+    tools you need to compile OpenChange. As a hint, as well as 
+    your base compiler (apt-get install build-essential on Debian and
+    Ubuntu) you will need automake and pkg-config.
+
+# ./autogen.sh && ./configure --prefix=/usr/local/samba && make
+# make install && make installlib && make installheader
+
+Since the libraries will be installed in /usr/local/samba/lib, make
+sure this is listed in /etc/ld.so.conf and run 'ldconfig'. On
+linux, check with ldconfig -v afterwards. 
+
+Similarly, you need to have /usr/local/samba/bin in your PATH for the
+pidl binary. This is also where OpenChange installs its binaries. Eg:
+
+$ export PATH=$PATH:/usr/local/samba/bin
+
+If you did a standard Samba install to the normal Samba4 location you
+should not need to change PKG_CONFIG_PATH. (So if OpenChange configure
+complains, you may have a problem with the Samba installation.)
+
+If you have installed Samba4 somewhere else, you need to change the reference 
+in ld.so.conf, in the PATH and PKG_CONFIG_PATH is set if you installed 
 Samba4 to a weird location. For example, if you installed to /usr/local/samba
 (default if building from source), run:
 
 $ export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/samba/lib/pkgconfig
 
-pkg-config >= 0.20 is required.
+pkg-config >= 0.20 is required. On Debian and Ubuntu you need to 
+
+[*] Install PIDL from Samba4 source directory:
+# cd pidl && perl Makefile.PL && make && make install
+
+[0x2b] Requirements
+===================
+
+* libmagic is mandatory in order to compile exchange2mbox
+
+[0x2c] OpenChange libmapi installation
+======================================
 
 If you are running out of Subversion, run autogen.sh now:
 
@@ -30,21 +119,169 @@ Now, run configure:
 
 $ ./configure --prefix=path_where_samba_is_installed
 
-At this point, you should be able to build and install openchange:
+At this point, you should be able to build and install openchange MAPI library:
 
 $ make && make install
 
-Once this is done, you need to provision OpenChange:
+You can test like this:
 
-You need to run the "oc_provision" script to set up a basic OpenChange store.
+$ openchangeclient --help
 
-$ cd source
-$ ./libmapi/setup/oc_provision --domain=YOURDOM
+
+
+#########################
+[0x3] POST-INSTALLATION
+#########################
+
+Prior you can use the MAPI library in your application, it is required
+that you setup a profile database and create a profile.
+
+
+[0x3a] Create a profile store
+=============================
+
+$ mapiprofile --database=/tmp/profiles.ldb	\
+	      --ldif=/usr/local/samba/share/setup -n
+
+
+[0x3b] Create a profile
+=======================
+
+$ mapiprofile --database=/tmp/profiles.ldb	\
+	      --profile=testuser-2000		\
+	      --username=testuser		\
+	      --password=openchange		\
+	      --workstation=LOCALHOST		\
+	      --domain=OPENCHANGE		\
+	      -I 192.168.194.22			\
+	      --create
+Profile testuser-2000 completed and added to database /tmp/profiles.ldb
+
+You need to specify:
+    - the full path to the profile store database
+    - the profile name you want to create
+    - the username/password couple mapiprofile will use to connect to
+      the Exchange server (you might want to use Administrator, on a test server)
+    - your computer name. This can be any value for testing.
+    - the Windows domain your Exchange server belongs to
+    - the IP address of the Exchange server (this must be real. Change the example!)
+    - the create operation
+
+
+[0x3c] Test the profile
+=======================
+
+You can next ensure your profile was correctly created by running the
+commands below:
+
+$ mapiprofile --database=/tmp/profiles.ldb --list
+We have 1 profiles in the database:
+        Profile = testuser-2000
+
+$ mapiprofile --database=/tmp/profiles.ldb --profile=testuser-2000 --dump
+Profile: testuser-2000
+        username       == testuser
+        password       == openchange
+        mailbox        == /o=First Organization/ou=First Administrative Group/cn=Recipients/cn=testuser
+        workstation    == LOCALHOST
+        realm          == (null)
+        server         == 192.168.194.22
+
+
+####################
+[0x4] USING LIBMAPI
+####################
+
+[0x4a] Man Pages
+================
+
+Man pages are supplied with the MAPI library so developers can have an
+overview on how to use each function properly. If you have troubles
+accessing man pages, be sure your MANPATH environment variable is set
+properly and point on openchange prefix installation path. (The man
+pages are not installed into the /usr/local hierachy.) Eg:
+
+$ export MANPATH=$MANPATH:/usr/src/openchange/branches/MAILOOK/doc/man
+
+
+
+[0x4b] Sample applications
+==========================
+
+A sample openchangeclient application is supplied so you can test the
+library and have an overview on how to use it into your
+applications. Please refer to the openchangeclient man page for
+further information on its command line option.
+
+$ openchangeclient --database=/tmp/profiles.ldb --profile=testuser-2000 --fetchmail
+
+
+
+For further examples see:
+
+$ man openchangeclient
+
+openchangeclient is also useful in its own right as a scriptable client.
+
+[0x4c] Web resources
+====================
+
+For an up to date material on how to use libmapi + discussions, you
+are strongly encouraged to visit the OpenChange wiki:
+    * http://wiki.openchange.org
+    * http://wiki.openchange.org/index.php/ClientSideProgramming
+
+
+
+########################
+[0x5] OPENCHANGE SERVER
+########################
+
+If you download one of the libmapi releases, please note that the
+server code is not supplied. Consider using subversion to retrieve the
+latest openchange revision:
+
+svn co https://svn.openchange.org/openchange
+
+
+[0x5a] Provision
+================
+
+In order to run openchange server, you need to setup Samba4
+correctly. If you have not already installed Samba4, please refer to
+section 2 for further information.
+
+Under your root account, provision the server:
+
+# ./setup/provision --domain=OPENCHANGE --realm=OPENCHANGE.LOCAL \
+		    --adminpass=secret
+
+If you encounter problems similar to: "smbscript not found", ajust
+your PATH environment variable.
+
+If you need to add a user, run the following command from Samba4
+source directory and setup arguments so it fullfill your needs:
+
+# ./setup/newuser --username=test --unixname=test --password=test
+
+
+[0x5b] Extending users Samba AD schema
+======================================
+
+In OpenChange source directory, run the following command to extend
+users AD. For example to make user test and Administrator openchange
+users run:
+
+# ./setup/oc_newuser --username=test
+# ./setup/oc_newuser --username=Administrator
+
+
+[0x5c] Setting smb.conf
+=======================
 
 In order to run OpenChange, you need so set up additional parameters
 in the [global] section of smb.conf. A sample smb.conf for OpenChange can be 
-found
-in doc/smb.conf.
+found in doc/smb.conf.example.
 
 You need to activate the exchange dcerpc endpoints servers. The
 following options overwrite the default endpoints list, we need to add
@@ -52,12 +289,15 @@ them anew:
 
        dcerpc endpoint servers = exchange_nsp exchange_emsmdb epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup
 
-You also need to fill information about your locale ID. 3 information are requested:
+You also need to fill information about your locale ID. 3 information
+are requested:
+
 - codepage
 - input locale language
 - input locale method
 
-You can easily find the locale language and method for your country using ./bin/locale_codepage we developed:
+You can easily find the locale language and method for your country
+using ./bin/locale_codepage we developed:
 
 1. Select your Region
 
@@ -106,19 +346,13 @@ You can choose the codepage you want and check it using:
         codepage name            : cpWindows1252
         codepage description     : ANSI - Latin I, Western European (Windows), Charset Label:Windows-1252, Aliases:ANSI_X3.4-1968, ANSI_X3.4-1986, ascii, cp367, cp819, csASCII, IBM367, ibm819, ISO_646.irv:1991, iso_8859-1, iso_8859-1:1987, ISO646-US, iso8859-1, iso-8859-1, iso-ir-100, i...
 
-
-  If you intend to run RPC-NSPI_PROFILE torture test and you have
-  configured OpenChange to run as a server, you'll need to specify the
-  exchange server you want to connect to. This can be specified on
-  command-line, but it's generally easier to add it into your smb.conf
-  file.
-
-  exchange:server = EXCHANGE
-
   Your OpenChange server needs a unique GUID that identifies it:
 
   exchange:GUID = 1b940e13-14d3-4e2a-9711-e06a2def5dfd
 
+
+[0x5d] Running the Address Book Provider (EMSABP)
+=================================================
 
 The simplest is to just run "smbd", but as a developer you may find
 the following more useful:
@@ -129,13 +363,4 @@ that means "start smbd without messages in stdout, and running a
 single process. That mode of operation makes debugging smbd with gdb
 particularly easy.
 
-Evolution Plugins
------------------
-
-To enable openchange evolution plugins compilation run:
-
-./configure --prefix=path_where_samba_is_installed --enable-eplugins=yes
-
-eplugins are disabled by default. If enabled, you'll need evolution-plugin-2.2
-package
 

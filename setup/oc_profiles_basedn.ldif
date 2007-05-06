@@ -1,0 +1,6 @@
+################################
+## Domain Naming Context
+################################
+dn: ${DOMAINDN}
+objectClass: top
+dc: ${RDN_DC}

@@ -79,8 +79,8 @@ BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 		return False;
 	}
 
-	retval = MapiLogonEx(&session, profname);
-	mapi_errstr("MapiLogonEx", GetLastError());
+	retval = MapiLogonProvider(&session, profname, PROVIDER_ID_NSPI);
+	mapi_errstr("MapiLogonProvider", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0xd,

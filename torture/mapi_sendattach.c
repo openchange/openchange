@@ -40,8 +40,6 @@ BOOL torture_rpc_mapi_sendattach(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
-	const char		*profname;
-	const char		*profdb;
 	const char		*subject = lp_parm_string(-1, "mapi", "subject");
 	const char		*body = lp_parm_string(-1, "mapi", "body");
 	const char		*filename = lp_parm_string(-1, "mapi", "attachment");
@@ -67,31 +65,17 @@ BOOL torture_rpc_mapi_sendattach(struct torture_context *torture)
 	uint32_t		msgflag;
 	DATA_BLOB		blob;
 
-	/* init torture */
-	mem_ctx = talloc_init("torture_rpc_mapi_sendmail");
-
-	/* init mapi */
-	profdb = lp_parm_string(-1, "mapi", "profile_store");
-	retval = MAPIInitialize(profdb);
-	mapi_errstr("MAPIInitialize", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
-
 	/* get the attachment filename */
 	if (!filename) {
 		DEBUG(0, ("No filename specified with mapi:attachment\n"));
 		return False;
 	}
 
-	/* profile name */
-	profname = lp_parm_string(-1, "mapi", "profile");
-	if (profname == 0) {
-		DEBUG(0, ("[!] lp_parm_string(profile)\n"));
-		return False;
-	}
+	/* init torture */
+	mem_ctx = talloc_init("torture_rpc_mapi_sendmail");
 
-	retval = MapiLogonEx(&session, profname);
-	mapi_errstr("MapiLogonEx", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	/* init mapi */
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
 
 	/* init objects */
 	mapi_object_init(&obj_store);

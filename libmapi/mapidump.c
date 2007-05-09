@@ -327,8 +327,10 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties)
 	mapidump_date(properties, PR_CommonEnd,"\tDue Date");
 	mapidump_date(properties, PR_CommonStart, "\tStart Date");
 
-	printf("\tPrivate: %s\n", (*private == True)?"True":"False");
-	fflush(0);
+	if (private) {
+		printf("\tPrivate: %s\n", (*private == True)?"True":"False");
+		fflush(0);
+	}
 
 	if (contacts) {
 		for (i = 0; i < contacts->cValues; i++) {

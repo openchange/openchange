@@ -35,8 +35,6 @@ BOOL torture_rpc_mapi_fetchcontacts(struct torture_context *torture)
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
-	const char		*profname;
-	const char		*profdb;
 	struct mapi_session	*session;
 	uint64_t		id_root;
 	uint64_t		id_contacts;
@@ -57,21 +55,7 @@ BOOL torture_rpc_mapi_fetchcontacts(struct torture_context *torture)
 	}
 
 	/* init mapi */
-	profdb = lp_parm_string(-1, "mapi", "profile_store");
-	retval = MAPIInitialize(profdb);
-	mapi_errstr("MAPIInitialize", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
-
-	/* profile name */
-	profname = lp_parm_string(-1, "mapi", "profile");
-	if (profname == 0) {
-		DEBUG(0, ("Please specify a valid profile name\n"));
-		return False;
-	}
-
-	retval = MapiLogonEx(&session, profname);
-	mapi_errstr("MapiLogonEx", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
 
 	/* init objects */
 	mapi_object_init(&obj_store);

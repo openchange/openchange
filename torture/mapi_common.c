@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation testsuite
 
-   Send attach to an Exchange server
+   Common MAPI and torture related operations
 
    Copyright (C) Fabien Le Mentec 2007
    
@@ -23,6 +23,7 @@
 #include <libmapi/libmapi.h>
 #include <torture/torture.h>
 #include <torture/torture_proto.h>
+#include <torture/mapi_torture.h>
 #include <param.h>
 
 const char *get_filename(const char *filename)
@@ -122,6 +123,43 @@ BOOL set_usernames_RecipientType(uint32_t *index, struct SRowSet *rowset, char *
 	*index = count;
 	
 	return True;
+}
+
+struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_session	*session;
+	const char		*profdb;
+	const char		*profname;
+
+	profdb = lp_parm_string(-1, "mapi", "profile_store");
+	if (!profdb) {
+		profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB_PATH, getenv("HOME"));
+		if (!profdb) {
+			DEBUG(0, ("Specify a valie MAPI profile store\n"));
+			return NULL;
+		}
+	}
+
+	retval = MAPIInitialize(profdb);
+	mapi_errstr("MAPIInitialize", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return NULL;
+
+
+	profname = lp_parm_string(-1, "mapi", "profile");
+	if (!profname) {
+		retval = GetDefaultProfile(&profname, 0);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("Please specify a valid profile\n"));
+			return NULL;
+		}
+	}
+
+	retval = MapiLogonEx(&session, profname);
+	mapi_errstr("MapiLogonEx", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return NULL;
+
+	return session;
 }
 
 uint64_t GetCalendarFID(struct SRowSet SRowSet)

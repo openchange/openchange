@@ -37,8 +37,6 @@ BOOL torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
-	const char		*profname;
-	const char		*profdb;
 	const char		*task = lp_parm_string(-1, "mapi", "task");
 	uint32_t		priority = lp_parm_int(-1, "mapi", "priority", 0);
 	uint32_t		status = lp_parm_int(-1, "mapi", "status", 0);
@@ -66,21 +64,7 @@ BOOL torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	}
 
 	/* init mapi */
-	profdb = lp_parm_string(-1, "mapi", "profile_store");
-	retval = MAPIInitialize(profdb);
-	mapi_errstr("MAPIInitialize", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
-
-	/* profile name */
-	profname = lp_parm_string(-1, "mapi", "profile");
-	if (profname == 0) {
-		DEBUG(0, ("Please specify a valid profile name\n"));
-		return False;
-	}
-
-	retval = MapiLogonEx(&session, profname);
-	mapi_errstr("MapiLogonEx", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
 
 	/* init objects */
 	mapi_object_init(&obj_store);

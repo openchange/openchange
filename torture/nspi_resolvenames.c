@@ -47,7 +47,8 @@ BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	struct FlagList		*flaglist = NULL;
 	const char		*profdb;
 	const char		*profname;
-	const char *username = lp_parm_string(-1, "exchange", "resolvename");
+	const char		*username = lp_parm_string(-1, "exchange", "resolvename");
+	uint32_t		unicode = lp_parm_int(-1, "mapi", "unicode", 0);
 	char *tmp;
 	char **usernames;
 	int j;
@@ -112,7 +113,7 @@ BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	}
 	usernames[j] = 0;
 
-	retval = ResolveNames((const char **)usernames, SPropTagArray, &rowset, &flaglist, 0);
+	retval = ResolveNames((const char **)usernames, SPropTagArray, &rowset, &flaglist, unicode?MAPI_UNICODE:0);
 	mapi_errstr("ResolveNames", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 

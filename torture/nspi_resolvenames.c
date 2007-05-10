@@ -26,6 +26,7 @@
 #include <credentials.h>
 #include <torture/torture.h>
 #include <torture/torture_proto.h>
+#include <torture/mapi_torture.h>
 #include <samba/popt.h>
 
 /* FIXME: Should be part of Samba's data: */
@@ -69,17 +70,27 @@ BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 
 	/* init mapi */
 	profdb = lp_parm_string(-1, "mapi", "profile_store");
+	if (!profdb) {
+		profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB_PATH, getenv("HOME"));
+		if (!profdb) {
+			DEBUG(0, ("Specify a valie MAPI profile store\n"));
+			return False;
+		}
+	}
 	retval = MAPIInitialize(profdb);
 	mapi_errstr("MAPIInitialize", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
 	/* profile name */
 	profname = lp_parm_string(-1, "mapi", "profile");
-	if (profname == 0) {
-		DEBUG(0, ("Please specify a valid profile name\n"));
-		return False;
+	if (!profname) {
+		retval = GetDefaultProfile(&profname, 0);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("Please specify a valid profile name\n"));
+			return False;
+		}
 	}
-
+	
 	retval = MapiLogonProvider(&session, profname, PROVIDER_ID_NSPI);
 	mapi_errstr("MapiLogonProvider", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;

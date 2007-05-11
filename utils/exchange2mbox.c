@@ -33,6 +33,8 @@
 
 #include <magic.h>
 
+#include "openchange-tools.h"
+
 struct message_ids {
 	const char *msgid;
 	
@@ -201,30 +203,30 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 static BOOL message2mbox(TALLOC_CTX *mem_ctx, int fd, 
 			 struct mapi_SPropValue_array *properties, mapi_object_t *obj_message)
 {
-	enum MAPISTATUS	retval;
-	mapi_object_t	obj_tb_attach;
-	mapi_object_t	obj_attach;
-	uint64_t       	*delivery_date;
-	const char	*date = NULL;
-	const char	*from = NULL;
-	const char	*to = NULL;
-	const char	*cc = NULL;
-	const char	*bcc = NULL;
-	const char	*subject = NULL;
-	const char	*msgid;
-	const char	*body = NULL;
-	const char	*attach_filename;
-	uint32_t	*attach_size;
-	char		*attachment_data;
-	uint32_t	*has_attach = NULL;
-	uint32_t	*attach_num = NULL;
-	char	*magic;
-	char	*line = NULL;
-	struct SBinary_short	*html = NULL;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SRowSet		rowset_attach;
-	struct mapi_SPropValue_array properties_array;
-	int			i;
+	enum MAPISTATUS			retval;
+	mapi_object_t			obj_tb_attach;
+	mapi_object_t			obj_attach;
+	uint64_t			*delivery_date;
+	const char			*date = NULL;
+	const char			*from = NULL;
+	const char			*to = NULL;
+	const char			*cc = NULL;
+	const char			*bcc = NULL;
+	const char			*subject = NULL;
+	const char			*msgid;
+	const char			*body = NULL;
+	const char			*attach_filename;
+	uint32_t			*attach_size;
+	char				*attachment_data;
+	uint32_t			*has_attach = NULL;
+	uint32_t			*attach_num = NULL;
+	char				*magic;
+	char				*line = NULL;
+	struct SBinary_short		*html = NULL;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct SRowSet			rowset_attach;
+	struct mapi_SPropValue_array	properties_array;
+	int				i;
 
 	has_attach = (uint32_t *) find_mapi_SPropValue_data(properties, PR_HASATTACH);
 
@@ -381,12 +383,13 @@ static BOOL message2mbox(TALLOC_CTX *mem_ctx, int fd,
 						write(fd, attachment_data, strlen(attachment_data));
 						talloc_free(attachment_data);
 
-						line = talloc_asprintf(mem_ctx, "\n\n--%s--\n\n\n", BOUNDARY);
-						if (line) write(fd, line, strlen(line));
-						talloc_free(line);
-						
 					}
 				}
+			}
+			if (has_attach && *has_attach) {
+				line = talloc_asprintf(mem_ctx, "\n\n--%s--\n\n\n", BOUNDARY);
+				if (line) write(fd, line, strlen(line));
+				talloc_free(line);
 			}
 		}
 		
@@ -466,18 +469,15 @@ int main(int argc, const char *argv[])
 	 */
 
 	if (!opt_profdb) {
-		poptPrintUsage(pc, stderr, 0);
-		exit (1);
+		opt_profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, getenv("HOME"));
 	}
 
 	if (!opt_mbox) {
-		poptPrintUsage(pc, stderr, 0);
-		exit (1);
+		opt_mbox = talloc_asprintf(mem_ctx, DEFAULT_MBOX, getenv("HOME"));
 	}
 
 	if (!opt_tdb) {
-		poptPrintUsage(pc, stderr, 0);
-		exit (1);
+		opt_tdb = talloc_asprintf(mem_ctx, DEFAULT_TDB, getenv("HOME"));
 	}
 
 	/**

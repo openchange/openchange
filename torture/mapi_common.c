@@ -136,7 +136,7 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
 	if (!profdb) {
 		profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB_PATH, getenv("HOME"));
 		if (!profdb) {
-			DEBUG(0, ("Specify a valie MAPI profile store\n"));
+			DEBUG(0, ("Specify a valid MAPI profile store\n"));
 			return NULL;
 		}
 	}

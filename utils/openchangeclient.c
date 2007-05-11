@@ -352,14 +352,17 @@ static BOOL set_usernames_RecipientType(uint32_t *index, struct SRowSet *rowset,
 {
 	uint32_t	i;
 	uint32_t	count = *index;
+	static uint32_t	counter = 0;
 
+	if (count == 0) counter = 0;
 	if (!usernames) return False;
 
 	for (i = 0; usernames[i]; i++) {
 		if (flaglist->ulFlags[count] == MAPI_RESOLVED) {
-			SetRecipientType(&(rowset->aRow[count]), RecipClass);
-			count++;
+			SetRecipientType(&(rowset->aRow[counter]), RecipClass);
+			counter++;
 		}
+		count++;
 	}
 	
 	*index = count;

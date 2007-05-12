@@ -255,6 +255,8 @@ static void mapiprofile_dump(const char *profdb, const char *profname)
 	printf("\tworkstation    == %s\n", profile.workstation);
 	printf("\trealm          == %s\n", profile.realm);
 	printf("\tserver         == %s\n", profile.server);
+
+	MAPIUninitialize();
 }
 
 static void mapiprofile_attribute(const char *profdb, const char *profname, 
@@ -262,11 +264,20 @@ static void mapiprofile_attribute(const char *profdb, const char *profname,
 {
 	enum MAPISTATUS		retval;
 	struct mapi_profile	profile;
-	const char		*value = NULL;
+	char			**value = NULL;
+	unsigned int		count = 0;
+	int			i;
 
-	if ((retval = MAPIInitialize(profdb))) {
+	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
+	}
+
+	if (!profname) {
+		if ((retval = GetDefaultProfile(&profname, 0)) != MAPI_E_SUCCESS) {
+			mapi_errstr("GetDefaultProfile", GetLastError());
+			exit (1);
+		}
 	}
 
 	if ((retval = OpenProfile(&profile, profname))) {
@@ -274,12 +285,16 @@ static void mapiprofile_attribute(const char *profdb, const char *profname,
 		exit (1);
 	}
 
-	if ((retval = GetProfileAttr(&profile, attribute, &value))) {
+	if ((retval = GetProfileAttr(&profile, attribute, &count, &value))) {
 		mapi_errstr("ProfileGetAttr", GetLastError());
 		exit (1);
 	}
 
-	printf("Profile %s: %s = %s\n", profname, attribute, value);
+	printf("Profile %s: results(%d)\n", profname, count);
+	for (i = 0; i < count; i++) {
+		printf("\t%s = %s\n", attribute, value[i]);
+	}
+	MAPIFreeBuffer(value);
 
 	MAPIUninitialize();
 }
@@ -419,8 +434,8 @@ int main(int argc, const char *argv[])
 	}
 
 	if ((list == false) && (newdb == false) 
-	    && (getdflt == false) && (dump == false) &&
-	    (!profname || !profdb)) {
+	    && (getdflt == false) && (dump == false) && 
+	    (!attribute) && (!profname || !profdb)) {
 		poptPrintUsage(pc, stderr, 0);
 		exit (1);
 	}

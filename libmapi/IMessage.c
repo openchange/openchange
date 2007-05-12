@@ -353,6 +353,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		size += sizeof(uint32_t);
 
 		RecipClass = (uint32_t *) find_SPropValue_data(aRow, PR_RECIPIENT_TYPE);
+		MAPI_RETVAL_IF(!RecipClass, MAPI_E_INVALID_PARAMETER, mem_ctx);
 		request.recipient[i_recip].RecipClass = (uint8_t) *RecipClass;
 		size += sizeof(uint8_t);
 		

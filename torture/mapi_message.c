@@ -112,6 +112,7 @@ static BOOL torture_message(mapi_object_t *obj_store,
 	mapi_object_t		obj_stream;
 	struct SPropTagArray	*proptags;
 	const char		*recipients[2];
+	char			**attrs = NULL;
 	struct SRowSet		*rows = NULL;
 	struct FlagList		*flaglist = NULL;
 	struct SRowSet		msgrows;
@@ -127,7 +128,8 @@ static BOOL torture_message(mapi_object_t *obj_store,
 	uint32_t		nattachs;
 	uint8_t			*buf_attach;
 	uint32_t		sz_attach;
-
+	unsigned int		count = 0;
+	uint32_t		index = 0;
 
 	mem_ctx = talloc_init("local");
 
@@ -157,7 +159,8 @@ static BOOL torture_message(mapi_object_t *obj_store,
 				     PR_SMTP_ADDRESS,
 				     PR_GIVEN_NAME);
 	GetProfileAttr(global_mapi_ctx->session->profile, "username", 
-		       &recipients[0]);
+		       &count, &attrs);
+	recipients[0] = attrs[0];
 	recipients[1] = 0;
 	retval = ResolveNames(recipients, proptags, &rows, &flaglist, 0);
 	mapi_errstr("ResolveNames", GetLastError());
@@ -168,9 +171,14 @@ static BOOL torture_message(mapi_object_t *obj_store,
 	value.value.l = 0;
 	SRowSet_propcpy(mem_ctx, rows, value);
 
+	set_usernames_RecipientType(&index, rows, (char **)recipients, flaglist, MAPI_TO);
+
 	retval = ModifyRecipients(&obj_message, rows);
 	mapi_errstr("ModifyRecipients", GetLastError());
 	oc_test_assert(retval == MAPI_E_SUCCESS);
+
+	retval = MAPIFreeBuffer(attrs);
+	mapi_errstr("MAPIFreeBuffer", GetLastError());
 
 	retval = MAPIFreeBuffer(rows);
 	mapi_errstr("MAPIFreeBuffer", GetLastError());

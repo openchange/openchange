@@ -35,13 +35,6 @@
 
 #include "openchange-tools.h"
 
-struct message_ids {
-	const char *msgid;
-	
-	struct message_ids *next;
-	struct message_ids *prev;
-};
-
 /* Ugly and lazy but working ... */
 #define BOUNDARY	"DocE+STaALJfprDB"
 #define	MAX_READ_SIZE	0x4000
@@ -86,7 +79,6 @@ static BOOL get_mbox_msgids(TALLOC_CTX *mem_ctx, const char *mbox, struct tdb_co
 
 	return True;
 }
-
 
 static const char *get_filename(const char *filename)
 {
@@ -200,7 +192,7 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 
 **/
 
-static BOOL message2mbox(TALLOC_CTX *mem_ctx, int fd, 
+static BOOL message2mbox(TALLOC_CTX *mem_ctx, FILE *fp, 
 			 struct mapi_SPropValue_array *properties, mapi_object_t *obj_message)
 {
 	enum MAPISTATUS			retval;
@@ -254,55 +246,55 @@ static BOOL message2mbox(TALLOC_CTX *mem_ctx, int fd,
 
 	/* First line From */
 	line = talloc_asprintf(mem_ctx, "From \"%s\" %s\n", from, date);
-	if (line) write(fd, line, strlen(line));
+	if (line) fwrite(line, strlen(line), 1, fp);
 	talloc_free(line);
 
 	/* Second line: Date */
 	line = talloc_asprintf(mem_ctx, "Date: %s\n", date);
-	if (line) write(fd, line, strlen(line));
+	if (line) fwrite(line, strlen(line), 1, fp);
 	talloc_free(line);
 
 	/* Third line From */
 	line = talloc_asprintf(mem_ctx, "From: %s\n", from);
-	if (line) write(fd, line, strlen(line));
+	if (line) fwrite(line, strlen(line), 1, fp);
 	talloc_free(line);
 
 	/* To, Cc, Bcc */
 	if (to) {
 		line = talloc_asprintf(mem_ctx, "To: %s\n", to);
-		if (line) write(fd, line, strlen(line));
+		if (line) fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);
 	}
 
 	if (cc) {
 		line = talloc_asprintf(mem_ctx, "Cc: %s\n", cc);
-		if (line) write(fd, line, strlen(line));
+		if (line) fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);
 	}
 
 	if (bcc) {
 		line = talloc_asprintf(mem_ctx, "Bcc: %s\n", bcc);
-		if (line) write(fd, line, strlen(line));
+		if (line) fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);
 	}
 
 	/* Subject */
 	if (subject) {
 		line = talloc_asprintf(mem_ctx, "Subject: %s\n", subject);
-		if (line) write(fd, line, strlen(line));
+		if (line) fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);
 	}
 
 	if (msgid) {
 		line = talloc_asprintf(mem_ctx, "Message-ID: %s\n", msgid);
-		if (line) write(fd, line, strlen(line));
+		if (line) fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);
 	}
 
 	/* Set multi-type if we have attachment */
 	if (has_attach && *has_attach) {
 		line = talloc_asprintf(mem_ctx, "Content-Type: multipart/mixed; boundary=\"%s\"\n", BOUNDARY);
-		if (line) write(fd, line, strlen(line));
+		if (line) fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);
 	}
 
@@ -310,36 +302,36 @@ static BOOL message2mbox(TALLOC_CTX *mem_ctx, int fd,
 	if (body) {
 		if (has_attach && *has_attach) {
 			line = talloc_asprintf(mem_ctx, "--%s\n", BOUNDARY);
-			if (line) write(fd, line, strlen(line));
+			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
 
 			line = talloc_asprintf(mem_ctx, "Content-Type: text/plain; charset=us-ascii\n");
-			if (line) write(fd, line, strlen(line));
+			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
 			
 			/* Just display UTF8 content inline */
 			line = talloc_asprintf(mem_ctx, "Content-Disposition: inline\n");
-			if (line) write(fd, line, strlen(line));
+			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
 		}
 
 		line = talloc_asprintf(mem_ctx, "\n%s", body);
-		if (line) write(fd, line, strlen(line));
+		if (line) fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);
 	} else if (html) {
 		if (has_attach && *has_attach) {
 			line = talloc_asprintf(mem_ctx, "--%s\n", BOUNDARY);
-			if (line) write(fd, line, strlen(line));
+			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
 		}
 
 		line = talloc_asprintf(mem_ctx, "Content-Type: \"text/html\"\n");
-		if (line) write(fd, line, strlen(line));
+		if (line) fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);		
 
 		
 
-		write(fd, html->lpb, html->cb);
+		fwrite(html->lpb, html->cb, 1, fp);
 	}
 
 	/* We are now fetching attachments */
@@ -365,22 +357,22 @@ static BOOL message2mbox(TALLOC_CTX *mem_ctx, int fd,
 					attachment_data = get_base64_attachment(mem_ctx, obj_attach, attach_size, &magic);
 					if (attachment_data) {
 						line = talloc_asprintf(mem_ctx, "\n\n--%s\n", BOUNDARY);
-						if (line) write(fd, line, strlen(line));
+						if (line) fwrite(line, strlen(line), 1, fp);
 						talloc_free(line);
 
 						line = talloc_asprintf(mem_ctx, "Content-Disposition: attachment; filename=\"%s\"\n", attach_filename);
-						if (line) write(fd, line, strlen(line));
+						if (line) fwrite(line, strlen(line), 1, fp);
 						talloc_free(line);
 
 						line = talloc_asprintf(mem_ctx, "Content-Type: \"%s\"\n", magic);
-						if (line) write(fd, line, strlen(line));
+						if (line) fwrite(line, strlen(line), 1, fp);
 						talloc_free(line);
 
 						line = talloc_asprintf(mem_ctx, "Content-Transfer-Encoding: base64\n\n");
-						if (line) write(fd, line, strlen(line));
+						if (line) fwrite(line, strlen(line), 1, fp);
 						talloc_free(line);
 						
-						write(fd, attachment_data, strlen(attachment_data));
+						fwrite(attachment_data, strlen(attachment_data), 1, fp);
 						talloc_free(attachment_data);
 
 					}
@@ -388,14 +380,14 @@ static BOOL message2mbox(TALLOC_CTX *mem_ctx, int fd,
 			}
 			if (has_attach && *has_attach) {
 				line = talloc_asprintf(mem_ctx, "\n\n--%s--\n\n\n", BOUNDARY);
-				if (line) write(fd, line, strlen(line));
+				if (line) fwrite(line, strlen(line), 1, fp);
 				talloc_free(line);
 			}
 		}
 		
 	}
 	
-	write(fd, "\n\n\n", 3);
+	fwrite("\n\n\n", 3, 1, fp);
 
 	return True;
 }
@@ -416,7 +408,7 @@ int main(int argc, const char *argv[])
 	struct SRowSet			rowset;
 	poptContext			pc;
 	int				opt;
-	int				fd;
+	FILE				*fp;
 	int				i;
 	const char			*opt_profdb = NULL;
 	const char			*opt_profname = NULL;
@@ -498,11 +490,11 @@ int main(int argc, const char *argv[])
 	 * Open the MBOX
 	 */
 
-	if ((fd = open(opt_mbox, O_CREAT|O_APPEND|O_WRONLY, S_IRWXU)) == -1) {
-		perror("open");
+	if ((fp = fopen(opt_mbox, "a+")) == NULL) {
+		perror("fopen");
 		exit (1);
 	}
-	
+
 	/**
 	 * Initialize MAPI subsystem
 	 */
@@ -575,7 +567,7 @@ int main(int argc, const char *argv[])
 					key.dptr = (unsigned char *)msgid;
 					key.dsize = strlen(msgid);
 					if (!tdb_exists(db, key)) {
-						message2mbox(mem_ctx, fd, &properties_array, &obj_message);
+						message2mbox(mem_ctx, fp, &properties_array, &obj_message);
 						if (tdb_store(db, key, key, TDB_INSERT) != 0) {
 							printf("Error while inserting %s in the index database\n", msgid);
 							return False;
@@ -588,7 +580,7 @@ int main(int argc, const char *argv[])
 	}
 
 	tdb_close(db);
-	close(fd);
+	fclose(fp);
 	mapi_object_release(&obj_table);
 	mapi_object_release(&obj_inbox);
 	mapi_object_release(&obj_store);

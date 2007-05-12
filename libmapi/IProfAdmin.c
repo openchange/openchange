@@ -702,16 +702,19 @@ _PUBLIC_ enum MAPISTATUS GetProfileTable(struct SRowSet *proftable, uint32_t fla
  */
 _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile, 
 					const char *attribute, 
-					const char **value)
+					unsigned int *count,
+					char ***value)
 {
-	TALLOC_CTX		*mem_ctx;
-	struct ldb_context	*ldb_ctx;
-	struct ldb_result	*res;
-	struct ldb_message	*msg;
-	struct ldb_dn		*basedn;
-	char			*ldb_filter;
-	const char		*attrs[] = {"*", NULL};
-	int			ret;
+	TALLOC_CTX			*mem_ctx;
+	struct ldb_context		*ldb_ctx;
+	struct ldb_result		*res;
+	struct ldb_message		*msg;
+	struct ldb_message_element	*ldb_element;
+	struct ldb_dn			*basedn;
+	char				*ldb_filter;
+	const char			*attrs[] = {"*", NULL};
+	int				ret;
+	int				i;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
@@ -728,7 +731,22 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
 
 	msg = res->msgs[0];
-	*value = ldb_msg_find_attr_as_string(msg, attribute, NULL);
+	ldb_element = ldb_msg_find_element(msg, attribute);
+	if (!ldb_element) {
+		printf("ldb_msg_find_element: NULL\n");
+		return MAPI_E_NOT_FOUND;
+	}
+
+	*count = ldb_element[0].num_values;
+	value[0] = talloc_array(mem_ctx, char *, *count);
+
+	if (*count == 1) {
+		value[0][0] = (char *)ldb_msg_find_attr_as_string(msg, attribute, NULL);
+	} else {
+		for (i = 0; i < *count; i++) {
+			value[0][i] = talloc_strdup(mem_ctx, (char *)ldb_element->values[i].data);
+		}
+	}
 
 	return MAPI_E_SUCCESS;
 }

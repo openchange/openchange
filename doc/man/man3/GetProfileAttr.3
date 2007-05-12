@@ -26,21 +26,24 @@
 .\" groff -man -Tascii GetProfileAttr.3
 .\"
 
-.TH GETPROFILEATTR 3 2007-04-23 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.TH GETPROFILEATTR 3 2007-04-23 "OpenChange libmapi 0.4" "OpenChange Programmer's Manual"
 .SH NAME
-GetProfileAttr \- Retrieve an attribute value from a profile
+GetProfileAttr \- Retrieve attribute values from a profile
 .SH SYNOPSIS
 .nf
 .B #include <libmapi/libmapi.h>
 .sp
-.BI "enum MAPISTATUS GetProfileAttr(struct mapi_profile *" profile ", const char *" attribute ", const char **" value ");"
+.BI "enum MAPISTATUS GetProfileAttr(struct mapi_profile *" profile ", const char *" attribute ", unsigned int *" count ", char ***" value ");"
 .fi
 .SH DESCRIPTION
-This function an attribute's value from the given 
-.IR profile. 
-The value is stored in the
+This function retrieves all the attribute values from the given 
+.IR profile.
+The number of results is stored in
+.IR count
+and values are stored in an allocated string array in the
 .IR value 
-parameter.
+parameter that needs to be free using
+.IR MAPIFreeBuffer() .
 
 .SH RETURN VALUE
 The function returns

@@ -34,6 +34,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>
+#include <netinet/in.h>
 
 /* Samba4 includes */
 #include <talloc.h>

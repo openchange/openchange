@@ -1342,14 +1342,19 @@ System Attendant Private Interface
 	/*****************/
 	/* Function 0x04 */
 	MAPISTATUS EcRRegisterPushNotification(
-		[in,out]	policy_handle		*handle,
-		[in]		uint32			unknown,
-		[in]		DATA_BLOB		blob1,
-		[in]		uint16			unknown1,
-		[in]		uint32			unknown2,
-		[in]		DATA_BLOB		blob2,
-		[in]		uint16			unknown3,
-		[out]		uint32			unknown4
+		[in,out]	policy_handle	*handle,
+		[in] uint32	unknown1,
+		[in] uint32	len,
+		[in] uint8	payload[8],
+		[in] uint16	unknown2,
+		[in] uint16	unknown3,
+		[in] uint32	unknown4,
+		[in] uint32	unknown5,
+		[in] uint16	unknown6,
+		[in] uint16	port,
+		[in] uint8	address[4],
+		[in] uint8	unknown7[10],
+		[out, flag(NDR_REMAINING)] DATA_BLOB unknown8
 		);
 
 	/*****************/

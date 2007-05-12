@@ -175,6 +175,58 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *
 }
 
 
+/* fixme: move to right place */
+#include <string.h>
+#include <netinet/in.h>
+NTSTATUS dcerpc_EcRRegisterPushNotification(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct EcRRegisterPushNotification *r);
+
+_PUBLIC_ NTSTATUS emsmdb_register_notification(const struct sockaddr_in* addr)
+{
+	struct EcRRegisterPushNotification request;
+	NTSTATUS		status;
+	mapi_ctx_t		*mapi_ctx;
+	struct emsmdb_context	*emsmdb;
+	struct policy_handle handle;
+	TALLOC_CTX* mem;
+
+	mem = talloc_init("local");
+	mapi_ctx = global_mapi_ctx;
+	emsmdb = mapi_ctx->session->emsmdb->ctx;
+
+	/* in */
+	request.in.handle = &emsmdb->handle;
+	request.in.unknown1 = 0x00000000;
+	request.in.len = 0x00000008;
+
+	memcpy(request.in.payload, "\xe8\x57\xff\x00\x00\x00\x00\x00", sizeof(request.in.payload));
+
+	/* post payload */
+	request.in.unknown2 = 0x0008;
+	request.in.unknown3 = 0x0008; /* varies */
+	request.in.unknown4 = 0xffffffff;
+	request.in.unknown5 = 0x00000010;
+	request.in.unknown6 = 0x0002;
+
+	/* addressing */
+	request.in.port = addr->sin_port;
+	*((unsigned long*)&request.in.address) = addr->sin_addr.s_addr;
+
+	/* post addressing, does not vary */
+	memcpy(request.in.unknown7, "\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00", sizeof(request.in.unknown7));
+
+	/* out */
+	request.out.handle = &handle;
+
+	status = dcerpc_EcRRegisterPushNotification(emsmdb->rpc_connection, mem, &request);
+	talloc_free(mem);
+
+	if (request.out.result != MAPI_E_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	return NT_STATUS_OK;
+}
+
+
 void *pull_emsmdb_property(TALLOC_CTX *ctx_mem, uint32_t *offset, enum MAPITAGS tag, DATA_BLOB* data)
 {
 	struct ndr_pull		*ndr;

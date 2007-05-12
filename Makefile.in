@@ -111,6 +111,7 @@ torture/openchange.$(SHLIBEXT):	torture/testjoin_exchange.o	\
 				torture/mapi_sendmail.o		\
 				torture/mapi_sendmail_html.o	\
 				torture/mapi_deletemail.o	\
+				torture/mapi_newmail.o		\
 				torture/mapi_sendattach.o	\
 				torture/mapi_fetchattach.o	\
 				torture/mapi_fetchappointment.o	\
@@ -271,6 +272,7 @@ torture_proto.h:
 	@echo "Generating torture_proto.h"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h \
 	torture/mapi_deletemail.c	\
+	torture/mapi_newmail.c		\
 	torture/mapi_fetchmail.c	\
 	torture/mapi_sendattach.c 	\
 	torture/mapi_folder.c		\

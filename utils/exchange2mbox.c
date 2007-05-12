@@ -22,7 +22,6 @@
 
 #include <libmapi/libmapi.h>
 #include <samba/popt.h>
-#include <tdb.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -39,45 +38,160 @@
 #define BOUNDARY	"DocE+STaALJfprDB"
 #define	MAX_READ_SIZE	0x4000
 #define	MESSAGEID	"Message-ID: "
+#define	MESSAGEID_LEN	11
+
+/**
+ * delete a message on the exchange server
+ */
+static BOOL delete_message(TALLOC_CTX *mem_ctx, char *msgid, const char *profname)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_session	*session;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_inbox;
+	mapi_object_t		obj_table;
+	mapi_id_t		id_inbox;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	int			i;
+	uint64_t		id_message;
+
+	retval = MapiLogonEx(&session, profname);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* Open the default message store */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* Open Inbox */
+	retval = GetReceiveFolder(&obj_store, &id_inbox);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	mapi_object_init(&obj_inbox);
+	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	mapi_object_init(&obj_table);
+	retval = GetContentsTable(&obj_inbox, &obj_table);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
+					  PR_FID,
+					  PR_MID,
+					  PR_INTERNET_MESSAGE_ID);
+	retval = SetColumns(&obj_table, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &SRowSet)) == MAPI_E_SUCCESS) {
+		if (!SRowSet.cRows) break;
+		for (i = 0; i < SRowSet.cRows; i++) {
+			if (!strncmp(SRowSet.aRow[i].lpProps[2].value.lpszA, msgid, strlen(msgid))) {
+				id_message = SRowSet.aRow[i].lpProps[1].value.d;
+				retval = DeleteMessage(&obj_inbox, &id_message, 1);
+				if (retval != MAPI_E_SUCCESS) return False;
+				break;
+			}
+		}
+	}
+	
+	mapi_object_release(&obj_table);
+	mapi_object_release(&obj_inbox);
+	mapi_object_release(&obj_store);
+
+	return True;
+}
 
 /**
  * Fetch message ids from the existing mbox
  */
-static BOOL get_mbox_msgids(TALLOC_CTX *mem_ctx, const char *mbox, struct tdb_context *db)
+static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp, 
+		       const char *profdb, const char *profname)
 {
-	FILE		*fp;
-	uint32_t	read_size;
-	char		*line = NULL;
-	size_t		size;
-	const char	*msgid;
-	const char	*id;
-	TDB_DATA	key;
+	enum MAPISTATUS		retval;
+	struct mapi_profile	profile;
+	uint32_t		read_size;
+	char			*line = NULL;
+	size_t			size;
+	const char		*msgid;
+	char     		*id;
+	char			**mbox_msgids;
+	char			**prof_msgids;
+	unsigned int		mbox_count = 0;
+	unsigned int		count;
+	int			i, j;
+	BOOL			found = False;
 
-	if ((fp = fopen(mbox, "a+")) == NULL) {
-		perror("fopen");
-		return False;
-	}
-	
+	retval = MAPIInitialize(profdb);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	retval = GetDefaultProfile(&profname, 0);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	retval = OpenProfile(&profile, profname);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	mbox_msgids = talloc_zero(mem_ctx, char *);
+	/* Add Message-ID attribute to the profile if it is missing */
 	while ((size = getline(&line, &read_size, fp)) != -1) {
 		if (line && !strncmp(line, MESSAGEID, strlen(MESSAGEID))) {
 			msgid = strstr(line, MESSAGEID);
-			id = msgid + strlen(MESSAGEID);
-			key.dptr = (unsigned char *)id;
-			key.dsize = strlen(id) - 1;
-			if (!tdb_exists(db, key)) {
-				if (tdb_store(db, key, key, TDB_INSERT) != 0) {
-					printf("Error while inserting %s in the index database\n", msgid);
-					return False;
+			id = talloc_strdup(mem_ctx, msgid + strlen(MESSAGEID));
+			id[strlen(id) - 1] = 0;
+
+			mbox_msgids = talloc_realloc(mem_ctx, mbox_msgids, char *, mbox_count + 2);
+			mbox_msgids[mbox_count] = talloc_strdup(mem_ctx, id);
+			mbox_count++;
+
+			retval = FindProfileAttr(&profile, "Message-ID", id);
+			if (GetLastError() == MAPI_E_NOT_FOUND) {
+				errno = 0;
+				printf("[+] Adding %s to %s\n", id, profname);
+				retval = mapi_profile_add_string_attr(profname, "Message-ID", id);
+				if (retval != MAPI_E_SUCCESS) {
+					mapi_errstr("mapi_profile_add_string_attr", GetLastError());
+					MAPIUninitialize();
+					return -1;
 				}
 			}
+			talloc_free(id);
 		}
-
+		
 	}
 	if (line)
 		free(line);
-	fclose(fp);
 
-	return True;
+	/* Remove Message-ID and update Exchange mailbox if a
+	 * Message-ID is missing in mbox 
+	 */
+	GetProfileAttr(&profile, "Message-ID", &count, &prof_msgids);
+
+	if (count != mbox_count) {
+		printf("{+] Synchonizing mbox with Exchange mailbox\n");
+		for (i = 0; i < count; i++) {
+			found = False;
+			for (j = 0; j < mbox_count; j++) {
+				if (!strcmp(prof_msgids[i], mbox_msgids[j])) {
+					found = True;
+				}
+			}
+			if (found == False) {
+				if (delete_message(mem_ctx, prof_msgids[i], profname) == True) {
+					printf("%s deleted from the Exchange server\n", prof_msgids[i]);
+					mapi_profile_delete_string_attr(profname, "Message-ID", prof_msgids[i]);
+				}
+			}
+		}
+	} else {
+		printf("[+] mbox already synchronized with Exchange Mailbox\n");
+	}
+
+	talloc_free(prof_msgids);
+	talloc_free(mbox_msgids);
+	MAPIUninitialize();
+
+	return MAPI_E_SUCCESS;
 }
 
 static const char *get_filename(const char *filename)
@@ -397,6 +511,7 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
 	struct mapi_session		*session = NULL;
+	struct mapi_profile		*profile;
 	mapi_object_t			obj_store;
 	mapi_object_t			obj_inbox;
 	mapi_object_t			obj_table;
@@ -413,22 +528,17 @@ int main(int argc, const char *argv[])
 	const char			*opt_profdb = NULL;
 	const char			*opt_profname = NULL;
 	const char			*opt_mbox = NULL;
-	const char			*opt_tdb = NULL;
+	BOOL				opt_update = False;
 	const char			*msgid;
-	BOOL				opt_populate = False;
-	TDB_DATA			key;
-	struct tdb_context		*db;
 
-
-	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_MBOX, OPT_TDB, OPT_POPULATE};
+	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_MBOX, OPT_UPDATE};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path"},
 		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name"},
 		{"mbox", 'm', POPT_ARG_STRING, NULL, OPT_MBOX, "set the mbox file"},
-		{"index", 'i', POPT_ARG_STRING, NULL, OPT_TDB, "set the message-id index database path"},
-		{"populate", 'n', POPT_ARG_NONE, 0, OPT_POPULATE, "populate the index database"},
+		{"update", 'u', POPT_ARG_NONE, 0, OPT_UPDATE, "mirror mbox changes back to the Exchange server"},
 		{ NULL }
 	};
 
@@ -447,11 +557,8 @@ int main(int argc, const char *argv[])
 		case OPT_MBOX:
 			opt_mbox = poptGetOptArg(pc);
 			break;
-		case OPT_TDB:
-			opt_tdb = poptGetOptArg(pc);
-			break;
-		case OPT_POPULATE:
-			opt_populate = True;
+		case OPT_UPDATE:
+			opt_update = True;
 			break;
 		}
 	}
@@ -468,24 +575,6 @@ int main(int argc, const char *argv[])
 		opt_mbox = talloc_asprintf(mem_ctx, DEFAULT_MBOX, getenv("HOME"));
 	}
 
-	if (!opt_tdb) {
-		opt_tdb = talloc_asprintf(mem_ctx, DEFAULT_TDB, getenv("HOME"));
-	}
-
-	/**
-	 * open/create the message-id database if it doesn't already exist
-	 * store an index for message-ids of the current mbox
-	 */
-	db = tdb_open(opt_tdb, 0, 0, O_RDWR|O_CREAT, 0600);
-	if (!db) {
-		printf("Failed to open the database\n");
-		exit (1);
-	}
-
-	if (opt_populate == True) {
-		get_mbox_msgids(mem_ctx, opt_mbox, db);
-	}
-
 	/**
 	 * Open the MBOX
 	 */
@@ -495,6 +584,10 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
+	if (opt_update == True) {
+		retval = update(mem_ctx, fp, opt_profdb, opt_profname);
+	}
+	
 	/**
 	 * Initialize MAPI subsystem
 	 */
@@ -519,6 +612,7 @@ int main(int argc, const char *argv[])
 		mapi_errstr("MapiLogonEx", GetLastError());
 		exit (1);
 	}
+	profile = session->profile;
 
 	/* Open the default message store */
 	mapi_object_init(&obj_store);
@@ -545,7 +639,7 @@ int main(int argc, const char *argv[])
 					  PR_MID,
 					  PR_INST_ID,
 					  PR_INSTANCE_NUM,
-					  PR_SUBJECT);
+					  PR_INTERNET_MESSAGE_ID);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -556,30 +650,32 @@ int main(int argc, const char *argv[])
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		for (i = 0; i < rowset.cRows; i++) {
 			mapi_object_init(&obj_message);
-			retval = OpenMessage(&obj_store, rowset.aRow[i].lpProps[0].value.d, rowset.aRow[i].lpProps[1].value.d, 
+			retval = OpenMessage(&obj_store, 
+					     rowset.aRow[i].lpProps[0].value.d, 
+					     rowset.aRow[i].lpProps[1].value.d, 
 					     &obj_message);
 			if (GetLastError() == MAPI_E_SUCCESS) {
 				retval = GetPropsAll(&obj_message, &properties_array);
-				MAPI_RETVAL_IF(retval, retval, mem_ctx);
+				if (retval != MAPI_E_SUCCESS) return False;
 				
 				msgid = (char *) find_mapi_SPropValue_data(&properties_array, PR_INTERNET_MESSAGE_ID);
 				if (msgid) {
-					key.dptr = (unsigned char *)msgid;
-					key.dsize = strlen(msgid);
-					if (!tdb_exists(db, key)) {
+					retval = FindProfileAttr(profile, "Message-ID", msgid);
+					if (GetLastError() == MAPI_E_NOT_FOUND) {
 						message2mbox(mem_ctx, fp, &properties_array, &obj_message);
-						if (tdb_store(db, key, key, TDB_INSERT) != 0) {
-							printf("Error while inserting %s in the index database\n", msgid);
-							return False;
-						} 
+						if (mapi_profile_add_string_attr(profile->profname, "Message-ID", msgid) != MAPI_E_SUCCESS) {
+							mapi_errstr("mapi_profile_add_string_attr", GetLastError());
+						} else {
+							printf("Message-ID: %s added to profile %s\n", msgid, profile->profname);
+						}
 					} 
 				}
-			}
+			} 
 			mapi_object_release(&obj_message);
+			errno = 0;
 		}
 	}
 
-	tdb_close(db);
 	fclose(fp);
 	mapi_object_release(&obj_table);
 	mapi_object_release(&obj_inbox);

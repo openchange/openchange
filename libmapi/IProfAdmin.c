@@ -263,6 +263,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(const char *profile,
 	const char * const		attrs[] = { "*", NULL };
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!profile, MAPI_E_BAD_VALUE, NULL);
 
 	mem_ctx = talloc_init("mapi_profile_add_string_attr");
@@ -341,6 +342,63 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_modify_string_attr(const char *profname,
 	msg.elements = el;
 
 	el[0].flags = LDB_FLAG_MOD_REPLACE;
+	el[0].name = talloc_strdup(mem_ctx, attr);
+	el[0].num_values = 1;
+	el[0].values = vals[0];
+	vals[0][0].data = (uint8_t *)value;
+	vals[0][0].length = strlen(value);
+
+	ret = ldb_modify(ldb_ctx, &msg);
+	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+
+	talloc_free(mem_ctx);
+	
+	return MAPI_E_SUCCESS;
+}
+
+/**
+ * Delete an attribute
+ */
+_PUBLIC_ enum MAPISTATUS mapi_profile_delete_string_attr(const char *profname, 
+							 const char *attr, 
+							 const char *value)
+{
+	TALLOC_CTX			*mem_ctx;
+	enum ldb_scope			scope = LDB_SCOPE_SUBTREE;
+	struct ldb_message		msg;
+	struct ldb_message_element	el[1];
+	struct ldb_val			vals[1][1];
+	struct ldb_result		*res;
+	struct ldb_context		*ldb_ctx;
+	struct ldb_dn			*basedn;
+	char				*dn;
+	char				*ldb_filter;
+	int				ret;
+	const char * const		attrs[] = { "*", NULL };
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!profname, MAPI_E_BAD_VALUE, NULL);
+
+	ldb_ctx = global_mapi_ctx->ldb_ctx;
+	mem_ctx = talloc_init("mapi_profile_delete_string_attr");
+
+	/* Retrieve the profile from the database */
+	ldb_filter = talloc_asprintf(mem_ctx, "(cn=%s)(cn=Profiles)", profname);
+	ret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), scope, ldb_filter, attrs, &res);
+	talloc_free(ldb_filter);
+	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_BAD_VALUE, mem_ctx);
+
+	/* Preparing for the transaction */
+	dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Profiles", profname);
+	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, dn);
+	talloc_free(dn);
+	MAPI_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, mem_ctx);
+
+	msg.dn = ldb_dn_copy(mem_ctx, basedn);
+	msg.num_elements = 1;
+	msg.elements = el;
+
+	el[0].flags = LDB_FLAG_MOD_DELETE;
 	el[0].name = talloc_strdup(mem_ctx, attr);
 	el[0].num_values = 1;
 	el[0].values = vals[0];
@@ -652,6 +710,18 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname, uint32_t flags
 }
 
 /**
+ * Retrieve a pointer on the mapi_profile structure used in the given session
+ */
+_PUBLIC_ enum MAPISTATUS GetProfilePtr(struct mapi_profile *profile)
+{
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	profile = global_mapi_ctx->session->profile;
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
  * Retrieve a SRowSet containing the profile table with only two
  * columns: PR_DISPLAY_NAME && PR_DEFAULT_PROFILE
  */
@@ -747,6 +817,49 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 			value[0][i] = talloc_strdup(mem_ctx, (char *)ldb_element->values[i].data);
 		}
 	}
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+ * Search the value of an attribute within a given profile
+ */
+_PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile, const char *attribute, const char *value)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct ldb_context		*ldb_ctx;
+	struct ldb_result		*res;
+	struct ldb_message		*msg;
+	struct ldb_message_element	*ldb_element;
+	struct ldb_val			val;
+	struct ldb_dn			*basedn;
+	char				*ldb_filter;
+	const char			*attrs[] = {"*", NULL};
+	int				ret;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!attribute, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!value, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = (TALLOC_CTX *)global_mapi_ctx->ldb_ctx;
+	ldb_ctx = global_mapi_ctx->ldb_ctx;
+
+	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
+	ldb_filter = talloc_asprintf(mem_ctx, "(CN=%s)", profile->profname);
+
+	ret = ldb_search(ldb_ctx, basedn, LDB_SCOPE_SUBTREE, ldb_filter, attrs, &res);
+	talloc_free(ldb_filter);
+	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
+	MAPI_RETVAL_IF(!res->count, MAPI_E_NOT_FOUND, NULL);
+
+	msg = res->msgs[0];
+	ldb_element = ldb_msg_find_element(msg, attribute);
+	MAPI_RETVAL_IF(!ldb_element, MAPI_E_NOT_FOUND, NULL);
+
+	val.data = (uint8_t *) value;
+	val.length = strlen(value);
+	MAPI_RETVAL_IF(!ldb_msg_find_val(ldb_element, &val), MAPI_E_NOT_FOUND, NULL);
 
 	return MAPI_E_SUCCESS;
 }

@@ -34,14 +34,15 @@ exchange2mbox \- Convert Exchange mailbox to mbox file
 .SH SYNOPSIS
 .nf
 exchange2mbox [-?] [-?|--help] [--usage] [-f|--database STRING]
-        [-p|--profile STRING] [-m|--mbox STRING] [-i|--index STRING]
-        [-n|--populate]
+        [-p|--profile STRING] [-m|--mbox STRING]
+        [-u|--update]
 .fi
 
 .SH DESCRIPTION
-exchange2mbox provides a way to retrieve an Exchange mailbox and
-convert it to mbox. The tool is developed so it only retrieve mails
-not already stored in the message ID index database. 
+exchange2mbox provides a way to synchronize an Exchange mailbox with a
+mbox file. The tool is developed so it only retrieve mails not already
+stored in the message ID index database and reflect changes back to
+the Exchange server if local message copy are deleted.
 
 .SH OPTIONS
 
@@ -67,31 +68,31 @@ has been set, exchange2mbox returns
 Set the mbox file full path
 
 .TP
-.B --index
+.B --update
 .TP
-.B -i
-Set the message ID index database full path
-
-.TP
-.B --populate
-.TP
-.B -n
-Populate the message ID index database with the existing mbox file if
-it doesn't exist. This option can be used if the index is not
-synchronized with mbox content.
+.B -u
+Synchonize the local mbox file with the remote Exchange server mailbox.
 
 .SH EXAMPLES
 
-.B Create/Update the mbox file and index database:
+.B Create/Update the mbox file and indexes within the profile database:
 .nf
-exchange2mbox -f /tmp/profiles.ldb -i /tmp/index.tdb -m /tmp/mbox
+exchange2mbox
 .fi
 
-.B Populate the index database:
+.B Update the Exchange mailbox and indexes according to the changes made to the mbox file.
+
 .nf
-rm -f /tmp/index.tdb
-exchange2mbox -f /tmp/profiles.ldb -i /tmp/index.tdb -m /tmp/mbox -n
+exchange2mbox -u
 .fi
+
+.SH REMARKS
+If no mbox file is specified, one will be automatically created in
+.B $(HOME)/.openchange/mbox .
+If you are using the default profile database path and have set a
+default profile using
+.B mapiprofile --profile=profile_name -S , 
+you can omit to specify these parameters on the command line
 
 .SH AUTHOR
 Julien Kerihuel <j.kerihuel at openchange dot org>

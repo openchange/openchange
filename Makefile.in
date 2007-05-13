@@ -121,6 +121,7 @@ torture/openchange.$(SHLIBEXT):	torture/testjoin_exchange.o	\
 				torture/mapi_fetchtasks.o	\
 				torture/mapi_sendtasks.o	\
 				torture/mapi_common.o		\
+				torture/fuzzer_msgstore.o	\
 				torture/openchange.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -lmapi
@@ -291,6 +292,7 @@ torture_proto.h:
 	torture/mapi_fetchtasks.c	\
 	torture/mapi_sendtasks.c	\
 	torture/mapi_common.c		\
+	torture/fuzzer_msgstore.c	\
 	torture/openchange.c
 
 libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\

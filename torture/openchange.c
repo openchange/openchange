@@ -53,6 +53,8 @@ NTSTATUS init_module(void)
 	torture_suite_add_simple_test(suite, "MAPI-FOLDER", torture_rpc_mapi_folder);
 	torture_suite_add_simple_test(suite, "MAPI-PROP", torture_rpc_mapi_prop);
 	torture_suite_add_simple_test(suite, "MAPI-MESSAGE", torture_rpc_mapi_message);
+	/* MAPI Fuzzer torture tests */
+	torture_suite_add_simple_test(suite, "FUZZER-MSGSTORE", torture_fuzzer_msgstore);
 
 	suite->description = talloc_strdup(suite, "Exchange protocols tests (NSPI and EMSMDB)");
 

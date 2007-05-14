@@ -126,8 +126,10 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	retval = MAPIInitialize(profdb);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
-	retval = GetDefaultProfile(&profname, 0);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	if (!profname) {
+		retval = GetDefaultProfile(&profname, 0);
+		MAPI_RETVAL_IF(retval, retval, NULL);
+	}
 
 	retval = OpenProfile(&profile, profname);
 	MAPI_RETVAL_IF(retval, retval, NULL);
@@ -586,6 +588,10 @@ int main(int argc, const char *argv[])
 
 	if (opt_update == True) {
 		retval = update(mem_ctx, fp, opt_profdb, opt_profname);
+		if (GetLastError() != MAPI_E_SUCCESS) {
+			printf("Problem encountered during update\n");
+			exit (1);
+		}
 	}
 	
 	/**

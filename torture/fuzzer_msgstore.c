@@ -110,7 +110,9 @@ BOOL torture_fuzzer_msgstore(struct torture_context *torture)
 		ntstatus = dcerpc_EcDoRpc(emsmdb->rpc_connection, emsmdb->mem_ctx, &r);
 		
 		if (MAPI_STATUS_IS_OK(NT_STATUS_V(ntstatus))) {
-			DEBUG(0, ("OpenMsgStore succeded with max_data = 0x%x\n", i));
+			DEBUG(0, ("SUCCESS: max_data = 0x%x\n", i));
+		} else {
+			DEBUG(0, ("FAILURE: max_data = 0x%x\n", i));
 		}
 	}
 

@@ -817,6 +817,11 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
+	if (opt_sendmail && (!oclient.pr_body && !oclient.pr_html_inline && !opt_html_file)) {
+		printf("No body specified (body, inline-html or html-file)\n");
+		exit (1);
+	}
+
 	if (opt_html_file && oclient.pr_body) {
 		printf("PR_BODY and PR_HTML can't be set at the same time\n");
 		exit (1);

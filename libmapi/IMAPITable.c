@@ -80,15 +80,15 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 	MAPI_RETVAL_IF(retval && (retval != MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
 
 	/* recopy property tags into table */
-	/* fixme: obj_table->private should be initialized during opening, not here */
-	if (obj_table->private == 0) {
-		obj_table->private = talloc((TALLOC_CTX *)obj_table->session, mapi_object_table_t);
+	/* fixme: obj_table->private_data should be initialized during opening, not here */
+	if (obj_table->private_data == 0) {
+		obj_table->private_data = talloc((TALLOC_CTX *)obj_table->session, mapi_object_table_t);
 	}
 
-	table = (mapi_object_table_t*)obj_table->private;
+	table = (mapi_object_table_t *)obj_table->private_data;
 	if (table) {
 		table->proptags.cValues = properties->cValues;
-		table->proptags.aulPropTag = talloc_array((TALLOC_CTX *)obj_table->private,
+		table->proptags.aulPropTag = talloc_array((TALLOC_CTX *)obj_table->private_data,
 							  enum MAPITAGS, table->proptags.cValues);
 		memcpy((void*)table->proptags.aulPropTag, (void*)properties->aulPropTag,
 		       table->proptags.cValues * sizeof(enum MAPITAGS));
@@ -207,7 +207,7 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* table contains mapitags from previous SetColumns */
-	table = (mapi_object_table_t*)obj_table->private;
+	table = (mapi_object_table_t *)obj_table->private_data;
 	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_QueryRows;
@@ -269,7 +269,7 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* get columns SPropTagArray */
-	table = (mapi_object_table_t*)obj_table->private;
+	table = (mapi_object_table_t *)obj_table->private_data;
 	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_QueryColumns;

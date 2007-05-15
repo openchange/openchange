@@ -39,7 +39,7 @@ static void mapi_object_reset(mapi_object_t *obj)
 	obj->id = 0;
 	obj->session = 0;
 	obj->handles = 0;
-	obj->private = 0;
+	obj->private_data = 0;
 }
 
 _PUBLIC_ enum MAPISTATUS mapi_object_init(mapi_object_t *obj)
@@ -54,8 +54,8 @@ _PUBLIC_ enum MAPISTATUS mapi_object_init(mapi_object_t *obj)
 
 _PUBLIC_ void mapi_object_release(mapi_object_t *obj)
 {
-	if (obj->private) {
-		talloc_free(obj->private);
+	if (obj->private_data) {
+		talloc_free(obj->private_data);
 	}
 	mapi_object_reset(obj);
 }

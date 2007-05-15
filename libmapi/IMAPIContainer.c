@@ -75,8 +75,8 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
 	
 	/* new table */
-	obj_table->private = talloc((TALLOC_CTX *)obj_table->session, mapi_object_table_t);
-	table = obj_table->private;
+	obj_table->private_data = talloc((TALLOC_CTX *)obj_table->session, mapi_object_table_t);
+	table = obj_table->private_data;
 	table->proptags.cValues = 0;
 	table->proptags.aulPropTag = 0;
 
@@ -141,8 +141,8 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
 	
 	/* new table */
-	obj_table->private = talloc((TALLOC_CTX *)obj_table->session, mapi_object_table_t);
-	table = obj_table->private;
+	obj_table->private_data = talloc((TALLOC_CTX *)obj_table->session, mapi_object_table_t);
+	table = obj_table->private_data;
 	table->proptags.cValues = 0;
 	table->proptags.aulPropTag = 0;
 

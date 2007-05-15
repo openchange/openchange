@@ -164,7 +164,7 @@ _PUBLIC_ enum MAPISTATUS GetDeletedItemsFolder(mapi_object_t *obj_store,
 
 	mapi_ctx = global_mapi_ctx;
 
-	store = (mapi_object_store_t *)obj_store->private;
+	store = (mapi_object_store_t *)obj_store->private_data;
 	*deleted_items_id = store->deleted_items_id;
 
 	return MAPI_E_SUCCESS;
@@ -186,7 +186,7 @@ _PUBLIC_ enum MAPISTATUS GetOutboxFolder(mapi_object_t *obj_store,
 
 	mapi_ctx = global_mapi_ctx;
 
-	store = (mapi_object_store_t *)obj_store->private;
+	store = (mapi_object_store_t *)obj_store->private_data;
 	*outbox_id = store->outbox_id;
 
 	return MAPI_E_SUCCESS;
@@ -208,7 +208,7 @@ _PUBLIC_ enum MAPISTATUS GetSentItemsFolder(mapi_object_t *obj_store,
 
 	mapi_ctx = global_mapi_ctx;
 
-	store = (mapi_object_store_t *)obj_store->private;
+	store = (mapi_object_store_t *)obj_store->private_data;
 	*sentitems_id = store->sent_items_id;
 
 	return MAPI_E_SUCCESS;

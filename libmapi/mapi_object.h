@@ -44,7 +44,7 @@ typedef struct mapi_object {
 	mapi_handle_t		handle;
 	struct mapi_session	*session;
 	struct mapi_handles	*handles;
-	void			*private;
+	void			*private_data;
 } mapi_object_t;
 
 

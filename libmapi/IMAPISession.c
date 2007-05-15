@@ -81,9 +81,9 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 	mapi_object_set_handle(obj_store, mapi_response->handles[0]);
 
 	/* retrieve store content */
-	obj_store->private = talloc((TALLOC_CTX *)obj_store->session, mapi_object_store_t);
-	store = (mapi_object_store_t*)obj_store->private;
-	MAPI_RETVAL_IF(!obj_store->private, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	obj_store->private_data = talloc((TALLOC_CTX *)obj_store->session, mapi_object_store_t);
+	store = (mapi_object_store_t*)obj_store->private_data;
+	MAPI_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 	store->outbox_id = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[3];
 	store->sent_items_id = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[6];
 	store->deleted_items_id = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[7];

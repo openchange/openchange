@@ -105,7 +105,6 @@ struct emsabp_containerID {
 
 /* GetHierarchyInfo flags */
 #define	MAPI_UNICODE		0x80000000
-#define	MAPI_DEFERRED_ERRORS	0x00000008
 #define	CONVENIENT_DEPTH	0x00000001
 
 #endif /* __EMSABP_H */

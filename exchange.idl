@@ -635,6 +635,7 @@ System Attendant Private Interface
 			op_MAPI_DeleteProps		= 0xb,
 			op_MAPI_SaveChangesMessage	= 0xc,
 			op_MAPI_ModifyRecipients	= 0xe,
+			op_MAPI_SetReadFlags		= 0x11,
 			op_MAPI_SetColumns		= 0x12,
 			op_MAPI_QueryRows		= 0x15,
 			op_MAPI_GetRowCount		= 0x17,
@@ -975,9 +976,29 @@ System Attendant Private Interface
 
 	} ModifyRecipients_repl;
 
+	/*************************/
+	/* EcDoRpc Function 0x11 */
+
+	typedef [bitmap8bit] bitmap {
+		SUPPRESS_RECEIPT	= 0x01,
+		CLEAR_READ_FLAG		= 0x04,
+		MAPI_DEFERRED_ERRORS	= 0x08,
+		GENERATE_RECEIPT_ONLY	= 0x10,
+		CLEAR_RN_PENDING	= 0x20,
+	       	CLEAR_NRN_PENDING	= 0x40
+	} MSGFLAG_READ;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		handle_idx;
+		MSGFLAG_READ	flags;
+	} SetReadFlags_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown;
+	} SetReadFlags_repl;
 
 	/*************************/
-	/* Ecdorpc Function 0x12 */
+	/* EcDoRpc Function 0x12 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
 		uint16		prop_count;
@@ -1233,6 +1254,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetProps)] SetProps_req mapi_SetProps;
 		[case(op_MAPI_DeleteProps)] DeleteProps_req mapi_DeleteProps;
 		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_req mapi_SaveChangesMessage;
+		[case(op_MAPI_SetReadFlags)] SetReadFlags_req mapi_SetReadFlags;
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_req mapi_ModifyRecipients;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
@@ -1267,7 +1289,9 @@ System Attendant Private Interface
 		[case(op_MAPI_GetPropList)] GetPropList_repl mapi_GetPropList;
 		[case(op_MAPI_SetProps)] SetProps_repl mapi_SetProps;
 		[case(op_MAPI_DeleteProps)] DeleteProps_repl mapi_DeleteProps;
-		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_repl mapi_SaveChangesMessage;		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
+		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_repl mapi_SaveChangesMessage;		
+		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
+		[case(op_MAPI_SetReadFlags)] SetReadFlags_repl mapi_SetReadFlags;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
 		[case(op_MAPI_QueryRows)] QueryRows_repl mapi_QueryRows;
 		[case(op_MAPI_GetRowCount)] GetRowCount_repl mapi_GetRowCount;

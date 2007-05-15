@@ -285,6 +285,9 @@ static enum MAPISTATUS openchangeclient_fetchmail(struct mapi_session *session,
 								fflush(0);
 								retval = GetPropsAll(&obj_attach, &properties_array);
 								attach_filename = get_filename((char *)find_mapi_SPropValue_data(&properties_array, PR_ATTACH_FILENAME));
+								if (attach_filename && !strcmp(attach_filename, "")) {
+									attach_filename = get_filename((char *)find_mapi_SPropValue_data(&properties_array, PR_ATTACH_LONG_FILENAME));
+								}
 								attach_size = (uint32_t *)find_mapi_SPropValue_data(&properties_array, PR_ATTACH_SIZE);
 								printf("[%d] %s (%d Bytes)\n", j, attach_filename, attach_size?*attach_size:0);
 								fflush(0);

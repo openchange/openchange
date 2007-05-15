@@ -236,6 +236,7 @@ proto.h: libmapi/mapitags.c libmapi/mapicode.c
 	libmapi/nspi.c			\
 	libmapi/emsmdb.c		\
 	libmapi/cdo_mapi.c		\
+	libmapi/simple_mapi.c		\
 	libmapi/mapitags.c		\
 	libmapi/mapicode.c		\
 	libmapi/mapidump.c		\
@@ -315,6 +316,7 @@ libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
 			libmapi/mapidump.o				\
 			libmapi/mapicode.o libmapi/emsmdb.o		\
 			libmapi/nspi.o gen_ndr/ndr_exchange.o		\
+			libmapi/simple_mapi.o				\
 			libmapi/util/locale.o libmapi/util/codepage.o	\
 			libmapi/x500.o ndr_mapi.o gen_ndr/ndr_exchange_c.o	
 	@echo "Compiling $<"

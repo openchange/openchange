@@ -49,6 +49,9 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	struct SRowSet		rowset;
 	uint32_t		i;
 	uint32_t		count;
+	uint32_t		unread;
+	uint32_t		total;
+
 
 	/* init torture */
 	mem_ctx = talloc_init("torture_rpc_mapi_fetchmail");
@@ -73,18 +76,21 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	mapi_errstr("OpenMsgStore", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
-	/* id_inbox = store->GetReceiveFolder
-	 */
+	/* id_inbox = store->GetReceiveFolder */
 	retval = GetReceiveFolder(&obj_store, &id_inbox);
 	mapi_errstr("GetReceiveFolder", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
-	/* inbox = store->OpenFolder()
-	 */
+	/* Open Inbox folder */
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
 	mapi_errstr("OpenFolder", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
+	/* Retrieve message count summary from the folder */
+	retval = GetFolderItemsCount(&obj_inbox, &unread, &total);
+	mapi_errstr("GetFolderItemsCount", GetLastError());
+	if (retval != MAPI_E_SUCCESS) return False;
+		
 	/* table = inbox->GetContentsTable()
 	 */
 	retval = GetContentsTable(&obj_inbox, &obj_table);
@@ -106,6 +112,9 @@ BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	 */
 	retval = GetRowCount(&obj_table, &count);
 	mapi_errstr("GetRowCount", GetLastError());
+
+	printf("Inbox: Total(%d) Unread(%d)\n", total, unread);
+
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		for (i = 0; i < rowset.cRows; i++) {
 			retval = OpenMessage(&obj_store,

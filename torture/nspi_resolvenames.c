@@ -38,7 +38,7 @@ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
 {
 	NTSTATUS                status;
-	MAPISTATUS		retval;
+	enum MAPISTATUS		retval;
 	struct dcerpc_pipe      *p;
 	TALLOC_CTX              *mem_ctx;
 	struct mapi_session	*session;

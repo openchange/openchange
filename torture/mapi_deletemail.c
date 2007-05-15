@@ -35,7 +35,7 @@
 
 BOOL torture_rpc_mapi_deletemail(struct torture_context *torture)
 {
-	MAPISTATUS		retval;
+	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
 	const char		*s_subject = lp_parm_string(-1, "mapi", "subject");

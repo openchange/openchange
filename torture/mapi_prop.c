@@ -92,7 +92,7 @@ static BOOL torture_prop(mapi_object_t *obj_prop)
 
 BOOL torture_rpc_mapi_prop(struct torture_context *torture)
 {
-	MAPISTATUS		retval;
+	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
 	mapi_object_t		obj_store;

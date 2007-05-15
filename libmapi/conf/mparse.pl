@@ -311,7 +311,6 @@ sub mapicodes_header($)
     mparse "";
     mparse "/* Status macros for MAPI */";
     mparse "typedef unsigned long	SCODE;";
-    mparse "typedef SCODE		MAPISTATUS;";
     mparse "";
     mparse "";
     mparse "#define SEVERITY_ERROR	1";
@@ -324,7 +323,7 @@ sub mapicodes_header($)
     mparse "#define	MAKE_MAPI_E(code) (MAKE_MAPI_CODE(SEVERITY_ERROR, FACILITY_ITF, code))";
     mparse "#define	MAKE_MAPI_S(code) (MAKE_MAPI_CODE(SEVERITY_WARN, FACILITY_ITF, code))";
     mparse "";
-    mparse "#define	MAPI_STATUS_V(x) ((MAPISTATUS)x)";
+    mparse "#define	MAPI_STATUS_V(x) ((SCODE)x)";
     mparse "";
     mparse "#define	MAPI_STATUS_IS_OK(x) (MAPI_STATUS_V(x) == 0)";
     mparse "#define	MAPI_STATUS_IS_ERR(x) ((MAPI_STATUS_V(x) & 0xc0000000) == 0xc0000000)";

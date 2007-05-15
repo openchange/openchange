@@ -103,7 +103,7 @@ static BOOL torture_folder(mapi_object_t *obj_parent)
 
 BOOL torture_rpc_mapi_folder(struct torture_context *torture)
 {
-	MAPISTATUS		retval;
+	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
 	mapi_object_t		obj_store;

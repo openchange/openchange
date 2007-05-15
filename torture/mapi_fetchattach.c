@@ -90,7 +90,7 @@ static enum MAPISTATUS read_attach_stream(TALLOC_CTX *ctx_mem,
 
 BOOL torture_rpc_mapi_fetchattach(struct torture_context *torture)
 {
-	MAPISTATUS		retval;
+	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
 	struct mapi_session	*session;

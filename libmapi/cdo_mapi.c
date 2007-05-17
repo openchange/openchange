@@ -127,6 +127,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	errno = 0;
 
 	MAPI_RETVAL_IF(global_mapi_ctx, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!profiledb, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("MAPIInitialize");
 	MAPI_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);

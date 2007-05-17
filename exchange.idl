@@ -731,7 +731,7 @@ System Attendant Private Interface
 		uint8		folder_handle_idx;
 		uint16		max_data;
 		hyper		folder_id;
-		uint8		message_handle_idx;
+		uint8		message_permissions;
 		hyper		message_id;
 	} OpenMessage_req;
 

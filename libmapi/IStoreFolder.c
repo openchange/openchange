@@ -51,7 +51,8 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store, mapi_id_t id_fold
 	request.folder_handle_idx = 0x1;
 	request.max_data = 0xfff;
 	request.folder_id = id_folder;
-	request.message_handle_idx = 0;
+	/* Seems to match for read/write */
+	request.message_permissions = 0x3;
 	request.message_id = id_message;
 	size = sizeof (uint8_t) + sizeof(uint16_t) + sizeof(mapi_id_t) + sizeof(uint8_t) + sizeof(mapi_id_t);
 

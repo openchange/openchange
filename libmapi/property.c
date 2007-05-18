@@ -325,6 +325,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 		return sizeof(uint64_t);
 	case PT_STRING8:
 		mapi_sprop->value.lpszA = sprop->value.lpszA;
+		if (!mapi_sprop->value.lpszA) return 0;
 		return (strlen(sprop->value.lpszA) + 1);
 	case PT_UNICODE:
 		mapi_sprop->value.lpszW = sprop->value.lpszW;
@@ -358,7 +359,7 @@ _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SProp
 	lpProp = aRow->lpProps[cValues];
 	lpProp.ulPropTag = SPropValue.ulPropTag;
 	lpProp.dwAlignPad = 0;
-	set_SPropValue(&(lpProp), (void *)&SPropValue.value);
+	set_SPropValue(&(lpProp), get_SPropValue_data(&SPropValue));
 	aRow->cValues = cValues;
 	aRow->lpProps[cValues - 1] = lpProp;
 

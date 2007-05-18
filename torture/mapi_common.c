@@ -105,19 +105,77 @@ char **collapse_recipients(TALLOC_CTX *mem_ctx, char **to, char **cc, char **bcc
 	return usernames;
 }
 
-BOOL set_usernames_RecipientType(uint32_t *index, struct SRowSet *rowset, char **usernames, struct FlagList *flaglist,
-				 enum ulRecipClass RecipClass)
+static BOOL set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, const char *username, enum ulRecipClass RecipClass)
+{
+	uint32_t		last;
+	struct SPropValue	SPropValue;
+
+	SRowSet->aRow = talloc_realloc(mem_ctx, SRowSet->aRow, struct SRow, SRowSet->cRows + 2);
+	last = SRowSet->cRows;
+	SRowSet->aRow[last].cValues = 0;
+	SRowSet->aRow[last].lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	
+	/* PR_OBJECT_TYPE */
+	SPropValue.ulPropTag = PR_OBJECT_TYPE;
+	SPropValue.value.l = MAPI_MAILUSER;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_DISPLAY_TYPE */
+	SPropValue.ulPropTag = PR_DISPLAY_TYPE;
+	SPropValue.value.l = 0;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_GIVEN_NAME */
+	SPropValue.ulPropTag = PR_GIVEN_NAME;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_DISPLAY_NAME */
+	SPropValue.ulPropTag = PR_DISPLAY_NAME;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_7BIT_DISPLAY_NAME */
+	SPropValue.ulPropTag = PR_7BIT_DISPLAY_NAME;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_SMTP_ADDRESS */
+	SPropValue.ulPropTag = PR_SMTP_ADDRESS;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_ADDRTYPE */
+	SPropValue.ulPropTag = PR_ADDRTYPE;
+	SPropValue.value.lpszA = "SMTP";
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	SetRecipientType(&(SRowSet->aRow[last]), RecipClass);
+
+	SRowSet->cRows += 1;
+	return True;
+}
+
+BOOL set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
+					char **usernames, struct FlagList *flaglist,
+					enum ulRecipClass RecipClass)
 {
 	uint32_t	i;
 	uint32_t	count = *index;
+	static uint32_t	counter = 0;
 
+	if (count == 0) counter = 0;
 	if (!usernames) return False;
 
 	for (i = 0; usernames[i]; i++) {
-		if (flaglist->ulFlags[count] == MAPI_RESOLVED) {
-			SetRecipientType(&(rowset->aRow[count]), RecipClass);
-			count++;
+		if (flaglist->ulFlags[count] == MAPI_UNRESOLVED) {
+			set_external_recipients(mem_ctx, rowset, usernames[i], RecipClass);
 		}
+		if (flaglist->ulFlags[count] == MAPI_RESOLVED) {
+			SetRecipientType(&(rowset->aRow[counter]), RecipClass);
+			counter++;
+		}
+		count++;
 	}
 	
 	*index = count;

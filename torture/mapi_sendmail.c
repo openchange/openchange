@@ -112,13 +112,12 @@ BOOL torture_rpc_mapi_sendmail(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return False;
 	
 	if (!SRowSet) {
-		printf("None of the recipients were resolved\n");
-		return False;
+		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	}
 	
-	set_usernames_RecipientType(&index, SRowSet, usernames_to, flaglist, MAPI_TO);
-	set_usernames_RecipientType(&index, SRowSet, usernames_cc, flaglist, MAPI_CC);
-	set_usernames_RecipientType(&index, SRowSet, usernames_bcc, flaglist, MAPI_BCC);
+	set_usernames_RecipientType(mem_ctx, &index, SRowSet, usernames_to, flaglist, MAPI_TO);
+	set_usernames_RecipientType(mem_ctx, &index, SRowSet, usernames_cc, flaglist, MAPI_CC);
+	set_usernames_RecipientType(mem_ctx, &index, SRowSet, usernames_bcc, flaglist, MAPI_BCC);
 
 	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
 	SPropValue.value.l = 0;

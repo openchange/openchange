@@ -350,7 +350,62 @@ static char **get_cmdline_recipients(TALLOC_CTX *mem_ctx, const char *recipients
 	return (usernames);
 }
 
-static BOOL set_usernames_RecipientType(uint32_t *index, struct SRowSet *rowset, char **usernames, struct FlagList *flaglist,
+/**
+ * We set external recipients at the end of aRow
+ */
+static BOOL set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, const char *username, enum ulRecipClass RecipClass)
+{
+	uint32_t		last;
+	struct SPropValue	SPropValue;
+
+	SRowSet->aRow = talloc_realloc(mem_ctx, SRowSet->aRow, struct SRow, SRowSet->cRows + 2);
+	last = SRowSet->cRows;
+	SRowSet->aRow[last].cValues = 0;
+	SRowSet->aRow[last].lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	
+	/* PR_OBJECT_TYPE */
+	SPropValue.ulPropTag = PR_OBJECT_TYPE;
+	SPropValue.value.l = MAPI_MAILUSER;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_DISPLAY_TYPE */
+	SPropValue.ulPropTag = PR_DISPLAY_TYPE;
+	SPropValue.value.l = 0;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_GIVEN_NAME */
+	SPropValue.ulPropTag = PR_GIVEN_NAME;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_DISPLAY_NAME */
+	SPropValue.ulPropTag = PR_DISPLAY_NAME;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_7BIT_DISPLAY_NAME */
+	SPropValue.ulPropTag = PR_7BIT_DISPLAY_NAME;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_SMTP_ADDRESS */
+	SPropValue.ulPropTag = PR_SMTP_ADDRESS;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_ADDRTYPE */
+	SPropValue.ulPropTag = PR_ADDRTYPE;
+	SPropValue.value.lpszA = "SMTP";
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	SetRecipientType(&(SRowSet->aRow[last]), RecipClass);
+
+	SRowSet->cRows += 1;
+	return True;
+}
+
+static BOOL set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
+					char **usernames, struct FlagList *flaglist,
 					enum ulRecipClass RecipClass)
 {
 	uint32_t	i;
@@ -361,6 +416,9 @@ static BOOL set_usernames_RecipientType(uint32_t *index, struct SRowSet *rowset,
 	if (!usernames) return False;
 
 	for (i = 0; usernames[i]; i++) {
+		if (flaglist->ulFlags[count] == MAPI_UNRESOLVED) {
+			set_external_recipients(mem_ctx, rowset, usernames[i], RecipClass);
+		}
 		if (flaglist->ulFlags[count] == MAPI_RESOLVED) {
 			SetRecipientType(&(rowset->aRow[counter]), RecipClass);
 			counter++;
@@ -468,6 +526,7 @@ static BOOL openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 	return True;
 }
 
+
 #define SETPROPS_COUNT	3
 
 /**
@@ -524,17 +583,16 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	if (retval != MAPI_E_SUCCESS) return False;
 
 	if (!SRowSet) {
-		printf("None of the recipients were resolved\n");
-		MAPI_RETVAL_IF(1, MAPI_E_NO_RECIPIENTS, NULL);
+		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	}
+
+	set_usernames_RecipientType(mem_ctx, &index, SRowSet, oclient->mapi_to, flaglist, MAPI_TO);
+	set_usernames_RecipientType(mem_ctx, &index, SRowSet, oclient->mapi_cc, flaglist, MAPI_CC);
+	set_usernames_RecipientType(mem_ctx, &index, SRowSet, oclient->mapi_bcc, flaglist, MAPI_BCC);
 
 	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
 	SPropValue.value.l = 0;
 	SRowSet_propcpy(mem_ctx, SRowSet, SPropValue);
-
-	set_usernames_RecipientType(&index, SRowSet, oclient->mapi_to, flaglist, MAPI_TO);
-	set_usernames_RecipientType(&index, SRowSet, oclient->mapi_cc, flaglist, MAPI_CC);
-	set_usernames_RecipientType(&index, SRowSet, oclient->mapi_bcc, flaglist, MAPI_BCC);
 
 	/* ModifyRecipients operation */
 	retval = ModifyRecipients(&obj_message, SRowSet);

@@ -171,7 +171,7 @@ static BOOL torture_message(mapi_object_t *obj_store,
 	value.value.l = 0;
 	SRowSet_propcpy(mem_ctx, rows, value);
 
-	set_usernames_RecipientType(&index, rows, (char **)recipients, flaglist, MAPI_TO);
+	set_usernames_RecipientType(mem_ctx, &index, rows, (char **)recipients, flaglist, MAPI_TO);
 
 	retval = ModifyRecipients(&obj_message, rows);
 	mapi_errstr("ModifyRecipients", GetLastError());

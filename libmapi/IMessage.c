@@ -320,7 +320,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 
 	/* 
 	 * append here property tags that can be fetched with
-	 * ResolveNames bu shouldn't be included in ModifyRecipients rows
+	 * ResolveNames but shouldn't be included in ModifyRecipients rows
 	 */
 	request.properties = get_MAPITAGS_SRow(mem_ctx, &SRowSet->aRow[0]);
 	count = SRowSet->aRow[0].cValues - 1;
@@ -367,6 +367,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 			size += sizeof(uint32_t);
 			break;
 		case 0xB:
+			size += sizeof(uint16_t);
 			break;
 		}
 		

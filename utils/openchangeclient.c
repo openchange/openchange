@@ -771,6 +771,93 @@ static BOOL openchangeclient_deletemail(TALLOC_CTX *mem_ctx, struct mapi_session
 	return True;
 }
 
+static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
+{
+	enum MAPISTATUS		retval;
+	BOOL			ret;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_htable;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		rowset;
+	const char	       	*name;
+	const char	       	*comment;
+	uint32_t	       	*total;
+	uint32_t	       	*unread;
+	uint32_t		*child;
+	uint32_t		index;
+	uint64_t		*fid;
+	int			i;
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(parent, folder_id, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	mapi_object_init(&obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
+					  PR_DISPLAY_NAME,
+					  PR_FID,
+					  PR_COMMENT,
+					  PR_CONTENT_UNREAD,
+					  PR_CONTENT_COUNT,
+					  PR_FOLDER_CHILD_COUNT);
+	retval = SetColumns(&obj_htable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return False;
+	
+	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+		for (index = 0; index < rowset.cRows; index++) {
+			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
+			comment = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_COMMENT);
+			total = (uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT);
+			unread = (uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_UNREAD);
+			child = (uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
+			for (i = 0; i < count; i++) {
+				printf("|   ");
+			}
+			printf("|---+ %-15s : %-20s (Total: %d / Unread: %d)\n", name, comment, *total, *unread);
+			if (*child) {
+				fid = (uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+				ret = get_child_folders(mem_ctx, &obj_folder, *fid, count + 1);
+				if (ret == False) return ret;
+			}
+			
+		}
+	}
+	return True;
+}
+
+static BOOL openchangeclient_mailbox(TALLOC_CTX *mem_ctx, struct mapi_session *session, mapi_object_t *obj_store)
+{
+	enum MAPISTATUS			retval;
+	mapi_id_t			id_mailbox;
+	struct SPropTagArray		*SPropTagArray;
+	struct SPropValue		*lpProps;
+	uint32_t			cValues;
+	const char			*mailbox_name;
+
+	/* Retrieve the mailbox folder name */
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME);
+	retval = GetProps(obj_store, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	if (lpProps[0].value.lpszA) {
+		mailbox_name = lpProps[0].value.lpszA;
+	} else {
+		return False;
+	}
+
+	/* Prepare the directory listing */
+	retval = GetDefaultFolder(obj_store, &id_mailbox, olFolderTopInformationStore);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	printf("+ %s\n", mailbox_name);
+	return get_child_folders(mem_ctx, obj_store, id_mailbox, 0);
+}
+
 int main(int argc, const char *argv[])
 {
 	TALLOC_CTX		*mem_ctx;
@@ -783,6 +870,7 @@ int main(int argc, const char *argv[])
 	BOOL			opt_sendmail = false;
 	BOOL			opt_fetchmail = false;
 	BOOL			opt_deletemail = false;
+	BOOL			opt_mailbox = false;
 	const char		*opt_profdb = NULL;
 	const char		*opt_profname = NULL;
 	const char		*opt_attachments = NULL;
@@ -793,7 +881,7 @@ int main(int argc, const char *argv[])
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_SENDMAIL, OPT_FETCHMAIL, 
 	      OPT_STOREMAIL,  OPT_DELETEMAIL, OPT_ATTACH, OPT_HTML_INLINE, OPT_HTML_FILE,
-	      OPT_MAPI_TO, OPT_MAPI_CC, OPT_MAPI_BCC, OPT_MAPI_SUBJECT, OPT_MAPI_BODY};
+	      OPT_MAPI_TO, OPT_MAPI_CC, OPT_MAPI_BCC, OPT_MAPI_SUBJECT, OPT_MAPI_BODY, OPT_MAILBOX};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -802,6 +890,7 @@ int main(int argc, const char *argv[])
 		{"sendmail", 'S', POPT_ARG_NONE, NULL, OPT_SENDMAIL, "send a mail"},
 		{"fetchmail", 'F', POPT_ARG_NONE, NULL, OPT_FETCHMAIL, "fetch user INBOX mails"},
 		{"storemail", 'G', POPT_ARG_STRING, NULL, OPT_STOREMAIL, "retrieve a mail on the filesystem"},
+		{"mailbox", 'm', POPT_ARG_NONE, NULL, OPT_MAILBOX, "list mailbox folder summary"},
 		{"deletemail", 'D', POPT_ARG_NONE, NULL, OPT_DELETEMAIL, "delete a mail from user INBOX"},
 		{"attachments", 'A', POPT_ARG_STRING, NULL, OPT_ATTACH, "send a list of attachments"},
 		{"html-inline", 'I', POPT_ARG_STRING, NULL, OPT_HTML_INLINE, "send PR_HTML content"},
@@ -827,6 +916,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_PROFILE:
 			opt_profname = poptGetOptArg(pc);
+			break;
+		case OPT_MAILBOX:
+			opt_mailbox = true;
 			break;
 		case OPT_SENDMAIL:
 			opt_sendmail = true;
@@ -948,7 +1040,13 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
-	
+	if (opt_mailbox) {
+		retval = openchangeclient_mailbox(mem_ctx, session, &obj_store);
+		mapi_errstr("mailbox", GetLastError());
+		if (retval != True) {
+			goto end;
+		}
+	}
 
 	/* MAPI operations */
 	if (opt_sendmail) {

@@ -211,6 +211,8 @@ void *get_SPropValue_data(struct SPropValue *lpProps)
 		return (void *)lpProps->value.lpszA;
 	case PT_UNICODE:
 		return (void *)lpProps->value.lpszW;
+	case PT_SYSTIME:
+		return (void *)(struct FILETIME *)&lpProps->value.ft;
 	case PT_ERROR:
 	case PT_LONG:
 		return (void *)&lpProps->value.l;

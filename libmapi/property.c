@@ -313,7 +313,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 	switch(sprop->ulPropTag & 0xFFFF) {
 	case PT_BOOLEAN:
 		mapi_sprop->value.b = sprop->value.b;
-		return sizeof(uint16_t);
+		return sizeof(uint8_t);
 	case PT_I2:
 		mapi_sprop->value.i = sprop->value.i;
 		return sizeof(uint16_t);

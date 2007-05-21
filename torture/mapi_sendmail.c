@@ -78,9 +78,9 @@ BOOL torture_rpc_mapi_sendmail(struct torture_context *torture)
 	mapi_errstr("OpenMsgStore", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
-	/* id_outbox = store->GeOutboxFolder() */
-	retval = GetOutboxFolder(&obj_store, &id_outbox);
-	mapi_errstr("GetOutboxFolder", GetLastError());
+	/* Retrieve the outbox folder id */
+	retval = GetDefaultFolder(&obj_store, &id_outbox, olFolderTopInformationStore);
+	mapi_errstr("GetDefaultFolder", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
 	/* outbox = store->OpenFolder(id_outbox) */

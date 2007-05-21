@@ -58,11 +58,19 @@ typedef struct mapi_object {
  */
 typedef struct mapi_obj_store
 {
-	uint64_t	inbox_id;
-	uint64_t	outbox_id;
-	uint64_t	deleted_items_id;
-	uint64_t	sent_items_id;
-	uint64_t	trash_id;
+	uint64_t	fid_non_ipm_subtree;
+	uint64_t	fid_deferred_actions;
+	uint64_t	fid_spooler_queue;
+	uint64_t	fid_top_information_store;
+	uint64_t	fid_inbox;
+	uint64_t	fid_outbox;
+	uint64_t	fid_sent_items;
+	uint64_t	fid_deleted_items;
+	uint64_t	fid_common_views;
+	uint64_t	fid_schedule;
+	uint64_t	fid_finder;
+	uint64_t	fid_views;
+	uint64_t	fid_shortcuts;
 } mapi_object_store_t;
 
 

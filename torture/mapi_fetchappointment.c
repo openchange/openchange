@@ -37,11 +37,8 @@ BOOL torture_rpc_mapi_fetchappointment(struct torture_context *torture)
 	TALLOC_CTX		*mem_ctx;
 	BOOL			ret = True;
 	struct mapi_session	*session;
-	uint64_t		id_root;
 	uint64_t		id_calendar;
 	mapi_object_t		obj_store;
-	mapi_object_t		obj_root;
-	mapi_object_t		obj_htable;
 	mapi_object_t		obj_calendar;
 	mapi_object_t		obj_cal_table;
 	struct SRowSet		SRowSet;
@@ -60,8 +57,6 @@ BOOL torture_rpc_mapi_fetchappointment(struct torture_context *torture)
 	
 	/* init objects */
 	mapi_object_init(&obj_store);
-	mapi_object_init(&obj_root);
-	mapi_object_init(&obj_htable);
 	mapi_object_init(&obj_calendar);
 	mapi_object_init(&obj_cal_table);
 
@@ -70,31 +65,10 @@ BOOL torture_rpc_mapi_fetchappointment(struct torture_context *torture)
 	mapi_errstr("OpenMsgStore", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
-	retval = GetOutboxFolder(&obj_store, &id_root);
+	/* Retrieve the default calendar folder id */
+	retval = GetDefaultFolder(&obj_store, &id_calendar, olFolderCalendar);
+	mapi_errstr("GetDefaultFolder", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
-
-	retval = OpenFolder(&obj_store, id_root, &obj_root);
-	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
-
-	retval = GetHierarchyTable(&obj_root, &obj_htable);
-	mapi_errstr("GetHierarchyTable", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
-
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
-					  PR_FID,
-					  PR_DISPLAY_NAME);
-	retval = SetColumns(&obj_htable, SPropTagArray);
-	MAPIFreeBuffer(SPropTagArray);
-	mapi_errstr("SetColumns", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
-
-	retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet);
-	mapi_errstr("QueryRows", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
-
-	/* Retrieve the calendar Folder ID */
-	id_calendar = GetCalendarFID(SRowSet);
 
 	/* We now open the calendar folder */
 	retval = OpenFolder(&obj_store, id_calendar, &obj_calendar);
@@ -145,8 +119,6 @@ BOOL torture_rpc_mapi_fetchappointment(struct torture_context *torture)
 
 	mapi_object_release(&obj_cal_table);
 	mapi_object_release(&obj_calendar);
-	mapi_object_release(&obj_htable);
-	mapi_object_release(&obj_root);
 	mapi_object_release(&obj_store);
 
 	/* uninitialize mapi

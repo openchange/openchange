@@ -84,9 +84,19 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 	obj_store->private_data = talloc((TALLOC_CTX *)obj_store->session, mapi_object_store_t);
 	store = (mapi_object_store_t*)obj_store->private_data;
 	MAPI_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
-	store->outbox_id = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[3];
-	store->sent_items_id = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[6];
-	store->deleted_items_id = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[7];
+	store->fid_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[0];
+	store->fid_deferred_actions = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[1];
+	store->fid_spooler_queue = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[2];
+	store->fid_top_information_store = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[3];
+	store->fid_inbox = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[4]; 
+	store->fid_outbox = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[5];
+	store->fid_sent_items = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[6];
+	store->fid_deleted_items = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[7];
+	store->fid_common_views = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[8];
+	store->fid_schedule = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[9];
+	store->fid_finder = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[10];
+	store->fid_views = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[11];
+	store->fid_shortcuts = mapi_response->mapi_repl->u.mapi_OpenMsgStore.folder_id[12];
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

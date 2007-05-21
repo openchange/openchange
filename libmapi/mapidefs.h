@@ -173,4 +173,25 @@
 #define	olDelegatedTask			1
 #define	olOwnTask			2
 
+/*
+ * Default folders
+ */
+#define	olFolderTopInformationStore	1
+#define	olFolderDeletedItems		3
+#define	olFolderOutbox			4
+#define	olFolderSentMail		5
+#define	olFolderInbox			6
+#define	olFolderCalendar		9
+#define	olFolderContacts		10
+#define	olFolderJournal			11
+#define	olFolderNotes			12
+#define	olFolderTasks			13
+#define	olFolderDrafts			16
+#define	olPublicFoldersAllPublicFolders	18
+#define	olFolderConflicts		19
+#define	olFolderSyncIssues		20
+#define	olFolderLocalFailures		21
+#define	olFolderServerFailures		22
+#define	olFolderJunk			23
+
 #endif /*!__MAPIDEFS_H__ */

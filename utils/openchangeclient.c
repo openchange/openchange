@@ -555,8 +555,8 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	mapi_object_init(&obj_outbox);
 	mapi_object_init(&obj_message);
 
-	/* Get outbox folder */
-	retval = GetOutboxFolder(obj_store, &id_outbox);
+	/* Get Sent Items folder but should be using olFolderOutbox */
+	retval = GetDefaultFolder(obj_store, &id_outbox, olFolderSentMail);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
 	/* Open outbox folder */

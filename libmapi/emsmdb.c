@@ -85,6 +85,8 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p
 	DEBUG(3, ("\t\t organization = %s\n", r.out.org_group));
 	
 	ret->cred = cred;
+	ret->max_data = 0xFFF0;
+	ret->setup = False;
 	
 	return ret;
 }
@@ -132,10 +134,10 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *
 	NTSTATUS		status;
 	struct EcDoRpc_MAPI_REQ	*multi_req;
 	uint8_t			i = 0;
-		
-	
+
+start:
 	r.in.handle = r.out.handle = &emsmdb->handle;
-	r.in.size = 0xFFF0;
+	r.in.size = emsmdb->max_data;
 	r.in.offset = 0x0;
 
 	mapi_response = talloc_zero(emsmdb->mem_ctx, struct mapi_response);	
@@ -160,12 +162,21 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *
 	length = talloc_zero(emsmdb->mem_ctx, uint16_t);
 	*length = r.in.mapi_request->mapi_len;
 	r.in.length = r.out.length = length;
-	r.in.max_data = (*length >= 0x6000) ? 0x7FFF : 0xFFF0;
+	r.in.max_data = (*length >= 0x4000) ? 0x7FFF : emsmdb->max_data;
 
 	status = dcerpc_EcDoRpc(emsmdb->rpc_connection, emsmdb->mem_ctx, &r);
 
 	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		return status;
+		if (emsmdb->setup == False) {
+			errno = 0;
+			emsmdb->max_data = 0x7FFF;
+			emsmdb->setup = True;
+			goto start;
+		} else {
+			return status;
+		}
+	} else {
+		emsmdb->setup = True;
 	}
 	emsmdb->cache_size = emsmdb->cache_count = 0;
 

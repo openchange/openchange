@@ -43,6 +43,20 @@ struct oclient {
 	const char		*store_folder;
 };
 
+struct itemfolder {
+	const uint32_t		olFolder;
+	const char		*container_class;
+};
+
+struct itemfolder	defaultFolders[] = {
+	{olFolderInbox,		"Mail"},
+	{olFolderCalendar,	"Appointment"},
+	{olFolderContacts,	"Contact"},
+	{olFolderTasks,		"Task"},
+	{olFolderNotes,		"Note"},
+	{0 , NULL}
+};
+
 #define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
 
 #endif /* !__OPENCHANGECLIENT_H__ */

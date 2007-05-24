@@ -194,4 +194,15 @@
 #define	olFolderServerFailures		22
 #define	olFolderJunk			23
 
+/*
+ * IPF container class
+ */
+
+#define	IPF_APPOINTMENT			"IPF.Appointment"
+#define	IPF_CONTACT			"IPF.Contact"
+#define	IPF_JOURNAL			"IPF.Journal"
+#define	IPF_NOTE			"IPF.Note"
+#define	IPF_STICKYNOTE			"IPF.StickyNote"
+#define	IPF_TASK			"IPF.Task"
+
 #endif /*!__MAPIDEFS_H__ */

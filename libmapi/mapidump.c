@@ -114,7 +114,7 @@ _PUBLIC_ void mapidump_date(struct mapi_SPropValue_array *properties, uint32_t m
 		time = time << 32;
 		time |= filetime->dwLowDateTime;
 		date = nt_time_string(mem_ctx, time);
-		printf("\t%s:   %s\n", label, date);
+		printf("\t%-15s:   %s\n", label, date);
 		fflush(0);
 	}
 
@@ -223,21 +223,63 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties)
 
 _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties)
 {
-	TALLOC_CTX	*mem_ctx;
-	const char	*subject;
-	const char	*location;
+	struct mapi_SLPSTRArray	*keywords = NULL;
+	struct mapi_SLPSTRArray	*contacts = NULL;
+	const char		*subject = NULL;
+	const char		*location= NULL;
+	const char		*timezone = NULL;
+	uint32_t		*status;
+	uint8_t			*priv = NULL;
+	int			i;
 
-	mem_ctx = talloc_init("mapidump_appointment");
-
+	keywords = (struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_EMS_AB_MONITORING_CACHED_VIA_MAIL);
+	contacts = (struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_Contacts);
 	subject = (char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	timezone = (char *)find_mapi_SPropValue_data(properties, PR_APPOINTMENT_TIMEZONE);
 	location = (char *)find_mapi_SPropValue_data(properties, PR_APPOINTMENT_LOCATION);
+	status = (uint32_t *)find_mapi_SPropValue_data(properties, PR_Status);
+	priv = (uint8_t *)find_mapi_SPropValue_data(properties, PR_Private);
 
-	printf("%s (%s)\n", subject, location);
+	printf("|== %s ==|\n", subject?subject:"");
 	fflush(0);
-	mapidump_date(properties, PR_START_DATE, "\tStart time");
-	mapidump_date(properties, PR_END_DATE, "\tEnd time");
 
-	talloc_free(mem_ctx);
+	if (location) {
+		printf("\tLocation: %s\n", location);
+		fflush(0);
+	}
+
+	mapidump_date(properties, PR_START_DATE, "Start time");
+	mapidump_date(properties, PR_END_DATE, "End time");
+
+	if (timezone) {
+		printf("\tTimezone: %s\n", timezone);
+		fflush(0);
+	}
+
+	printf("\tPrivate: %s\n", (*priv == True) ? "True" : "False");
+	fflush(0);
+
+	if (status) {
+		printf("\tStatus: %s\n", get_task_status(*status));
+		fflush(0);
+	}
+
+	if (keywords) {
+		printf("\tCategories:\n");
+		fflush(0);
+		for (i = 0; i < keywords->cValues; i++) {
+			printf("\t\tCategory: %s\n", keywords->strings[i].lppszA);
+		}
+	}
+
+	if (contacts) {
+		printf("\tContacts:\n");
+		fflush(0);
+		for (i = 0; i < contacts->cValues; i++) {
+			printf("\t\tContact: %s\n", contacts->strings[i].lppszA);
+			fflush(0);
+		}
+	}	
 }
 
 _PUBLIC_ void mapidump_contact(struct mapi_SPropValue_array *properties)
@@ -300,7 +342,6 @@ _PUBLIC_ const char *get_priority(uint32_t priority)
 
 _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties)
 {
-	TALLOC_CTX		*mem_ctx;
 	struct mapi_SLPSTRArray	*keywords = NULL;
 	struct mapi_SLPSTRArray	*contacts = NULL;
 	const char		*subject = NULL;
@@ -310,8 +351,6 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties)
 	uint32_t		*priority;
 	uint8_t			*private;
 	int			i;
-
-	mem_ctx = talloc_init("mapidump_task");
 
 	keywords = (struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_EMS_AB_MONITORING_CACHED_VIA_MAIL);
 	contacts = (struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_Contacts);
@@ -364,6 +403,31 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties)
 			fflush(0);
 		}
 	}
+}
 
-	talloc_free(mem_ctx);
+_PUBLIC_ void mapidump_note(struct mapi_SPropValue_array *properties)
+{
+	const char		*subject = NULL;
+	const char		*body = NULL;
+
+	subject = (char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	body = (char *)find_mapi_SPropValue_data(properties, PR_BODY);
+
+	printf("|== %s ==|\n", subject?subject:"");
+	fflush(0);
+	
+	mapidump_date(properties, PR_CLIENT_SUBMIT_TIME, "Submit Time");
+
+	if (body) {
+		printf("Content:\n");
+		printf("%s\n", body);
+		fflush(0);
+	} else {
+		body = (char *)find_mapi_SPropValue_data(properties, PR_BODY_HTML);
+		if (body) {
+			printf("Content HTML:\n");
+			printf("%s\n", body);
+			fflush(0);
+		}
+	}
 }

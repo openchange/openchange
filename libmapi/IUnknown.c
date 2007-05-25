@@ -55,7 +55,6 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ *mapi_req;
 	NTSTATUS		status;
-	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		size = 0;
 	mapi_ctx_t		*mapi_ctx;
@@ -70,7 +69,7 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	mapi_req->opnum = op_MAPI_Release;
 	mapi_req->mapi_flags = 0;
 	mapi_req->handle_idx = 0;
-	size += 4;
+	size += 5;
 
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
@@ -82,12 +81,11 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 
 	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
-	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
+	errno = 0;
 	return MAPI_E_SUCCESS;
 }
 

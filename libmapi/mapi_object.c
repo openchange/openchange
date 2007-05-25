@@ -54,10 +54,15 @@ _PUBLIC_ enum MAPISTATUS mapi_object_init(mapi_object_t *obj)
 
 _PUBLIC_ void mapi_object_release(mapi_object_t *obj)
 {
-	if (obj->private_data) {
-		talloc_free(obj->private_data);
+	enum MAPISTATUS retval;
+
+	retval = Release(obj);
+	if (retval == MAPI_E_SUCCESS) {
+		if (obj->private_data) {
+			talloc_free(obj->private_data);
+		}
+		mapi_object_reset(obj);
 	}
-	mapi_object_reset(obj);
 }
 
 int mapi_object_is_invalid(mapi_object_t *obj)

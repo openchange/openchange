@@ -370,3 +370,23 @@ _PUBLIC_ void ndr_print_QueryRows_repl(struct ndr_print *ndr, const char *name, 
 		ndr->flags = _flags_save_STRUCT;
 	}
 }
+
+NTSTATUS ndr_push_Release_req(struct ndr_push *ndr, int ndr_flags, const struct Release_req *r)
+{
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_Release_req(struct ndr_pull *ndr, int ndr_flags, struct Release_req *r)
+{
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_push_Release_repl(struct ndr_push *ndr, int ndr_flags, const struct Release_repl *r)
+{
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_Release_repl(struct ndr_pull *ndr, int ndr_flags, struct Release_repl *r)
+{
+	return NT_STATUS_OK;
+}

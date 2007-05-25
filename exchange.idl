@@ -713,10 +713,10 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x1   */
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [nopush,nopull,flag(NDR_NOALIGN)] struct {
 	} Release_req;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [nopush,nopull,flag(NDR_NOALIGN)] struct {
 	} Release_repl;
 
 	/**************************/

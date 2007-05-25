@@ -41,6 +41,8 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 	const char		*mailbox;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("OpenMsgStore");

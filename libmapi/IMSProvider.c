@@ -67,7 +67,12 @@ enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_
 
 	mem_ctx = (TALLOC_CTX *)provider;
 	profile = global_mapi_ctx->session->profile;
-	binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s", profile->server);
+	
+	if (global_mapi_ctx->dumpdata == false) {
+		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s", profile->server);
+	} else {
+		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s[print]", profile->server);
+	}
 
 	switch(provider_id) {
 	case PROVIDER_ID_EMSMDB:

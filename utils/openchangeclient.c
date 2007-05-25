@@ -22,6 +22,8 @@
 
 #include <libmapi/libmapi.h>
 #include <samba/popt.h>
+#include <param.h>
+#include <param/proto.h>
 
 #include "openchangeclient.h"
 
@@ -771,6 +773,28 @@ static BOOL openchangeclient_deletemail(TALLOC_CTX *mem_ctx, struct mapi_session
 	return True;
 }
 
+static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_folder;
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	*lpProps;
+	uint32_t		count;
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(parent, folder_id, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_CONTAINER_CLASS);
+	retval = GetProps(&obj_folder, SPropTagArray, &lpProps, &count);
+	MAPIFreeBuffer(SPropTagArray);
+	if ((lpProps[0].ulPropTag != PR_CONTAINER_CLASS) || (retval != MAPI_E_SUCCESS)) {
+		errno = 0;
+		return IPF_NOTE;
+	}
+	return lpProps[0].value.lpszA;
+}
+
 static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
 {
 	enum MAPISTATUS		retval;
@@ -809,17 +833,19 @@ static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	
 	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
+			fid = (uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
 			comment = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_COMMENT);
 			total = (uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT);
 			unread = (uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_UNREAD);
 			child = (uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
+
 			for (i = 0; i < count; i++) {
 				printf("|   ");
 			}
-			printf("|---+ %-15s : %-20s (Total: %d / Unread: %d)\n", name, comment, *total, *unread);
+			printf("|---+ %-15s : %-20s (Total: %d / Unread: %d - Container class: %s)\n", name, comment, *total, *unread,
+			       get_container_class(mem_ctx, parent, *fid));
 			if (*child) {
-				fid = (uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 				ret = get_child_folders(mem_ctx, &obj_folder, *fid, count + 1);
 				if (ret == False) return ret;
 			}
@@ -968,11 +994,14 @@ int main(int argc, const char *argv[])
 	const char		*opt_mapi_to = NULL;
 	const char		*opt_mapi_cc = NULL;
 	const char		*opt_mapi_bcc = NULL;
+	const char		*opt_debug = NULL;
+	BOOL			opt_dumpdata = false;
+	
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_SENDMAIL, OPT_FETCHMAIL, 
 	      OPT_STOREMAIL,  OPT_DELETEMAIL, OPT_ATTACH, OPT_HTML_INLINE, OPT_HTML_FILE,
 	      OPT_MAPI_TO, OPT_MAPI_CC, OPT_MAPI_BCC, OPT_MAPI_SUBJECT, OPT_MAPI_BODY, 
-	      OPT_MAILBOX, OPT_FETCHITEMS};
+	      OPT_MAILBOX, OPT_FETCHITEMS, OPT_DEBUG, OPT_DUMPDATA};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -992,6 +1021,8 @@ int main(int argc, const char *argv[])
 		{"bcc", 'b', POPT_ARG_STRING, NULL, OPT_MAPI_BCC, "Bcc recipients"},
 		{"subject", 's', POPT_ARG_STRING, NULL, OPT_MAPI_SUBJECT, "Mail subject"},
 		{"body", 'B', POPT_ARG_STRING, NULL, OPT_MAPI_BODY, "Mail body"},
+		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level"},
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "Dump the hex data"},
 		{ NULL }
 	};
 
@@ -1003,6 +1034,12 @@ int main(int argc, const char *argv[])
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+		case OPT_DEBUG:
+			opt_debug = poptGetOptArg(pc);
+			break;
+		case OPT_DUMPDATA:
+			opt_dumpdata = true;
+			break;
 		case OPT_PROFILE_DB:
 			opt_profdb = poptGetOptArg(pc);
 			break;
@@ -1055,7 +1092,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* Sanity check on options */
-	
+
 	if (!opt_profdb) {
 		opt_profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, getenv("HOME"));
 	}
@@ -1105,6 +1142,17 @@ int main(int argc, const char *argv[])
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
+
+	/* debug options */
+	if (opt_debug) {
+		lp_set_cmdline("log level", opt_debug);
+	}
+
+	if (opt_dumpdata == true) {
+		global_mapi_ctx->dumpdata = true;
+	}
+	
+
 
 	/* If no profile is specified try to load the default one from
 	 * the database 

@@ -238,7 +238,7 @@ _PUBLIC_ NTSTATUS emsmdb_register_notification(const struct sockaddr_in* addr)
 }
 
 
-void *pull_emsmdb_property(TALLOC_CTX *ctx_mem, uint32_t *offset, enum MAPITAGS tag, DATA_BLOB* data)
+void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAPITAGS tag, DATA_BLOB *data)
 {
 	struct ndr_pull		*ndr;
 	const char		*pt_string8;
@@ -250,7 +250,7 @@ void *pull_emsmdb_property(TALLOC_CTX *ctx_mem, uint32_t *offset, enum MAPITAGS 
 	struct SBinary_short	pt_binary;
 	struct SBinary		*sbin;
 
-	ndr = talloc_zero(ctx_mem, struct ndr_pull);
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
 	ndr->offset = *offset;
 	ndr->data = data->data;
 	ndr->data_size = data->length;
@@ -258,29 +258,29 @@ void *pull_emsmdb_property(TALLOC_CTX *ctx_mem, uint32_t *offset, enum MAPITAGS 
 
 	switch(tag & 0xFFFF) {
 	case PT_BOOLEAN:
-		pt_boolean = talloc_zero(ctx_mem, uint16_t);
+		pt_boolean = talloc_zero(mem_ctx, uint16_t);
 		ndr_pull_uint16(ndr, NDR_SCALARS, pt_boolean);
 		*offset = ndr->offset;
 		return (void *) pt_boolean;
 	case PT_I2:
-		pt_i2 = talloc_zero(ctx_mem, uint16_t);
+		pt_i2 = talloc_zero(mem_ctx, uint16_t);
 		ndr_pull_uint16(ndr, NDR_SCALARS, pt_i2);
 		*offset = ndr->offset;
 		return (void *) pt_i2;
 	case PT_NULL:
 	case PT_ERROR:
 	case PT_LONG:
-		pt_long = talloc_zero(ctx_mem, uint32_t);
+		pt_long = talloc_zero(mem_ctx, uint32_t);
 		ndr_pull_uint32(ndr, NDR_SCALARS, pt_long);
 		*offset = ndr->offset;
 		return (void *) pt_long;
 	case PT_I8:
-		pt_i8 = talloc_zero(ctx_mem, uint64_t);
+		pt_i8 = talloc_zero(mem_ctx, uint64_t);
 		ndr_pull_hyper(ndr, NDR_SCALARS, pt_i8);
 		*offset = ndr->offset;
 		return (void *) pt_i8;
 	case PT_SYSTIME:
-		pt_filetime = talloc_zero(ctx_mem, struct FILETIME);
+		pt_filetime = talloc_zero(mem_ctx, struct FILETIME);
 		ndr_pull_hyper(ndr, NDR_SCALARS, (uint64_t*)pt_filetime);
 		*offset = ndr->offset;
 		return (void*) pt_filetime;
@@ -294,7 +294,7 @@ void *pull_emsmdb_property(TALLOC_CTX *ctx_mem, uint32_t *offset, enum MAPITAGS 
 	case PT_BINARY:
 		ndr_pull_SBinary_short(ndr, NDR_SCALARS, &pt_binary);
 		*offset = ndr->offset;
-		sbin = talloc_zero(ctx_mem, struct SBinary);
+		sbin = talloc_zero(mem_ctx, struct SBinary);
 		sbin->cb = pt_binary.cb;
 		sbin->lpb = pt_binary.lpb;
 		return (void *) sbin;
@@ -306,14 +306,15 @@ void *pull_emsmdb_property(TALLOC_CTX *ctx_mem, uint32_t *offset, enum MAPITAGS 
 enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 				      DATA_BLOB *content,
 				      struct SPropTagArray *tags,
-				      struct SPropValue **propvals, uint32_t *cn_propvals)
+				      struct SPropValue **propvals, uint32_t *cn_propvals,
+				      uint8_t layout)
 {
-	struct SPropValue *p_propval;
-	uint32_t	i_propval;
-	uint32_t	i_tag;
-	uint32_t	cn_tags;
-	uint32_t	offset = 0;
-	void		*data;
+	struct SPropValue	*p_propval;
+	uint32_t		i_propval;
+	uint32_t		i_tag;
+	uint32_t		cn_tags;
+	uint32_t		offset = 0;
+	void			*data;
 
 	i_propval = 0;
 	cn_tags = tags->cValues;
@@ -321,6 +322,14 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 	*propvals = talloc_array(mem_ctx, struct SPropValue, cn_tags);
 
 	for (i_tag = 0; i_tag < cn_tags; i_tag++) {
+		if (layout) { 
+			if (((uint8_t)(*(content->data + offset))) == PT_ERROR) {
+				tags->aulPropTag[i_tag] &= 0xFFFF0000;
+				tags->aulPropTag[i_tag] |= PT_ERROR;
+			}
+			offset += sizeof (uint8_t);
+		}
+
 		data = pull_emsmdb_property(mem_ctx, &offset, tags->aulPropTag[i_tag], content);
 		if (data) {
 			p_propval = &((*propvals)[i_propval]);

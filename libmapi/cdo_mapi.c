@@ -136,6 +136,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	global_mapi_ctx = talloc_zero(mem_ctx, struct mapi_ctx);
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 	global_mapi_ctx->mem_ctx = mem_ctx;
+	global_mapi_ctx->dumpdata = false;
 
 	/* profile store */
 	status = OpenProfileStore(mem_ctx, &global_mapi_ctx->ldb_ctx, profiledb);

@@ -38,6 +38,7 @@ typedef struct mapi_ctx
   TALLOC_CTX		*mem_ctx;
   struct ldb_context	*ldb_ctx;
   struct mapi_session	*session;
+  BOOL			dumpdata;
 } mapi_ctx_t;
 
 

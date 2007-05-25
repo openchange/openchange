@@ -84,8 +84,9 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj, struct SPropTagArray *tags
 	   fixme: replace the memory context by the object one.
 	*/
 	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)obj->session,
-				       &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
-				       tags, vals, cn_vals);
+					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
+					   tags, vals, cn_vals, 
+					   mapi_response->mapi_repl->u.mapi_GetProps.layout);
 	MAPI_RETVAL_IF(!mapistatus && (retval == MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
 	
 	talloc_free(mapi_response);

@@ -113,15 +113,14 @@ NTSTATUS emsmdb_disconnect(struct emsmdb_context *emsmdb)
 	NTSTATUS		status;
 	struct EcDoDisconnect	r;
 
-	r.in.handle = &emsmdb->handle;
+	r.in.handle = r.out.handle = &emsmdb->handle;
 
 	/* fixme: dcerpc_EcDoDisconnect bug */
-	status = NT_STATUS_OK;
-/* 	status = dcerpc_EcDoDisconnect(emsmdb->rpc_connection, emsmdb, &r); */
-/* 	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) { */
-/* 		mapi_errstr("EcDoDisconnect", r.out.result); */
-/* 		return status; */
-/* 	} */
+	status = dcerpc_EcDoDisconnect(emsmdb->rpc_connection, emsmdb, &r);
+	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
+		mapi_errstr("EcDoDisconnect", r.out.result);
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }

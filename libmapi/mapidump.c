@@ -285,27 +285,88 @@ _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties)
 _PUBLIC_ void mapidump_contact(struct mapi_SPropValue_array *properties)
 {
 	const char	*card_name =NULL;
+	const char	*topic =NULL;
 	const char	*full_name = NULL;
+	const char	*given_name = NULL;
+	const char	*surname = NULL;
 	const char	*company = NULL;
 	const char	*email = NULL;
 	const char	*title = NULL;
+	const char      *office_phone = NULL;
+	const char      *home_phone = NULL;
+	const char      *mobile_phone = NULL;
+	const char      *postal_address = NULL;
+	const char      *street_address = NULL;
+	const char      *locality = NULL;
+	const char      *state = NULL;
+	const char      *country = NULL;
+	const char      *department = NULL;
+	const char      *business_fax = NULL;
+	const char      *business_home_page = NULL;
 
 	card_name = (char *)find_mapi_SPropValue_data(properties, PR_CONTACT_CARD_NAME);
+	topic = (char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
 	company = (char *)find_mapi_SPropValue_data(properties, PR_COMPANY_NAME);
 	title = (char *)find_mapi_SPropValue_data(properties, PR_TITLE);
 	full_name = (char *)find_mapi_SPropValue_data(properties, PR_DISPLAY_NAME);
+	given_name = (char *)find_mapi_SPropValue_data(properties, PR_GIVEN_NAME);
+	surname = (char *)find_mapi_SPropValue_data(properties, PR_SURNAME);
+	department = (char *)find_mapi_SPropValue_data(properties, PR_DEPARTMENT_NAME);
 	email = (char *)find_mapi_SPropValue_data(properties, PR_CONTACT_CARD_EMAIL_ADDRESS);
+	office_phone = (char *)find_mapi_SPropValue_data(properties, PR_OFFICE_TELEPHONE_NUMBER);
+	home_phone = (char *)find_mapi_SPropValue_data(properties, PR_HOME_TELEPHONE_NUMBER);
+	mobile_phone = (char *)find_mapi_SPropValue_data(properties, PR_MOBILE_TELEPHONE_NUMBER);
+	business_fax = (char *)find_mapi_SPropValue_data(properties, PR_BUSINESS_FAX_NUMBER);
+	business_home_page = (char *)find_mapi_SPropValue_data(properties, PR_BUSINESS_HOME_PAGE);
+	postal_address = (char*)find_mapi_SPropValue_data(properties, PR_POSTAL_ADDRESS);
+	street_address = (char*)find_mapi_SPropValue_data(properties, PR_STREET_ADDRESS);
+	locality = (char*)find_mapi_SPropValue_data(properties, PR_LOCALITY);
+	state = (char*)find_mapi_SPropValue_data(properties, PR_STATE_OR_PROVINCE);
+	country = (char*)find_mapi_SPropValue_data(properties, PR_COUNTRY);
 
-	printf("|== %s ==|\n", card_name?card_name:"<Unknown>");
+	if (card_name) 
+		printf("|== %s ==|\n", card_name );
+	else if (topic)
+		printf("|== %s ==|\n", topic );
+	else 
+		printf("|== <Unknown> ==|\n");
 	fflush(0);
-	if (full_name) printf("Full Name: %s\n", full_name);
+	if (topic) printf("Topic: %s\n", topic);
+	fflush(0);
+	if (full_name)
+		printf("Full Name: %s\n", full_name);
+	else if (given_name && surname)
+		printf("Full Name: %s %s\n", given_name, surname); // initials? l10n?
 	fflush(0);
 	if (title) printf("Job Title: %s\n", title);
+	fflush(0);
+	if (department) printf("Department: %s\n", department);
 	fflush(0);
 	if (company) printf("Company: %s\n", company);
 	fflush(0);
 	if (email) printf("E-mail: %s\n", email);
 	fflush(0);
+	if (office_phone) printf("Office phone number: %s\n", office_phone);
+	fflush(0);
+	if (home_phone) printf("Work phone number: %s\n", home_phone);
+	fflush(0);
+	if (mobile_phone) printf("Mobile phone number: %s\n", mobile_phone);
+	fflush(0);
+	if (business_fax) printf("Business fax number: %s\n", business_fax);
+	fflush(0);
+	if (business_home_page) printf("Business home page: %s\n", business_home_page);
+	fflush(0);
+	if (postal_address) printf("Postal address: %s\n", postal_address);
+	fflush(0);
+	if (street_address) printf("Street address: %s\n", street_address);
+	fflush(0);
+	if (locality) printf("Locality: %s\n", locality);
+	fflush(0);
+	if (state) printf("State / Province: %s\n", state);
+	fflush(0);
+	if (country) printf("Country: %s\n", country);
+	fflush(0);
+
 	printf("\n");
 }
 

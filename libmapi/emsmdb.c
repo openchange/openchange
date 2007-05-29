@@ -99,8 +99,11 @@ int emsmdb_disconnect_dtor(void *data)
 {
 	NTSTATUS		status;
 	struct mapi_provider	*provider = (struct mapi_provider *)data;
+	struct emsmdb_context	*emsmdb_ctx;
 
+	emsmdb_ctx = (struct emsmdb_context *)provider->ctx;
 	status = emsmdb_disconnect(provider->ctx);	
+		
 	return 0;
 }
 
@@ -115,7 +118,6 @@ NTSTATUS emsmdb_disconnect(struct emsmdb_context *emsmdb)
 
 	r.in.handle = r.out.handle = &emsmdb->handle;
 
-	/* fixme: dcerpc_EcDoDisconnect bug */
 	status = dcerpc_EcDoDisconnect(emsmdb->rpc_connection, emsmdb, &r);
 	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
 		mapi_errstr("EcDoDisconnect", r.out.result);
@@ -123,6 +125,47 @@ NTSTATUS emsmdb_disconnect(struct emsmdb_context *emsmdb)
 	}
 
 	return NT_STATUS_OK;
+}
+
+/**
+ * Send a null MAPI packet. 
+ * Useful to keep connection up or force notifications
+ */
+
+_PUBLIC_ NTSTATUS emsmdb_transaction_null(struct emsmdb_context *emsmdb, struct mapi_response **res)
+{
+	struct EcDoRpc		r;
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	NTSTATUS		status;
+	uint16_t		*length;
+
+	mapi_request = talloc_zero(emsmdb->mem_ctx, struct mapi_request);
+	mapi_response = talloc_zero(emsmdb->mem_ctx, struct mapi_response);
+
+	r.in.mapi_request = mapi_request;
+	r.in.mapi_request->mapi_len = 2;
+	r.in.mapi_request->length = 2;
+
+	r.in.handle = r.out.handle = &emsmdb->handle;
+	r.in.size = emsmdb->max_data;
+	r.in.offset = 0x0;
+	r.in.max_data = emsmdb->max_data;
+	length = talloc_zero(emsmdb->mem_ctx, uint16_t);
+	*length = r.in.mapi_request->mapi_len;
+	r.in.length = r.out.length = length;
+
+	r.out.mapi_response = mapi_response;
+
+	status = dcerpc_EcDoRpc(emsmdb->rpc_connection, emsmdb->mem_ctx, &r);
+
+	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
+		return status;
+	}
+
+	*res = mapi_response;
+
+	return status;
 }
 
 NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *req, struct mapi_response **repl)
@@ -184,55 +227,110 @@ start:
 	return status;
 }
 
-
-/* fixme: move to right place */
-#include <string.h>
-#include <netinet/in.h>
-NTSTATUS dcerpc_EcRRegisterPushNotification(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct EcRRegisterPushNotification *r);
-
-_PUBLIC_ NTSTATUS emsmdb_register_notification(const struct sockaddr_in* addr)
+/**
+ * initialize notify context structure and bind a local udp port for
+ * notifications
+ */
+struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 {
-	struct EcRRegisterPushNotification request;
-	NTSTATUS		status;
-	mapi_ctx_t		*mapi_ctx;
-	struct emsmdb_context	*emsmdb;
-	struct policy_handle handle;
-	TALLOC_CTX* mem;
+	struct mapi_notify_ctx	*notify_ctx = NULL;
+	unsigned short		port = DFLT_NOTIF_PORT;
+	const char		*ipaddr = NULL;
+	uint32_t		try = 0;
 
-	mem = talloc_init("local");
-	mapi_ctx = global_mapi_ctx;
-	emsmdb = mapi_ctx->session->emsmdb->ctx;
+	if (!global_mapi_ctx) return NULL;
+	if (!global_mapi_ctx->session) return NULL;
+	if (!global_mapi_ctx->session->profile) return NULL;
+
+	notify_ctx = talloc_zero(mem_ctx, struct mapi_notify_ctx);
+
+	notify_ctx->notifications = talloc_zero((TALLOC_CTX *)notify_ctx, struct notifications);
+	notify_ctx->notifications->prev = NULL;
+	notify_ctx->notifications->next = NULL;
+
+	ipaddr = iface_best_ip(global_mapi_ctx->session->profile->server);
+	if (!ipaddr) return NULL;
+	notify_ctx->addr = talloc_zero(mem_ctx, struct sockaddr);
+	notify_ctx->addr->sa_family = AF_INET;
+	((struct sockaddr_in *)(notify_ctx->addr))->sin_addr.s_addr = inet_addr(ipaddr);
+retry:
+	if (try) port++;
+	((struct sockaddr_in *)(notify_ctx->addr))->sin_port = htons(port);
+
+	notify_ctx->fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (notify_ctx->fd == -1) {
+		return NULL;
+	}
+
+	if (bind(notify_ctx->fd, notify_ctx->addr, sizeof(struct sockaddr)) == -1) {
+		shutdown(notify_ctx->fd, SHUT_RDWR);
+		close(notify_ctx->fd);
+		if (try < 3) {
+			try++;
+			errno = 0;
+			goto retry;
+		}
+		return NULL;
+	}
+
+	return notify_ctx;
+}
+
+/**
+ * Register for notifications on a Exchange server
+ */
+NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey, uint32_t ulEventMask)
+{
+	struct EcRRegisterPushNotification	request;
+	NTSTATUS				status;
+	struct emsmdb_context			*emsmdb;
+	struct mapi_session			*session;
+	struct mapi_notify_ctx			*notify_ctx;
+	struct policy_handle			handle;
+
+	if (!global_mapi_ctx) return NT_STATUS_UNSUCCESSFUL;
+	if (!global_mapi_ctx->session) return NT_STATUS_UNSUCCESSFUL;
+	if (!global_mapi_ctx->session->emsmdb) return NT_STATUS_UNSUCCESSFUL;
+	if (!global_mapi_ctx->session->emsmdb->ctx) return NT_STATUS_UNSUCCESSFUL;
+
+	session = (struct mapi_session *)global_mapi_ctx->session;
+	emsmdb = (struct emsmdb_context *)session->emsmdb->ctx;
+	notify_ctx = (struct mapi_notify_ctx *)session->notify_ctx;
 
 	/* in */
 	request.in.handle = &emsmdb->handle;
-	request.in.unknown1 = 0x00000000;
-	request.in.len = 0x00000008;
+	request.in.ulEventMask = ulEventMask;
 
-	memcpy(request.in.payload, "\xe8\x57\xff\x00\x00\x00\x00\x00", sizeof(request.in.payload));
+	request.in.notifkey = talloc_array(emsmdb->mem_ctx, uint8_t, request.in.notif_len);
+	memcpy(request.in.notifkey, notifkey->ab, request.in.notif_len);
+	request.in.notif_len = notifkey->cb;
 
-	/* post payload */
-	request.in.unknown2 = 0x0008;
-	request.in.unknown3 = 0x0008; /* varies */
-	request.in.unknown4 = 0xffffffff;
-	request.in.unknown5 = 0x00000010;
-	request.in.unknown6 = 0x0002;
+	request.in.unknown2 = 0xffffffff;
 
-	/* addressing */
-	request.in.port = addr->sin_port;
-	*((unsigned long*)&request.in.address) = addr->sin_addr.s_addr;
-
-	/* post addressing, does not vary */
-	memcpy(request.in.unknown7, "\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00", sizeof(request.in.unknown7));
+	request.in.sockaddr = talloc_array(emsmdb->mem_ctx, uint8_t, sizeof (struct sockaddr));
+	/* cp address family and length */
+	request.in.sockaddr[0] = (notify_ctx->addr->sa_family & 0xFF);
+	request.in.sockaddr[1] = (notify_ctx->addr->sa_family & 0xFF00) >> 8;
+	memcpy(&request.in.sockaddr[2], notify_ctx->addr->sa_data, 14);
+	request.in.sockaddr_len = sizeof (struct sockaddr);
 
 	/* out */
 	request.out.handle = &handle;
+	request.out.retval = talloc_zero(emsmdb->mem_ctx, uint32_t);
 
-	status = dcerpc_EcRRegisterPushNotification(emsmdb->rpc_connection, mem, &request);
-	talloc_free(mem);
+	status = dcerpc_EcRRegisterPushNotification(emsmdb->rpc_connection, emsmdb->mem_ctx, &request);
+	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
+		return status;
+	}
 
 	if (request.out.result != MAPI_E_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	if (request.out.retval && *request.out.retval != MAPI_E_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	return NT_STATUS_OK;
 }
 

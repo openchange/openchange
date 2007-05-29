@@ -248,6 +248,7 @@ proto.h: libmapi/mapitags.c libmapi/mapicode.c
 	libmapi/IMAPIFolder.c 		\
 	libmapi/IMAPIProp.c 		\
 	libmapi/IMAPISession.c		\
+	libmapi/IMAPISupport.c		\
 	libmapi/IMAPITable.c 		\
 	libmapi/IMSProvider.c		\
 	libmapi/IMessage.c 		\
@@ -258,7 +259,9 @@ proto.h: libmapi/mapitags.c libmapi/mapicode.c
 	libmapi/x500.c 			\
 	libmapi/utils.c 		\
 	libmapi/util/locale.c 		\
-	libmapi/util/codepage.c 
+	libmapi/util/codepage.c 	\
+	libmapi/socket/interface.c	\
+	libmapi/socket/netif.c		
 
 providers_proto.h: providers/emsabp.c
 	@echo "Generating providers/providers_proto.h"
@@ -302,6 +305,7 @@ libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
 			libmapi/IMAPIFolder.o				\
 			libmapi/IMAPIProp.o				\
 			libmapi/IMAPISession.o				\
+			libmapi/IMAPISupport.o				\
 			libmapi/IStream.o				\
 			libmapi/IMAPITable.o				\
 			libmapi/IMessage.o				\
@@ -315,10 +319,16 @@ libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
 			libmapi/mapitags.o				\
 			libmapi/mapidump.o				\
 			libmapi/mapicode.o libmapi/emsmdb.o		\
-			libmapi/nspi.o gen_ndr/ndr_exchange.o		\
+			libmapi/nspi.o 					\
 			libmapi/simple_mapi.o				\
-			libmapi/util/locale.o libmapi/util/codepage.o	\
-			libmapi/x500.o ndr_mapi.o gen_ndr/ndr_exchange_c.o	
+			libmapi/util/locale.o 				\
+			libmapi/util/codepage.o				\
+			libmapi/x500.o 					\
+			ndr_mapi.o					\
+			gen_ndr/ndr_exchange.o				\
+			gen_ndr/ndr_exchange_c.o			\
+			libmapi/socket/interface.o			\
+			libmapi/socket/netif.o				
 	@echo "Compiling $<"
 	@$(CC) $(DSOOPT) -o $@ $^ $(LIBS)
 

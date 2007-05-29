@@ -105,3 +105,52 @@ enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_
 
 	return MAPI_E_SUCCESS;
 }
+
+_PUBLIC_ enum MAPISTATUS RegisterNotification(uint32_t ulEventMask)
+{
+	NTSTATUS		status;
+	struct emsmdb_context	*emsmdb;
+	struct mapi_session	*session;
+	TALLOC_CTX		*mem_ctx;
+	struct NOTIFKEY		*lpKey;
+	static uint8_t		rand = 0;
+	static uint8_t		try = 0;
+	
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
+
+	session = (struct mapi_session *)global_mapi_ctx->session;
+	MAPI_RETVAL_IF(!session->emsmdb, MAPI_E_SESSION_LIMIT, NULL);
+
+	emsmdb = (struct emsmdb_context *)global_mapi_ctx->session->emsmdb->ctx;
+	MAPI_RETVAL_IF(!emsmdb, MAPI_E_SESSION_LIMIT, NULL);
+
+	mem_ctx = emsmdb->mem_ctx;
+
+	/* bind local udp port */
+	session->notify_ctx = emsmdb_bind_notification(mem_ctx);
+	if (!session->notify_ctx) return MAPI_E_CANCEL;
+
+	/* tell exchange where to send notifications */
+	lpKey = talloc_zero(mem_ctx, struct NOTIFKEY);
+	lpKey->cb = 8;
+	lpKey->ab = talloc_array((TALLOC_CTX *)lpKey, uint8_t, lpKey->cb);
+	memcpy(lpKey->ab, "libmapi", 7);
+retry:
+	lpKey->ab[7] = rand;
+
+	status = emsmdb_register_notification(lpKey, ulEventMask);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (try < 5) {
+			rand++;
+			try++;
+			errno = 0;
+			goto retry;
+		} else {
+			talloc_free(lpKey);
+			return MAPI_E_CALL_FAILED;
+		}
+	}
+	talloc_free(lpKey);
+	return MAPI_E_SUCCESS;
+}

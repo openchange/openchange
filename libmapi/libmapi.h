@@ -25,6 +25,9 @@
 #define _GNU_SOURCE 1
 
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +37,10 @@
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>
+#include <netdb.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <net/if.h>
 
 /* Samba4 includes */
 #include <talloc.h>
@@ -49,10 +55,12 @@
 #include <libmapi/mapi_provider.h>
 #include <libmapi/mapi_handles.h>
 #include <libmapi/mapi_object.h>
+#include <libmapi/mapi_notification.h>
 #include <libmapi/mapi_profile.h>
 #include <libmapi/mapidefs.h>
 #include <libmapi/mapicode.h>
 #include <libmapi/property.h>
+#include <libmapi/socket/netif.h>
 #include <libmapi/proto.h>
 
 extern struct mapi_ctx *global_mapi_ctx;

@@ -973,6 +973,64 @@ static BOOL openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	return True;
 }
 
+static mapi_notify_callback_t callback(uint32_t ulEventType, void *notif_data, void *private_data)
+{
+	struct NEWMAIL_NOTIFICATION	*newmail;
+
+	switch(ulEventType) {
+	case fnevNewMail:
+		printf("[+]New mail Received!!!!\n");
+		newmail = (struct NEWMAIL_NOTIFICATION *)notif_data;
+		mapidump_newmail(newmail, "\t");
+		break;
+	case fnevObjectCreated:
+		printf("[+]Object Created!!!\n");
+		break;
+	}
+
+	return 0;
+}
+
+static BOOL openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store)
+{
+	enum MAPISTATUS	retval;
+	mapi_object_t	obj_inbox;
+	mapi_id_t	fid;
+	uint32_t	ulConnection;
+	uint32_t	ulEventMask;
+
+	/* Register notification */
+	retval = RegisterNotification(0);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* Retrieve Inbox folder ID */
+	retval = GetDefaultFolder(obj_store, &fid, olFolderInbox);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* Open Inbox folder */
+	mapi_object_init(&obj_inbox);
+	retval = OpenFolder(obj_store, fid, &obj_inbox);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* subscribe Inbox to receive newmail notifications */
+	ulEventMask = fnevNewMail;
+	retval = Subscribe(&obj_inbox, &ulConnection, ulEventMask, (mapi_notify_callback_t)callback);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	/* wait for notifications: infinite loop */
+	retval = MonitorNotification((void *)&obj_store);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	retval = Unsubscribe(ulConnection);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	mapi_object_release(&obj_inbox);
+
+	return True;
+}
+
+
+
 int main(int argc, const char *argv[])
 {
 	TALLOC_CTX		*mem_ctx;
@@ -986,6 +1044,8 @@ int main(int argc, const char *argv[])
 	BOOL			opt_fetchmail = false;
 	BOOL			opt_deletemail = false;
 	BOOL			opt_mailbox = false;
+	BOOL			opt_dumpdata = false;
+	BOOL			opt_notifications = false;
 	const char		*opt_profdb = NULL;
 	const char		*opt_profname = NULL;
 	const char		*opt_attachments = NULL;
@@ -995,13 +1055,12 @@ int main(int argc, const char *argv[])
 	const char		*opt_mapi_cc = NULL;
 	const char		*opt_mapi_bcc = NULL;
 	const char		*opt_debug = NULL;
-	BOOL			opt_dumpdata = false;
 	
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_SENDMAIL, OPT_FETCHMAIL, 
 	      OPT_STOREMAIL,  OPT_DELETEMAIL, OPT_ATTACH, OPT_HTML_INLINE, OPT_HTML_FILE,
 	      OPT_MAPI_TO, OPT_MAPI_CC, OPT_MAPI_BCC, OPT_MAPI_SUBJECT, OPT_MAPI_BODY, 
-	      OPT_MAILBOX, OPT_FETCHITEMS, OPT_DEBUG, OPT_DUMPDATA};
+	      OPT_MAILBOX, OPT_FETCHITEMS, OPT_NOTIFICATIONS, OPT_DEBUG, OPT_DUMPDATA};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1021,6 +1080,7 @@ int main(int argc, const char *argv[])
 		{"bcc", 'b', POPT_ARG_STRING, NULL, OPT_MAPI_BCC, "Bcc recipients"},
 		{"subject", 's', POPT_ARG_STRING, NULL, OPT_MAPI_SUBJECT, "Mail subject"},
 		{"body", 'B', POPT_ARG_STRING, NULL, OPT_MAPI_BODY, "Mail body"},
+		{"notifications", 0, POPT_ARG_NONE, NULL, OPT_NOTIFICATIONS, "Monitor INBOX newmail notifications"},
 		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level"},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "Dump the hex data"},
 		{ NULL }
@@ -1039,6 +1099,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_DUMPDATA:
 			opt_dumpdata = true;
+			break;
+		case OPT_NOTIFICATIONS:
+			opt_notifications = true;
 			break;
 		case OPT_PROFILE_DB:
 			opt_profdb = poptGetOptArg(pc);
@@ -1224,6 +1287,15 @@ int main(int argc, const char *argv[])
 	if (opt_deletemail) {
 		retval = openchangeclient_deletemail(mem_ctx, session, &obj_store, &oclient);
 		mapi_errstr("deletemail", GetLastError());
+		if (retval != True) {
+			goto end;
+		}
+	}
+
+	/* Monitor newmail notifications */
+	if (opt_notifications) {
+		openchangeclient_notifications(mem_ctx, &obj_store);
+		mapi_errstr("notifications", GetLastError());
 		if (retval != True) {
 			goto end;
 		}

@@ -158,10 +158,18 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 
 _PUBLIC_ void MAPIUninitialize(void)
 {
-	TALLOC_CTX	*mem_ctx;
+	TALLOC_CTX		*mem_ctx;
+	struct mapi_session	*session;
 
 	if (!global_mapi_ctx) return;
 
+	session = global_mapi_ctx->session;
+	if (session && session->notify_ctx && session->notify_ctx->fd != -1) {
+		printf("emsmdb_disconnect_dtor: unbind udp\n");
+		shutdown(session->notify_ctx->fd, SHUT_RDWR);
+		close(session->notify_ctx->fd);
+	}
+	
 	mem_ctx = global_mapi_ctx->mem_ctx;
 	talloc_free(mem_ctx);
 	global_mapi_ctx = NULL;

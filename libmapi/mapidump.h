@@ -1,6 +1,7 @@
 /*
- *  Copyright (C) Julien Kerihuel  2007.
- *  Copyright (C) Fabien Le Mentec 2007.
+ *  OpenChange MAPI Implementation
+ *
+ *  Copyright (C) Julien Kerihuel 2007.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,33 +18,26 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef __MAPI_PROVIDER_H
-#define __MAPI_PROVIDER_H
+#ifndef __MAPIDUMP_H__
+#define	__MAPIDUMP_H__
 
-
-/* forward decls */
-struct mapi_profile;
-struct mapi_notify_ctx;
-
-enum PROVIDER_ID {
-	PROVIDER_ID_EMSMDB = 0x1,
-	PROVIDER_ID_NSPI = 0x2,
-	PROVIDER_ID_UNKNOWN
+struct mdump_msgflags {
+	uint16_t	flag;
+	const char	*value;
 };
 
-struct mapi_provider {
-	enum PROVIDER_ID	id;
-	void			*ctx;
+struct mdump_msgflags mdump_msgflags[] = {
+	{0x1,	"MSGFLAG_READ"},
+	{0x2,	"MSGFLAG_UNMODIFIED"},
+	{0x4,	"MSGFLAG_SUBMIT"},
+	{0x8,	"MSGFLAG_UNSENT"},
+	{0x10,	"MSGFLAG_HASATTACH"},
+	{0x20,	"MSGFLAG_FROMME"},
+	{0x40,	"MSGFLAG_ASSOCIATED"},
+	{0x80,	"MSGFLAG_RESEND"},
+	{0x100,	"MSGFLAG_RN_PENDING"},
+	{0x200,	"MSGFLAG_NRN_PENDING"},
+	{0, NULL}
 };
 
-struct mapi_session {
-	struct mapi_provider		*emsmdb;
-	struct mapi_provider		*nspi;
-	struct mapi_profile		*profile;
-	struct mapi_notify_ctx		*notify_ctx;
-
-	struct mapi_session		*next;
-	struct mapi_session		*prev;
-};
-
-#endif /* !__MAPI_PROVIDER_H */
+#endif	/* __MAPIDUMP_H__ */

@@ -47,7 +47,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store, mapi_id_t id_fold
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("OpenMessage");
 
-	/* Fill the OpenFolder operation */
+	/* Fill the OpenMessage operation */
 	request.folder_handle_idx = 0x1;
 	request.max_data = 0xfff;
 	request.folder_id = id_folder;

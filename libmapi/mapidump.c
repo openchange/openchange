@@ -19,6 +19,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/mapidump.h>
 #include <libmapi/proto_private.h>
 
 _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
@@ -491,4 +492,31 @@ _PUBLIC_ void mapidump_note(struct mapi_SPropValue_array *properties)
 			fflush(0);
 		}
 	}
+}
+
+_PUBLIC_ void mapidump_msgflags(uint32_t MsgFlags, const char *sep)
+{
+	uint32_t	i;
+	
+	for (i = 0; mdump_msgflags[i].flag; i++) {
+		if (MsgFlags & mdump_msgflags[i].flag) {
+			printf("%s\t%s (0x%x)\n", sep?sep:"", 
+			       mdump_msgflags[i].value, mdump_msgflags[i].flag);
+			fflush(0);
+		}
+	}
+
+}
+
+_PUBLIC_ void mapidump_newmail(struct NEWMAIL_NOTIFICATION *newmail, const char *sep)
+{
+	printf("%sParent Entry ID: 0x%llx\n", sep?sep:"", newmail->lpParentID);
+	fflush(0);
+	printf("%sMessage Entry ID: 0x%llx\n", sep?sep:"", newmail->lpEntryID);
+	fflush(0);
+	printf("%sMessage flags:\n", sep?sep:"");
+	fflush(0);
+	mapidump_msgflags(newmail->MsgFlags, sep);
+	printf("%sMessage Class: %s\n", sep?sep:"", newmail->lpszMessageClass);
+	fflush(0);
 }

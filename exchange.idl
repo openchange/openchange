@@ -648,6 +648,7 @@ System Attendant Private Interface
 			op_MAPI_CreateAttach		= 0x23,
 			op_MAPI_SaveChanges		= 0x25,
 			op_MAPI_GetReceiveFolder	= 0x27,
+			op_MAPI_Advise			= 0x29,
 			op_MAPI_Notify			= 0x2a,
 			op_MAPI_OpenStream		= 0x2b,
 			op_MAPI_ReadStream		= 0x2c,
@@ -710,6 +711,11 @@ System Attendant Private Interface
 		uint16					cValues;
 		[flag(NDR_REMAINING)]mapi_SPropValue	lpProps[cValues];
 	} mapi_SPropValue_array;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16					cValues;
+		MAPITAGS				aulPropTag[cValues];
+	} mapi_SPropTagArray;
 
 	/**************************/
 	/* EcDoRpc Function 0x1   */
@@ -1156,9 +1162,119 @@ System Attendant Private Interface
 	} GetReceiveFolder_repl;
 
 	/*************************/
-	/* EcDoRpc Function 0x2a */
+	/* EcDoRpc Function 0x29 */
+	typedef [bitmap16bit] bitmap {
+		fnevCriticalError	= 0x00000001,
+	        fnevNewMail		= 0x00000002,
+	        fnevObjectCreated       = 0x00000004,
+		fnevObjectDeleted       = 0x00000008,
+		fnevObjectModified      = 0x00000010,
+		fnevObjectMoved         = 0x00000020,
+		fnevObjectCopied        = 0x00000040,
+		fnevSearchComplete      = 0x00000080,
+		fnevTableModified       = 0x00000100,
+		fnevStatusObjectModified= 0x00000200,
+		fnevReservedForMapi     = 0x40000000,
+		fnevExtended            = 0x80000000
+	} ulEventType;
+
+	typedef struct {
+		hyper	entryid[2];
+	} notif_entryid;
+
+	typedef [nodiscriminant] union {
+		[case (0x0)] notif_entryid entryids;
+		[case (0x1)];
+	} notification_data;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		[flag(NDR_REMAINING)] DATA_BLOB data;
+		uint8		handle_idx;
+		ulEventType    	notification_type;
+		uint8		layout;
+		[switch_is(layout)] notification_data	u;
+	} Advise_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} Advise_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x2a */
+
+	/******************** EXPERIMENTAL *********************/
+
+	typedef [bitmap32bit] bitmap {
+		MSGFLAG_READ		= 0x1,
+		MSGFLAG_UNMODIFIED	= 0x2,
+		MSGFLAG_SUBMIT		= 0x4,
+		MSGFLAG_UNSENT		= 0x8,
+		MSGFLAG_HASATTACH	= 0x10,
+		MSGFLAG_FROMME		= 0x20,
+		MSGFLAG_ASSOCIATED	= 0x40,
+		MSGFLAG_RESEND		= 0x80,
+		MSGFLAG_RN_PENDING	= 0x100,
+	        MSGFLAG_NRN_PENDING	= 0x200
+	} MsgFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8	       	type;
+		hyper		lpParentID;
+		hyper		lpEntryID;
+		MsgFlags	MsgFlags;
+		uint8		unknown;
+		astring		lpszMessageClass;
+		uint8		unknown2[3];
+	} NEWMAIL_NOTIFICATION;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		mapi_SPropTagArray	lpPropTagArray;
+		uint32			msg_count;//fixme
+		uint8			unknown[3];
+	} obj_change;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		mapi_SPropValue_array	properties;
+		uint8			unknown[3];
+	} obj_update;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		mapi_SPropTagArray	lpPropTagArray;
+		uint32			row_idx;
+		uint32			unread_count;
+	} obj_received;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper			lpEntryID;
+		mapi_SPropTagArray	lpPropTagArray;
+	} obj_created;
+
+	typedef [flag(NDR_NOALIGN),nodiscriminant] union {
+		[case(0x0)] obj_change			change;
+		[case(0x10)] obj_change			change;
+		[case(0x20)] obj_update			update;
+		[case(0x30)] obj_received		received;
+		[case(0x80)] obj_created		created;
+		[default] [flag(NDR_REMAINING)]DATA_BLOB blob;
+	} OBJECT_TYPE;
+	
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8				type;
+		hyper				lpParentID;
+ 		[switch_is(type)]OBJECT_TYPE   	object_type;
+	} OBJECT_NOTIFICATION;
+
+
+	typedef [nodiscriminant] union {
+		[case(fnevNewMail)] NEWMAIL_NOTIFICATION	newmail;
+		[case(fnevObjectCreated)] OBJECT_NOTIFICATION	obj;
+		[default][flag(NDR_REMAINING)] DATA_BLOB data;
+	} NOTIFICATION;
+
+	/******************** EXPERIMENTAL *********************/
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown[5];
+		uint8		ulEventType;
+ 		[switch_is(ulEventType)]NOTIFICATION	info;
 	} Notify_repl;
 
 	/*************************/
@@ -1274,6 +1390,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CreateAttach)] CreateAttach_req mapi_CreateAttach;
 		[case(op_MAPI_SaveChanges)] SaveChanges_req mapi_SaveChanges;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_req mapi_GetReceiveFolder;
+		[case(op_MAPI_Advise)] Advise_req mapi_Advise;
 		[case(op_MAPI_OpenStream)] OpenStream_req mapi_OpenStream;
 		[case(op_MAPI_ReadStream)] ReadStream_req mapi_ReadStream;
 		[case(op_MAPI_WriteStream)] WriteStream_req mapi_WriteStream;
@@ -1310,6 +1427,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CreateAttach)] CreateAttach_repl mapi_CreateAttach;
 		[case(op_MAPI_SaveChanges)] SaveChanges_repl mapi_SaveChanges;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_repl mapi_GetReceiveFolder;
+		[case(op_MAPI_Advise)] Advise_repl mapi_Advise;
 		[case(op_MAPI_Notify)] Notify_repl mapi_Notify;
 		[case(op_MAPI_OpenStream)] OpenStream_repl mapi_OpenStream;
 		[case(op_MAPI_ReadStream)] ReadStream_repl mapi_ReadStream;
@@ -1371,20 +1489,30 @@ System Attendant Private Interface
 
 	/*****************/
 	/* Function 0x04 */
+
+	/*
+	  we could directly use a NOTIFKEY structure rather than
+	  a uint8 array, but this makes the IDL more robust
+	
+	  sockaddr array is made of: 
+	   - family (unsigned short in) sa_family_t
+	   - address data sa_data[14];
+	 */
+
+	typedef struct {
+		uint16		cb;
+		uint8		ab[cb];
+	} NOTIFKEY;
+
 	MAPISTATUS EcRRegisterPushNotification(
-		[in,out]	policy_handle	*handle,
-		[in] uint32	unknown1,
-		[in] uint32	len,
-		[in] uint8	payload[8],
-		[in] uint16	unknown2,
-		[in] uint16	unknown3,
-		[in] uint32	unknown4,
-		[in] uint32	unknown5,
-		[in] uint16	unknown6,
-		[in] uint16	port,
-		[in] uint8	address[4],
-		[in] uint8	unknown7[10],
-		[out, flag(NDR_REMAINING)] DATA_BLOB unknown8
+               [in,out] policy_handle	*handle,
+               [in] ulEventType ulEventMask,
+	       [in, size_is(notif_len)] uint8 notifkey[*],
+               [in] uint16 notif_len,
+	       [in] uint32 unknown2,
+	       [in, size_is(sockaddr_len)] uint8 sockaddr[*],
+	       [in] uint16 sockaddr_len,
+	       [out,ref] uint32	*retval
 		);
 
 	/*****************/

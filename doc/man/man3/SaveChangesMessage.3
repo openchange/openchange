@@ -23,42 +23,39 @@
 .\" the source, must acknowledge the copyright and authors of this work.
 .\"
 .\" Process this file with
-.\" groff -man -Tascii MAPILogonEx.3
+.\" groff -man -Tascii SaveChangesMessage.3
 .\"
 
-.TH MAPILOGONEX 3 2007-04-23 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.TH SAVECHANGESMessage 3 2007-06-01 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
 .SH NAME
-MAPILogonEx \- Create a full MAPI Session
+SaveChangesMessage \- Save all changes on a given message.
+
 .SH SYNOPSIS
 .nf
 .B #include <libmapi/libmapi.h>
 .sp
-.BI "enum MAPISTATUS MAPILogonEx(struct mapi_session **" session ", const char *" profname ");"
+.BI "enum MAPISTATUS SaveChangesMessage(mapi_object_t *" obj_parent ", mapi_object_t *" obj_child ");"
 .fi
 .SH DESCRIPTION
-This function opens the profile name set in
-.IR profname 
-and establish connections on Exchange related pipes using information
-stored in this profile. The function set a valid MAPI session pointer in
-.IR session 
-on success.
+The function saves all changes on the message specified by
+.IR obj_child .
 
 .SH RETURN VALUE
 The function returns
-.BI MAPI_E_SUCCESS 
+.BI MAPI_E_SUCCESS
 on success, otherwise -1. Developers should call
 .B GetLastError()
 to retrieve the latest MAPI error code. Possible MAPI error codes are:
 
-.BR "MAPI_E_NOT_INITIALIZED":
+.BR "MAPI_E_NOT_INITIALIZED": 
 MAPI subsystem has not been initialized
 
-.BR "MAPI_E_NOT_ENOUGH_RESOURCES": 
-MAPI subsystem failed to allocate the necessary resources to operate properly
+.BR "MAPI_E_CALL_FAILED": 
+A network problem was encountered during the transaction
 
 .SH "SEE ALSO"
-.BR MAPIInitialize (3),
-.BR MAPILogonProvider (3),
+.BR SetProps (3),
+.BR ModifyRecipients (3),
 .BR GetLastError (3)
 
 .SH AUTHOR

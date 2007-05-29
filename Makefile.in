@@ -367,10 +367,11 @@ manpages = \
 		doc/man/man3/MAPIAllocateBuffer.3			\
 		doc/man/man3/MAPIFreeBuffer.3				\
 		doc/man/man3/MAPIInitialize.3				\
-		doc/man/man3/MAPILogonEx.3				\
-		doc/man/man3/MAPILogonProvider.3			\
+		doc/man/man3/MapiLogonEx.3				\
+		doc/man/man3/MapiLogonProvider.3			\
 		doc/man/man3/MAPIUninitialize.3				\
 		doc/man/man3/ModifyRecipients.3				\
+		doc/man/man3/MonitorNotification.3			\
 		doc/man/man3/OpenAttach.3				\
 		doc/man/man3/OpenFolder.3				\
 		doc/man/man3/OpenProfile.3				\
@@ -381,16 +382,21 @@ manpages = \
 		doc/man/man3/QueryColumns.3				\
 		doc/man/man3/QueryRows.3				\
 		doc/man/man3/ReadStream.3				\
+		doc/man/man3/RegisterNotification.3			\
 		doc/man/man3/Release.3					\
 		doc/man/man3/ResolveNames.3				\
 		doc/man/man3/SaveChanges.3				\
+		doc/man/man3/SaveChangesMessage.3			\
 		doc/man/man3/SeekRow.3					\
 		doc/man/man3/SetColumns.3				\
 		doc/man/man3/SetDefaultProfile.3			\
 		doc/man/man3/SetProps.3					\
+		doc/man/man3/SetReadFlags.3				\
 		doc/man/man3/SetRecipientType.3				\
 		doc/man/man3/ShutDown.3					\
 		doc/man/man3/SubmitMessage.3				\
+		doc/man/man3/Subscribe.3				\
+		doc/man/man3/Unsubscribe.3				\
 		doc/man/man3/WriteStream.3
 
 installman:

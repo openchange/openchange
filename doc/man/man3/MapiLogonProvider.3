@@ -23,50 +23,50 @@
 .\" the source, must acknowledge the copyright and authors of this work.
 .\"
 .\" Process this file with
-.\" groff -man -Tascii GetOutboxFolder.3
+.\" groff -man -Tascii MAPILogonProvider.3
 .\"
 
-.TH GETOUTBOXFOLDER 3 2007-06-01 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.TH MAPILOGONPROVIDER 3 2007-06-01 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
 .SH NAME
-GetOutboxFolder \- Retrieves the outbox folder id from a store
+MapiLogonProvider \- Create a session on specific provider
 .SH SYNOPSIS
 .nf
 .B #include <libmapi/libmapi.h>
 .sp
-.BI "enum MAPISTATUS GetOutboxFolder(mapi_object_t *" obj_store ", mapi_id_t *" outbox_id ");"
+.BI "enum MAPISTATUS MapiLogonProvider(struct mapi_session **" session ", const char *" profname ", enum PROVIDER_ID " provider ");"
 .fi
 .SH DESCRIPTION
-The function retrieves the
-.IR outbox_id
-from
-.IR obj_store .
+This function opens the profile name set in
+.IR profname 
+and establish a connection on the provider specified with 
+.IR provider
+using information stored in this profile. The function sets a valid
+MAPI session pointer in
+.IR session 
+on success.
+
+Supported providers are:
+
+.BR PROVIDER_ID_NSPI
+.BR PROVIDER_ID_EMSMDB
 
 .SH RETURN VALUE
 The function returns
 .BI MAPI_E_SUCCESS 
 on success, otherwise -1. Developers should call
 .B GetLastError()
-to retrieve the latest MAPI error code. Possible
-MAPI error codes are:
+to retrieve the latest MAPI error code. Possible MAPI error codes are:
 
-.BR "MAPI_E_NOT_INITIALIZED": 
+.BR "MAPI_E_NOT_INITIALIZED":
 MAPI subsystem has not been initialized
 
-.BR "MAPI_E_CALL_FAILED":
-A network problem was encountered during the transaction
+.BR "MAPI_E_NOT_ENOUGH_RESOURCES": 
+MAPI subsystem failed to allocate the necessary resources to operate properly
 
 .SH "SEE ALSO"
-.BR GetDefaultFolder (3),
 .BR MAPIInitialize (3),
-.BR OpenMsgStore (3),
+.BR MAPILogonEx (3),
 .BR GetLastError (3)
-
-.SH "NOTES"
-This function is 
-.BI deprecated 
-and should be removed in next release. Please use
-.BI GetDefaultFolder()
-instead.
 
 .SH AUTHOR
 Julien Kerihuel <j.kerihuel at openchange dot org>

@@ -23,50 +23,40 @@
 .\" the source, must acknowledge the copyright and authors of this work.
 .\"
 .\" Process this file with
-.\" groff -man -Tascii GetOutboxFolder.3
+.\" groff -man -Tascii SetReadFlags.3
 .\"
 
-.TH GETOUTBOXFOLDER 3 2007-06-01 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.TH SETREADFLAGS 3 2007-04-23 "OpenChange libmapi 0.4" "OpenChange Programmer's Manual"
 .SH NAME
-GetOutboxFolder \- Retrieves the outbox folder id from a store
+SetReadFlags \- clear or set the MSGFLAG_READ flag for a given message
 .SH SYNOPSIS
 .nf
 .B #include <libmapi/libmapi.h>
 .sp
-.BI "enum MAPISTATUS GetOutboxFolder(mapi_object_t *" obj_store ", mapi_id_t *" outbox_id ");"
+.BI "enum MAPISTATUS SetReadFlags(mapi_object_t *" obj_folder ", mapi_object_t *" obj_child ", uint8_t " flags ");"
 .fi
 .SH DESCRIPTION
-The function retrieves the
-.IR outbox_id
-from
-.IR obj_store .
+This function clear or set the MSGFLAG_READ flag in the
+PR_MESSAGE_FLAGS property of a given message pointed by.
+.IR obj_child .
+
 
 .SH RETURN VALUE
 The function returns
-.BI MAPI_E_SUCCESS 
+.BI MAPI_E_SUCCESS
 on success, otherwise -1. Developers should call
 .B GetLastError()
-to retrieve the latest MAPI error code. Possible
-MAPI error codes are:
+to retrieve the latest MAPI error code. Possible MAPI error codes are:
 
 .BR "MAPI_E_NOT_INITIALIZED": 
 MAPI subsystem has not been initialized
 
-.BR "MAPI_E_CALL_FAILED":
+.BR "MAPI_E_CALL_FAILED": 
 A network problem was encountered during the transaction
 
 .SH "SEE ALSO"
-.BR GetDefaultFolder (3),
-.BR MAPIInitialize (3),
-.BR OpenMsgStore (3),
+.BR OpenMessage (3),
 .BR GetLastError (3)
-
-.SH "NOTES"
-This function is 
-.BI deprecated 
-and should be removed in next release. Please use
-.BI GetDefaultFolder()
-instead.
 
 .SH AUTHOR
 Julien Kerihuel <j.kerihuel at openchange dot org>

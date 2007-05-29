@@ -23,23 +23,28 @@
 .\" the source, must acknowledge the copyright and authors of this work.
 .\"
 .\" Process this file with
-.\" groff -man -Tascii GetOutboxFolder.3
+.\" groff -man -Tascii Unsubscribe.3
 .\"
 
-.TH GETOUTBOXFOLDER 3 2007-06-01 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.TH UNSUBSCRIBE 3 2007-06-01 "OpenChange libmapi 0.4" "OpenChange Programmer's Manual"
 .SH NAME
-GetOutboxFolder \- Retrieves the outbox folder id from a store
+Unsubscribe \- Unregister notifications on a given object
 .SH SYNOPSIS
 .nf
 .B #include <libmapi/libmapi.h>
 .sp
-.BI "enum MAPISTATUS GetOutboxFolder(mapi_object_t *" obj_store ", mapi_id_t *" outbox_id ");"
+.BI "enum MAPISTATUS Unsubscribe(uint32_t *" ulConnection ");"
 .fi
 .SH DESCRIPTION
-The function retrieves the
-.IR outbox_id
-from
-.IR obj_store .
+This function unregisters notifications on the Exchange server for the
+object specified with its connection number
+.IR ulConnection .
+The function will releases the notification on the Exchange server and
+remove the entry from the internal notifications list.
+
+The function takes a callback to execute when such notification occurs and returns the
+.IR ulConnection
+identifier we can use in further management.
 
 .SH RETURN VALUE
 The function returns
@@ -56,17 +61,10 @@ MAPI subsystem has not been initialized
 A network problem was encountered during the transaction
 
 .SH "SEE ALSO"
-.BR GetDefaultFolder (3),
-.BR MAPIInitialize (3),
-.BR OpenMsgStore (3),
+.BR RegisterNotification (3),
+.BR Subscribe (3),
+.BR MonitorNotification(3),
 .BR GetLastError (3)
-
-.SH "NOTES"
-This function is 
-.BI deprecated 
-and should be removed in next release. Please use
-.BI GetDefaultFolder()
-instead.
 
 .SH AUTHOR
 Julien Kerihuel <j.kerihuel at openchange dot org>

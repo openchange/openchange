@@ -26,7 +26,7 @@
 .\" groff -man -Tascii mapiprofile.1
 .\"
 
-.TH OPENCHANGECLIENT 1 2007-04-23 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.TH OPENCHANGECLIENT 1 2007-06-21 "OpenChange libmapi 0.4" "OpenChange Programmer's Manual"
 
 .SH NAME
 openchangeclient \- MAPI command line messaging tool
@@ -38,7 +38,7 @@ openchangeclient [-?] [-?|--help] [--usage] [-f|--database STRING]
         [-G|--storemail STRING] [-D|--deletemail] [-A|--attachments STRING]
         [-I|--html-inline STRING] [-W|--html-file STRING] [-t|--to STRING]
         [-c|--cc STRING] [-b|--bcc STRING] [-s|--subject STRING]
-        [-B|--body STRING]
+        [-B|--body STRING] [--notifications][-i|--fetch-items STRING]
 .fi
 
 .SH DESCRIPTION
@@ -58,6 +58,18 @@ Fetch Exchange user mails and dump general information on the standard output.
 .TP
 .B -G
 Store mail attachments on the local filesystem in the specified directory.
+
+.TP
+.B --fetch-items=STRING
+.TP
+.B -i
+Retrieve specific items from Exchange default folders. Possible value
+for STRING are Mail, Appointment, Contact, Task, Note.
+
+.TP
+.B --notifications
+Monitor NEWMAIL notifications in the Inbox folder and display summary
+on standard output.
 
 .TP
 .B --sendmail

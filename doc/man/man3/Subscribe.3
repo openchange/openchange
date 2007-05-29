@@ -23,23 +23,56 @@
 .\" the source, must acknowledge the copyright and authors of this work.
 .\"
 .\" Process this file with
-.\" groff -man -Tascii GetOutboxFolder.3
+.\" groff -man -Tascii Subscribe.3
 .\"
 
-.TH GETOUTBOXFOLDER 3 2007-06-01 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.TH SUBSCRIBE 3 2007-06-01 "OpenChange libmapi 0.4" "OpenChange Programmer's Manual"
 .SH NAME
-GetOutboxFolder \- Retrieves the outbox folder id from a store
+Subscribe \- Register an object to receive notifications
 .SH SYNOPSIS
 .nf
 .B #include <libmapi/libmapi.h>
 .sp
-.BI "enum MAPISTATUS GetOutboxFolder(mapi_object_t *" obj_store ", mapi_id_t *" outbox_id ");"
+.BI "typedef int (*mapi_notify_callback_t)(uint32_t, void *, void *)";
+.sp
+.BI "enum MAPISTATUS Subscribe(mapi_object_t *" obj ", uint32_t *" ulConnection ", uint32_t " ulEventMask ", mapi_notify_callback_t " notify_callback ");"
 .fi
 .SH DESCRIPTION
-The function retrieves the
-.IR outbox_id
-from
-.IR obj_store .
+This function registers notifications on the Exchange server for the object
+.IR obj .
+The function holds the notifications intended to be monitored in the
+.IR ulEventMask
+bitmask. The bitmask can take the following values:
+
+.sp
+fnevCriticalError        = 0x00000001,
+.sp
+fnevNewMail              = 0x00000002,
+.sp
+fnevObjectCreated        = 0x00000004,
+.sp
+fnevObjectDeleted        = 0x00000008,
+.sp
+fnevObjectModified       = 0x00000010,
+.sp
+fnevObjectMoved          = 0x00000020,
+.sp
+fnevObjectCopied         = 0x00000040,
+.sp
+fnevSearchComplete       = 0x00000080,
+.sp
+fnevTableModified        = 0x00000100,
+.sp
+fnevStatusObjectModified = 0x00000200,
+.sp
+fnevReservedForMapi      = 0x40000000,
+.sp
+fnevExtended             = 0x80000000
+.fi
+
+The function takes a callback to execute when such notification occurs and returns the
+.IR ulConnection
+identifier we can use in further management.
 
 .SH RETURN VALUE
 The function returns
@@ -56,17 +89,14 @@ MAPI subsystem has not been initialized
 A network problem was encountered during the transaction
 
 .SH "SEE ALSO"
-.BR GetDefaultFolder (3),
-.BR MAPIInitialize (3),
-.BR OpenMsgStore (3),
+.BR RegisterNotification (3),
+.BR Unsubscribe (3),
+.BR MonitorNotification(3),
 .BR GetLastError (3)
-
-.SH "NOTES"
-This function is 
-.BI deprecated 
-and should be removed in next release. Please use
-.BI GetDefaultFolder()
-instead.
 
 .SH AUTHOR
 Julien Kerihuel <j.kerihuel at openchange dot org>
+
+.SH "BUGS"
+This code is experimental. The current implementation only supports
+fnevNewmail and fnevCreatedObject notifications.

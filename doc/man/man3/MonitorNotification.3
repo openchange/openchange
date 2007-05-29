@@ -23,23 +23,26 @@
 .\" the source, must acknowledge the copyright and authors of this work.
 .\"
 .\" Process this file with
-.\" groff -man -Tascii GetOutboxFolder.3
+.\" groff -man -Tascii MonitorNotification.3
 .\"
 
-.TH GETOUTBOXFOLDER 3 2007-06-01 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.TH MONITORNOTIFICATION 3 2007-06-01 "OpenChange libmapi 0.4" "OpenChange Programmer's Manual"
 .SH NAME
-GetOutboxFolder \- Retrieves the outbox folder id from a store
+MonitorNotification \- Wait for notifications and process them
 .SH SYNOPSIS
 .nf
 .B #include <libmapi/libmapi.h>
 .sp
-.BI "enum MAPISTATUS GetOutboxFolder(mapi_object_t *" obj_store ", mapi_id_t *" outbox_id ");"
+.BI "enum MAPISTATUS MonitorNotification(void *" private_data ");"
 .fi
 .SH DESCRIPTION
-The function retrieves the
-.IR outbox_id
-from
-.IR obj_store .
+This function indefinively waits for notifications on the UDP port and
+generates the traffic needed to receive MAPI notifications. These MAPI
+notifications are next compared to the registered ones and the callback specified in
+.BI Subscribe()
+called if it matches.  
+
+Note that the function will loop indefinitively until an error occurs.
 
 .SH RETURN VALUE
 The function returns
@@ -56,17 +59,15 @@ MAPI subsystem has not been initialized
 A network problem was encountered during the transaction
 
 .SH "SEE ALSO"
-.BR GetDefaultFolder (3),
-.BR MAPIInitialize (3),
-.BR OpenMsgStore (3),
+.BR RegisterNotification (3),
+.BR Subscribe (3),
+.BR Unsubscribe(3),
 .BR GetLastError (3)
-
-.SH "NOTES"
-This function is 
-.BI deprecated 
-and should be removed in next release. Please use
-.BI GetDefaultFolder()
-instead.
 
 .SH AUTHOR
 Julien Kerihuel <j.kerihuel at openchange dot org>
+
+.SH "BUGS"
+This code is experimental. The current implementation is non-threaded,
+only supports fnevNewmail and fnevCreatedObject notifications and will
+block your process until you send a signal.

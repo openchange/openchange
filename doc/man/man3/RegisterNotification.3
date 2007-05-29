@@ -23,50 +23,48 @@
 .\" the source, must acknowledge the copyright and authors of this work.
 .\"
 .\" Process this file with
-.\" groff -man -Tascii MAPILogonProvider.3
+.\" groff -man -Tascii RegisterNotification.3
 .\"
 
-.TH MAPILOGONPROVIDER 3 2007-04-23 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.TH REGISTERNOTIFICATION 3 2007-06-01 "OpenChange libmapi 0.4" "OpenChange Programmer's Manual"
 .SH NAME
-MAPILogonProvider \- Create a session on specific provider
+RegisterNotification \- Initialize the notification subsytem.
+
 .SH SYNOPSIS
 .nf
 .B #include <libmapi/libmapi.h>
 .sp
-.BI "enum MAPISTATUS MAPILogonProvider(struct mapi_session **" session ", const char *" profname ", enum PROVIDER_ID " provider ");"
+.BI "enum MAPISTATUS RegisterNotification(uint32_t " ulEventMask ");"
 .fi
 .SH DESCRIPTION
-This function opens the profile name set in
-.IR profname 
-and establish a connection on the provider specified with 
-.IR provider
-using information stored in this profile. The function sets a valid
-MAPI session pointer in
-.IR session 
-on success.
-
-Supported providers are:
-
-.BR PROVIDER_ID_NSPI
-.BR PROVIDER_ID_EMSMDB
+This function initializes the notification subsystem, bind a local UDP
+port to receive Exchange notifications and notify Exchange to send
+notifications on this port.
 
 .SH RETURN VALUE
 The function returns
 .BI MAPI_E_SUCCESS 
 on success, otherwise -1. Developers should call
 .B GetLastError()
-to retrieve the latest MAPI error code. Possible MAPI error codes are:
+to retrieve the latest MAPI error code. Possible
+MAPI error codes are:
 
-.BR "MAPI_E_NOT_INITIALIZED":
+.BR "MAPI_E_NOT_INITIALIZED": 
 MAPI subsystem has not been initialized
 
-.BR "MAPI_E_NOT_ENOUGH_RESOURCES": 
-MAPI subsystem failed to allocate the necessary resources to operate properly
+.BR "MAPI_E_CALL_FAILED":
+A network problem was encountered during the transaction
 
 .SH "SEE ALSO"
-.BR MAPIInitialize (3),
-.BR MAPILogonEx (3),
+.BR Subscribe (3),
+.BR Unsubscribe (3),
+.BR MonitorNotification (3),
 .BR GetLastError (3)
 
-.SH AUTHOR
+.SH "AUTHOR"
 Julien Kerihuel <j.kerihuel at openchange dot org>
+
+.SH "BUGS"
+The .B ulEventMask should be set to 0 for the moment.
+
+

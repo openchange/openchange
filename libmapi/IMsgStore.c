@@ -149,22 +149,6 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store,
 }
 
 /**
- * Obtain the deleted items folder id.
- * No action is performed on the network
- * since we have the id from OpenMsgStore.
- */
-
-_PUBLIC_ enum MAPISTATUS GetDeletedItemsFolder(mapi_object_t *obj_store, 
-					       mapi_id_t *deleted_items_id)
-{
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	*deleted_items_id = ((mapi_object_store_t *)obj_store->private_data)->fid_deleted_items;
-
-	return MAPI_E_SUCCESS;
-}
-
-/**
  * Obtain the outbox folder id.
  * No action is performed on the network
  * since we have the id from OpenMsgStore.
@@ -176,20 +160,5 @@ _PUBLIC_ enum MAPISTATUS GetOutboxFolder(mapi_object_t *obj_store,
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	*outbox_id = ((mapi_object_store_t *)obj_store->private_data)->fid_outbox;
-	return MAPI_E_SUCCESS;
-}
-
-/**
- * Obtain the sent items folder id.
- * No action is performed on the network
- * since we have the id from OpenMsgStore.
- */
-
-_PUBLIC_ enum MAPISTATUS GetSentItemsFolder(mapi_object_t *obj_store, 
-					    mapi_id_t *sentitems_id)
-{
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	*sentitems_id = ((mapi_object_store_t *)obj_store->private_data)->fid_sent_items;
 	return MAPI_E_SUCCESS;
 }

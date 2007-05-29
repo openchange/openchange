@@ -1551,6 +1551,8 @@
 0x81ed000b  PR_Private
 0x824b0003  PR_LABEL
 0x824c0040  PR_DateCompleted
+0x824d0040  PR_DueDate
+0x824e0040  PR_StartDate
 0x824f000b  PR_Complete
 0x827b0003  PR_Status
 0x827f0005  PR_PercentComplete

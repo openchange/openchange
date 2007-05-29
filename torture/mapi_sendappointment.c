@@ -52,7 +52,6 @@ BOOL torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	uint64_t		id_calendar;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_calendar;
-	mapi_object_t		obj_table;
 	mapi_object_t		obj_message;
 	struct SPropValue	props[CN_PROPS];
 	NTTIME			nt;
@@ -80,7 +79,6 @@ BOOL torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	/* init objects */
 	mapi_object_init(&obj_store);
 	mapi_object_init(&obj_calendar);
-	mapi_object_init(&obj_table);
 
 	/* session::OpenMsgStore */
 	retval = OpenMsgStore(&obj_store);
@@ -147,7 +145,6 @@ BOOL torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return False;
 
 
-	mapi_object_release(&obj_table);
 	mapi_object_release(&obj_calendar);
 	mapi_object_release(&obj_store);
 

@@ -41,6 +41,16 @@ struct oclient {
 	struct attach		*attach;
 	uint32_t		attach_num;
 	const char		*store_folder;
+	const char		*location;
+	const char		*dtstart;
+	const char		*dtend;
+	uint32_t		busystatus;
+	uint32_t		taskstatus;
+	uint32_t		label;
+	uint32_t		priority;
+	const char		*email;
+	const char		*full_name;
+	const char		*card_name;
 };
 
 struct itemfolder {
@@ -57,6 +67,39 @@ struct itemfolder	defaultFolders[] = {
 	{0 , NULL}
 };
 
+struct oc_element {
+	uint8_t			index;
+	const char		*status;
+};
+
+struct oc_element	oc_busystatus[] = {
+	{BUSY_STATUS_FREE,		"FREE"},
+	{BUSY_STATUS_TENTATIVE,		"TENTATIVE"},
+	{BUSY_STATUS_BUSY,		"BUSY"},
+	{BUSY_STATUS_OUTOFOFFICE,	"OUTOFOFFICE"},
+	{0 , NULL}
+};
+
+struct oc_element	oc_priority[] = {
+	{PRIORITY_LOW,		"LOW"},
+	{PRIORITY_NORMAL,	"NORMAL"},
+	{PRIORITY_HIGH,		"HIGH"},
+	{0, NULL}
+};
+
+struct oc_element	oc_taskstatus[] = {
+	{olTaskNotStarted,	"NOTSTARTED"},
+	{olTaskInProgress,	"PROGRESS"},
+	{olTaskComplete,	"COMPLETED"},
+	{olTaskWaiting,		"WAITING"},
+	{olTaskDeferred,	"DEFERRED"},
+	{0, NULL}
+};
+
 #define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
+#define	DATE_FORMAT	"%Y-%m-%d %H:%M:%S"
+#define	CAL_CNPROPS	14
+#define	CONTACT_CNPROPS	5
+#define	TASK_CNPROPS	7
 
 #endif /* !__OPENCHANGECLIENT_H__ */

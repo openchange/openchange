@@ -26,7 +26,7 @@
 .\" groff -man -Tascii mapiprofile.1
 .\"
 
-.TH OPENCHANGECLIENT 1 2007-06-21 "OpenChange libmapi 0.4" "OpenChange Programmer's Manual"
+.TH OPENCHANGECLIENT 1 2007-06-01 "OpenChange libmapi 0.4" "OpenChange Programmer's Manual"
 
 .SH NAME
 openchangeclient \- MAPI command line messaging tool
@@ -38,7 +38,11 @@ openchangeclient [-?] [-?|--help] [--usage] [-f|--database STRING]
         [-G|--storemail STRING] [-D|--deletemail] [-A|--attachments STRING]
         [-I|--html-inline STRING] [-W|--html-file STRING] [-t|--to STRING]
         [-c|--cc STRING] [-b|--bcc STRING] [-s|--subject STRING]
-        [-B|--body STRING] [--notifications][-i|--fetch-items STRING]
+        [-B|--body STRING] [--notifications] [-i|--fetch-items STRING]
+        [-m|--mailbox] [--sendcontact] [--sendappointment] [--sendtask]
+        [--location STRING] [--dtstart STRING] [--dtend STRING]
+        [--busystatus STRING] [--taskstatus STRING] [--email STRING]
+        [--fullname STRING] [--cardname STRING]
 .fi
 
 .SH DESCRIPTION
@@ -67,6 +71,13 @@ Retrieve specific items from Exchange default folders. Possible value
 for STRING are Mail, Appointment, Contact, Task, Note.
 
 .TP
+.B --mailbox=STRING
+.TP
+.B -m
+Display the user mailbox folder hierarchy with folder names, its
+container class, unread and total number of items.
+
+.TP
 .B --notifications
 Monitor NEWMAIL notifications in the Inbox folder and display summary
 on standard output.
@@ -76,6 +87,18 @@ on standard output.
 .TP
 .B -S
 Send a mail to a user whom belongs to the Exchange organization.
+
+.TP
+.B --sendappointment
+Create an appointment in the default Calendar folder
+
+.TP
+.B --sendcontact
+Create a contact in the default contact folder
+
+.TP
+.B --sendtask
+Create a task in the default task folder
 
 .TP
 .B --deletemail
@@ -159,6 +182,46 @@ Specify
 recipients for the mail. Usernames needs to be separated with commas
 as specified in the example above.
 
+.TP
+.B --location=STRING
+Specify the appointment location
+
+.TP
+.B --dtstart=STRING
+Specify the start date of an event. The following dat format need to be used:
+.B "%Y-%m-%d %H:%M:%S"
+e.g: 2007-06-01 14:59:00
+
+.TP
+.B --dtend=STRING
+Specify either the end date or due date of an event. The following dat
+format need to be used:
+.B "%Y-%m-%d %H:%M:%S"
+e.g: 2007-06-01 14:59:00
+When no
+.B dtend
+parameter is specified, default value is set to
+.B dtstart
+
+.TP
+.B --busystatus=STRING
+Set the busy status of an appointment. Possible values are FREE,
+TENTATIVE, BUSY or OUTOFOFFICE
+
+.TP
+.B --taskstatus=STRING
+Set the status of a task. Possible values are NOTSTARTED, PROGRESS,
+COMPLETED, WAITING, DEFERRED
+
+.TP
+.B --fullname=STRING
+Set the full name in a contact message
+
+.TP
+.B --cardname=STRING
+Set the card name of a task or contact message
+
+
 .SH EXAMPLES
 
 .B Fetching emails:
@@ -227,6 +290,55 @@ openchangeclient --database=/tmp/profiles.ldb --profile=2000
 
 The example above will send a UTF8 body mail to Administrator and
 attach file1,jpg, file2.jpg and file3.jpg to the email.
+
+
+.B Fetch calendar items:
+.nf
+openchangeclient --fetch-items=Calendar
+.fi
+
+
+.B Fetch contact items:
+.nf
+openchangeclient --fetch-items=Contact
+.fi
+
+
+.B Fetch task items:
+.nf
+openchangeclient --fetch-items=Task
+.fi
+
+
+.B Create appointment:
+.nf
+openchangeclient --sendappointment --dtstart="2007-06-01 22:00:00" \\
+                 --dtend="2007-06-01 22:35:00"                     \\
+                 --busystatus=FREE                                 \\
+                 --location="Home"                                 \\
+                 --subject="Check the Junk folder"
+.fi
+
+
+.B Create Task:
+.nf
+openchangeclient --sendtask --dtstart="2007-06-01 18:00:00"        \\
+                 --cardname="openchangeclient" --priority=HIGH     \\
+                 --taskstatus=COMPLETED
+.fi
+
+
+.B Create contact:
+.nf
+openchangeclient --sendcontact --cardname="openchangeclient"       \\
+                 --fullname="OpenChange Client 3rd"                \\
+                 --email="openchangeclient@nonexistentdomain.com"  
+.fi
+
+.B List Mailbox hierarchy:
+.nf
+openchangeclient --mailbox
+.fi
 
 .SH AUTHOR
 Julien Kerihuel <j.kerihuel at openchange dot org>

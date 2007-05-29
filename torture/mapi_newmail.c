@@ -31,7 +31,7 @@
 #include <samba/popt.h>
 
 
-static uint32_t callback(uint32_t ulEventType, void *notif_data, void *private_data)
+static int callback(uint32_t ulEventType, void *notif_data, void *private_data)
 {
 	struct NEWMAIL_NOTIFICATION	*newmail;
 

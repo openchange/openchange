@@ -47,7 +47,7 @@ all: 	gen_ndr gen_ndr/ndr_exchange.h proto.h			\
 
 install: all installman
 	@echo "Installing OpenChange plugin"
-	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/libmapi $(DESTDIR)$(includedir)/gen_ndr
+	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/libmapi $(DESTDIR)$(includedir)/libmapi/socket $(DESTDIR)$(includedir)/gen_ndr
 	mkdir -p $(DESTDIR)$(TORTURE_MODULESDIR)
 	mkdir -p $(DESTDIR)$(SERVER_MODULESDIR)
 	cp bin/schemaIDGUID $(DESTDIR)$(bindir)
@@ -73,11 +73,13 @@ install: all installman
 	cp libmapi/mapi_ctx.h $(DESTDIR)$(includedir)/libmapi/
 	cp libmapi/mapi_provider.h $(DESTDIR)$(includedir)/libmapi/
 	cp libmapi/mapi_handles.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/mapi_notification.h $(DESTDIR)$(includedir)/libmapi/
 	cp libmapi/mapi_object.h $(DESTDIR)$(includedir)/libmapi/
 	cp libmapi/mapi_profile.h $(DESTDIR)$(includedir)/libmapi/
 	cp libmapi/mapidefs.h $(DESTDIR)$(includedir)/libmapi/
 	cp libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
 	cp libmapi/property.h $(DESTDIR)$(includedir)/libmapi/
+	cp libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
 	cp gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	@echo "OpenChange plugin installed"
 

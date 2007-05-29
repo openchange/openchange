@@ -973,7 +973,7 @@ static BOOL openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	return True;
 }
 
-static mapi_notify_callback_t callback(uint32_t ulEventType, void *notif_data, void *private_data)
+static uint32_t callback(uint32_t ulEventType, void *notif_data, void *private_data)
 {
 	struct NEWMAIL_NOTIFICATION	*newmail;
 

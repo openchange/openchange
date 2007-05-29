@@ -1,0 +1,83 @@
+.\" OpenChange Project Libraries Man Pages
+.\"
+.\" This manpage is Copyright (C) 2007 Julien Kerihuel;
+.\"
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of this
+.\" manual under the conditions for verbatim copying, provided that the
+.\" entire resulting derived work is distributed under the terms of a
+.\" permission notice identical to this one.
+.\" 
+.\" Since the OpenChange and Samba4 libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+.\" responsibility for errors or omissions, or for damages resulting from
+.\" the use of the information contained herein.  The author(s) may not
+.\" have taken the same level of care in the production of this manual,
+.\" which is licensed free of charge, as they might when working
+.\" professionally.
+.\" 
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\"
+.\" Process this file with
+.\" groff -man -Tascii GetDefaultFolder.3
+.\"
+
+.TH GETDEFAULTFOLDER 3 2007-06-01 "OpenChange libmapi 0.4" "OpenChange Programmer's Manual"
+.SH NAME
+GetDefaultFolder \- Retrieves the folder id for the specified default folder
+.SH SYNOPSIS
+.nf
+.B #include <libmapi/libmapi.h>
+.sp
+#define	olFolderTopInformationStore      1
+#define	olFolderDeletedItems             3
+#define	olFolderOutbox                   4
+#define	olFolderSentMail                 5
+#define	olFolderInbox                    6
+#define	olFolderCalendar                 9
+#define	olFolderContacts                10
+#define	olFolderJournal                 11
+#define	olFolderNotes                   12
+#define	olFolderTasks                   13
+#define	olFolderDrafts                  16
+#define	olPublicFoldersAllPublicFolders 18
+#define	olFolderConflicts               19
+#define	olFolderSyncIssues              20
+#define	olFolderLocalFailures           21
+#define	olFolderServerFailures          22
+#define	olFolderJunk                    23
+.sp
+.BI "enum MAPISTATUS GetDefaultFolder(mapi_object_t *" obj_store ", mapi_id_t *" fid ", const uint32_t olFolder);"
+.fi
+.SH DESCRIPTION
+This function searches for the default folder specified in
+.B olFolder
+and returns the associated folder id in
+.B fid.
+
+
+.SH RETURN VALUE
+The function returns
+.BI MAPI_E_SUCCESS 
+on success, otherwise -1. Developers should call
+.B GetLastError()
+to retrieve the latest MAPI error code. Possible
+MAPI error codes are:
+
+.BR "MAPI_E_NOT_INITIALIZED": 
+MAPI subsystem has not been initialized
+
+.BR "MAPI_E_NOT_FOUND":
+The specified folder could not be found or not is not yet supported.
+
+.SH "SEE ALSO"
+.BR MAPIInitialize (3),
+.BR OpenMsgStore (3),
+.BR GetLastError (3)
+
+.SH AUTHOR
+Julien Kerihuel <j.kerihuel at openchange dot org>

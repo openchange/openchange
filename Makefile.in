@@ -353,7 +353,9 @@ manpages = \
 		doc/man/man3/EmptyFolder.3				\
 		doc/man/man3/GetAttachmentTable.3			\
 		doc/man/man3/GetContentsTable.3				\
+		doc/man/man3/GetDefaultFolder.3				\
 		doc/man/man3/GetDefaultProfile.3			\
+		doc/man/man3/GetFolderItemsCount.3			\
 		doc/man/man3/GetHierarchyTable.3			\
 		doc/man/man3/GetLastError.3				\
 		doc/man/man3/GetOutboxFolder.3				\

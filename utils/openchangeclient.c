@@ -988,6 +988,14 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
 	return lpProps[0].value.lpszA;
 }
 
+static char *utf8tolinux(TALLOC_CTX *mem_ctx, const char *wstring)
+{
+	char		*newstr;
+
+	newstr = windows_to_utf8(mem_ctx, wstring);
+	return newstr;
+}
+
 static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
 {
 	enum MAPISTATUS		retval;
@@ -997,6 +1005,7 @@ static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		rowset;
 	const char	       	*name;
+	char			*newname;
 	const char	       	*comment;
 	uint32_t	       	*total;
 	uint32_t	       	*unread;
@@ -1036,8 +1045,10 @@ static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 			for (i = 0; i < count; i++) {
 				printf("|   ");
 			}
-			printf("|---+ %-15s : %-20s (Total: %d / Unread: %d - Container class: %s)\n", name, comment, *total, *unread,
+			newname = utf8tolinux(mem_ctx, name);
+			printf("|---+ %-15s : %-20s (Total: %d / Unread: %d - Container class: %s)\n", newname, comment, *total, *unread,
 			       get_container_class(mem_ctx, parent, *fid));
+			MAPIFreeBuffer(newname);
 			if (*child) {
 				ret = get_child_folders(mem_ctx, &obj_folder, *fid, count + 1);
 				if (ret == False) return ret;
@@ -1056,6 +1067,7 @@ static BOOL openchangeclient_mailbox(TALLOC_CTX *mem_ctx, struct mapi_session *s
 	struct SPropValue		*lpProps;
 	uint32_t			cValues;
 	const char			*mailbox_name;
+	char				*utf8_mailbox_name;
 
 	/* Retrieve the mailbox folder name */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME);
@@ -1073,7 +1085,9 @@ static BOOL openchangeclient_mailbox(TALLOC_CTX *mem_ctx, struct mapi_session *s
 	retval = GetDefaultFolder(obj_store, &id_mailbox, olFolderTopInformationStore);
 	if (retval != MAPI_E_SUCCESS) return False;
 
-	printf("+ %s\n", mailbox_name);
+	utf8_mailbox_name = utf8tolinux(mem_ctx, mailbox_name);
+	printf("+ %s\n", utf8_mailbox_name);
+	MAPIFreeBuffer(utf8_mailbox_name);
 	return get_child_folders(mem_ctx, obj_store, id_mailbox, 0);
 }
 

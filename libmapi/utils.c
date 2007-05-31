@@ -96,3 +96,21 @@ _PUBLIC_ struct SBinary *generate_recipient_entryid(TALLOC_CTX *mem_ctx, const c
 	return entryid;
 }
 
+/**
+ * convert utf8 windows string into classic utf8
+ * NOTE: windows utf8 encoding is equal or larger to classic utf8
+ *       we should anyway find a better way to allocate the output buf
+ */
+
+int yyparse_utf8(char *, const char *);
+
+_PUBLIC_ char *windows_to_utf8(TALLOC_CTX *mem_ctx, const char *input)
+{
+	char	*output;
+
+	if (!input) return NULL;
+
+	output = talloc_size(mem_ctx, strlen(input) + 1);
+	yyparse_utf8(output, input);
+	return output;
+}

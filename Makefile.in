@@ -2,6 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@samba.org>, 2005.
 
 CC=@CC@
+LEX=@LEX@
 CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3
 PIDL=@PIDL@
 PERL=@PERL@
@@ -33,7 +34,8 @@ LIBS+=@SAMBA_LIBS@
 CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
 LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 
-all: 	gen_ndr gen_ndr/ndr_exchange.h proto.h			\
+all: 	libmapi/utf8_convert.yy.c				\
+	gen_ndr gen_ndr/ndr_exchange.h proto.h			\
 	torture_proto.h	providers_proto.h dcesrv_proto.h	\
 	libmapi.$(SHLIBEXT)					\
 	bin/schemaIDGUID					\
@@ -128,6 +130,10 @@ torture/openchange.$(SHLIBEXT):	torture/testjoin_exchange.o	\
 	@echo "Compiling $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -lmapi
 
+libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
+	@echo "Generating $@"
+	@$(LEX) -t $< > $@
+
 server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.o server/dcesrv_exchange.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. -lmapi $(LIBS)
@@ -207,6 +213,7 @@ realdistclean: distclean
 clean:
 	rm -f libmapi/generated/*
 	rm -f libmapi/*.o
+	rm -f libmapi/utf8_convert.yy.c
 	rm -f libmapi/tests/*.o
 	rm -f libmapi/util/*.o
 	rm -f tests/*.o
@@ -330,7 +337,8 @@ libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
 			gen_ndr/ndr_exchange.o				\
 			gen_ndr/ndr_exchange_c.o			\
 			libmapi/socket/interface.o			\
-			libmapi/socket/netif.o				
+			libmapi/socket/netif.o				\
+			libmapi/utf8_convert.yy.c
 	@echo "Compiling $<"
 	@$(CC) $(DSOOPT) -o $@ $^ $(LIBS)
 

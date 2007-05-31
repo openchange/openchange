@@ -7,6 +7,8 @@ AC_CONFIG_HEADER([config.h])
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 AC_PROG_CC
+AC_PROG_LEX
+AC_PROG_YACC
 
 dnl ***********************
 dnl Check for PERL

@@ -42,12 +42,15 @@ openchangeclient [-?] [-?|--help] [--usage] [-f|--database STRING]
         [-m|--mailbox] [--sendcontact] [--sendappointment] [--sendtask]
         [--location STRING] [--dtstart STRING] [--dtend STRING]
         [--busystatus STRING] [--taskstatus STRING] [--email STRING]
-        [--fullname STRING] [--cardname STRING]
+        [--fullname STRING] [--cardname STRING] [--debuglevel STRING]
+	[--dump-data]
 .fi
 
 .SH DESCRIPTION
 openchangeclient is a MAPI command line tool designed to facilitate
-mail send, receive and delete operations using the MAPI protocol.
+mail send, receive and delete operations using the MAPI protocol. It
+also provides operations on tasks, contacts (address book) and calendar
+operations.
 
 .SH COMMANDS
 
@@ -74,8 +77,9 @@ for STRING are Mail, Appointment, Contact, Task, Note.
 .B --mailbox=STRING
 .TP
 .B -m
-Display the user mailbox folder hierarchy with folder names, its
-container class, unread and total number of items.
+Display the user mailbox folder hierarchy with folder names, folder
+comments, the folder type, number of unread items in the folder 
+and total number of items in the folder.
 
 .TP
 .B --notifications
@@ -119,7 +123,9 @@ Set the MAPI profile database. If no database is specified, then openchangeclien
 .B --profile=PROFILE
 .TP
 .B -p
-Set the profile to use. If no profile is specified for any operations different from create or delete, then the default profile is used if it exists.
+Set the profile to use. If a profile is not specified, and one of the 
+profiles has been set as the default in the profile database 
+(for example, using mapiprofile -S), then that default profile will be used.
 
 .TP
 .B --attachments="ATTACHMENT1;ATTACHMENT2"
@@ -128,32 +134,38 @@ Set the profile to use. If no profile is specified for any operations different 
 Set attachments to send when sending a mail. Attached filenames need
 to be separated with
 .B semi-colons
-as specified in the description above.
+as specified in the description above. This is only meaningful with
+.B --sendmail
 
 .TP
 .B --subject=STRING
 .TP
 .B -s
 Specify the mail subject. If no subject is specified, the mail subject will be empty.
+This is only meaningful with
+.B --sendmail
 
 .TP
 .B --body=STRING
 .TP
 .B -B
 Set the body with the UTF8 text only content specified on the command
-line.
+line. This is only meaningful with
+.B --sendmail
 
 .TP
 .B --html-inline=STRING
 .TP
 .B -I
-Set the body with the HTML content specified on command line.
+Set the body with the HTML content specified on command line. This is only meaningful with
+.B --sendmail
 
 .TP
 .B --html-file=FILENAME
 .TP
 .B -W
-Set the body with the content of the specified file.
+Set the body with the content of the specified file. This is only meaningful with
+.B --sendmail
 
 .TP
 .B --to="USERNAME1,USERNAME2"
@@ -162,7 +174,8 @@ Set the body with the content of the specified file.
 Specify
 .B To
 recipients for the mail. Usernames needs to be separated with commas
-as specified in the example above.
+as specified in the example above. This is only meaningful with
+.B --sendmail
 
 .TP
 .B --cc="USERNAME1,USERNAME2"
@@ -171,7 +184,8 @@ as specified in the example above.
 Specify
 .B Cc
 recipients for the mail. Usernames needs to be separated with commas
-as specified in the example above.
+as specified in the example above. This is only meaningful with
+.B --sendmail
 
 .TP
 .B --bcc="USERNAME1,USERNAME2"
@@ -180,17 +194,22 @@ as specified in the example above.
 Specify
 .B Bcc
 recipients for the mail. Usernames needs to be separated with commas
-as specified in the example above.
+as specified in the example above. This is only meaningful with
+.B --sendmail
 
 .TP
 .B --location=STRING
-Specify the appointment location
+Specify the appointment location. This is only meaningful with
+.B --sendappointment
 
 .TP
 .B --dtstart=STRING
 Specify the start date of an event. The following dat format need to be used:
 .B "%Y-%m-%d %H:%M:%S"
-e.g: 2007-06-01 14:59:00
+e.g: 2007-06-01 14:59:00. This is only meaningful with
+.B --sendappointment
+and
+.B --sendtask
 
 .TP
 .B --dtend=STRING
@@ -202,24 +221,44 @@ When no
 .B dtend
 parameter is specified, default value is set to
 .B dtstart
+This is only meaningful with
+.B --sendappointment
+and
+.B --sendtask
 
 .TP
 .B --busystatus=STRING
 Set the busy status of an appointment. Possible values are FREE,
-TENTATIVE, BUSY or OUTOFOFFICE
+TENTATIVE, BUSY or OUTOFOFFICE. This is only meaningful with
+.B --sendappointment
 
 .TP
 .B --taskstatus=STRING
 Set the status of a task. Possible values are NOTSTARTED, PROGRESS,
-COMPLETED, WAITING, DEFERRED
+COMPLETED, WAITING, DEFERRED. This is only meaningful with
+.B --sendtask
 
 .TP
 .B --fullname=STRING
-Set the full name in a contact message
+Set the full name in a contact message. This is only meaningful with
+.B --sendcontact
 
 .TP
 .B --cardname=STRING
-Set the card name of a task or contact message
+Set the card name of a task or contact message. This is only meaningful with
+.B --sendcontact
+or
+.B --sendtask
+
+.TP
+.B --dump-data
+Display raw format data associated with the operation. You normally only
+need this when debugging.
+
+.TP
+.B --debug-level=LEVEL
+Display debugging information at the specified level (or higher). Level
+10 is a lot of debug information.
 
 
 .SH EXAMPLES
@@ -234,8 +273,11 @@ openchangeclient --database=/tmp/profiles.ldb --profile=2000 --fetchmail
 openchangeclient --database=/tmp/profiles.ldb --profile=2000 --fetchmail --storemail=test
 .fi
 
-All attachments from any mails with indistinctly be stored in the test
-directory. If test doesn't exist, it will automatically be created.
+All attachments from any mails will be stored in the test
+directory. If the specified directory does not exist, it will
+automatically be created. Note that if the attachment name
+is not unique amongst all emails, some attachments may be 
+overwritten. 
 
 
 .B Send a basic email:

@@ -49,6 +49,18 @@ _PUBLIC_ struct SPropTagArray *set_SPropTagArray(TALLOC_CTX *mem_ctx,
 	return SPropTag;
 }
 
+_PUBLIC_ void *get_SPropValue(struct SPropValue *lpProps, uint32_t ulPropTag)
+{
+	uint32_t	i;
+
+	for (i = 0; lpProps[i].ulPropTag; i++) {
+		if (ulPropTag == lpProps[i].ulPropTag) {
+			return get_SPropValue_data(&lpProps[i]);
+		}
+	}
+	return NULL;
+}
+
 _PUBLIC_ struct SPropValue *get_SPropValue_SRowSet(struct SRowSet *RowSet, 
 						   uint32_t ulPropTag)
 {

@@ -3,6 +3,7 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 datadir=@datadir@
+datarootdir=@prefix@/share
 
 Name: MAPI
 Description: MAPI Protocol Implementation

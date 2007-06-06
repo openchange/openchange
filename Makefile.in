@@ -15,7 +15,7 @@ libdir=@libdir@
 datarootdir=@datarootdir@
 datadir=@datadir@
 includedir=@includedir@
-mandir=@mandir@
+mandir=${prefix}/man
 
 top_builddir=${PWD}
 
@@ -107,6 +107,7 @@ re: clean install
 torture/openchange.$(SHLIBEXT):	torture/testjoin_exchange.o	\
 				torture/nspi_profile.o		\
 				torture/nspi_resolvenames.o	\
+				torture/mapi_copymail.o		\
 				torture/mapi_prop.o		\
 				torture/mapi_folder.o		\
 				torture/mapi_table.o		\
@@ -291,6 +292,7 @@ torture_proto.h:
 	torture/mapi_sendattach.c 	\
 	torture/mapi_folder.c		\
 	torture/mapi_table.c		\
+	torture/mapi_copymail.c		\
 	torture/mapi_prop.c		\
 	torture/mapi_message.c		\
 	torture/mapi_fetchattach.c	\

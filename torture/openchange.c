@@ -41,6 +41,7 @@ NTSTATUS init_module(void)
 	torture_suite_add_simple_test(suite, "MAPI-SENDATTACH", torture_rpc_mapi_sendattach);
         torture_suite_add_simple_test(suite, "MAPI-DELETEMAIL", torture_rpc_mapi_deletemail);
         torture_suite_add_simple_test(suite, "MAPI-NEWMAIL", torture_rpc_mapi_newmail);
+	torture_suite_add_simple_test(suite, "MAPI-COPYMAIL", torture_rpc_mapi_copymail);
 	/* MAPI calendar torture tests */
 	torture_suite_add_simple_test(suite, "MAPI-FETCHAPPOINTMENT", torture_rpc_mapi_fetchappointment);
 	torture_suite_add_simple_test(suite, "MAPI-SENDAPPOINTMENT", torture_rpc_mapi_sendappointment);

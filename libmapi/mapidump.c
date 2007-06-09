@@ -69,6 +69,15 @@ _PUBLIC_ void mapidump_SPropTagArray(struct SPropTagArray *proptags)
 	}
 }
 
+_PUBLIC_ void mapidump_SRowSet(struct SRowSet *SRowSet, const char *sep)
+{
+	uint32_t		i;
+
+	for (i = 0; i < SRowSet->cRows; i++) {
+		mapidump_SRow(&(SRowSet->aRow[i]), sep);
+	}
+}
+
 _PUBLIC_ void mapidump_SRow(struct SRow *aRow, const char *sep)
 {
 	uint32_t		i;

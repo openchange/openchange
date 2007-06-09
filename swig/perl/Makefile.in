@@ -1,0 +1,65 @@
+#Makefile for libmapi Perl bindings
+#Writen by Julien Kerihuel <j.kerihuel@openchange.org>, 2007.
+
+CC=@CC@
+CFLAGS=@CFLAGS@  `perl -MExtUtils::Embed -e ccopts` -D_SAMBA_UTIL_H_
+SWIG=@SWIG@
+DSOOPT=-shared -fPIC
+PERL5DIR=@PERL5DIR@
+
+top_builddir=@top_builddir@
+
+# Portability hack...
+CFLAGS+=-Duint_t="unsigned int" 
+
+CFLAGS+=@SAMBA_CFLAGS@
+LIBS+=@SAMBA_LIBS@
+
+CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
+LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
+
+CFLAGS+=-I$(top_builddir)
+
+# This value should be determined by configure at some point
+SHLIBEXT=so
+
+
+all:	mapi_wrap.c			\
+	mapi.$(SHLIBEXT)
+
+clean:
+	rm -f *.o
+	rm -f *.pm
+	rm -f mapi_wrap.c
+
+distclean: clean
+	rm -f *.so
+
+realdistclean: distclean
+	rm -f Makefile
+
+install: all
+	cp mapi.pm $(PERL5DIR)
+	cp mapi.so $(PERL5DIR)
+
+uninstall:
+	rm -f $(PERL5DIR)/mapi.pm
+	rm -f $(PERL5DIR)/mapi.so
+
+mapi_wrap.c: mapi.i
+	@echo "Swigify $<"
+	@$(SWIG) -perl5 $<
+
+.c.o:
+	@echo "Compiling $<"
+	@$(CC) $(CFLAGS) -DDEFAULT_LDIF=\"$(DESTDIR)$(datadir)/setup\" -c $< -o $@
+
+
+mapi.$(SHLIBEXT): 	mapi_wrap.o				\
+			lwmapi.o				\
+			../../libmapi/utf8_convert.yy.o		\
+			../../libmapi/*.o			\
+			../../gen_ndr/*.o			\
+			../../*.o
+	@echo "Compiling $<"
+	@$(CC) -o $@ $(DSOOPT) $^ $(LIBS)

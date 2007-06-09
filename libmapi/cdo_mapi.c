@@ -33,15 +33,15 @@ struct mapi_ctx *global_mapi_ctx = NULL;
  */
 
 _PUBLIC_ enum MAPISTATUS MapiLogonEx(struct mapi_session **session, 
-				     const char *profname)
+				     const char *profname, const char *password)
 {
 	struct mapi_session	*tmp_session = NULL;
 	enum MAPISTATUS		retval;
 
-	retval = MapiLogonProvider(&tmp_session, profname, PROVIDER_ID_NSPI);
+	retval = MapiLogonProvider(&tmp_session, profname, password, PROVIDER_ID_NSPI);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
-	retval = MapiLogonProvider(&tmp_session, profname, PROVIDER_ID_EMSMDB);
+	retval = MapiLogonProvider(&tmp_session, profname, password, PROVIDER_ID_EMSMDB);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
 	*session = tmp_session;
@@ -54,7 +54,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonEx(struct mapi_session **session,
  */
 
 _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
-					   const char *profname,
+					   const char *profname, const char *password,
 					   enum PROVIDER_ID provider)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -80,7 +80,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 		profile = talloc_zero(mem_ctx, struct mapi_profile);
 		MAPI_RETVAL_IF(!profile, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
-		status = OpenProfile(profile, profname);
+		status = OpenProfile(profile, profname, password);
 		if (status != MAPI_E_SUCCESS) return status;
 		
 		status = LoadProfile(profile);

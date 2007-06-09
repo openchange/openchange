@@ -22,6 +22,14 @@ top_builddir=${PWD}
 TORTURE_MODULESDIR=@TORTURE_MODULESDIR@
 SERVER_MODULESDIR=${prefix}/modules/dcerpc_server
 
+# SWIG
+SWIGDIRS-ALL=@SWIGDIRSALL@
+SWIGDIRS-INSTALL=@SWIGDIRSINSTALL@
+SWIGDIRS-UNINSTALL=@SWIGDIRSUNINSTALL@
+SWIGDIRS-CLEAN=@SWIGDIRSCLEAN@
+SWIGDIRS-DISTCLEAN=@SWIGDIRSDISTCLEAN@
+SWIGDIRS-REALDISTCLEAN=@SWIGDIRSREALDISTCLEAN@
+
 # This value should be determined by configure at some point
 SHLIBEXT=so
 
@@ -45,9 +53,10 @@ all: 	libmapi/utf8_convert.yy.c				\
 	bin/locale_codepage					\
 	torture/openchange.$(SHLIBEXT)				\
 	server/dcesrv_exchange.$(SHLIBEXT)			\
-	server/dcesrv_exchange_remote.$(SHLIBEXT)
+	server/dcesrv_exchange_remote.$(SHLIBEXT)		\
+	$(SWIGDIRS-ALL)
 
-install: all installman
+install: all installman $(SWIGDIRS-INSTALL)
 	@echo "Installing OpenChange plugin"
 	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/libmapi $(DESTDIR)$(includedir)/libmapi/socket $(DESTDIR)$(includedir)/gen_ndr
 	mkdir -p $(DESTDIR)$(TORTURE_MODULESDIR)
@@ -85,7 +94,7 @@ install: all installman
 	cp gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	@echo "OpenChange plugin installed"
 
-uninstall:
+uninstall: $(SWIGDIRS-UNINSTALL)
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapi.pc
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
 	rm -f $(DESTDIR)$(bindir)/mapiprofile
@@ -198,20 +207,20 @@ bin/exchange2mbox:	utils/exchange2mbox.o				\
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS)
 
-distclean: clean
+distclean: clean $(SWIGDIRS-DISTCLEAN)
 	rm -rf autom4te.cache
 	rm -f libmapi.pc
 	rm -f Makefile config.status config.log
 	rm -f intltool-extract intltool-merge intltool-update
 
-realdistclean: distclean
+realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
 	rm -f libmapi.so
 	rm -f torture/openchange.so
 	rm -f server/dcesrv_exchange.so
 	rm -f server/dcesrv_exchange_remote.so
 	rmdir gen_ndr
 
-clean:
+clean:	$(SWIGDIRS-CLEAN)
 	rm -f libmapi/generated/*
 	rm -f libmapi/*.o
 	rm -f libmapi/utf8_convert.yy.c
@@ -423,7 +432,29 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
+swigperl-all:
+	@echo "Creating Perl bindings ..."
+	@cd swig/perl && $(MAKE) all
+
+swigperl-install:
+	@echo "Install Perl bindings ..."
+	@cd swig/perl && $(MAKE) install
+
+swigperl-uninstall:
+	@echo "Uninstall Perl bindings ..."
+	@cd swig/perl && $(MAKE) uninstall
+
+swigperl-realdistclean:
+	@cd swig/perl && $(MAKE) realdistclean
+
+swigperl-distclean:
+	@cd swig/perl && $(MAKE) distclean
+
+swigperl-clean:
+	@echo "Cleaning Perl bindings ..."
+	@cd swig/perl && $(MAKE) clean
+
 .PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h
 
-Makefile: Makefile.in config.status
+Makefile: Makefile.in swig/perl/Makefile.in config.status
 	./config.status

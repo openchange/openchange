@@ -117,7 +117,7 @@ BOOL torture_rpc_nspi_profile(struct torture_context *torture)
 		const char *username = cli_credentials_get_username(cmdline_credentials);
 		const char *password = cli_credentials_get_password(cmdline_credentials);
 		
-		retval = CreateProfile(profname, username, password);
+		retval = CreateProfile(profname, username, password, 0);
 		mapi_errstr("CreateProfile", GetLastError());
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Unable to create %s profile\n", profname));

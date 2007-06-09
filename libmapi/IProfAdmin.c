@@ -35,7 +35,7 @@
 static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 					struct ldb_context *ldb_ctx,
 					struct mapi_profile *profile,
-					const char *profname)
+					const char *profname, const char *password)
 {
 	int			ret;
 	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
@@ -66,7 +66,7 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	msg = res->msgs[0];
 
 	profile->username = ldb_msg_find_attr_as_string(msg, "username", NULL);
-	profile->password = ldb_msg_find_attr_as_string(msg, "password", "");
+	profile->password = password ? password : ldb_msg_find_attr_as_string(msg, "password", "");
 	profile->workstation = ldb_msg_find_attr_as_string(msg, "workstation", NULL);
 	profile->realm = ldb_msg_find_attr_as_string(msg, "realm", NULL);
 	profile->domain = ldb_msg_find_attr_as_string(msg, "domain", NULL);
@@ -77,6 +77,8 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	profile->codepage = ldb_msg_find_attr_as_int(msg, "codepage", 0);
 	profile->language = ldb_msg_find_attr_as_int(msg, "language", 0);
 	profile->method = ldb_msg_find_attr_as_int(msg, "method", 0);
+
+	if (!profile->password) return MAPI_E_INVALID_PARAMETER;
 
 	return MAPI_E_SUCCESS;
 }
@@ -515,7 +517,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
  * Open a MAPI Profile
  */
 
-_PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_profile *profile, const char *profname)
+_PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_profile *profile, const char *profname, const char *password)
 {
 	TALLOC_CTX	*mem_ctx;
 	enum MAPISTATUS	retval;
@@ -525,7 +527,8 @@ _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_profile *profile, const char *p
 	mem_ctx = (TALLOC_CTX *) global_mapi_ctx->session;
 	
 	/* find the profile in ldb store */
-	retval = ldb_load_profile(mem_ctx, global_mapi_ctx->ldb_ctx, profile, profname);
+	retval = ldb_load_profile(mem_ctx, global_mapi_ctx->ldb_ctx, profile, profname, password);
+
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;	
@@ -570,7 +573,7 @@ _PUBLIC_ enum MAPISTATUS ShutDown(struct mapi_profile *profile)
  * Create a MAPI Profile
  */
 _PUBLIC_ enum MAPISTATUS CreateProfile(const char *profile, const char *username,
-				       const char *password)
+				       const char *password, uint32_t flag)
 {
 	enum MAPISTATUS retval;
 	TALLOC_CTX	*mem_ctx;
@@ -582,7 +585,9 @@ _PUBLIC_ enum MAPISTATUS CreateProfile(const char *profile, const char *username
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	retval = mapi_profile_add_string_attr(profile, "username", username);
-	retval = mapi_profile_add_string_attr(profile, "password", password);
+	if (flag != PROFILE_NOPASSWORD) {
+		retval = mapi_profile_add_string_attr(profile, "password", password);
+	}
 	talloc_free(mem_ctx);
 
 	return retval;
@@ -665,8 +670,8 @@ _PUBLIC_ enum MAPISTATUS SetDefaultProfile(const char *profname, uint32_t flags)
 	mem_ctx = talloc_init("SetDefaultProfile");
 
 	/* open profile */
-	retval = ldb_load_profile(mem_ctx, global_mapi_ctx->ldb_ctx, &profile, profname);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	retval = ldb_load_profile(mem_ctx, global_mapi_ctx->ldb_ctx, &profile, profname, NULL);
+	MAPI_RETVAL_IF(retval && retval != MAPI_E_INVALID_PARAMETER, retval, mem_ctx);
 
 	/* search any previous default profile and unset it */
 	retval = ldb_clear_default_profile(mem_ctx);

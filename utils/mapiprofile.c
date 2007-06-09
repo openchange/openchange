@@ -74,7 +74,8 @@ getentry:
 static void mapiprofile_create(const char *profdb, const char *profname,
 			       const char *pattern, const char *username, 
 			       const char *password, const char *address, 
-			       const char *workstation, const char *domain)
+			       const char *workstation, const char *domain,
+			       uint32_t flags)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
@@ -85,7 +86,7 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 		exit (1);
 	}
 
-	retval = CreateProfile(profname, username, password);
+	retval = CreateProfile(profname, username, password, flags);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("CreateProfile", GetLastError());
 		exit (1);
@@ -102,7 +103,7 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 
 	dcerpc_init();
 
-	retval = MapiLogonProvider(&session, profname, PROVIDER_ID_NSPI);
+	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonProvider", GetLastError());
 		printf("Deleting profile\n");
@@ -243,7 +244,8 @@ static void mapiprofile_dump(const char *profdb, const char *profname)
 		}
 	}
 
-	if ((retval = OpenProfile(&profile, profname)) != MAPI_E_SUCCESS) {
+	retval = OpenProfile(&profile, profname, NULL);
+	if (retval && retval != MAPI_E_INVALID_PARAMETER) {
 		mapi_errstr("OpenProfile", GetLastError());
 		exit (1);
 	}
@@ -280,7 +282,8 @@ static void mapiprofile_attribute(const char *profdb, const char *profname,
 		}
 	}
 
-	if ((retval = OpenProfile(&profile, profname))) {
+	retval = OpenProfile(&profile, profname, NULL);
+	if (retval && retval != MAPI_E_INVALID_PARAMETER) {
 		mapi_errstr("OpenProfile", GetLastError());
 		exit (1);
 	}
@@ -330,12 +333,14 @@ int main(int argc, const char *argv[])
 	const char	*profdb = NULL;
 	const char	*profname = NULL;
 	const char	*attribute = NULL;
+	uint32_t	nopass = 0;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_ADDRESS, OPT_WORKSTATION,
 	      OPT_DOMAIN, OPT_USERNAME, OPT_PASSWORD, OPT_CREATE_PROFILE, 
 	      OPT_DELETE_PROFILE, OPT_LIST_PROFILE, OPT_DUMP_PROFILE, 
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, 
-	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN };
+	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN,
+	      OPT_NOPASS};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -351,6 +356,7 @@ int main(int argc, const char *argv[])
 		{"username", 'u', POPT_ARG_STRING, NULL, OPT_USERNAME, "set the profile username"},
 		{"pattern", 's', POPT_ARG_STRING, NULL, OPT_PATTERN, "username to search"},
 		{"password", 'p', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
+		{"nopass", 0, POPT_ARG_NONE, NULL, OPT_NOPASS, "do not save password in the profile"},
 		{"create", 'c', POPT_ARG_NONE, NULL, OPT_CREATE_PROFILE, "create a profile in the database"},
 		{"delete", 'r', POPT_ARG_NONE, NULL, OPT_DELETE_PROFILE, "delete a profile in the database"},
 		{"list", 'l', POPT_ARG_NONE, NULL, OPT_LIST_PROFILE, "list existing profiles in the database"},
@@ -400,6 +406,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_PASSWORD:
 			password = poptGetOptArg(pc);
+			break;
+		case OPT_NOPASS:
+			nopass = 1;
 			break;
 		case OPT_CREATE_PROFILE:
 			create = true;
@@ -458,7 +467,7 @@ int main(int argc, const char *argv[])
 		if (!domain) show_help(pc, "domain");
 
 		mapiprofile_create(profdb, profname, pattern, username, password, address,
-				   workstation, domain);
+				   workstation, domain, nopass);
 	}
 
 	if (setdflt == true) {

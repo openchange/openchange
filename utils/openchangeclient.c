@@ -1325,6 +1325,7 @@ int main(int argc, const char *argv[])
 	BOOL			opt_notifications = false;
 	const char		*opt_profdb = NULL;
 	const char		*opt_profname = NULL;
+	const char		*opt_password = NULL;
 	const char		*opt_attachments = NULL;
 	const char		*opt_fetchitems = NULL;
 	const char		*opt_html_file = NULL;
@@ -1333,7 +1334,7 @@ int main(int argc, const char *argv[])
 	const char		*opt_mapi_bcc = NULL;
 	const char		*opt_debug = NULL;
 
-	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_SENDMAIL, OPT_SENDAPPOINTMENT, 
+	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_SENDMAIL, OPT_PASSWORD, OPT_SENDAPPOINTMENT, 
 	      OPT_SENDCONTACT, OPT_SENDTASK, OPT_FETCHMAIL, OPT_STOREMAIL,  OPT_DELETEMAIL, 
 	      OPT_ATTACH, OPT_HTML_INLINE, OPT_HTML_FILE, OPT_MAPI_TO, OPT_MAPI_CC, 
 	      OPT_MAPI_BCC, OPT_MAPI_SUBJECT, OPT_MAPI_BODY, OPT_MAILBOX, 
@@ -1346,6 +1347,7 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path"},
 		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name"},
+		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
 		{"sendmail", 'S', POPT_ARG_NONE, NULL, OPT_SENDMAIL, "send a mail"},
 		{"sendappointment", 0, POPT_ARG_NONE, NULL, OPT_SENDAPPOINTMENT, "send an appointment"},
 		{"sendcontact", 0, POPT_ARG_NONE, NULL, OPT_SENDCONTACT, "send a contact"},
@@ -1399,6 +1401,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_PROFILE:
 			opt_profname = poptGetOptArg(pc);
+			break;
+		case OPT_PASSWORD:
+			opt_password = poptGetOptArg(pc);
 			break;
 		case OPT_MAILBOX:
 			opt_mailbox = true;
@@ -1568,7 +1573,7 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	retval = MapiLogonEx(&session, opt_profname);
+	retval = MapiLogonEx(&session, opt_profname, opt_password);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
 		exit (1);

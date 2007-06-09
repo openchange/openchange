@@ -61,10 +61,42 @@ AC_SUBST(TORTURE_MODULESDIR)
 AC_CHECK_TYPE(uint_t, unsigned int)
 
 dnl ***********************
+dnl Swig bindings
+dnl ***********************
+AC_ARG_ENABLE(swig-perl, AC_HELP_STRING([--enable-swig-perl],
+			   [build SWIG interfaces for Perl]),
+			   enable_perlswig="$enableval")
+if test "x${enable_perlswig}" = xyes; then
+   AC_PATH_PROG(SWIG, swig)
+
+   if test -z "$SWIG"
+      then
+	AC_MSG_ERROR(Please install swig)
+   fi
+
+   SWIGDIRSALL+="swigperl-all"
+   SWIGDIRSINSTALL+="swigperl-install"
+   SWIGDIRSUNINSTALL+="swigperl-uninstall"
+   SWIGDIRSCLEAN+="swigperl-clean"
+   SWIGDIRSDISTCLEAN+="swigperl-distclean"
+   SWIGDIRSREALDISTCLEAN+="swigperl-realdistclean"
+fi
+
+PERL5DIR=`$PERL -e 'use Config; my $dir = $Config{sitelib}; print $dir'`
+AC_SUBST(PERL5DIR)
+
+AC_SUBST(SWIGDIRSALL)
+AC_SUBST(SWIGDIRSINSTALL)
+AC_SUBST(SWIGDIRSUNINSTALL)
+AC_SUBST(SWIGDIRSCLEAN)
+AC_SUBST(SWIGDIRSDISTCLEAN)
+AC_SUBST(SWIGDIRSREALDISTCLEAN)
+
+dnl ***********************
 dnl Makefiles 
 dnl ***********************
 
-AC_CONFIG_FILES([Makefile libmapi.pc])
+AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc])
 AC_OUTPUT
 
 dnl ***********************

@@ -189,6 +189,7 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
 	struct mapi_session	*session;
 	const char		*profdb;
 	const char		*profname;
+	const char		*password;
 
 	profdb = lp_parm_string(-1, "mapi", "profile_store");
 	if (!profdb) {
@@ -213,7 +214,8 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
 		}
 	}
 
-	retval = MapiLogonEx(&session, profname);
+	password = lp_parm_string(-1, "mapi", "password");
+	retval = MapiLogonEx(&session, profname, password);
 	mapi_errstr("MapiLogonEx", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return NULL;
 

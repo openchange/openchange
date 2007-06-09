@@ -43,7 +43,8 @@
 /**
  * delete a message on the exchange server
  */
-static BOOL delete_message(TALLOC_CTX *mem_ctx, char *msgid, const char *profname)
+static BOOL delete_message(TALLOC_CTX *mem_ctx, char *msgid, 
+			   const char *profname, const char *password)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session;
@@ -56,7 +57,7 @@ static BOOL delete_message(TALLOC_CTX *mem_ctx, char *msgid, const char *profnam
 	int			i;
 	uint64_t		id_message;
 
-	retval = MapiLogonEx(&session, profname);
+	retval = MapiLogonEx(&session, profname, password);
 	if (retval != MAPI_E_SUCCESS) return False;
 
 	/* Open the default message store */
@@ -107,7 +108,8 @@ static BOOL delete_message(TALLOC_CTX *mem_ctx, char *msgid, const char *profnam
  * Fetch message ids from the existing mbox
  */
 static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp, 
-		       const char *profdb, const char *profname)
+		       const char *profdb, const char *profname,
+		       const char *password)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_profile	profile;
@@ -131,7 +133,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 		MAPI_RETVAL_IF(retval, retval, NULL);
 	}
 
-	retval = OpenProfile(&profile, profname);
+	retval = OpenProfile(&profile, profname, password);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	mbox_msgids = talloc_zero(mem_ctx, char *);
@@ -179,7 +181,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 				}
 			}
 			if (found == False) {
-				if (delete_message(mem_ctx, prof_msgids[i], profname) == True) {
+				if (delete_message(mem_ctx, prof_msgids[i], profname, password) == True) {
 					printf("%s deleted from the Exchange server\n", prof_msgids[i]);
 					mapi_profile_delete_string_attr(profname, "Message-ID", prof_msgids[i]);
 				}
@@ -529,16 +531,18 @@ int main(int argc, const char *argv[])
 	int				i;
 	const char			*opt_profdb = NULL;
 	const char			*opt_profname = NULL;
+	const char			*opt_password = NULL;
 	const char			*opt_mbox = NULL;
 	BOOL				opt_update = False;
 	const char			*msgid;
 
-	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_MBOX, OPT_UPDATE};
+	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_MBOX, OPT_UPDATE};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path"},
 		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name"},
+		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
 		{"mbox", 'm', POPT_ARG_STRING, NULL, OPT_MBOX, "set the mbox file"},
 		{"update", 'u', POPT_ARG_NONE, 0, OPT_UPDATE, "mirror mbox changes back to the Exchange server"},
 		{ NULL }
@@ -555,6 +559,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_PROFILE:
 			opt_profname = poptGetOptArg(pc);
+			break;
+		case OPT_PASSWORD:
+			opt_password = poptGetOptArg(pc);
 			break;
 		case OPT_MBOX:
 			opt_mbox = poptGetOptArg(pc);
@@ -587,7 +594,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_update == True) {
-		retval = update(mem_ctx, fp, opt_profdb, opt_profname);
+		retval = update(mem_ctx, fp, opt_profdb, opt_profname, opt_password);
 		if (GetLastError() != MAPI_E_SUCCESS) {
 			printf("Problem encountered during update\n");
 			exit (1);
@@ -613,7 +620,7 @@ int main(int argc, const char *argv[])
 		}
 	}
 	
-	retval = MapiLogonEx(&session, opt_profname);
+	retval = MapiLogonEx(&session, opt_profname, opt_password);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
 		exit (1);

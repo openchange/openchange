@@ -16,11 +16,6 @@ use mapi;
 
 package mapi;
 
-use constant MAPI_E_NOT_FOUND => 0x8004010F;
-use constant PR_FID => 0x67480014;
-use constant PR_MID => 0x674a0014;
-use constant olFolderInbox => 6;
-
 my $retval;
 
 sub mapi_init()
@@ -39,7 +34,7 @@ sub mapi_init()
     mapi_errstr("MAPIInitialize", GetLastError());
 
     # Activate MAPI decoding
-    # lw_dumpdata();
+    #lw_dumpdata();
 
     # Retrieve default profile name
     ($retval, $profname) = GetDefaultProfile($flag);
@@ -56,25 +51,21 @@ sub mapi_finalize()
 
 sub mapi_fetchmail()
 {
-    my $obj_store = new_mapi_object();
-    my $obj_inbox = new_mapi_object();
-    my $obj_table = new_mapi_object();
     my $inbox_id = new_int64();
     my $cRows;
     my $count = new_int32();
     my $unread = new_int32();
     my $total = new_int32();
-    my $SPropTagArray = new_SPropTagArray();
-    my $SRowSet = new_SRowSet();
+    my $SRowSet = new mapi::SRowSet();
 
     ## Open Message Store
-    $retval = mapi_object_init($obj_store);
+    my $obj_store = new_mapi_object();
     $retval = OpenMsgStore($obj_store);
     mapi_errstr("OpenMsgStore", GetLastError());
 
     ## Open Inbox
-    $retval = mapi_object_init($obj_inbox);
-    $retval = GetDefaultFolder($obj_store, $inbox_id, olFolderInbox);
+    my $obj_inbox = new_mapi_object();
+    $retval = GetDefaultFolder($obj_store, $inbox_id, $mapi::olFolderInbox);
     mapi_errstr("GetDefaultFolder", GetLastError());
 
     $retval = OpenFolder($obj_store, $inbox_id, $obj_inbox);
@@ -89,43 +80,53 @@ sub mapi_fetchmail()
     print "\t => Total(" . int32_value($total) . ")\n";
 
     ## GetContentsTable
-    $retval = mapi_object_init($obj_table);
+    my $obj_table = new_mapi_object();
     $retval = GetContentsTable($obj_inbox, $obj_table);
     mapi_errstr("GetContentsTable", GetLastError());
 
-    $retval = lw_SetCommonColumns($obj_table);
+    ## Prepare MAPI table creation
+    my $SPropTagArray = new_SPropTagArray(5);
+    aulPropTag_setitem($SPropTagArray->{aulPropTag}, 0, $mapi::PR_FID);
+    aulPropTag_setitem($SPropTagArray->{aulPropTag}, 1, $mapi::PR_MID);
+    aulPropTag_setitem($SPropTagArray->{aulPropTag}, 2, $mapi::PR_INST_ID);
+    aulPropTag_setitem($SPropTagArray->{aulPropTag}, 3, $mapi::PR_INSTANCE_NUM);
+    aulPropTag_setitem($SPropTagArray->{aulPropTag}, 4, $mapi::PR_SUBJECT);
+
+    $retval = SetColumns($obj_table, $SPropTagArray);
+    delete_SPropTagArray($SPropTagArray);
     mapi_errstr("SetColumns", GetLastError());
 
+    ## Count numer of rows in the table
     $retval = GetRowCount($obj_table, $count);
     mapi_errstr("GetRowCount", GetLastError());
 
-    while (($retval = QueryRows($obj_table, int32_value($count), 0, $SRowSet)) != MAPI_E_NOT_FOUND && lw_SRowSetEnd($SRowSet))
+    ## Get table rows
+    while (($retval = QueryRows($obj_table, int32_value($count), 0, $SRowSet)) != $mapi::MAPI_E_NOT_FOUND 
+	   && $SRowSet->{cRows})
     {
-	$cRows = lw_SRowSetEnd($SRowSet);
-    
-	for (my $i = 0; $i != $cRows; $i++) {
-	    my $obj_message = new_mapi_object();	
-	
-	    my $fid = int64_value(lw_getID($SRowSet, PR_FID, $i));
-	    my $mid = int64_value(lw_getID($SRowSet, PR_MID, $i));
 
-	    $retval = mapi_object_init($obj_message);
+	for (my $i = 0; $i != $SRowSet->{cRows}; $i++) {
+
+	    my $fid = int64_value(lw_getID($SRowSet, $mapi::PR_FID, $i));
+	    my $mid = int64_value(lw_getID($SRowSet, $mapi::PR_MID, $i));
+	    
+	    my $obj_message = new_mapi_object();
 	    $retval = OpenMessage($obj_store, $fid, $mid, $obj_message);
-
-	    if (GetLastError() != MAPI_E_NOT_FOUND) {
+	    
+	    if (GetLastError() != $mapi::MAPI_E_NOT_FOUND) {
 		my $props = new_mapi_SPropValue_array();
-
+		
 		$retval = GetPropsAll($obj_message, $props);
 		mapidump_message($props);
-		mapi_object_release($obj_message);
+		delete_mapi_object($obj_message);
 	    }
 	}
 	$retval = GetRowCount($obj_table, $count);
     }
 
-    mapi_object_release($obj_table);
-    mapi_object_release($obj_inbox);
-    mapi_object_release($obj_store);
+    delete_mapi_object($obj_table);
+    delete_mapi_object($obj_inbox);
+    delete_mapi_object($obj_store);
 }
 
 &mapi_init();

@@ -30,32 +30,6 @@ void lw_dumpdata(void)
 	global_mapi_ctx->dumpdata = true;
 }
 
-uint32_t lw_SetCommonColumns(mapi_object_t *obj)
-{
-	enum MAPISTATUS		retval;
-	TALLOC_CTX		*mem_ctx;
-	struct SPropTagArray	*SPropTagArray;
-
-	mem_ctx = (TALLOC_CTX *) global_mapi_ctx->session;
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
-					  PR_FID,
-					  PR_MID,
-					  PR_INST_ID,
-					  PR_INSTANCE_NUM,
-					  PR_SUBJECT);
-	retval = SetColumns(obj, SPropTagArray);
-	MAPIFreeBuffer(SPropTagArray);
-	
-	return retval;
-}
-
-uint32_t lw_SRowSetEnd(struct SRowSet *SRowSet)
-{
-	if (!SRowSet->cRows) return 0;
-
-	return SRowSet->cRows;
-}
-
 uint64_t *lw_getID(struct SRowSet *SRowSet, uint32_t ulPropTag, uint32_t idx)
 {
 	struct SPropValue *lpProp;

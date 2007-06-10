@@ -26,26 +26,82 @@ typedef unsigned long long uint64_t;
 #include <libmapi/libmapi.h>
 #include <libmapi/proto.h>
 #include <libmapi/proto_private.h>
+
 %}
 
-%include typemaps.i
-%include cstring.i
-%include cpointer.i
+%include "typemaps.i"
+%include "cstring.i"
+%include "cpointer.i"
+%include "carrays.i"
+
+%include "../../libmapi/mapidefs.h"
+%include "swig_mapitags.h"
+%include "swig_mapicodes.h"
 
 %typemap(in) uint32_t = unsigned int;
 %apply int { uint32_t };
 
-%pointer_functions(mapi_object_t, mapi_object);
+
+%nodefaultctor SPropTagArray;
+%nodefaultdtor SPropTagArray;
+
+%array_functions(uint32_t,aulPropTag);
+struct SPropTagArray {
+       uint32_t	*aulPropTag;
+       uint32_t	cValues;
+};
+
+%inline %{
+	struct SPropTagArray *new_SPropTagArray(int nb) 
+	{
+		struct SPropTagArray *result = 0;
+
+		result = (struct SPropTagArray *)(struct SPropTagArray *) calloc(1, sizeof(struct SPropTagArray));
+		result->cValues = nb;
+		result->aulPropTag = new_aulPropTag(nb);
+		      
+		return result;
+	}
+
+	void delete_SPropTagArray(struct SPropTagArray *s)
+	{
+		delete_aulPropTag(s->aulPropTag);
+		free((struct SPropTagArray *)s);     		
+	}
+%}
+
+
+%nodefaultctor mapi_object;
+%nodefaultdtor mapi_object;
+%inline %{
+	mapi_object_t *new_mapi_object()
+	{
+		mapi_object_t	*obj;
+
+		obj = malloc(sizeof(mapi_object_t));
+		mapi_object_init(obj);
+
+		return obj;
+	}
+
+	static void delete_mapi_object(mapi_object_t *obj)
+	{
+		mapi_object_release(obj);
+		free((mapi_object_t *)obj);
+	}	
+%}
+
+struct SRowSet {
+	uint32_t cRows;
+	struct SRow *aRow;
+};
+
 %pointer_functions(uint64_t, int64);
 %pointer_functions(uint32_t, int32);
-%pointer_functions(struct SPropTagArray, SPropTagArray);
-%pointer_functions(struct SRowSet, SRowSet);
 %pointer_functions(struct mapi_SPropValue_array, mapi_SPropValue_array);
 %pointer_functions(struct mapi_session *, mapi_session_t);
 
-extern uint32_t		lw_SetCommonColumns(mapi_object_t *obj);
 extern void		lw_dumpdata(void);
-extern uint32_t		lw_SRowSetEnd(struct SRowSet *SRowSet);
 extern uint64_t		*lw_getID(struct SRowSet *SRowSet, uint32_t tag, uint32_t idx);
 
 extern uint32_t		MAPIInitialize(const char *profile);
@@ -57,7 +113,7 @@ extern void		mapi_errstr(const char *function, uint32_t mapi_code);
 %cstring_output_allocate(char **s, $1);
 extern uint32_t		GetDefaultProfile(const char **s, uint32_t flags);
 
-extern uint32_t		GetDefaultFolder(mapi_object_t *obj, uint64_t *folder, uint32_t folder_id);
+extern uint32_t		GetDefaultFolder(mapi_object_t *obj, uint64_t *folder, const uint32_t folder_id);
 extern uint32_t		OpenFolder(mapi_object_t *obj, uint64_t folder, mapi_object_t *obj2);
 extern uint32_t		GetFolderItemsCount(mapi_object_t *obj, uint32_t *unread, uint32_t *total);
 extern uint32_t		GetContentsTable(mapi_object_t *obj, mapi_object_t *obj2);
@@ -67,10 +123,6 @@ extern uint32_t		GetRowCount(mapi_object_t *obj, uint32_t *props);
 extern uint32_t		OpenMsgStore(mapi_object_t *obj);
 extern uint32_t		OpenMessage(mapi_object_t *obj, uint64_t fid, uint64_t mid, mapi_object_t *obj_msg);
 extern uint32_t		GetPropsAll(mapi_object_t *obj, struct mapi_SPropValue_array *mlpProps);
-
-extern void		mapi_object_init(mapi_object_t *obj);
-extern void		mapi_object_release(mapi_object_t *obj);
-extern void		mapi_object_debug(mapi_object_t *obj);
 
 extern void		mapidump_SPropTagArray(struct SPropTagArray *lpProps);
 extern void		mapidump_SRowSet(struct SRowSet *SRowSet, const char *sep);

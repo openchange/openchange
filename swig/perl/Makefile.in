@@ -24,13 +24,16 @@ CFLAGS+=-I$(top_builddir)
 SHLIBEXT=so
 
 
-all:	mapi_wrap.c			\
+all:	swig_mapitags.h 		\
+	swig_mapicodes.h		\
+	mapi_wrap.c			\
 	mapi.$(SHLIBEXT)
 
 clean:
 	rm -f *.o
 	rm -f *.pm
 	rm -f mapi_wrap.c
+	rm -f swig_mapicodes.h swig_mapitags.h
 
 distclean: clean
 	rm -f *.so
@@ -48,7 +51,17 @@ uninstall:
 
 mapi_wrap.c: mapi.i
 	@echo "Swigify $<"
-	@$(SWIG) -perl5 $<
+	@$(SWIG) -Wall -Werror -perl5 $<
+
+swig_mapitags.h:
+	@echo "Generating Headers (swig_mapitags.h)"
+	@$(top_builddir)/libmapi/conf/mparse.pl --parser=swig_mapitags --outputdir=${PWD}/ $(top_builddir)/libmapi/conf/mapi-properties
+
+swig_mapicodes.h:
+	@echo "Generating Headers (swig_mapicodes.h)"
+	@$(top_builddir)/libmapi/conf/mparse.pl --parser=swig_mapicodes --outputdir=${PWD}/ $(top_builddir)/libmapi/conf/mapi-codes
+
+
 
 .c.o:
 	@echo "Compiling $<"

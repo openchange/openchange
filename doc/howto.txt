@@ -9,7 +9,7 @@ Updates by Julien Kerihuel <j.kerihuel@openchange.org>, March 2007.
 Updates by Julien Kerihuel <j.kerihuel@openchange.org>, April 2007.
 Updates by Dan Shearer <dan@shearer.org>, April 2007.
 Updates by Julien Kerihuel <j.kerihuel@openchange.org>, April 2007.
-
+Updates by Julien Kerihuel <j.kerihuel@openchange.org>, June 2007.
 
 ###############
 [0x0] CONTENTS
@@ -36,6 +36,9 @@ Updates by Julien Kerihuel <j.kerihuel@openchange.org>, April 2007.
      [0x5b] Extending users Samba AD schema
      [0x5c] Setting smb.conf
      [0x5d] Running the Address Book Provider (EMSABP)     
+[0x6] SWIG BINDINGS
+     [0x6a] Installation
+     [0x6b] Sample applications
 +------------------------------------+
 
 
@@ -364,3 +367,34 @@ single process. That mode of operation makes debugging smbd with gdb
 particularly easy.
 
 
+########################
+[0x5] SWIG BINDINGS
+########################
+
+OpenChange has introduced SWIG bindings support for its MAPI
+Library. This development provides MAPI library support for different
+languages.
+
+[0x6a] Installation
+===================
+
+o Perl bindings support:
+  [*] run configure with --enable-swig-perl=yes
+  [*] make && make install
+
+Note: The compilation process requires quite some time due to the code
+generation for mapitags and mapicodes constant. If you intend to
+develop on libmapi bindings, you should comment the following
+directives in mapi.i: 
+
+	   %include "swig_mapitags.h" 
+	   %include "swig_mapicodes.h"
+
+
+[0x6b] Sample applications
+==========================
+
+Tests applications are located in the tests directory of swig
+languages supported.
+
+Example: swig/perl/fetchmail.pl

@@ -316,6 +316,30 @@ _PUBLIC_ BOOL set_SPropValue(struct SPropValue* lpProps, void *data)
 	return True;
 }
 
+_PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)
+{
+	switch(lpProp->ulPropTag & 0xFFFF) {
+	case PT_BOOLEAN:
+		return sizeof (uint8_t);
+	case PT_I2:
+		return sizeof (uint16_t);
+	case PT_LONG:
+	case PT_ERROR:
+		return sizeof (uint32_t);
+	case PT_DOUBLE:
+		return sizeof (uint64_t);
+	case PT_STRING8:
+		return strlen(lpProp->value.lpszA) + 1;
+	case PT_UNICODE:
+		return strlen(lpProp->value.lpszW) * 2 + 2;
+	case PT_SYSTIME:
+		return sizeof (struct FILETIME);
+	case PT_BINARY:
+		return (lpProp->value.bin.cb + sizeof(uint16_t));
+	}
+	return 0;
+}
+
 /*
   convenient function which cast a SPropValue structure in a mapi_SPropValue one and return the associated size
 */

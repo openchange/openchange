@@ -183,6 +183,11 @@ BOOL set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SR
 	return True;
 }
 
+/**
+ * Initialize MAPI and logs on the EMSMDB pipe with the default
+ * profile
+ */
+
 struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
 {
 	enum MAPISTATUS		retval;
@@ -220,4 +225,72 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
 	if (retval != MAPI_E_SUCCESS) return NULL;
 
 	return session;
+}
+
+enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent, 
+					  const char *subject, const char *body,
+					  uint32_t flags)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_message;
+	struct SPropTagArray	*SPropTagArray = NULL;
+	struct SPropValue	SPropValue;
+	struct SRowSet		*SRowSet = NULL;
+	struct FlagList		*flaglist = NULL;
+	struct SPropValue	props[3];
+	char			**usernames;
+	uint32_t		index = 0;
+
+	mem_ctx = talloc_init("torture_simplemail");
+
+	mapi_object_init(&obj_message);
+	retval = CreateMessage(obj_parent, &obj_message);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	SPropTagArray  = set_SPropTagArray(mem_ctx, 0x6,
+					   PR_OBJECT_TYPE,
+					   PR_DISPLAY_TYPE,
+					   PR_7BIT_DISPLAY_NAME,
+					   PR_DISPLAY_NAME,
+					   PR_SMTP_ADDRESS,
+					   PR_GIVEN_NAME);
+
+	lp_set_cmdline("mapi:to", global_mapi_ctx->session->profile->username);
+	usernames = get_cmdline_recipients(mem_ctx, "to");
+
+	retval = ResolveNames((const char **)usernames, SPropTagArray, &SRowSet, &flaglist, 0);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	if (!SRowSet) {
+		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	}
+
+	set_usernames_RecipientType(mem_ctx, &index, SRowSet, usernames, flaglist, MAPI_TO);
+
+	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
+	SPropValue.value.l = 0;
+	SRowSet_propcpy(mem_ctx, SRowSet, SPropValue);
+
+	retval = ModifyRecipients(&obj_message, SRowSet);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	retval = MAPIFreeBuffer(SRowSet);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	retval = MAPIFreeBuffer(flaglist);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	set_SPropValue_proptag(&props[0], PR_SUBJECT, (void *)subject);
+	set_SPropValue_proptag(&props[1], PR_BODY, (void *)body);
+	set_SPropValue_proptag(&props[2], PR_MESSAGE_FLAGS, (void *)&flags);
+	retval = SetProps(&obj_message, props, 3);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	retval = SaveChangesMessage(obj_parent, &obj_message);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	mapi_object_release(&obj_message);
+
+	talloc_free(mem_ctx);
+	return MAPI_E_SUCCESS;
 }

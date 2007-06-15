@@ -116,6 +116,7 @@ re: clean install
 torture/openchange.$(SHLIBEXT):	torture/testjoin_exchange.o	\
 				torture/nspi_profile.o		\
 				torture/nspi_resolvenames.o	\
+				torture/mapi_restrictions.o	\
 				torture/mapi_copymail.o		\
 				torture/mapi_prop.o		\
 				torture/mapi_folder.o		\
@@ -295,6 +296,7 @@ dcesrv_proto.h: server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
 torture_proto.h:
 	@echo "Generating torture_proto.h"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h \
+	torture/mapi_restrictions.c	\
 	torture/mapi_deletemail.c	\
 	torture/mapi_newmail.c		\
 	torture/mapi_fetchmail.c	\

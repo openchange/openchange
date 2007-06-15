@@ -347,3 +347,107 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table, enum BOOKMARK origin,
 
 	return MAPI_E_SUCCESS;
 }
+
+/**
+ * Restrict a table 
+ */
+
+static uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
+{
+	uint32_t	size;
+
+	size = 0;
+
+	switch(res->rt) {
+	case RES_CONTENT:
+		size += sizeof (res->res.resContent.fuzzy);
+		size += sizeof (res->res.resContent.ulPropTag);
+		size += sizeof (res->res.resContent.lpProp.ulPropTag);
+		size += get_mapi_property_size(&(res->res.resContent.lpProp));
+		break;
+	case RES_PROPERTY:
+		size += sizeof (res->res.resProperty.relop);
+		size += sizeof (res->res.resProperty.ulPropTag);
+		size += sizeof (res->res.resProperty.lpProp.ulPropTag);
+		size += get_mapi_property_size(&(res->res.resProperty.lpProp));
+		break;
+	case RES_COMPAREPROPS:
+		size += sizeof (uint8_t);
+		size += sizeof (res->res.resCompareProps.ulPropTag1);
+		size += sizeof (res->res.resCompareProps.ulPropTag2);
+		break;
+	case RES_BITMASK:
+		size += sizeof (uint8_t);
+		size += sizeof (res->res.resBitmask.ulPropTag);
+		size += sizeof (res->res.resBitmask.ulMask);
+		break;
+	case RES_SIZE:
+		size += sizeof (uint8_t);
+		size += sizeof (res->res.resSize.ulPropTag);
+		size += sizeof (res->res.resSize.size);
+		break;
+	case RES_EXIST:
+		size += sizeof (res->res.resExist.ulPropTag);
+		break;
+	}
+	return (size);
+}
+
+_PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj, struct mapi_SRestriction *res)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct Restrict_req	request;
+	struct Restrict_repl	*reply;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	uint32_t		size;
+	TALLOC_CTX		*mem_ctx;
+	mapi_ctx_t		*mapi_ctx;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!res, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("Restrict");
+
+	/* Fill the Restrict operation */
+	size = 0;
+	request.handle_idx = 0;
+	size += sizeof (request.handle_idx);
+	request.restrictions = *res;
+	size += sizeof (res->rt);
+	size += get_mapi_SRestriction_size(res);
+
+	/* add subcontext size */
+	size += sizeof (uint16_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_Restrict;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_Restrict = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	reply = &mapi_response->mapi_repl->u.mapi_Restrict;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}

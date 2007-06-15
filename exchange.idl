@@ -637,6 +637,7 @@ System Attendant Private Interface
 			op_MAPI_ModifyRecipients	= 0xe,
 			op_MAPI_SetReadFlags		= 0x11,
 			op_MAPI_SetColumns		= 0x12,
+			op_MAPI_Restrict		= 0x14,
 			op_MAPI_QueryRows		= 0x15,
 			op_MAPI_GetRowCount		= 0x17,
 			op_MAPI_SeekRow			= 0x18,
@@ -658,7 +659,7 @@ System Attendant Private Interface
 			op_MAPI_QueryColumns		= 0x37,
 			op_MAPI_EmptyFolder		= 0x58,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
-			op_MAPI_OpenMsgStore		= 0xFE
+			op_MAPI_OpenMsgStore		= 0xfe
 		} MAPI_OPNUM;
 
 
@@ -1021,6 +1022,90 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
 	} SetColumns_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x14  */
+
+	typedef [bitmap32bit] bitmap {
+		FL_FULLSTRING		= 0x00000,
+	       	FL_SUBSTRING		= 0x00001,
+		FL_PREFIX		= 0x00002,
+		FL_IGNORECASE		= 0x10000,
+		FL_IGNORENONSPACE	= 0x20000,
+		FL_LOOSE		= 0x40000
+	} fuzzyLevel;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		fuzzyLevel	fuzzy;
+		MAPITAGS	ulPropTag;
+		mapi_SPropValue	lpProp;
+	} mapi_SContentRestriction;
+
+	typedef [enum8bit, flag(NDR_PAHEX)] enum {
+		BMR_EQZ = 0x0,
+		BMR_NEZ = 0x1
+	} relMBR;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		relMBR		relMBR;
+		MAPITAGS	ulPropTag;
+		uint32		ulMask;
+	} mapi_SBitmaskRestriction;
+
+	typedef [enum8bit, flag(NDR_PAHEX)] enum {
+		RELOP_LT = 0x0,		/* <  */
+		RELOP_LE = 0x1,		/* <= */
+		RELOP_GT = 0x2,		/* >  */
+		RELOP_GE = 0x3,		/* >= */
+		RELOP_EQ = 0x4,		/* == */
+		RELOP_NE = 0x5,		/* != */
+		RELOP_RE = 0x6		/* LIKE (Regular expression) */
+	} CompareRelop;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		CompareRelop	relop;
+		MAPITAGS	ulPropTag;
+		uint32		size;
+	} mapi_SSizeRestriction;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		relop;
+		MAPITAGS	ulPropTag;
+		mapi_SPropValue	lpProp;
+	} mapi_SPropertyRestriction;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		CompareRelop   	relop;
+		MAPITAGS	ulPropTag1;
+		MAPITAGS	ulPropTag2;
+	} mapi_SCompareProps;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		MAPITAGS	ulPropTag;
+	} mapi_SExistRestriction;
+
+	typedef [nodiscriminant] union {
+		[case(RES_CONTENT)]	mapi_SContentRestriction	resContent;
+		[case(RES_PROPERTY)]	mapi_SPropertyRestriction	resProperty;
+		[case(RES_COMPAREPROPS)]mapi_SCompareProps		resCompareProps;
+		[case(RES_BITMASK)]	mapi_SBitmaskRestriction	resBitmask;
+		[case(RES_SIZE)]	mapi_SSizeRestriction		resSize;
+		[case(RES_EXIST)]	mapi_SExistRestriction		resExist;
+	} mapi_SRestriction_CTR;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8 rt;
+		[switch_is(rt)] mapi_SRestriction_CTR res;
+	} mapi_SRestriction;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8 handle_idx;
+		[subcontext(2)] mapi_SRestriction  restrictions;
+	} Restrict_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown;
+	} Restrict_repl;
 
 	/**************************/
 	/* EcDoRpc Function 0x15  */
@@ -1391,6 +1476,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_req mapi_SaveChangesMessage;
 		[case(op_MAPI_SetReadFlags)] SetReadFlags_req mapi_SetReadFlags;
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
+		[case(op_MAPI_Restrict)] Restrict_req mapi_Restrict;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_req mapi_ModifyRecipients;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
 		[case(op_MAPI_GetRowCount)] GetRowCount_req mapi_GetRowCount;
@@ -1430,6 +1516,7 @@ System Attendant Private Interface
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
 		[case(op_MAPI_SetReadFlags)] SetReadFlags_repl mapi_SetReadFlags;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
+		[case(op_MAPI_Restrict)] Restrict_repl mapi_Restrict;
 		[case(op_MAPI_QueryRows)] QueryRows_repl mapi_QueryRows;
 		[case(op_MAPI_GetRowCount)] GetRowCount_repl mapi_GetRowCount;
 		[case(op_MAPI_SeekRow)] SeekRow_repl mapi_SeekRow;

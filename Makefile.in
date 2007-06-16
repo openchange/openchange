@@ -33,6 +33,9 @@ SWIGDIRS-REALDISTCLEAN=@SWIGDIRSREALDISTCLEAN@
 # This value should be determined by configure at some point
 SHLIBEXT=so
 
+PACKAGE_VERSION=@PACKAGE_VERSION@
+SO_VERSION=0
+
 # Portability hack...
 CFLAGS+=-Duint_t="unsigned int" 
 
@@ -45,7 +48,7 @@ LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 all: 	libmapi/utf8_convert.yy.c				\
 	gen_ndr gen_ndr/ndr_exchange.h proto.h			\
 	torture_proto.h	providers_proto.h dcesrv_proto.h	\
-	libmapi.$(SHLIBEXT)					\
+	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)					\
 	bin/schemaIDGUID					\
 	bin/mapiprofile						\
 	bin/openchangeclient					\
@@ -66,7 +69,7 @@ install: all installman $(SWIGDIRS-INSTALL)
 	cp bin/openchangeclient $(DESTDIR)$(bindir)
 	cp bin/exchange2mbox $(DESTDIR)$(bindir)
 	cp bin/locale_codepage $(DESTDIR)$(bindir)
-	cp libmapi.$(SHLIBEXT) $(DESTDIR)$(libdir)
+	cp libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	cp torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
 	cp server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
 	cp server/dcesrv_exchange_remote.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
@@ -190,21 +193,21 @@ bin/schemaIDGUID: utils/schemaIDGUID.o
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS)
 
-bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT)
+bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
-bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT)
+bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
 bin/openchangeclient: 	utils/openchangeclient.o			\
-			libmapi.$(SHLIBEXT)
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
 bin/exchange2mbox:	utils/exchange2mbox.o				\
-			libmapi.$(SHLIBEXT) -lpopt -lmagic
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) -lpopt -lmagic
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS)
 
@@ -215,7 +218,7 @@ distclean: clean $(SWIGDIRS-DISTCLEAN)
 	rm -f intltool-extract intltool-merge intltool-update
 
 realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
-	rm -f libmapi.so
+	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f torture/openchange.so
 	rm -f server/dcesrv_exchange.so
 	rm -f server/dcesrv_exchange_remote.so
@@ -321,7 +324,7 @@ torture_proto.h:
 	torture/fuzzer_msgstore.c	\
 	torture/openchange.c
 
-libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
+libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o				\
 			libmapi/IProfAdmin.o				\
 			libmapi/IMAPIContainer.o			\
 			libmapi/IMAPIFolder.o				\
@@ -353,7 +356,7 @@ libmapi.$(SHLIBEXT): 	libmapi/IABContainer.o				\
 			libmapi/socket/netif.o				\
 			libmapi/utf8_convert.yy.c
 	@echo "Compiling $<"
-	@$(CC) $(DSOOPT) -o $@ $^ $(LIBS)
+	@$(CC) $(DSOOPT) -Wl,-soname,$(SO_VERSION) -o $@ $^ $(LIBS)
 
 manpages = \
 		doc/man/man1/exchange2mbox.1				\

@@ -7,7 +7,7 @@ datadir=@datadir@
 
 Name: MAPI
 Description: MAPI Protocol Implementation
-Version: 0.2
+Version: @PACKAGE_VERSION@
 Libs: @LIBS@ -lmapi
 Cflags: @CFLAGS@
 Requires: talloc dcerpc ndr samba-config ldb

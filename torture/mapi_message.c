@@ -171,7 +171,7 @@ static BOOL torture_message(mapi_object_t *obj_store,
 	value.value.l = 0;
 	SRowSet_propcpy(mem_ctx, rows, value);
 
-	set_usernames_RecipientType(mem_ctx, &index, rows, (char **)recipients, flaglist, MAPI_TO);
+	set_usernames_RecipientType(mem_ctx, &index, rows, (const char **)recipients, flaglist, MAPI_TO);
 
 	retval = ModifyRecipients(&obj_message, rows);
 	mapi_errstr("ModifyRecipients", GetLastError());
@@ -190,9 +190,9 @@ static BOOL torture_message(mapi_object_t *obj_store,
 	 */
 	oc_test_describe("SetProps");
 	msgflag = MSGFLAG_UNSENT;
-	set_SPropValue_proptag(&props[0], PR_SUBJECT, (void *)MSG_SUBJECT);
-	set_SPropValue_proptag(&props[1], PR_BODY, (void *)MSG_BODY);
-	set_SPropValue_proptag(&props[2], PR_MESSAGE_FLAGS, (void *)&msgflag);
+	set_SPropValue_proptag(&props[0], PR_SUBJECT, (const void *)MSG_SUBJECT);
+	set_SPropValue_proptag(&props[1], PR_BODY, (const void *)MSG_BODY);
+	set_SPropValue_proptag(&props[2], PR_MESSAGE_FLAGS, (const void *)&msgflag);
 	retval = SetProps(&obj_message, props, CN_MSG_PROPS);
 	oc_test_assert(retval == MAPI_E_SUCCESS);
 

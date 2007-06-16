@@ -228,7 +228,7 @@ NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, struct instance_key *insta
 	struct ldb_result		*res = NULL;
 	struct SPropValue		*lpProp = NULL;
 	const char * const		recipient_attrs[] = { "*", NULL};
-	char				*recipient;
+	const char				*recipient;
 	char				*ldb_filter;
 	int				ret;
 	int				i;
@@ -243,7 +243,7 @@ NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, struct instance_key *insta
 	}
 
 	lpProp = res_prop->lpProp;
-	if ((recipient = (char *)((res_prop->ulPropTag == PR_ANR) ? lpProp->value.lpszA : lpProp->value.lpszW))) {
+	if ((recipient = (const char *)((res_prop->ulPropTag == PR_ANR) ? lpProp->value.lpszA : lpProp->value.lpszW))) {
 		ldb_filter = talloc_asprintf(emsabp_ctx->mem_ctx, "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))", recipient);
 	} else {
 		return NT_STATUS_INVALID_PARAMETER;

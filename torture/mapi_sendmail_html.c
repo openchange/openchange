@@ -39,10 +39,10 @@ BOOL torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 	const char		*subject = lp_parm_string(-1, "mapi", "subject");
 	const char		*body = lp_parm_string(-1, "mapi", "body");
 	const char		*filename = lp_parm_string(-1, "mapi", "html");
-	char			**usernames;
-	char			**usernames_to;
-	char			**usernames_cc;
-	char			**usernames_bcc;
+	const char		**usernames;
+	const char		**usernames_to;
+	const char		**usernames_cc;
+	const char		**usernames_bcc;
 	struct mapi_session	*session;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_outbox;
@@ -156,9 +156,9 @@ BOOL torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 	}
 
 	msgflag = MSGFLAG_UNSENT;
-	set_SPropValue_proptag(&props[0], PR_SUBJECT, (void *)subject);
-	set_SPropValue_proptag(&props[1], PR_HTML, (void *)&html);
-	set_SPropValue_proptag(&props[2], PR_MESSAGE_FLAGS, (void *)&msgflag);
+	set_SPropValue_proptag(&props[0], PR_SUBJECT, (const void *)subject);
+	set_SPropValue_proptag(&props[1], PR_HTML, (const void *)&html);
+	set_SPropValue_proptag(&props[2], PR_MESSAGE_FLAGS, (const void *)&msgflag);
 	retval = SetProps(&obj_message, props, 3);
 	mapi_errstr("SetProps", GetLastError());
 

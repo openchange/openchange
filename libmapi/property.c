@@ -49,7 +49,8 @@ _PUBLIC_ struct SPropTagArray *set_SPropTagArray(TALLOC_CTX *mem_ctx,
 	return SPropTag;
 }
 
-_PUBLIC_ void *get_SPropValue(struct SPropValue *lpProps, uint32_t ulPropTag)
+_PUBLIC_ const void *get_SPropValue(struct SPropValue *lpProps, 
+									uint32_t ulPropTag)
 {
 	uint32_t	i;
 
@@ -155,7 +156,7 @@ uint32_t MAPITAGS_delete_entries(enum MAPITAGS *mapitags, uint32_t final_count, 
 	return final_count;
 }
 
-_PUBLIC_ void *find_SPropValue_data(struct SRow *aRow, uint32_t mapitag)
+_PUBLIC_ const void *find_SPropValue_data(struct SRow *aRow, uint32_t mapitag)
 {
 	uint32_t i;
 
@@ -167,7 +168,8 @@ _PUBLIC_ void *find_SPropValue_data(struct SRow *aRow, uint32_t mapitag)
 	return NULL;
 }
 
-_PUBLIC_ void *find_mapi_SPropValue_data(struct mapi_SPropValue_array *properties, uint32_t mapitag)
+_PUBLIC_ const void *find_mapi_SPropValue_data(
+					struct mapi_SPropValue_array *properties, uint32_t mapitag)
 {
 	uint32_t i;
 
@@ -179,38 +181,38 @@ _PUBLIC_ void *find_mapi_SPropValue_data(struct mapi_SPropValue_array *propertie
 	return NULL;
 }
 
-void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
+const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 {
 	if (lpProp->ulPropTag == 0) {
 		return NULL;
 	}
 	switch(lpProp->ulPropTag & 0xFFFF) {
 	case PT_BOOLEAN:
-		return (void *)(uint8_t *)&lpProp->value.b;
+		return (const void *)(uint8_t *)&lpProp->value.b;
 	case PT_I2:
-		return (void *)(uint16_t *)&lpProp->value.i;
+		return (const void *)(uint16_t *)&lpProp->value.i;
 	case PT_LONG:
-		return (void *)&lpProp->value.l;
+		return (const void *)&lpProp->value.l;
 	case PT_DOUBLE:
-		return (void *)&lpProp->value.dbl;
+		return (const void *)&lpProp->value.dbl;
 	case PT_SYSTIME:
-		return (void *)(struct FILETIME *)&lpProp->value.ft;
+		return (const void *)(struct FILETIME *)&lpProp->value.ft;
 	case PT_ERROR:
-		return (void *)lpProp->value.err;
+		return (const void *)lpProp->value.err;
 	case PT_STRING8:
-		return (void *)lpProp->value.lpszA;
+		return (const void *)lpProp->value.lpszA;
 	case PT_UNICODE:
-		return (void *)lpProp->value.lpszW;
+		return (const void *)lpProp->value.lpszW;
 	case PT_BINARY:
-		return (void *)(struct SBinary_short *)&lpProp->value.bin;
+		return (const void *)(struct SBinary_short *)&lpProp->value.bin;
 	case PT_MV_STRING8:
-		return (void *)(struct mapi_SLPSTRArray *)&lpProp->value.MVszA;
+		return (const void *)(struct mapi_SLPSTRArray *)&lpProp->value.MVszA;
 	default:
 		return NULL;
 	}
 }
 
-void *get_SPropValue_data(struct SPropValue *lpProps)
+const void *get_SPropValue_data(struct SPropValue *lpProps)
 {
 	if (lpProps->ulPropTag == 0) {
 		return NULL;
@@ -218,24 +220,24 @@ void *get_SPropValue_data(struct SPropValue *lpProps)
 
 	switch(lpProps->ulPropTag & 0xFFFF) {
 	case PT_I8:
-		return (void *)&lpProps->value.d;
+		return (const void *)&lpProps->value.d;
 	case PT_STRING8:
-		return (void *)lpProps->value.lpszA;
+		return (const void *)lpProps->value.lpszA;
 	case PT_UNICODE:
-		return (void *)lpProps->value.lpszW;
+		return (const void *)lpProps->value.lpszW;
 	case PT_SYSTIME:
-		return (void *)(struct FILETIME *)&lpProps->value.ft;
+		return (const void *)(struct FILETIME *)&lpProps->value.ft;
 	case PT_ERROR:
 	case PT_LONG:
-		return (void *)&lpProps->value.l;
+		return (const void *)&lpProps->value.l;
 	case PT_DOUBLE:
-		return (void *)&lpProps->value.dbl;
+		return (const void *)&lpProps->value.dbl;
 	default:
 		return NULL;
 	}
 }
 
-_PUBLIC_ BOOL set_SPropValue_proptag(struct SPropValue* lpProps, uint32_t aulPropTag, void *data)
+_PUBLIC_ BOOL set_SPropValue_proptag(struct SPropValue* lpProps, uint32_t aulPropTag, const void *data)
 {
 	lpProps->ulPropTag = aulPropTag;
 	lpProps->dwAlignPad = 0x0;
@@ -243,7 +245,7 @@ _PUBLIC_ BOOL set_SPropValue_proptag(struct SPropValue* lpProps, uint32_t aulPro
 	return (set_SPropValue(lpProps, data));
 }
 
-_PUBLIC_ BOOL set_SPropValue(struct SPropValue* lpProps, void *data)
+_PUBLIC_ BOOL set_SPropValue(struct SPropValue* lpProps, const void *data)
 {
 	if (data == NULL) {
 		lpProps->value.err = MAPI_E_NOT_FOUND;
@@ -251,61 +253,61 @@ _PUBLIC_ BOOL set_SPropValue(struct SPropValue* lpProps, void *data)
 	}
 	switch (lpProps->ulPropTag & 0xFFFF) {
 	case PT_SHORT:
-		lpProps->value.i = *((uint16_t *)data);
+		lpProps->value.i = *((const uint16_t *)data);
 		break;
 	case PT_LONG:
-		lpProps->value.l = *((uint32_t *)data);
+		lpProps->value.l = *((const uint32_t *)data);
 		break;
 	case PT_I8:
-		lpProps->value.d = *((uint64_t *)data);
+		lpProps->value.d = *((const uint64_t *)data);
 		break;
 	case PT_BOOLEAN:
-		lpProps->value.b = *((uint16_t *)data);
+		lpProps->value.b = *((const uint16_t *)data);
 		break;
 	case PT_STRING8:
-		lpProps->value.lpszA = (char *) data;
+		lpProps->value.lpszA = (const char *) data;
 		break;
 	case PT_BINARY:
-		lpProps->value.bin = *((struct SBinary *)data);
+		lpProps->value.bin = *((const struct SBinary *)data);
 		break;
 	case PT_UNICODE:
-		lpProps->value.lpszW = (char *) data;
+		lpProps->value.lpszW = (const char *) data;
 		break;
 	case PT_CLSID:
-		lpProps->value.lpguid = (struct MAPIUID *) data;
+		lpProps->value.lpguid = (const struct MAPIUID *) data;
 		break;
 	case PT_SYSTIME:
-		lpProps->value.ft = *((struct FILETIME *) data);
+		lpProps->value.ft = *((const struct FILETIME *) data);
 		break;
 	case PT_ERROR:
-		lpProps->value.err = *((uint32_t *)data);
+		lpProps->value.err = *((const uint32_t *)data);
 		break;
 	case PT_MV_SHORT:
-		lpProps->value.err = *((uint32_t *)data);
+		lpProps->value.err = *((const uint32_t *)data);
 		break;
 	case PT_MV_LONG:
-		lpProps->value.MVl = *((struct MV_LONG_STRUCT *)data);
+		lpProps->value.MVl = *((const struct MV_LONG_STRUCT *)data);
 		break;
 	case PT_MV_STRING8:
-		lpProps->value.MVszA = *((struct SLPSTRArray *)data);
+		lpProps->value.MVszA = *((const struct SLPSTRArray *)data);
 		break;
 	case PT_MV_BINARY:
-		lpProps->value.MVbin = *((struct SBinaryArray *)data);
+		lpProps->value.MVbin = *((const struct SBinaryArray *)data);
 		break;
 	case PT_MV_CLSID:
-		lpProps->value.MVguid = *((struct SGuidArray *)data);
+		lpProps->value.MVguid = *((const struct SGuidArray *)data);
 		break;
 	case PT_MV_UNICODE:
-		lpProps->value.MVszW = *((struct MV_UNICODE_STRUCT *)data);
+		lpProps->value.MVszW = *((const struct MV_UNICODE_STRUCT *)data);
 		break;
 	case PT_MV_SYSTIME:
-		lpProps->value.MVft = *((struct SDateTimeArray *)data);
+		lpProps->value.MVft = *((const struct SDateTimeArray *)data);
 		break;
 	case PT_NULL:
-		lpProps->value.null = *((uint32_t *)data);
+		lpProps->value.null = *((const uint32_t *)data);
 		break;
 	case PT_OBJECT:
-		lpProps->value.null = *((uint32_t *)data);
+		lpProps->value.null = *((const uint32_t *)data);
 		break;
 	default:
 		lpProps->value.err = MAPI_E_NOT_FOUND;

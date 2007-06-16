@@ -25,30 +25,30 @@
 _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 {
 	const char	*proptag;
-	void		*data;
+	const void	*data;
 
 	proptag = get_proptag_name(lpProp.ulPropTag);
 
 	switch(lpProp.ulPropTag & 0xFFFF) {
 	case PT_I8:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: %llx\n", sep?sep:"", proptag, (*(uint64_t *)data));
+		printf("%s%s: %llx\n", sep?sep:"", proptag, (*(const uint64_t *)data));
 		break;
 	case PT_STRING8:
 	case PT_UNICODE:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: %s\n", sep?sep:"", proptag, (char *)data);
+		printf("%s%s: %s\n", sep?sep:"", proptag, (const char *)data);
 		break;
 	case PT_SYSTIME:
 		mapidump_date_SPropValue(lpProp, proptag);
 		break;
 	case PT_ERROR:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: 0x%.8x\n", sep?sep:"", proptag, (*(uint32_t *)data));
+		printf("%s%s: 0x%.8x\n", sep?sep:"", proptag, (*(const uint32_t *)data));
 		break;
 	case PT_LONG:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: %d\n", sep?sep:"", proptag, (*(uint32_t *)data));
+		printf("%s%s: %d\n", sep?sep:"", proptag, (*(const uint32_t *)data));
 		break;
 	default:
 		break;
@@ -113,12 +113,12 @@ _PUBLIC_ void mapidump_date(struct mapi_SPropValue_array *properties, uint32_t m
 {
 	TALLOC_CTX		*mem_ctx;
 	NTTIME			time;
-	struct FILETIME		*filetime;
+	const struct FILETIME		*filetime;
 	const char		*date;
 
 	mem_ctx = talloc_init("mapidump_date");
 
-	filetime = (struct FILETIME *) find_mapi_SPropValue_data(properties, mapitag);
+	filetime = (const struct FILETIME *) find_mapi_SPropValue_data(properties, mapitag);
 	if (filetime) {
 		time = filetime->dwHighDateTime;
 		time = time << 32;
@@ -136,12 +136,12 @@ _PUBLIC_ void mapidump_date_SPropValue(struct SPropValue lpProp, const char *lab
 {
 	TALLOC_CTX		*mem_ctx;
 	NTTIME			time;
-	struct FILETIME		*filetime;
+	const struct FILETIME		*filetime;
 	const char		*date;
 
 	mem_ctx = talloc_init("mapidump_date_SPropValue");
 
-	filetime = (struct FILETIME *) get_SPropValue_data(&lpProp);
+	filetime = (const struct FILETIME *) get_SPropValue_data(&lpProp);
 	if (filetime) {
 		time = filetime->dwHighDateTime;
 		time = time << 32;
@@ -164,27 +164,27 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties)
 	const char		*subject;
 	const char		*body;
 	const char		*codepage;
-	struct SBinary_short	*html = NULL;
-	uint8_t			*has_attach;
-	uint32_t       		*cp;
+	const struct SBinary_short	*html = NULL;
+	const uint8_t			*has_attach;
+	const uint32_t       		*cp;
 
-	msgid = (char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
-	subject = (char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	body = (char *) find_mapi_SPropValue_data(properties, PR_BODY);
+	msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
+	subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY);
 	if (!body) {
-		body = (char *) find_mapi_SPropValue_data(properties, PR_BODY_UNICODE);
+		body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY_UNICODE);
 		if (!body) {
-			html = (struct SBinary_short *) find_mapi_SPropValue_data(properties, PR_HTML);
+			html = (const struct SBinary_short *) find_mapi_SPropValue_data(properties, PR_HTML);
 		}
 	}
-	from = (char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME);
-	to = (char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO);
-	cc = (char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC);
-	bcc = (char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC);
+	from = (const char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME);
+	to = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO);
+	cc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC);
+	bcc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC);
 
-	has_attach = (uint8_t *)find_mapi_SPropValue_data(properties, PR_HASATTACH);
+	has_attach = (const uint8_t *)find_mapi_SPropValue_data(properties, PR_HASATTACH);
 
-	cp = (uint32_t *)find_mapi_SPropValue_data(properties, PR_MESSAGE_CODEPAGE);
+	cp = (const uint32_t *)find_mapi_SPropValue_data(properties, PR_MESSAGE_CODEPAGE);
 	switch (cp ? *cp : 0) {
 	case CP_USASCII:
 		codepage = "CP_USASCII";
@@ -233,22 +233,22 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties)
 
 _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties)
 {
-	struct mapi_SLPSTRArray	*keywords = NULL;
-	struct mapi_SLPSTRArray	*contacts = NULL;
+	const struct mapi_SLPSTRArray	*keywords = NULL;
+	const struct mapi_SLPSTRArray	*contacts = NULL;
 	const char		*subject = NULL;
 	const char		*location= NULL;
 	const char		*timezone = NULL;
-	uint32_t		*status;
-	uint8_t			*priv = NULL;
+	const uint32_t		*status;
+	const uint8_t			*priv = NULL;
 	int			i;
 
-	keywords = (struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_EMS_AB_MONITORING_CACHED_VIA_MAIL);
-	contacts = (struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_Contacts);
-	subject = (char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	timezone = (char *)find_mapi_SPropValue_data(properties, PR_APPOINTMENT_TIMEZONE);
-	location = (char *)find_mapi_SPropValue_data(properties, PR_APPOINTMENT_LOCATION);
-	status = (uint32_t *)find_mapi_SPropValue_data(properties, PR_Status);
-	priv = (uint8_t *)find_mapi_SPropValue_data(properties, PR_Private);
+	keywords = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_EMS_AB_MONITORING_CACHED_VIA_MAIL);
+	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_Contacts);
+	subject = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	timezone = (const char *)find_mapi_SPropValue_data(properties, PR_APPOINTMENT_TIMEZONE);
+	location = (const char *)find_mapi_SPropValue_data(properties, PR_APPOINTMENT_LOCATION);
+	status = (const uint32_t *)find_mapi_SPropValue_data(properties, PR_Status);
+	priv = (const uint8_t *)find_mapi_SPropValue_data(properties, PR_Private);
 
 	printf("|== %s ==|\n", subject?subject:"");
 	fflush(0);
@@ -314,25 +314,25 @@ _PUBLIC_ void mapidump_contact(struct mapi_SPropValue_array *properties)
 	const char      *business_fax = NULL;
 	const char      *business_home_page = NULL;
 
-	card_name = (char *)find_mapi_SPropValue_data(properties, PR_CONTACT_CARD_NAME);
-	topic = (char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	company = (char *)find_mapi_SPropValue_data(properties, PR_COMPANY_NAME);
-	title = (char *)find_mapi_SPropValue_data(properties, PR_TITLE);
-	full_name = (char *)find_mapi_SPropValue_data(properties, PR_DISPLAY_NAME);
-	given_name = (char *)find_mapi_SPropValue_data(properties, PR_GIVEN_NAME);
-	surname = (char *)find_mapi_SPropValue_data(properties, PR_SURNAME);
-	department = (char *)find_mapi_SPropValue_data(properties, PR_DEPARTMENT_NAME);
-	email = (char *)find_mapi_SPropValue_data(properties, PR_CONTACT_CARD_EMAIL_ADDRESS);
-	office_phone = (char *)find_mapi_SPropValue_data(properties, PR_OFFICE_TELEPHONE_NUMBER);
-	home_phone = (char *)find_mapi_SPropValue_data(properties, PR_HOME_TELEPHONE_NUMBER);
-	mobile_phone = (char *)find_mapi_SPropValue_data(properties, PR_MOBILE_TELEPHONE_NUMBER);
-	business_fax = (char *)find_mapi_SPropValue_data(properties, PR_BUSINESS_FAX_NUMBER);
-	business_home_page = (char *)find_mapi_SPropValue_data(properties, PR_BUSINESS_HOME_PAGE);
-	postal_address = (char*)find_mapi_SPropValue_data(properties, PR_POSTAL_ADDRESS);
-	street_address = (char*)find_mapi_SPropValue_data(properties, PR_STREET_ADDRESS);
-	locality = (char*)find_mapi_SPropValue_data(properties, PR_LOCALITY);
-	state = (char*)find_mapi_SPropValue_data(properties, PR_STATE_OR_PROVINCE);
-	country = (char*)find_mapi_SPropValue_data(properties, PR_COUNTRY);
+	card_name = (const char *)find_mapi_SPropValue_data(properties, PR_CONTACT_CARD_NAME);
+	topic = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	company = (const char *)find_mapi_SPropValue_data(properties, PR_COMPANY_NAME);
+	title = (const char *)find_mapi_SPropValue_data(properties, PR_TITLE);
+	full_name = (const char *)find_mapi_SPropValue_data(properties, PR_DISPLAY_NAME);
+	given_name = (const char *)find_mapi_SPropValue_data(properties, PR_GIVEN_NAME);
+	surname = (const char *)find_mapi_SPropValue_data(properties, PR_SURNAME);
+	department = (const char *)find_mapi_SPropValue_data(properties, PR_DEPARTMENT_NAME);
+	email = (const char *)find_mapi_SPropValue_data(properties, PR_CONTACT_CARD_EMAIL_ADDRESS);
+	office_phone = (const char *)find_mapi_SPropValue_data(properties, PR_OFFICE_TELEPHONE_NUMBER);
+	home_phone = (const char *)find_mapi_SPropValue_data(properties, PR_HOME_TELEPHONE_NUMBER);
+	mobile_phone = (const char *)find_mapi_SPropValue_data(properties, PR_MOBILE_TELEPHONE_NUMBER);
+	business_fax = (const char *)find_mapi_SPropValue_data(properties, PR_BUSINESS_FAX_NUMBER);
+	business_home_page = (const char *)find_mapi_SPropValue_data(properties, PR_BUSINESS_HOME_PAGE);
+	postal_address = (const char*)find_mapi_SPropValue_data(properties, PR_POSTAL_ADDRESS);
+	street_address = (const char*)find_mapi_SPropValue_data(properties, PR_STREET_ADDRESS);
+	locality = (const char*)find_mapi_SPropValue_data(properties, PR_LOCALITY);
+	state = (const char*)find_mapi_SPropValue_data(properties, PR_STATE_OR_PROVINCE);
+	country = (const char*)find_mapi_SPropValue_data(properties, PR_COUNTRY);
 
 	if (card_name) 
 		printf("|== %s ==|\n", card_name );
@@ -413,24 +413,24 @@ _PUBLIC_ const char *get_priority(uint32_t priority)
 
 _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties)
 {
-	struct mapi_SLPSTRArray	*keywords = NULL;
-	struct mapi_SLPSTRArray	*contacts = NULL;
+	const struct mapi_SLPSTRArray	*keywords = NULL;
+	const struct mapi_SLPSTRArray	*contacts = NULL;
 	const char		*subject = NULL;
 	const char		*body = NULL;
-	double			*complete = 0;
-	uint32_t		*status;
-	uint32_t		*priority;
-	uint8_t			*private;
+	const double			*complete = 0;
+	const uint32_t		*status;
+	const uint32_t		*priority;
+	const uint8_t			*private;
 	int			i;
 
-	keywords = (struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_EMS_AB_MONITORING_CACHED_VIA_MAIL);
-	contacts = (struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_Contacts);
-	subject = (char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	body = (char *)find_mapi_SPropValue_data(properties, PR_BODY);
-	complete = (double *)find_mapi_SPropValue_data(properties, PR_PercentComplete);
-	status = (uint32_t *)find_mapi_SPropValue_data(properties, PR_Status);
-	priority = (uint32_t *)find_mapi_SPropValue_data(properties, PR_PRIORITY);
-	private = (uint8_t *)find_mapi_SPropValue_data(properties, PR_Private);
+	keywords = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_EMS_AB_MONITORING_CACHED_VIA_MAIL);
+	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_Contacts);
+	subject = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	body = (const char *)find_mapi_SPropValue_data(properties, PR_BODY);
+	complete = (const double *)find_mapi_SPropValue_data(properties, PR_PercentComplete);
+	status = (const uint32_t *)find_mapi_SPropValue_data(properties, PR_Status);
+	priority = (const uint32_t *)find_mapi_SPropValue_data(properties, PR_PRIORITY);
+	private = (const uint8_t *)find_mapi_SPropValue_data(properties, PR_Private);
 
 	printf("|== %s ==|\n", subject?subject:"");
 	fflush(0);
@@ -481,8 +481,8 @@ _PUBLIC_ void mapidump_note(struct mapi_SPropValue_array *properties)
 	const char		*subject = NULL;
 	const char		*body = NULL;
 
-	subject = (char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	body = (char *)find_mapi_SPropValue_data(properties, PR_BODY);
+	subject = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	body = (const char *)find_mapi_SPropValue_data(properties, PR_BODY);
 
 	printf("|== %s ==|\n", subject?subject:"");
 	fflush(0);
@@ -494,7 +494,7 @@ _PUBLIC_ void mapidump_note(struct mapi_SPropValue_array *properties)
 		printf("%s\n", body);
 		fflush(0);
 	} else {
-		body = (char *)find_mapi_SPropValue_data(properties, PR_BODY_HTML);
+		body = (const char *)find_mapi_SPropValue_data(properties, PR_BODY_HTML);
 		if (body) {
 			printf("Content HTML:\n");
 			printf("%s\n", body);

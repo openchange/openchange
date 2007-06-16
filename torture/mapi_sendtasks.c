@@ -86,11 +86,11 @@ BOOL torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	mapi_errstr("CreateMessage", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
-	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (void *) task);
-	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (void *) task);
-	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (void *)"IPM.Task");
-	set_SPropValue_proptag(&props[3], PR_PRIORITY, (void *)&priority);
-	set_SPropValue_proptag(&props[4], PR_Status, (void *)&status);
+	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (const void *) task);
+	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (const void *) task);
+	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Task");
+	set_SPropValue_proptag(&props[3], PR_PRIORITY, (const void *)&priority);
+	set_SPropValue_proptag(&props[4], PR_Status, (const void *)&status);
 	retval = SetProps(&obj_message, props, CN_PROPS);
 	mapi_errstr("SetProps", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;

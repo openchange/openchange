@@ -248,7 +248,7 @@ static char *ldb_base64_encode(void *mem_ctx, const char *buf, int len)
 }
 
 
-static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach, uint32_t *size, char **magic)
+static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach, const uint32_t size, char **magic)
 {
 	enum MAPISTATUS	retval;
 	const char     	*tmp;
@@ -261,24 +261,24 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 	magic_t		cookie = NULL;
 
 	data.length = 0;
-	data.data = talloc_size(mem_ctx, *size);
+	data.data = talloc_size(mem_ctx, size);
 
 	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
 	if (retval != MAPI_E_SUCCESS) return False;
 
-	if (*size < MAX_READ_SIZE) {
-		retval = ReadStream(&obj_stream, buf, *size, &read_size);
+	if (size < MAX_READ_SIZE) {
+		retval = ReadStream(&obj_stream, buf, size, &read_size);
 		if (retval != MAPI_E_SUCCESS) return NULL;
 		memcpy(data.data, buf, read_size);
 	}
 
-	for (stream_size = 0; stream_size < *size; stream_size += 0x4000) {
+	for (stream_size = 0; stream_size < size; stream_size += 0x4000) {
 		retval = ReadStream(&obj_stream, buf, max_read_size, &read_size);
 		if (retval != MAPI_E_SUCCESS) return NULL;
 		memcpy(data.data + stream_size, buf, read_size);
 	}
 
-	data.length = *size;
+	data.length = size;
 
 	cookie = magic_open(MAGIC_MIME);
 	if (cookie == NULL) {
@@ -316,7 +316,7 @@ static BOOL message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	enum MAPISTATUS			retval;
 	mapi_object_t			obj_tb_attach;
 	mapi_object_t			obj_attach;
-	uint64_t			*delivery_date;
+	const uint64_t		*delivery_date;
 	const char			*date = NULL;
 	const char			*from = NULL;
 	const char			*to = NULL;
@@ -326,39 +326,39 @@ static BOOL message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	const char			*msgid;
 	const char			*body = NULL;
 	const char			*attach_filename;
-	uint32_t			*attach_size;
+	const uint32_t		*attach_size;
 	char				*attachment_data;
-	uint32_t			*has_attach = NULL;
-	uint32_t			*attach_num = NULL;
+	const uint32_t		*has_attach = NULL;
+	const uint32_t		*attach_num = NULL;
 	char				*magic;
 	char				*line = NULL;
-	struct SBinary_short		*html = NULL;
+	const struct SBinary_short		*html = NULL;
 	struct SPropTagArray		*SPropTagArray = NULL;
 	struct SRowSet			rowset_attach;
 	struct mapi_SPropValue_array	properties_array;
 	int				i;
 
-	has_attach = (uint32_t *) find_mapi_SPropValue_data(properties, PR_HASATTACH);
+	has_attach = (const uint32_t *) find_mapi_SPropValue_data(properties, PR_HASATTACH);
 
-	from = (char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME);
-	to = (char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO);
-	cc = (char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC);
-	bcc = (char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC);
+	from = (const char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME);
+	to = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO);
+	cc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC);
+	bcc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC);
 
 	if (!to && !cc && !bcc) {
 		return False;
 	}
 
-	delivery_date = (uint64_t *)find_mapi_SPropValue_data(properties, PR_MESSAGE_DELIVERY_TIME);
+	delivery_date = (const uint64_t *)find_mapi_SPropValue_data(properties, PR_MESSAGE_DELIVERY_TIME);
 	date = nt_time_string(mem_ctx, *delivery_date);
 
-	subject = (char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	msgid = (char *) find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
-	body = (char *) find_mapi_SPropValue_data(properties, PR_BODY);
+	subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	msgid = (const char *) find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
+	body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY);
 	if (!body) {
-		body = (char *) find_mapi_SPropValue_data(properties, PR_BODY_UNICODE);
+		body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY_UNICODE);
 		if (!body) {
-			html = (struct SBinary_short *) find_mapi_SPropValue_data(properties, PR_HTML);
+			html = (const struct SBinary_short *) find_mapi_SPropValue_data(properties, PR_HTML);
 		}
 	}
 
@@ -466,13 +466,13 @@ static BOOL message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 			MAPI_RETVAL_IF(retval, retval, NULL);
 			
 			for (i = 0; i < rowset_attach.cRows; i++) {
-				attach_num = (uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[i]), PR_ATTACH_NUM);
+				attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[i]), PR_ATTACH_NUM);
 				retval = OpenAttach(obj_message, *attach_num, &obj_attach);
 				if (retval == MAPI_E_SUCCESS) {
 					retval = GetPropsAll(&obj_attach, &properties_array);
-					attach_filename = get_filename((char *)(find_mapi_SPropValue_data(&properties_array, PR_ATTACH_FILENAME)));
-					attach_size = (uint32_t *) find_mapi_SPropValue_data(&properties_array, PR_ATTACH_SIZE);
-					attachment_data = get_base64_attachment(mem_ctx, obj_attach, attach_size, &magic);
+					attach_filename = get_filename(find_mapi_SPropValue_data(&properties_array, PR_ATTACH_FILENAME));
+					attach_size = (const uint32_t *) find_mapi_SPropValue_data(&properties_array, PR_ATTACH_SIZE);
+					attachment_data = get_base64_attachment(mem_ctx, obj_attach, *attach_size, &magic);
 					if (attachment_data) {
 						line = talloc_asprintf(mem_ctx, "\n\n--%s\n", BOUNDARY);
 						if (line) fwrite(line, strlen(line), 1, fp);
@@ -671,7 +671,7 @@ int main(int argc, const char *argv[])
 				retval = GetPropsAll(&obj_message, &properties_array);
 				if (retval != MAPI_E_SUCCESS) return False;
 				
-				msgid = (char *) find_mapi_SPropValue_data(&properties_array, PR_INTERNET_MESSAGE_ID);
+				msgid = (const char *) find_mapi_SPropValue_data(&properties_array, PR_INTERNET_MESSAGE_ID);
 				if (msgid) {
 					retval = FindProfileAttr(profile, "Message-ID", msgid);
 					if (GetLastError() == MAPI_E_NOT_FOUND) {

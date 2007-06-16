@@ -343,7 +343,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		struct recipients_headers	*headers;
 		struct ndr_push			*ndr;
 		struct mapi_SPropValue		mapi_sprop;
-		uint32_t			*RecipClass = 0;
+		const uint32_t			*RecipClass = 0;
 
 		ndr = talloc_zero(mem_ctx, struct ndr_push);
 		aRow = &(SRowSet->aRow[i_recip]);
@@ -352,7 +352,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		request.recipient[i_recip].idx = i_recip;
 		size += sizeof(uint32_t);
 
-		RecipClass = (uint32_t *) find_SPropValue_data(aRow, PR_RECIPIENT_TYPE);
+		RecipClass = (const uint32_t *) find_SPropValue_data(aRow, PR_RECIPIENT_TYPE);
 		MAPI_RETVAL_IF(!RecipClass, MAPI_E_INVALID_PARAMETER, mem_ctx);
 		request.recipient[i_recip].RecipClass = (uint8_t) *RecipClass;
 		size += sizeof(uint8_t);
@@ -374,9 +374,9 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		/* displayname 7bit == username */
 		switch (headers->bitmask & 0x400) {
 		case (0x400):
-			headers->username.lpszA = (char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
+			headers->username.lpszA = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
 			if (!headers->username.lpszA) {
-				headers->username.lpszA = (char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
+				headers->username.lpszA = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
 			}
 			size += strlen(headers->username.lpszA) + 1;
 			break;
@@ -387,11 +387,11 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		/* first name */
 		switch (headers->bitmask & 0x210) {
 		case (0x10):
-			headers->firstname.lpszA = (char *) find_SPropValue_data(aRow, PR_GIVEN_NAME);
+			headers->firstname.lpszA = (const char *) find_SPropValue_data(aRow, PR_GIVEN_NAME);
 			size += strlen(headers->firstname.lpszA) + 1;
 			break;
 		case (0x210):
-			headers->firstname.lpszW = (char *) find_SPropValue_data(aRow, PR_GIVEN_NAME_UNICODE);
+			headers->firstname.lpszW = (const char *) find_SPropValue_data(aRow, PR_GIVEN_NAME_UNICODE);
 			size += strlen(headers->firstname.lpszW) * 2 + 2;
 			break;
 		default:
@@ -401,11 +401,11 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		/* display name */
 		switch (headers->bitmask & 0x201) {
 		case (0x1):
-			headers->displayname.lpszA = (char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME);
+			headers->displayname.lpszA = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME);
 			size += strlen(headers->displayname.lpszA) + 1;
 			break;
 		case (0x201):
-			headers->displayname.lpszW = (char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
+			headers->displayname.lpszW = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
 			size += strlen(headers->displayname.lpszW) * 2 + 2;
 		default:
 			break;

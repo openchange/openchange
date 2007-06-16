@@ -83,10 +83,10 @@ BOOL torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 	mapi_errstr("CreateMessage", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
-	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (void *) cardname);
-	set_SPropValue_proptag(&props[1], PR_DISPLAY_NAME, (void *) fullname);
-	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (void *)"IPM.Contact");
-	set_SPropValue_proptag(&props[3], PR_NORMALIZED_SUBJECT, (void *) cardname);
+	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (const void *) cardname);
+	set_SPropValue_proptag(&props[1], PR_DISPLAY_NAME, (const void *) fullname);
+	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Contact");
+	set_SPropValue_proptag(&props[3], PR_NORMALIZED_SUBJECT, (const void *) cardname);
 	retval = SetProps(&obj_message, props, 4);
 	mapi_errstr("SetProps", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;

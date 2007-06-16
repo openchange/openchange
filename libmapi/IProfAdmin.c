@@ -174,7 +174,8 @@ static enum MAPISTATUS ldb_create_profile(TALLOC_CTX *mem_ctx,
 	const char * const		attrs[] = { "*", NULL };
 
 	/* Sanity check */
-	if (!profname) return MAPI_E_BAD_VALUE;
+	if (profname == NULL) 
+		return MAPI_E_BAD_VALUE;
 
 	/* Does the profile already exists? */
 	ldb_filter = talloc_asprintf(mem_ctx, "(cn=%s)(cn=Profiles)", profname);
@@ -199,14 +200,14 @@ static enum MAPISTATUS ldb_create_profile(TALLOC_CTX *mem_ctx,
 	el[0].name = talloc_strdup(mem_ctx, "cn");
 	el[0].num_values = 1;
 	el[0].values = vals[0];
-	vals[0][0].data = (uint8_t *)profname;
+	vals[0][0].data = (uint8_t *)talloc_strdup(mem_ctx, profname);
 	vals[0][0].length = strlen(profname);
 
 	el[1].flags = 0;
 	el[1].name = talloc_strdup(mem_ctx, "name");
 	el[1].num_values = 1;
 	el[1].values = vals[1];
-	vals[1][0].data = (uint8_t *)profname;
+	vals[1][0].data = (uint8_t *)talloc_strdup(mem_ctx, profname);
 	vals[1][0].length = strlen(profname);
 
 	ret = ldb_add(ldb_ctx, &msg);
@@ -291,7 +292,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(const char *profile,
 	el[0].name = talloc_strdup(mem_ctx, attr);
 	el[0].num_values = 1;
 	el[0].values = vals[0];
-	vals[0][0].data = (uint8_t *)value;
+	vals[0][0].data = (uint8_t *)talloc_strdup(mem_ctx, value);
 	vals[0][0].length = strlen(value);
 
 	ret = ldb_modify(ldb_ctx, &msg);
@@ -347,7 +348,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_modify_string_attr(const char *profname,
 	el[0].name = talloc_strdup(mem_ctx, attr);
 	el[0].num_values = 1;
 	el[0].values = vals[0];
-	vals[0][0].data = (uint8_t *)value;
+	vals[0][0].data = (uint8_t *)talloc_strdup(mem_ctx, value);
 	vals[0][0].length = strlen(value);
 
 	ret = ldb_modify(ldb_ctx, &msg);
@@ -404,7 +405,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_delete_string_attr(const char *profname,
 	el[0].name = talloc_strdup(mem_ctx, attr);
 	el[0].num_values = 1;
 	el[0].values = vals[0];
-	vals[0][0].data = (uint8_t *)value;
+	vals[0][0].data = (uint8_t *)talloc_strdup(mem_ctx, value);
 	vals[0][0].length = strlen(value);
 
 	ret = ldb_modify(ldb_ctx, &msg);
@@ -816,7 +817,8 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 	value[0] = talloc_array(mem_ctx, char *, *count);
 
 	if (*count == 1) {
-		value[0][0] = (char *)ldb_msg_find_attr_as_string(msg, attribute, NULL);
+		value[0][0] = talloc_strdup(value[0], 
+						ldb_msg_find_attr_as_string(msg, attribute, NULL));
 	} else {
 		for (i = 0; i < *count; i++) {
 			value[0][i] = talloc_strdup(mem_ctx, (char *)ldb_element->values[i].data);
@@ -862,7 +864,7 @@ _PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile, const cha
 	ldb_element = ldb_msg_find_element(msg, attribute);
 	MAPI_RETVAL_IF(!ldb_element, MAPI_E_NOT_FOUND, NULL);
 
-	val.data = (uint8_t *) value;
+	val.data = (uint8_t *)talloc_strdup(mem_ctx, value);
 	val.length = strlen(value);
 	MAPI_RETVAL_IF(!ldb_msg_find_val(ldb_element, &val), MAPI_E_NOT_FOUND, NULL);
 
@@ -920,7 +922,7 @@ static BOOL set_profile_mvstr_attribute(const char *profname, struct SRowSet row
 }
 
 _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, const char *username,
-					       mapi_profile_callback_t callback, void *private)
+					       mapi_profile_callback_t callback, const void *private)
 {
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi;

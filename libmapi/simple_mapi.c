@@ -32,7 +32,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	mapi_object_t			obj_inbox;
 	mapi_id_t			id_inbox;
 	struct mapi_SPropValue_array	properties_array;
-	struct SBinary_short		*entryid;
+	const struct SBinary_short		*entryid;
 	uint32_t			low;
 	uint32_t			high;
 
@@ -70,22 +70,22 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_inbox;
 		return MAPI_E_SUCCESS;
 	case olFolderCalendar:
-		entryid = (struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_APPOINTMENT_ENTRYID);
+		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_APPOINTMENT_ENTRYID);
 		break;
 	case olFolderContacts:
-		entryid = (struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_CONTACT_ENTRYID);
+		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_CONTACT_ENTRYID);
 		break;
 	case olFolderJournal:
-		entryid = (struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_JOURNAL_ENTRYID);
+		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_JOURNAL_ENTRYID);
 		break;
 	case olFolderNotes:
-		entryid = (struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_NOTE_ENTRYID);
+		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_NOTE_ENTRYID);
 		break;		
 	case olFolderTasks:
-		entryid = (struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_TASK_ENTRYID);
+		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_TASK_ENTRYID);
 		break;
 	case olFolderDrafts:
-		entryid = (struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_DRAFTS_ENTRYID);
+		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_DRAFTS_ENTRYID);
 		break;		
 	default:
 		*folder = 0;

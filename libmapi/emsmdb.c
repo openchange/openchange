@@ -335,7 +335,7 @@ NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey, uint32_t ulEven
 }
 
 
-void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAPITAGS tag, DATA_BLOB *data)
+const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAPITAGS tag, DATA_BLOB *data)
 {
 	struct ndr_pull		*ndr;
 	const char		*pt_string8;
@@ -386,7 +386,7 @@ void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAPITAGS 
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 		ndr_pull_string(ndr, NDR_SCALARS, &pt_string8);
 		*offset = ndr->offset;
-		return (void *) pt_string8;
+		return (const void *) pt_string8;
 	case PT_OBJECT:
 	case PT_BINARY:
 		ndr_pull_SBinary_short(ndr, NDR_SCALARS, &pt_binary);
@@ -411,7 +411,7 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 	uint32_t		i_tag;
 	uint32_t		cn_tags;
 	uint32_t		offset = 0;
-	void			*data;
+	const void		*data;
 
 	i_propval = 0;
 	cn_tags = tags->cValues;
@@ -448,7 +448,7 @@ void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPro
 	uint32_t	idx;
 	uint32_t	prop;
 	uint32_t	offset = 0;
-	void		*data;
+	const void		*data;
 	uint32_t	row_count;
 
 	/* caller allocated */

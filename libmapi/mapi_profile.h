@@ -52,7 +52,7 @@ struct mapi_profile
 	uint32_t		method;
 };
 
-typedef int (*mapi_profile_callback_t)(struct SRowSet *, void *);
+typedef int (*mapi_profile_callback_t)(struct SRowSet *, const void *);
 
 #define	PROFILE_NOPASSWORD	1
 

@@ -43,10 +43,10 @@ BOOL torture_rpc_mapi_sendattach(struct torture_context *torture)
 	const char		*subject = lp_parm_string(-1, "mapi", "subject");
 	const char		*body = lp_parm_string(-1, "mapi", "body");
 	const char		*filename = lp_parm_string(-1, "mapi", "attachment");
-	char			**usernames;
-	char			**usernames_to;
-	char			**usernames_cc;
-	char			**usernames_bcc;
+	const char		**usernames;
+	const char		**usernames_to;
+	const char		**usernames_cc;
+	const char		**usernames_bcc;
 	struct mapi_session	*session;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_outbox;
@@ -119,7 +119,7 @@ BOOL torture_rpc_mapi_sendattach(struct torture_context *torture)
 	usernames_bcc = get_cmdline_recipients(mem_ctx, "bcc");
 	usernames = collapse_recipients(mem_ctx, usernames_to, usernames_cc, usernames_bcc);
 
-	retval = ResolveNames((const char **)usernames, SPropTagArray, &SRowSet, &flaglist, 0);
+	retval = ResolveNames(usernames, SPropTagArray, &SRowSet, &flaglist, 0);
 	mapi_errstr("ResolveNames", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return False;
 
@@ -150,9 +150,9 @@ BOOL torture_rpc_mapi_sendattach(struct torture_context *torture)
 	/* message->SetProps()
 	 */
 	msgflag = MSGFLAG_UNSENT;
-	set_SPropValue_proptag(&props[0], PR_SUBJECT, (void *)subject);
-	set_SPropValue_proptag(&props[1], PR_BODY, (void *)body);
-	set_SPropValue_proptag(&props[2], PR_MESSAGE_FLAGS, (void *)&msgflag);
+	set_SPropValue_proptag(&props[0], PR_SUBJECT, (const void *)subject);
+	set_SPropValue_proptag(&props[1], PR_BODY, (const void *)body);
+	set_SPropValue_proptag(&props[2], PR_MESSAGE_FLAGS, (const void *)&msgflag);
 	retval = SetProps(&obj_message, props, CN_MSG_PROPS);
 	mapi_errstr("SetProps", GetLastError());
 

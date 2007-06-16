@@ -36,9 +36,9 @@ const char *get_filename(const char *filename)
 	return filename;
 }
 
-char **get_cmdline_recipients(TALLOC_CTX *mem_ctx, const char *type)
+const char **get_cmdline_recipients(TALLOC_CTX *mem_ctx, const char *type)
 {
-	char		**usernames;
+	const char	**usernames;
 	const char	*recipients;
 	char		*tmp = NULL;
 	uint32_t	j = 0;
@@ -60,23 +60,23 @@ char **get_cmdline_recipients(TALLOC_CTX *mem_ctx, const char *type)
 		return NULL;
 	}
 	
-	usernames = talloc_array(mem_ctx, char *, 2);
+	usernames = talloc_array(mem_ctx, const char *, 2);
 	usernames[0] = strdup(tmp);
 	
 	for (j = 1; (tmp = strtok(NULL, ",")) != NULL; j++) {
-		usernames = talloc_realloc(mem_ctx, usernames, char *, j+2);
+		usernames = talloc_realloc(mem_ctx, usernames, const char *, j+2);
 		usernames[j] = strdup(tmp);
 	}
 	usernames[j] = 0;
 
-	return (usernames);
+	return usernames;
 }
 
-char **collapse_recipients(TALLOC_CTX *mem_ctx, char **to, char **cc, char **bcc)
+const char **collapse_recipients(TALLOC_CTX *mem_ctx, const char **to, const char **cc, const char **bcc)
 {
 	uint32_t	count;
 	uint32_t       	i;
-	char		**usernames;
+	const char	**usernames;
 
 	if (!to && !cc && !bcc) return NULL;
 
@@ -85,7 +85,7 @@ char **collapse_recipients(TALLOC_CTX *mem_ctx, char **to, char **cc, char **bcc
 	for (i = 0; cc && cc[i]; i++,  count++);
 	for (i = 0; bcc && bcc[i]; i++, count++);
 
-	usernames = talloc_array(mem_ctx, char *, count + 1);
+	usernames = talloc_array(mem_ctx, const char *, count + 1);
 	count = 0;
 
 	for (i = 0; to && to[i]; i++, count++) {
@@ -157,7 +157,7 @@ static BOOL set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 }
 
 BOOL set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
-					char **usernames, struct FlagList *flaglist,
+					const char **usernames, struct FlagList *flaglist,
 					enum ulRecipClass RecipClass)
 {
 	uint32_t	i;
@@ -239,7 +239,7 @@ enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent,
 	struct SRowSet		*SRowSet = NULL;
 	struct FlagList		*flaglist = NULL;
 	struct SPropValue	props[3];
-	char			**usernames;
+	const char			**usernames;
 	uint32_t		index = 0;
 
 	mem_ctx = talloc_init("torture_simplemail");
@@ -259,7 +259,7 @@ enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent,
 	lp_set_cmdline("mapi:to", global_mapi_ctx->session->profile->username);
 	usernames = get_cmdline_recipients(mem_ctx, "to");
 
-	retval = ResolveNames((const char **)usernames, SPropTagArray, &SRowSet, &flaglist, 0);
+	retval = ResolveNames(usernames, SPropTagArray, &SRowSet, &flaglist, 0);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (!SRowSet) {
@@ -280,9 +280,9 @@ enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent,
 	retval = MAPIFreeBuffer(flaglist);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	set_SPropValue_proptag(&props[0], PR_SUBJECT, (void *)subject);
-	set_SPropValue_proptag(&props[1], PR_BODY, (void *)body);
-	set_SPropValue_proptag(&props[2], PR_MESSAGE_FLAGS, (void *)&flags);
+	set_SPropValue_proptag(&props[0], PR_SUBJECT, (const void *)subject);
+	set_SPropValue_proptag(&props[1], PR_BODY, (const void *)body);
+	set_SPropValue_proptag(&props[2], PR_MESSAGE_FLAGS, (const void *)&flags);
 	retval = SetProps(&obj_message, props, 3);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 

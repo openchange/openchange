@@ -235,10 +235,10 @@ static enum MAPISTATUS openchangeclient_fetchmail(struct mapi_session *session,
 	struct mapi_SPropValue_array	properties_array;
 	uint32_t			i, j;
 	uint32_t			count;
-	uint8_t				*has_attach;
-	uint32_t			*attach_num;
+	const uint8_t		*has_attach;
+	const uint32_t		*attach_num;
 	const char			*attach_filename;
-	uint32_t			*attach_size;
+	const uint32_t		*attach_size;
 	
 	mem_ctx = talloc_init("openchangeclient_fetchmail");
 
@@ -279,7 +279,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(struct mapi_session *session,
 			if (GetLastError() == MAPI_E_SUCCESS) {
 				retval = GetPropsAll(&obj_message, &properties_array);
 				if (retval != MAPI_E_SUCCESS) return False;
-				has_attach = (uint8_t *) find_mapi_SPropValue_data(&properties_array, PR_HASATTACH);
+				has_attach = (const uint8_t *) find_mapi_SPropValue_data(&properties_array, PR_HASATTACH);
 				
 				mapidump_message(&properties_array);
 
@@ -297,16 +297,16 @@ static enum MAPISTATUS openchangeclient_fetchmail(struct mapi_session *session,
 						if (retval != MAPI_E_SUCCESS) return False;
 
 						for (j = 0; j < rowset_attach.cRows; j++) {
-							attach_num = (uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[j]), PR_ATTACH_NUM);
+							attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[j]), PR_ATTACH_NUM);
 							retval = OpenAttach(&obj_message, *attach_num, &obj_attach);
 							if (retval == MAPI_E_SUCCESS) {
 								fflush(0);
 								retval = GetPropsAll(&obj_attach, &properties_array);
-								attach_filename = get_filename((char *)find_mapi_SPropValue_data(&properties_array, PR_ATTACH_FILENAME));
+								attach_filename = get_filename(find_mapi_SPropValue_data(&properties_array, PR_ATTACH_FILENAME));
 								if (attach_filename && !strcmp(attach_filename, "")) {
-									attach_filename = get_filename((char *)find_mapi_SPropValue_data(&properties_array, PR_ATTACH_LONG_FILENAME));
+									attach_filename = get_filename(find_mapi_SPropValue_data(&properties_array, PR_ATTACH_LONG_FILENAME));
 								}
-								attach_size = (uint32_t *)find_mapi_SPropValue_data(&properties_array, PR_ATTACH_SIZE);
+								attach_size = (const uint32_t *)find_mapi_SPropValue_data(&properties_array, PR_ATTACH_SIZE);
 								printf("[%d] %s (%d Bytes)\n", j, attach_filename, attach_size?*attach_size:0);
 								fflush(0);
 								if (oclient->store_folder) {
@@ -620,8 +620,10 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 
 	/* set message properties */
 	msgflag = MSGFLAG_UNSENT;
-	set_SPropValue_proptag(&props[0], PR_SUBJECT, (void *)oclient->subject);
-	set_SPropValue_proptag(&props[1], PR_MESSAGE_FLAGS, (void *)&msgflag);
+	set_SPropValue_proptag(&props[0], PR_SUBJECT, 
+						   (const void *)oclient->subject);
+	set_SPropValue_proptag(&props[1], PR_MESSAGE_FLAGS, 
+						   (const void *)&msgflag);
 	prop_count = 2;
 
 	/* Set PR_BODY or PR_HTML or inline PR_HTML */
@@ -633,7 +635,8 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			bin.cb = strlen(oclient->pr_body);
 			openchangeclient_stream(mem_ctx, obj_message, obj_stream, PR_BODY, 2, bin);
 		} else {
-			set_SPropValue_proptag(&props[2], PR_BODY, (void *)oclient->pr_body);
+			set_SPropValue_proptag(&props[2], PR_BODY, 
+								   (const void *)oclient->pr_body);
 			prop_count++;
 		}
 	} else if (oclient->pr_html_inline) {
@@ -834,24 +837,26 @@ static BOOL openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	end_date->dwLowDateTime = (nt << 32) >> 32;
 	end_date->dwHighDateTime = (nt >> 32);
 
-	set_SPropValue_proptag(&props[0], PR_CONVERSATION_TOPIC, (void *) oclient->subject);
-	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (void *) oclient->subject);
-	set_SPropValue_proptag(&props[2], PR_START_DATE, (void *) start_date);
-	set_SPropValue_proptag(&props[3], PR_END_DATE, (void *) end_date);
-	set_SPropValue_proptag(&props[4], PR_MESSAGE_CLASS, (void *)"IPM.Appointment");
+	set_SPropValue_proptag(&props[0], PR_CONVERSATION_TOPIC, 
+						   (const void *) oclient->subject);
+	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, 
+						   (const void *) oclient->subject);
+	set_SPropValue_proptag(&props[2], PR_START_DATE, (const void *) start_date);
+	set_SPropValue_proptag(&props[3], PR_END_DATE, (const void *) end_date);
+	set_SPropValue_proptag(&props[4], PR_MESSAGE_CLASS, (const void *)"IPM.Appointment");
 	flag = 1;
-	set_SPropValue_proptag(&props[5], PR_MESSAGE_FLAGS, (void *) &flag);
-	set_SPropValue_proptag(&props[6], PR_APPOINTMENT_LOCATION, (void *)(oclient->location?oclient->location:""));
-	set_SPropValue_proptag(&props[7], PR_BusyStatus, (void *) &oclient->busystatus);
+	set_SPropValue_proptag(&props[5], PR_MESSAGE_FLAGS, (const void *) &flag);
+	set_SPropValue_proptag(&props[6], PR_APPOINTMENT_LOCATION, (const void *)(oclient->location?oclient->location:""));
+	set_SPropValue_proptag(&props[7], PR_BusyStatus, (const void *) &oclient->busystatus);
 	flag= MEETING_STATUS_NONMEETING;
-	set_SPropValue_proptag(&props[8], PR_APPOINTMENT_MEETING_STATUS, (void *) &flag);
+	set_SPropValue_proptag(&props[8], PR_APPOINTMENT_MEETING_STATUS, (const void *) &flag);
 	flag2 = True;
-	set_SPropValue_proptag(&props[9], PR_CommonStart, (void *) start_date);
-	set_SPropValue_proptag(&props[10], PR_CommonEnd, (void *) end_date);
-	set_SPropValue_proptag(&props[11], PR_LABEL, (void *)&oclient->label);
+	set_SPropValue_proptag(&props[9], PR_CommonStart, (const void *) start_date);
+	set_SPropValue_proptag(&props[10], PR_CommonEnd, (const void *) end_date);
+	set_SPropValue_proptag(&props[11], PR_LABEL, (const void *)&oclient->label);
 	flag = 30;
-	set_SPropValue_proptag(&props[12], PR_ReminderMinutesBeforeStart, (void *)&flag);
-	set_SPropValue_proptag(&props[13], PR_BODY, (void *)(oclient->pr_body?oclient->pr_body:""));
+	set_SPropValue_proptag(&props[12], PR_ReminderMinutesBeforeStart, (const void *)&flag);
+	set_SPropValue_proptag(&props[13], PR_BODY, (const void *)(oclient->pr_body?oclient->pr_body:""));
 	retval = SetProps(&obj_message, props, CAL_CNPROPS);
 	if (retval != MAPI_E_SUCCESS) return False;
 
@@ -885,11 +890,11 @@ static BOOL openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	retval = CreateMessage(&obj_contact, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return False;
 
-	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (void *)oclient->card_name);
-	set_SPropValue_proptag(&props[1], PR_DISPLAY_NAME, (void *)oclient->full_name);
-	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (void *)"IPM.Contact");
-	set_SPropValue_proptag(&props[3], PR_NORMALIZED_SUBJECT, (void *)oclient->card_name);
-	set_SPropValue_proptag(&props[4], PR_CONTACT_CARD_EMAIL_ADDRESS, (void *)oclient->email);
+	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (const void *)oclient->card_name);
+	set_SPropValue_proptag(&props[1], PR_DISPLAY_NAME, (const void *)oclient->full_name);
+	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Contact");
+	set_SPropValue_proptag(&props[3], PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
+	set_SPropValue_proptag(&props[4], PR_CONTACT_CARD_EMAIL_ADDRESS, (const void *)oclient->email);
 	retval = SetProps(&obj_message, props, CONTACT_CNPROPS);
 	if (retval != MAPI_E_SUCCESS) return False;
 
@@ -947,13 +952,13 @@ static BOOL openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	end_date->dwHighDateTime = (nt >> 32);
 
 
-	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (void *)oclient->card_name);
-	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (void *)oclient->card_name);
-	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (void *)"IPM.Task");
-	set_SPropValue_proptag(&props[3], PR_PRIORITY, (void *)&oclient->priority);
-	set_SPropValue_proptag(&props[4], PR_Status, (void *)&oclient->taskstatus);
-	set_SPropValue_proptag(&props[5], PR_StartDate, (void *)start_date);
-	set_SPropValue_proptag(&props[6], PR_DueDate, (void *)end_date);
+	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (const void *)oclient->card_name);
+	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
+	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Task");
+	set_SPropValue_proptag(&props[3], PR_PRIORITY, (const void *)&oclient->priority);
+	set_SPropValue_proptag(&props[4], PR_Status, (const void *)&oclient->taskstatus);
+	set_SPropValue_proptag(&props[5], PR_StartDate, (const void *)start_date);
+	set_SPropValue_proptag(&props[6], PR_DueDate, (const void *)end_date);
 	retval = SetProps(&obj_message, props, TASK_CNPROPS);
 	if (retval != MAPI_E_SUCCESS) return False;
 
@@ -1006,12 +1011,12 @@ static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	struct SRowSet		rowset;
 	const char	       	*name;
 	char			*newname;
-	const char	       	*comment;
-	uint32_t	       	*total;
-	uint32_t	       	*unread;
-	uint32_t		*child;
+	const char	    *comment;
+	const uint32_t	*total;
+	const uint32_t	*unread;
+	const uint32_t	*child;
 	uint32_t		index;
-	uint64_t		*fid;
+	const uint64_t	*fid;
 	int			i;
 
 	mapi_object_init(&obj_folder);
@@ -1035,12 +1040,12 @@ static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	
 	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
-			fid = (uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
 			comment = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_COMMENT);
-			total = (uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT);
-			unread = (uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_UNREAD);
-			child = (uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
+			total = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT);
+			unread = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_UNREAD);
+			child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
 
 			for (i = 0; i < count; i++) {
 				printf("|   ");

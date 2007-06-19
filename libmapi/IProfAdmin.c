@@ -586,7 +586,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfile(const char *profile, const char *username
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	retval = mapi_profile_add_string_attr(profile, "username", username);
-	if (flag != PROFILE_NOPASSWORD) {
+	if (flag != OC_PROFILE_NOPASSWORD) {
 		retval = mapi_profile_add_string_attr(profile, "password", password);
 	}
 	talloc_free(mem_ctx);

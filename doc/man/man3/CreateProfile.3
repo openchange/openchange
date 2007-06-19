@@ -26,19 +26,30 @@
 .\" groff -man -Tascii CreateProfile.3
 .\"
 
-.TH CREATEPROFILE 3 2007-04-23 "OpenChange libmapi 0.2" "OpenChange Programmer's Manual"
+.TH CREATEPROFILE 3 2007-06-16 "OpenChange libmapi 0.6" "OpenChange Programmer's Manual"
 .SH NAME
 CreateProfile \- Create a profile in the MAPI profile database
 .SH SYNOPSIS
 .nf
 .B #include <libmapi/libmapi.h>
 .sp
-.BI "enum MAPISTATUS CreateProfile(const char *" profile ", const char *" username ", const char *" password ");"
+.BI "enum MAPISTATUS CreateProfile(const char *" profile ", const char *" username ", const char *" password ", uint32_t flags);"
 .fi
 .SH DESCRIPTION
 This function creates a profile named
 .IR profile
-in the MAPI profile database and sets the username and password field.
+in the MAPI profile database and sets the specified username in that profile.
+
+This function may also set the password. If the
+.IR flags
+include
+.BI OC_PROFILE_NOPASSWORD
+then the password will not be set. Otherwise, the specified
+.IR password 
+argument will also be saved to the profile.
+
+Note that profile information (including the password, if saved to the profile)
+is stored unencrypted.
 
 .SH RETURN VALUE
 The function returns
@@ -48,7 +59,9 @@ on success, otherwise -1. The last error can be retrieved using
 Possible MAPI error codes are:
 
 .BR "MAPI_E_NOT_INITIALIZED":
-MAPI subsystem has not been initialized
+MAPI subsystem has not been initialized. The MAPI subsystem must be initialized prior
+to creating a profile - see 
+.B MAPIInitialize().
 
 .BR "MAPI_E_NOT_ENOUGH_RESOURCES": 
 MAPI subsystem failed to allocate the necessary resources to operate properly

@@ -54,6 +54,6 @@ struct mapi_profile
 
 typedef int (*mapi_profile_callback_t)(struct SRowSet *, const void *);
 
-#define	PROFILE_NOPASSWORD	1
+#define	OC_PROFILE_NOPASSWORD	1
 
 #endif /* ! __MAPI_PROFILE_H__ */

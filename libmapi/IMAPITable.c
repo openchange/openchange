@@ -355,10 +355,25 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table, enum BOOKMARK origin,
 static uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
 {
 	uint32_t	size;
+	uint32_t	i;
 
 	size = 0;
 
+	size += sizeof (res->rt);
+
 	switch(res->rt) {
+	case RES_AND:
+		size += sizeof (res->res.resAnd.cRes);
+		for (i = 0; i < res->res.resAnd.cRes; i++) {
+			size += get_mapi_SRestriction_size((struct mapi_SRestriction *)&(res->res.resAnd.res[i]));
+		}
+		break;
+	case RES_OR:
+		size += sizeof (res->res.resOr.cRes);
+		for (i = 0; i < res->res.resOr.cRes; i++) {
+			size += get_mapi_SRestriction_size((struct mapi_SRestriction *)&(res->res.resOr.res[i]));
+		}
+		break;
 	case RES_CONTENT:
 		size += sizeof (res->res.resContent.fuzzy);
 		size += sizeof (res->res.resContent.ulPropTag);
@@ -417,7 +432,6 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj, struct mapi_SRestriction *
 	request.handle_idx = 0;
 	size += sizeof (request.handle_idx);
 	request.restrictions = *res;
-	size += sizeof (res->rt);
 	size += get_mapi_SRestriction_size(res);
 
 	/* add subcontext size */

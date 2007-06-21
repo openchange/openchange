@@ -126,6 +126,12 @@ At this point, you should be able to build and install openchange MAPI library:
 
 $ make && make install
 
+Since the libraries will be installed in /usr/local/samba/lib, make
+sure this is listed in /etc/ld.so.conf and run 'ldconfig'. On linux,
+check with ldconfig -v afterwards.
+
+# ldconfig
+
 You can test like this:
 
 $ openchangeclient --help

@@ -15,7 +15,7 @@ libdir=@libdir@
 datarootdir=@datarootdir@
 datadir=@datadir@
 includedir=@includedir@
-mandir=${prefix}/man
+mandir=${datarootdir}/man
 
 top_builddir=${PWD}
 

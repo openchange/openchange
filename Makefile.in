@@ -140,21 +140,24 @@ torture/openchange.$(SHLIBEXT):	torture/testjoin_exchange.o	\
 				torture/mapi_sendtasks.o	\
 				torture/mapi_common.o		\
 				torture/fuzzer_msgstore.o	\
-				torture/openchange.o
+				torture/openchange.o		\
+				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Compiling $<"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -lmapi
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
 libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
 	@echo "Generating $@"
 	@$(LEX) -t $< > $@
 
-server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.o server/dcesrv_exchange.o
+server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.o server/dcesrv_exchange.o	\
+				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Compiling $<"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. -lmapi $(LIBS)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
-server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.o
+server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.o	\
+					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Compiling $<"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. -lmapi $(LIBS)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
 gen_ndr:
 	@echo "Creating the gen_ndr directory"
@@ -356,7 +359,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o				\
 			libmapi/socket/netif.o				\
 			libmapi/utf8_convert.yy.c
 	@echo "Compiling $<"
-	@$(CC) $(DSOOPT) -Wl,-soname,$(SO_VERSION) -o $@ $^ $(LIBS)
+	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
 
 manpages = \
 		doc/man/man1/exchange2mbox.1				\

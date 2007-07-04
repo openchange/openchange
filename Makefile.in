@@ -2,7 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@samba.org>, 2005.
 
 CC=@CC@
-LEX=@LEX@
+LEX=@FLEX@
 CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3
 PIDL=@PIDL@
 PERL=@PERL@

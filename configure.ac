@@ -7,8 +7,8 @@ AC_CONFIG_HEADER([config.h])
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 AC_PROG_CC
-AC_PROG_LEX
-AC_PROG_YACC
+dnl AC_PROG_LEX
+dnl AC_PROG_YACC
 
 dnl ***********************
 dnl Check for PERL
@@ -19,6 +19,15 @@ AC_PATH_PROG(PERL, perl)
 if test -z "$PERL"
 then
 	AC_MSG_ERROR(Please install perl)
+fi
+
+dnl ***********************
+dnl Check for Flex
+dnl ***********************
+AC_ARG_VAR([FLEX], [Location of the flex program.])
+AC_CHECK_PROG([FLEX], [flex], [flex])
+if test x"$FLEX" = x""; then
+    AC_MSG_ERROR([You must have the flex lexer generator installed.])
 fi
 
 dnl ***********************

@@ -141,6 +141,7 @@ torture/openchange.$(SHLIBEXT):	torture/testjoin_exchange.o	\
 				torture/mapi_sendtasks.o	\
 				torture/mapi_common.o		\
 				torture/fuzzer_msgstore.o	\
+				torture/mapi_permissions.o	\
 				torture/openchange.o		\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Compiling $<"
@@ -219,6 +220,7 @@ distclean: clean $(SWIGDIRS-DISTCLEAN)
 	rm -rf autom4te.cache
 	rm -f libmapi.pc
 	rm -f Makefile config.status config.log
+	rm -f swig/perl/Makefile
 	rm -f intltool-extract intltool-merge intltool-update
 
 realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
@@ -325,6 +327,7 @@ torture_proto.h:
 	torture/mapi_fetchtasks.c	\
 	torture/mapi_sendtasks.c	\
 	torture/mapi_common.c		\
+	torture/mapi_permissions.c	\
 	torture/fuzzer_msgstore.c	\
 	torture/openchange.c
 

@@ -294,3 +294,31 @@ enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent,
 	talloc_free(mem_ctx);
 	return MAPI_E_SUCCESS;
 }
+
+uint32_t get_permission_from_name(const char *role)
+{
+	if (!role) return -1;
+
+	if (!strncasecmp(role, "RightsNone", strlen(role))) return 0x0;
+	if (!strncasecmp(role, "RightsReadItems", strlen(role))) return 0x1;
+	if (!strncasecmp(role, "RightsCreateItems", strlen(role))) return 0x2;
+	if (!strncasecmp(role, "RightsEditOwn", strlen(role))) return 0x8;
+	if (!strncasecmp(role, "RightsDeleteOwn", strlen(role))) return 0x10;
+	if (!strncasecmp(role, "RightsEditAll", strlen(role))) return 0x20;
+	if (!strncasecmp(role, "RightsDeleteAll", strlen(role))) return 0x40;
+	if (!strncasecmp(role, "RightsCreateSubfolders", strlen(role))) return 0x80;
+	if (!strncasecmp(role, "RightsFolderOwner", strlen(role))) return 0x100;
+	if (!strncasecmp(role, "RightsFolderContact", strlen(role))) return 0x200;
+	if (!strncasecmp(role, "RoleNone", strlen(role))) return 0x400;
+	if (!strncasecmp(role, "RoleReviewer", strlen(role))) return 0x401;
+	if (!strncasecmp(role, "RoleContributor", strlen(role))) return 0x402;
+	if (!strncasecmp(role, "RoleNoneditingAuthor", strlen(role))) return 0x413;
+	if (!strncasecmp(role, "RoleAuthor", strlen(role))) return 0x41B;
+	if (!strncasecmp(role, "RoleEditor", strlen(role))) return 0x47B;
+	if (!strncasecmp(role, "RolePublishAuthor", strlen(role))) return 0x49B;
+	if (!strncasecmp(role, "RolePublishEditor", strlen(role))) return 0x4FB;
+	if (!strncasecmp(role, "RightsAll", strlen(role))) return 0x5FB;
+	if (!strncasecmp(role, "RoleOwner", strlen(role))) return 0x7FB;
+
+	return -1;
+}

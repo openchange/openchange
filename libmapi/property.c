@@ -219,6 +219,8 @@ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	}
 
 	switch(lpProps->ulPropTag & 0xFFFF) {
+	case PT_BOOLEAN:
+		return (const void *)&lpProps->value.b;
 	case PT_I8:
 		return (const void *)&lpProps->value.d;
 	case PT_STRING8:
@@ -232,6 +234,8 @@ const void *get_SPropValue_data(struct SPropValue *lpProps)
 		return (const void *)&lpProps->value.l;
 	case PT_DOUBLE:
 		return (const void *)&lpProps->value.dbl;
+	case PT_BINARY:
+		return (const void *)&lpProps->value.bin;
 	default:
 		return NULL;
 	}
@@ -329,6 +333,7 @@ _PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)
 	case PT_ERROR:
 		return sizeof (uint32_t);
 	case PT_DOUBLE:
+	case PT_I8:
 		return sizeof (uint64_t);
 	case PT_STRING8:
 		return strlen(lpProp->value.lpszA) + 1;

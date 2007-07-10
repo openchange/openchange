@@ -619,6 +619,29 @@ System Attendant Private Interface
 			MAPI_FORMINFO	= 0xC
 		} MAPI_OBJTYPE;
 
+	typedef [public, v1_enum, flag(NDR_PAHEX)] enum 
+		{
+			RightsNone		= 0x00000000,
+			RightsReadItems		= 0x00000001,
+			RightsCreateItems	= 0x00000002,
+			RightsEditOwn		= 0x00000008,
+			RightsDeleteOwn		= 0x00000010,
+			RightsEditAll		= 0x00000020,
+			RightsDeleteAll		= 0x00000040,
+			RightsCreateSubfolders	= 0x00000080,
+			RightsFolderOwner	= 0x00000100,
+			RightsFolderContact	= 0x00000200,
+			RoleNone		= 0x00000400,
+			RoleReviewer		= 0x00000401,
+			RoleContributor		= 0x00000402,
+			RoleNoneditingAuthor	= 0x00000413,
+			RoleAuthor		= 0x0000041B,
+			RoleEditor		= 0x0000047B,
+			RolePublishAuthor	= 0x0000049B,
+			RolePublishEditor	= 0x000004FB,
+			RightsAll		= 0x000005FB,
+			RoleOwner		= 0x000007FB
+	       	} ACLRIGHTS;
 
 	typedef [public, enum8bit, flag(NDR_PAHEX)] enum
 		{
@@ -657,6 +680,8 @@ System Attendant Private Interface
 			op_MAPI_SubmitMessage		= 0x32,
 			op_MAPI_CopyMessages		= 0x33,
 			op_MAPI_QueryColumns		= 0x37,
+			op_MAPI_GetTable		= 0x3e,
+			op_MAPI_ModifyTable		= 0x40,
 			op_MAPI_EmptyFolder		= 0x58,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
 			op_MAPI_OpenMsgStore		= 0xfe
@@ -718,6 +743,23 @@ System Attendant Private Interface
 		uint16					cValues;
 		MAPITAGS				aulPropTag[cValues];
 	} mapi_SPropTagArray;
+
+	typedef [enum8bit, flag(NDR_PAHEX)] enum {
+		ROW_ADD		=	0x1,
+		ROW_MODIFY	=	0x2,
+		ROW_REMOVE	=	0x4
+	} ulRowFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		ulRowFlags				ulRowFlags;
+		mapi_SPropValue_array			lpProps;
+	} mapi_SRow;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8					padding;
+		uint16					cEntries;
+		mapi_SRow				aEntries[cEntries];
+	} mapi_SRowList;
 
 	/**************************/
 	/* EcDoRpc Function 0x1   */
@@ -1471,6 +1513,26 @@ System Attendant Private Interface
 	} QueryColumns_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x3e */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		handle_idx;
+		uint8		padding;
+	} GetTable_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} GetTable_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x40 */
+	typedef [flag(NDR_NOALIGN)] struct {
+ 		mapi_SRowList		rowList;
+	} ModifyTable_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		[flag(NDR_REMAINING)] DATA_BLOB remaining;
+	} ModifyTable_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x58 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		unknown;
@@ -1537,6 +1599,8 @@ System Attendant Private Interface
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_req mapi_SubmitMessage;
 		[case(op_MAPI_CopyMessages)] CopyMessages_req mapi_CopyMessages;
 		[case(op_MAPI_QueryColumns)] QueryColumns_req mapi_QueryColumns;
+		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
+		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
 		[case(op_MAPI_OpenMsgStore)] OpenMsgStore_req mapi_OpenMsgStore;
 	} EcDoRpc_MAPI_REQ_UNION;
@@ -1577,6 +1641,8 @@ System Attendant Private Interface
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_repl mapi_SubmitMessage;
 		[case(op_MAPI_CopyMessages)] CopyMessages_repl mapi_CopyMessages;
 		[case(op_MAPI_QueryColumns)] QueryColumns_repl mapi_QueryColumns;
+		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
+		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;
 		[case(op_MAPI_OpenMsgStore)] OpenMsgStore_repl mapi_OpenMsgStore;
 

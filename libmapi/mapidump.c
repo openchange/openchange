@@ -30,6 +30,10 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	proptag = get_proptag_name(lpProp.ulPropTag);
 
 	switch(lpProp.ulPropTag & 0xFFFF) {
+	case PT_BOOLEAN:
+		data = get_SPropValue_data(&lpProp);
+		printf("%s%s: 0x%x\n", sep?sep:"", proptag, (*(const uint16_t *)data));
+		break;
 	case PT_I8:
 		data = get_SPropValue_data(&lpProp);
 		printf("%s%s: %llx\n", sep?sep:"", proptag, (*(const uint64_t *)data));

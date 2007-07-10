@@ -153,3 +153,209 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 	
 	return MAPI_E_SUCCESS;
 }
+
+/**
+ * Add a permission
+ */
+_PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char *username, enum ACLRIGHTS role)
+{
+	enum MAPISTATUS		retval;
+	TALLOC_CTX		*mem_ctx;
+	struct SPropTagArray	*SPropTagArray;
+	const char		*names[1];
+	struct SRowSet		*rows = NULL;
+	struct FlagList		*flaglist = NULL;
+	struct mapi_SRowList	rowList;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_init("AddUserPermission");
+
+	/* query Address book */
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
+	names[0] = username;
+	names[1] = NULL;
+	retval = ResolveNames((const char **)names, SPropTagArray, &rows, &flaglist, 0);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	rowList.cEntries = 1;
+	rowList.aEntries = talloc_array(mem_ctx, struct mapi_SRow, 1);
+	rowList.aEntries[0].ulRowFlags = ROW_ADD;
+	rowList.aEntries[0].lpProps.cValues = 2;
+	rowList.aEntries[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
+	cast_mapi_SPropValue(&rowList.aEntries[0].lpProps.lpProps[0], &rows->aRow[0].lpProps[0]);
+	rowList.aEntries[0].lpProps.lpProps[1].ulPropTag = PR_MEMBER_RIGHTS;
+	rowList.aEntries[0].lpProps.lpProps[1].value.l = role;
+
+	retval = ModifyTable(obj_folder, &rowList);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+ * Modify a permission
+ */
+_PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const char *username, enum ACLRIGHTS role)
+{
+	enum MAPISTATUS		retval;
+	TALLOC_CTX		*mem_ctx;
+	struct SPropTagArray	*SPropTagArray;
+	const char		*names[1];
+	const char		*user = NULL;
+	struct SRowSet		*rows = NULL;
+	struct SRowSet		rowset;
+	struct FlagList		*flaglist = NULL;
+	struct mapi_SRowList	rowList;
+	struct SPropValue	*lpProp;
+	mapi_object_t		obj_table;
+	uint32_t		row_count;
+	BOOL			found = False;
+	uint32_t		i = 0;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_init("ModifyUserPermission");
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
+	names[0] = username;
+	names[1] = NULL;
+	retval = ResolveNames((const char **)names, SPropTagArray, &rows, &flaglist, 0);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
+
+	mapi_object_init(&obj_table);
+	retval = GetTable(obj_folder, &obj_table);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 4,
+					  PR_ENTRYID,
+					  PR_MEMBER_RIGHTS,
+					  PR_MEMBER_ID,
+					  PR_MEMBER_NAME);
+	retval = SetColumns(&obj_table, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	retval = GetRowCount(&obj_table, &row_count);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	retval = QueryRows(&obj_table, row_count, TBL_ADVANCE, &rowset);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	for (i = 0; i < rowset.cRows; i++) {
+		lpProp = get_SPropValue_SRow(&rowset.aRow[i], PR_MEMBER_NAME);
+		if (lpProp && lpProp->value.lpszA) {
+			if (!strcmp(lpProp->value.lpszA, user)) {
+				rowList.cEntries = 1;
+				rowList.aEntries = talloc_array(mem_ctx, struct mapi_SRow, 1);
+				rowList.aEntries[0].ulRowFlags = ROW_MODIFY;
+				rowList.aEntries[0].lpProps.cValues = 2;
+				rowList.aEntries[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
+				lpProp = get_SPropValue_SRow(&(rowset.aRow[i]), PR_MEMBER_ID);
+				rowList.aEntries[0].lpProps.lpProps[0].ulPropTag = PR_MEMBER_ID;
+				rowList.aEntries[0].lpProps.lpProps[0].value.d = lpProp->value.d;
+				rowList.aEntries[0].lpProps.lpProps[1].ulPropTag = PR_MEMBER_RIGHTS;
+				rowList.aEntries[0].lpProps.lpProps[1].value.l = role;
+				
+				retval = ModifyTable(obj_folder, &rowList);
+				MAPI_RETVAL_IF(retval, retval, mem_ctx);
+				found = True;
+				break;
+			}
+		}
+	}
+
+	mapi_object_release(&obj_table);
+	talloc_free(mem_ctx);
+
+	return ((found == True) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);	
+}
+
+/**
+ * Remove a permission
+ */
+_PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const char *username)
+{
+	enum MAPISTATUS		retval;
+	TALLOC_CTX		*mem_ctx;
+	struct SPropTagArray	*SPropTagArray;
+	const char		*names[1];
+	const char		*user = NULL;
+	struct SRowSet		*rows = NULL;
+	struct SRowSet		rowset;
+	struct FlagList		*flaglist = NULL;
+	struct mapi_SRowList	rowList;
+	struct SPropValue	*lpProp;
+	mapi_object_t		obj_table;
+	uint32_t		row_count;
+	BOOL			found = False;
+	uint32_t		i = 0;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_init("RemoveUserPermission");
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
+	names[0] = username;
+	names[1] = NULL;
+	retval = ResolveNames((const char **)names, SPropTagArray, &rows, &flaglist, 0);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
+
+	mapi_object_init(&obj_table);
+	retval = GetTable(obj_folder, &obj_table);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 4,
+					  PR_ENTRYID,
+					  PR_MEMBER_RIGHTS,
+					  PR_MEMBER_ID,
+					  PR_MEMBER_NAME);
+	retval = SetColumns(&obj_table, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	retval = GetRowCount(&obj_table, &row_count);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	retval = QueryRows(&obj_table, row_count, TBL_ADVANCE, &rowset);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	for (i = 0; i < rowset.cRows; i++) {
+		lpProp = get_SPropValue_SRow(&rowset.aRow[i], PR_MEMBER_NAME);
+		if (lpProp && lpProp->value.lpszA) {
+			if (!strcmp(lpProp->value.lpszA, user)) {
+				rowList.cEntries = 1;
+				rowList.aEntries = talloc_array(mem_ctx, struct mapi_SRow, 1);
+				rowList.aEntries[0].ulRowFlags = ROW_REMOVE;
+				rowList.aEntries[0].lpProps.cValues = 1;
+				rowList.aEntries[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 1);
+				lpProp = get_SPropValue_SRow(&(rowset.aRow[i]), PR_MEMBER_ID);
+				rowList.aEntries[0].lpProps.lpProps[0].ulPropTag = PR_MEMBER_ID;
+				rowList.aEntries[0].lpProps.lpProps[0].value.d = lpProp->value.d;
+				
+				retval = ModifyTable(obj_folder, &rowList);
+				MAPI_RETVAL_IF(retval, retval, mem_ctx);
+				found = True;
+				break;
+			}
+		}
+	}
+
+	mapi_object_release(&obj_table);
+	talloc_free(mem_ctx);
+
+	return ((found == True) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);
+}

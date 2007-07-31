@@ -10,6 +10,7 @@ Updates by Julien Kerihuel <j.kerihuel@openchange.org>, April 2007.
 Updates by Dan Shearer <dan@shearer.org>, April 2007.
 Updates by Julien Kerihuel <j.kerihuel@openchange.org>, April 2007.
 Updates by Julien Kerihuel <j.kerihuel@openchange.org>, June 2007.
+Updates by Dan Shearer <dan@shearer.org>, July 2007.
 
 ###############
 [0x0] CONTENTS
@@ -91,17 +92,24 @@ pidl binary. This is also where OpenChange installs its binaries. Eg:
 $ export PATH=$PATH:/usr/local/samba/bin
 
 If you did a standard Samba install to the normal Samba4 location you
-should not need to change PKG_CONFIG_PATH. (So if OpenChange configure
-complains, you may have a problem with the Samba installation.)
+should not need to change PKG_CONFIG_PATH, however it does need to be
+set. Use 
 
-If you have installed Samba4 somewhere else, you need to change the reference 
-in ld.so.conf, in the PATH and PKG_CONFIG_PATH is set if you installed 
-Samba4 to a weird location. For example, if you installed to /usr/local/samba
-(default if building from source), run:
+$ echo $PKG_CONFIG_PATH
 
-$ export PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/samba/lib/pkgconfig
+to see if it has a current value. So if PKG_CONFIG_PATH points to a valid place
+and OpenChange configure still complains, you may have a problem with the Samba 
+installation.)
 
-pkg-config >= 0.20 is required. On Debian and Ubuntu you need to 
+If you have installed Samba4 somewhere else, you need to change Samba references
+in ld.so.conf, and in the PATH and PKG_CONFIG_PATH environment variables. 
+For example, if you installed to /opt/otherplace/samba
+run:
+
+$ export PATH=$PATH:/opt/otherplace/samba
+$ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/otherplace/samba/lib/pkgconfig
+
+pkg-config >= 0.20 is required.
 
 [*] Install PIDL from Samba4 source directory:
 # cd pidl && perl Makefile.PL && make && make install
@@ -109,7 +117,16 @@ pkg-config >= 0.20 is required. On Debian and Ubuntu you need to
 [0x2b] Requirements
 ===================
 
-* libmagic is mandatory in order to compile exchange2mbox
+OpenChange has only these dependencies in addition to Samba4's requirements:
+
+* automake (autogen will fail with 'autogen.sh: aclocal not found')
+* libmagic, to compile exchange2mbox
+* flex
+* libpopt
+
+Samba4 can *use* some of the above, and will tell you in the 'configure' summary 
+that some of them have not been found, however it does not *require* them.
+
 
 [0x2c] OpenChange libmapi installation
 ======================================
@@ -122,15 +139,16 @@ Now, run configure:
 
 $ ./configure --prefix=path_where_samba_is_installed
 
-At this point, you should be able to build and install openchange MAPI library:
+The default is not /usr/local/samba as you might expect, but /usr/local . So you normally
+do need to specify --prefix.
+
+You should already have made sure that the output of 'ldconfig -v' mentions
+the samba library directory in the Samba installation step. If you didn't, OpenChange
+will not find the libraries it needs.
+
+You should now be able to build and install openchange MAPI library:
 
 $ make && make install
-
-Since the libraries will be installed in /usr/local/samba/lib, make
-sure this is listed in /etc/ld.so.conf and run 'ldconfig'. On linux,
-check with ldconfig -v afterwards.
-
-# ldconfig
 
 You can test like this:
 
@@ -142,8 +160,8 @@ $ openchangeclient --help
 [0x3] POST-INSTALLATION
 #########################
 
-Prior you can use the MAPI library in your application, it is required
-that you setup a profile database and create a profile.
+The MAPI library requires a profile database and a profile in that database
+before it can be used.
 
 
 [0x3a] Create a profile store

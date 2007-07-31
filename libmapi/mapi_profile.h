@@ -44,6 +44,7 @@ struct mapi_profile
 	const char     		*password;
 	const char     		*mailbox;
 	const char     		*workstation;
+	const char		*homemdb;
 	const char     		*domain;
 	const char     		*realm;
 	const char     		*server;

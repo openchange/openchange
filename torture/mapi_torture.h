@@ -23,6 +23,27 @@
 #ifndef __MAPI_TORTURE_H__
 #define	__MAPI_TORTURE_H__
 
+#include <ldb.h>
+
+#ifndef __BEGIN_DECLS
+#ifdef __cplusplus
+#define __BEGIN_DECLS		extern "C" {
+#define __END_DECLS		}
+#else
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+#endif
+
+__BEGIN_DECLS
+
+int samdb_msg_add_string(struct ldb_context *, TALLOC_CTX *, 
+			 struct ldb_message *, const char *, const char *);
+int samdb_modify(struct ldb_context *, TALLOC_CTX *, struct ldb_message *);
+int samdb_replace(struct ldb_context *, TALLOC_CTX *, struct ldb_message *);
+
+__END_DECLS
+
 #define	DEFAULT_PROFDB_PATH	"%s/.openchange/profiles.ldb"
 
 #endif /* __MAPI_TORTURE_H__ */

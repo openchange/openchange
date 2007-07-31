@@ -184,6 +184,46 @@ BOOL set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SR
 }
 
 /**
+ * Initialize MAPI and Load Profile
+ *
+ */
+enum MAPISTATUS torture_load_profile(TALLOC_CTX *mem_ctx)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_session	*session;
+	const char		*profdb;
+	const char		*profname;
+
+	profdb = lp_parm_string(-1, "mapi", "profile_store");
+	if (!profdb) {
+		profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB_PATH, getenv("HOME"));
+		if (!profdb) {
+			DEBUG(0, ("Specify a valid MAPI profile store\n"));
+			return MAPI_E_NOT_FOUND;
+		}
+	}
+
+	retval = MAPIInitialize(profdb);
+	mapi_errstr("MAPIInitialize", GetLastError());
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	profname = lp_parm_string(-1, "mapi", "profile");
+	if (!profname) {
+		retval = GetDefaultProfile(&profname, 0);
+		MAPI_RETVAL_IF(retval, retval, NULL);
+	}
+
+	/* MapiLogonProvider returns MAPI_E_NO_SUPPORT: reset errno */
+	retval = MapiLogonProvider(&session, profname, NULL, PROVIDER_ID_UNKNOWN);
+	errno = 0;
+
+	retval = LoadProfile(global_mapi_ctx->session->profile);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
  * Initialize MAPI and logs on the EMSMDB pipe with the default
  * profile
  */

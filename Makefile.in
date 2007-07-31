@@ -48,7 +48,7 @@ LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 all: 	libmapi/utf8_convert.yy.c				\
 	gen_ndr gen_ndr/ndr_exchange.h proto.h			\
 	torture_proto.h	providers_proto.h dcesrv_proto.h	\
-	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)					\
+	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)			\
 	bin/schemaIDGUID					\
 	bin/mapiprofile						\
 	bin/openchangeclient					\
@@ -117,8 +117,7 @@ uninstall: $(SWIGDIRS-UNINSTALL)
 
 re: clean install
 
-torture/openchange.$(SHLIBEXT):	torture/testjoin_exchange.o	\
-				torture/nspi_profile.o		\
+torture/openchange.$(SHLIBEXT):	torture/nspi_profile.o		\
 				torture/nspi_resolvenames.o	\
 				torture/mapi_restrictions.o	\
 				torture/mapi_copymail.o		\
@@ -142,6 +141,8 @@ torture/openchange.$(SHLIBEXT):	torture/testjoin_exchange.o	\
 				torture/mapi_common.o		\
 				torture/fuzzer_msgstore.o	\
 				torture/mapi_permissions.o	\
+				torture/mapi_createuser.o	\
+				torture/exchange_createuser.o	\
 				torture/openchange.o		\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Compiling $<"
@@ -237,7 +238,7 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f libmapi/tests/*.o
 	rm -f libmapi/util/*.o
 	rm -f tests/*.o
-	rm -f bin/*
+	rm -rf bin/*
 	rm -f server/*.o
 	rm -f providers/*.o
 	rm -f torture/*.o
@@ -328,6 +329,8 @@ torture_proto.h:
 	torture/mapi_sendtasks.c	\
 	torture/mapi_common.c		\
 	torture/mapi_permissions.c	\
+	torture/mapi_createuser.c	\
+	torture/exchange_createuser.c	\
 	torture/fuzzer_msgstore.c	\
 	torture/openchange.c
 

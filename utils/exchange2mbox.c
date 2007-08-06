@@ -57,6 +57,10 @@ static BOOL delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 	int			i;
 	uint64_t		id_message;
 
+	if (!msgid) {
+		return False;
+	}
+
 	retval = MapiLogonEx(&session, profname, password);
 	if (retval != MAPI_E_SUCCESS) return False;
 
@@ -88,7 +92,11 @@ static BOOL delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &SRowSet)) == MAPI_E_SUCCESS) {
 		if (!SRowSet.cRows) break;
 		for (i = 0; i < SRowSet.cRows; i++) {
-			if (!strncmp(SRowSet.aRow[i].lpProps[2].value.lpszA, msgid, strlen(msgid))) {
+			const char     	*message_id;
+
+			message_id = (const char *)find_SPropValue_data(&(SRowSet.aRow[i]), PR_INTERNET_MESSAGE_ID);
+
+			if (message_id && !strncmp(message_id, msgid, strlen(msgid))) {
 				id_message = SRowSet.aRow[i].lpProps[1].value.d;
 				retval = DeleteMessage(&obj_inbox, &id_message, 1);
 				if (retval != MAPI_E_SUCCESS) return False;
@@ -169,7 +177,8 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	/* Remove Message-ID and update Exchange mailbox if a
 	 * Message-ID is missing in mbox 
 	 */
-	GetProfileAttr(&profile, "Message-ID", &count, &prof_msgids);
+	retval = GetProfileAttr(&profile, "Message-ID", &count, &prof_msgids);
+	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	if (count != mbox_count) {
 		printf("{+] Synchonizing mbox with Exchange mailbox\n");

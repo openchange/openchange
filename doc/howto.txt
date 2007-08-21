@@ -82,6 +82,14 @@ applications.
 # ./autogen.sh && ./configure --prefix=/usr/local/samba && make
 # make install && make installlib && make installheader
 
+If you are only interested in OpenChange client libraries you don't need all of
+Samba built or installed, which has several efficiencies. For example:
+
+# export AUTOGEN_SKIP_SWAT=yes
+# ./autogen.sh && ./configure --prefix=/usr/local/samba --with-krb5=no && make
+# make installlib && make installheader
+
+
 Since the libraries will be installed in /usr/local/samba/lib, make
 sure this is listed in /etc/ld.so.conf and run 'ldconfig'. On
 linux, check with ldconfig -v afterwards. 

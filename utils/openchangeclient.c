@@ -1064,6 +1064,72 @@ static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	return True;
 }
 
+static BOOL get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
+{
+	enum MAPISTATUS		retval;
+	BOOL			ret;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_htable;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		rowset;
+	const char	       	*name;
+	char			*newname;
+	const uint32_t		*child;
+	uint32_t		index;
+	const uint64_t		*fid;
+	int			i;
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(parent, folder_id, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	mapi_object_init(&obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
+					  PR_DISPLAY_NAME,
+					  PR_FID,
+					  PR_FOLDER_CHILD_COUNT);
+	retval = SetColumns(&obj_htable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return False;
+	
+	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+		for (index = 0; index < rowset.cRows; index++) {
+			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
+			child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
+
+			for (i = 0; i < count; i++) {
+				printf("|   ");
+			}
+			newname = utf8tolinux(mem_ctx, name);
+			printf("|---+ %-15s\n", newname);
+			MAPIFreeBuffer(newname);
+			if (*child) {
+				ret = get_child_folders_pf(mem_ctx, &obj_folder, *fid, count + 1);
+				if (ret == False) return ret;
+			}
+			
+		}
+	}
+	return True;
+}
+
+
+static BOOL openchangeclient_pf(TALLOC_CTX *mem_ctx, struct mapi_session *session, mapi_object_t *obj_store)
+{
+	enum MAPISTATUS			retval;
+	mapi_id_t			id_pubroot;
+
+	retval = GetDefaultPublicFolder(obj_store, &id_pubroot, olFolderPublicRoot);
+	if (retval != MAPI_E_SUCCESS) return False;
+
+	return get_child_folders_pf(mem_ctx, obj_store, id_pubroot, 0);
+}
+
+
 static BOOL openchangeclient_mailbox(TALLOC_CTX *mem_ctx, struct mapi_session *session, mapi_object_t *obj_store)
 {
 	enum MAPISTATUS			retval;
@@ -1328,6 +1394,7 @@ int main(int argc, const char *argv[])
 	BOOL			opt_mailbox = false;
 	BOOL			opt_dumpdata = false;
 	BOOL			opt_notifications = false;
+	BOOL			opt_pf = false;
 	const char		*opt_profdb = NULL;
 	const char		*opt_profname = NULL;
 	const char		*opt_password = NULL;
@@ -1346,11 +1413,12 @@ int main(int argc, const char *argv[])
 	      OPT_FETCHITEMS, OPT_MAPI_LOCATION, OPT_MAPI_STARTDATE, OPT_MAPI_ENDDATE, 
 	      OPT_MAPI_BUSYSTATUS, OPT_NOTIFICATIONS, OPT_DEBUG, OPT_DUMPDATA, 
 	      OPT_MAPI_EMAIL, OPT_MAPI_FULLNAME, OPT_MAPI_CARDNAME, OPT_MAPI_PRIORITY,
-	      OPT_MAPI_TASKSTATUS};
+	      OPT_MAPI_TASKSTATUS, OPT_PF};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path"},
+		{"pf", 0, POPT_ARG_NONE, NULL, OPT_PF, "access public folders instead of mailbox"},
 		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name"},
 		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
 		{"sendmail", 'S', POPT_ARG_NONE, NULL, OPT_SENDMAIL, "send a mail"},
@@ -1392,6 +1460,9 @@ int main(int argc, const char *argv[])
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+		case OPT_PF:
+			opt_pf = true;
+			break;
 		case OPT_DEBUG:
 			opt_debug = poptGetOptArg(pc);
 			break;
@@ -1589,10 +1660,18 @@ int main(int argc, const char *argv[])
 	 */
 
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
-	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("OpenMsgStore", GetLastError());
-		exit (1);
+	if (opt_pf == true) {
+		retval = OpenPublicFolder(&obj_store);
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_errstr("OpenPublicFolder", GetLastError());
+			exit (1);
+		}
+	} else {
+		retval = OpenMsgStore(&obj_store);
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_errstr("OpenMsgStore", GetLastError());
+			exit (1);
+		}
 	}
 
 	if (opt_fetchitems) {
@@ -1604,10 +1683,18 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_mailbox) {
-		retval = openchangeclient_mailbox(mem_ctx, session, &obj_store);
-		mapi_errstr("mailbox", GetLastError());
-		if (retval != True) {
-			goto end;
+		if (opt_pf == true) {
+			retval = openchangeclient_pf(mem_ctx, session, &obj_store);
+			mapi_errstr("public folder", GetLastError());
+			if (retval != True) {
+				goto end;
+			}
+		} else {
+			retval = openchangeclient_mailbox(mem_ctx, session, &obj_store);
+			mapi_errstr("mailbox", GetLastError());
+			if (retval != True) {
+				goto end;
+			}
 		}
 	}
 

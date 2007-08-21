@@ -24,17 +24,11 @@
 #include <gen_ndr/ndr_exchange.h>
 #include <param.h>
 #include <credentials.h>
+#include <torture/mapi_torture.h>
 #include <torture/torture.h>
 #include <torture/torture_proto.h>
-#include <torture/mapi_torture.h>
 #include <samba/popt.h>
 #include <dcerpc/samr.h>
-
-struct test_join;
-
-const struct dom_sid *torture_join_user_sid(struct test_join *);
-void torture_leave_domain(struct test_join *);
-struct test_join *torture_create_testuser(const char *, const char *, uint16_t, const char **);
 
 BOOL torture_mapi_createuser(struct torture_context *torture)
 {
@@ -60,7 +54,8 @@ BOOL torture_mapi_createuser(struct torture_context *torture)
 	profile = global_mapi_ctx->session->profile;
 
 	/* Create the user in the AD */
-	user_ctx = torture_create_testuser(username, profile->domain, ACB_NORMAL,
+	user_ctx = torture_create_testuser(username, profile->domain, 
+					   ACB_NORMAL,
 					   (const char **)&user_password);
 
 	if (!user_ctx) {

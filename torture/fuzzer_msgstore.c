@@ -27,9 +27,9 @@
 #include <gen_ndr/ndr_exchange_c.h>
 #include <param.h>
 #include <credentials.h>
+#include <torture/mapi_torture.h>
 #include <torture/torture.h>
 #include <torture/torture_proto.h>
-#include <torture/mapi_torture.h>
 #include <samba/popt.h>
 
 BOOL torture_fuzzer_msgstore(struct torture_context *torture)
@@ -52,7 +52,7 @@ BOOL torture_fuzzer_msgstore(struct torture_context *torture)
 
 	/* init torture */
 	mem_ctx = talloc_init("torture_fuzzer_msgtore");
-	ntstatus = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_exchange_emsmdb);
+	ntstatus = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		talloc_free(mem_ctx);
 		return False;

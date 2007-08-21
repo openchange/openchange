@@ -31,16 +31,16 @@
 #include <gen_ndr/ndr_exchange.h>
 #include "server/dcesrv_proto.h"
 
-NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interface);
+NTSTATUS librpc_register_interface(const struct ndr_interface_table *interface);
 
 NTSTATUS init_module(void)
 {
 	NTSTATUS status;
 
-	status = librpc_register_interface(&dcerpc_table_exchange_nsp);
+	status = librpc_register_interface(&ndr_table_exchange_nsp);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
-	status = librpc_register_interface(&dcerpc_table_exchange_emsmdb);
+	status = librpc_register_interface(&ndr_table_exchange_emsmdb);
 	if (NT_STATUS_IS_ERR(status)) return status;
 
 	return NT_STATUS_OK;

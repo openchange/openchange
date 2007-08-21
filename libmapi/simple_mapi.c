@@ -23,6 +23,28 @@
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 
+_PUBLIC_ enum MAPISTATUS GetDefaultPublicFolder(mapi_object_t *obj_store,
+						uint64_t *folder,
+						const uint32_t id)
+{
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+
+	switch (id) {
+	case olFolderPublicRoot:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_public_root;
+		break;
+	case olFolderPublicIPMSubtree:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_ipm_subtree;
+		break;
+	default:
+		return MAPI_E_NOT_FOUND;
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
+
 _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store, 
 					  uint64_t *folder,
 					  const uint32_t id)

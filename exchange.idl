@@ -1551,8 +1551,14 @@ System Attendant Private Interface
 		ascstr3	mailbox_path;
 	} OpenMsgStore_req;
 
+ 	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		folder_id[13];
+		uint16		unknown;
+		MAPIUID		entryid;
+		MAPIUID		msgstore;
+	} store_pf;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		MAPI_OBJTYPE	PR_OBJECT_TYPE;
  		hyper		folder_id[13];
 		uint8		unknown3;
 		MAPIUID		entryid;
@@ -1562,6 +1568,23 @@ System Attendant Private Interface
 		astring		creation_date;
 		uint8		terminator;
 		uint16		unknown4;
+	} store_mailbox;
+
+	typedef [nodiscriminant] union {
+		[case(0x0)] store_pf store_pf;
+		[case(0x1)] store_mailbox store_mailbox;
+	} store_type;
+
+	typedef [enum8bit,flag(NDR_NOALIGN)] enum {
+		PROVIDER_TYPE_PF = 0x0,
+		PROVIDER_TYPE_MAILBOX = 0x1
+	} PROVIDER_TYPE;
+
+
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		PROVIDER_TYPE	PR_OBJECT_TYPE;
+		[switch_is(PR_OBJECT_TYPE)] store_type type;
 	} OpenMsgStore_repl;
 
 	typedef [public, nodiscriminant] union {

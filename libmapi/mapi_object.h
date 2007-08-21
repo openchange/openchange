@@ -58,6 +58,7 @@ typedef struct mapi_object {
  */
 typedef struct mapi_obj_store
 {
+	/* Mailbox */
 	uint64_t	fid_non_ipm_subtree;
 	uint64_t	fid_deferred_actions;
 	uint64_t	fid_spooler_queue;
@@ -71,6 +72,15 @@ typedef struct mapi_obj_store
 	uint64_t	fid_finder;
 	uint64_t	fid_views;
 	uint64_t	fid_shortcuts;
+	/* Public Folders */
+	uint64_t	fid_pf_public_root;
+	uint64_t	fid_pf_ipm_subtree;
+	uint64_t	fid_pf_non_ipm_subtree;
+	uint64_t	fid_pf_eforms_registry;
+	uint64_t	fid_pf_schedule_freebusy;
+	uint64_t	fid_pf_offline_addrbook;
+	uint64_t	fid_pf_schedule_freebusy_adm_group;
+	uint64_t	fid_pf_offline_addrbook_sub;
 } mapi_object_store_t;
 
 

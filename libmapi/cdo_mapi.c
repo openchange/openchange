@@ -165,7 +165,7 @@ _PUBLIC_ void MAPIUninitialize(void)
 
 	session = global_mapi_ctx->session;
 	if (session && session->notify_ctx && session->notify_ctx->fd != -1) {
-		printf("emsmdb_disconnect_dtor: unbind udp\n");
+		DEBUG(3, ("emsmdb_disconnect_dtor: unbind udp\n"));
 		shutdown(session->notify_ctx->fd, SHUT_RDWR);
 		close(session->notify_ctx->fd);
 	}

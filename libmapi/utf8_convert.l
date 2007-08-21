@@ -125,9 +125,9 @@ int  newbuf_idx;
 
 %}
 
-chars [A-za-z\_\'\.\"]
+chars [0-9A-za-z\_\'\.\"/\+\-=\{\}:]
 numbers ([0-9])+
-delim [" "\n\t]
+delim [" "\n\t\s]
 whitespace {delim}+
 words {chars}+
 

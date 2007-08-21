@@ -181,6 +181,8 @@
 #define	olFolderLocalFailures		21
 #define	olFolderServerFailures		22
 #define	olFolderJunk			23
+#define	olFolderPublicRoot		25
+#define	olFolderPublicIPMSubtree	26
 
 /*
  * IPF container class

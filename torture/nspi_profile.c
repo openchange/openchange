@@ -24,6 +24,7 @@
 #include <gen_ndr/ndr_exchange.h>
 #include <param.h>
 #include <credentials.h>
+#include <torture/mapi_torture.h>
 #include <torture/torture.h>
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
@@ -31,7 +32,7 @@
 /* FIXME: Should be part of Samba's data: */
 NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
 				struct dcerpc_pipe **p, 
-				const struct dcerpc_interface_table *table);
+				const struct ndr_interface_table *table);
 
 BOOL set_profile_attribute(const char *profname, struct SRowSet rowset, 
 			   uint32_t property, const char *attr)
@@ -97,7 +98,7 @@ BOOL torture_rpc_nspi_profile(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_nspi_profile");
 	
-	status = torture_rpc_connection(mem_ctx, &p, &dcerpc_table_exchange_nsp);
+	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_nsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

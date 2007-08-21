@@ -20,6 +20,7 @@
 
 #include <libmapi/libmapi.h>
 #include <core/nterr.h>
+#include <torture/mapi_torture.h>
 #include <torture/torture.h>
 #include <torture/torture_proto.h>
 

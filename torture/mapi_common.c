@@ -21,6 +21,7 @@
 */
 
 #include <libmapi/libmapi.h>
+#include <torture/mapi_torture.h>
 #include <torture/torture.h>
 #include <torture/torture_proto.h>
 #include <torture/mapi_torture.h>

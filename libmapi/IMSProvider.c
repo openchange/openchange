@@ -32,12 +32,12 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 					struct dcerpc_pipe **p, 
 					const char *binding,
 					struct cli_credentials *credentials,
-					const struct dcerpc_interface_table *table)
+					const struct ndr_interface_table *table)
 {
         NTSTATUS status;
 
 	if (!binding) {
-		printf("You must specify a ncacn binding string\n");
+		DEBUG(3, ("You must specify a ncacn binding string\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -46,7 +46,8 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 				     credentials, NULL); 
 
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Failed to connect to remote server: %s %s\n", binding, nt_errstr(status));
+		DEBUG(3, ("Failed to connect to remote server: %s %s\n", 
+			  binding, nt_errstr(status)));
 	}
 
 	/* dcerpc_pipe_connect set errno, we have to unset it */
@@ -76,7 +77,7 @@ enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_
 
 	switch(provider_id) {
 	case PROVIDER_ID_EMSMDB:
-		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &dcerpc_table_exchange_emsmdb);
+		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_emsmdb);
 		talloc_free(binding);
 		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
 		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
@@ -87,7 +88,7 @@ enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_
 		MAPI_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
 		break;
 	case PROVIDER_ID_NSPI:
-		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &dcerpc_table_exchange_nsp);
+		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_nsp);
 		talloc_free(binding);
 		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
 		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);

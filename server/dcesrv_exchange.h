@@ -70,6 +70,23 @@
 #define _PUBLIC_
 #endif
 
+/* init functions definitions from gen_ndr/ndr_exchange_s.c */
+
+NTSTATUS dcerpc_server_exchange_store_admin3_init(void);
+NTSTATUS dcerpc_server_exchange_store_admin2_init(void);
+NTSTATUS dcerpc_server_exchange_store_admin1_init(void);
+NTSTATUS dcerpc_server_exchange_ds_rfr_init(void);
+NTSTATUS dcerpc_server_exchange_sysatt_cluster_init(void);
+NTSTATUS dcerpc_server_exchange_system_attendant_init(void);
+NTSTATUS dcerpc_server_exchange_mta_init(void);
+NTSTATUS dcerpc_server_exchange_drs_init(void);
+NTSTATUS dcerpc_server_exchange_xds_init(void);
+NTSTATUS dcerpc_server_exchange_mta_qadmin_init(void);
+NTSTATUS dcerpc_server_exchange_store_information_init(void);
+NTSTATUS dcerpc_server_exchange_nsp_init(void);
+NTSTATUS dcerpc_server_exchange_emsmdb_init(void);
+NTSTATUS dcerpc_server_exchange_unknown_init(void);
+
 
 /* The following definitions come from server/dcesrv_exchange.c  */
 

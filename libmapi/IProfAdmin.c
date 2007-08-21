@@ -810,7 +810,7 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 	msg = res->msgs[0];
 	ldb_element = ldb_msg_find_element(msg, attribute);
 	if (!ldb_element) {
-		printf("ldb_msg_find_element: NULL\n");
+		DEBUG(3, ("ldb_msg_find_element: NULL\n"));
 		return MAPI_E_NOT_FOUND;
 	}
 

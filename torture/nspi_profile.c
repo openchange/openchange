@@ -44,16 +44,16 @@ bool set_profile_attribute(const char *profname, struct SRowSet rowset,
 
 	if (!lpProp) {
 		DEBUG(0, ("MAPI Property %s not set\n", attr));
-		return True;
+		return true;
 	}
 
 	ret = mapi_profile_add_string_attr(profname, attr, lpProp->value.lpszA);
 
 	if (ret != MAPI_E_SUCCESS) {
 		DEBUG(0, ("Problem adding attribute %s in profile %s\n", attr, profname));
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
 bool set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
@@ -67,17 +67,17 @@ bool set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
 
 	if (!lpProp) {
 		DEBUG(0, ("MAPI Property %s not set\n", attr));
-		return True;
+		return true;
 	}
 
 	for (i = 0; i < lpProp->value.MVszA.cValues; i++) {
 		ret = mapi_profile_add_string_attr(profname, attr, lpProp->value.MVszA.strings[i]->lppszA);
 		if (ret != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Problem adding attriute %s in profile %s\n", attr, profname));
-			return False;
+			return false;
 		}
 	}
-	return True;
+	return true;
 }
 
 bool torture_rpc_nspi_profile(struct torture_context *torture)
@@ -103,16 +103,16 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 
-		return False;
+		return false;
 	}
 
 	/* profiles */
 	retval = MAPIInitialize(profdb);
 	mapi_errstr("MAPIInitialize", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	nspi = nspi_bind(mem_ctx, p, cmdline_credentials, codepage, language, method);
-	if (!nspi) return False;
+	if (!nspi) return false;
 	
 	if (profname) {
 		const char *username = cli_credentials_get_username(cmdline_credentials);
@@ -122,7 +122,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 		mapi_errstr("CreateProfile", GetLastError());
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Unable to create %s profile\n", profname));
-			return False;
+			return false;
 		}
 		{
 			const char *workstation = cli_credentials_get_workstation(cmdline_credentials);
@@ -148,7 +148,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 
 	retval = nspi_GetHierarchyInfo(nspi, &rowset);
 	mapi_errstr("NspiGetHierarchyInfo", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0xd,
 					  PR_DISPLAY_NAME,
@@ -166,7 +166,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 					  );
 	retval = nspi_GetMatches(nspi, SPropTagArray, &rowset, NULL);
 	mapi_errstr("NspiGetMatches", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	
 	lpProp = get_SPropValue_SRowSet(&rowset, PR_INSTANCE_KEY);
 	if (lpProp) {
@@ -207,7 +207,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 					  );
 	retval = nspi_QueryRows(nspi, SPropTagArray, &rowset);
 	mapi_errstr("NspiQueryRows", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	lpProp = get_SPropValue_SRowSet(&rowset, PR_EMS_AB_HOME_MDB);
 	if (lpProp) {
@@ -225,13 +225,13 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 
 	retval = nspi_DNToEph(nspi);
 	mapi_errstr("NspiDNToEph", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x2,
 					  PR_EMS_AB_NETWORK_ADDRESS);
 	retval = nspi_GetProps(nspi, SPropTagArray, &rowset);
 	mapi_errstr("NspiGetProps", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (profname) {
 		set_profile_mvstr_attribute(profname, rowset, PR_EMS_AB_NETWORK_ADDRESS, "NetworkAddress");
@@ -239,11 +239,11 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 
 	retval = nspi_unbind(nspi);
 	mapi_errstr("NspiUnbind", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	MAPIUninitialize();
 
 	talloc_free(mem_ctx);
 
-	return True;
+	return true;
 }

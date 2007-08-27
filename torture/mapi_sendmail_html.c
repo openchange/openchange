@@ -36,7 +36,7 @@ bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	const char		*subject = lp_parm_string(-1, "mapi", "subject");
 	const char		*body = lp_parm_string(-1, "mapi", "body");
 	const char		*filename = lp_parm_string(-1, "mapi", "html");
@@ -64,11 +64,11 @@ bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 	/* get the attachment filename */
 	if (!filename) {
 		DEBUG(0, ("No filename specified with mapi:html\n"));
-		return False;
+		return false;
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -82,21 +82,21 @@ bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 	/* session::OpenMsgStore() */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* id_outbox = store->GeOutboxFolder() */
 	retval = GetOutboxFolder(&obj_store, &id_outbox);
 	mapi_errstr("GetOutboxFodler", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* outbox = store->OpenFolder(id_outbox) */
 	retval = OpenFolder(&obj_store, id_outbox, &obj_outbox);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* message = outbox->CreateMessage() */
 	retval = CreateMessage(&obj_outbox, &obj_message);
 	mapi_errstr("CreateMessage", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
 					  PR_OBJECT_TYPE,
@@ -113,7 +113,7 @@ bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 
 	retval = ResolveNames((const char **)usernames, SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
 	mapi_errstr("ResolveNames", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (!SRowSet) {
 		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
@@ -131,7 +131,7 @@ bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 	/* message->ModifyRecipients() */
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapi_errstr("ModifyRecipients", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	
 	retval = MAPIFreeBuffer(SRowSet);
 	mapi_errstr("MAPIFreeBuffer: SRowSet", GetLastError());
@@ -146,10 +146,10 @@ bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 		struct stat	sb;
 		int		fd;
 
-		if (stat(filename, &sb) != 0) return False;
+		if (stat(filename, &sb) != 0) return false;
 		if ((fd = open(filename, O_RDONLY)) == -1) {
 			DEBUG(0, ("Error while opening %s\n", filename));
-			return False;
+			return false;
 		}
 		html.lpb = talloc_size(mem_ctx, sb.st_size);
 		html.cb = read(fd, html.lpb, sb.st_size);
@@ -166,7 +166,7 @@ bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 	/* message->SubmitMessage() */
 	retval = SubmitMessage(&obj_message);
 	mapi_errstr("SubmitMessage", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* objects->Release()
 	 */

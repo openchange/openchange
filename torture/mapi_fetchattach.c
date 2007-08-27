@@ -93,7 +93,7 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	struct mapi_session	*session;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;
@@ -118,7 +118,7 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_mapi_fetchattach");
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -132,22 +132,22 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 	/* session::OpenMsgStore() */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* id_inbox = store->GetReceiveFolder */
 	retval = GetReceiveFolder(&obj_store, &id_inbox);
 	mapi_errstr("GetReceiveFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* inbox = store->OpenFolder() */
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* table = inbox->GetContentsTable() */
 	retval = GetContentsTable(&obj_inbox, &obj_tb_contents);
 	mapi_errstr("GetContentsTable", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	proptags = set_SPropTagArray(mem_ctx, 0x5,
 				     PR_FID,
@@ -157,11 +157,11 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 				     PR_SUBJECT);
 	retval = SetColumns(&obj_tb_contents, proptags);
 	mapi_errstr("SetColumns", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = QueryRows(&obj_tb_contents, 0xa, TBL_ADVANCE, &rows_msgs);
 	mapi_errstr("QueryRows", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* foreach message get attachment table
 	   foreach attachment, get PR_NUM
@@ -187,11 +187,11 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 				proptags = set_SPropTagArray(mem_ctx, 0x1, PR_ATTACH_NUM);
 				retval = SetColumns(&obj_tb_attach, proptags);
 				mapi_errstr("SetColumns", GetLastError());
-				if (retval != MAPI_E_SUCCESS) return False;
+				if (retval != MAPI_E_SUCCESS) return false;
 
 				retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rows_attach);
 				mapi_errstr("QueryRows", GetLastError());
-				if (retval != MAPI_E_SUCCESS) return False;
+				if (retval != MAPI_E_SUCCESS) return false;
 
 				/* get a stream on PR_ATTACH_DATA_BIN */
 				for (i_row_attach = 0; i_row_attach < rows_attach.cRows; i_row_attach++) {

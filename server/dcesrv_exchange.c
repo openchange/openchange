@@ -469,7 +469,7 @@ enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 
 	/* check if a valid CPID has been provided */
-	if (valid_codepage(r->in.settings->codepage) == False) {
+	if (valid_codepage(r->in.settings->codepage) == false) {
 		DEBUG(1, ("Invalid CPID\n"));
 		r->out.mapiuid = r->in.mapiuid;
 		r->out.result = MAPI_E_UNKNOWN_CPID;

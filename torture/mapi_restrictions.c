@@ -46,7 +46,7 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 	mapi_object_init(child);
 	retval = CreateFolder(parent, "torture_restrictions", 
 			      "MAPI restrictions torture test", child);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("[+] torture restrictions directory created\n"));
 
 	/* Send 5 mails with MSGFLAG_READ set */
@@ -57,7 +57,7 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 						   "This is sample content", 
 						   MSGFLAG_READ|MSGFLAG_SUBMIT);
 		talloc_free(subject);
-		if (retval != MAPI_E_SUCCESS) return False;
+		if (retval != MAPI_E_SUCCESS) return false;
 	}
 	DEBUG(0, ("[+] 5 mails created with MSGFLAG_READ set\n"));
 
@@ -69,7 +69,7 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 						   "This is sample content", 
 						   MSGFLAG_SUBMIT);
 		talloc_free(subject);
-		if (retval != MAPI_E_SUCCESS) return False;
+		if (retval != MAPI_E_SUCCESS) return false;
 	}
 	DEBUG(0, ("[+] 5 unread mails created\n"));
 
@@ -78,7 +78,7 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 		retval = torture_simplemail_fromme(child, SAME_SUBJECT,
 						   "Different content",
 						   MSGFLAG_SUBMIT);
-		if (retval != MAPI_E_SUCCESS) return False;
+		if (retval != MAPI_E_SUCCESS) return false;
 	}
 	DEBUG(0, ("[+] 2 mails unread with same subject but different body\n"));
 
@@ -88,7 +88,7 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 		retval = torture_simplemail_fromme(child, SAME_SUBJECT_BODY,
 						   SAME_SUBJECT_BODY,
 						   MSGFLAG_SUBMIT);
-		if (retval != MAPI_E_SUCCESS) return False;
+		if (retval != MAPI_E_SUCCESS) return false;
 	}
 	DEBUG(0, ("[+] 3 mails unread with same subject and body\n"));
 
@@ -97,17 +97,17 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 	body = talloc_size(mem_ctx, 40);
 	memset(body, 'X', 39);
 	retval = torture_simplemail_fromme(child, "Long body", body, MSGFLAG_SUBMIT);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("[+] 1 mail with  body > 39 chars\n"));
 	talloc_free(body);
 
 	/* Create 1 mail with a unique body content */
 	retval = torture_simplemail_fromme(child, "Unique content", UNIQUE_BODY, MSGFLAG_SUBMIT);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("[+] 1 mail with  unique body: %s\n", UNIQUE_BODY));
 	
 
-	return True;
+	return true;
 }
 
 bool torture_rpc_mapi_restrictions(struct torture_context *torture)
@@ -116,7 +116,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	struct mapi_session	*session;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;
@@ -133,11 +133,11 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	nt_status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -147,24 +147,24 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	/* Open Message Store */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetDefaultFolder(&obj_store, &id_inbox, olFolderInbox);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Open Inbox folder */
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Create test environment */
-	if (torture_create_environment(mem_ctx, &obj_inbox, &obj_testdir) != True) {
-		return False;
+	if (torture_create_environment(mem_ctx, &obj_inbox, &obj_testdir) != true) {
+		return false;
 	}
 
 	/* Get Contents Table */
 	retval = GetContentsTable(&obj_testdir, &obj_table);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Filter contents table on subject */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
@@ -176,10 +176,10 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 					  PR_MESSAGE_FLAGS);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	printf("Total number of mails = %d\n", total);
 
@@ -191,10 +191,10 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resProperty.lpProp.value.lpszA = "Same subject";
 
 	retval = Restrict(&obj_table, &res);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	
 	retval = GetRowCount(&obj_table, &total);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_PROPERTY\n"));
 	DEBUG(0, ("  -------------------------\n"));
@@ -209,10 +209,10 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resBitmask.ulMask = MSGFLAG_READ;
 
 	retval = Restrict(&obj_table, &res);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_BITMASK\n"));
 	DEBUG(0, ("  --------------------------\n"));
@@ -227,10 +227,10 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resSize.size = 30;
 
 	retval = Restrict(&obj_table, &res);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_SIZE\n"));
 	DEBUG(0, ("  --------------------------\n"));
@@ -243,10 +243,10 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resExist.ulPropTag = PR_HTML;
 
 	retval = Restrict(&obj_table, &res);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_EXIST\n"));
 	DEBUG(0, ("  --------------------------\n"));
@@ -261,10 +261,10 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resCompareProps.ulPropTag1 = PR_BODY;
 	res.res.resCompareProps.ulPropTag2 = PR_SUBJECT;
 	retval = Restrict(&obj_table, &res);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_COMPAREPROPS\n"));
 	DEBUG(0, ("  --------------------------\n"));
@@ -279,10 +279,10 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resContent.lpProp.ulPropTag = PR_BODY;
 	res.res.resContent.lpProp.value.lpszA = "openchange";
 	retval = Restrict(&obj_table, &res);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_CONTENT\n"));
 	DEBUG(0, ("  --------------------------\n"));
@@ -292,11 +292,11 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 
 	/* Clean up test environment */
 	retval = EmptyFolder(&obj_testdir);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("\n[+] Removing messages from testdir\n"));
 
 	retval = DeleteFolder(&obj_inbox, mapi_object_get_id(&obj_testdir));
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("[+] Deleting testdir folder\n"));
 
 	/* release mapi objects */

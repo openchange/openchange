@@ -35,7 +35,7 @@ bool torture_rpc_mapi_fetchcontacts(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	struct mapi_session	*session;
 	uint64_t		id_contacts;
 	mapi_object_t		obj_store;
@@ -49,11 +49,11 @@ bool torture_rpc_mapi_fetchcontacts(struct torture_context *torture)
 	nt_status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -63,21 +63,21 @@ bool torture_rpc_mapi_fetchcontacts(struct torture_context *torture)
 	/* session::OpenMsgStore */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Retrieve the contacts Folder ID */
 	retval = GetDefaultFolder(&obj_store, &id_contacts, olFolderContacts);
 	mapi_errstr("GetDefaultFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* We now open the contacts folder */
 	retval = OpenFolder(&obj_store, id_contacts, &obj_contacts);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Operations on the contacts folder */
 	retval = GetContentsTable(&obj_contacts, &obj_table);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
 					  PR_FID,
@@ -90,10 +90,10 @@ bool torture_rpc_mapi_fetchcontacts(struct torture_context *torture)
 					  PR_RULE_MSG_NAME);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = QueryRows(&obj_table, 0x32, TBL_ADVANCE, &SRowSet);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	{
 		int i;

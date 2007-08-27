@@ -42,7 +42,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	struct dcerpc_pipe      *p;
 	TALLOC_CTX              *mem_ctx;
 	struct mapi_session	*session;
-	bool                    ret = True;
+	bool                    ret = true;
 	struct SPropTagArray    *SPropTagArray;
 	struct SRowSet		*rowset = NULL;
 	struct FlagList		*flaglist = NULL;
@@ -60,13 +60,13 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	if (!username) {
 		DEBUG(0,("Specify the usernames to resolve with exchange:resolvename\n"));
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_nsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	/* init mapi */
@@ -75,12 +75,12 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 		profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB_PATH, getenv("HOME"));
 		if (!profdb) {
 			DEBUG(0, ("Specify a valie MAPI profile store\n"));
-			return False;
+			return false;
 		}
 	}
 	retval = MAPIInitialize(profdb);
 	mapi_errstr("MAPIInitialize", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* profile name */
 	profname = lp_parm_string(-1, "mapi", "profile");
@@ -88,13 +88,13 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 		retval = GetDefaultProfile(&profname, 0);
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Please specify a valid profile name\n"));
-			return False;
+			return false;
 		}
 	}
 	
 	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
 	mapi_errstr("MapiLogonProvider", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0xd,
 					  PR_ENTRYID,
@@ -127,7 +127,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 
 	retval = ResolveNames((const char **)usernames, SPropTagArray, &rowset, &flaglist, unicode?MAPI_UNICODE:0);
 	mapi_errstr("ResolveNames", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapidump_Recipients((const char **)usernames, rowset, flaglist);
 

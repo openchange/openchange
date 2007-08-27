@@ -135,7 +135,7 @@ do {							\
   if (__cond == 0) __reason = "(" #cond ") is not true";\
   else __reason = "(" #cond ") is true";		\
   oc_test_next(__cond, __FILE__, __LINE__, __reason);	\
-  if (__cond == 0) return False;			\
+  if (__cond == 0) return false;			\
 } while (0)
 
 #define oc_test_step()					\

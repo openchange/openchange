@@ -98,7 +98,7 @@ static bool torture_folder(mapi_object_t *obj_parent)
 	oc_test_describe("Release");
 	oc_test_step();
 
-	return True;
+	return true;
 }
 
 
@@ -106,7 +106,7 @@ bool torture_rpc_mapi_folder(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;
 	mapi_id_t		id_inbox;
@@ -117,7 +117,7 @@ bool torture_rpc_mapi_folder(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_mapi_folder");
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -126,18 +126,18 @@ bool torture_rpc_mapi_folder(struct torture_context *torture)
 	/* session::OpenMsgStore() */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	mapi_object_debug(&obj_store);
 
 	/* id_inbox = store->GeInboxFolder() */
 	retval = GetReceiveFolder(&obj_store, &id_inbox);
 	mapi_errstr("GetReceiveFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* inbox = store->OpenFolder(id_inbox) */
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	mapi_object_debug(&obj_inbox);
 
 	oc_test_begin();

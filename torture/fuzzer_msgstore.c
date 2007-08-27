@@ -55,11 +55,11 @@ bool torture_fuzzer_msgstore(struct torture_context *torture)
 	ntstatus = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	mapi_ctx = global_mapi_ctx;
 	mailbox = mapi_ctx->session->profile->mailbox;
@@ -116,5 +116,5 @@ bool torture_fuzzer_msgstore(struct torture_context *torture)
 		}
 	}
 
-	return True;
+	return true;
 }

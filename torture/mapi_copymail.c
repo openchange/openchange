@@ -51,11 +51,11 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 	
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -66,30 +66,30 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	/* OpenMsgStore */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Get Inbox folder */
 	retval = GetDefaultFolder(&obj_store, &id_src, olFolderInbox);
 	mapi_errstr("GetDefaultFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = OpenFolder(&obj_store, id_src, &obj_dir_src);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Get Deleted Items folder */
 	retval = GetDefaultFolder(&obj_store, &id_dst, olFolderDrafts);
 	mapi_errstr("GetDefaultFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	
 	retval = OpenFolder(&obj_store, id_dst, &obj_dir_dst);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 
 	retval = GetContentsTable(&obj_dir_src, &obj_table);
 	mapi_errstr("GetContentsTable", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 		SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
 					  PR_FID,
@@ -100,13 +100,13 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	mapi_errstr("SetColumns", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		for (i = 0; i < rowset.cRows; i++) {
 			retval = CopyMessages(&obj_dir_src, &obj_dir_dst, rowset.aRow[i].lpProps[1].value.d);
 			mapi_errstr("CopyMessages", GetLastError());
-			if (retval != MAPI_E_SUCCESS) return False;
+			if (retval != MAPI_E_SUCCESS) return false;
 		}
 	}
 
@@ -122,5 +122,5 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	MAPIUninitialize();
 	talloc_free(mem_ctx);
 
-	return True;
+	return true;
 }

@@ -43,13 +43,13 @@ bool torture_mapi_createuser(struct torture_context *torture)
 	/* sanity checks */
 	if (!username) {
 		printf("Specify the username to create with exchange:username\n");
-		return False;
+		return false;
 	}
 
 	/* init mapi */
 	mem_ctx = talloc_init("torture_mapi_createuser");
 	retval = torture_load_profile(mem_ctx);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	profile = global_mapi_ctx->session->profile;
 
@@ -60,7 +60,7 @@ bool torture_mapi_createuser(struct torture_context *torture)
 
 	if (!user_ctx) {
 		printf("Failed to create the user\n");
-		return False;
+		return false;
 	}
 
        /* We extend the user with Exchange attributes */
@@ -68,8 +68,8 @@ bool torture_mapi_createuser(struct torture_context *torture)
        if (!NT_STATUS_IS_OK(ntstatus)) {
 	       torture_leave_domain(user_ctx);
 	       talloc_free(mem_ctx);
-	       return False;
+	       return false;
        }
 
-       return True;
+       return true;
 }

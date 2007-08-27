@@ -154,7 +154,7 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 	SetRecipientType(&(SRowSet->aRow[last]), RecipClass);
 
 	SRowSet->cRows += 1;
-	return True;
+	return true;
 }
 
 bool set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
@@ -166,7 +166,7 @@ bool set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SR
 	static uint32_t	counter = 0;
 
 	if (count == 0) counter = 0;
-	if (!usernames) return False;
+	if (!usernames) return false;
 
 	for (i = 0; usernames[i]; i++) {
 		if (flaglist->ulFlags[count] == MAPI_UNRESOLVED) {
@@ -181,7 +181,7 @@ bool set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SR
 	
 	*index = count;
 	
-	return True;
+	return true;
 }
 
 /**

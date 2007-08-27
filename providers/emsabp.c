@@ -168,7 +168,7 @@ bool emsabp_add_entry(struct emsabp_ctx *emsabp_ctx, uint32_t *instance_key,
 
 	emsabp_ctx->entry_ids = entry;
 
-	return True;
+	return true;
 }
 
 
@@ -370,7 +370,7 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 	if (x500 == NULL) {
 		for (i = 0; emsabp_multi_x500_tags[i].mapitag; i++) {
 			if (emsabp_multi_x500_tags[i].mapitag == mapitag) {
-				ismultix500 = True;
+				ismultix500 = true;
 				x500 = emsabp_multi_x500_tags[i].x500;
 				break;
 			}

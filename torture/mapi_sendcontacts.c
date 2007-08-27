@@ -35,7 +35,7 @@ bool torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	const char		*cardname = lp_parm_string(-1, "mapi", "cardname");
 	const char		*fullname = lp_parm_string(-1, "mapi", "fullname");
 	struct mapi_session	*session;
@@ -46,18 +46,18 @@ bool torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 	mapi_object_t		obj_message;
 	struct SPropValue	props[4];
 
-	if (!cardname) return False;
+	if (!cardname) return false;
 
 	/* init torture */
 	mem_ctx = talloc_init("torture_rpc_mapi_fetchmail");
 	nt_status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -67,22 +67,22 @@ bool torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 	/* session::OpenMsgStore */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Retrieve the contacts Folder ID */
 	retval = GetDefaultFolder(&obj_store, &id_contacts, olFolderContacts);
 	mapi_errstr("GetDefaultFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* We now open the contacts folder */
 	retval = OpenFolder(&obj_store, id_contacts, &obj_contacts);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Operations on the contacts folder */
 	retval = CreateMessage(&obj_contacts, &obj_message);
 	mapi_errstr("CreateMessage", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (const void *) cardname);
 	set_SPropValue_proptag(&props[1], PR_DISPLAY_NAME, (const void *) fullname);
@@ -90,11 +90,11 @@ bool torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 	set_SPropValue_proptag(&props[3], PR_NORMALIZED_SUBJECT, (const void *) cardname);
 	retval = SetProps(&obj_message, props, 4);
 	mapi_errstr("SetProps", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_contacts, &obj_message);
 	mapi_errstr("SaveChangesMessage", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 
 	mapi_object_release(&obj_table);

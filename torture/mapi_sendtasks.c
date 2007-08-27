@@ -37,7 +37,7 @@ bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	const char		*task = lp_parm_string(-1, "mapi", "task");
 	uint32_t		priority = lp_parm_int(-1, "mapi", "priority", 0);
 	uint32_t		status = lp_parm_int(-1, "mapi", "status", 0);
@@ -49,18 +49,18 @@ bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	mapi_object_t		obj_message;
 	struct SPropValue	props[CN_PROPS];
 
-	if (!task) return False;
+	if (!task) return false;
 
 	/* init torture */
 	mem_ctx = talloc_init("torture_rpc_mapi_fetchmail");
 	nt_status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -70,22 +70,22 @@ bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	/* session::OpenMsgStore */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Retrieve the task Folder ID */
 	retval = GetDefaultFolder(&obj_store, &id_task, olFolderTasks);
 	mapi_errstr("GetDefaultFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* We now open the task folder */
 	retval = OpenFolder(&obj_store, id_task, &obj_task);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Operations on the task folder */
 	retval = CreateMessage(&obj_task, &obj_message);
 	mapi_errstr("CreateMessage", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (const void *) task);
 	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (const void *) task);
@@ -94,11 +94,11 @@ bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	set_SPropValue_proptag(&props[4], PR_Status, (const void *)&status);
 	retval = SetProps(&obj_message, props, CN_PROPS);
 	mapi_errstr("SetProps", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_task, &obj_message);
 	mapi_errstr("SaveChangesMessage", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 
 	mapi_object_release(&obj_table);

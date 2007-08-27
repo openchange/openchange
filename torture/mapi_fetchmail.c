@@ -37,7 +37,7 @@ bool torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	struct mapi_session	*session;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;
@@ -58,11 +58,11 @@ bool torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	nt_status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -74,28 +74,28 @@ bool torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	 */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* id_inbox = store->GetReceiveFolder */
 	retval = GetReceiveFolder(&obj_store, &id_inbox);
 	mapi_errstr("GetReceiveFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Open Inbox folder */
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Retrieve message count summary from the folder */
 	retval = GetFolderItemsCount(&obj_inbox, &unread, &total);
 	mapi_errstr("GetFolderItemsCount", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 		
 	/* table = inbox->GetContentsTable()
 	 */
 	retval = GetContentsTable(&obj_inbox, &obj_table);
 	mapi_errstr("GetContentsTable", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
 					  PR_FID,
@@ -106,7 +106,7 @@ bool torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	retval = SetColumns(&obj_table, SPropTagArray);
 	talloc_free(SPropTagArray);
 	mapi_errstr("SetColumns", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Iterate through messages
 	 */

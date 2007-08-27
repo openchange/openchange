@@ -87,7 +87,7 @@ static bool torture_prop(mapi_object_t *obj_prop)
 	status = GetProps(obj_prop, proptags, &propvals, &cn_vals);
 	oc_test_assert(status == MAPI_E_SUCCESS || status == MAPI_W_ERRORS_RETURNED);
 
-	return True;
+	return true;
 }
 
 
@@ -95,7 +95,7 @@ bool torture_rpc_mapi_prop(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;
 	mapi_object_t		obj_child;
@@ -107,7 +107,7 @@ bool torture_rpc_mapi_prop(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_mapi_prop");
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -117,24 +117,24 @@ bool torture_rpc_mapi_prop(struct torture_context *torture)
 	/* session::OpenMsgStore() */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	mapi_object_debug(&obj_store);
 
 	/* id_inbox = store->GeInboxFolder() */
 	retval = GetReceiveFolder(&obj_store, &id_inbox);
 	mapi_errstr("GetReceiveFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* inbox = store->OpenFolder(id_inbox) */
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	mapi_object_debug(&obj_inbox);
 
 	/* child = inbox->CreateFolder() */
 	retval = CreateFolder(&obj_inbox, "torture_name", "torture_comment", &obj_child);
 	mapi_errstr("CreateFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	mapi_object_debug(&obj_child);
 
 	/* child->torture() */
@@ -145,7 +145,7 @@ bool torture_rpc_mapi_prop(struct torture_context *torture)
 	/* inbox->DeleteFolder() */
 	retval = DeleteFolder(&obj_inbox, mapi_object_get_id(&obj_child));
 	mapi_errstr("DeleteFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* objects->Release()
 	 */

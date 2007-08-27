@@ -46,7 +46,7 @@ int samdb_msg_add_string(struct ldb_context *, TALLOC_CTX *,
 int samdb_modify(struct ldb_context *, TALLOC_CTX *, struct ldb_message *);
 int samdb_replace(struct ldb_context *, TALLOC_CTX *, struct ldb_message *);
 struct dom_sid *dom_sid_add_rid(TALLOC_CTX *,  const struct dom_sid *, uint32_t);
-BOOL encode_pw_buffer(uint8_t buffer[516], const char *, int);
+bool encode_pw_buffer(uint8_t buffer[516], const char *, int);
 void arcfour_crypt_blob(uint8_t *, int, const DATA_BLOB *);
 
 __END_DECLS

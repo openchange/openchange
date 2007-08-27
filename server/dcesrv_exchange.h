@@ -26,7 +26,7 @@
 #include <auth.h>
 
 #define	NTLM_AUTH_IS_OK(dce_call) \
-(dce_call->conn->auth_state.session_info->server_info->authenticated == True)
+(dce_call->conn->auth_state.session_info->server_info->authenticated == true)
 
 #define	NTLM_AUTH_USERNAME(dce_call) \
 (dce_call->conn->auth_state.session_info->credentials->username)
@@ -36,7 +36,7 @@
 
 #define	NTLM_AUTH_IS_OK_RETURN(dce_call) do { \
 	if (!NTLM_AUTH_IS_OK(dce_call)) {\
-		return True;\
+		return true;\
 	}\
 } while (0)
 

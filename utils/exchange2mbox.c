@@ -58,28 +58,28 @@ static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 	uint64_t		id_message;
 
 	if (!msgid) {
-		return False;
+		return false;
 	}
 
 	retval = MapiLogonEx(&session, profname, password);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Open the default message store */
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(&obj_store);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Open Inbox */
 	retval = GetReceiveFolder(&obj_store, &id_inbox);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_inbox);
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_table);
 	retval = GetContentsTable(&obj_inbox, &obj_table);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
 					  PR_FID,
@@ -87,7 +87,7 @@ static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 					  PR_INTERNET_MESSAGE_ID);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &SRowSet)) == MAPI_E_SUCCESS) {
 		if (!SRowSet.cRows) break;
@@ -99,7 +99,7 @@ static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 			if (message_id && !strncmp(message_id, msgid, strlen(msgid))) {
 				id_message = SRowSet.aRow[i].lpProps[1].value.d;
 				retval = DeleteMessage(&obj_inbox, &id_message, 1);
-				if (retval != MAPI_E_SUCCESS) return False;
+				if (retval != MAPI_E_SUCCESS) return false;
 				break;
 			}
 		}
@@ -109,7 +109,7 @@ static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 	mapi_object_release(&obj_inbox);
 	mapi_object_release(&obj_store);
 
-	return True;
+	return true;
 }
 
 /**
@@ -131,7 +131,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	unsigned int		mbox_count = 0;
 	unsigned int		count;
 	int			i, j;
-	bool			found = False;
+	bool			found = false;
 
 	retval = MAPIInitialize(profdb);
 	MAPI_RETVAL_IF(retval, retval, NULL);
@@ -183,14 +183,14 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	if (count != mbox_count) {
 		printf("{+] Synchonizing mbox with Exchange mailbox\n");
 		for (i = 0; i < count; i++) {
-			found = False;
+			found = false;
 			for (j = 0; j < mbox_count; j++) {
 				if (!strcmp(prof_msgids[i], mbox_msgids[j])) {
-					found = True;
+					found = true;
 				}
 			}
-			if (found == False) {
-				if (delete_message(mem_ctx, prof_msgids[i], profname, password) == True) {
+			if (found == false) {
+				if (delete_message(mem_ctx, prof_msgids[i], profname, password) == true) {
 					printf("%s deleted from the Exchange server\n", prof_msgids[i]);
 					mapi_profile_delete_string_attr(profname, "Message-ID", prof_msgids[i]);
 				}
@@ -273,7 +273,7 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 	data.data = talloc_size(mem_ctx, size);
 
 	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (size < MAX_READ_SIZE) {
 		retval = ReadStream(&obj_stream, buf, size, &read_size);
@@ -355,7 +355,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	bcc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC);
 
 	if (!to && !cc && !bcc) {
-		return False;
+		return false;
 	}
 
 	delivery_date = (const uint64_t *)find_mapi_SPropValue_data(properties, PR_MESSAGE_DELIVERY_TIME);
@@ -516,7 +516,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	
 	fwrite("\n\n\n", 3, 1, fp);
 
-	return True;
+	return true;
 }
 
 int main(int argc, const char *argv[])
@@ -542,7 +542,7 @@ int main(int argc, const char *argv[])
 	const char			*opt_profname = NULL;
 	const char			*opt_password = NULL;
 	const char			*opt_mbox = NULL;
-	bool				opt_update = False;
+	bool				opt_update = false;
 	const char			*msgid;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_MBOX, OPT_UPDATE};
@@ -576,7 +576,7 @@ int main(int argc, const char *argv[])
 			opt_mbox = poptGetOptArg(pc);
 			break;
 		case OPT_UPDATE:
-			opt_update = True;
+			opt_update = true;
 			break;
 		}
 	}
@@ -602,7 +602,7 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
-	if (opt_update == True) {
+	if (opt_update == true) {
 		retval = update(mem_ctx, fp, opt_profdb, opt_profname, opt_password);
 		if (GetLastError() != MAPI_E_SUCCESS) {
 			printf("Problem encountered during update\n");
@@ -678,7 +678,7 @@ int main(int argc, const char *argv[])
 					     &obj_message);
 			if (GetLastError() == MAPI_E_SUCCESS) {
 				retval = GetPropsAll(&obj_message, &properties_array);
-				if (retval != MAPI_E_SUCCESS) return False;
+				if (retval != MAPI_E_SUCCESS) return false;
 				
 				msgid = (const char *) find_mapi_SPropValue_data(&properties_array, PR_INTERNET_MESSAGE_ID);
 				if (msgid) {

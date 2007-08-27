@@ -44,27 +44,27 @@ static void process_one(const char *name)
 	}
 
 	if (options.locale_id) {
-		if (print_locale(options.locale_id) == False) {
+		if (print_locale(options.locale_id) == false) {
 			DEBUG(0, ("Unknown locale id in the locale database (%s)\n", name));
 		}
 			
 	}
 	if (options.language_group) {
-		if (print_groupmember(lang2nb(options.language_group)) == False) {
+		if (print_groupmember(lang2nb(options.language_group)) == false) {
 			DEBUG(0, ("(%s)\n", name));
 			exit (1);
 		}
 	}
 
 	if (options.codepage) {
-		if (print_codepage_infos(options.codepage) == False) {
+		if (print_codepage_infos(options.codepage) == false) {
 			DEBUG(0, ("Invalid codepage (%s)\n", name));
 			exit (1);
 		}
 	}
 	if (options.language_info) {
 		printf("######### BEGIN: (copy and paste into smb.conf) #########\n");
-		if (get_locales(options.language_info) == False) {
+		if (get_locales(options.language_info) == false) {
 			DEBUG(0, ("Invalid language (%s)\n", name));
 			exit (1);
 		}

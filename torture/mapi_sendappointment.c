@@ -41,7 +41,7 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	const char		*appointment = lp_parm_string(-1, "mapi", "appointment");
 	const char		*body = lp_parm_string(-1, "mapi", "body");
 	const char		*location = lp_parm_string(-1, "mapi", "location");
@@ -62,20 +62,20 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	uint32_t		flag;
 	uint8_t			flag2;
 
-	if (!appointment) return False;
-	if (busy_status > 3) return False;
-	if (!start || !end) return False;
+	if (!appointment) return false;
+	if (busy_status > 3) return false;
+	if (!start || !end) return false;
 
 	/* init torture */
 	mem_ctx = talloc_init("torture_rpc_mapi_sendappointment");
 	nt_status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -84,25 +84,25 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	/* session::OpenMsgStore */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetDefaultFolder(&obj_store, &id_calendar, olFolderCalendar);
 	mapi_errstr("GetDefaultFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* We now open the calendar folder */
 	retval = OpenFolder(&obj_store, id_calendar, &obj_calendar);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Operations on the calendar folder */
 	retval = CreateMessage(&obj_calendar, &obj_message);
 	mapi_errstr("CreateMessage", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (!strptime(start, DATE_FORMAT, &tm)) {
 		printf("Invalid start date\n");
-		return False;
+		return false;
 	}
 	unix_to_nt_time(&nt, mktime(&tm));
 	start_date = talloc(mem_ctx, struct FILETIME);
@@ -112,7 +112,7 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 
 	if (!strptime(end, DATE_FORMAT, &tm)) {
 		printf("Invalid end date\n");
-		return False;
+		return false;
 	}
 	unix_to_nt_time(&nt, mktime(&tm));
 	end_date = talloc(mem_ctx, struct FILETIME);
@@ -131,7 +131,7 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	set_SPropValue_proptag(&props[7], PR_BusyStatus, (const void *) &busy_status);
 	flag= MEETING_STATUS_NONMEETING;
 	set_SPropValue_proptag(&props[8], PR_APPOINTMENT_MEETING_STATUS, (const void *) &flag);
-	flag2 = True;
+	flag2 = true;
 	set_SPropValue_proptag(&props[9], PR_CommonStart, (const void *) start_date);
 	set_SPropValue_proptag(&props[10], PR_CommonEnd, (const void *) end_date);
 	set_SPropValue_proptag(&props[11], PR_LABEL, (const void *)&label);
@@ -140,11 +140,11 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	set_SPropValue_proptag(&props[13], PR_BODY, (const void *)(body?body:""));
 	retval = SetProps(&obj_message, props, CN_PROPS);
 	mapi_errstr("SetProps", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_calendar, &obj_message);
 	mapi_errstr("SaveChangesMessage", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 
 	mapi_object_release(&obj_calendar);

@@ -53,49 +53,49 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 	ntstatus = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		talloc_free(mem_ctx);
-		return False;
+		return false;
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Retrieve the default inbox folder id */
 	retval = GetDefaultFolder(&obj_store, &id_inbox, olFolderInbox);
 	mapi_errstr("GetDefaultFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_inbox);
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (!strncasecmp(operation, "add", strlen(operation))) {
 		permission = get_permission_from_name(role);
 		retval = AddUserPermission(&obj_inbox, username, permission);
 		mapi_errstr("AddUserPermission", GetLastError());
-		if (retval != MAPI_E_SUCCESS) return False;
+		if (retval != MAPI_E_SUCCESS) return false;
 	}
 	if (!strncasecmp(operation, "modify", strlen(operation))) {
 		permission = get_permission_from_name(role);
 		retval = ModifyUserPermission(&obj_inbox, username, permission);
 		mapi_errstr("ModifyUserPermission", GetLastError());
-		if (retval != MAPI_E_SUCCESS) return False;
+		if (retval != MAPI_E_SUCCESS) return false;
 	}
 	if (!strncasecmp(operation, "remove", strlen(operation))) {
 		retval = RemoveUserPermission(&obj_inbox, username);
 		mapi_errstr("RemoveUserPermission", GetLastError());
-		if (retval != MAPI_E_SUCCESS) return False;
+		if (retval != MAPI_E_SUCCESS) return false;
 	}
 	if (!strncasecmp(operation, "list", strlen(operation))) {
 		mapi_object_init(&obj_table);
 		retval = GetTable(&obj_inbox, &obj_table);
 		mapi_errstr("GetTable", GetLastError());
-		if (retval != MAPI_E_SUCCESS) return False;
+		if (retval != MAPI_E_SUCCESS) return false;
 
 		proptags = set_SPropTagArray(mem_ctx, 4,
 					     PR_MEMBER_ID,
@@ -105,11 +105,11 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 		retval = SetColumns(&obj_table, proptags);
 		mapi_errstr("SetColumns", GetLastError());
 		MAPIFreeBuffer(proptags);
-		if (retval != MAPI_E_SUCCESS) return False;
+		if (retval != MAPI_E_SUCCESS) return false;
 		
 		retval = QueryRows(&obj_table, 0x32, TBL_ADVANCE, &SRowSet);
 		mapi_errstr("QueryRows", GetLastError());
-		if (retval != MAPI_E_SUCCESS) return False;
+		if (retval != MAPI_E_SUCCESS) return false;
 		
 		for (i = 0; i < SRowSet.cRows; i++) {
 			struct SPropValue *lpProp;
@@ -128,5 +128,5 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 
 	MAPIUninitialize();
 	talloc_free(mem_ctx);
-	return True;
+	return true;
 }

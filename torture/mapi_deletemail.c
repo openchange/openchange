@@ -38,7 +38,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	bool			ret = True;
+	bool			ret = true;
 	const char		*s_subject = lp_parm_string(-1, "mapi", "subject");
 	int			len_subject;
 	struct mapi_session	*session;
@@ -58,7 +58,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_mapi_deletemail");
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return False;
+	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
 
 	/* init objets */
 	mapi_object_init(&obj_store);
@@ -68,25 +68,25 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 	/* session::OpenMsgStore() */
 	retval = OpenMsgStore(&obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	mapi_object_debug(&obj_store);
 
 	/* id_inbox = store->GetReceiveFolder */
 	retval = GetReceiveFolder(&obj_store, &id_inbox);
 	mapi_errstr("GetReceiveFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* inbox = store->OpenFolder()
 	 */
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
 	mapi_errstr("OpenFolder", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	mapi_object_debug(&obj_inbox);
 
 	/* table = inbox->GetContentsTable() */
 	retval = GetContentsTable(&obj_inbox, &obj_table);
 	mapi_errstr("GetContentsTable", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	mapi_object_debug(&obj_table);
 
 	/* rowset = table->QueryRows() */
@@ -98,7 +98,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 					  PR_SUBJECT);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	mapi_errstr("SetColumns", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	while ((retval = QueryRows(&obj_table, CN_ROWS, TBL_ADVANCE, &rowset)) == MAPI_E_SUCCESS) {
 		cn_rows = rowset.cRows;

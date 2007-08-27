@@ -201,7 +201,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	names[1] = NULL;
 	retval = ResolveNames((const char **)names, SPropTagArray, &rows, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
 
 	rowList.cEntries = 1;
 	rowList.aEntries = talloc_array(mem_ctx, struct mapi_SRow, 1);
@@ -213,7 +213,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	rowList.aEntries[0].lpProps.lpProps[1].value.l = role;
 
 	retval = ModifyTable(obj_folder, &rowList);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
 
 	talloc_free(mem_ctx);
 

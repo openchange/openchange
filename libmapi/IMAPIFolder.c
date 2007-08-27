@@ -288,13 +288,14 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent, const char *nam
 	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!name, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("CreateFolder");
 
 	size = 0;
 
-	/* Fill the DeleteMessages operation */
+	/* Fill the CreateFolder operation */
 	request.handle_idx = 0x1;
 	size+= sizeof(uint8_t);
 	request.flags_type = 0x0001;
@@ -303,8 +304,13 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent, const char *nam
 	size += sizeof(uint16_t);
 	request.name = name;
 	size += strlen(name) + 1;
-	request.comment = comment;
-	size += strlen(comment) + 1;	
+	if (comment) {
+		request.comment = comment;
+		size += strlen(comment) + 1;
+	} else {
+		request.comment = "";
+		size += 1;
+	}
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);

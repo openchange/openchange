@@ -62,6 +62,7 @@ CPPFLAGS="-I$prefix/include"
 PKG_PROG_PKG_CONFIG([0.20])
 PKG_CHECK_MODULES(TALLOC, talloc)
 PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-config)
+PKG_CHECK_MODULES(SAMR, dcerpc_samr)
 PKG_CHECK_MODULES(LDB, ldb)
 
 TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`
@@ -105,7 +106,7 @@ dnl ***********************
 dnl Makefiles 
 dnl ***********************
 
-AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc])
+AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc libmapiadmin.pc])
 AC_OUTPUT
 
 dnl ***********************

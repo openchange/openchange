@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+datarootdir=@prefix@/share
+datadir=@datadir@
+
+Name: MAPI Adminitration
+Description: MAPI Administration Implementation
+Version: @PACKAGE_VERSION@
+Libs: @LIBS@
+Cflags: @CFLAGS@
+Requires: talloc dcerpc ndr samba-config ldb

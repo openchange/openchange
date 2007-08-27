@@ -194,5 +194,6 @@
 #define	IPF_NOTE			"IPF.Note"
 #define	IPF_STICKYNOTE			"IPF.StickyNote"
 #define	IPF_TASK			"IPF.Task"
+#define	IPF_POST			"IPF.Post"
 
 #endif /*!__MAPIDEFS_H__ */

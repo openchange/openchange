@@ -45,13 +45,19 @@ LIBS+=@SAMBA_LIBS@
 CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
 LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 
+LIBMAPIADMIN_LIBS+=@SAMR_LIBS@
+LIBMAPIADMIN_CFLAGS=@SAMR_CFLAGS@
+
 all: 	libmapi/utf8_convert.yy.c				\
 	gen_ndr gen_ndr/ndr_exchange.h proto.h			\
 	torture_proto.h	providers_proto.h dcesrv_proto.h	\
+	libmapiadmin_proto.h					\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)			\
+	libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 	bin/schemaIDGUID					\
 	bin/mapiprofile						\
 	bin/openchangeclient					\
+	bin/openchangepfadmin					\
 	bin/exchange2mbox					\
 	bin/locale_codepage					\
 	torture/openchange.$(SHLIBEXT)				\
@@ -61,16 +67,19 @@ all: 	libmapi/utf8_convert.yy.c				\
 
 install: all installman $(SWIGDIRS-INSTALL)
 	@echo "Installing OpenChange plugin"
-	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/libmapi $(DESTDIR)$(includedir)/libmapi/socket $(DESTDIR)$(includedir)/gen_ndr
+	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/libmapi $(DESTDIR)$(includedir)/libmapi/socket $(DESTDIR)$(includedir)/libmapiadmin $(DESTDIR)$(includedir)/gen_ndr
 	mkdir -p $(DESTDIR)$(TORTURE_MODULESDIR)
 	mkdir -p $(DESTDIR)$(SERVER_MODULESDIR)
 	cp bin/schemaIDGUID $(DESTDIR)$(bindir)
 	cp bin/mapiprofile $(DESTDIR)$(bindir)
 	cp bin/openchangeclient $(DESTDIR)$(bindir)
+	cp bin/openchangepfadmin $(DESTDIR)$(bindir)
 	cp bin/exchange2mbox $(DESTDIR)$(bindir)
 	cp bin/locale_codepage $(DESTDIR)$(bindir)
 	cp libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf $(libdir)/libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapi.$(SHLIBEXT)
+	cp libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf $(libdir)/libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiadmin.$(SHLIBEXT)
 	cp torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
 	cp server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
 	cp server/dcesrv_exchange_remote.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
@@ -80,6 +89,7 @@ install: all installman $(SWIGDIRS-INSTALL)
 	cp setup/*.ldif $(DESTDIR)$(datadir)/setup/
 	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
 	cp libmapi.pc $(DESTDIR)$(libdir)/pkgconfig
+	cp libmapiadmin.pc $(DESTDIR)$(libdir)/pkgconfig
 	cp libmapi/dlinklist.h $(DESTDIR)$(includedir)/libmapi/
 	cp libmapi/libmapi.h $(DESTDIR)$(includedir)/libmapi/
 	cp libmapi/proto.h $(DESTDIR)$(includedir)/libmapi/
@@ -100,6 +110,7 @@ install: all installman $(SWIGDIRS-INSTALL)
 
 uninstall: $(SWIGDIRS-UNINSTALL)
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapi.pc
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapiadmin.pc
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
 	rm -f $(DESTDIR)$(bindir)/mapiprofile
 	rm -f $(DESTDIR)$(bindir)/openchangeclient
@@ -113,6 +124,7 @@ uninstall: $(SWIGDIRS-UNINSTALL)
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
 	rm -rf $(DESTDIR)$(includedir)/libmapi
+	rm -rf $(DESTDIR)$(includedir)/libmapiadmin
 	rm -f $(DESTDIR)$(includedir)/gen_ndr/exchange.h
 
 re: clean install
@@ -212,6 +224,14 @@ bin/openchangeclient: 	utils/openchangeclient.o			\
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
+bin/openchangepfadmin:	utils/openchangepfadmin.o			\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
+			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			-lpopt
+	@echo "Compiling $<"
+	@$(CC) -o $@ $^ $(LIBS)
+
+
 bin/exchange2mbox:	utils/exchange2mbox.o				\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) -lpopt -lmagic
 	@echo "Compiling $<"
@@ -219,13 +239,14 @@ bin/exchange2mbox:	utils/exchange2mbox.o				\
 
 distclean: clean $(SWIGDIRS-DISTCLEAN)
 	rm -rf autom4te.cache
-	rm -f libmapi.pc
+	rm -f libmapi.pc libmapiadmin.pc
 	rm -f Makefile config.status config.log
 	rm -f swig/perl/Makefile
 	rm -f intltool-extract intltool-merge intltool-update
 
 realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
 	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f torture/openchange.so
 	rm -f server/dcesrv_exchange.so
 	rm -f server/dcesrv_exchange_remote.so
@@ -233,7 +254,7 @@ realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
 
 clean:	$(SWIGDIRS-CLEAN)
 	rm -f libmapi/generated/*
-	rm -f libmapi/*.o
+	rm -f libmapi/*.o libmapiadmin/*.o
 	rm -f libmapi/utf8_convert.yy.c
 	rm -f libmapi/tests/*.o
 	rm -f libmapi/util/*.o
@@ -248,6 +269,8 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f libmapi/mapitags.{c,h}
 	rm -f libmapi/proto.h
 	rm -f libmapi/proto_private.h
+	rm -f libmapiadmin/proto.h
+	rm -f libmapiadmin/proto_private.h
 	rm -f server/dcesrv_proto.h
 	rm -f libmapi/pr
 	rm -f providers/providers_proto.h
@@ -293,6 +316,12 @@ proto.h: libmapi/mapitags.c libmapi/mapicode.c
 	libmapi/socket/interface.c	\
 	libmapi/socket/netif.c		
 
+libmapiadmin_proto.h:
+	@echo "Generating libmapiadmin/proto.h"
+	@./script/mkproto.pl -private=libmapiadmin/proto_private.h --public=libmapiadmin/proto.h \
+	libmapiadmin/mapiadmin.c	\
+	libmapiadmin/mapiadmin_user.c	
+
 providers_proto.h: providers/emsabp.c
 	@echo "Generating providers/providers_proto.h"
 	@./script/mkproto.pl --private=providers/providers_proto.h --public=providers/providers_proto.h \
@@ -334,7 +363,7 @@ torture_proto.h:
 	torture/fuzzer_msgstore.c	\
 	torture/openchange.c
 
-libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o				\
+libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o	\
 			libmapi/IProfAdmin.o				\
 			libmapi/IMAPIContainer.o			\
 			libmapi/IMAPIFolder.o				\
@@ -367,6 +396,11 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o				\
 			libmapi/utf8_convert.yy.c
 	@echo "Compiling $<"
 	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
+
+libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	libmapiadmin/mapiadmin_user.o	\
+						libmapiadmin/mapiadmin.o
+	@echo "Compiling $<"
+	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) -lmapi
 
 manpages = \
 		doc/man/man1/exchange2mbox.1				\

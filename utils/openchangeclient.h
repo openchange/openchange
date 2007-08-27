@@ -51,6 +51,9 @@ struct oclient {
 	const char		*email;
 	const char		*full_name;
 	const char		*card_name;
+	/* PF related options */
+	BOOL			pf;
+	const char		*folder;
 };
 
 struct itemfolder {

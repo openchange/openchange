@@ -60,6 +60,83 @@ static void init_oclient(struct oclient *oclient)
 	/* task related parameters */
 	oclient->priority = 0;
 	oclient->taskstatus = 0;
+
+	/* pf related parameters */
+	oclient->pf = false;
+	oclient->folder = NULL;
+}
+
+static char *utf8tolinux(TALLOC_CTX *mem_ctx, const char *wstring)
+{
+	char		*newstr;
+
+	newstr = windows_to_utf8(mem_ctx, wstring);
+	return newstr;
+}
+
+static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx, 
+					       mapi_object_t *obj_container,
+					       mapi_object_t *obj_child,
+					       const char *folder)
+{
+	enum MAPISTATUS		retval;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		rowset;
+	mapi_object_t		obj_htable;
+	char			*newname;
+	const char		*name;
+	const uint64_t		*fid;
+	uint32_t		index;
+
+	mapi_object_init(&obj_htable);
+	retval = GetHierarchyTable(obj_container, &obj_htable);
+	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
+					  PR_DISPLAY_NAME,
+					  PR_FID);
+	retval = SetColumns(&obj_htable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	
+	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+		for (index = 0; index < rowset.cRows; index++) {
+			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
+
+			newname = utf8tolinux(mem_ctx, name);
+			if (newname && fid && !strcmp(newname, folder)) {
+				retval = OpenFolder(obj_container, *fid, obj_child);
+				MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+				return MAPI_E_SUCCESS;
+			}
+			MAPIFreeBuffer(newname);
+		}
+	}
+
+	return MAPI_E_NOT_FOUND;
+}
+
+static enum MAPISTATUS openchangeclient_getpfdir(TALLOC_CTX *mem_ctx, 
+						 mapi_object_t *obj_store,
+						 mapi_object_t *obj_child,
+						 const char *name)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_pf;
+	mapi_id_t		id_pf;
+
+	retval = GetDefaultPublicFolder(obj_store, &id_pf, olFolderPublicIPMSubtree);
+	if (retval != MAPI_E_SUCCESS) return retval;
+	
+	mapi_object_init(&obj_pf);
+	retval = OpenFolder(obj_store, id_pf, &obj_pf);
+	if (retval != MAPI_E_SUCCESS) return retval;
+	
+	retval = openchangeclient_getdir(mem_ctx, &obj_pf, obj_child, name);
+	if (retval != MAPI_E_SUCCESS) return retval;
+
+	return MAPI_E_SUCCESS;
 }
 
 /**
@@ -245,11 +322,16 @@ static enum MAPISTATUS openchangeclient_fetchmail(struct mapi_session *session,
 	mapi_object_init(&obj_inbox);
 	mapi_object_init(&obj_table);
 
-	retval = GetReceiveFolder(obj_store, &id_inbox);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	if (oclient->pf == true) {
+		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_inbox, oclient->folder);
+		MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
+	} else {
+		retval = GetReceiveFolder(obj_store, &id_inbox);
+		MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+		retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
+		MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	}
 
 	retval = GetContentsTable(&obj_inbox, &obj_table);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -573,13 +655,18 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	mapi_object_init(&obj_outbox);
 	mapi_object_init(&obj_message);
 
-	/* Get Sent Items folder but should be using olFolderOutbox */
-	retval = GetDefaultFolder(obj_store, &id_outbox, olFolderSentMail);
-	if (retval != MAPI_E_SUCCESS) return retval;
+	if (oclient->pf == true) {
+		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_outbox, oclient->folder);
+		if (retval != MAPI_E_SUCCESS) return retval;
+	} else {
+		/* Get Sent Items folder but should be using olFolderOutbox */
+		retval = GetDefaultFolder(obj_store, &id_outbox, olFolderSentMail);
+		if (retval != MAPI_E_SUCCESS) return retval;
 
-	/* Open outbox folder */
-	retval = OpenFolder(obj_store, id_outbox, &obj_outbox);
-	if (retval != MAPI_E_SUCCESS) return retval;
+		/* Open outbox folder */
+		retval = OpenFolder(obj_store, id_outbox, &obj_outbox);
+		if (retval != MAPI_E_SUCCESS) return retval;
+	}
 
 	/* Create the message */
 	retval = CreateMessage(&obj_outbox, &obj_message);
@@ -712,9 +799,16 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			mapi_object_release(&obj_attach);
 		}
 	}
-	/* Submit the message */
-	retval = SubmitMessage(&obj_message);
-	if (retval != MAPI_E_SUCCESS) return retval;
+
+	if (oclient->pf) {
+		retval = SaveChangesMessage(&obj_outbox, &obj_message);
+		if (retval != MAPI_E_SUCCESS);
+
+	} else {
+		/* Submit the message */
+		retval = SubmitMessage(&obj_message);
+		if (retval != MAPI_E_SUCCESS) return retval;
+	}
 
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_outbox);
@@ -748,11 +842,16 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx, struct mapi_session
 	mapi_object_init(&obj_inbox);
 	mapi_object_init(&obj_table);
 
-	retval = GetReceiveFolder(obj_store, &id_inbox);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (oclient->pf == true) {
+		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_inbox, oclient->folder);
+		if (retval != MAPI_E_SUCCESS) return retval;
+	} else {
+		retval = GetReceiveFolder(obj_store, &id_inbox);
+		if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
-	if (retval != MAPI_E_SUCCESS) return false;
+		retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
+		if (retval != MAPI_E_SUCCESS) return false;
+	}
 
 	retval = GetContentsTable(&obj_inbox, &obj_table);
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -806,13 +905,19 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	uint32_t		flag;
 	uint8_t			flag2;
 
-	/* Open Calendar default folder */
-	retval = GetDefaultFolder(obj_store, &id_calendar, olFolderCalendar);
-	if (retval != MAPI_E_SUCCESS) return false;
-
 	mapi_object_init(&obj_calendar);
-	retval = OpenFolder(obj_store, id_calendar, &obj_calendar);
-	if (retval != MAPI_E_SUCCESS) return false;
+
+	if (oclient->pf == true) {
+		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_calendar, oclient->folder);
+		if (retval != MAPI_E_SUCCESS) return retval;
+	} else {
+		/* Open Calendar default folder */
+		retval = GetDefaultFolder(obj_store, &id_calendar, olFolderCalendar);
+		if (retval != MAPI_E_SUCCESS) return false;
+		
+		retval = OpenFolder(obj_store, id_calendar, &obj_calendar);
+		if (retval != MAPI_E_SUCCESS) return false;
+	}
 
 	/* Create calendar mesage */
 	mapi_object_init(&obj_message);
@@ -877,13 +982,19 @@ static bool openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	mapi_object_t		obj_message;
 	mapi_id_t		id_contact;	
 
-	/* Open Contact default folder */
-	retval = GetDefaultFolder(obj_store, &id_contact, olFolderContacts);
-	if (retval != MAPI_E_SUCCESS) return false;
-
 	mapi_object_init(&obj_contact);
-	retval = OpenFolder(obj_store, id_contact, &obj_contact);
-	if (retval != MAPI_E_SUCCESS) return false;
+
+	if (oclient->pf == true) {
+		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_contact, oclient->folder);
+		if (retval != MAPI_E_SUCCESS) return retval;
+	} else {
+		/* Open Contact default folder */
+		retval = GetDefaultFolder(obj_store, &id_contact, olFolderContacts);
+		if (retval != MAPI_E_SUCCESS) return false;
+
+		retval = OpenFolder(obj_store, id_contact, &obj_contact);
+		if (retval != MAPI_E_SUCCESS) return false;
+	}
 
 	/* Create contact mesage */
 	mapi_object_init(&obj_message);
@@ -919,13 +1030,19 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	NTTIME			nt;
 	struct tm		tm;
 
-	/* Open Contact default folder */
-	retval = GetDefaultFolder(obj_store, &id_task, olFolderTasks);
-	if (retval != MAPI_E_SUCCESS) return false;
-
 	mapi_object_init(&obj_task);
-	retval = OpenFolder(obj_store, id_task, &obj_task);
-	if (retval != MAPI_E_SUCCESS) return false;
+
+	if (oclient->pf == true) {
+		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_task, oclient->folder);
+		if (retval != MAPI_E_SUCCESS) return retval;
+	} else {
+		/* Open Contact default folder */
+		retval = GetDefaultFolder(obj_store, &id_task, olFolderTasks);
+		if (retval != MAPI_E_SUCCESS) return false;
+
+		retval = OpenFolder(obj_store, id_task, &obj_task);
+		if (retval != MAPI_E_SUCCESS) return false;
+	}
 
 	/* Create contact mesage */
 	mapi_object_init(&obj_message);
@@ -991,14 +1108,6 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
 		return IPF_NOTE;
 	}
 	return lpProps[0].value.lpszA;
-}
-
-static char *utf8tolinux(TALLOC_CTX *mem_ctx, const char *wstring)
-{
-	char		*newstr;
-
-	newstr = windows_to_utf8(mem_ctx, wstring);
-	return newstr;
 }
 
 static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
@@ -1394,7 +1503,6 @@ int main(int argc, const char *argv[])
 	bool			opt_mailbox = false;
 	bool			opt_dumpdata = false;
 	bool			opt_notifications = false;
-	bool			opt_pf = false;
 	const char		*opt_profdb = NULL;
 	const char		*opt_profname = NULL;
 	const char		*opt_password = NULL;
@@ -1413,7 +1521,7 @@ int main(int argc, const char *argv[])
 	      OPT_FETCHITEMS, OPT_MAPI_LOCATION, OPT_MAPI_STARTDATE, OPT_MAPI_ENDDATE, 
 	      OPT_MAPI_BUSYSTATUS, OPT_NOTIFICATIONS, OPT_DEBUG, OPT_DUMPDATA, 
 	      OPT_MAPI_EMAIL, OPT_MAPI_FULLNAME, OPT_MAPI_CARDNAME, OPT_MAPI_PRIORITY,
-	      OPT_MAPI_TASKSTATUS, OPT_PF};
+	      OPT_MAPI_TASKSTATUS, OPT_PF, OPT_FOLDER};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1447,6 +1555,7 @@ int main(int argc, const char *argv[])
 		{"fullname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_FULLNAME, "set the full name"},
 		{"cardname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_CARDNAME, "set a contact card name"},
 		{"notifications", 0, POPT_ARG_NONE, NULL, OPT_NOTIFICATIONS, "Monitor INBOX newmail notifications"},
+		{"folder", 0, POPT_ARG_STRING, NULL, OPT_FOLDER, "set the folder to use instead of inbox"},
 		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level"},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "Dump the hex data"},
 		{ NULL }
@@ -1461,7 +1570,10 @@ int main(int argc, const char *argv[])
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_PF:
-			opt_pf = true;
+			oclient.pf = true;
+			break;
+		case OPT_FOLDER:
+			oclient.folder = poptGetOptArg(pc);
 			break;
 		case OPT_DEBUG:
 			opt_debug = poptGetOptArg(pc);
@@ -1590,6 +1702,11 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
+	if (opt_sendmail && oclient.pf == true && !oclient.folder) {
+		printf("--folder option is mandatory\n");
+		exit (1);
+	}
+
 	if (opt_html_file && oclient.pr_body) {
 		printf("PR_BODY and PR_HTML can't be set at the same time\n");
 		exit (1);
@@ -1660,7 +1777,7 @@ int main(int argc, const char *argv[])
 	 */
 
 	mapi_object_init(&obj_store);
-	if (opt_pf == true) {
+	if (oclient.pf == true) {
 		retval = OpenPublicFolder(&obj_store);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("OpenPublicFolder", GetLastError());
@@ -1683,7 +1800,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_mailbox) {
-		if (opt_pf == true) {
+		if (oclient.pf == true) {
 			retval = openchangeclient_pf(mem_ctx, session, &obj_store);
 			mapi_errstr("public folder", GetLastError());
 			if (retval != true) {

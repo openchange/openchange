@@ -237,7 +237,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	struct SPropValue	*lpProp;
 	mapi_object_t		obj_table;
 	uint32_t		row_count;
-	BOOL			found = False;
+	bool			found = false;
 	uint32_t		i = 0;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -290,7 +290,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 				
 				retval = ModifyTable(obj_folder, &rowList);
 				MAPI_RETVAL_IF(retval, retval, mem_ctx);
-				found = True;
+				found = true;
 				break;
 			}
 		}
@@ -299,7 +299,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	mapi_object_release(&obj_table);
 	talloc_free(mem_ctx);
 
-	return ((found == True) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);	
+	return ((found == true) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);	
 }
 
 /**
@@ -319,7 +319,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	struct SPropValue	*lpProp;
 	mapi_object_t		obj_table;
 	uint32_t		row_count;
-	BOOL			found = False;
+	bool			found = false;
 	uint32_t		i = 0;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -370,7 +370,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 				
 				retval = ModifyTable(obj_folder, &rowList);
 				MAPI_RETVAL_IF(retval, retval, mem_ctx);
-				found = True;
+				found = true;
 				break;
 			}
 		}
@@ -379,5 +379,5 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	mapi_object_release(&obj_table);
 	talloc_free(mem_ctx);
 
-	return ((found == True) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);
+	return ((found == true) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);
 }

@@ -32,11 +32,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-BOOL torture_rpc_mapi_sendmail_html(struct torture_context *torture)
+bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	const char		*subject = lp_parm_string(-1, "mapi", "subject");
 	const char		*body = lp_parm_string(-1, "mapi", "body");
 	const char		*filename = lp_parm_string(-1, "mapi", "html");

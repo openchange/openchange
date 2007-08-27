@@ -35,14 +35,14 @@ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
                                 const struct ndr_interface_table *table);
 
 
-BOOL torture_rpc_nspi_resolvenames(struct torture_context *torture)
+bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 {
 	NTSTATUS                status;
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe      *p;
 	TALLOC_CTX              *mem_ctx;
 	struct mapi_session	*session;
-	BOOL                    ret = True;
+	bool                    ret = True;
 	struct SPropTagArray    *SPropTagArray;
 	struct SRowSet		*rowset = NULL;
 	struct FlagList		*flaglist = NULL;

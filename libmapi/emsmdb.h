@@ -33,7 +33,7 @@ struct emsmdb_context {
   uint16_t			prop_count;
   enum MAPITAGS			*properties;
   uint16_t     			max_data;
-  BOOL				setup;
+  bool				setup;
 };
 
 #define	MAILBOX_PATH	"/o=%s/ou=%s/cn=Recipients/cn=%s"

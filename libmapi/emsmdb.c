@@ -86,7 +86,7 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p
 	
 	ret->cred = cred;
 	ret->max_data = 0xFFF0;
-	ret->setup = False;
+	ret->setup = false;
 	
 	return ret;
 }
@@ -209,16 +209,16 @@ start:
 	status = dcerpc_EcDoRpc(emsmdb->rpc_connection, emsmdb->mem_ctx, &r);
 
 	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		if (emsmdb->setup == False) {
+		if (emsmdb->setup == false) {
 			errno = 0;
 			emsmdb->max_data = 0x7FFF;
-			emsmdb->setup = True;
+			emsmdb->setup = true;
 			goto start;
 		} else {
 			return status;
 		}
 	} else {
-		emsmdb->setup = True;
+		emsmdb->setup = true;
 	}
 	emsmdb->cache_size = emsmdb->cache_count = 0;
 

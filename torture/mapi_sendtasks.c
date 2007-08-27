@@ -31,13 +31,13 @@
 
 #define	CN_PROPS 5
 
-BOOL torture_rpc_mapi_sendtasks(struct torture_context *torture)
+bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 {
 	NTSTATUS		nt_status;
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	const char		*task = lp_parm_string(-1, "mapi", "task");
 	uint32_t		priority = lp_parm_int(-1, "mapi", "priority", 0);
 	uint32_t		status = lp_parm_int(-1, "mapi", "status", 0);

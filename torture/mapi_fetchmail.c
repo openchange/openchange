@@ -31,13 +31,13 @@
 #include <samba/popt.h>
 
 
-BOOL torture_rpc_mapi_fetchmail(struct torture_context *torture)
+bool torture_rpc_mapi_fetchmail(struct torture_context *torture)
 {
 	NTSTATUS		nt_status;
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	struct mapi_session	*session;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;

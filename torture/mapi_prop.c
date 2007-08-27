@@ -34,7 +34,7 @@
 #include "oc_test.h"
 
 
-static BOOL torture_prop(mapi_object_t *obj_prop)
+static bool torture_prop(mapi_object_t *obj_prop)
 {
 	enum MAPISTATUS	status;
 	TALLOC_CTX	*mem;
@@ -91,11 +91,11 @@ static BOOL torture_prop(mapi_object_t *obj_prop)
 }
 
 
-BOOL torture_rpc_mapi_prop(struct torture_context *torture)
+bool torture_rpc_mapi_prop(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;
 	mapi_object_t		obj_child;

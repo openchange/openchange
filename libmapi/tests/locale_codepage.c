@@ -27,7 +27,7 @@
 static struct {
 	uint32_t	 locale_id;
 	char		*language_group;
-	BOOL		group;
+	bool		group;
 	uint32_t	codepage;
 	char		*language_info;
 } options;

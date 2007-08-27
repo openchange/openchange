@@ -60,10 +60,10 @@ static char *utf8tolinux(TALLOC_CTX *mem_ctx, const char *wstring)
 	return newstr;
 }
 
-static BOOL get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
+static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
 {
 	enum MAPISTATUS		retval;
-	BOOL			ret;
+	bool			ret;
 	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	struct SPropTagArray	*SPropTagArray;
@@ -227,15 +227,15 @@ int main(int argc, const char *argv[])
 	const char		*opt_acomment = NULL;
 	const char		*opt_afullname = NULL;
 	const char		*opt_addright = NULL;
-	BOOL			opt_rmright = False;
+	bool			opt_rmright = False;
 	const char		*opt_modright = NULL;
 	const char		*opt_folder = NULL;
 	const char		*opt_debug = NULL;
 	const char		*opt_username = NULL;	
 	uint32_t		opt_permission = -1;
-	BOOL			opt_ipm_list = False;
-	BOOL			opt_mkdir = False;
-	BOOL			opt_rmdir = False;
+	bool			opt_ipm_list = False;
+	bool			opt_mkdir = False;
+	bool			opt_rmdir = False;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_IPM_LIST, 
 	      OPT_MKDIR, OPT_RMDIR, OPT_COMMENT, OPT_DIRCLASS, OPT_ACL, 

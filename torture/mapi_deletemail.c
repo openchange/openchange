@@ -34,11 +34,11 @@
 #define CN_ROWS 0x100
 
 
-BOOL torture_rpc_mapi_deletemail(struct torture_context *torture)
+bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	const char		*s_subject = lp_parm_string(-1, "mapi", "subject");
 	int			len_subject;
 	struct mapi_session	*session;

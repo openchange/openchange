@@ -241,7 +241,7 @@ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	}
 }
 
-_PUBLIC_ BOOL set_SPropValue_proptag(struct SPropValue* lpProps, uint32_t aulPropTag, const void *data)
+_PUBLIC_ bool set_SPropValue_proptag(struct SPropValue* lpProps, uint32_t aulPropTag, const void *data)
 {
 	lpProps->ulPropTag = aulPropTag;
 	lpProps->dwAlignPad = 0x0;
@@ -249,11 +249,11 @@ _PUBLIC_ BOOL set_SPropValue_proptag(struct SPropValue* lpProps, uint32_t aulPro
 	return (set_SPropValue(lpProps, data));
 }
 
-_PUBLIC_ BOOL set_SPropValue(struct SPropValue* lpProps, const void *data)
+_PUBLIC_ bool set_SPropValue(struct SPropValue* lpProps, const void *data)
 {
 	if (data == NULL) {
 		lpProps->value.err = MAPI_E_NOT_FOUND;
-		return False;
+		return false;
 	}
 	switch (lpProps->ulPropTag & 0xFFFF) {
 	case PT_SHORT:
@@ -316,10 +316,10 @@ _PUBLIC_ BOOL set_SPropValue(struct SPropValue* lpProps, const void *data)
 	default:
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 _PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)

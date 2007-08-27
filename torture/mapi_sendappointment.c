@@ -35,13 +35,13 @@
 
 #define CN_PROPS 14
 
-BOOL torture_rpc_mapi_sendappointment(struct torture_context *torture)
+bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 {
 	NTSTATUS		nt_status;
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	const char		*appointment = lp_parm_string(-1, "mapi", "appointment");
 	const char		*body = lp_parm_string(-1, "mapi", "body");
 	const char		*location = lp_parm_string(-1, "mapi", "location");

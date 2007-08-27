@@ -29,7 +29,7 @@
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
 
-BOOL torture_rpc_mapi_copymail(struct torture_context *torture)
+bool torture_rpc_mapi_copymail(struct torture_context *torture)
 {
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;

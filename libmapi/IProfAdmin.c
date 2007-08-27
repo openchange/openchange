@@ -876,7 +876,7 @@ _PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile, const cha
  * Create the profile 
  */
 
-static BOOL set_profile_attribute(const char *profname, struct SRowSet rowset, 
+static bool set_profile_attribute(const char *profname, struct SRowSet rowset, 
 				  uint32_t index, uint32_t property, const char *attr)
 {
 	struct SPropValue	*lpProp;
@@ -886,19 +886,19 @@ static BOOL set_profile_attribute(const char *profname, struct SRowSet rowset,
 
 	if (!lpProp) {
 		DEBUG(3, ("MAPI Property %s not set\n", attr));
-		return True;
+		return true;
 	}
 
 	ret = mapi_profile_add_string_attr(profname, attr, lpProp->value.lpszA);
 
 	if (ret != MAPI_E_SUCCESS) {
 		DEBUG(3, ("Problem adding attribute %s in profile %s\n", attr, profname));
-		return False;
+		return false;
 	}
-	return True;
+	return true;
 }
 
-static BOOL set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
+static bool set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
 					uint32_t index, uint32_t property, const char *attr)
 {
 	struct SPropValue	*lpProp;
@@ -909,17 +909,17 @@ static BOOL set_profile_mvstr_attribute(const char *profname, struct SRowSet row
 
 	if (!lpProp) {
 		DEBUG(3, ("MAPI Property %s not set\n", attr));
-		return True;
+		return true;
 	}
 
 	for (i = 0; i < lpProp->value.MVszA.cValues; i++) {
 		ret = mapi_profile_add_string_attr(profname, attr, lpProp->value.MVszA.strings[i]->lppszA);
 		if (ret != MAPI_E_SUCCESS) {
 			DEBUG(3, ("Problem adding attribute %s in profile %s\n", attr, profname));
-			return False;
+			return false;
 		}
 	}
-	return True;
+	return true;
 }
 
 _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, const char *username,

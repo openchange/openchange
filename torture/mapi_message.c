@@ -100,7 +100,7 @@ static enum MAPISTATUS read_attach_stream(TALLOC_CTX *ctx_mem,
 }
 
 
-static BOOL torture_message(mapi_object_t *obj_store,
+static bool torture_message(mapi_object_t *obj_store,
 			    mapi_object_t *obj_inbox,
 			    mapi_object_t *obj_outbox)
 {
@@ -337,11 +337,11 @@ static BOOL torture_message(mapi_object_t *obj_store,
 }
 
 
-BOOL torture_rpc_mapi_message(struct torture_context *torture)
+bool torture_rpc_mapi_message(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_outbox;
 	mapi_object_t		obj_inbox;

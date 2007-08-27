@@ -34,11 +34,11 @@
 
 #define CN_MSG_PROPS 3
 
-BOOL torture_rpc_mapi_sendmail(struct torture_context *torture)
+bool torture_rpc_mapi_sendmail(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	const char		*subject = lp_parm_string(-1, "mapi", "subject");
 	const char		*body = lp_parm_string(-1, "mapi", "body");
 	const char		**usernames;

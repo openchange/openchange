@@ -34,7 +34,7 @@
 
 
 
-static BOOL torture_table(mapi_object_t *obj_folder)
+static bool torture_table(mapi_object_t *obj_folder)
 {
 	uint32_t	count;
 	struct SRowSet	rows;
@@ -158,11 +158,11 @@ static BOOL torture_table(mapi_object_t *obj_folder)
 }
 
 
-BOOL torture_rpc_mapi_table(struct torture_context *torture)
+bool torture_rpc_mapi_table(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;
 	mapi_id_t		id_inbox;

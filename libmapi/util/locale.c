@@ -214,12 +214,12 @@ static const struct locale_struct locales[] =
   Print locale_id information for a given Language
 */
 
-BOOL get_locales(const char *lang)
+bool get_locales(const char *lang)
 {
 	int idx = 0;
 	
 	if (!lang) {
-		return False;
+		return false;
 	}
 		
 	while (locales[idx].locale_str != NULL) {
@@ -227,34 +227,34 @@ BOOL get_locales(const char *lang)
 			DEBUG(0, ("locale:language = 0x%x\n", locales[idx].lcid));
 			/* Fix me */
 			DEBUG(0, ("locale:method = 0x%x\n", locales[idx].combination[1].lcid));
-			return True;
+			return true;
 		}
 		idx++;
 	}
-	return False;
+	return false;
 }
 
 /*
   Check if the locale provided exists
 */
 
-BOOL valid_locale(uint32_t locale)
+bool valid_locale(uint32_t locale)
 {
 	int idx = 0;
 
 	while (locales[idx].locale_str != NULL) {
 		if (locales[idx].lcid == locale)
-			return True;
+			return true;
 		idx++;
 	}
-	return False;
+	return false;
 }
 
 /*
   Print locale information for a given locale id
  */
 
-BOOL print_locale(uint32_t locale)
+bool print_locale(uint32_t locale)
 {
 	int idx = 0;
 	int i = 0;
@@ -270,11 +270,11 @@ BOOL print_locale(uint32_t locale)
 				       locales[idx].combination[i].lcid,
 				       locales[idx].combination[i].input_locale);
 			}
-			return True;
+			return true;
 		}
 		idx++;
 	}
-	return False;
+	return false;
 }
 
 /*
@@ -295,13 +295,13 @@ void print_group(void)
   Print languages associated to a single language group
  */
 
-BOOL print_groupmember(uint32_t group)
+bool print_groupmember(uint32_t group)
 {
 	uint32_t idx = 0;
 
 	if (group == -1) {
 	  DEBUG(0, ("Invalid language group "));
-	  return False;
+	  return false;
 	}
 
 	DEBUG(0, ("%s:\n", language_group[group]));
@@ -311,7 +311,7 @@ BOOL print_groupmember(uint32_t group)
 			printf("\t\t\t%s\n", locales[idx].locale_str);
 		}
 	}
-	return True;
+	return true;
 }
 
 /*

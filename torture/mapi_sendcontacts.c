@@ -29,13 +29,13 @@
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
 
-BOOL torture_rpc_mapi_sendcontacts(struct torture_context *torture)
+bool torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 {
 	NTSTATUS		nt_status;
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	const char		*cardname = lp_parm_string(-1, "mapi", "cardname");
 	const char		*fullname = lp_parm_string(-1, "mapi", "fullname");
 	struct mapi_session	*session;

@@ -270,7 +270,7 @@ _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties)
 		fflush(0);
 	}
 
-	printf("\tPrivate: %s\n", (*priv == True) ? "True" : "False");
+	printf("\tPrivate: %s\n", (*priv == true) ? "True" : "False");
 	fflush(0);
 
 	if (status) {
@@ -468,7 +468,7 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties)
 	mapidump_date(properties, PR_CommonStart, "\tStart Date");
 
 	if (private) {
-		printf("\tPrivate: %s\n", (*private == True)?"True":"False");
+		printf("\tPrivate: %s\n", (*private == true)?"True":"False");
 		fflush(0);
 	}
 

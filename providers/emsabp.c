@@ -146,7 +146,7 @@ struct emsabp_ctx *emsabp_init(void)
   Add an entry in the chain list
 */
 
-BOOL emsabp_add_entry(struct emsabp_ctx *emsabp_ctx, uint32_t *instance_key,
+bool emsabp_add_entry(struct emsabp_ctx *emsabp_ctx, uint32_t *instance_key,
 		      struct ldb_message *ldb_recipient)
 {
 	struct entry_id		*entry;
@@ -327,7 +327,7 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 	const char			*ldb_str;
 	const char			*x500 = NULL;
 	NTSTATUS			status;
-	BOOL				ismultix500 = False;
+	bool				ismultix500 = false;
 	uint32_t			ldb_int;
 	uint32_t			i;
 	uint32_t			*num;
@@ -482,7 +482,7 @@ NTSTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx,
  *
  */
 
-struct SBinary *emsabp_hierarchy_get_entryID(TALLOC_CTX *mem_ctx, struct GUID *guid, BOOL containerID)
+struct SBinary *emsabp_hierarchy_get_entryID(TALLOC_CTX *mem_ctx, struct GUID *guid, bool containerID)
 {
 	struct SBinary	*entryID;
 	char		*guid_str = (char *) NULL;

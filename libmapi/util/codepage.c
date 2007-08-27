@@ -195,25 +195,25 @@ static struct codepages codepages[] =
  Check for a valid codepage
 */
 
-_PUBLIC_ BOOL valid_codepage(uint32_t cpid)
+_PUBLIC_ bool valid_codepage(uint32_t cpid)
 {
 	uint32_t idx = 0;
 
 	while (codepages[idx].cp_name) {
 		if (codepages[idx].cpid == cpid) {
-			return True;
+			return true;
 		}
 		idx++;
 	}
-	return False;
+	return false;
 }
 
-BOOL print_codepage_infos(uint32_t cpid)
+bool print_codepage_infos(uint32_t cpid)
 {
 	uint32_t idx = 0;
 
-	if (valid_codepage(cpid) == False) {
-		return False;
+	if (valid_codepage(cpid) == false) {
+		return false;
 	}
 	
 	while (codepages[idx].cp_name) {
@@ -221,9 +221,9 @@ BOOL print_codepage_infos(uint32_t cpid)
 			printf("\t%-25s: 0x%x\n", CP_VAL, cpid);
 			printf("\t%-25s: %s\n", CP_NAME, codepages[idx].cp_name);
 			printf("\t%-25s: %s\n", CP_DESC, codepages[idx].cp_desc);
-			return True;
+			return true;
 		}
 		idx++;
 	}
-	return False;
+	return false;
 }

@@ -106,7 +106,7 @@ const char **collapse_recipients(TALLOC_CTX *mem_ctx, const char **to, const cha
 	return usernames;
 }
 
-static BOOL set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, const char *username, enum ulRecipClass RecipClass)
+static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, const char *username, enum ulRecipClass RecipClass)
 {
 	uint32_t		last;
 	struct SPropValue	SPropValue;
@@ -157,7 +157,7 @@ static BOOL set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 	return True;
 }
 
-BOOL set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
+bool set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
 					const char **usernames, struct FlagList *flaglist,
 					enum ulRecipClass RecipClass)
 {

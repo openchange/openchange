@@ -32,7 +32,7 @@
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
 
-BOOL torture_fuzzer_msgstore(struct torture_context *torture)
+bool torture_fuzzer_msgstore(struct torture_context *torture)
 {
 	NTSTATUS		ntstatus;
 	TALLOC_CTX		*mem_ctx;

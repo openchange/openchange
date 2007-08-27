@@ -43,7 +43,7 @@
 /**
  * delete a message on the exchange server
  */
-static BOOL delete_message(TALLOC_CTX *mem_ctx, char *msgid, 
+static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid, 
 			   const char *profname, const char *password)
 {
 	enum MAPISTATUS		retval;
@@ -131,7 +131,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	unsigned int		mbox_count = 0;
 	unsigned int		count;
 	int			i, j;
-	BOOL			found = False;
+	bool			found = False;
 
 	retval = MAPIInitialize(profdb);
 	MAPI_RETVAL_IF(retval, retval, NULL);
@@ -319,7 +319,7 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 
 **/
 
-static BOOL message2mbox(TALLOC_CTX *mem_ctx, FILE *fp, 
+static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp, 
 			 struct mapi_SPropValue_array *properties, mapi_object_t *obj_message)
 {
 	enum MAPISTATUS			retval;
@@ -542,7 +542,7 @@ int main(int argc, const char *argv[])
 	const char			*opt_profname = NULL;
 	const char			*opt_password = NULL;
 	const char			*opt_mbox = NULL;
-	BOOL				opt_update = False;
+	bool				opt_update = False;
 	const char			*msgid;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_MBOX, OPT_UPDATE};

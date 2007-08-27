@@ -116,7 +116,7 @@ _PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe 
 
 int nspi_disconnect_dtor(void *data)
 {
-	BOOL res;
+	bool res;
 	struct mapi_provider	*provider = (struct mapi_provider *) data;
 
 	res = nspi_unbind(provider->ctx);

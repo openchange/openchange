@@ -30,13 +30,13 @@
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
 
-BOOL torture_rpc_mapi_fetchappointment(struct torture_context *torture)
+bool torture_rpc_mapi_fetchappointment(struct torture_context *torture)
 {
 	NTSTATUS		nt_status;
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	struct mapi_session	*session;
 	uint64_t		id_calendar;
 	mapi_object_t		obj_store;

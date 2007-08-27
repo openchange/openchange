@@ -34,7 +34,7 @@
 #define	SAME_SUBJECT_BODY	"Same subject and body"
 #define	UNIQUE_BODY		"The secret word is OpenChange and is hidden"
 
-BOOL torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
+bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 				mapi_object_t *child)
 {
 	enum MAPISTATUS	retval;
@@ -110,13 +110,13 @@ BOOL torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 	return True;
 }
 
-BOOL torture_rpc_mapi_restrictions(struct torture_context *torture)
+bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 {
 	NTSTATUS		nt_status;
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	struct mapi_session	*session;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;

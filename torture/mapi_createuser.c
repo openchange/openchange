@@ -30,7 +30,7 @@
 #include <samba/popt.h>
 #include <dcerpc/samr.h>
 
-BOOL torture_mapi_createuser(struct torture_context *torture)
+bool torture_mapi_createuser(struct torture_context *torture)
 {
 	NTSTATUS		ntstatus;
 	enum MAPISTATUS		retval;

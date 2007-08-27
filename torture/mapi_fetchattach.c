@@ -89,11 +89,11 @@ static enum MAPISTATUS read_attach_stream(TALLOC_CTX *ctx_mem,
   return status;
 }
 
-BOOL torture_rpc_mapi_fetchattach(struct torture_context *torture)
+bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	struct mapi_session	*session;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;

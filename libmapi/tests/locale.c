@@ -25,9 +25,9 @@
 
 /* command line options */
 static struct {
-	BOOL locale_id;
-	BOOL language_group;
-	BOOL group;
+	bool locale_id;
+	bool language_group;
+	bool group;
 } options;
 
 /*

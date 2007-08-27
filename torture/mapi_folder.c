@@ -33,7 +33,7 @@
 #include "oc_test.h"
 
 
-static BOOL torture_folder(mapi_object_t *obj_parent)
+static bool torture_folder(mapi_object_t *obj_parent)
 {
 	enum MAPISTATUS	status;
 	TALLOC_CTX	*mem;
@@ -102,11 +102,11 @@ static BOOL torture_folder(mapi_object_t *obj_parent)
 }
 
 
-BOOL torture_rpc_mapi_folder(struct torture_context *torture)
+bool torture_rpc_mapi_folder(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
-	BOOL			ret = True;
+	bool			ret = True;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_inbox;
 	mapi_id_t		id_inbox;

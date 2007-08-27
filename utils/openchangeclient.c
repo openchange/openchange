@@ -66,7 +66,7 @@ static void init_oclient(struct oclient *oclient)
  * read a file and store it in the appropriate structure element
  */
 
-static BOOL oclient_read_file(TALLOC_CTX *mem_ctx, const char *filename, 
+static bool oclient_read_file(TALLOC_CTX *mem_ctx, const char *filename, 
 			      struct oclient *oclient, uint32_t mapitag)
 {
 	struct stat	sb;
@@ -111,7 +111,7 @@ static BOOL oclient_read_file(TALLOC_CTX *mem_ctx, const char *filename,
 /**
  * Parse attachments and load their content
  */
-static BOOL oclient_parse_attachments(TALLOC_CTX *mem_ctx, const char *filename,
+static bool oclient_parse_attachments(TALLOC_CTX *mem_ctx, const char *filename,
 				      struct oclient *oclient)
 {
 	char		**filenames;
@@ -162,7 +162,7 @@ static const char *get_filename(const char *filename)
 
 #define	MAX_READ_SIZE	0x4000
 
-static BOOL store_attachment(mapi_object_t obj_attach, const char *filename, uint32_t size, struct oclient *oclient)
+static bool store_attachment(mapi_object_t obj_attach, const char *filename, uint32_t size, struct oclient *oclient)
 {
 	TALLOC_CTX	*mem_ctx;
 	enum MAPISTATUS	retval;
@@ -221,7 +221,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(struct mapi_session *session,
 						  mapi_object_t *obj_store, struct oclient *oclient)
 {
 	enum MAPISTATUS			retval;
-	BOOL				status;
+	bool				status;
 	TALLOC_CTX			*mem_ctx;
 	mapi_object_t			obj_inbox;
 	mapi_object_t			obj_message;
@@ -371,7 +371,7 @@ static char **get_cmdline_recipients(TALLOC_CTX *mem_ctx, const char *recipients
 /**
  * We set external recipients at the end of aRow
  */
-static BOOL set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, const char *username, enum ulRecipClass RecipClass)
+static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, const char *username, enum ulRecipClass RecipClass)
 {
 	uint32_t		last;
 	struct SPropValue	SPropValue;
@@ -422,7 +422,7 @@ static BOOL set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 	return True;
 }
 
-static BOOL set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
+static bool set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
 					char **usernames, struct FlagList *flaglist,
 					enum ulRecipClass RecipClass)
 {
@@ -488,7 +488,7 @@ static char **collapse_recipients(TALLOC_CTX *mem_ctx, struct oclient *oclient)
 
 #define	MAX_READ_SIZE	0x4000
 
-static BOOL openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_parent, 
+static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_parent, 
 				    mapi_object_t obj_stream, uint32_t mapitag, 
 				    uint32_t access_flags, struct SBinary bin)
 {
@@ -725,7 +725,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 /**
  * delete a mail from user INBOX
  */
-static BOOL openchangeclient_deletemail(TALLOC_CTX *mem_ctx, struct mapi_session *session,
+static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx, struct mapi_session *session,
 					mapi_object_t *obj_store, struct oclient *oclient)
 {
 	enum MAPISTATUS		retval;
@@ -792,7 +792,7 @@ static BOOL openchangeclient_deletemail(TALLOC_CTX *mem_ctx, struct mapi_session
 	return True;
 }
 
-static BOOL openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	props[CAL_CNPROPS];
@@ -869,7 +869,7 @@ static BOOL openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	return True;
 }
 
-static BOOL openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+static bool openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	props[CONTACT_CNPROPS];
@@ -907,7 +907,7 @@ static BOOL openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	return True;
 }
 
-static BOOL openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	props[TASK_CNPROPS];
@@ -1001,10 +1001,10 @@ static char *utf8tolinux(TALLOC_CTX *mem_ctx, const char *wstring)
 	return newstr;
 }
 
-static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
+static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
 {
 	enum MAPISTATUS		retval;
-	BOOL			ret;
+	bool			ret;
 	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	struct SPropTagArray	*SPropTagArray;
@@ -1064,10 +1064,10 @@ static BOOL get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	return True;
 }
 
-static BOOL get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
+static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
 {
 	enum MAPISTATUS		retval;
-	BOOL			ret;
+	bool			ret;
 	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	struct SPropTagArray	*SPropTagArray;
@@ -1118,7 +1118,7 @@ static BOOL get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 }
 
 
-static BOOL openchangeclient_pf(TALLOC_CTX *mem_ctx, struct mapi_session *session, mapi_object_t *obj_store)
+static bool openchangeclient_pf(TALLOC_CTX *mem_ctx, struct mapi_session *session, mapi_object_t *obj_store)
 {
 	enum MAPISTATUS			retval;
 	mapi_id_t			id_pubroot;
@@ -1130,7 +1130,7 @@ static BOOL openchangeclient_pf(TALLOC_CTX *mem_ctx, struct mapi_session *sessio
 }
 
 
-static BOOL openchangeclient_mailbox(TALLOC_CTX *mem_ctx, struct mapi_session *session, mapi_object_t *obj_store)
+static bool openchangeclient_mailbox(TALLOC_CTX *mem_ctx, struct mapi_session *session, mapi_object_t *obj_store)
 {
 	enum MAPISTATUS			retval;
 	mapi_id_t			id_mailbox;
@@ -1162,7 +1162,7 @@ static BOOL openchangeclient_mailbox(TALLOC_CTX *mem_ctx, struct mapi_session *s
 	return get_child_folders(mem_ctx, obj_store, id_mailbox, 0);
 }
 
-static BOOL openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item)
+static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item)
 {
 	enum MAPISTATUS			retval;
 	mapi_object_t			obj_folder;
@@ -1269,7 +1269,7 @@ static int callback(uint32_t ulEventType, void *notif_data, void *private_data)
 	return 0;
 }
 
-static BOOL openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store)
+static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store)
 {
 	enum MAPISTATUS	retval;
 	mapi_object_t	obj_inbox;
@@ -1385,16 +1385,16 @@ int main(int argc, const char *argv[])
 	struct oclient		oclient;
 	poptContext		pc;
 	int			opt;
-	BOOL			opt_sendmail = false;
-	BOOL			opt_sendappointment = false;
-	BOOL			opt_sendcontact = false;
-	BOOL			opt_sendtask = false;
-	BOOL			opt_fetchmail = false;
-	BOOL			opt_deletemail = false;
-	BOOL			opt_mailbox = false;
-	BOOL			opt_dumpdata = false;
-	BOOL			opt_notifications = false;
-	BOOL			opt_pf = false;
+	bool			opt_sendmail = false;
+	bool			opt_sendappointment = false;
+	bool			opt_sendcontact = false;
+	bool			opt_sendtask = false;
+	bool			opt_fetchmail = false;
+	bool			opt_deletemail = false;
+	bool			opt_mailbox = false;
+	bool			opt_dumpdata = false;
+	bool			opt_notifications = false;
+	bool			opt_pf = false;
 	const char		*opt_profdb = NULL;
 	const char		*opt_profname = NULL;
 	const char		*opt_password = NULL;

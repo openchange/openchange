@@ -34,7 +34,7 @@ NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx,
 				struct dcerpc_pipe **p, 
 				const struct ndr_interface_table *table);
 
-BOOL set_profile_attribute(const char *profname, struct SRowSet rowset, 
+bool set_profile_attribute(const char *profname, struct SRowSet rowset, 
 			   uint32_t property, const char *attr)
 {
 	struct SPropValue	*lpProp;
@@ -56,7 +56,7 @@ BOOL set_profile_attribute(const char *profname, struct SRowSet rowset,
 	return True;
 }
 
-BOOL set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
+bool set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
 				 uint32_t property, const char *attr)
 {
 	struct SPropValue	*lpProp;
@@ -80,7 +80,7 @@ BOOL set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
 	return True;
 }
 
-BOOL torture_rpc_nspi_profile(struct torture_context *torture)
+bool torture_rpc_nspi_profile(struct torture_context *torture)
 {
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;

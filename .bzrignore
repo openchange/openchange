@@ -25,3 +25,9 @@ bin/openchangeclient
 bin/schemaIDGUID
 libmapi/proto_private.h
 providers/providers_proto.h
+tags
+*.pc
+*.so.*
+bin/openchangepfadmin
+libmapiadmin/proto.h
+libmapiadmin/proto_private.h

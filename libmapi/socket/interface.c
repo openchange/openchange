@@ -54,7 +54,7 @@ static struct ipv4_addr tov4(struct in_addr in)
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/
-static struct interface *iface_find(struct in_addr ip, bool checkMask)
+static struct interface *iface_find(struct in_addr ip, bool CheckMask)
 {
 	struct interface *i;
 	if (is_zero_ip(tov4(ip))) return local_interfaces;
@@ -75,7 +75,7 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 {
 	struct interface *iface;
 	struct ipv4_addr bcast;
-	if (iface_find(ip, False)) {
+	if (iface_find(ip, false)) {
 		DEBUG(3,("not adding duplicate interface %s\n",inet_ntoa(ip)));
 		return;
 	}
@@ -320,7 +320,7 @@ _PUBLIC_ const char *iface_best_ip(const char *dest)
 	load_interfaces();
 
 	ip.s_addr = interpret_addr(dest);
-	iface = iface_find(ip, True);
+	iface = iface_find(ip, true);
 	if (iface) {
 		return iface->ip_s;
 	}
@@ -337,10 +337,10 @@ bool iface_is_local(const char *dest)
 	load_interfaces();
 
 	ip.s_addr = interpret_addr(dest);
-	if (iface_find(ip, True)) {
-		return True;
+	if (iface_find(ip, true)) {
+		return true;
 	}
-	return False;
+	return false;
 }
 
 /**

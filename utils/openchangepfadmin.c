@@ -77,11 +77,11 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 
 	mapi_object_init(&obj_folder);
 	retval = OpenFolder(parent, folder_id, &obj_folder);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_htable);
 	retval = GetHierarchyTable(&obj_folder, &obj_htable);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
 					  PR_DISPLAY_NAME,
@@ -89,7 +89,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 					  PR_FOLDER_CHILD_COUNT);
 	retval = SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	
 	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
@@ -105,12 +105,12 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 			MAPIFreeBuffer(newname);
 			if (*child) {
 				ret = get_child_folders_pf(mem_ctx, &obj_folder, *fid, count + 1);
-				if (ret == False) return ret;
+				if (ret == false) return ret;
 			}
 			
 		}
 	}
-	return True;
+	return true;
 }
 
 static enum MAPISTATUS openchangepfadmin_getdir(TALLOC_CTX *mem_ctx, 
@@ -136,7 +136,7 @@ static enum MAPISTATUS openchangepfadmin_getdir(TALLOC_CTX *mem_ctx,
 					  PR_FID);
 	retval = SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return False;
+	if (retval != MAPI_E_SUCCESS) return false;
 	
 	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
@@ -227,15 +227,15 @@ int main(int argc, const char *argv[])
 	const char		*opt_acomment = NULL;
 	const char		*opt_afullname = NULL;
 	const char		*opt_addright = NULL;
-	bool			opt_rmright = False;
+	bool			opt_rmright = false;
 	const char		*opt_modright = NULL;
 	const char		*opt_folder = NULL;
 	const char		*opt_debug = NULL;
 	const char		*opt_username = NULL;	
 	uint32_t		opt_permission = -1;
-	bool			opt_ipm_list = False;
-	bool			opt_mkdir = False;
-	bool			opt_rmdir = False;
+	bool			opt_ipm_list = false;
+	bool			opt_mkdir = false;
+	bool			opt_rmdir = false;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_IPM_LIST, 
 	      OPT_MKDIR, OPT_RMDIR, OPT_COMMENT, OPT_DIRCLASS, OPT_ACL, 

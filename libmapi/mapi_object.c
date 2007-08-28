@@ -56,6 +56,8 @@ _PUBLIC_ void mapi_object_release(mapi_object_t *obj)
 {
 	enum MAPISTATUS retval;
 
+	if (!obj) return;
+
 	retval = Release(obj);
 	if (retval == MAPI_E_SUCCESS) {
 		if (obj->private_data) {
@@ -77,7 +79,7 @@ int mapi_object_is_invalid(mapi_object_t *obj)
 
 _PUBLIC_ mapi_id_t mapi_object_get_id(mapi_object_t *obj)
 {
-	return obj->id;
+	return (!obj) ? -1 : obj->id;
 }
 
 
@@ -89,7 +91,7 @@ void mapi_object_set_id(mapi_object_t *obj, mapi_id_t id)
 
 mapi_handle_t mapi_object_get_handle(mapi_object_t *obj)
 {
-	return obj->handle;
+	return (!obj) ? -1 : obj->handle;
 }
 
 

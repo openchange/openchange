@@ -477,11 +477,12 @@ int main(int argc, const char *argv[])
 				goto end;
 			}
 			retval = AddUserPermission(&obj_folder, opt_username, opt_permission);
-			mapi_object_release(&obj_folder);
 			if (retval != MAPI_E_SUCCESS) {
 				mapi_errstr("AddUserPermission", GetLastError());
+				mapi_object_release(&obj_folder);
 				goto end;
 			}
+			mapi_object_release(&obj_folder);
 		}
 		printf("Permission %s added for %s on folder %s\n", opt_addright, opt_username, opt_folder);
 	}
@@ -495,11 +496,12 @@ int main(int argc, const char *argv[])
 			goto end;
 		}
 		retval = RemoveUserPermission(&obj_folder, opt_username);
-		mapi_object_release(&obj_folder);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("RemoveUserPermission", GetLastError());
+			mapi_object_release(&obj_folder);
 			goto end;
 		}
+		mapi_object_release(&obj_folder);
 		printf("Permission removed for %s on folder %s\n", opt_username, opt_folder);
 	}
 
@@ -518,11 +520,12 @@ int main(int argc, const char *argv[])
 				goto end;
 			}
 			retval = ModifyUserPermission(&obj_folder, opt_username, opt_permission);
-			mapi_object_release(&obj_folder);
 			if (retval != MAPI_E_SUCCESS) {
-				mapi_errstr("AddUserPermission", GetLastError());
+				mapi_errstr("ModifyUserPermission", GetLastError());
+				mapi_object_release(&obj_folder);
 				goto end;
 			}
+			mapi_object_release(&obj_folder);
 		}
 		printf("Permission changed to %s for %s on folder %s\n", opt_modright, opt_username, opt_folder);
 	}

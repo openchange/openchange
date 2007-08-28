@@ -153,6 +153,7 @@ static enum MAPISTATUS openchangepfadmin_getdir(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	errno = MAPI_E_NOT_FOUND;
 	return MAPI_E_NOT_FOUND;
 }
 
@@ -200,6 +201,8 @@ static enum MAPISTATUS openchangepfadmin_rmdir(TALLOC_CTX *mem_ctx,
 
 	retval = DeleteFolder(obj_container, mapi_object_get_id(&obj_folder));
 	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+
+	mapi_object_release(&obj_folder);
 
 	return MAPI_E_SUCCESS;
 }
@@ -346,8 +349,9 @@ int main(int argc, const char *argv[])
 
 	/* Sanity check on options */
 
-	if ((opt_mkdir == true && !opt_folder) || (opt_addright && !opt_folder) || 
-	    (opt_rmright == true && !opt_folder) || (opt_modright && !opt_folder)) {
+	if ((opt_mkdir == true && !opt_folder) || (opt_rmdir == true && !opt_folder) ||
+	    (opt_addright && !opt_folder) || (opt_rmright == true && !opt_folder) || 
+	    (opt_modright && !opt_folder)) {
 		printf("You need to specify a directory with --folder option\n");
 		return (-1);
 	}

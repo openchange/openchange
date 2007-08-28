@@ -1,3 +1,7 @@
+Copyright 2007 OpenChange Project
+under the terms at http://creativecommons.org/licenses/by-sa/3.0/
+
+
 OpenChange developer howto
 --------------------------
 
@@ -11,6 +15,8 @@ Updates by Dan Shearer <dan@shearer.org>, April 2007.
 Updates by Julien Kerihuel <j.kerihuel@openchange.org>, April 2007.
 Updates by Julien Kerihuel <j.kerihuel@openchange.org>, June 2007.
 Updates by Dan Shearer <dan@shearer.org>, July 2007.
+Updates by Dan Shearer <dan@shearer.org>, August 2007.
+
 
 ###############
 [0x0] CONTENTS
@@ -64,6 +70,25 @@ interface designed to offer Exchange support to third party
 applications.
 
 
+[0x1c] Why do I have to do all this compilation?
+================================================
+
+The OpenChange project is quite young and has not yet produced any
+binary distributions, although that is a short-term goal for libmapi
+now it is reached levels of stability and reliability we are happy
+with. For the moment though you need to compile both OpenChange and
+its dependency Samba version 4, and Samba4 itself has some
+dependencies. This is a temporary situation, and if you are
+experiementing with OpenChange at this stage then congratulations, and
+we'll help you as much as we can.
+
+You should not draw conclusions about libmapi maturity from Samba4
+maturity. Samba4 covers a very large scope of functionality, much of
+which is incomplete.  libmapi uses Samba4 libraries in specific areas
+where they are very well-tested and very reliable. That means that
+libmapi bugs belong to OpenChange. As far as libmapi is concerned,
+Samba4 had most bugs fixed years ago :-)
+
 
 ####################
 [0x2] INSTALLATION 
@@ -75,27 +100,34 @@ applications.
 
 [*] First of all, install Samba 4 correctly (see howto.txt in the
     Samba4 package). This should give you the libraries, headers and
-    tools you need to compile OpenChange. As a hint, as well as 
-    your base compiler (apt-get install build-essential on Debian and
-    Ubuntu) you will need automake and pkg-config.
+    tools you need to compile OpenChange. It is rare that you will
+    need to update Samba, when you have successfully done this once
+    you should not need to do it again.  As a hint, as well as your
+    base compiler (apt-get install build-essential on Debian and
+    Ubuntu) you will need pkg-config.
 
-# ./autogen.sh && ./configure --prefix=/usr/local/samba && make
-# make install && make installlib && make installheader
+If you want to control every detail of the Samba build, follow the
+instructions for checking out the subversion tree. You will require
+tools such as autoconf (apt-get install automake on Debian and
+Ubuntu), it will take more time and disk space, and there is more to
+go wrong.
 
-If you are only interested in OpenChange client libraries you don't need all of
-Samba built or installed, which has several efficiencies. For example:
+Otherwise, use rsync to fetch a tree with many files pre-generated, like this:
 
-# export AUTOGEN_SKIP_SWAT=yes
-# ./autogen.sh && ./configure --prefix=/usr/local/samba --with-krb5=no && make
+$ mkdir samba4 ; cd samba4
+$ rsync -avz samba.org::ftp/unpacked/samba4 .
+$ ./configure --prefix=/usr/local/samba
+$ make 
 # make installlib && make installheader
 
-
-Since the libraries will be installed in /usr/local/samba/lib, make
-sure this is listed in /etc/ld.so.conf and run 'ldconfig'. On
-linux, check with ldconfig -v afterwards. 
+Since the libraries will be installed in /usr/local/samba/lib, ldconfig needs
+to know about it. On Linux, make sure this directory is listed in /etc/ld.so.conf 
+and run 'ldconfig -v'. On FreeBSD, add this directory to the line 'ldconfig_paths'
+in /etc/rc.conf and then run 'ldconfig -rv'.
 
 Similarly, you need to have /usr/local/samba/bin in your PATH for the
-pidl binary. This is also where OpenChange installs its binaries. Eg:
+pidl binary. This is also where OpenChange installs its binaries. Eg, if your shell
+is bash:
 
 $ export PATH=$PATH:/usr/local/samba/bin
 
@@ -119,8 +151,14 @@ $ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/otherplace/samba/lib/pkgconfig
 
 pkg-config >= 0.20 is required.
 
-[*] Install PIDL from Samba4 source directory:
+[*] Install pidl from Samba4 source directory:
 # cd pidl && perl Makefile.PL && make && make install
+
+CAUTION: if you update Samba (using svn up, no matter whether you used rsync or svn
+to fetch the original tree) then you may have compilation errors in OpenChange if you 
+are still running an out-of-date pidl. To be safe, you should always rebuild and reinstall
+Samba and pidl together.
+
 
 [0x2b] Requirements
 ===================
@@ -233,11 +271,9 @@ Profile: testuser-2000
 Man pages are supplied with the MAPI library so developers can have an
 overview on how to use each function properly. If you have troubles
 accessing man pages, be sure your MANPATH environment variable is set
-properly and point on openchange prefix installation path. (The man
-pages are not installed into the /usr/local hierachy.) Eg:
+properly and point on openchange prefix installation path. 
 
-$ export MANPATH=$MANPATH:/usr/src/openchange/branches/MAILOOK/doc/man
-
+$ export MANPATH=$MANPATH:/usr/local/samba/share/man
 
 
 [0x4b] Sample applications

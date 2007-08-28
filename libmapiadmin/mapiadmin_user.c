@@ -464,15 +464,14 @@ again:
 	return MAPI_E_SUCCESS;
 
 failed:
-	talloc_free(mem_ctx);
 	mapiadmin_user_del(mapiadmin_ctx);
+	talloc_free(mem_ctx);
 	return MAPI_E_CALL_FAILED;
 }
 
 /**
- * Delete a user from Active Directory
+ * Delete a user from Active Directory 
  */
-
 _PUBLIC_ enum MAPISTATUS mapiadmin_user_del(struct mapiadmin_ctx *mapiadmin_ctx)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -490,7 +489,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_del(struct mapiadmin_ctx *mapiadmin_ctx)
 
 	mem_ctx = talloc_init("mapiadmin_user_del");
 
-	/* Initiate SAMR connection if not already done */
+ 	/* Initiate SAMR connection if not already done */
 	if (!mapiadmin_ctx->user_ctx) {
 		retval = mapiadmin_samr_connect(mapiadmin_ctx, mem_ctx);
 		MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);		

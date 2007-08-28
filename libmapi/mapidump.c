@@ -270,7 +270,7 @@ _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties)
 		fflush(0);
 	}
 
-	printf("\tPrivate: %s\n", (*priv == true) ? "True" : "False");
+	printf("\tPrivate: %s\n", (priv && (*priv == true)) ? "True" : "False");
 	fflush(0);
 
 	if (status) {

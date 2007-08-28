@@ -909,7 +909,7 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 
 	if (oclient->pf == true) {
 		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_calendar, oclient->folder);
-		if (retval != MAPI_E_SUCCESS) return retval;
+		if (retval != MAPI_E_SUCCESS) return false;
 	} else {
 		/* Open Calendar default folder */
 		retval = GetDefaultFolder(obj_store, &id_calendar, olFolderCalendar);
@@ -1271,7 +1271,8 @@ static bool openchangeclient_mailbox(TALLOC_CTX *mem_ctx, struct mapi_session *s
 	return get_child_folders(mem_ctx, obj_store, id_mailbox, 0);
 }
 
-static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item)
+static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item,
+					struct oclient *oclient)
 {
 	enum MAPISTATUS			retval;
 	mapi_object_t			obj_folder;
@@ -1286,6 +1287,8 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	
 	if (!item) return false;
 
+	mapi_object_init(&obj_folder);
+
 	for (i = 0; defaultFolders[i].olFolder; i++) {
 		if (!strncasecmp(defaultFolders[i].container_class, item, strlen(defaultFolders[i].container_class))) {
 			olFolder = defaultFolders[i].olFolder;
@@ -1294,13 +1297,17 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	
 	if (!olFolder) return false;
 
-	retval = GetDefaultFolder(obj_store, &fid, olFolder);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (oclient->pf == true) {
+		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_folder, oclient->folder);
+		if (retval != MAPI_E_SUCCESS) return retval;
+	} else {
+		retval = GetDefaultFolder(obj_store, &fid, olFolder);
+		if (retval != MAPI_E_SUCCESS) return false;
 
-	/* We now open the folder */
-	mapi_object_init(&obj_folder);
-	retval = OpenFolder(obj_store, fid, &obj_folder);
-	if (retval != MAPI_E_SUCCESS) return false;
+		/* We now open the folder */
+		retval = OpenFolder(obj_store, fid, &obj_folder);
+		if (retval != MAPI_E_SUCCESS) return false;
+	}
 
 	/* Operations on the  folder */
 	mapi_object_init(&obj_table);
@@ -1378,7 +1385,7 @@ static int callback(uint32_t ulEventType, void *notif_data, void *private_data)
 	return 0;
 }
 
-static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store)
+static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
 {
 	enum MAPISTATUS	retval;
 	mapi_object_t	obj_inbox;
@@ -1390,14 +1397,19 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 	retval = RegisterNotification(0);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	/* Retrieve Inbox folder ID */
-	retval = GetDefaultFolder(obj_store, &fid, olFolderInbox);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (oclient->pf == true) {
+		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_inbox, oclient->folder);
+		if (retval != MAPI_E_SUCCESS) return retval;
+	} else {
+		/* Retrieve Inbox folder ID */
+		retval = GetDefaultFolder(obj_store, &fid, olFolderInbox);
+		if (retval != MAPI_E_SUCCESS) return false;
 
-	/* Open Inbox folder */
-	mapi_object_init(&obj_inbox);
-	retval = OpenFolder(obj_store, fid, &obj_inbox);
-	if (retval != MAPI_E_SUCCESS) return false;
+		/* Open Inbox folder */
+		mapi_object_init(&obj_inbox);
+		retval = OpenFolder(obj_store, fid, &obj_inbox);
+		if (retval != MAPI_E_SUCCESS) return false;
+	}
 
 	/* subscribe Inbox to receive newmail notifications */
 	ulEventMask = fnevNewMail;
@@ -1702,7 +1714,8 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
-	if (opt_sendmail && oclient.pf == true && !oclient.folder) {
+	if ((opt_sendmail && oclient.pf == true && !oclient.folder) ||
+	    (oclient.pf == true && !oclient.folder)) {
 		printf("--folder option is mandatory\n");
 		exit (1);
 	}
@@ -1792,7 +1805,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_fetchitems) {
-		retval = openchangeclient_fetchitems(mem_ctx, &obj_store, opt_fetchitems);
+		retval = openchangeclient_fetchitems(mem_ctx, &obj_store, opt_fetchitems, &oclient);
 		mapi_errstr("fetchitems", GetLastError());
 		if (retval != true) {
 			goto end;
@@ -1894,7 +1907,7 @@ int main(int argc, const char *argv[])
 	
 	/* Monitor newmail notifications */
 	if (opt_notifications) {
-		openchangeclient_notifications(mem_ctx, &obj_store);
+		openchangeclient_notifications(mem_ctx, &obj_store, &oclient);
 		mapi_errstr("notifications", GetLastError());
 		if (retval != true) {
 			goto end;

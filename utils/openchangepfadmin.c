@@ -52,6 +52,31 @@ static void list_aclrights(void)
 	}
 }
 
+static uint32_t check_IPF_class(const char *dirclass)
+{
+	uint32_t	i;
+
+	if (!dirclass) return -1;
+
+	for (i = 0; IPF_class[i]; i++) {
+		if (!strcmp(dirclass, IPF_class[i])) {
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+static void list_IPF_class(void)
+{
+	uint32_t	i;
+
+	printf("Valid IPF Classes:\n");
+	for (i = 0; IPF_class[i] != NULL; i++) {
+		printf("\t%s\n", IPF_class[i]);
+	}
+}
+
 static char *utf8tolinux(TALLOC_CTX *mem_ctx, const char *wstring)
 {
 	char		*newstr;
@@ -360,6 +385,14 @@ int main(int argc, const char *argv[])
 	    (opt_modright && !opt_username)) {
 		printf("You need to specify a username with --username option\n");
 		return (-1);
+	}
+
+	/* dirclass sanity check */
+	if (opt_dirclass) {
+		if (check_IPF_class(opt_dirclass) == -1) {
+			list_IPF_class();
+			return (-1);
+		}
 	}
 
 	if (!opt_profdb) {

@@ -54,4 +54,13 @@ const struct aclrights	aclrights[] = {
 	{NULL, 0}
 };
 
+const char * IPF_class[] = { IPF_APPOINTMENT, 
+			     IPF_CONTACT, 
+			     IPF_JOURNAL, 
+			     IPF_NOTE, 
+			     IPF_STICKYNOTE, 
+			     IPF_TASK, 
+			     IPF_POST, 
+			     NULL};
+
 #endif /* __OPENCHANGEPFADMIN_H__ */

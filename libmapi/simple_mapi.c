@@ -255,10 +255,15 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* Check if the username was found */
-	MAPI_RETVAL_IF((*flaglist[0].ulFlags != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
-
-	user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
+	if (*flaglist[0].ulFlags == MAPI_RESOLVED) {
+		user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
+	} else {
+		/* Special case: Not a AD user account but Default or
+		 * Anonymous. Since names are language specific, we
+		 * can't use strcmp 
+		 */
+		user = username;
+	}
 
 	mapi_object_init(&obj_table);
 	retval = GetTable(obj_folder, &obj_table);
@@ -304,7 +309,8 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 
 	mapi_object_release(&obj_table);
 	talloc_free(mem_ctx);
-
+	
+	errno = (found == true) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND;
 	return ((found == true) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);	
 }
 

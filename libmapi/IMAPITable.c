@@ -82,7 +82,7 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 	/* recopy property tags into table */
 	/* fixme: obj_table->private_data should be initialized during opening, not here */
 	if (obj_table->private_data == 0) {
-		obj_table->private_data = talloc((TALLOC_CTX *)obj_table->session, mapi_object_table_t);
+		obj_table->private_data = talloc((TALLOC_CTX *)mapi_ctx->session, mapi_object_table_t);
 	}
 
 	table = (mapi_object_table_t *)obj_table->private_data;

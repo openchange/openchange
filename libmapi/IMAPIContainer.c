@@ -75,7 +75,7 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
 	
 	/* new table */
-	obj_table->private_data = talloc((TALLOC_CTX *)obj_table->session, mapi_object_table_t);
+	obj_table->private_data = talloc((TALLOC_CTX *)mapi_ctx->session, mapi_object_table_t);
 	table = obj_table->private_data;
 	table->proptags.cValues = 0;
 	table->proptags.aulPropTag = 0;
@@ -141,7 +141,7 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
 	
 	/* new table */
-	obj_table->private_data = talloc((TALLOC_CTX *)obj_table->session, mapi_object_table_t);
+	obj_table->private_data = talloc((TALLOC_CTX *)mapi_ctx->session, mapi_object_table_t);
 	table = obj_table->private_data;
 	table->proptags.cValues = 0;
 	table->proptags.aulPropTag = 0;
@@ -205,7 +205,7 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
 
 	/* new table */
-	obj_table->private_data = talloc((TALLOC_CTX *)obj_table->session, mapi_object_table_t);
+	obj_table->private_data = talloc((TALLOC_CTX *)mapi_ctx->session, mapi_object_table_t);
 	table = obj_table->private_data;
 	table->proptags.cValues = 0;
 	table->proptags.aulPropTag = 0;

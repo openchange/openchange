@@ -448,6 +448,15 @@ enum MAPISTATUS OpenProfileStore(TALLOC_CTX *mem_ctx, struct ldb_context **ldb_c
 }
 
 /**
+ * Get default ldif_path
+ */
+_PUBLIC_ const char *mapi_profile_get_ldif_path(void)
+{
+	return DEFAULT_LDIF;
+}
+
+
+/**
  * Create a profile store
  */
 _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *ldif_path)

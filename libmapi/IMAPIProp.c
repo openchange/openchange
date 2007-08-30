@@ -83,7 +83,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj, struct SPropTagArray *tags
 	/* Read the SPropValue array from data blob.
 	   fixme: replace the memory context by the object one.
 	*/
-	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)obj->session,
+	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)mapi_ctx->session,
 					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
 					   tags, vals, cn_vals, 
 					   mapi_response->mapi_repl->u.mapi_GetProps.layout);
@@ -269,7 +269,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	proptags->cValues = mapi_response->mapi_repl->u.mapi_GetPropList.count;
 	if (proptags->cValues) {
 		size = proptags->cValues * sizeof(enum MAPITAGS);
-		proptags->aulPropTag = talloc_array((TALLOC_CTX *)obj->session,
+		proptags->aulPropTag = talloc_array((TALLOC_CTX *)mapi_ctx->session,
 						    enum MAPITAGS, proptags->cValues);
 		memcpy((void*)proptags->aulPropTag,
 		       (void*)mapi_response->mapi_repl->u.mapi_GetPropList.tags,

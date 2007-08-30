@@ -37,7 +37,6 @@ static void mapi_object_reset(mapi_object_t *obj)
 {
 	obj->handle = INVALID_HANDLE_VALUE;
 	obj->id = 0;
-	obj->session = 0;
 	obj->handles = 0;
 	obj->private_data = 0;
 }
@@ -48,7 +47,6 @@ _PUBLIC_ enum MAPISTATUS mapi_object_init(mapi_object_t *obj)
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	obj->session = global_mapi_ctx->session;
 	return MAPI_E_SUCCESS;
 }
 

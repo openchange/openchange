@@ -451,7 +451,7 @@ int main(int argc, const char *argv[])
 
 	if (newdb == true) {
 		if (!ldif) {
-			ldif = talloc_strdup(mem_ctx, DEFAULT_LDIF);
+			ldif = talloc_strdup(mem_ctx, mapi_profile_get_ldif_path());
 		}
 		if (!ldif) show_help(pc, "ldif");
 		mapiprofile_createdb(profdb, ldif);

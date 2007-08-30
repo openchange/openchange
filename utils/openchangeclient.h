@@ -52,7 +52,7 @@ struct oclient {
 	const char		*full_name;
 	const char		*card_name;
 	/* PF related options */
-	BOOL			pf;
+	bool			pf;
 	const char		*folder;
 };
 

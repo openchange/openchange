@@ -7,12 +7,12 @@ AC_CONFIG_HEADER([config.h])
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 AC_PROG_CC
-dnl AC_PROG_LEX
 dnl AC_PROG_YACC
 
 dnl ***********************
 dnl Check for PERL
 dnl ***********************
+AC_PROG_INSTALL
 
 AC_PATH_PROG(PERL, perl)
 
@@ -47,7 +47,8 @@ dnl *****************************
 AC_CHECK_LIB([magic], [magic_open],
 	             [AC_DEFINE(HAVE_LIBMAGIC, 1,
  	                       [Define if you want to use libmagic])
- 	              LIB_MAGIC="-lmagic -lz"],
+ 	              MAGIC_LIBS="-lmagic -lz"],
+				  AC_SUBST(MAGIC_LIBS)
  	             [AC_MSG_ERROR([libmagic is missing - install it please])
  	             ])
 

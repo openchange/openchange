@@ -48,6 +48,8 @@ LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
 LIBMAPIADMIN_LIBS+=@SAMR_LIBS@
 LIBMAPIADMIN_CFLAGS=@SAMR_CFLAGS@
 
+MAGIC_LIBS=@MAGIC_LIBS@
+
 all: 	libmapi/utf8_convert.yy.c				\
 	gen_ndr gen_ndr/ndr_exchange.h proto.h			\
 	torture_proto.h	providers_proto.h dcesrv_proto.h	\
@@ -233,7 +235,7 @@ bin/openchangepfadmin:	utils/openchangepfadmin.o			\
 
 
 bin/exchange2mbox:	utils/exchange2mbox.o				\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) -lpopt -lmagic
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) -lpopt $(MAGIC_LIBS)
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS)
 
@@ -400,7 +402,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o	\
 libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	libmapiadmin/mapiadmin_user.o	\
 						libmapiadmin/mapiadmin.o
 	@echo "Compiling $<"
-	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) -lmapi
+	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) -L. -lmapi
 
 manpages = \
 		doc/man/man1/exchange2mbox.1				\

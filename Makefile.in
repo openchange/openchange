@@ -401,9 +401,9 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o	\
 	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
 
 libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	libmapiadmin/mapiadmin_user.o	\
-						libmapiadmin/mapiadmin.o
+						libmapiadmin/mapiadmin.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Compiling $<"
-	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) -L. -lmapi
+	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
 
 manpages = \
 		doc/man/man1/exchange2mbox.1				\

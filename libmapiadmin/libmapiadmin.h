@@ -36,7 +36,7 @@ struct mapiadmin_ctx;
 #include <string.h>
 
 /* Samba4 includes */
-#include <core.h>
+#include <stdint.h>
 #include <talloc.h>
 #include <ldb.h>
 

@@ -6,6 +6,7 @@ LEX=@FLEX@
 CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3
 PIDL=@PIDL@
 PERL=@PERL@
+INSTALL=@INSTALL@
 DSOOPT=-shared -fPIC
 
 prefix=@prefix@
@@ -69,45 +70,50 @@ all: 	libmapi/utf8_convert.yy.c				\
 
 install: all installman $(SWIGDIRS-INSTALL)
 	@echo "Installing OpenChange plugin"
-	mkdir -p $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(includedir)/libmapi $(DESTDIR)$(includedir)/libmapi/socket $(DESTDIR)$(includedir)/libmapiadmin $(DESTDIR)$(includedir)/gen_ndr
-	mkdir -p $(DESTDIR)$(TORTURE_MODULESDIR)
-	mkdir -p $(DESTDIR)$(SERVER_MODULESDIR)
-	cp bin/schemaIDGUID $(DESTDIR)$(bindir)
-	cp bin/mapiprofile $(DESTDIR)$(bindir)
-	cp bin/openchangeclient $(DESTDIR)$(bindir)
-	cp bin/openchangepfadmin $(DESTDIR)$(bindir)
-	cp bin/exchange2mbox $(DESTDIR)$(bindir)
-	cp bin/locale_codepage $(DESTDIR)$(bindir)
-	cp libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
-	ln -sf $(libdir)/libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapi.$(SHLIBEXT)
-	cp libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
-	ln -sf $(libdir)/libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiadmin.$(SHLIBEXT)
-	cp torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
-	cp server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
-	cp server/dcesrv_exchange_remote.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
-	mkdir -p $(DESTDIR)$(datadir)/js
-	cp scripting/libjs/*.js $(DESTDIR)$(datadir)/js/
-	mkdir -p $(DESTDIR)$(datadir)/setup
-	cp setup/*.ldif $(DESTDIR)$(datadir)/setup/
-	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
-	cp libmapi.pc $(DESTDIR)$(libdir)/pkgconfig
-	cp libmapiadmin.pc $(DESTDIR)$(libdir)/pkgconfig
-	cp libmapi/dlinklist.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/libmapi.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/proto.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/nspi.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/emsmdb.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/mapi_ctx.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/mapi_provider.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/mapi_handles.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/mapi_notification.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/mapi_object.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/mapi_profile.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/mapidefs.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/property.h $(DESTDIR)$(includedir)/libmapi/
-	cp libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
-	cp gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
+	$(INSTALL) -d $(DESTDIR)$(bindir) 
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi 
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi/socket 
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapiadmin 
+	$(INSTALL) -d $(DESTDIR)$(includedir)/gen_ndr
+	$(INSTALL) -d $(DESTDIR)$(TORTURE_MODULESDIR)
+	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
+	$(INSTALL) -m 0755 bin/schemaIDGUID $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/mapiprofile $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/openchangeclient $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/openchangepfadmin $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/exchange2mbox $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/locale_codepage $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapi.$(SHLIBEXT)
+	$(INSTALL) -m 0755 libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiadmin.$(SHLIBEXT)
+	$(INSTALL) -m 0755 torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
+	$(INSTALL) -m 0755 server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
+	$(INSTALL) -m 0755 server/dcesrv_exchange_remote.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
+	$(INSTALL) -d $(DESTDIR)$(datadir)/js
+	$(INSTALL) -m 0644 scripting/libjs/*.js $(DESTDIR)$(datadir)/js/
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
+	$(INSTALL) -m 0644 setup/*.ldif $(DESTDIR)$(datadir)/setup/
+	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 libmapi.pc $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 libmapiadmin.pc $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 libmapi/dlinklist.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/libmapi.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/proto.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/nspi.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/emsmdb.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/mapi_ctx.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/mapi_provider.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/mapi_handles.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/mapi_notification.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/mapi_object.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/mapi_profile.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/mapidefs.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/property.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
+	$(INSTALL) -m 0644 gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	@echo "OpenChange plugin installed"
 
 uninstall: $(SWIGDIRS-UNINSTALL)

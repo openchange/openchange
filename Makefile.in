@@ -53,9 +53,9 @@ LIBMAPIADMIN_CFLAGS=@SAMR_CFLAGS@
 MAGIC_LIBS=@MAGIC_LIBS@
 
 all: 	libmapi/utf8_convert.yy.c				\
-	gen_ndr gen_ndr/ndr_exchange.h proto.h			\
-	torture_proto.h	providers_proto.h dcesrv_proto.h	\
-	libmapiadmin_proto.h					\
+	gen_ndr gen_ndr/ndr_exchange.h libmapi/proto.h			\
+	torture/torture_proto.h	providers/providers_proto.h server/dcesrv_proto.h	\
+	libmapiadmin/proto.h					\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)			\
 	libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 	bin/schemaIDGUID					\
@@ -209,7 +209,7 @@ gen_ndr/ndr_%_s.c: %.idl
 	@echo "Compiling $<"
 	@$(PIDL) --outputdir=gen_ndr --server -- $<
 
-server/dcesrv_exchange.c: providers_proto.h gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
+server/dcesrv_exchange.c: providers/providers_proto.h gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
 
 libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
@@ -292,10 +292,7 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f */*~
 	rm -f */*/*~
 
-proto.h: libmapi/mapitags.c libmapi/mapicode.c
-	@echo "Generating libmapi proto.h"
-	@./script/mkproto.pl --private=libmapi/proto_private.h --public=libmapi/proto.h \
-	libmapi/nspi.c			\
+libmapi/proto.h libmapi/proto_private.h: libmapi/nspi.c			\
 	libmapi/emsmdb.c		\
 	libmapi/cdo_mapi.c		\
 	libmapi/simple_mapi.c		\
@@ -324,27 +321,22 @@ proto.h: libmapi/mapitags.c libmapi/mapicode.c
 	libmapi/util/codepage.c 	\
 	libmapi/socket/interface.c	\
 	libmapi/socket/netif.c		
+	@echo "Generating libmapi proto.h"
+	@./script/mkproto.pl --private=libmapi/proto_private.h --public=libmapi/proto.h $^
 
-libmapiadmin_proto.h:
+libmapiadmin/proto.h libmapiadmin/proto_private.h: libmapiadmin/mapiadmin.c libmapiadmin/mapiadmin_user.c	
 	@echo "Generating libmapiadmin/proto.h"
-	@./script/mkproto.pl -private=libmapiadmin/proto_private.h --public=libmapiadmin/proto.h \
-	libmapiadmin/mapiadmin.c	\
-	libmapiadmin/mapiadmin_user.c	
+	@./script/mkproto.pl -private=libmapiadmin/proto_private.h --public=libmapiadmin/proto.h $^
 
-providers_proto.h: providers/emsabp.c
+providers/providers_proto.h: providers/emsabp.c
 	@echo "Generating providers/providers_proto.h"
-	@./script/mkproto.pl --private=providers/providers_proto.h --public=providers/providers_proto.h \
-	providers/emsabp.c
+	@./script/mkproto.pl --private=providers/providers_proto.h --public=providers/providers_proto.h $^
 
-dcesrv_proto.h: server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
+server/dcesrv_proto.h: server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
 	@echo "Generating server/dcesrv_proto.h"
-	@./script/mkproto.pl --private=server/dcesrv_proto.h --public=server/dcesrv_proto.h \
-	server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
+	@./script/mkproto.pl --private=server/dcesrv_proto.h --public=server/dcesrv_proto.h $^
 
-torture_proto.h:
-	@echo "Generating torture_proto.h"
-	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h \
-	torture/mapi_restrictions.c	\
+torture/torture_proto.h: torture/mapi_restrictions.c	\
 	torture/mapi_deletemail.c	\
 	torture/mapi_newmail.c		\
 	torture/mapi_fetchmail.c	\
@@ -371,6 +363,8 @@ torture_proto.h:
 	torture/exchange_createuser.c	\
 	torture/fuzzer_msgstore.c	\
 	torture/openchange.c
+	@echo "Generating torture_proto.h"
+	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h $^
 
 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o	\
 			libmapi/IProfAdmin.o				\

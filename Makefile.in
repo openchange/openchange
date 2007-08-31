@@ -7,6 +7,7 @@ CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3
 PIDL=@PIDL@
 PERL=@PERL@
 INSTALL=@INSTALL@
+SMBTORTURE=@SMBTORTURE@
 DSOOPT=-shared -fPIC
 
 prefix=@prefix@
@@ -255,9 +256,9 @@ distclean: clean $(SWIGDIRS-DISTCLEAN)
 realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
 	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
-	rm -f torture/openchange.so
-	rm -f server/dcesrv_exchange.so
-	rm -f server/dcesrv_exchange_remote.so
+	rm -f torture/openchange.$(SHLIBEXT)
+	rm -f server/dcesrv_exchange.$(SHLIBEXT)
+	rm -f server/dcesrv_exchange_remote.$(SHLIBEXT)
 	rmdir gen_ndr
 
 clean:	$(SWIGDIRS-CLEAN)
@@ -515,3 +516,10 @@ swigperl-clean:
 
 Makefile: Makefile.in swig/perl/Makefile.in config.status
 	./config.status
+
+test:: check
+
+check:: torture/openchange.$(SHLIBEXT)
+	# FIXME: Set up server
+	LD_LIBRARY_PATH=`pwd` $(SMBTORTURE) --load-module torture/openchange.$(SHLIBEXT) ncalrpc: OPENCHANGE
+

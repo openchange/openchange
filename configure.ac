@@ -41,6 +41,13 @@ then
 	AC_MSG_ERROR(Please install pidl)
 fi
 
+dnl ********************
+dnl Check for smbtorture
+dnl ********************
+
+AC_PATH_PROG(SMBTORTURE, smbtorture, no, "$prefix/bin")
+
+
 dnl *****************************
 dnl Check for libmagic
 dnl *****************************

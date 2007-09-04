@@ -294,8 +294,8 @@ error:
 	return false;
 }
 
-static enum MAPISTATUS openchangeclient_fetchmail(struct mapi_session *session, 
-						  mapi_object_t *obj_store, struct oclient *oclient)
+static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store, 
+						  struct oclient *oclient)
 {
 	enum MAPISTATUS			retval;
 	bool				status;
@@ -634,7 +634,6 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
  */
 
 static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx, 
-						 struct mapi_session *session, 
 						 mapi_object_t *obj_store, 
 						 struct oclient *oclient)
 {
@@ -819,8 +818,9 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 /**
  * delete a mail from user INBOX
  */
-static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx, struct mapi_session *session,
-					mapi_object_t *obj_store, struct oclient *oclient)
+static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
+					mapi_object_t *obj_store, 
+					struct oclient *oclient)
 {
 	enum MAPISTATUS		retval;
 	struct SPropTagArray	*SPropTagArray;
@@ -1227,7 +1227,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 }
 
 
-static bool openchangeclient_pf(TALLOC_CTX *mem_ctx, struct mapi_session *session, mapi_object_t *obj_store)
+static bool openchangeclient_pf(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store)
 {
 	enum MAPISTATUS			retval;
 	mapi_id_t			id_pubroot;
@@ -1239,7 +1239,8 @@ static bool openchangeclient_pf(TALLOC_CTX *mem_ctx, struct mapi_session *sessio
 }
 
 
-static bool openchangeclient_mailbox(TALLOC_CTX *mem_ctx, struct mapi_session *session, mapi_object_t *obj_store)
+static bool openchangeclient_mailbox(TALLOC_CTX *mem_ctx, 
+				     mapi_object_t *obj_store)
 {
 	enum MAPISTATUS			retval;
 	mapi_id_t			id_mailbox;
@@ -1367,18 +1368,110 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	return true;
 }
 
+/**
+ * Dump email
+ * 
+ * Assume msg is received in Inbox folder since we only register
+ * notifications for this folder.
+ *
+ */
+
+static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store, 
+						   mapi_id_t parentID,
+						   mapi_id_t msgid)
+{
+	enum MAPISTATUS			retval;
+	TALLOC_CTX			*mem_ctx;
+	struct SRowSet			rowset;
+	struct SPropValue		*lpProp;
+	struct mapi_SPropValue_array	properties_array;
+	mapi_id_t			fid;
+	const mapi_id_t			*mid;
+	mapi_object_t			obj_inbox;
+	mapi_object_t			obj_table;
+	mapi_object_t			obj_message;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	uint32_t			count;
+	uint32_t			i;
+
+	mem_ctx = talloc_init("openchangeclient_findmail");
+
+	/* Get Inbox folder */
+	retval = GetDefaultFolder(obj_store, &fid, olFolderInbox);
+	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
+
+	/* Open Inbox */
+	mapi_object_init(&obj_inbox);
+	retval = OpenFolder(obj_store, fid, &obj_inbox);
+	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
+
+	/* Retrieve contents table */
+	mapi_object_init(&obj_table);
+	retval = GetContentsTable(&obj_inbox, &obj_table);
+	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
+					  PR_FID,
+					  PR_MID);
+	retval = SetColumns(&obj_table, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
+
+	retval = GetRowCount(&obj_table, &count);
+	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
+
+	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
+		for (i = 0; i < rowset.cRows; i++) {
+			lpProp = get_SPropValue_SRowSet(&rowset, PR_MID);
+			if (lpProp != NULL) {
+				mid = (const uint64_t *)get_SPropValue(lpProp, PR_MID);
+				if (*mid == msgid) {
+					mapi_object_init(&obj_message);
+					retval = OpenMessage(obj_store,
+							     rowset.aRow[i].lpProps[0].value.d,
+							     rowset.aRow[i].lpProps[1].value.d,
+							     &obj_message);
+					if (GetLastError() == MAPI_E_SUCCESS) {
+						retval = GetPropsAll(&obj_message, &properties_array);
+						if (retval != MAPI_E_SUCCESS) return false;
+						mapidump_message(&properties_array);
+						mapi_object_release(&obj_message);
+
+						goto end;
+					}
+					mapi_object_release(&obj_message);
+				}
+			}
+		}
+	}
+end:
+	mapi_object_release(&obj_table);
+	mapi_object_release(&obj_inbox);
+
+	talloc_free(mem_ctx);
+	return MAPI_E_SUCCESS;
+}
+
 static int callback(uint32_t ulEventType, void *notif_data, void *private_data)
 {
 	struct NEWMAIL_NOTIFICATION	*newmail;
+	enum MAPISTATUS			retval;
 
 	switch(ulEventType) {
 	case fnevNewMail:
 		printf("[+]New mail Received!!!!\n");
 		newmail = (struct NEWMAIL_NOTIFICATION *)notif_data;
 		mapidump_newmail(newmail, "\t");
+		retval = openchangeclient_findmail((mapi_object_t *)private_data,
+						   newmail->lpParentID,
+						   newmail->lpEntryID);
+		mapi_errstr("openchangeclient_findmail", GetLastError());
 		break;
 	case fnevObjectCreated:
 		printf("[+]Object Created!!!\n");
+		break;
+	default:
+		printf("[+] Unsupported notification (%d)\n", ulEventType);
 		break;
 	}
 
@@ -1417,7 +1510,7 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* wait for notifications: infinite loop */
-	retval = MonitorNotification((void *)&obj_store);
+	retval = MonitorNotification((void *)obj_store);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = Unsubscribe(ulConnection);
@@ -1814,13 +1907,13 @@ int main(int argc, const char *argv[])
 
 	if (opt_mailbox) {
 		if (oclient.pf == true) {
-			retval = openchangeclient_pf(mem_ctx, session, &obj_store);
+			retval = openchangeclient_pf(mem_ctx, &obj_store);
 			mapi_errstr("public folder", GetLastError());
 			if (retval != true) {
 				goto end;
 			}
 		} else {
-			retval = openchangeclient_mailbox(mem_ctx, session, &obj_store);
+			retval = openchangeclient_mailbox(mem_ctx, &obj_store);
 			mapi_errstr("mailbox", GetLastError());
 			if (retval != true) {
 				goto end;
@@ -1835,7 +1928,7 @@ int main(int argc, const char *argv[])
 		oclient.mapi_cc = get_cmdline_recipients(mem_ctx, opt_mapi_cc);
 		oclient.mapi_bcc = get_cmdline_recipients(mem_ctx, opt_mapi_bcc);
 
-		retval = openchangeclient_sendmail(mem_ctx, session, &obj_store, &oclient);
+		retval = openchangeclient_sendmail(mem_ctx, &obj_store, &oclient);
 		mapi_errstr("sendmail", GetLastError());
 		if (retval != true) {
 			goto end;
@@ -1843,7 +1936,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_fetchmail) {
-		retval = openchangeclient_fetchmail(session, &obj_store, &oclient);
+		retval = openchangeclient_fetchmail(&obj_store, &oclient);
 		mapi_errstr("fetchmail", GetLastError());
 		if (retval != true) {
 			goto end;
@@ -1851,7 +1944,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_deletemail) {
-		retval = openchangeclient_deletemail(mem_ctx, session, &obj_store, &oclient);
+		retval = openchangeclient_deletemail(mem_ctx, &obj_store, &oclient);
 		mapi_errstr("deletemail", GetLastError());
 		if (retval != true) {
 			goto end;

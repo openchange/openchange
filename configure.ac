@@ -117,7 +117,3 @@ dnl ***********************
 AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc libmapiadmin.pc])
 AC_OUTPUT
 
-dnl ***********************
-dnl Output 
-dnl ***********************
-

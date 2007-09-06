@@ -166,7 +166,7 @@ Samba and pidl together.
 OpenChange has only these dependencies in addition to Samba4's requirements:
 
 * automake (autogen will fail with 'autogen.sh: aclocal not found')
-* libmagic, to compile exchange2mbox
+* libmagic (with development headers, to compile exchange2mbox)
 * flex
 * libpopt
 
@@ -174,10 +174,22 @@ Samba4 can *use* some of the above, and will tell you in the 'configure' summary
 that some of them have not been found, however it does not *require* them.
 
 
+Before attempting the OpenChange build, install libmagic using your
+operating system's package mangement tools, for example with
+Debian/Ubuntu:
+
+# apt-get install libmagic-dev   (Debian, Ubuntu)
+# pkg_add libmagic               (BSD)
+
+Similarly for the others:
+
+# apt-get install automake flex libpopt    or
+# pkg_add automake flex libpopt
+
 [0x2c] OpenChange libmapi installation
 ======================================
 
-If you are running out of Subversion, run autogen.sh now:
+If you retrieved the soure code from Subversion, run autogen.sh now:
 
 $ ./autogen.sh
 

@@ -377,13 +377,13 @@ again:
 		if (NT_STATUS_IS_OK(status)) {
 			goto again;
 		} else {
-		        MAPI_RETVAL_IF(0,MAPI_E_CALL_FAILED,mem_ctx);
+		        MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);
 		}
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("CreateUser2 failed - %s\n", nt_errstr(status)));
-	        MAPI_RETVAL_IF(0,MAPI_E_CALL_FAILED,mem_ctx);
+	        MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);
 	}
 
 	mapiadmin_ctx->user_ctx->user_sid = dom_sid_add_rid(mapiadmin_ctx->user_ctx, mapiadmin_ctx->user_ctx->dom_sid, rid);
@@ -395,7 +395,7 @@ again:
 		policy_min_pw_len = pwp.out.info.min_password_length;
 	} else {
 		DEBUG(3, ("GetUserPwInfo failed - %s\n", nt_errstr(status)));
-	        MAPI_RETVAL_IF(0,MAPI_E_CALL_FAILED,mem_ctx);
+	        MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);
         }
 
 	if (!mapiadmin_ctx->password) {
@@ -417,7 +417,7 @@ again:
 		DEBUG(3, ("SetUserInfo level %u - no session key - %s\n",
 			  s.in.level, nt_errstr(status)));
 		mapiadmin_user_del(mapiadmin_ctx);
-	        MAPI_RETVAL_IF(0,MAPI_E_CALL_FAILED,mem_ctx);
+	        MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);
 	}
 
 	arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
@@ -463,12 +463,12 @@ again:
 	status = dcerpc_samr_SetUserInfo(mapiadmin_ctx->user_ctx->p, mapiadmin_ctx->user_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("SetUserInfo failed - %s\n", nt_errstr(status)));
-	        MAPI_RETVAL_IF(0, MAPI_E_CALL_FAILED, mem_ctx);
+	        MAPI_RETVAL_IF(1, MAPI_E_CALL_FAILED, mem_ctx);
 	}
 	retval = mapiadmin_user_extend(mapiadmin_ctx);
 	if (retval != MAPI_E_SUCCESS) {
 	        mapiadmin_user_del(mapiadmin_ctx);
-	        MAPI_RETVAL_IF(0, MAPI_E_CALL_FAILED,mem_ctx);
+	        MAPI_RETVAL_IF(1, MAPI_E_CALL_FAILED,mem_ctx);
 	}
 
 	talloc_free(mem_ctx);

@@ -391,7 +391,10 @@ again:
 	status = dcerpc_samr_GetUserPwInfo(mapiadmin_ctx->user_ctx->p, mapiadmin_ctx->user_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
 		policy_min_pw_len = pwp.out.info.min_password_length;
-	}
+	} else {
+		DEBUG(3, ("GetUserPwInfo failed - %s\n", nt_errstr(status)));
+		goto failed;
+        }
 
 	if (!mapiadmin_ctx->password) {
 		mapiadmin_ctx->password = generate_random_str(mapiadmin_ctx->user_ctx, MAX(8, policy_min_pw_len));
@@ -420,7 +423,7 @@ again:
 	status = dcerpc_samr_SetUserInfo(mapiadmin_ctx->user_ctx->p, mapiadmin_ctx->user_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("SetUserInfo failed - %s\n", nt_errstr(status)));
-		goto failed;
+	        MAPI_RETVAL_IF(0, MAPI_E_CALL_FAILED, mem_ctx);
 	}
 
 	ZERO_STRUCT(u);
@@ -454,7 +457,7 @@ again:
 	status = dcerpc_samr_SetUserInfo(mapiadmin_ctx->user_ctx->p, mapiadmin_ctx->user_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("SetUserInfo failed - %s\n", nt_errstr(status)));
-		goto failed;
+	        MAPI_RETVAL_IF(0, MAPI_E_CALL_FAILED, mem_ctx);
 	}
 
 	retval = mapiadmin_user_extend(mapiadmin_ctx);
@@ -466,7 +469,7 @@ again:
 failed:
 	mapiadmin_user_del(mapiadmin_ctx);
 	talloc_free(mem_ctx);
-	return MAPI_E_CALL_FAILED;
+        return MAPI_E_CALL_FAILED;
 }
 
 /**

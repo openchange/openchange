@@ -354,7 +354,7 @@ sub mapicodes_header($)
     mparse "		}			\\";
     mparse "		return -1;		\\";
     mparse "	}				\\";
-    mparse "} while (0)";
+    mparse "} while (0);";
     mparse "";
     mparse "/* Status macros for MAPI */";
     mparse "typedef unsigned long	SCODE;";

@@ -50,7 +50,7 @@ _PUBLIC_ struct SPropTagArray *set_SPropTagArray(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_ const void *get_SPropValue(struct SPropValue *lpProps, 
-									uint32_t ulPropTag)
+				    uint32_t ulPropTag)
 {
 	uint32_t	i;
 
@@ -79,6 +79,15 @@ _PUBLIC_ struct SPropValue *get_SPropValue_SRowSet(struct SRowSet *RowSet,
 	return NULL;
 }
 
+_PUBLIC_ const void *get_SPropValue_SRowSet_data(struct SRowSet *RowSet,
+						 uint32_t ulPropTag)
+{
+	struct SPropValue *lpProp;
+
+	lpProp = get_SPropValue_SRowSet(RowSet, ulPropTag);
+	return get_SPropValue(lpProp, ulPropTag);
+}
+
 _PUBLIC_ enum MAPISTATUS set_default_error_SPropValue_SRow(struct SRow *aRow, uint32_t ulPropTag, void *data)
 {
 	uint32_t	i;
@@ -105,6 +114,15 @@ _PUBLIC_ struct SPropValue *get_SPropValue_SRow(struct SRow *aRow,
 	}
 
 	return NULL;
+}
+
+_PUBLIC_ const void *get_SPropValue_SRow_data(struct SRow *aRow,
+					      uint32_t ulPropTag)
+{
+	struct SPropValue *lpProp;
+
+	lpProp = get_SPropValue_SRow(aRow, ulPropTag);
+	return get_SPropValue(lpProp, ulPropTag);
 }
 
 /*
@@ -195,6 +213,8 @@ const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 		return (const void *)&lpProp->value.l;
 	case PT_DOUBLE:
 		return (const void *)&lpProp->value.dbl;
+	case PT_I8:
+		return (const void *)&lpProp->value.d;
 	case PT_SYSTIME:
 		return (const void *)(struct FILETIME *)&lpProp->value.ft;
 	case PT_ERROR:
@@ -230,6 +250,7 @@ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	case PT_SYSTIME:
 		return (const void *)(struct FILETIME *)&lpProps->value.ft;
 	case PT_ERROR:
+		return (const void *)&lpProps->value.err;
 	case PT_LONG:
 		return (const void *)&lpProps->value.l;
 	case PT_DOUBLE:

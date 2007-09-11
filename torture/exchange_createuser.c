@@ -319,7 +319,7 @@ struct test_join *torture_create_testuser(const char *username,
 	int policy_min_pw_len = 0;
 	struct test_join *join;
 	char *random_pw;
-	const char *dc_binding = lp_parm_string(-1, "torture", "dc_binding");
+	const char *dc_binding = lp_parm_string(NULL, "torture", "dc_binding");
 
 	join = talloc(NULL, struct test_join);
 	if (join == NULL) {

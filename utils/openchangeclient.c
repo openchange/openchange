@@ -1120,12 +1120,12 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	struct SRowSet		rowset;
 	const char	       	*name;
 	char			*newname;
-	const char	    *comment;
-	const uint32_t	*total;
-	const uint32_t	*unread;
-	const uint32_t	*child;
+	const char		*comment;
+	const uint32_t		*total;
+	const uint32_t		*unread;
+	const uint32_t		*child;
 	uint32_t		index;
-	const uint64_t	*fid;
+	const uint64_t		*fid;
 	int			i;
 
 	mapi_object_init(&obj_folder);
@@ -1839,16 +1839,6 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	/**
-	 * Initialize MAPI subsystem
-	 */
-
-	retval = MAPIInitialize(opt_profdb);
-	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("MAPIInitialize", GetLastError());
-		exit (1);
-	}
-
 	/* debug options */
 	if (opt_debug) {
 		lp_set_cmdline("log level", opt_debug);
@@ -1858,7 +1848,15 @@ int main(int argc, const char *argv[])
 		global_mapi_ctx->dumpdata = true;
 	}
 	
+	/**
+	 * Initialize MAPI subsystem
+	 */
 
+	retval = MAPIInitialize(opt_profdb);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_errstr("MAPIInitialize", GetLastError());
+		exit (1);
+	}
 
 	/* If no profile is specified try to load the default one from
 	 * the database 

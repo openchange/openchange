@@ -41,9 +41,9 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	bool			ret = true;
-	const char		*subject = lp_parm_string(-1, "mapi", "subject");
-	const char		*body = lp_parm_string(-1, "mapi", "body");
-	const char		*filename = lp_parm_string(-1, "mapi", "attachment");
+	const char		*subject = lp_parm_string(NULL, "mapi", "subject");
+	const char		*body = lp_parm_string(NULL, "mapi", "body");
+	const char		*filename = lp_parm_string(NULL, "mapi", "attachment");
 	const char		**usernames;
 	const char		**usernames_to;
 	const char		**usernames_cc;

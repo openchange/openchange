@@ -422,7 +422,7 @@ int main(int argc, const char *argv[])
 
 	retval = MapiLogonEx(&session, opt_profname, opt_password);
 	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("MapiLogonProvider", GetLastError());
+		mapi_errstr("MapiLogonEx", GetLastError());
 		exit (1);
 	}
 

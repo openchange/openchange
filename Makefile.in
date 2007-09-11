@@ -62,6 +62,7 @@ all: 	libmapi/utf8_convert.yy.c				\
 	bin/mapiprofile						\
 	bin/openchangeclient					\
 	bin/openchangepfadmin					\
+	bin/openchangemapidump					\
 	bin/exchange2mbox					\
 	bin/locale_codepage					\
 	torture/openchange.$(SHLIBEXT)				\
@@ -83,6 +84,7 @@ install: all installman $(SWIGDIRS-INSTALL)
 	$(INSTALL) -m 0755 bin/mapiprofile $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/openchangeclient $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/openchangepfadmin $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/openchangemapidump $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/exchange2mbox $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/locale_codepage $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
@@ -123,6 +125,8 @@ uninstall: $(SWIGDIRS-UNINSTALL)
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
 	rm -f $(DESTDIR)$(bindir)/mapiprofile
 	rm -f $(DESTDIR)$(bindir)/openchangeclient
+	rm -f $(DESTDIR)$(bindir)/openchangepfadmin
+	rm -f $(DESTDIR)$(bindir)/openchangemapidump
 	rm -f $(DESTDIR)$(bindir)/exchange2mbox
 	rm -f $(DESTDIR)$(bindir)/locale_codepage
 	rm -f $(DESTDIR)$(libdir)/libmapi.*
@@ -236,10 +240,16 @@ bin/openchangeclient: 	utils/openchangeclient.o			\
 bin/openchangepfadmin:	utils/openchangepfadmin.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
 			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)	\
-			-lpopt
+			-lpopt						
+	@echo "Compiling $<"
+	@$(CC) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS)
+
+bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
+			utils/backup/openchangebackup.o			\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+			-lpopt						
 	@echo "Compiling $<"
 	@$(CC) -o $@ $^ $(LIBS)
-
 
 bin/exchange2mbox:	utils/exchange2mbox.o				\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) -lpopt $(MAGIC_LIBS)

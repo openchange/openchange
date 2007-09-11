@@ -39,7 +39,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	bool			ret = true;
-	const char		*s_subject = lp_parm_string(-1, "mapi", "subject");
+	const char		*s_subject = lp_parm_string(NULL, "mapi", "subject");
 	int			len_subject;
 	struct mapi_session	*session;
 	mapi_object_t		obj_store;

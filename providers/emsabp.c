@@ -181,7 +181,7 @@ NTSTATUS emsabp_setEntryId(TALLOC_CTX *mem_ctx, struct entry_id *entry, struct S
 	struct GUID	*guid;
 	const char	*guid_str;
 
-	guid_str = lp_parm_string(-1, "exchange", "GUID");
+	guid_str = lp_parm_string(NULL, "exchange", "GUID");
 	guid = talloc(mem_ctx, struct GUID);
 	GUID_from_string(guid_str, guid);
 	

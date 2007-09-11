@@ -308,6 +308,8 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!SRowSet, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!SRowSet->aRow, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("ModifyRecipients");

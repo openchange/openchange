@@ -37,9 +37,9 @@ bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	bool			ret = true;
-	const char		*subject = lp_parm_string(-1, "mapi", "subject");
-	const char		*body = lp_parm_string(-1, "mapi", "body");
-	const char		*filename = lp_parm_string(-1, "mapi", "html");
+	const char		*subject = lp_parm_string(NULL, "mapi", "subject");
+	const char		*body = lp_parm_string(NULL, "mapi", "body");
+	const char		*filename = lp_parm_string(NULL, "mapi", "html");
 	const char		**usernames;
 	const char		**usernames_to;
 	const char		**usernames_cc;

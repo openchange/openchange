@@ -43,6 +43,7 @@
 
 struct ocb_context {
 	struct ldb_context	*ldb_ctx;	/* ldb database context */
+	struct ldb_message	*msg;		/* pointer on record msg */
 };
 
 /* Prototypes */
@@ -59,14 +60,30 @@ struct ocb_context {
 __BEGIN_DECLS
 struct ocb_context	*ocb_init(TALLOC_CTX *, const char *);
 uint32_t		ocb_release(struct ocb_context *);
-uint32_t		ocb_create_record(struct ocb_context *, const char *, const char *);
-uint32_t		ocb_add_attribute(struct ocb_context *, const char *,
-					  struct mapi_SPropValue *);
+
+uint32_t		ocb_record_init(struct ocb_context *, const char *, 
+					const char *,struct mapi_SPropValue_array *);
+uint32_t		ocb_record_commit(struct ocb_context *);
+uint32_t		ocb_record_add_property(struct ocb_context *, struct mapi_SPropValue *);
+
 char			*get_record_uuid(TALLOC_CTX *, const struct SBinary_short *);
 char			*get_MAPI_uuid(TALLOC_CTX *, const struct SBinary_short *);
 char			*get_MAPI_store_guid(TALLOC_CTX *, const struct SBinary_short *);
 char			*ocb_ldb_timestring(TALLOC_CTX *, struct FILETIME *);
 __END_DECLS
+
+#define	OCB_RETVAL_IF_CODE(x, m, c, r)	       	\
+do {						\
+	if (x) {				\
+		DEBUG(3, ("[OCB] %s\n", m));	\
+		if (c) {			\
+			talloc_free(c);		\
+		}				\
+		return r;			\
+	}					\
+} while (0);
+
+#define	OCB_RETVAL_IF(x, m, c) OCB_RETVAL_IF_CODE(x, m, c, -1)
 
 
 #define	DEFAULT_PROFDB		"%s/.openchange/profiles.ldb"

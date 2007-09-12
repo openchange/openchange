@@ -45,11 +45,12 @@ static enum MAPISTATUS mapidump_write_attachment(TALLOC_CTX *mem_ctx,
 	uint32_t		ret;
 	uint32_t		i;
 
-	ret = ocb_create_record(ocb_ctx, contentdn, uuid);
+	ret = ocb_record_init(ocb_ctx, contentdn, uuid, props);
 	if (ret == -1) return MAPI_E_SUCCESS;
 	for (i = 0; i < props->cValues; i++) {
-		ret = ocb_add_attribute(ocb_ctx, contentdn, &props->lpProps[i]);
+		ret = ocb_record_add_property(ocb_ctx, &props->lpProps[i]);
 	}
+	ret = ocb_record_commit(ocb_ctx);
 
 	return MAPI_E_SUCCESS;
 }
@@ -66,11 +67,12 @@ static enum MAPISTATUS mapidump_write_content(TALLOC_CTX *mem_ctx,
 	uint32_t		ret;
 	uint32_t		i;
 
-	ret = ocb_create_record(ocb_ctx, contentdn, uuid);
+	ret = ocb_record_init(ocb_ctx, contentdn, uuid, props);
 	if (ret == -1) return MAPI_E_SUCCESS;
 	for (i = 0; i < props->cValues; i++) {
-		ret = ocb_add_attribute(ocb_ctx, contentdn, &props->lpProps[i]);
+		ret = ocb_record_add_property(ocb_ctx, &props->lpProps[i]);
 	}
+	ret = ocb_record_commit(ocb_ctx);
 
 	return MAPI_E_SUCCESS;
 }
@@ -87,11 +89,12 @@ static enum MAPISTATUS mapidump_write_container(TALLOC_CTX *mem_ctx,
 	uint32_t		ret;
 	uint32_t		i;
 
-	ret = ocb_create_record(ocb_ctx, containerdn, uuid);
+	ret = ocb_record_init(ocb_ctx, containerdn, uuid, props);
 	if (ret == -1) return MAPI_E_SUCCESS;
 	for (i = 0; i < props->cValues; i++) {
-		ret = ocb_add_attribute(ocb_ctx, containerdn, &props->lpProps[i]);
+		ret = ocb_record_add_property(ocb_ctx, &props->lpProps[i]);
 	}
+	ret = ocb_record_commit(ocb_ctx);
 
 	return MAPI_E_SUCCESS;
 }
@@ -415,6 +418,13 @@ int main(int argc, const char *argv[])
 		opt_profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, getenv("HOME"));
 	}
 
+	/* Initialize MAPI subsystem */
+	retval = MAPIInitialize(opt_profdb);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_errstr("MAPIInitialize", GetLastError());
+		exit (1);
+	}
+
 	/* debug options */
 	if (opt_debug) {
 		lp_set_cmdline("log level", opt_debug);
@@ -422,13 +432,6 @@ int main(int argc, const char *argv[])
 
 	if (opt_dumpdata == true) {
 		global_mapi_ctx->dumpdata = true;
-	}
-
-	/* Initialize MAPI subsystem */
-	retval = MAPIInitialize(opt_profdb);
-	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("MAPIInitialize", GetLastError());
-		exit (1);
 	}
 
 	/* If no profile is specified try to load the default one from

@@ -33,15 +33,8 @@ struct ocb_context *ocb_init(TALLOC_CTX *mem_ctx, const char *dbpath)
 	int			ret;
 
 	/* sanity check */
-	if (!mem_ctx) {
-		DEBUG(3, ("[ocb]: talloc context not valid\n"));
-		return NULL;
-	}
-
-	if (!dbpath) {
-		DEBUG(3, ("[ocb]: dbpath not set\n"));
-		return NULL;
-	}
+	OCB_RETVAL_IF_CODE(!mem_ctx, "invalid memory context", NULL, NULL);
+	OCB_RETVAL_IF_CODE(!dbpath, "dbpath not set", NULL, NULL);
 	
 	ocb_ctx = talloc_zero(mem_ctx, struct ocb_context);
 
@@ -64,243 +57,175 @@ failed:
 	return NULL;
 }
 
-
 /**
  * Release OCB subsystem
  */
 uint32_t ocb_release(struct ocb_context *ocb_ctx)
 {
-	if (!ocb_ctx) {
-		DEBUG(3, ("[ocb] subsystem not initialized\n"));
-		return -1;
-	}
-	
+	OCB_RETVAL_IF(!ocb_ctx, "subsystem not initialized\n", NULL);
 	talloc_free(ocb_ctx);
 
 	return 0;
 }
 
-
 /**
- * Add a new record to OCB ldap database
+ * init and prepare a record
  */
-uint32_t ocb_create_record(struct ocb_context *ocb_ctx, const char *containerdn, 
-			   const char *uid)
+
+uint32_t ocb_record_init(struct ocb_context *ocb_ctx, const char *dn, const char *id,
+			 struct mapi_SPropValue_array *props)
 {
-	TALLOC_CTX			*mem_ctx;
-	struct ldb_context		*ldb_ctx;
-	enum ldb_scope			scope = LDB_SCOPE_SUBTREE;
-	struct ldb_message		msg;
-	struct ldb_message_element	el[2];
-	struct ldb_val			vals[2][1];
-	struct ldb_result		*res;
-	struct ldb_dn			*basedn;
-	int				ret;
-	const char * const		attrs[] = { "*", NULL };
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx;
+	struct ldb_result	*res;
+	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
+	struct ldb_dn		*basedn;
+	int		       	ret;
+	const char * const     	attrs[] = { "*", NULL };
 
 	/* sanity check */
-	if (!containerdn || !uid) {
-		return -1;
-	}
-
-	if (!ocb_ctx->ldb_ctx) {
-		return -1;
-	}
+	OCB_RETVAL_IF(!ocb_ctx, "Subsystem not initialized", NULL);
+	OCB_RETVAL_IF(!dn, "Not a valid DN", NULL);
+	OCB_RETVAL_IF(!id, "Not a valid ID", NULL);
 
 	mem_ctx = (TALLOC_CTX *)ocb_ctx;
 	ldb_ctx = ocb_ctx->ldb_ctx;
 
-	/* Does the entry already exist? */
-	ret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), scope, containerdn, attrs, &res);
-	if (res->msgs) {
-		return -1;
-	}
+	/* Check if the record already exists */
+	ret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), scope, dn, attrs, &res);
+	OCB_RETVAL_IF(res->msgs, "Record already exists", NULL);
 
-	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, containerdn);
-	if (!ldb_dn_validate(basedn)) {
-		DEBUG(3, ("Invalid dn = %s\n", containerdn));
-		return -1;
-	}
+	/* Retrieve the record basedn */
+	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, dn);
+	OCB_RETVAL_IF(!ldb_dn_validate(basedn), "Invalid DN", NULL);
 
-	msg.dn = ldb_dn_copy(mem_ctx, basedn);
-	msg.num_elements = 2;
-	msg.elements = el;
+	ocb_ctx->msg = ldb_msg_new(mem_ctx);
+	ocb_ctx->msg->dn = ldb_dn_copy(mem_ctx, basedn);
 
-	el[0].flags = 0;
-	el[0].name = talloc_strdup(mem_ctx, "cn");
-	el[0].num_values = 1;
-	el[0].values = vals[0];
-	vals[0][0].data = (uint8_t *)talloc_strdup(mem_ctx, uid);
-	vals[0][0].length = strlen(uid);
+	/* add records for cn */
+	ldb_msg_add_string(ocb_ctx->msg, "cn", id);
 
-	el[1].flags = 0;
-	el[1].name = talloc_strdup(mem_ctx, "objectID");
-	el[1].num_values = 1;
-	el[1].values = vals[1];
-	vals[1][0].data = (uint8_t *)talloc_strdup(mem_ctx, uid);
-	vals[1][0].length = strlen(uid);
-
-	ret = ldb_add(ldb_ctx, &msg);
-
-	if (ret != LDB_SUCCESS) return -1;
+	talloc_free(basedn);
 
 	return 0;
 }
 
 
 /**
- * Add a property (value+ attr) to a ldb database record
+ * Commit the record with all its attributes: single transaction
  */
-static uint32_t ocb_add_string_attribute(struct ocb_context *ocb_ctx, 
-					 const char *recdn,
-					 char *attr,
-					 char *value)
+uint32_t ocb_record_commit(struct ocb_context *ocb_ctx)
 {
-	TALLOC_CTX			*mem_ctx;
-	struct ldb_message		msg;
-	struct ldb_val			vals[1][1];
-	struct ldb_message_element	el[1];
-	struct ldb_context		*ldb_ctx;
-	struct ldb_dn			*basedn;
-	int				ret;
+	int		ret;
 
-	mem_ctx = talloc_init("ocb_add_string_attribute");
-	ldb_ctx = ocb_ctx->ldb_ctx;
+	/* sanity checks */
+	OCB_RETVAL_IF(!ocb_ctx, "Subsystem not initialized", NULL);
+	OCB_RETVAL_IF(!ocb_ctx->ldb_ctx, "LDB context not initialized", NULL);
+	OCB_RETVAL_IF(!ocb_ctx->msg, "Message not initialized", NULL);
 
-	/* Retrieve the record context */
-	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, recdn);
-	if (!ldb_dn_validate(basedn)) {
-		DEBUG(3, ("Invalid dn = %s\n", recdn));
+	ret = ldb_add(ocb_ctx->ldb_ctx, ocb_ctx->msg);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(3, ("LDB operation failed: %s\n", ldb_errstring(ocb_ctx->ldb_ctx)));
 		return -1;
 	}
 
-	msg.dn = ldb_dn_copy(mem_ctx, basedn);
-	msg.num_elements = 1;
-	msg.elements = el;
+	talloc_free(ocb_ctx->msg);
 
-	el[0].flags = LDB_FLAG_MOD_ADD;
-	el[0].name = talloc_strdup(mem_ctx, attr);
-	el[0].num_values = 1;
-	el[0].values = vals[0];
-	vals[0][0].data = (uint8_t *)talloc_strdup(mem_ctx, value);
-	vals[0][0].length = strlen(value);
-
-	if ((ret = ldb_modify(ldb_ctx, &msg)) != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return -1;
-	}
-	
-	talloc_free(mem_ctx);
 	return 0;
 }
 
-/**
- * Public function: Add properties (name, value) to an existing record
- *
- * This function shouldn't be used when adding a full record to the
- * database. It performs one ldb transaction for each property rather
- * than a single one for the whole record.
- */
-uint32_t ocb_add_attribute(struct ocb_context *ocb_ctx, const char *recdn,
-			     struct mapi_SPropValue *lpProp)
+uint32_t ocb_record_add_property(struct ocb_context *ocb_ctx, 
+				 struct mapi_SPropValue *lpProp)
 {
 	TALLOC_CTX     	*mem_ctx;
 	int    		i;
 	char	       	*attr;
-	char	       	*value;
+	char	       	*value = NULL;
+	const char	*tag;
 
-	mem_ctx = talloc_init("ocb_add_attribute");
-	attr = talloc_asprintf(mem_ctx, "0x%.8x", lpProp->ulPropTag);
+	/* sanity checks */
+	OCB_RETVAL_IF(!ocb_ctx, "Subsystem not initialized", NULL);
+	OCB_RETVAL_IF(!ocb_ctx->ldb_ctx, "LDB context not initialized", NULL);
+	OCB_RETVAL_IF(!ocb_ctx->msg, "Message not initialized", NULL);
 
+	mem_ctx = (TALLOC_CTX *)ocb_ctx->msg;
+
+	tag = get_proptag_name(lpProp->ulPropTag);
+	if (tag) {
+		attr = talloc_asprintf(mem_ctx, "%s", tag);
+	} else {
+		attr = talloc_asprintf(mem_ctx, "PR-x%.8x", lpProp->ulPropTag);
+	}
+
+	for (i = 0; attr[i]; i++) {
+		if (attr[i] == '_') attr[i] = '-';
+	}
+	
 	switch (lpProp->ulPropTag & 0xFFFF) {
 	case PT_SHORT:
-		value = talloc_asprintf(mem_ctx, "%hd", lpProp->value.i);
-		ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+		ldb_msg_add_fmt(ocb_ctx->msg, attr, "%hd", lpProp->value.i);
 		break;
 	case PT_STRING8:
-		if (!lpProp->value.lpszA) {
-			talloc_free(mem_ctx);
-			return 0;
-		}
-		if (lpProp->value.lpszA && strlen((char *)lpProp->value.lpszA) == 0) {
-			talloc_free(mem_ctx);
-			return 0;
-		}
-		value = talloc_strdup(mem_ctx, lpProp->value.lpszA);
-		ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+		ldb_msg_add_string(ocb_ctx->msg, attr, lpProp->value.lpszA);
 		break;
 	case PT_UNICODE:
-		if (!lpProp->value.lpszW) {
-			talloc_free(mem_ctx);
-			return 0;
-		}
-		if (lpProp->value.lpszW && strlen((char *)lpProp->value.lpszW) == 0) {
-			talloc_free(mem_ctx);
-			return 0;
-		}
-		value = talloc_strdup(mem_ctx, lpProp->value.lpszW);
-		ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+		ldb_msg_add_string(ocb_ctx->msg, attr, lpProp->value.lpszW);
 		break;
-	case PT_ERROR:
-		/* We shouldn't need to backup error properties */
+	case PT_ERROR: /* We shouldn't need to backup error properties */
 		return 0;
-		break;
 	case PT_LONG:
-		value = talloc_asprintf(mem_ctx, "%d", lpProp->value.l);
-		ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+		ldb_msg_add_fmt(ocb_ctx->msg, attr, "%d", lpProp->value.l);
 		break;
 	case PT_BOOLEAN:
-		value = talloc_strdup(mem_ctx, (lpProp->value.b == true) ? "true" : "false");
-		ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+		ldb_msg_add_fmt(ocb_ctx->msg, attr, "%s", 
+				((lpProp->value.b == true) ? "true" : "false"));
 		break;
 	case PT_I8:
-		if (!lpProp->value.d) {
-			talloc_free(mem_ctx);
-			return 0;
-		}
-		value = talloc_asprintf(mem_ctx, "%16llx", lpProp->value.d);
-		ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+		ldb_msg_add_fmt(ocb_ctx->msg, attr, "%16llx", lpProp->value.d);
 		break;
 	case PT_SYSTIME:
 		value = ocb_ldb_timestring(mem_ctx, &lpProp->value.ft);
-		ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+		ldb_msg_add_string(ocb_ctx->msg, attr, value);
 		break;
 	case 0xFB:
 	case PT_BINARY:
-		value = ldb_base64_encode(mem_ctx, (char *)lpProp->value.bin.lpb, 
-					  lpProp->value.bin.cb);
-		ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+		if (lpProp->value.bin.cb) {
+			value = ldb_base64_encode(mem_ctx, (char *)lpProp->value.bin.lpb,
+						  lpProp->value.bin.cb);
+			ldb_msg_add_string(ocb_ctx->msg, attr, value);
+		}
 		break;
 	case PT_MV_LONG:
 		for (i = 0; i < lpProp->value.MVl.cValues; i++) {
-			value = talloc_asprintf(mem_ctx, "%d", lpProp->value.MVl.lpl[i]);		
-			ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+			ldb_msg_add_fmt(ocb_ctx->msg, attr, "%d", 
+					lpProp->value.MVl.lpl[i]);
 		}
 		break;
 	case PT_MV_BINARY:
 		for (i = 0; i < lpProp->value.MVbin.cValues; i++) {
-			value = ldb_base64_encode(mem_ctx, (char *)lpProp->value.MVbin.bin[i].lpb, 
-						  lpProp->value.MVbin.bin[i].cb);		
-			ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+			struct SBinary_short bin;
+
+			bin = lpProp->value.MVbin.bin[i];
+			if (bin.cb) {
+				value = ldb_base64_encode(mem_ctx, (char *)bin.lpb, bin.cb);
+				ldb_msg_add_string(ocb_ctx->msg, attr, value);
+			}
 		}
 		break;
 	case PT_MV_STRING8:
 		for (i = 0; i < lpProp->value.MVszA.cValues; i++) {
-			value = talloc_strdup(mem_ctx, lpProp->value.MVszA.strings[i].lppszA);
-			ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
+			ldb_msg_add_string(ocb_ctx->msg, attr, 
+					   lpProp->value.MVszA.strings[i].lppszA);
 		}
 		break;
 	default:
 		printf("%s case %d not supported\n", attr, lpProp->ulPropTag & 0xFFFF);
-		value = talloc_strdup(mem_ctx, "MAPI_E_NO_SUPPORT");
-		ocb_add_string_attribute(ocb_ctx, recdn, attr, value);
 		break;
 	}
 
-	talloc_free(mem_ctx);
+	talloc_free(attr);
 	return 0;
 }
-
 
 /**
  * Retrieve UUID from Sbinary_short struct
@@ -312,11 +237,7 @@ char *get_record_uuid(TALLOC_CTX *mem_ctx, const struct SBinary_short *bin)
 	uint32_t	i;
 	char		*lpb;
 
-	if (!bin) {
-		DEBUG(3, ("Invalid PR_RECORD_KEY value\n"));
-		return NULL;
-	}
-
+	OCB_RETVAL_IF_CODE(!bin, "Invalid PR_RECORD_KEY val", NULL, NULL);
 	lpb = talloc_asprintf(mem_ctx, "%.2X", bin->lpb[0]);
 	for (i = 1; i < bin->cb; i++) {
 		lpb = talloc_asprintf_append(lpb, "%.2X", bin->lpb[i]);
@@ -337,10 +258,7 @@ char *get_MAPI_uuid(TALLOC_CTX *mem_ctx, const struct SBinary_short *bin)
 	uint32_t       	i;
 	char		*ab;
 
-	if (!bin || bin->cb != 22) {
-		DEBUG(3, ("Invalid SBinary_short structure\n"));
-		return NULL;
-	}
+	OCB_RETVAL_IF_CODE(!bin || bin->cb != 22, "Invalid SBinary", NULL, NULL);
 
 	ab = talloc_asprintf(mem_ctx, "%.2X", bin->lpb[16]);
 	for (i = 17; i < bin->cb; i++) {
@@ -361,10 +279,7 @@ char *get_MAPI_store_guid(TALLOC_CTX *mem_ctx, const struct SBinary_short *bin)
 	int		i;
 	char		*ab;
 
-	if (!bin || bin->cb != 22) {
-		DEBUG(3, ("Invalid SBinary_short structure\n"));
-		return NULL;
-	}
+	OCB_RETVAL_IF_CODE(!bin || bin->cb != 22, "Invalid SBinary", NULL, NULL);
 
 	ab = talloc_asprintf(mem_ctx, "%.2X", bin->lpb[0]);
 	for (i = 1; i < 16; i++) {
@@ -384,10 +299,7 @@ char *ocb_ldb_timestring(TALLOC_CTX *mem_ctx, struct FILETIME *ft)
 	NTTIME		time;
 	time_t		t;
 
-	if (!ft) {
-		DEBUG(3, ("Invalid FILETIME structure\n"));
-		return NULL;
-	}
+	OCB_RETVAL_IF_CODE(!ft, "Invalid FILTIME", NULL, NULL);
 
 	time = ft->dwHighDateTime;
 	time = time << 32;

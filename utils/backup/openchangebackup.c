@@ -72,8 +72,8 @@ uint32_t ocb_release(struct ocb_context *ocb_ctx)
  * init and prepare a record
  */
 
-uint32_t ocb_record_init(struct ocb_context *ocb_ctx, const char *dn, const char *id,
-			 struct mapi_SPropValue_array *props)
+uint32_t ocb_record_init(struct ocb_context *ocb_ctx, const char *objclass, const char *dn, 
+			 const char *id, struct mapi_SPropValue_array *props)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_context	*ldb_ctx;
@@ -105,6 +105,9 @@ uint32_t ocb_record_init(struct ocb_context *ocb_ctx, const char *dn, const char
 	/* add records for cn */
 	ldb_msg_add_string(ocb_ctx->msg, "cn", id);
 
+	/* add filters attributes */
+	ldb_msg_add_string(ocb_ctx->msg, "objectClass", objclass);
+
 	talloc_free(basedn);
 
 	return 0;
@@ -134,6 +137,10 @@ uint32_t ocb_record_commit(struct ocb_context *ocb_ctx)
 	return 0;
 }
 
+
+/**
+ * Add a property (attr, value) couple to the current record
+ */
 uint32_t ocb_record_add_property(struct ocb_context *ocb_ctx, 
 				 struct mapi_SPropValue *lpProp)
 {

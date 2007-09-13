@@ -62,7 +62,7 @@ struct ocb_context	*ocb_init(TALLOC_CTX *, const char *);
 uint32_t		ocb_release(struct ocb_context *);
 
 uint32_t		ocb_record_init(struct ocb_context *, const char *, 
-					const char *,struct mapi_SPropValue_array *);
+					const char *, const char *, struct mapi_SPropValue_array *);
 uint32_t		ocb_record_commit(struct ocb_context *);
 uint32_t		ocb_record_add_property(struct ocb_context *, struct mapi_SPropValue *);
 
@@ -89,5 +89,10 @@ do {						\
 #define	DEFAULT_PROFDB		"%s/.openchange/profiles.ldb"
 #define	DEFAULT_OCBCONF		"%s/.openchange/openchangebackup.conf"
 #define	DEFAULT_OCBDB		"%s/.openchange/openchangebackup_%s.ldb"
+
+/* objectClass */
+#define	OCB_OBJCLASS_CONTAINER	"container"
+#define	OCB_OBJCLASS_MESSAGE	"message"
+#define	OCB_OBJCLASS_ATTACHMENT	"attachment"
 
 #endif /* __OPENCHANGEBACKUP_H__ */

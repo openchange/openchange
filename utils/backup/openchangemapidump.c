@@ -45,7 +45,7 @@ static enum MAPISTATUS mapidump_write_attachment(TALLOC_CTX *mem_ctx,
 	uint32_t		ret;
 	uint32_t		i;
 
-	ret = ocb_record_init(ocb_ctx, contentdn, uuid, props);
+	ret = ocb_record_init(ocb_ctx, OCB_OBJCLASS_ATTACHMENT, contentdn, uuid, props);
 	if (ret == -1) return MAPI_E_SUCCESS;
 	for (i = 0; i < props->cValues; i++) {
 		ret = ocb_record_add_property(ocb_ctx, &props->lpProps[i]);
@@ -56,9 +56,9 @@ static enum MAPISTATUS mapidump_write_attachment(TALLOC_CTX *mem_ctx,
 }
 
 /**
- * write contents to the database (message, appointment, contact, task, note etc.)
+ * write message to the database (email, appointment, contact, task, note etc.)
  */
-static enum MAPISTATUS mapidump_write_content(TALLOC_CTX *mem_ctx,
+static enum MAPISTATUS mapidump_write_message(TALLOC_CTX *mem_ctx,
 					      struct ocb_context *ocb_ctx,
 					      struct mapi_SPropValue_array *props,
 					      const char *contentdn,
@@ -67,7 +67,7 @@ static enum MAPISTATUS mapidump_write_content(TALLOC_CTX *mem_ctx,
 	uint32_t		ret;
 	uint32_t		i;
 
-	ret = ocb_record_init(ocb_ctx, contentdn, uuid, props);
+	ret = ocb_record_init(ocb_ctx, OCB_OBJCLASS_MESSAGE, contentdn, uuid, props);
 	if (ret == -1) return MAPI_E_SUCCESS;
 	for (i = 0; i < props->cValues; i++) {
 		ret = ocb_record_add_property(ocb_ctx, &props->lpProps[i]);
@@ -89,7 +89,7 @@ static enum MAPISTATUS mapidump_write_container(TALLOC_CTX *mem_ctx,
 	uint32_t		ret;
 	uint32_t		i;
 
-	ret = ocb_record_init(ocb_ctx, containerdn, uuid, props);
+	ret = ocb_record_init(ocb_ctx, OCB_OBJCLASS_CONTAINER, containerdn, uuid, props);
 	if (ret == -1) return MAPI_E_SUCCESS;
 	for (i = 0; i < props->cValues; i++) {
 		ret = ocb_record_add_property(ocb_ctx, &props->lpProps[i]);
@@ -219,7 +219,7 @@ static enum MAPISTATUS mapidump_walk_content(TALLOC_CTX *mem_ctx,
 					sbin = (const struct SBinary_short *)find_mapi_SPropValue_data(&props, PR_SOURCE_KEY);
 					uuid = get_MAPI_uuid(mem_ctx, sbin);
 					contentdn = talloc_asprintf(mem_ctx, "cn=%s,%s", uuid, containerdn);
-					mapidump_write_content(mem_ctx, ocb_ctx, &props, contentdn, uuid);
+					mapidump_write_message(mem_ctx, ocb_ctx, &props, contentdn, uuid);
 
 					/* If Message has attachments then process them */
 					has_attach = (const uint8_t *)find_mapi_SPropValue_data(&props, PR_HASATTACH);

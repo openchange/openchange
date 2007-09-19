@@ -1844,10 +1844,6 @@ int main(int argc, const char *argv[])
 		lp_set_cmdline("log level", opt_debug);
 	}
 
-	if (opt_dumpdata == true) {
-		global_mapi_ctx->dumpdata = true;
-	}
-	
 	/**
 	 * Initialize MAPI subsystem
 	 */
@@ -1858,6 +1854,10 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
+	if (opt_dumpdata == true) {
+		global_mapi_ctx->dumpdata = true;
+	}
+	
 	/* If no profile is specified try to load the default one from
 	 * the database 
 	 */

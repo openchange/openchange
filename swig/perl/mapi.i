@@ -22,10 +22,11 @@
 %{
 typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
+typedef uint64_t NTTIME;
+struct ipv4_addr;
 
 #include <libmapi/libmapi.h>
 #include <libmapi/proto.h>
-#include <libmapi/proto_private.h>
 
 %}
 

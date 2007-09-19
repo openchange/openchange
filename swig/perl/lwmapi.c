@@ -18,6 +18,10 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+typedef unsigned long long uint64_t;
+typedef uint64_t NTTIME;
+struct ipv4_addr;
+
 #include <libmapi/libmapi.h>
 
 /**
@@ -30,7 +34,8 @@ void lw_dumpdata(void)
 	global_mapi_ctx->dumpdata = true;
 }
 
-uint64_t *lw_getID(struct SRowSet *SRowSet, uint32_t ulPropTag, uint32_t idx)
+const uint64_t *lw_getID(struct SRowSet *SRowSet, uint32_t ulPropTag, 
+			 uint32_t idx)
 {
 	struct SPropValue *lpProp;
 	uint64_t *id;

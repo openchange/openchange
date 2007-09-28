@@ -245,11 +245,9 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	enum MAPISTATUS	retval;
 	char		*path;
 	mapi_object_t	obj_stream;
-	uint32_t	stream_size;
 	uint32_t	read_size;
 	int		fd;
 	unsigned char  	buf[MAX_READ_SIZE];
-	uint32_t	max_read_size = MAX_READ_SIZE;
 
 	if (!filename || !size) return false;
 
@@ -263,7 +261,7 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	}
 
 	path = talloc_asprintf(mem_ctx, "%s/%s", oclient->store_folder, filename);
-	if ((fd = open(path, O_CREAT|O_WRONLY)) == -1) return false;
+	if ((fd = open(path, O_CREAT|O_WRONLY, S_IWUSR|S_IRUSR)) == -1) return false;
 
 	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -273,14 +271,14 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 		if (retval != MAPI_E_SUCCESS) goto error;
 		write(fd, buf, read_size);
 		close(fd);
+	} else {
+		do {
+			retval = ReadStream(&obj_stream, buf, MAX_READ_SIZE, &read_size);
+			if (retval != MAPI_E_SUCCESS) goto error;
+			write(fd, buf, read_size);
+		} while (read_size);
+		close(fd);
 	}
-
-	for (stream_size = 0; stream_size < size; stream_size += 0x4000) {
-		retval = ReadStream(&obj_stream, buf, max_read_size, &read_size);
-		if (retval != MAPI_E_SUCCESS) goto error;
-		write(fd, buf, read_size);
-	}
-	close(fd);
 
 	mapi_object_release(&obj_stream);
 	close(fd);
@@ -351,7 +349,8 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 
 	printf("MAILBOX (%d messages)\n", count);
 
-	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
+	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
+		count -= rowset.cRows;
 		for (i = 0; i < rowset.cRows; i++) {
 			mapi_object_init(&obj_message);
 			retval = OpenMessage(obj_store,
@@ -578,6 +577,7 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 	DATA_BLOB	stream;
 	uint32_t	size;
 	uint32_t	offset;
+	uint16_t	read_size;
 
 	/* Open a stream on the parent for the given property */
 	retval = OpenStream(&obj_parent, mapitag, access_flags, &obj_stream);
@@ -589,37 +589,33 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 		stream.length = bin.cb;
 		stream.data = talloc_size(mem_ctx, bin.cb);
 		memcpy(stream.data, bin.lpb, bin.cb);
-		retval = WriteStream(&obj_stream, &stream);
+		retval = WriteStream(&obj_stream, &stream, &read_size);
 		talloc_free(stream.data);
 		if (retval != MAPI_E_SUCCESS) return false;
-
-		return true;
 	} else {
-		for (size = 0, offset = - MAX_READ_SIZE; size <= bin.cb; size += MAX_READ_SIZE) {
-			offset += MAX_READ_SIZE;
-			stream.length = MAX_READ_SIZE;
-			stream.data = talloc_size(mem_ctx, MAX_READ_SIZE);
-			memcpy(stream.data, bin.lpb + offset, MAX_READ_SIZE);
-
-			errno = 0;
-			retval = WriteStream(&obj_stream, &stream);
-			printf(".");
-			fflush(0);
-			if (retval != MAPI_E_SUCCESS) return false;
-			talloc_free(stream.data);
-		}
-		if (size > bin.cb) {
-			size = bin.cb - offset;		
+		/* initialize values */
+		size = MAX_READ_SIZE;
+		offset = 0;
+		while (offset <= bin.cb) {
 			stream.length = size;
 			stream.data = talloc_size(mem_ctx, size);
 			memcpy(stream.data, bin.lpb + offset, size);
-			
-			errno = 0;
-			retval = WriteStream(&obj_stream, &stream);
-			printf(".\n");
-			fflush(0);
-			if (retval != MAPI_E_SUCCESS) return false;
+
+			retval = WriteStream(&obj_stream, &stream, &read_size);
 			talloc_free(stream.data);
+			if (retval != MAPI_E_SUCCESS) return false;
+			printf(".");
+			fflush(0);
+
+			/* Exit when there is nothing left to write */
+			if (!read_size) return true;
+
+			offset += read_size;
+			size = read_size;
+
+			if ((offset + size) > bin.cb) {
+				size = bin.cb - offset;
+			}
 		}
 	}
 
@@ -1656,6 +1652,7 @@ int main(int argc, const char *argv[])
 		{"dtend", 0, POPT_ARG_STRING, NULL, OPT_MAPI_ENDDATE, "Set the event end date"},
 		{"busystatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_BUSYSTATUS, "Set the item busy status"},
 		{"taskstatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_TASKSTATUS, "Set the task status"},
+		{"priority", 0, POPT_ARG_STRING, NULL, OPT_MAPI_PRIORITY, "Set the task priority"},
 		{"email", 0, POPT_ARG_STRING, NULL, OPT_MAPI_EMAIL, "set the email address"},
 		{"fullname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_FULLNAME, "set the full name"},
 		{"cardname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_CARDNAME, "set a contact card name"},

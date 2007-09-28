@@ -186,6 +186,7 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 		int		fd;
 		struct stat	sb;
 		uint32_t	read_size;
+		uint16_t	buf_readsize;
 		uint8_t		buf[0x7000];
 
 		if (stat(filename, &sb) != 0) return false;
@@ -202,7 +203,7 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 			memcpy(blob.data, buf, read_size);
 			
 			errno = 0;
-			retval = WriteStream(&obj_stream, &blob);
+			retval = WriteStream(&obj_stream, &blob, &buf_readsize);
 			mapi_errstr("WriteStream", GetLastError());
 			talloc_free(blob.data);
 		}

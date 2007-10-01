@@ -210,7 +210,8 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 
 	/* open LDAP connection */
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);
-	remote_ldb = ldb_wrap_connect(mem_ctx, remote_ldb_url, NULL,
+	remote_ldb = ldb_wrap_connect(mem_ctx, global_loadparm, remote_ldb_url, 
+								  NULL,
 				      global_mapi_ctx->session->profile->credentials, 0, NULL);
 	MAPI_RETVAL_IF(!remote_ldb, MAPI_E_NETWORK_ERROR, mem_ctx);
 
@@ -456,7 +457,8 @@ again:
 						      mapiadmin_ctx->description ?
 						      mapiadmin_ctx->description :
 						      "OpenChange account created by host %s: %s", 
-					 lp_netbios_name(), timestring(mapiadmin_ctx->user_ctx, time(NULL)));
+					 lp_netbios_name(global_loadparm), 
+					 timestring(mapiadmin_ctx->user_ctx, time(NULL)));
 
 	DEBUG(3, ("Resetting ACB flags, force pw change time\n"));
 

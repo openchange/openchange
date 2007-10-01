@@ -90,11 +90,16 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		rowset;
 	struct SPropValue	*lpProp;
-	const char		*profname = lp_parm_string(NULL, "mapi", "profile");
-	const char		*profdb = lp_parm_string(NULL, "mapi", "profile_store");
-	uint32_t		codepage = lp_parm_int(NULL, "mapi", "codepage", 0);
-	uint32_t		language = lp_parm_int(NULL, "mapi", "language", 0);
-	uint32_t		method = lp_parm_int(NULL, "mapi", "method", 0);
+	const char		*profname = lp_parm_string(global_loadparm, NULL, "mapi", 
+											   "profile");
+	const char		*profdb = lp_parm_string(global_loadparm, NULL, "mapi", 
+											 "profile_store");
+	uint32_t		codepage = lp_parm_int(global_loadparm, NULL, "mapi", 
+										   "codepage", 0);
+	uint32_t		language = lp_parm_int(global_loadparm, NULL, "mapi", 
+										   "language", 0);
+	uint32_t		method = lp_parm_int(global_loadparm, NULL, "mapi", 
+										 "method", 0);
 
 	mem_ctx = talloc_init("torture_rpc_nspi_profile");
 	
@@ -127,7 +132,8 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 		{
 			const char *workstation = cli_credentials_get_workstation(cmdline_credentials);
 			const char *domain = cli_credentials_get_domain(cmdline_credentials);
-			const char *binding = lp_parm_string(NULL, "torture", "binding");
+			const char *binding = lp_parm_string(global_loadparm, 
+												 NULL, "torture", "binding");
 			struct dcerpc_binding *dcerpc_binding;
 			char *p_codepage = talloc_asprintf(mem_ctx, "0x%x", codepage);
 			char *p_language = talloc_asprintf(mem_ctx, "0x%x", language);

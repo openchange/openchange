@@ -48,9 +48,9 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	struct FlagList		*flaglist = NULL;
 	const char		*profdb;
 	const char		*profname;
-	const char		*username = lp_parm_string(NULL, "exchange", "resolvename");
-	const char		*password = lp_parm_string(NULL, "mapi", "password");
-	uint32_t		unicode = lp_parm_int(NULL, "mapi", "unicode", 0);
+	const char		*username = lp_parm_string(global_loadparm, NULL, "exchange", "resolvename");
+	const char		*password = lp_parm_string(global_loadparm, NULL, "mapi", "password");
+	uint32_t		unicode = lp_parm_int(global_loadparm, NULL, "mapi", "unicode", 0);
 	char *tmp;
 	char **usernames;
 	int j;
@@ -70,7 +70,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	}
 
 	/* init mapi */
-	profdb = lp_parm_string(NULL, "mapi", "profile_store");
+	profdb = lp_parm_string(global_loadparm, NULL, "mapi", "profile_store");
 	if (!profdb) {
 		profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB_PATH, getenv("HOME"));
 		if (!profdb) {
@@ -83,7 +83,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* profile name */
-	profname = lp_parm_string(NULL, "mapi", "profile");
+	profname = lp_parm_string(global_loadparm, NULL, "mapi", "profile");
 	if (!profname) {
 		retval = GetDefaultProfile(&profname, 0);
 		if (retval != MAPI_E_SUCCESS) {

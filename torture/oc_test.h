@@ -63,7 +63,7 @@ static void __attribute__((unused)) oc_test_begin(void)
   gbl_oc_test.id_test = 0;
   gbl_oc_test.desc = 0;
 
-  path = lp_parm_string(NULL, "openchange", "oc_test_out");
+  path = lp_parm_string(global_loadparm, NULL, "openchange", "oc_test_out");
   if (path == 0)
     return ;
   gbl_oc_test.f_out = fopen(path, "w");

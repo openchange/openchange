@@ -122,7 +122,8 @@ struct emsabp_ctx *emsabp_init(void)
 	/* return an opaque context pointer on the configuration database */
 	emsabp_ctx->conf_ctx = ldb_init(emsabp_ctx->mem_ctx);
 	if (ldb_connect(emsabp_ctx->conf_ctx, 
-			private_path(emsabp_ctx->mem_ctx, "configuration.ldb"), 
+			private_path(emsabp_ctx->mem_ctx, global_loadparm, 
+						 "configuration.ldb"), 
 			LDB_FLG_RDONLY, NULL) != LDB_SUCCESS) {
 		DEBUG(0, ("Connection to the configuration database failed\n"));
 		exit (-1);
@@ -131,7 +132,8 @@ struct emsabp_ctx *emsabp_init(void)
 	/* return an opaque context pointer on the users database*/
 	emsabp_ctx->users_ctx = ldb_init(emsabp_ctx->mem_ctx);
 	if (ldb_connect(emsabp_ctx->users_ctx, 
-			private_path(emsabp_ctx->mem_ctx, "users.ldb"),
+			private_path(emsabp_ctx->mem_ctx, global_loadparm, 
+						 "users.ldb"),
 			LDB_FLG_RDONLY, NULL) != LDB_SUCCESS) {
 		DEBUG(0, ("Connection to the users database failed\n"));
 		exit (-1);
@@ -181,7 +183,7 @@ NTSTATUS emsabp_setEntryId(TALLOC_CTX *mem_ctx, struct entry_id *entry, struct S
 	struct GUID	*guid;
 	const char	*guid_str;
 
-	guid_str = lp_parm_string(NULL, "exchange", "GUID");
+	guid_str = lp_parm_string(global_loadparm, NULL, "exchange", "GUID");
 	guid = talloc(mem_ctx, struct GUID);
 	GUID_from_string(guid_str, guid);
 	

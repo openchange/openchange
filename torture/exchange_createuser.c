@@ -102,8 +102,8 @@ NTSTATUS torture_exchange_createuser(TALLOC_CTX *mem_ctx, const char *username,
 
 	/* open LDAP connection */
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);
-	remote_ldb = ldb_wrap_connect(mem_ctx, remote_ldb_url, NULL,
-				      cmdline_credentials, 0, NULL);
+	remote_ldb = ldb_wrap_connect(mem_ctx, global_loadparm, remote_ldb_url, 
+								  NULL, cmdline_credentials, 0, NULL);
 	if (!remote_ldb) return NT_STATUS_UNSUCCESSFUL;
 
 	/* search the user's record using the user dom_sid */
@@ -319,7 +319,8 @@ struct test_join *torture_create_testuser(const char *username,
 	int policy_min_pw_len = 0;
 	struct test_join *join;
 	char *random_pw;
-	const char *dc_binding = lp_parm_string(NULL, "torture", "dc_binding");
+	const char *dc_binding = lp_parm_string(global_loadparm,
+											NULL, "torture", "dc_binding");
 
 	join = talloc(NULL, struct test_join);
 	if (join == NULL) {
@@ -470,7 +471,8 @@ again:
 	
 	u.info21.description.string = talloc_asprintf(join, 
 					 "Samba4 torture account created by host %s: %s", 
-					 lp_netbios_name(), timestring(join, time(NULL)));
+					 lp_netbios_name(global_loadparm), 
+					 timestring(join, time(NULL)));
 
 	printf("Resetting ACB flags, force pw change time\n");
 

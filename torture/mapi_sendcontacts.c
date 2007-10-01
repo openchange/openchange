@@ -36,8 +36,8 @@ bool torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
 	bool			ret = true;
-	const char		*cardname = lp_parm_string(NULL, "mapi", "cardname");
-	const char		*fullname = lp_parm_string(NULL, "mapi", "fullname");
+	const char		*cardname = lp_parm_string(global_loadparm, NULL, "mapi", "cardname");
+	const char		*fullname = lp_parm_string(global_loadparm, NULL, "mapi", "fullname");
 	struct mapi_session	*session;
 	uint64_t		id_contacts;
 	mapi_object_t		obj_store;

@@ -142,7 +142,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	status = OpenProfileStore(mem_ctx, &global_mapi_ctx->ldb_ctx, profiledb);
 	MAPI_RETVAL_IF(status, status, mem_ctx);
 
-	lp_load();
+	lp_load_default();
 	dcerpc_init();
 
 	errno = 0;

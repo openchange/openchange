@@ -31,3 +31,4 @@ tags
 bin/openchangepfadmin
 libmapiadmin/proto.h
 libmapiadmin/proto_private.h
+bin/openchangemapidump

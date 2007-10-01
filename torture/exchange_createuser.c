@@ -41,11 +41,10 @@
 #include <ldb_errors.h>
 #include <db_wrap.h>
 #include <ldap.h>
-#include <core/nterr.h>
-#include <core/error_proto.h>
 #include <dcerpc/ndr_samr.h>
 #include <dcerpc/ndr_samr_c.h>
 #include <time.h>
+#include <core/error.h>
 
 struct tce_async_context {
 	int found;

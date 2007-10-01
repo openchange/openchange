@@ -27,8 +27,6 @@
 #include <dcerpc_server.h>
 #include <dcerpc_server/common.h>
 
-#include <core/nterr.h>
-
 #include <util.h>
 #include <param.h>
 

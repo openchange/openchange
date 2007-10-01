@@ -24,7 +24,6 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/mapitags.h>
 #include <ndr.h>
-#include <core/nterr.h>
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <gen_ndr/ndr_misc.h>

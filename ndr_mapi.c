@@ -24,7 +24,6 @@
 #include <ndr.h>
 #include <ndr_mapi.h>
 #include <gen_ndr/ndr_exchange.h>
-#include <core/nterr.h>
 
 
 static void obfuscate_data(uint8_t *data, uint32_t size, uint8_t salt)

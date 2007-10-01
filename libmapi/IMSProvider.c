@@ -20,7 +20,6 @@
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 #include <core/error.h>
-#include <core/nterr.h>
 #include <param.h>
 #include <credentials.h>
 

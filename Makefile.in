@@ -52,7 +52,7 @@ LIBMAPIADMIN_CFLAGS=@SAMR_CFLAGS@
 
 MAGIC_LIBS=@MAGIC_LIBS@
 
-all: 	libmapi/utf8_convert.yy.c				\
+all: 	\
 	gen_ndr gen_ndr/ndr_exchange.h libmapi/proto.h			\
 	torture/torture_proto.h	providers/providers_proto.h server/dcesrv_proto.h	\
 	libmapiadmin/proto.h					\
@@ -170,21 +170,24 @@ torture/openchange.$(SHLIBEXT):	torture/nspi_profile.o		\
 				torture/exchange_createuser.o	\
 				torture/openchange.o		\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
 libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
 	@echo "Generating $@"
 	@$(LEX) -t $< > $@
 
+# Avoid warnings:
+libmapi/utf8_convert.yy.o: CFLAGS=
+
 server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.o server/dcesrv_exchange.o	\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
 server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.o	\
 					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
 gen_ndr:
@@ -194,7 +197,7 @@ gen_ndr:
 exchange.idl: mapitags_enum.h mapicodes_enum.h
 
 %.h: %.idl
-	@echo "Compiling $<"
+	@echo "Generating $@"
 	@$(PIDL) --outputdir=gen_ndr --header -- $<
 
 .c.o:
@@ -202,15 +205,15 @@ exchange.idl: mapitags_enum.h mapicodes_enum.h
 	@$(CC) $(CFLAGS) -DDEFAULT_LDIF=\"$(DESTDIR)$(datadir)/setup\" -c $< -o $@
 
 gen_ndr/ndr_%.h gen_ndr/ndr_%.c: %.idl %.h
-	@echo "Compiling $<"
+	@echo "Generating $@"
 	@$(PIDL) --outputdir=gen_ndr --ndr-parser -- $<
 
 gen_ndr/ndr_%_c.h gen_ndr/ndr_%_c.c: %.idl %.h
-	@echo "Compiling $<"
+	@echo "Generating $@"
 	@$(PIDL) --outputdir=gen_ndr --client -- $<
 
 gen_ndr/ndr_%_s.c: %.idl
-	@echo "Compiling $<"
+	@echo "Generating $@"
 	@$(PIDL) --outputdir=gen_ndr --server -- $<
 
 server/dcesrv_exchange.c: providers/providers_proto.h gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
@@ -221,39 +224,39 @@ libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/
 	@./libmapi/conf/build.sh
 
 bin/schemaIDGUID: utils/schemaIDGUID.o
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS)
 
 bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
 bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
 bin/openchangeclient: 	utils/openchangeclient.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
 bin/openchangepfadmin:	utils/openchangepfadmin.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
 			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 			-lpopt						
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS)
 
 bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
 			utils/backup/openchangebackup.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 			-lpopt						
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS)
 
 bin/exchange2mbox:	utils/exchange2mbox.o				\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) -lpopt $(MAGIC_LIBS)
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS)
 
 distclean: clean $(SWIGDIRS-DISTCLEAN)
@@ -331,19 +334,19 @@ libmapi/proto.h libmapi/proto_private.h: libmapi/nspi.c			\
 	libmapi/util/codepage.c 	\
 	libmapi/socket/interface.c	\
 	libmapi/socket/netif.c		
-	@echo "Generating libmapi proto.h"
+	@echo "Generating $@"
 	@./script/mkproto.pl --private=libmapi/proto_private.h --public=libmapi/proto.h $^
 
 libmapiadmin/proto.h libmapiadmin/proto_private.h: libmapiadmin/mapiadmin.c libmapiadmin/mapiadmin_user.c	
-	@echo "Generating libmapiadmin/proto.h"
+	@echo "Generating $@"
 	@./script/mkproto.pl -private=libmapiadmin/proto_private.h --public=libmapiadmin/proto.h $^
 
 providers/providers_proto.h: providers/emsabp.c
-	@echo "Generating providers/providers_proto.h"
+	@echo "Generating $@"
 	@./script/mkproto.pl --private=providers/providers_proto.h --public=providers/providers_proto.h $^
 
 server/dcesrv_proto.h: server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
-	@echo "Generating server/dcesrv_proto.h"
+	@echo "Generating $@"
 	@./script/mkproto.pl --private=server/dcesrv_proto.h --public=server/dcesrv_proto.h $^
 
 torture/torture_proto.h: torture/mapi_restrictions.c	\
@@ -373,7 +376,7 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 	torture/exchange_createuser.c	\
 	torture/fuzzer_msgstore.c	\
 	torture/openchange.c
-	@echo "Generating torture_proto.h"
+	@echo "Generating $@"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h $^
 
 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o	\
@@ -406,13 +409,13 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o	\
 			gen_ndr/ndr_exchange_c.o			\
 			libmapi/socket/interface.o			\
 			libmapi/socket/netif.o				\
-			libmapi/utf8_convert.yy.c
-	@echo "Compiling $<"
+			libmapi/utf8_convert.yy.o
+	@echo "Linking $@"
 	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
 
 libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	libmapiadmin/mapiadmin_user.o	\
 						libmapiadmin/mapiadmin.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Compiling $<"
+	@echo "Linking $@"
 	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
 
 manpages = \

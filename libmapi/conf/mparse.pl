@@ -505,7 +505,7 @@ sub process_file($)
     my $mapi_file = shift;
     my $outputdir = $opt_outputdir;
 
-    print "\nParsing $mapi_file\n";
+    print "Parsing $mapi_file\n";
     my $contents = FileLoad($mapi_file);
     defined $contents || return undef;
 

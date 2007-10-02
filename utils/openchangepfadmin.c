@@ -264,12 +264,13 @@ int main(int argc, const char *argv[])
 	bool			opt_ipm_list = false;
 	bool			opt_mkdir = false;
 	bool			opt_rmdir = false;
+	bool			opt_dumpdata = false;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_IPM_LIST, 
 	      OPT_MKDIR, OPT_RMDIR, OPT_COMMENT, OPT_DIRCLASS, OPT_ACL, 
 	      OPT_ADDUSER, OPT_RMUSER, OPT_DEBUG, OPT_APASSWORD, OPT_ADESC, 
 	      OPT_ACOMMENT, OPT_AFULLNAME, OPT_ADDRIGHT, OPT_RMRIGHT, 
-	      OPT_MODRIGHT, OPT_USERNAME, OPT_FOLDER};
+	      OPT_MODRIGHT, OPT_USERNAME, OPT_FOLDER, OPT_DUMPDATA};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -291,6 +292,7 @@ int main(int argc, const char *argv[])
 		{"rmright", 0, POPT_ARG_NONE, NULL, OPT_RMRIGHT, "remove MAPI permissions to PF folder"},
 		{"modright", 0, POPT_ARG_STRING, NULL, OPT_MODRIGHT, "modify MAPI permissions to PF folder"},
 		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "set debug level"},
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "Dump the hex data"},
 		{"folder", 0, POPT_ARG_STRING, NULL, OPT_FOLDER, "specify the Public Folder directory"},
 		{"username", 0, POPT_ARG_STRING, NULL, OPT_USERNAME, "specify the username to use"},
 		{ NULL }
@@ -304,6 +306,9 @@ int main(int argc, const char *argv[])
 		switch (opt) {
 		case OPT_DEBUG:
 			opt_debug = poptGetOptArg(pc);
+			break;
+		case OPT_DUMPDATA:
+			opt_dumpdata = true;
 			break;
 		case OPT_PROFILE_DB:
 			opt_profdb = poptGetOptArg(pc);
@@ -406,6 +411,10 @@ int main(int argc, const char *argv[])
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
+	}
+
+	if (opt_dumpdata == true) {
+		global_mapi_ctx->dumpdata = true;
 	}
 
 	/**

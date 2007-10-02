@@ -237,7 +237,7 @@ static const char *get_filename(const char *filename)
  * fetch the user INBOX
  */
 
-#define	MAX_READ_SIZE	0x4000
+#define	MAX_READ_SIZE	0x1000
 
 static bool store_attachment(mapi_object_t obj_attach, const char *filename, uint32_t size, struct oclient *oclient)
 {
@@ -262,23 +262,19 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 
 	path = talloc_asprintf(mem_ctx, "%s/%s", oclient->store_folder, filename);
 	if ((fd = open(path, O_CREAT|O_WRONLY, S_IWUSR|S_IRUSR)) == -1) return false;
+	talloc_free(path);
 
 	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	if (size < MAX_READ_SIZE) {
-		retval = ReadStream(&obj_stream, buf, size, &read_size);
+	read_size = 0;
+	do {
+		retval = ReadStream(&obj_stream, buf, MAX_READ_SIZE, &read_size);
 		if (retval != MAPI_E_SUCCESS) goto error;
 		write(fd, buf, read_size);
-		close(fd);
-	} else {
-		do {
-			retval = ReadStream(&obj_stream, buf, MAX_READ_SIZE, &read_size);
-			if (retval != MAPI_E_SUCCESS) goto error;
-			write(fd, buf, read_size);
-		} while (read_size);
-		close(fd);
-	}
+	} while (read_size);
+	
+	close(fd);
 
 	mapi_object_release(&obj_stream);
 	close(fd);
@@ -567,7 +563,7 @@ static char **collapse_recipients(TALLOC_CTX *mem_ctx, struct oclient *oclient)
  * Write a stream with MAX_READ_SIZE chunks
  */
 
-#define	MAX_READ_SIZE	0x4000
+#define	MAX_READ_SIZE	0x1000
 
 static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_parent, 
 				    mapi_object_t obj_stream, uint32_t mapitag, 
@@ -585,39 +581,29 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 
 	/* WriteStream operation */
 	printf("We are about to write %d bytes in the stream\n", bin.cb);
-	if (bin.cb <= MAX_READ_SIZE) {
-		stream.length = bin.cb;
-		stream.data = talloc_size(mem_ctx, bin.cb);
-		memcpy(stream.data, bin.lpb, bin.cb);
+	size = MAX_READ_SIZE;
+	offset = 0;
+	while (offset <= bin.cb) {
+		stream.length = size;
+		stream.data = talloc_size(mem_ctx, size);
+		memcpy(stream.data, bin.lpb + offset, size);
+		
 		retval = WriteStream(&obj_stream, &stream, &read_size);
 		talloc_free(stream.data);
 		if (retval != MAPI_E_SUCCESS) return false;
-	} else {
-		/* initialize values */
-		size = MAX_READ_SIZE;
-		offset = 0;
-		while (offset <= bin.cb) {
-			stream.length = size;
-			stream.data = talloc_size(mem_ctx, size);
-			memcpy(stream.data, bin.lpb + offset, size);
+		printf(".");
+		fflush(0);
 
-			retval = WriteStream(&obj_stream, &stream, &read_size);
-			talloc_free(stream.data);
-			if (retval != MAPI_E_SUCCESS) return false;
-			printf(".");
-			fflush(0);
+		/* Exit when there is nothing left to write */
+		if (!read_size) return true;
+		
+		offset += read_size;
 
-			/* Exit when there is nothing left to write */
-			if (!read_size) return true;
-
-			offset += read_size;
-			size = read_size;
-
-			if ((offset + size) > bin.cb) {
-				size = bin.cb - offset;
-			}
+		if ((offset + size) > bin.cb) {
+			size = bin.cb - offset;
 		}
 	}
+/* 	} */
 
 	return true;
 }

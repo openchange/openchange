@@ -107,7 +107,7 @@ bool torture_rpc_mapi_fetchappointment(struct torture_context *torture)
 			retval = OpenMessage(&obj_calendar, 
 					     SRowSet.aRow[i].lpProps[0].value.d,
 					     SRowSet.aRow[i].lpProps[1].value.d,
-					     &obj_message);
+					     &obj_message, 0);
 			if (retval != MAPI_E_NOT_FOUND) {
 				retval = GetPropsAll(&obj_message, &properties_array);
 				if (retval == MAPI_E_SUCCESS) {

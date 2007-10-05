@@ -219,7 +219,7 @@ static bool torture_message(mapi_object_t *obj_store,
 	retval = SetProps(&obj_attach, attachprops, nattachprops);
 	oc_test_assert(retval == MAPI_E_SUCCESS);
 
-	SaveChanges(&obj_message, &obj_attach);
+	SaveChanges(&obj_message, &obj_attach, KEEP_OPEN_READONLY);
 
 	mapi_object_release(&obj_attach);
 
@@ -263,7 +263,7 @@ static bool torture_message(mapi_object_t *obj_store,
 	retval = OpenMessage(obj_store,
 			     msgrows.aRow[0].lpProps[0].value.d,
 			     msgrows.aRow[0].lpProps[1].value.d,
-			     &obj_message);
+			     &obj_message, 0);
 	oc_test_assert(retval == MAPI_E_SUCCESS);
 
 	proptags = set_SPropTagArray(mem_ctx, 0x2,

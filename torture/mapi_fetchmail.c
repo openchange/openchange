@@ -120,7 +120,7 @@ bool torture_rpc_mapi_fetchmail(struct torture_context *torture)
 			retval = OpenMessage(&obj_store,
 					     rowset.aRow[i].lpProps[0].value.d,
 					     rowset.aRow[i].lpProps[1].value.d,
-					     &obj_message);
+					     &obj_message, 0);
 
 			if (GetLastError() != MAPI_E_NOT_FOUND) {
 			  retval = GetPropsAll(&obj_message, &properties_array);

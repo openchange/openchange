@@ -29,8 +29,11 @@
  * be used to read the message body.
  */
 
-_PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store, mapi_id_t id_folder, 
-				     mapi_id_t id_message, mapi_object_t *obj_message)
+_PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store, 
+				     mapi_id_t id_folder, 
+				     mapi_id_t id_message, 
+				     mapi_object_t *obj_message,
+				     uint8_t ulFlags)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -51,8 +54,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store, mapi_id_t id_fold
 	request.folder_handle_idx = 0x1;
 	request.max_data = 0xfff;
 	request.folder_id = id_folder;
-	/* Seems to match for read/write */
-	request.message_permissions = 0x3;
+	request.message_permissions = ulFlags;
 	request.message_id = id_message;
 	size = sizeof (uint8_t) + sizeof(uint16_t) + sizeof(mapi_id_t) + sizeof(uint8_t) + sizeof(mapi_id_t);
 

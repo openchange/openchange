@@ -19,6 +19,7 @@
 */
 
 #include <libmapi/libmapi.h>
+#include <samba/popt.h>
 #include <torture/mapi_torture.h>
 #include <torture/torture.h>
 #include <torture/torture_proto.h>
@@ -56,6 +57,7 @@ NTSTATUS init_module(void)
 	torture_suite_add_simple_test(suite, "MAPI-FOLDER", torture_rpc_mapi_folder);
 	torture_suite_add_simple_test(suite, "MAPI-PROP", torture_rpc_mapi_prop);
 	torture_suite_add_simple_test(suite, "MAPI-MESSAGE", torture_rpc_mapi_message);
+	torture_suite_add_simple_test(suite, "MAPI-NAMEDPROPS", torture_rpc_mapi_namedprops);
 	/* MAPI Fuzzer torture tests */
 	torture_suite_add_simple_test(suite, "FUZZER-MSGSTORE", torture_fuzzer_msgstore);
 	/* Exchange Administration torture tests */
@@ -65,4 +67,59 @@ NTSTATUS init_module(void)
 
 	torture_register_suite(suite);
 	return NT_STATUS_OK;
+}
+
+/**
+ * Obtain the DCE/RPC binding context associated with a torture context.
+ *
+ * @param tctx Torture context
+ * @param binding Pointer to store DCE/RPC binding
+ */
+NTSTATUS torture_rpc_binding(struct torture_context *tctx,
+			     struct dcerpc_binding **binding)
+{
+	NTSTATUS status;
+	const char *binding_string = torture_setting_string(tctx, "binding",
+							    NULL);
+
+	if (binding_string == NULL) {
+		torture_comment(tctx,
+				"You must specify a DCE/RPC binding string\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = dcerpc_parse_binding(tctx, binding_string, binding);
+	if (NT_STATUS_IS_ERR(status)) {
+		DEBUG(0,("Failed to parse dcerpc binding '%s'\n",
+			 binding_string));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/**
+ * open a rpc connection to the chosen binding string
+ */
+_PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
+				struct dcerpc_pipe **p,
+				const struct ndr_interface_table *table)
+{
+	NTSTATUS status;
+	struct dcerpc_binding *binding;
+
+	status = torture_rpc_binding(tctx, &binding);
+	if (NT_STATUS_IS_ERR(status))
+		return status;
+
+	status = dcerpc_pipe_connect_b(tctx,
+				     p, binding, table,
+				     cmdline_credentials, NULL);
+ 
+	if (NT_STATUS_IS_ERR(status)) {
+		printf("Failed to connect to remote server: %s %s\n",
+			   dcerpc_binding_string(tctx, binding), nt_errstr(status));
+	}
+
+	return status;
 }

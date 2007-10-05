@@ -107,6 +107,19 @@
 #define ATTACH_EMBEDDED_MSG	5
 #define ATTACH_OLE		6
 
+/* Creation flags */
+#define	MAPI_CREATE		0x2
+
+/* SaveChanges flags */
+#define KEEP_OPEN_READONLY	0x1
+#define KEEP_OPEN_READWRITE	0x2
+#define FORCE_SAVE		0x4
+/* #define MAPI_DEFERRED_ERRORS 0x8 (already defined in the IDL */
+
+/* OpenMessage flags */
+#define	MAPI_MODIFY             0x1
+/* see MAPI_CREATE above */
+
 /*
  * ENTRYID flags
  */
@@ -121,7 +134,7 @@
 /* definition for abFlags[1] */
 #define MAPI_COMPOUND           0x80
 
-/**
+/*
  * Priority
  */
 
@@ -129,7 +142,7 @@
 #define	PRIORITY_NORMAL		0
 #define	PRIORITY_HIGH		1
 
-/**
+/*
  * Appointment flags with PR_APPOINTMENT_BUSY_STATUS
  */
 
@@ -138,13 +151,13 @@
 #define	BUSY_STATUS_BUSY	2
 #define	BUSY_STATUS_OUTOFOFFICE	3
 
-/**
+/*
  * Appointment meeting status
  */
 #define MEETING_STATUS_NONMEETING	0
 #define MEETING_STATUS_MEETING		1
 
-/**
+/*
  * Task status
  */
 
@@ -154,7 +167,7 @@
 #define	olTaskWaiting			3
 #define	olTaskDeferred			4
 
-/**
+/*
  * Task OwnerShip
  */
 #define	olNewTask			0
@@ -195,5 +208,19 @@
 #define	IPF_STICKYNOTE			"IPF.StickyNote"
 #define	IPF_TASK			"IPF.Task"
 #define	IPF_POST			"IPF.Post"
+
+/*
+ * Common OLEGUID
+ */
+
+#define	PSETID_Appointment	"00062002-0000-0000-c000-000000000046"
+#define	PSETID_Task		"00062003-0000-0000-c000-000000000046"
+#define	PSETID_Address		"00062004-0000-0000-c000-000000000046"
+#define	PSETID_Common		"00062008-0000-0000-c000-000000000046"
+#define	PSETID_Note		"0006200e-0000-0000-c000-000000000046"
+#define	PSETID_Log		"0006200a-0000-0000-c000-000000000046"
+#define	PS_PUBLIC_STRINGS	"00020329-0000-0000-c000-000000000046"
+#define	PS_INTERNET_HEADERS	"00020386-0000-0000-c000-000000000046"
+
 
 #endif /*!__MAPIDEFS_H__ */

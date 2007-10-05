@@ -1,5 +1,7 @@
 #include "idl_types.h"
 
+import "misc.idl";
+
 /*
    http://support.microsoft.com/default.aspx?scid=KB;en-us;q159298
    Any UUID starting with:
@@ -257,15 +259,7 @@ System Attendant Private Interface
 	/*****************/
 	/* Function 0x05 */
 
-	
-
-	typedef struct {
-		[unique] MAPIUID *lpguid;
-		uint32 ulKind;
-		uint32 lID; /* this is actually a union in mapidefs.h */
-	} MAPINAMEID;
-
-/* Restriction types */
+	/* Restriction types */
 #define RES_AND            0
 #define RES_OR             1
 #define RES_NOT            2
@@ -682,7 +676,10 @@ System Attendant Private Interface
 			op_MAPI_QueryColumns		= 0x37,
 			op_MAPI_GetTable		= 0x3e,
 			op_MAPI_ModifyTable		= 0x40,
+			op_MAPI_GetNamesFromIDs		= 0x55,
+			op_MAPI_GetIDsFromNames		= 0x56,
 			op_MAPI_EmptyFolder		= 0x58,
+			op_MAPI_GetAllNamesFromIDs	= 0x5f,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
 			op_MAPI_OpenMsgStore		= 0xfe
 		} MAPI_OPNUM;
@@ -1314,7 +1311,7 @@ System Attendant Private Interface
 	/* EcDoRpc Function 0x25 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8 handle_idx;
-		uint8 unknown;
+		uint8 ulFlags;
 	} SaveChanges_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1533,6 +1530,52 @@ System Attendant Private Interface
 	} ModifyTable_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x55 */
+
+	typedef [enum8bit] enum {
+		MNID_ID = 0,
+		MNID_STRING = 1
+	} ulKind;
+
+	typedef struct {
+		uint8				length;
+		[flag(STR_NULLTERM)] string	lpwstrName;
+	} LPWSTR;
+
+	typedef [nodiscriminant] union {
+		[case(MNID_ID)] uint32		lid;
+		[case(MNID_STRING)] LPWSTR	lpwstr;
+	} Kind;
+	
+	typedef [flag(NDR_NOALIGN)] struct {
+		ulKind				ulKind;
+		GUID				lpguid;
+		[switch_is(ulKind)] Kind	kind;
+	} MAPINAMEID;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		MAPITAGS	ulPropTag;
+	} GetNamesFromIDs_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		count;
+		MAPINAMEID	nameid[count];
+	} GetNamesFromIDs_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x56 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		ulFlags;
+		uint16		count;
+		MAPINAMEID	nameid[count];
+	} GetIDsFromNames_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		count;
+		uint16		propID[count];
+	} GetIDsFromNames_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x58 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		unknown;
@@ -1541,6 +1584,18 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
 	} EmptyFolder_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x5f */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		propID;
+	} GetAllNamesFromIDs_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		count;
+		uint16		propID[count];
+		MAPINAMEID	nameid[count];
+	} GetAllNamesFromIDs_repl;
   
 	/*************************/
 	/* EcDoRpc Function 0xFE */
@@ -1624,7 +1679,10 @@ System Attendant Private Interface
 		[case(op_MAPI_QueryColumns)] QueryColumns_req mapi_QueryColumns;
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
+		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
+		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
+		[case(op_MAPI_GetAllNamesFromIDs)] GetAllNamesFromIDs_req mapi_GetAllNamesFromIDs;
 		[case(op_MAPI_OpenMsgStore)] OpenMsgStore_req mapi_OpenMsgStore;
 	} EcDoRpc_MAPI_REQ_UNION;
 
@@ -1666,7 +1724,10 @@ System Attendant Private Interface
 		[case(op_MAPI_QueryColumns)] QueryColumns_repl mapi_QueryColumns;
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
+		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
+		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;
+		[case(op_MAPI_GetAllNamesFromIDs)] GetAllNamesFromIDs_repl mapi_GetAllNamesFromIDs;
 		[case(op_MAPI_OpenMsgStore)] OpenMsgStore_repl mapi_OpenMsgStore;
 
 	} EcDoRpc_MAPI_REPL_UNION;

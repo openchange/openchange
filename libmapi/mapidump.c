@@ -26,8 +26,14 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 {
 	const char	*proptag;
 	const void	*data;
+	TALLOC_CTX	*mem_ctx = NULL;
 
 	proptag = get_proptag_name(lpProp.ulPropTag);
+	if (!proptag) {
+		mem_ctx = talloc_init("mapidump_SPropValue");
+		proptag = talloc_asprintf(mem_ctx, "0x%.8x", lpProp.ulPropTag);
+	}
+	
 
 	switch(lpProp.ulPropTag & 0xFFFF) {
 	case PT_BOOLEAN:
@@ -58,6 +64,10 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		break;
 	}
 
+	if (mem_ctx) {
+		talloc_free(mem_ctx);
+	}
+
 }
 
 _PUBLIC_ void mapidump_SPropTagArray(struct SPropTagArray *proptags)
@@ -69,7 +79,11 @@ _PUBLIC_ void mapidump_SPropTagArray(struct SPropTagArray *proptags)
 
 	for (count = 0; count != proptags->cValues; count++) {
 		proptag = get_proptag_name(proptags->aulPropTag[count]);
-		printf("%s\n", proptag);
+		if (proptag) {
+			printf("%s\n", proptag);
+		} else {
+			printf("0x%.8x\n", proptags->aulPropTag[count]);
+		}
 	}
 }
 

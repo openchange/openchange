@@ -211,7 +211,7 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 	}
 
 	/* message->SaveChanges() */
-	retval = SaveChanges(&obj_message, &obj_attach);
+	retval = SaveChanges(&obj_message, &obj_attach, KEEP_OPEN_READONLY);
 	mapi_errstr("SaveChanges", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

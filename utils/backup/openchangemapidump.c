@@ -211,7 +211,7 @@ static enum MAPISTATUS mapidump_walk_content(TALLOC_CTX *mem_ctx,
 			fid = (const uint64_t *) get_SPropValue_SRow_data(&rowset.aRow[i], PR_FID);
 			mid = (const uint64_t *) get_SPropValue_SRow_data(&rowset.aRow[i], PR_MID);
 			/* Open Message */
-			retval = OpenMessage(obj_folder, *fid, *mid, &obj_message);
+			retval = OpenMessage(obj_folder, *fid, *mid, &obj_message, 0);
 			if (GetLastError() == MAPI_E_SUCCESS) {
 				retval = GetPropsAll(&obj_message, &props);
 				if (GetLastError() == MAPI_E_SUCCESS) {

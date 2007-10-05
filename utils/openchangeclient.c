@@ -352,7 +352,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 			retval = OpenMessage(obj_store,
 					     rowset.aRow[i].lpProps[0].value.d,
 					     rowset.aRow[i].lpProps[1].value.d,
-					     &obj_message);
+					     &obj_message, 0);
 			if (GetLastError() == MAPI_E_SUCCESS) {
 				retval = GetPropsAll(&obj_message, &properties_array);
 				if (retval != MAPI_E_SUCCESS) return false;
@@ -774,7 +774,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			openchangeclient_stream(mem_ctx, obj_attach, obj_stream, PR_ATTACH_DATA_BIN, 2, oclient->attach[i].bin);
 
 			/* Save changes */
-			retval = SaveChanges(&obj_message, &obj_attach);
+			retval = SaveChanges(&obj_message, &obj_attach, KEEP_OPEN_READWRITE);
 			if (retval != MAPI_E_SUCCESS) return retval;
 
 			mapi_object_release(&obj_attach);
@@ -1318,7 +1318,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 		retval = OpenMessage(&obj_folder, 
 				     SRowSet.aRow[i].lpProps[0].value.d,
 				     SRowSet.aRow[i].lpProps[1].value.d,
-				     &obj_message);
+				     &obj_message, 0);
 		if (retval != MAPI_E_NOT_FOUND) {
 			retval = GetPropsAll(&obj_message, &properties_array);
 			if (retval == MAPI_E_SUCCESS) {
@@ -1412,7 +1412,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 					retval = OpenMessage(obj_store,
 							     rowset.aRow[i].lpProps[0].value.d,
 							     rowset.aRow[i].lpProps[1].value.d,
-							     &obj_message);
+							     &obj_message, 0);
 					if (GetLastError() == MAPI_E_SUCCESS) {
 						retval = GetPropsAll(&obj_message, &properties_array);
 						if (retval != MAPI_E_SUCCESS) return false;

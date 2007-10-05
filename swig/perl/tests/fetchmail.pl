@@ -111,7 +111,7 @@ sub mapi_fetchmail()
 	    my $mid = int64_value(lw_getID($SRowSet, $mapi::PR_MID, $i));
 	    
 	    my $obj_message = new_mapi_object();
-	    $retval = OpenMessage($obj_store, $fid, $mid, $obj_message);
+	    $retval = OpenMessage($obj_store, $fid, $mid, $obj_message, $mapi::MAPI_CREATE|$mapi::MAPI_MODIFY);
 	    
 	    if (GetLastError() != $mapi::MAPI_E_NOT_FOUND) {
 		my $props = new_mapi_SPropValue_array();

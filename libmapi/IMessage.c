@@ -542,7 +542,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 
 	size = 0;
 
-	/* Fill the SubmitMessage operation */
+	/* Fill the SaveChangesMessage operation */
 	request.handle_idx = 0x1;
 	request.prop_nb = 0xa;
 	size += sizeof(uint16_t);

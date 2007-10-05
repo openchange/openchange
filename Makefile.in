@@ -53,8 +53,9 @@ LIBMAPIADMIN_CFLAGS=@SAMR_CFLAGS@
 MAGIC_LIBS=@MAGIC_LIBS@
 
 all: 	\
-	gen_ndr gen_ndr/ndr_exchange.h libmapi/proto.h			\
-	torture/torture_proto.h	providers/providers_proto.h server/dcesrv_proto.h	\
+	gen_ndr gen_ndr/ndr_exchange.h libmapi/proto.h		\
+	torture/torture_proto.h					\
+	providers/providers_proto.h server/dcesrv_proto.h	\
 	libmapiadmin/proto.h					\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)			\
 	libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)		\
@@ -168,10 +169,11 @@ torture/openchange.$(SHLIBEXT):	torture/nspi_profile.o		\
 				torture/mapi_permissions.o	\
 				torture/mapi_createuser.o	\
 				torture/exchange_createuser.o	\
+				torture/mapi_namedprops.o	\
 				torture/openchange.o		\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
+	$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
 libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
 	@echo "Generating $@"
@@ -275,7 +277,6 @@ realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
 	rmdir gen_ndr
 
 clean:	$(SWIGDIRS-CLEAN)
-	rm -f libmapi/generated/*
 	rm -f libmapi/*.o libmapiadmin/*.o
 	rm -f libmapi/utf8_convert.yy.c
 	rm -f libmapi/tests/*.o
@@ -294,7 +295,6 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f libmapiadmin/proto.h
 	rm -f libmapiadmin/proto_private.h
 	rm -f server/dcesrv_proto.h
-	rm -f libmapi/pr
 	rm -f providers/providers_proto.h
 	rm -f torture/*.$(SHLIBEXT) server/*.$(SHLIBEXT)
 	rm -f torture/torture_proto.h
@@ -372,6 +372,7 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 	torture/mapi_sendtasks.c	\
 	torture/mapi_common.c		\
 	torture/mapi_permissions.c	\
+	torture/mapi_namedprops.c	\
 	torture/mapi_createuser.c	\
 	torture/exchange_createuser.c	\
 	torture/fuzzer_msgstore.c	\
@@ -398,7 +399,8 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o	\
 			libmapi/mapi_object.o				\
 			libmapi/mapitags.o				\
 			libmapi/mapidump.o				\
-			libmapi/mapicode.o libmapi/emsmdb.o		\
+			libmapi/mapicode.o 				\
+			libmapi/emsmdb.o				\
 			libmapi/nspi.o 					\
 			libmapi/simple_mapi.o				\
 			libmapi/util/locale.o 				\

@@ -29,12 +29,6 @@
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
 
-/* FIXME: Should be part of Samba's data: */
-NTSTATUS torture_rpc_connection(TALLOC_CTX *parent_ctx, 
-                                struct dcerpc_pipe **p, 
-                                const struct ndr_interface_table *table);
-
-
 bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 {
 	NTSTATUS                status;

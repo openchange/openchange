@@ -675,7 +675,7 @@ int main(int argc, const char *argv[])
 			retval = OpenMessage(&obj_store, 
 					     rowset.aRow[i].lpProps[0].value.d, 
 					     rowset.aRow[i].lpProps[1].value.d, 
-					     &obj_message);
+					     &obj_message, 0);
 			if (GetLastError() == MAPI_E_SUCCESS) {
 				retval = GetPropsAll(&obj_message, &properties_array);
 				if (retval != MAPI_E_SUCCESS) return false;

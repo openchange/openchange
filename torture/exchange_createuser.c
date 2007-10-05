@@ -295,7 +295,8 @@ const struct dom_sid *torture_join_user_sid(struct test_join *join)
 	return join->user_sid;
 }
 
-struct test_join *torture_create_testuser(const char *username, 
+struct test_join *torture_create_testuser(struct torture_context *torture,
+					  const char *username, 
 					  const char *domain,
 					  uint16_t acct_type,
 					  const char **random_password)
@@ -338,7 +339,7 @@ struct test_join *torture_create_testuser(const char *username,
 					     cmdline_credentials, NULL);
 					     
 	} else {
-		status = torture_rpc_connection(join, 
+		status = torture_rpc_connection(torture, 
 						&join->p, 
 						&ndr_table_samr);
 	}

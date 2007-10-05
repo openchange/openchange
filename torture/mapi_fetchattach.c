@@ -174,7 +174,10 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 		 */
 		id_folder = rows_msgs.aRow[i_msg].lpProps[0].value.d;
 		id_message = rows_msgs.aRow[i_msg].lpProps[1].value.d;
-		retval = OpenMessage(&obj_store, id_folder, id_message, &obj_message);
+		retval = OpenMessage(&obj_store, 
+				     id_folder, 
+				     id_message, 
+				     &obj_message, 0);
 		mapi_errstr("OpenMessage", GetLastError());
 		if (retval == MAPI_E_SUCCESS) {
 

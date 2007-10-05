@@ -1,0 +1,45 @@
+# OOM	                   propID propName  propType	  Kind	      OLEGUID
+
+### Address named Properties
+FileAs                     0x8005 NULL      PT_STRING8    MNID_ID     PSETID_Address
+HomeAddress                0x801A NULL      PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddress            0x801B NULL      PT_STRING8    MNID_ID     PSETID_Address
+OtherAddress               0x801C NULL      PT_STRING8    MNID_ID     PSETID_Address
+SelectedMailingAddress     0x8022 NULL      PT_LONG       MNID_ID     PSETID_Address
+Journal                    0x8025 NULL      PT_BOOLEAN    MNID_ID     PSETID_Address
+WebPage                    0x802B NULL      PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddressStreet      0x8045 NULL      PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddressCity        0x8046 NULL      PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddressState       0x8047 NULL      PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddressPostalCode  0x8048 NULL      PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddressCountry     0x8049 NULL      PT_STRING8    MNID_ID     PSETID_Address
+IMAddress                  0x8062 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Email1DisplayName          0x8080 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Email1AddressType          0x8082 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Email1Address              0x8083 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Email1DisplayName          0x8084 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Email1EntryID              0x8085 NULL      PT_BINARY     MNID_ID     PSETID_Address
+Fax1AddrType               0x80B2 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Fax1EmailAddress           0x80B3 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Fax1OriginalDisplayName    0x80B4 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Fax2AddrType               0x80C2 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Fax2EmailAddress           0x80C3 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Fax2OriginalDisplayName    0x80C4 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Fax2OriginalEntryID        0x80C5 NULL      PT_BINARY     MNID_ID     PSETID_Address
+Fax3AddrType               0x80D2 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Fax3EmailAddress           0x80D3 NULL      PT_STRING8    MNID_ID     PSETID_Address
+Fax3OriginalDisplayName    0x80D4 NULL      PT_STRING8    MNID_ID     PSETID_Address
+
+
+### Common Named properties
+ReminderMinutesBeforeStart 0x8501 NULL      PT_LONG       MNID_ID     PSETID_Common
+ReminderSet                0x8503 NULL      PT_BOOLEAN    MNID_ID     PSETID_Common
+Private	                   0x8506 NULL      PT_BOOLEAN    MNID_ID     PSETID_Common
+NoAging                    0x850E NULL      PT_BOOLEAN    MNID_ID     PSETID_Common
+Contacts                   0x853A NULL      PT_MV_STRING8 MNID_ID     PSETID_Common
+OutlookInternalVersion     0x8552 NULL      PT_LONG       MNID_ID     PSETID_Common
+OutlookVersion             0x8554 NULL      PT_STRING8    MNID_ID     PSETID_Common
+
+
+### PS_PUBLIC_STRINGS
+Keywords                   0x0000 Keywords  PT_MV_STRING8 MNID_STRING PS_PUBLIC_STRINGS

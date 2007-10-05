@@ -29,7 +29,8 @@
  * object.
  */
 
-_PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj, struct SPropTagArray *tags,
+_PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj, 
+				  struct SPropTagArray *tags,
 				  struct SPropValue **vals, uint32_t *cn_vals)
 {
 	struct mapi_request	*mapi_request;
@@ -167,7 +168,8 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *sprops,
  */
 
 _PUBLIC_ enum MAPISTATUS SaveChanges(mapi_object_t *obj_parent, 
-				     mapi_object_t *obj_child)
+				     mapi_object_t *obj_child,
+				     uint8_t flags)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -188,7 +190,7 @@ _PUBLIC_ enum MAPISTATUS SaveChanges(mapi_object_t *obj_parent,
 
 	/* Fill the SaveChanges operation */
 	request.handle_idx = 0x0;
-	request.unknown = 0x1;
+	request.ulFlags = flags;
 	size += sizeof(uint8_t) + sizeof(uint8_t);
 
 	/* Fill the MAPI_REQ request */
@@ -393,5 +395,220 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+ * GetNamesFromIDs: provides the property names that correspond to one
+ * or more property identifiers.
+ */
+_PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
+					 uint32_t ulPropTag,
+					 uint16_t *count,
+					 struct MAPINAMEID **nameid)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetNamesFromIDs_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size= 0;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	/* Initialization */
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("GetNamesFromIDs");
+	size = 0;
+
+	/* Fill the GetNamesFromIDs operation */
+	request.ulPropTag = ulPropTag;
+	size += sizeof (uint32_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetNamesFromIDs;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_GetNamesFromIDs = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, 
+				    mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Fill in count */
+	*count = mapi_response->mapi_repl->u.mapi_GetNamesFromIDs.count;
+
+	/* Fill MAPINAMEID struct */
+	*nameid = mapi_response->mapi_repl->u.mapi_GetNamesFromIDs.nameid;
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+ * GetIDsFromNames: provides the property identifiers that correspond
+ * to one or more property names.
+ */
+_PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
+					 uint16_t count,
+					 struct MAPINAMEID *nameid,
+					 uint32_t ulFlags,
+					 struct SPropTagArray **proptags)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetIDsFromNames_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+	uint32_t			i;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!proptags[0], MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Initialization */
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("GetIDsFromNames");
+	size = 0;
+	
+	/* Fill the GetIDsFromNames operation */
+	request.ulFlags = ulFlags;
+	request.count = count;
+	size += sizeof (uint8_t) + sizeof (uint16_t);
+
+	request.nameid = nameid;
+	for (i = 0; i < count; i++) {
+		size += sizeof (uint8_t) + sizeof (request.nameid[i].lpguid);
+		switch (request.nameid[i].ulKind) {
+		case MNID_ID:
+			size += sizeof (request.nameid[i].kind.lid);
+			break;
+		case MNID_STRING:
+			size += strlen(request.nameid[i].kind.lpwstr.lpwstrName) * 2 + 2;
+			size += sizeof (uint8_t);
+			break;
+		default:
+			break;
+		}
+	}
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetIDsFromNames;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_GetIDsFromNames = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, 
+				    mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Fill the SPropTagArray */
+	proptags[0]->cValues = mapi_response->mapi_repl->u.mapi_GetIDsFromNames.count;
+	proptags[0]->aulPropTag = talloc_array((TALLOC_CTX *)proptags[0], uint32_t, proptags[0]->cValues);
+	for (i = 0; i < proptags[0]->cValues; i++) {
+		proptags[0]->aulPropTag[i] = (mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i] << 16) | PT_UNSPECIFIED;
+	}
+	
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/*
+ * variant of GetNamesFromIDs. Work almost like GetNamesFromIDs except
+ * that it can take ulPropTag = 0 and return the whole set of named
+ * properties for a given object
+ */
+_PUBLIC_ enum MAPISTATUS GetAllNamesFromIDs(mapi_object_t *obj,
+					    uint16_t ulPropTag,
+					    uint16_t *count,
+					    uint16_t **propID,
+					    struct MAPINAMEID **nameid)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetAllNamesFromIDs_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	/* Initialization */
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("GetAllNamesFromIDs");
+	size = 0;
+
+	/* Fill the QueryNamesFromIDs operation */
+	request.propID = ulPropTag;
+	size += sizeof (uint16_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetAllNamesFromIDs;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_GetAllNamesFromIDs = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx,
+				    mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Fill [out] parameters */
+	*count = mapi_response->mapi_repl->u.mapi_GetAllNamesFromIDs.count;
+	*propID = mapi_response->mapi_repl->u.mapi_GetAllNamesFromIDs.propID;
+	*nameid = mapi_response->mapi_repl->u.mapi_GetAllNamesFromIDs.nameid;
+
+	talloc_free(mem_ctx);
+	
 	return MAPI_E_SUCCESS;
 }

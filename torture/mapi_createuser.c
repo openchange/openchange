@@ -54,7 +54,8 @@ bool torture_mapi_createuser(struct torture_context *torture)
 	profile = global_mapi_ctx->session->profile;
 
 	/* Create the user in the AD */
-	user_ctx = torture_create_testuser(username, profile->domain, 
+	user_ctx = torture_create_testuser(torture, username, 
+					   profile->domain, 
 					   ACB_NORMAL,
 					   (const char **)&user_password);
 

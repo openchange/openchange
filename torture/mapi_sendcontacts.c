@@ -44,7 +44,9 @@ bool torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 	mapi_object_t		obj_contacts;
 	mapi_object_t		obj_table;
 	mapi_object_t		obj_message;
-	struct SPropValue	props[4];
+	struct SPropValue	props[5];
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray;
 
 	if (!cardname) return false;
 
@@ -84,12 +86,28 @@ bool torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 	mapi_errstr("CreateMessage", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (const void *) cardname);
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "FileAs", PSETID_Address);
+	mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
+
+
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(&obj_contacts, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+
+	set_SPropValue_proptag(&props[0], SPropTagArray->aulPropTag[0], (const void *) cardname);
 	set_SPropValue_proptag(&props[1], PR_DISPLAY_NAME, (const void *) fullname);
 	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Contact");
 	set_SPropValue_proptag(&props[3], PR_NORMALIZED_SUBJECT, (const void *) cardname);
-	retval = SetProps(&obj_message, props, 4);
+	set_SPropValue_proptag(&props[4], SPropTagArray->aulPropTag[1], (const void *) cardname);
+	retval = SetProps(&obj_message, props, 5);
 	mapi_errstr("SetProps", GetLastError());
+	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_contacts, &obj_message);

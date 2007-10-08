@@ -341,7 +341,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAP
 	uint16_t		*pt_i2;
 	uint64_t		*pt_i8;
 	uint32_t		*pt_long;
-	uint16_t		*pt_boolean;
+	uint8_t			*pt_boolean;
 	struct FILETIME		*pt_filetime;
 	struct SBinary_short	pt_binary;
 	struct SBinary		*sbin;
@@ -354,8 +354,8 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAP
 
 	switch(tag & 0xFFFF) {
 	case PT_BOOLEAN:
-		pt_boolean = talloc_zero(mem_ctx, uint16_t);
-		ndr_pull_uint16(ndr, NDR_SCALARS, pt_boolean);
+		pt_boolean = talloc_zero(mem_ctx, uint8_t);
+		ndr_pull_uint8(ndr, NDR_SCALARS, pt_boolean);
 		*offset = ndr->offset;
 		return (void *) pt_boolean;
 	case PT_I2:
@@ -442,13 +442,13 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 
 void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPropTagArray *proptags, DATA_BLOB *content, uint8_t layout, uint8_t align)
 {
-	struct SRow	*rows;
-	struct SPropValue *lpProps;
-	uint32_t	idx;
-	uint32_t	prop;
-	uint32_t	offset = 0;
+	struct SRow		*rows;
+	struct SPropValue	*lpProps;
+	uint32_t		idx;
+	uint32_t		prop;
+	uint32_t		offset = 0;
 	const void		*data;
-	uint32_t	row_count;
+	uint32_t		row_count;
 
 	/* caller allocated */
 	rows = rowset->aRow;

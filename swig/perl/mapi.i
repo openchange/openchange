@@ -114,7 +114,7 @@ extern uint32_t		GetLastError(void);
 extern void		mapi_errstr(const char *function, uint32_t mapi_code);
 
 %cstring_output_allocate(char **s, $1);
-extern uint32_t		GetDefaultProfile(const char **s, uint32_t flags);
+extern uint32_t		GetDefaultProfile(const char **s);
 
 extern uint32_t		GetDefaultFolder(mapi_object_t *obj, uint64_t *folder, const uint32_t folder_id);
 extern uint32_t		OpenFolder(mapi_object_t *obj, uint64_t folder, mapi_object_t *obj2);

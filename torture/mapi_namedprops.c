@@ -105,6 +105,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 	/* We just need to open the first message for this test */
 	if (SRowSet.cRows == 0) {
 		printf("No messages in Mailbox\n");
+		talloc_free(mem_ctx);
 		return false;
 	}
 
@@ -149,10 +150,10 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 	 * This function seems to be the only one accepting 0 for
 	 * input ulPropTag and returning the whole set of named properties
 	 */
-	printf("\n\n2. GetAllNamesFromIDs\n");
+	printf("\n\n2. QueryNamesFromIDs\n");
 	nameid = talloc_zero(mem_ctx, struct MAPINAMEID);
 	propIDs = talloc_zero(mem_ctx, uint16_t);
-	retval = GetAllNamesFromIDs(&obj_message, 0, &count, &propIDs, &nameid);
+	retval = QueryNamesFromIDs(&obj_message, 0, &count, &propIDs, &nameid);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	for (i = 0; i < count; i++) {
@@ -268,6 +269,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapidump_SPropValue(propvals[0], "\t");
+	MAPIFreeBuffer(propvals);
 
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_folder);

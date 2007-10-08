@@ -212,7 +212,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 
 	lpProp = get_SPropValue_SRowSet(&rowset, PR_EMS_AB_HOME_MDB);
 	if (lpProp) {
-		nspi->servername = x500_get_servername(nspi->mem_ctx, lpProp->value.lpszA);
+		nspi->servername = x500_get_servername(lpProp->value.lpszA);
 		if (profname) {
 			mapi_profile_add_string_attr(profname, "ServerName", nspi->servername);
 			set_profile_attribute(profname, rowset, PR_EMS_AB_HOME_MDB, "HomeMDB");

@@ -210,7 +210,7 @@ enum MAPISTATUS torture_load_profile(TALLOC_CTX *mem_ctx)
 
 	profname = lp_parm_string(global_loadparm, NULL, "mapi", "profile");
 	if (!profname) {
-		retval = GetDefaultProfile(&profname, 0);
+		retval = GetDefaultProfile(&profname);
 		MAPI_RETVAL_IF(retval, retval, NULL);
 	}
 
@@ -253,7 +253,7 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
 
 	profname = lp_parm_string(global_loadparm, NULL, "mapi", "profile");
 	if (!profname) {
-		retval = GetDefaultProfile(&profname, 0);
+		retval = GetDefaultProfile(&profname);
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Please specify a valid profile\n"));
 			return NULL;

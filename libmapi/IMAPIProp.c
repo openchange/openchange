@@ -554,16 +554,16 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
  * that it can take ulPropTag = 0 and return the whole set of named
  * properties for a given object
  */
-_PUBLIC_ enum MAPISTATUS GetAllNamesFromIDs(mapi_object_t *obj,
-					    uint16_t ulPropTag,
-					    uint16_t *count,
-					    uint16_t **propID,
-					    struct MAPINAMEID **nameid)
+_PUBLIC_ enum MAPISTATUS QueryNamesFromIDs(mapi_object_t *obj,
+					   uint16_t ulPropTag,
+					   uint16_t *count,
+					   uint16_t **propID,
+					   struct MAPINAMEID **nameid)
 {
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
-	struct GetAllNamesFromIDs_req	request;
+	struct QueryNamesFromIDs_req	request;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size;
@@ -574,7 +574,7 @@ _PUBLIC_ enum MAPISTATUS GetAllNamesFromIDs(mapi_object_t *obj,
 
 	/* Initialization */
 	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("GetAllNamesFromIDs");
+	mem_ctx = talloc_init("QueryNamesFromIDs");
 	size = 0;
 
 	/* Fill the QueryNamesFromIDs operation */
@@ -583,10 +583,10 @@ _PUBLIC_ enum MAPISTATUS GetAllNamesFromIDs(mapi_object_t *obj,
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_GetAllNamesFromIDs;
+	mapi_req->opnum = op_MAPI_QueryNamesFromIDs;
 	mapi_req->mapi_flags = 0;
 	mapi_req->handle_idx = 0;
-	mapi_req->u.mapi_GetAllNamesFromIDs = request;
+	mapi_req->u.mapi_QueryNamesFromIDs = request;
 	size += 5;
 
 	/* Fill the mapi_request structure */
@@ -604,9 +604,9 @@ _PUBLIC_ enum MAPISTATUS GetAllNamesFromIDs(mapi_object_t *obj,
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Fill [out] parameters */
-	*count = mapi_response->mapi_repl->u.mapi_GetAllNamesFromIDs.count;
-	*propID = mapi_response->mapi_repl->u.mapi_GetAllNamesFromIDs.propID;
-	*nameid = mapi_response->mapi_repl->u.mapi_GetAllNamesFromIDs.nameid;
+	*count = mapi_response->mapi_repl->u.mapi_QueryNamesFromIDs.count;
+	*propID = mapi_response->mapi_repl->u.mapi_QueryNamesFromIDs.propID;
+	*nameid = mapi_response->mapi_repl->u.mapi_QueryNamesFromIDs.nameid;
 
 	talloc_free(mem_ctx);
 	

@@ -1,8 +1,7 @@
 /*
  *  OpenChange MAPI implementation.
- *  Status codes returned my MAPI
  *
- *  Copyright (C) Julien Kerihuel 2005.
+ *  Copyright (C) Julien Kerihuel 2007.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,26 +18,23 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef	_MAPI_H
-#define	_MAPI_H
+#ifndef	__MAPI_NAMEID_H__
+#define	__MAPI_NAMEID_H__
 
-/*
-  MAPI opnums
- */
-
-#define	OPNUM_Unknown		"Unknown opnum"
-#define	OPNUM_LEN		1
-
-#define	OPNUM_MAPI_OPENFOLDER		0x02
-#define OPNUM_MAPI_GETCONTENTSTABLE	0x05
-#define	OPNUM_MAPI_OPEN_MSGSTORE	0xFE
-#define	OPNUM_MAPI_SETCOLUMNS		0x12
-#define	OPNUM_MAPI_QUERYROWS		0x15
-#define	OPNUM_MAPI_GETRECEIVEFOLDER	0x27
-
-struct	opnums {
-	uint8_t		opnum;
-	const char	*name;
+struct mapi_nameid_tags
+{
+	const char          *OOM;
+	uint16_t            lid;
+	const char          *lpwstrName;
+	uint32_t            propType;
+	uint8_t             ulKind;
+	const char          *OLEGUID;
 };
 
-#endif /*!_MAPI_H */
+struct mapi_nameid {
+	struct MAPINAMEID	*nameid;
+	uint16_t		count;
+	struct mapi_nameid_tags	*entries;
+};
+
+#endif /* __MAPI_NAMEID_H__ */

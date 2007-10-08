@@ -55,6 +55,8 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	mapi_object_t		obj_calendar;
 	mapi_object_t		obj_message;
 	struct SPropValue	props[CN_PROPS];
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray;
 	NTTIME			nt;
 	struct tm		tm;
 	struct FILETIME		*start_date;
@@ -100,8 +102,26 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	mapi_errstr("CreateMessage", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "Location", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "BusyStatus", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "MeetingStatus", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "CommonStart", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "CommonEnd", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "Label", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "ReminderMinutesBeforeStart", PSETID_Common);
+
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(&obj_calendar, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+
 	if (!strptime(start, DATE_FORMAT, &tm)) {
-		printf("Invalid start date\n");
+		printf("Invalid date format: yyyy-mm-dd hh:mm:ss (e.g.: 2007-09-17 10:00:00)\n");
 		return false;
 	}
 	unix_to_nt_time(&nt, mktime(&tm));
@@ -109,38 +129,40 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	start_date->dwLowDateTime = (nt << 32) >> 32;
 	start_date->dwHighDateTime = (nt >> 32);
 
-
 	if (!strptime(end, DATE_FORMAT, &tm)) {
-		printf("Invalid end date\n");
+		printf("Invalid date format: yyyy-mm-dd hh:mm:ss (e.g.:2007-09-17 18:30:00)\n");
 		return false;
 	}
 	unix_to_nt_time(&nt, mktime(&tm));
 	end_date = talloc(mem_ctx, struct FILETIME);
 	end_date->dwLowDateTime = (nt << 32) >> 32;
 	end_date->dwHighDateTime = (nt >> 32);
-	
+
 	set_SPropValue_proptag(&props[0], PR_CONVERSATION_TOPIC, 
 						   (const void *) appointment);
-	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (const void *) appointment);
+	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, 
+						   (const void *) appointment);
 	set_SPropValue_proptag(&props[2], PR_START_DATE, (const void *) start_date);
 	set_SPropValue_proptag(&props[3], PR_END_DATE, (const void *) end_date);
 	set_SPropValue_proptag(&props[4], PR_MESSAGE_CLASS, (const void *)"IPM.Appointment");
 	flag = 1;
 	set_SPropValue_proptag(&props[5], PR_MESSAGE_FLAGS, (const void *) &flag);
-	set_SPropValue_proptag(&props[6], PR_APPOINTMENT_LOCATION, (const void *)(location?location:""));
-	set_SPropValue_proptag(&props[7], PR_BusyStatus, (const void *) &busy_status);
+	set_SPropValue_proptag(&props[6], SPropTagArray->aulPropTag[0], (const void *)(location?location:""));
+	set_SPropValue_proptag(&props[7], SPropTagArray->aulPropTag[1], (const void *) &busy_status);
 	flag= MEETING_STATUS_NONMEETING;
-	set_SPropValue_proptag(&props[8], PR_APPOINTMENT_MEETING_STATUS, (const void *) &flag);
+	set_SPropValue_proptag(&props[8], SPropTagArray->aulPropTag[2], (const void *) &flag);
 	flag2 = true;
-	set_SPropValue_proptag(&props[9], PR_CommonStart, (const void *) start_date);
-	set_SPropValue_proptag(&props[10], PR_CommonEnd, (const void *) end_date);
-	set_SPropValue_proptag(&props[11], PR_LABEL, (const void *)&label);
+	set_SPropValue_proptag(&props[9], SPropTagArray->aulPropTag[3], (const void *) start_date);
+	set_SPropValue_proptag(&props[10], SPropTagArray->aulPropTag[4], (const void *) end_date);
+	set_SPropValue_proptag(&props[11], SPropTagArray->aulPropTag[5], (const void *)&label);
 	flag = 30;
-	set_SPropValue_proptag(&props[12], PR_ReminderMinutesBeforeStart, (const void *)&flag);
+	set_SPropValue_proptag(&props[12], SPropTagArray->aulPropTag[6], (const void *)&flag);
 	set_SPropValue_proptag(&props[13], PR_BODY, (const void *)(body?body:""));
 	retval = SetProps(&obj_message, props, CN_PROPS);
 	mapi_errstr("SetProps", GetLastError());
+	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
+
 
 	retval = SaveChangesMessage(&obj_calendar, &obj_message);
 	mapi_errstr("SaveChangesMessage", GetLastError());

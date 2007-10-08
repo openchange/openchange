@@ -101,13 +101,11 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	mapi_profile_add_string_attr(profname, "language", "0x40c");
 	mapi_profile_add_string_attr(profname, "method", "0x409");
 
-	dcerpc_init();
-
 	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonProvider", GetLastError());
 		printf("Deleting profile\n");
-		if ((retval = DeleteProfile(profname, 0)) != MAPI_E_SUCCESS) {
+		if ((retval = DeleteProfile(profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("DeleteProfile", GetLastError());
 		}
 		exit (1);
@@ -121,7 +119,7 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	if (retval != MAPI_E_SUCCESS && retval != 0x1) {
 		mapi_errstr("ProcessNetworkProfile", GetLastError());
 		printf("Deleting profile\n");
-		if ((retval = DeleteProfile(profname, 0)) != MAPI_E_SUCCESS) {
+		if ((retval = DeleteProfile(profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("DeleteProfile", GetLastError());
 		}
 		exit (1);
@@ -141,7 +139,7 @@ static void mapiprofile_delete(const char *profdb, const char *profname)
 		exit (1);
 	}
 
-	if ((retval = DeleteProfile(profname, 0)) != MAPI_E_SUCCESS) {
+	if ((retval = DeleteProfile(profname)) != MAPI_E_SUCCESS) {
 		mapi_errstr("DeleteProfile", GetLastError());
 		exit (1);
 	}
@@ -160,7 +158,7 @@ static void mapiprofile_set_default(const char *profdb, const char *profname)
 		exit (1);
 	}
 
-	if ((retval = SetDefaultProfile(profname, 0)) != MAPI_E_SUCCESS) {
+	if ((retval = SetDefaultProfile(profname)) != MAPI_E_SUCCESS) {
 		mapi_errstr("SetDefaultProfile", GetLastError());
 		exit (1);
 	}
@@ -180,7 +178,7 @@ static void mapiprofile_get_default(const char *profdb)
 		exit (1);
 	}
 	
-	if ((retval = GetDefaultProfile(&profname, 0)) != MAPI_E_SUCCESS) {
+	if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
 		mapi_errstr("GetDefaultProfile", GetLastError());
 		exit (1);
 	}
@@ -202,7 +200,7 @@ static void mapiprofile_list(const char *profdb)
 	}
 
 	memset(&proftable, 0, sizeof (struct SRowSet));
-	if ((retval = GetProfileTable(&proftable, 0)) != MAPI_E_SUCCESS) {
+	if ((retval = GetProfileTable(&proftable)) != MAPI_E_SUCCESS) {
 		mapi_errstr("GetProfileTable", GetLastError());
 		exit (1);
 	}
@@ -238,7 +236,7 @@ static void mapiprofile_dump(const char *profdb, const char *profname)
 	}
 
 	if (!profname) {
-		if ((retval = GetDefaultProfile(&profname, 0)) != MAPI_E_SUCCESS) {
+		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			exit (1);
 		}
@@ -276,7 +274,7 @@ static void mapiprofile_attribute(const char *profdb, const char *profname,
 	}
 
 	if (!profname) {
-		if ((retval = GetDefaultProfile(&profname, 0)) != MAPI_E_SUCCESS) {
+		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			exit (1);
 		}

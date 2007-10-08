@@ -450,3 +450,41 @@ _PUBLIC_ uint32_t SRowSet_propcpy(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, 
 	}
 	return 0;
 }
+
+_PUBLIC_ void mapi_SPropValue_array_named(mapi_object_t *obj, 
+					  struct mapi_SPropValue_array *props)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum MAPISTATUS		retval;
+	struct MAPINAMEID	*nameid;
+	uint32_t		propID;
+	uint16_t		count;
+	uint32_t		i;
+
+	mem_ctx = talloc_init("mapidump_named");
+
+	for (i = 0; i < props->cValues; i++) {
+		if ((props->lpProps[i].ulPropTag & 0xFFFF0000) > 0x80000000) {
+			propID = props->lpProps[i].ulPropTag;
+			propID = (propID & 0xFFFF0000) | PT_NULL;
+			nameid = talloc_zero(mem_ctx, struct MAPINAMEID);
+			retval = GetNamesFromIDs(obj, propID, &count, &nameid);
+			if (retval != MAPI_E_SUCCESS) goto end;
+
+			if (count) {
+				/* Display property given its propID */
+				switch (nameid->ulKind) {
+				case MNID_ID:
+					props->lpProps[i].ulPropTag = (nameid->kind.lid << 16) | 
+						(props->lpProps[i].ulPropTag & 0x0000FFFF);
+					break;
+				case MNID_STRING:
+					break;
+				}
+			}
+			talloc_free(nameid);
+		}
+	}
+end:
+	talloc_free(mem_ctx);
+}

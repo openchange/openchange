@@ -48,6 +48,8 @@ bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	mapi_object_t		obj_table;
 	mapi_object_t		obj_message;
 	struct SPropValue	props[CN_PROPS];
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray;
 
 	if (!task) return false;
 
@@ -87,13 +89,26 @@ bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	mapi_errstr("CreateMessage", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (const void *) task);
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "Status", PSETID_Task);
+
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(&obj_task, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+
+	set_SPropValue_proptag(&props[0], PR_CONVERSATION_TOPIC, (const void *) task);
 	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (const void *) task);
 	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Task");
 	set_SPropValue_proptag(&props[3], PR_PRIORITY, (const void *)&priority);
-	set_SPropValue_proptag(&props[4], PR_Status, (const void *)&status);
+	set_SPropValue_proptag(&props[4], SPropTagArray->aulPropTag[0], (const void *)&status);
 	retval = SetProps(&obj_message, props, CN_PROPS);
 	mapi_errstr("SetProps", GetLastError());
+	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_task, &obj_message);

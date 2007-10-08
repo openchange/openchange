@@ -143,6 +143,25 @@
 #define	PRIORITY_HIGH		1
 
 /*
+ * Importance
+ */
+
+#define	IMPORTANCE_LOW		0
+#define	IMPORTANCE_NORMAL	1
+#define	IMPORTANCE_HIGH		2
+
+/*
+ * Color
+ */
+
+#define	olBlue			0
+#define	olGreen			1
+#define	olPink			2
+#define	olYellow		3
+#define	olWhite			4
+
+
+/*
  * Appointment flags with PR_APPOINTMENT_BUSY_STATUS
  */
 

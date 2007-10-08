@@ -37,7 +37,7 @@ sub mapi_init()
     #lw_dumpdata();
 
     # Retrieve default profile name
-    ($retval, $profname) = GetDefaultProfile($flag);
+    ($retval, $profname) = GetDefaultProfile();
     mapi_errstr("GetDefaultProfile", GetLastError());
 
     $retval = MapiLogonEx($session, $profname, $password);

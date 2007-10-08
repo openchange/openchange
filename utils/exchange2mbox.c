@@ -137,7 +137,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	if (!profname) {
-		retval = GetDefaultProfile(&profname, 0);
+		retval = GetDefaultProfile(&profname);
 		MAPI_RETVAL_IF(retval, retval, NULL);
 	}
 
@@ -622,7 +622,7 @@ int main(int argc, const char *argv[])
 
 	/* if no profile is supplied use the default one */
 	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname, 0);
+		retval = GetDefaultProfile(&opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			printf("No profile specified and no default profile found\n");
 			exit (1);

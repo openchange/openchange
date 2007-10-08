@@ -454,7 +454,7 @@ System Attendant Private Interface
 		[case(PT_I2)]			uint16			i;
 		[case(PT_LONG)]			uint32			l;
 		[case(PT_DOUBLE)]		dlong			dbl;
-		[case(PT_BOOLEAN)]		uint16			b;
+		[case(PT_BOOLEAN)]		uint8			b;
 		[case(PT_I8)]			dlong			d;
 		[case(PT_STRING8)][unique][string,charset(DOS)] uint8	*lpszA;
 		[case(PT_BINARY)]		SBinary			bin;
@@ -679,7 +679,7 @@ System Attendant Private Interface
 			op_MAPI_GetNamesFromIDs		= 0x55,
 			op_MAPI_GetIDsFromNames		= 0x56,
 			op_MAPI_EmptyFolder		= 0x58,
-			op_MAPI_GetAllNamesFromIDs	= 0x5f,
+			op_MAPI_QueryNamesFromIDs	= 0x5f,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
 			op_MAPI_OpenMsgStore		= 0xfe
 		} MAPI_OPNUM;
@@ -1589,13 +1589,13 @@ System Attendant Private Interface
 	/* EcDoRpc Function 0x5f */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		propID;
-	} GetAllNamesFromIDs_req;
+	} QueryNamesFromIDs_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		count;
 		uint16		propID[count];
 		MAPINAMEID	nameid[count];
-	} GetAllNamesFromIDs_repl;
+	} QueryNamesFromIDs_repl;
   
 	/*************************/
 	/* EcDoRpc Function 0xFE */
@@ -1682,7 +1682,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
-		[case(op_MAPI_GetAllNamesFromIDs)] GetAllNamesFromIDs_req mapi_GetAllNamesFromIDs;
+		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_req mapi_QueryNamesFromIDs;
 		[case(op_MAPI_OpenMsgStore)] OpenMsgStore_req mapi_OpenMsgStore;
 	} EcDoRpc_MAPI_REQ_UNION;
 
@@ -1727,7 +1727,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;
-		[case(op_MAPI_GetAllNamesFromIDs)] GetAllNamesFromIDs_repl mapi_GetAllNamesFromIDs;
+		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_repl mapi_QueryNamesFromIDs;
 		[case(op_MAPI_OpenMsgStore)] OpenMsgStore_repl mapi_OpenMsgStore;
 
 	} EcDoRpc_MAPI_REPL_UNION;

@@ -55,7 +55,7 @@ _PUBLIC_ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const ch
  * We should definitively find a better way to handle this
  */
 
-_PUBLIC_ char *x500_get_servername(TALLOC_CTX *mem_ctx, const char *dn)
+_PUBLIC_ char *x500_get_servername(const char *dn)
 {
 	char *pdn;
 	char *servername;

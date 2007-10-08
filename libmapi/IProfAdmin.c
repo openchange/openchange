@@ -607,7 +607,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfile(const char *profile, const char *username
 /**
  * Delete a MAPI Profile
  */
-_PUBLIC_ enum MAPISTATUS DeleteProfile(const char *profile, uint32_t flags)
+_PUBLIC_ enum MAPISTATUS DeleteProfile(const char *profile)
 {
 	TALLOC_CTX	*mem_ctx;
 	enum MAPISTATUS	retval;
@@ -625,8 +625,9 @@ _PUBLIC_ enum MAPISTATUS DeleteProfile(const char *profile, uint32_t flags)
 /**
  * Change the profile password
  */
-_PUBLIC_ enum MAPISTATUS ChangeProfilePassword(const char *profile, const char *old_password,
-					       const char *password, uint32_t flags)
+_PUBLIC_ enum MAPISTATUS ChangeProfilePassword(const char *profile, 
+					       const char *old_password,
+					       const char *password)
 {
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
@@ -647,9 +648,13 @@ _PUBLIC_ enum MAPISTATUS ChangeProfilePassword(const char *profile, const char *
 /**
  * Copies a profile
  */
-_PUBLIC_ enum MAPISTATUS CopyProfile(const char *old_profile, const char *password,
-				     const char *profile, uint32_t flags)
+_PUBLIC_ enum MAPISTATUS CopyProfile(const char *old_profile, 
+				     const char *password,
+				     const char *profile)
 {
+	old_profile = NULL;
+	password = NULL;
+	profile = NULL;
 	return MAPI_E_SUCCESS;
 	/* return MAPI_E_LOGON_FAILED => auth failure */
 	/* return MAPI_E_ACCESS_DENIED => the new profile already exists */
@@ -659,9 +664,13 @@ _PUBLIC_ enum MAPISTATUS CopyProfile(const char *old_profile, const char *passwo
 /**
  * Rename a profile
  */
-_PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile, const char *password,
-				       const char *profile, uint32_t flags)
+_PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile, 
+				       const char *password,
+				       const char *profile)
 {
+	old_profile = NULL;
+	password = NULL;
+	profile = NULL;
 	return MAPI_E_SUCCESS;
 	/* return MAPI_E_LOGON_FAILED => auth failure*/
 }
@@ -669,7 +678,7 @@ _PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile, const char *pass
 /**
  * Set default profile
  */
-_PUBLIC_ enum MAPISTATUS SetDefaultProfile(const char *profname, uint32_t flags)
+_PUBLIC_ enum MAPISTATUS SetDefaultProfile(const char *profname)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_profile	profile;
@@ -698,7 +707,7 @@ _PUBLIC_ enum MAPISTATUS SetDefaultProfile(const char *profname, uint32_t flags)
 /**
  * Get default profile
  */
-_PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname, uint32_t flags)
+_PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
 {
 	enum MAPISTATUS		retval;
 	struct SRowSet		proftable;
@@ -708,7 +717,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname, uint32_t flags
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	
-	retval = GetProfileTable(&proftable, 0);
+	retval = GetProfileTable(&proftable);
 
 	for (i = 0; i < proftable.cRows; i++) {
 		lpProp = get_SPropValue_SRow(&(proftable.aRow[i]), PR_DEFAULT_PROFILE);
@@ -741,7 +750,7 @@ _PUBLIC_ enum MAPISTATUS GetProfilePtr(struct mapi_profile *profile)
  * Retrieve a SRowSet containing the profile table with only two
  * columns: PR_DISPLAY_NAME && PR_DEFAULT_PROFILE
  */
-_PUBLIC_ enum MAPISTATUS GetProfileTable(struct SRowSet *proftable, uint32_t flags)
+_PUBLIC_ enum MAPISTATUS GetProfileTable(struct SRowSet *proftable)
 {
 	TALLOC_CTX			*mem_ctx;
 	enum ldb_scope			scope = LDB_SCOPE_SUBTREE;
@@ -1019,7 +1028,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	lpProp = get_SPropValue_SRowSet(&rowset, PR_EMS_AB_HOME_MDB);
 	MAPI_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, NULL);
 
-	nspi->servername = x500_get_servername(nspi->mem_ctx, lpProp->value.lpszA);
+	nspi->servername = x500_get_servername(lpProp->value.lpszA);
 	mapi_profile_add_string_attr(profname, "ServerName", nspi->servername);
 	set_profile_attribute(profname, rowset, 0, PR_EMS_AB_HOME_MDB, "HomeMDB");
 	set_profile_mvstr_attribute(profname, rowset, 0, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");

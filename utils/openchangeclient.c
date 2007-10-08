@@ -58,8 +58,14 @@ static void init_oclient(struct oclient *oclient)
 	oclient->card_name = "";
 
 	/* task related parameters */
+	oclient->importance = 1;
 	oclient->priority = 0;
 	oclient->taskstatus = 0;
+
+	/* note related parameters */
+	oclient->color = olYellow;
+	oclient->width = 166;
+	oclient->height = 200;
 
 	/* pf related parameters */
 	oclient->pf = false;
@@ -880,6 +886,8 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	mapi_object_t		obj_calendar;
 	mapi_object_t		obj_message;
 	mapi_id_t		id_calendar;
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray;
 	struct FILETIME		*start_date;
 	struct FILETIME		*end_date;
 	NTTIME			nt;
@@ -906,8 +914,26 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	retval = CreateMessage(&obj_calendar, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "Location", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "BusyStatus", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "MeetingStatus", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "CommonStart", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "CommonEnd", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "Label", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "ReminderMinutesBeforeStart", PSETID_Common);
+
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(&obj_calendar, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+
 	if (!strptime(oclient->dtstart, DATE_FORMAT, &tm)) {
-		printf("Invalid date format (e.g.: 2007-06-01 22:30:00)\n");
+		printf("Invalid date format: yyyy-mm-dd hh:mm:ss (e.g.: 2007-09-17 10:00:00)\n");
 		return false;
 	}
 	unix_to_nt_time(&nt, mktime(&tm));
@@ -916,7 +942,7 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	start_date->dwHighDateTime = (nt >> 32);
 
 	if (!strptime(oclient->dtend, DATE_FORMAT, &tm)) {
-		printf("Invalid date format (e.g.: 2007-06-01 22:30:00)\n");
+		printf("Invalid date format: yyyy-mm-dd hh:mm:ss (e.g.:2007-09-17 18:30:00)\n");
 		return false;
 	}
 	unix_to_nt_time(&nt, mktime(&tm));
@@ -933,18 +959,19 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	set_SPropValue_proptag(&props[4], PR_MESSAGE_CLASS, (const void *)"IPM.Appointment");
 	flag = 1;
 	set_SPropValue_proptag(&props[5], PR_MESSAGE_FLAGS, (const void *) &flag);
-	set_SPropValue_proptag(&props[6], PR_APPOINTMENT_LOCATION, (const void *)(oclient->location?oclient->location:""));
-	set_SPropValue_proptag(&props[7], PR_BusyStatus, (const void *) &oclient->busystatus);
+	set_SPropValue_proptag(&props[6], SPropTagArray->aulPropTag[0], (const void *)(oclient->location?oclient->location:""));
+	set_SPropValue_proptag(&props[7], SPropTagArray->aulPropTag[1], (const void *) &oclient->busystatus);
 	flag= MEETING_STATUS_NONMEETING;
-	set_SPropValue_proptag(&props[8], PR_APPOINTMENT_MEETING_STATUS, (const void *) &flag);
+	set_SPropValue_proptag(&props[8], SPropTagArray->aulPropTag[2], (const void *) &flag);
 	flag2 = true;
-	set_SPropValue_proptag(&props[9], PR_CommonStart, (const void *) start_date);
-	set_SPropValue_proptag(&props[10], PR_CommonEnd, (const void *) end_date);
-	set_SPropValue_proptag(&props[11], PR_LABEL, (const void *)&oclient->label);
+	set_SPropValue_proptag(&props[9], SPropTagArray->aulPropTag[3], (const void *) start_date);
+	set_SPropValue_proptag(&props[10], SPropTagArray->aulPropTag[4], (const void *) end_date);
+	set_SPropValue_proptag(&props[11], SPropTagArray->aulPropTag[5], (const void *)&oclient->label);
 	flag = 30;
-	set_SPropValue_proptag(&props[12], PR_ReminderMinutesBeforeStart, (const void *)&flag);
+	set_SPropValue_proptag(&props[12], SPropTagArray->aulPropTag[6], (const void *)&flag);
 	set_SPropValue_proptag(&props[13], PR_BODY, (const void *)(oclient->pr_body?oclient->pr_body:""));
 	retval = SetProps(&obj_message, props, CAL_CNPROPS);
+	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_calendar, &obj_message);
@@ -960,6 +987,8 @@ static bool openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	props[CONTACT_CNPROPS];
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray;
 	mapi_object_t		obj_contact;
 	mapi_object_t		obj_message;
 	mapi_id_t		id_contact;	
@@ -983,12 +1012,30 @@ static bool openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	retval = CreateMessage(&obj_contact, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (const void *)oclient->card_name);
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "FileAs", PSETID_Address);
+	mapi_nameid_lid_add(nameid, 0x8084, PSETID_Address);
+	mapi_nameid_OOM_add(nameid, "Email1Address", PSETID_Address);
+	mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
+
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(&obj_contact, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+
+	set_SPropValue_proptag(&props[0], SPropTagArray->aulPropTag[0], (const void *)oclient->card_name);
 	set_SPropValue_proptag(&props[1], PR_DISPLAY_NAME, (const void *)oclient->full_name);
 	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Contact");
 	set_SPropValue_proptag(&props[3], PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
-	set_SPropValue_proptag(&props[4], PR_CONTACT_CARD_EMAIL_ADDRESS, (const void *)oclient->email);
+	set_SPropValue_proptag(&props[4], SPropTagArray->aulPropTag[1], (const void *)oclient->email);
+	set_SPropValue_proptag(&props[5], SPropTagArray->aulPropTag[2], (const void *)oclient->email);
+	set_SPropValue_proptag(&props[6], SPropTagArray->aulPropTag[3], (const void *)oclient->card_name);
 	retval = SetProps(&obj_message, props, CONTACT_CNPROPS);
+	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_contact, &obj_message);
@@ -1007,6 +1054,8 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	mapi_object_t		obj_task;
 	mapi_object_t		obj_message;
 	mapi_id_t		id_task;	
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray;
 	struct FILETIME		*start_date;
 	struct FILETIME		*end_date;
 	NTTIME			nt;
@@ -1031,6 +1080,19 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	retval = CreateMessage(&obj_task, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "Status", PSETID_Task);
+	mapi_nameid_OOM_add(nameid, "StartDate", PSETID_Task);
+	mapi_nameid_OOM_add(nameid, "DueDate", PSETID_Task);
+
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(&obj_task, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
 
 	if (!strptime(oclient->dtstart, DATE_FORMAT, &tm)) {
 		printf("Invalid date format (e.g.: 2007-06-01 22:30:00)\n");
@@ -1051,14 +1113,16 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	end_date->dwHighDateTime = (nt >> 32);
 
 
-	set_SPropValue_proptag(&props[0], PR_CONTACT_CARD_NAME, (const void *)oclient->card_name);
+	set_SPropValue_proptag(&props[0], PR_CONVERSATION_TOPIC, (const void *)oclient->card_name);
 	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
 	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Task");
-	set_SPropValue_proptag(&props[3], PR_PRIORITY, (const void *)&oclient->priority);
-	set_SPropValue_proptag(&props[4], PR_Status, (const void *)&oclient->taskstatus);
-	set_SPropValue_proptag(&props[5], PR_StartDate, (const void *)start_date);
-	set_SPropValue_proptag(&props[6], PR_DueDate, (const void *)end_date);
+	set_SPropValue_proptag(&props[3], PR_IMPORTANCE, (const void *)&oclient->importance);
+	set_SPropValue_proptag(&props[4], PR_BODY, (const void *)oclient->pr_body);
+	set_SPropValue_proptag(&props[5], SPropTagArray->aulPropTag[0], (const void *)&oclient->taskstatus);
+	set_SPropValue_proptag(&props[6], SPropTagArray->aulPropTag[1], (const void *)start_date);
+	set_SPropValue_proptag(&props[7], SPropTagArray->aulPropTag[2], (const void *)end_date);
 	retval = SetProps(&obj_message, props, TASK_CNPROPS);
+	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_task, &obj_message);
@@ -1069,6 +1133,79 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 
 	return true;
 }
+
+
+static bool openchangeclient_sendnote(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+{
+	enum MAPISTATUS		retval;
+	struct SPropValue	props[NOTE_CNPROPS];
+	mapi_object_t		obj_note;
+	mapi_object_t		obj_message;
+	mapi_id_t		id_note;	
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray;
+	uint32_t		value;
+
+	mapi_object_init(&obj_note);
+
+	if (oclient->pf == true) {
+		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_note, oclient->folder);
+		if (retval != MAPI_E_SUCCESS) return retval;
+	} else {
+		/* Open Contact default folder */
+		retval = GetDefaultFolder(obj_store, &id_note, olFolderNotes);
+		if (retval != MAPI_E_SUCCESS) return false;
+
+		retval = OpenFolder(obj_store, id_note, &obj_note);
+		if (retval != MAPI_E_SUCCESS) return false;
+	}
+
+	/* Create contact mesage */
+	mapi_object_init(&obj_message);
+	retval = CreateMessage(&obj_note, &obj_message);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "Color", PSETID_Note);
+	mapi_nameid_OOM_add(nameid, "Width", PSETID_Note);
+	mapi_nameid_OOM_add(nameid, "Height", PSETID_Note);
+	mapi_nameid_lid_add(nameid, 0x8510, PSETID_Common);
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(&obj_note, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+
+	set_SPropValue_proptag(&props[0], PR_CONVERSATION_TOPIC, (const void *)oclient->card_name);
+	set_SPropValue_proptag(&props[1], PR_SUBJECT, (const void *)oclient->card_name);
+	set_SPropValue_proptag(&props[2], PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
+	set_SPropValue_proptag(&props[3], PR_MESSAGE_CLASS, (const void *)"IPM.StickyNote");
+	value = 1;
+	set_SPropValue_proptag(&props[4], PR_MESSAGE_FLAGS, (const void *)&value);
+	value = 768;
+	set_SPropValue_proptag(&props[5], PR_ICON_INDEX, (const void *)&value);
+	set_SPropValue_proptag(&props[6], SPropTagArray->aulPropTag[0], (const void *)&oclient->color);
+	set_SPropValue_proptag(&props[7], SPropTagArray->aulPropTag[1], (const void *)&oclient->width);
+	set_SPropValue_proptag(&props[8], SPropTagArray->aulPropTag[2], (const void *)&oclient->height);
+	value = 272;
+	set_SPropValue_proptag(&props[9], SPropTagArray->aulPropTag[3], (const void *)&value);
+	
+	retval = SetProps(&obj_message, props, NOTE_CNPROPS);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	retval = SaveChangesMessage(&obj_note, &obj_message);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_note);
+
+	return true;
+}
+
 
 static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id)
 {
@@ -1322,6 +1459,8 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 		if (retval != MAPI_E_NOT_FOUND) {
 			retval = GetPropsAll(&obj_message, &properties_array);
 			if (retval == MAPI_E_SUCCESS) {
+				mapi_SPropValue_array_named(&obj_message, 
+							    &properties_array);
 				switch (olFolder) {
 				case olFolderInbox:
 					mapidump_message(&properties_array);
@@ -1503,74 +1642,30 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 	return true;
 }
 
-static uint32_t	oc_get_busystatus(const char *name)
+static void list_argument(const char *label, struct oc_element *oc_items)
 {
 	uint32_t	i;
 
-	for (i = 0; oc_busystatus[i].status; i++) {
-		if (!strncasecmp(oc_busystatus[i].status, name, strlen(oc_busystatus[i].status))) {
-			return oc_busystatus[i].index;
+	printf("Use one of the following %s values:\n", label);
+	for (i = 0; oc_items[i].status; i++) {
+		printf("%s\n", oc_items[i].status);
+	}
+}
+
+
+static uint32_t oc_get_argument(const char *name, struct oc_element *oc_items, const char *label)
+{
+	uint32_t	i;
+
+	for (i = 0; oc_items[i].status; i++) {
+		if (!strncasecmp(oc_items[i].status, name, strlen(oc_items[i].status))) {
+			return oc_items[i].index;
 		}
 	}
-
-	return -1;
+	list_argument(label, oc_items);
+	exit (1);
 }
 
-static void list_busystatus(void)
-{
-	uint32_t	i;
-
-	printf("Use one of the following busystatus value:\n");
-	for (i = 0; oc_busystatus[i].status; i++) {
-		printf("%s\n", oc_busystatus[i].status);
-	}
-}
-
-static uint32_t	oc_get_priority(const char *name)
-{
-	uint32_t	i;
-
-	for (i = 0; oc_priority[i].status; i++) {
-		if (!strncasecmp(oc_priority[i].status, name, strlen(oc_priority[i].status))) {
-			return oc_priority[i].index;
-		}
-	}
-
-	return -2;
-}
-
-static void list_priority(void)
-{
-	uint32_t	i;
-
-	printf("Use one of the following priority value:\n");
-	for (i = 0; oc_priority[i].status; i++) {
-		printf("%s\n", oc_priority[i].status);
-	}
-}
-
-static uint32_t	oc_get_task_status(const char *name)
-{
-	uint32_t	i;
-
-	for (i = 0; oc_taskstatus[i].status; i++) {
-		if (!strncasecmp(oc_taskstatus[i].status, name, strlen(oc_taskstatus[i].status))) {
-			return oc_taskstatus[i].index;
-		}
-	}
-
-	return -1;
-}
-
-static void list_taskstatus(void)
-{
-	uint32_t	i;
-
-	printf("Use one of the following priority value:\n");
-	for (i = 0; oc_taskstatus[i].status; i++) {
-		printf("%s\n", oc_taskstatus[i].status);
-	}
-}
 
 int main(int argc, const char *argv[])
 {
@@ -1585,6 +1680,7 @@ int main(int argc, const char *argv[])
 	bool			opt_sendappointment = false;
 	bool			opt_sendcontact = false;
 	bool			opt_sendtask = false;
+	bool			opt_sendnote = false;
 	bool			opt_fetchmail = false;
 	bool			opt_deletemail = false;
 	bool			opt_mailbox = false;
@@ -1608,7 +1704,8 @@ int main(int argc, const char *argv[])
 	      OPT_FETCHITEMS, OPT_MAPI_LOCATION, OPT_MAPI_STARTDATE, OPT_MAPI_ENDDATE, 
 	      OPT_MAPI_BUSYSTATUS, OPT_NOTIFICATIONS, OPT_DEBUG, OPT_DUMPDATA, 
 	      OPT_MAPI_EMAIL, OPT_MAPI_FULLNAME, OPT_MAPI_CARDNAME, OPT_MAPI_PRIORITY,
-	      OPT_MAPI_TASKSTATUS, OPT_PF, OPT_FOLDER};
+	      OPT_MAPI_TASKSTATUS, OPT_MAPI_IMPORTANCE, OPT_MAPI_LABEL, OPT_PF, 
+	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1620,6 +1717,7 @@ int main(int argc, const char *argv[])
 		{"sendappointment", 0, POPT_ARG_NONE, NULL, OPT_SENDAPPOINTMENT, "send an appointment"},
 		{"sendcontact", 0, POPT_ARG_NONE, NULL, OPT_SENDCONTACT, "send a contact"},
 		{"sendtask", 0, POPT_ARG_NONE, NULL, OPT_SENDTASK, "send a task"},
+		{"sendnote", 0, POPT_ARG_NONE, NULL, OPT_SENDNOTE, "send a note"},
 		{"fetchmail", 'F', POPT_ARG_NONE, NULL, OPT_FETCHMAIL, "fetch user INBOX mails"},
 		{"storemail", 'G', POPT_ARG_STRING, NULL, OPT_STOREMAIL, "retrieve a mail on the filesystem"},
 		{"fetch-items", 'i', POPT_ARG_STRING, NULL, OPT_FETCHITEMS, "fetch specified user INBOX items"},
@@ -1634,18 +1732,21 @@ int main(int argc, const char *argv[])
 		{"subject", 's', POPT_ARG_STRING, NULL, OPT_MAPI_SUBJECT, "Mail subject"},
 		{"body", 'B', POPT_ARG_STRING, NULL, OPT_MAPI_BODY, "Mail body"},
 		{"location", 0, POPT_ARG_STRING, NULL, OPT_MAPI_LOCATION, "Set the item location"},
+		{"label", 0, POPT_ARG_STRING, NULL, OPT_MAPI_LABEL, "Set the event label"},
 		{"dtstart", 0, POPT_ARG_STRING, NULL, OPT_MAPI_STARTDATE, "Set the event start date"},
-		{"dtend", 0, POPT_ARG_STRING, NULL, OPT_MAPI_ENDDATE, "Set the event end date"},
-		{"busystatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_BUSYSTATUS, "Set the item busy status"},
-		{"taskstatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_TASKSTATUS, "Set the task status"},
-		{"priority", 0, POPT_ARG_STRING, NULL, OPT_MAPI_PRIORITY, "Set the task priority"},
+		{"dtend", 0, POPT_ARG_STRING, NULL, OPT_MAPI_ENDDATE, "set the event end date"},
+		{"busystatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_BUSYSTATUS, "set the item busy status"},
+		{"taskstatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_TASKSTATUS, "set the task status"},
+		{"priority", 0, POPT_ARG_STRING, NULL, OPT_MAPI_PRIORITY, "set the item priority"},
+		{"importance", 0, POPT_ARG_STRING, NULL, OPT_MAPI_IMPORTANCE, "Set the item importance"},
 		{"email", 0, POPT_ARG_STRING, NULL, OPT_MAPI_EMAIL, "set the email address"},
 		{"fullname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_FULLNAME, "set the full name"},
 		{"cardname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_CARDNAME, "set a contact card name"},
-		{"notifications", 0, POPT_ARG_NONE, NULL, OPT_NOTIFICATIONS, "Monitor INBOX newmail notifications"},
+		{"color", 0, POPT_ARG_STRING, NULL, OPT_MAPI_COLOR, "set the note color"},
+		{"notifications", 0, POPT_ARG_NONE, NULL, OPT_NOTIFICATIONS, "monitor INBOX newmail notifications"},
 		{"folder", 0, POPT_ARG_STRING, NULL, OPT_FOLDER, "set the folder to use instead of inbox"},
 		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level"},
-		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "Dump the hex data"},
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
 		{ NULL }
 	};
 
@@ -1699,6 +1800,9 @@ int main(int argc, const char *argv[])
 		case OPT_SENDTASK:
 			opt_sendtask = true;
 			break;
+		case OPT_SENDNOTE:
+			opt_sendnote = true;
+			break;
 		case OPT_FETCHMAIL:
 			opt_fetchmail = true;
 			break;
@@ -1742,25 +1846,34 @@ int main(int argc, const char *argv[])
 			oclient.dtend = poptGetOptArg(pc);
 			break;
 		case OPT_MAPI_BUSYSTATUS:
-			oclient.busystatus = oc_get_busystatus(poptGetOptArg(pc));
-			if (oclient.busystatus == -1) {
-				(void)list_busystatus();
-				exit (1);
-			}
+			oclient.busystatus = oc_get_argument(poptGetOptArg(pc),
+							     oc_busystatus,
+							     "busystatus");
+			break;
+		case OPT_MAPI_LABEL:
+			oclient.label = oc_get_argument(poptGetOptArg(pc),
+							oc_label,
+							"label");
 			break;
 		case OPT_MAPI_PRIORITY:
-			oclient.priority = oc_get_priority(poptGetOptArg(pc));
-			if (oclient.priority == -2) {
-				(void)list_priority();
-				exit (1);
-			}
+			oclient.priority = oc_get_argument(poptGetOptArg(pc),
+							   oc_priority,
+							   "priority");
+			break;
+		case OPT_MAPI_IMPORTANCE:
+			oclient.importance = oc_get_argument(poptGetOptArg(pc), 
+							     oc_importance, 
+							     "importance");
 			break;
 		case OPT_MAPI_TASKSTATUS:
-			oclient.taskstatus = oc_get_task_status(poptGetOptArg(pc));
-			if (oclient.taskstatus == -1) {
-				(void)list_taskstatus();
-				exit (1);
-			}
+			oclient.taskstatus = oc_get_argument(poptGetOptArg(pc),
+							     oc_taskstatus,
+							     "taskstatus");
+			break;
+		case OPT_MAPI_COLOR:
+			oclient.color = oc_get_argument(poptGetOptArg(pc),
+							oc_color,
+							"color");
 			break;
 		case OPT_MAPI_EMAIL:
 			oclient.email = poptGetOptArg(pc);
@@ -1846,7 +1959,7 @@ int main(int argc, const char *argv[])
 	 */
 
 	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname, 0);
+		retval = GetDefaultProfile(&opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			exit (1);
@@ -1977,6 +2090,16 @@ int main(int argc, const char *argv[])
 		if (retval != true) {
 			goto end;
 		}
+	}
+
+	/* MAPI note operations */
+	if (opt_sendnote) {
+		retval = openchangeclient_sendnote(mem_ctx, &obj_store, &oclient);
+		mapi_errstr("sendnote", GetLastError());
+		if (retval != true) {
+			goto end;
+		}
+		
 	}
 	
 	/* Monitor newmail notifications */

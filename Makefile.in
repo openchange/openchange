@@ -113,6 +113,7 @@ install: all installman $(SWIGDIRS-INSTALL)
 	$(INSTALL) -m 0644 libmapi/mapi_notification.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapi_object.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapi_profile.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/mapi_nameid.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapidefs.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/property.h $(DESTDIR)$(includedir)/libmapi/
@@ -173,7 +174,7 @@ torture/openchange.$(SHLIBEXT):	torture/nspi_profile.o		\
 				torture/openchange.o		\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
 libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
 	@echo "Generating $@"
@@ -222,7 +223,7 @@ server/dcesrv_exchange.c: providers/providers_proto.h gen_ndr/ndr_exchange_s.c g
 
 libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
-libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mparse.pl
+libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mapi-named-properties libmapi/conf/mparse.pl
 	@./libmapi/conf/build.sh
 
 bin/schemaIDGUID: utils/schemaIDGUID.o
@@ -290,6 +291,7 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f gen_ndr/ndr_exchange* gen_ndr/exchange.h
 	rm -f libmapi/mapicode.{c,h}
 	rm -f libmapi/mapitags.{c,h}
+	rm -f libmapi/mapi_nameid_private.h
 	rm -f libmapi/proto.h
 	rm -f libmapi/proto_private.h
 	rm -f libmapiadmin/proto.h
@@ -313,6 +315,7 @@ libmapi/proto.h libmapi/proto_private.h: libmapi/nspi.c			\
 	libmapi/mapicode.c		\
 	libmapi/mapidump.c		\
 	libmapi/mapi_object.c		\
+	libmapi/mapi_nameid.c		\
 	libmapi/property.c		\
 	libmapi/IABContainer.c		\
 	libmapi/IProfAdmin.c		\
@@ -400,6 +403,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o	\
 			libmapi/mapitags.o				\
 			libmapi/mapidump.o				\
 			libmapi/mapicode.o 				\
+			libmapi/mapi_nameid.o				\
 			libmapi/emsmdb.o				\
 			libmapi/nspi.o 					\
 			libmapi/simple_mapi.o				\

@@ -79,7 +79,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	/* profile name */
 	profname = lp_parm_string(global_loadparm, NULL, "mapi", "profile");
 	if (!profname) {
-		retval = GetDefaultProfile(&profname, 0);
+		retval = GetDefaultProfile(&profname);
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Please specify a valid profile name\n"));
 			return false;

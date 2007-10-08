@@ -38,7 +38,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	switch(lpProp.ulPropTag & 0xFFFF) {
 	case PT_BOOLEAN:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: 0x%x\n", sep?sep:"", proptag, (*(const uint16_t *)data));
+		printf("%s%s: 0x%x\n", sep?sep:"", proptag, (*(const uint8_t *)data));
 		break;
 	case PT_I8:
 		data = get_SPropValue_data(&lpProp);
@@ -251,7 +251,6 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties)
 
 _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties)
 {
-	const struct mapi_SLPSTRArray	*keywords = NULL;
 	const struct mapi_SLPSTRArray	*contacts = NULL;
 	const char		*subject = NULL;
 	const char		*location= NULL;
@@ -260,13 +259,12 @@ _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties)
 	const uint8_t			*priv = NULL;
 	int			i;
 
-	keywords = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_EMS_AB_MONITORING_CACHED_VIA_MAIL);
-	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_Contacts);
+	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, 0x853A101e);
 	subject = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	timezone = (const char *)find_mapi_SPropValue_data(properties, PR_APPOINTMENT_TIMEZONE);
-	location = (const char *)find_mapi_SPropValue_data(properties, PR_APPOINTMENT_LOCATION);
-	status = (const uint32_t *)find_mapi_SPropValue_data(properties, PR_Status);
-	priv = (const uint8_t *)find_mapi_SPropValue_data(properties, PR_Private);
+	timezone = (const char *)find_mapi_SPropValue_data(properties, 0x8234001e);
+	location = (const char *)find_mapi_SPropValue_data(properties, 0x8208001e);
+	status = (const uint32_t *)find_mapi_SPropValue_data(properties, 0x82050003);
+	priv = (const uint8_t *)find_mapi_SPropValue_data(properties, 0x8506000b);
 
 	printf("|== %s ==|\n", subject?subject:"");
 	fflush(0);
@@ -290,14 +288,6 @@ _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties)
 	if (status) {
 		printf("\tStatus: %s\n", get_task_status(*status));
 		fflush(0);
-	}
-
-	if (keywords) {
-		printf("\tCategories:\n");
-		fflush(0);
-		for (i = 0; i < keywords->cValues; i++) {
-			printf("\t\tCategory: %s\n", keywords->strings[i].lppszA);
-		}
 	}
 
 	if (contacts) {
@@ -332,7 +322,7 @@ _PUBLIC_ void mapidump_contact(struct mapi_SPropValue_array *properties)
 	const char      *business_fax = NULL;
 	const char      *business_home_page = NULL;
 
-	card_name = (const char *)find_mapi_SPropValue_data(properties, PR_CONTACT_CARD_NAME);
+	card_name = (const char *)find_mapi_SPropValue_data(properties, 0x8005001e);
 	topic = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
 	company = (const char *)find_mapi_SPropValue_data(properties, PR_COMPANY_NAME);
 	title = (const char *)find_mapi_SPropValue_data(properties, PR_TITLE);
@@ -340,7 +330,7 @@ _PUBLIC_ void mapidump_contact(struct mapi_SPropValue_array *properties)
 	given_name = (const char *)find_mapi_SPropValue_data(properties, PR_GIVEN_NAME);
 	surname = (const char *)find_mapi_SPropValue_data(properties, PR_SURNAME);
 	department = (const char *)find_mapi_SPropValue_data(properties, PR_DEPARTMENT_NAME);
-	email = (const char *)find_mapi_SPropValue_data(properties, PR_CONTACT_CARD_EMAIL_ADDRESS);
+	email = (const char *)find_mapi_SPropValue_data(properties, 0x8084001e);
 	office_phone = (const char *)find_mapi_SPropValue_data(properties, PR_OFFICE_TELEPHONE_NUMBER);
 	home_phone = (const char *)find_mapi_SPropValue_data(properties, PR_HOME_TELEPHONE_NUMBER);
 	mobile_phone = (const char *)find_mapi_SPropValue_data(properties, PR_MOBILE_TELEPHONE_NUMBER);
@@ -431,24 +421,22 @@ _PUBLIC_ const char *get_priority(uint32_t priority)
 
 _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties)
 {
-	const struct mapi_SLPSTRArray	*keywords = NULL;
 	const struct mapi_SLPSTRArray	*contacts = NULL;
-	const char		*subject = NULL;
-	const char		*body = NULL;
+	const char			*subject = NULL;
+	const char			*body = NULL;
 	const double			*complete = 0;
-	const uint32_t		*status;
-	const uint32_t		*priority;
+	const uint32_t			*status;
+	const uint32_t			*priority;
 	const uint8_t			*private;
-	int			i;
+	int				i;
 
-	keywords = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_EMS_AB_MONITORING_CACHED_VIA_MAIL);
-	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PR_Contacts);
+	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, 0x853a101e);
 	subject = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
 	body = (const char *)find_mapi_SPropValue_data(properties, PR_BODY);
-	complete = (const double *)find_mapi_SPropValue_data(properties, PR_PercentComplete);
-	status = (const uint32_t *)find_mapi_SPropValue_data(properties, PR_Status);
+	complete = (const double *)find_mapi_SPropValue_data(properties, 0x81020005);
+	status = (const uint32_t *)find_mapi_SPropValue_data(properties, 0x82050003);
 	priority = (const uint32_t *)find_mapi_SPropValue_data(properties, PR_PRIORITY);
-	private = (const uint8_t *)find_mapi_SPropValue_data(properties, PR_Private);
+	private = (const uint8_t *)find_mapi_SPropValue_data(properties, 0x8506000b);
 
 	printf("|== %s ==|\n", subject?subject:"");
 	fflush(0);
@@ -456,12 +444,6 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties)
 	printf("\tBody: %s\n", body?body:"none");
 	fflush(0);
 
-	if (keywords) {
-		for (i = 0; i < keywords->cValues; i++) {
-			printf("\tCategory: %s\n", keywords->strings[i].lppszA);
-		}
-	}
-	
 	if (complete) {
 		printf("\tComplete: %d %c\n", (uint32_t)(*complete * 100), '%');
 		fflush(0);
@@ -471,15 +453,15 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties)
 		printf("\tStatus: %s\n", get_task_status(*status));
 		fflush(0);
 		if (*status == olTaskComplete) {
-			mapidump_date(properties, PR_DateCompleted, "\tDate Completed");
+			mapidump_date(properties, 0x810F0040, "\tDate Completed");
 		}
 	}
 
 	printf("\tPriority: %s\n", get_priority(*priority));
 	fflush(0);
 
-	mapidump_date(properties, PR_CommonEnd,"\tDue Date");
-	mapidump_date(properties, PR_CommonStart, "\tStart Date");
+	mapidump_date(properties, 0x85170040,"\tDue Date");
+	mapidump_date(properties, 0x85160040, "\tStart Date");
 
 	if (private) {
 		printf("\tPrivate: %s\n", (*private == true)?"True":"False");
@@ -534,6 +516,7 @@ _PUBLIC_ void mapidump_msgflags(uint32_t MsgFlags, const char *sep)
 	}
 
 }
+
 
 _PUBLIC_ void mapidump_newmail(struct NEWMAIL_NOTIFICATION *newmail, const char *sep)
 {

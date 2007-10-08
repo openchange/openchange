@@ -48,6 +48,10 @@ struct oclient {
 	uint32_t		taskstatus;
 	uint32_t		label;
 	uint32_t		priority;
+	uint32_t		importance;
+	uint32_t		color;
+	uint32_t		width;
+	uint32_t		height;
 	const char		*email;
 	const char		*full_name;
 	const char		*card_name;
@@ -90,6 +94,13 @@ struct oc_element	oc_priority[] = {
 	{0, NULL}
 };
 
+struct oc_element	oc_importance[] = {
+	{IMPORTANCE_LOW,	"LOW"},
+	{IMPORTANCE_NORMAL,	"NORMAL"},
+	{IMPORTANCE_HIGH,	"HIGH"},
+	{0, NULL}
+};
+
 struct oc_element	oc_taskstatus[] = {
 	{olTaskNotStarted,	"NOTSTARTED"},
 	{olTaskInProgress,	"PROGRESS"},
@@ -99,10 +110,35 @@ struct oc_element	oc_taskstatus[] = {
 	{0, NULL}
 };
 
+struct oc_element	oc_label[] = {
+	{0,			"NONE"},
+	{1,			"IMPORTANT"},
+	{2,			"BUSINESS"},
+	{3,			"PERSONAL"},
+	{4,			"VACATION"},
+	{5,			"MUST_ATTEND"},
+	{6,			"TRAVEL_REQUIRED"},
+	{7,			"NEEDS_PREPARATION"},
+	{8,			"BIRTHDAY"},
+	{9,			"ANNIVERSARY"},
+	{10,			"PHONE_CALL"},
+	{0, NULL}
+};
+
+struct oc_element	oc_color[] = {
+	{olBlue,		"Blue"},
+	{olGreen,		"Green"},
+	{olPink,		"Pink"},
+	{olYellow,		"Yellow"},
+	{olWhite,		"White"},
+	{0, NULL}
+};
+
 #define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
 #define	DATE_FORMAT	"%Y-%m-%d %H:%M:%S"
 #define	CAL_CNPROPS	14
-#define	CONTACT_CNPROPS	5
-#define	TASK_CNPROPS	7
+#define	CONTACT_CNPROPS	7
+#define	TASK_CNPROPS	8
+#define	NOTE_CNPROPS	10
 
 #endif /* !__OPENCHANGECLIENT_H__ */

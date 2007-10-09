@@ -32,3 +32,5 @@ bin/openchangepfadmin
 libmapiadmin/proto.h
 libmapiadmin/proto_private.h
 bin/openchangemapidump
+*.po
+libmapi/mapi_nameid_private.h

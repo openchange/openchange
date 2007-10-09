@@ -201,7 +201,9 @@ gen_ndr:
 
 exchange.idl: mapitags_enum.h mapicodes_enum.h
 
-%.h: %.idl
+.SUFFIXES: .c .o .h .po .idl
+
+.idl.h:
 	@echo "Generating $@"
 	@$(PIDL) --outputdir=gen_ndr --header -- $<
 

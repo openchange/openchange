@@ -709,6 +709,11 @@ System Attendant Private Interface
 		SBinary_short	bin[cValues];
 	} mapi_SBinaryArray;
 
+	typedef struct {
+		uint32		cValues;
+		GUID		lpguid[cValues];
+	} mapi_SGuidArray;
+
 	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
 		[case(PT_BOOLEAN)]	uint8			b;
 		[case(PT_I2)]		uint16			i;
@@ -719,10 +724,12 @@ System Attendant Private Interface
 		[case(PT_ERROR)]       	uint32			err;
 		[case(PT_STRING8)]	astring			lpszA;
 		[case(PT_UNICODE)][flag(STR_NULLTERM)] string	lpszW;
+		[case(PT_CLSID)]	GUID			lpguid;
   		[case(PT_BINARY)]	SBinary_short		bin;
 		[case(0xFB)]		SBinary_short		bin;
 		[case(PT_MV_LONG)]	mapi_MV_LONG_STRUCT	MVl;	
 		[case(PT_MV_STRING8)]	mapi_SLPSTRArray	MVszA;
+		[case(PT_MV_CLSID)]	mapi_SGuidArray		MVguid;
 		[case(PT_MV_BINARY)]	mapi_SBinaryArray      	MVbin;
 	} mapi_SPropValue_CTR;
 

@@ -3,7 +3,8 @@
 
 CC=@CC@
 LEX=@FLEX@
-CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3
+CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 \
+	   -DDEFAULT_LDIF=\"$(DESTDIR)$(datadir)/setup\" 
 PIDL=@PIDL@
 PERL=@PERL@
 INSTALL=@INSTALL@
@@ -144,34 +145,34 @@ uninstall: $(SWIGDIRS-UNINSTALL)
 
 re: clean install
 
-torture/openchange.$(SHLIBEXT):	torture/nspi_profile.o		\
-				torture/nspi_resolvenames.o	\
-				torture/mapi_restrictions.o	\
-				torture/mapi_copymail.o		\
-				torture/mapi_prop.o		\
-				torture/mapi_folder.o		\
-				torture/mapi_table.o		\
-				torture/mapi_message.o		\
-				torture/mapi_fetchmail.o	\
-				torture/mapi_sendmail.o		\
-				torture/mapi_sendmail_html.o	\
-				torture/mapi_deletemail.o	\
-				torture/mapi_newmail.o		\
-				torture/mapi_sendattach.o	\
-				torture/mapi_fetchattach.o	\
-				torture/mapi_fetchappointment.o	\
-				torture/mapi_sendappointment.o	\
-				torture/mapi_fetchcontacts.o	\
-				torture/mapi_sendcontacts.o	\
-				torture/mapi_fetchtasks.o	\
-				torture/mapi_sendtasks.o	\
-				torture/mapi_common.o		\
-				torture/fuzzer_msgstore.o	\
-				torture/mapi_permissions.o	\
-				torture/mapi_createuser.o	\
-				torture/exchange_createuser.o	\
-				torture/mapi_namedprops.o	\
-				torture/openchange.o		\
+torture/openchange.$(SHLIBEXT):	torture/nspi_profile.po		\
+				torture/nspi_resolvenames.po	\
+				torture/mapi_restrictions.po	\
+				torture/mapi_copymail.po		\
+				torture/mapi_prop.po		\
+				torture/mapi_folder.po		\
+				torture/mapi_table.po		\
+				torture/mapi_message.po		\
+				torture/mapi_fetchmail.po	\
+				torture/mapi_sendmail.po		\
+				torture/mapi_sendmail_html.po	\
+				torture/mapi_deletemail.po	\
+				torture/mapi_newmail.po		\
+				torture/mapi_sendattach.po	\
+				torture/mapi_fetchattach.po	\
+				torture/mapi_fetchappointment.po	\
+				torture/mapi_sendappointment.po	\
+				torture/mapi_fetchcontacts.po	\
+				torture/mapi_sendcontacts.po	\
+				torture/mapi_fetchtasks.po	\
+				torture/mapi_sendtasks.po	\
+				torture/mapi_common.po		\
+				torture/fuzzer_msgstore.po	\
+				torture/mapi_permissions.po	\
+				torture/mapi_createuser.po	\
+				torture/exchange_createuser.po	\
+				torture/mapi_namedprops.po	\
+				torture/openchange.po		\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
@@ -183,12 +184,13 @@ libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
 # Avoid warnings:
 libmapi/utf8_convert.yy.o: CFLAGS=
 
-server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.o server/dcesrv_exchange.o	\
+server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.po \
+									server/dcesrv_exchange.po	\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
-server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.o	\
+server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.po	\
 					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
@@ -205,7 +207,11 @@ exchange.idl: mapitags_enum.h mapicodes_enum.h
 
 .c.o:
 	@echo "Compiling $<"
-	@$(CC) $(CFLAGS) -DDEFAULT_LDIF=\"$(DESTDIR)$(datadir)/setup\" -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+.c.po:
+	@echo "Compiling $< with -fPIC"
+	@$(CC) $(CFLAGS) -fPIC -c $< -o $@
 
 gen_ndr/ndr_%.h gen_ndr/ndr_%.c: %.idl %.h
 	@echo "Generating $@"
@@ -383,39 +389,39 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h $^
 
-libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.o	\
-			libmapi/IProfAdmin.o				\
-			libmapi/IMAPIContainer.o			\
-			libmapi/IMAPIFolder.o				\
-			libmapi/IMAPIProp.o				\
-			libmapi/IMAPISession.o				\
-			libmapi/IMAPISupport.o				\
-			libmapi/IStream.o				\
-			libmapi/IMAPITable.o				\
-			libmapi/IMessage.o				\
-			libmapi/IMsgStore.o				\
-			libmapi/IStoreFolder.o				\
-			libmapi/IUnknown.o				\
-			libmapi/IMSProvider.o				\
-			libmapi/utils.o libmapi/property.o		\
-			libmapi/cdo_mapi.o 				\
-			libmapi/mapi_object.o				\
-			libmapi/mapitags.o				\
-			libmapi/mapidump.o				\
-			libmapi/mapicode.o 				\
-			libmapi/mapi_nameid.o				\
-			libmapi/emsmdb.o				\
-			libmapi/nspi.o 					\
-			libmapi/simple_mapi.o				\
-			libmapi/util/locale.o 				\
-			libmapi/util/codepage.o				\
-			libmapi/x500.o 					\
-			ndr_mapi.o					\
-			gen_ndr/ndr_exchange.o				\
-			gen_ndr/ndr_exchange_c.o			\
-			libmapi/socket/interface.o			\
-			libmapi/socket/netif.o				\
-			libmapi/utf8_convert.yy.o
+libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.po	\
+			libmapi/IProfAdmin.po				\
+			libmapi/IMAPIContainer.po			\
+			libmapi/IMAPIFolder.po				\
+			libmapi/IMAPIProp.po				\
+			libmapi/IMAPISession.po				\
+			libmapi/IMAPISupport.po				\
+			libmapi/IStream.po				\
+			libmapi/IMAPITable.po				\
+			libmapi/IMessage.po				\
+			libmapi/IMsgStore.po				\
+			libmapi/IStoreFolder.po				\
+			libmapi/IUnknown.po				\
+			libmapi/IMSProvider.po				\
+			libmapi/utils.po libmapi/property.po		\
+			libmapi/cdo_mapi.po 				\
+			libmapi/mapi_object.po				\
+			libmapi/mapitags.po				\
+			libmapi/mapidump.po				\
+			libmapi/mapicode.po 				\
+			libmapi/mapi_nameid.po				\
+			libmapi/emsmdb.po				\
+			libmapi/nspi.po 					\
+			libmapi/simple_mapi.po				\
+			libmapi/util/locale.po 				\
+			libmapi/util/codepage.po				\
+			libmapi/x500.po 					\
+			ndr_mapi.po					\
+			gen_ndr/ndr_exchange.po				\
+			gen_ndr/ndr_exchange_c.po			\
+			libmapi/socket/interface.po			\
+			libmapi/socket/netif.po				\
+			libmapi/utf8_convert.yy.po
 	@echo "Linking $@"
 	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
 

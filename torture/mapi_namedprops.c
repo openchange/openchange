@@ -154,6 +154,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 	nameid = talloc_zero(mem_ctx, struct MAPINAMEID);
 	propIDs = talloc_zero(mem_ctx, uint16_t);
 	retval = QueryNamesFromIDs(&obj_message, 0, &count, &propIDs, &nameid);
+	mapi_errstr("QueryNamesFromIDs", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	for (i = 0; i < count; i++) {

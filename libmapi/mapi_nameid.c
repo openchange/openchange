@@ -209,3 +209,31 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_name
 	
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+ * Lookup named properties (MNID_STRING) and return their mapped
+ * proptags
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_GetIDsFromNames(struct mapi_nameid *mapi_nameid,
+						     mapi_object_t *obj, 
+						     struct SPropTagArray *SPropTagArray)
+{
+	enum MAPISTATUS		retval;
+	uint32_t		i;
+
+	/* sanity check */
+	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+
+	retval = GetIDsFromNames(obj, mapi_nameid->count, mapi_nameid->nameid, 0,
+				 &SPropTagArray);
+	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+
+	for (i = 0; i < SPropTagArray->cValues; i++) {
+		SPropTagArray->aulPropTag[i] = (SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
+			mapi_nameid->entries[i].propType;
+	}
+
+	return MAPI_E_SUCCESS;
+}

@@ -2,145 +2,161 @@
 
 
 ### Address Named Properties
-FileAs                        0x8005 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-HomeAddress                   0x801A NULL                        PT_STRING8    MNID_ID     PSETID_Address
-BusinessAddress               0x801B NULL                        PT_STRING8    MNID_ID     PSETID_Address
-OtherAddress                  0x801C NULL                        PT_STRING8    MNID_ID     PSETID_Address
-SelectedMailingAddress        0x8022 NULL                        PT_LONG       MNID_ID     PSETID_Address
-Journal                       0x8025 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Address
-WebPage                       0x802B NULL                        PT_STRING8    MNID_ID     PSETID_Address
-BusinessAddressStreet         0x8045 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-BusinessAddressCity           0x8046 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-BusinessAddressState          0x8047 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-BusinessAddressPostalCode     0x8048 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-BusinessAddressCountry        0x8049 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-IMAddress                     0x8062 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Email1DisplayName             0x8080 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Email1AddressType             0x8082 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Email1Address                 0x8083 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Email1DisplayName             0x8084 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Email1EntryID                 0x8085 NULL                        PT_BINARY     MNID_ID     PSETID_Address
-Fax1AddrType                  0x80B2 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Fax1EmailAddress              0x80B3 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Fax1OriginalDisplayName       0x80B4 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Fax2AddrType                  0x80C2 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Fax2EmailAddress              0x80C3 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Fax2OriginalDisplayName       0x80C4 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Fax2OriginalEntryID           0x80C5 NULL                        PT_BINARY     MNID_ID     PSETID_Address
-Fax3AddrType                  0x80D2 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Fax3EmailAddress              0x80D3 NULL                        PT_STRING8    MNID_ID     PSETID_Address
-Fax3OriginalDisplayName       0x80D4 NULL                        PT_STRING8    MNID_ID     PSETID_Address
+FileAs                        0x8005 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+HomeAddress                   0x801A NULL                          PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddress               0x801B NULL                          PT_STRING8    MNID_ID     PSETID_Address
+OtherAddress                  0x801C NULL                          PT_STRING8    MNID_ID     PSETID_Address
+SelectedMailingAddress        0x8022 NULL                          PT_LONG       MNID_ID     PSETID_Address
+Journal                       0x8025 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Address
+WebPage                       0x802B NULL                          PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddressStreet         0x8045 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddressCity           0x8046 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddressState          0x8047 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddressPostalCode     0x8048 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+BusinessAddressCountry        0x8049 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+IMAddress                     0x8062 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Email1DisplayName             0x8080 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Email1AddressType             0x8082 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Email1Address                 0x8083 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Email1DisplayName             0x8084 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Email1EntryID                 0x8085 NULL                          PT_BINARY     MNID_ID     PSETID_Address
+Fax1AddrType                  0x80B2 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Fax1EmailAddress              0x80B3 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Fax1OriginalDisplayName       0x80B4 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Fax2AddrType                  0x80C2 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Fax2EmailAddress              0x80C3 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Fax2OriginalDisplayName       0x80C4 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Fax2OriginalEntryID           0x80C5 NULL                          PT_BINARY     MNID_ID     PSETID_Address
+Fax3AddrType                  0x80D2 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Fax3EmailAddress              0x80D3 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Fax3OriginalDisplayName       0x80D4 NULL                          PT_STRING8    MNID_ID     PSETID_Address
 
 
 
 ### Task Named Properties
-Status                        0x8101 NULL                        PT_LONG       MNID_ID     PSETID_Task
-PercentComplete               0x8102 NULL                        PT_DOUBLE     MNID_ID     PSETID_Task
-TeamTask                      0x8103 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Task
-StartDate                     0x8104 NULL                        PT_SYSTIME    MNID_ID     PSETID_Task
-DueDate                       0x8105 NULL                        PT_SYSTIME    MNID_ID     PSETID_Task
-DateCompleted                 0x810F NULL                        PT_SYSTIME    MNID_ID     PSETID_Task
-ActualWork                    0x8110 NULL                        PT_LONG       MNID_ID     PSETID_Task
-TotalWork                     0x8111 NULL                        PT_LONG       MNID_ID     PSETID_Task
-NULL                          0x8112 NULL                        PT_LONG       MNID_ID     PSETID_Task
-NULL                          0x8113 NULL                        PT_LONG       MNID_ID     PSETID_Task
-Complete                      0x811C NULL                        PT_BOOLEAN    MNID_ID     PSETID_Task
-Owner                         0x811F NULL                        PT_STRING8    MNID_ID     PSETID_Task
-Delegator                     0x8121 NULL                        PT_STRING8    MNID_ID     PSETID_Task
-Ordinal                       0x8123 NULL                        PT_LONG       MNID_ID     PSETID_Task
-NULL                          0x8124 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Task
-IsRecurring                   0x8126 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Task
-Role                          0x8127 NULL                        PT_STRING8    MNID_ID     PSETID_Task
-Ownership                     0x8129 NULL                        PT_LONG       MNID_ID     PSETID_Task
-DelegationState               0x812A NULL                        PT_LONG       MNID_ID     PSETID_Task
-NULL                          0x812C NULL                        PT_BOOLEAN    MNID_ID     PSETID_Task
+Status                        0x8101 NULL                          PT_LONG       MNID_ID     PSETID_Task
+PercentComplete               0x8102 NULL                          PT_DOUBLE     MNID_ID     PSETID_Task
+TeamTask                      0x8103 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Task
+StartDate                     0x8104 NULL                          PT_SYSTIME    MNID_ID     PSETID_Task
+DueDate                       0x8105 NULL                          PT_SYSTIME    MNID_ID     PSETID_Task
+DateCompleted                 0x810F NULL                          PT_SYSTIME    MNID_ID     PSETID_Task
+ActualWork                    0x8110 NULL                          PT_LONG       MNID_ID     PSETID_Task
+TotalWork                     0x8111 NULL                          PT_LONG       MNID_ID     PSETID_Task
+NULL                          0x8112 NULL                          PT_LONG       MNID_ID     PSETID_Task
+NULL                          0x8113 NULL                          PT_LONG       MNID_ID     PSETID_Task
+Complete                      0x811C NULL                          PT_BOOLEAN    MNID_ID     PSETID_Task
+Owner                         0x811F NULL                          PT_STRING8    MNID_ID     PSETID_Task
+Delegator                     0x8121 NULL                          PT_STRING8    MNID_ID     PSETID_Task
+Ordinal                       0x8123 NULL                          PT_LONG       MNID_ID     PSETID_Task
+NULL                          0x8124 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Task
+IsRecurring                   0x8126 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Task
+Role                          0x8127 NULL                          PT_STRING8    MNID_ID     PSETID_Task
+Ownership                     0x8129 NULL                          PT_LONG       MNID_ID     PSETID_Task
+DelegationState               0x812A NULL                          PT_LONG       MNID_ID     PSETID_Task
+NULL                          0x812C NULL                          PT_BOOLEAN    MNID_ID     PSETID_Task
 
 
 
 ### Appointment Named Properties
-SendAsICAL                    0x8200 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Appointment
-BusyStatus                    0x8205 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-NULL                          0x8207 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-Location                      0x8208 NULL                        PT_STRING8    MNID_ID     PSETID_Appointment
-Start                         0x820d NULL                        PT_SYSTIME    MNID_ID     PSETID_Appointment
-End                           0x820e NULL                        PT_SYSTIME    MNID_ID     PSETID_Appointment
-Duration                      0x8213 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-Label                         0x8214 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-AllDayEvent                   0x8215 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Appointment
-MeetingStatus                 0x8217 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-ResponseStatus                0x8218 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-IsRecurring                   0x8223 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Appointment
-NULL                          0x8224 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-NULL                          0x8229 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Appointment
-RecurrenceType                0x8231 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-RecurrencePattern             0x8232 NULL                        PT_STRING8    MNID_ID     PSETID_Appointment
-TimeZone                      0x8234 NULL                        PT_STRING8    MNID_ID     PSETID_Appointment
-NULL                          0x8235 NULL                        PT_SYSTIME    MNID_ID     PSETID_Appointment
-NULL                          0x8236 NULL                        PT_SYSTIME    MNID_ID     PSETID_Appointment
-NetMeetingType                0x8241 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-NetMeetingServer              0x8242 NULL                        PT_STRING8    MNID_ID     PSETID_Appointment
-NetMeetingOrganizerAlias      0x8243 NULL                        PT_STRING8    MNID_ID     PSETID_Appointment
-NULL                          0x8245 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-ConferenceServerAllowExternal 0x8246 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Appointment
-NetMeetingDocPathName         0x8247 NULL                        PT_STRING8    MNID_ID     PSETID_Appointment
-NetShowURL                    0x8248 NULL                        PT_STRING8    MNID_ID     PSETID_Appointment
-ConferenceServerPassword      0x8249 NULL                        PT_STRING8    MNID_ID     PSETID_Appointment
-NULL                          0x8256 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-NULL                          0x8257 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Appointment
-NULL                          0x8259 NULL                        PT_LONG       MNID_ID     PSETID_Appointment
-NULL                          0x825a NULL                        PT_BOOLEAN    MNID_ID     PSETID_Appointment
+SendAsICAL                    0x8200 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+NULL                          0x8201 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+NULL                          0x8202 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
+NULL                          0x8203 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+BusyStatus                    0x8205 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+NULL                          0x8207 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+Location                      0x8208 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+Start                         0x820d NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
+End                           0x820e NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
+NULL                          0x820f NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
+NULL                          0x8210 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
+NULL                          0x8211 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
+NULL                          0x8212 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
+Duration                      0x8213 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+Label                         0x8214 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+AllDayEvent                   0x8215 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+MeetingStatus                 0x8217 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+ResponseStatus                0x8218 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+IsRecurring                   0x8223 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+NULL                          0x8224 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+NULL                          0x8229 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+RecurrenceType                0x8231 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+RecurrencePattern             0x8232 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+TimeZone                      0x8234 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+NULL                          0x8235 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
+NULL                          0x8236 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
+AllAttendees                  0x8238 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+NULL                          0x823b NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+NULL                          0x823c NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+NULL                          0x823d NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+IsOnlineMeeting               0x8240 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+NetMeetingType                0x8241 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+NetMeetingServer              0x8242 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+NetMeetingOrganizerAlias      0x8243 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+NetMeetingAutoStart           0x8244 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+NULL                          0x8245 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+ConferenceServerAllowExternal 0x8246 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+NetMeetingDocPathName         0x8247 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+NetShowURL                    0x8248 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+ConferenceServerPassword      0x8249 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+NULL                          0x8256 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+NULL                          0x8257 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+NULL                          0x8259 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+NULL                          0x825a NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
 
 
 
 ### Common Named properties
-ReminderMinutesBeforeStart    0x8501 NULL                        PT_LONG       MNID_ID     PSETID_Common
-ReminderTime                  0x8502 NULL                        PT_SYSTIME    MNID_ID     PSETID_Common
-ReminderSet                   0x8503 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Common
-Private	                      0x8506 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Common
-NoAging                       0x850E NULL                        PT_BOOLEAN    MNID_ID     PSETID_Common
-NULL                          0x8510 NULL                        PT_LONG       MNID_ID     PSETID_Common
-CommonStart                   0x8516 NULL                        PT_SYSTIME    MNID_ID     PSETID_Common
-CommonEnd                     0x8517 NULL                        PT_SYSTIME    MNID_ID     PSETID_Common
-NULL                          0x8518 NULL                        PT_LONG       MNID_ID     PSETID_Common
-Mileage                       0x8534 NULL                        PT_STRING8    MNID_ID     PSETID_Common
-BillingInformation            0x8535 NULL                        PT_STRING8    MNID_ID     PSETID_Common
-Companies                     0x8539 NULL                        PT_MV_STRING8 MNID_ID     PSETID_Common
-Contacts                      0x853A NULL                        PT_MV_STRING8 MNID_ID     PSETID_Common
-OutlookInternalVersion        0x8552 NULL                        PT_LONG       MNID_ID     PSETID_Common
-OutlookVersion                0x8554 NULL                        PT_STRING8    MNID_ID     PSETID_Common
-FlagDueBy                     0x8560 NULL                        PT_SYSTIME    MNID_ID     PSETID_Common
-UseTNEF                       0x8582 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Common
-NULL                          0x8583 NULL                        PT_STRING8    MNID_ID     PSETID_Common
-
+ReminderMinutesBeforeStart    0x8501 NULL                          PT_LONG       MNID_ID     PSETID_Common
+ReminderTime                  0x8502 NULL                          PT_SYSTIME    MNID_ID     PSETID_Common
+ReminderSet                   0x8503 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Common
+Private	                      0x8506 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Common
+NoAging                       0x850E NULL                          PT_BOOLEAN    MNID_ID     PSETID_Common
+NULL                          0x8510 NULL                          PT_LONG       MNID_ID     PSETID_Common
+CommonStart                   0x8516 NULL                          PT_SYSTIME    MNID_ID     PSETID_Common
+CommonEnd                     0x8517 NULL                          PT_SYSTIME    MNID_ID     PSETID_Common
+NULL                          0x8518 NULL                          PT_LONG       MNID_ID     PSETID_Common
+Mileage                       0x8534 NULL                          PT_STRING8    MNID_ID     PSETID_Common
+BillingInformation            0x8535 NULL                          PT_STRING8    MNID_ID     PSETID_Common
+Companies                     0x8539 NULL                          PT_MV_STRING8 MNID_ID     PSETID_Common
+Contacts                      0x853A NULL                          PT_MV_STRING8 MNID_ID     PSETID_Common
+OutlookInternalVersion        0x8552 NULL                          PT_LONG       MNID_ID     PSETID_Common
+OutlookVersion                0x8554 NULL                          PT_STRING8    MNID_ID     PSETID_Common
+FlagDueBy                     0x8560 NULL                          PT_SYSTIME    MNID_ID     PSETID_Common
+UseTNEF                       0x8582 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Common
+NULL                          0x8583 NULL                          PT_STRING8    MNID_ID     PSETID_Common
+NULL                          0x8584 NULL                          PT_BINARY     MNID_ID     PSETID_Common
+NULL                          0x8585 NULL                          PT_BINARY     MNID_ID     PSETID_Common
+NULL                          0x8586 NULL                          PT_STRING8    MNID_ID     PSETID_Common
 
 
 ### Log Named Properties
-Type                          0x8700 NULL                        PT_STRING8    MNID_ID     PSETID_Log
-Start                         0x8706 NULL                        PT_SYSTIME    MNID_ID     PSETID_Log
-Duration                      0x8707 NULL                        PT_LONG       MNID_ID     PSETID_Log
-End                           0x8708 NULL                        PT_SYSTIME    MNID_ID     PSETID_Log
-LogFlags                      0x870C NULL                        PT_LONG       MNID_ID     PSETID_Log
-DocPrinted                    0x870E NULL                        PT_BOOLEAN    MNID_ID     PSETID_Log
-DocSaved                      0x870F NULL                        PT_BOOLEAN    MNID_ID     PSETID_Log
-DocRouted                     0x8710 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Log
-DocPosted                     0x8711 NULL                        PT_BOOLEAN    MNID_ID     PSETID_Log
-TypeDescription               0x8712 NULL                        PT_STRING8    MNID_ID     PSETID_Log
+Type                          0x8700 NULL                          PT_STRING8    MNID_ID     PSETID_Log
+Start                         0x8706 NULL                          PT_SYSTIME    MNID_ID     PSETID_Log
+Duration                      0x8707 NULL                          PT_LONG       MNID_ID     PSETID_Log
+End                           0x8708 NULL                          PT_SYSTIME    MNID_ID     PSETID_Log
+LogFlags                      0x870C NULL                          PT_LONG       MNID_ID     PSETID_Log
+DocPrinted                    0x870E NULL                          PT_BOOLEAN    MNID_ID     PSETID_Log
+DocSaved                      0x870F NULL                          PT_BOOLEAN    MNID_ID     PSETID_Log
+DocRouted                     0x8710 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Log
+DocPosted                     0x8711 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Log
+TypeDescription               0x8712 NULL                          PT_STRING8    MNID_ID     PSETID_Log
 
 
 
 ### Note Named Properties
-Color                         0x8B00 NULL                        PT_LONG       MNID_ID     PSETID_Note
-Width                         0x8B02 NULL                        PT_LONG       MNID_ID     PSETID_Note
-Height                        0x8B03 NULL                        PT_LONG       MNID_ID     PSETID_Note
-Left                          0x8B04 NULL                        PT_LONG       MNID_ID     PSETID_Note
-Top                           0x8B05 NULL                        PT_LONG       MNID_ID     PSETID_Note
+Color                         0x8B00 NULL                          PT_LONG       MNID_ID     PSETID_Note
+Width                         0x8B02 NULL                          PT_LONG       MNID_ID     PSETID_Note
+Height                        0x8B03 NULL                          PT_LONG       MNID_ID     PSETID_Note
+Left                          0x8B04 NULL                          PT_LONG       MNID_ID     PSETID_Note
+Top                           0x8B05 NULL                          PT_LONG       MNID_ID     PSETID_Note
 
 
 
 ### PS_PUBLIC_STRINGS
-Keywords                      0x0000 Keywords                    PT_MV_STRING8 MNID_STRING PS_PUBLIC_STRINGS
-urn:schemas:contacts:fileas   0x0000 urn:schemas:contacts:fileas PT_STRING8    MNID_STRING PS_PUBLIC_STRINGS
-
+NULL                          0x0000 Keywords                      PT_MV_STRING8 MNID_STRING PS_PUBLIC_STRINGS
+NULL                          0x0000 urn:schemas:contacts:fileas   PT_STRING8    MNID_STRING PS_PUBLIC_STRINGS
+NULL                          0x0000 urn:schemas:calendar:sequence PT_LONG       MNID_STRING PS_PUBLIC_STRINGS
+NULL                          0x0000 urn:schemas:calendar:version  PT_STRING8    MNID_STRING PS_PUBLIC_STRINGS
 
 
 ### PS_INTERNET_HEADERS

@@ -479,6 +479,7 @@ _PUBLIC_ void mapi_SPropValue_array_named(mapi_object_t *obj,
 						(props->lpProps[i].ulPropTag & 0x0000FFFF);
 					break;
 				case MNID_STRING:
+					/* MNID_STRING named properties don't have propIDs */
 					break;
 				}
 			}

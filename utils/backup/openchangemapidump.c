@@ -438,7 +438,7 @@ int main(int argc, const char *argv[])
 	 * the database 
 	 */
 	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname, 0);
+		retval = GetDefaultProfile(&opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			exit (1);

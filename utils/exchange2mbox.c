@@ -325,7 +325,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	enum MAPISTATUS			retval;
 	mapi_object_t			obj_tb_attach;
 	mapi_object_t			obj_attach;
-	const uint64_t		*delivery_date;
+	const uint64_t			*delivery_date;
 	const char			*date = NULL;
 	const char			*from = NULL;
 	const char			*to = NULL;
@@ -335,13 +335,13 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	const char			*msgid;
 	const char			*body = NULL;
 	const char			*attach_filename;
-	const uint32_t		*attach_size;
+	const uint32_t			*attach_size;
 	char				*attachment_data;
-	const uint32_t		*has_attach = NULL;
-	const uint32_t		*attach_num = NULL;
+	const uint32_t			*has_attach = NULL;
+	const uint32_t			*attach_num = NULL;
 	char				*magic;
 	char				*line = NULL;
-	const struct SBinary_short		*html = NULL;
+	const struct SBinary_short	*html = NULL;
 	struct SPropTagArray		*SPropTagArray = NULL;
 	struct SRowSet			rowset_attach;
 	struct mapi_SPropValue_array	properties_array;
@@ -359,7 +359,11 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	}
 
 	delivery_date = (const uint64_t *)find_mapi_SPropValue_data(properties, PR_MESSAGE_DELIVERY_TIME);
-	date = nt_time_string(mem_ctx, *delivery_date);
+	if (delivery_date) {
+		date = nt_time_string(mem_ctx, *delivery_date);
+	} else {
+		date = "None";
+	}
 
 	subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
 	msgid = (const char *) find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
@@ -455,11 +459,8 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 		line = talloc_asprintf(mem_ctx, "Content-Type: \"text/html\"\n");
 		if (line) fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);		
-
-		
-
 		fwrite(html->lpb, html->cb, 1, fp);
-	}
+	} 
 
 	/* We are now fetching attachments */
 	if (has_attach && *has_attach) {

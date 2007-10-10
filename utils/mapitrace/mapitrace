@@ -7,7 +7,7 @@
 # Copyright Julien Kerihuel 2007.
 # <j.kerihuel@openchange.org>
 #
-# released under GNU GPL
+# released under GNU GPL v3 or later
 
 use strict;
 

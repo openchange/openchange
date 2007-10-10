@@ -3,7 +3,7 @@
 	Copyright Andrew Tridgell 2005
 	Copyright Julien Kerihuel 2005-2007
 	Copyright Jerome Medegan  2006
-	Released under the GNU GPL v2 or later
+	Released under the GNU GPL v3 or later
 
 	Note to developers: This script is a light copy from Samba
 	provisioning script with some modifications so it fit

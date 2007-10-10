@@ -117,7 +117,6 @@ install: all installman $(SWIGDIRS-INSTALL)
 	$(INSTALL) -m 0644 libmapi/mapi_nameid.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapidefs.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
-	$(INSTALL) -m 0644 libmapi/property.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
 	$(INSTALL) -m 0644 gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	@echo "OpenChange plugin installed"
@@ -297,6 +296,7 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f providers/*.{o,po}
 	rm -f torture/*.{o,po}
 	rm -f utils/*.o
+	rm -f utils/backup/*.o
 	rm -f gen_ndr/ndr_exchange* gen_ndr/exchange.h
 	rm -f libmapi/mapicode.{c,h}
 	rm -f libmapi/mapitags.{c,h}

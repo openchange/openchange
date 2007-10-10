@@ -3,7 +3,7 @@ exec smbscript "$0" ${1+"$@"}
 /*
 	provision OpenChange MAPI Profiles
 	Copyright Julien Kerihuel 2007
-	Released under the GNU GPL v2 or later
+	Released under the GNU GPL v3 or later
 */
 
 options = GetOptions(ARGV,

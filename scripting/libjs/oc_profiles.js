@@ -1,7 +1,7 @@
 /*
 	backend code for provisioning a MAPI Profile database
 	Copyright Julien Kerihuel 2007
-	Released under the GNU GPL v2 or later
+	Released under the GNU GPL v3 or later
 */
 
 sys = sys_init();

@@ -3,7 +3,7 @@
 # Copyright Julien Kerihuel 2007
 # <j.kerihuel@openchange.org>
 #
-# released under the GNU GPL
+# released under the GNU GPL v3 or later
 #
 package MAPI::EcDoRpc;
 

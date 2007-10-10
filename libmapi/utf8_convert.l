@@ -24,6 +24,13 @@
 
 int yylex(void);
 
+/*
+ * Prototypes
+ */
+
+int	yyreplace_utf8(char *);
+int	yyparse_utf8(char *, char *);
+
 char *newbuf;
 int  newbuf_idx;
 
@@ -343,6 +350,7 @@ yyreplace_utf8(char *str)
 {
 	memcpy(&newbuf[newbuf_idx], str, strlen(str));
 	newbuf_idx += strlen(str);
+	return 0;
 }
 
 int
@@ -353,4 +361,5 @@ yyparse_utf8(char *mybuf, char *str)
 	yy_scan_string(str);
 	yylex();
 	newbuf[newbuf_idx] = 0;
+	return 0;
 }

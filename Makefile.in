@@ -286,15 +286,16 @@ realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
 	rmdir gen_ndr
 
 clean:	$(SWIGDIRS-CLEAN)
-	rm -f libmapi/*.o libmapiadmin/*.o
+	rm -f libmapi/*.{o,po} libmapiadmin/*.{o,po}
 	rm -f libmapi/utf8_convert.yy.c
-	rm -f libmapi/tests/*.o
-	rm -f libmapi/util/*.o
+	rm -f libmapi/tests/*.{o,po}
+	rm -f libmapi/socket/*.{o,po}
+	rm -f libmapi/util/*.{o,po}
 	rm -f tests/*.o
 	rm -rf bin/*
-	rm -f server/*.o
-	rm -f providers/*.o
-	rm -f torture/*.o
+	rm -f server/*.{o,po}
+	rm -f providers/*.{o,po}
+	rm -f torture/*.{o,po}
 	rm -f utils/*.o
 	rm -f gen_ndr/ndr_exchange* gen_ndr/exchange.h
 	rm -f libmapi/mapicode.{c,h}
@@ -308,7 +309,7 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f providers/providers_proto.h
 	rm -f torture/*.$(SHLIBEXT) server/*.$(SHLIBEXT)
 	rm -f torture/torture_proto.h
-	rm -f ndr_mapi.o
+	rm -f ndr_mapi.{o,po}
 	rm -f mapicodes_enum.h
 	rm -f mapitags_enum.h
 	rm -f *~
@@ -413,11 +414,11 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.po	\
 			libmapi/mapicode.po 				\
 			libmapi/mapi_nameid.po				\
 			libmapi/emsmdb.po				\
-			libmapi/nspi.po 					\
+			libmapi/nspi.po 				\
 			libmapi/simple_mapi.po				\
 			libmapi/util/locale.po 				\
-			libmapi/util/codepage.po				\
-			libmapi/x500.po 					\
+			libmapi/util/codepage.po			\
+			libmapi/x500.po 				\
 			ndr_mapi.po					\
 			gen_ndr/ndr_exchange.po				\
 			gen_ndr/ndr_exchange_c.po			\

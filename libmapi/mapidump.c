@@ -174,14 +174,14 @@ _PUBLIC_ void mapidump_date_SPropValue(struct SPropValue lpProp, const char *lab
 
 _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties)
 {
-	const char		*msgid;
-	const char		*from;
-	const char		*to;
-	const char		*cc;
-	const char		*bcc;
-	const char		*subject;
-	const char		*body;
-	const char		*codepage;
+	const char			*msgid;
+	const char			*from;
+	const char			*to;
+	const char			*cc;
+	const char			*bcc;
+	const char			*subject;
+	const char			*body;
+	const char			*codepage;
 	const struct SBinary_short	*html = NULL;
 	const uint8_t			*has_attach;
 	const uint32_t       		*cp;

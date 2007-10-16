@@ -22,6 +22,7 @@
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 #include <gen_ndr/ndr_exchange_c.h>
+#include <gen_ndr/ndr_misc.h>
 
 #include <param.h>
 #include <credentials.h>
@@ -337,11 +338,13 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAP
 {
 	struct ndr_pull		*ndr;
 	const char		*pt_string8;
+	const char		*pt_unicode;
 	uint16_t		*pt_i2;
 	uint64_t		*pt_i8;
 	uint32_t		*pt_long;
 	uint8_t			*pt_boolean;
 	struct FILETIME		*pt_filetime;
+	struct GUID		*pt_clsid;
 	struct SBinary_short	pt_binary;
 	struct SBinary		*sbin;
 
@@ -352,40 +355,48 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAP
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 
 	switch(tag & 0xFFFF) {
-	case PT_BOOLEAN:
-		pt_boolean = talloc_zero(mem_ctx, uint8_t);
-		ndr_pull_uint8(ndr, NDR_SCALARS, pt_boolean);
-		*offset = ndr->offset;
-		return (void *) pt_boolean;
 	case PT_I2:
 		pt_i2 = talloc_zero(mem_ctx, uint16_t);
 		ndr_pull_uint16(ndr, NDR_SCALARS, pt_i2);
 		*offset = ndr->offset;
 		return (void *) pt_i2;
-	case PT_NULL:
 	case PT_ERROR:
 	case PT_LONG:
 		pt_long = talloc_zero(mem_ctx, uint32_t);
 		ndr_pull_uint32(ndr, NDR_SCALARS, pt_long);
 		*offset = ndr->offset;
 		return (void *) pt_long;
+	case PT_BOOLEAN:
+		pt_boolean = talloc_zero(mem_ctx, uint8_t);
+		ndr_pull_uint8(ndr, NDR_SCALARS, pt_boolean);
+		*offset = ndr->offset;
+		return (void *) pt_boolean;
 	case PT_I8:
 		pt_i8 = talloc_zero(mem_ctx, uint64_t);
 		ndr_pull_hyper(ndr, NDR_SCALARS, pt_i8);
 		*offset = ndr->offset;
 		return (void *) pt_i8;
-	case PT_SYSTIME:
-		pt_filetime = talloc_zero(mem_ctx, struct FILETIME);
-		ndr_pull_hyper(ndr, NDR_SCALARS, (uint64_t*)pt_filetime);
-		*offset = ndr->offset;
-		return (void*) pt_filetime;
 	case PT_UNICODE:
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+		ndr_pull_string(ndr, NDR_SCALARS, &pt_unicode);
+		*offset = ndr->offset;
+		return (const void *) pt_unicode;
 	case PT_STRING8:
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 		ndr_pull_string(ndr, NDR_SCALARS, &pt_string8);
 		*offset = ndr->offset;
 		return (const void *) pt_string8;
-	case PT_OBJECT:
+	case PT_SYSTIME:
+		pt_filetime = talloc_zero(mem_ctx, struct FILETIME);
+		ndr_pull_hyper(ndr, NDR_SCALARS, (uint64_t *) pt_filetime);
+		*offset = ndr->offset;
+		return (void*) pt_filetime;
+	case PT_CLSID:
+		pt_clsid = talloc_zero(mem_ctx, struct GUID);
+		ndr_pull_GUID(ndr, NDR_SCALARS, pt_clsid);
+		*offset = ndr->offset;
+		return (void *) pt_clsid;
+	case 0xFB:
 	case PT_BINARY:
 		ndr_pull_SBinary_short(ndr, NDR_SCALARS, &pt_binary);
 		*offset = ndr->offset;

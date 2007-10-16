@@ -715,15 +715,15 @@ System Attendant Private Interface
 	} mapi_SGuidArray;
 
 	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
-		[case(PT_BOOLEAN)]	uint8			b;
 		[case(PT_I2)]		uint16			i;
 		[case(PT_LONG)]     	uint32			l;
 		[case(PT_DOUBLE)]	dlong			dbl;
-		[case(PT_I8)]		dlong			d;
-		[case(PT_SYSTIME)]	FILETIME		ft;
 		[case(PT_ERROR)]       	uint32			err;
+		[case(PT_BOOLEAN)]	uint8			b;
+		[case(PT_I8)]		dlong			d;
 		[case(PT_STRING8)]	astring			lpszA;
 		[case(PT_UNICODE)][flag(STR_NULLTERM)] string	lpszW;
+		[case(PT_SYSTIME)]	FILETIME		ft;
 		[case(PT_CLSID)]	GUID			lpguid;
   		[case(PT_BINARY)]	SBinary_short		bin;
 		[case(0xFB)]		SBinary_short		bin;

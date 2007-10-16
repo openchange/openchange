@@ -252,6 +252,8 @@ const void *get_SPropValue_data(struct SPropValue *lpProps)
 		return (const void *)&lpProps->value.l;
 	case PT_DOUBLE:
 		return (const void *)&lpProps->value.dbl;
+	case PT_CLSID:
+		return (const void *)(struct GUID *)&lpProps->value.lpguid;
 	case PT_BINARY:
 		return (const void *)&lpProps->value.bin;
 	default:

@@ -252,22 +252,21 @@ bin/openchangeclient: 	utils/openchangeclient.o			\
 
 bin/openchangepfadmin:	utils/openchangepfadmin.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
-			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)	\
-			-lpopt						
+			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS)
+	@$(CC) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) -lpopt						
+
 
 bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
 			utils/backup/openchangebackup.o			\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-			-lpopt						
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS)
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
 bin/exchange2mbox:	utils/exchange2mbox.o				\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) -lpopt $(MAGIC_LIBS)
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS)
+	@$(CC) -o $@ $^ $(LIBS) -lpopt  $(MAGIC_LIBS)
 
 distclean: clean $(SWIGDIRS-DISTCLEAN)
 	rm -rf autom4te.cache
@@ -428,8 +427,8 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.po	\
 	@echo "Linking $@"
 	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
 
-libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	libmapiadmin/mapiadmin_user.o	\
-						libmapiadmin/mapiadmin.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	libmapiadmin/mapiadmin_user.po	\
+						libmapiadmin/mapiadmin.po libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
 

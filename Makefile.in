@@ -340,6 +340,7 @@ libmapi/proto.h libmapi/proto_private.h: libmapi/nspi.c			\
 	libmapi/IUnknown.c 		\
 	libmapi/IStream.c		\
 	libmapi/x500.c 			\
+	libmapi/lzfu.c			\
 	libmapi/utils.c 		\
 	libmapi/util/locale.c 		\
 	libmapi/util/codepage.c 	\
@@ -407,6 +408,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.po	\
 			libmapi/IMSProvider.po				\
 			libmapi/utils.po libmapi/property.po		\
 			libmapi/cdo_mapi.po 				\
+			libmapi/lzfu.po					\
 			libmapi/mapi_object.po				\
 			libmapi/mapitags.po				\
 			libmapi/mapidump.po				\

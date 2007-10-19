@@ -57,7 +57,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 					   enum PROVIDER_ID provider)
 {
 	TALLOC_CTX		*mem_ctx;
-	enum MAPISTATUS		status;
+	enum MAPISTATUS		retval;
 	struct mapi_provider	*provider_emsmdb;
 	struct mapi_provider	*provider_nspi;
 	struct mapi_profile	*profile;
@@ -79,11 +79,11 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 		profile = talloc_zero(mem_ctx, struct mapi_profile);
 		MAPI_RETVAL_IF(!profile, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
-		status = OpenProfile(profile, profname, password);
-		if (status != MAPI_E_SUCCESS) return status;
+		retval = OpenProfile(profile, profname, password);
+		if (retval != MAPI_E_SUCCESS) return retval;
 		
-		status = LoadProfile(profile);
-		if (status != MAPI_E_SUCCESS) return status;
+		retval = LoadProfile(profile);
+		if (retval != MAPI_E_SUCCESS) return retval;
 
 		global_mapi_ctx->session->profile = profile;
 	}
@@ -93,16 +93,16 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 		provider_emsmdb = talloc_zero(mem_ctx, struct mapi_provider);
 		MAPI_RETVAL_IF(!provider_emsmdb, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 		talloc_set_destructor((void *)provider_emsmdb, (int (*)(void *))emsmdb_disconnect_dtor);
-		status = Logon(provider_emsmdb, PROVIDER_ID_EMSMDB);
-		if (status) return status;
+		retval = Logon(provider_emsmdb, PROVIDER_ID_EMSMDB);
+		if (retval) return retval;
 		global_mapi_ctx->session->emsmdb = provider_emsmdb;
 		break;
 	case PROVIDER_ID_NSPI:
 		provider_nspi = talloc_zero(mem_ctx, struct mapi_provider);
 		MAPI_RETVAL_IF(!provider_nspi, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 		talloc_set_destructor((void *)provider_nspi, (int (*)(void *))nspi_disconnect_dtor);
-		status = Logon(provider_nspi, PROVIDER_ID_NSPI);
-		if (status) return status;
+		retval = Logon(provider_nspi, PROVIDER_ID_NSPI);
+		if (retval) return retval;
 		global_mapi_ctx->session->nspi = provider_nspi;
 		break;
 	default:
@@ -119,7 +119,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 
 _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 {
-	enum MAPISTATUS	status;
+	enum MAPISTATUS	retval;
 	TALLOC_CTX	*mem_ctx;
 
 	/* Set the initial errno value for GetLastError */
@@ -138,8 +138,8 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	global_mapi_ctx->dumpdata = false;
 
 	/* profile store */
-	status = OpenProfileStore(mem_ctx, &global_mapi_ctx->ldb_ctx, profiledb);
-	MAPI_RETVAL_IF(status, status, mem_ctx);
+	retval = OpenProfileStore(mem_ctx, &global_mapi_ctx->ldb_ctx, profiledb);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	lp_load_default();
 	dcerpc_init();

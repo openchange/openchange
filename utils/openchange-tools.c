@@ -82,7 +82,7 @@ static enum MAPISTATUS octool_get_stream(TALLOC_CTX *mem_ctx,
 /*
  * Fetch the body given PR_MSG_EDITOR_FORMAT property value
  */
-static enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
+_PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
 				       mapi_object_t *obj_message,
 				       struct SRow *aRow,
 				       const uint32_t *editor, 

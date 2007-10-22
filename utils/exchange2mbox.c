@@ -319,7 +319,7 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 **/
 
 static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp, 
-			 struct mapi_SPropValue_array *properties, mapi_object_t *obj_message)
+			 struct SRow *aRow, mapi_object_t *obj_message)
 {
 	enum MAPISTATUS			retval;
 	mapi_object_t			obj_tb_attach;
@@ -332,7 +332,8 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	const char			*bcc = NULL;
 	const char			*subject = NULL;
 	const char			*msgid;
-	const char			*body = NULL;
+	const uint32_t			*editor;
+	DATA_BLOB			body;
 	const char			*attach_filename;
 	const uint32_t			*attach_size;
 	char				*attachment_data;
@@ -340,39 +341,35 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	const uint32_t			*attach_num = NULL;
 	char				*magic;
 	char				*line = NULL;
-	const struct SBinary_short	*html = NULL;
 	struct SPropTagArray		*SPropTagArray = NULL;
+	struct SPropValue		*lpProps;
+	struct SRow			aRow2;
 	struct SRowSet			rowset_attach;
-	struct mapi_SPropValue_array	properties_array;
+	uint32_t			count;
 	int				i;
 
-	has_attach = (const uint32_t *) find_mapi_SPropValue_data(properties, PR_HASATTACH);
-
-	from = (const char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME);
-	to = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO);
-	cc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC);
-	bcc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC);
+	has_attach = (const uint32_t *) octool_get_propval(aRow, PR_HASATTACH);
+	from = (const char *) octool_get_propval(aRow, PR_SENT_REPRESENTING_NAME);
+	to = (const char *) octool_get_propval(aRow, PR_DISPLAY_TO);
+	cc = (const char *) octool_get_propval(aRow, PR_DISPLAY_CC);
+	bcc = (const char *) octool_get_propval(aRow, PR_DISPLAY_BCC);
 
 	if (!to && !cc && !bcc) {
 		return false;
 	}
 
-	delivery_date = (const uint64_t *)find_mapi_SPropValue_data(properties, PR_MESSAGE_DELIVERY_TIME);
+	delivery_date = (const uint64_t *)octool_get_propval(aRow, PR_MESSAGE_DELIVERY_TIME);
 	if (delivery_date) {
 		date = nt_time_string(mem_ctx, *delivery_date);
 	} else {
 		date = "None";
 	}
 
-	subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	msgid = (const char *) find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
-	body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY);
-	if (!body) {
-		body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY_UNICODE);
-		if (!body) {
-			html = (const struct SBinary_short *) find_mapi_SPropValue_data(properties, PR_HTML);
-		}
-	}
+	subject = (const char *) octool_get_propval(aRow, PR_CONVERSATION_TOPIC);
+	msgid = (const char *) octool_get_propval(aRow, PR_INTERNET_MESSAGE_ID);
+	editor = (const uint32_t *) octool_get_propval(aRow, PR_MSG_EDITOR_FORMAT);
+
+	retval = octool_get_body(mem_ctx, obj_message, aRow, editor, &body);
 
 	/* First line From */
 	line = talloc_asprintf(mem_ctx, "From \"%s\" %s\n", from, date);
@@ -429,12 +426,14 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	}
 
 	/* body */
-	if (body) {
+	if (body.length) {
 		if (has_attach && *has_attach) {
 			line = talloc_asprintf(mem_ctx, "--%s\n", BOUNDARY);
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
-
+		}
+		switch (*editor) {
+		case EDITOR_FORMAT_PLAINTEXT:
 			line = talloc_asprintf(mem_ctx, "Content-Type: text/plain; charset=us-ascii\n");
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
@@ -443,22 +442,25 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 			line = talloc_asprintf(mem_ctx, "Content-Disposition: inline\n");
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
-		}
+			break;
+		case EDITOR_FORMAT_HTML:
+			line = talloc_asprintf(mem_ctx, "Content-Type: \"text/html\"\n");
+			if (line) fwrite(line, strlen(line), 1, fp);
+			talloc_free(line);		
+			break;
+		case EDITOR_FORMAT_RTF:
+			line = talloc_asprintf(mem_ctx, "Content-Type: \"text/rtf\"\n");
+			if (line) fwrite(line, strlen(line), 1, fp);
+			talloc_free(line);					
 
-		line = talloc_asprintf(mem_ctx, "\n%s", body);
-		if (line) fwrite(line, strlen(line), 1, fp);
-		talloc_free(line);
-	} else if (html) {
-		if (has_attach && *has_attach) {
 			line = talloc_asprintf(mem_ctx, "--%s\n", BOUNDARY);
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
+			break;
 		}
 
-		line = talloc_asprintf(mem_ctx, "Content-Type: \"text/html\"\n");
-		if (line) fwrite(line, strlen(line), 1, fp);
-		talloc_free(line);		
-		fwrite(html->lpb, html->cb, 1, fp);
+		fwrite(body.data, body.length, 1, fp);
+		talloc_free(body.data);
 	} 
 
 	/* We are now fetching attachments */
@@ -478,31 +480,46 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 				attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[i]), PR_ATTACH_NUM);
 				retval = OpenAttach(obj_message, *attach_num, &obj_attach);
 				if (retval == MAPI_E_SUCCESS) {
-					retval = GetPropsAll(&obj_attach, &properties_array);
-					attach_filename = get_filename(find_mapi_SPropValue_data(&properties_array, PR_ATTACH_FILENAME));
-					attach_size = (const uint32_t *) find_mapi_SPropValue_data(&properties_array, PR_ATTACH_SIZE);
-					attachment_data = get_base64_attachment(mem_ctx, obj_attach, *attach_size, &magic);
-					if (attachment_data) {
-						line = talloc_asprintf(mem_ctx, "\n\n--%s\n", BOUNDARY);
-						if (line) fwrite(line, strlen(line), 1, fp);
-						talloc_free(line);
+					SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
+									  PR_ATTACH_FILENAME,
+									  PR_ATTACH_LONG_FILENAME,
+									  PR_ATTACH_SIZE);
+					lpProps = talloc_zero(mem_ctx, struct SPropValue);
+					retval = GetProps(&obj_attach, SPropTagArray, &lpProps, &count);
+					MAPIFreeBuffer(SPropTagArray);
+					if (retval == MAPI_E_SUCCESS) {
+						aRow2.ulAdrEntryPad = 0;
+						aRow2.cValues = count;
+						aRow2.lpProps = lpProps;
 
-						line = talloc_asprintf(mem_ctx, "Content-Disposition: attachment; filename=\"%s\"\n", attach_filename);
-						if (line) fwrite(line, strlen(line), 1, fp);
-						talloc_free(line);
+						attach_filename = get_filename(octool_get_propval(&aRow2, PR_ATTACH_LONG_FILENAME));
+						if (!attach_filename || (attach_filename && !strcmp(attach_filename, ""))) {
+							attach_filename = get_filename(octool_get_propval(&aRow2, PR_ATTACH_FILENAME));
+						}
+						attach_size = (const uint32_t *) octool_get_propval(&aRow2, PR_ATTACH_SIZE);						
+						attachment_data = get_base64_attachment(mem_ctx, obj_attach, *attach_size, &magic);
+						if (attachment_data) {
+							line = talloc_asprintf(mem_ctx, "\n\n--%s\n", BOUNDARY);
+							if (line) fwrite(line, strlen(line), 1, fp);
+							talloc_free(line);
 
-						line = talloc_asprintf(mem_ctx, "Content-Type: \"%s\"\n", magic);
-						if (line) fwrite(line, strlen(line), 1, fp);
-						talloc_free(line);
-
-						line = talloc_asprintf(mem_ctx, "Content-Transfer-Encoding: base64\n\n");
-						if (line) fwrite(line, strlen(line), 1, fp);
-						talloc_free(line);
-						
-						fwrite(attachment_data, strlen(attachment_data), 1, fp);
-						talloc_free(attachment_data);
-
+							line = talloc_asprintf(mem_ctx, "Content-Disposition: attachment; filename=\"%s\"\n", attach_filename);
+							if (line) fwrite(line, strlen(line), 1, fp);
+							talloc_free(line);
+							
+							line = talloc_asprintf(mem_ctx, "Content-Type: \"%s\"\n", magic);
+							if (line) fwrite(line, strlen(line), 1, fp);
+							talloc_free(line);
+							
+							line = talloc_asprintf(mem_ctx, "Content-Transfer-Encoding: base64\n\n");
+							if (line) fwrite(line, strlen(line), 1, fp);
+							talloc_free(line);
+							
+							fwrite(attachment_data, strlen(attachment_data), 1, fp);
+							talloc_free(attachment_data);
+						}
 					}
+					MAPIFreeBuffer(lpProps);
 				}
 			}
 			if (has_attach && *has_attach) {
@@ -531,8 +548,9 @@ int main(int argc, const char *argv[])
 	mapi_object_t			obj_message;
 	mapi_id_t			id_inbox;
 	uint32_t			count;
-	struct mapi_SPropValue_array	properties_array;
 	struct SPropTagArray		*SPropTagArray = NULL;
+	struct SPropValue		*lpProps;
+	struct SRow			aRow;
 	struct SRowSet			rowset;
 	poptContext			pc;
 	int				opt;
@@ -677,14 +695,40 @@ int main(int argc, const char *argv[])
 					     rowset.aRow[i].lpProps[1].value.d, 
 					     &obj_message, 0);
 			if (GetLastError() == MAPI_E_SUCCESS) {
-				retval = GetPropsAll(&obj_message, &properties_array);
+				SPropTagArray = set_SPropTagArray(mem_ctx, 0x13,
+								  PR_INTERNET_MESSAGE_ID,
+								  PR_INTERNET_MESSAGE_ID_UNICODE,
+								  PR_CONVERSATION_TOPIC,
+								  PR_CONVERSATION_TOPIC_UNICODE,
+								  PR_MESSAGE_DELIVERY_TIME,
+								  PR_MSG_EDITOR_FORMAT,
+								  PR_BODY,
+								  PR_BODY_UNICODE,
+								  PR_HTML,
+								  PR_RTF_COMPRESSED,
+								  PR_SENT_REPRESENTING_NAME,
+								  PR_SENT_REPRESENTING_NAME_UNICODE,
+								  PR_DISPLAY_TO,
+								  PR_DISPLAY_TO_UNICODE,
+								  PR_DISPLAY_CC,
+								  PR_DISPLAY_CC_UNICODE,
+								  PR_DISPLAY_BCC,
+								  PR_DISPLAY_BCC_UNICODE,
+								  PR_HASATTACH);
+				retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
+				MAPIFreeBuffer(SPropTagArray);
 				if (retval != MAPI_E_SUCCESS) return false;
-				
-				msgid = (const char *) find_mapi_SPropValue_data(&properties_array, PR_INTERNET_MESSAGE_ID);
+
+				/* Build a SRow structure */
+				aRow.ulAdrEntryPad = 0;
+				aRow.cValues = count;
+				aRow.lpProps = lpProps;
+
+				msgid = (const char *) octool_get_propval(&aRow, PR_INTERNET_MESSAGE_ID);
 				if (msgid) {
 					retval = FindProfileAttr(profile, "Message-ID", msgid);
 					if (GetLastError() == MAPI_E_NOT_FOUND) {
-						message2mbox(mem_ctx, fp, &properties_array, &obj_message);
+						message2mbox(mem_ctx, fp, &aRow, &obj_message);
 						if (mapi_profile_add_string_attr(profile->profname, "Message-ID", msgid) != MAPI_E_SUCCESS) {
 							mapi_errstr("mapi_profile_add_string_attr", GetLastError());
 						} else {
@@ -692,6 +736,7 @@ int main(int argc, const char *argv[])
 						}
 					} 
 				}
+				talloc_free(lpProps);
 			} 
 			mapi_object_release(&obj_message);
 			errno = 0;

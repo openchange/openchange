@@ -255,7 +255,7 @@ bin/openchangepfadmin:	utils/openchangepfadmin.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
 			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) -lpopt						
+	@$(CC) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) -lpopt			
 
 
 bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
@@ -265,6 +265,7 @@ bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
 bin/exchange2mbox:	utils/exchange2mbox.o				\
+			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt  $(MAGIC_LIBS)

@@ -133,7 +133,6 @@ struct oc_element	oc_color[] = {
 	{0, NULL}
 };
 
-#define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
 #define	DATE_FORMAT	"%Y-%m-%d %H:%M:%S"
 #define	CAL_CNPROPS	14
 #define	CONTACT_CNPROPS	7

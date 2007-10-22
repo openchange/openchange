@@ -25,6 +25,7 @@
 #include <param/proto.h>
 
 #include "openchangeclient.h"
+#include "openchange-tools.h"
 
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -308,7 +309,6 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 	struct SPropTagArray		*SPropTagArray;
 	struct SRowSet			rowset;
 	struct SRowSet			rowset_attach;
-	struct mapi_SPropValue_array	properties_array;
 	uint32_t			i, j;
 	uint32_t			count;
 	const uint8_t			*has_attach;
@@ -359,11 +359,23 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 					     rowset.aRow[i].lpProps[1].value.d,
 					     &obj_message, 0);
 			if (GetLastError() == MAPI_E_SUCCESS) {
-				retval = GetPropsAll(&obj_message, &properties_array);
+				struct SPropValue	*lpProps;
+				struct SRow		aRow;
+
+				SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_HASATTACH);
+				lpProps = talloc_zero(mem_ctx, struct SPropValue);
+				retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
+				MAPIFreeBuffer(SPropTagArray);
 				if (retval != MAPI_E_SUCCESS) return false;
-				has_attach = (const uint8_t *) find_mapi_SPropValue_data(&properties_array, PR_HASATTACH);
-				
-				mapidump_message(&properties_array);
+
+				aRow.ulAdrEntryPad = 0;
+				aRow.cValues = count;
+				aRow.lpProps = lpProps;
+
+				retval = octool_message(mem_ctx, &obj_message);
+				MAPI_RETVAL_IF(retval, retval, NULL);
+
+				has_attach = (const uint8_t *) get_SPropValue_SRow_data(&aRow, PR_HASATTACH);
 
  				/* If we have attachments, retrieve them */
 				if (has_attach && *has_attach) {
@@ -382,14 +394,28 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 							attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[j]), PR_ATTACH_NUM);
 							retval = OpenAttach(&obj_message, *attach_num, &obj_attach);
 							if (retval == MAPI_E_SUCCESS) {
-								fflush(0);
-								retval = GetPropsAll(&obj_attach, &properties_array);
-								attach_filename = get_filename(find_mapi_SPropValue_data(&properties_array, PR_ATTACH_LONG_FILENAME));
+								struct SPropValue	*lpProps2;
+								uint32_t		count2;
+
+								SPropTagArray = set_SPropTagArray(mem_ctx, 0x3, 
+												  PR_ATTACH_FILENAME,
+												  PR_ATTACH_LONG_FILENAME,
+												  PR_ATTACH_SIZE);
+								lpProps2 = talloc_zero(mem_ctx, struct SPropValue);
+								retval = GetProps(&obj_attach, SPropTagArray, &lpProps2, &count2);
+								MAPIFreeBuffer(SPropTagArray);
+								if (retval != MAPI_E_SUCCESS) return false;
+								
+								aRow.ulAdrEntryPad = 0;
+								aRow.cValues = count2;
+								aRow.lpProps = lpProps2;
+
+								attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_LONG_FILENAME));
 								if (!attach_filename || (attach_filename && !strcmp(attach_filename, ""))) {
-									attach_filename = get_filename(find_mapi_SPropValue_data(&properties_array, PR_ATTACH_FILENAME));
+									attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_FILENAME));
 								}
-								attach_size = (const uint32_t *)find_mapi_SPropValue_data(&properties_array, PR_ATTACH_SIZE);
-								printf("[%d] %s (%d Bytes)\n", j, attach_filename, attach_size?*attach_size:0);
+								attach_size = (const uint32_t *) octool_get_propval(&aRow, PR_ATTACH_SIZE);
+								printf("[%d] %s (%d Bytes)\n", j, attach_filename, attach_size ? *attach_size : 0);
 								fflush(0);
 								if (oclient->store_folder) {
 									status = store_attachment(obj_attach, attach_filename, *attach_size, oclient);
@@ -399,10 +425,12 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 
 									}
 								}
+								MAPIFreeBuffer(lpProps2);
 							}
 						}
 						errno = 0;
 					}
+					MAPIFreeBuffer(lpProps);
 				}
 			}
 			mapi_object_release(&obj_message);
@@ -608,7 +636,6 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 			size = bin.cb - offset;
 		}
 	}
-/* 	} */
 
 	return true;
 }
@@ -1402,6 +1429,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	struct SRowSet			SRowSet;
 	struct SPropTagArray		*SPropTagArray;
 	struct mapi_SPropValue_array	properties_array;
+	uint32_t			count;
 	int				i;
 	
 	if (!item) return false;
@@ -1446,38 +1474,43 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = QueryRows(&obj_table, 0x32, TBL_ADVANCE, &SRowSet);
-	if (retval != MAPI_E_SUCCESS) return false;
+	retval = GetRowCount(&obj_table, &count);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	for (i = 0; i < SRowSet.cRows; i++) {
-		mapi_object_init(&obj_message);
-		retval = OpenMessage(&obj_folder, 
-				     SRowSet.aRow[i].lpProps[0].value.d,
-				     SRowSet.aRow[i].lpProps[1].value.d,
-				     &obj_message, 0);
-		if (retval != MAPI_E_NOT_FOUND) {
-			retval = GetPropsAll(&obj_message, &properties_array);
-			if (retval == MAPI_E_SUCCESS) {
-				mapi_SPropValue_array_named(&obj_message, 
-							    &properties_array);
-				switch (olFolder) {
-				case olFolderInbox:
-					mapidump_message(&properties_array);
-					break;
-				case olFolderCalendar:
-					mapidump_appointment(&properties_array);
-					break;
-				case olFolderContacts:
-					mapidump_contact(&properties_array);
-					break;
-				case olFolderTasks:
-					mapidump_task(&properties_array);
-					break;
-				case olFolderNotes:
-					mapidump_note(&properties_array);
-					break;
+	printf("MAILBOX (%d messages)\n", count);
+
+	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
+		count -= SRowSet.cRows;
+		for (i = 0; i < SRowSet.cRows; i++) {
+			mapi_object_init(&obj_message);
+			retval = OpenMessage(&obj_folder, 
+					     SRowSet.aRow[i].lpProps[0].value.d,
+					     SRowSet.aRow[i].lpProps[1].value.d,
+					     &obj_message, 0);
+			if (retval != MAPI_E_NOT_FOUND) {
+				retval = GetPropsAll(&obj_message, &properties_array);
+				if (retval == MAPI_E_SUCCESS) {
+					mapi_SPropValue_array_named(&obj_message, 
+								    &properties_array);
+					switch (olFolder) {
+					case olFolderInbox:
+						mapidump_message(&properties_array);
+						break;
+					case olFolderCalendar:
+						mapidump_appointment(&properties_array);
+						break;
+					case olFolderContacts:
+						mapidump_contact(&properties_array);
+						break;
+					case olFolderTasks:
+						mapidump_task(&properties_array);
+						break;
+					case olFolderNotes:
+						mapidump_note(&properties_array);
+						break;
+					}
+					mapi_object_release(&obj_message);
 				}
-				mapi_object_release(&obj_message);
 			}
 		}
 	}

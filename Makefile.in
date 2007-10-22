@@ -246,6 +246,7 @@ bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
 bin/openchangeclient: 	utils/openchangeclient.o			\
+			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt

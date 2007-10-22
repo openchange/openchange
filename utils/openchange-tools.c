@@ -1,0 +1,258 @@
+/*
+   Convenient functions for openchange tools
+
+   OpenChange Project
+
+   Copyright (C) Julien Kerihuel 2007
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include <libmapi/libmapi.h>
+#include "openchange-tools.h"
+
+
+/*
+ * Retrieve the property value for a given SRow and property tag.  
+ *
+ * If the property type is a string: fetch PT_STRING8 then PT_UNICODE
+ * in case the desired property is not available in first choice.
+ *
+ * Fetch property normally for any others properties
+ */
+_PUBLIC_ void *octool_get_propval(struct SRow *aRow, uint32_t proptag)
+{
+	const char	*str;
+
+	if (((proptag & 0xFFFF) == PT_STRING8) ||
+	    ((proptag & 0xFFFF) == PT_UNICODE)) {
+		proptag = (proptag & 0xFFFF0000) | PT_STRING8;
+		str = (const char *) find_SPropValue_data(aRow, proptag);
+		if (str) return (void *)str;
+
+		proptag = (proptag & 0xFFFF0000) | PT_UNICODE;
+		str = (const char *) find_SPropValue_data(aRow, proptag);
+		return (void *)str;
+	} 
+
+	return (void *)find_SPropValue_data(aRow, proptag);
+}
+
+
+/*
+ * Read a stream and store it in a DATA_BLOB
+ */
+static enum MAPISTATUS octool_get_stream(TALLOC_CTX *mem_ctx,
+					 mapi_object_t *obj_stream, 
+					 DATA_BLOB *body)
+{
+	enum MAPISTATUS	retval;
+	uint32_t	read_size;
+	uint8_t		buf[0x1000];
+
+	body->length = 0;
+	body->data = talloc_zero(mem_ctx, uint8_t);
+
+	do {
+		retval = ReadStream(obj_stream, buf, 0x1000, &read_size);
+		MAPI_RETVAL_IF(retval, GetLastError(), body->data);
+		if (read_size) {
+			body->data = talloc_realloc(mem_ctx, body->data, uint8_t,
+						    body->length + read_size);
+			memcpy(&(body->data[body->length]), buf, read_size);
+			body->length += read_size;
+		}
+	} while (read_size);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/*
+ * Fetch the body given PR_MSG_EDITOR_FORMAT property value
+ */
+static enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
+				       mapi_object_t *obj_message,
+				       struct SRow *aRow,
+				       const uint32_t *editor, 
+				       DATA_BLOB *body)
+{
+	enum MAPISTATUS			retval;
+	const struct SBinary_short	*bin;
+	mapi_object_t			obj_stream;
+
+	/* sanity check */
+	if (!obj_message) return false;
+	if (!editor || *editor == 0) return false;
+
+	switch (*editor) {
+	case EDITOR_FORMAT_PLAINTEXT:
+		body->data = (uint8_t *) octool_get_propval(aRow, PR_BODY);
+		if (body->data) {
+			body->length = strlen((char *)body->data);
+		} else {
+			mapi_object_init(&obj_stream);
+			retval = OpenStream(obj_message, PR_BODY, 0, &obj_stream);
+			MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+
+			retval = octool_get_stream(mem_ctx, &obj_stream, body);
+			MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+
+			mapi_object_release(&obj_stream);
+		}
+		break;
+	case EDITOR_FORMAT_HTML:
+		bin = (const struct SBinary_short *) octool_get_propval(aRow, PR_HTML);
+		if (bin) {
+			body->data = bin->lpb;
+			body->length = bin->cb;
+		} else {
+			mapi_object_init(&obj_stream);
+			retval = OpenStream(obj_message, PR_HTML, 0, &obj_stream);
+			MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+
+			retval = octool_get_stream(mem_ctx, &obj_stream, body);
+			MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+
+			mapi_object_release(&obj_stream);
+		}			
+		break;
+	case EDITOR_FORMAT_RTF:
+		mapi_object_init(&obj_stream);
+
+		retval = OpenStream(obj_message, PR_RTF_COMPRESSED, 0, &obj_stream);
+		MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+
+		retval = WrapCompressedRTFStream(&obj_stream, body);
+		MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+
+		mapi_object_release(&obj_stream);
+		break;
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/*
+ * Optimized dump message routine (use GetProps rather than GetPropsAll)
+ */
+_PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
+					mapi_object_t *obj_message)
+{
+	enum MAPISTATUS			retval;
+	struct SPropTagArray		*SPropTagArray;
+	struct SPropValue		*lpProps;
+	struct SRow			aRow;
+	uint32_t			count;
+	/* common email fields */
+	const char			*msgid;
+	const char			*from, *to, *cc, *bcc;
+	const char			*subject;
+	DATA_BLOB			body;
+	const uint8_t			*has_attach;
+	const uint32_t			*cp;
+	const char			*codepage;
+	const uint32_t			*editor;
+
+	/* Build the array of properties we want to fetch */
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x13,
+					  PR_INTERNET_MESSAGE_ID,
+					  PR_INTERNET_MESSAGE_ID_UNICODE,
+					  PR_CONVERSATION_TOPIC,
+					  PR_CONVERSATION_TOPIC_UNICODE,
+					  PR_MSG_EDITOR_FORMAT,
+					  PR_BODY,
+					  PR_BODY_UNICODE,
+					  PR_HTML,
+					  PR_RTF_COMPRESSED,
+					  PR_SENT_REPRESENTING_NAME,
+					  PR_SENT_REPRESENTING_NAME_UNICODE,
+					  PR_DISPLAY_TO,
+					  PR_DISPLAY_TO_UNICODE,
+					  PR_DISPLAY_CC,
+					  PR_DISPLAY_CC_UNICODE,
+					  PR_DISPLAY_BCC,
+					  PR_DISPLAY_BCC_UNICODE,
+					  PR_HASATTACH,
+					  PR_MESSAGE_CODEPAGE);
+	lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	retval = GetProps(obj_message, SPropTagArray, &lpProps, &count);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	/* Build a SRow structure */
+	aRow.ulAdrEntryPad = 0;
+	aRow.cValues = count;
+	aRow.lpProps = lpProps;
+
+	msgid =	(const char *) octool_get_propval(&aRow, PR_INTERNET_MESSAGE_ID);
+	subject = (const char *) octool_get_propval(&aRow, PR_CONVERSATION_TOPIC);
+	editor = (const uint32_t *) octool_get_propval(&aRow, PR_MSG_EDITOR_FORMAT);
+
+	retval = octool_get_body(mem_ctx, obj_message, &aRow, editor, &body);
+	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+	
+	from = (const char *) octool_get_propval(&aRow, PR_SENT_REPRESENTING_NAME);
+	to = (const char *) octool_get_propval(&aRow, PR_DISPLAY_TO);
+	cc = (const char *) octool_get_propval(&aRow, PR_DISPLAY_CC);
+	bcc = (const char *) octool_get_propval(&aRow, PR_DISPLAY_BCC);
+
+	has_attach = (const uint8_t *) octool_get_propval(&aRow, PR_HASATTACH);
+	cp = (const uint32_t *) octool_get_propval(&aRow, PR_MESSAGE_CODEPAGE);
+	switch (cp ? *cp : 0) {
+	case CP_USASCII:
+		codepage = "CP_USASCII";
+		break;
+	case CP_UNICODE:
+		codepage = "CP_UNICODE";
+		break;
+	case CP_JAUTODETECT:
+		codepage = "CP_JAUTODETECT";
+		break;
+	case CP_KAUTODETECT:
+		codepage = "CP_KAUTODETECT";
+		break;
+	case CP_ISO2022JPESC:
+		codepage = "CP_ISO2022JPESC";
+		break;
+	case CP_ISO2022JPSIO:
+		codepage = "CP_ISO2022JPSIO";
+		break;
+	default:
+		codepage = "";
+		break;
+	}
+
+	printf("+-------------------------------------+\n");
+	printf("message id: %s\n", msgid ? msgid : "");
+	printf("subject: %s\n", subject ? subject : "");
+	printf("From: %s\n", from ? from : "");
+	printf("To:  %s\n", to ? to : "");
+	printf("Cc:  %s\n", cc ? cc : "");
+	printf("Bcc: %s\n", bcc ? bcc : "");
+	if (has_attach) {
+		printf("Attachment: %s\n", *has_attach ? "True" : "False");
+	}
+	printf("Codepage: %s\n", codepage);
+	printf("Body:\n");
+	fflush(0);
+	if (body.length) {
+		write(1, body.data, body.length);
+		write(1, "\n", 1);
+		fflush(0);
+		talloc_free(body.data);
+	} 
+	return MAPI_E_SUCCESS;
+}

@@ -29,4 +29,23 @@
 #define	DEFAULT_VCF	"%s/.openchange/vcf"
 #define	DEFAULT_DIR	"%s/.openchange"
 
+#ifndef __BEGIN_DECLS
+#ifdef __cplusplus
+#define __BEGIN_DECLS		extern "C" {
+#define __END_DECLS		}
+#else
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+#endif
+
+#ifndef _PUBLIC_
+#define _PUBLIC_
+#endif
+
+__BEGIN_DECLS
+_PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *, mapi_object_t *);
+_PUBLIC_ void *octool_get_propval(struct SRow *, uint32_t);
+__END_DECLS
+
 #endif /*!__OPENCHANGETOOLS_H__ */

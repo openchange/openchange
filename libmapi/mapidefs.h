@@ -193,6 +193,13 @@
 #define	olOwnTask			2
 
 /*
+ * PR_MESSAGE_EDITOR_FORMAT type
+ */
+#define	EDITOR_FORMAT_PLAINTEXT		1
+#define	EDITOR_FORMAT_HTML		2
+#define	EDITOR_FORMAT_RTF		3
+
+/*
  * Default folders
  */
 #define	olFolderTopInformationStore	1

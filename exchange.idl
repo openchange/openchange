@@ -1279,8 +1279,7 @@ System Attendant Private Interface
 	} DeleteMessages_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		unknown;
-		[flag(NDR_REMAINING)]DATA_BLOB entries;
+		uint8		align_pad;
 	} DeleteMessages_repl;
 
 	/**************************/

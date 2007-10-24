@@ -70,9 +70,9 @@ swig_mapicodes.h:
 
 mapi.$(SHLIBEXT): 	mapi_wrap.o				\
 			lwmapi.o				\
-			../../libmapi/utf8_convert.yy.o		\
-			../../libmapi/*.o			\
-			../../gen_ndr/*.o			\
-			../../*.o
+			../../libmapi/utf8_convert.yy.po	\
+			../../libmapi/*.po			\
+			../../gen_ndr/*.po			\
+			../../*.po
 	@echo "Compiling $<"
 	@$(CC) -o $@ $(DSOOPT) $^ $(LIBS)

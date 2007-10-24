@@ -91,6 +91,7 @@ _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS			retval;
 	const struct SBinary_short	*bin;
 	mapi_object_t			obj_stream;
+	char				*data;
 
 	/* sanity check */
 	if (!obj_message) return false;
@@ -98,9 +99,10 @@ _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
 
 	switch (*editor) {
 	case EDITOR_FORMAT_PLAINTEXT:
-		body->data = (uint8_t *) octool_get_propval(aRow, PR_BODY);
-		if (body->data) {
-			body->length = strlen((char *)body->data);
+		data = octool_get_propval(aRow, PR_BODY);
+		if (data) {
+			body->data = talloc_memdup(mem_ctx, data, strlen(data));
+			body->length = strlen(data);
 		} else {
 			mapi_object_init(&obj_stream);
 			retval = OpenStream(obj_message, PR_BODY, 0, &obj_stream);
@@ -115,7 +117,7 @@ _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
 	case EDITOR_FORMAT_HTML:
 		bin = (const struct SBinary_short *) octool_get_propval(aRow, PR_HTML);
 		if (bin) {
-			body->data = bin->lpb;
+			body->data = talloc_memdup(mem_ctx, bin->lpb, bin->cb);
 			body->length = bin->cb;
 		} else {
 			mapi_object_init(&obj_stream);

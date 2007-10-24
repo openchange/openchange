@@ -274,7 +274,6 @@ distclean: clean $(SWIGDIRS-DISTCLEAN)
 	rm -rf autom4te.cache
 	rm -f libmapi.pc libmapiadmin.pc
 	rm -f Makefile config.status config.log
-	rm -f swig/perl/Makefile
 	rm -f intltool-extract intltool-merge intltool-update
 
 realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)

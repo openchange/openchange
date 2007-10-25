@@ -488,3 +488,44 @@ _PUBLIC_ void mapi_SPropValue_array_named(mapi_object_t *obj,
 end:
 	talloc_free(mem_ctx);
 }
+
+_PUBLIC_ enum MAPISTATUS get_mapi_SPropValue_array_date_timeval(struct timeval *t,
+								struct mapi_SPropValue_array *properties,
+								uint32_t mapitag)
+{
+	const struct FILETIME	*filetime;
+	NTTIME			time;
+	
+	filetime = (const struct FILETIME *) find_mapi_SPropValue_data(properties, mapitag);
+	if (!filetime) {
+		t = NULL;
+		return MAPI_E_NOT_FOUND;
+	}
+
+	time = filetime->dwHighDateTime;
+	time = time << 32;
+	time |= filetime->dwLowDateTime;
+	nttime_to_timeval(t, time);
+	
+	return MAPI_E_SUCCESS;	
+}
+
+_PUBLIC_ enum MAPISTATUS get_mapi_SPropValue_date_timeval(struct timeval *t, 
+							  struct SPropValue lpProp)
+{
+	const struct FILETIME	*filetime;
+	NTTIME			time;
+	
+	filetime = (const struct FILETIME *) get_SPropValue_data(&lpProp);
+	if (!filetime) {
+		t = NULL;
+		return MAPI_E_NOT_FOUND;
+	}
+
+	time = filetime->dwHighDateTime;
+	time = time << 32;
+	time |= filetime->dwLowDateTime;
+	nttime_to_timeval(t, time);
+	
+	return MAPI_E_SUCCESS;
+}

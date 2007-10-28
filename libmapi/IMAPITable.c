@@ -21,15 +21,30 @@
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 
-
 /**
- * defines the particular properties and order of properties to appear
- * as columns in the table.
- *
- * SetColumns set a *cache* in emsmdb_context. The call will be
- * processed with another request such as QueryRows
+   \file IMAPITable.c
+
+   \brief Operations on tables
  */
 
+
+/**
+   \details Defines the particular properties and order of properties
+  to appear as columns in the table.
+ 
+  \param obj_table the table the function is setting columns for
+  \param properties the properties intended to be set
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_W_ERROR_RETURNED: Problem encountered while trying to set
+   one or more properties
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+  \sa QueryRows, QueryColumns, SeekRow, GetLastError
+ */
 _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table, 
 				    struct SPropTagArray *properties)
 {
@@ -101,9 +116,19 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 
 
 /**
- *  GetRowCount
- */
+   \details returns the total number of rows in the table
+ 
+   \param obj_table pointer to the table's object
+   \param cn_rows pointer to the total number of rows in the table
 
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa QueryRows
+*/
 _PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table, 
 				     uint32_t *cn_rows)
 {
@@ -154,11 +179,28 @@ _PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table,
 
 
 /**
- * QueryRows returns a RowSet with the properties returned by Exchange
- * Server
- */
+   \details Returns a RowSet with the properties returned by the
+   server
 
-_PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count, enum tbl_advance flg_advance, 
+   \param obj_table the table we are requesting properties from
+   \param row_count the number of rows to retrieve
+   \param flg_advance define is QueryRows is called recursively
+   \param rowSet the results
+
+   flag_advance possible values:
+   - TBL_ADVANCE: index automatically increased from last rowcount
+   - TBL_NOADVANCE: should be used for a single QueryRows call
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa SetColumns, GetRowCount, QueryColumns, SeekRow
+ */
+_PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
+				   enum tbl_advance flg_advance, 
 				   struct SRowSet *rowSet)
 {
 	struct mapi_request	*mapi_request;
@@ -222,9 +264,20 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 
 
 /**
- * QueryColumns
- */
+   \details Retrieves the set of columns defined in the current table
+   view
 
+   \param obj_table the table we are retrieving columns from
+   \param cols pointer to an array of property tags
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa SetColumns, QueryRows
+*/
 _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table, 
 				      struct SPropTagArray *cols)
 {
@@ -284,10 +337,28 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 
 
 /**
- * SeekRow
- */
+   \details Move the table cursor at a specific location
 
-_PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table, enum BOOKMARK origin, 
+   \param obj_table the table we are moving cursor on
+   \param origin the table position where we start to seek 
+   \param offset a particular offset in the table
+   \param row the position of the seeked row is returned in rows
+
+   origin possible values:
+   - BOOKMARK_BEGINNING: Beginning of the table
+   - BOOKMARK_CURRENT: Current position in the table
+   - BOKMARK_END: End of the table
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa SetColumns, QueryRows
+*/
+_PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table, 
+				 enum BOOKMARK origin, 
 				 uint32_t offset, uint32_t *row)
 {
 	struct mapi_request	*mapi_request;
@@ -347,10 +418,10 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table, enum BOOKMARK origin,
 	return MAPI_E_SUCCESS;
 }
 
-/**
+
+/*
  * Restrict a table 
  */
-
 static uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
 {
 	uint32_t	size;
@@ -407,6 +478,22 @@ static uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
 	return (size);
 }
 
+
+/**
+   \details Applies a filter to a table, reducing the row set to only
+   those rows matching the specified criteria.
+
+   \param obj the object we are filtering
+   \param res the filters we want to apply
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa QueryRows
+*/
 _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj, struct mapi_SRestriction *res)
 {
 	struct mapi_request	*mapi_request;

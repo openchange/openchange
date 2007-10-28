@@ -1,0 +1,106 @@
+/** \example mapi_sample1.c
+
+This example shows a very basic MAPI program, including setup, login,
+and teardown.
+
+The first MAPI library function called is MAPIInitialize(). As its
+name suggests, this function initializes MAPI library: It creates the
+MAPI global context, opens the profile database store (database path
+passed as function parameter) and initialize Samba4 transport
+layer. This function must be called prior any other MAPI
+library operations.
+
+Once MAPI is initialized, we need to create a connection to Exchange and
+open MAPI sessions with the user credentials. This is the purpose of
+MapiLogonEx() which needs to be executed prior doing any effective
+code. This function takes a pointer on a mapi_session structure,
+the profile username and an optional password in case you decided to
+store it outside the profile. In the example above, we retrieve the
+default profile name from the database using GetDefaultProfile()
+Note that MapiLogonEx() opens connections to both the EMSMDB and
+EMSABP store providers. If you intend to interact with a single
+provider, use MapiLogonProvider() instead.
+
+Finally we call MAPIUninitialize() prior to leaving the
+function. This opaque function will clean up the memory allocated
+during the session and stored within the global MAPI context.
+
+*/
+
+/** \example fetchmail.c
+
+This example shows how to fetch mail from the server.
+
+We initialize MAPI library with the profiles database path, retrieve
+the default profile name and open connections to both the Exchange
+message store provider (EMSMDB) and Exchange Address Book provider
+(EMSABP).
+
+\section ex-fetchmail-openstore Open the message store
+
+Now we have
+opened a connection to the Exchange message store provider, we can
+open the user mailbox store with OpenMsgStore() This function
+will return a set of pre-defined folder unique IDs (stored on double
+values) and a \em pointer to the upper object we can access in MAPI
+hierarchy.
+
+\section ex-fetchmail-openinbox Opening the Inbox folder
+
+We now open the Inbox folder. Since OpenMsgStore() returns a set
+of \em common folders identifiers we store in the message store
+object (obj_store), we can retrieve them using the convenient
+GetDefaultFolder() function. This function doesn't generate any
+network traffic, but returns the folder identifier associated with the
+constant passed as argument (here olFolderInbox).
+
+We could have used MAPI tables and GetHierarchyTable() function to
+find Inbox folder identifier. We would have had to retrieve the
+Top Information Store hierarchy table, customize the view with 
+PR_FID (Folder ID MAPI property) and PR_DISPLAY_NAME, find the 
+IPM_SUBTREE folder identifier, open it, retrieve the Hierarchy Table,
+call SetColumns() with PR_FID and finally browse table rows until
+we found the Inbox folder.folders to store emails within 
+IPM_SUBTREE folder hierarchy.
+
+\section ex-fetchmail-retrievecontentstable Retrieve contents table
+
+Once the Inbox folder is opened, we can call GetContentsTable() to
+create the view needed to list all the children objects. In the
+current example we suppose we will only retrieve IPM.Post objects
+(emails).
+
+\section ex-fetchmail-customview Customizing the MAPI view
+
+We now customize the MAPI view and set the columns with the property
+tags we want to access: PR_FID (Folder Identifier) and
+PR_MID (Message identifier). MAPI uses unique and permanent
+identifiers to classify objects. These identifiers are double values
+(8 bytes) and never change until you move the object to another
+location.
+
+We now enter the last step of the fetching process:
+- Call GetRowCount() to retrieve the number of rows in the contents table
+- Recursively call QueryRows() with the TBL_ADVANCE flag to fetch table rows.
+- Iterate through QueryRows results
+- Retrieve columns values for each row with the convenient find_SPropValue_data()
+- Open the message given its folder and message ids.
+- Call GetPropsAll() rather than GetProps() to retrieve all properties associated with a given object
+- Call one of OpenChange mapidump API function to display nice messages dump on standard output.
+
+We finally release mapi objects and clean up the MAPI library before returning
+*/
+
+/** \example fetchappointment.c
+
+This example shows how to fetch an appointment from the server.
+
+This is very similar to the fetchmail.c example, except two minor changes:
+- We change the default folder constant from olFolderInbox to
+olFolderContact so any further operations are performed on a child of
+the calendar folder.
+- We use mapidump_appointment() rather than mapidump_message() to dump
+appointments on standard output. 
+
+*/
+

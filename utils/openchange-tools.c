@@ -93,6 +93,10 @@ _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
 	mapi_object_t			obj_stream;
 	char				*data;
 
+	/* initialize body DATA_BLOB */
+	body->data = NULL;
+	body->length = 0;
+
 	/* sanity check */
 	if (!obj_message) return false;
 	if (!editor || *editor == 0) return false;

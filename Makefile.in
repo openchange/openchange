@@ -7,6 +7,7 @@ CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 \
 	   -DDEFAULT_LDIF=\"$(DESTDIR)$(datadir)/setup\" 
 PIDL=@PIDL@
 PERL=@PERL@
+DOXYGEN=@DOXYGEN@
 INSTALL=@INSTALL@
 SMBTORTURE=@SMBTORTURE@
 DSOOPT=-shared -fPIC
@@ -70,9 +71,9 @@ all: 	\
 	torture/openchange.$(SHLIBEXT)				\
 	server/dcesrv_exchange.$(SHLIBEXT)			\
 	server/dcesrv_exchange_remote.$(SHLIBEXT)		\
-	$(SWIGDIRS-ALL)
+	$(SWIGDIRS-ALL)						
 
-install: all installman $(SWIGDIRS-INSTALL)
+install: all $(SWIGDIRS-INSTALL)
 	@echo "Installing OpenChange plugin"
 	$(INSTALL) -d $(DESTDIR)$(bindir) 
 	$(INSTALL) -d $(DESTDIR)$(libdir)
@@ -273,6 +274,7 @@ bin/exchange2mbox:	utils/exchange2mbox.o				\
 distclean: clean $(SWIGDIRS-DISTCLEAN)
 	rm -rf autom4te.cache
 	rm -f libmapi.pc libmapiadmin.pc
+	rm -f Doxyfile
 	rm -f Makefile config.status config.log
 	rm -f intltool-extract intltool-merge intltool-update
 
@@ -282,7 +284,8 @@ realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
 	rm -f torture/openchange.$(SHLIBEXT)
 	rm -f server/dcesrv_exchange.$(SHLIBEXT)
 	rm -f server/dcesrv_exchange_remote.$(SHLIBEXT)
-	rmdir gen_ndr
+	rm -rf apidocs
+	rm -f gen_ndr
 
 clean:	$(SWIGDIRS-CLEAN)
 	rm -f libmapi/*.{o,po} libmapiadmin/*.{o,po}
@@ -438,75 +441,20 @@ libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	libmapiadmin/mapiadmin_user.po	\
 manpages = \
 		doc/man/man1/exchange2mbox.1				\
 		doc/man/man1/mapiprofile.1				\
-		doc/man/man1/openchangeclient.1				\
-		doc/man/man3/mapidump.3					\
-		doc/man/man3/mapi_object.3				\
-		doc/man/man3/ChangeProfilePassword.3			\
-		doc/man/man3/CreateAttach.3				\
-		doc/man/man3/CreateFolder.3				\
-		doc/man/man3/CreateMessage.3				\
-		doc/man/man3/CreateProfile.3				\
-		doc/man/man3/CreateProfileStore.3			\
-		doc/man/man3/DeleteFolder.3				\
-		doc/man/man3/DeleteMessage.3				\
-		doc/man/man3/DeleteProfile.3				\
-		doc/man/man3/DeleteProps.3				\
-		doc/man/man3/EmptyFolder.3				\
-		doc/man/man3/GetAttachmentTable.3			\
-		doc/man/man3/GetContentsTable.3				\
-		doc/man/man3/GetDefaultFolder.3				\
-		doc/man/man3/GetDefaultProfile.3			\
-		doc/man/man3/GetFolderItemsCount.3			\
-		doc/man/man3/GetHierarchyTable.3			\
-		doc/man/man3/GetLastError.3				\
-		doc/man/man3/GetOutboxFolder.3				\
-		doc/man/man3/GetProfileAttr.3				\
-		doc/man/man3/GetProps.3					\
-		doc/man/man3/GetPropsAll.3				\
-		doc/man/man3/GetPropList.3				\
-		doc/man/man3/GetReceiveFolder.3				\
-		doc/man/man3/GetRowCount.3				\
-		doc/man/man3/LoadProfile.3				\
-		doc/man/man3/MAPIAllocateBuffer.3			\
-		doc/man/man3/MAPIFreeBuffer.3				\
-		doc/man/man3/MAPIInitialize.3				\
-		doc/man/man3/MapiLogonEx.3				\
-		doc/man/man3/MapiLogonProvider.3			\
-		doc/man/man3/MAPIUninitialize.3				\
-		doc/man/man3/ModifyRecipients.3				\
-		doc/man/man3/MonitorNotification.3			\
-		doc/man/man3/OpenAttach.3				\
-		doc/man/man3/OpenFolder.3				\
-		doc/man/man3/OpenProfile.3				\
-		doc/man/man3/OpenMessage.3				\
-		doc/man/man3/OpenMsgStore.3				\
-		doc/man/man3/OpenStream.3				\
-		doc/man/man3/ProcessNetworkProfile.3			\
-		doc/man/man3/QueryColumns.3				\
-		doc/man/man3/QueryRows.3				\
-		doc/man/man3/ReadStream.3				\
-		doc/man/man3/RegisterNotification.3			\
-		doc/man/man3/Release.3					\
-		doc/man/man3/ResolveNames.3				\
-		doc/man/man3/SaveChanges.3				\
-		doc/man/man3/SaveChangesMessage.3			\
-		doc/man/man3/SeekRow.3					\
-		doc/man/man3/SetColumns.3				\
-		doc/man/man3/SetDefaultProfile.3			\
-		doc/man/man3/SetProps.3					\
-		doc/man/man3/SetReadFlags.3				\
-		doc/man/man3/SetRecipientType.3				\
-		doc/man/man3/ShutDown.3					\
-		doc/man/man3/SubmitMessage.3				\
-		doc/man/man3/Subscribe.3				\
-		doc/man/man3/Unsubscribe.3				\
-		doc/man/man3/WriteStream.3
+		doc/man/man1/openchangeclient.1				
 
 installman:
 	@./script/installman.sh $(DESTDIR)$(mandir) $(manpages)
 
 uninstallman:
 	@./script/uninstallman.sh $(DESTDIR)$(mandir) $(manpages)
+
+doxygen:	
+	@echo "Doxify API documentation: HTML and man pages"
+	@$(DOXYGEN) Doxyfile
+	@cp -f doc/doxygen/pictures/* apidocs/html/
+
+doxygen-install: doxygen
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]"`

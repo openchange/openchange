@@ -20,10 +20,52 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
 
+
 /**
- * Register an object to receive notifications
+   \file IMAPISupport.c
+
+   \brief MAPI notifications functions
  */
 
+
+/**
+   \details Register an object to receive notifications
+ 
+   This function registers notifications on the Exchange server for an
+   object.  The function holds the notifications intended to be
+   monitored in as a bitmask.
+
+   \param obj the object to get notifications for
+   \param connection connection identifier for callabck function
+   \param ulEventMask mask for events to provide notifications for (see
+   below)
+   \param notify_callback notification callback function.
+   
+   The event bitmask can take the following values:
+   - fnevCriticalError
+   - fnevNewMail
+   - fnevObjectCreated
+   - fnevObjectDeleted
+   - fnevObjectModified
+   - fnevObjectMoved
+   - fnevObjectCopied
+   - fnevSearchComplete
+   - fnevTableModified
+   - fnevStatusObjectModified
+   - fnevReservedForMapi
+   - fnevExtended
+   
+   \return MAPI_E_SUCCESS on success, otherwise -1.  
+   
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   
+   \sa RegisterNotification, Unsubscribe, MonitorNotification,
+   GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection, 
 				   uint32_t ulEventMask, 
 				   mapi_notify_callback_t notify_callback)
@@ -100,11 +142,32 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	return MAPI_E_SUCCESS;
 }
 
-/*
- * Cancel any notification registrations associated with the notify
- * object
- */
 
+/**
+   \details Unregister notifications on a given object.
+
+   Cancel any notification registrations associated with the notify
+   object.  This function unregisters notifications on the Exchange
+   server for the object specified with its connection number
+   ulConnection. The function will releases the notification on the
+   Exchange server and remove the entry from the internal
+   notifications list.
+
+   The function takes a callback to execute when such notification
+   occurs and returns the ulConnection identifier we can use in
+   further management.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.  
+   
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   
+   \sa RegisterNotification, Subscribe, MonitorNotification,
+   GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS Unsubscribe(uint32_t ulConnection)
 {
 	enum MAPISTATUS	retval;
@@ -163,6 +226,33 @@ static enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details Wait for notifications and process them
+
+   This function indefinively waits for notifications on the UDP port
+   and generates the traffic needed to receive MAPI
+   notifications. These MAPI notifications are next compared to the
+   registered ones and the callback specified in Subscribe() called if
+   it matches.
+
+   Note that the function will loop indefinitively until an error
+   occurs.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.  
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa RegisterNotification, Subscribe, Unsubscribe, GetLastError
+
+   \note This code is experimental. The current implementation is
+   non-threaded, only supports fnevNewmail and fnevCreatedObject
+   notifications and will block your process until you send a signal.
+*/
 _PUBLIC_ enum MAPISTATUS MonitorNotification(void *private_data)
 {
 	struct mapi_response	*mapi_response;

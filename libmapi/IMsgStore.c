@@ -23,12 +23,29 @@
 
 
 /**
- * OpenFolder is not part of MSDN and is certainly OpenEntry in
- * fact. Nevertheless, we keep this name until we are not absolutely
- * sure.
- *
+   \file IMsgStore.c
+
+   \brief Folders related operations
  */
 
+
+/**
+   \details Open a folder from the store
+ 
+   \param obj_store the store to open a folder in (i.e. the parent)
+   \param id_folder the folder identifier
+   \param obj_folder the resulting open folder
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa MAPIInitialize, OpenMsgStore, GetLastError
+ */
 _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store, mapi_id_t id_folder,
 				    mapi_object_t *obj_folder)
 {
@@ -86,13 +103,26 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store, mapi_id_t id_folde
 }
 
 
-
 /**
- * Obtains the folder that was established as the destination for
- * incoming messages of a specified message class or the default
- * receive folder for the message store.
- */
+   \details Retrieves the receive folder (INBOX) for a given store
 
+   This function obtains the folder that was established as the
+   destination for incoming messages of a specified message class, or
+   the default receive folder for the message store.
+
+   \param obj_store the store to get the receiver folder for
+   \param id_folder the resulting folder identification
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa MAPIInitialize, OpenMsgStore, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store, 
 					  mapi_id_t *id_folder)
 {
@@ -146,12 +176,28 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store,
 	return MAPI_E_SUCCESS;
 }
 
-/**
- * Obtain the outbox folder id.
- * No action is performed on the network
- * since we have the id from OpenMsgStore.
- */
 
+/**
+   \details Retrieves the sending folder (OUTBOX) for a given store
+
+   This function obtains the folder that was established as the
+   destination for outgoing messages of a specified message class.
+
+   This function does not result in any network traffic.
+
+   \param obj_store the store to get the outbox folder for
+   \param outbox_id the resulting folder identification
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+   
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa MAPIInitialize, OpenMsgStore, GetLastError, GetDefaultFolder
+*/
 _PUBLIC_ enum MAPISTATUS GetOutboxFolder(mapi_object_t *obj_store, 
 					 mapi_id_t *outbox_id)
 {

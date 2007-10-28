@@ -1,0 +1,55 @@
+/**
+\page mapiconcepts MAPI Concepts
+
+<h2>MAPI objects</h2>
+
+Almost any MAPI data you access, read or edit is associated with an
+object. No matter whether you intend to browse mailbox hierarchy, open
+folders, create tables or access items (messages, appointments,
+contacts, tasks, notes), you will have to initialize and use MAPI
+objects: <em>object understanding and manipulation is
+fundamental</em>.
+
+- When developing MAPI clients with Microsoft framework, instantiated
+objects inherit from parent classes. As a matter of fact, developers
+know which methods they can apply to objects and we  suppose it makes
+their life easier.
+- In OpenChange, objects are opaque. They are generic data structures
+which content is set and accessed through MAPI public
+functions. Therefore, Linux MAPI developers must know what they are
+doing. 
+
+An example of MAPI object manipulation is shown below:
+\code
+        mapi_object     obj_store;
+
+        [...]
+
+        mapi_object_init(&obj_store);
+        retval = OpenMsgStore(&obj_store);
+        if (retval != MAPI_E_SUCCESS) {
+                mapi_errstr("OpenMsgStore", GetLastError());
+                exit (1);
+        }
+        mapi_object_release(&obj_store);
+\endcode
+
+<h3>MAPI Handles</h3>
+
+Beyond memory management considerations, understanding MAPI handles
+role in object manipulation provides a better understanding why
+mapi_object_release() matters.
+
+Handles are temporary identifiers returned by Exchange when you access
+or create objects on the server. They are used to make reference to a
+particular object all along its session lifetime. They are stored in
+unsigned integers, are unique for each object but temporary along MAPI
+session. Handles are the only links between objects accessed on the
+client side and efficiently stored on the server side.
+
+Although OpenChange MAPI makes handles manipulation transparent for
+developers, mapi_object_release() frees both the allocated memory
+for the object on client side, but also releases the object on the
+server.
+
+*/

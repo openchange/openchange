@@ -20,19 +20,19 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/dlinklist.h>
 
-/**
+
+/*
  * mapi_handles destructor: flush the list
  */
-
 uint32_t mapi_handles_dtor(struct mapi_handles *mapi_handles)
 {
 	return 0;
 }
 
-/**
+
+/*
  * Add a handle within mapi_handles list
  */
-
 uint32_t mapi_handles_add(struct mapi_handles *mapi_handles, uint32_t handle)
 {
 	TALLOC_CTX		*mem_ctx = (TALLOC_CTX *)mapi_handles;
@@ -44,20 +44,20 @@ uint32_t mapi_handles_add(struct mapi_handles *mapi_handles, uint32_t handle)
 	return 0;
 }
 
-/**
+
+/*
  * Remove handle from mapi_handles list
  */
-
 uint32_t mapi_handles_del(struct mapi_handles *mapi_handles, uint32_t handle)
 {
 	return 0;
 }
 
-/**
+
+/*
  * Get the mapi_handles list, fill the handes array and return handles
  * count
  */
-
 uint32_t mapi_handles_get(struct mapi_handles *mapi_handles, uint32_t **handles)
 {
 	return 0;

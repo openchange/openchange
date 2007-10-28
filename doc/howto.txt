@@ -35,7 +35,7 @@ Updates by Dan Shearer <dan@shearer.org>, August 2007.
      [0x3b] Create a profile
      [0x3c] Test the profile
 [0x4] USING LIBMAPI
-     [0x4a] Man Pages
+     [0x4a] Doxygen
      [0x4b] Sample applications
      [0x4c] External resources
 [0x5] OPENCHANGE SERVER
@@ -277,16 +277,23 @@ Profile: testuser-2000
 [0x4] USING LIBMAPI
 ####################
 
-[0x4a] Man Pages
-================
+[0x4a] Doxygen
+==============
 
-Man pages are supplied with the MAPI library so developers can have an
-overview on how to use each function properly. If you have troubles
-accessing man pages, be sure your MANPATH environment variable is set
-properly and point on openchange prefix installation path. 
+HTML documentation and Man pages are supplied with the MAPI library so
+developers can have an overview on how to use each function properly.
+
+Run the following commands to generate and install man pages:
+$ make doxygen
+# make install-doxygen
+
+If you have troubles accessing man pages, be sure your MANPATH
+environment variable is set properly and point on openchange prefix
+installation path.
 
 $ export MANPATH=$MANPATH:/usr/local/samba/share/man
 
+The HTML documentation is available in the apidocs/html/ directory.
 
 [0x4b] Sample applications
 ==========================

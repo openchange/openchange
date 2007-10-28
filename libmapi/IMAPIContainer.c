@@ -20,10 +20,34 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
 
-/**
- * returns a pointer to the container's contents table.
- */
 
+/**
+   \file IMAPIContainer.c
+
+   \brief Containers and tables related operations
+*/
+
+
+/**
+   \details Returns a pointer to a container's table object
+
+   This function takes a pointer to a container object and returns a
+   pointer to its associated contents
+
+   \param obj_container the object to get the contents of
+   \param obj_table the resulting table containing the container's
+   contents.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenFolder, GetHierarchyTable, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_object_t *obj_table)
 {
 	struct mapi_request	*mapi_request;
@@ -85,11 +109,26 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 }
 
 
-
 /**
- * returns a pointer to the container's hierarchy table.
- */
+   \details Returns a pointer to a container's table object
 
+   This function takes a pointer to a container object and returns a
+   pointer to its associated hierarchy table
+
+   \param obj_container the object to get the contents of
+   \param obj_table the resulting table containing the container's
+   hierarchy
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenFolder, GetContentsTable, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_object_t *obj_table)
 {
 	struct mapi_request	*mapi_request;
@@ -150,8 +189,26 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
- * GetTable
+   \details Returns a pointer to the permission's table object.  
+
+   This function takes a pointer to a container object and returns a
+   pointer to its associated permission table
+
+   \param obj_container the object to get the contents of
+   \param obj_table the resulting table containing the container's
+   permissions
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa ModifyTable
  */
 _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *obj_table)
 {
@@ -215,7 +272,26 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 }
 
 /**
- * ModifyTable
+   \details Modify the entries of a permission table
+
+   This function takes a pointer to a table object, a list of entries
+   to modify and alter the permission table of its associated
+   container. This function can be used to add, modify or remove
+   permissions.
+
+   \param obj_table the table containing the container's permissions
+   \param rowList the list of table entries to modify
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa GetTable, AddUserPermission, ModifyUserPermission,
+   RemoveUserPermission
  */
 _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowList *rowList)
 {

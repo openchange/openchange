@@ -2,7 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@samba.org>
 
 AC_PREREQ(2.57)
-AC_INIT(openchange, 0.4, [openchange@openchange.org])
+AC_INIT(openchange, 0.6, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
@@ -110,10 +110,21 @@ AC_SUBST(SWIGDIRSCLEAN)
 AC_SUBST(SWIGDIRSDISTCLEAN)
 AC_SUBST(SWIGDIRSREALDISTCLEAN)
 
+dnl **************************
+dnl Documentation dependencies
+dnl **************************
+
+AC_PATH_PROG(DOXYGEN, doxygen)
+if test -z "$DOXYGEN"
+   then
+	AC_MSG_ERROR(Please install doxygen)
+fi
+
 dnl ***********************
 dnl Makefiles 
 dnl ***********************
 
-AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc libmapiadmin.pc])
+AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc libmapiadmin.pc
+		 Doxyfile])
 AC_OUTPUT
 

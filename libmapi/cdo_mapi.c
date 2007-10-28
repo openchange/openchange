@@ -27,10 +27,37 @@
 
 struct mapi_ctx *global_mapi_ctx = NULL;
 
-/**
- * Open providers stored in the profile and return a pointer on a IMAPISession object.
- */
 
+/**
+   \file cdo_mapi.c
+
+   \brief MAPI subsystem related operations
+*/
+
+
+/**
+   \details Create a full MAPI session
+ 
+   Open providers stored in the profile and return a pointer on a
+   IMAPISession object.
+
+   \param session pointer to a pointer to a MAPI session object
+   \param profname profile name to use
+   \param password password to use for the profile
+
+   password should be set to NULL if the password has been stored in
+   the profile.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
+     the necessary resources to operate properly
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa MAPIInitialize, OpenProfile, MapiLogonProvider
+*/
 _PUBLIC_ enum MAPISTATUS MapiLogonEx(struct mapi_session **session, 
 				     const char *profname, const char *password)
 {
@@ -48,12 +75,35 @@ _PUBLIC_ enum MAPISTATUS MapiLogonEx(struct mapi_session **session,
 	return MAPI_E_SUCCESS;
 }
 
-/**
- * Initialize a session on the specified provider
- */
 
+/**
+   \details Initialize a session on the specified provider
+
+   \param session pointer to a pointer to a MAPI session object
+   \param profname profile name
+   \param password profile password
+   \param provider provider we want to establish a connection on
+
+   password should be set to NULL if the password has been stored in
+   the profile.
+
+   Supported providers are:
+   - PROVIDER_ID_NSPI: Address Book provider
+   - PROVIDER_ID_EMSMDB: MAPI Store provider
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
+     the necessary resources to operate properly
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa MapiLogonEx, OpenProfile, LoadProfile
+*/
 _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
-					   const char *profname, const char *password,
+					   const char *profname, 
+					   const char *password,
 					   enum PROVIDER_ID provider)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -113,10 +163,27 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 	return MAPI_E_SUCCESS;
 }
 
-/**
- * Initialize mapi context global structure
- */
 
+/**
+   \details Initialize mapi context global structure
+
+   This function inititalizes the MAPI subsystem and open the profile
+   database pointed by profiledb .
+
+   \param profiledb profile database path
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
+     the necessary resources to operate properly
+   - MAPI_E_NOT_FOUND: No suitable profile database was found in the
+     path pointed by profiledb
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa MAPIUninitialize
+*/
 _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 {
 	enum MAPISTATUS	retval;
@@ -151,10 +218,13 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 
 
 /**
- * Uninitialize MAPI context and destroy recursively the whole mapi
- * session and associated objects hierarchy
- */
+   \details Uninitialize MAPI subsystem
 
+   This function uninitializes the MAPI context and destroy
+   recursively the whole mapi session and associated objects hierarchy
+
+   \sa MAPIInitialize, GetLastError
+ */
 _PUBLIC_ void MAPIUninitialize(void)
 {
 	TALLOC_CTX		*mem_ctx;

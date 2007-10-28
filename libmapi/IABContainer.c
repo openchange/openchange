@@ -20,16 +20,45 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
 
-/**
- * Wrapper on nspi_ResolveNames and nspi_ResolveNamesW
- *
- * Set flags to MAPI_UNICODE for ResolveNamesW call 
- * otherwise ResolveNames is called 
- *
- * Fill an adrlist and flaglist structure
- *
- */
 
+/**
+   \file IABContainer.c
+
+   \brief Provides access to address book containers -- Used to
+   perform name resolution
+*/
+
+
+/**
+   \details Resolve user names against the Windows Address Book Provider
+
+   \param usernames list of user names to resolve
+   \param rowset resulting list of user details
+   \param props resulting list of resolved names
+   \param flaglist resulting list of resolution status (see below)
+   \param flags if set to MAPI_UNICODE then UNICODE MAPITAGS can be
+   used, otherwise only UTF8 encoded fields may be returned.
+
+   Possible flaglist values are:
+   - MAPI_UNRESOLVED: could not be resolved
+   - MAPI_AMBIGUOUS: resolution match more than one entry
+   - MAPI_RESOLVED: resolution matched a single entry
+ 
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+   
+   \note Developers should call GetLastError() to retrieve the last MAPI error
+   code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_SESSION_LIMIT: No session has been opened on the provider
+   - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
+     the necessary resources to operate properly
+   - MAPI_E_NOT_FOUND: No suitable profile database was found in the
+     path pointed by profiledb
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+   
+   \sa MAPILogonProvider, GetLastError
+ */
 _PUBLIC_ enum MAPISTATUS ResolveNames(const char **usernames, struct SPropTagArray *props, struct SRowSet **rowset, struct FlagList **flaglist, uint32_t flags)
 {
 	struct nspi_context	*nspi;

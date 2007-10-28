@@ -22,6 +22,13 @@
 
 #include <libmapi/libmapi.h>
 
+/**
+   \file lzfu.c
+   
+   \brief RTF Compressed related functions
+*/
+
+
 #if BYTE_ORDER == BIG_ENDIAN
 #define LE32_CPU(x)		    \
   x = ((((x) & 0xff000000) >> 24) | \
@@ -65,6 +72,29 @@ typedef struct _lzfuheader {
 } lzfuheader;
 
 
+/**
+   \details creates a DATA_BLOB in uncompressed Rich Text Format (RTF)
+   from the compressed format used in the PR_RTF_COMPRESSED property
+   opened in the stream.
+
+   \param obj_stream stream object with RTF stream content
+   \param rtf the output blob with uncompressed content
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_stream is not a valid pointer
+   - MAPI_E_CORRUPT_DATA: a problem was encountered while
+     decompressing the RTF compressed data
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \note rtf->data needs to be freed with MAPIFreeBuffer
+
+   \sa OpenStream
+*/
 _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream, 
 						 DATA_BLOB *rtf)
 {
@@ -84,6 +114,7 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 	unsigned char	buf[0x1000];
 
 	/* sanity check and init */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	mem_ctx = global_mapi_ctx->mem_ctx;
 

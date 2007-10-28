@@ -21,9 +21,32 @@
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 
+
 /**
- * Open Public Folders
+   \file IMAPISession.c
  */
+
+
+/**
+   \details Open the Public Folder store
+
+   This function opens the public folder store. This allows access to
+   the normal folders.
+
+   \param obj_store the result of opening the store
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa MAPIInitialize which is required before opening the store
+   \sa GetLastError to check the result of a failed call, if necessary
+   \sa OpenMsgStore if you need access to the message store folders
+*/
 _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
 {
 	struct mapi_request	*mapi_request;
@@ -99,9 +122,25 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
 
 
 /**
- * Open the Message Store
- */
+   \details Open the Message Store
 
+   This function opens the main message store. This allows access to
+   the normal folders.
+
+   \param obj_store the result of opening the store
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa MAPIInitialize which is required before opening the store
+   \sa GetLastError to check the result of a failed call, if necessary
+   \sa OpenPublicFolder if you need access to the public folders
+*/
 _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 {
 	struct mapi_request	*mapi_request;

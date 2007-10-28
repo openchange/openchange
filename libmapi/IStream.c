@@ -21,8 +21,38 @@
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 
+
 /**
- * Open a stream
+   \file IStream.c
+
+   \brief Functions for operating on Streams on MAPI objects
+ */
+
+
+/**
+   \details Open a stream
+
+   This function opens a stream on the property \a prop set in \a
+   obj_related with access flags set to \a access_flags and returns an
+   object \a obj_stream.
+
+   \param obj_related the object to open.
+   \param prop the property name for the object to create a stream
+   for.
+   \param access_flags sets the access mode for the stream and is one
+   of the following values: 0 for reading, 1 for writing, 2 for read
+   and write access.
+   \param obj_stream the resulting stream object.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1. 
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa ReadStream, WriteStream, GetLastError
  */
 
 _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t prop,
@@ -85,11 +115,35 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t prop,
 }
 
 
-
 /**
- * Read buffer from a stream
- */
+   \details Read buffer from a stream
 
+   This function reads the stream opened in and reads data_size.  Data
+   is returned within data and read_size is set to the size of data
+   read.
+
+   \param obj_stream the opened stream object
+   \param buf_data the buffer where data read from the stream will be
+   stored
+   \param sz_data the number of bytes requested to be read from the
+   stream
+   \param sz_read the number of bytes effectively read from the stream
+
+   \return MAPI_E_SUCCESS on success, otherwise -1. 
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \note The data size intended to be read from the stream shouldn't
+   extend a maximum size each time you call ReadStream. This size
+   depends on Exchange server version. However 0x1000 is known to be a
+   reliable read size value.
+
+   \sa OpenStream, WriteStream, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *buf_data, 
 				    int sz_data, uint32_t *sz_read)
 {
@@ -151,11 +205,34 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 	return MAPI_E_SUCCESS;
 }
 
-/**
- * Write buffer to the stream
- */
 
-_PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob, uint16_t *read_size)
+/**
+   \details Write buffer to the stream
+
+   This function writes the stream specified as a DATA_BLOB in data to
+   the stream obj_stream.
+
+   \param obj_stream the opened stream object
+   \param blob the DATA_BLOB to write to the stream
+   \param write_size the effective number of bytes written to the
+   stream
+
+   \return MAPI_E_SUCCESS on success, otherwise -1. 
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \note The data size intended to be written to the stream shouldn't
+   extend a maximum size each time you call WriteStream. This size
+   depends on Exchange server version. However 0x1000 is known to be a
+   reliable write size value.
+
+   \sa OpenStream, ReadStream, GetLastError
+  */
+_PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob, uint16_t *write_size)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -203,7 +280,7 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	*read_size = mapi_response->mapi_repl->u.mapi_WriteStream.size;
+	*write_size = mapi_response->mapi_repl->u.mapi_WriteStream.size;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

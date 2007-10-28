@@ -20,6 +20,14 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
 
+
+/**
+   \file mapi_object.c
+
+   \brief mapi_object_t support functions
+*/
+
+
 /* fixme: mapi_object functions should return error codes */
 
 
@@ -39,6 +47,23 @@ static void mapi_object_reset(mapi_object_t *obj)
 	obj->private_data = 0;
 }
 
+
+/**
+   \details Initialize MAPI object
+
+   This function is required to be called before any 
+   manipulation of this MAPI object.
+
+   \param obj the object to initialize
+   
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+   
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
+
+   \sa mapi_object_release
+*/
 _PUBLIC_ enum MAPISTATUS mapi_object_init(mapi_object_t *obj)
 {
 	mapi_object_reset(obj);
@@ -48,6 +73,17 @@ _PUBLIC_ enum MAPISTATUS mapi_object_init(mapi_object_t *obj)
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details Release MAPI object
+
+   This function is required to be called when this MAPI object
+   is no longer required.
+
+   \param obj the object to release
+
+   \sa mapi_object_initialize, Release
+*/
 _PUBLIC_ void mapi_object_release(mapi_object_t *obj)
 {
 	enum MAPISTATUS retval;
@@ -63,6 +99,7 @@ _PUBLIC_ void mapi_object_release(mapi_object_t *obj)
 	}
 }
 
+
 int mapi_object_is_invalid(mapi_object_t *obj)
 {
 	if (mapi_object_get_handle(obj) == INVALID_HANDLE_VALUE) {
@@ -73,6 +110,13 @@ int mapi_object_is_invalid(mapi_object_t *obj)
 }
 
 
+/**
+   \details Retrieve an object ID for a given MAPI object
+ 
+   \param obj the object to get the ID for
+
+   \return the object ID, or -1 if the object does not exist
+*/
 _PUBLIC_ mapi_id_t mapi_object_get_id(mapi_object_t *obj)
 {
 	return (!obj) ? -1 : obj->id;
@@ -97,6 +141,11 @@ void mapi_object_set_handle(mapi_object_t *obj, mapi_handle_t handle)
 }
 
 
+/**
+   \details Dump a MAPI object (for debugging)
+
+   \param obj the MAPI object to dump out
+*/
 _PUBLIC_ void mapi_object_debug(mapi_object_t* obj)
 {
 	DEBUG(0, ("mapi_object {\n"));

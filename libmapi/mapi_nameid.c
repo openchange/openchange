@@ -21,9 +21,24 @@
 #include <libmapi/mapi_nameid.h>
 #include <libmapi/mapi_nameid_private.h>
 
+
 /**
- * Create a new mapi_newid structure
- */
+   \file mapi_nameid.c
+
+   \brief mapi_nameid convenient API
+*/
+
+
+/**
+   \details Create a new mapi_newid structure
+
+   \param mem_ctx memory context to use for allocation
+
+   \returns a pointer to an allocated mapi_nameid structure on
+   success, otherwise NULL
+
+   \sa GetIDsFromNames
+*/
 _PUBLIC_ struct mapi_nameid *mapi_nameid_new(TALLOC_CTX *mem_ctx)
 {
 	struct mapi_nameid	*mapi_nameid = NULL;
@@ -43,10 +58,27 @@ _PUBLIC_ struct mapi_nameid *mapi_nameid_new(TALLOC_CTX *mem_ctx)
 
 
 /**
- * Add a mapi_nameid entry given its OOM and OLEGUID (MNID_ID|MNID_STRING)
+   \details Add a mapi_nameid entry given its OOM and OLEGUID
+   (MNID_ID|MNID_STRING)
+
+   \param mapi_nameid the structure where results are stored
+   \param OOM the Outlook Object Model matching string
+   \param OLEGUID the property set this entry belongs to
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+   
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set
+   properly
+   - MAPI_E_NOT_FOUND: the entry intended to be added was not found
+
+   \sa mapi_nameid_new
  */
 _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_add(struct mapi_nameid *mapi_nameid,
-					     const char *OOM, const char *OLEGUID)
+					     const char *OOM, 
+					     const char *OLEGUID)
 {
 	uint32_t		i;
 	uint16_t		count;
@@ -92,7 +124,24 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_add(struct mapi_nameid *mapi_nameid,
 
 
 /**
- * Add a mapi_nameid entry given its lid and OLEGUID (MNID_ID)
+   \details Add a mapi_nameid entry given its lid and OLEGUID
+   (MNID_ID)
+
+   \param mapi_nameid the structure where results are stored
+   \param lid the light ID of the name property (used by MNID_ID named
+   props only)
+   \param OLEGUID the property set this entry belongs to
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+   
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set
+   properly
+   - MAPI_E_NOT_FOUND: the entry intended to be added was not found
+
+   \sa mapi_nameid_new
  */
 _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
 					     uint16_t lid, const char *OLEGUID)
@@ -140,7 +189,24 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
 
 
 /**
- * Add a mapi_nameid entry given its lpwstrName and OLEGUID (MNID_STRING)
+   \details Add a mapi_nameid entry given its lpwstrName and OLEGUID
+   (MNID_STRING)
+
+   \param mapi_nameid the structure where results are stored
+   \param lpwstrName the property name (used by MNID_STRING named
+   props only)
+   \param OLEGUID the property set this entry belongs to
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+   
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set
+   properly
+   - MAPI_E_NOT_FOUND: the entry intended to be added was not found
+
+   \sa mapi_nameid_new
  */
 _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
 						const char *lpwstrName,
@@ -190,8 +256,22 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
 
 
 /**
- * Set SPropTagArray ulPropTag property types from mapi_nameid
- */
+   \details set SPropTagArray ulPropTag property types from
+   mapi_nameid returned by GetIDsFromNames()
+
+   \param mapi_nameid the structure where results are stored
+   \param SPropTagArray the array of property tags returned by
+   previous call to GetIDsFromNames()
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+   
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set
+   properly
+
+   \sa GetIDsFromNames
+*/
 _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_nameid,
 						   struct SPropTagArray *SPropTagArray)
 {
@@ -211,9 +291,21 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_name
 
 
 /**
- * Lookup named properties (MNID_STRING) and return their mapped
- * proptags
- */
+   \details Lookup named properties (MNID_STRING) and return their
+   mapped proptags
+
+   This convenient function calls GetIDsFromNames() and returns
+   property tags with their real property type.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+   
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set
+   properly
+
+   \sa GetIDsFromNames, mapi_nameid_SPropTagArray
+*/
 _PUBLIC_ enum MAPISTATUS mapi_nameid_GetIDsFromNames(struct mapi_nameid *mapi_nameid,
 						     mapi_object_t *obj, 
 						     struct SPropTagArray *SPropTagArray)

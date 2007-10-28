@@ -23,10 +23,35 @@
 
 
 /**
- * retrieves the property value of one or more properties of an
- * object.
+   \file IMAPIProp.c
+
+   \brief Properties and named properties operations.
  */
 
+
+/**
+   \details Returns values of one or more properties for an object
+ 
+   The function takes a pointer on the object obj, a MAPITAGS array
+   specified in mapitags, and the count of properties.  The function
+   returns associated values within the SPropValue values pointer.
+
+   \param obj the object to get properties on
+   \param tags an array of MAPI property tags
+   \param vals the result of the query
+   \param cn_vals the count of property tags
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa SetProps, GetPropList, GetPropsAll, DeleteProps, SaveChanges,
+   GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj, 
 				  struct SPropTagArray *tags,
 				  struct SPropValue **vals, uint32_t *cn_vals)
@@ -96,9 +121,25 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 
 
 /**
- * updates one or more properties.
- */
+   \details Set one or more properties on a given object
 
+   This function sets one or more properties on a specified object.
+
+   \param obj the object to set properties on
+   \param sprops the list of properties to set
+   \param cn_props the number of properties
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa GetProps, GetPropList, GetPropsAll, DeleteProps, SaveChanges,
+   GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *sprops, 
 				  unsigned long cn_props)
 {
@@ -160,11 +201,30 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *sprops,
 	return MAPI_E_SUCCESS;
 }
 
-/**
- * makes permanent any changes made to an object since the last save
- * operation.
- */
 
+/**
+   \details Makes permanent any changes made to an object since the
+   last save operation.
+
+   \param obj_parent the parent of the object to save changes for
+   \param obj_child the object to save changes for
+   \param flags the access flags to set on the saved object 
+
+   Possible flags:
+   - KEEP_OPEN_READONLY
+   - KEEP_OPEN_READWRITE
+   - FORCE_SAVE
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa SetProps, ModifyRecipients, GetLastError
+ */
 _PUBLIC_ enum MAPISTATUS SaveChanges(mapi_object_t *obj_parent, 
 				     mapi_object_t *obj_child,
 				     uint8_t flags)
@@ -221,9 +281,22 @@ _PUBLIC_ enum MAPISTATUS SaveChanges(mapi_object_t *obj_parent,
 
 
 /**
- * get the property list
- */
+   \details Retrieve all the properties associated with a given object
 
+   \param obj the object to retrieve properties for
+   \param proptags the resulting list of properties associated with
+   the object
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:   
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa GetProps, GetPropsAll, GetLastError
+ */
 _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj, 
 				     struct SPropTagArray *proptags)
 {
@@ -282,11 +355,27 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	return MAPI_E_SUCCESS;
 }
 
-/**
- * GetPropsAll: Retrieve the whole set of properties and values
- * associated with an object
- */
 
+/**
+   \details Retrieve all properties and values associated with an
+   object
+
+   This function returns all the properties and and associated values
+   for a given object.
+
+   \param obj the object to get the properties for
+   \param properties the properties / values for the object
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa GetProps, GetPropList, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 				     struct mapi_SPropValue_array *properties)
 {
@@ -340,10 +429,23 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	return MAPI_E_SUCCESS;
 }
 
-/**
- * DeleteProps
- */
 
+/**
+   \details Delete one or more properties from an object
+
+   \param obj the object to remove properties from
+   \param tags the properties to remove from the given object
+       
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa SetProps, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj, 
 				     struct SPropTagArray *tags)
 {
@@ -398,9 +500,28 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 
 
 /**
- * GetNamesFromIDs: provides the property names that correspond to one
- * or more property identifiers.
- */
+   \details Provides the property names that correspond to one
+   or more property identifiers.
+   
+   \param obj the object we are retrieving the names from
+   \param ulPropTag the mapped property tag
+   \param count count of property names pointed to by the nameid
+   parameter returned by the server
+   \param nameid pointer to a pointer to property names returned by
+   the server
+
+   ulPropTag must be a property with type set to PT_NULL
+ 
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+  
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa GetIDsFromNames, QueryNamesFromIDs
+*/
 _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 					 uint32_t ulPropTag,
 					 uint16_t *count,
@@ -458,10 +579,39 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
- * GetIDsFromNames: provides the property identifiers that correspond
- * to one or more property names.
- */
+   \details Provides the property identifiers that correspond to one
+   or more property names.
+   
+   \param obj the object we are retrieving the identifiers from
+   \param count count of property names pointed to by the nameid
+   parameter.
+   \param nameid pointer to an array of property names
+   \param ulFlags indicates how the property identifiers should be
+   returned
+   \param proptags pointer to a pointer to an array of property tags
+   containing existing or newly assigned property
+   identifiers. Property types in this array are set to PT_NULL.
+
+   ulFlags can be set to:
+   - 0 retrieves named properties from the server
+   - MAPI_CREATE create the named properties if they don't exist on
+     the server
+
+   \note count and nameid parameter can automatically be built
+   using the mapi_nameid API.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+   
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa GetIDsFromNames, QueryNamesFromIDs, mapi_nameid_new
+*/
 _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 					 uint16_t count,
 					 struct MAPINAMEID *nameid,
@@ -547,11 +697,18 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 }
 
 
-/*
- * variant of GetNamesFromIDs. Work almost like GetNamesFromIDs except
- * that it can take ulPropTag = 0 and return the whole set of named
- * properties for a given object
- */
+/**
+   \details Provides the property names that correspond to one or more
+   property identifiers.
+
+   variant of GetNamesFromIDs(). This function works almost like
+   GetNamesFromIDs() except that it can take ulPropTag = 0 and return
+   the whole set of named properties available.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \sa GetNamesFromIDs
+*/
 _PUBLIC_ enum MAPISTATUS QueryNamesFromIDs(mapi_object_t *obj,
 					   uint16_t ulPropTag,
 					   uint16_t *count,

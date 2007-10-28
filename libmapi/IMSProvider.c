@@ -24,6 +24,14 @@
 #include <param.h>
 #include <credentials.h>
 
+
+/**
+   \file IMSProvider.c
+
+   \brief Provider operations
+*/
+
+
 /*
  * Log MAPI to one instance of a message store provider
  */
@@ -107,6 +115,27 @@ enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details Initialize the notification subsystem
+
+   This function initializes the notification subsystem, binds a local
+   UDP port to receive Exchange (server side) notifications and
+   configures the server to send notifications on this port.
+
+   \param ulEventMask the mask of events to provide notifications
+   for. This should be set to 0 for the moment.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa Subscribe, Unsubscribe, MonitorNotification, GetLastError 
+*/
 _PUBLIC_ enum MAPISTATUS RegisterNotification(uint32_t ulEventMask)
 {
 	NTSTATUS		status;

@@ -23,9 +23,27 @@
 
 
 /**
- * Creates a new message
+   \file IMAPIFolder.c
  */
 
+
+/**
+   \details The function creates a message in the specified folder,
+   and returns a pointer on this message.
+
+   \param obj_folder the folder to create the message in.
+   \param obj_message pointer to the newly created message.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenFolder, DeleteMessage, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t *obj_message)
 {
 	struct mapi_request	*mapi_request;
@@ -83,9 +101,25 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
 
 
 /**
- * Deletes one or more messages.
- */
+   \details Delete one or more messages
 
+   This function deletes one or more messages based on their ids from
+   a specified folder.
+
+   \param obj_folder the folder to delete messages from
+   \param id_messages the list of ids
+   \param cn_messages the number of messages in the id list.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenFolder, DeleteMessage, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS DeleteMessage(mapi_object_t *obj_folder, mapi_id_t *id_messages,
 				       uint32_t cn_messages)
 {
@@ -141,10 +175,24 @@ _PUBLIC_ enum MAPISTATUS DeleteMessage(mapi_object_t *obj_folder, mapi_id_t *id_
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
- * Copy or move a message from a folder to another
- *
- */
+   \details Copy or move a message from a folder to another
+
+   \param obj_src The source folder
+   \param obj_dst The destination folder
+   \param msgid The message ID to copy
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenFolder, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS CopyMessages(mapi_object_t *obj_src,
 				      mapi_object_t *obj_dst,
 				      mapi_id_t msgid)
@@ -209,8 +257,24 @@ _PUBLIC_ enum MAPISTATUS CopyMessages(mapi_object_t *obj_src,
 
 
 /**
- * SetReadFlags: method sets or clears the MSGFLAG_READ flag in the
- * PR_MESSAGE_FLAGS property
+   \details Clear or set the MSGFLAG_READ flag for a given message
+
+   This function clears or sets the MSGFLAG_READ flag in the
+   PR_MESSAGE_FLAGS property of a given message.
+
+   \param obj_folder the folder to operate in
+   \param obj_child the message to set flags on
+   \param flags the new flags (MSGFLAG_READ) value
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenMessage, GetLastError
  */
 _PUBLIC_ enum MAPISTATUS SetReadFlags(mapi_object_t *obj_folder, 
 				      mapi_object_t *obj_child,
@@ -269,9 +333,26 @@ _PUBLIC_ enum MAPISTATUS SetReadFlags(mapi_object_t *obj_folder,
 
 
 /**
- * CreateFolder, create a subfolder
- */
+   \details Create a folder
 
+   The function creates a folder (defined with its name and comment)
+   within a specified folder.
+
+   \param obj_parent the folder to create the new folder in
+   \param name the name of the new folder
+   \param comment the comment associated with the new folder
+   \param obj_child pointer to the newly created folder
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenFolder, DeleteFolder, EmptyFolder, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent, const char *name,
 				      const char *comment, mapi_object_t *obj_child)
 {
@@ -344,9 +425,22 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent, const char *nam
 
 
 /**
- * EmptyFolder
- */
+   \details Empty the contents of a folder
 
+   This function empties (clears) the contents of a specified folder.
+
+   \param obj_folder the folder to empty
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenFolder, CreateFolder, DeleteFolder, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS EmptyFolder(mapi_object_t *obj_folder)
 {
 	struct mapi_request	*mapi_request;
@@ -399,9 +493,23 @@ _PUBLIC_ enum MAPISTATUS EmptyFolder(mapi_object_t *obj_folder)
 
 
 /**
- * DeleteFolder
- */
+   \details Delete a folder
 
+   The function deletes a specified folder.
+
+   \param obj_parent the folder containing the folder to be deleted
+   \param folder_id the folder to delete
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenFolder, CreateFolder, EmptyFolder, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent, mapi_id_t folder_id)
 {
 	struct mapi_request	*mapi_request;

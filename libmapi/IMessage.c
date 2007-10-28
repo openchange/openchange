@@ -23,10 +23,30 @@
 #include <gen_ndr/ndr_exchange.h>
 #include <param.h>
 
+
 /**
- * Creates a new attachment
+   \file IMessage.c
  */
 
+
+/**
+   \details Create a new attachment
+
+   This function creates a new attachment to an existing message.
+
+   \param obj_message the message to attach to
+   \param obj_attach the attachment
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa CreateMessage, GetAttachmentTable, OpenAttach, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message, 
 				      mapi_object_t *obj_attach)
 {
@@ -81,8 +101,21 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 
 
 /**
- * Open the attachment table
- */
+   \details Retrieve the attachment table for a message
+
+   \param obj_message the message
+   \param obj_tb_attch the attachment table for the message
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa CreateMessage, OpenMessage, CreateAttach, OpenAttach, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message, 
 					    mapi_object_t *obj_tb_attch)
 {
@@ -137,9 +170,25 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 
 
 /**
- * Open an attachment given its PR_ATTACH_NUM
- */
+   \details Open an attachment to a message
 
+   This function opens one attachment from a message. The attachment
+   to be opened is is specified by its PR_ATTACH_NUM.
+
+   \param obj_message the message to operate on
+   \param num_attach the attachment number
+   \param obj_attach the resulting attachment object
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa CreateMessage, CreateAttach, GetAttachmentTable, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t num_attach,
 				    mapi_object_t *obj_attach)
 {
@@ -197,10 +246,25 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t num_att
 	return MAPI_E_SUCCESS;
 }
 
-/**
- * Set the recipient type: To, Cc, Bcc
- */
 
+/**
+   \details Set the type of a recipient
+
+   The function sets the recipient type (RecipClass) in the aRow
+   parameter.  ResolveNames should be used to fill the SRow structure.
+
+   \param aRow the row to set
+   \param RecipClass the type of recipient to set on the specified row
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: The aRow parameter was not set
+     properly.
+
+   \sa ResolveNames, ModifyRecipients, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS SetRecipientType(struct SRow *aRow, enum ulRecipClass RecipClass)
 {
 	enum MAPISTATUS		retval;
@@ -215,7 +279,8 @@ _PUBLIC_ enum MAPISTATUS SetRecipientType(struct SRow *aRow, enum ulRecipClass R
 	return MAPI_E_SUCCESS;
 }
 
-/**
+
+/*
  * retrieve the organization length for Exchange recipients
  */
 uint8_t mapi_recipients_get_org_length(struct mapi_profile *profile)
@@ -225,7 +290,8 @@ uint8_t mapi_recipients_get_org_length(struct mapi_profile *profile)
 	return 0;
 }
 
-/**
+
+/*
  * EXPERIMENTAL:
  * bitmask calculation for recipients headers structures
  */
@@ -284,10 +350,26 @@ uint16_t mapi_recipients_bitmask(struct SRow *aRow)
 	return bitmask;
 }
 
-/**
- * Adds, deletes, or modifies message recipients.
- */
 
+/**
+   \details Adds, deletes or modifies message recipients
+
+   \param obj_message the message to change the recipients for
+   \param SRowSet the recipients to add
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \bug ModifyRecipients can only add recipients.
+
+   \sa CreateMessage, ResolveNames, SetRecipientType, GetLastError
+
+*/
 _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message, 
 					  struct SRowSet *SRowSet)
 {
@@ -463,11 +545,26 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 }
 
 
-
 /**
- * Saves all changes to the message and marks it as ready for sending.
- */
+   \details Saves all changes to the message and marks it as ready for
+   sending.
 
+   This function saves all changes made to a message and marks it
+   ready to be sent.
+
+   \param obj_message the message to mark complete
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa CreateMessage, SetProps, ModifyRecipients, SetRecipientType,
+   GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 {
 	struct mapi_request	*mapi_request;
@@ -517,8 +614,22 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
- * Saves all changes to the message
+   \details Saves all changes to the message
+
+   \param parent the parent object for the message
+   \param obj_message the message to save
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa SetProps, ModifyRecipients, GetLastError
  */
 _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 					    mapi_object_t *obj_message)

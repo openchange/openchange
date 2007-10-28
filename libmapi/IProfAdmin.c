@@ -24,6 +24,12 @@
 #include <ldb_errors.h>
 #include <ldb.h>
 
+/**
+   \file IProfAdmin.c
+
+   \brief MAPI Profiles interface
+ */
+
 /*
  * Private functions
  */
@@ -245,8 +251,8 @@ static enum MAPISTATUS ldb_delete_profile(TALLOC_CTX *mem_ctx,
  * Public interface
  */
 
-/*
- * Add an attribute to the profile
+/**
+   \details Add an attribute to the profile
  */
 _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(const char *profile, 
 						      const char *attr, 
@@ -303,7 +309,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(const char *profile,
 }
 
 /**
- * Modify an attribute
+   \details Modify an attribute
  */
 _PUBLIC_ enum MAPISTATUS mapi_profile_modify_string_attr(const char *profname, 
 							 const char *attr, 
@@ -360,7 +366,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_modify_string_attr(const char *profname,
 }
 
 /**
- * Delete an attribute
+   \details Delete an attribute
  */
 _PUBLIC_ enum MAPISTATUS mapi_profile_delete_string_attr(const char *profname, 
 							 const char *attr, 
@@ -416,7 +422,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_delete_string_attr(const char *profname,
 	return MAPI_E_SUCCESS;
 }
 
-/**
+/*
  * Private function which opens the profile store
  * Should only be called within MAPIInitialize
  */
@@ -446,9 +452,14 @@ enum MAPISTATUS OpenProfileStore(TALLOC_CTX *mem_ctx, struct ldb_context **ldb_c
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
- * Get default ldif_path
- */
+   \details Get default ldif_path
+
+   This function returns the path for the default LDIF files.
+
+   \sa CreateProfileStore
+*/
 _PUBLIC_ const char *mapi_profile_get_ldif_path(void)
 {
 	return DEFAULT_LDIF;
@@ -456,8 +467,26 @@ _PUBLIC_ const char *mapi_profile_get_ldif_path(void)
 
 
 /**
- * Create a profile store
- */
+   \details Create a profile database
+   
+   This function creates a new profile database, including doing an
+   initial setup.
+
+   \param profiledb the absolute path to the profile database intended
+   to be created
+   \param ldif_path the absolute path to the LDIF information to use
+   for initial setup.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+ 
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_CALL_FAILED: profiledb or ldif_path is not set
+   - MAPI_E_NOT_ENOUGH_RESOURCES: ldb subsystem initialization failed
+   - MAPI_E_NO_ACCESS: connection or ldif add failed
+
+   \sa GetLastError, mapi_profile_get_ldif_path
+*/
 _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *ldif_path)
 {
 	int			ret;
@@ -524,9 +553,26 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 
 
 /**
- * Open a MAPI Profile
- */
+   \details Load a profile from the database
 
+   This function opens a named profile from the database, and fills
+   the mapi_profile structure with common profile information.
+
+   \param profile the resulting profile
+   \param profname the name of the profile to open
+   \param password the password to use with the profile
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_ENOUGH_RESOURCES: ldb subsystem initialization failed
+   - MAPI_E_NOT_FOUND: the profile was not found in the profile
+     database
+   - MAPI_E_COLLISION: profname matched more than one entry
+
+   \sa MAPIInitialize, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_profile *profile, const char *profname, const char *password)
 {
 	TALLOC_CTX	*mem_ctx;
@@ -545,9 +591,21 @@ _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_profile *profile, const char *p
 }
 
 /**
- * Load a MAPI Profile and sets its credentials
- */
+   \details Load a MAPI Profile and sets its credentials
 
+   This function loads a named MAPI profile and sets the MAPI session
+   credentials.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
+     the necessary resources to perform the operation
+
+   \sa OpenProfile, GetLastError
+ */
 _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_profile *profile)
 {
 	TALLOC_CTX *mem_ctx;
@@ -568,7 +626,18 @@ _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_profile *profile)
 }
 
 /**
- * Release a profile
+   \details Release a profile
+
+   This function releases the credentials associated with the profile.
+
+   \param profile the profile to release.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: The profile parameter was not set or
+     not valid
  */
 _PUBLIC_ enum MAPISTATUS ShutDown(struct mapi_profile *profile)
 {
@@ -579,8 +648,40 @@ _PUBLIC_ enum MAPISTATUS ShutDown(struct mapi_profile *profile)
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
- * Create a MAPI Profile
+   \details Create a profile in the MAPI profile database
+
+   This function creates a profile named \a profile in the MAPI profile
+   database and sets the specified username in that profile.
+
+   This function may also set the password. If the flags include
+   OC_PROFILE_NOPASSWORD then the password will not be set. Otherwise,
+   the specified password argument will also be saved to the profile.
+
+   \param profile the name of the profile
+   \param username the username of the profile
+   \param password the password for the profile (if used)
+   \param flag the union of the flags. 
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been
+     initialized. The MAPI subsystem must be initialized (using
+     MAPIInitialize) prior to creating a profile.
+   - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
+     the necessary resources to operate properly
+   - MAPI_E_NO_SUPPORT: An error was encountered while setting the
+     MAPI profile attributes in the database.
+
+   \note profile information (including the password, if saved to the
+   profile) is stored unencrypted.
+
+   \sa DeleteProfile, SetDefaultProfile, GetDefaultProfile,
+   ChangeProfilePassword, GetProfileTable, ProcessNetworkProfile,
+   GetLastError
  */
 _PUBLIC_ enum MAPISTATUS CreateProfile(const char *profile, const char *username,
 				       const char *password, uint32_t flag)
@@ -603,9 +704,24 @@ _PUBLIC_ enum MAPISTATUS CreateProfile(const char *profile, const char *username
 	return retval;
 }
 
+
 /**
- * Delete a MAPI Profile
- */
+   \details Delete a profile from the MAPI profile database
+
+   \param profile the name of the profile to delete
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been
+     initialized. The MAPI subsystem must be initialized (using
+     MAPIInitialize) prior to creating a profile.
+   - MAPI_E_NOT_FOUND: The profile was not found in the database.
+
+   \sa CreateProfile, ChangeProfilePassword, GetProfileTable,
+   GetProfileAttr, ProcessNetworkProfile, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS DeleteProfile(const char *profile)
 {
 	TALLOC_CTX	*mem_ctx;
@@ -621,8 +737,24 @@ _PUBLIC_ enum MAPISTATUS DeleteProfile(const char *profile)
 	return retval;
 }
 
+
 /**
- * Change the profile password
+   \details Change the profile password of an existing MAPI profile
+
+   \param profile the name of the profile to have its password changed
+   \param old_password the old password
+   \param password the new password
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: One of the following argument was not
+     set: profile, old_password, password
+   - MAPI_E_NOT_FOUND: The profile was not found in the database
+
+   \sa CreateProfile, GetProfileTable, GetProfileAttr,
+   ProcessNetworkProfile, GetLastError
  */
 _PUBLIC_ enum MAPISTATUS ChangeProfilePassword(const char *profile, 
 					       const char *old_password,
@@ -644,7 +776,7 @@ _PUBLIC_ enum MAPISTATUS ChangeProfilePassword(const char *profile,
 	return retval;
 }
 
-/**
+/*
  * Copies a profile
  */
 _PUBLIC_ enum MAPISTATUS CopyProfile(const char *old_profile, 
@@ -660,7 +792,7 @@ _PUBLIC_ enum MAPISTATUS CopyProfile(const char *old_profile,
 	/* return MAPI_E_NOT_FOUND => old profile doesn't exist */
 }
 
-/**
+/*
  * Rename a profile
  */
 _PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile, 
@@ -674,8 +806,22 @@ _PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile,
 	/* return MAPI_E_LOGON_FAILED => auth failure*/
 }
 
+
 /**
- * Set default profile
+   \details Set a default profile for the database
+
+   \param profname the name of the profile to make the default profile
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: The profile parameter was not set
+     properly.
+   - MAPI_E_NOT_FOUND: The profile was not found in the database
+
+   \sa GetDefaultProfile, GetProfileTable, GetLastError
  */
 _PUBLIC_ enum MAPISTATUS SetDefaultProfile(const char *profname)
 {
@@ -703,9 +849,22 @@ _PUBLIC_ enum MAPISTATUS SetDefaultProfile(const char *profname)
 	return retval;
 }
 
+
 /**
- * Get default profile
- */
+   \details Get the default profile from the database
+
+   \param profname the result of the function (name of the default
+   profile)
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_NOT_FOUND: The profile was not found in the database
+
+   \sa SetDefaultProfile, GetProfileTable, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
 {
 	enum MAPISTATUS		retval;
@@ -734,7 +893,8 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
 }
 
 /**
- * Retrieve a pointer on the mapi_profile structure used in the given session
+   \details Retrieve a pointer on the mapi_profile structure used in
+   the given session
  */
 _PUBLIC_ enum MAPISTATUS GetProfilePtr(struct mapi_profile *profile)
 {
@@ -745,9 +905,25 @@ _PUBLIC_ enum MAPISTATUS GetProfilePtr(struct mapi_profile *profile)
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
- * Retrieve a SRowSet containing the profile table with only two
- * columns: PR_DISPLAY_NAME && PR_DEFAULT_PROFILE
+   \details Retrieve the profile table
+
+   This function retrieves the profile table. Two fields are returned:
+   - PR_DISPLAY_NAME: The profile name stored as a UTF8 string
+   - PR_DEFAULT_PROFILE: Whether the profile is the default one(1) or
+     not(0), stored as an integer
+
+   \param proftable the result of the call
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_NOT_FOUND: The profile was not found in the database
+
+   \sa SetDefaultProfile, GetProfileTable, GetLastError
  */
 _PUBLIC_ enum MAPISTATUS GetProfileTable(struct SRowSet *proftable)
 {
@@ -791,9 +967,32 @@ _PUBLIC_ enum MAPISTATUS GetProfileTable(struct SRowSet *proftable)
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
- * Retrieve an attribute value from the profile
- */
+   \details Retrieve attribute values from a profile
+
+   This function retrieves all the attribute values from the given
+   profile.  The number of results is stored in \a count and values
+   are stored in an allocated string array in the \a value parameter
+   that needs to be free'd using MAPIFreeBuffer().
+   
+   \param profile the name of the profile to retrieve attributes from
+   \param attribute the attribute(s) to search for
+   \param count the number of results
+   \param value the resulting values
+   
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: Either profile or attribute was not set
+     properly
+   - MAPI_E_NOT_FOUND: The profile was not found in the database
+
+   \sa SetDefaultProfile, GetDefaultProfile, MAPIFreeBuffer,
+   GetProfileTable, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile, 
 					const char *attribute, 
 					unsigned int *count,
@@ -847,7 +1046,7 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 }
 
 /**
- * Search the value of an attribute within a given profile
+   \details Search the value of an attribute within a given profile
  */
 _PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile, const char *attribute, const char *value)
 {
@@ -890,7 +1089,7 @@ _PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile, const cha
 }
 
 /**
- * Create the profile 
+   Create the profile 
  */
 
 static bool set_profile_attribute(const char *profname, struct SRowSet rowset, 
@@ -939,6 +1138,46 @@ static bool set_profile_mvstr_attribute(const char *profname, struct SRowSet row
 	return true;
 }
 
+
+/**
+   \details Process a full and automated MAPI profile creation
+
+   This function process a full and automated MAPI profile creation
+   using the \a username pattern passed as a parameter. The functions
+   takes a callback parameter which will be called when the username
+   checked matches several usernames. Private data needed by the
+   callback can be supplied using the private data pointer.
+
+   \code
+   typedef int (*mapi_callback_t) callback(struct SRowSet *, void *private);
+   \endcode
+   
+   The callback returns the SRow element index within the SRowSet
+   structure.  If the user cancels the operation the callback return
+   value should be SRowSet->cRows or more.
+
+   \param session the session context
+   \param username the username for the network profile
+   \param callback function pointer callback function
+   \param private context data that will be provided to the callback
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been
+     initialized. The MAPI subsystem must be initialized (using
+     MAPIInitialize) prior to creating a profile.
+   - MAPI_E_END_OF_SESSION: The NSPI session has not been initialized
+   - MAPI_E_CANCEL_USER: The user has aborted the operation
+   - MAPI_E_INVALID_PARAMETER: The profile parameter was not set
+     properly.
+   - MAPI_E_NOT_FOUND: One of the mandatory field was not found during
+     the profile creation process.
+
+   \sa OpenProfileStore, MAPILogonProvider, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, const char *username,
 					       mapi_profile_callback_t callback, const void *private)
 {

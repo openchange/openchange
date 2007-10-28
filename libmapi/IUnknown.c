@@ -21,6 +21,32 @@
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 
+
+/**
+   \file IUnknown.c
+
+   \brief Various miscellaneous (ungrouped) functions
+ */
+
+
+/**
+   \details Allocate memory using the MAPI memory context
+
+   \param size the number of bytes to allocate
+   \param ptr pointer to the allocated byte region
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_SESSION_LIMIT: No session has been opened on the provider
+   - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
+     the necessary resources to operate properly
+   - MAPI_E_INVALID_PARAMER: size is not set properly.
+
+   \sa MAPIFreeBuffer, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS MAPIAllocateBuffer(uint32_t size, void **ptr)
 {
 	TALLOC_CTX	*mem_ctx;
@@ -37,6 +63,23 @@ _PUBLIC_ enum MAPISTATUS MAPIAllocateBuffer(uint32_t size, void **ptr)
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details Free allocated memory
+
+   This function frees memory previously allocated with
+   MAPIAllocateBuffer.
+
+   \param ptr memory region to free
+       
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMER: ptr is not set properly.
+
+   \sa MAPIAllocateBuffer, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS MAPIFreeBuffer(void *ptr)
 {
 	uint32_t	ret;
@@ -49,6 +92,24 @@ _PUBLIC_ enum MAPISTATUS MAPIFreeBuffer(void *ptr)
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details Release an object on the server
+
+   The function releases the object \a obj on the server.
+
+   \param obj the object to release
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 {
 	struct mapi_request	*mapi_request;
@@ -89,11 +150,13 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	return MAPI_E_SUCCESS;
 }
 
-/*
- * GetLastError returns the latest error code.
- * If it is needed by openchange, we will return some kind of
- * MAPIERROR structure in the future.
- */
+
+/**
+   \details Returns the latest error code.
+
+   This function returns the error code set by a previous function
+   call.
+*/
 _PUBLIC_ enum MAPISTATUS GetLastError(void)
 {
 	return errno;

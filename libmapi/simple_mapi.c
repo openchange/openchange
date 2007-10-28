@@ -21,6 +21,37 @@
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 
+
+/**
+   \file simple_mapi.c
+
+   \brief Convenient functions.
+*/
+
+
+/**
+   \details Retrieve the folder id for the specified default folder in
+   a public folder store
+
+   \param obj_store the store to search
+   \param id the type of folder to search for
+   \param folder the resulting folder reference
+
+   The following types of folders are supported:
+   - olFolderPublicRoot
+   - olFolderPublicIPMSubtree
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
+   - MAPI_E_INVALID_PARAMETER: obj_store is undefined
+   - MAPI_E_NOT_FOUND: The specified folder could not be found or is
+     not yet supported.
+
+   \sa MAPIInitialize, OpenPublicFolder, GetLastError
+ */
 _PUBLIC_ enum MAPISTATUS GetDefaultPublicFolder(mapi_object_t *obj_store,
 						uint64_t *folder,
 						const uint32_t id)
@@ -43,6 +74,38 @@ _PUBLIC_ enum MAPISTATUS GetDefaultPublicFolder(mapi_object_t *obj_store,
 }
 
 
+/**
+   \details Retrieves the folder id for the specified default folder
+   in a mailbox store
+
+   \param obj_store the store to search
+   \param id the type of folder to search for
+   \param folder the resulting folder reference
+
+   The following types of folders are supported:
+   - olFolderTopInformationStore
+   - olFolderDeletedItems
+   - olFolderOutbox
+   - olFolderSentMail
+   - olFolderInbox
+   - olFolderCalendar
+   - olFolderContacts
+   - olFolderJournal
+   - olFolderNotes
+   - olFolderTasks
+   - olFolderDrafts
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
+   - MAPI_E_INVALID_PARAMETER: obj_store is undefined
+   - MAPI_E_NOT_FOUND: The specified folder could not be found or is
+     not yet supported.
+
+   \sa MAPIInitialize, OpenMsgStore, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store, 
 					  uint64_t *folder,
 					  const uint32_t id)
@@ -137,6 +200,27 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details Retrieves the total and unread number of items for a
+    specified folder.
+
+    \param obj_folder the folder to get item counts for
+    \param unread the number of items in the folder (result)
+    \param total the number of items in the folder, including unread
+    items (result)
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
+   - MAPI_E_INVALID_PARAMETER: obj_folder is undefined
+   - MAPI_E_NOT_FOUND: The specified folder could not be found or is
+     not yet supported.
+
+   \sa MAPIInitialize, OpenFolder, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 					     uint32_t *unread,
 					     uint32_t *total)
@@ -174,8 +258,42 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
- * Add a permission
+   \details Adds permissions for a user on a given folder
+
+   \param obj_folder the folder we add permission for
+   \param username the Exchange username we add permissions for
+   \param role the permission mask value
+
+   The following permissions and rights are supported:
+   - RightsNone
+   - RightsReadItems
+   - RightsCreateItems
+   - RightsEditOwn
+   - RightsDeleteOwn
+   - RightsEditAll
+   - RightsDeleteAll
+   - RightsCreateSubfolders
+   - RightsFolderOwner
+   - RightsFolderContact
+   - RoleNone
+   - RoleReviewer
+   - RoleContributor
+   - RoleNoneditingAuthor
+   - RoleAuthor
+   - RoleEditor
+   - RolePublishAuthor
+   - RolePublishEditor
+   - RightsAll
+   - RoleOwner
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
+   - MAPI_E_INVALID_PARAMETER: username is NULL
+
+   \sa ResolveNames, ModifyTable
  */
 _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char *username, enum ACLRIGHTS role)
 {
@@ -221,8 +339,22 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
- * Modify a permission
+   \details Modify permissions for a user on a given folder
+   
+   \param obj_folder the folder we add permission for
+   \param username the Exchange username we modify permissions for
+   \param role the permission mask value
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
+   - MAPI_E_INVALID_PARAMETER: username is NULL
+   - MAPI_E_NOT_FOUND: couldn't find or change permissions for the
+     given user
+
+   \sa AddUserPermission, ResolveNames, GetTable, ModifyTable
  */
 _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const char *username, enum ACLRIGHTS role)
 {
@@ -312,8 +444,21 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	return ((found == true) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);	
 }
 
+
 /**
- * Remove a permission
+   \details Remove permissions for a user on a given folder
+
+   \param obj_folder the folder we add permission for
+   \param username the Exchange username we remove permissions for
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
+   - MAPI_E_INVALID_PARAMETER: username is NULL
+   - MAPI_E_NOT_FOUND: couldn't find or remove permissions for the
+     given user
+
+   \sa ResolveNames, GetTable, ModifyTable
  */
 _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const char *username)
 {

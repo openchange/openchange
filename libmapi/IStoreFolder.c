@@ -23,10 +23,41 @@
 
 
 /**
- * Opens a specific message and retrieves a read-only stream that can
- * be used to read the message body.
- */
+   \file IStoreFolder.c
+ 
+   \brief Open messages
+*/
 
+
+/**
+   \details Opens a specific message and retrieves a MAPI object that
+   can be used to get or set message properties.
+
+   This function opens a specific message defined by a combination of
+   object store, folder ID, and message ID and which read/write access
+   is defined by ulFlags.
+
+   \param obj_store the store to read from
+   \param id_folder the folder ID
+   \param id_message the message ID
+   \param obj_message the resulting message object
+   \param ulFlags
+
+   Possible ulFlags values:
+   - 0x0: read only access
+   - MAPI_MODIFY: read/write access
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_store is undefined
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa MAPIInitialize, GetLastError
+*/
 _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store, 
 				     mapi_id_t id_folder, 
 				     mapi_id_t id_message, 
@@ -44,6 +75,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("OpenMessage");

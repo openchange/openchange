@@ -148,19 +148,19 @@ re: clean install
 torture/openchange.$(SHLIBEXT):	torture/nspi_profile.po		\
 				torture/nspi_resolvenames.po	\
 				torture/mapi_restrictions.po	\
-				torture/mapi_copymail.po		\
+				torture/mapi_copymail.po	\
 				torture/mapi_prop.po		\
 				torture/mapi_folder.po		\
 				torture/mapi_table.po		\
 				torture/mapi_message.po		\
 				torture/mapi_fetchmail.po	\
-				torture/mapi_sendmail.po		\
+				torture/mapi_sendmail.po	\
 				torture/mapi_sendmail_html.po	\
 				torture/mapi_deletemail.po	\
 				torture/mapi_newmail.po		\
 				torture/mapi_sendattach.po	\
 				torture/mapi_fetchattach.po	\
-				torture/mapi_fetchappointment.po	\
+				torture/mapi_fetchappointment.po\
 				torture/mapi_sendappointment.po	\
 				torture/mapi_fetchcontacts.po	\
 				torture/mapi_sendcontacts.po	\
@@ -184,8 +184,8 @@ libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
 # Avoid warnings:
 libmapi/utf8_convert.yy.o: CFLAGS=
 
-server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.po \
-									server/dcesrv_exchange.po	\
+server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.po 	\
+				server/dcesrv_exchange.po	\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
@@ -285,7 +285,7 @@ realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
 	rm -f server/dcesrv_exchange.$(SHLIBEXT)
 	rm -f server/dcesrv_exchange_remote.$(SHLIBEXT)
 	rm -rf apidocs
-	rm -f gen_ndr
+	rm -rf gen_ndr
 
 clean:	$(SWIGDIRS-CLEAN)
 	rm -f libmapi/*.{o,po} libmapiadmin/*.{o,po}
@@ -443,18 +443,21 @@ manpages = \
 		doc/man/man1/mapiprofile.1				\
 		doc/man/man1/openchangeclient.1				
 
-installman:
+installman: doxygen
 	@./script/installman.sh $(DESTDIR)$(mandir) $(manpages)
+	@./script/installman.sh $(DESTDIR)$(mandir) `ls apidocs/man/man3/*`
+
 
 uninstallman:
 	@./script/uninstallman.sh $(DESTDIR)$(mandir) $(manpages)
+	@./script/uninstallman.sh $(DESTDIR)$(mandir) `ls apidocs/man/man3/*`
 
 doxygen:	
-	@echo "Doxify API documentation: HTML and man pages"
-	@$(DOXYGEN) Doxyfile
-	@cp -f doc/doxygen/pictures/* apidocs/html/
-
-doxygen-install: doxygen
+	@if test ! -d apidocs ; then					\
+		echo "Doxify API documentation: HTML and man pages";	\
+		$(DOXYGEN) Doxyfile;					\
+		cp -f doc/doxygen/pictures/* apidocs/html/;		\
+	fi								
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]"`

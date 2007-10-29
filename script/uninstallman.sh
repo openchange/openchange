@@ -9,7 +9,7 @@ MANPAGES=$*
 for I in $MANPAGES
 do
 	SECTION=`echo $I | grep -o '.$'`
-	MAN=`echo $I | grep -o '[a-zA-Z]*\.[0-9]'`
+	MAN=`echo $I | grep -o '[a-zA-Z_]*\.[0-9]'`
 	FNAME=$MANDIR/man$SECTION/$MAN
 	if test -f $FNAME; then
 	  echo Deleting $FNAME

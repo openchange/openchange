@@ -373,7 +373,6 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 				aRow.lpProps = lpProps;
 
 				retval = octool_message(mem_ctx, &obj_message);
-				MAPI_RETVAL_IF(retval, retval, NULL);
 
 				has_attach = (const uint8_t *) get_SPropValue_SRow_data(&aRow, PR_HASATTACH);
 
@@ -641,7 +640,7 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 }
 
 
-#define SETPROPS_COUNT	3
+#define SETPROPS_COUNT	4
 
 /**
  * Send a mail
@@ -664,6 +663,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	uint32_t		msgflag;
 	struct SPropValue	props[SETPROPS_COUNT];
 	uint32_t		prop_count = 0;
+	uint32_t		editor = 0;
 
 	mapi_object_init(&obj_outbox);
 	mapi_object_init(&obj_message);
@@ -728,6 +728,9 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 
 	/* Set PR_BODY or PR_HTML or inline PR_HTML */
 	if (oclient->pr_body) {
+		editor = EDITOR_FORMAT_PLAINTEXT;
+		set_SPropValue_proptag(&props[3], PR_MSG_EDITOR_FORMAT, (const void *)&editor);
+
 		if (strlen(oclient->pr_body) > MAX_READ_SIZE) {
 			struct SBinary	bin;
 
@@ -740,6 +743,9 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			prop_count++;
 		}
 	} else if (oclient->pr_html_inline) {
+		editor = EDITOR_FORMAT_HTML;
+		set_SPropValue_proptag(&props[3], PR_MSG_EDITOR_FORMAT, (const void *)&editor);
+
 		if (strlen(oclient->pr_html_inline) > MAX_READ_SIZE) {
 			struct SBinary	bin;
 			
@@ -756,6 +762,9 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 		}
 		
 	} else if (&oclient->pr_html) {
+		editor = EDITOR_FORMAT_HTML;
+		set_SPropValue_proptag(&props[3], PR_MSG_EDITOR_FORMAT, (const void *)&editor);
+
 		if (oclient->pr_html.cb <= MAX_READ_SIZE) {
 			struct SBinary_short bin;
 
@@ -1931,7 +1940,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_sendmail && (!oclient.pr_body && !oclient.pr_html_inline && !opt_html_file)) {
-		printf("No body specified (body, inline-html or html-file)\n");
+		printf("No body specified (body, html-inline or html-file)\n");
 		exit (1);
 	}
 

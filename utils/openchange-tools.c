@@ -75,6 +75,7 @@ static enum MAPISTATUS octool_get_stream(TALLOC_CTX *mem_ctx,
 		}
 	} while (read_size);
 
+	errno = 0;
 	return MAPI_E_SUCCESS;
 }
 
@@ -171,6 +172,7 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 	const uint32_t			*cp;
 	const char			*codepage;
 	const uint32_t			*editor;
+	uint32_t			dflt;
 
 	/* Build the array of properties we want to fetch */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x13,
@@ -207,8 +209,18 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 	subject = (const char *) octool_get_propval(&aRow, PR_CONVERSATION_TOPIC);
 	editor = (const uint32_t *) octool_get_propval(&aRow, PR_MSG_EDITOR_FORMAT);
 
+	/* if PR_MSG_EDITOR_FORMAT doesn't exist, set it to PLAINTEXT */
+	if (!editor) {
+		dflt = EDITOR_FORMAT_PLAINTEXT;
+		editor = &dflt;
+	}
+
 	retval = octool_get_body(mem_ctx, obj_message, &aRow, editor, &body);
-	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+
+	if (retval != MAPI_E_SUCCESS) {
+		printf("Invalid Message: %s\n", msgid ? msgid : "");
+		MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+	}
 	
 	from = (const char *) octool_get_propval(&aRow, PR_SENT_REPRESENTING_NAME);
 	to = (const char *) octool_get_propval(&aRow, PR_DISPLAY_TO);

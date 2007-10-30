@@ -5,17 +5,20 @@ under the terms at http://creativecommons.org/licenses/by-sa/3.0/
 OpenChange developer howto
 --------------------------
 
-j.kerihuel@openchange.org, October 2005
-Updates by Jelmer Vernooij <jelmer@samba.org>, March 2006.
-Updates by Gregory Schiro <g.schiro@openchange.org>, April 2006.
-Updates by Julien Kerihuel <j.kerihuel@openchange.org>, May 2006.
-Updates by Julien Kerihuel <j.kerihuel@openchange.org>, March 2007.
-Updates by Julien Kerihuel <j.kerihuel@openchange.org>, April 2007.
-Updates by Dan Shearer <dan@shearer.org>, April 2007.
-Updates by Julien Kerihuel <j.kerihuel@openchange.org>, April 2007.
-Updates by Julien Kerihuel <j.kerihuel@openchange.org>, June 2007.
-Updates by Dan Shearer <dan@shearer.org>, July 2007.
-Updates by Dan Shearer <dan@shearer.org>, August 2007.
+Revision History:
+=================
+Initial by Julien Kerihuel	<j.kerihuel@openchange.org>,	October 2005.
+Updates by Jelmer Vernooij	<jelmer@samba.org>,		March	2006.
+Updates by Gregory Schiro	<g.schiro@openchange.org>,	April	2006.
+Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	May	2006.
+Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	March	2007.
+Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	April	2007.
+Updates by Dan Shearer		<dan@shearer.org>,		April	2007.
+Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	April	2007.
+Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	June	2007.
+Updates by Dan Shearer		<dan@shearer.org>,		July	2007.
+Updates by Dan Shearer		<dan@shearer.org>,		August	2007.
+Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	October 2007.
 
 
 ###############
@@ -285,7 +288,7 @@ developers can have an overview on how to use each function properly.
 
 Run the following commands to generate and install man pages:
 $ make doxygen
-# make install-doxygen
+# make installman
 
 If you have troubles accessing man pages, be sure your MANPATH
 environment variable is set properly and point on openchange prefix
@@ -293,7 +296,8 @@ installation path.
 
 $ export MANPATH=$MANPATH:/usr/local/samba/share/man
 
-The HTML documentation is available in the apidocs/html/ directory.
+The HTML documentation is available in the apidocs/html/ directory or
+can directly be browsed online at http://www.openchange.org/apidocs/.
 
 [0x4b] Sample applications
 ==========================

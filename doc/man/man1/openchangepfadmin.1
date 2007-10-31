@@ -1,0 +1,252 @@
+.\" OpenChange Project Tools Man Pages
+.\"
+.\" This manpage is Copyright (C) 2007 Julien Kerihuel;
+.\"
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of this
+.\" manual under the conditions for verbatim copying, provided that the
+.\" entire resulting derived work is distributed under the terms of a
+.\" permission notice identical to this one.
+.\" 
+.\" Since the OpenChange and Samba4 libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+.\" responsibility for errors or omissions, or for damages resulting from
+.\" the use of the information contained herein.  The author(s) may not
+.\" have taken the same level of care in the production of this manual,
+.\" which is licensed free of charge, as they might when working
+.\" professionally.
+.\" 
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\"
+.\" Process this file with
+.\" groff -man -Tascii openchangepfadmin.1
+.\"
+.TH OPENCHANGEPFADMIN 1 2007-11-01 "OpenChange libmapi 0.6" "OpenChange Programmer's Manual"
+
+.SH NAME
+openchangepfadmin \- Exchange users and Public Folder administration tool
+
+.SH SYNOPSIS
+.nf
+openchangepfadmin [-?] [-?|--help] [--usage] [-f|--database STRING]
+        [-p|--profile STRING] [-P|--password STRING] [--apassword=STRING]
+        [--adesc=STRING] [--acomment=STRING] [--afullname=STRING] [--list]
+        [--mkdir] [--rmdir] [--comment=STRING] [--dirclass=STRING]
+        [--adduser=STRING] [--rmuser=STRING] [--addright=STRING] [--rmright]
+        [--modright=STRING] [--debuglevel=STRING] [--dump-data]
+        [--folder=STRING] [--username=STRING]
+.fi
+
+.SH DESCRIPTION
+openchangepfadmin is a administrative command line tool designed to
+facilitate user management related operations (create, delete, modify)
+on a remote Exchange server and manage public folder store and
+permissions.
+
+.SH COMMANDS
+
+.TP
+.B --adduser=STRING
+Create a Exchange user with the username specified by STRING
+
+.TP
+.B --rmuser=STRING
+Delete the Exchange user account specified by STRING
+
+.TP
+.B --list
+List Public Folder hierarchy (IPM_SUBTREE)
+
+.TP
+.B --mkdir
+Create a folder in the Public Folder store
+
+.TP
+.B --rmdir
+Delete a folder in the Public Folder store
+
+.TP
+.B --addright=STRING
+Add permission and roles for a user on a Public Folder directory. 
+
+.TP
+.B --modright=STRING
+Modify permissions and roles for a user on a Public Folder directory
+
+.TP
+.B --rmright
+Delete permissions and roles for a specific user
+
+
+.SH OPTIONS
+
+.TP
+.B --database=DATABASE
+.TP
+.B -f
+Set the MAPI profile database. If no database is specified, then
+openchangeclient tries to load the default one:
+.B $HOME/.openchange/profiles.ldb
+
+.TP
+.B --profile=PROFILE
+.TP
+.B -p
+Set the profile to use. If a profile is not specified, and one of the
+profiles has been set as the default in the profile database (for
+example, using mapiprofile -S), then that default profile will be
+used.
+
+.TP
+.B --apassword=STRING
+Define the password to set for the user specified with --adduser. If
+no password is explicitely supplied, openchangepfadmin will arbitrary
+set a random one.
+
+.TP
+.B --adesc=STRING
+This command can only be used with --adduser and specifies a
+description for this account
+
+.TP
+.B --acomment=STRING
+This command can only be used with --adduser and specifies a comment
+for this account.
+
+.TP
+.B --afullname
+This command can only be used with --adduser and specifies the user
+full name for this account.
+
+.TP
+.B --comment
+This command can only be used with --mkdir and specifies a comment for
+the folder.
+
+.TP
+.B --dirclass
+This command can only be used with --mkdir and specifies the container
+class of the directory we want to create. Possible values are:
+IPF.Appointment, IPF.Contact, IPF.Journal, IPF.Note, IPF.StickyNote,
+IPF.Task, IPF.Post
+
+.TP
+.B --folder=STRING
+This command can only be used with --addright, --modright and
+--rmright. Specify the folder where permissions and roles have to be
+changed.
+
+.TP
+.B --username=STRING
+This command can only be used with --addright, --modright and
+--rmright. Specify the username we want to change permissions and
+roles for.
+
+.SH EXAMPLES
+
+.B Creating user
+.nf
+openchangepfadmin --adduser=linuxowner --apassword=linuxowner   \\
+                    --adesc="Linux Owner Test account"          \\
+		    --afullname="Linux Owner"
+    mapiadmin_user_add       : MAPI_E_SUCCESS (0x0)
+username: linuxowner
+password: linuxowner
+.fi
+
+Creates a user account with username and password set to linuxowner.
+
+.B Deleting user:
+.nf
+openchangepfadmin --rmuser=linuxowner
+    mapiadmin_user_del       : MAPI_E_SUCCESS (0x0)
+.fi
+
+.B Create Public Folder:
+.nf
+openchangepfadmin --mkdir --folder=public_events --dirclass=IPF.Appointment
+.fi
+
+Creates a folder in the Public Folder store named public_events with a
+container class set to Appointment. This folder will display calendar
+items.
+
+.B Delete Public Folder:
+.nf
+openchangepfadmin --rmdir --folder=public_events
+.fi
+
+.B List Public Folder hierarchy:
+.nf
+openchangepfadmin --list
+.fi
+
+.B Add Permission:
+.nf
+openchangepfadmin --username=linuxowner --folder=public_events \\
+                    --addright=RoleOwner
+Permission RoleOwner added for linuxowner on folder public_events
+.fi
+
+.B Modify Permission
+.nf
+openchangepfadmin --username=Anonymous --folder=public_events \\
+  		    --modright=RoleNone
+Permission changed to RoleNone for Anonymous on folder appointment
+.fi
+
+Note that you can only change permissions for a user already listed in
+the ACL table.
+
+.SH NOTE
+Permissions and Roles possible values are:
+.IP "\(bu" 2
+RightsNone                    
+.IP "\(bu" 2
+RightsReadItems               
+.IP "\(bu" 2
+RightsCreateItems             
+.IP "\(bu" 2
+RightsEditOwn                 
+.IP "\(bu" 2
+RightsDeleteOwn               
+.IP "\(bu" 2
+RightsEditAll
+.IP "\(bu" 2    
+RightsDeleteAll
+.IP "\(bu" 2
+RightsCreateSubfolders
+.IP "\(bu" 2
+RightsFolderOwner
+.IP "\(bu" 2
+RightsFolderContact
+.IP "\(bu" 2
+RoleNone
+.IP "\(bu" 2
+RoleReviewer
+.IP "\(bu" 2
+RoleContributor
+.IP "\(bu" 2
+RoleNoneditingAuthor
+.IP "\(bu" 2
+RoleAuthor
+.IP "\(bu" 2
+RoleEditor
+.IP "\(bu" 2
+RolePublishAuthor
+.IP "\(bu" 2
+RolePublishEditor
+.IP "\(bu" 2
+RightsAll
+.IP "\(bu" 2
+RoleOwner			
+
+.SH SEE ALSO
+AddUserPermission, ModifyUserPermission, RemoveUserPermission
+
+.SH AUTHOR
+Julien Kerihuel <j.kerihuel at openchange dot org>

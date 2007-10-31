@@ -441,7 +441,8 @@ libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	libmapiadmin/mapiadmin_user.po	\
 manpages = \
 		doc/man/man1/exchange2mbox.1				\
 		doc/man/man1/mapiprofile.1				\
-		doc/man/man1/openchangeclient.1				
+		doc/man/man1/openchangeclient.1				\
+		doc/man/man1/openchangepfadmin.1			
 
 installman: doxygen
 	@./script/installman.sh $(DESTDIR)$(mandir) $(manpages)

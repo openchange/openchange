@@ -78,6 +78,68 @@ AC_SUBST(TORTURE_MODULESDIR)
 
 AC_CHECK_TYPE(uint_t, unsigned int)
 
+dnl ************************
+dnl Nail down samba4 version
+dnl ************************
+
+dnl Samba4 revision boundaries
+FIRST_REV=25624
+LAST_REV=25759
+
+INCDIR=$prefix/include
+if test -f $INCDIR/samba/version.h; then
+	SAMBA_VERSION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_MAJOR | cut -d" " -f 3`
+	SAMBA_VERSION_ALPHA_RELEASE=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_ALPHA_RELEASE | cut -d" " -f 3`
+	SAMBA_VERSION_SVN_REVISION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_SVN_REVISION | cut -d" " -f 3`
+
+	dnl OpenChange only compiles with Samba4
+	if test !"$SAMBA_VERSION" = 4 ; then
+	   AC_MSG_ERROR(Samba4 installation is mandatory)
+	fi
+
+	dnl OpenChange only compiles with Samba4 > alpha 2
+	if test "$SAMBA_VERSION_ALPHA_RELEASE" -lt 2; then
+	   AC_MSG_ERROR(*******************************************************		\
+		  OpenChange only compiles with Samba4 alpha 2 or greater		\
+		  *******************************************************)
+	fi
+
+	dnl OpenChange won't compile with rev prior $FIRST_REV
+	if test "$SAMBA_VERSION_SVN_REVISION" -lt $FIRST_REV; then
+	   AC_MSG_ERROR(**********************************************************
+		  * Samba4 version working with libmapi $PACKAGE_VERSION:		
+		       First working revision:........$FIRST_REV			
+		       Last known working revision:...$LAST_REV				
+		       	    	  	  						
+		  * Your Samba4 installation:						
+		       Installed revision:............$SAMBA_VERSION_SVN_REVISION	
+											
+		  Please UPDATE your Samba4 installation to $LAST_REV or higher.	
+		  **********************************************************)
+	fi
+	
+	dnl OpenChange is known to compile with rev $LAST_REV
+	if test "$SAMBA_VERSION_SVN_REVISION" -gt $LAST_REV; then
+	   AC_MSG_WARN(**********************************************************	
+		    * Samba4 version working with libmapi $PACKAGE_VERSION:		
+		       First working revision:........$FIRST_REV			
+		       Last known working revision:...$LAST_REV				
+											
+		    * Your Samba4 installation:						
+		       Installed revision:............$SAMBA_VERSION_SVN_REVISION	
+											
+		    OpenChange has not been tested with this revision but
+		    there is a high probability it compiles and works properly     	       	   			
+											
+		    If you encounter any issues with your Samba4 installation		
+	   	    Please consider downgrading to samba4 rev $LAST_REV		
+		    **********************************************************)
+	fi
+
+else
+	AC_MSG_WARN([Unable to nail down Samba4 version])
+fi
+
 dnl ***********************
 dnl Swig bindings
 dnl ***********************

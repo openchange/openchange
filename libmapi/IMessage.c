@@ -678,6 +678,9 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
+	/* store the message_id */
+	mapi_object_set_id(obj_message, mapi_response->mapi_repl->u.mapi_SaveChangesMessage.message_id);
+
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;

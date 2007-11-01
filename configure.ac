@@ -2,7 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@samba.org>
 
 AC_PREREQ(2.57)
-AC_INIT(openchange, 0.6, [openchange@openchange.org])
+AC_INIT(openchange, 0.7, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 

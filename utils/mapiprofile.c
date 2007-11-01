@@ -74,7 +74,7 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 			       const char *pattern, const char *username, 
 			       const char *password, const char *address, 
 			       const char *workstation, const char *domain,
-			       uint32_t flags)
+			       uint32_t flags, bool opt_dumpdata)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
@@ -83,6 +83,11 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
+	}
+
+	if (opt_dumpdata == true) {
+		printf("dumpdata is true\n");
+		global_mapi_ctx->dumpdata = true;
 	}
 
 	retval = CreateProfile(profname, username, password, flags);
@@ -320,6 +325,7 @@ int main(int argc, const char *argv[])
 	bool		newdb = false;
 	bool		setdflt = false;
 	bool		getdflt = false;
+	bool		opt_dumpdata = false;
 	const char	*ldif = NULL;
 	const char	*address = NULL;
 	const char	*workstation = NULL;
@@ -337,7 +343,7 @@ int main(int argc, const char *argv[])
 	      OPT_DELETE_PROFILE, OPT_LIST_PROFILE, OPT_DUMP_PROFILE, 
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, 
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN,
-	      OPT_NOPASS};
+	      OPT_NOPASS, OPT_DUMPDATA};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -359,6 +365,7 @@ int main(int argc, const char *argv[])
 		{"list", 'l', POPT_ARG_NONE, NULL, OPT_LIST_PROFILE, "list existing profiles in the database"},
 		{"dump", 'd', POPT_ARG_NONE, NULL, OPT_DUMP_PROFILE, "dump a profile entry"},
 		{"attr", 'a', POPT_ARG_STRING, NULL, OPT_DUMP_ATTR, "print an attribute value"},
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
 		{ NULL }
 	};
 
@@ -368,6 +375,8 @@ int main(int argc, const char *argv[])
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch(opt) {
+		case OPT_DUMPDATA:
+			opt_dumpdata = true;
 		case OPT_PROFILE_LDIF:
 			ldif = poptGetOptArg(pc);
 			break;
@@ -464,7 +473,7 @@ int main(int argc, const char *argv[])
 		if (!domain) show_help(pc, "domain");
 
 		mapiprofile_create(profdb, profname, pattern, username, password, address,
-				   workstation, domain, nopass);
+				   workstation, domain, nopass, opt_dumpdata);
 	}
 
 	if (setdflt == true) {

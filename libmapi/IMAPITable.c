@@ -305,7 +305,7 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 	mapi_req->opnum = op_MAPI_QueryColumns;
 	mapi_req->mapi_flags = 0;
 	mapi_req->handle_idx = 0;
-	size += 4;
+	size += 5;
 
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);

@@ -1232,20 +1232,6 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 		nspi->profile_instance_key = 0;
 	}
 	
-	lpProp = get_SPropValue_SRow(&(rowset.aRow[index]), PR_EMAIL_ADDRESS);
-	if (lpProp) {
-		nspi->org = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG);
-		nspi->org_unit = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG_UNIT);
-
-		MAPI_RETVAL_IF(!nspi->org_unit, MAPI_E_INVALID_PARAMETER, NULL);
-		MAPI_RETVAL_IF(!nspi->org, MAPI_E_INVALID_PARAMETER, NULL);
-
-		retval = mapi_profile_add_string_attr(profname, "Organization", nspi->org);
-		retval = mapi_profile_add_string_attr(profname, "OrganizationUnit", nspi->org_unit);
-	} else {
-		MAPI_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, NULL);
-	}
-	
 	set_profile_attribute(profname, rowset, index, PR_EMAIL_ADDRESS, "EmailAddress");
 	set_profile_attribute(profname, rowset, index, PR_DISPLAY_NAME, "DisplayName");
 	set_profile_attribute(profname, rowset, index, PR_ACCOUNT, "Account");
@@ -1265,6 +1251,15 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 
 	lpProp = get_SPropValue_SRowSet(&rowset, PR_EMS_AB_HOME_MDB);
 	MAPI_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, NULL);
+
+	nspi->org = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG);
+	nspi->org_unit = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG_UNIT);
+	
+	MAPI_RETVAL_IF(!nspi->org_unit, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!nspi->org, MAPI_E_INVALID_PARAMETER, NULL);
+
+	retval = mapi_profile_add_string_attr(profname, "Organization", nspi->org);
+	retval = mapi_profile_add_string_attr(profname, "OrganizationUnit", nspi->org_unit);
 
 	nspi->servername = x500_get_servername(lpProp->value.lpszA);
 	mapi_profile_add_string_attr(profname, "ServerName", nspi->servername);

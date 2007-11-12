@@ -110,6 +110,7 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 	uint8_t		*rtfcomp;
 	uint8_t		*out_buf;
 	uint32_t	out_ptr = 0;
+	uint32_t	out_size = 0;
 	uint32_t	read_size;
 	unsigned char	buf[0x1000];
 
@@ -147,14 +148,13 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 	DEBUG(3, ("lzfuhdr.dwMagic = 0x%x\n", lzfuhdr.dwMagic));
 	DEBUG(3, ("lzfuhdr.dwCRC = 0x%x\n", lzfuhdr.dwCRC));
 
-	out_buf = (unsigned char *) talloc_size(mem_ctx, lzfuhdr.cbRawSize + 
-						LZFU_HEADERLENGTH + 4);
+	out_size = lzfuhdr.cbRawSize + LZFU_HEADERLENGTH + 4;
+	out_buf = (unsigned char *) talloc_size(mem_ctx, out_size);
 	MAPI_RETVAL_IF(!out_buf, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
 	in_size = LZFU_HEADERLENGTH;
 
-	while ((in_size < (lzfuhdr.cbSize - 1)) && 
-	       (out_ptr < (lzfuhdr.cbRawSize + LZFU_HEADERLENGTH + 4))) {
+	while ((in_size < (lzfuhdr.cbSize - 1)) && (out_ptr < out_size)) {
 		memcpy(&flags, &(rtfcomp[in_size]), 1);
 		in_size += 1;
 
@@ -187,7 +187,7 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 					c1 = dict[(offset + i) % 4096];
 					dict[dict_length] = c1;
 					dict_length = (dict_length + 1) % 4096;
-					out_buf[out_ptr++] = c1;
+					if (out_ptr < out_size) out_buf[out_ptr++] = c1;
 				}
 			} else {
 				/* uncompressed chunk (single byte) */
@@ -195,7 +195,7 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 				in_size++;
 				dict[dict_length] = c1;
 				dict_length = (dict_length + 1) % 4096;
-				out_buf[out_ptr++] = c1;
+				if (out_ptr < out_size) out_buf[out_ptr++] = c1;
 			}
 			flag_mask <<= 1;
 		}
@@ -206,9 +206,9 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 	/* the compressed version doesn't appear to drop the closing braces onto the doc.
 	 * we should do that
 	 */
-	out_buf[out_ptr++] = '}';
-	out_buf[out_ptr++] = '}';
-	out_buf[out_ptr++] = '\0';
+	if (out_ptr < out_size) out_buf[out_ptr++] = '}';
+	if (out_ptr < out_size) out_buf[out_ptr++] = '}';
+	if (out_ptr < out_size) out_buf[out_ptr++] = '\0';
 
 	/* check if out_ptr matches with expected size */
 	MAPI_RETVAL_IF(out_ptr != lzfuhdr.cbRawSize, 

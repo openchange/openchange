@@ -81,7 +81,7 @@ struct emsabp_containerID emsabp_containerID[] =
 static struct GUID emsabp_result_guid(const struct ldb_message *msg, const char *attr)
 {
 	const struct ldb_val *v;
-	NTSTATUS status;
+	enum ndr_err_code status;
 	struct GUID guid;
 	TALLOC_CTX *mem_ctx;
 
@@ -95,7 +95,7 @@ static struct GUID emsabp_result_guid(const struct ldb_message *msg, const char 
 	status = ndr_pull_struct_blob(v, mem_ctx, &guid, 
 				      (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	talloc_free(mem_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
 		return guid;
 	}
 

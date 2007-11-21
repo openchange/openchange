@@ -31,7 +31,7 @@
 #include <credentials.h>
 #include <samba/popt.h>
 #include <ldb_errors.h>
-#include <db_wrap.h>
+#include <ldb_wrap.h>
 #include <ldap.h>
 
 #include <core/error.h>

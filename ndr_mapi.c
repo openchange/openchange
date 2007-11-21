@@ -120,7 +120,7 @@ void ndr_print_mapi_response(struct ndr_print *ndr, const char *name, const stru
   (uint16_t) and next substract when pushing the content blob
 */
 
-NTSTATUS ndr_push_mapi_request(struct ndr_push *ndr, int ndr_flags, const struct mapi_request *r)
+enum ndr_err_code ndr_push_mapi_request(struct ndr_push *ndr, int ndr_flags, const struct mapi_request *r)
 {
 	uint32_t		cntr_mapi_req_0;
 	uint32_t		count;
@@ -139,10 +139,10 @@ NTSTATUS ndr_push_mapi_request(struct ndr_push *ndr, int ndr_flags, const struct
 
 	obfuscate_data(ndr->data, ndr->offset, 0xA5);
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_push_mapi_response(struct ndr_push *ndr, int ndr_flags, const struct mapi_response *_blob)
+enum ndr_err_code ndr_push_mapi_response(struct ndr_push *ndr, int ndr_flags, const struct mapi_response *_blob)
 {
 	uint32_t	remaining_length;
 	struct mapi_response blob = *_blob;
@@ -165,14 +165,14 @@ NTSTATUS ndr_push_mapi_response(struct ndr_push *ndr, int ndr_flags, const struc
 	}
 	obfuscate_data(ndr->data, ndr->alloc_size, 0xA5);
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   pull mapi_request / mapi_response from the wire
 */
 
-NTSTATUS ndr_pull_mapi_request(struct ndr_pull *ndr, int ndr_flags, struct mapi_request *r)
+enum ndr_err_code ndr_pull_mapi_request(struct ndr_pull *ndr, int ndr_flags, struct mapi_request *r)
 {
 	uint32_t length,count;
 	uint32_t cntr_mapi_req_0;
@@ -203,11 +203,8 @@ NTSTATUS ndr_pull_mapi_request(struct ndr_pull *ndr, int ndr_flags, struct mapi_
 		r->mapi_req = talloc_realloc(_mem_save_mapi_req_0, r->mapi_req, struct EcDoRpc_MAPI_REQ, cntr_mapi_req_0 + 2);
 		r->mapi_req[cntr_mapi_req_0].opnum = 0;
 		
-		if (_ndr_mapi_req->offset > r->length - 2) {
-			return NT_STATUS_OBJECT_TYPE_MISMATCH;
-		}
-		if (_ndr_mapi_req->offset < r->length - 2) {
-			return NT_STATUS_BUFFER_TOO_SMALL;
+		if (_ndr_mapi_req->offset != r->length - 2) {
+			return NDR_ERR_BUFSIZE;
 		}
 		NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_mapi_req, 4, -1));
 	}
@@ -218,10 +215,10 @@ NTSTATUS ndr_pull_mapi_request(struct ndr_pull *ndr, int ndr_flags, struct mapi_
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->handles[cntr_mapi_req_0]));
 	}
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, struct mapi_response *r)
+enum ndr_err_code ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, struct mapi_response *r)
 {
 	uint32_t length,count;
 	uint32_t cntr_mapi_repl_0;
@@ -260,14 +257,14 @@ NTSTATUS ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, struct mapi
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->handles[cntr_mapi_repl_0]));
 	}
 
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 /*
   We stop processing the IDL if MAPISTATUS is different from MAPI_E_SUCCESS
  */
 
-NTSTATUS ndr_pull_EcDoRpc_MAPI_REPL(struct ndr_pull *ndr, int ndr_flags, struct EcDoRpc_MAPI_REPL *r)
+enum ndr_err_code ndr_pull_EcDoRpc_MAPI_REPL(struct ndr_pull *ndr, int ndr_flags, struct EcDoRpc_MAPI_REPL *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -291,7 +288,7 @@ NTSTATUS ndr_pull_EcDoRpc_MAPI_REPL(struct ndr_pull *ndr, int ndr_flags, struct 
 			ndr->flags = _flags_save_STRUCT;
 		}
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 void ndr_print_EcDoRpc_MAPI_REPL(struct ndr_print *ndr, const char *name, const struct EcDoRpc_MAPI_REPL *r)
@@ -323,7 +320,7 @@ void ndr_print_EcDoRpc_MAPI_REPL(struct ndr_print *ndr, const char *name, const 
   If we have no results, do not pull/print the DATA_BLOB
 */
 
-NTSTATUS ndr_pull_QueryRows_repl(struct ndr_pull *ndr, int ndr_flags, struct QueryRows_repl *r)
+enum ndr_err_code ndr_pull_QueryRows_repl(struct ndr_pull *ndr, int ndr_flags, struct QueryRows_repl *r)
 {
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
@@ -347,7 +344,7 @@ NTSTATUS ndr_pull_QueryRows_repl(struct ndr_pull *ndr, int ndr_flags, struct Que
 		}
 		ndr->flags = _flags_save_STRUCT;
 	}
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
 _PUBLIC_ void ndr_print_QueryRows_repl(struct ndr_print *ndr, const char *name, const struct QueryRows_repl *r)
@@ -368,22 +365,22 @@ _PUBLIC_ void ndr_print_QueryRows_repl(struct ndr_print *ndr, const char *name, 
 	}
 }
 
-NTSTATUS ndr_push_Release_req(struct ndr_push *ndr, int ndr_flags, const struct Release_req *r)
+enum ndr_err_code ndr_push_Release_req(struct ndr_push *ndr, int ndr_flags, const struct Release_req *r)
 {
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_Release_req(struct ndr_pull *ndr, int ndr_flags, struct Release_req *r)
+enum ndr_err_code ndr_pull_Release_req(struct ndr_pull *ndr, int ndr_flags, struct Release_req *r)
 {
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_push_Release_repl(struct ndr_push *ndr, int ndr_flags, const struct Release_repl *r)
+enum ndr_err_code ndr_push_Release_repl(struct ndr_push *ndr, int ndr_flags, const struct Release_repl *r)
 {
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }
 
-NTSTATUS ndr_pull_Release_repl(struct ndr_pull *ndr, int ndr_flags, struct Release_repl *r)
+enum ndr_err_code ndr_pull_Release_repl(struct ndr_pull *ndr, int ndr_flags, struct Release_repl *r)
 {
-	return NT_STATUS_OK;
+	return NDR_ERR_SUCCESS;
 }

@@ -83,8 +83,8 @@ dnl Nail down samba4 version
 dnl ************************
 
 dnl Samba4 revision boundaries
-FIRST_REV=25624
-LAST_REV=25759
+FIRST_REV=26100
+LAST_REV=$FIRST_REV
 
 INCDIR=$prefix/include
 if test -f $INCDIR/samba/version.h; then

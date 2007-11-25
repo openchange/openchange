@@ -261,7 +261,7 @@ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	}
 }
 
-_PUBLIC_ bool set_SPropValue_proptag(struct SPropValue* lpProps, uint32_t aulPropTag, const void *data)
+_PUBLIC_ bool set_SPropValue_proptag(struct SPropValue *lpProps, uint32_t aulPropTag, const void *data)
 {
 	lpProps->ulPropTag = aulPropTag;
 	lpProps->dwAlignPad = 0x0;
@@ -269,7 +269,7 @@ _PUBLIC_ bool set_SPropValue_proptag(struct SPropValue* lpProps, uint32_t aulPro
 	return (set_SPropValue(lpProps, data));
 }
 
-_PUBLIC_ bool set_SPropValue(struct SPropValue* lpProps, const void *data)
+_PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 {
 	if (data == NULL) {
 		lpProps->value.err = MAPI_E_NOT_FOUND;
@@ -528,4 +528,17 @@ _PUBLIC_ enum MAPISTATUS get_mapi_SPropValue_date_timeval(struct timeval *t,
 	nttime_to_timeval(t, time);
 	
 	return MAPI_E_SUCCESS;
+}
+
+_PUBLIC_ bool set_SPropValue_proptag_date_timeval(struct SPropValue *lpProps, uint32_t aulPropTag, const struct timeval *t) 
+{
+	struct FILETIME	filetime;
+	NTTIME		time;
+	
+	time = timeval_to_nttime(t);
+
+	filetime.dwLowDateTime = (time << 32) >> 32;
+	filetime.dwHighDateTime = time >> 32;
+
+	return set_SPropValue_proptag(lpProps, aulPropTag, &filetime);
 }

@@ -3,11 +3,20 @@
 
 ### Address Named Properties
 FileAs                        0x8005 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+NULL                          0x8006 NULL                          PT_LONG       MNID_ID     PSETID_Address
+NULL                          0x8007 NULL                          PT_MV_LONG    MNID_ID     PSETID_Address
+NULL                          0x800E NULL                          PT_STRING8    MNID_ID     PSETID_Address
+NULL                          0x8010 NULL                          PT_STRING8    MNID_ID     PSETID_Address
 HomeAddress                   0x801A NULL                          PT_STRING8    MNID_ID     PSETID_Address
 BusinessAddress               0x801B NULL                          PT_STRING8    MNID_ID     PSETID_Address
 OtherAddress                  0x801C NULL                          PT_STRING8    MNID_ID     PSETID_Address
 SelectedMailingAddress        0x8022 NULL                          PT_LONG       MNID_ID     PSETID_Address
+NULL                          0x8023 NULL                          PT_LONG       MNID_ID     PSETID_Address
 Journal                       0x8025 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Address
+NULL                          0x8026 NULL                          PT_MV_LONG    MNID_ID     PSETID_Address
+NULL                          0x8027 NULL                          PT_MV_LONG    MNID_ID     PSETID_Address
+NULL                          0x8028 NULL                          PT_MV_LONG    MNID_ID     PSETID_Address
+NULL                          0x8029 NULL                          PT_LONG       MNID_ID     PSETID_Address
 WebPage                       0x802B NULL                          PT_STRING8    MNID_ID     PSETID_Address
 BusinessAddressStreet         0x8045 NULL                          PT_STRING8    MNID_ID     PSETID_Address
 BusinessAddressCity           0x8046 NULL                          PT_STRING8    MNID_ID     PSETID_Address
@@ -20,6 +29,10 @@ Email1AddressType             0x8082 NULL                          PT_STRING8   
 Email1Address                 0x8083 NULL                          PT_STRING8    MNID_ID     PSETID_Address
 Email1DisplayName             0x8084 NULL                          PT_STRING8    MNID_ID     PSETID_Address
 Email1EntryID                 0x8085 NULL                          PT_BINARY     MNID_ID     PSETID_Address
+Email2Address                 0x8093 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Email2EntryID                 0x8095 NULL                          PT_BINARY     MNID_ID     PSETID_Address
+Email3Address                 0x80A3 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+Email3EntryID                 0x80A5 NULL                          PT_BINARY     MNID_ID     PSETID_Address
 Fax1AddrType                  0x80B2 NULL                          PT_STRING8    MNID_ID     PSETID_Address
 Fax1EmailAddress              0x80B3 NULL                          PT_STRING8    MNID_ID     PSETID_Address
 Fax1OriginalDisplayName       0x80B4 NULL                          PT_STRING8    MNID_ID     PSETID_Address
@@ -30,6 +43,7 @@ Fax2OriginalEntryID           0x80C5 NULL                          PT_BINARY    
 Fax3AddrType                  0x80D2 NULL                          PT_STRING8    MNID_ID     PSETID_Address
 Fax3EmailAddress              0x80D3 NULL                          PT_STRING8    MNID_ID     PSETID_Address
 Fax3OriginalDisplayName       0x80D4 NULL                          PT_STRING8    MNID_ID     PSETID_Address
+NULL                          0x80DD NULL                          PT_STRING8    MNID_ID     PSETID_Address
 
 
 

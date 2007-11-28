@@ -56,7 +56,7 @@ static bool torture_table(mapi_object_t *obj_folder)
 	error = 0;
 	for (ifolder = 0; error == 0 && ifolder < 7; ifolder++) {
 		name = talloc_asprintf(mem, "%d", ifolder);
-		status = CreateFolder(obj_folder, name, "0", &obj_subfolder);
+		status = CreateFolder(obj_folder, FOLDER_GENERIC, name, "0", 0, &obj_subfolder);
 		if (status != MAPI_E_SUCCESS) error = -1;
 	}
 	oc_test_assert(error == 0);

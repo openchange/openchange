@@ -69,7 +69,11 @@ static void init_oclient(struct oclient *oclient)
 
 	/* pf related parameters */
 	oclient->pf = false;
+
+	/* folder related parameters */
 	oclient->folder = NULL;
+	oclient->folder_name = NULL;
+	oclient->folder_comment = NULL;
 }
 
 static char *utf8tolinux(TALLOC_CTX *mem_ctx, const char *wstring)
@@ -1614,6 +1618,7 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
+
 static int callback(uint32_t ulEventType, void *notif_data, void *private_data)
 {
 	struct NEWMAIL_NOTIFICATION	*newmail;
@@ -1639,6 +1644,7 @@ static int callback(uint32_t ulEventType, void *notif_data, void *private_data)
 
 	return 0;
 }
+
 
 static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
 {
@@ -1680,6 +1686,96 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 
 	mapi_object_release(&obj_inbox);
 
+	return true;
+}
+
+
+static bool openchangeclient_mkdir(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_child;
+	mapi_object_t		obj_tis;
+	mapi_id_t		id_inbox;
+
+	mapi_object_init(&obj_tis);
+	mapi_object_init(&obj_folder);
+	mapi_object_init(&obj_child);
+
+	if (oclient->folder) {
+		retval = GetDefaultFolder(obj_store, &id_inbox, olFolderTopInformationStore);
+		if (retval != MAPI_E_SUCCESS) return false;
+
+		retval = OpenFolder(obj_store, id_inbox, &obj_tis);
+		if (retval != MAPI_E_SUCCESS) return false;
+
+		retval = openchangeclient_getdir(mem_ctx, &obj_tis, &obj_folder, oclient->folder);
+		if (retval != MAPI_E_SUCCESS) return false;
+	} else {
+		retval = GetDefaultFolder(obj_store, &id_inbox, olFolderInbox);
+		if (retval != MAPI_E_SUCCESS) return false;
+
+		retval = OpenFolder(obj_store, id_inbox, &obj_folder);
+		if (retval != MAPI_E_SUCCESS) return false;
+	}
+
+	retval = CreateFolder(&obj_folder, FOLDER_GENERIC, oclient->folder_name, 
+			      oclient->folder_comment, OPEN_IF_EXISTS, &obj_child);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	mapi_object_release(&obj_child);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_tis);
+
+	return true;
+}
+
+
+static bool openchangeclient_rmdir(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_child;
+	mapi_object_t		obj_tis;
+	mapi_id_t		id_inbox;
+
+	mapi_object_init(&obj_tis);
+	mapi_object_init(&obj_folder);
+	mapi_object_init(&obj_child);
+
+	if (oclient->folder) {
+		printf("Removing folder within %s\n", oclient->folder);
+		retval = GetDefaultFolder(obj_store, &id_inbox, olFolderTopInformationStore);
+		if (retval != MAPI_E_SUCCESS) return false;
+		
+		retval = OpenFolder(obj_store, id_inbox, &obj_tis);
+		if (retval != MAPI_E_SUCCESS) return false;
+
+		retval = openchangeclient_getdir(mem_ctx, &obj_tis, &obj_folder, oclient->folder);
+		if (retval != MAPI_E_SUCCESS) return false;
+	} else {
+		retval = GetDefaultFolder(obj_store, &id_inbox, olFolderInbox);
+		if (retval != MAPI_E_SUCCESS) return false;
+		
+		retval = OpenFolder(obj_store, id_inbox, &obj_folder);
+		if (retval != MAPI_E_SUCCESS) return false;
+	}
+	
+	retval = openchangeclient_getdir(mem_ctx, &obj_folder, &obj_child, oclient->folder_name);
+	if (retval != MAPI_E_SUCCESS) return false;
+	
+	retval = EmptyFolder(&obj_child);
+	if (retval != MAPI_E_SUCCESS) return false;
+	
+	printf("obj_child fid = 0x%llx\n", mapi_object_get_id(&obj_child));
+
+	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_child));
+	if (retval != MAPI_E_SUCCESS) return false;
+	
+	mapi_object_release(&obj_child);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_tis);
+	
 	return true;
 }
 
@@ -1727,6 +1823,8 @@ int main(int argc, const char *argv[])
 	bool			opt_mailbox = false;
 	bool			opt_dumpdata = false;
 	bool			opt_notifications = false;
+	bool			opt_mkdir = false;
+	bool			opt_rmdir = false;
 	const char		*opt_profdb = NULL;
 	const char		*opt_profname = NULL;
 	const char		*opt_password = NULL;
@@ -1746,7 +1844,8 @@ int main(int argc, const char *argv[])
 	      OPT_MAPI_BUSYSTATUS, OPT_NOTIFICATIONS, OPT_DEBUG, OPT_DUMPDATA, 
 	      OPT_MAPI_EMAIL, OPT_MAPI_FULLNAME, OPT_MAPI_CARDNAME, OPT_MAPI_PRIORITY,
 	      OPT_MAPI_TASKSTATUS, OPT_MAPI_IMPORTANCE, OPT_MAPI_LABEL, OPT_PF, 
-	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE};
+	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
+	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1786,6 +1885,10 @@ int main(int argc, const char *argv[])
 		{"color", 0, POPT_ARG_STRING, NULL, OPT_MAPI_COLOR, "set the note color"},
 		{"notifications", 0, POPT_ARG_NONE, NULL, OPT_NOTIFICATIONS, "monitor INBOX newmail notifications"},
 		{"folder", 0, POPT_ARG_STRING, NULL, OPT_FOLDER, "set the folder to use instead of inbox"},
+		{"mkdir", 0, POPT_ARG_NONE, NULL, OPT_MKDIR, "create a folder"},
+		{"rmdir", 0, POPT_ARG_NONE, NULL, OPT_RMDIR, "delete a folder"},
+		{"folder-name", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_NAME, "set the folder name"},
+		{"folder-comment", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_COMMENT, "set the folder comment"},
 		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level"},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
 		{ NULL }
@@ -1810,6 +1913,18 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_DUMPDATA:
 			opt_dumpdata = true;
+			break;
+		case OPT_MKDIR:
+			opt_mkdir = true;
+			break;
+		case OPT_RMDIR:
+			opt_rmdir = true;
+			break;
+		case OPT_FOLDER_NAME:
+			oclient.folder_name = poptGetOptArg(pc);
+			break;
+		case OPT_FOLDER_COMMENT:
+			oclient.folder_comment = poptGetOptArg(pc);
 			break;
 		case OPT_NOTIFICATIONS:
 			opt_notifications = true;
@@ -1974,6 +2089,11 @@ int main(int argc, const char *argv[])
 			printf("Unable to parse one of the specified attachments\n");
 			exit (1);
 		}
+	}
+
+	if (opt_mkdir && !oclient.folder_name) {
+		printf("mkdir requires --folder-name to be defined\n");
+		exit (1);
 	}
 
 	/* debug options */
@@ -2147,6 +2267,23 @@ int main(int argc, const char *argv[])
 	if (opt_notifications) {
 		openchangeclient_notifications(mem_ctx, &obj_store, &oclient);
 		mapi_errstr("notifications", GetLastError());
+		if (retval != true) {
+			goto end;
+		}
+	}
+
+	/* Folder operations */
+	if (opt_mkdir) {
+		openchangeclient_mkdir(mem_ctx, &obj_store, &oclient);
+		mapi_errstr("mkdir", GetLastError());
+		if (retval != true) {
+			goto end;
+		}
+	}
+
+	if (opt_rmdir) {
+		openchangeclient_rmdir(mem_ctx, &obj_store, &oclient);
+		mapi_errstr("rmdir", GetLastError());
 		if (retval != true) {
 			goto end;
 		}

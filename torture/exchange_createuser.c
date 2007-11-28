@@ -39,6 +39,7 @@
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <ldb_wrap.h>
+#include <util_ldb.h>
 #include <ldap.h>
 #include <dcerpc/ndr_samr.h>
 #include <dcerpc/ndr_samr_c.h>

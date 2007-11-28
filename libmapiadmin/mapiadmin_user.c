@@ -32,6 +32,7 @@
 #include <samba/popt.h>
 #include <ldb_errors.h>
 #include <ldb_wrap.h>
+#include <util_ldb.h>
 #include <ldap.h>
 
 #include <core/error.h>

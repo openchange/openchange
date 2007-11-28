@@ -130,7 +130,7 @@ bool torture_rpc_mapi_prop(struct torture_context *torture)
 	mapi_object_debug(&obj_inbox);
 
 	/* child = inbox->CreateFolder() */
-	retval = CreateFolder(&obj_inbox, "torture_name", "torture_comment", &obj_child);
+	retval = CreateFolder(&obj_inbox, FOLDER_GENERIC, "torture_name", "torture_comment", 0, &obj_child);
 	mapi_errstr("CreateFolder", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 	mapi_object_debug(&obj_child);

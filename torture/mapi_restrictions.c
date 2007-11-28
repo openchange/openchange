@@ -42,8 +42,9 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 
 	/* Create the test directory */
 	mapi_object_init(child);
-	retval = CreateFolder(parent, "torture_restrictions", 
-			      "MAPI restrictions torture test", child);
+	retval = CreateFolder(parent, FOLDER_GENERIC, 
+			      "torture_restrictions", 
+			      "MAPI restrictions torture test", 0, child);
 	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("[+] torture restrictions directory created\n"));
 

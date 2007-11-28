@@ -193,7 +193,7 @@ static enum MAPISTATUS openchangepfadmin_mkdir(TALLOC_CTX *mem_ctx,
 	uint32_t		prop_count = 0;
 
 	mapi_object_init(&obj_folder);
-	retval = CreateFolder(obj_container, name, comment, &obj_folder);
+	retval = CreateFolder(obj_container, FOLDER_GENERIC, name, comment, OPEN_IF_EXISTS, &obj_folder);
 	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
 	if (type) {

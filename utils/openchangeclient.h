@@ -54,6 +54,8 @@ struct oclient {
 	const char		*email;
 	const char		*full_name;
 	const char		*card_name;
+	const char		*folder_name;
+	const char		*folder_comment;
 	/* PF related options */
 	bool			pf;
 	const char		*folder;

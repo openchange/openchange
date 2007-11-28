@@ -1246,12 +1246,33 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x1c  */
+	typedef [enum8bit] enum {
+		FOLDER_GENERIC	= 0x1,
+		FOLDER_SEARCH	= 0x2
+	} FOLDER_TYPE;
+
+	typedef [enum8bit] enum {
+		MAPI_FOLDER_ANSI       	= 0x0,
+		MAPI_FOLDER_UNICODE    	= 0x1
+	} FOLDER_STRING;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(MAPI_FOLDER_ANSI)] astring			lpszA;
+		[case(MAPI_FOLDER_UNICODE)][flag(STR_NULLTERM)] string	lpszW;
+	} LPTSTR;
+
+	typedef [enum16bit] enum {
+		NONE		= 0x0000,
+		OPEN_IF_EXISTS	= 0x0001
+	} FOLDER_FLAGS;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		handle_idx;
-		uint16		flags_type;
-		uint16		flags_open;
-		astring		name;
-		astring		comment;
+		uint8				handle_idx;
+		FOLDER_TYPE			ulFolderType;
+		FOLDER_STRING			ulType;
+		FOLDER_FLAGS	       		ulFlags;
+		[switch_is(ulType)] LPTSTR	FolderName;
+		[switch_is(ulType)] LPTSTR	FolderComment;
 	} CreateFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {

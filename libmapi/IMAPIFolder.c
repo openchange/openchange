@@ -335,13 +335,23 @@ _PUBLIC_ enum MAPISTATUS SetReadFlags(mapi_object_t *obj_folder,
 /**
    \details Create a folder
 
-   The function creates a folder (defined with its name and comment)
+   The function creates a folder (defined with its name, comment and type)
    within a specified folder.
 
    \param obj_parent the folder to create the new folder in
+   \param ulFolderType the type of the folder
    \param name the name of the new folder
    \param comment the comment associated with the new folder
+   \param ulFlags flags associated with folder creation
    \param obj_child pointer to the newly created folder
+
+   ulFlags possible values:
+   - MAPI_UNICODE: use UNICODE folder name and comment
+   - OPEN_IF_EXISTS: open the folder if it already exists
+
+   ulFolderType possible values:
+   - FOLDER_GENERIC
+   - FOLDER_SEARCH
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -353,8 +363,12 @@ _PUBLIC_ enum MAPISTATUS SetReadFlags(mapi_object_t *obj_folder,
 
    \sa OpenFolder, DeleteFolder, EmptyFolder, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent, const char *name,
-				      const char *comment, mapi_object_t *obj_child)
+_PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent, 
+				      uint8_t ulFolderType,
+				      const char *name,
+				      const char *comment, 
+				      uint32_t ulFlags,
+				      mapi_object_t *obj_child)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -369,6 +383,11 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent, const char *nam
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!name, MAPI_E_NOT_INITIALIZED, NULL);
 
+	/* Sanitify check on the folder type */
+	MAPI_RETVAL_IF((ulFolderType != FOLDER_GENERIC && 
+			ulFolderType != FOLDER_SEARCH),
+		       MAPI_E_INVALID_PARAMETER, NULL);
+
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("CreateFolder");
 
@@ -377,18 +396,52 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent, const char *nam
 	/* Fill the CreateFolder operation */
 	request.handle_idx = 0x1;
 	size+= sizeof(uint8_t);
-	request.flags_type = 0x0001;
+	switch (ulFlags & 0xFFFF0000) {
+	case MAPI_UNICODE:
+		request.ulType = MAPI_FOLDER_UNICODE;
+		break;
+	default:
+		request.ulType = MAPI_FOLDER_ANSI;
+		break;
+	}
+	request.ulFolderType = ulFolderType;
 	size += sizeof(uint16_t);
-	request.flags_open = 0x0001;
+	request.ulFlags = ulFlags & 0xFFFF;
 	size += sizeof(uint16_t);
-	request.name = name;
-	size += strlen(name) + 1;
+
+	switch (request.ulType) {
+	case MAPI_FOLDER_ANSI:
+		request.FolderName.lpszA = name;
+		size += strlen(name) + 1;
+		break;
+	case MAPI_FOLDER_UNICODE:
+		request.FolderName.lpszW = name;
+		size += strlen(name) * 2 + 2;
+		break;
+	}
+
 	if (comment) {
-		request.comment = comment;
-		size += strlen(comment) + 1;
+		switch(request.ulType) {
+		case MAPI_FOLDER_ANSI:
+			request.FolderComment.lpszA = comment;
+			size += strlen(comment) + 1;
+			break;
+		case MAPI_FOLDER_UNICODE:
+			request.FolderComment.lpszW = comment;
+			size += strlen(comment) * 2 + 2;
+			break;
+		}
 	} else {
-		request.comment = "";
-		size += 1;
+		switch(request.ulType) {
+		case MAPI_FOLDER_ANSI:
+			request.FolderComment.lpszA = "";
+			size += 1;
+			break;
+		case MAPI_FOLDER_UNICODE:
+			request.FolderComment.lpszW = "";
+			size += 2;
+			break;
+		}
 	}
 
 	/* Fill the MAPI_REQ request */

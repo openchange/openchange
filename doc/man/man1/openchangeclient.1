@@ -33,16 +33,19 @@ openchangeclient \- MAPI command line messaging tool
 .SH SYNOPSIS
 .nf
 openchangeclient [-?] [-?|--help] [--usage] [-f|--database STRING]
-        [-p|--profile STRING] [-S|--sendmail] [-F|--fetchmail]
-        [-G|--storemail STRING] [-D|--deletemail] [-A|--attachments STRING]
+        [--pf] [-p|--profile STRING] [-P|--password STRING] [-S|--sendmail]
+        [--sendappointment] [--sendcontact] [--sendtask] [--sendnote]
+        [-F|--fetchmail] [-G|--storemail STRING] [-i|--fetch-items STRING]
+        [-m|--mailbox] [-D|--deletemail] [-A|--attachments STRING]
         [-I|--html-inline STRING] [-W|--html-file STRING] [-t|--to STRING]
         [-c|--cc STRING] [-b|--bcc STRING] [-s|--subject STRING]
-        [-B|--body STRING] [--notifications] [-i|--fetch-items STRING]
-        [-m|--mailbox] [--sendcontact] [--sendappointment] [--sendtask]
-        [--location STRING] [--dtstart STRING] [--dtend STRING]
-        [--busystatus STRING] [--taskstatus STRING] [--email STRING]
-        [--fullname STRING] [--cardname STRING] [--debuglevel STRING]
-	[--dump-data]
+        [-B|--body STRING] [--location=STRING] [--label=STRING]
+        [--dtstart=STRING] [--dtend=STRING] [--busystatus=STRING]
+        [--taskstatus=STRING] [--priority=STRING] [--importance=STRING]
+        [--email=STRING] [--fullname=STRING] [--cardname=STRING]
+        [--color=STRING] [--notifications] [--folder=STRING] [--mkdir]
+        [--rmdir] [--folder-name=STRING] [--folder-comment=STRING]
+        [--debuglevel=STRING] [--dump-data]
 .fi
 
 .SH DESCRIPTION
@@ -71,6 +74,18 @@ Store mail attachments on the local filesystem in the specified directory.
 .B -i
 Retrieve specific items from Exchange default folders. Possible value
 for STRING are Mail, Appointment, Contact, Task, Note.
+
+.TP
+.B --mkdir
+.TP
+Create a folder within the mailbox or public folders store
+hierarchy. This option requires --folder-name to be defined.
+
+.TP
+.B --rmdir
+.TP
+Deletes a folder within the mailbox or public folders store
+hierarchy. This option requires --folder-name to be defined.
 
 .TP
 .B --mailbox=STRING
@@ -125,6 +140,18 @@ Set the MAPI profile database. If no database is specified, then openchangeclien
 Set the profile to use. If a profile is not specified, and one of the 
 profiles has been set as the default in the profile database 
 (for example, using mapiprofile -S), then that default profile will be used.
+
+.TP
+.B --pf
+.TP
+Specify openchangeclient will work with the Public Folders store.
+
+.TP
+.B --folder
+.TP
+Specify the folder name we want to work with want to open. This option
+is mandatory for public folders, but can also be used to open specific
+folders in the mailbox store.
 
 .TP
 .B --attachments="ATTACHMENT1;ATTACHMENT2"
@@ -248,6 +275,21 @@ Set the card name of a task or contact message. This is only meaningful with
 .B --sendcontact
 or
 .B --sendtask
+
+.TP
+.B --folder-name=STRING
+.TP
+Set the folder name to create. This is only meaningful with 
+.B --mkdir 
+or 
+--rmdir
+
+.TP
+.B --folder-comment=STRING
+.TP
+Set the folder comment. This is only meaningful with
+.B --mkdir
+
 
 .TP
 .B --dump-data
@@ -375,6 +417,23 @@ openchangeclient --sendcontact --cardname="openchangeclient"       \\
                  --fullname="OpenChange Client 3rd"                \\
                  --email="openchangeclient@nonexistentdomain.com"  
 .fi
+
+.B Create folder:
+.nf
+openchangeclient --mkdir --folder-name="openchange"		   \\
+		 --folder-comment="comment"
+.fi
+
+This example will create a generic folder named openchange under
+Inbox folder.
+
+.B Delete folder:
+.nf
+openchangeclient --rmdir --folder-name="openchange"
+.fi
+
+This example will delete the generic folder named openchange under
+Inbox folder.
 
 .B List Mailbox hierarchy:
 .nf

@@ -46,7 +46,7 @@ static bool torture_folder(mapi_object_t *obj_parent)
 	/* CreateFolder
 	 */
 	oc_test_describe("CreateFolder(parent)");
-	status = CreateFolder(obj_parent, "torture_folder_name", "torture_folder_comment", &obj_child);
+	status = CreateFolder(obj_parent, FOLDER_GENERIC, "torture_folder_name", "torture_folder_comment", 0, &obj_child);
 	oc_test_assert(status == MAPI_E_SUCCESS);
 
 	mapi_object_debug(&obj_child);
@@ -55,7 +55,7 @@ static bool torture_folder(mapi_object_t *obj_parent)
 	/* Create sub Folder
 	 */
 	oc_test_describe("CreateFolder(child)");
-	status = CreateFolder(&obj_child, "torture_subfolder_name", "torture_subfolder_comment", &obj_sub);
+	status = CreateFolder(&obj_child, FOLDER_GENERIC, "torture_subfolder_name", "torture_subfolder_comment", 0, &obj_sub);
 	oc_test_assert(status == MAPI_E_SUCCESS);
 
 

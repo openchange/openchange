@@ -444,12 +444,12 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 			talloc_free(line);
 			break;
 		case EDITOR_FORMAT_HTML:
-			line = talloc_asprintf(mem_ctx, "Content-Type: \"text/html\"\n");
+			line = talloc_asprintf(mem_ctx, "Content-Type: text/html\n");
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);		
 			break;
 		case EDITOR_FORMAT_RTF:
-			line = talloc_asprintf(mem_ctx, "Content-Type: \"text/rtf\"\n");
+			line = talloc_asprintf(mem_ctx, "Content-Type: text/rtf\n");
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);					
 

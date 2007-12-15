@@ -19,8 +19,6 @@
 
 %module mapi
 %{
-typedef unsigned int uint32_t;
-typedef unsigned long long uint64_t;
 typedef uint64_t NTTIME;
 struct ipv4_addr;
 
@@ -33,6 +31,7 @@ struct ipv4_addr;
 %include "cstring.i"
 %include "cpointer.i"
 %include "carrays.i"
+%import "stdint.i"
 
 %include "../../libmapi/mapidefs.h"
 %include "swig_mapitags.h"

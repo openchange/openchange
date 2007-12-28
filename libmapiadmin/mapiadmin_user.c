@@ -78,7 +78,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 				     mapiadmin_ctx->dc_binding : 
 				     mapiadmin_ctx->binding,
 				     &ndr_table_samr,
-				     profile->credentials, NULL);
+				     profile->credentials, NULL, global_mapi_ctx->lp_ctx);
 					     
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);	
 

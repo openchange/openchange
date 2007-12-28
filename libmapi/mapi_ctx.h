@@ -37,6 +37,7 @@ typedef struct mapi_ctx
   struct ldb_context	*ldb_ctx;
   struct mapi_session	*session;
   bool			dumpdata;
+  struct loadparm_context *lp_ctx;
 } mapi_ctx_t;
 
 

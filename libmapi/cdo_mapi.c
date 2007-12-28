@@ -203,6 +203,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 	global_mapi_ctx->mem_ctx = mem_ctx;
 	global_mapi_ctx->dumpdata = false;
+	global_mapi_ctx->lp_ctx = loadparm_init(global_mapi_ctx);
 
 	/* profile store */
 	retval = OpenProfileStore(mem_ctx, &global_mapi_ctx->ldb_ctx, profiledb);

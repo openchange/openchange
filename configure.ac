@@ -87,7 +87,7 @@ FIRST_REV=26100
 LAST_REV=$FIRST_REV
 
 INCDIR=$prefix/include
-if test -f $INCDIR/samba/version.h; then
+if test -f $INCDIR/samba/version.h && grep SAMBA_VERSION_SVN_REVISION 2>&1 >/dev/null; then
 	SAMBA_VERSION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_MAJOR | cut -d" " -f 3`
 	SAMBA_VERSION_ALPHA_RELEASE=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_ALPHA_RELEASE | cut -d" " -f 3`
 	SAMBA_VERSION_SVN_REVISION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_SVN_REVISION | cut -d" " -f 3`

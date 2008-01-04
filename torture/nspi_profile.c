@@ -97,7 +97,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 
 	mem_ctx = talloc_init("torture_rpc_nspi_profile");
 	
-	status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_nsp);
+	status = torture_rpc_connection(torture, &p, &ndr_table_exchange_nsp);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

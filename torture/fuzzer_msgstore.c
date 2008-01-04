@@ -50,7 +50,7 @@ bool torture_fuzzer_msgstore(struct torture_context *torture)
 
 	/* init torture */
 	mem_ctx = talloc_init("torture_fuzzer_msgtore");
-	ntstatus = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
+	ntstatus = torture_rpc_connection(torture, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		talloc_free(mem_ctx);
 		return false;

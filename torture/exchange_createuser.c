@@ -39,6 +39,7 @@
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <ldb_wrap.h>
+#include <ldb/ldap_ndr.h>
 #include <util_ldb.h>
 #include <ldap.h>
 #include <dcerpc/ndr_samr.h>
@@ -201,7 +202,7 @@ NTSTATUS torture_exchange_createuser(TALLOC_CTX *mem_ctx, const char *username,
 		DEBUG(0, ("async ldb request on msExchMailboxGuid sent\n"));
 
 		/* We modify the user record with Exchange attributes */
-		rtn = samdb_modify(remote_ldb, mem_ctx, msg);
+		rtn = ldb_modify(remote_ldb, msg);
 		if (rtn != 0) return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		DEBUG(0, ("Extending AD user record with Exchange attributes\n"));
 	}
@@ -336,7 +337,8 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 					     &join->p,
 					     dc_binding,
 					     &ndr_table_samr,
-					     cmdline_credentials, NULL);
+					     cmdline_credentials, 
+					     NULL, torture->lp_ctx);
 					     
 	} else {
 		status = torture_rpc_connection(torture, 

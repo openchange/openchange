@@ -54,7 +54,7 @@ bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 
 	/* init torture */
 	mem_ctx = talloc_init("torture_rpc_mapi_fetchmail");
-	nt_status = torture_rpc_connection(mem_ctx, &p, &ndr_table_exchange_emsmdb);
+	nt_status = torture_rpc_connection(torture, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return false;

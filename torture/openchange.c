@@ -23,9 +23,14 @@
 #include <torture/torture.h>
 #include <torture/torture_proto.h>
 
+NTSTATUS ndr_table_init(void);
+
 NTSTATUS init_module(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "OPENCHANGE");
+
+	dcerpc_init();
+	ndr_table_init();
 
 	DEBUG(0, ("Loading openchange torture test\n"));
 

@@ -27,6 +27,18 @@ int yylex(void);
  * Prototypes
  */
 
+int	yyget_lineno(void);
+FILE	*yyget_in(void);
+FILE	*yyget_out(void);
+int	yyget_leng(void);
+char	*yyget_text(void);
+void	yyset_lineno(int);
+void	yyset_in (FILE *);
+void	yyset_out (FILE *);
+int	yyget_debug(void);
+void	yyset_debug(int);
+int	yylex_destroy(void);
+
 int	yyreplace_utf8(char *);
 int	yyparse_utf8(char *, char *);
 

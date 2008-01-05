@@ -428,6 +428,8 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		const uint32_t			*RecipClass = 0;
 
 		ndr = talloc_zero(mem_ctx, struct ndr_push);
+		ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
+
 		aRow = &(SRowSet->aRow[i_recip]);
 		headers = &(request.recipient[i_recip].headers);
 		

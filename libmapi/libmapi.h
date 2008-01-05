@@ -48,6 +48,7 @@
 /* OpenChange includes */
 #include <gen_ndr/exchange.h>
 
+#include <libmapi/version.h>
 #include <libmapi/nspi.h>
 #include <libmapi/emsmdb.h>
 #include <libmapi/mapi_ctx.h>

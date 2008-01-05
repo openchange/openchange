@@ -55,6 +55,7 @@ LIBMAPIADMIN_CFLAGS=@SAMR_CFLAGS@
 MAGIC_LIBS=@MAGIC_LIBS@
 
 all: 	\
+	libmapi/version.h					\
 	gen_ndr gen_ndr/ndr_exchange.h libmapi/proto.h		\
 	torture/torture_proto.h					\
 	providers/providers_proto.h server/dcesrv_proto.h	\
@@ -117,6 +118,7 @@ install: all $(SWIGDIRS-INSTALL)
 	$(INSTALL) -m 0644 libmapi/mapi_profile.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapi_nameid.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapidefs.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/version.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
 	$(INSTALL) -m 0644 gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
@@ -176,6 +178,9 @@ torture/openchange.$(SHLIBEXT):	torture/nspi_profile.po		\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
+
+libmapi/version.h: VERSION
+	@./script/mkversion.sh 	VERSION libmapi/version.h $(PACKAGE_VERSION) $(top_builddir)/
 
 libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
 	@echo "Generating $@"
@@ -293,6 +298,7 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f libmapi/tests/*.{o,po}
 	rm -f libmapi/socket/*.{o,po}
 	rm -f libmapi/util/*.{o,po}
+	rm -f libmapi/version.h
 	rm -f tests/*.o
 	rm -rf bin/*
 	rm -f server/*.{o,po}

@@ -79,6 +79,12 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p
 		return NULL;
 	}
 
+	ret->info.username = talloc_strdup(mem_ctx, r.out.user);
+	ret->info.mailbox = talloc_strdup(mem_ctx, r.out.org_group);
+	ret->info.store_version[0] = r.out.store_version[0];
+	ret->info.store_version[1] = r.out.store_version[1];
+	ret->info.store_version[2] = r.out.store_version[2];
+	
 	DEBUG(3, ("emsmdb_connect\n"));
 	DEBUG(3, ("\t\t user = %s\n", r.out.user));
 	DEBUG(3, ("\t\t organization = %s\n", r.out.org_group));
@@ -334,6 +340,18 @@ NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey, uint32_t ulEven
 }
 
 
+/**
+ * Retrieve the emsmdb server info structure
+ */
+_PUBLIC_ struct emsmdb_info *emsmdb_get_info(void)
+{
+	if (!global_mapi_ctx || !global_mapi_ctx->session->emsmdb->ctx) {
+		return NULL;
+	}
+
+	return &((struct emsmdb_context *)global_mapi_ctx->session->emsmdb->ctx)->info;
+}
+
 const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAPITAGS tag, DATA_BLOB *data)
 {
 	struct ndr_pull		*ndr;
@@ -353,6 +371,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAP
 	ndr->data = data->data;
 	ndr->data_size = data->length;
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
 
 	switch(tag & 0xFFFF) {
 	case PT_I2:

@@ -34,6 +34,7 @@
 #include <ldb_wrap.h>
 #include <util_ldb.h>
 #include <ldap.h>
+#include <ldb/ldap_ndr.h>
 
 #include <core/error.h>
 #include <dcerpc/ndr_samr.h>
@@ -71,7 +72,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 	MAPI_RETVAL_IF(!mapiadmin_ctx->user_ctx, MAPI_E_NOT_ENOUGH_RESOURCES ,NULL);
 
 	DEBUG(3, ("Connecting to SAMR\n"));
-	
+
 	status = dcerpc_pipe_connect(mapiadmin_ctx->user_ctx,
 				     &mapiadmin_ctx->user_ctx->p,
 				     mapiadmin_ctx->dc_binding ? 
@@ -301,7 +302,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CALL_FAILED, mem_ctx);
 
 	/* We modify the user record with Exchange attributes */
-	ret = samdb_modify(remote_ldb, mem_ctx, msg);
+	ret =  ldb_modify(remote_ldb, msg);
 	MAPI_RETVAL_IF((ret != 0), MAPI_E_CORRUPT_DATA, mem_ctx);
 	
 	while ((tce_ctx->found == 0) && (req->handle->state != LDB_ASYNC_DONE)) {

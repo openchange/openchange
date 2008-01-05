@@ -371,11 +371,6 @@ int main(int argc, const char *argv[])
 		};
 	}
 
-	/* debug options */
-	if (opt_debug) {
-		lp_set_cmdline(global_loadparm, "log level", opt_debug);
-	}
-
 	/* Sanity check on options */
 
 	if ((opt_mkdir == true && !opt_folder) || (opt_rmdir == true && !opt_folder) ||
@@ -410,6 +405,11 @@ int main(int argc, const char *argv[])
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
+	}
+
+	/* debug options */
+	if (opt_debug) {
+		lp_set_cmdline(global_loadparm, "log level", opt_debug);
 	}
 
 	if (opt_dumpdata == true) {

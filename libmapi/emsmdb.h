@@ -20,19 +20,26 @@
 #ifndef __EMSMDB_H__
 #define	__EMSMDB_H__
 
+struct emsmdb_info {
+	char			*username;
+	char			*mailbox;
+	uint16_t		store_version[3];
+};
+
 struct emsmdb_context {
-  struct dcerpc_pipe		*rpc_connection;
-  struct policy_handle		handle;
-  struct nspi_context		*nspi;
-  struct cli_credentials	*cred;
-  TALLOC_CTX			*mem_ctx;
-  struct EcDoRpc_MAPI_REQ	**cache_requests;
-  uint32_t			cache_size;
-  uint8_t			cache_count;
-  uint16_t			prop_count;
-  enum MAPITAGS			*properties;
-  uint16_t     			max_data;
-  bool				setup;
+	struct dcerpc_pipe     	*rpc_connection;
+	struct policy_handle   	handle;
+	struct nspi_context    	*nspi;
+	struct cli_credentials	*cred;
+	TALLOC_CTX	       	*mem_ctx;
+	struct EcDoRpc_MAPI_REQ	**cache_requests;
+	uint32_t	       	cache_size;
+	uint8_t			cache_count;
+	uint16_t	       	prop_count;
+	enum MAPITAGS	       	*properties;
+	uint16_t     	       	max_data;
+	bool		       	setup;
+	struct emsmdb_info	info;
 };
 
 #define	MAILBOX_PATH	"/o=%s/ou=%s/cn=Recipients/cn=%s"

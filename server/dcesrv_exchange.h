@@ -22,7 +22,51 @@
 #ifndef _DCESRV_EXCHANGE_H_
 # define _DCESRV_EXCHANGE_H_
 
-#include <auth.h>
+/* #include <auth.h> */
+
+struct auth_serversupplied_info 
+{
+	struct dom_sid *account_sid;
+	struct dom_sid *primary_group_sid;
+
+	size_t n_domain_groups;
+	struct dom_sid **domain_groups;
+
+	DATA_BLOB user_session_key;
+	DATA_BLOB lm_session_key;
+
+	const char *account_name;
+	const char *domain_name;
+
+	const char *full_name;
+	const char *logon_script;
+	const char *profile_path;
+	const char *home_directory;
+	const char *home_drive;
+	const char *logon_server;
+	
+	NTTIME last_logon;
+	NTTIME last_logoff;
+	NTTIME acct_expiry;
+	NTTIME last_password_change;
+	NTTIME allow_password_change;
+	NTTIME force_password_change;
+
+	uint16_t logon_count;
+	uint16_t bad_password_count;
+
+	uint32_t acct_flags;
+
+	bool authenticated;
+};
+
+
+struct auth_session_info {
+	struct security_token *security_token;
+	struct auth_serversupplied_info *server_info;
+	DATA_BLOB session_key;
+	struct cli_credentials *credentials;
+};
 
 #define	NTLM_AUTH_IS_OK(dce_call) \
 (dce_call->conn->auth_state.session_info->server_info->authenticated == true)

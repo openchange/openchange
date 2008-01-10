@@ -69,6 +69,7 @@ all: 	\
 	bin/openchangemapidump					\
 	bin/exchange2mbox					\
 	bin/locale_codepage					\
+	bin/mapitest						\
 	torture/openchange.$(SHLIBEXT)				\
 	server/dcesrv_exchange.$(SHLIBEXT)			\
 	server/dcesrv_exchange_remote.$(SHLIBEXT)		\
@@ -91,6 +92,7 @@ install: all $(SWIGDIRS-INSTALL)
 	$(INSTALL) -m 0755 bin/openchangemapidump $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/exchange2mbox $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/locale_codepage $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/mapitest $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapi.$(SHLIBEXT)
 	$(INSTALL) -m 0755 libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
@@ -134,6 +136,7 @@ uninstall: $(SWIGDIRS-UNINSTALL)
 	rm -f $(DESTDIR)$(bindir)/openchangemapidump
 	rm -f $(DESTDIR)$(bindir)/exchange2mbox
 	rm -f $(DESTDIR)$(bindir)/locale_codepage
+	rm -f $(DESTDIR)$(bindir)/mapitest
 	rm -f $(DESTDIR)$(libdir)/libmapi.*
 	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
 	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_exchange.*
@@ -276,6 +279,19 @@ bin/exchange2mbox:	utils/exchange2mbox.o				\
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt  $(MAGIC_LIBS)
 
+bin/mapitest:		utils/mapitest/mapitest.o			\
+			utils/mapitest/mapitest_common.o		\
+			utils/mapitest/mapitest_print.o			\
+			utils/mapitest/mapitest_calls.o			\
+			utils/mapitest/mapitest_calls_ring1.o		\
+			utils/mapitest/mapitest_calls_ring2.o		\
+			utils/mapitest/mapitest_calls_ring3.o		\
+			utils/mapitest/mapitest_calls_ring4.o		\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
+
 distclean: clean $(SWIGDIRS-DISTCLEAN)
 	rm -rf autom4te.cache
 	rm -f libmapi.pc libmapiadmin.pc
@@ -306,6 +322,7 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f torture/*.{o,po}
 	rm -f utils/*.o
 	rm -f utils/backup/*.o
+	rm -f utils/mapitest/*.o
 	rm -f gen_ndr/ndr_exchange* gen_ndr/exchange.h
 	rm -f libmapi/mapicode.{c,h}
 	rm -f libmapi/mapitags.{c,h}

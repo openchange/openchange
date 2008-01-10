@@ -1,0 +1,305 @@
+Copyright 2008 OpenChange Project
+under the terms at http://creativecommons.org/licenses/by-sa/3.0/
+
+OpenChange Test Suite HOW-TO
+--------------------------
+
+Revision History:
+=================
+Initial by Julien Kerihuel	<j.kerihuel@openchange.org>,	January 2008.
+
+
+###############
+[0x0] CONTENTS
+###############
+
++---------------------------------+
+[0x1] INTRODUCTION
+     [0x1a] Purpose and Scope
+     [0x1b] Coverage
+     [0x1c] Internals
++---------------------------------+
+
+
+#####################
+[0x1] INTRODUCTION
+#####################
+
+[0x1a] Purpose and Scope
+========================
+
+OpenChange provides an Open Source test suite of Microsoft Exchange
+protocols under UNIX/Linux platforms. This test suite, named mapitest,
+has two objectives:
+
+	1. Help the development team to validate the implementation
+	across revisions and prevent from any regression.
+
+	2. Provide a tool for users which encounter issues running
+	openchange and which require relevant feedback to be sent to
+	the development team.
+
+
+[0x1b] Coverage
+===============
+
+MAPITEST intends to cover the whole OpenChange MAPI, MAPIADMIN
+implementation and tools. Furthermore, it catches signals and dump a
+backtrace if SIGSEGV is encountered. [NOT IMPLEMENTED]
+
+--mapi-all option: [NOT IMPLEMENTED]
+	   This option overrides all --mapi-* options and run all the
+	   MAPI tests matching the user credentials.
+
+--mapiadmin-all option: [NOT IMPLEMENTED]
+	   This option overrides all --mapiadmin-* options and run all
+	   the MAPIADMIN tests. MAPIADMIN requires an Administrator
+	   account.
+
+--mapi-calls option:
+	   This option tests all the different MAPI calls and ensure
+	   they work properly.
+
+--confidential option:
+	   This option is meaningful for users which intends to send
+	   debug reports but wishes to remove any sensitive data from
+	   the report.
+
+--pcap=STRING: [NOT IMPLEMENTED]
+	   This option will create a pcap file associated with the
+	   scenario and storing all the [in] [out] communication. If
+	   the user supplies --confidential, then all sensitive data
+	   will be removed from the pcap file and replaced with XXX.
+
+--mapi-profile option: [NOT IMPLEMENTED]
+	   This option will create a temporary profile database, test
+	   all the mapi profiles functions and use the temporary
+	   account created for remaining tests. This option requires
+	   the user to have an existing profile database.
+
+--username=STRING option:
+	   Specify the username account to use when creating profiles
+	   with --mapi-profile option.
+
+--password=STRING option:
+	   Specify the password associated with the username or
+	   profile. If --username or --profile is supplied but not the
+	   password, then the user will be prompted on stdout.
+
+
+[0x1c] Internals
+================
+
+1. MAPI Report Headers
+----------------------
+	
+	In the MAPI Report Headers, we print all the information
+	relative to the user configuration, Exchange environment and
+	mapitest selected options:
+	    * Samba4 version
+	    * OpenChange version
+	    * System Information (kernel, kernel version, processor)
+	    * Exchange server information (store version, user,
+              mailbox path)
+
+	If --confidential, then user, organization and organization
+	unit will be obfuscated whenever they are met during the
+	testing process. It is also important to note that mapitest
+	requires an existing mapi profile database to work. The
+	--mapi-profile option will only create a new temporary
+	database and test mapi profiles API using information stored
+	in the original database. This is a known and wanted
+	limitation so we can keep a reasonable mapitest command-line.
+
+
+2. MAPI-CALLS test mode
+-----------------------
+
+	In this mode, we test all the different MAPI calls implemented
+	in libmapi. The point is that we can't test interfaces
+	separately since most calls depends on an existing chain of
+	MAPI calls. So all MAPI calls are tested based on their level
+	in the hierarchy of calls (which we'll name ring). For example
+	OpenMsgStore and OpenPublicFolder are the initial calls
+	required for any further operations, so we can categorize them
+	as members of the first ring.
+
+	For each calls we can use at different level of operations,
+	we'll classify them at the first level of operation we can use
+	them. Classifying calls this way allow to perform complex
+	operations for deeper rings and ensure each calls has
+	previously been tested.
+
+
+3. MAPI-CALLS rings
+-------------------
+
+X	Not yet tested
+N	Not yet implemented
+
+
+	Ring 1:
+	      [*] OpenMsgStore
+	      [*] OpenPublicFolder
+	      [*] Release
+
+	Ring 2:
+	      [*] GetReceiveFolder
+	      [*] GetPropList
+	      [*] GetPropsAll
+	      [*] GetProps
+	      [*] SetProps
+	      [*] OpenFolder
+	      [*] ResolveNames (NSPI)
+
+	Ring 3:
+	      [*] CreateFolder
+	      [*] EmptyFolder
+	      [*] DeleteFolder
+	      [*] GetContentsTable
+	      [*] GetHierarchyTable
+	      [*] CreateMessage
+	      [*] DeleteMessage
+
+	Ring 4:
+	      [*] ModifyRecipients
+	      [*] SaveChangesMessage
+	      [*] SubmitMessage
+	      [*] GetRowCount
+	      [*] SetColumns
+	      [*] QueryRows
+	      [*] SeekRow
+X	      [*] QueryColumns
+	      [*] OpenMessage
+	      [*] SetReadFlags
+X	      [*] OpenAttach
+X	      [*] CreateAttach
+N	      [*] DeleteAttach
+
+
+	3.1 First Ring
+	++++++++++++++
+
+	OpenChange sometimes experience MAPI_E_CALL_FAILED responses
+	from the Exchange Server, possibly cause the Exchange server
+	is not ready. However calling OpenMsgStore again may success,
+	which make the nature and frequency of failing OpenMsgStore
+	unpredictable. In order to pass the test, we'll assume
+	OpenMsgStore should at least be OK on 3 attempts.
+
+
+	3.2 Second Ring
+	+++++++++++++++
+
+SetProps:
+=========
+	The SetProps test is divided into 4 steps and temporary
+	changes the PR_DISPLAY_NAME property of the message store
+	object returned by OpenMsgStore. It first retrieves the
+	original mailbox display name, then changes it (append
+	[MAPITEST]) and checks if the new name is correctly set with a
+	new GetProps call. The last step of this test is to reset the
+	display name to its original value and check if GetProps
+	fetches the original name properly.
+
+OpenFolder:
+===========
+	For the OpenFolder test, we try to open all the message store
+	folders (top folders and inbox ones). We directly access top
+	folders using the fid returned from OpenMsgStore, but we rely
+	on GetDefaultFolder which calls GetReceiveFolder,
+	OpenFolder(Inbox) and GetPropsAll to retrieve folders entry
+	IDs.
+
+
+	3.3 Third Ring
+	++++++++++++++
+
+	We can't create a folder directly under the message store
+	object. We first need to open an existing folder. For mapitest
+	purposes, we will create a temporary folder named "[MP] Test
+	Folder". We next create different folders with different
+	classes within this new container (note, appointment, task
+	etc.). Finally we end the test with EmptyFolder and
+	DeleteFolder and get our mailbox in its initial state.
+
+
+	CreateMessage - DeleteMessage
+
+	=> ModifyRecipients
+
+	In the third ring, we test all the functions against the Inbox
+	folder which means we call OpenMsgStore and OpenFolder on
+	Inbox prior any tests.
+
+	
+	3.4 Fourth Ring
+	+++++++++++++++
+
+
+ModifyRecipients:
+=================
+	In the ModifyRecipients test, we simulate MAPI message
+	creation until ModifyRecipients. We first try to resolve our
+	own username, then prepare the SRowSet array with required
+	values and finally call ModifyRecipients with this single
+	resolved recipient (profile's one). We repeat calls to
+	ModifyRecipients with MAPI_TO, MAPI_CC, MAPI_BCC.
+
+
+SaveChangesMessage:
+===================
+	This is a very basic test which creates a message in the
+	outbox folder and saves it using SaveChangesMessage. The
+	result will be a message in Outbox with neither recipients,
+	subject nor contents. We finally delete this message from
+	Outbox.
+
+SubmitMessage:
+==============
+	To test SubmitMessage, we need to create a real message. We
+	Open the outbox folder, create a message, add a single MAPI_TO
+	recipient (our profile's username), and set arbitrary subjects
+	we will use in further tests.
+
+
+OpenMessage:
+============
+	OpenMessage is a particular case. It belongs to ring2 cause it
+	depends on obj_store, but we generally open messages given
+	their PR_MID and PR_FID respectively message identifier and
+	folder identifier. These two parameters are not unique and are
+	commonly retrieved from QueryRows calls.
+
+	In the OpenMessage test, we rely on messages created, saved on
+	submitted in previous tests. In our OpenMessage test, we want
+	to benefit from previous tests and delete messages we have
+	created so far. This means we need to pass MAPI_MODIFY flag to
+	OpenMessage so we can delete them. The point is that we will
+	sometimes encounter a MAPI error 0x8040608
+	(MAPI_E_SUBMITTED). This error occurs when the mails sent in
+	previous tests have been submitted but not yet
+	dispatched. Depending on the server congestion, the submit
+	task can require more or less time. The workaround here is to
+	add an attempt counter we arbitrary set to 3 and sleep 1
+	second between each attempts and hope the message has been
+	submitted.
+
+	Another possibility (which we will experiment later) is to
+	register notifications on new mail and call OpenMessage and
+	DeleteMessage once we receive this notification. This
+	alternative method should be much more reliable.
+
+
+SetReadFlags:
+=============
+	In our SubmitMessage test, we have sent an email with
+	PR_SUBJECT set to MP_MAIL_SUBJECT_READFLAG ([MP] Mail -
+	ReadFlags). We will use this email to test the SetReadFlags
+	MAPI call. For this test, we will first call OpenMessage,
+	retrieve its PR_MESSAGE_FLAGS value with GetProps, then call
+	SetReadFlags, clear the MSGFLAG_READ flag and call GetProps
+	again to test if PR_MESSAGE_FLAGS has changed. The next step
+	is to set PR_MESSAGE_FLAGS to MSGFLAG_SUBMIT, check if the
+	value has changed with GetProps. Finally delete the
+	MP_MAIL_SUBJECT_READFLAG messages from Inbox folder.

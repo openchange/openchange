@@ -76,9 +76,13 @@ void	mapitest_indent(void);
 void	mapitest_deindent(void);
 
 /* Definitions from mapitest_common.c */
-bool	mapitest_find_message_subject(struct mapitest *, mapi_object_t *,
+bool	mapitest_folder_open(struct mapitest *, mapi_object_t *, 
+			     mapi_object_t *, uint32_t, const char *);
+bool	mapitest_message_find_subject(struct mapitest *, mapi_object_t *,
 				      mapi_object_t *, uint8_t, const char *, 
 				      const char *, uint32_t *);
+bool	mapitest_message_create(struct mapitest *, mapi_object_t *, 
+				mapi_object_t *, const char *, const char *);
 
 /* Definitions required by mapitest_calls.c */
 void	mapitest_calls(struct mapitest *);
@@ -129,6 +133,9 @@ __END_DECLS
 #define	MT_MAIL_SUBJECT			"[MP] Mail"
 #define	MT_MAIL_SUBJECT_ATTACH		"[MP] Mail - Attach"
 #define	MT_MAIL_SUBJECT_READFLAGS	"[MP] Mail - ReadFlags"
+
+#define	MT_MAIL_ATTACH_NAME	"MP_attach.txt"
+#define	MT_MAIL_ATTACH_BLOB	"[MP] OpenChange MAPI TestSuite: mapitest [MP]"
 
 /**
  * Macros

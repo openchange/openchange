@@ -32,7 +32,7 @@ static void mapitest_call_ModifyRecipients(struct mapitest *mt,
 					   mapi_object_t *obj_store)
 {
 	enum MAPISTATUS		retval;
-	mapi_id_t		id_outbox;
+	bool			ret = false;
 	mapi_object_t		obj_outbox;
 	mapi_object_t		obj_message;
 	char			**username = NULL;
@@ -46,11 +46,9 @@ static void mapitest_call_ModifyRecipients(struct mapitest *mt,
 
 	/* Open the outbox folder */
 	mapi_object_init(&obj_outbox);
-	retval = GetDefaultFolder(obj_store, &id_outbox, olFolderOutbox);
-	MT_ERRNO_IF(mt, retval, "ModifyRecipients:GetDefaultFolder");
-
-	retval = OpenFolder(obj_store, id_outbox, &obj_outbox);
-	MT_ERRNO_IF(mt, retval, "ModifyRecipients:OpenFolder");
+	ret = mapitest_folder_open(mt, obj_store, &obj_outbox, 
+				   olFolderOutbox, "ModifyRecipients");
+	if (ret == false) goto end;
 
 	/* Create the message */
 	mapi_object_init(&obj_message);
@@ -92,11 +90,13 @@ static void mapitest_call_ModifyRecipients(struct mapitest *mt,
 
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_outbox);
-	mapitest_deindent();
 
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(flaglist);
 	MAPIFreeBuffer(SPropTagArray);
+
+end:
+	mapitest_deindent();
 }
 
 
@@ -104,18 +104,16 @@ static void mapitest_call_SaveChangesMessage(struct mapitest *mt,
 					     mapi_object_t *obj_store)
 {
 	enum MAPISTATUS		retval;
-	mapi_id_t		id_outbox;
+	bool			ret = false;
 	mapi_object_t		obj_outbox;
 	mapi_object_t		obj_message;
 	mapi_id_t		id_msgs[1];
 
 	/* Open the outbox folder */
 	mapi_object_init(&obj_outbox);
-	retval = GetDefaultFolder(obj_store, &id_outbox, olFolderOutbox);
-	MT_ERRNO_IF(mt, retval, "SaveChangesMessage:GetDefaultFolder");
-
-	retval = OpenFolder(obj_store, id_outbox, &obj_outbox);
-	MT_ERRNO_IF(mt, retval, "SaveChangesMessage:OpenFolder");
+	ret = mapitest_folder_open(mt, obj_store, &obj_outbox, 
+				   olFolderOutbox, "SaveChangesMessage");
+	if (ret == false) return;
 
 	/* Create the message */
 	mapi_object_init(&obj_message);
@@ -140,22 +138,14 @@ static void mapitest_call_SubmitMessage(struct mapitest *mt,
 					mapi_object_t *obj_store)
 {
 	enum MAPISTATUS		retval;
-	mapi_id_t		id_outbox;
+	bool			ret = false;
 	mapi_object_t		obj_outbox;
 	mapi_object_t		obj_message;
-	uint32_t		msgflag;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SRowSet		*SRowSet = NULL;
-	struct FlagList		*flaglist = NULL;
-	struct SPropValue	SPropValue;
-	struct SPropValue	props[2];
-	char			**username = NULL;
 	char			*str = NULL;
 	int			i;
 
 	const char		*subjects[] = {
 		MT_MAIL_SUBJECT,
-		MT_MAIL_SUBJECT_ATTACH,
 		MT_MAIL_SUBJECT_READFLAGS,
 		NULL
 	};
@@ -165,65 +155,26 @@ static void mapitest_call_SubmitMessage(struct mapitest *mt,
 
 	/* Open the outbox folder */
 	mapi_object_init(&obj_outbox);
-	retval = GetDefaultFolder(obj_store, &id_outbox, olFolderOutbox);
-	MT_ERRNO_IF(mt, retval, "SubmitMessage:GetDefaultFolder");
-
-	retval = OpenFolder(obj_store, id_outbox, &obj_outbox);
-	MT_ERRNO_IF(mt, retval, "SubmitMessage:OpenFolder");
-
-
+	ret = mapitest_folder_open(mt, obj_store, &obj_outbox, 
+				   olFolderOutbox, "SubmitMessage");
+	if (ret == false) goto end;
+	
 	for (i = 0; subjects[i] != NULL; i++) {
-		/* Create the message */
 		mapi_object_init(&obj_message);
-		retval = CreateMessage(&obj_outbox, &obj_message);
-		MT_ERRNO_IF(mt, retval, "SubmitMessage:CreateMessage");	
-
-		/* Resolve the recipients */
-		SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x6,
-						  PR_OBJECT_TYPE,
-						  PR_DISPLAY_TYPE,
-						  PR_7BIT_DISPLAY_NAME,
-						  PR_DISPLAY_NAME,
-						  PR_SMTP_ADDRESS,
-						  PR_GIVEN_NAME);
-
-		username = talloc_array(mt->mem_ctx, char *, 2);
-		username[0] = mt->info.username;
-		username[1] = NULL;
-		
-		retval = ResolveNames((const char **)username, SPropTagArray, 
-				      &SRowSet, &flaglist, 0);
-		MAPIFreeBuffer(SPropTagArray);
-		MT_ERRNO_IF(mt, retval, "SubmitMessage:ResolveNames");
-		
-		SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
-		SPropValue.value.l = 0;
-		SRowSet_propcpy(mt->mem_ctx, SRowSet, SPropValue);
-		
-		SetRecipientType(&(SRowSet->aRow[0]), MAPI_TO);
-		retval = ModifyRecipients(&obj_message, SRowSet);
-		MAPIFreeBuffer(SRowSet);
-		MAPIFreeBuffer(flaglist);
-		MT_ERRNO_IF(mt, retval, "SubmitMessage:ModifyRecipients");
-		
-		/* Set the message properties */
-		msgflag = MSGFLAG_SUBMIT;
-		set_SPropValue_proptag(&props[0], PR_SUBJECT, 
-				       (const void *)subjects[i]);
-		set_SPropValue_proptag(&props[1], PR_MESSAGE_FLAGS, 
-				       (const void *)&msgflag);
-		retval = SetProps(&obj_message, props, 2);
-		MT_ERRNO_IF(mt, retval, "SubmitMessage:SetProps");
-		
-		/* Submit the message */
-		retval = SubmitMessage(&obj_message);
-		str = talloc_asprintf(mt->mem_ctx, "SubmitMessage: %s", subjects[i]);
-		mapitest_print_subcall(mt, str, GetLastError());
-		talloc_free(str);
-
-		mapi_object_release(&obj_message);
+		ret = mapitest_message_create(mt, &obj_outbox, &obj_message, 
+					      subjects[i], "SubmitMessage");
+		if (ret == true) {
+			/* Submit the message */
+			retval = SubmitMessage(&obj_message);
+			str = talloc_asprintf(mt->mem_ctx, "SubmitMessage: %s", subjects[i]);
+			mapitest_print_subcall(mt, str, GetLastError());
+			talloc_free(str);
+			
+			mapi_object_release(&obj_message);
+		}
 	}
 
+end:
 	mapitest_deindent();
 	mapi_object_release(&obj_outbox);
 }
@@ -253,6 +204,17 @@ static void mapitest_call_SetColumn(struct mapitest *mt,
 	retval = SetColumns(obj_table, SPropTagArray);
 	mapitest_print_call(mt, "SetColumn", GetLastError());
 	MAPIFreeBuffer(SPropTagArray);
+}
+
+
+static void mapitest_call_QueryColumns(struct mapitest *mt,
+				       mapi_object_t *obj_table)
+{
+	enum MAPISTATUS		retval;
+	struct SPropTagArray	columns;
+
+	retval = QueryColumns(obj_table, &columns);
+	mapitest_print_call(mt, "QueryColumns", GetLastError());
 }
 
 
@@ -392,9 +354,181 @@ static void mapitest_call_OpenMessage(struct mapitest *mt,
 			}
 			mapi_object_release(&obj_message);
 		}
+
 	}
 	mapi_object_release(&obj_ctable);
 }
+
+
+static void mapitest_call_CreateAttach(struct mapitest *mt, 
+				       mapi_object_t *obj_folder)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = false;
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_attach;
+
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "CreateAttach");
+	mapitest_indent();
+
+	mapi_object_init(&obj_message);
+	ret = mapitest_message_create(mt, obj_folder, &obj_message, 
+				      MT_MAIL_SUBJECT_ATTACH, "CreateAttach");
+	if (ret == false) goto end;
+
+	/* Create the attachment */
+	mapi_object_init(&obj_attach);
+	retval = CreateAttach(&obj_message, &obj_attach);
+	mapitest_print_subcall(mt, "CreateAttach", GetLastError());
+
+	mapi_object_release(&obj_attach);
+	mapi_object_release(&obj_message);
+
+end:
+	mapitest_deindent();
+}
+
+
+static void mapitest_call_SaveChanges(struct mapitest *mt,
+				      mapi_object_t *obj_folder)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = false;
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_attach;
+	struct SPropValue	lpProps[4];
+
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "SaveChanges");
+	mapitest_indent();
+
+	mapi_object_init(&obj_message);
+	ret = mapitest_message_create(mt, obj_folder, &obj_message,
+				      MT_MAIL_SUBJECT_ATTACH, "SaveChanges");
+	if (ret == false) goto end;
+
+	/* Create the attachment */
+	mapi_object_init(&obj_attach);
+	retval = CreateAttach(&obj_message, &obj_attach);
+	MT_ERRNO_IF_CALL(mt, retval, "SaveChanges", "CreateAttach");
+
+	/* Set the attachment */
+	lpProps[0].ulPropTag= PR_ATTACH_METHOD;
+	lpProps[0].value.l = ATTACH_BY_VALUE;
+	lpProps[1].ulPropTag = PR_RENDERING_POSITION;
+	lpProps[1].value.l = -1;
+	lpProps[2].ulPropTag = PR_ATTACH_DATA_BIN;
+	lpProps[2].value.bin.lpb = (uint8_t *) MT_MAIL_ATTACH_BLOB;
+	lpProps[2].value.bin.cb = strlen(MT_MAIL_ATTACH_BLOB) + 1;
+	lpProps[3].ulPropTag = PR_DISPLAY_NAME;
+	lpProps[3].value.lpszA = MT_MAIL_ATTACH_NAME;
+
+	retval = SetProps(&obj_attach, lpProps, 4);
+	MT_ERRNO_IF_CALL(mt, retval, "SaveChanges", "SetProps");
+
+	/* Test the call we were looking for */
+	retval = SaveChanges(&obj_message, &obj_attach, KEEP_OPEN_READONLY);
+	mapitest_print_subcall(mt, "SaveChanges", GetLastError());
+	mapi_object_release(&obj_attach);
+
+	/* Finally submit the message */
+	retval = SubmitMessage(&obj_message);
+	MT_ERRNO_IF_CALL(mt, retval, "SaveChanges", "SubmitMessage");
+
+
+	mapi_object_release(&obj_message);
+
+end:
+	mapitest_deindent();
+}
+
+
+static void mapitest_call_GetAttachmentTable(struct mapitest *mt,
+					     mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = false;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_atable;
+	uint32_t		count = 0;
+
+	/* Open Inbox folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_folder_open(mt, obj_store, &obj_folder, olFolderInbox, "GetAttachmentTable");
+	if (ret == false) return;
+	
+	/* Find message */
+	mapi_object_init(&obj_message);
+	ret = mapitest_message_find_subject(mt, &obj_folder, &obj_message, 0,
+					    MT_MAIL_SUBJECT_ATTACH, "GetAttachmentTable", &count);
+
+	if (ret == false) return;
+	/* Retrieve attachment table */
+	mapi_object_init(&obj_atable);
+	retval = GetAttachmentTable(&obj_message, &obj_atable);
+	mapitest_print_call(mt, "GetAttachmentTable", GetLastError());
+
+	mapi_object_release(&obj_atable);
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+}
+
+
+static void mapitest_call_DeleteAttach(struct mapitest *mt,
+				       mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = false;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_atable;
+	uint32_t		count = 0;
+	uint32_t		count2 = 0;
+
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "DeleteAttach");
+	mapitest_indent();
+
+	/* Open Inbox folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_folder_open(mt, obj_store, &obj_folder, olFolderInbox, "DeleteAttach");
+	if (ret == false) goto end;
+
+	/* Find Message */
+	mapi_object_init(&obj_message);
+	ret = mapitest_message_find_subject(mt, &obj_folder, &obj_message, MAPI_MODIFY, 
+					    MT_MAIL_SUBJECT_ATTACH, "DeleteAttach", &count);
+	if (ret == false) goto end;
+
+	mapi_object_init(&obj_atable);
+	retval = GetAttachmentTable(&obj_message, &obj_atable);
+	MT_ERRNO_IF_CALL(mt, retval, "DeleteAttach", "GetAttachmentTable");
+	
+	count = 0;
+	retval = GetRowCount(&obj_atable, &count);
+	MT_ERRNO_IF_CALL(mt, retval, "DeleteAttach", "GetRowCount");
+
+	if (count > 0) {
+		retval = DeleteAttach(&obj_message, 0);
+		mapitest_print_subcall(mt, "DeleteAttach", GetLastError());
+
+		retval = SaveChangesMessage(&obj_folder, &obj_message);
+		MT_ERRNO_IF_CALL(mt, retval, "DeleteAttach", "SaveChangesMessage");
+	}
+
+	count2 = 0;
+	retval = GetRowCount(&obj_atable, &count2);
+	MT_ERRNO_IF_CALL(mt, retval, "DeleteAttach", "GetRowCount");
+
+	errno = (count2 < count) ? 0 : -1;
+	mapitest_print_subcall(mt, "DeleteAttach Effectiveness", GetLastError());
+	errno = 0;
+	
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+end:
+	mapitest_deindent();
+}
+
 
 
 static void mapitest_call_SetReadFlags(struct mapitest *mt,
@@ -419,7 +553,7 @@ static void mapitest_call_SetReadFlags(struct mapitest *mt,
 					  PR_MESSAGE_FLAGS);
 	do {
 		mapi_object_init(&obj_message);
-		bret = mapitest_find_message_subject(mt, obj_folder, &obj_message,
+		bret = mapitest_message_find_subject(mt, obj_folder, &obj_message,
 						     MAPI_MODIFY, MT_MAIL_SUBJECT_READFLAGS,
 						     "SetReadFlags",
 						     &count);
@@ -510,15 +644,21 @@ retry:
 
 	mapitest_call_GetRowCount(mt, &obj_htable);
 	mapitest_call_SetColumn(mt, &obj_htable);
+	mapitest_call_QueryColumns(mt, &obj_htable);
 	mapitest_call_QueryRows(mt, &obj_htable);
 	mapitest_call_SeekRow(mt, &obj_htable);
 
 	/* Open outbox folder where we have stored emails in previous tests */
 	mapi_object_release(&obj_folder);
+	mapi_object_init(&obj_folder);
 	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderOutbox);
 	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 
 	mapitest_call_OpenMessage(mt, &obj_folder, "Outbox");
+	mapitest_call_CreateAttach(mt, &obj_folder);
+	mapitest_call_SaveChanges(mt, &obj_folder);
+	mapitest_call_GetAttachmentTable(mt, &obj_store);
+	mapitest_call_DeleteAttach(mt, &obj_store);
 
 	mapi_object_release(&obj_folder);
 

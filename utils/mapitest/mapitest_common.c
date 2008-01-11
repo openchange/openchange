@@ -27,12 +27,35 @@
 #include <utils/openchange-tools.h>
 #include <utils/mapitest/mapitest.h>
 
+
+/**
+ * Opens a default folder
+ */
+bool mapitest_folder_open(struct mapitest *mt,
+			  mapi_object_t *obj_parent, 
+			  mapi_object_t *obj_child,
+			  uint32_t olNum,
+			  const char *call)
+{
+	enum MAPISTATUS	retval;
+	mapi_id_t	id_child;
+
+	retval = GetDefaultFolder(obj_parent, &id_child, olNum);
+	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "GetDefaultFolder");
+
+	retval = OpenFolder(obj_parent, id_child, obj_child);
+	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "OpenFolder");
+
+	return true;
+}
+
+
 /**
  * This convenient function searches for an obj_message given the
  * specified subject. Note: this function doesn't use the Restrict
  * call so we can respect the ring policy we defined.
  */
-bool mapitest_find_message_subject(struct mapitest *mt,
+bool mapitest_message_find_subject(struct mapitest *mt,
 				   mapi_object_t *obj_folder,
 				   mapi_object_t *obj_message,
 				   uint8_t mode,
@@ -99,7 +122,7 @@ bool mapitest_find_message_subject(struct mapitest *mt,
 
 			if (retval == MAPI_E_SUCCESS) {
 				msubject = SRowSet.aRow[i].lpProps[2].value.lpszA;
-				if (msubject && !strncmp(subject, msubject, strlen(msubject))) {
+				if (msubject && !strncmp(subject, msubject, strlen(subject))) {
 					*index += i + 1;
 					mapi_object_release(&obj_ctable);
 					return true;
@@ -111,4 +134,70 @@ bool mapitest_find_message_subject(struct mapitest *mt,
 	}
 	mapi_object_release(&obj_ctable);
 	return false;
+}
+
+
+/**
+ * Create a message ready to submit
+ */
+bool mapitest_message_create(struct mapitest *mt,
+			     mapi_object_t *obj_folder, 
+			     mapi_object_t *obj_message,
+			     const char *subject,
+			     const char *call)
+{
+	enum MAPISTATUS		retval;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		*SRowSet = NULL;
+	struct FlagList		*flaglist = NULL;
+	struct SPropValue	SPropValue;
+	struct SPropValue	lpProps[1];
+	char			**username = NULL;
+	uint32_t		msgflag;
+
+	/* Sanity checks */
+	if (subject == NULL) return false;
+	if (call == NULL) return false;
+
+	/* Create the mesage */
+	retval = CreateMessage(obj_folder, obj_message);
+	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "CreateMessage");
+
+	/* Resolve recipients */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x6,
+					  PR_OBJECT_TYPE,
+					  PR_DISPLAY_TYPE,
+					  PR_7BIT_DISPLAY_NAME,
+					  PR_DISPLAY_NAME,
+					  PR_SMTP_ADDRESS,
+					  PR_GIVEN_NAME);
+
+	username = talloc_array(mt->mem_ctx, char *, 2);
+	username[0] = mt->info.username;
+	username[1] = NULL;
+
+	retval = ResolveNames((const char **)username, SPropTagArray,
+			      &SRowSet, &flaglist, 0);
+	MAPIFreeBuffer(SPropTagArray);
+	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "ResolveNames");
+
+	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
+	SPropValue.value.l = 0;
+	SRowSet_propcpy(mt->mem_ctx, SRowSet, SPropValue);
+
+	/* Set Recipients */
+	SetRecipientType(&(SRowSet->aRow[0]), MAPI_TO);
+	retval = ModifyRecipients(obj_message, SRowSet);
+	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(flaglist);
+	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "ModifyRecipients");
+
+	/* Set message properties */
+	msgflag = MSGFLAG_SUBMIT;
+	set_SPropValue_proptag(&lpProps[0], PR_SUBJECT, (const void *) subject);
+	set_SPropValue_proptag(&lpProps[1], PR_MESSAGE_FLAGS, (const void *)&msgflag);
+	retval = SetProps(obj_message, lpProps, 2);
+	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "SetProps");
+
+	return true;
 }

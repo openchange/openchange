@@ -13,12 +13,16 @@ Initial by Julien Kerihuel	<j.kerihuel@openchange.org>,	January 2008.
 [0x0] CONTENTS
 ###############
 
-+---------------------------------+
++----------------------------------------+
 [0x1] INTRODUCTION
      [0x1a] Purpose and Scope
      [0x1b] Coverage
      [0x1c] Internals
-+---------------------------------+
+[0x2] CONVENIENT FUNCTIONS
+     [0x2a] Purpose
+     [0x2b] mapitest_message_find_subject
+     [0x2c] mapitest_message_create
++----------------------------------------+
 
 
 #####################
@@ -169,12 +173,19 @@ N	Not yet implemented
 	      [*] SetColumns
 	      [*] QueryRows
 	      [*] SeekRow
-X	      [*] QueryColumns
+	      [*] QueryColumns
 	      [*] OpenMessage
 	      [*] SetReadFlags
+	      [*] CreateAttach
+	      [*] DeleteAttach
+	      [*] GetAttachmentTable
+
+	Ring 5:
 X	      [*] OpenAttach
-X	      [*] CreateAttach
-N	      [*] DeleteAttach
+X	      [*] ReadAttach
+X	      [*] OpenStream
+X	      [*] ReadStream
+X	      [*] WriteStream
 
 
 	3.1 First Ring
@@ -224,15 +235,7 @@ OpenFolder:
 	DeleteFolder and get our mailbox in its initial state.
 
 
-	CreateMessage - DeleteMessage
 
-	=> ModifyRecipients
-
-	In the third ring, we test all the functions against the Inbox
-	folder which means we call OpenMsgStore and OpenFolder on
-	Inbox prior any tests.
-
-	
 	3.4 Fourth Ring
 	+++++++++++++++
 
@@ -303,3 +306,39 @@ SetReadFlags:
 	is to set PR_MESSAGE_FLAGS to MSGFLAG_SUBMIT, check if the
 	value has changed with GetProps. Finally delete the
 	MP_MAIL_SUBJECT_READFLAG messages from Inbox folder.
+
+
+
+##########################
+[0x2] CONVENIENT FUNCTIONS
+##########################
+
+[0x2a] Purpose
+==============
+
+	During MAPI tests we generally find recurrent and common set
+	of MAPI operations, or more generally common peace of code
+	we'll use across different mapitest_call_* functions. This
+	file attempts to provide routines which make test development
+	easier and avoid code duplication across mapitest.
+
+
+[0x2b] mapitest_message_find_subject
+====================================
+
+	This function searches through a contents table for messages
+	with a PR_SUBJECT property set to the argument specified in
+	parameters. This call assigns the obj_message object (assuming
+	it has been initialized in the calling function) and store the
+	current table position in index. The mode parameter is used to
+	specify OpenMessage flags - either 0 or MAPI_MODIFY for
+	read/write access.
+
+
+[0x2c] mapitest_message_create
+==============================
+
+	This function automates MAPI message creation (more
+	specifically email) from CreateMessage to SetProps, including
+	name resolution. The scope of this function is obviously very
+	limited, but it is only intended to be used in mapitest suite.

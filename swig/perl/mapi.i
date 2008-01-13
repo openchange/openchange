@@ -41,7 +41,7 @@ struct ipv4_addr;
 %apply short { uint8_t };
 %typemap(in) uint32_t = unsigned int;
 %apply int { uint32_t };
-
+%apply unsigned long long { uint64_t }
 
 %nodefaultctor SPropTagArray;
 %nodefaultdtor SPropTagArray;

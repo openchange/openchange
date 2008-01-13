@@ -68,7 +68,7 @@ sub mapi_fetchmail()
     $retval = GetDefaultFolder($obj_store, $inbox_id, $mapi::olFolderInbox);
     mapi_errstr("GetDefaultFolder", GetLastError());
 
-    $retval = OpenFolder($obj_store, $inbox_id, $obj_inbox);
+    $retval = OpenFolder($obj_store, int64_value($inbox_id), $obj_inbox);
     mapi_errstr("OpenFolder", GetLastError());
 
     ## Count messages

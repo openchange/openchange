@@ -177,6 +177,177 @@ _PUBLIC_ enum MAPISTATUS DeleteMessage(mapi_object_t *obj_folder, mapi_id_t *id_
 
 
 /**
+   \details Obtain the status associated with a message
+
+   This function obtains the status associated with a message in the
+   given folder.
+
+   \param obj_folder the folder where the message is located
+   \param msgid the message ID
+   \param ulStatus the message status
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+ */
+_PUBLIC_ enum MAPISTATUS GetMessageStatus(mapi_object_t *obj_folder, 
+					  mapi_id_t msgid, 
+					  uint32_t *ulStatus)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetMessageStatus_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!msgid, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("GetMessageStatus");
+
+	size = 0;
+
+	/* Fill the GetMessageStatus operation */
+	request.msgid = msgid;
+	size += sizeof (uint64_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetMessageStatus;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_GetMessageStatus = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_folder);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	*ulStatus = mapi_response->mapi_repl->u.mapi_SetMessageStatus.ulOldStatus;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Set the status associated with a message
+
+   This function sets the status associated with a message in the
+   given folder.
+
+   \param obj_folder the folder where the message is located
+   \param msgid the message ID
+   \param ulNewStatus the new status to be assigned
+   \param ulNewStatusMask bitmask of flags hat is applied to the new
+   status indicating the flags to be set
+   \param ulOldStatus pointer on the previous status of the message
+
+   ulNewStatusMask possible values:
+   - MSGSTATUS_DELMARKED: the message is marked for deletion
+   - MSGSTATUS_HIDDEN: the message is not to be displayed
+   - MSGSTATUS_HIGHLIGHTED: the message is to be displayed highlighted
+   - MSGSTATUS_REMOTE_DELETE: the message has been marked for deletion
+     on the remote message store without downloading to the local
+     client.
+   - MSGSTATUS_REMOTE_DOWNLOAD: the message has been marked for
+     downloading from the remote message store to the local client.
+   - MSGSTATUS_TAGGED: The message has been tagged for a
+     client-defined purpose.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+ */
+_PUBLIC_ enum MAPISTATUS SetMessageStatus(mapi_object_t *obj_folder,
+					  mapi_id_t msgid,
+					  uint32_t ulNewStatus,
+					  uint32_t ulNewStatusMask,
+					  uint32_t *ulOldStatus)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SetMessageStatus_req    	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!msgid, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("SetMessageStatus");
+
+	size = 0;
+
+	/* Fill the SetMessageStatus operation */
+	request.msgid = msgid;
+	size += sizeof (uint64_t);
+
+	request.ulNewStatus = ulNewStatus;
+	size += sizeof (uint32_t);
+
+	request.ulNewStatusMask = ulNewStatusMask;
+	size += sizeof (uint32_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetMessageStatus;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SetMessageStatus = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_folder);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	*ulOldStatus = mapi_response->mapi_repl->u.mapi_SetMessageStatus.ulOldStatus;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+	
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details Copy or move a message from a folder to another
 
    \param obj_src The source folder

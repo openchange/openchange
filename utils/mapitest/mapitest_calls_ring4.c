@@ -180,6 +180,148 @@ end:
 }
 
 
+static void mapitest_call_GetMessageStatus(struct mapitest *mt, 
+					   mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = false;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_ctable;
+	uint32_t		i;
+	uint32_t		count;
+	uint32_t		status;
+
+	/* Open Inbox folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_folder_open(mt, obj_store, &obj_folder, 
+				   olFolderInbox, "GetMessageStatus");
+	if (ret == false) return;
+
+	/* Retrieve the contents table */
+	mapi_object_init(&obj_ctable);
+	retval = GetContentsTable(&obj_folder, &obj_ctable);
+	MT_ERRNO_IF_CALL(mt, retval, "GetMessageStatus", "GetContentsTable");
+
+	/* Customize the contents table view */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, 
+					  PR_MID,
+					  PR_MSG_STATUS);
+	retval = SetColumns(&obj_ctable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	MT_ERRNO_IF_CALL(mt, retval, "GetMessageStatus", "SetColumns");
+
+	
+	/* Get the total number of rows */
+	retval = GetRowCount(&obj_ctable, &count);
+	MT_ERRNO_IF_CALL(mt, retval, "GetMessageStatus", "GetRowCount");
+	if (count == 0) goto end;
+
+	/* Loop through the table and call GetMessageStatus */
+	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
+	       SRowSet.cRows) {
+		count -= SRowSet.cRows;
+		for (i = 0; i < SRowSet.cRows; i++) {
+			retval = GetMessageStatus(&obj_folder, SRowSet.aRow[i].lpProps[0].value.d, &status);
+			mapitest_print_call(mt, "GetMessageStatus", GetLastError());
+		}
+	}
+
+end:
+	mapi_object_release(&obj_ctable);
+	mapi_object_release(&obj_folder);
+}
+
+
+struct msgstatus {
+	uint32_t	status;
+	const char	*name;
+};
+
+static struct msgstatus msgstatus[] = {
+	{MSGSTATUS_HIDDEN,		"MSGSTATUS_HIDDEN"},
+	{MSGSTATUS_HIGHLIGHTED,		"MSGSTATUS_HIGHLIGHTED"},
+	{MSGSTATUS_TAGGED,		"MSGSTATUS_TAGGED"},
+	{MSGSTATUS_REMOTE_DOWNLOAD,	"MSGSTATUS_REMOTE_DOWNLOAD"},
+	{MSGSTATUS_REMOTE_DELETE,	"MSGSTATUS_REMOTE_DELETE"},
+	{MSGSTATUS_DELMARKED,		"MSGSTATUS_DELMARKED"},
+	{0,				NULL}
+};
+
+
+static void mapitest_call_SetMessageStatus(struct mapitest *mt,
+					   mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	bool			ret;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_ctable;
+	uint32_t		i;
+	uint32_t		count;
+	uint32_t		ulOldStatus;
+	uint32_t		ulOldStatus2;
+
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "SetMessageStatus");
+	mapitest_indent();
+
+	/* Open Inbox folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_folder_open(mt, obj_store, &obj_folder, 
+				   olFolderInbox, "SetMessageStatus");
+	if (ret == false) {
+		mapitest_deindent();
+		return;
+	}
+
+	/* Retrieve the contents table */
+	mapi_object_init(&obj_ctable);
+	retval = GetContentsTable(&obj_folder, &obj_ctable);
+	MT_ERRNO_IF_CALL(mt, retval, "SetMessageStatus", "GetContentsTable");
+
+	/* Customize the contents table view */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2,
+					  PR_MID,
+					  PR_MSG_STATUS);
+	retval = SetColumns(&obj_ctable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	MT_ERRNO_IF_CALL(mt, retval, "SetMessageStatus", "SetColumns");
+
+	/* Get the total number of rows */
+	retval = GetRowCount(&obj_ctable, &count);
+	MT_ERRNO_IF_CALL(mt, retval, "SetMessageStatus", "GetRowCount");
+	if (count == 0) goto end;
+
+	/* Fetch the first email */
+	retval = QueryRows(&obj_ctable, 1, TBL_NOADVANCE, &SRowSet);
+	MT_ERRNO_IF_CALL(mt, retval, "SetMessageStatus", "QueryRows");
+
+
+	/* Test MSGSTATUS_HIDDEN */
+	for (i = 0; msgstatus[i].name; i++) {
+		retval = SetMessageStatus(&obj_folder, SRowSet.aRow[0].lpProps[0].value.d,
+					  msgstatus[i].status, msgstatus[i].status, &ulOldStatus2);
+		mapitest_print_subcall(mt, "SetMessageStatus", GetLastError());
+
+		retval = GetMessageStatus(&obj_folder, SRowSet.aRow[0].lpProps[0].value.d, &ulOldStatus);
+		MT_ERRNO_IF_CALL(mt, retval, "SetMessageStatus", "GetMessageStatus");
+
+		if ((ulOldStatus != ulOldStatus2) && (ulOldStatus & msgstatus[i].status)) {
+			errno = 0;
+			mapitest_print_subcall(mt, msgstatus[i].name, GetLastError());
+		}
+	}
+	
+
+end:
+	mapi_object_release(&obj_ctable);
+	mapi_object_release(&obj_folder);
+	mapitest_deindent();
+}
+
+
 static void mapitest_call_GetRowCount(struct mapitest *mt, 
 				      mapi_object_t *obj_table)
 {
@@ -191,7 +333,7 @@ static void mapitest_call_GetRowCount(struct mapitest *mt,
 }
 
 
-static void mapitest_call_SetColumn(struct mapitest *mt,
+static void mapitest_call_SetColumns(struct mapitest *mt,
 				    mapi_object_t *obj_table)
 {
 	enum MAPISTATUS		retval;
@@ -202,7 +344,7 @@ static void mapitest_call_SetColumn(struct mapitest *mt,
 					  PR_FID,
 					  PR_FOLDER_CHILD_COUNT);
 	retval = SetColumns(obj_table, SPropTagArray);
-	mapitest_print_call(mt, "SetColumn", GetLastError());
+	mapitest_print_call(mt, "SetColumns", GetLastError());
 	MAPIFreeBuffer(SPropTagArray);
 }
 
@@ -643,10 +785,13 @@ retry:
 	retval = GetHierarchyTable(&obj_folder, &obj_htable);
 
 	mapitest_call_GetRowCount(mt, &obj_htable);
-	mapitest_call_SetColumn(mt, &obj_htable);
+	mapitest_call_SetColumns(mt, &obj_htable);
 	mapitest_call_QueryColumns(mt, &obj_htable);
 	mapitest_call_QueryRows(mt, &obj_htable);
 	mapitest_call_SeekRow(mt, &obj_htable);
+
+	mapitest_call_GetMessageStatus(mt, &obj_store);
+	mapitest_call_SetMessageStatus(mt, &obj_store);
 
 	/* Open outbox folder where we have stored emails in previous tests */
 	mapi_object_release(&obj_folder);

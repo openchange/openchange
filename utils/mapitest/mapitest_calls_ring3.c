@@ -179,7 +179,6 @@ retry:
 	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 
 	mapitest_call_CreateMessage(mt, &obj_folder);
-	
 
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);

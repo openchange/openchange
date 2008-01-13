@@ -179,6 +179,8 @@ N	Not yet implemented
 	      [*] CreateAttach
 	      [*] DeleteAttach
 	      [*] GetAttachmentTable
+	      [*] GetMessageStatus
+	      [*] SetMessageStatus
 
 	Ring 5:
 X	      [*] OpenAttach

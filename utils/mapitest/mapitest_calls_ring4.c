@@ -442,6 +442,7 @@ static void mapitest_call_SortTable(struct mapitest *mt,
 	struct SSortOrderSet	lpSortCriteria;
 	uint32_t		count;
 	const char     		*msgid;
+	uint32_t		attempt = 0;
 
 	mapitest_print(mt, MT_HDR_FMT_SECTION, "SortTable");
 	mapitest_indent();
@@ -452,6 +453,7 @@ static void mapitest_call_SortTable(struct mapitest *mt,
 	if (ret == false) return;
 
 	/* Get Contents Table */
+	mapi_object_init(&obj_ctable);
 	retval = GetContentsTable(&obj_folder, &obj_ctable);
 	MT_ERRNO_IF_CALL(mt, retval, "SortTable", "GetContentsTable");
 
@@ -470,9 +472,19 @@ static void mapitest_call_SortTable(struct mapitest *mt,
 		mapitest_print_subcall(mt, "Enough messages to process", GetLastError());
 	}
 
-	/* Retrieve the first message */
+	/* Retrieve the first message: We retry 5 times with sleep 1
+	 * in case submitted message has not yet been dispatched into
+	 * Inbox.  It is a bit messy and this should be cleaned when
+	 * notifications are implemented.
+	 */
+retry:
 	retval = QueryRows(&obj_ctable, 1, TBL_NOADVANCE, &SRowSet);
 	MT_ERRNO_IF_CALL(mt, retval, "SortTable", "QueryRows");
+	if ((SRowSet.cRows == 0 || !SRowSet.aRow[0].lpProps[0].value.lpszA) && attempt < 5) {
+		sleep(1);
+		attempt++;
+		goto retry;
+	}
 	msgid = SRowSet.aRow[0].lpProps[0].value.lpszA;
 
 	/* Sort Table: ascending PR_LAST_MODIFICATION_TIME */

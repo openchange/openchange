@@ -61,6 +61,30 @@ static struct folders inbox_folders[] = {
 };
 
 
+static void mapitest_call_AddressTypes(struct mapitest *mt,
+				       mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	uint16_t		cValues;
+	struct mapi_LPSTR	*transport = NULL;
+	uint32_t		i;
+	char			*str = NULL;
+
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "AddressTypes");
+	mapitest_indent();
+
+	retval = AddressTypes(obj_store, &cValues, &transport);
+	mapitest_print_subcall(mt, "AddressTypes", GetLastError());
+	for (i = 0; i < cValues; i++) {
+		str = talloc_asprintf(mt->mem_ctx, "Recipient Type: %s", transport[i].lppszA);
+		mapitest_print_subcall(mt, str, GetLastError());
+		talloc_free(str);
+	}
+
+	mapitest_deindent();
+}
+
+
 static void mapitest_call_GetReceiveFolder(struct mapitest *mt, 
 					   mapi_object_t *obj_store)
 {
@@ -250,6 +274,7 @@ retry:
 		goto retry;
 	}
 
+	mapitest_call_AddressTypes(mt, &obj_store);
 	mapitest_call_GetReceiveFolder(mt, &obj_store);
 	mapitest_call_GetPropList(mt, &obj_store);
 	mapitest_call_GetPropsAll(mt, &obj_store);

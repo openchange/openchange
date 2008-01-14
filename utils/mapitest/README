@@ -148,6 +148,7 @@ N	Not yet implemented
 	      [*] Release
 
 	Ring 2:
+	      [*] AddressTypes
 	      [*] GetReceiveFolder
 	      [*] GetPropList
 	      [*] GetPropsAll
@@ -172,6 +173,7 @@ N	Not yet implemented
 	      [*] GetRowCount
 	      [*] SetColumns
 	      [*] QueryRows
+	      [*] SortTable
 	      [*] SeekRow
 	      [*] QueryColumns
 	      [*] OpenMessage

@@ -301,22 +301,6 @@ System Attendant Private Interface
 		[switch_is(rt)] SRestriction_CTR res;
 	} SRestriction;
 
-/* Sort type */
-#define TABLE_SORT_ASCEND	0
-#define TABLE_SORT_DESCEND	0
-
-	typedef [public] struct _SSortOrder{
-		uint32 ulPropTag;
-		uint32 ulOrder;
-	} SSortOrder;
-
-	typedef [public] struct _SSortOrderSet{
-		uint32 cSorts;
-		uint32 cCategories;
-		uint32 cExpanded;
-		[size_is(cSorts)][unique]SSortOrder *aSort;
-	} SSortOrderSet;
-
 	MAPISTATUS NspiGetMatches(
 		[in]		policy_handle	*handle,
 		[in]		uint32		unknown1,
@@ -654,6 +638,7 @@ System Attendant Private Interface
 			op_MAPI_ModifyRecipients	= 0xe,
 			op_MAPI_SetReadFlags		= 0x11,
 			op_MAPI_SetColumns		= 0x12,
+			op_MAPI_SortTable		= 0x13,
 			op_MAPI_Restrict		= 0x14,
 			op_MAPI_QueryRows		= 0x15,
 			op_MAPI_GetRowCount		= 0x17,
@@ -679,6 +664,7 @@ System Attendant Private Interface
 			op_MAPI_QueryColumns		= 0x37,
 			op_MAPI_GetTable		= 0x3e,
 			op_MAPI_ModifyTable		= 0x40,
+			op_MAPI_AddressTypes		= 0x49,
 			op_MAPI_GetNamesFromIDs		= 0x55,
 			op_MAPI_GetIDsFromNames		= 0x56,
 			op_MAPI_EmptyFolder		= 0x58,
@@ -1071,6 +1057,40 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
 	} SetColumns_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x13  */
+        typedef [enum8bit, flag(NDR_PAHEX)] enum {
+                TBL_ASYNC = 0x1,
+                TBL_BATCH = 0x2
+        } TBL_FLAGS;
+	
+        typedef [enum8bit, flag(NDR_PAHEX)] enum {
+                TABLE_SORT_ASCEND = 0x0,
+                TABLE_SORT_COMBINE = 0x1,
+                TABLE_SORT_DESCEND = 0x2
+        } TABLE_SORT;
+
+        typedef [public, flag(NDR_NOALIGN)] struct _SSortOrder{
+                MAPITAGS ulPropTag;
+                TABLE_SORT ulOrder;
+        } SSortOrder;
+
+	typedef [public, flag(NDR_NOALIGN)] struct _SSortOrderSet {
+ 		uint16		cSorts;
+ 		uint16		cCategories;
+ 		uint16		cExpanded;
+		SSortOrder	aSort[cSorts];
+	} SSortOrderSet;
+
+        typedef [flag(NDR_NOALIGN)]struct {
+		uint8		unknown;
+		SSortOrderSet	lpSortCriteria;
+        } SortTable_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown;
+	} SortTable_repl;
 
 	/**************************/
 	/* EcDoRpc Function 0x14  */
@@ -1598,6 +1618,17 @@ System Attendant Private Interface
 	} ModifyTable_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x49 */
+	typedef [flag(NDR_NOALIGN)] struct {
+	} AddressTypes_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16 		cValues;
+		uint16 		size;
+		mapi_LPSTR	transport[cValues];
+	} AddressTypes_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x55 */
 
 	typedef [enum8bit] enum {
@@ -1725,6 +1756,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_req mapi_SaveChangesMessage;
 		[case(op_MAPI_SetReadFlags)] SetReadFlags_req mapi_SetReadFlags;
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
+		[case(op_MAPI_SortTable)] SortTable_req mapi_SortTable;
 		[case(op_MAPI_Restrict)] Restrict_req mapi_Restrict;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_req mapi_ModifyRecipients;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
@@ -1750,6 +1782,7 @@ System Attendant Private Interface
 		[case(op_MAPI_QueryColumns)] QueryColumns_req mapi_QueryColumns;
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
+		[case(op_MAPI_AddressTypes)] AddressTypes_req mapi_AddressTypes;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
@@ -1773,6 +1806,7 @@ System Attendant Private Interface
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
 		[case(op_MAPI_SetReadFlags)] SetReadFlags_repl mapi_SetReadFlags;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
+		[case(op_MAPI_SortTable)] SortTable_repl mapi_SortTable;
 		[case(op_MAPI_Restrict)] Restrict_repl mapi_Restrict;
 		[case(op_MAPI_QueryRows)] QueryRows_repl mapi_QueryRows;
 		[case(op_MAPI_GetRowCount)] GetRowCount_repl mapi_GetRowCount;
@@ -1797,6 +1831,7 @@ System Attendant Private Interface
 		[case(op_MAPI_QueryColumns)] QueryColumns_repl mapi_QueryColumns;
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
+		[case(op_MAPI_AddressTypes)] AddressTypes_repl mapi_AddressTypes;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;

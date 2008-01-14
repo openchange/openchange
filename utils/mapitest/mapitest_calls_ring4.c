@@ -430,6 +430,83 @@ static void mapitest_call_SeekRow(struct mapitest *mt,
 }
 
 
+static void mapitest_call_SortTable(struct mapitest *mt,
+				    mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = false;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_ctable;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	struct SSortOrderSet	lpSortCriteria;
+	uint32_t		count;
+	const char     		*msgid;
+
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "SortTable");
+	mapitest_indent();
+
+	/* Open Inbox folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_folder_open(mt, obj_store, &obj_folder, olFolderInbox, "SortTable");
+	if (ret == false) return;
+
+	/* Get Contents Table */
+	retval = GetContentsTable(&obj_folder, &obj_ctable);
+	MT_ERRNO_IF_CALL(mt, retval, "SortTable", "GetContentsTable");
+
+	/* Customize table view */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, 
+					  PR_INTERNET_MESSAGE_ID,
+					  PR_LAST_MODIFICATION_TIME);
+	retval = SetColumns(&obj_ctable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	MT_ERRNO_IF_CALL(mt, retval, "SortTable", "SetColumns");
+
+	/* Get the total number of rows */
+	retval = GetRowCount(&obj_ctable, &count);
+	if (count >= 2) {
+		errno = 0;
+		mapitest_print_subcall(mt, "Enough messages to process", GetLastError());
+	}
+
+	/* Retrieve the first message */
+	retval = QueryRows(&obj_ctable, 1, TBL_NOADVANCE, &SRowSet);
+	MT_ERRNO_IF_CALL(mt, retval, "SortTable", "QueryRows");
+	msgid = SRowSet.aRow[0].lpProps[0].value.lpszA;
+
+	/* Sort Table: ascending PR_LAST_MODIFICATION_TIME */
+	lpSortCriteria.cSorts = 1;
+	lpSortCriteria.cCategories = 0;
+	lpSortCriteria.cExpanded = 0;
+	lpSortCriteria.aSort = talloc_array(mt->mem_ctx, struct SSortOrder, 1);
+	lpSortCriteria.aSort[0].ulPropTag = PR_LAST_MODIFICATION_TIME;
+	lpSortCriteria.aSort[0].ulOrder = TABLE_SORT_ASCEND;
+	
+	retval = SortTable(&obj_ctable, &lpSortCriteria);
+	mapitest_print_subcall(mt, "SortTable", GetLastError());
+
+	/* Retrieve the "New" first msgid */
+	retval = QueryRows(&obj_ctable, 1, TBL_NOADVANCE, &SRowSet);
+	MT_ERRNO_IF_CALL(mt, retval, "SortTable", "QueryRows");
+
+	if (SRowSet.aRow[0].lpProps[0].value.lpszA && msgid &&
+	    strcmp(msgid, SRowSet.aRow[0].lpProps[0].value.lpszA)) {
+		errno = 0;
+		mapitest_print_subcall(mt, "msgid has changed", GetLastError());
+	} else {
+		errno = -1;
+		mapitest_print_subcall(mt, "msgid has not changed", GetLastError());
+	}
+
+	mapi_object_release(&obj_ctable);
+	mapi_object_release(&obj_folder);
+
+	mapitest_deindent();
+}
+
+
+
 static void mapitest_call_OpenMessage(struct mapitest *mt, 
 				      mapi_object_t *obj_folder,
 				      const char *folder_name)
@@ -789,6 +866,7 @@ retry:
 	mapitest_call_QueryColumns(mt, &obj_htable);
 	mapitest_call_QueryRows(mt, &obj_htable);
 	mapitest_call_SeekRow(mt, &obj_htable);
+	mapitest_call_SortTable(mt, &obj_store);
 
 	mapitest_call_GetMessageStatus(mt, &obj_store);
 	mapitest_call_SetMessageStatus(mt, &obj_store);

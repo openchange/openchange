@@ -157,6 +157,7 @@ torture/openchange.$(SHLIBEXT):	torture/nspi_profile.po		\
 				torture/mapi_prop.po		\
 				torture/mapi_folder.po		\
 				torture/mapi_table.po		\
+				torture/mapi_sorttable.po	\
 				torture/mapi_message.po		\
 				torture/mapi_fetchmail.po	\
 				torture/mapi_sendmail.po	\
@@ -366,6 +367,7 @@ libmapi/proto.h libmapi/proto_private.h: libmapi/nspi.c			\
 	libmapi/IStoreFolder.c		\
 	libmapi/IUnknown.c 		\
 	libmapi/IStream.c		\
+	libmapi/IXPLogon.c		\
 	libmapi/x500.c 			\
 	libmapi/lzfu.c			\
 	libmapi/utils.c 		\
@@ -395,6 +397,7 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 	torture/mapi_sendattach.c 	\
 	torture/mapi_folder.c		\
 	torture/mapi_table.c		\
+	torture/mapi_sorttable.c	\
 	torture/mapi_copymail.c		\
 	torture/mapi_prop.c		\
 	torture/mapi_message.c		\
@@ -433,6 +436,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.po	\
 			libmapi/IStoreFolder.po				\
 			libmapi/IUnknown.po				\
 			libmapi/IMSProvider.po				\
+			libmapi/IXPLogon.po				\
 			libmapi/utils.po libmapi/property.po		\
 			libmapi/cdo_mapi.po 				\
 			libmapi/lzfu.po					\

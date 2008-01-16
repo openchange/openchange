@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007.
+   Copyright (C) Julien Kerihuel 2007-2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -104,6 +104,80 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store, mapi_id_t id_folde
 
 
 /**
+   \details Sets a folder as the destination for incoming messages of
+   a particular message class.
+
+   \param obj_store the store to set the receive folder for
+   \param obj_folder the destination folder
+   \param lpszMessageClass the message class the folder will receive
+
+      \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa GetReceiveFolder, GetReceiveFolderTable
+ */
+_PUBLIC_ enum MAPISTATUS SetReceiveFolder(mapi_object_t *obj_store,
+					  mapi_object_t *obj_folder,
+					  const char *lpszMessageClass)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SetReceiveFolder_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!lpszMessageClass, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("SetReceiveFolder");
+
+	/* Fill the SetReceiveFolder operation */
+	size = 0;
+	request.fid = mapi_object_get_id(obj_folder);
+	size += sizeof (uint64_t);
+	request.lpszMessageClass = lpszMessageClass;
+	size += strlen(lpszMessageClass) + 1;
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetReceiveFolder;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SetReceiveFolder = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details Retrieves the receive folder (INBOX) for a given store
 
    This function obtains the folder that was established as the
@@ -121,7 +195,8 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store, mapi_id_t id_folde
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   \sa MAPIInitialize, OpenMsgStore, GetLastError
+   \sa MAPIInitialize, OpenMsgStore, GetLastError, SetReceiveFolder,
+   GetReceiveFolderTable
 */
 _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store, 
 					  mapi_id_t *id_folder)
@@ -173,6 +248,98 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store,
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Retrieve the receive folder table which includes all the
+   information about the receive folders for the message store
+
+   \param obj_store the message store object
+   \param SRowSet pointer on a SRowSet structure with
+   GetReceiveFolderTable results.
+
+   Developers are required to call MAPIFreeBuffer(SRowSet.aRow) when
+   they don't need the folder table data anymore.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa GetReceiveFolder, SetReceiveFolder
+ */
+_PUBLIC_ enum MAPISTATUS GetReceiveFolderTable(mapi_object_t *obj_store, 
+					       struct SRowSet *SRowSet)
+{
+	struct mapi_request			*mapi_request;
+	struct mapi_response			*mapi_response;
+	struct EcDoRpc_MAPI_REQ			*mapi_req;
+	struct GetReceiveFolderTable_repl	*reply;
+	NTSTATUS				status;
+	enum MAPISTATUS				retval;
+	uint32_t				size = 0;
+	TALLOC_CTX				*mem_ctx;
+	mapi_ctx_t				*mapi_ctx;
+	uint32_t				i;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("GetReceiveFolderTable");
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetReceiveFolderTable;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	reply = &mapi_response->mapi_repl->u.mapi_GetReceiveFolderTable;
+
+	/* Retrieve the ReceiveFolderTable entries */
+	SRowSet->cRows = reply->cValues;
+	SRowSet->aRow = talloc_array((TALLOC_CTX *)mapi_ctx->session, struct SRow, reply->cValues);
+	
+	for (i = 0; i < reply->cValues; i++) {
+		SRowSet->aRow[i].ulAdrEntryPad = 0;
+		SRowSet->aRow[i].cValues = 3;
+		SRowSet->aRow[i].lpProps = talloc_array((TALLOC_CTX *)SRowSet->aRow, struct SPropValue, 
+							SRowSet->aRow[i].cValues);
+
+		SRowSet->aRow[i].lpProps[0].ulPropTag = PR_FID;
+		SRowSet->aRow[i].lpProps[0].dwAlignPad = 0x0;
+		SRowSet->aRow[i].lpProps[0].value.d = reply->entries[i].fid;
+
+		SRowSet->aRow[i].lpProps[1].ulPropTag = PR_MESSAGE_CLASS;
+		SRowSet->aRow[i].lpProps[1].dwAlignPad = 0x0;
+		SRowSet->aRow[i].lpProps[1].value.lpszA = talloc_strdup((TALLOC_CTX *)SRowSet->aRow, reply->entries[i].lpszMessageClass);
+	
+		SRowSet->aRow[i].lpProps[2].ulPropTag = PR_LAST_MODIFICATION_TIME;
+		SRowSet->aRow[i].lpProps[2].dwAlignPad = 0x0;
+		SRowSet->aRow[i].lpProps[2].value.ft.dwLowDateTime = reply->entries[i].modiftime.dwLowDateTime;
+		SRowSet->aRow[i].lpProps[2].value.ft.dwHighDateTime = reply->entries[i].modiftime.dwHighDateTime;
+	}
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+	
 	return MAPI_E_SUCCESS;
 }
 

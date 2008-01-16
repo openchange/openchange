@@ -506,6 +506,12 @@ retry:
 		attempt++;
 		goto retry;
 	}
+	if (SRowSet.cRows == 0 || !SRowSet.aRow[0].lpProps[0].value.lpszA) {
+		errno = -1;
+		mapitest_print_subcall(mt, "No messages available", GetLastError());
+		errno = 0;
+		goto end;
+	}
 	msgid = SRowSet.aRow[0].lpProps[0].value.lpszA;
 
 	/* Sort Table: ascending PR_LAST_MODIFICATION_TIME */
@@ -532,6 +538,7 @@ retry:
 		mapitest_print_subcall(mt, "msgid has not changed", GetLastError());
 	}
 
+end:
 	mapi_object_release(&obj_ctable);
 	mapi_object_release(&obj_folder);
 

@@ -84,6 +84,20 @@ static void mapitest_call_AddressTypes(struct mapitest *mt,
 	mapitest_deindent();
 }
 
+static void mapitest_call_GetReceiveFolderTable(struct mapitest *mt,
+						mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	struct SRowSet		SRowSet;
+
+	retval = GetReceiveFolderTable(obj_store, &SRowSet);
+	mapitest_print_call(mt, "GetReceiveFolderTable", GetLastError());
+	mapitest_indent();
+	mapidump_SRowSet(&SRowSet, "\t\t[*] ");
+	mapitest_deindent();
+	MAPIFreeBuffer(SRowSet.aRow);
+}
+
 
 static void mapitest_call_GetReceiveFolder(struct mapitest *mt, 
 					   mapi_object_t *obj_store)
@@ -275,6 +289,7 @@ retry:
 	}
 
 	mapitest_call_AddressTypes(mt, &obj_store);
+	mapitest_call_GetReceiveFolderTable(mt, &obj_store);
 	mapitest_call_GetReceiveFolder(mt, &obj_store);
 	mapitest_call_GetPropList(mt, &obj_store);
 	mapitest_call_GetPropsAll(mt, &obj_store);

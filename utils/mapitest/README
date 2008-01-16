@@ -149,6 +149,7 @@ N	Not yet implemented
 
 	Ring 2:
 	      [*] AddressTypes
+	      [*] GetReceiveFolderTable
 	      [*] GetReceiveFolder
 	      [*] GetPropList
 	      [*] GetPropsAll
@@ -158,6 +159,7 @@ N	Not yet implemented
 	      [*] ResolveNames (NSPI)
 
 	Ring 3:
+	      [*] SetReceiveFolder
 	      [*] CreateFolder
 	      [*] EmptyFolder
 	      [*] DeleteFolder

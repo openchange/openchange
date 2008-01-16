@@ -46,6 +46,63 @@ static struct test_folders subfolders[] = {
 };
 
 
+static void mapitest_call_SetReceiveFolder(struct mapitest *mt,
+					   mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	mapi_id_t		id_inbox;
+	mapi_id_t		id_tis;
+	mapi_object_t		obj_tis;
+	mapi_object_t		obj_inbox;
+	mapi_object_t		obj_folder;
+
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "SetReceiveFolder");
+	mapitest_indent();
+
+	/* Get the original ReceiveFolder */
+	retval = GetReceiveFolder(obj_store, &id_inbox);
+	MT_ERRNO_IF_CALL(mt, GetLastError(), "SetReceiveFolder", "GetReceiveFolder");
+
+	/* Open the ReceiveFolder */
+	mapi_object_init(&obj_inbox);
+	retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
+	MT_ERRNO_IF_CALL(mt, GetLastError(), "SetReceiveFolder", "OpenFolder");
+
+	/* Open the Top Information Store folder */
+	retval = GetDefaultFolder(obj_store, &id_tis, olFolderTopInformationStore);
+	MT_ERRNO_IF_CALL(mt, GetLastError(), "SetReceiveFolder", "GetDefaultFolder");
+
+	mapi_object_init(&obj_tis);
+	retval = OpenFolder(obj_store, id_tis, &obj_tis);
+	MT_ERRNO_IF_CALL(mt, GetLastError(), "SetReceiveFolder", "OpenFolder");
+
+	/* Create the New Inbox folder under Top Information Store */
+	mapi_object_init(&obj_folder);
+	retval = CreateFolder(&obj_tis, FOLDER_GENERIC, "New Inbox", NULL,
+			      OPEN_IF_EXISTS, &obj_folder);
+	MT_ERRNO_IF_CALL(mt, GetLastError(), "SetReceiveFolder", "CreateFolder");
+
+	/* Set IPM.Note receive folder to New Inbox */
+	retval = SetReceiveFolder(obj_store, &obj_folder, "IPM.Note");
+	mapitest_print_subcall(mt, "SetReceiveFolder: New Inbox", GetLastError());
+
+	/* Reset receive folder to Inbox */
+	retval = SetReceiveFolder(obj_store, &obj_inbox, "IPM.Note");
+	mapitest_print_subcall(mt, "SetReceiveFolder: Inbox", GetLastError());
+
+	/* Delete New Inbox folder */
+	retval = EmptyFolder(&obj_folder);
+	MT_ERRNO_IF_CALL(mt, GetLastError(), "SetReceiveFolder", "EmptyFolder");
+
+	retval = DeleteFolder(&obj_tis, mapi_object_get_id(&obj_folder));
+	MT_ERRNO_IF_CALL(mt, GetLastError(), "SetReceiveFolder", "DeleteFolder");
+
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_tis);
+	mapi_object_release(&obj_inbox);
+}
+
+
 static void mapitest_call_GetHierarchyTable(struct mapitest *mt,
 					    mapi_object_t *obj_folder)
 {
@@ -162,6 +219,9 @@ retry:
 		attempt++;
 		goto retry;
 	}
+
+	mapitest_call_SetReceiveFolder(mt, &obj_store);
+	mapitest_deindent();
 
 	mapi_object_init(&obj_folder);
 	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderTopInformationStore);

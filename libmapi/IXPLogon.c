@@ -31,9 +31,10 @@
    \details Returns the types of recipients that the transport
    provider handles.
 
-   \param obj the object to get recipients types from
-   \param cValues the count of recipients types returned
-   \param transport the transport provider types returned
+   \param obj_store the object to get recipients types from
+   \param lpcAdrType the count of recipients types returned
+   \param lpAdrTypeArray pointer on pointer of returned transport
+   provider types
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 

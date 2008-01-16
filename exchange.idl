@@ -644,6 +644,7 @@ System Attendant Private Interface
 			op_MAPI_GetRowCount		= 0x17,
 			op_MAPI_SeekRow			= 0x18,
 			op_MAPI_SeekRowBookmark		= 0x19,
+			op_MAPI_SeekRowApprox		= 0x1a,
 			op_MAPI_CreateBookmark		= 0x1b,
 			op_MAPI_CreateFolder		= 0x1c,
 			op_MAPI_DeleteFolder		= 0x1d,
@@ -1271,7 +1272,7 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x19  */
-	typedef struct {
+	typedef [flag(NDR_NOALIGN)] struct {
 		SBinary_short	bookmark;
 		uint32		offset;
 		uint8		unknown;
@@ -1282,6 +1283,16 @@ System Attendant Private Interface
 		uint32		row;
 	} SeekRowBookmark_repl;
 
+	/**************************/
+	/* EcDoRpc Function 0x1a  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		ulNumerator;
+		uint32		ulDenominator;
+	} SeekRowApprox_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} SeekRowApprox_repl;
+	
 	/**************************/
 	/* EcDoRpc Function 0x1b  */
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1787,6 +1798,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetRowCount)] GetRowCount_req mapi_GetRowCount;
 		[case(op_MAPI_SeekRow)] SeekRow_req mapi_SeekRow;
 		[case(op_MAPI_SeekRowBookmark)] SeekRowBookmark_req mapi_SeekRowBookmark;
+		[case(op_MAPI_SeekRowApprox)] SeekRowApprox_req mapi_SeekRowApprox;
 		[case(op_MAPI_CreateBookmark)] CreateBookmark_req mapi_CreateBookmark;
 		[case(op_MAPI_CreateFolder)] CreateFolder_req mapi_CreateFolder;
 		[case(op_MAPI_DeleteFolder)] DeleteFolder_req mapi_DeleteFolder;
@@ -1838,6 +1850,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetRowCount)] GetRowCount_repl mapi_GetRowCount;
 		[case(op_MAPI_SeekRow)] SeekRow_repl mapi_SeekRow;
 		[case(op_MAPI_SeekRowBookmark)] SeekRowBookmark_repl mapi_SeekRowBookmark;
+		[case(op_MAPI_SeekRowApprox)] SeekRowApprox_repl mapi_SeekRowApprox;
 		[case(op_MAPI_CreateBookmark)] CreateBookmark_repl mapi_CreateBookmark;
 		[case(op_MAPI_CreateFolder)] CreateFolder_repl mapi_CreateFolder;
 		[case(op_MAPI_DeleteFolder)] DeleteFolder_repl mapi_DeleteFolder;

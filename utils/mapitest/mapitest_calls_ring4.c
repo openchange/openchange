@@ -430,6 +430,27 @@ static void mapitest_call_SeekRow(struct mapitest *mt,
 }
 
 
+static void mapitest_call_SeekRowApprox(struct mapitest *mt,
+					mapi_object_t *obj_table)
+{
+	enum MAPISTATUS		retval;
+
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "SeekRowApprox");
+	mapitest_indent();
+
+	retval = SeekRowApprox(obj_table, 0, 1);
+	mapitest_print_subcall(mt, "SeekRowApprox 0/1", GetLastError());
+
+	retval = SeekRowApprox(obj_table, 1, 1);
+	mapitest_print_subcall(mt, "SeekRowApprox 1/1", GetLastError());
+
+	retval = SeekRowApprox(obj_table, 1, 2);
+	mapitest_print_subcall(mt, "SeekRowApprox 1/2", GetLastError());
+
+	mapitest_deindent();
+}
+
+
 static void mapitest_call_SortTable(struct mapitest *mt,
 				    mapi_object_t *obj_store)
 {
@@ -1007,6 +1028,7 @@ retry:
 	mapitest_call_QueryColumns(mt, &obj_htable);
 	mapitest_call_QueryRows(mt, &obj_htable);
 	mapitest_call_SeekRow(mt, &obj_htable);
+	mapitest_call_SeekRowApprox(mt, &obj_htable);
 	mapitest_call_SortTable(mt, &obj_store);
 
 	mapitest_call_Bookmark(mt, &obj_store);

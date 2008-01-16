@@ -427,6 +427,7 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
    \param obj_table the table we are moving cursor on
    \param lpbkPosition the bookmarked position 
    \param offset an relative offset to the bookmark
+   \param row the position of the seeked row is returned in rows
 
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
@@ -499,6 +500,93 @@ _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
 
 	reply = &mapi_response->mapi_repl->u.mapi_SeekRowBookmark;
 	*row = reply->row;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Moves the cursor to an approximate fractional position in
+   the table
+
+   \param obj_table the table we are moving cursor on
+   \param ulNumerator numerator of the fraction representing the table
+   position.
+   \param ulDenominator denominator of the fraction representing the
+   table position
+
+   - If ulDenominator is NULL, then SeekRowApprox returns
+   MAPI_E_INVALID_PARAMETER.
+   - If ulNumerator is NULL, then SeekRowApprox moves the cursor to
+     the beginning of the table. In such situation, SeekRowApprox call
+     is similar to SeekRow with BOOKMARK_BEGINNING
+   - If ulNumerator and ulDenominator have the same value, then
+     SeekRowApprox moves the cursor to the end of the table. In such
+     situation, SeekRowApprox call is similar to SeekRow with
+     BOOKMARK_END
+     
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_BOOKMARK: The bookmark specified is invalid or
+   beyond the last row requested
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa SeekRow, SeekRowBookmark
+ */
+_PUBLIC_ enum MAPISTATUS SeekRowApprox(mapi_object_t *obj_table,
+				       uint32_t ulNumerator,
+				       uint32_t ulDenominator)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SeekRowApprox_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ulDenominator, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("SeekRowApprox");
+	
+	/* Fill the SeekRowApprox operation */
+	size = 0;
+	request.ulNumerator = ulNumerator;
+	size += sizeof (uint32_t);
+	request.ulDenominator = ulDenominator;
+	size += sizeof (uint32_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SeekRowApprox;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SeekRowApprox = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

@@ -175,6 +175,7 @@ N	Not yet implemented
 	      [*] QueryRows
 	      [*] SortTable
 	      [*] SeekRow
+	      [*] SeekRowApprox
 	      [*] CreateBookmark
 	      [*] DeleteBookmark
 	      [*] SeekRowBookmark

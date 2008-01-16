@@ -161,3 +161,50 @@ _PUBLIC_ enum MAPISTATUS GetLastError(void)
 {
 	return errno;
 }
+
+
+/**
+   \details Release the memory associated with a bookmark
+
+   \param obj_table the table the bookmark is associated to
+   \param bkPosition the bookmark to be freed
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_BOOKMARK: The bookmark specified is invalid or
+     beyond the last row requested
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+ 
+   \sa CreateBookmark
+*/
+_PUBLIC_ enum MAPISTATUS FreeBookmark(mapi_object_t *obj_table, 
+				      uint32_t bkPosition)
+{
+	mapi_object_table_t    	*table;
+	mapi_object_bookmark_t	*bookmark;
+
+	table = (mapi_object_table_t *)obj_table->private_data;
+	bookmark = table->bookmark;
+
+	/* Sanity check */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!bookmark, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(bkPosition > table->bk_last, MAPI_E_INVALID_BOOKMARK, NULL);
+
+	while (bookmark) {
+		if (bookmark->index == bkPosition) {
+			if (bookmark->index == table->bk_last) {
+				table->bk_last--;
+			}
+			MAPIFreeBuffer(bookmark->bin.lpb);
+			DLIST_REMOVE(table->bookmark, bookmark);
+			return MAPI_E_SUCCESS;
+		}
+		bookmark = bookmark->next;
+	}
+	return MAPI_E_INVALID_BOOKMARK;
+}

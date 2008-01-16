@@ -175,6 +175,9 @@ N	Not yet implemented
 	      [*] QueryRows
 	      [*] SortTable
 	      [*] SeekRow
+	      [*] CreateBookmark
+	      [*] DeleteBookmark
+	      [*] SeekRowBookmark
 	      [*] QueryColumns
 	      [*] OpenMessage
 	      [*] SetReadFlags

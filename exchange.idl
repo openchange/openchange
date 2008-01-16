@@ -643,6 +643,8 @@ System Attendant Private Interface
 			op_MAPI_QueryRows		= 0x15,
 			op_MAPI_GetRowCount		= 0x17,
 			op_MAPI_SeekRow			= 0x18,
+			op_MAPI_SeekRowBookmark		= 0x19,
+			op_MAPI_CreateBookmark		= 0x1b,
 			op_MAPI_CreateFolder		= 0x1c,
 			op_MAPI_DeleteFolder		= 0x1d,
 			op_MAPI_DeleteMessages		= 0x1e,
@@ -674,7 +676,7 @@ System Attendant Private Interface
 		} MAPI_OPNUM;
 
 
-	typedef [public,flag(NDR_NOALIGN)] struct {
+	typedef [public,noprint,flag(NDR_NOALIGN)] struct {
 		uint16				cb;
 		[flag(NDR_BUFFERS)]uint8	lpb[cb];
 	} SBinary_short;
@@ -1268,6 +1270,28 @@ System Attendant Private Interface
 	} SeekRow_repl;
 
 	/**************************/
+	/* EcDoRpc Function 0x19  */
+	typedef struct {
+		SBinary_short	bookmark;
+		uint32		offset;
+		uint8		unknown;
+	} SeekRowBookmark_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		unknown;
+		uint32		row;
+	} SeekRowBookmark_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x1b  */
+	typedef [flag(NDR_NOALIGN)] struct {
+	} CreateBookmark_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		SBinary_short	bookmark;
+	} CreateBookmark_repl;
+
+	/**************************/
 	/* EcDoRpc Function 0x1c  */
 	typedef [enum8bit] enum {
 		FOLDER_GENERIC	= 0x1,
@@ -1762,6 +1786,8 @@ System Attendant Private Interface
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
 		[case(op_MAPI_GetRowCount)] GetRowCount_req mapi_GetRowCount;
 		[case(op_MAPI_SeekRow)] SeekRow_req mapi_SeekRow;
+		[case(op_MAPI_SeekRowBookmark)] SeekRowBookmark_req mapi_SeekRowBookmark;
+		[case(op_MAPI_CreateBookmark)] CreateBookmark_req mapi_CreateBookmark;
 		[case(op_MAPI_CreateFolder)] CreateFolder_req mapi_CreateFolder;
 		[case(op_MAPI_DeleteFolder)] DeleteFolder_req mapi_DeleteFolder;
 		[case(op_MAPI_DeleteMessages)] DeleteMessages_req mapi_DeleteMessages;
@@ -1811,6 +1837,8 @@ System Attendant Private Interface
 		[case(op_MAPI_QueryRows)] QueryRows_repl mapi_QueryRows;
 		[case(op_MAPI_GetRowCount)] GetRowCount_repl mapi_GetRowCount;
 		[case(op_MAPI_SeekRow)] SeekRow_repl mapi_SeekRow;
+		[case(op_MAPI_SeekRowBookmark)] SeekRowBookmark_repl mapi_SeekRowBookmark;
+		[case(op_MAPI_CreateBookmark)] CreateBookmark_repl mapi_CreateBookmark;
 		[case(op_MAPI_CreateFolder)] CreateFolder_repl mapi_CreateFolder;
 		[case(op_MAPI_DeleteFolder)] DeleteFolder_repl mapi_DeleteFolder;
 		[case(op_MAPI_DeleteMessages)] DeleteMessages_repl mapi_DeleteMessages;

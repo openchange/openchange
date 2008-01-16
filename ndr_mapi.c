@@ -365,6 +365,20 @@ _PUBLIC_ void ndr_print_QueryRows_repl(struct ndr_print *ndr, const char *name, 
 	}
 }
 
+
+_PUBLIC_ void ndr_print_SBinary_short(struct ndr_print *ndr, const char *name, const struct SBinary_short *r)
+{
+	ndr->print(ndr, "%-25s: SBinary_short cb=%u", name, (unsigned)r->cb);
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		dump_data(0, r->lpb, r->cb);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
 enum ndr_err_code ndr_push_Release_req(struct ndr_push *ndr, int ndr_flags, const struct Release_req *r)
 {
 	return NDR_ERR_SUCCESS;

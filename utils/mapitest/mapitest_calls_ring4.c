@@ -518,6 +518,135 @@ retry:
 }
 
 
+static void mapitest_call_Bookmark(struct mapitest *mt,
+				  mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = false;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_ctable;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	uint32_t		count;
+	uint32_t		*bkPosition;
+	uint32_t		i;
+
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "Bookmark");
+	mapitest_indent();
+
+	/* Open Inbox folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_folder_open(mt, obj_store, &obj_folder, olFolderInbox, "Bookmark");
+	if (ret == false) return;
+
+	/* Get Contents Table */
+	mapi_object_init(&obj_ctable);
+	retval = GetContentsTable(&obj_folder, &obj_ctable);
+	MT_ERRNO_IF_CALL(mt, retval, "Bookmark", "GetContentsTable");
+
+	/* Customize table view */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2,
+					  PR_INTERNET_MESSAGE_ID,
+					  PR_LAST_MODIFICATION_TIME);
+	retval = SetColumns(&obj_ctable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	MT_ERRNO_IF_CALL(mt, retval, "Bookmark", "SetColumns");
+
+	/* Get the total number of rows */
+	retval = GetRowCount(&obj_ctable, &count);
+	MT_ERRNO_IF_CALL(mt, retval, "Bookmark", "GetRowCount");
+
+	bkPosition = talloc_array(mt->mem_ctx, uint32_t, 1);
+	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
+	       SRowSet.cRows) {
+		count -= SRowSet.cRows;
+		for (i = 0; i < SRowSet.cRows; i++) {
+			bkPosition = talloc_realloc(mt->mem_ctx, bkPosition, uint32_t, i + 2);
+			retval = CreateBookmark(&obj_ctable, &(bkPosition[i]));
+			mapitest_print_subcall(mt, "CreateBookmark", GetLastError());
+		}
+	}
+
+	retval = mapi_object_bookmark_get_count(&obj_ctable, &count);
+
+	for (i = 0; i < count; i++) {
+		retval = FreeBookmark(&obj_ctable, bkPosition[i]);
+		mapitest_print_subcall(mt, "FreeBookmark", GetLastError());
+	}
+
+	mapi_object_release(&obj_ctable);
+	mapi_object_release(&obj_folder);
+	mapitest_deindent();
+}
+
+
+static void mapitest_call_SeekRowBookmark(struct mapitest *mt,
+					  mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = false;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_ctable;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	uint32_t		row;
+	uint32_t		count;
+	uint32_t		*bkPosition;
+	uint32_t		i;
+
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "SeekRowBookmark");
+	mapitest_indent();
+
+	/* Open Inbox folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_folder_open(mt, obj_store, &obj_folder, olFolderInbox, "SeekRowBookmark");
+	if (ret == false) return;
+
+	/* Get Contents Table */
+	mapi_object_init(&obj_ctable);
+	retval = GetContentsTable(&obj_folder, &obj_ctable);
+	MT_ERRNO_IF_CALL(mt, retval, "SeekRowBookmark", "GetContentsTable");
+
+	/* Customize table view */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2,
+					  PR_INTERNET_MESSAGE_ID,
+					  PR_LAST_MODIFICATION_TIME);
+	retval = SetColumns(&obj_ctable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	MT_ERRNO_IF_CALL(mt, retval, "SeekRowBookmark", "SetColumns");
+
+	/* Get the total number of rows */
+	retval = GetRowCount(&obj_ctable, &count);
+	MT_ERRNO_IF_CALL(mt, retval, "SeekRowBookmark", "GetRowCount");
+
+	bkPosition = talloc_array(mt->mem_ctx, uint32_t, 1);
+	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
+	       SRowSet.cRows) {
+		count -= SRowSet.cRows;
+		for (i = 0; i < SRowSet.cRows; i++) {
+			bkPosition = talloc_realloc(mt->mem_ctx, bkPosition, uint32_t, i + 2);
+			retval = CreateBookmark(&obj_ctable, &(bkPosition[i]));
+			MT_ERRNO_IF_CALL(mt, retval, "SeekRowBookmark", "CreateBookmark");
+		}
+	}
+
+	retval = mapi_object_bookmark_get_count(&obj_ctable, &count);
+
+	for (i = 0; i < count; i++) {
+		retval = SeekRowBookmark(&obj_ctable, bkPosition[i], 0, &row);
+		mapitest_print_subcall(mt, "SeekRowBookmark", GetLastError());
+	}
+
+	for (i = 0; i < count; i++) {
+		retval = FreeBookmark(&obj_ctable, bkPosition[i]);
+		MT_ERRNO_IF_CALL(mt, retval, "SeekRowBookmark", "FreeBookmark");
+	}
+
+	mapi_object_release(&obj_ctable);
+	mapi_object_release(&obj_folder);
+	mapitest_deindent();	
+}
+
 
 static void mapitest_call_OpenMessage(struct mapitest *mt, 
 				      mapi_object_t *obj_folder,
@@ -879,6 +1008,9 @@ retry:
 	mapitest_call_QueryRows(mt, &obj_htable);
 	mapitest_call_SeekRow(mt, &obj_htable);
 	mapitest_call_SortTable(mt, &obj_store);
+
+	mapitest_call_Bookmark(mt, &obj_store);
+	mapitest_call_SeekRowBookmark(mt, &obj_store);
 
 	mapitest_call_GetMessageStatus(mt, &obj_store);
 	mapitest_call_SetMessageStatus(mt, &obj_store);

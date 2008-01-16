@@ -158,6 +158,7 @@ torture/openchange.$(SHLIBEXT):	torture/nspi_profile.po		\
 				torture/mapi_folder.po		\
 				torture/mapi_table.po		\
 				torture/mapi_sorttable.po	\
+				torture/mapi_bookmark.po	\
 				torture/mapi_message.po		\
 				torture/mapi_fetchmail.po	\
 				torture/mapi_sendmail.po	\
@@ -398,6 +399,7 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 	torture/mapi_folder.c		\
 	torture/mapi_table.c		\
 	torture/mapi_sorttable.c	\
+	torture/mapi_bookmark.c		\
 	torture/mapi_copymail.c		\
 	torture/mapi_prop.c		\
 	torture/mapi_message.c		\

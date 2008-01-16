@@ -58,7 +58,6 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
-	mapi_object_table_t	*table;
 	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -97,10 +96,7 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
 	
 	/* new table */
-	obj_table->private_data = talloc((TALLOC_CTX *)mapi_ctx->session, mapi_object_table_t);
-	table = obj_table->private_data;
-	table->proptags.cValues = 0;
-	table->proptags.aulPropTag = 0;
+	mapi_object_table_init(obj_table);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -139,7 +135,6 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
-	mapi_object_table_t	*table;
 	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -178,10 +173,7 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
 	
 	/* new table */
-	obj_table->private_data = talloc((TALLOC_CTX *)mapi_ctx->session, mapi_object_table_t);
-	table = obj_table->private_data;
-	table->proptags.cValues = 0;
-	table->proptags.aulPropTag = 0;
+	mapi_object_table_init(obj_table);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -220,7 +212,6 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
-	mapi_object_table_t    	*table;
 	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -260,10 +251,7 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
 
 	/* new table */
-	obj_table->private_data = talloc((TALLOC_CTX *)mapi_ctx->session, mapi_object_table_t);
-	table = obj_table->private_data;
-	table->proptags.cValues = 0;
-	table->proptags.aulPropTag = 0;
+	mapi_object_table_init(obj_table);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

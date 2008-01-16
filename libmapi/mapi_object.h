@@ -84,9 +84,20 @@ typedef struct mapi_obj_store
 /**
  * IMAPITable object 
  */
+
+typedef struct mapi_obj_bookmark {
+	uint32_t			index;
+	struct SBinary_short		bin;
+	struct mapi_obj_bookmark	*prev;
+	struct mapi_obj_bookmark	*next;
+} mapi_object_bookmark_t;
+
 typedef struct mapi_obj_table
 {
-	struct SPropTagArray proptags;
+	uint32_t			bk_last;
+	mapi_object_bookmark_t		*bookmark;
+	struct SPropTagArray		proptags;
 } mapi_object_table_t;
+
 
 #endif /*!__MAPI_OBJECT_H */

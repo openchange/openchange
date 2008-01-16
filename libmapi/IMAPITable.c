@@ -373,6 +373,7 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
 	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("SeekRow");
@@ -411,6 +412,177 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
 
 	reply = &mapi_response->mapi_repl->u.mapi_SeekRow;
 	*row = reply->row;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Move the table cursor at a specific location given a
+   bookmark
+
+   \param obj_table the table we are moving cursor on
+   \param lpbkPosition the bookmarked position 
+   \param offset an relative offset to the bookmark
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_BOOKMARK: The bookmark specified is invalid or
+     beyond the last row requested
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa CreateBookmark, FreeBookmark
+ */
+_PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
+					 uint32_t lpbkPosition,
+					 uint32_t offset,
+					 uint32_t *row)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SeekRowBookmark_req	request;
+	struct SeekRowBookmark_repl	*reply;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+	struct SBinary_short   		bin;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+
+	retval = mapi_object_bookmark_find(obj_table, lpbkPosition, &bin);
+	MAPI_RETVAL_IF(retval, MAPI_E_INVALID_BOOKMARK, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("SeekRowBookmark");
+
+	/* Fill the SeekRowBookmark operation */
+	size = 0;
+	request.bookmark.cb = bin.cb;
+	size += sizeof (uint16_t);
+	request.bookmark.lpb = bin.lpb;
+	size += bin.cb;
+	request.offset = offset;
+	size += sizeof (uint32_t);
+	request.unknown = 0x1;
+	size += sizeof (uint8_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SeekRowBookmark;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SeekRowBookmark = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	reply = &mapi_response->mapi_repl->u.mapi_SeekRowBookmark;
+	*row = reply->row;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Marks the table current position
+
+   \param obj_table the table we are creating a bookmark in
+   \param lpbkPosition pointer on the bookmark value. This bookmark
+   can be passed in a call to the SeekRowBookmark method
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   
+   \sa SeekRowBookmark, FreeBookmark
+ */
+_PUBLIC_ enum MAPISTATUS CreateBookmark(mapi_object_t *obj_table, 
+					uint32_t *lpbkPosition)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct CreateBookmark_repl	*reply;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+	mapi_object_table_t	       	*mapi_table;
+	mapi_object_bookmark_t		*bookmark;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("CreateBookmark");
+	
+	size = 0;
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_CreateBookmark;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	reply = &mapi_response->mapi_repl->u.mapi_CreateBookmark;
+
+	mapi_table = (mapi_object_table_t *)obj_table->private_data;
+	MAPI_RETVAL_IF(!mapi_table, MAPI_E_INVALID_PARAMETER, mem_ctx);
+
+	/* Store CreateBookmark data in mapi_object_table private_data */
+	bookmark = talloc_zero((TALLOC_CTX *)mapi_table->bookmark, mapi_object_bookmark_t);
+	mapi_table->bk_last++;
+	bookmark->index = mapi_table->bk_last;
+	bookmark->bin.cb = reply->bookmark.cb;
+	bookmark->bin.lpb = talloc_array((TALLOC_CTX *)bookmark, uint8_t, reply->bookmark.cb);
+	memcpy(bookmark->bin.lpb, reply->bookmark.lpb, reply->bookmark.cb);
+
+	DLIST_ADD(mapi_table->bookmark, bookmark);
+
+	*lpbkPosition = mapi_table->bk_last;
+
+	obj_table->private_data = mapi_table;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

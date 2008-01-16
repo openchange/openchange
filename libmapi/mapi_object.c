@@ -146,10 +146,106 @@ void mapi_object_set_handle(mapi_object_t *obj, mapi_handle_t handle)
 
    \param obj the MAPI object to dump out
 */
-_PUBLIC_ void mapi_object_debug(mapi_object_t* obj)
+_PUBLIC_ void mapi_object_debug(mapi_object_t *obj)
 {
 	DEBUG(0, ("mapi_object {\n"));
 	DEBUG(0, (" .handle == 0x%x\n", obj->handle));
 	DEBUG(0, (" .id     == 0x%llx\n", obj->id));
 	DEBUG(0, ("};\n"));
+}
+
+
+void mapi_object_table_init(mapi_object_t *obj_table)
+{
+	mapi_ctx_t		*mapi_ctx;
+	mapi_object_table_t	*table = NULL;
+
+	mapi_ctx = global_mapi_ctx;
+
+	if (obj_table->private_data == NULL) {
+		obj_table->private_data = talloc_zero((TALLOC_CTX *)mapi_ctx->session, mapi_object_table_t);
+	}
+
+	table = (mapi_object_table_t *) obj_table->private_data;
+
+	if (table->bookmark == NULL) {
+		table->bookmark = talloc_zero((TALLOC_CTX *)table, mapi_object_bookmark_t);
+	}
+
+
+	table->proptags.aulPropTag = 0;
+	table->proptags.cValues = 0;
+	table->bk_last = 0;
+}
+
+
+enum MAPISTATUS mapi_object_bookmark_find(mapi_object_t *obj_table, uint32_t bkPosition,
+					  struct SBinary_short *bin)
+{
+	mapi_object_table_t	*table;
+	mapi_object_bookmark_t	*bookmark;
+
+	table = (mapi_object_table_t *)obj_table->private_data;
+	bookmark = table->bookmark;
+
+	/* Sanity check */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!bookmark, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(bkPosition > table->bk_last, MAPI_E_INVALID_BOOKMARK, NULL);
+	
+	while (bookmark) {
+		if (bookmark->index == bkPosition) {
+			bin->cb = bookmark->bin.cb;
+			bin->lpb = bookmark->bin.lpb;
+			return MAPI_E_SUCCESS;
+		}
+		bookmark = bookmark->next;
+	}
+	return MAPI_E_INVALID_BOOKMARK;
+}
+
+
+_PUBLIC_ enum MAPISTATUS mapi_object_bookmark_get_count(mapi_object_t *obj_table, 
+							uint32_t *count)
+{
+	mapi_object_table_t	*table;
+
+	table = (mapi_object_table_t *)obj_table->private_data;
+
+	/* Sanity check */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
+
+	*count = table->bk_last;
+
+	return MAPI_E_SUCCESS;
+}
+
+
+_PUBLIC_ enum MAPISTATUS mapi_object_bookmark_debug(mapi_object_t *obj_table)
+{
+	mapi_object_table_t	*table;
+	mapi_object_bookmark_t	*bookmark;
+
+	table = (mapi_object_table_t *)obj_table->private_data;
+	bookmark = table->bookmark;
+
+	/* Sanity check */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!bookmark, MAPI_E_NOT_INITIALIZED, NULL);
+	
+	while (bookmark) {
+		DEBUG(0, ("mapi_object_bookmark {\n"));
+		DEBUG(0, (".index == %d\n", bookmark->index));
+		dump_data(0, bookmark->bin.lpb, bookmark->bin.cb);
+		DEBUG(0, ("};\n"));
+
+		bookmark = bookmark->next;
+	}	
+	return MAPI_E_SUCCESS;
 }

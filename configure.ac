@@ -83,11 +83,11 @@ dnl Nail down samba4 version
 dnl ************************
 
 dnl Samba4 revision boundaries
-FIRST_REV=26100
+FIRST_REV=26689
 LAST_REV=$FIRST_REV
 
 INCDIR=$prefix/include
-if test -f $INCDIR/samba/version.h && grep SAMBA_VERSION_SVN_REVISION 2>&1 >/dev/null; then
+if test -f $INCDIR/samba/version.h && grep SAMBA_VERSION_SVN_REVISION $INCDIR/samba/version.h 2>&1 >/dev/null; then
 	SAMBA_VERSION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_MAJOR | cut -d" " -f 3`
 	SAMBA_VERSION_ALPHA_RELEASE=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_ALPHA_RELEASE | cut -d" " -f 3`
 	SAMBA_VERSION_SVN_REVISION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_SVN_REVISION | cut -d" " -f 3`
@@ -98,7 +98,7 @@ if test -f $INCDIR/samba/version.h && grep SAMBA_VERSION_SVN_REVISION 2>&1 >/dev
 	fi
 
 	dnl OpenChange only compiles with Samba4 > alpha 2
-	if test "$SAMBA_VERSION_ALPHA_RELEASE" -lt 2; then
+	if test "$SAMBA_VERSION_ALPHA_RELEASE" -lt 3; then
 	   AC_MSG_ERROR(*******************************************************		\
 		  OpenChange only compiles with Samba4 alpha 2 or greater		\
 		  *******************************************************)

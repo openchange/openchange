@@ -3,7 +3,7 @@
 
    Test Restrictions
 
-   Copyright (C) Julien Kerihuel 2007.
+   Copyright (C) Julien Kerihuel 2007 - 2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,9 +44,13 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 	mapi_object_init(child);
 	retval = CreateFolder(parent, FOLDER_GENERIC, 
 			      "torture_restrictions", 
-			      "MAPI restrictions torture test", 0, child);
+			      "MAPI restrictions torture test", 
+			      OPEN_IF_EXISTS, child);
 	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("[+] torture restrictions directory created\n"));
+	
+	retval = EmptyFolder(child);
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Send 5 mails with MSGFLAG_READ set */
 	for (i = 0; i < 5; i++) {
@@ -93,12 +97,10 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 
 
 	/* Create 1 mail with a long body */
-	body = talloc_size(mem_ctx, 40);
-	memset(body, 'X', 39);
+	body = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 	retval = torture_simplemail_fromme(child, "Long body", body, MSGFLAG_SUBMIT);
 	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("[+] 1 mail with  body > 39 chars\n"));
-	talloc_free(body);
 
 	/* Create 1 mail with a unique body content */
 	retval = torture_simplemail_fromme(child, "Unique content", UNIQUE_BODY, MSGFLAG_SUBMIT);
@@ -111,20 +113,24 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 
 bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 {
-	NTSTATUS		nt_status;
-	enum MAPISTATUS		retval;
-	struct dcerpc_pipe	*p;
-	TALLOC_CTX		*mem_ctx;
-	bool			ret = true;
-	struct mapi_session	*session;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_inbox;
-	mapi_object_t		obj_table;
-	mapi_object_t		obj_testdir;
-	mapi_id_t		id_inbox;
-	struct SPropTagArray	*SPropTagArray;
+	NTSTATUS			nt_status;
+	enum MAPISTATUS			retval;
+	struct dcerpc_pipe		*p;
+	TALLOC_CTX			*mem_ctx;
+	bool				ret = true;
+	struct mapi_session		*session;
+	mapi_object_t			obj_store;
+	mapi_object_t			obj_inbox;
+	mapi_object_t			obj_table;
+	mapi_object_t			obj_testdir;
+	mapi_id_t			id_inbox;
+	struct SPropTagArray		*SPropTagArray;
+	struct SRowSet			SRowSet;
+	struct SRowSet			SRowSet_row;
 	struct mapi_SRestriction	res;
-	uint32_t		total;
+	uint32_t			total;
+	uint32_t			row_idx;
+	uint32_t			bookmark;
 
 
 	/* init torture */
@@ -180,7 +186,10 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	retval = GetRowCount(&obj_table, &total);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	printf("Total number of mails = %d\n", total);
+	DEBUG(0, ("Total number of mails = %d\n", total));
+
+	DEBUG(0, ("\nStep 1. Test Restrict MAPI call\n"));
+	DEBUG(0, ("===============================\n"));
 
 	/* RES_PROPERTY test */
 	res.rt = RES_PROPERTY;
@@ -288,6 +297,56 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	DEBUG(0, ("\tFilter on insensitive substring within content\n"));
 	DEBUG(0, ("\tCheck for all emails with PR_SUBJECT contained \"openchange\"\n"));
 	DEBUG(0, (("\tResult = %d\n"), total));
+
+	/* We now test the FindRow MAPI call */
+
+	DEBUG(0, ("\nStep 2. Test FindRow MAPI call\n"));
+	DEBUG(0, ("==============================\n"));
+
+	/* Approximatively position at half the contents table */
+	retval = SeekRowApprox(&obj_table, 1, 2);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Create a bookmark */
+	retval = CreateBookmark(&obj_table, &bookmark);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Fetch row data */
+	retval = QueryRows(&obj_table, 1, TBL_NOADVANCE, &SRowSet_row);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Position table cursor to the beginning of the table */
+	retval = SeekRow(&obj_table, BOOKMARK_BEGINNING, 0, &row_idx);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	res.rt = RES_CONTENT;
+	res.res.resContent.fuzzy = FL_SUBSTRING|FL_LOOSE;
+	res.res.resContent.ulPropTag = PR_BODY;
+	res.res.resContent.lpProp.ulPropTag = PR_BODY;
+	res.res.resContent.lpProp.value.lpszA = "openchange";
+	retval = FindRow(&obj_table, &res, 0, 0, &SRowSet);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	DEBUG(0, ("\no FindRow: RES_CONTENT\n"));
+	DEBUG(0, ("----------------------\n"));
+	mapidump_SRowSet(&SRowSet, "\t[+] ");
+	MAPIFreeBuffer(SRowSet.aRow);
+
+	DEBUG(0, ("\n"));
+	mapi_object_bookmark_debug(&obj_table);
+
+	retval = FindRow(&obj_table, &res, bookmark, 0, &SRowSet);
+	if (retval != MAPI_E_SUCCESS) return false;
+	DEBUG(0, ("\no FindRow: RES_CONTENT BOOKMARK_USER (%.2d)\n", bookmark));
+	DEBUG(0, ("--------------------------------------------\n"));
+	mapidump_SRowSet(&SRowSet, "\t[+] ");
+	DEBUG(0, ("=============\n"));
+	mapidump_SRowSet(&SRowSet_row, "\t[+] ");
+	
+	if (SRowSet.aRow[0].lpProps[1].value.d == SRowSet_row.aRow[0].lpProps[1].value.d) {
+		DEBUG(0, ("PR_MID matches\n"));
+	}
+	MAPIFreeBuffer(SRowSet.aRow);
 
 	/* Clean up test environment */
 	retval = EmptyFolder(&obj_testdir);

@@ -175,7 +175,8 @@ void mapi_object_table_init(mapi_object_t *obj_table)
 
 	table->proptags.aulPropTag = 0;
 	table->proptags.cValues = 0;
-	table->bk_last = 0;
+	/* start bookmark index after BOOKMARK_END */ 
+	table->bk_last = 3;
 }
 
 
@@ -219,7 +220,7 @@ _PUBLIC_ enum MAPISTATUS mapi_object_bookmark_get_count(mapi_object_t *obj_table
 	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
 
-	*count = table->bk_last;
+	*count = table->bk_last - 3;
 
 	return MAPI_E_SUCCESS;
 }

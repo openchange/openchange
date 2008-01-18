@@ -336,7 +336,7 @@ enum ndr_err_code ndr_pull_QueryRows_repl(struct ndr_pull *ndr, int ndr_flags, s
 
 				NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->layout));
 				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-				NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->inbox));
+				NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->rows));
 				ndr->flags = _flags_save_DATA_BLOB;
 			}
 		}
@@ -345,24 +345,6 @@ enum ndr_err_code ndr_pull_QueryRows_repl(struct ndr_pull *ndr, int ndr_flags, s
 		ndr->flags = _flags_save_STRUCT;
 	}
 	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_QueryRows_repl(struct ndr_print *ndr, const char *name, const struct QueryRows_repl *r)
-{
-	ndr_print_struct(ndr, name, "QueryRows_repl");
-	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
-		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-		ndr->depth++;
-		ndr_print_uint8(ndr, "unknown", r->unknown);
-		ndr_print_uint16(ndr, "results_count", r->results_count);
-		ndr_print_uint8(ndr, "layout", r->layout);
-		if (r->results_count) {
-			ndr_print_DATA_BLOB(ndr, "inbox", r->inbox);
-		}
-		ndr->depth--;
-		ndr->flags = _flags_save_STRUCT;
-	}
 }
 
 
@@ -377,6 +359,29 @@ _PUBLIC_ void ndr_print_SBinary_short(struct ndr_print *ndr, const char *name, c
 		ndr->depth--;
 		ndr->flags = _flags_save_STRUCT;
 	}
+}
+
+
+_PUBLIC_ void ndr_print_fuzzyLevel(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	switch ((r & 0x0000FFFF)) {
+	case FL_FULLSTRING:
+		ndr->print(ndr, "%-25s: FL_FULLSTRING", "lower  16 bits");
+		break;
+	case FL_SUBSTRING:
+		ndr->print(ndr, "%-25s: FL_SUBSTRING", "lower  16 bits");
+		break;
+	case FL_PREFIX:
+		ndr->print(ndr, "%-25s: FL_PREFIX", "lower  16 bits");
+		break;
+	}
+	ndr->print(ndr, "%-25s", "higher 16 bits");
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "FL_IGNORECASE", FL_IGNORECASE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "FL_IGNORENONSPACE", FL_IGNORENONSPACE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "FL_LOOSE", FL_LOOSE, r);
+	ndr->depth--;
 }
 
 enum ndr_err_code ndr_push_Release_req(struct ndr_push *ndr, int ndr_flags, const struct Release_req *r)

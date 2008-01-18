@@ -668,6 +668,7 @@ System Attendant Private Interface
 			op_MAPI_QueryColumns		= 0x37,
 			op_MAPI_GetTable		= 0x3e,
 			op_MAPI_ModifyTable		= 0x40,
+			op_MAPI_FindRow			= 0x4f,
 			op_MAPI_AddressTypes		= 0x49,
 			op_MAPI_GetNamesFromIDs		= 0x55,
 			op_MAPI_GetIDsFromNames		= 0x56,
@@ -1098,18 +1099,22 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x14  */
-
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16			cRes;
-		mapi_SRestriction_and	res[cRes];
+   		mapi_SRestriction_and	res[cRes];
 	} mapi_SAndRestriction;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16	cRes;
-		mapi_SRestriction_or	res[cRes];
+    		mapi_SRestriction_or	res[cRes];
 	} mapi_SOrRestriction;
 
-	typedef [bitmap32bit] bitmap {
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		reserved;
+		MAPITAGS	ulPropTag;
+	} mapi_SNotRestriction;
+
+ 	typedef [noprint, bitmap32bit] bitmap {
 		FL_FULLSTRING		= 0x00000,
 	       	FL_SUBSTRING		= 0x00001,
 		FL_PREFIX		= 0x00002,
@@ -1167,34 +1172,31 @@ System Attendant Private Interface
 		MAPITAGS	ulPropTag;
 	} mapi_SExistRestriction;
 
-	typedef [nodiscriminant] union {
-		[case(RES_CONTENT)]	mapi_SContentRestriction	resContent;
-		[case(RES_PROPERTY)]	mapi_SPropertyRestriction	resProperty;
-		[case(RES_COMPAREPROPS)]mapi_SCompareProps		resCompareProps;
-		[case(RES_BITMASK)]	mapi_SBitmaskRestriction	resBitmask;
-		[case(RES_SIZE)]	mapi_SSizeRestriction		resSize;
-		[case(RES_EXIST)]	mapi_SExistRestriction		resExist;
-	} mapi_SOrRestriction_CTR;
+	typedef [flag(NDR_NOALIGN)] struct {
+ 		MAPITAGS	       	ulSubObject;
+  		mapi_SRestriction_sub  	res[ulSubObject - ulSubObject + 1]; /* nasty hack - generates fake pointer */
+	} mapi_SSubRestriction;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8				cValues;
+		uint16				cRes;
+		uint16				unknown;
+		mapi_SRestriction_comment	res[cRes];
+		mapi_SPropValue			lpProp[cValues];
+	} mapi_SCommentRestriction;
 
 	typedef [nodiscriminant] union {
-		[case(RES_OR)]		mapi_SOrRestriction		resOr;
-		[case(RES_CONTENT)]	mapi_SContentRestriction	resContent;
-		[case(RES_PROPERTY)]	mapi_SPropertyRestriction	resProperty;
-		[case(RES_COMPAREPROPS)]mapi_SCompareProps		resCompareProps;
-		[case(RES_BITMASK)]	mapi_SBitmaskRestriction	resBitmask;
-		[case(RES_SIZE)]	mapi_SSizeRestriction		resSize;
-		[case(RES_EXIST)]	mapi_SExistRestriction		resExist;
-	} mapi_SAndRestriction_CTR;
-
-	typedef [nodiscriminant] union {
-		[case(RES_AND)]		mapi_SAndRestriction		resAnd;
-		[case(RES_OR)]		mapi_SOrRestriction		resOr;
-		[case(RES_CONTENT)]	mapi_SContentRestriction	resContent;
-		[case(RES_PROPERTY)]	mapi_SPropertyRestriction	resProperty;
-		[case(RES_COMPAREPROPS)]mapi_SCompareProps		resCompareProps;
-		[case(RES_BITMASK)]	mapi_SBitmaskRestriction	resBitmask;
-		[case(RES_SIZE)]	mapi_SSizeRestriction		resSize;
-		[case(RES_EXIST)]	mapi_SExistRestriction		resExist;
+		[case(RES_AND)]			mapi_SAndRestriction		resAnd;
+		[case(RES_OR)]			mapi_SOrRestriction		resOr;
+ 		[case(RES_NOT)]			mapi_SNotRestriction		resNot;
+		[case(RES_CONTENT)]		mapi_SContentRestriction	resContent;
+		[case(RES_PROPERTY)]		mapi_SPropertyRestriction	resProperty;
+		[case(RES_COMPAREPROPS)]	mapi_SCompareProps		resCompareProps;
+		[case(RES_BITMASK)]		mapi_SBitmaskRestriction	resBitmask;
+		[case(RES_SIZE)]		mapi_SSizeRestriction		resSize;
+		[case(RES_EXIST)]		mapi_SExistRestriction		resExist;
+		[case(RES_SUBRESTRICTION)]	mapi_SSubRestriction		resSub;
+		[case(RES_COMMENT)]		mapi_SCommentRestriction	resComment;
 	} mapi_SRestriction_CTR;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1204,13 +1206,23 @@ System Attendant Private Interface
 
 	typedef [public,flag(NDR_NOALIGN)] struct _mapi_SRestriction {
 		uint8 rt;
-		[switch_is(rt)] mapi_SAndRestriction_CTR res;
+		[switch_is(rt)] mapi_SRestriction_CTR res;
 	} mapi_SRestriction_and;
 
 	typedef [public,flag(NDR_NOALIGN)] struct _mapi_SRestriction {
 		uint8 rt;
-		[switch_is(rt)] mapi_SOrRestriction_CTR res;
+		[switch_is(rt)] mapi_SRestriction_CTR res;
 	} mapi_SRestriction_or;
+
+	typedef [public,flag(NDR_NOALIGN)] struct _mapi_SRestriction {
+		uint8 rt;
+		[switch_is(rt)] mapi_SRestriction_CTR res;
+	} mapi_SRestriction_sub;
+
+	typedef [public,flag(NDR_NOALIGN)] struct _mapi_SRestriction {
+		uint8 rt;
+		[switch_is(rt)] mapi_SRestriction_CTR res;
+	} mapi_SRestriction_comment;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8 handle_idx;
@@ -1235,11 +1247,11 @@ System Attendant Private Interface
 		uint16		row_count;
 	} QueryRows_req;
 
-	typedef [noprint,nopull,flag(NDR_NOALIGN)] struct {
+	typedef [nopull,flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
 		uint16		results_count;
  		uint8		layout;
-		[flag(NDR_REMAINING)]DATA_BLOB	inbox;
+		[flag(NDR_REMAINING)]DATA_BLOB	rows;
 	} QueryRows_repl;
 
 	/**************************/
@@ -1257,7 +1269,8 @@ System Attendant Private Interface
 	typedef [enum8bit] enum {
 		BOOKMARK_BEGINNING	= 0x0,
 		BOOKMARK_CURRENT	= 0x1,
-		BOOKMARK_END		= 0x2
+		BOOKMARK_END		= 0x2,
+		BOOKMARK_USER		= 0x3
 	} BOOKMARK;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1674,6 +1687,26 @@ System Attendant Private Interface
 		mapi_LPSTR	transport[cValues];
 	} AddressTypes_repl;
 
+	/**************************/
+	/* EcDoRpc Function 0x4f  */
+	typedef [enum8bit] enum {
+		DIR_FORWARD  = 0x0,
+		DIR_BACKWARD = 0x1
+	} FindRow_ulFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		FindRow_ulFlags	ulFlags;
+  		[subcontext(2)] mapi_SRestriction res;
+		BOOKMARK	origin;
+		SBinary_short	bookmark;
+	} FindRow_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		unknown;
+		uint8		layout;
+		[flag(NDR_NOALIGN)] DATA_BLOB row;
+	} FindRow_repl;
+
 	/*************************/
 	/* EcDoRpc Function 0x55 */
 
@@ -1850,6 +1883,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
 		[case(op_MAPI_AddressTypes)] AddressTypes_req mapi_AddressTypes;
+		[case(op_MAPI_FindRow)] FindRow_req mapi_FindRow;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
@@ -1904,6 +1938,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
 		[case(op_MAPI_AddressTypes)] AddressTypes_repl mapi_AddressTypes;
+		[case(op_MAPI_FindRow)] FindRow_repl mapi_FindRow;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;

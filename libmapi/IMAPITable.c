@@ -254,7 +254,7 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 	reply = &mapi_response->mapi_repl->u.mapi_QueryRows;
 	rowSet->cRows = reply->results_count;
 	rowSet->aRow = talloc_array((TALLOC_CTX *)table, struct SRow, rowSet->cRows);
-	emsmdb_get_SRowSet((TALLOC_CTX *)table, rowSet, &table->proptags, &reply->inbox, reply->layout, 1);
+	emsmdb_get_SRowSet((TALLOC_CTX *)table, rowSet, &table->proptags, &reply->rows, reply->layout, 1);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -879,6 +879,125 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj, struct mapi_SRestriction *
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_Restrict;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Find the next row in a table that matches specific search
+   criteria
+
+   \param obj_table the table we are searching in
+   \param res pointer on search criterias
+   \param bkOrigin bookmark identifying the row where FindRow should
+   begin
+   \param ulFlags controls the direction of the search
+   \param SRowSet the resulting row
+
+   bkOrigin can either take the value of a bookmark created with
+   CreateBookmark or any of the default values:
+   - BOOKMARK_BEGINNING
+   - BOOKMARK_CURRENT
+   - BOOKMARK_END
+
+   ulFlags can be set either to DIR_FORWARD (0x0) or DIR_BACKWARD
+   (0x1).
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
+     beyond the last row requested.
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa CreateBookmark
+ */
+_PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table, 
+				 struct mapi_SRestriction *res,
+				 uint32_t bkOrigin, uint8_t ulFlags,
+				 struct SRowSet *SRowSet)
+{
+	struct mapi_request    	*mapi_request;
+	struct mapi_response   	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct FindRow_req     	request;
+	struct FindRow_repl    	*reply;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	uint32_t		size;
+	TALLOC_CTX		*mem_ctx;
+	mapi_ctx_t		*mapi_ctx;
+	mapi_object_table_t	*table;
+	struct SBinary_short	bin;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!res, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if (bkOrigin >= 3) {
+		retval = mapi_object_bookmark_find(obj_table, bkOrigin, &bin);
+		MAPI_RETVAL_IF(retval, MAPI_E_INVALID_BOOKMARK, NULL);
+	}
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("FindRow");
+
+	/* Fill the FindRow operation */
+	size = 0;
+	request.ulFlags = ulFlags;
+	size += sizeof (uint8_t);
+	request.res = *res;
+	size += get_mapi_SRestriction_size(res);
+	request.origin = (bkOrigin > 3) ? 3 : bkOrigin;
+	size += sizeof (uint8_t);
+	if (bkOrigin >= 3) {
+		request.bookmark.cb = bin.cb;
+		request.bookmark.lpb = bin.lpb;
+		size += sizeof (uint16_t)+ bin.cb;
+	} else {
+		request.bookmark.cb = 0;
+		request.bookmark.lpb = NULL;
+		size += sizeof (uint16_t);
+	}
+
+	/* add subcontext size */
+	size += sizeof (uint16_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_FindRow;
+	mapi_req->mapi_flags = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_FindRow = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* table contains SPropTagArray from previous SetColumns call */
+	table = (mapi_object_table_t *)obj_table->private_data;
+	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
+
+	reply = &mapi_response->mapi_repl->u.mapi_FindRow;
+	SRowSet->cRows = 1;
+	SRowSet->aRow = talloc_array((TALLOC_CTX *)table, struct SRow, SRowSet->cRows);
+	emsmdb_get_SRowSet((TALLOC_CTX *)table, SRowSet, &table->proptags, &reply->row, reply->layout, 1);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

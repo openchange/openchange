@@ -10,7 +10,7 @@ do
 	DIR="$MANDIR/man$SECTION"
 	if [ ! -d "$DIR" ]
 	then
-		mkdir "$DIR"
+		mkdir -p "$DIR"
 	fi
 
 	BASE=`basename $I`

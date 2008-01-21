@@ -115,6 +115,7 @@ install: all $(SWIGDIRS-INSTALL)
 	$(INSTALL) -m 0644 libmapi/mapi_ctx.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapi_provider.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapi_handles.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/mapi_id_array.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapi_notification.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapi_object.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapi_profile.h $(DESTDIR)$(includedir)/libmapi/
@@ -153,6 +154,7 @@ re: clean install
 torture/openchange.$(SHLIBEXT):	torture/nspi_profile.po		\
 				torture/nspi_resolvenames.po	\
 				torture/mapi_restrictions.po	\
+				torture/mapi_criteria.po	\
 				torture/mapi_copymail.po	\
 				torture/mapi_prop.po		\
 				torture/mapi_folder.po		\
@@ -352,6 +354,7 @@ libmapi/proto.h libmapi/proto_private.h: libmapi/nspi.c			\
 	libmapi/mapicode.c		\
 	libmapi/mapidump.c		\
 	libmapi/mapi_object.c		\
+	libmapi/mapi_id_array.c		\
 	libmapi/mapi_nameid.c		\
 	libmapi/property.c		\
 	libmapi/IABContainer.c		\
@@ -392,6 +395,7 @@ server/dcesrv_proto.h: server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
 	@./script/mkproto.pl --private=server/dcesrv_proto.h --public=server/dcesrv_proto.h $^
 
 torture/torture_proto.h: torture/mapi_restrictions.c	\
+	torture/mapi_criteria.c		\
 	torture/mapi_deletemail.c	\
 	torture/mapi_newmail.c		\
 	torture/mapi_fetchmail.c	\
@@ -443,6 +447,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.po	\
 			libmapi/cdo_mapi.po 				\
 			libmapi/lzfu.po					\
 			libmapi/mapi_object.po				\
+			libmapi/mapi_id_array.po			\
 			libmapi/mapitags.po				\
 			libmapi/mapidump.po				\
 			libmapi/mapicode.po 				\

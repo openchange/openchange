@@ -57,6 +57,7 @@ NTSTATUS init_module(void)
 	/* MAPI object torture tests */
 	torture_suite_add_simple_test(suite, "MAPI-ACLS", torture_rpc_mapi_permissions);
 	torture_suite_add_simple_test(suite, "MAPI-RESTRICTIONS", torture_rpc_mapi_restrictions);
+	torture_suite_add_simple_test(suite, "MAPI-CRITERIA", torture_rpc_mapi_criteria);
 	torture_suite_add_simple_test(suite, "MAPI-TABLE", torture_rpc_mapi_table);
 	torture_suite_add_simple_test(suite, "MAPI-SORTTABLE", torture_rpc_mapi_sorttable);
 	torture_suite_add_simple_test(suite, "MAPI-BOOKMARK", torture_rpc_mapi_bookmark);

@@ -384,6 +384,68 @@ _PUBLIC_ void ndr_print_fuzzyLevel(struct ndr_print *ndr, const char *name, uint
 	ndr->depth--;
 }
 
+/*
+ * We need to have user defined push,pull,print function for
+ * SNotRestriction so we can workaround the no-pointer deep recursion
+ * pb in pidl.
+ */
+
+enum ndr_err_code ndr_push_mapi_SNotRestriction(struct ndr_push *ndr, int ndr_flags, const struct mapi_SNotRestriction *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr->flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_mapi_SRestriction_not(ndr, NDR_SCALARS, &r->res[0]));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_push_mapi_SRestriction_not(ndr, NDR_BUFFERS, &r->res[0]));
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code  ndr_pull_mapi_SNotRestriction(struct ndr_pull *ndr, int ndr_flags, struct mapi_SNotRestriction *r)
+{
+	TALLOC_CTX *_mem_save_res_0;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_PULL_ALLOC_N(ndr, r->res, 1);
+			_mem_save_res_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->res, 0);
+			NDR_CHECK(ndr_pull_mapi_SRestriction_not(ndr, NDR_SCALARS, &r->res[0]));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_res_0, 0);
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			_mem_save_res_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->res, 0);
+			NDR_CHECK(ndr_pull_mapi_SRestriction_not(ndr, NDR_BUFFERS, &r->res[0]));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_res_0, 0);
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+
+_PUBLIC_ void ndr_print_mapi_SNotRestriction(struct ndr_print *ndr, const char *name, const struct mapi_SNotRestriction *r)
+{
+	ndr_print_struct(ndr, name, "mapi_SNotRestriction");
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		ndr_print_mapi_SRestriction_not(ndr, "res", &r->res[0]);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
 enum ndr_err_code ndr_push_Release_req(struct ndr_push *ndr, int ndr_flags, const struct Release_req *r)
 {
 	return NDR_ERR_SUCCESS;

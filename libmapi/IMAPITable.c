@@ -756,7 +756,7 @@ _PUBLIC_ enum MAPISTATUS SortTable(mapi_object_t *obj_table,
 /*
  * Restrict a table 
  */
-static uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
+uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
 {
 	uint32_t	size;
 	uint32_t	i;

@@ -55,6 +55,7 @@
 #include <libmapi/mapi_provider.h>
 #include <libmapi/mapi_handles.h>
 #include <libmapi/mapi_object.h>
+#include <libmapi/mapi_id_array.h>
 #include <libmapi/mapi_notification.h>
 #include <libmapi/mapi_profile.h>
 #include <libmapi/mapi_nameid.h>

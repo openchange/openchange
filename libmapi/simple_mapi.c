@@ -152,6 +152,9 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	case olFolderInbox:
 		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_inbox;
 		return MAPI_E_SUCCESS;
+	case olFolderCommonView:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_common_views;
+		return MAPI_E_SUCCESS;
 	case olFolderCalendar:
 		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_APPOINTMENT_ENTRYID);
 		break;
@@ -170,6 +173,9 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	case olFolderDrafts:
 		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_DRAFTS_ENTRYID);
 		break;		
+	case olFolderFinder:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_finder;
+		return MAPI_E_SUCCESS;
 	default:
 		*folder = 0;
 		talloc_free(mem_ctx);

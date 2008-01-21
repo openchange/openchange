@@ -207,6 +207,7 @@
 #define	olFolderOutbox			4
 #define	olFolderSentMail		5
 #define	olFolderInbox			6
+#define	olFolderCommonView		8
 #define	olFolderCalendar		9
 #define	olFolderContacts		10
 #define	olFolderJournal			11
@@ -219,6 +220,7 @@
 #define	olFolderLocalFailures		21
 #define	olFolderServerFailures		22
 #define	olFolderJunk			23
+#define	olFolderFinder			24
 #define	olFolderPublicRoot		25
 #define	olFolderPublicIPMSubtree	26
 

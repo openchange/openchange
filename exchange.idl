@@ -663,6 +663,8 @@ System Attendant Private Interface
 			op_MAPI_OpenStream		= 0x2b,
 			op_MAPI_ReadStream		= 0x2c,
 			op_MAPI_WriteStream		= 0x2d,
+			op_MAPI_SetSearchCriteria	= 0x30,
+			op_MAPI_GetSearchCriteria      	= 0x31,
 			op_MAPI_SubmitMessage		= 0x32,
 			op_MAPI_CopyMessages		= 0x33,
 			op_MAPI_QueryColumns		= 0x37,
@@ -1109,9 +1111,8 @@ System Attendant Private Interface
     		mapi_SRestriction_or	res[cRes];
 	} mapi_SOrRestriction;
 
-	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		reserved;
-		MAPITAGS	ulPropTag;
+	typedef [nopull,nopush,noprint,flag(NDR_NOALIGN)] struct {
+		mapi_SRestriction_not	*res;
 	} mapi_SNotRestriction;
 
  	typedef [noprint, bitmap32bit] bitmap {
@@ -1213,6 +1214,11 @@ System Attendant Private Interface
 		uint8 rt;
 		[switch_is(rt)] mapi_SRestriction_CTR res;
 	} mapi_SRestriction_or;
+
+	typedef [public,flag(NDR_NOALIGN)] struct _mapi_SRestriction {
+		uint8 rt;
+		[switch_is(rt)] mapi_SRestriction_CTR res;
+	} mapi_SRestriction_not;
 
 	typedef [public,flag(NDR_NOALIGN)] struct _mapi_SRestriction {
 		uint8 rt;
@@ -1624,6 +1630,41 @@ System Attendant Private Interface
 	} WriteStream_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x30 */
+	typedef [bitmap32bit, flag(NDR_PAHEX)] bitmap {
+		STOP_SEARCH		= 0x1,
+		RESTART_SEARCH		= 0x2,
+		RECURSIVE_SEARCH	= 0x4,
+		SHALLOW_SEARCH		= 0x8,
+		FOREGROUND_SEARCH	= 0x10,
+		BACKGROUND_SEARCH	= 0x20
+	} ulSearchFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		[subcontext(2)] mapi_SRestriction res;
+		uint16		count;
+		hyper		lpContainerList[count];
+		ulSearchFlags	ulSearchFlags;
+	} SetSearchCriteria_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} SetSearchCriteria_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x31 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		unknown[3];
+	} GetSearchCriteria_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		[subcontext(2)] mapi_SRestriction	res;
+		uint8		unknown;
+		uint16		count;
+		hyper		lpContainerList[count];
+		ulSearchFlags	ulSearchFlags;
+	} GetSearchCriteria_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x32 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
@@ -1877,6 +1918,8 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenStream)] OpenStream_req mapi_OpenStream;
 		[case(op_MAPI_ReadStream)] ReadStream_req mapi_ReadStream;
 		[case(op_MAPI_WriteStream)] WriteStream_req mapi_WriteStream;
+		[case(op_MAPI_SetSearchCriteria)] SetSearchCriteria_req mapi_SetSearchCriteria;
+		[case(op_MAPI_GetSearchCriteria)] GetSearchCriteria_req mapi_GetSearchCriteria;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_req mapi_SubmitMessage;
 		[case(op_MAPI_CopyMessages)] CopyMessages_req mapi_CopyMessages;
 		[case(op_MAPI_QueryColumns)] QueryColumns_req mapi_QueryColumns;
@@ -1932,6 +1975,8 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenStream)] OpenStream_repl mapi_OpenStream;
 		[case(op_MAPI_ReadStream)] ReadStream_repl mapi_ReadStream;
 		[case(op_MAPI_WriteStream)] WriteStream_repl mapi_WriteStream;
+		[case(op_MAPI_SetSearchCriteria)] SetSearchCriteria_repl mapi_SetSearchCriteria;
+		[case(op_MAPI_GetSearchCriteria)] GetSearchCriteria_repl mapi_GetSearchCriteria;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_repl mapi_SubmitMessage;
 		[case(op_MAPI_CopyMessages)] CopyMessages_repl mapi_CopyMessages;
 		[case(op_MAPI_QueryColumns)] QueryColumns_repl mapi_QueryColumns;

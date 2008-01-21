@@ -58,6 +58,7 @@ ActualWork                    0x8110 NULL                          PT_LONG      
 TotalWork                     0x8111 NULL                          PT_LONG       MNID_ID     PSETID_Task
 NULL                          0x8112 NULL                          PT_LONG       MNID_ID     PSETID_Task
 NULL                          0x8113 NULL                          PT_LONG       MNID_ID     PSETID_Task
+NULL                          0x8116 NULL                          PT_BINARY     MNID_ID     PSETID_Task
 Complete                      0x811C NULL                          PT_BOOLEAN    MNID_ID     PSETID_Task
 Owner                         0x811F NULL                          PT_STRING8    MNID_ID     PSETID_Task
 Delegator                     0x8121 NULL                          PT_STRING8    MNID_ID     PSETID_Task
@@ -88,10 +89,12 @@ NULL                          0x8212 NULL                          PT_SYSTIME   
 Duration                      0x8213 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
 Label                         0x8214 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
 AllDayEvent                   0x8215 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+NULL                          0x8216 NULL                          PT_BINARY     MNID_ID     PSETID_Appointment
 MeetingStatus                 0x8217 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
 ResponseStatus                0x8218 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
 IsRecurring                   0x8223 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
 NULL                          0x8224 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
+RecurrenceBase                0x8228 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
 NULL                          0x8229 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
 RecurrenceType                0x8231 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
 RecurrencePattern             0x8232 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
@@ -99,8 +102,8 @@ TimeZone                      0x8234 NULL                          PT_STRING8   
 NULL                          0x8235 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
 NULL                          0x8236 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment
 AllAttendees                  0x8238 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
-NULL                          0x823b NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
-NULL                          0x823c NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+ToAttendees                   0x823b NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
+CcAttendees                   0x823c NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
 NULL                          0x823d NULL                          PT_LONG       MNID_ID     PSETID_Appointment
 IsOnlineMeeting               0x8240 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
 NetMeetingType                0x8241 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
@@ -113,9 +116,11 @@ NetMeetingDocPathName         0x8247 NULL                          PT_STRING8   
 NetShowURL                    0x8248 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
 ConferenceServerPassword      0x8249 NULL                          PT_STRING8    MNID_ID     PSETID_Appointment
 NULL                          0x8256 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
-NULL                          0x8257 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+ApptCounterProposal           0x8257 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
 NULL                          0x8259 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
 NULL                          0x825a NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
+ApptTZDefStartDisplay         0x825e NULL                          PT_BINARY     MNID_ID     PSETID_Appointment
+ApptTZDefEndDisplay           0x825f NULL                          PT_BINARY     MNID_ID     PSETID_Appointment
 
 
 

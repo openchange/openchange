@@ -755,3 +755,37 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Returns the message recipient table
+
+   \param obj_message the message to receive recipients from
+   \param SRowSet pointer to the recipient table
+   \param SPropTagArray pointer to the array of properties listed in
+   the recipient table
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+
+     \sa OpenMessage
+ */
+_PUBLIC_ enum MAPISTATUS GetRecipientTable(mapi_object_t *obj_message, 
+					   struct SRowSet *SRowSet,
+					   struct SPropTagArray *SPropTagArray)
+{
+	mapi_object_message_t	*message;
+
+	message = (mapi_object_message_t *)obj_message->private_data;
+
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!message, MAPI_E_NOT_INITIALIZED, NULL);
+
+	*SRowSet = message->SRowSet;
+	*SPropTagArray = message->SPropTagArray;
+
+	return MAPI_E_SUCCESS;
+}

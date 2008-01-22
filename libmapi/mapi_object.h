@@ -92,12 +92,18 @@ typedef struct mapi_obj_bookmark {
 	struct mapi_obj_bookmark	*next;
 } mapi_object_bookmark_t;
 
-typedef struct mapi_obj_table
-{
+
+typedef struct mapi_obj_table {
 	uint32_t			bk_last;
 	mapi_object_bookmark_t		*bookmark;
 	struct SPropTagArray		proptags;
 } mapi_object_table_t;
 
+
+typedef struct mapi_obj_message {
+	uint32_t			cValues;
+	struct SPropTagArray   		SPropTagArray;
+	struct SRowSet			SRowSet;
+} mapi_object_message_t;
 
 #endif /*!__MAPI_OBJECT_H */

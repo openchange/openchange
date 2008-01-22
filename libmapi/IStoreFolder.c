@@ -64,15 +64,19 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 				     mapi_object_t *obj_message,
 				     uint8_t ulFlags)
 {
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct OpenMessage_req	request;
-	NTSTATUS		status;
-	enum MAPISTATUS		retval;
-	uint32_t		size = 0;
-	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct OpenMessage_req		request;
+	struct OpenMessage_repl		*reply;
+	mapi_object_message_t		*message;
+	struct SPropValue		lpProp;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+	uint32_t			i = 0;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
@@ -111,6 +115,37 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	mapi_object_set_handle(obj_message, mapi_response->handles[1]);
+
+	/* Store OpenMessage reply data */
+	reply = &mapi_response->mapi_repl->u.mapi_OpenMessage;
+
+	message = talloc_zero((TALLOC_CTX *)mapi_ctx->session, mapi_object_message_t);
+	message->cValues = reply->SPropTagArray.cValues;
+	message->SRowSet.cRows = reply->recipient_count;
+	message->SRowSet.aRow = talloc_array((TALLOC_CTX *)message, struct SRow, reply->recipient_count + 1);
+
+	message->SPropTagArray.cValues = reply->SPropTagArray.cValues;
+	message->SPropTagArray.aulPropTag = reply->SPropTagArray.aulPropTag;
+
+	/* add SPropTagArray elements we automatically append to SRow */
+	SPropTagArray_add((TALLOC_CTX *)message, &message->SPropTagArray, PR_RECIPIENT_TYPE);
+	SPropTagArray_add((TALLOC_CTX *)message, &message->SPropTagArray, PR_INTERNET_CPID);
+
+	for (i = 0; i < reply->recipient_count; i++) {
+		emsmdb_get_SRow((TALLOC_CTX *)message, &(message->SRowSet.aRow[i]), &message->SPropTagArray, 
+				&reply->recipients[i].recipients_headers.prop_values,
+				reply->recipients[i].recipients_headers.layout, 1);
+
+		lpProp.ulPropTag = PR_RECIPIENT_TYPE;
+		lpProp.value.l = reply->recipients[i].RecipClass;
+		SRow_addprop(&(message->SRowSet.aRow[i]), lpProp);
+
+		lpProp.ulPropTag = PR_INTERNET_CPID;
+		lpProp.value.l = reply->recipients[i].codepage;
+		SRow_addprop(&(message->SRowSet.aRow[i]), lpProp);
+	}
+
+	obj_message->private_data = (void *) message;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

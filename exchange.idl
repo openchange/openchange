@@ -888,10 +888,9 @@ System Attendant Private Interface
 		[switch_is(type_prefix)] OpenMessage_repl_UNION prefix;
 		uint8		type_subject;
 		[switch_is(type_subject)] OpenMessage_repl_UNION subject;
-		uint16		recipient_count;
-		uint16		prop_count;
-		MAPITAGS	properties[prop_count];
-		uint8		recipient_count_again;
+		uint16			recipient_count;
+		mapi_SPropTagArray	SPropTagArray;
+		uint8			recipient_count_again;
 		OpenMessage_recipients	recipients[recipient_count];
 	} OpenMessage_repl;
 

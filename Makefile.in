@@ -181,6 +181,7 @@ torture/openchange.$(SHLIBEXT):	torture/nspi_profile.po		\
 				torture/mapi_createuser.po	\
 				torture/exchange_createuser.po	\
 				torture/mapi_namedprops.po	\
+				torture/mapi_recipient.po	\
 				torture/openchange.po		\
 				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
@@ -421,6 +422,7 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 	torture/mapi_common.c		\
 	torture/mapi_permissions.c	\
 	torture/mapi_namedprops.c	\
+	torture/mapi_recipient.c	\
 	torture/mapi_createuser.c	\
 	torture/exchange_createuser.c	\
 	torture/fuzzer_msgstore.c	\

@@ -85,15 +85,15 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	struct SRowSet		rowset;
 	struct SPropValue	*lpProp;
 	const char		*profname = lp_parm_string(global_loadparm, NULL, "mapi", 
-											   "profile");
+							   "profile");
 	const char		*profdb = lp_parm_string(global_loadparm, NULL, "mapi", 
-											 "profile_store");
+							 "profile_store");
 	uint32_t		codepage = lp_parm_int(global_loadparm, NULL, "mapi", 
-										   "codepage", 0);
+						       "codepage", 0);
 	uint32_t		language = lp_parm_int(global_loadparm, NULL, "mapi", 
-										   "language", 0);
+						       "language", 0);
 	uint32_t		method = lp_parm_int(global_loadparm, NULL, "mapi", 
-										 "method", 0);
+						     "method", 0);
 
 	mem_ctx = talloc_init("torture_rpc_nspi_profile");
 	
@@ -196,7 +196,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 		retval = mapi_profile_add_string_attr(profname, "OrganizationUnit", nspi->org_unit);
 	}
 
-	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x8,
+	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x7,
 					  PR_DISPLAY_NAME,
 					  PR_EMAIL_ADDRESS,
 					  PR_DISPLAY_TYPE,
@@ -205,7 +205,11 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 					  PR_PROFILE_HOME_SERVER_ADDRS,
 					  PR_EMS_AB_PROXY_ADDRESSES
 					  );
-	retval = nspi_QueryRows(nspi, SPropTagArray, &rowset);
+
+	memset(nspi->settings->service_provider.ab, 0, 16);
+	nspi->settings->service_provider.ab[12] = 0x1;
+
+	retval = nspi_QueryRows(nspi, SPropTagArray, &rowset, 1);
 	mapi_errstr("NspiQueryRows", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

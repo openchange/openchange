@@ -179,7 +179,7 @@ _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi)
  */
 
 _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi, struct SPropTagArray *SPropTagArray,
-					struct SRowSet *rowset)
+					struct SRowSet *rowset, uint32_t count)
 {
 	struct NspiQueryRows		r;
 	NTSTATUS			status;
@@ -192,16 +192,19 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi, struct SPropT
 	r.in.flag = 0x0;
 
 	r.in.settings = nspi->settings;
-	memset(r.in.settings->service_provider.ab, 0, 16);
-	r.in.settings->service_provider.ab[12] = 0x1;
 
-	r.in.lRows = 0x1;
+	if (nspi->profile_instance_key) {
+		r.in.ikey_cnt = 0x1;
+		r.in.instance_key = &(nspi->profile_instance_key);
+		DEBUG(5, ("r.in.instance_key = 0x%x\n", *r.in.instance_key));
+	} else {
+		r.in.ikey_cnt = 0x0;
+		r.in.instance_key = NULL;
+	}
 
-	r.in.instance_key = &(nspi->profile_instance_key);
-	DEBUG(5, ("r.in.instance_key = 0x%x\n", *r.in.instance_key));
-
-	r.in.unknown = 0x1;
+	r.in.lRows = count;
 	
+	SPropTagArray->cValues += 1;
  	r.in.REQ_properties = SPropTagArray;
 
 	settings = talloc(nspi->mem_ctx, struct MAPI_SETTINGS);
@@ -213,6 +216,8 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi, struct SPropT
 	retval = r.out.result;
 	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
 
+	memcpy(&nspi->settings->service_provider, 
+	       &r.out.settings->service_provider, 16);
 	return MAPI_E_SUCCESS;
 
 }

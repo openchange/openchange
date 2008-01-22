@@ -247,9 +247,9 @@ System Attendant Private Interface
 		[in]				policy_handle	*handle,
 		[in]				uint32		flag,
 		[in,out]			MAPI_SETTINGS	*settings,
+		[in]				uint32		ikey_cnt,
+ 		[in][size_is(ikey_cnt)][unique]	uint32		*instance_key,
 		[in]				uint32		lRows,
-		[in][size_is(lRows)][unique]	uint32		*instance_key,
-		[in]				uint32		unknown,
 		[in]				SPropTagArray	*REQ_properties,
 		[out]				SRowSet		**RowSet
 		);

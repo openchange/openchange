@@ -90,3 +90,58 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(const char **usernames, struct SPropTagArr
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Retrieve the global address list
+   
+   \param SPropTagArray pointer on an array of MAPI properties we want
+   to fetch
+   \param SRowSet pointer on the rows returned
+   \param count the number of rows we want to fetch
+   \param first specify if this is the first call or not
+
+   Possible value for first:
+   - true: Use it the first time you call GetGALTable or when you want
+     to rewind to the beginning of the Global Address List table
+   - false: For any other GetGALTable but the first one.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \sa MapiLogonEx, MapiLogonProvider
+ */
+_PUBLIC_ enum MAPISTATUS GetGALTable(struct SPropTagArray *SPropTagArray, struct SRowSet **SRowSet, 
+				     uint32_t count, bool first)
+{
+	struct nspi_context	*nspi;
+	enum MAPISTATUS		retval;
+	mapi_ctx_t		*mapi_ctx;
+	uint32_t		instance_key = 0;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->session->nspi, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!SRowSet, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	nspi = (struct nspi_context *)mapi_ctx->session->nspi->ctx;
+
+	instance_key = nspi->profile_instance_key;
+	nspi->profile_instance_key = 0;
+       
+	if (first == true) {
+		memset(nspi->settings->service_provider.ab, 0, 16);
+		memset(nspi->settings->service_provider.ab + 12, 0xff, 4);
+	}
+
+	*SRowSet = talloc_zero(mapi_ctx->session, struct SRowSet);
+	retval = nspi_QueryRows(nspi, SPropTagArray, *SRowSet, count);
+
+	nspi->profile_instance_key = instance_key;
+
+	if (retval != MAPI_E_SUCCESS) return retval;
+
+	return MAPI_E_SUCCESS;
+}

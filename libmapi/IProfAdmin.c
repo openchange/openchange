@@ -1237,7 +1237,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	set_profile_attribute(profname, rowset, index, PR_ACCOUNT, "Account");
 	set_profile_attribute(profname, rowset, index, PR_ADDRTYPE, "AddrType");
 
-	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x8,
+	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x7,
 					  PR_DISPLAY_NAME,
 					  PR_EMAIL_ADDRESS,
 					  PR_DISPLAY_TYPE,
@@ -1246,8 +1246,14 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 					  PR_PROFILE_HOME_SERVER_ADDRS,
 					  PR_EMS_AB_PROXY_ADDRESSES
 					  );
-	retval = nspi_QueryRows(nspi, SPropTagArray, &rowset);
+
+	memset(nspi->settings->service_provider.ab, 0, 16);
+	nspi->settings->service_provider.ab[12] = 0x1;
+
+	retval = nspi_QueryRows(nspi, SPropTagArray, &rowset, 1);
 	if (retval != MAPI_E_SUCCESS) return retval;
+
+	printf("nspi_QueryRows success\n");
 
 	lpProp = get_SPropValue_SRowSet(&rowset, PR_EMS_AB_HOME_MDB);
 	MAPI_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, NULL);

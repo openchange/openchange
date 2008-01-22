@@ -1779,6 +1779,48 @@ static bool openchangeclient_rmdir(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store
 	return true;
 }
 
+static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx, struct oclient *oclient)
+{
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		*SRowSet;
+	enum MAPISTATUS		retval;
+	uint32_t		i;
+	uint32_t		count;
+	bool			first = true;
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0xc,
+					  PR_INSTANCE_KEY,
+					  PR_ENTRYID,
+					  PR_DISPLAY_NAME_UNICODE,
+					  PR_EMAIL_ADDRESS_UNICODE,
+					  PR_DISPLAY_TYPE,
+					  PR_OBJECT_TYPE,
+					  PR_ADDRTYPE_UNICODE,
+					  PR_OFFICE_TELEPHONE_NUMBER_UNICODE,
+					  PR_OFFICE_LOCATION_UNICODE,
+					  PR_TITLE_UNICODE,
+					  PR_COMPANY_NAME_UNICODE,
+					  PR_ACCOUNT_UNICODE);
+
+	count = 0x7;
+	do {
+		count += 0x2;
+		retval = GetGALTable(SPropTagArray, &SRowSet, count, first);
+		if (SRowSet->cRows) {
+			for (i = 0; i < SRowSet->cRows; i++) {
+				mapidump_PAB_entry(&SRowSet->aRow[i]);
+			}
+		}
+		first = false;
+		MAPIFreeBuffer(SRowSet);
+	} while (SRowSet->cRows == count);
+	mapi_errstr("GetPABTable", GetLastError());
+
+	MAPIFreeBuffer(SPropTagArray);
+
+	return true;
+}
+
 static void list_argument(const char *label, struct oc_element *oc_items)
 {
 	uint32_t	i;
@@ -1825,6 +1867,7 @@ int main(int argc, const char *argv[])
 	bool			opt_notifications = false;
 	bool			opt_mkdir = false;
 	bool			opt_rmdir = false;
+	bool			opt_userlist = false;
 	const char		*opt_profdb = NULL;
 	const char		*opt_profname = NULL;
 	const char		*opt_password = NULL;
@@ -1845,7 +1888,7 @@ int main(int argc, const char *argv[])
 	      OPT_MAPI_EMAIL, OPT_MAPI_FULLNAME, OPT_MAPI_CARDNAME, OPT_MAPI_PRIORITY,
 	      OPT_MAPI_TASKSTATUS, OPT_MAPI_IMPORTANCE, OPT_MAPI_LABEL, OPT_PF, 
 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
-	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT};
+	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1887,6 +1930,7 @@ int main(int argc, const char *argv[])
 		{"folder", 0, POPT_ARG_STRING, NULL, OPT_FOLDER, "set the folder to use instead of inbox"},
 		{"mkdir", 0, POPT_ARG_NONE, NULL, OPT_MKDIR, "create a folder"},
 		{"rmdir", 0, POPT_ARG_NONE, NULL, OPT_RMDIR, "delete a folder"},
+		{"userlist", 0, POPT_ARG_NONE, NULL, OPT_USERLIST, "list PAB entries"},
 		{"folder-name", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_NAME, "set the folder name"},
 		{"folder-comment", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_COMMENT, "set the folder comment"},
 		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level"},
@@ -1913,6 +1957,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_DUMPDATA:
 			opt_dumpdata = true;
+			break;
+		case OPT_USERLIST:
+			opt_userlist = true;
 			break;
 		case OPT_MKDIR:
 			opt_mkdir = true;
@@ -2131,6 +2178,11 @@ int main(int argc, const char *argv[])
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
 		exit (1);
+	}
+
+	if (opt_userlist) {
+		retval = openchangeclient_userlist(mem_ctx, &oclient);
+		exit (0);
 	}
 
 	/**

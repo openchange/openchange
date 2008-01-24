@@ -19,22 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* #include "system/network.h" */
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
 #include <param.h>
-
-/** used for network interfaces */
-struct interface {
-	struct interface *next, *prev;
-	struct in_addr ip;
-	struct in_addr nmask;
-	const char *ip_s;
-	const char *bcast_s;
-	const char *nmask_s;
-};
-
-static struct interface *local_interfaces;
 
 #define ALLONES  ((uint32_t)0xFFFFFFFF)
 /*
@@ -46,12 +33,13 @@ static struct interface *local_interfaces;
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/
-static struct interface *iface_find(struct in_addr ip, bool CheckMask)
+static struct interface *iface_find(struct interface *interfaces, 
+				    struct in_addr ip, bool CheckMask)
 {
 	struct interface *i;
-	if (is_zero_ip(ip)) return local_interfaces;
+	if (is_zero_ip(ip)) return interfaces;
 
-	for (i=local_interfaces;i;i=i->next)
+	for (i=interfaces;i;i=i->next)
 		if (CheckMask) {
 			if (same_net(i->ip,ip,i->nmask)) return i;
 		} else if (i->ip.s_addr == ip.s_addr) return i;
@@ -59,21 +47,23 @@ static struct interface *iface_find(struct in_addr ip, bool CheckMask)
 	return NULL;
 }
 
+
 /****************************************************************************
 add an interface to the linked list of interfaces
 ****************************************************************************/
-static void add_interface(struct in_addr ip, struct in_addr nmask)
+static void add_interface(TALLOC_CTX *mem_ctx, struct in_addr ip, struct in_addr nmask, struct interface **interfaces)
 {
 	struct interface *iface;
 	struct in_addr bcast;
 
-	if (iface_find(ip, false)) {
+	if (iface_find(*interfaces, ip, false)) {
 		DEBUG(3,("not adding duplicate interface %s\n",inet_ntoa(ip)));
 		return;
 	}
 
-	iface = talloc(local_interfaces == NULL ? talloc_autofree_context() : local_interfaces, struct interface);
-	if (!iface) return;
+	iface = talloc(*interfaces == NULL ? mem_ctx : *interfaces, struct interface);
+	if (iface == NULL) 
+		return;
 	
 	ZERO_STRUCTPN(iface);
 
@@ -90,10 +80,12 @@ static void add_interface(struct in_addr ip, struct in_addr nmask)
 		iface->bcast_s = talloc_strdup(iface, inet_ntoa(bcast));
 	}
 
-	DLIST_ADD_END(local_interfaces, iface, struct interface *);
+	DLIST_ADD_END(*interfaces, iface, struct interface *);
 
 	DEBUG(2,("added interface ip=%s nmask=%s\n", iface->ip_s, iface->nmask_s));
 }
+
+
 
 /**
 interpret a single element from a interfaces= config line 
@@ -106,12 +98,15 @@ This handles the following different forms:
 4) ip/mask
 5) bcast/mask
 **/
-static void interpret_interface(const char *token, 
+static void interpret_interface(TALLOC_CTX *mem_ctx, 
+				const char *token, 
 				struct iface_struct *probed_ifaces, 
-				int total_probed)
+				int total_probed,
+				struct interface **local_interfaces)
 {
 	struct in_addr ip, nmask;
 	char *p;
+	char *address;
 	int i, added=0;
 
 	ip.s_addr = 0;
@@ -120,8 +115,9 @@ static void interpret_interface(const char *token,
 	/* first check if it is an interface name */
 	for (i=0;i<total_probed;i++) {
 		if (gen_fnmatch(token, probed_ifaces[i].name) == 0) {
-			add_interface(probed_ifaces[i].ip,
-				      probed_ifaces[i].netmask);
+			add_interface(mem_ctx, probed_ifaces[i].ip,
+				      probed_ifaces[i].netmask,
+				      local_interfaces);
 			added = 1;
 		}
 	}
@@ -137,8 +133,9 @@ static void interpret_interface(const char *token,
 		ip.s_addr = interpret_addr2(token).s_addr;
 		for (i=0;i<total_probed;i++) {
 			if (ip.s_addr == probed_ifaces[i].ip.s_addr) {
-				add_interface(probed_ifaces[i].ip,
-					      probed_ifaces[i].netmask);
+				add_interface(mem_ctx, probed_ifaces[i].ip,
+					      probed_ifaces[i].netmask,
+					      local_interfaces);
 				return;
 			}
 		}
@@ -146,10 +143,13 @@ static void interpret_interface(const char *token,
 		return;
 	}
 
+	address = talloc_strdup(mem_ctx, token);
+	p = strchr_m(address,'/');
+
 	/* parse it into an IP address/netmasklength pair */
 	*p++ = 0;
 
-	ip.s_addr = interpret_addr2(token).s_addr;
+	ip.s_addr = interpret_addr2(address).s_addr;
 
 	if (strlen(p) > 2) {
 		nmask.s_addr = interpret_addr2(p).s_addr;
@@ -162,34 +162,35 @@ static void interpret_interface(const char *token,
 	    ip.s_addr == MKNETADDR(ip.s_addr, nmask.s_addr)) {
 		for (i=0;i<total_probed;i++) {
 			if (same_net(ip, probed_ifaces[i].ip, nmask)) {
-				add_interface(probed_ifaces[i].ip, nmask);
+				add_interface(mem_ctx, probed_ifaces[i].ip, nmask,
+					      local_interfaces);
+				talloc_free(address);
 				return;
 			}
 		}
-		DEBUG(2,("Can't determine ip for broadcast address %s\n", token));
+		DEBUG(2,("Can't determine ip for broadcast address %s\n", address));
+		talloc_free(address);
 		return;
 	}
 
-	add_interface(ip, nmask);
+	add_interface(mem_ctx, ip, nmask, local_interfaces);
+	talloc_free(address);
 }
 
 
 /**
 load the list of network interfaces
 **/
-static void load_interfaces(void)
+void load_interfaces(TALLOC_CTX *mem_ctx, const char **interfaces, struct interface **local_interfaces)
 {
-	const char **ptr;
+	const char **ptr = interfaces;
 	int i;
 	struct iface_struct ifaces[MAX_INTERFACES];
 	struct in_addr loopback_ip;
 	int total_probed;
 
-	if (local_interfaces != NULL) {
-		return;
-	}
+	*local_interfaces = NULL;
 
-	ptr = lp_interfaces(global_loadparm);
 	loopback_ip = interpret_addr2("127.0.0.1");
 
 	/* probe the kernel for interfaces */
@@ -203,42 +204,31 @@ static void load_interfaces(void)
 		}
 		for (i=0;i<total_probed;i++) {
 			if (ifaces[i].ip.s_addr != loopback_ip.s_addr) {
-				add_interface(ifaces[i].ip, 
-					      ifaces[i].netmask);
+				add_interface(mem_ctx, ifaces[i].ip, 
+					      ifaces[i].netmask, local_interfaces);
 			}
 		}
 	}
 
 	while (ptr && *ptr) {
-		interpret_interface(*ptr, ifaces, total_probed);
+		interpret_interface(mem_ctx, *ptr, ifaces, total_probed, local_interfaces);
 		ptr++;
 	}
 
-	if (!local_interfaces) {
+	if (!*local_interfaces) {
 		DEBUG(0,("WARNING: no network interfaces found\n"));
 	}
 }
 
 /**
-  unload the interfaces list, so it can be reloaded when needed
-*/
-void unload_interfaces(void)
-{
-	talloc_free(local_interfaces);
-	local_interfaces = NULL;
-}
-
-/**
   how many interfaces do we have
   **/
-int iface_count(void)
+int iface_count(struct interface *ifaces)
 {
 	int ret = 0;
 	struct interface *i;
 
-	load_interfaces();
-
-	for (i=local_interfaces;i;i=i->next)
+	for (i=ifaces;i;i=i->next)
 		ret++;
 	return ret;
 }
@@ -246,13 +236,11 @@ int iface_count(void)
 /**
   return IP of the Nth interface
   **/
-const char *iface_n_ip(int n)
+const char *iface_n_ip(struct interface *ifaces, int n)
 {
 	struct interface *i;
   
-	load_interfaces();
-
-	for (i=local_interfaces;i && n;i=i->next)
+	for (i=ifaces;i && n;i=i->next)
 		n--;
 
 	if (i) {
@@ -264,13 +252,11 @@ const char *iface_n_ip(int n)
 /**
   return bcast of the Nth interface
   **/
-const char *iface_n_bcast(int n)
+const char *iface_n_bcast(struct interface *ifaces, int n)
 {
 	struct interface *i;
   
-	load_interfaces();
-
-	for (i=local_interfaces;i && n;i=i->next)
+	for (i=ifaces;i && n;i=i->next)
 		n--;
 
 	if (i) {
@@ -282,13 +268,11 @@ const char *iface_n_bcast(int n)
 /**
   return netmask of the Nth interface
   **/
-const char *iface_n_netmask(int n)
+const char *iface_n_netmask(struct interface *ifaces, int n)
 {
 	struct interface *i;
   
-	load_interfaces();
-
-	for (i=local_interfaces;i && n;i=i->next)
+	for (i=ifaces;i && n;i=i->next)
 		n--;
 
 	if (i) {
@@ -301,39 +285,35 @@ const char *iface_n_netmask(int n)
   return the local IP address that best matches a destination IP, or
   our first interface if none match
 */
-_PUBLIC_ const char *iface_best_ip(const char *dest)
+const char *iface_best_ip(struct interface *ifaces, const char *dest)
 {
 	struct interface *iface;
 	struct in_addr ip;
 
-	load_interfaces();
-
 	ip.s_addr = interpret_addr(dest);
-	iface = iface_find(ip, true);
+	iface = iface_find(ifaces, ip, true);
 	if (iface) {
 		return iface->ip_s;
 	}
-	return iface_n_ip(0);
+	return iface_n_ip(ifaces, 0);
 }
 
 /**
-  return True if an IP is one one of our local networks
+  return true if an IP is one one of our local networks
 */
-bool iface_is_local(const char *dest)
+bool iface_is_local(struct interface *ifaces, const char *dest)
 {
 	struct in_addr ip;
 
-	load_interfaces();
-
 	ip.s_addr = interpret_addr(dest);
-	if (iface_find(ip, true)) {
+	if (iface_find(ifaces, ip, true)) {
 		return true;
 	}
 	return false;
 }
 
 /**
-  return True if a IP matches a IP/netmask pair
+  return true if a IP matches a IP/netmask pair
 */
 bool iface_same_net(const char *ip1, const char *ip2, const char *netmask)
 {

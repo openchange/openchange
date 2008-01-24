@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
 
-   structures for lib/netif/
+   structures for socke/netif.c and socket/interface.c
 
    Copyright (C) Andrew Tridgell 2004
    
@@ -18,6 +18,16 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/** used for network interfaces */
+struct interface {
+	struct interface *next, *prev;
+	struct in_addr ip;
+	struct in_addr nmask;
+	const char *ip_s;
+	const char *bcast_s;
+	const char *nmask_s;
+};
 
 struct iface_struct {
 	char name[16];

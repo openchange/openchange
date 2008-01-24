@@ -127,10 +127,6 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	message->SPropTagArray.cValues = reply->SPropTagArray.cValues;
 	message->SPropTagArray.aulPropTag = reply->SPropTagArray.aulPropTag;
 
-	/* add SPropTagArray elements we automatically append to SRow */
-	SPropTagArray_add((TALLOC_CTX *)message, &message->SPropTagArray, PR_RECIPIENT_TYPE);
-	SPropTagArray_add((TALLOC_CTX *)message, &message->SPropTagArray, PR_INTERNET_CPID);
-
 	for (i = 0; i < reply->recipient_count; i++) {
 		emsmdb_get_SRow((TALLOC_CTX *)message, &(message->SRowSet.aRow[i]), &message->SPropTagArray, 
 				&reply->recipients[i].recipients_headers.prop_values,
@@ -144,6 +140,10 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 		lpProp.value.l = reply->recipients[i].codepage;
 		SRow_addprop(&(message->SRowSet.aRow[i]), lpProp);
 	}
+
+	/* add SPropTagArray elements we automatically append to SRow */
+	SPropTagArray_add((TALLOC_CTX *)message, &message->SPropTagArray, PR_RECIPIENT_TYPE);
+	SPropTagArray_add((TALLOC_CTX *)message, &message->SPropTagArray, PR_INTERNET_CPID);
 
 	obj_message->private_data = (void *) message;
 

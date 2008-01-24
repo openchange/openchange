@@ -119,6 +119,11 @@
 #define	MAPI_MODIFY             0x1
 /* see MAPI_CREATE above */
 
+
+/* GetGALTable flags */
+#define	TABLE_START		0x0
+#define	TABLE_CUR		0x1
+
 /*
  * ENTRYID flags
  */

@@ -111,6 +111,9 @@ bool torture_rpc_mapi_newmail(struct torture_context *torture)
  	/* wait for notifications */
 	MonitorNotification((void *)&obj_store);
 
+	mapi_object_release(&obj_inbox);
+	mapi_object_release(&obj_store);
+
 	/* uninitialize mapi */
 	MAPIUninitialize();
 	talloc_free(mem_ctx);

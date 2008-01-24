@@ -99,19 +99,18 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(const char **usernames, struct SPropTagArr
    to fetch
    \param SRowSet pointer on the rows returned
    \param count the number of rows we want to fetch
-   \param first specify if this is the first call or not
+   \param ulFlags specify the table cursor location
 
-   Possible value for first:
-   - true: Use it the first time you call GetGALTable or when you want
-     to rewind to the beginning of the Global Address List table
-   - false: For any other GetGALTable but the first one.
+   Possible value for ulFlags:
+   - TABLE_START: Fetch rows from the beginning of the table
+   - TABLE_CUR: Fetch rows from current table location
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
    \sa MapiLogonEx, MapiLogonProvider
  */
 _PUBLIC_ enum MAPISTATUS GetGALTable(struct SPropTagArray *SPropTagArray, struct SRowSet **SRowSet, 
-				     uint32_t count, bool first)
+				     uint32_t count, uint8_t ulFlags)
 {
 	struct nspi_context	*nspi;
 	enum MAPISTATUS		retval;
@@ -131,7 +130,7 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct SPropTagArray *SPropTagArray, struct
 	instance_key = nspi->profile_instance_key;
 	nspi->profile_instance_key = 0;
        
-	if (first == true) {
+	if (ulFlags == TABLE_START) {
 		memset(nspi->settings->service_provider.ab, 0, 16);
 		memset(nspi->settings->service_provider.ab + 12, 0xff, 4);
 	}

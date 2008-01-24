@@ -1786,7 +1786,7 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx, struct oclient *oclie
 	enum MAPISTATUS		retval;
 	uint32_t		i;
 	uint32_t		count;
-	bool			first = true;
+	uint8_t			ulFlags;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0xc,
 					  PR_INSTANCE_KEY,
@@ -1803,15 +1803,16 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx, struct oclient *oclie
 					  PR_ACCOUNT_UNICODE);
 
 	count = 0x7;
+	ulFlags = TABLE_START;
 	do {
 		count += 0x2;
-		retval = GetGALTable(SPropTagArray, &SRowSet, count, first);
+		retval = GetGALTable(SPropTagArray, &SRowSet, count, ulFlags);
 		if (SRowSet->cRows) {
 			for (i = 0; i < SRowSet->cRows; i++) {
 				mapidump_PAB_entry(&SRowSet->aRow[i]);
 			}
 		}
-		first = false;
+		ulFlags = TABLE_CUR;
 		MAPIFreeBuffer(SRowSet);
 	} while (SRowSet->cRows == count);
 	mapi_errstr("GetPABTable", GetLastError());

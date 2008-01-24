@@ -238,6 +238,7 @@ start:
  */
 struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 {
+	struct interface	*ifaces;
 	struct mapi_notify_ctx	*notify_ctx = NULL;
 	unsigned short		port = DFLT_NOTIF_PORT;
 	const char		*ipaddr = NULL;
@@ -253,7 +254,8 @@ struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 	notify_ctx->notifications->prev = NULL;
 	notify_ctx->notifications->next = NULL;
 
-	ipaddr = iface_best_ip(global_mapi_ctx->session->profile->server);
+	load_interfaces(mem_ctx, lp_interfaces(global_mapi_ctx->lp_ctx), &ifaces);
+	ipaddr = iface_best_ip(ifaces, global_mapi_ctx->session->profile->server);
 	if (!ipaddr) return NULL;
 	notify_ctx->addr = talloc_zero(mem_ctx, struct sockaddr);
 	notify_ctx->addr->sa_family = AF_INET;

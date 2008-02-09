@@ -508,9 +508,9 @@ System Attendant Private Interface
 	} FlagList;
 
  	typedef struct {
-		uint32		cEntries;
- 		uint32		count;
- 		[flag(STR_ASCII|STR_SIZE4|STR_LEN4)]string *recipient[count];
+		uint32				cEntries;
+ 		uint32				count;
+		[string,charset(DOS)] uint8	*recipient[count];
  	} names;
 
 	MAPISTATUS NspiResolveNames(

@@ -115,9 +115,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	mapi_object_t			obj_inbox;
 	mapi_id_t			id_inbox;
 	struct mapi_SPropValue_array	properties_array;
-	const struct SBinary_short		*entryid;
-	uint32_t			low;
-	uint32_t			high;
+	const struct SBinary_short     	*entryid;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
@@ -185,22 +183,18 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
 	MAPI_RETVAL_IF(entryid->cb < 8, MAPI_E_INVALID_PARAMETER, mem_ctx);
 
-	low = 0;
-	low += entryid->lpb[entryid->cb - 1] << 24;
-	low += entryid->lpb[entryid->cb - 2] << 16;
-	low += entryid->lpb[entryid->cb - 3] << 8;
-	low += entryid->lpb[entryid->cb - 4];
-	
-	high = 0;
-	high += entryid->lpb[entryid->cb - 5] << 24;
-	high += entryid->lpb[entryid->cb - 6] << 16;
-	high += entryid->lpb[entryid->cb - 7] << 8;
-	high += entryid->lpb[entryid->cb - 8];
-	
-	*folder = high;
-	*folder = ((uint64_t)low) << 48;
-	/* the lowest byte of folder id is set to 1 while entryid one is not */
-	*folder += 1;
+	*folder = 0;
+	*folder += ((uint64_t)entryid->lpb[entryid->cb - 3] << 56);
+	*folder += ((uint64_t)entryid->lpb[entryid->cb - 4] << 48);
+	*folder += ((uint64_t)entryid->lpb[entryid->cb - 5] << 40);
+	*folder += ((uint64_t)entryid->lpb[entryid->cb - 6] << 32);
+	*folder += ((uint64_t)entryid->lpb[entryid->cb - 7] << 24);
+	*folder += ((uint64_t)entryid->lpb[entryid->cb - 8] << 16);
+	/* WARNING: for some unknown reason the latest byte of folder
+	   ID may change (0x1 or 0x4 values identified so far).
+	   However this byte sounds the same than the parent folder
+	   one */
+	*folder += (id_inbox & 0xFF);
 
 	talloc_free(mem_ctx);
 	return MAPI_E_SUCCESS;

@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2007
+   Copyright (C) Julien Kerihuel 2007-2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1162,7 +1162,7 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
 	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Task");
 	set_SPropValue_proptag(&props[3], PR_IMPORTANCE, (const void *)&oclient->importance);
-	set_SPropValue_proptag(&props[4], PR_BODY, (const void *)oclient->pr_body);
+	set_SPropValue_proptag(&props[4], PR_BODY, (const void *)oclient->pr_body ? oclient->pr_body : "");
 	set_SPropValue_proptag(&props[5], SPropTagArray->aulPropTag[0], (const void *)&oclient->taskstatus);
 	set_SPropValue_proptag(&props[6], SPropTagArray->aulPropTag[1], (const void *)start_date);
 	set_SPropValue_proptag(&props[7], SPropTagArray->aulPropTag[2], (const void *)end_date);

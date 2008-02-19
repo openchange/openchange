@@ -45,7 +45,7 @@ openchangeclient [-?] [-?|--help] [--usage] [-f|--database STRING]
         [--email=STRING] [--fullname=STRING] [--cardname=STRING]
         [--color=STRING] [--notifications] [--folder=STRING] [--mkdir]
         [--rmdir] [--folder-name=STRING] [--folder-comment=STRING]
-        [--debuglevel=STRING] [--dump-data]
+        [--debuglevel=STRING] [--dump-data] [--private]
 .fi
 
 .SH DESCRIPTION
@@ -251,6 +251,11 @@ This is only meaningful with
 .B --sendappointment
 and
 .B --sendtask
+
+.TP
+.B --private
+Mark the appointment as private event. This is only meaningful with
+.B --sendappointment
 
 .TP
 .B --busystatus=STRING

@@ -47,6 +47,7 @@ struct oclient {
 	uint32_t		taskstatus;
 	uint32_t		label;
 	uint32_t		priority;
+	bool			private;
 	uint32_t		importance;
 	uint32_t		color;
 	uint32_t		width;
@@ -136,7 +137,7 @@ struct oc_element	oc_color[] = {
 };
 
 #define	DATE_FORMAT	"%Y-%m-%d %H:%M:%S"
-#define	CAL_CNPROPS	14
+#define	CAL_CNPROPS	16
 #define	CONTACT_CNPROPS	7
 #define	TASK_CNPROPS	8
 #define	NOTE_CNPROPS	10

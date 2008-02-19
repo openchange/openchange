@@ -51,6 +51,7 @@ static void init_oclient(struct oclient *oclient)
 	oclient->dtend = NULL;
 	oclient->busystatus = 0;
 	oclient->label = 0;
+	oclient->private = false;
 
 	/* contact related parameters */
 	oclient->email = "";
@@ -962,6 +963,7 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	mapi_nameid_OOM_add(nameid, "CommonEnd", PSETID_Common);
 	mapi_nameid_OOM_add(nameid, "Label", PSETID_Appointment);
 	mapi_nameid_OOM_add(nameid, "ReminderMinutesBeforeStart", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "Private", PSETID_Common);
 
 	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
@@ -1002,13 +1004,17 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	set_SPropValue_proptag(&props[7], SPropTagArray->aulPropTag[1], (const void *) &oclient->busystatus);
 	flag= MEETING_STATUS_NONMEETING;
 	set_SPropValue_proptag(&props[8], SPropTagArray->aulPropTag[2], (const void *) &flag);
-	flag2 = true;
 	set_SPropValue_proptag(&props[9], SPropTagArray->aulPropTag[3], (const void *) start_date);
 	set_SPropValue_proptag(&props[10], SPropTagArray->aulPropTag[4], (const void *) end_date);
 	set_SPropValue_proptag(&props[11], SPropTagArray->aulPropTag[5], (const void *)&oclient->label);
 	flag = 30;
 	set_SPropValue_proptag(&props[12], SPropTagArray->aulPropTag[6], (const void *)&flag);
 	set_SPropValue_proptag(&props[13], PR_BODY, (const void *)(oclient->pr_body?oclient->pr_body:""));
+	flag2 = oclient->private;
+	set_SPropValue_proptag(&props[14], SPropTagArray->aulPropTag[7], (const void *)&flag2);
+	flag = (oclient->private == true) ? 2 : 0;
+	set_SPropValue_proptag(&props[15], PR_SENSITIVITY, (const void *)&flag);
+	
 	retval = SetProps(&obj_message, props, CAL_CNPROPS);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -1889,7 +1895,7 @@ int main(int argc, const char *argv[])
 	      OPT_MAPI_EMAIL, OPT_MAPI_FULLNAME, OPT_MAPI_CARDNAME, OPT_MAPI_PRIORITY,
 	      OPT_MAPI_TASKSTATUS, OPT_MAPI_IMPORTANCE, OPT_MAPI_LABEL, OPT_PF, 
 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
-	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST};
+	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1936,6 +1942,7 @@ int main(int argc, const char *argv[])
 		{"folder-comment", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_COMMENT, "set the folder comment"},
 		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level"},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
+		{"private", 0, POPT_ARG_NONE, NULL, OPT_MAPI_PRIVATE, "Set the private flag on messages"},
 		{ NULL }
 	};
 
@@ -2087,6 +2094,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_MAPI_CARDNAME:
 			oclient.card_name = poptGetOptArg(pc);
+			break;
+		case OPT_MAPI_PRIVATE:
+			oclient.private = true;
 			break;
 		}
 	}

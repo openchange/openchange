@@ -475,8 +475,10 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties)
 		}
 	}
 
-	printf("\tPriority: %s\n", get_priority(*priority));
-	fflush(0);
+	if (priority) {
+	  printf("\tPriority: %s\n", get_priority(*priority));
+	  fflush(0);
+	}
 
 	mapidump_date(properties, 0x85170040,"\tDue Date");
 	mapidump_date(properties, 0x85160040, "\tStart Date");

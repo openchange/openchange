@@ -109,7 +109,7 @@ bool torture_rpc_mapi_fetchtasks(struct torture_context *torture)
 			if (retval != MAPI_E_NOT_FOUND) {
 				retval = GetPropsAll(&obj_message, &properties_array);
 				if (retval == MAPI_E_SUCCESS) {
-					mapidump_task(&properties_array);
+				  mapidump_task(&properties_array, NULL);
 					mapi_object_release(&obj_message);
 				}
 			}

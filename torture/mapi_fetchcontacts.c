@@ -107,7 +107,7 @@ bool torture_rpc_mapi_fetchcontacts(struct torture_context *torture)
 					     &obj_message, 0);
 			if (retval != MAPI_E_NOT_FOUND) {
 				retval = GetPropsAll(&obj_message, &properties_array);
-				mapidump_contact(&properties_array);
+				mapidump_contact(&properties_array, NULL);
 				mapi_object_release(&obj_message);
 			}
 		}

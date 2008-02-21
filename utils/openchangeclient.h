@@ -29,6 +29,8 @@ struct attach {
 };
 
 struct oclient {
+	const char     		*update;
+	const char		*delete;
 	const char		*subject;
 	const char		*pr_body;
 	const char		*pr_html_inline;
@@ -137,9 +139,5 @@ struct oc_element	oc_color[] = {
 };
 
 #define	DATE_FORMAT	"%Y-%m-%d %H:%M:%S"
-#define	CAL_CNPROPS	16
-#define	CONTACT_CNPROPS	7
-#define	TASK_CNPROPS	8
-#define	NOTE_CNPROPS	10
 
 #endif /* !__OPENCHANGECLIENT_H__ */

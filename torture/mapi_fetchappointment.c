@@ -109,7 +109,7 @@ bool torture_rpc_mapi_fetchappointment(struct torture_context *torture)
 			if (retval != MAPI_E_NOT_FOUND) {
 				retval = GetPropsAll(&obj_message, &properties_array);
 				if (retval == MAPI_E_SUCCESS) {
-					mapidump_appointment(&properties_array);
+				  mapidump_appointment(&properties_array, NULL);
 					mapi_object_release(&obj_message);
 				}
 			}

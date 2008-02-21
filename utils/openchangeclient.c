@@ -38,7 +38,12 @@
 
 static void init_oclient(struct oclient *oclient)
 {
-	oclient->subject = "";
+	/* update and delete parameter */
+	oclient->update = NULL;
+	oclient->delete = NULL;
+	
+	/* email related parameter */
+	oclient->subject = NULL;
 	oclient->pr_body = NULL;
 	oclient->pr_html_inline = NULL;
 	oclient->attach = NULL;
@@ -49,24 +54,24 @@ static void init_oclient(struct oclient *oclient)
 	oclient->location = NULL;
 	oclient->dtstart = NULL;
 	oclient->dtend = NULL;
-	oclient->busystatus = 0;
-	oclient->label = 0;
+	oclient->busystatus = -1;
+	oclient->label = -1;
 	oclient->private = false;
 
 	/* contact related parameters */
-	oclient->email = "";
-	oclient->full_name = "";
-	oclient->card_name = "";
+	oclient->email = NULL;
+	oclient->full_name = NULL;
+	oclient->card_name = NULL;
 
 	/* task related parameters */
-	oclient->importance = 1;
+	oclient->importance = -1;
 	oclient->priority = 0;
-	oclient->taskstatus = 0;
+	oclient->taskstatus = -1;
 
 	/* note related parameters */
-	oclient->color = olYellow;
-	oclient->width = 166;
-	oclient->height = 200;
+	oclient->color = -1;
+	oclient->width = -1;
+	oclient->height = -1;
 
 	/* pf related parameters */
 	oclient->pf = false;
@@ -243,6 +248,42 @@ static const char *get_filename(const char *filename)
 
 	return filename;
 }
+
+
+/**
+ * build unique ID from folder and message
+ */
+static char *build_uniqueID(TALLOC_CTX *mem_ctx, mapi_object_t *obj_folder,
+			    mapi_object_t *obj_message)
+{
+	enum MAPISTATUS		retval;
+	char			*id;
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	*lpProps;
+	uint32_t		count;
+	const uint64_t		*mid;
+	const uint64_t		*fid;
+
+	/* retrieve the folder ID */
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_FID);
+	retval = GetProps(obj_folder, SPropTagArray, &lpProps, &count);
+	MAPIFreeBuffer(SPropTagArray);
+	if (GetLastError() != MAPI_E_SUCCESS) return NULL;
+	fid = (const uint64_t *)get_SPropValue_data(lpProps);
+
+	/* retrieve the message ID */
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_MID);
+	retval = GetProps(obj_message, SPropTagArray, &lpProps, &count);
+	MAPIFreeBuffer(SPropTagArray);
+	if (GetLastError() != MAPI_E_SUCCESS) return NULL;
+	mid = (const uint64_t *)get_SPropValue_data(lpProps);
+
+	if (!fid || !mid) return NULL;
+
+	id = talloc_asprintf(mem_ctx, "%llX/%llX", *fid, *mid);
+	return id;
+}
+
 
 /**
  * fetch the user INBOX
@@ -725,10 +766,11 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 
 	/* set message properties */
 	msgflag = MSGFLAG_UNSENT;
+	oclient->subject = (!oclient->subject) ? "" : oclient->subject;
 	set_SPropValue_proptag(&props[0], PR_SUBJECT, 
-						   (const void *)oclient->subject);
+			       (const void *)oclient->subject);
 	set_SPropValue_proptag(&props[1], PR_MESSAGE_FLAGS, 
-						   (const void *)&msgflag);
+			       (const void *)&msgflag);
 	prop_count = 2;
 
 	/* Set PR_BODY or PR_HTML or inline PR_HTML */
@@ -919,21 +961,140 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
-static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+
+/**
+ * Send appointment
+ */
+
+static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx, 
+					    mapi_object_t *obj_folder,
+					    mapi_object_t *obj_message, 
+					    struct oclient *oclient)
 {
 	enum MAPISTATUS		retval;
-	struct SPropValue	props[CAL_CNPROPS];
-	mapi_object_t		obj_calendar;
-	mapi_object_t		obj_message;
-	mapi_id_t		id_calendar;
+	struct SPropValue	*lpProps;
 	struct mapi_nameid	*nameid;
 	struct SPropTagArray	*SPropTagArray;
 	struct FILETIME		*start_date;
 	struct FILETIME		*end_date;
+	uint32_t		cValues = 0;
 	NTTIME			nt;
 	struct tm		tm;
 	uint32_t		flag;
 	uint8_t			flag2;
+	
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "Location", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "BusyStatus", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "MeetingStatus", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "CommonStart", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "CommonEnd", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "Label", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "ReminderMinutesBeforeStart", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "Private", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "Start", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "End", PSETID_Appointment);
+
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(obj_folder, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+
+	cValues = 0;
+	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+
+	if (oclient->subject) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_CONVERSATION_TOPIC, 
+			       (const void *) oclient->subject);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT,
+			       (const void *) oclient->subject);
+	}
+	if (oclient->pr_body) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_BODY, (const void *)oclient->pr_body);
+	}
+	if (oclient->location) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)oclient->location);
+	}
+	if (oclient->dtstart) {
+		if (!strptime(oclient->dtstart, DATE_FORMAT, &tm)) {
+			printf("Invalid date format: yyyy-mm-dd hh:mm:ss (e.g.: 2007-09-17 10:00:00)\n");
+			return MAPI_E_INVALID_PARAMETER;
+		}
+		unix_to_nt_time(&nt, mktime(&tm));
+		start_date = talloc(mem_ctx, struct FILETIME);
+		start_date->dwLowDateTime = (nt << 32) >> 32;
+		start_date->dwHighDateTime = (nt >> 32);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_START_DATE, (const void *)start_date);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[3], (const void *)start_date);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[8], (const void *) start_date);
+	}
+	if (oclient->dtend) {
+		if (!strptime(oclient->dtend, DATE_FORMAT, &tm)) {
+			printf("Invalid date format: yyyy-mm-dd hh:mm:ss (e.g.:2007-09-17 18:30:00)\n");
+			return MAPI_E_INVALID_PARAMETER;
+		}
+		unix_to_nt_time(&nt, mktime(&tm));
+		end_date = talloc(mem_ctx, struct FILETIME);
+		end_date->dwLowDateTime = (nt << 32) >> 32;
+		end_date->dwHighDateTime = (nt >> 32);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_END_DATE, (const void *) end_date);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[4], (const void *) end_date);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[9], (const void *) end_date);
+	}
+
+	if (!oclient->update) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Appointment");
+
+		flag = 1;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_FLAGS, (const void *)&flag);
+
+		flag= MEETING_STATUS_NONMEETING;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[2], (const void *) &flag);
+
+		flag = 30;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[6], (const void *)&flag);
+		
+		/* WARNING needs to replace private */
+		flag2 = oclient->private;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[7], (const void *)&flag2);
+
+		oclient->label = (oclient->label == -1) ? 0 : oclient->label;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[5], (const void *) &oclient->label);
+
+		oclient->busystatus = (oclient->busystatus == -1) ? 0 : oclient->busystatus;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *) &oclient->busystatus);
+	} else {
+		if (oclient->busystatus != -1) {
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *) &oclient->busystatus);
+		}
+		if (oclient->label != -1) {
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[5], (const void *) &oclient->label);
+		}
+	}
+
+	flag = (oclient->private == true) ? 2 : 0;
+	lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_SENSITIVITY, (const void *)&flag);
+	
+	retval = SetProps(obj_message, lpProps, cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPIFreeBuffer(lpProps);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_calendar;
+	mapi_object_t		obj_message;
+	mapi_id_t		id_calendar;
+	char			*uniq_id;
 
 	mapi_object_init(&obj_calendar);
 
@@ -949,78 +1110,23 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 		if (retval != MAPI_E_SUCCESS) return false;
 	}
 
-	/* Create calendar mesage */
+	/* Create calendar message */
 	mapi_object_init(&obj_message);
 	retval = CreateMessage(&obj_calendar, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	/* Build the list of named properties we want to set */
-	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "Location", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "BusyStatus", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "MeetingStatus", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "CommonStart", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "CommonEnd", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "Label", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ReminderMinutesBeforeStart", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "Private", PSETID_Common);
-
-	/* GetIDsFromNames and map property types */
-	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = GetIDsFromNames(&obj_calendar, nameid->count,
-				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
-	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
-	MAPIFreeBuffer(nameid);
-
-	if (!strptime(oclient->dtstart, DATE_FORMAT, &tm)) {
-		printf("Invalid date format: yyyy-mm-dd hh:mm:ss (e.g.: 2007-09-17 10:00:00)\n");
-		return false;
-	}
-	unix_to_nt_time(&nt, mktime(&tm));
-	start_date = talloc(mem_ctx, struct FILETIME);
-	start_date->dwLowDateTime = (nt << 32) >> 32;
-	start_date->dwHighDateTime = (nt >> 32);
-
-	if (!strptime(oclient->dtend, DATE_FORMAT, &tm)) {
-		printf("Invalid date format: yyyy-mm-dd hh:mm:ss (e.g.:2007-09-17 18:30:00)\n");
-		return false;
-	}
-	unix_to_nt_time(&nt, mktime(&tm));
-	end_date = talloc(mem_ctx, struct FILETIME);
-	end_date->dwLowDateTime = (nt << 32) >> 32;
-	end_date->dwHighDateTime = (nt >> 32);
-
-	set_SPropValue_proptag(&props[0], PR_CONVERSATION_TOPIC, 
-						   (const void *) oclient->subject);
-	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, 
-						   (const void *) oclient->subject);
-	set_SPropValue_proptag(&props[2], PR_START_DATE, (const void *) start_date);
-	set_SPropValue_proptag(&props[3], PR_END_DATE, (const void *) end_date);
-	set_SPropValue_proptag(&props[4], PR_MESSAGE_CLASS, (const void *)"IPM.Appointment");
-	flag = 1;
-	set_SPropValue_proptag(&props[5], PR_MESSAGE_FLAGS, (const void *) &flag);
-	set_SPropValue_proptag(&props[6], SPropTagArray->aulPropTag[0], (const void *)(oclient->location?oclient->location:""));
-	set_SPropValue_proptag(&props[7], SPropTagArray->aulPropTag[1], (const void *) &oclient->busystatus);
-	flag= MEETING_STATUS_NONMEETING;
-	set_SPropValue_proptag(&props[8], SPropTagArray->aulPropTag[2], (const void *) &flag);
-	set_SPropValue_proptag(&props[9], SPropTagArray->aulPropTag[3], (const void *) start_date);
-	set_SPropValue_proptag(&props[10], SPropTagArray->aulPropTag[4], (const void *) end_date);
-	set_SPropValue_proptag(&props[11], SPropTagArray->aulPropTag[5], (const void *)&oclient->label);
-	flag = 30;
-	set_SPropValue_proptag(&props[12], SPropTagArray->aulPropTag[6], (const void *)&flag);
-	set_SPropValue_proptag(&props[13], PR_BODY, (const void *)(oclient->pr_body?oclient->pr_body:""));
-	flag2 = oclient->private;
-	set_SPropValue_proptag(&props[14], SPropTagArray->aulPropTag[7], (const void *)&flag2);
-	flag = (oclient->private == true) ? 2 : 0;
-	set_SPropValue_proptag(&props[15], PR_SENSITIVITY, (const void *)&flag);
-	
-	retval = SetProps(&obj_message, props, CAL_CNPROPS);
-	MAPIFreeBuffer(SPropTagArray);
+	/* Set calendar message properties */
+	retval = appointment_SetProps(mem_ctx, &obj_calendar, &obj_message, oclient);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_calendar, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Fetch and Display the message unique ID */
+	uniq_id = build_uniqueID(mem_ctx, &obj_calendar, &obj_message);
+	printf("    %-25s: %s\n", "Unique ID", uniq_id);
+	fflush(0);
+	talloc_free(uniq_id);
 
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_calendar);
@@ -1028,15 +1134,68 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	return true;
 }
 
+/**
+ * Create a contact
+ */
+static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
+					mapi_object_t *obj_folder,
+					mapi_object_t *obj_message,
+					struct oclient *oclient)
+{
+	enum MAPISTATUS		retval;
+	struct SPropValue	*lpProps;
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray;
+	uint32_t		cValues = 0;
+
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "FileAs", PSETID_Address);
+	mapi_nameid_lid_add(nameid, 0x8084, PSETID_Address);
+	mapi_nameid_OOM_add(nameid, "Email1Address", PSETID_Address);
+	mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
+
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(obj_folder, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+
+	cValues = 0;
+	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+
+	if (oclient->card_name) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[3], (const void *)oclient->card_name);
+	}
+	if (oclient->full_name) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_DISPLAY_NAME, (const void *)oclient->full_name);
+	}
+	if (oclient->email) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *)oclient->email);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[2], (const void *)oclient->email);
+	}
+	if (!oclient->update) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Contact");
+	}
+	retval = SetProps(obj_message, lpProps, cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPIFreeBuffer(lpProps);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+	
+	return MAPI_E_SUCCESS;
+}
+
 static bool openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
 {
 	enum MAPISTATUS		retval;
-	struct SPropValue	props[CONTACT_CNPROPS];
-	struct mapi_nameid	*nameid;
-	struct SPropTagArray	*SPropTagArray;
 	mapi_object_t		obj_contact;
 	mapi_object_t		obj_message;
 	mapi_id_t		id_contact;	
+	char			*uniq_id;
 
 	mapi_object_init(&obj_contact);
 
@@ -1057,34 +1216,18 @@ static bool openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	retval = CreateMessage(&obj_contact, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	/* Build the list of named properties we want to set */
-	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "FileAs", PSETID_Address);
-	mapi_nameid_lid_add(nameid, 0x8084, PSETID_Address);
-	mapi_nameid_OOM_add(nameid, "Email1Address", PSETID_Address);
-	mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
-
-	/* GetIDsFromNames and map property types */
-	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = GetIDsFromNames(&obj_contact, nameid->count,
-				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
-	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
-	MAPIFreeBuffer(nameid);
-
-	set_SPropValue_proptag(&props[0], SPropTagArray->aulPropTag[0], (const void *)oclient->card_name);
-	set_SPropValue_proptag(&props[1], PR_DISPLAY_NAME, (const void *)oclient->full_name);
-	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Contact");
-	set_SPropValue_proptag(&props[3], PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
-	set_SPropValue_proptag(&props[4], SPropTagArray->aulPropTag[1], (const void *)oclient->email);
-	set_SPropValue_proptag(&props[5], SPropTagArray->aulPropTag[2], (const void *)oclient->email);
-	set_SPropValue_proptag(&props[6], SPropTagArray->aulPropTag[3], (const void *)oclient->card_name);
-	retval = SetProps(&obj_message, props, CONTACT_CNPROPS);
-	MAPIFreeBuffer(SPropTagArray);
+	/* Set contact message properties */
+	retval = contact_SetProps(mem_ctx, &obj_contact, &obj_message, oclient);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_contact, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Fetch and Display the message unique ID */
+	uniq_id = build_uniqueID(mem_ctx, &obj_contact, &obj_message);
+	printf("    %-25s: %s\n", "Unique ID", uniq_id);
+	fflush(0);
+	talloc_free(uniq_id);
 
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_contact);
@@ -1092,19 +1235,104 @@ static bool openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	return true;
 }
 
-static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+/**
+ * Create task
+ */
+static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
+					mapi_object_t *obj_folder,
+					mapi_object_t *obj_message,
+					struct oclient *oclient)
 {
 	enum MAPISTATUS		retval;
-	struct SPropValue	props[TASK_CNPROPS];
-	mapi_object_t		obj_task;
-	mapi_object_t		obj_message;
-	mapi_id_t		id_task;	
+	struct SPropValue	*lpProps;
 	struct mapi_nameid	*nameid;
 	struct SPropTagArray	*SPropTagArray;
 	struct FILETIME		*start_date;
 	struct FILETIME		*end_date;
+	uint32_t		cValues = 0;
 	NTTIME			nt;
 	struct tm		tm;
+
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "Status", PSETID_Task);
+	mapi_nameid_OOM_add(nameid, "StartDate", PSETID_Task);
+	mapi_nameid_OOM_add(nameid, "DueDate", PSETID_Task);
+
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(obj_folder, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+
+	cValues = 0;
+	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+
+	if (oclient->card_name) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_CONVERSATION_TOPIC, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
+	}
+
+	if (oclient->dtstart) {
+		if (!strptime(oclient->dtstart, DATE_FORMAT, &tm)) {
+			printf("Invalid date format (e.g.: 2007-06-01 22:30:00)\n");
+			return false;
+		}
+		unix_to_nt_time(&nt, mktime(&tm));
+		start_date = talloc(mem_ctx, struct FILETIME);
+		start_date->dwLowDateTime = (nt << 32) >> 32;
+		start_date->dwHighDateTime = (nt >> 32);		
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *)start_date);
+	}
+
+	if (oclient->dtend) {
+		if (!strptime(oclient->dtend, DATE_FORMAT, &tm)) {
+			printf("Invalid date format (e.g.: 2007-06-01 22:30:00)\n");
+			return false;
+		}
+		unix_to_nt_time(&nt, mktime(&tm));
+		end_date = talloc(mem_ctx, struct FILETIME);
+		end_date->dwLowDateTime = (nt << 32) >> 32;
+		end_date->dwHighDateTime = (nt >> 32);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[2], (const void *)end_date);
+	}
+
+	if (oclient->pr_body) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_BODY, (const void *)oclient->pr_body);
+	}
+
+	if (!oclient->update) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Task");
+		oclient->importance = (oclient->importance == -1) ? 1 : oclient->importance;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_IMPORTANCE, (const void *)&oclient->importance);
+		oclient->taskstatus = (oclient->taskstatus == -1) ? 0 : oclient->taskstatus;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)&oclient->taskstatus);
+	} else {
+		if (oclient->importance != -1) {
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_IMPORTANCE, (const void *)&oclient->importance);
+		}
+		if (oclient->taskstatus != -1) {
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)&oclient->taskstatus);
+		}
+	}
+
+	retval = SetProps(obj_message, lpProps, cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPIFreeBuffer(lpProps);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_task;
+	mapi_object_t		obj_message;
+	mapi_id_t		id_task;	
+	char			*uniq_id;
 
 	mapi_object_init(&obj_task);
 
@@ -1125,53 +1353,17 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	retval = CreateMessage(&obj_task, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	/* Build the list of named properties we want to set */
-	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "Status", PSETID_Task);
-	mapi_nameid_OOM_add(nameid, "StartDate", PSETID_Task);
-	mapi_nameid_OOM_add(nameid, "DueDate", PSETID_Task);
-
-	/* GetIDsFromNames and map property types */
-	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = GetIDsFromNames(&obj_task, nameid->count,
-				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
-	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
-	MAPIFreeBuffer(nameid);
-
-	if (!strptime(oclient->dtstart, DATE_FORMAT, &tm)) {
-		printf("Invalid date format (e.g.: 2007-06-01 22:30:00)\n");
-		return false;
-	}
-	unix_to_nt_time(&nt, mktime(&tm));
-	start_date = talloc(mem_ctx, struct FILETIME);
-	start_date->dwLowDateTime = (nt << 32) >> 32;
-	start_date->dwHighDateTime = (nt >> 32);
-
-	if (!strptime(oclient->dtend, DATE_FORMAT, &tm)) {
-		printf("Invalid date format (e.g.: 2007-06-01 22:30:00)\n");
-		return false;
-	}
-	unix_to_nt_time(&nt, mktime(&tm));
-	end_date = talloc(mem_ctx, struct FILETIME);
-	end_date->dwLowDateTime = (nt << 32) >> 32;
-	end_date->dwHighDateTime = (nt >> 32);
-
-
-	set_SPropValue_proptag(&props[0], PR_CONVERSATION_TOPIC, (const void *)oclient->card_name);
-	set_SPropValue_proptag(&props[1], PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
-	set_SPropValue_proptag(&props[2], PR_MESSAGE_CLASS, (const void *)"IPM.Task");
-	set_SPropValue_proptag(&props[3], PR_IMPORTANCE, (const void *)&oclient->importance);
-	set_SPropValue_proptag(&props[4], PR_BODY, (const void *)oclient->pr_body ? oclient->pr_body : "");
-	set_SPropValue_proptag(&props[5], SPropTagArray->aulPropTag[0], (const void *)&oclient->taskstatus);
-	set_SPropValue_proptag(&props[6], SPropTagArray->aulPropTag[1], (const void *)start_date);
-	set_SPropValue_proptag(&props[7], SPropTagArray->aulPropTag[2], (const void *)end_date);
-	retval = SetProps(&obj_message, props, TASK_CNPROPS);
-	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
+	/* Set contact properties */
+	retval = task_SetProps(mem_ctx, &obj_task, &obj_message, oclient);
 
 	retval = SaveChangesMessage(&obj_task, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Fetch and Display the message unique ID */
+	uniq_id = build_uniqueID(mem_ctx, &obj_task, &obj_message);
+	printf("    %-25s: %s\n", "Unique ID", uniq_id);
+	fflush(0);
+	talloc_free(uniq_id);
 
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_task);
@@ -1180,16 +1372,94 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 }
 
 
+/**
+ * Send notes
+ */
+static enum MAPISTATUS note_SetProps(TALLOC_CTX *mem_ctx,
+					mapi_object_t *obj_folder,
+					mapi_object_t *obj_message,
+					struct oclient *oclient)
+{
+	enum MAPISTATUS		retval;
+	struct SPropValue	*lpProps;
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray;
+	uint32_t		cValues = 0;
+	uint32_t		value;
+
+	/* Build the list of named properties we want to set */
+	nameid = mapi_nameid_new(mem_ctx);
+	mapi_nameid_OOM_add(nameid, "Color", PSETID_Note);
+	mapi_nameid_OOM_add(nameid, "Width", PSETID_Note);
+	mapi_nameid_OOM_add(nameid, "Height", PSETID_Note);
+	mapi_nameid_lid_add(nameid, 0x8510, PSETID_Common);
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(obj_folder, nameid->count,
+				 nameid->nameid, 0, &SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+
+	cValues = 0;
+	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+
+	if (oclient->card_name) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_CONVERSATION_TOPIC, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_SUBJECT, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_BODY, (const void *)oclient->card_name);
+	}
+
+	if (!oclient->update) {
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.StickyNote");
+
+		value = 1;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_FLAGS, (const void *)&value);
+
+		value = 768;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_ICON_INDEX, (const void *)&value);
+		
+		value = 272;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[3], (const void *)&value);
+
+		oclient->color = (oclient->color == -1) ? olYellow : oclient->color;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)&oclient->color);
+
+		oclient->width = (oclient->width == -1) ? 166 : oclient->width;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *)&oclient->width);
+
+		oclient->height = (oclient->height == -1) ? 200 : oclient->height;
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[2], (const void *)&oclient->height);
+
+	} else {
+		if (oclient->color != -1) {
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)&oclient->color);
+		}
+		if (oclient->width != -1) {
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *)&oclient->width);
+		}
+		if (oclient->height != -1) {
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[2], (const void *)&oclient->height);
+		}
+	}
+
+	
+	retval = SetProps(obj_message, lpProps, cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPIFreeBuffer(lpProps);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+	
+	return MAPI_E_SUCCESS;
+}
+
 static bool openchangeclient_sendnote(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
 {
 	enum MAPISTATUS		retval;
-	struct SPropValue	props[NOTE_CNPROPS];
 	mapi_object_t		obj_note;
 	mapi_object_t		obj_message;
 	mapi_id_t		id_note;	
-	struct mapi_nameid	*nameid;
-	struct SPropTagArray	*SPropTagArray;
-	uint32_t		value;
+	char			*uniq_id;
 
 	mapi_object_init(&obj_note);
 
@@ -1210,40 +1480,18 @@ static bool openchangeclient_sendnote(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	retval = CreateMessage(&obj_note, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	/* Build the list of named properties we want to set */
-	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "Color", PSETID_Note);
-	mapi_nameid_OOM_add(nameid, "Width", PSETID_Note);
-	mapi_nameid_OOM_add(nameid, "Height", PSETID_Note);
-	mapi_nameid_lid_add(nameid, 0x8510, PSETID_Common);
-	/* GetIDsFromNames and map property types */
-	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = GetIDsFromNames(&obj_note, nameid->count,
-				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
-	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
-	MAPIFreeBuffer(nameid);
-
-	set_SPropValue_proptag(&props[0], PR_CONVERSATION_TOPIC, (const void *)oclient->card_name);
-	set_SPropValue_proptag(&props[1], PR_SUBJECT, (const void *)oclient->card_name);
-	set_SPropValue_proptag(&props[2], PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
-	set_SPropValue_proptag(&props[3], PR_MESSAGE_CLASS, (const void *)"IPM.StickyNote");
-	value = 1;
-	set_SPropValue_proptag(&props[4], PR_MESSAGE_FLAGS, (const void *)&value);
-	value = 768;
-	set_SPropValue_proptag(&props[5], PR_ICON_INDEX, (const void *)&value);
-	set_SPropValue_proptag(&props[6], SPropTagArray->aulPropTag[0], (const void *)&oclient->color);
-	set_SPropValue_proptag(&props[7], SPropTagArray->aulPropTag[1], (const void *)&oclient->width);
-	set_SPropValue_proptag(&props[8], SPropTagArray->aulPropTag[2], (const void *)&oclient->height);
-	value = 272;
-	set_SPropValue_proptag(&props[9], SPropTagArray->aulPropTag[3], (const void *)&value);
-	
-	retval = SetProps(&obj_message, props, NOTE_CNPROPS);
-	MAPIFreeBuffer(SPropTagArray);
+	/* Set Note message properties */
+	retval = note_SetProps(mem_ctx, &obj_note, &obj_message, oclient);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_note, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Fetch and Display the message unique ID */
+	uniq_id = build_uniqueID(mem_ctx, &obj_note, &obj_message);
+	printf("    %-25s: %s\n", "Unique ID", uniq_id);
+	fflush(0);
+	talloc_free(uniq_id);
 
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_note);
@@ -1450,6 +1698,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	struct mapi_SPropValue_array	properties_array;
 	uint32_t			count;
 	int				i;
+	char				*id;
 	
 	if (!item) return false;
 
@@ -1509,6 +1758,9 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 			if (retval != MAPI_E_NOT_FOUND) {
 				retval = GetPropsAll(&obj_message, &properties_array);
 				if (retval == MAPI_E_SUCCESS) {
+					id = talloc_asprintf(mem_ctx, ": %llX/%llX",
+							     SRowSet.aRow[i].lpProps[0].value.d,
+							     SRowSet.aRow[i].lpProps[1].value.d);
 					mapi_SPropValue_array_named(&obj_message, 
 								    &properties_array);
 					switch (olFolder) {
@@ -1516,18 +1768,19 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 						mapidump_message(&properties_array);
 						break;
 					case olFolderCalendar:
-						mapidump_appointment(&properties_array);
+						mapidump_appointment(&properties_array, id);
 						break;
 					case olFolderContacts:
-						mapidump_contact(&properties_array);
+						mapidump_contact(&properties_array, id);
 						break;
 					case olFolderTasks:
-						mapidump_task(&properties_array);
+						mapidump_task(&properties_array, id);
 						break;
 					case olFolderNotes:
-						mapidump_note(&properties_array);
+						mapidump_note(&properties_array, id);
 						break;
 					}
+					talloc_free(id);
 					mapi_object_release(&obj_message);
 				}
 			}
@@ -1539,6 +1792,237 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 
 	return true;
 }
+
+/**
+ * Update Item
+ *
+ * Edit the existing item specified on command line.
+ * The function first loops over the mailbox, looking for the folder
+ * ID, then it looks for the particular message ID. It finally opens
+ * it, set properties and save the message.
+ *
+ */
+static enum MAPISTATUS folder_lookup(TALLOC_CTX *mem_ctx,
+				     uint64_t sfid,
+				     mapi_object_t *obj_parent,
+				     mapi_id_t folder_id,
+				     mapi_object_t *obj_ret)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_htable;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	uint32_t		i;
+	const uint64_t		*fid;
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(obj_parent, folder_id, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	mapi_object_init(&obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_FID);
+	retval = SetColumns(&obj_htable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows)) {
+		for (i = 0; i < SRowSet.cRows; i++) {
+			fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
+			if (fid && *fid == sfid) {
+				retval = OpenFolder(&obj_folder, *fid, obj_ret);
+				mapi_object_release(&obj_htable);
+				mapi_object_release(&obj_folder);
+				return MAPI_E_SUCCESS;
+			} else {
+				retval = folder_lookup(mem_ctx, sfid, &obj_folder, *fid, obj_ret);
+				if (retval == MAPI_E_SUCCESS) {
+					mapi_object_release(&obj_htable);
+					mapi_object_release(&obj_folder);
+					return MAPI_E_SUCCESS;
+				}
+			}
+		}
+	}
+
+	mapi_object_release(&obj_htable);
+	mapi_object_release(&obj_folder);
+
+	errno = MAPI_E_NOT_FOUND;
+	return MAPI_E_NOT_FOUND;
+}
+
+static enum MAPISTATUS message_lookup(TALLOC_CTX *mem_ctx, 
+				      uint64_t smid,
+				      mapi_object_t *obj_folder, 
+				      mapi_object_t *obj_message)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_htable;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	uint32_t		i;
+	const uint64_t		*fid;
+	const uint64_t		*mid;
+
+	mapi_object_init(&obj_htable);
+	retval = GetContentsTable(obj_folder, &obj_htable);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2, PR_FID, PR_MID);
+	retval = SetColumns(&obj_htable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
+		for (i = 0; i < SRowSet.cRows; i++) {
+			fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
+			mid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_MID);
+			if (mid && *mid == smid) {
+				retval = OpenMessage(obj_folder, *fid, *mid, obj_message, MAPI_MODIFY);
+				mapi_object_release(&obj_htable);
+				return retval;
+			}
+		}
+	}
+
+	mapi_object_release(&obj_htable);
+
+	errno = MAPI_E_NOT_FOUND;
+	return MAPI_E_NOT_FOUND;
+}
+
+static bool openchangeclient_updateitem(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store,
+					struct oclient *oclient, const char *container_class)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_message;
+	mapi_id_t		id_tis;
+	char			*fid_str;
+	uint64_t		fid;
+	uint64_t		mid;
+	const char		*item = NULL;
+
+	item = oclient->update;
+
+	if (!item) {
+		DEBUG(0, ("Missing ID\n"));
+		errno = MAPI_E_INVALID_PARAMETER;
+		return false;
+	}
+
+	if (!container_class) {
+		DEBUG(0, ("Missing container class\n"));
+		errno = MAPI_E_INVALID_PARAMETER;
+		return false;
+	}
+
+	fid_str = strsep((char **)&item, "/");
+	if (!fid_str) {
+		DEBUG(0, ("Invalid ID\n"));
+		errno = MAPI_E_INVALID_PARAMETER;
+		return false;
+	}
+
+	fid = strtoull(fid_str, NULL, 16);
+	mid = strtoull(item, NULL, 16);
+
+	/* Step 1: search the folder from Top Information Store */
+	mapi_object_init(&obj_folder);
+	retval = GetDefaultFolder(obj_store, &id_tis, olFolderTopInformationStore);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	retval = folder_lookup(mem_ctx, fid, obj_store, id_tis, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Step 2: search the message */
+	mapi_object_init(&obj_message);
+	retval = message_lookup(mem_ctx, mid, &obj_folder, &obj_message);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Step 3: edit the message */
+	if (!strcmp(container_class, IPF_APPOINTMENT)) {
+		retval = appointment_SetProps(mem_ctx, &obj_folder, &obj_message, oclient);
+	} else if (!strcmp(container_class, IPF_CONTACT)) {
+		retval = contact_SetProps(mem_ctx, &obj_folder, &obj_message, oclient);
+	} else if (!strcmp(container_class, IPF_TASK)) {
+		retval = task_SetProps(mem_ctx, &obj_folder, &obj_message, oclient);
+	} else if (!strcmp(container_class, IPF_STICKYNOTE)) {
+		retval = note_SetProps(mem_ctx, &obj_folder, &obj_message, oclient);
+	}
+
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Step 4: save the message */
+	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+
+	return true;
+}
+
+/**
+ * Delete an item given its unique ID
+ */
+static bool openchangeclient_deleteitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, 
+					 struct oclient *oclient)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_message;
+	mapi_id_t		id_tis;
+	char			*fid_str;
+	uint64_t		fid;
+	uint64_t		mid;
+	const char		*item = NULL;
+
+	item = oclient->delete;
+
+	if (!item) {
+		DEBUG(0, ("Missing ID\n"));
+		errno = MAPI_E_INVALID_PARAMETER;
+		return false;
+	}
+	
+	fid_str = strsep((char **)&item, "/");
+	if (!fid_str) {
+		DEBUG(0, ("Invalid ID"));;
+		errno = MAPI_E_INVALID_PARAMETER;
+		return false;
+	}
+
+	fid = strtoull(fid_str, NULL, 16);
+	mid = strtoull(item, NULL, 16);
+
+	/* Step 1: search the folder from Top Information Store */
+	mapi_object_init(&obj_folder);
+	retval = GetDefaultFolder(obj_store, &id_tis, olFolderTopInformationStore);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	retval = folder_lookup(mem_ctx, fid, obj_store, id_tis, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) return false;
+	
+	/* Step 2: search the message within returned folder */
+	mapi_object_init(&obj_message);
+	retval = message_lookup(mem_ctx, mid, &obj_folder, &obj_message);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Step 3: delete the message */
+	retval = DeleteMessage(&obj_folder, &mid, 1);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+
+	return true;
+}
+
 
 /**
  * Dump email
@@ -1813,6 +2297,7 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx, struct oclient *oclie
 	do {
 		count += 0x2;
 		retval = GetGALTable(SPropTagArray, &SRowSet, count, ulFlags);
+		printf("SRoSet->cRows = %d\n", SRowSet->cRows);
 		if (SRowSet->cRows) {
 			for (i = 0; i < SRowSet->cRows; i++) {
 				mapidump_PAB_entry(&SRowSet->aRow[i]);
@@ -1895,7 +2380,8 @@ int main(int argc, const char *argv[])
 	      OPT_MAPI_EMAIL, OPT_MAPI_FULLNAME, OPT_MAPI_CARDNAME, OPT_MAPI_PRIORITY,
 	      OPT_MAPI_TASKSTATUS, OPT_MAPI_IMPORTANCE, OPT_MAPI_LABEL, OPT_PF, 
 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
-	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE};
+	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE,
+	      OPT_UPDATE, OPT_DELETEITEMS};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -1911,6 +2397,8 @@ int main(int argc, const char *argv[])
 		{"fetchmail", 'F', POPT_ARG_NONE, NULL, OPT_FETCHMAIL, "fetch user INBOX mails"},
 		{"storemail", 'G', POPT_ARG_STRING, NULL, OPT_STOREMAIL, "retrieve a mail on the filesystem"},
 		{"fetch-items", 'i', POPT_ARG_STRING, NULL, OPT_FETCHITEMS, "fetch specified user INBOX items"},
+		{"delete", 'd', POPT_ARG_STRING, NULL, OPT_DELETEITEMS, "delete message given its unique ID"},
+		{"update", 'u', POPT_ARG_STRING, NULL, OPT_UPDATE, "update the specified item"},
 		{"mailbox", 'm', POPT_ARG_NONE, NULL, OPT_MAILBOX, "list mailbox folder summary"},
 		{"deletemail", 'D', POPT_ARG_NONE, NULL, OPT_DELETEMAIL, "delete a mail from user INBOX"},
 		{"attachments", 'A', POPT_ARG_STRING, NULL, OPT_ATTACH, "send a list of attachments"},
@@ -1998,6 +2486,12 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_FETCHITEMS:
 			opt_fetchitems = poptGetOptArg(pc);
+			break;
+		case OPT_DELETEITEMS:
+			oclient.delete = poptGetOptArg(pc);
+			break;
+		case OPT_UPDATE:
+			oclient.update = poptGetOptArg(pc);
 			break;
 		case OPT_SENDMAIL:
 			opt_sendmail = true;
@@ -2223,6 +2717,14 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	if (oclient.delete) {
+		retval = openchangeclient_deleteitems(mem_ctx, &obj_store, &oclient);
+		mapi_errstr("deleteitems", GetLastError());
+		if (retval != true) {
+			goto end;
+		}
+	}
+
 	if (opt_mailbox) {
 		if (oclient.pf == true) {
 			retval = openchangeclient_pf(mem_ctx, &obj_store);
@@ -2271,18 +2773,23 @@ int main(int argc, const char *argv[])
 
 	/* MAPI calendar operations */
 	if (opt_sendappointment) {
-		if (!oclient.dtstart) {
+		if (!oclient.dtstart && !oclient.update) {
 			printf("You need to specify a start date (e.g: 2007-06-01 22:30:00)\n");
 			goto end;
 		}
 		
-		if (!oclient.dtend) {
+		if (!oclient.dtend && !oclient.update) {
 			printf("Setting default end date\n");
 			oclient.dtend = oclient.dtstart;
 		}
 
-		retval = openchangeclient_sendappointment(mem_ctx, &obj_store, &oclient);
-		mapi_errstr("sendappointment", GetLastError());
+		if (!oclient.update) {
+			retval = openchangeclient_sendappointment(mem_ctx, &obj_store, &oclient);
+			mapi_errstr("sendappointment", GetLastError());
+		} else {
+			retval = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_APPOINTMENT);
+			mapi_errstr("update appointment", GetLastError());
+		}
 		if (retval != true) {
 			goto end;
 		}
@@ -2290,8 +2797,13 @@ int main(int argc, const char *argv[])
 
 	/* MAPI contact operations */
 	if (opt_sendcontact) {
-		retval = openchangeclient_sendcontact(mem_ctx, &obj_store, &oclient);
-		mapi_errstr("sendcontact", GetLastError());
+		if (!oclient.update) {
+			retval = openchangeclient_sendcontact(mem_ctx, &obj_store, &oclient);
+			mapi_errstr("sendcontact", GetLastError());
+		} else {
+			retval = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_CONTACT);
+			mapi_errstr("update contact", GetLastError());
+		}
 		if (retval != true) {
 			goto end;
 		}
@@ -2299,18 +2811,23 @@ int main(int argc, const char *argv[])
 
 	/* MAPI task operations */
 	if (opt_sendtask) {
-		if (!oclient.dtstart) {
+		if (!oclient.dtstart && !oclient.update) {
 			printf("You need to specify a start date (e.g: 2007-06-01 22:30:00)\n");
 			goto end;
 		}
 		
-		if (!oclient.dtend) {
+		if (!oclient.dtend && !oclient.update) {
 			printf("Setting default end date\n");
 			oclient.dtend = oclient.dtstart;
 		}
 
-		retval = openchangeclient_sendtask(mem_ctx, &obj_store, &oclient);
-		mapi_errstr("sentask", GetLastError());
+		if (!oclient.update) {
+			retval = openchangeclient_sendtask(mem_ctx, &obj_store, &oclient);
+			mapi_errstr("sentask", GetLastError());
+		} else {
+			retval = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_TASK);
+			mapi_errstr("update task", GetLastError());
+		}
 		if (retval != true) {
 			goto end;
 		}
@@ -2318,12 +2835,16 @@ int main(int argc, const char *argv[])
 
 	/* MAPI note operations */
 	if (opt_sendnote) {
-		retval = openchangeclient_sendnote(mem_ctx, &obj_store, &oclient);
-		mapi_errstr("sendnote", GetLastError());
+		if (!oclient.update) {
+			retval = openchangeclient_sendnote(mem_ctx, &obj_store, &oclient);
+			mapi_errstr("sendnote", GetLastError());
+		} else {
+			retval = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_STICKYNOTE);
+			mapi_errstr("update note", GetLastError());
+		}
 		if (retval != true) {
 			goto end;
 		}
-		
 	}
 	
 	/* Monitor newmail notifications */

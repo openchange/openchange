@@ -245,7 +245,7 @@ const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 	}
 }
 
-const void *get_SPropValue_data(struct SPropValue *lpProps)
+_PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 {
 	if (lpProps->ulPropTag == 0) {
 		return NULL;
@@ -283,6 +283,16 @@ _PUBLIC_ bool set_SPropValue_proptag(struct SPropValue *lpProps, uint32_t aulPro
 	lpProps->dwAlignPad = 0x0;
 
 	return (set_SPropValue(lpProps, data));
+}
+
+_PUBLIC_ struct SPropValue *add_SPropValue(TALLOC_CTX *mem_ctx, struct SPropValue *lpProps, uint32_t *cValues, uint32_t aulPropTag, const void * data)
+{
+	lpProps = talloc_realloc(mem_ctx, lpProps, struct SPropValue, *cValues + 2);
+
+	set_SPropValue_proptag(&lpProps[*cValues], aulPropTag, data);
+	*cValues = *cValues + 1;
+
+	return lpProps;
 }
 
 _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
@@ -410,6 +420,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 		return (strlen(sprop->value.lpszA) + 1);
 	case PT_UNICODE:
 		mapi_sprop->value.lpszW = sprop->value.lpszW;
+		if (!mapi_sprop->value.lpszW) return 0;
 		return (strlen(sprop->value.lpszW) * 2 + 2);
 	case PT_SYSTIME:
 		mapi_sprop->value.ft.dwLowDateTime = sprop->value.ft.dwLowDateTime;

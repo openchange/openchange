@@ -24,6 +24,8 @@
 
 /**
    \file IMAPISession.c
+
+   \brief Session initialization options
  */
 
 
@@ -31,7 +33,7 @@
    \details Open the Public Folder store
 
    This function opens the public folder store. This allows access to
-   the normal folders.
+   the public folders.
 
    \param obj_store the result of opening the store
 
@@ -125,7 +127,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
    \details Open the Message Store
 
    This function opens the main message store. This allows access to
-   the normal folders.
+   the normal user folders.
 
    \param obj_store the result of opening the store
 

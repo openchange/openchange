@@ -25,7 +25,7 @@
 /**
    \file simple_mapi.c
 
-   \brief Convenient functions.
+   \brief Convenience functions.
 */
 
 

@@ -26,6 +26,8 @@
 
 /**
    \file IMessage.c
+
+   \brief Operations on messages
  */
 
 

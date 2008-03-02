@@ -25,7 +25,7 @@
 /**
    \file lzfu.c
    
-   \brief RTF Compressed related functions
+   \brief Compressed RTF related functions
 */
 
 

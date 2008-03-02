@@ -24,6 +24,8 @@
 
 /**
    \file IMAPIFolder.c
+
+   \brief Folder related functions
  */
 
 

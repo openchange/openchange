@@ -25,12 +25,12 @@
 /**
    \file mapi_nameid.c
 
-   \brief mapi_nameid convenient API
+   \brief mapi_nameid convenience API
 */
 
 
 /**
-   \details Create a new mapi_newid structure
+   \details Create a new mapi_nameid structure
 
    \param mem_ctx memory context to use for allocation
 
@@ -70,7 +70,7 @@ _PUBLIC_ struct mapi_nameid *mapi_nameid_new(TALLOC_CTX *mem_ctx)
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set
+   - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
    - MAPI_E_NOT_FOUND: the entry intended to be added was not found
 
@@ -137,7 +137,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_add(struct mapi_nameid *mapi_nameid,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set
+   - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
    - MAPI_E_NOT_FOUND: the entry intended to be added was not found
 
@@ -202,7 +202,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set
+   - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
    - MAPI_E_NOT_FOUND: the entry intended to be added was not found
 
@@ -267,7 +267,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
    
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
-   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set
+   - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
 
    \sa GetIDsFromNames
@@ -301,7 +301,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_name
    
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
-   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set
+   - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
 
    \sa GetIDsFromNames, mapi_nameid_SPropTagArray

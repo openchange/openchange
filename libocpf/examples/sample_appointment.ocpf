@@ -58,4 +58,5 @@ NPROPERTY {
 	  OOM:Private:PSETID_Common = B"true"
 
 	  MNID_ID:0x8501:PT_LONG:PSETID_Common = $reminder
+	  MNID_STRING:"Keywords":PS_PUBLIC_STRINGS = { "single category" }
 };

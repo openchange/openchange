@@ -69,6 +69,7 @@ int			folderset;
 
 %token OBRACE
 %token EBRACE
+%token COMMA
 %token SEMICOLON
 %token COLON
 %token EQUAL
@@ -78,6 +79,9 @@ int			folderset;
 %%
 
 keywords	: | keywords kvalues
+		{
+			memset(&lpProp, 0, sizeof (union SPropValue_CTR));
+		}
 		;
 
 kvalues		: Type
@@ -142,6 +146,7 @@ Set		:
 		kw_SET VAR EQUAL propvalue
 		{
 			ocpf_variable_add($2, lpProp, type);
+			memset(&lpProp, 0, sizeof (union SPropValue_CTR));
 		}
 		;
 
@@ -151,6 +156,9 @@ Property	:
 		}
 
 pcontent       	: | pcontent content
+		{
+			memset(&lpProp, 0, sizeof (union SPropValue_CTR));
+		}
 		;
 
 content		:
@@ -185,12 +193,46 @@ propvalue	: STRING
 			ocpf_add_filetime($1, &lpProp.ft);
 			type = PT_SYSTIME;
 		}
-		| MVSTRING	
+		| OBRACE mvstring_contents STRING EBRACE
 		{
-			type = PT_MV_STRING8;
-			lpProp.MVszA = $1;
+			TALLOC_CTX *mem_ctx;
+
+			if (!lpProp.MVszA.cValues) {
+				lpProp.MVszA.cValues = 0;
+				lpProp.MVszA.strings = talloc_array(ocpf->mem_ctx, struct LPSTR *, 2);
+			} else {
+				lpProp.MVszA.strings = talloc_realloc(NULL, lpProp.MVszA.strings, struct LPSTR *,
+								      lpProp.MVszA.cValues + 2);
+			}
+			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.strings;
+			lpProp.MVszA.strings[lpProp.MVszA.cValues] = talloc_zero(mem_ctx, struct LPSTR);
+			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.strings[lpProp.MVszA.cValues];
+			lpProp.MVszA.strings[lpProp.MVszA.cValues]->lppszA = talloc_strdup(mem_ctx, $3);
+			lpProp.MVszA.cValues += 1;
 		}
 		;
+
+mvstring_contents: | mvstring_contents mvstring_content
+
+
+mvstring_content  : STRING COMMA
+		  {
+			TALLOC_CTX *mem_ctx;
+
+			if (!lpProp.MVszA.cValues) {
+				lpProp.MVszA.cValues = 0;
+				lpProp.MVszA.strings = talloc_array(ocpf->mem_ctx, struct LPSTR *, 2);
+			} else {
+				lpProp.MVszA.strings = talloc_realloc(NULL, lpProp.MVszA.strings, struct LPSTR *,
+								      lpProp.MVszA.cValues + 2);
+			}
+			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.strings;
+			lpProp.MVszA.strings[lpProp.MVszA.cValues] = talloc_zero(mem_ctx, struct LPSTR);
+			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.strings[lpProp.MVszA.cValues];
+			lpProp.MVszA.strings[lpProp.MVszA.cValues]->lppszA = talloc_strdup(mem_ctx, $1);
+			lpProp.MVszA.cValues += 1;
+		  }
+		  ;
 
 NProperty	:
 		kw_NPROPERTY OBRACE npcontent EBRACE SEMICOLON
@@ -198,6 +240,9 @@ NProperty	:
 		}
 
 npcontent	: | npcontent ncontent
+		{
+			memset(&lpProp, 0, sizeof (union SPropValue_CTR));
+		}
 		;
 
 ncontent	: kind EQUAL propvalue
@@ -276,5 +321,5 @@ known_kind	: kw_MNID_ID COLON INTEGER COLON IDENTIFIER
 
 void yyerror(char *s)
 {
-	printf("%s", s);
+	printf("%s: %d", s, lineno);
 }

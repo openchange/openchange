@@ -44,7 +44,6 @@ void ocpf_do_debug(const char *format, ...)
 	free(s);
 }
 
-
 const char *ocpf_get_filename(void)
 {
 	return ocpf->filename;
@@ -91,6 +90,7 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 	switch (proptype) {
 	case PT_STRING8:
 		*value = talloc_memdup(mem_ctx, (const void *)lpProp.lpszA, strlen(lpProp.lpszA) + 1);
+		talloc_free((char *)lpProp.lpszA);
 		return OCPF_SUCCESS;
 	case PT_LONG:
 		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.l, sizeof (uint32_t));
@@ -118,6 +118,7 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 				((struct SLPSTRArray *)*value)->strings[i] = talloc_zero(mem_ctx, struct LPSTR);
 				((struct SLPSTRArray *)*value)->strings[i]->lppszA = talloc_strdup(mem_ctx, lpProp.MVszA.strings[i]->lppszA);
 			}
+			talloc_free(lpProp.MVszA.strings);
 		}
 		return OCPF_SUCCESS;
 	default:

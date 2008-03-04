@@ -59,6 +59,12 @@
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
 	</tr>
 	<tr>
+	   <td style="text-align:center">05/03/08</td>
+	   <td style="text-align:center"><strong>0.2</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:center">Improve PT_MV_STRING8 support</td>
+	</tr>
+	<tr>
 	   <td style="text-align:center">03/03/08</td>
 	   <td style="text-align:center"><strong>0.1</strong></td>
 	   <td style="text-align:center">Julien Kerihuel</td>
@@ -527,8 +533,8 @@ href="#proptype"> 8. Supported Property Types </a>.
 Considering the behavior described above, we could set the "Keywords"
 MNID_STRING named property using any of the following example:
 \code
-       MNID_STRING:"Keywords":PS_PUBLIC_STRINGS               = one;two;three;
-       MNID_STRING:"Keywords":PT_MV_STRING8:PS_PUBLIC_STRINGS = one;two;three;
+       MNID_STRING:"Keywords":PS_PUBLIC_STRINGS               = {"one", "two" , "three" }
+       MNID_STRING:"Keywords":PT_MV_STRING8:PS_PUBLIC_STRINGS = {"one", "two" , "three" }
 \endcode
 
 <br/>
@@ -600,13 +606,21 @@ with the syntax below:
 
 <a name="mv_string8"></a><h3>8.6. PT_MV_STRING8</h3>
 
-OCPF PT_MV_STRING8 support is yet experimental and should be improved
-in further revision. The current format only allows to set different
-single words. These are identifiers sequenced with semi-colon and
-which last identifier must be followed with a semi-colon.
+PT_MV_STRING8 are arrays of strings. OCPF defines PT_MV_STRING8
+property values as STRING propety values separated by commas and enclosed within
+braces.
 
 \code
-      one;two;three;owned;
+      { STRING, STRING, ..., STRING }	
+\endcode
+
+One STRING property value is at least required to create a valid
+PT_MV_STRING8 property. If two or more STRING property values are set,
+then they must be separated with comma.
+
+\code
+      { "single multi-string value" }
+      { "one" , "two", "three", "owned" }
 \endcode
 <br/>
 

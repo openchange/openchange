@@ -62,6 +62,7 @@ PT_SYSTIME	{ return kw_PT_SYSTIME; }
 PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
 \{		{ return OBRACE; }
 \}		{ return EBRACE; }
+,		{ return COMMA; }
 ;		{ return SEMICOLON; }
 :		{ return COLON; }
 =		{ return EQUAL;}
@@ -147,27 +148,6 @@ PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
 			    *p++ = '\0';
 			    ocpf_yylval.name = buf;
 			    return STRING; 
-			}
-([A-Za-z0-9_]+\;)+ {
-			char *y = yytext;
-			char *tmp;
-			int j;
-
-			tmp = strtok((char *)y, ";");
-			ocpf_yylval.MVszA.strings = talloc_array(ocpf->mem_ctx, struct LPSTR *, 2);
-
-			ocpf_yylval.MVszA.cValues = 1;
-			ocpf_yylval.MVszA.strings[0] = talloc_zero(ocpf->mem_ctx, struct LPSTR);
-			ocpf_yylval.MVszA.strings[0]->lppszA = talloc_strdup(ocpf->mem_ctx, tmp);
-
-			for (j = 1; (tmp = strtok(NULL, ";")) != NULL; j++) {
-			       ocpf_yylval.MVszA.strings = talloc_realloc(ocpf->mem_ctx, ocpf_yylval.MVszA.strings, struct LPSTR *, j + 2);
-			       ocpf_yylval.MVszA.cValues++;
-			       ocpf_yylval.MVszA.strings[j] = talloc_zero(ocpf->mem_ctx, struct LPSTR);
-			       ocpf_yylval.MVszA.strings[j]->lppszA = talloc_strndup(ocpf->mem_ctx, tmp, strlen(tmp));
-			}
-
-			return MVSTRING;
 			}
 \$[-A-Za-z0-9_]+      	{ char *y = yytext + 1;
 			  ocpf_yylval.var = strdup((const char *)y);

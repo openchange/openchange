@@ -24,6 +24,7 @@ FOLDER	"olFolderTasks"
 
 OLEGUID PSETID_Task             "00062003-0000-0000-c000-000000000046"
 OLEGUID	PSETID_Common		"00062008-0000-0000-c000-000000000046"
+OLEGUID	PS_PUBLIC_STRINGS	"00020329-0000-0000-c000-000000000046"
 
 SET	$subject	=	"[OCPF] Sample Task"
 SET	$body		=	"This is the sample task body"
@@ -41,8 +42,10 @@ PROPERTY {
 };
 
 NPROPERTY {
+	  OOM:Companies:PSETID_Common = {"OpenChange Project", "Samba Project" }
 	  OOM:StartDate:PSETID_Task = $start_date
 	  OOM:DueDate:PSETID_Task = $end_date
 	  OOM:Status:PSETID_Task = $task_status
 	  OOM:Private:PSETID_Common = B"true"
+	  MNID_STRING:"Keywords":PS_PUBLIC_STRINGS = { "Category1", "Category2" }
 };

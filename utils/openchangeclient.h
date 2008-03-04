@@ -22,6 +22,20 @@
 #ifndef __OPENCHANGECLIENT_H__
 #define	__OPENCHANGECLIENT_H__
 
+struct oc_property {
+	struct oc_property	*prev;
+	struct oc_property	*next;
+	uint32_t		ulPropTag;
+	const void		*data;
+	bool			named;
+};
+
+struct ocpf_file {
+	struct ocpf_file	*prev;
+	struct ocpf_file	*next;
+	const char		*filename;
+};
+
 struct attach {
 	const char		*filename;
 	struct SBinary		bin;
@@ -29,6 +43,7 @@ struct attach {
 };
 
 struct oclient {
+	struct oc_property	*props;
 	const char     		*update;
 	const char		*delete;
 	const char		*subject;
@@ -62,6 +77,8 @@ struct oclient {
 	/* PF related options */
 	bool			pf;
 	const char		*folder;
+	/* OCPF related options */
+	struct ocpf_file	*ocpf_files;
 };
 
 struct itemfolder {

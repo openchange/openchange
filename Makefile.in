@@ -3,6 +3,7 @@
 
 CC=@CC@
 LEX=@FLEX@
+YACC=@YACC@
 CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 \
 	   -DDEFAULT_LDIF=\"$(datadir)/setup\" 
 PIDL=@PIDL@
@@ -60,8 +61,10 @@ all: 	\
 	torture/torture_proto.h					\
 	providers/providers_proto.h server/dcesrv_proto.h	\
 	libmapiadmin/proto.h					\
+	libocpf/proto.h						\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)			\
 	libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+	libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)			\
 	bin/schemaIDGUID					\
 	bin/mapiprofile						\
 	bin/openchangeclient					\
@@ -97,6 +100,8 @@ install: all $(SWIGDIRS-INSTALL)
 	ln -sf libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapi.$(SHLIBEXT)
 	$(INSTALL) -m 0755 libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiadmin.$(SHLIBEXT)
+	$(INSTALL) -m 0755 libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libocpf.$(SHLIBEXT)
 	$(INSTALL) -m 0755 torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
 	$(INSTALL) -m 0755 server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
 	$(INSTALL) -m 0755 server/dcesrv_exchange_remote.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
@@ -107,6 +112,7 @@ install: all $(SWIGDIRS-INSTALL)
 	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL) -m 0644 libmapi.pc $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL) -m 0644 libmapiadmin.pc $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 libocpf.pc $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL) -m 0644 libmapi/dlinklist.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/libmapi.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/proto.h $(DESTDIR)$(includedir)/libmapi/
@@ -130,6 +136,7 @@ install: all $(SWIGDIRS-INSTALL)
 uninstall: $(SWIGDIRS-UNINSTALL)
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapi.pc
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapiadmin.pc
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/libocpf.pc
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
 	rm -f $(DESTDIR)$(bindir)/mapiprofile
 	rm -f $(DESTDIR)$(bindir)/openchangeclient
@@ -139,6 +146,8 @@ uninstall: $(SWIGDIRS-UNINSTALL)
 	rm -f $(DESTDIR)$(bindir)/locale_codepage
 	rm -f $(DESTDIR)$(bindir)/mapitest
 	rm -f $(DESTDIR)$(libdir)/libmapi.*
+	rm -f $(DESTDIR)$(libdir)/libmapiadmin.*
+	rm -f $(DESTDIR)$(libdir)/libocpf.*
 	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
 	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_exchange.*
 	rm -f $(DESTDIR)$(datadir)/js/oc_provision.js
@@ -261,7 +270,8 @@ bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 bin/openchangeclient: 	utils/openchangeclient.o			\
 			utils/openchange-tools.o			\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
@@ -299,7 +309,7 @@ bin/mapitest:		utils/mapitest/mapitest.o			\
 
 distclean: clean $(SWIGDIRS-DISTCLEAN)
 	rm -rf autom4te.cache
-	rm -f libmapi.pc libmapiadmin.pc
+	rm -f libmapi.pc libmapiadmin.pc libocpf.pc
 	rm -f Doxyfile
 	rm -f Makefile config.status config.log
 	rm -f intltool-extract intltool-merge intltool-update
@@ -307,6 +317,7 @@ distclean: clean $(SWIGDIRS-DISTCLEAN)
 realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
 	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
+	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f torture/openchange.$(SHLIBEXT)
 	rm -f server/dcesrv_exchange.$(SHLIBEXT)
 	rm -f server/dcesrv_exchange_remote.$(SHLIBEXT)
@@ -328,6 +339,10 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f utils/*.o
 	rm -f utils/backup/*.o
 	rm -f utils/mapitest/*.o
+	rm -f libocpf/*.{o,po}
+	rm -f libocpf/lex.yy.c
+	rm -f libocpf/ocpf.tab.{c,h}
+	rm -f utils/ocpf/*.{o,po}
 	rm -f gen_ndr/ndr_exchange* gen_ndr/exchange.h
 	rm -f libmapi/mapicode.{c,h}
 	rm -f libmapi/mapitags.{c,h}
@@ -336,6 +351,8 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f libmapi/proto_private.h
 	rm -f libmapiadmin/proto.h
 	rm -f libmapiadmin/proto_private.h
+	rm -f libocpf/proto.h
+	rm -f libocpf/proto_private.h
 	rm -f server/dcesrv_proto.h
 	rm -f providers/providers_proto.h
 	rm -f torture/*.$(SHLIBEXT) server/*.$(SHLIBEXT)
@@ -479,6 +496,34 @@ manpages = \
 		doc/man/man1/mapiprofile.1				\
 		doc/man/man1/openchangeclient.1				\
 		doc/man/man1/openchangepfadmin.1			
+
+libocpf/proto.h: 	libocpf/ocpf_public.c	\
+			libocpf/ocpf_dump.c	\
+			libocpf/ocpf_api.c	
+			@echo "Generating $@"
+			@./script/mkproto.pl --private=libocpf/proto_private.h \
+			--public=libocpf/proto.h $^
+
+libocpf/lex.yy.c:		libocpf/lex.l
+	@echo "Generating $@"
+	@$(LEX) -t $< > $@
+
+libocpf/ocpf.tab.c:	libocpf/ocpf.y
+	@echo "Generating $@"
+	@$(YACC) -pocpf_yy -d $< -o $@
+
+# Avoid warnings
+libocpf/lex.yy.o: CFLAGS=
+libocpf/ocpf.tab.o: CFLAGS=
+
+libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		libocpf/ocpf.tab.po	\
+						libocpf/lex.yy.po	\
+						libocpf/ocpf_public.po	\
+						libocpf/ocpf_dump.po	\
+						libocpf/ocpf_api.po	\
+						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(DSOOPT) -Wl,-soname,libocpf.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
 
 installman: doxygen
 	@./script/installman.sh $(DESTDIR)$(mandir) $(manpages)

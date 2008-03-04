@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+datarootdir=@prefix@/share
+datadir=@datadir@
+
+Name: OpenChange Property File
+Description: OCPF file format support
+Version: @PACKAGE_VERSION@
+Libs: @LIBS@
+Cflags: @CFLAGS@
+Requires: libmapi

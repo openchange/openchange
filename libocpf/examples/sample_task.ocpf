@@ -1,0 +1,48 @@
+/*
+ *  OpenChange Property File
+ *
+ *  Copyright (C) Julien Kerihuel 2008.
+ *
+ *  Sample appointment
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *   
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
+TYPE	"IPM.Task"
+FOLDER	"olFolderTasks"
+
+OLEGUID PSETID_Task             "00062003-0000-0000-c000-000000000046"
+OLEGUID	PSETID_Common		"00062008-0000-0000-c000-000000000046"
+
+SET	$subject	=	"[OCPF] Sample Task"
+SET	$body		=	"This is the sample task body"
+SET	$start_date	=	T2008-03-06 20:00:00
+SET	$end_date	=	T2008-03-06 23:00:00
+SET	$importance	=	2 /* IMPORTANCE_HIGH */
+SET	$task_status	=	3 /* Waiting */
+
+PROPERTY {
+	 PR_CONVERSATION_TOPIC = $subject
+	 PR_NORMALIZED_SUBJECT = $subject
+	 PR_BODY = $body
+	 PR_IMPORTANCE = $importance
+	 PR_SENSITIVITY = 2	/* needed to have private box ticked */
+};
+
+NPROPERTY {
+	  OOM:StartDate:PSETID_Task = $start_date
+	  OOM:DueDate:PSETID_Task = $end_date
+	  OOM:Status:PSETID_Task = $task_status
+	  OOM:Private:PSETID_Common = B"true"
+};

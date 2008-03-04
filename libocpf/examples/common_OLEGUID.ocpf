@@ -1,0 +1,29 @@
+/*
+ *  OpenChange Property File
+ *
+ *  Copyright (C) Julien Kerihuel 2008.
+ *
+ *  Registers common OLEGUID
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *   
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
+OLEGUID PSETID_Appointment      "00062002-0000-0000-c000-000000000046"
+OLEGUID PSETID_Task             "00062003-0000-0000-c000-000000000046"
+OLEGUID PSETID_Address          "00062004-0000-0000-c000-000000000046"
+OLEGUID PSETID_Common           "00062008-0000-0000-c000-000000000046"
+OLEGUID PSETID_Note             "0006200e-0000-0000-c000-000000000046"
+OLEGUID PSETID_Log              "0006200a-0000-0000-c000-000000000046"
+OLEGUID PS_PUBLIC_STRINGS       "00020329-0000-0000-c000-000000000046"
+OLEGUID PS_INTERNET_HEADERS     "00020386-0000-0000-c000-000000000046"

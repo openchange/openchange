@@ -7,7 +7,7 @@ AC_CONFIG_HEADER([config.h])
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 AC_PROG_CC
-dnl AC_PROG_YACC
+AC_PROG_YACC
 
 dnl ***********************
 dnl Check for PERL
@@ -28,6 +28,15 @@ AC_ARG_VAR([FLEX], [Location of the flex program.])
 AC_CHECK_PROG([FLEX], [flex], [flex])
 if test x"$FLEX" = x""; then
     AC_MSG_ERROR([You must have the flex lexer generator installed.])
+fi
+
+dnl ***********************
+dnl Check for Yacc
+dnl ***********************
+AC_ARG_VAR([YACC], [Location of the yacc program.])
+AC_CHECK_PROG([YACC], [yacc], [yacc])
+if test x"$YACC" = x""; then
+   AC_MSG_ERROR([You must have the yacc parser generator installed.])
 fi
 
 dnl ***********************
@@ -186,7 +195,7 @@ dnl ***********************
 dnl Makefiles 
 dnl ***********************
 
-AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc libmapiadmin.pc
-		 Doxyfile])
+AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc libmapiadmin.pc 
+		 libocpf.pc Doxyfile])
 AC_OUTPUT
 

@@ -20,42 +20,41 @@ int main(int argc, char *argv[])
 	char				*profdb;
         uint32_t                        i, count;
 
-	mem_ctx = talloc_init("fetchappointment");
+	mem_ctx = talloc_init("fetchmail");
 
         /* Initialize MAPI */
 	profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, getenv("HOME"));
         retval = MAPIInitialize(profdb);
-        MAPI_RETVAL_IF(retval, retval, NULL);
+        MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
         /* Find Default Profile */
         retval = GetDefaultProfile(&profname);
-        MAPI_RETVAL_IF(retval, retval, NULL);
+        MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
         /* Log on EMSMDB and NSPI */
         retval = MapiLogonEx(&session, profname, NULL);
-        MAPI_RETVAL_IF(retval, retval, NULL);
+        MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
         /* Open Message Store */
         mapi_object_init(&obj_store);
         retval = OpenMsgStore(&obj_store);
-        MAPI_RETVAL_IF(retval, retval, NULL);
+        MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
         /* Find Inbox default folder */
         retval = GetDefaultFolder(&obj_store, &id_inbox, olFolderInbox);
-        MAPI_RETVAL_IF(retval, retval, NULL);
+        MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
         /* Open Inbox folder */
         mapi_object_init(&obj_folder);
         retval = OpenFolder(&obj_store, id_inbox, &obj_folder);
-        MAPI_RETVAL_IF(retval, retval, NULL);
+        MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
         /* Retrieve Inbox content table */
         mapi_object_init(&obj_table);
         retval = GetContentsTable(&obj_folder, &obj_table);
-        MAPI_RETVAL_IF(retval, retval, NULL);
+        MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
         /* Create the MAPI table view */
-        mem_ctx = talloc_init("MAPI Table");
         SPropTagArray = set_SPropTagArray(mem_ctx, 0x2, PR_FID, PR_MID);
         retval = SetColumns(&obj_table, SPropTagArray);
         MAPIFreeBuffer(SPropTagArray);
@@ -64,7 +63,7 @@ int main(int argc, char *argv[])
 
         /* Get MAPI table rows count */
         retval = GetRowCount(&obj_table, &count);
-        MAPI_RETVAL_IF(retval, retval, NULL);
+        MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
         /* Iterate through rows */
         while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &rowset)) 

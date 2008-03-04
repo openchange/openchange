@@ -431,6 +431,21 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 		mapi_sprop->value.bin.lpb = sprop->value.bin.lpb;
 		return (mapi_sprop->value.bin.cb + sizeof(uint16_t));
 
+	case PT_MV_STRING8:
+		{
+		uint32_t	i;
+		uint32_t	size = 0;
+
+		mapi_sprop->value.MVszA.cValues = sprop->value.MVszA.cValues;
+		size += 4;
+
+		mapi_sprop->value.MVszA.strings = talloc_array(global_mapi_ctx->mem_ctx, struct mapi_LPSTR, mapi_sprop->value.MVszA.cValues);
+		for (i = 0; i < mapi_sprop->value.MVszA.cValues; i++) {
+			mapi_sprop->value.MVszA.strings[i].lppszA = sprop->value.MVszA.strings[i]->lppszA;
+			size += strlen(mapi_sprop->value.MVszA.strings[i].lppszA) + 1;
+		}
+		return size;
+		}
 	}
 	return 0;
 

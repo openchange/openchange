@@ -462,7 +462,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = libmapi doc/doxygen
+INPUT                  = libmapi libocpf doc/doxygen
 
 # This tag can be used to specify the character encoding of the source files that 
 # doxygen parses. Internally doxygen uses the UTF-8 encoding, which is also the default 
@@ -517,7 +517,7 @@ EXCLUDE_SYMBOLS        =
 # directories that contain example code fragments that are included (see 
 # the \include command).
 
-EXAMPLE_PATH           = doc/examples
+EXAMPLE_PATH           = doc/examples libocpf/examples
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the 
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp 
@@ -558,6 +558,12 @@ INPUT_FILTER           = "sed \
 			 -e 's/.*\<libmapi\/dlinklist.h\>//'		\
 			 -e 's/.*\<libmapi\/mapi_nameid.h\>//'		\
 			 -e 's/.*\<libmapi\/mapi_nameid_private.h\>//'	\
+			 -e 's/.*\<libocpf\/proto_private.h\>//'	\
+			 -e 's/.*\<libocpf\/ocpf_api.h\>//'		\
+			 -e 's/.*\<libocpf\/ocpf.tab.h\>//'		\
+			 -e 's/.*\<libgen.h\>//'			\
+			 -e 's/.*\<time.h\>//'				\
+			 -e 's/.*\<sys\/*\>//'				\
                          -e 's/_PUBLIC_//'"
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern 

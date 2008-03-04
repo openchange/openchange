@@ -254,6 +254,224 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
 	return MAPI_E_NOT_FOUND;
 }
 
+/**
+  \details Register and add a custom MNID_ID named property given its
+  lid, proptype and OLEGUID.
+ 
+  \param mapi_nameid the structure where results are stored 
+  \param lid the light ID of the name property (used by MNID_ID named
+  props only)
+  \param propType the named property type
+  \param OLEGUID the property set this entry belongs to
+ 
+  \return MAPI_E_SUCCESS on success, otherwise -1.
+ 
+  \note Developers should call GetLastError() to retrieve the last
+  MAPI error code. Possible MAPI error codes are:
+  - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+  - MAPI_E_INVALID_PARAMETER: one of the parameter was no set properly
+
+  \sa mapi_nameid_new, mapi_nameid_lid_add
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_custom_lid_add(struct mapi_nameid *mapi_nameid, 
+						    uint16_t lid, uint16_t propType, 
+						    const char *OLEGUID)
+{
+	uint16_t	count;
+
+	/* Sanity check */
+	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED,  NULL);
+	MAPI_RETVAL_IF(!lid, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!propType, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_nameid->nameid = talloc_realloc(mapi_nameid,
+					     mapi_nameid->nameid, struct MAPINAMEID,
+					     mapi_nameid->count + 1);
+	mapi_nameid->entries = talloc_realloc(mapi_nameid, 
+					      mapi_nameid->entries, struct mapi_nameid_tags,
+					      mapi_nameid->count + 1);
+
+	count = mapi_nameid->count;
+	mapi_nameid->entries[count].lid = lid;
+	mapi_nameid->entries[count].propType = propType;
+	mapi_nameid->entries[count].ulKind = MNID_ID;
+	mapi_nameid->entries[count].OLEGUID = OLEGUID;
+
+	mapi_nameid->nameid[count].ulKind = MNID_ID;
+	GUID_from_string(OLEGUID, &(mapi_nameid->nameid[count].lpguid));
+	mapi_nameid->nameid[count].kind.lid = lid;
+
+	mapi_nameid->count++;
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Register and add a custom MNID_STRING named property given
+   its string, proptype and OLEGUID.
+ 
+   \param mapi_nameid the structure where results are stored
+   \param lpwstrName the property name (used by MNID_STRING named props only)
+   \param propType the named property type
+   \param OLEGUID the property set this entry belongs to
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
+
+   \sa mapi_nameid_new, mapi_nameid_string_add
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_custom_string_add(struct mapi_nameid *mapi_nameid,
+						       const char *lpwstrName, uint16_t propType,
+						       const char *OLEGUID)
+{
+	uint16_t	count;
+
+	/* Sanity check */
+	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!lpwstrName, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!propType, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_nameid->nameid = talloc_realloc(mapi_nameid,
+					     mapi_nameid->nameid, struct MAPINAMEID,
+					     mapi_nameid->count + 1);
+	mapi_nameid->entries = talloc_realloc(mapi_nameid,
+					      mapi_nameid->entries, struct mapi_nameid_tags,
+					      mapi_nameid->count + 1);
+	count = mapi_nameid->count;
+	mapi_nameid->entries[count].lpwstrName = lpwstrName;
+	mapi_nameid->entries[count].propType = propType;
+	mapi_nameid->entries[count].ulKind = MNID_STRING;
+	mapi_nameid->entries[count].OLEGUID = OLEGUID;
+
+	mapi_nameid->nameid[count].ulKind = MNID_STRING;
+	GUID_from_string(OLEGUID, &(mapi_nameid->nameid[count].lpguid));
+	mapi_nameid->nameid[count].kind.lpwstr.lpwstrName = lpwstrName;
+	mapi_nameid->nameid[count].kind.lpwstr.length = strlen(lpwstrName) * 2 + 2;
+
+	mapi_nameid->count++;
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Search for a given OOM,OLEGUID couple and return the
+   associated propType.
+
+   \param OOM The Outlook Object Model
+   \param OLEGUID the named property GUID for this entry
+   \param propType pointer on returned named property type
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
+   - MAPI_E_NOT_FOUND: no named property found
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_lookup(const char *OOM, const char *OLEGUID,
+						uint16_t *propType)
+{
+	uint32_t	i;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!OOM, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
+		if (mapi_nameid_tags[i].OOM && 
+		    !strcmp(mapi_nameid_tags[i].OOM, OOM) &&
+		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
+			*propType = mapi_nameid_tags[i].propType;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	errno = MAPI_E_NOT_FOUND;
+	return -1;
+}
+
+
+/**
+   \details Search for a given OOM,OLEGUID couple and return the
+   associated propType.
+
+   \param lid the named property light ID
+   \param OLEGUID the named property GUID for this entry
+   \param propType pointer on returned named property type
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
+   - MAPI_E_NOT_FOUND: no named property found
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup(uint16_t lid, const char *OLEGUID,
+						uint16_t *propType)
+{
+	uint32_t	i;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!lid, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
+		if (mapi_nameid_tags[i].lid == lid &&
+		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
+			*propType = mapi_nameid_tags[i].propType;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	errno = MAPI_E_NOT_FOUND;
+	return -1;
+}
+
+
+/**
+   \details Search for a given OOM,OLEGUID couple and return the
+   associated propType.
+
+   \param lpwstrName the named property name
+   \param OLEGUID the named property GUID for this entry
+   \param propType pointer on returned named property type
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
+   - MAPI_E_NOT_FOUND: no named property found
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *lpwstrName, 
+						   const char *OLEGUID,
+						   uint16_t *propType)
+{
+	uint32_t	i;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!lpwstrName, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
+		if (mapi_nameid_tags[i].lpwstrName &&
+		    !strcmp(mapi_nameid_tags[i].lpwstrName, lpwstrName) &&
+		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
+			*propType = mapi_nameid_tags[i].propType;
+			return MAPI_E_SUCCESS;
+		}
+	}
+	
+	errno = MAPI_E_NOT_FOUND;
+	return -1;
+}
+
 
 /**
    \details set SPropTagArray ulPropTag property types from

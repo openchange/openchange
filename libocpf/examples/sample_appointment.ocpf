@@ -1,0 +1,61 @@
+/*
+ *  OpenChange Property File
+ *
+ *  Copyright (C) Julien Kerihuel 2008.
+ *
+ *  Sample appointment
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *   
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
+TYPE	"IPM.Appointment"
+
+FOLDER	"olFolderCalendar"
+
+OLEGUID	PSETID_Appointment	"00062002-0000-0000-c000-000000000046"
+OLEGUID	PSETID_Common		"00062008-0000-0000-c000-000000000046"
+OLEGUID	PS_PUBLIC_STRINGS	"00020329-0000-0000-c000-000000000046"
+
+SET $subject = "[OCPF] Julien Kerihuel Birthday"
+SET $start_date = T2008-03-06 22:00:00
+SET $end_date = T2008-03-06 23:45:00
+SET $reminder = 45
+
+PROPERTY {
+	 PR_CONVERSATION_TOPIC = $subject
+	 PR_NORMALIZED_SUBJECT = $subject
+	 PR_BODY = "Another year, another pleasure"	 
+	 PR_START_DATE = $start_date
+	 PR_END_DATE = $end_date
+	 PR_SENSITIVITY = 2
+};
+
+NPROPERTY {
+	  OOM:Label:PSETID_Appointment = 9
+	  	  
+	  OOM:Start:PSETID_Appointment  =  $start_date
+	  OOM:CommonStart:PSETID_Common =  $start_date
+
+	  OOM:End:PSETID_Appointment  = $end_date
+	  OOM:CommonEnd:PSETID_Common = $end_date
+
+	  OOM:Location:PSETID_Appointment = "Home Sweet Home"
+
+	  /* MeetingStatus */
+	  MNID_ID:0x8217:PSETID_Appointment = 0
+	  
+	  OOM:Private:PSETID_Common = B"true"
+
+	  MNID_ID:0x8501:PT_LONG:PSETID_Common = $reminder
+};

@@ -28,6 +28,7 @@ struct ocpf_var
 	struct ocpf_var		*next;
 	const char		*name;
 	const void		*value;
+	uint16_t		propType;
 };
 
 struct ocpf_oleguid
@@ -144,6 +145,8 @@ do {								\
 #define	OCPF_WARN_VAR_TYPE		"Variable property type not supported"
 
 #define	OCPF_WARN_FOLDER_ID_UNKNOWN	"Unknown Folder"
+
+#define	OCPF_WARN_PROPVALUE_MISMATCH	"Property type and value mismatch"
 
 #define	DATE_FORMAT     "%Y-%m-%d %H:%M:%S"
 

@@ -60,6 +60,7 @@ PT_STRING8	{ return kw_PT_STRING8; }
 PT_LONG		{ return kw_PT_LONG; }
 PT_SYSTIME	{ return kw_PT_SYSTIME; }
 PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
+PT_MV_STRING8	{ return kw_PT_MV_STRING8; }
 \{		{ return OBRACE; }
 \}		{ return EBRACE; }
 ,		{ return COMMA; }

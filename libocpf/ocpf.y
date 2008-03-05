@@ -66,6 +66,7 @@ int			folderset;
 %token kw_PT_STRING8
 %token kw_PT_LONG
 %token kw_PT_SYSTIME
+%token kw_PT_MV_STRING8
 
 %token OBRACE
 %token EBRACE
@@ -164,11 +165,11 @@ pcontent       	: | pcontent content
 content		:
 		IDENTIFIER EQUAL propvalue
 		{
-			ocpf_propvalue_s($1, lpProp);
+			ocpf_propvalue_s($1, lpProp, type);
 		}
 		| INTEGER EQUAL propvalue
 		{
-			ocpf_propvalue($1, "UNNAMED", lpProp);
+			ocpf_propvalue($1, "UNNAMED", lpProp, type);
 		}
 		| IDENTIFIER EQUAL VAR
 		{
@@ -209,6 +210,8 @@ propvalue	: STRING
 			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.strings[lpProp.MVszA.cValues];
 			lpProp.MVszA.strings[lpProp.MVszA.cValues]->lppszA = talloc_strdup(mem_ctx, $3);
 			lpProp.MVszA.cValues += 1;
+
+			type = PT_MV_STRING8;
 		}
 		;
 
@@ -247,13 +250,17 @@ npcontent	: | npcontent ncontent
 
 ncontent	: kind EQUAL propvalue
 		{
-			ocpf_nproperty_add(&nprop, lpProp, NULL, 0);
+			ocpf_nproperty_add(&nprop, lpProp, NULL, type);
 		}
 		| known_kind EQUAL propvalue
 		{
-			ocpf_nproperty_add(&nprop, lpProp, NULL, 0);
+			ocpf_nproperty_add(&nprop, lpProp, NULL, type);
 		}
 		| kind EQUAL VAR
+		{
+			ocpf_nproperty_add(&nprop, lpProp, $3, type);
+		}
+		| known_kind EQUAL VAR
 		{
 			ocpf_nproperty_add(&nprop, lpProp, $3, type);
 		}
@@ -298,6 +305,11 @@ proptype	: kw_PT_STRING8
 		{
 			memset(&nprop, 0, sizeof (struct ocpf_nprop));
 			nprop.propType = PT_SYSTIME; 
+		}
+		| kw_PT_MV_STRING8
+		{
+			memset(&nprop, 0, sizeof (struct ocpf_nprop));
+			nprop.propType = PT_MV_STRING8;
 		}
 		;
 

@@ -31,6 +31,9 @@ SET $subject = "[OCPF] Julien Kerihuel Birthday"
 SET $start_date = T2008-03-06 22:00:00
 SET $end_date = T2008-03-06 23:45:00
 SET $reminder = 45
+SET $keywords = { "candles", "friends", "family" }
+SET $private = B"true"
+SET $wrong = 0
 
 PROPERTY {
 	 PR_CONVERSATION_TOPIC = $subject
@@ -46,17 +49,19 @@ NPROPERTY {
 	  	  
 	  OOM:Start:PSETID_Appointment  =  $start_date
 	  OOM:CommonStart:PSETID_Common =  $start_date
-
-	  OOM:End:PSETID_Appointment  = $end_date
-	  OOM:CommonEnd:PSETID_Common = $end_date
+	  OOM:End:PSETID_Appointment    = $end_date
+	  OOM:CommonEnd:PSETID_Common   = $end_date
 
 	  OOM:Location:PSETID_Appointment = "Home Sweet Home"
 
 	  /* MeetingStatus */
-	  MNID_ID:0x8217:PSETID_Appointment = 0
+	  MNID_ID:0x8217:PSETID_Appointment = $wrong
 	  
-	  OOM:Private:PSETID_Common = B"true"
+	  OOM:Private:PSETID_Common = $private
 
+	  /* Set a reminder */
 	  MNID_ID:0x8501:PT_LONG:PSETID_Common = $reminder
-	  MNID_STRING:"Keywords":PS_PUBLIC_STRINGS = { "single category" }
+
+	  /* Add categories */
+	  MNID_STRING:"Keywords":PS_PUBLIC_STRINGS = $keywords
 };

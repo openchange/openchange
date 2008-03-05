@@ -66,12 +66,14 @@ int ocpf_propvalue_var(const char *propname, uint32_t proptag, const char *varia
 	} else {
 		aulPropTag = get_proptag_value(propname);
 	}
+
 	for (element = ocpf->props; element->next; element = element->next) {
 		OCPF_RETVAL_IF(element->aulPropTag == aulPropTag, OCPF_WARN_PROP_REGISTERED, NULL);
 	}
 
 	for (vel = ocpf->vars; vel->next; vel = vel->next) {
 		if (vel->name && !strcmp(vel->name, variable)) {
+			OCPF_RETVAL_IF(vel->propType != (aulPropTag & 0xFFFF), OCPF_WARN_PROPVALUE_MISMATCH, NULL);
 			element = NULL;
 			element = talloc_zero(ocpf->mem_ctx, struct ocpf_property);
 			element->aulPropTag = aulPropTag;
@@ -85,8 +87,11 @@ int ocpf_propvalue_var(const char *propname, uint32_t proptag, const char *varia
 }
 
 
-int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptype, union SPropValue_CTR lpProp)
+int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptype, uint16_t sproptype, 
+		       union SPropValue_CTR lpProp)
 {
+	OCPF_RETVAL_IF(proptype != sproptype, OCPF_WARN_PROPVALUE_MISMATCH, NULL);
+
 	switch (proptype) {
 	case PT_STRING8:
 		*value = talloc_memdup(mem_ctx, (const void *)lpProp.lpszA, strlen(lpProp.lpszA) + 1);
@@ -129,7 +134,7 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 }
 
 
-int ocpf_propvalue(uint32_t aulPropTag, const char *propname, union SPropValue_CTR lpProp)
+int ocpf_propvalue(uint32_t aulPropTag, const char *propname, union SPropValue_CTR lpProp, uint16_t proptype)
 {
 	struct ocpf_property	*element;
 	int			ret;
@@ -144,7 +149,7 @@ int ocpf_propvalue(uint32_t aulPropTag, const char *propname, union SPropValue_C
 	element = NULL;
 	element = talloc_zero(ocpf->mem_ctx, struct ocpf_property);
 	element->aulPropTag = aulPropTag;
-	ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, (uint16_t)aulPropTag & 0xFFFF, lpProp);
+	ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, (uint16_t)aulPropTag & 0xFFFF, proptype, lpProp);
 	if (ret == -1) {
 		talloc_free(element);
 		return OCPF_ERROR;
@@ -155,12 +160,12 @@ int ocpf_propvalue(uint32_t aulPropTag, const char *propname, union SPropValue_C
 }
 
 
-void ocpf_propvalue_s(const char *propname, union SPropValue_CTR lpProp)
+void ocpf_propvalue_s(const char *propname, union SPropValue_CTR lpProp, uint16_t proptype)
 {
 	uint32_t	aulPropTag;
 
 	aulPropTag = get_proptag_value(propname);
-	ocpf_propvalue(aulPropTag, propname, lpProp);
+	ocpf_propvalue(aulPropTag, propname, lpProp, proptype);
 }
 
 
@@ -179,7 +184,7 @@ void ocpf_propvalue_s(const char *propname, union SPropValue_CTR lpProp)
    \return OCPF_SUCCESS on success, otherwise OCPF_ERROR.
  */
 int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
-		       const char *var_name, uint16_t var_type)
+		       const char *var_name, uint16_t proptype)
 {
 	enum MAPISTATUS		retval;
 	int			ret = 0;
@@ -255,15 +260,16 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 		}
 	}
 
-	if (var_name && var_type) {
+	if (var_name) {
 		for (vel = ocpf->vars; vel->next; vel = vel->next) {
 			if (vel->name && !strcmp(vel->name, var_name)) {
+				OCPF_RETVAL_IF(element->propType != vel->propType, OCPF_WARN_PROPVALUE_MISMATCH, element);
 				element->value = vel->value;
 			}
 		}
 		OCPF_RETVAL_IF(!element->value, OCPF_WARN_VAR_NOT_REGISTERED, element);
 	} else {
-		ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, element->propType, lpProp);
+		ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, element->propType, proptype, lpProp);
 		if (ret == -1) {
 			talloc_free(element);
 			return OCPF_ERROR;
@@ -458,7 +464,7 @@ int ocpf_add_filetime(const char *date, struct FILETIME *ft)
 }
 
 
-int ocpf_variable_add(const char *name, union SPropValue_CTR lpProp, uint16_t type)
+int ocpf_variable_add(const char *name, union SPropValue_CTR lpProp, uint16_t propType)
 {
 	struct ocpf_var		*element;
 	int			ret;
@@ -474,8 +480,9 @@ int ocpf_variable_add(const char *name, union SPropValue_CTR lpProp, uint16_t ty
 
 	element = talloc_zero(ocpf->mem_ctx, struct ocpf_var);
 	element->name = talloc_strdup((TALLOC_CTX *)element, name);
+	element->propType = propType;
 
-	ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, type, lpProp);
+	ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, propType, propType, lpProp);
 	OCPF_RETVAL_IF(ret == -1, OCPF_WARN_VAR_TYPE, element);
 
 	DLIST_ADD(ocpf->vars, element);

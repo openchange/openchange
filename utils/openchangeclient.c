@@ -2437,7 +2437,7 @@ static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Step5. Set message properties */
-	retval = ocpf_set_SPropValue(mem_ctx, &obj_folder);
+	retval = ocpf_set_SPropValue(mem_ctx, &obj_folder, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Step6. Set message properties */

@@ -39,6 +39,7 @@
         <li><a href="#string8">    8.4. PT_STRING8        </a></li>
         <li><a href="#systime">    8.5. PT_SYSTIME        </a></li>
         <li><a href="#mv_string8"> 8.6. PT_MV_STRING8     </a></li>
+	<li><a href="#binary">     8.7  PT_BINARY         </a></li>
    </ul>
  </li>
  <li><a href="#tools">       9. OCPF and openchangeclient </a>
@@ -57,6 +58,12 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">06/03/08</td>
+	   <td style="text-align:center"><strong>0.3</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:center">Add PT_BINARY and Streams support</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">05/03/08</td>
@@ -623,6 +630,33 @@ then they must be separated with comma.
       { "one" , "two", "three", "owned" }
 \endcode
 <br/>
+
+<a name="binary"></a><h3>8.7. PT_BINARY</h3>
+
+PT_BINARY are blobs of data. OCPF defines PT_BINARY property values
+using two different methods. This can either be raw/inline blob of
+data or filename/external.
+
+If users wish to add raw data blob for a given property, they need to
+enclose INTEGER values within braces. However many cases occur where
+the data blob is large such as HTML content (PR_HTML has PT_BINARY
+property type). In such cases, users may rather prefer to write an
+external file and specify a filename.
+
+\code
+	{ INTEGER INTEGER [...] INTEGER }
+	< STRING >
+\endcode
+
+Note that if the blob of data (raw or pointed by filename) is too
+large to fit in the property values array, then ocpf will
+automatically open a stream for the property and write its data in the
+stream.
+
+\code
+	PR_HTML = { 0x48 0x65 0x6c 0x6c 0x6f } /* Hello */
+	PR_HTML = <"/tmp/sample.html">
+\endcode
 
 
 <a name="tools"></a><h2>9. OCPF and openchangeclient</h2>

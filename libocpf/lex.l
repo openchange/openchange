@@ -61,11 +61,14 @@ PT_LONG		{ return kw_PT_LONG; }
 PT_SYSTIME	{ return kw_PT_SYSTIME; }
 PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
 PT_MV_STRING8	{ return kw_PT_MV_STRING8; }
+PT_BINARY	{ return kw_PT_BINARY; }
 \{		{ return OBRACE; }
 \}		{ return EBRACE; }
 ,		{ return COMMA; }
 ;		{ return SEMICOLON; }
 :		{ return COLON; }
+\<		{ return LOWER; }
+\>		{ return GREATER; }
 =		{ return EQUAL;}
 \/\*			{ 
 			    int c, start_lineno = lineno;
@@ -166,7 +169,7 @@ T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
 			  ocpf_yylval.date = strdup((const char *)yytext + 1);
 			  return SYSTIME;
 			}
-0x[0-9A-Fa-f]+	{ char *e, *y = yytext;
+0x[0-9A-Fa-f]+		{ char *e, *y = yytext;
 			ocpf_yylval.l = strtoul((const char *)y, &e, 0);
 			if (e == y)
 				error_message("malformed constant (%s)", yytext);

@@ -21,6 +21,8 @@
 #include <libocpf/ocpf_api.h>
 #include <libocpf/ocpf.tab.h>
 
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <libgen.h>
 #include <time.h>
 
@@ -111,6 +113,11 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 		return OCPF_SUCCESS;
 	case PT_SYSTIME:
 		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.ft, sizeof (struct FILETIME));
+		return OCPF_SUCCESS;
+	case PT_BINARY:
+		*value = (const void *)talloc_zero(mem_ctx, struct SBinary);
+		((struct SBinary *)*value)->cb = lpProp.bin.cb;
+		((struct SBinary *)*value)->lpb = talloc_memdup(mem_ctx, (const void *)lpProp.bin.lpb, lpProp.bin.cb);
 		return OCPF_SUCCESS;
 	case PT_MV_STRING8:
 		*value = (const void *)talloc_zero(mem_ctx, struct SLPSTRArray);
@@ -486,6 +493,24 @@ int ocpf_variable_add(const char *name, union SPropValue_CTR lpProp, uint16_t pr
 	OCPF_RETVAL_IF(ret == -1, OCPF_WARN_VAR_TYPE, element);
 
 	DLIST_ADD(ocpf->vars, element);
+
+	return OCPF_SUCCESS;
+}
+
+
+int ocpf_binary_add(const char *filename, struct SBinary *bin)
+{
+	int		fd;
+	struct stat	sb;
+
+	OCPF_RETVAL_IF(stat(filename, &sb), OCPF_WARN_FILENAME_STAT, NULL);
+	fd = open(filename, O_RDONLY);
+	OCPF_RETVAL_IF(fd == -1, OCPF_WARN_FILENAME_INVALID, NULL);
+	
+	bin->lpb = talloc_size(ocpf->mem_ctx, sb.st_size);
+	bin->cb = read(fd, bin->lpb, sb.st_size);
+
+	close(fd);
 
 	return OCPF_SUCCESS;
 }

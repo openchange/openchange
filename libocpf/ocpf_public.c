@@ -120,6 +120,55 @@ _PUBLIC_ int ocpf_parse(const char *filename)
 }
 
 
+#define	MAX_READ_SIZE	0x1000
+
+static enum MAPISTATUS ocpf_stream(TALLOC_CTX *mem_ctx,
+				   mapi_object_t *obj_parent,
+				   uint32_t aulPropTag,
+				   struct SBinary *bin)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_stream;
+	DATA_BLOB		stream;
+	uint32_t		access_flags = 2;	/* MAPI_MODIFY by default */
+	uint32_t		size;
+	uint32_t		offset;
+	uint16_t		read_size;
+
+	mapi_object_init(&obj_stream);
+
+	/* Step1. Open the Stream */
+	retval = OpenStream(obj_parent, aulPropTag, access_flags, &obj_stream);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	/* Step2. Write the Stream */
+	size = MAX_READ_SIZE;
+	offset = 0;
+	while (offset <= bin->cb) {
+		stream.length = size;
+		stream.data = talloc_size(mem_ctx, size);
+		memcpy(stream.data, bin->lpb + offset, size);
+		
+		retval = WriteStream(&obj_stream, &stream, &read_size);
+		talloc_free(stream.data);
+		OCPF_RETVAL_IF(retval, retval, NULL);
+
+		/* Exit when there is nothing left to write */
+		if (!read_size) return MAPI_E_SUCCESS;
+		
+		offset += read_size;
+
+		if ((offset + size) > bin->cb) {
+			size = bin->cb - offset;
+		}
+	}
+
+	mapi_object_release(&obj_stream);
+
+	return MAPI_E_SUCCESS;
+}
+
+
 /**
    \details Build a SPropValue array from ocpf context
 
@@ -127,14 +176,18 @@ _PUBLIC_ int ocpf_parse(const char *filename)
    information stored.
 
    \param mem_ctx the memory context to use for memory allocation
-   \param obj_folder pointer the folder we use for internal MAPI operations
+   \param obj_folder pointer the folder object we use for internal
+   MAPI operations
+   \param obj_message pointer to the message object we use for
+   internal MAPI operations
 
    \return OCPF_SUCCESS on success, otherwise OCPF_ERROR.
 
    \sa ocpf_get_SPropValue
  */
 _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx, 
-					     mapi_object_t *obj_folder)
+					     mapi_object_t *obj_folder,
+					     mapi_object_t *obj_message)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_nameid	*nameid;
@@ -152,51 +205,67 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 	ocpf->lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
 
 	/* Step2. build the list of named properties we want to set */
-	nameid = mapi_nameid_new(mem_ctx);
-	for (nel = ocpf->nprops; nel->next; nel = nel->next) {
-		if (nel->OOM) {
-			mapi_nameid_OOM_add(nameid, nel->OOM, nel->oleguid);
-		} else if (nel->mnid_id) {
-			mapi_nameid_custom_lid_add(nameid, nel->mnid_id, nel->propType, nel->oleguid);
-		} else if (nel->mnid_string) {
-			mapi_nameid_custom_string_add(nameid, nel->mnid_string, nel->propType, nel->oleguid);
+	if (ocpf->nprops && ocpf->nprops->next) {
+		nameid = mapi_nameid_new(mem_ctx);
+		for (nel = ocpf->nprops; nel->next; nel = nel->next) {
+			if (nel->OOM) {
+				mapi_nameid_OOM_add(nameid, nel->OOM, nel->oleguid);
+			} else if (nel->mnid_id) {
+				mapi_nameid_custom_lid_add(nameid, nel->mnid_id, nel->propType, nel->oleguid);
+			} else if (nel->mnid_string) {
+				mapi_nameid_custom_string_add(nameid, nel->mnid_string, nel->propType, nel->oleguid);
+			}
 		}
-	}
-
-	/* Step3. GetIDsFromNames and map property types */
-	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = GetIDsFromNames(obj_folder, nameid->count, 
-				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) {
-		MAPIFreeBuffer(SPropTagArray);
+		
+		/* Step3. GetIDsFromNames and map property types */
+		SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+		retval = GetIDsFromNames(obj_folder, nameid->count, 
+					 nameid->nameid, 0, &SPropTagArray);
+		if (retval != MAPI_E_SUCCESS) {
+			MAPIFreeBuffer(SPropTagArray);
+			MAPIFreeBuffer(nameid);
+			return retval;
+		}
+		mapi_nameid_SPropTagArray(nameid, SPropTagArray);
 		MAPIFreeBuffer(nameid);
-		return retval;
+
+
+		/* Step4. Add named properties */
+		for (nel = ocpf->nprops, i = 0; SPropTagArray->aulPropTag[i] && nel->next; nel = nel->next, i++) {
+			if (SPropTagArray->aulPropTag[i]) {
+				if (((SPropTagArray->aulPropTag[i] & 0xFFFF) == PT_BINARY) && 
+				    (((struct SBinary *)nel->value)->cb > MAX_READ_SIZE)) {
+					retval = ocpf_stream(mem_ctx, obj_message, SPropTagArray->aulPropTag[i], 
+							     (struct SBinary *)nel->value);
+					MAPI_RETVAL_IF(retval, retval, NULL);
+				} else {
+					ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues,
+								       SPropTagArray->aulPropTag[i], nel->value);
+				}
+			}
+		}
+		MAPIFreeBuffer(SPropTagArray);
 	}
 
-	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
-	MAPIFreeBuffer(nameid);
-
-	/* Step4. Add Known properties */
-	for (pel = ocpf->props; pel->next; pel = pel->next) {
-		ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues, 
-					       pel->aulPropTag, pel->value);
-	}
-
-	/* Step5. Add named properties */
-	for (nel = ocpf->nprops, i = 0; SPropTagArray->aulPropTag[i] && nel->next; nel = nel->next, i++) {
-		if (SPropTagArray->aulPropTag[i]) {
-			ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues,
-						       SPropTagArray->aulPropTag[i], nel->value);
+	/* Step5. Add Known properties */
+	if (ocpf->props && ocpf->props->next) {
+		for (pel = ocpf->props; pel->next; pel = pel->next) {
+			if (((pel->aulPropTag & 0xFFFF) == PT_BINARY) && 
+			    (((struct SBinary *)pel->value)->cb > MAX_READ_SIZE)) {
+				retval = ocpf_stream(mem_ctx, obj_message, pel->aulPropTag, 
+						     (struct SBinary *)pel->value);
+				MAPI_RETVAL_IF(retval, retval, NULL);
+			} else {
+				ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues, 
+							       pel->aulPropTag, pel->value);
+			}
 		}
 	}
-
 	/* Step 6. Add message class */
 	if (ocpf->type) {
 		ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues,
 					       PR_MESSAGE_CLASS, (const void *)ocpf->type);
 	}
-
-	MAPIFreeBuffer(SPropTagArray);
 
 	return MAPI_E_SUCCESS;
 }

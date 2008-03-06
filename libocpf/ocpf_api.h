@@ -120,6 +120,7 @@ do {								\
 
 #define	OCPF_FATAL_ERROR		"Fatal error encountered"
 #define	OCPF_WARN_FILENAME_INVALID	"Invalid filename"
+#define	OCPF_WARN_FILENAME_STAT		"Unable to stat file"
 
 #define	OCPF_WARN_PROP_REGISTERED	"Property already registered"
 #define	OCPF_WARN_PROP_TYPE		"Property type not supported"

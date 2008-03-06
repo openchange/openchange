@@ -34,6 +34,7 @@ int			folderset;
 %}
 
 %union {
+	uint8_t				i;
 	uint8_t				b;
 	uint32_t			l;
 	uint64_t			d;
@@ -43,6 +44,7 @@ int			folderset;
 	struct SLPSTRArray		MVszA;
 }
 
+%token <i> UINT8
 %token <b> BOOLEAN
 %token <l> INTEGER
 %token <d> DOUBLE
@@ -67,12 +69,15 @@ int			folderset;
 %token kw_PT_LONG
 %token kw_PT_SYSTIME
 %token kw_PT_MV_STRING8
+%token kw_PT_BINARY
 
 %token OBRACE
 %token EBRACE
 %token COMMA
 %token SEMICOLON
 %token COLON
+%token LOWER
+%token GREATER
 %token EQUAL
 
 %start keywords
@@ -213,6 +218,17 @@ propvalue	: STRING
 
 			type = PT_MV_STRING8;
 		}
+		| OBRACE binary_contents EBRACE
+		{
+			type = PT_BINARY;
+		}
+		| LOWER STRING GREATER
+		{
+			int	ret;
+
+			ret = ocpf_binary_add($2, &lpProp.bin);
+			type = (ret == OCPF_SUCCESS) ? PT_BINARY : PT_ERROR;
+		}
 		;
 
 mvstring_contents: | mvstring_contents mvstring_content
@@ -236,6 +252,31 @@ mvstring_content  : STRING COMMA
 			lpProp.MVszA.cValues += 1;
 		  }
 		  ;
+
+binary_contents: | binary_contents binary_content
+
+binary_content	: INTEGER
+		{
+			TALLOC_CTX *mem_ctx;
+
+			if ($1 > 0xFF) {
+				error_message("Invalid Binary constant: 0x%x > 0xFF\n", $1);
+			}
+
+			if (!lpProp.bin.cb) {
+				lpProp.bin.cb = 0;
+				lpProp.bin.lpb = talloc_array(ocpf->mem_ctx, uint8_t, 2);
+			} else {
+				lpProp.bin.lpb = talloc_realloc(NULL, lpProp.bin.lpb, uint8_t,
+								lpProp.bin.cb + 2);
+			}
+			mem_ctx = (TALLOC_CTX *) lpProp.bin.lpb;
+			lpProp.bin.lpb[lpProp.bin.cb] = $1;
+			lpProp.bin.cb += 1;
+
+			printf("[%d] binary: 0x%.2x\n", lpProp.bin.cb, $1);
+		}
+		;
 
 NProperty	:
 		kw_NPROPERTY OBRACE npcontent EBRACE SEMICOLON
@@ -310,6 +351,11 @@ proptype	: kw_PT_STRING8
 		{
 			memset(&nprop, 0, sizeof (struct ocpf_nprop));
 			nprop.propType = PT_MV_STRING8;
+		}
+		| kw_PT_BINARY
+		{
+			memset(&nprop, 0, sizeof (struct ocpf_nprop));
+			nprop.propType = PT_BINARY;
 		}
 		;
 

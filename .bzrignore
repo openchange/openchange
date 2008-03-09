@@ -35,3 +35,4 @@ bin/openchangemapidump
 *.po
 libmapi/mapi_nameid_private.h
 Doxyfile
+libmapi/version.h

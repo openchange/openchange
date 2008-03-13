@@ -42,10 +42,12 @@
 	<li><a href="#binary">     8.7  PT_BINARY         </a></li>
    </ul>
  </li>
- <li><a href="#tools">       9. OCPF and openchangeclient </a>
+ <li><a href="#comments">  9. Comments                    </a>
+ </li>
+ <li><a href="#tools">       10. OCPF and openchangeclient </a>
    <ul>
-       <li><a href="#syntax">      9.1. ocpf_syntax       </a></li>
-       <li><a href="#sender">      9.2. ocpf_sender       </a></li>
+       <li><a href="#syntax">      10.1. ocpf_syntax       </a></li>
+       <li><a href="#sender">      10.2. ocpf_sender       </a></li>
    </ul>
  </li>
 </ul>
@@ -85,7 +87,7 @@
 OCPF stands for OpenChange Property Files. This is a tiny file format
 designed for scripting and which facilitates third-party applications
 interaction and developers work using OpenChange. The main objective
-of OCPF is to offer the possibility to go beyond openchange tools
+of OCPF is to offer the possibility to go beyond OpenChange tools
 default properties and create a custom message with user-defined
 fields.
 <br/>
@@ -98,26 +100,26 @@ different purposes:
 
   <li><strong>Research on properties</strong>: OpenChange developers
   have often requested for an easy way to test properties and
-  properties values. Prior OCPF, they had to write an application
-  linked with libmapi and compile it so they can test
+  properties values. Prior to OCPF, developers had to write an application
+  linked with libmapi and compile it so that they could test
   properties. Moreover, adding new named properties in trunk was kept
-  under openchange commiters agreement. OCPF solves this issue and
-  allow developers to write OCPF files with custom properties they can
-  send using openchange tools. Furthermore OCPF will provide the
+  under OpenChange commiters agreement. OCPF solves this issue and
+  allow developers to write OCPF files with custom properties that they can
+  send using OpenChange tools. Furthermore OCPF will provide the
   community a convenient way to agree on a particular property.</li>
 
-  <li><strong>Web Applications</strong>:OCPF offers a scripted
-  language with substitution variables which make possible to use OCPF
+  <li><strong>Web Applications</strong>: OCPF offers a scripted
+  language with substitution variables which makes it possible to use OCPF
   templates and use OCPF in conjunction with Web Forms. Since OCPF API
   supports the parsing of multiple files, developers can plan to have
-  a file with variable declarations and a OCPF template with variables
-  only.</li>
+  a file with variable declarations and a separate OCPF template that just
+  specifies variables.</li>
 
   <li><strong>Backup/Restore</strong>: OCPF format may offer an easy
-  way for restore/backup application to dump to the local filesystem
-  and restore messages on Exchange server. Furthermore, substitution
-  variables can possibly get used to maintain the new hierarchy, such
-  as changing folders ID, across Exchange servers and help migrating
+  way for a restore/backup application to dump to the local filesystem
+  and restore messages on Exchange server. Furthermore, substitution of
+  variables can possibly be used to maintain the new hierarchy, such
+  as changing folders ID across Exchange servers and help migrating
   database from a server to another.</li>
 
 </ul>
@@ -126,23 +128,24 @@ different purposes:
 
 <a name="limit"></a><h2>3. Limitations and Bugs </a></h2>
 
-OCPF is a pretty young library and it suffers from different
-limitations we will remove across revisions:
+OCPF is a pretty new library and it currently has a some limitations:
 <ul>
     <li> It only supports a very limited set of property types </li>
     <li> It can't set emails recipients </li>
     <li> It doesn't support attachment yet </li>
 </ul>
 
+These limitations will be removed in later versions of OCPF.
+
 If you find bugs, limitations or encounter issues while using the OCPF
 library, please consider reporting them on <a
 href="http://trac.openchange.org">http://trac.openchange.org</a> and
-select libocpf component. (Note: registration is required to create
+select the libocpf component. (Note: registration is required to create
 new tickets).
 
 For questions about its usage or about libocpf development, please
 post on the <a href="http://mailman.openchange.org/listinfo/devel">
-openchange devel mailing-list.</a>
+OpenChange devel mailing-list.</a>
 <br/>
 
 
@@ -203,7 +206,7 @@ top-level keywords, sections and properties types.
   </li>
   <li><strong>Description:</strong>
 
-  This keywords defines the destination folder of the message. Users
+  This keyword defines the destination folder of the message. Users
   can either specify a default folder using the string value or a
   custom folder ID using its PR_FID double value. It is also possible
   to substitute the value with a variable, but it is limited to DOUBLE
@@ -233,15 +236,22 @@ top-level keywords, sections and properties types.
 
   FOLDER can only be defined once.
   </li>
-  <li><strong>Example:</strong>
+  <li><strong>Examples:</strong>
 \code 
 FOLDER "olFolderCalendar"
+\endcode
 
+or
+
+\code
 FOLDER D0x9504000000000001
+\endcode
 
+or
+
+\code
 SET    $folder_id = D0x9504000000000001
 FOLDER $folder_id
-
 \endcode
   </li>
 </ul>
@@ -256,9 +266,9 @@ FOLDER $folder_id
   </li>
   <li><strong>Description:</strong>
 
-  This keyword registers a variable named VARIABLE with its associated
-  value. Variables must be prefixed with a dollar sign ($) and their
-  value can be set to any supported property values. See section on
+  This keyword registers a variable named VAR and sets its value to
+  PROPVALUE. Variables must be prefixed with a dollar sign ($) and their
+  value can be set to any supported property type. See section on
   property values for further information.
   </li>
 
@@ -266,8 +276,8 @@ FOLDER $folder_id
 
   SET can be used as many times as needed by the user, however VAR
   name must remain unique. When a variable name is registered for the
-  second time, ocpf parser displays a warning on the standard output
-  and skip the assignment.
+  second time, the OCPF parser displays a warning on the standard output
+  and skips the assignment.
   </li>
 
   <li><strong>Example:</strong>
@@ -288,8 +298,8 @@ FOLDER $folder_id
     </li>
     <li><strong>Description:</strong>
 
-    This keywords register an OLEGUID couple (IDENTIFIER and STRING
-    value) which can next be used when declaring named properties (see
+    This keyword registers an OLEGUID couple (IDENTIFIER and STRING
+    value) that can then be used when declaring named properties (see
     NPROPERTY). OLEGUID keyword takes two parameters: first the name,
     used with named properties (PSETID_Appointment, PS_PUBLIC_STRINGS
     etc.) and secondly a string representing a GUID value.
@@ -328,8 +338,8 @@ NPROPERTY {
 
   This keyword declares a <i>known property</i> section. PROPERTY is
   followed by an opening brace, a set of property declarations and
-  finally ended with a closing brace and semi-colon. This section only
-  recognizes properties as described in <a href="#properties">6. Know
+  is ended with a closing brace and semicolon. This section only
+  recognizes properties as described in <a href="#properties">6. Known
   properties</a>.
   </li>
   <li><strong>Note:</strong>
@@ -340,8 +350,8 @@ NPROPERTY {
   <li><strong>Example:</strong>
 \code
      PROPERTY {
-     	      PR_SUBJECT = "Hello World"
-	      0x1000001e = "Sample body content"
+              PR_SUBJECT = "Hello World"
+              0x1000001e = "Sample body content"
      };
 \endcode
   </li>
@@ -354,21 +364,21 @@ NPROPERTY {
   <li><strong>Format:</strong>
 \code
       NPROPERTY {
-      		[...]
-		};
+                 [...]
+                };
 \endcode
   </li>
   <li><strong>Description:</strong>
 
   This keyword declares a <i>named property</i> section. NPROPERTY is
   followed by an opening brace, a set of named properties declarations
-  and finally ended with a closing brace and semi-colon. This section
-  only recognize named properties as described in <a
+  and is ended with a closing brace and semicolon. This section
+  only recognizes named properties as described in <a
   href="#nproperties">7. Named Properties</a>.
 
   </li>
   <li><strong>Note:</strong>
-  
+
   While we suggest keeping a single NPROPERTY section, nothing
   prevents the user from declaring as many NPROPERTY sections as
   needed.
@@ -376,10 +386,10 @@ NPROPERTY {
   <li><strong>Example:</strong>
 \code
       NPROPERTY {
-      		OOM:Start:PSETID_Appointment = T2008-03-06 22:00:00
-		OOM:Location:PSETID_Appointment = "Home Sweet Home"
-		/* Meeting Status */
-		MNID_ID:0x8217:PSETID_Appointment = 0;
+                OOM:Start:PSETID_Appointment = T2008-03-06 22:00:00
+                OOM:Location:PSETID_Appointment = "Home Sweet Home"
+                /* Meeting Status */
+                MNID_ID:0x8217:PSETID_Appointment = 0;
       };
 \endcode
   </li>
@@ -390,7 +400,7 @@ NPROPERTY {
 
 <a name="properties"></a><h2>6. Known Properties</h2>
 
-We call known properties, any properties which value doesn't change
+A known properties is any property where the value doesn't change
 across Exchange servers and versions. Known properties can only be
 registered within a PROPERTY section (See <a href="#property">5.5
 PROPERTY section</a>). Known properties have the same general syntax:
@@ -404,14 +414,15 @@ OCPF lets the user define <i>known properties</i> using two different
 methods: property names or property tags.
 
 Please note that OCPF doesn't check whether the value associated with
-the property matches the property type. For the moment is it up to the
-developer responsability to conform the property type with its value.
+the property matches the property type. For the moment it is the
+developer's responsibility to ensure that the property type matches
+its value.
 <br/>
 
-<a name="propname"></a><h3>6.1. Property Name</h3>
+<a name="propname"></a><h3>6.1. Property Names</h3>
 
-	Property Name are defined with an IDENTIFIER whichmust be
-	already registered in libmapi/conf/mapi-properties. For
+	Property Names are defined with an IDENTIFIER which must match
+	one already registered in libmapi/conf/mapi-properties. For
 	example:
 \code
       PR_SUBJECT      = "Hello World"
@@ -420,12 +431,12 @@ developer responsability to conform the property type with its value.
 \endcode
 <br/>
 
-<a name="proptag"></a><h3>6.2. Property Tag</h3>
+<a name="proptag"></a><h3>6.2. Property Tags</h3>
 
 	Property Tags are the other way to set a property. This is an
-	integer value represented under its hexadecimal notation and
-	which have two parts: upper 16bits are the property ID and
-	lower 16bits the property type. 
+	integer value represented using hexadecimal notation and
+	which has two parts: the upper 16 bits are the property ID and
+	the lower 16 bits are the property type.
 
 	While users may prefer to use the property name notation for
 	declaration, libmapi/conf/mapi-properties remains incomplete
@@ -443,17 +454,22 @@ developer responsability to conform the property type with its value.
 <a name="nproperties"></a><h2>7. Named Properties</h2>
 
 The OCPF syntax for different kind of named properties is quite
-generic. It supports any kind of properties (OOM, MNID_ID,
-MNID_STRING), can set known named properties (those listed in
-libmapi/conf/mapi-named-properties) or register new named
-properties (except OOM ones).
+generic. It supports each of the three kinds of property
+(OOM, MNID_ID, MNID_STRING) and can set known named properties
+(those listed in libmapi/conf/mapi-named-properties) or register
+new named properties (except OOM properties).
+
+The types of properties, and how they can be used, are described
+below.
 <br/>
 
 <a name="OOM"></a><h3>7.1. OOM</h3>
 
 OOM stands for Outlook Object Model and is a friendly name associated
-to a named property. It has no meaning to Exchange but OpenChange or
-MAPI developers. OOM are human readable shortcuts for most named
+to a named property. It has no meaning to Exchange, but it can
+be useful for OpenChange or MAPI developers.
+
+OOM are human readable shortcuts for most named
 properties and OOM values are are considered reliable. This is the
 reason why OOM can only be used if it exists in
 libmapi/conf/mapi-named-properties. This method - in our opinion - is
@@ -464,9 +480,9 @@ Theorically, property names can have the same OOM, property ID
 (MNID_ID) or name (MNID_STRING). The only way to guarantee named
 property uniqueness is to associate its value with a OLEGUID.
 
-OLEGUID needs to be registered prior they can be used with named
+OLEGUID needs to be registered before they can be used with named
 properties. See <a href="#oleguid">5.4 OLEGUID</a> for more
-information on how to register OLEGUID.
+information on how to register a OLEGUID.
 
 OOM named properties have the following syntax:
 \code
@@ -486,7 +502,7 @@ quotes. Below are some OOM assignments examples:
 
 <a name="MNID_ID"></a><h3>7.2. MNID_ID</h3>
 
-Named properties which Exchange convert using their property ID (16
+Named properties that Exchange converts using their property ID (16
 bits) are known as MNID_ID named property kind. OCPF provides two
 different ways to define MNID_ID. It can either be a new named
 property or an existing one which wouldn't have any associated OOM.
@@ -507,7 +523,7 @@ property type. If your MNID_ID property has not been referenced within
 libmapi/conf/mapi-named-property, then you must supply its property
 type, otherwise you can skip it.
 
-Note: PROPTYPE can be any of the value described in <a
+Note: PROPTYPE can be any of the values described in <a
 href="#proptype"> 8. Supported Property Types </a>.
 
 \code
@@ -518,7 +534,7 @@ href="#proptype"> 8. Supported Property Types </a>.
 
 <a name="MNID_STRING"></a><h3>7.3. MNID_STRING</h3>
 
-However Exchange also supports named properties which don't have any
+Exchange also supports named properties which do not have a
 property ID but are described using property names. These named
 properties are known as MNID_STRING named property kind and Exchange
 maps these names to a temporary property type.
@@ -529,7 +545,7 @@ MNID_STRING named property kind has the following syntax:
       MNID_STRING:STRING:PROPTYPE:IDENTIFIER = [PROPVALUE | VAR]
 \endcode
 
-MNID_STRING difference between known and custom is the same than
+MNID_STRING difference between known and custom is the same as
 MNID_ID one. If the MNID_STRING property doesn't exist in
 libmapi/conf/mapi-named-properties, then users have to supply its
 PROPTYPE.
@@ -558,7 +574,7 @@ OCPF uses the following format for BOOLEAN values:
 <br/>
 
 <a name="long"></a><h3>8.2. PT_LONG</h3>
-OCPF can use any of the following format for PT_LONG values:
+OCPF can use any of the following formats for PT_LONG values:
 \code
       0xdeadbeef
       L0xdeadbeef
@@ -567,7 +583,7 @@ OCPF can use any of the following format for PT_LONG values:
 
 The integer can either be in hexadecimal or decimal notation or
 prefixed with a "L" to specify this is long value. If you use the
-hexadecimal notation consider using the 'L' prefixed since other one
+hexadecimal notation consider using the 'L' prefixed form since other form
 may disappear in further versions.
 <br/>
 
@@ -613,15 +629,15 @@ with the syntax below:
 
 <a name="mv_string8"></a><h3>8.6. PT_MV_STRING8</h3>
 
-PT_MV_STRING8 are arrays of strings. OCPF defines PT_MV_STRING8
-property values as STRING propety values separated by commas and enclosed within
+PT_MV_STRING8 are arrays ("multiple values") of strings. OCPF defines PT_MV_STRING8
+property values as STRING property values separated by commas and enclosed within
 braces.
 
 \code
       { STRING, STRING, ..., STRING }	
 \endcode
 
-One STRING property value is at least required to create a valid
+At least one STRING property value is required to create a valid
 PT_MV_STRING8 property. If two or more STRING property values are set,
 then they must be separated with comma.
 
@@ -639,7 +655,7 @@ data or filename/external.
 
 If users wish to add raw data blob for a given property, they need to
 enclose INTEGER values within braces. However many cases occur where
-the data blob is large such as HTML content (PR_HTML has PT_BINARY
+the data blob is large (such as HTML content; PR_HTML has PT_BINARY
 property type). In such cases, users may rather prefer to write an
 external file and specify a filename.
 
@@ -649,7 +665,7 @@ external file and specify a filename.
 \endcode
 
 Note that if the blob of data (raw or pointed by filename) is too
-large to fit in the property values array, then ocpf will
+large to fit in the property values array, then OCPF will
 automatically open a stream for the property and write its data in the
 stream.
 
@@ -658,28 +674,41 @@ stream.
 	PR_HTML = <"/tmp/sample.html">
 \endcode
 
+<a name="comments"></a><h2>9. Comments</h2>
 
-<a name="tools"></a><h2>9. OCPF and openchangeclient</h2>
+OCPF files can contain comments embedded in normal C-style comment
+markers. That is, a comment starts with a combination of / followed by *,
+and ends with combination of * followed by /.
 
-OCPF support has been added to openchangeclient. It now has the
-ability to parse and process ocpf files. Two different options are
-supported; you can either check ocpf files syntax (--ocpf_syntax) or
-process the files (--ocpf_sender).
+Anything contained with in comment markers is ignored by the OCPF tools,
+and is only for the convenience of human readers.
 
-Users can set ocpf files using --ocpf-file=filename. Note that you can
-specify --ocpf-file multiple times if you have split ocpf contents
-into different files. However the whole ocpf files you specify must
+\code
+/* This is a comment */
+\endcode
+
+<a name="tools"></a><h2>10. OCPF and openchangeclient</h2>
+
+OCPF support has been added to the openchangeclient utility.
+It now has the ability to parse and process OCPF files. Two different 
+options are supported; you can either check an OCPF files' syntax
+(--ocpf_syntax) or process the files (--ocpf_sender).
+
+Users can set OCPF files using --ocpf-file=filename. Note that you can
+specify --ocpf-file multiple times if you have split the OCPF contents
+into different files. However the whole OCPF files you specify must
 only represent a single message.
 
-Sample ocpf files are provided in the distribution (libocpf/examples),
-and can also be browsed from the Examples section of this documentation:
+Sample OCPF files are provided in the distribution (libocpf/examples),
+and can also be browsed from the <a href="examples.html">Examples section</a>
+of this documentation:
 <ul>
-  <li> sample_appointment.ocpf </li>
-  <li> sample_task.ocpf </li>
+  <li> <a href="sample__appointment_8ocpf-example.html">sample_appointment.ocpf</a> </li>
+  <li> <a href="sample__task_8ocpf-example.html">sample_task.ocpf</a> </li>
 </ul>
 
-<a name="syntax"></a><h2>9.ocpf_syntax</h2>
-Process given OCPF files, display syntax errors if detected and dump
+<a name="syntax"></a><h2>10.1 ocpf_syntax</h2>
+Process specified OCPF files, display syntax errors if detected and dump
 OCPF context content on standard output.
 
 \code
@@ -687,9 +716,9 @@ openchangeclient --ocpf-syntax	\
 		 --ocpf-file=libocpf/examples/sample_appointment.ocpf 
 \endcode
 
-<a name="sender"></a><h2>9.2. ocpf_sender</h2>
+<a name="sender"></a><h2>10.2. ocpf_sender</h2>
 
-Process given OCPF files and create/send a message using OCPF context
+Process specified OCPF files and create/send a message using OCPF context
 contents.
 
 \code
@@ -717,6 +746,6 @@ the following details:
 - Task starting the 6th of March at 8:00PM and ending at 11:00PM
 - Importance set to High
 - Waiting for someone else
-- Subject, Body and Private flags set
+- Subject, Body and Private flag set
 
 */

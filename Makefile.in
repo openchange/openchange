@@ -307,6 +307,9 @@ bin/mapitest:		utils/mapitest/mapitest.o			\
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
+examples:
+	cd doc/examples && make && cd ../..
+ 
 distclean: clean $(SWIGDIRS-DISTCLEAN)
 	rm -rf autom4te.cache
 	rm -f libmapi.pc libmapiadmin.pc libocpf.pc
@@ -363,6 +366,9 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f *~
 	rm -f */*~
 	rm -f */*/*~
+	rm -f doc/examples/mapi_sample1
+	rm -f doc/examples/fetchappointment
+	rm -f doc/examples/fetchmail
 
 libmapi/proto.h libmapi/proto_private.h: libmapi/nspi.c			\
 	libmapi/emsmdb.c		\

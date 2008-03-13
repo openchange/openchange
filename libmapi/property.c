@@ -24,6 +24,12 @@
 #include <gen_ndr/ndr_exchange.h>
 #include <param.h>
 
+/**
+   \file property.c
+
+   \brief Functions for manipulating MAPI properties
+ */
+
 _PUBLIC_ struct SPropTagArray *set_SPropTagArray(TALLOC_CTX *mem_ctx, 
 						 uint32_t prop_nb, ...)
 {
@@ -46,13 +52,27 @@ _PUBLIC_ struct SPropTagArray *set_SPropTagArray(TALLOC_CTX *mem_ctx,
 	return SPropTag;
 }
 
+/**
+   \details Add a property tag to an existing properties array
+
+   \param mem_ctx talloc memory context to use for allocation
+   \param SPropTagArray existing properties array to add to
+   \param aulPropTag the property tag to add
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: SPropTagArray parameter is not correctly set
+*/
 _PUBLIC_ enum MAPISTATUS SPropTagArray_add(TALLOC_CTX *mem_ctx, 
 					   struct SPropTagArray *SPropTagArray, 
 					   uint32_t aulPropTag)
 {
 	MAPI_RETVAL_IF(!mem_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray->cValues, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!SPropTagArray->cValues, MAPI_E_INVALID_PARAMETER, NULL);
 
 	SPropTagArray->cValues += 1;
 	SPropTagArray->aulPropTag = talloc_realloc(mem_ctx, SPropTagArray->aulPropTag,

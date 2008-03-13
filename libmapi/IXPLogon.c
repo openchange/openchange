@@ -24,6 +24,8 @@
 
 /**
    \file IXPLogon.c
+
+   \brief Transport provider status information
 */
 
 
@@ -41,7 +43,7 @@
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_PARAMETER: obj is not initialized
+   - MAPI_E_INVALID_PARAMETER: obj_store is not initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 

@@ -21,6 +21,12 @@
 #include <libmapi/mapidump.h>
 #include <libmapi/proto_private.h>
 
+/**
+   \file mapidump.c
+
+   \brief Functions for displaying various data structures, mainly for debugging
+ */
+
 _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 {
 	const char	*proptag;
@@ -190,6 +196,16 @@ _PUBLIC_ void mapidump_date_SPropValue(struct SPropValue lpProp, const char *lab
 	talloc_free(mem_ctx);
 }
 
+/**
+   \details This function dumps the properties relating to a message to standard output
+
+   The expected way to obtain the properties array is to use OpenMessage() to obtain the
+   message object, then to use GetPropsAll() to obtain all the properties.
+
+   \param properties array of message properties
+
+   \sa mapidump_appointment, mapidump_contact, mapidump_task, mapidump_note
+*/
 _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties)
 {
 	const char			*msgid;
@@ -267,6 +283,17 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties)
 	}
 }
 
+/**
+   \details This function dumps the properties relating to an appointment to standard output
+
+   The expected way to obtain the properties array is to use OpenMessage() to obtain the
+   appointment object, then to use GetPropsAll() to obtain all the properties.
+
+   \param properties array of appointment properties
+   \param id identification to display for the appointment (can be NULL)
+
+   \sa mapidump_message, mapidump_contact, mapidump_task, mapidump_note
+*/
 _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties, const char *id)
 {
 	const struct mapi_SLPSTRArray	*contacts = NULL;
@@ -318,6 +345,18 @@ _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties, con
 	}	
 }
 
+/**
+   \details This function dumps the properties relating to a contact (address book entry)
+   to standard output
+
+   The expected way to obtain the properties array is to use OpenMessage() to obtain the
+   contact object, then to use GetPropsAll() to obtain all the properties.
+
+   \param properties array of contact properties
+   \param id identification to display for the contact (can be NULL)
+
+   \sa mapidump_message, mapidump_appointment, mapidump_task, mapidump_note
+*/
 _PUBLIC_ void mapidump_contact(struct mapi_SPropValue_array *properties, const char *id)
 {
 	const char	*card_name =NULL;
@@ -437,6 +476,18 @@ _PUBLIC_ const char *get_importance(uint32_t importance)
 	return NULL;
 }
 
+/**
+   \details This function dumps the properties relating to a task (to-do list entry)
+   to standard output
+
+   The expected way to obtain the properties array is to use OpenMessage() to obtain the
+   task object, then to use GetPropsAll() to obtain all the properties.
+
+   \param properties array of task properties
+   \param id identification to display for the task (can be NULL)
+
+   \sa mapidump_message, mapidump_appointment, mapidump_contact, mapidump_note
+*/
 _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties, const char *id)
 {
 	const struct mapi_SLPSTRArray	*contacts = NULL;
@@ -499,6 +550,17 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties, const char
 	}
 }
 
+/**
+   \details This function dumps the properties relating to a note to standard output
+
+   The expected way to obtain the properties array is to use OpenMessage() to obtain the
+   note object, then to use GetPropsAll() to obtain all the properties.
+
+   \param properties array of note properties
+   \param id identification to display for the note (can be NULL)
+
+   \sa mapidump_message, mapidump_appointment, mapidump_contact, mapidump_task
+*/
 _PUBLIC_ void mapidump_note(struct mapi_SPropValue_array *properties, const char *id)
 {
 	const char		*subject = NULL;

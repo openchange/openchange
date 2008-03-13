@@ -122,7 +122,7 @@ bool torture_rpc_mapi_fetchmail(struct torture_context *torture)
 
 			if (GetLastError() != MAPI_E_NOT_FOUND) {
 			  retval = GetPropsAll(&obj_message, &properties_array);
-			  mapidump_message(&properties_array);
+			  mapidump_message(&properties_array, NULL);
 			  mapi_object_release(&obj_message);
 			}
 		}

@@ -203,10 +203,11 @@ _PUBLIC_ void mapidump_date_SPropValue(struct SPropValue lpProp, const char *lab
    message object, then to use GetPropsAll() to obtain all the properties.
 
    \param properties array of message properties
+   \param id identification to display for the message (can be NULL)
 
    \sa mapidump_appointment, mapidump_contact, mapidump_task, mapidump_note
 */
-_PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties)
+_PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const char *id)
 {
 	const char			*msgid;
 	const char			*from;
@@ -262,7 +263,7 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties)
 	}
 
 	printf("+-------------------------------------+\n");
-	printf("message id: %s\n", msgid ? msgid : "");
+	printf("message id: %s %s\n", msgid ? msgid : "", id?id:"");
 	printf("subject: %s\n", subject ? subject : "");
 	printf("From: %s\n", from ? from : "");
 	printf("To:  %s\n", to ? to : "");

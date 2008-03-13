@@ -1804,7 +1804,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 								    &properties_array);
 					switch (olFolder) {
 					case olFolderInbox:
-						mapidump_message(&properties_array);
+					  mapidump_message(&properties_array, id);
 						break;
 					case olFolderCalendar:
 						mapidump_appointment(&properties_array, id);
@@ -2077,7 +2077,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 {
 	enum MAPISTATUS			retval;
 	TALLOC_CTX			*mem_ctx;
-	struct SRowSet			rowset;
+	struct SRowSet			SRowSet;
 	struct SPropValue		*lpProp;
 	struct mapi_SPropValue_array	properties_array;
 	mapi_id_t			fid;
@@ -2088,6 +2088,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 	struct SPropTagArray		*SPropTagArray = NULL;
 	uint32_t			count;
 	uint32_t			i;
+	char				*id;
 
 	mem_ctx = talloc_init("openchangeclient_findmail");
 
@@ -2115,22 +2116,26 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 	retval = GetRowCount(&obj_table, &count);
 	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
 
-	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
-		for (i = 0; i < rowset.cRows; i++) {
-			lpProp = get_SPropValue_SRowSet(&rowset, PR_MID);
+	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
+		for (i = 0; i < SRowSet.cRows; i++) {
+			lpProp = get_SPropValue_SRowSet(&SRowSet, PR_MID);
 			if (lpProp != NULL) {
 				mid = (const uint64_t *)get_SPropValue(lpProp, PR_MID);
 				if (*mid == msgid) {
 					mapi_object_init(&obj_message);
 					retval = OpenMessage(obj_store,
-							     rowset.aRow[i].lpProps[0].value.d,
-							     rowset.aRow[i].lpProps[1].value.d,
+							     SRowSet.aRow[i].lpProps[0].value.d,
+							     SRowSet.aRow[i].lpProps[1].value.d,
 							     &obj_message, 0);
 					if (GetLastError() == MAPI_E_SUCCESS) {
 						retval = GetPropsAll(&obj_message, &properties_array);
 						if (retval != MAPI_E_SUCCESS) return false;
-						mapidump_message(&properties_array);
+						id = talloc_asprintf(mem_ctx, ": %llX/%llX",
+								     SRowSet.aRow[i].lpProps[0].value.d,
+								     SRowSet.aRow[i].lpProps[1].value.d);
+						mapidump_message(&properties_array, id);
 						mapi_object_release(&obj_message);
+						talloc_free(id);
 
 						goto end;
 					}

@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
                         retval = OpenMessage(&obj_store, *fid, *mid, &obj_message, 0x0);
                         if (retval != MAPI_E_NOT_FOUND) {
                                 retval = GetPropsAll(&obj_message, &props_all);
-                                mapidump_message(&props_all);
+                                mapidump_message(&props_all, NULL);
                                 mapi_object_release(&obj_message);
                         }
                 }

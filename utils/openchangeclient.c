@@ -3028,7 +3028,7 @@ int main(int argc, const char *argv[])
 
 		if (!oclient.update) {
 			retval = openchangeclient_sendtask(mem_ctx, &obj_store, &oclient);
-			mapi_errstr("sentask", GetLastError());
+			mapi_errstr("sendtask", GetLastError());
 		} else {
 			retval = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_TASK);
 			mapi_errstr("update task", GetLastError());

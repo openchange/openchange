@@ -178,15 +178,15 @@ void ocpf_propvalue_s(const char *propname, union SPropValue_CTR lpProp, uint16_
 
 /**
    \details Add a named property
-   
-   This function adds whether a custom or known named property and
-   supply either the lpProp value or substitute with registered
+
+   This function adds either a custom or a known named property and
+   supplies either the lpProp value or substitute with registered
    variable.
 
    \param nprop pointer on a ocpf named property entry
    \param lpProp named property value
    \param var_name variable name
-   \param var_type variable property type
+   \param proptype variable property type
 
    \return OCPF_SUCCESS on success, otherwise OCPF_ERROR.
  */

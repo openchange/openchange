@@ -22,6 +22,7 @@
 #include <libmapi/libmapi.h>
 #include <samba/popt.h>
 
+#include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -31,6 +32,11 @@
 static void mapiprofile_createdb(const char *profdb, const char *ldif_path)
 {
 	enum MAPISTATUS retval;
+	
+	if (access(profdb, F_OK) == 0) {
+		fprintf(stderr, "[ERROR] mapiprofile: %s already exists\n", profdb);
+		exit (1);
+	}
 
 	retval = CreateProfileStore(profdb, ldif_path);
 	if (retval != MAPI_E_SUCCESS) {
@@ -70,6 +76,21 @@ getentry:
 	return (index);
 }
 
+const char *g_profname;
+
+static void signal_delete_profile(const char *profname)
+{
+	enum MAPISTATUS	retval;
+
+	fprintf(stderr, "CTRL-C catched ... Deleting profile\n");
+	if ((retval = DeleteProfile(g_profname)) != MAPI_E_SUCCESS) {
+		mapi_errstr("DeleteProfile", GetLastError());
+	}
+
+	(void) signal(SIGINT, SIG_DFL);
+	exit (1);
+}
+
 static void mapiprofile_create(const char *profdb, const char *profname,
 			       const char *pattern, const char *username, 
 			       const char *password, const char *address, 
@@ -78,6 +99,11 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
+	struct mapi_profile	profile;
+
+	/* catch CTRL-C */
+	g_profname = profname;
+	(void) signal(SIGINT, (sighandler_t) signal_delete_profile);
 
 	retval = MAPIInitialize(profdb);
 	if (retval != MAPI_E_SUCCESS) {
@@ -88,6 +114,13 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	if (opt_dumpdata == true) {
 		printf("dumpdata is true\n");
 		global_mapi_ctx->dumpdata = true;
+	}
+
+	/* Sanity check */
+	retval = OpenProfile(&profile, profname, NULL);
+	if (retval == MAPI_E_SUCCESS) {
+		fprintf(stderr, "[ERROR] mapiprofile: profile \"%s\" already exists\n", profname);
+		exit (1);
 	}
 
 	retval = CreateProfile(profname, username, password, flags);

@@ -191,7 +191,7 @@ sub mapitags_interface($)
 
     mparse sprintf "{ %-51s, %-13d, \"NULL\"}", 0, 0;
     deindent;
-    mparse "};;";
+    mparse "};";
     mparse "";
     mparse "_PUBLIC_ const char *get_proptag_name(uint32_t proptag)";
     mparse "{";

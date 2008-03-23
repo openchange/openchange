@@ -242,7 +242,7 @@ _PUBLIC_ enum MAPISTATUS mapi_object_bookmark_debug(mapi_object_t *obj_table)
 	
 	while (bookmark) {
 		DEBUG(0, ("mapi_object_bookmark {\n"));
-		DEBUG(0, (".index == %d\n", bookmark->index));
+		DEBUG(0, (".index == %u\n", bookmark->index));
 		dump_data(0, bookmark->bin.lpb, bookmark->bin.cb);
 		DEBUG(0, ("};\n"));
 

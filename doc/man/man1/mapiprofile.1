@@ -35,9 +35,10 @@ mapiprofile \- administrate OpenChange MAPI Profiles databases
 mapiprofile [-?] [-?|--help] [--usage] [-L|--ldif STRING]
         [-G|--getdefault] [-S|--default] [-n|--newdb] [-f|--database STRING]
         [-P|--profile STRING] [-I|--address STRING] [-M|--workstation STRING]
-        [-D|--domain STRING] [-u|--username STRING] [-s|--pattern STRING]
-        [-p|--password STRING] [-c|--create] [-r|--delete] [-l|--list]
-        [-d|--dump] [-a|--attr STRING]
+        [-D|--domain STRING] [-u|--username STRING] [-C|--language STRING]
+        [-s|--pattern STRING] [-p|--password STRING] [--nopass] [-c|--create]
+        [-r|--delete] [-l|--list] [--listlangs] [-d|--dump] [-a|--attr STRING]
+        [--dump-data]
 .fi
 
 .SH DESCRIPTION
@@ -89,6 +90,14 @@ Display information from a specific profile stored in the database
 .TP
 .B -l
 List existing profiles in the database
+
+.TP
+.B --listlangs
+.TP
+.B -l
+List the available languages. These can be used to specify the
+language name (--language) when creating a profile.
+
 
 
 .SH OPTIONS
@@ -143,6 +152,17 @@ Set the username to use to log on the Exchange server
 Set the password matching with the username described above
 
 .TP
+.B --language
+.TP
+.B -C
+Specify the language to use with the account. This can be specified
+as a code (in hexadecimal) or as a name. When specifying the name,
+you use the name of the language, and the location (if any), separated
+by underscores (e.g. English_United_States). See the --listlangs option for
+how to obtain the full list of languages. The default language code is 0x0409,
+for US English.
+
+.TP
 .B --pattern
 .TP
 .B -s
@@ -160,10 +180,11 @@ mapiprofile --database=/tmp/profiles2.ldb --ldif=/usr/local/samba/share/setup --
 .B Create a new profile:
 .nf
 mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel
-     --username=jkerihuel --password=secret
+     --username=jkerihuel --password=secret --language=0x040C
      --address=192.168.194.22 --workstation=LOCALHOST --domain=OPENCHANGE 
      --create
-Profile jkerihuel completed and added to database /tmp/profiles.ldb
+Profile jkerihuel completed and added to database /tmp/profiles.ldb. Note
+that this account will use French.
 .fi
 
 .B Delete a profile:
@@ -200,3 +221,8 @@ Profile jkerihuel: HomeMDB = /o=First Organization/ou=First Administrative Group
 
 .SH AUTHOR
 Julien Kerihuel <j.kerihuel at openchange dot org>
+
+.SH "SEE ALSO"
+The codes for various languages can be found in many places, including
+the Windows Language Code Identifier (LCID) Reference.
+

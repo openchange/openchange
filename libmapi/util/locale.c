@@ -277,6 +277,41 @@ bool print_locale(uint32_t locale)
 }
 
 /*
+  Print all languages
+*/
+void print_languages(void)
+{
+	int idx = 0;
+
+	while (locales[idx].locale_str != NULL) {
+		printf("\t%s\n", locales[idx].locale_str);
+		idx++;
+	}
+}
+
+/*
+  Convert language name (as a string) to an integer language code
+ */
+
+uint32_t lang2lcid(const char *name)
+{
+	int idx = 0;
+
+	if (!name) {
+		return 0xFFFFFFFF;
+	}
+		
+	while (locales[idx].locale_str != NULL) {
+		if (strncasecmp(locales[idx].locale_str, name, strlen(name)) == 0) {
+			// we found a match
+			return locales[idx].lcid;
+		}
+		idx++;
+	}
+	return 0xFFFFFFFF;
+}
+
+/*
   Print language groups
  */
 

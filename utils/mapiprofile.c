@@ -22,12 +22,14 @@
 #include <libmapi/libmapi.h>
 #include <samba/popt.h>
 
+#include <stdlib.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #define	DEFAULT_DIR	"%s/.openchange"
 #define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
+#define	DEFAULT_LCID	"0x409" /* language code ID: en-US */
 
 static void mapiprofile_createdb(const char *profdb, const char *ldif_path)
 {
@@ -94,12 +96,16 @@ static void signal_delete_profile(const char *profname)
 static void mapiprofile_create(const char *profdb, const char *profname,
 			       const char *pattern, const char *username, 
 			       const char *password, const char *address, 
-			       const char *workstation, const char *domain,
-			       uint32_t flags, bool opt_dumpdata)
+			       const char *lcid, const char *workstation,
+			       const char *domain, uint32_t flags,
+			       bool opt_dumpdata)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
+	TALLOC_CTX		*mem_ctx;
 	struct mapi_profile	profile;
+
+	mem_ctx = talloc_init("mapiprofile_create");
 
 	/* catch CTRL-C */
 	g_profname = profname;
@@ -133,9 +139,21 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	mapi_profile_add_string_attr(profname, "workstation", workstation);
 	mapi_profile_add_string_attr(profname, "domain", domain);
 
+	if (strncmp(lcid, "0x", 2) != 0) {
+		/* it doesn't look like a hex id, so try to convert it from
+		   a string name (like "English_Australian" to a language code
+		   ID string (like "0x0c09")
+		*/
+		lcid = talloc_asprintf(mem_ctx, "0x%04x", lang2lcid(lcid));
+	}
+	if (!valid_locale(strtoul(lcid, 0, 16))) {
+		lcid = DEFAULT_LCID;
+		printf("Language code not recognised, using default (%s) instead\n", lcid);
+	}
+
 	/* This is only convenient here and should be replaced at some point */
 	mapi_profile_add_string_attr(profname, "codepage", "0x4e4");
-	mapi_profile_add_string_attr(profname, "language", "0x40c");
+	mapi_profile_add_string_attr(profname, "language", lcid );
 	mapi_profile_add_string_attr(profname, "method", "0x409");
 
 	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
@@ -145,6 +163,7 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 		if ((retval = DeleteProfile(profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("DeleteProfile", GetLastError());
 		}
+		talloc_free(mem_ctx);
 		exit (1);
 	}
 
@@ -159,10 +178,13 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 		if ((retval = DeleteProfile(profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("DeleteProfile", GetLastError());
 		}
+		talloc_free(mem_ctx);
 		exit (1);
 	}
 
 	printf("Profile %s completed and added to database %s\n", profname, profdb);
+
+	talloc_free(mem_ctx);
 
 	MAPIUninitialize();
 }
@@ -354,6 +376,7 @@ int main(int argc, const char *argv[])
 	bool		create = false;
 	bool		delete = false;
 	bool		list = false;
+	bool		listlangs = false;
 	bool		dump = false;
 	bool		newdb = false;
 	bool		setdflt = false;
@@ -364,6 +387,7 @@ int main(int argc, const char *argv[])
 	const char	*workstation = NULL;
 	const char	*domain = NULL;
 	const char	*username = NULL;
+	const char      *lcid = NULL;
 	const char	*pattern = NULL;
 	const char	*password = NULL;
 	const char	*profdb = NULL;
@@ -372,9 +396,9 @@ int main(int argc, const char *argv[])
 	uint32_t	nopass = 0;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_ADDRESS, OPT_WORKSTATION,
-	      OPT_DOMAIN, OPT_USERNAME, OPT_PASSWORD, OPT_CREATE_PROFILE, 
+	      OPT_DOMAIN, OPT_USERNAME, OPT_LCID, OPT_PASSWORD, OPT_CREATE_PROFILE, 
 	      OPT_DELETE_PROFILE, OPT_LIST_PROFILE, OPT_DUMP_PROFILE, 
-	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, 
+	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN,
 	      OPT_NOPASS, OPT_DUMPDATA};
 
@@ -386,16 +410,18 @@ int main(int argc, const char *argv[])
 		{"newdb", 'n', POPT_ARG_NONE, NULL, OPT_PROFILE_NEWDB, "create a new profile store"},
 		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path"},
 		{"profile", 'P', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name"},
-		{"address", 'I', POPT_ARG_STRING, NULL, OPT_ADDRESS, "set the exchange server address"},
+		{"address", 'I', POPT_ARG_STRING, NULL, OPT_ADDRESS, "set the exchange server IP address"},
 		{"workstation", 'M', POPT_ARG_STRING, NULL, OPT_WORKSTATION, "set the workstation"},
 		{"domain", 'D', POPT_ARG_STRING, NULL, OPT_DOMAIN, "set the domain"},
 		{"username", 'u', POPT_ARG_STRING, NULL, OPT_USERNAME, "set the profile username"},
+		{"langcode", 'C', POPT_ARG_STRING, NULL, OPT_LCID, "set the language code ID"},
 		{"pattern", 's', POPT_ARG_STRING, NULL, OPT_PATTERN, "username to search"},
 		{"password", 'p', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
 		{"nopass", 0, POPT_ARG_NONE, NULL, OPT_NOPASS, "do not save password in the profile"},
 		{"create", 'c', POPT_ARG_NONE, NULL, OPT_CREATE_PROFILE, "create a profile in the database"},
 		{"delete", 'r', POPT_ARG_NONE, NULL, OPT_DELETE_PROFILE, "delete a profile in the database"},
 		{"list", 'l', POPT_ARG_NONE, NULL, OPT_LIST_PROFILE, "list existing profiles in the database"},
+		{"listlangs", 0, POPT_ARG_NONE, NULL, OPT_LIST_LANGS, "list all recognised languages"},
 		{"dump", 'd', POPT_ARG_NONE, NULL, OPT_DUMP_PROFILE, "dump a profile entry"},
 		{"attr", 'a', POPT_ARG_STRING, NULL, OPT_DUMP_ATTR, "print an attribute value"},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
@@ -440,6 +466,9 @@ int main(int argc, const char *argv[])
 		case OPT_USERNAME:
 			username = poptGetOptArg(pc);
 			break;
+		case OPT_LCID:
+			lcid = poptGetOptArg(pc);
+			break;
 		case OPT_PATTERN:
 			pattern = poptGetOptArg(pc);
 			break;
@@ -457,6 +486,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_LIST_PROFILE:
 			list = true;
+			break;
+		case OPT_LIST_LANGS:
+			listlangs = true;
 			break;
 		case OPT_DUMP_PROFILE:
 			dump = true;
@@ -481,7 +513,7 @@ int main(int argc, const char *argv[])
 					 getenv("HOME"));
 	}
 
-	if ((list == false) && (newdb == false) 
+	if ((list == false) && (newdb == false) && (listlangs == false)
 	    && (getdflt == false) && (dump == false) && 
 	    (!attribute) && (!profname || !profdb)) {
 		poptPrintUsage(pc, stderr, 0);
@@ -505,8 +537,15 @@ int main(int argc, const char *argv[])
 		if (!workstation) show_help(pc, "workstation");
 		if (!domain) show_help(pc, "domain");
 
+		if (!lcid) {
+		  lcid = talloc_asprintf(mem_ctx, DEFAULT_LCID);
+		}
 		mapiprofile_create(profdb, profname, pattern, username, password, address,
-				   workstation, domain, nopass, opt_dumpdata);
+				   lcid, workstation, domain, nopass, opt_dumpdata);
+	}
+
+	if (listlangs == true) {
+		print_languages();
 	}
 
 	if (setdflt == true) {

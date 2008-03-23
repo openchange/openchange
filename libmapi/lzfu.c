@@ -143,8 +143,8 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 	LE32_CPU(lzfuhdr.dwMagic);  
 	LE32_CPU(lzfuhdr.dwCRC);
 
-	DEBUG(3, ("lzfuhdr.cbSize = %d\n", lzfuhdr.cbSize));
-	DEBUG(3, ("lzfuhdr.cbRawSize = %d\n", lzfuhdr.cbRawSize));
+	DEBUG(3, ("lzfuhdr.cbSize = %u\n", lzfuhdr.cbSize));
+	DEBUG(3, ("lzfuhdr.cbRawSize = %u\n", lzfuhdr.cbRawSize));
 	DEBUG(3, ("lzfuhdr.dwMagic = 0x%x\n", lzfuhdr.dwMagic));
 	DEBUG(3, ("lzfuhdr.dwCRC = 0x%x\n", lzfuhdr.dwCRC));
 

@@ -2834,6 +2834,19 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+
+	/* One of the rare options which doesn't require MAPI to get
+	 *   initialized 
+	 */
+	if (opt_ocpf_syntax) {
+		retval = openchangeclient_ocpf_syntax(mem_ctx, &obj_store, &oclient);
+		mapi_errstr("OCPF Syntax", GetLastError());
+		if (retval != true) {
+			goto end;
+		}
+		exit (0);
+	}
+	
 	/**
 	 * Initialize MAPI subsystem
 	 */
@@ -2896,16 +2909,8 @@ int main(int argc, const char *argv[])
 	}
 
 	/**
-	 * OCPF commands
+	 * OCPF sending command
 	 */
-	if (opt_ocpf_syntax) {
-		retval = openchangeclient_ocpf_syntax(mem_ctx, &obj_store, &oclient);
-		mapi_errstr("OCPF Syntax", GetLastError());
-		if (retval != true) {
-			goto end;
-		}
-	}
-	
 	if (opt_ocpf_sender) {
 		retval = openchangeclient_ocpf_sender(mem_ctx, &obj_store, &oclient);
 		mapi_errstr("OCPF Sender", GetLastError());

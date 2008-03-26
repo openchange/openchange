@@ -4,7 +4,7 @@
 CC=@CC@
 LEX=@FLEX@
 YACC=@YACC@
-CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes \
+CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 \
 	   -DDEFAULT_LDIF=\"$(datadir)/setup\" 
 PIDL=@PIDL@
 PERL=@PERL@
@@ -65,7 +65,6 @@ all: 	\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)			\
 	libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 	libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)			\
-	bin_dir							\
 	bin/schemaIDGUID					\
 	bin/mapiprofile						\
 	bin/openchangeclient					\
@@ -257,9 +256,6 @@ libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mapi-named-properties libmapi/conf/mparse.pl
 	@./libmapi/conf/build.sh
 
-bin_dir:
-	mkdir -p bin
-
 bin/schemaIDGUID: utils/schemaIDGUID.o
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS)
@@ -339,7 +335,7 @@ clean:	$(SWIGDIRS-CLEAN)
 	rm -f libmapi/util/*.{o,po}
 	rm -f libmapi/version.h
 	rm -f tests/*.o
-	rm -rf bin
+	rm -rf bin/*
 	rm -f server/*.{o,po}
 	rm -f providers/*.{o,po}
 	rm -f torture/*.{o,po}

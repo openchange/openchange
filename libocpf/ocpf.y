@@ -144,7 +144,13 @@ Folder		:
 OLEGUID		: 
 		kw_OLEGUID IDENTIFIER STRING
 		{ 
-			ocpf_oleguid_add($2, $3);
+			char *name;
+			char *guid;
+			
+			name = talloc_strdup(ocpf->mem_ctx, $2);
+			guid = talloc_strdup(ocpf->mem_ctx, $3);
+
+			ocpf_oleguid_add(name, guid);
 		}
 		;
 

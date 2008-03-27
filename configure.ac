@@ -6,152 +6,254 @@ AC_INIT(openchange, 0.7, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
-AC_PROG_CC
-AC_PROG_YACC
+#
+# OC_SETVAL([NAME])
+# -----------------
+AC_DEFUN([OC_SETVAL],
+[
+AC_ARG_VAR([NAME], [var name])
+if test x"$enable_$1" = x""; then
+   enable_$1="no"
+fi[]
+])
 
-dnl ***********************
-dnl Check for PERL
-dnl ***********************
-AC_PROG_INSTALL
+#
+# OC_RULE_ADD([NAME], [TYPE])
+# ---------------------------
+AC_DEFUN([OC_RULE_ADD], 
+[ 
+AC_ARG_VAR([NAME], [rule name])
+AC_ARG_VAR([TYPE], [rule type])
+if test "x$1_set" != "xset"; then
+   case "$2" in
+   	LIBS)
+		OC_$2+=" $1"
+   		OC_$2_INSTALL+=" $1-install"
+   		OC_$2_UNINSTALL+=" $1-uninstall"
+   		OC_$2_CLEAN+=" $1-clean"
+   		OC_$2_INSTALLPC+=" $1-installpc"
+   		OC_$2_INSTALLHEADER+=" $1-installheader"
+   		OC_$2_INSTALLLIB+=" $1-installlib"
+   		OC_$2_DISTCLEAN+=" $1-distclean"
+   		OC_$2_REALDISTCLEAN+=" $1-realdistclean"
 
-AC_PATH_PROG(PERL, perl)
+		AC_SUBST(OC_$2_INSTALLPC)
+		AC_SUBST(OC_$2_INSTALLHEADER)
+		AC_SUBST(OC_$2_INSTALLLIB)
+		AC_SUBST(OC_$2_DISTCLEAN)
+		AC_SUBST(OC_$2_REALDISTCLEAN)
+	;;
+	TOOLS|TORTURE)
+		OC_$2+=" $1"
+		OC_$2_INSTALL+=" $1-install"
+   		OC_$2_UNINSTALL+=" $1-uninstall"
+   		OC_$2_CLEAN+=" $1-clean"
+	;;
+	SERVER)
+		OC_$2+=" $1"
+		OC_$2_INSTALL+=" $1-install"
+   		OC_$2_UNINSTALL+=" $1-uninstall"
+   		OC_$2_CLEAN+=" $1-clean"
+		OC_$2_REALDISTCLEAN= " $1-realdistclean"
 
-if test -z "$PERL"
-then
-	AC_MSG_ERROR(Please install perl)
-fi
+		AC_SUBST(OC_$2_REALDISTCLEAN)
+	;;
+   esac
 
-dnl ***********************
-dnl Check for Flex
-dnl ***********************
-AC_ARG_VAR([FLEX], [Location of the flex program.])
-AC_CHECK_PROG([FLEX], [flex], [flex])
-if test x"$FLEX" = x""; then
-    AC_MSG_ERROR([You must have the flex lexer generator installed.])
-fi
+   AC_SUBST(OC_$2)
+   AC_SUBST(OC_$2_INSTALL)
+   AC_SUBST(OC_$2_UNINSTALL)
+   AC_SUBST(OC_$2_CLEAN)
 
-dnl ***********************
-dnl Check for Yacc
-dnl ***********************
-AC_ARG_VAR([YACC], [Location of the yacc program.])
-AC_CHECK_PROG([YACC], [yacc], [yacc])
-if test x"$YACC" = x""; then
-   AC_MSG_ERROR([You must have the yacc parser generator installed.])
-fi
+   enable_$1="yes"
 
-dnl ***********************
-dnl Check for Pidl
-dnl ***********************
-
-AC_PATH_PROG(PIDL, pidl)
-
-if test -z "$PIDL"
-then
-	AC_MSG_ERROR(Please install pidl)
-fi
-
-dnl ********************
-dnl Check for smbtorture
-dnl ********************
-
-AC_PATH_PROG(SMBTORTURE, smbtorture, no, "$prefix/bin")
+fi[]
+])
 
 
-dnl *****************************
-dnl Check for libmagic
-dnl *****************************
-AC_CHECK_LIB([magic], [magic_open],
-	             [AC_DEFINE(HAVE_LIBMAGIC, 1,
- 	                       [Define if you want to use libmagic])
- 	              MAGIC_LIBS="-lmagic -lz"],
-				  AC_SUBST(MAGIC_LIBS)
- 	             [AC_MSG_ERROR([libmagic is missing - install it please])
- 	             ])
 
-dnl *****************************
-dnl Check for samba dependencies 
-dnl *****************************
-
-AC_CHECK_LIB(popt, poptFreeContext, , [ AC_MSG_ERROR([Popt is required]) ])
-
-CPPFLAGS="-I$prefix/include"
-
-PKG_PROG_PKG_CONFIG([0.20])
-PKG_CHECK_MODULES(TALLOC, talloc)
-PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-config)
-PKG_CHECK_MODULES(SAMR, dcerpc_samr)
-PKG_CHECK_MODULES(LDB, ldb)
-
-TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`
-AC_SUBST(TORTURE_MODULESDIR)
+dnl ###########################################################################
+dnl libmapi and required dependencies
+dnl ###########################################################################
 
 AC_CHECK_TYPE(uint_t, unsigned int)
 
-dnl ************************
-dnl Nail down samba4 version
-dnl ************************
+dnl ---------------------------------------------------------------------------
+dnl Check for CC
+dnl ---------------------------------------------------------------------------
+AC_PROG_CC
 
-dnl Samba4 revision boundaries
-FIRST_REV=26689
-LAST_REV=$FIRST_REV
+dnl ---------------------------------------------------------------------------
+dnl Check for install
+dnl ---------------------------------------------------------------------------
+AC_PROG_INSTALL
 
-INCDIR=$prefix/include
-if test -f $INCDIR/samba/version.h && grep SAMBA_VERSION_SVN_REVISION $INCDIR/samba/version.h 2>&1 >/dev/null; then
-	SAMBA_VERSION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_MAJOR | cut -d" " -f 3`
-	SAMBA_VERSION_ALPHA_RELEASE=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_ALPHA_RELEASE | cut -d" " -f 3`
-	SAMBA_VERSION_SVN_REVISION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_SVN_REVISION | cut -d" " -f 3`
+dnl ---------------------------------------------------------------------------
+dnl Check for Perl
+dnl ---------------------------------------------------------------------------
+AC_PATH_PROG(PERL, perl)
 
-	dnl OpenChange only compiles with Samba4
-	if test !"$SAMBA_VERSION" = 4 ; then
-	   AC_MSG_ERROR(Samba4 installation is mandatory)
-	fi
+if test x"$PERL" = x""; then
+   	AC_MSG_WARN([No version of perl was found!])
+	AC_MSG_ERROR([Please install perl http://www.perl.com])
+fi
+AC_SUBST(PERL)
 
-	dnl OpenChange only compiles with Samba4 > alpha 2
-	if test "$SAMBA_VERSION_ALPHA_RELEASE" -lt 3; then
-	   AC_MSG_ERROR(*******************************************************		\
-		  OpenChange only compiles with Samba4 alpha 2 or greater		\
-		  *******************************************************)
-	fi
+dnl ---------------------------------------------------------------------------
+dnl Check for Pidl
+dnl ---------------------------------------------------------------------------
+AC_PATH_PROG(PIDL, pidl)
 
-	dnl OpenChange won't compile with rev prior $FIRST_REV
-	if test "$SAMBA_VERSION_SVN_REVISION" -lt $FIRST_REV; then
-	   AC_MSG_ERROR(**********************************************************
-		  * Samba4 version working with libmapi $PACKAGE_VERSION:		
-		       First working revision:........$FIRST_REV			
-		       Last known working revision:...$LAST_REV				
-		       	    	  	  						
-		  * Your Samba4 installation:						
-		       Installed revision:............$SAMBA_VERSION_SVN_REVISION	
-											
-		  Please UPDATE your Samba4 installation to $LAST_REV or higher.	
-		  **********************************************************)
-	fi
-	
-	dnl OpenChange is known to compile with rev $LAST_REV
-	if test "$SAMBA_VERSION_SVN_REVISION" -gt $LAST_REV; then
-	   AC_MSG_WARN(**********************************************************	
-		    * Samba4 version working with libmapi $PACKAGE_VERSION:		
-		       First working revision:........$FIRST_REV			
-		       Last known working revision:...$LAST_REV				
-											
-		    * Your Samba4 installation:						
-		       Installed revision:............$SAMBA_VERSION_SVN_REVISION	
-											
-		    OpenChange has not been tested with this revision but
-		    there is a high probability it compiles and works properly     	       	   			
-											
-		    If you encounter any issues with your Samba4 installation		
-	   	    Please consider downgrading to samba4 rev $LAST_REV		
-		    **********************************************************)
-	fi
+if test x"$PIDL" = x""; then
+   	AC_MSG_WARN([No version of pidl was found!])
+	AC_MSG_ERROR([Please install pidl])
+fi
+AC_SUBST(PIDL)
 
-else
-	AC_MSG_WARN([Unable to nail down Samba4 version])
+dnl ----------------------------------------------------------------------------
+dnl Check for Flex
+dnl ----------------------------------------------------------------------------
+AC_ARG_VAR([FLEX], [Location of the flex program.])
+AC_CHECK_PROG([FLEX], [flex], [flex])
+
+if test x"$FLEX" = x""; then
+   	AC_MSG_WARN([No version of flex was found!])
+	AC_MSG_ERROR([Please install flex])
+fi
+AC_SUBST(FLEX)
+
+dnl ---------------------------------------------------------------------------
+dnl Samba4 modules: talloc, dcerpc, ndr, samba-config, ldb
+dnl ---------------------------------------------------------------------------
+PKG_PROG_PKG_CONFIG([0.20])
+PKG_CHECK_MODULES(TALLOC, talloc)
+PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-config)
+PKG_CHECK_MODULES(LDB, ldb)
+
+dnl ---------------------------------------------------------------------------
+dnl Finally add libmapi to the library list
+dnl ---------------------------------------------------------------------------
+OC_RULE_ADD(libmapi, LIBS)
+
+dnl nasty hack: only compile IDL if we have a library
+dnl libraries require libmapi and libmapi require IDL
+OC_IDL="idl"
+AC_SUBST(OC_IDL)
+
+
+
+dnl ###########################################################################
+dnl libocpf dependencies
+dnl ###########################################################################
+
+dnl ---------------------------------------------------------------------------
+dnl Check for Bison
+dnl ---------------------------------------------------------------------------
+AC_ARG_VAR([BISON], [Location of the bison program.])
+AC_PATH_PROG([BISON], [bison], [bison])
+
+if test x"$BISON" != x""; then
+   OC_RULE_ADD(libocpf, LIBS)
+   AC_SUBST(BISON)
 fi
 
-dnl ***********************
-dnl Swig bindings
-dnl ***********************
+
+
+dnl ###########################################################################
+dnl libmapiadmin dependencies
+dnl ###########################################################################
+PKG_CHECK_EXISTS([ dcerpc_samr ],
+		[
+			enable_libmapiadmin="yes"
+		], [
+			enable_libmapiadmin="no"
+		])
+
+if test x"$enable_libmapiadmin" = x"yes"; then
+   	PKG_CHECK_MODULES(SAMR, dcerpc_samr)
+	OC_RULE_ADD(libmapiadmin, LIBS)
+fi
+
+
+
+dnl ##########################################################################
+dnl tools dependencies
+dnl ##########################################################################
+
+dnl --------------------------------------------------------------------------
+dnl Check for popt
+dnl --------------------------------------------------------------------------
+AC_CHECK_LIB([popt], [poptFreeContext], 
+             [
+	       AC_DEFINE(HAVE_LIBPOPT, 1, [Define if you want to use libpopt])
+	       enable_libpopt="yes"
+             ], 
+             [ 
+               AC_MSG_WARN([libpopt is missing - can't build openchange tools]) 
+	       enable_libpopt="no"
+             ])
+
+if test x"$enable_libpopt" = x"yes"; then
+   	if test x"$enable_libmapiadmin" = x"yes"; then
+	   OC_RULE_ADD(openchangepfadmin, TOOLS)
+	   OC_RULE_ADD(mapitest, TOOLS)
+	fi
+
+	if test x"$enable_libocpf" = x"yes"; then
+	   OC_RULE_ADD(openchangeclient, TOOLS)
+	fi
+
+	OC_RULE_ADD(mapiprofile, TOOLS)
+	OC_RULE_ADD(openchangemapidump, TOOLS)
+	OC_RULE_ADD(schemaIDGUID, TOOLS)
+	OC_RULE_ADD(locale_codepage, TOOLS)
+fi
+
+dnl --------------------------------------------------------------------------
+dnl Check for libmagic
+dnl --------------------------------------------------------------------------
+AC_CHECK_LIB([magic], [magic_open],
+	     [
+               AC_DEFINE(HAVE_LIBMAGIC, 1, [Define if you want to use libmagic])
+ 	       MAGIC_LIBS="-lmagic -lz"
+	       enable_libmagic="yes"
+             ],
+	       AC_SUBST(MAGIC_LIBS)
+ 	     [
+               AC_MSG_WARN([libmagic is missing - can't build exchange2mbox])
+	       enable_libmagic="no"
+ 	     ])
+
+if test x"$enable_libmagic" = x"yes"; then
+   	if test x"$enable_libpopt" = x"yes"; then
+	   OC_RULE_ADD(exchange2mbox, TOOLS)
+	fi
+fi
+
+
+
+dnl ##########################################################################
+dnl torture dependencies
+dnl ##########################################################################
+AC_PATH_PROG([SMBTORTURE], [smbtorture], no, "$prefix/bin")
+
+if test x"$SMBTORTURE" != x""; then
+   	TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`
+   	AC_SUBST(TORTURE_MODULESDIR)
+   	OC_RULE_ADD(torture, TORTURE)
+fi
+
+
+
+dnl ##########################################################################
+dnl Server compilation
+dnl ##########################################################################
+OC_RULE_ADD(server, SERVER)
+
+
+dnl ##########################################################################
+dnl Swig bindings dependencies
+dnl ##########################################################################
 AC_ARG_ENABLE(swig-perl, AC_HELP_STRING([--enable-swig-perl],
 			   [build SWIG interfaces for Perl]),
 			   enable_perlswig="$enableval")
@@ -181,21 +283,83 @@ AC_SUBST(SWIGDIRSCLEAN)
 AC_SUBST(SWIGDIRSDISTCLEAN)
 AC_SUBST(SWIGDIRSREALDISTCLEAN)
 
-dnl **************************
-dnl Documentation dependencies
-dnl **************************
 
+
+dnl ##########################################################################
+dnl Documentation dependencies
+dnl ##########################################################################
 AC_PATH_PROG(DOXYGEN, doxygen)
-if test -z "$DOXYGEN"
-   then
-	AC_MSG_ERROR(Please install doxygen)
+if test x"$DOXYGEN" = x""; then
+	AC_MSG_WARN(doxygen)
+	enable_doxygen="no"
+else
+	enable_doxygen="yes"
+	AC_SUBST(DOXYGEN)
 fi
+
+
 
 dnl ***********************
 dnl Makefiles 
 dnl ***********************
-
 AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc libmapiadmin.pc 
 		 libocpf.pc Doxyfile])
 AC_OUTPUT
+
+
+dnl ##########################################################################
+dnl Print configuration info
+dnl ##########################################################################
+
+OC_SETVAL(libmapi)
+OC_SETVAL(libmapiadmin)
+OC_SETVAL(libocpf)
+
+OC_SETVAL(openchangeclient)
+OC_SETVAL(mapiprofile)
+OC_SETVAL(openchangepfadmin)
+OC_SETVAL(exchange2mbox)
+OC_SETVAL(mapitest)
+OC_SETVAL(openchangemapidump)
+OC_SETVAL(schemaIDGUID)
+OC_SETVAL(locale_codepage)
+
+OC_SETVAL(torture)
+OC_SETVAL(doxygen)
+OC_SETVAL(perlswig)
+
+AC_MSG_RESULT([
+
+===============================================================
+OpenChange Configuration (Please review)
+
+	   * Install:
+	     - prefix:			$prefix
+
+	   * OpenChange MAPI library:	$enable_libmapi
+
+	   * OpenChange Libraries:
+	     - libmapiadmin:		$enable_libmapiadmin
+	     - libocpf:			$enable_libocpf
+
+	   * OpenChange Tools:
+	     - openchangeclient:	$enable_openchangeclient
+	     - mapiprofile:		$enable_mapiprofile
+	     - openchangepfadmin:	$enable_openchangepfadmin
+	     - exchange2mbox:		$enable_exchange2mbox
+	     - mapitest:		$enable_mapitest
+	     - openchangemapidump:	$enable_openchangemapidump
+	     - schemaIDGUID:		$enable_schemaIDGUID
+	     - locale_codepage:		$enable_locale_codepage
+
+	   * OpenChange Torture Suite:	$enable_torture
+
+	   * OpenChange Documentation:	$enable_doxygen
+
+	   * OpenChange SWIG Bindings:
+	     - Perl:			$enable_perlswig
+
+===============================================================
+
+])
 

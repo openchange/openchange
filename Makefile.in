@@ -1,17 +1,15 @@
 # Makefile for OpenChange
 # Written by Jelmer Vernooij <jelmer@samba.org>, 2005.
 
+# Binary
 CC=@CC@
-LEX=@FLEX@
-YACC=@YACC@
-CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 \
-	   -DDEFAULT_LDIF=\"$(datadir)/setup\" 
+BISON=@BISON@
+FLEX=@FLEX@
 PIDL=@PIDL@
 PERL=@PERL@
 DOXYGEN=@DOXYGEN@
 INSTALL=@INSTALL@
 SMBTORTURE=@SMBTORTURE@
-DSOOPT=-shared -fPIC
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
@@ -21,11 +19,62 @@ datarootdir=@datarootdir@
 datadir=@datadir@
 includedir=@includedir@
 mandir=@mandir@
-
 top_builddir=${PWD}
 
+DSOOPT=-shared -fPIC
+CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 \
+	   -DDEFAULT_LDIF=\"$(datadir)/setup\" 
+
+# This value should be determined by configure at some point
+SHLIBEXT=so
+PACKAGE_VERSION=@PACKAGE_VERSION@
+SO_VERSION=0
+
+# Portability hack...
+CFLAGS+=-Duint_t="unsigned int" 
+
+CFLAGS+=@SAMBA_CFLAGS@ @LDB_CFLAGS@ @TALLOC_CFLAGS@
+LIBS+=@SAMBA_LIBS@ @LDB_LIBS@ @TALLOC_LIBS@
+
+# OPENCHANGE LIBRARIES
+OC_IDL=@OC_IDL@
+OC_LIBS=@OC_LIBS@
+OC_LIBS_INSTALL=@OC_LIBS_INSTALL@
+OC_LIBS_UNINSTALL=@OC_LIBS_UNINSTALL@
+OC_LIBS_INSTALLPC=@OC_LIBS_INSTALLPC@
+OC_LIBS_INSTALLHEADER=@OC_LIBS_INSTALLHEADER@
+OC_LIBS_INSTALLLIB=@OC_LIBS_INSTALLLIB@
+OC_LIBS_CLEAN=@OC_LIBS_CLEAN@
+OC_LIBS_DISTCLEAN=@OC_LIBS_DISTCLEAN@
+OC_LIBS_REALDISTCLEAN=@OC_LIBS_REALDISTCLEAN@
+LIBMAPIADMIN_LIBS+=@SAMR_LIBS@
+LIBMAPIADMIN_CFLAGS=@SAMR_CFLAGS@
+
+
+# TORTURE
+OC_TORTURE=@OC_TORTURE@
+OC_TORTURE_INSTALL=@OC_TORTURE_INSTALL@
+OC_TORTURE_UNINSTALL=@OC_TORTURE_UNINSTALL@
+OC_TORTURE_CLEAN=@OC_TORTURE_CLEAN@
 TORTURE_MODULESDIR=@TORTURE_MODULESDIR@
 SERVER_MODULESDIR=${prefix}/modules/dcerpc_server
+
+
+# TOOLS
+OC_TOOLS=@OC_TOOLS@
+OC_TOOLS_INSTALL=@OC_TOOLS_INSTALL@
+OC_TOOLS_UNINSTALL=@OC_TOOLS_UNINSTALL@
+OC_TOOLS_CLEAN=@OC_TOOLS_CLEAN@
+MAGIC_LIBS=@MAGIC_LIBS@
+
+
+# SERVER
+OC_SERVER=@OC_SERVER@
+OC_SERVER_INSTALL=@OC_SERVER_INSTALL@
+OC_SERVER_UNINSTALL=@OC_SERVER_UNINSTALL@
+OC_SERVER_CLEAN=@OC_SERVER_CLEAN@
+OC_SERVER_REALDISTCLEAN=@OC_SERVER_REALDISTCLEAN@
+
 
 # SWIG
 SWIGDIRS-ALL=@SWIGDIRSALL@
@@ -35,84 +84,167 @@ SWIGDIRS-CLEAN=@SWIGDIRSCLEAN@
 SWIGDIRS-DISTCLEAN=@SWIGDIRSDISTCLEAN@
 SWIGDIRS-REALDISTCLEAN=@SWIGDIRSREALDISTCLEAN@
 
-# This value should be determined by configure at some point
-SHLIBEXT=so
 
-PACKAGE_VERSION=@PACKAGE_VERSION@
-SO_VERSION=0
+#################################################################
+# top level compilation rules
+#################################################################
 
-# Portability hack...
-CFLAGS+=-Duint_t="unsigned int" 
+all: 		$(OC_IDL)		\
+		$(OC_LIBS)		\
+		$(OC_TOOLS)		\
+		$(OC_TORTURE)		\
+		$(OC_SERVER)		\
+		$(SWIGDIRS-ALL)					
 
-CFLAGS+=@SAMBA_CFLAGS@
-LIBS+=@SAMBA_LIBS@
+install: 	all 			\
+		installlib 		\
+		installpc 		\
+		installheader 		\
+		$(OC_TOOLS_INSTALL) 	\
+		$(OC_SERVER_INSTALL) 	\
+		$(OC_TORTURE_INSTALL) 	\
+		$(SWIGDIRS-INSTALL)
 
-CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
-LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
+installlib:	$(OC_LIBS_INSTALL)
+installpc:	$(OC_LIBS_INSTALLPC)
+installheader:	$(OC_LIBS_INSTALLHEADERS)
 
-LIBMAPIADMIN_LIBS+=@SAMR_LIBS@
-LIBMAPIADMIN_CFLAGS=@SAMR_CFLAGS@
+uninstall: 	$(OC_LIBS_UNINSTALL) 	\
+		$(OC_TOOLS_UNINSTALL) 	\
+		$(OC_SERVER_UNINSTALL) 	\
+		$(OC_TORTURE_UNINSTALL) \
+		$(SWIGDIRS-UNINSTALL)
 
-MAGIC_LIBS=@MAGIC_LIBS@
+distclean: clean $(OC_LIBS_DISTCLEAN) $(SWIGDIRS-DISTCLEAN)
+	rm -rf autom4te.cache
+	rm -f Doxyfile
+	rm -f Makefile config.status config.log
+	rm -f intltool-extract intltool-merge intltool-update
 
-all: 	\
-	libmapi/version.h					\
-	gen_ndr gen_ndr/ndr_exchange.h libmapi/proto.h		\
-	torture/torture_proto.h					\
-	providers/providers_proto.h server/dcesrv_proto.h	\
-	libmapiadmin/proto.h					\
-	libocpf/proto.h						\
-	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)			\
-	libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-	libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)			\
-	bin/schemaIDGUID					\
-	bin/mapiprofile						\
-	bin/openchangeclient					\
-	bin/openchangepfadmin					\
-	bin/openchangemapidump					\
-	bin/exchange2mbox					\
-	bin/locale_codepage					\
-	bin/mapitest						\
-	torture/openchange.$(SHLIBEXT)				\
-	server/dcesrv_exchange.$(SHLIBEXT)			\
-	server/dcesrv_exchange_remote.$(SHLIBEXT)		\
-	$(SWIGDIRS-ALL)						
+realdistclean: distclean $(OC_LIBS_REALDISTCLEAN) $(OC_SERVER_REALDISTCLEAN) $(SWIGDIRS-REALDISTCLEAN)
+	rm -rf apidocs
+	rm -rf gen_ndr
 
-install: all $(SWIGDIRS-INSTALL)
-	@echo "Installing OpenChange plugin"
-	$(INSTALL) -d $(DESTDIR)$(bindir) 
-	$(INSTALL) -d $(DESTDIR)$(libdir)
-	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi 
-	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi/socket 
-	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapiadmin 
-	$(INSTALL) -d $(DESTDIR)$(includedir)/gen_ndr
-	$(INSTALL) -d $(DESTDIR)$(TORTURE_MODULESDIR)
-	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -m 0755 bin/schemaIDGUID $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 bin/mapiprofile $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 bin/openchangeclient $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 bin/openchangepfadmin $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 bin/openchangemapidump $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 bin/exchange2mbox $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 bin/locale_codepage $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 bin/mapitest $(DESTDIR)$(bindir)
-	$(INSTALL) -m 0755 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
-	ln -sf libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapi.$(SHLIBEXT)
-	$(INSTALL) -m 0755 libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
-	ln -sf libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiadmin.$(SHLIBEXT)
-	$(INSTALL) -m 0755 libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
-	ln -sf libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libocpf.$(SHLIBEXT)
-	$(INSTALL) -m 0755 torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
-	$(INSTALL) -m 0755 server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -m 0755 server/dcesrv_exchange_remote.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -d $(DESTDIR)$(datadir)/js
-	$(INSTALL) -m 0644 scripting/libjs/*.js $(DESTDIR)$(datadir)/js/
-	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
-	$(INSTALL) -m 0644 setup/*.ldif $(DESTDIR)$(datadir)/setup/
+clean:	$(OC_LIBS_CLEAN) $(OC_TOOLS_CLEAN) $(OC_SERVER_CLEAN) $(OC_TORTURE_CLEAN) $(SWIGDIRS-CLEAN)
+	rm -f *~
+	rm -f */*~
+	rm -f */*/*~
+	rm -f doc/examples/mapi_sample1
+	rm -f doc/examples/fetchappointment
+	rm -f doc/examples/fetchmail
+
+re: clean install
+
+
+
+#################################################################
+# Suffixes compilation rules
+#################################################################
+
+.SUFFIXES: .c .o .h .po .idl
+
+.idl.h:
+	@echo "Generating $@"
+	@$(PIDL) --outputdir=gen_ndr --header -- $<
+
+.c.o:
+	@echo "Compiling $<"
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+.c.po:
+	@echo "Compiling $< with -fPIC"
+	@$(CC) $(CFLAGS) -fPIC -c $< -o $@
+
+
+
+#################################################################
+# IDL compilation rules
+#################################################################
+
+idl: gen_ndr gen_ndr/ndr_exchange.h
+
+exchange.idl: mapitags_enum.h mapicodes_enum.h
+
+gen_ndr:
+	@echo "Creating the gen_ndr directory"
+	mkdir -p gen_ndr
+
+gen_ndr/ndr_%.h gen_ndr/ndr_%.c: %.idl %.h
+	@echo "Generating $@"
+	@$(PIDL) --outputdir=gen_ndr --ndr-parser -- $<
+
+gen_ndr/ndr_%_c.h gen_ndr/ndr_%_c.c: %.idl %.h
+	@echo "Generating $@"
+	@$(PIDL) --outputdir=gen_ndr --client -- $<
+
+gen_ndr/ndr_%_s.c: %.idl
+	@echo "Generating $@"
+	@$(PIDL) --outputdir=gen_ndr --server -- $<
+
+
+
+#################################################################
+# libmapi compilation rules
+#################################################################
+
+libmapi:	idl					\
+		libmapi/version.h			\
+		libmapi/proto.h				\
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)	
+
+libmapi-install:	libmapi-installpc	\
+			libmapi-installlib	\
+			libmapi-installheader	\
+			libmapi-installscript
+
+libmapi-uninstall:	libmapi-uninstallpc	\
+			libmapi-uninstalllib	\
+			libmapi-uninstallheader	\
+			libmapi-uninstallscript
+
+libmapi-clean:
+	rm -f libmapi/*.{o,po}
+	rm -f libmapi/utf8_convert.yy.c
+	rm -f libmapi/tests/*.{o,po}
+	rm -f libmapi/socket/*.{o,po}
+	rm -f libmapi/util/*.{o,po}
+	rm -f libmapi/version.h
+	rm -f libmapi/mapicode.{c,h}
+	rm -f libmapi/mapitags.{c,h}
+	rm -f libmapi/mapi_nameid_private.h
+	rm -f libmapi/proto.h
+	rm -f libmapi/proto_private.h
+	rm -f gen_ndr/ndr_exchange*
+	rm -f gen_ndr/exchange.h
+	rm -f ndr_mapi.{o,po}
+	rm -f mapicodes_enum.h
+	rm -f mapitags_enum.h
+	rm -f *~
+	rm -f */*~
+	rm -f */*/*~
+
+libmapi-distclean:
+	rm -f libmapi.pc
+
+libmapi-realdistclean:
+	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+libmapi-installpc:
+	@echo "[*] install: libmapi pc files"
 	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL) -m 0644 libmapi.pc $(DESTDIR)$(libdir)/pkgconfig
-	$(INSTALL) -m 0644 libmapiadmin.pc $(DESTDIR)$(libdir)/pkgconfig
-	$(INSTALL) -m 0644 libocpf.pc $(DESTDIR)$(libdir)/pkgconfig
+
+libmapi-installlib:
+	@echo "[*] install: libmapi library"
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(INSTALL) -m 0755 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapi.$(SHLIBEXT)
+
+libmapi-installheader:
+	@echo "[*] install: libmapi headers"
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi 
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi/socket 
+	$(INSTALL) -d $(DESTDIR)$(includedir)/gen_ndr
 	$(INSTALL) -m 0644 libmapi/dlinklist.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/libmapi.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/proto.h $(DESTDIR)$(includedir)/libmapi/
@@ -131,292 +263,332 @@ install: all $(SWIGDIRS-INSTALL)
 	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
 	$(INSTALL) -m 0644 gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
-	@echo "OpenChange plugin installed"
 
-uninstall: $(SWIGDIRS-UNINSTALL)
+libmapi-installscript:
+	$(INSTALL) -d $(DESTDIR)$(datadir)/js
+	$(INSTALL) -m 0644 scripting/libjs/oc_profiles.js $(DESTDIR)$(datadir)/js/
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
+	$(INSTALL) -m 0644 setup/oc_profiles* $(DESTDIR)$(datadir)/setup/
+
+libmapi-uninstallpc:
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapi.pc
-	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapiadmin.pc
-	rm -f $(DESTDIR)$(libdir)/pkgconfig/libocpf.pc
-	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
-	rm -f $(DESTDIR)$(bindir)/mapiprofile
-	rm -f $(DESTDIR)$(bindir)/openchangeclient
-	rm -f $(DESTDIR)$(bindir)/openchangepfadmin
-	rm -f $(DESTDIR)$(bindir)/openchangemapidump
-	rm -f $(DESTDIR)$(bindir)/exchange2mbox
-	rm -f $(DESTDIR)$(bindir)/locale_codepage
-	rm -f $(DESTDIR)$(bindir)/mapitest
+
+libmapi-uninstalllib:
 	rm -f $(DESTDIR)$(libdir)/libmapi.*
-	rm -f $(DESTDIR)$(libdir)/libmapiadmin.*
-	rm -f $(DESTDIR)$(libdir)/libocpf.*
-	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
-	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_exchange.*
-	rm -f $(DESTDIR)$(datadir)/js/oc_provision.js
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
+
+libmapi-uninstallheader:
 	rm -rf $(DESTDIR)$(includedir)/libmapi
-	rm -rf $(DESTDIR)$(includedir)/libmapiadmin
 	rm -f $(DESTDIR)$(includedir)/gen_ndr/exchange.h
 
-re: clean install
+libmapi-uninstallscript:
+	rm -f $(DESTDIR)$(datadir)/js/oc_profiles.js
+	rm -f $(DESTDIR)$(datadir)/setup/oc_profiles*
 
-torture/openchange.$(SHLIBEXT):	torture/nspi_profile.po		\
-				torture/nspi_resolvenames.po	\
-				torture/mapi_restrictions.po	\
-				torture/mapi_criteria.po	\
-				torture/mapi_copymail.po	\
-				torture/mapi_prop.po		\
-				torture/mapi_folder.po		\
-				torture/mapi_table.po		\
-				torture/mapi_sorttable.po	\
-				torture/mapi_bookmark.po	\
-				torture/mapi_message.po		\
-				torture/mapi_fetchmail.po	\
-				torture/mapi_sendmail.po	\
-				torture/mapi_sendmail_html.po	\
-				torture/mapi_deletemail.po	\
-				torture/mapi_newmail.po		\
-				torture/mapi_sendattach.po	\
-				torture/mapi_fetchattach.po	\
-				torture/mapi_fetchappointment.po\
-				torture/mapi_sendappointment.po	\
-				torture/mapi_fetchcontacts.po	\
-				torture/mapi_sendcontacts.po	\
-				torture/mapi_fetchtasks.po	\
-				torture/mapi_sendtasks.po	\
-				torture/mapi_common.po		\
-				torture/fuzzer_msgstore.po	\
-				torture/mapi_permissions.po	\
-				torture/mapi_createuser.po	\
-				torture/exchange_createuser.po	\
-				torture/mapi_namedprops.po	\
-				torture/mapi_recipient.po	\
-				torture/openchange.po		\
-				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
+	libmapi/IABContainer.po				\
+	libmapi/IProfAdmin.po				\
+	libmapi/IMAPIContainer.po			\
+	libmapi/IMAPIFolder.po				\
+	libmapi/IMAPIProp.po				\
+	libmapi/IMAPISession.po				\
+	libmapi/IMAPISupport.po				\
+	libmapi/IStream.po				\
+	libmapi/IMAPITable.po				\
+	libmapi/IMessage.po				\
+	libmapi/IMsgStore.po				\
+	libmapi/IStoreFolder.po				\
+	libmapi/IUnknown.po				\
+	libmapi/IMSProvider.po				\
+	libmapi/IXPLogon.po				\
+	libmapi/utils.po 				\
+	libmapi/property.po				\
+	libmapi/cdo_mapi.po 				\
+	libmapi/lzfu.po					\
+	libmapi/mapi_object.po				\
+	libmapi/mapi_id_array.po			\
+	libmapi/mapitags.po				\
+	libmapi/mapidump.po				\
+	libmapi/mapicode.po 				\
+	libmapi/mapi_nameid.po				\
+	libmapi/emsmdb.po				\
+	libmapi/nspi.po 				\
+	libmapi/simple_mapi.po				\
+	libmapi/util/locale.po 				\
+	libmapi/util/codepage.po			\
+	libmapi/x500.po 				\
+	ndr_mapi.po					\
+	gen_ndr/ndr_exchange.po				\
+	gen_ndr/ndr_exchange_c.po			\
+	libmapi/socket/interface.po			\
+	libmapi/socket/netif.po				\
+	libmapi/utf8_convert.yy.po
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
+	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
 
 libmapi/version.h: VERSION
 	@./script/mkversion.sh 	VERSION libmapi/version.h $(PACKAGE_VERSION) $(top_builddir)/
 
 libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
 	@echo "Generating $@"
-	@$(LEX) -t $< > $@
+	@$(FLEX) -t $< > $@
 
 # Avoid warnings:
 libmapi/utf8_convert.yy.o: CFLAGS=
 
-server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.po 	\
-				server/dcesrv_exchange.po	\
-				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
-
-server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.po	\
-					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
-
-gen_ndr:
-	@echo "Creating the gen_ndr directory"
-	mkdir -p gen_ndr
-
-exchange.idl: mapitags_enum.h mapicodes_enum.h
-
-.SUFFIXES: .c .o .h .po .idl
-
-.idl.h:
-	@echo "Generating $@"
-	@$(PIDL) --outputdir=gen_ndr --header -- $<
-
-.c.o:
-	@echo "Compiling $<"
-	@$(CC) $(CFLAGS) -c $< -o $@
-
-.c.po:
-	@echo "Compiling $< with -fPIC"
-	@$(CC) $(CFLAGS) -fPIC -c $< -o $@
-
-gen_ndr/ndr_%.h gen_ndr/ndr_%.c: %.idl %.h
-	@echo "Generating $@"
-	@$(PIDL) --outputdir=gen_ndr --ndr-parser -- $<
-
-gen_ndr/ndr_%_c.h gen_ndr/ndr_%_c.c: %.idl %.h
-	@echo "Generating $@"
-	@$(PIDL) --outputdir=gen_ndr --client -- $<
-
-gen_ndr/ndr_%_s.c: %.idl
-	@echo "Generating $@"
-	@$(PIDL) --outputdir=gen_ndr --server -- $<
-
-server/dcesrv_exchange.c: providers/providers_proto.h gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
-
-libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
-
-libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: libmapi/conf/mapi-properties libmapi/conf/mapi-codes libmapi/conf/mapi-named-properties libmapi/conf/mparse.pl
-	@./libmapi/conf/build.sh
-
-bin/schemaIDGUID: utils/schemaIDGUID.o
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS)
-
-bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
-
-bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
-
-bin/openchangeclient: 	utils/openchangeclient.o			\
-			utils/openchange-tools.o			\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
-
-bin/openchangepfadmin:	utils/openchangepfadmin.o			\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
-			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) -lpopt			
-
-
-bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
-			utils/backup/openchangebackup.o			\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
-
-bin/exchange2mbox:	utils/exchange2mbox.o				\
-			utils/openchange-tools.o			\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt  $(MAGIC_LIBS)
-
-bin/mapitest:		utils/mapitest/mapitest.o			\
-			utils/mapitest/mapitest_common.o		\
-			utils/mapitest/mapitest_print.o			\
-			utils/mapitest/mapitest_calls.o			\
-			utils/mapitest/mapitest_calls_ring1.o		\
-			utils/mapitest/mapitest_calls_ring2.o		\
-			utils/mapitest/mapitest_calls_ring3.o		\
-			utils/mapitest/mapitest_calls_ring4.o		\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
-
-examples:
-	cd doc/examples && make && cd ../..
- 
-distclean: clean $(SWIGDIRS-DISTCLEAN)
-	rm -rf autom4te.cache
-	rm -f libmapi.pc libmapiadmin.pc libocpf.pc
-	rm -f Doxyfile
-	rm -f Makefile config.status config.log
-	rm -f intltool-extract intltool-merge intltool-update
-
-realdistclean: distclean $(SWIGDIRS-REALDISTCLEAN)
-	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
-	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
-	rm -f torture/openchange.$(SHLIBEXT)
-	rm -f server/dcesrv_exchange.$(SHLIBEXT)
-	rm -f server/dcesrv_exchange_remote.$(SHLIBEXT)
-	rm -rf apidocs
-	rm -rf gen_ndr
-
-clean:	$(SWIGDIRS-CLEAN)
-	rm -f libmapi/*.{o,po} libmapiadmin/*.{o,po}
-	rm -f libmapi/utf8_convert.yy.c
-	rm -f libmapi/tests/*.{o,po}
-	rm -f libmapi/socket/*.{o,po}
-	rm -f libmapi/util/*.{o,po}
-	rm -f libmapi/version.h
-	rm -f tests/*.o
-	rm -rf bin/*
-	rm -f server/*.{o,po}
-	rm -f providers/*.{o,po}
-	rm -f torture/*.{o,po}
-	rm -f utils/*.o
-	rm -f utils/backup/*.o
-	rm -f utils/mapitest/*.o
-	rm -f libocpf/*.{o,po}
-	rm -f libocpf/lex.yy.c
-	rm -f libocpf/ocpf.tab.{c,h}
-	rm -f utils/ocpf/*.{o,po}
-	rm -f gen_ndr/ndr_exchange* gen_ndr/exchange.h
-	rm -f libmapi/mapicode.{c,h}
-	rm -f libmapi/mapitags.{c,h}
-	rm -f libmapi/mapi_nameid_private.h
-	rm -f libmapi/proto.h
-	rm -f libmapi/proto_private.h
-	rm -f libmapiadmin/proto.h
-	rm -f libmapiadmin/proto_private.h
-	rm -f libocpf/proto.h
-	rm -f libocpf/proto_private.h
-	rm -f server/dcesrv_proto.h
-	rm -f providers/providers_proto.h
-	rm -f torture/*.$(SHLIBEXT) server/*.$(SHLIBEXT)
-	rm -f torture/torture_proto.h
-	rm -f ndr_mapi.{o,po}
-	rm -f mapicodes_enum.h
-	rm -f mapitags_enum.h
-	rm -f *~
-	rm -f */*~
-	rm -f */*/*~
-	rm -f doc/examples/mapi_sample1
-	rm -f doc/examples/fetchappointment
-	rm -f doc/examples/fetchmail
-
-libmapi/proto.h libmapi/proto_private.h: libmapi/nspi.c			\
-	libmapi/emsmdb.c		\
-	libmapi/cdo_mapi.c		\
-	libmapi/simple_mapi.c		\
-	libmapi/mapitags.c		\
-	libmapi/mapicode.c		\
-	libmapi/mapidump.c		\
-	libmapi/mapi_object.c		\
-	libmapi/mapi_id_array.c		\
-	libmapi/mapi_nameid.c		\
-	libmapi/property.c		\
-	libmapi/IABContainer.c		\
-	libmapi/IProfAdmin.c		\
-	libmapi/IMAPIContainer.c	\
-	libmapi/IMAPIFolder.c 		\
-	libmapi/IMAPIProp.c 		\
-	libmapi/IMAPISession.c		\
-	libmapi/IMAPISupport.c		\
-	libmapi/IMAPITable.c 		\
-	libmapi/IMSProvider.c		\
-	libmapi/IMessage.c 		\
-	libmapi/IMsgStore.c 		\
-	libmapi/IStoreFolder.c		\
-	libmapi/IUnknown.c 		\
-	libmapi/IStream.c		\
-	libmapi/IXPLogon.c		\
-	libmapi/x500.c 			\
-	libmapi/lzfu.c			\
-	libmapi/utils.c 		\
-	libmapi/util/locale.c 		\
-	libmapi/util/codepage.c 	\
-	libmapi/socket/interface.c	\
+libmapi/proto.h libmapi/proto_private.h:		\
+	libmapi/nspi.c					\
+	libmapi/emsmdb.c				\
+	libmapi/cdo_mapi.c				\
+	libmapi/simple_mapi.c				\
+	libmapi/mapitags.c				\
+	libmapi/mapicode.c				\
+	libmapi/mapidump.c				\
+	libmapi/mapi_object.c				\
+	libmapi/mapi_id_array.c				\
+	libmapi/mapi_nameid.c				\
+	libmapi/property.c				\
+	libmapi/IABContainer.c				\
+	libmapi/IProfAdmin.c				\
+	libmapi/IMAPIContainer.c			\
+	libmapi/IMAPIFolder.c 				\
+	libmapi/IMAPIProp.c 				\
+	libmapi/IMAPISession.c				\
+	libmapi/IMAPISupport.c				\
+	libmapi/IMAPITable.c 				\
+	libmapi/IMSProvider.c				\
+	libmapi/IMessage.c 				\
+	libmapi/IMsgStore.c 				\
+	libmapi/IStoreFolder.c				\
+	libmapi/IUnknown.c 				\
+	libmapi/IStream.c				\
+	libmapi/IXPLogon.c				\
+	libmapi/x500.c 					\
+	libmapi/lzfu.c					\
+	libmapi/utils.c 				\
+	libmapi/util/locale.c 				\
+	libmapi/util/codepage.c 			\
+	libmapi/socket/interface.c			\
 	libmapi/socket/netif.c		
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=libmapi/proto_private.h --public=libmapi/proto.h $^
 
-libmapiadmin/proto.h libmapiadmin/proto_private.h: libmapiadmin/mapiadmin.c libmapiadmin/mapiadmin_user.c	
+libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
+
+libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: \
+	libmapi/conf/mapi-properties 					\
+	libmapi/conf/mapi-codes 					\
+	libmapi/conf/mapi-named-properties 				\
+	libmapi/conf/mparse.pl
+	@./libmapi/conf/build.sh
+
+
+
+#################################################################
+# libmapiadmin compilation rules
+#################################################################
+
+libmapiadmin:	libmapiadmin/proto.h				\
+		libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+libmapiadmin-install:	libmapiadmin-installpc		\
+			libmapiadmin-installlib		\
+			libmapiadmin-installheader
+
+libmapiadmin-uninstall:	libmapiadmin-uninstallpc	\
+			libmapiadmin-uninstalllib	\
+			libmapiadmin-uninstallheader
+
+libmapiadmin-clean:
+	rm -f libmapiadmin/*.{o,po}
+	rm -f libmapiadmin/proto.h
+	rm -f libmapiadmin/proto_private.h
+
+libmapiadmin-distclean:
+	rm -f libmapiadmin.pc
+
+libmapiadmin-realdistclean:
+	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+libmapiadmin-installpc:
+	@echo "[*] install: libmapiadmin pc files"
+	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 libmapiadmin.pc $(DESTDIR)$(libdir)/pkgconfig
+
+libmapiadmin-installlib:
+	@echo "[*] install: libmapiadmin library"
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(INSTALL) -m 0755 libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiadmin.$(SHLIBEXT)
+
+libmapiadmin-installheader:
+	@echo "[*] install: libmapiadmin headers"
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapiadmin 
+	$(INSTALL) -m 0644 libmapiadmin/proto.h $(DESTDIR)$(includedir)/libmapiadmin/
+
+libmapiadmin-uninstallpc:
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapiadmin.pc
+
+libmapiadmin-uninstalllib:
+	rm -f $(DESTDIR)$(libdir)/libmapiadmin.*
+
+libmapiadmin-uninstallheader:
+	rm -rf $(DESTDIR)$(includedir)/libmapiadmin
+
+libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	\
+	libmapiadmin/mapiadmin_user.po		\
+	libmapiadmin/mapiadmin.po 		\
+	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
+
+libmapiadmin/proto.h libmapiadmin/proto_private.h: 	\
+	libmapiadmin/mapiadmin.c 			\
+	libmapiadmin/mapiadmin_user.c			
 	@echo "Generating $@"
 	@./script/mkproto.pl -private=libmapiadmin/proto_private.h --public=libmapiadmin/proto.h $^
 
-providers/providers_proto.h: providers/emsabp.c
-	@echo "Generating $@"
-	@./script/mkproto.pl --private=providers/providers_proto.h --public=providers/providers_proto.h $^
 
-server/dcesrv_proto.h: server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
+
+#################################################################
+# libocpf compilation rules
+#################################################################
+
+libocpf:	libocpf/proto.h				\
+		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+libocpf-install:	libocpf-installpc	\
+			libocpf-installlib	\
+			libocpf-installheader
+
+libocpf-uninstall:	libocpf-uninstallpc	\
+			libocpf-uninstalllib	\
+			libocpf-uninstallheader
+
+libocpf-clean:
+	rm -f libocpf/*.{o,po}
+	rm -f libocpf/lex.yy.c
+	rm -f libocpf/ocpf.tab.{c,h}
+	rm -f libocpf/proto.h
+	rm -f libocpf/proto_private.h
+
+libocpf-distclean:
+	rm -f libocpf.pc
+
+libocpf-realdistclean:
+	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+libocpf-installpc:
+	@echo "[*] install: libocpf pc files"
+	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 libocpf.pc $(DESTDIR)$(libdir)/pkgconfig
+
+libocpf-installlib:
+	@echo "[*] install: libocpf library"
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(INSTALL) -m 0755 libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libocpf.$(SHLIBEXT)
+
+libocpf-installheader:
+	@echo "[*] install: libocpf headers"
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libocpf
+	$(INSTALL) -m 0644 libocpf/ocpf.h $(DESTDIR)$(includedir)/libocpf/
+	$(INSTALL) -m 0644 libocpf/proto.h $(DESTDIR)$(includedir)/libocpf/
+
+libocpf-uninstallpc:
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/libocpf.pc
+
+libocpf-uninstalllib:
+	rm -f $(DESTDIR)$(libdir)/libocpf.*
+
+libocpf-uninstallheader:
+	rm -rf $(DESTDIR)$(includedir)/libocpf
+
+libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		\
+	libocpf/ocpf.tab.po			\
+	libocpf/lex.yy.po			\
+	libocpf/ocpf_public.po			\
+	libocpf/ocpf_dump.po			\
+	libocpf/ocpf_api.po			\
+	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(DSOOPT) -Wl,-soname,libocpf.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
+
+libocpf/proto.h:	libocpf/ocpf_public.c	\
+			libocpf/ocpf_dump.c	\
+			libocpf/ocpf_api.c	
+			@echo "Generating $@"
+			@./script/mkproto.pl --private=libocpf/proto_private.h \
+			--public=libocpf/proto.h $^
+
+libocpf/lex.yy.c:		libocpf/lex.l
 	@echo "Generating $@"
-	@./script/mkproto.pl --private=server/dcesrv_proto.h --public=server/dcesrv_proto.h $^
+	@$(FLEX) -t $< > $@
+
+libocpf/ocpf.tab.c:	libocpf/ocpf.y
+	@echo "Generating $@"
+	@$(BISON) -pocpf_yy -d $< -o $@
+
+# Avoid warnings
+libocpf/lex.yy.o: CFLAGS=
+libocpf/ocpf.tab.o: CFLAGS=
+
+
+
+#################################################################
+# torture suite compilation rules
+#################################################################
+
+torture:	torture/torture_proto.h		\
+		torture/openchange.$(SHLIBEXT)
+
+torture-install:
+	$(INSTALL) -d $(DESTDIR)$(TORTURE_MODULESDIR)
+	$(INSTALL) -m 0755 torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
+
+torture-uninstall:
+	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
+
+torture-clean:
+	rm -f torture/*.$(SHLIBEXT)
+	rm -f torture/torture/proto.h
+	rm -f torture/*.{o,po}
+
+torture/openchange.$(SHLIBEXT):			\
+	torture/nspi_profile.po			\
+	torture/nspi_resolvenames.po		\
+	torture/mapi_restrictions.po		\
+	torture/mapi_criteria.po		\
+	torture/mapi_copymail.po		\
+	torture/mapi_prop.po			\
+	torture/mapi_folder.po			\
+	torture/mapi_table.po			\
+	torture/mapi_sorttable.po		\
+	torture/mapi_bookmark.po		\
+	torture/mapi_message.po			\
+	torture/mapi_fetchmail.po		\
+	torture/mapi_sendmail.po		\
+	torture/mapi_sendmail_html.po		\
+	torture/mapi_deletemail.po		\
+	torture/mapi_newmail.po			\
+	torture/mapi_sendattach.po		\
+	torture/mapi_fetchattach.po		\
+	torture/mapi_fetchappointment.po	\
+	torture/mapi_sendappointment.po		\
+	torture/mapi_fetchcontacts.po		\
+	torture/mapi_sendcontacts.po		\
+	torture/mapi_fetchtasks.po		\
+	torture/mapi_sendtasks.po		\
+	torture/mapi_common.po			\
+	torture/fuzzer_msgstore.po		\
+	torture/mapi_permissions.po		\
+	torture/mapi_createuser.po		\
+	torture/exchange_createuser.po		\
+	torture/mapi_namedprops.po		\
+	torture/mapi_recipient.po		\
+	torture/openchange.po			\
+	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
 torture/torture_proto.h: torture/mapi_restrictions.c	\
 	torture/mapi_criteria.c		\
@@ -453,83 +625,287 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h $^
 
-libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	libmapi/IABContainer.po	\
-			libmapi/IProfAdmin.po				\
-			libmapi/IMAPIContainer.po			\
-			libmapi/IMAPIFolder.po				\
-			libmapi/IMAPIProp.po				\
-			libmapi/IMAPISession.po				\
-			libmapi/IMAPISupport.po				\
-			libmapi/IStream.po				\
-			libmapi/IMAPITable.po				\
-			libmapi/IMessage.po				\
-			libmapi/IMsgStore.po				\
-			libmapi/IStoreFolder.po				\
-			libmapi/IUnknown.po				\
-			libmapi/IMSProvider.po				\
-			libmapi/IXPLogon.po				\
-			libmapi/utils.po libmapi/property.po		\
-			libmapi/cdo_mapi.po 				\
-			libmapi/lzfu.po					\
-			libmapi/mapi_object.po				\
-			libmapi/mapi_id_array.po			\
-			libmapi/mapitags.po				\
-			libmapi/mapidump.po				\
-			libmapi/mapicode.po 				\
-			libmapi/mapi_nameid.po				\
-			libmapi/emsmdb.po				\
-			libmapi/nspi.po 				\
-			libmapi/simple_mapi.po				\
-			libmapi/util/locale.po 				\
-			libmapi/util/codepage.po			\
-			libmapi/x500.po 				\
-			ndr_mapi.po					\
-			gen_ndr/ndr_exchange.po				\
-			gen_ndr/ndr_exchange_c.po			\
-			libmapi/socket/interface.po			\
-			libmapi/socket/netif.po				\
-			libmapi/utf8_convert.yy.po
-	@echo "Linking $@"
-	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
 
-libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	libmapiadmin/mapiadmin_user.po	\
-						libmapiadmin/mapiadmin.po libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+#################################################################
+# server and providers compilation rules
+#################################################################
+
+server:		providers/providers_proto.h server/dcesrv_proto.h	\
+		server/dcesrv_exchange.$(SHLIBEXT)			\
+		server/dcesrv_exchange_remote.$(SHLIBEXT)
+
+server-install:
+	$(INSTALL) -m 0755 server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
+	$(INSTALL) -m 0755 server/dcesrv_exchange_remote.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
+	$(INSTALL) -d $(DESTDIR)$(datadir)/js
+	$(INSTALL) -m 0644 scripting/libjs/oc_provision.js $(DESTDIR)$(datadir)/js/
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
+	$(INSTALL) -m 0644 setup/oc_provision* $(DESTDIR)$(datadir)/setup/
+
+server-uninstall:
+	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_exchange.*
+	rm -f $(DESTDIR)$(datadir)/js/oc_provision.js
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
+
+server-clean:
+	rm -f providers/*.{o,po}
+	rm -f server/*.{o,po}
+	rm -f server/dcesrv_proto.h
+	rm -f providers/providers_proto.h
+	rm -f server/*.$(SHLIBEXT)
+
+server-realdistclean:
+	rm -f server/dcesrv_exchange.$(SHLIBEXT)
+	rm -f server/dcesrv_exchange_remote.$(SHLIBEXT)
+
+server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.po 	\
+				server/dcesrv_exchange.po	\
+				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
+
+server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.po	\
+					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
+
+server/dcesrv_exchange.c: providers/providers_proto.h gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
+
+providers/providers_proto.h: providers/emsabp.c
+	@echo "Generating $@"
+	@./script/mkproto.pl --private=providers/providers_proto.h --public=providers/providers_proto.h $^
+
+server/dcesrv_proto.h: server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
+	@echo "Generating $@"
+	@./script/mkproto.pl --private=server/dcesrv_proto.h --public=server/dcesrv_proto.h $^
+
+
+#################################################################
+# Tools compilation rules
+#################################################################
+
+###################
+# openchangeclient
+###################
+
+openchangeclient:	bin/openchangeclient
+
+openchangeclient-install:
+	$(INSTALL) -d $(DESTDIR)$(bindir) 
+	$(INSTALL) -m 0755 bin/openchangeclient $(DESTDIR)$(bindir)
+
+openchangeclient-uninstall:
+	rm -f $(DESTDIR)$(bindir)/openchangeclient
+
+openchangeclient-clean:
+	rm -f bin/openchangeclient
+	rm -f utils/openchangeclient.o
+	rm -f utils/openchange-tools.o	
+
+bin/openchangeclient: 	utils/openchangeclient.o			\
+			utils/openchange-tools.o			\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
+
+
+##############
+# mapiprofile
+##############
+
+mapiprofile:		bin/mapiprofile
+
+mapiprofile-install:
+	$(INSTALL) -d $(DESTDIR)$(bindir) 
+	$(INSTALL) -m 0755 bin/mapiprofile $(DESTDIR)$(bindir)
+
+mapiprofile-uninstall:
+	rm -f $(DESTDIR)$(bindir)/mapiprofile
+
+mapiprofile-clean:
+	rm -f bin/mapiprofile
+	rm -f utils/mapiprofile.o
+
+bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
+
+
+###################
+#openchangepfadmin
+###################
+
+openchangepfadmin:	bin/openchangepfadmin
+
+openchangepfadmin-install:
+	$(INSTALL) -d $(DESTDIR)$(bindir) 
+
+openchangepfadmin-uninstall:
+	rm -f $(DESTDIR)$(bindir)/openchangepfadmin
+
+openchangepfadmin-clean:
+	rm -f bin/openchangepfadmin
+	rm -f utils/openchangepfadmin.o
+
+bin/openchangepfadmin:	utils/openchangepfadmin.o			\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
+			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) -lpopt			
+
+
+###################
+# exchange2mbox
+###################
+
+exchange2mbox:		bin/exchange2mbox
+
+exchange2mbox-install:
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/exchange2mbox $(DESTDIR)$(bindir)
+
+exchange2mbox-uninstall:
+	rm -f $(DESTDIR)$(bindir)/exchange2mbox
+
+exchange2mbox-clean:
+	rm -f bin/exchange2mbox
+	rm -f utils/exchange2mbox.o
+	rm -f utils/openchange-tools.o	
+
+bin/exchange2mbox:	utils/exchange2mbox.o				\
+			utils/openchange-tools.o			\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt  $(MAGIC_LIBS)
+
+
+###################
+# mapitest
+###################
+
+mapitest:		bin/mapitest
+
+mapitest-install:
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/mapitest $(DESTDIR)$(bindir)
+
+mapitest-uninstall:
+	rm -f $(DESTDIR)$(bindir)/mapitest
+
+mapitest-clean:
+	rm -f bin/mapitest
+	rm -f utils/mapitest/mapitest.o
+	rm -f utils/mapitest/mapitest_common.o
+	rm -f utils/mapitest/mapitest_print.o
+	rm -f utils/mapitest/mapitest_calls.o
+	rm -f utils/mapitest/mapitest_calls_ring1.o
+	rm -f utils/mapitest/mapitest_calls_ring2.o
+	rm -f utils/mapitest/mapitest_calls_ring3.o
+	rm -f utils/mapitest/mapitest_calls_ring4.o	
+
+bin/mapitest:	utils/mapitest/mapitest.o			\
+		utils/mapitest/mapitest_common.o		\
+		utils/mapitest/mapitest_print.o			\
+		utils/mapitest/mapitest_calls.o			\
+		utils/mapitest/mapitest_calls_ring1.o		\
+		utils/mapitest/mapitest_calls_ring2.o		\
+		utils/mapitest/mapitest_calls_ring3.o		\
+		utils/mapitest/mapitest_calls_ring4.o		\
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+		libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
+
+
+#####################
+# openchangemapidump
+#####################
+
+openchangemapidump:		bin/openchangemapidump
+
+openchangemapidump-install:
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/openchangemapidump $(DESTDIR)$(bindir)
+
+openchangemapidump-uninstall:
+	rm -f bin/openchangemapidump
+	rm -f $(DESTDIR)$(bindir)/openchangemapidump
+
+openchangemapidump-clean:
+	rm -f utils/backup/openchangemapidump.o
+	rm -f utils/backup/openchangebackup.o
+
+bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
+			utils/backup/openchangebackup.o			\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
+
+
+###############
+# schemaIDGUID
+###############
+
+schemaIDGUID:		bin/schemaIDGUID
+
+schemaIDGUID-install:
+	$(INSTALL) -m 0755 bin/schemaIDGUID $(DESTDIR)$(bindir)
+
+schemaIDGUID-uninstall:
+	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
+
+schemaIDGUID-clean:
+	rm -f bin/schemaIDGUID
+	rm -f utils/schemaIDGUID.o
+
+bin/schemaIDGUID: utils/schemaIDGUID.o
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS)
+
+
+##################
+# locale_codepage
+##################
+
+locale_codepage:	bin/locale_codepage
+
+locale_codepage-install:
+	$(INSTALL) -m 0755 bin/locale_codepage $(DESTDIR)$(bindir)
+
+locale_codepage-uninstall:
+	rm -f bin/locale_codepage
+	rm -f $(DESTDIR)$(bindir)/locale_codepage
+
+locale_codepage-clean:
+	rm -f libmapi/tests/locale_codepage.o
+
+bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
+
+
+###################
+# libmapi examples
+###################
+examples:
+	cd doc/examples && make && cd ${OLD_PWD}
+
+examples-clean:
+	rm -f doc/examples/mapi_sample1
+	rm -f doc/examples/fetchappointment
+	rm -f doc/examples/fetchmail
+
+examples-install examples-uninstall examples-realdistclean:
 
 manpages = \
 		doc/man/man1/exchange2mbox.1				\
 		doc/man/man1/mapiprofile.1				\
 		doc/man/man1/openchangeclient.1				\
 		doc/man/man1/openchangepfadmin.1			
-
-libocpf/proto.h: 	libocpf/ocpf_public.c	\
-			libocpf/ocpf_dump.c	\
-			libocpf/ocpf_api.c	
-			@echo "Generating $@"
-			@./script/mkproto.pl --private=libocpf/proto_private.h \
-			--public=libocpf/proto.h $^
-
-libocpf/lex.yy.c:		libocpf/lex.l
-	@echo "Generating $@"
-	@$(LEX) -t $< > $@
-
-libocpf/ocpf.tab.c:	libocpf/ocpf.y
-	@echo "Generating $@"
-	@$(YACC) -pocpf_yy -d $< -o $@
-
-# Avoid warnings
-libocpf/lex.yy.o: CFLAGS=
-libocpf/ocpf.tab.o: CFLAGS=
-
-libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		libocpf/ocpf.tab.po	\
-						libocpf/lex.yy.po	\
-						libocpf/ocpf_public.po	\
-						libocpf/ocpf_dump.po	\
-						libocpf/ocpf_api.po	\
-						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) $(DSOOPT) -Wl,-soname,libocpf.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
 
 installman: doxygen
 	@./script/installman.sh $(DESTDIR)$(mandir) $(manpages)

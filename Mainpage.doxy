@@ -1,0 +1,39 @@
+/** @mainpage The OpenChange Library API Reference
+
+This is the online reference for developing with the OpenChange client
+libraries.
+
+Among other things, the OpenChange client libraries provide:
+- MAPI client library (<a href="../libmapi/html/index.html">libmapi</a>)
+- OpenChange Property Files (<a href="../libocpf/html/index.html">libocpf</a>)
+
+<h2>OpenChange Project Goals</h2>
+
+The OpenChange Project aims to provide a portable Open Source
+implementation of Microsoft Exchange Server and Exchange
+protocols. Exchange is a groupware server designed to work with
+Microsoft Outlook, and providing features such as a messaging server,
+shared calendars, contact databases, public folders, notes and tasks.
+
+The OpenChange project has three goals:
+
+- To provide a library for interoperability with Exchange
+protocols, and to assist implementors to use this to create
+groupware that interoperates with both Exchange and other
+OpenChange-based software.
+
+- To provide an alternative to Microsoft Exchange Server which uses
+native Exchange protocols and provides exactly equivalent
+functionality when viewed from Microsoft Outlook clients.
+
+- To develop a body of knowledge about the most popular groupware
+protocols in use commercially today in order to promote  development
+of a documented and unencumbered standard, with all the  benefits that
+standards bring.
+
+<h2>More information</h2>
+
+Visit the <a href="http://www.openchange.org">OpenChange web site</a> for
+other useful information.
+
+*/

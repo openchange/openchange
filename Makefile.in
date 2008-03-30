@@ -118,6 +118,8 @@ uninstall: 	$(OC_LIBS_UNINSTALL) 	\
 distclean: clean $(OC_LIBS_DISTCLEAN) $(SWIGDIRS-DISTCLEAN)
 	rm -rf autom4te.cache
 	rm -f Doxyfile
+	rm -f libmapi/Doxyfile
+	rm -f libocpf/Doxyfile
 	rm -f Makefile config.status config.log
 	rm -f intltool-extract intltool-merge intltool-update
 
@@ -922,7 +924,11 @@ doxygen:
 	@if test ! -d apidocs ; then					\
 		echo "Doxify API documentation: HTML and man pages";	\
 		$(DOXYGEN) Doxyfile;					\
+		$(DOXYGEN) libmapi/Doxyfile;				\
+		$(DOXYGEN) libocpf/Doxyfile;				\
 		cp -f doc/doxygen/pictures/* apidocs/html/;		\
+		cp -f doc/doxygen/pictures/* apidocs/libmapi/html/;	\
+		cp -f doc/doxygen/pictures/* apidocs/libocpf/html/;	\
 	fi								
 
 etags:

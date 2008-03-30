@@ -303,7 +303,7 @@ dnl ***********************
 dnl Makefiles 
 dnl ***********************
 AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc libmapiadmin.pc 
-		 libocpf.pc Doxyfile])
+		 libocpf.pc Doxyfile libmapi/Doxyfile libocpf/Doxyfile])
 AC_OUTPUT
 
 

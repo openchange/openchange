@@ -54,7 +54,7 @@ if test "x$1_set" != "xset"; then
 		OC_$2_INSTALL+=" $1-install"
    		OC_$2_UNINSTALL+=" $1-uninstall"
    		OC_$2_CLEAN+=" $1-clean"
-		OC_$2_REALDISTCLEAN= " $1-realdistclean"
+		OC_$2_REALDISTCLEAN=" $1-realdistclean"
 
 		AC_SUBST(OC_$2_REALDISTCLEAN)
 	;;

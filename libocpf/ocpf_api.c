@@ -97,7 +97,12 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 	switch (proptype) {
 	case PT_STRING8:
 		*value = talloc_memdup(mem_ctx, (const void *)lpProp.lpszA, strlen(lpProp.lpszA) + 1);
-		talloc_free((char *)lpProp.lpszA);
+		return OCPF_SUCCESS;
+	case PT_UNICODE:
+		*value = talloc_memdup(mem_ctx, (const void *)lpProp.lpszW, strlen(lpProp.lpszW) + 1);
+		return OCPF_SUCCESS;
+	case PT_SHORT:
+		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.i, sizeof (uint16_t));
 		return OCPF_SUCCESS;
 	case PT_LONG:
 		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.l, sizeof (uint32_t));
@@ -130,7 +135,6 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 				((struct SLPSTRArray *)*value)->strings[i] = talloc_zero(mem_ctx, struct LPSTR);
 				((struct SLPSTRArray *)*value)->strings[i]->lppszA = talloc_strdup(mem_ctx, lpProp.MVszA.strings[i]->lppszA);
 			}
-			talloc_free(lpProp.MVszA.strings);
 		}
 		return OCPF_SUCCESS;
 	default:
@@ -140,6 +144,21 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 	return OCPF_ERROR;
 }
 
+int ocpf_propvalue_free(union SPropValue_CTR lpProp, uint16_t proptype)
+{
+	switch (proptype) {
+	case PT_STRING8:
+		talloc_free((char *)lpProp.lpszA);
+		break;
+	case PT_UNICODE:
+		talloc_free((char *)lpProp.lpszW);
+		break;
+	case PT_MV_STRING8:
+		talloc_free(lpProp.MVszA.strings);
+		break;
+	}
+	return OCPF_SUCCESS;
+}
 
 int ocpf_propvalue(uint32_t aulPropTag, const char *propname, union SPropValue_CTR lpProp, uint16_t proptype)
 {
@@ -253,7 +272,7 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 		for (el = ocpf->nprops; el->next; el = el->next) {
 			OCPF_RETVAL_IF((el->mnid_id == nprop->mnid_id) && 
 				       (el->oleguid && !strcmp(el->oleguid, nprop->guid)),
-				       OCPF_WARN_LID_REGISTEERED, element);
+				       OCPF_WARN_LID_REGISTERED, element);
 		}
 		element->kind = OCPF_MNID_ID;
 		element->mnid_id = nprop->mnid_id;

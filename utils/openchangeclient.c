@@ -87,6 +87,7 @@ static void init_oclient(struct oclient *oclient)
 
 	/* ocpf related parameters */
 	oclient->ocpf_files = NULL;
+	oclient->ocpf_dump = NULL;
 }
 
 static bool oclient_parse_properties(TALLOC_CTX *mem_ctx, 
@@ -2463,6 +2464,73 @@ static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 }
 
 
+static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+{
+	enum MAPISTATUS			retval;
+	int				ret;
+	mapi_object_t			obj_folder;
+	mapi_object_t			obj_message;
+	mapi_id_t			id_tis;
+	const char			*fid_str;
+	uint64_t			fid;
+	uint64_t			mid;
+	const char			*item = NULL;
+	char				*filename = NULL;
+	struct mapi_SPropValue_array	lpProps;
+
+
+	/* retrieve the FID/MID for ocpf_dump parameter */
+	item = oclient->ocpf_dump;
+
+	fid_str = strsep((char **)&item, "/");
+	if (!fid_str) {
+		DEBUG(0, ("Invalid ID\n"));
+		errno = MAPI_E_INVALID_PARAMETER;
+		return false;
+	}
+
+	fid = strtoull(fid_str, NULL, 16);
+	mid = strtoull(item, NULL, 16);
+
+	/* Step 1. search the folder from Top Information Store */
+	mapi_object_init(&obj_folder);
+	retval = GetDefaultFolder(obj_store, &id_tis, olFolderTopInformationStore);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	retval = folder_lookup(mem_ctx, fid, obj_store, id_tis, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Step 2. search the message */
+	mapi_object_init(&obj_message);
+	retval = message_lookup(mem_ctx, mid, &obj_folder, &obj_message);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Step 3. retrieve all message properties */
+	retval = GetPropsAll(&obj_message, &lpProps);
+
+	/* Step 4. save the message */
+	ret = ocpf_init();
+
+	filename = talloc_asprintf(mem_ctx, "%llx.ocpf", mid);
+	DEBUG(0, ("OCPF output file: %s\n", filename));
+
+	ret = ocpf_write_init(filename, fid);
+	talloc_free(filename);
+
+	ret = ocpf_write_auto(&obj_message, &lpProps);
+	if (ret == OCPF_SUCCESS) {
+		ret = ocpf_write_commit();
+	} 
+
+	ret = ocpf_release();
+
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+
+	return true;
+}
+
+
 static void list_argument(const char *label, struct oc_element *oc_items)
 {
 	uint32_t	i;
@@ -2535,7 +2603,7 @@ int main(int argc, const char *argv[])
 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
 	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE,
 	      OPT_UPDATE, OPT_DELETEITEMS, OPT_MAPI_PROPS, OPT_OCPF_FILE, OPT_OCPF_SYNTAX,
-	      OPT_OCPF_SENDER};
+	      OPT_OCPF_SENDER, OPT_OCPF_DUMP};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -2551,7 +2619,7 @@ int main(int argc, const char *argv[])
 		{"fetchmail", 'F', POPT_ARG_NONE, NULL, OPT_FETCHMAIL, "fetch user INBOX mails"},
 		{"storemail", 'G', POPT_ARG_STRING, NULL, OPT_STOREMAIL, "retrieve a mail on the filesystem"},
 		{"fetch-items", 'i', POPT_ARG_STRING, NULL, OPT_FETCHITEMS, "fetch specified user INBOX items"},
-		{"delete", 'd', POPT_ARG_STRING, NULL, OPT_DELETEITEMS, "delete message given its unique ID"},
+		{"delete", 0, POPT_ARG_STRING, NULL, OPT_DELETEITEMS, "delete message given its unique ID"},
 		{"update", 'u', POPT_ARG_STRING, NULL, OPT_UPDATE, "update the specified item"},
 		{"mailbox", 'm', POPT_ARG_NONE, NULL, OPT_MAILBOX, "list mailbox folder summary"},
 		{"deletemail", 'D', POPT_ARG_NONE, NULL, OPT_DELETEMAIL, "delete a mail from user INBOX"},
@@ -2582,11 +2650,12 @@ int main(int argc, const char *argv[])
 		{"userlist", 0, POPT_ARG_NONE, NULL, OPT_USERLIST, "list PAB entries"},
 		{"folder-name", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_NAME, "set the folder name"},
 		{"folder-comment", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_COMMENT, "set the folder comment"},
-		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level"},
+		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level"},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
 		{"private", 0, POPT_ARG_NONE, NULL, OPT_MAPI_PRIVATE, "Set the private flag on messages"},
 		{"properties", 0, POPT_ARG_STRING, NULL, OPT_MAPI_PROPS, "Set MAPI properties manually"},
 		{"ocpf-file", 0, POPT_ARG_STRING, NULL, OPT_OCPF_FILE, "Set OCPF file"},
+		{"ocpf-dump", 0, POPT_ARG_STRING, NULL, OPT_OCPF_DUMP, "Dump message into OCPF file"},
 		{"ocpf-syntax", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SYNTAX, "Check OCPF files syntax"},
 		{"ocpf-sender", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SENDER, "Send message using OCPF files contents"}
 	};
@@ -2771,6 +2840,9 @@ int main(int argc, const char *argv[])
 		case OPT_OCPF_SENDER:
 			opt_ocpf_sender = true;
 			break;
+		case OPT_OCPF_DUMP:
+			oclient.ocpf_dump = poptGetOptArg(pc);
+			break;
 		}
 	}
 
@@ -2833,7 +2905,6 @@ int main(int argc, const char *argv[])
 			exit (1);
 		}
 	}
-
 
 	/* One of the rare options which doesn't require MAPI to get
 	 *   initialized 
@@ -2914,6 +2985,14 @@ int main(int argc, const char *argv[])
 	if (opt_ocpf_sender) {
 		retval = openchangeclient_ocpf_sender(mem_ctx, &obj_store, &oclient);
 		mapi_errstr("OCPF Sender", GetLastError());
+		if (retval != true) {
+			goto end;
+		}
+	}
+
+	if (oclient.ocpf_dump) {
+		retval = openchangeclient_ocpf_dump(mem_ctx, &obj_store, &oclient);
+		mapi_errstr("OCPF Dump", GetLastError());
 		if (retval != true) {
 			goto end;
 		}

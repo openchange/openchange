@@ -79,6 +79,7 @@ struct oclient {
 	const char		*folder;
 	/* OCPF related options */
 	struct ocpf_file	*ocpf_files;
+	const char		*ocpf_dump;
 };
 
 struct itemfolder {

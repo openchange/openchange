@@ -509,13 +509,15 @@ libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		\
 	libocpf/ocpf_public.po			\
 	libocpf/ocpf_dump.po			\
 	libocpf/ocpf_api.po			\
+	libocpf/ocpf_write.po			\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(DSOOPT) -Wl,-soname,libocpf.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
 
 libocpf/proto.h:	libocpf/ocpf_public.c	\
 			libocpf/ocpf_dump.c	\
-			libocpf/ocpf_api.c	
+			libocpf/ocpf_api.c	\
+			libocpf/ocpf_write.c
 			@echo "Generating $@"
 			@./script/mkproto.pl --private=libocpf/proto_private.h \
 			--public=libocpf/proto.h $^

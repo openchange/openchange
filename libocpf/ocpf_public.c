@@ -91,7 +91,7 @@ _PUBLIC_ int ocpf_release(void)
 
    \param filename the file to parse
 
-   \return OCPF_SUCCESS on success, otherwise OCPF_ERROR;
+   \return OCPF_SUCCESS on success, otherwise OCPF_ERROR
 
    \sa ocpf_init
  */

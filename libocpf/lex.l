@@ -57,6 +57,8 @@ OOM		{ return kw_OOM; }
 MNID_ID		{ return kw_MNID_ID; }
 MNID_STRING	{ return kw_MNID_STRING; }
 PT_STRING8	{ return kw_PT_STRING8; }
+PT_UNICODE	{ return kw_PT_UNICODE; }
+PT_SHORT	{ return kw_PT_SHORT; }
 PT_LONG		{ return kw_PT_LONG; }
 PT_SYSTIME	{ return kw_PT_SYSTIME; }
 PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
@@ -153,6 +155,49 @@ PT_BINARY	{ return kw_PT_BINARY; }
 			    ocpf_yylval.name = buf;
 			    return STRING; 
 			}
+W"\""			{
+			    int start_lineno = lineno;
+			    int c;
+			    char buf[1024];
+			    char *p = buf;
+			    int f = 0;
+			    int skip_ws = 0;
+			    
+			    while((c = input()) != EOF) {
+				if(isspace(c) && skip_ws) {
+				    if(c == '\n')
+					lineno++;
+				    continue;
+				}
+				skip_ws = 0;
+				
+				if(c == '"') {
+				    if(f) {
+					*p++ = '"';
+					f = 0;
+				    } else
+					f = 1;
+				    continue;
+				}
+				if(f == 1) {
+				    unput(c);
+				    break;
+				}
+				if(c == '\n') {
+				    lineno++;
+				    while(p > buf && isspace((unsigned char)p[-1]))
+					p--;
+				    skip_ws = 1;
+				    continue;
+				}
+				*p++ = c;
+			    }
+			    if(c == EOF)
+				unterminated("string", start_lineno);
+			    *p++ = '\0';
+			    ocpf_yylval.name = buf;
+			    return UNICODE; 
+			}
 \$[-A-Za-z0-9_]+      	{ char *y = yytext + 1;
 			  ocpf_yylval.var = strdup((const char *)y);
 			  return VAR;
@@ -177,6 +222,16 @@ T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
 				return INTEGER;
 			
 }
+S0x[0-9A-Fa-f]+|-S[0-9]+ {
+			   char *e, *y;
+			   y = (yytext[0] == 'S') ? yytext + 1 : yytext;
+			   ocpf_yylval.s = strtoul((const char *)y, &e, 0);
+			   if (e == y)
+				error_message("malformed constant (%s)", yytext);
+			   else
+				return SHORT;
+			 }
+
 L0x[0-9A-Fa-f]+|-?[0-9]+ { char *e, *y;
 			  y = (yytext[0] == 'L') ? yytext + 1 : yytext;
 			  ocpf_yylval.l = strtoul((const char *)y, &e, 0);

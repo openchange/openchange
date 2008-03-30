@@ -36,9 +36,11 @@ int			folderset;
 %union {
 	uint8_t				i;
 	uint8_t				b;
+	uint16_t			s;
 	uint32_t			l;
 	uint64_t			d;
 	char				*name;
+	char				*nameW;
 	char				*date;
 	char				*var;
 	struct SLPSTRArray		MVszA;
@@ -46,10 +48,12 @@ int			folderset;
 
 %token <i> UINT8
 %token <b> BOOLEAN
+%token <s> SHORT
 %token <l> INTEGER
 %token <d> DOUBLE
 %token <name> IDENTIFIER
 %token <name> STRING
+%token <nameW> UNICODE
 %token <MVszA> MVSTRING
 %token <date> SYSTIME
 %token <var> VAR
@@ -66,6 +70,8 @@ int			folderset;
 
 %token kw_PT_BOOLEAN
 %token kw_PT_STRING8
+%token kw_PT_UNICODE
+%token kw_PT_SHORT
 %token kw_PT_LONG
 %token kw_PT_SYSTIME
 %token kw_PT_MV_STRING8
@@ -177,10 +183,12 @@ content		:
 		IDENTIFIER EQUAL propvalue
 		{
 			ocpf_propvalue_s($1, lpProp, type);
+			ocpf_propvalue_free(lpProp, type);
 		}
 		| INTEGER EQUAL propvalue
 		{
 			ocpf_propvalue($1, "UNNAMED", lpProp, type);
+			ocpf_propvalue_free(lpProp, type);
 		}
 		| IDENTIFIER EQUAL VAR
 		{
@@ -197,8 +205,14 @@ propvalue	: STRING
 			lpProp.lpszA = talloc_strdup(ocpf->mem_ctx, $1); 
 			type = PT_STRING8; 
 		}
+		| UNICODE
+		{
+			lpProp.lpszW = talloc_strdup(ocpf->mem_ctx, $1);
+			type = PT_UNICODE;
+		}
+		| SHORT		{ lpProp.i = $1; type = PT_SHORT; }
 		| INTEGER	{ lpProp.l = $1; type = PT_LONG; }
-		| BOOLEAN	{ lpProp.b = $1; type = PT_BOOLEAN; };
+		| BOOLEAN	{ lpProp.b = $1; type = PT_BOOLEAN; }
 		| DOUBLE	{ lpProp.d = $1; type = PT_DOUBLE; }
 		| SYSTIME
 		{
@@ -279,8 +293,6 @@ binary_content	: INTEGER
 			mem_ctx = (TALLOC_CTX *) lpProp.bin.lpb;
 			lpProp.bin.lpb[lpProp.bin.cb] = $1;
 			lpProp.bin.cb += 1;
-
-			printf("[%d] binary: 0x%.2x\n", lpProp.bin.cb, $1);
 		}
 		;
 
@@ -337,6 +349,16 @@ proptype	: kw_PT_STRING8
 		{
  			memset(&nprop, 0, sizeof (struct ocpf_nprop));
 			nprop.propType = PT_STRING8; 
+		}
+		| kw_PT_UNICODE
+		{
+			memset(&nprop, 0, sizeof (struct ocpf_nprop));
+			nprop.propType = PT_UNICODE; 
+		}
+		| kw_PT_SHORT
+		{
+			memset(&nprop, 0, sizeof (struct ocpf_nprop));
+			nprop.propType = PT_SHORT;
 		}
 		| kw_PT_LONG 
 		{

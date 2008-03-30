@@ -34,20 +34,23 @@
  <li><a href="#proptype">    8. Supported Property Types </a>
    <ul>
 	<li><a href="#boolean">    8.1. PT_BOOLEAN        </a></li>
-        <li><a href="#long">       8.2. PT_LONG           </a></li>
-        <li><a href="#double">     8.3. PT_I8             </a></li>
-        <li><a href="#string8">    8.4. PT_STRING8        </a></li>
-        <li><a href="#systime">    8.5. PT_SYSTIME        </a></li>
-        <li><a href="#mv_string8"> 8.6. PT_MV_STRING8     </a></li>
-	<li><a href="#binary">     8.7  PT_BINARY         </a></li>
+	<li><a href="#short">      8.2. PT_SHORT          </a></li>
+        <li><a href="#long">       8.3. PT_LONG           </a></li>
+        <li><a href="#double">     8.4. PT_I8             </a></li>
+        <li><a href="#string8">    8.5. PT_STRING8        </a></li>
+	<li><a href="#unicode">    8.6. PT_UNICODE        </a></li>
+        <li><a href="#systime">    8.7. PT_SYSTIME        </a></li>
+        <li><a href="#mv_string8"> 8.8. PT_MV_STRING8     </a></li>
+	<li><a href="#binary">     8.9. PT_BINARY         </a></li>
    </ul>
  </li>
- <li><a href="#comments">  9. Comments                    </a>
+ <li><a href="#comments">    9. Comments                  </a>
  </li>
  <li><a href="#tools">       10. OCPF and openchangeclient </a>
    <ul>
        <li><a href="#syntax">      10.1. ocpf_syntax       </a></li>
        <li><a href="#sender">      10.2. ocpf_sender       </a></li>
+       <li><a href="#dump">        10.3  ocpf_dump         </a></li>
    </ul>
  </li>
 </ul>
@@ -60,6 +63,12 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">29/03/08</td>
+	   <td style="text-align:center"><strong>0.4</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:center">Add PT_UNICODE support and ocpf_dump option</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">06/03/08</td>
@@ -573,7 +582,19 @@ OCPF uses the following format for BOOLEAN values:
 \endcode
 <br/>
 
-<a name="long"></a><h3>8.2. PT_LONG</h3>
+<a name="short"></a><h3>8.2. PT_SHORT</h3>
+OCPF can use any of the following formats for SHORT values:
+\code
+     S0x1234
+     S32
+\endcode
+
+The short integer can either be in hexadecimal of decimal notation but
+must be prefixed with a "S" to specify this is a short integer
+value. If you omit to specify the "S", mismatch property type/value
+errors will occur while sending the message.
+
+<a name="long"></a><h3>8.3. PT_LONG</h3>
 OCPF can use any of the following formats for PT_LONG values:
 \code
       0xdeadbeef
@@ -587,14 +608,14 @@ hexadecimal notation consider using the 'L' prefixed form since other form
 may disappear in further versions.
 <br/>
 
-<a name="double"></a><h3>8.3. PT_I8</h3>
+<a name="double"></a><h3>8.4. PT_I8</h3>
 OCPF uses the following format for PT_I8 (uint64_t) values:
 \code
       D0x9504000000000001
 \endcode
 <br/>
 
-<a name="string8"></a><h3>8.4. PT_STRING8</h3>
+<a name="string8"></a><h3>8.5. PT_STRING8</h3>
 
 OCPF defines a string as a set of characters (A-Za-z0-9_) enclosed
 with double quotes:
@@ -603,7 +624,16 @@ with double quotes:
 \endcode
 <br/>
 
-<a name="systime"></a><h3>8.5. PT_SYSTIME</h3>
+<a name="unicode"></a><h3>8.6. PT_UNICODE</h3>
+
+OCPF defines a unicode string as a set of characters enclosed with
+double quotes and prefixed with <strong>W</strong>:
+\code
+      W"I am a UNICODE string"
+\endcode
+<br/>
+
+<a name="systime"></a><h3>8.7. PT_SYSTIME</h3>
 
 OCPF defines date using the following format string:
 \code
@@ -627,7 +657,7 @@ with the syntax below:
 \endcode
 <br/>
 
-<a name="mv_string8"></a><h3>8.6. PT_MV_STRING8</h3>
+<a name="mv_string8"></a><h3>8.8. PT_MV_STRING8</h3>
 
 PT_MV_STRING8 are arrays ("multiple values") of strings. OCPF defines PT_MV_STRING8
 property values as STRING property values separated by commas and enclosed within
@@ -647,7 +677,7 @@ then they must be separated with comma.
 \endcode
 <br/>
 
-<a name="binary"></a><h3>8.7. PT_BINARY</h3>
+<a name="binary"></a><h3>8.9. PT_BINARY</h3>
 
 PT_BINARY are blobs of data. OCPF defines PT_BINARY property values
 using two different methods. This can either be raw/inline blob of
@@ -724,6 +754,27 @@ contents.
 \code
 openchangeclient --ocpf_sender \
 		 --ocpf-file=libocpf/examples/sample_appointment.ocpf
+\endcode
+
+<a name="dump"></a><h2>10.3 ocpf_dump</h2>
+Process specified MAPI message and generates the corresponding OCPF
+file on the filesystem.
+
+\code
+openchangeclient --fetch-items=Appointment
+MAILBOX (1 messages)
+|== test ==| : AA13000000000001/20C140000000003
+        Location: paris
+        Start time     :   Sat Mar 29 09:00:00 2008 CET
+        End time       :   Sat Mar 29 09:30:00 2008 CET
+        Timezone: (GMT+01:00) Brussels, Copenhagen, Madrid, Paris
+        Private: False
+        Status: Completed
+    fetchitems               : MAPI_E_SUCCESS (0x0)
+
+openchangeclient --ocpf-dump=AA13000000000001/20C140000000003
+OCPF output file: 20c140000000003.ocpf
+    OCPF Dump                : MAPI_E_SUCCESS (0x0)
 \endcode
 
 */

@@ -471,6 +471,63 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 
 }
 
+/*
+ *
+ */
+_PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPropValue *sprop)
+{
+	sprop->ulPropTag = mapi_sprop->ulPropTag;
+
+	switch(sprop->ulPropTag & 0xFFFF) {
+	case PT_BOOLEAN:
+		sprop->value.b = mapi_sprop->value.b;
+		return sizeof(uint8_t);
+	case PT_I2:
+		sprop->value.i = mapi_sprop->value.i;
+		return sizeof(uint16_t);
+	case PT_LONG:
+		sprop->value.l = mapi_sprop->value.l;
+		return sizeof(uint32_t);
+	case PT_DOUBLE:
+		sprop->value.dbl = mapi_sprop->value.dbl;
+		return sizeof(uint64_t);
+	case PT_STRING8:
+		sprop->value.lpszA = mapi_sprop->value.lpszA;
+		if (!mapi_sprop->value.lpszA) return 0;
+		return (strlen(sprop->value.lpszA) + 1);
+	case PT_UNICODE:
+		sprop->value.lpszW = mapi_sprop->value.lpszW;
+		if (!sprop->value.lpszW) return 0;
+		return (strlen(mapi_sprop->value.lpszW) * 2 + 2);
+	case PT_SYSTIME:
+		sprop->value.ft.dwLowDateTime = mapi_sprop->value.ft.dwLowDateTime;
+		sprop->value.ft.dwHighDateTime = mapi_sprop->value.ft.dwHighDateTime;
+		return (sizeof (struct FILETIME));
+	case PT_BINARY:
+		sprop->value.bin.cb = mapi_sprop->value.bin.cb;
+		sprop->value.bin.lpb = mapi_sprop->value.bin.lpb;
+		return (sprop->value.bin.cb + sizeof(uint16_t));
+
+	case PT_MV_STRING8:
+		{
+		uint32_t	i;
+		uint32_t	size = 0;
+
+		sprop->value.MVszA.cValues = mapi_sprop->value.MVszA.cValues;
+		size += 4;
+
+		sprop->value.MVszA.strings = talloc_array(global_mapi_ctx->mem_ctx, struct LPSTR *, sprop->value.MVszA.cValues);
+		for (i = 0; i < sprop->value.MVszA.cValues; i++) {
+			sprop->value.MVszA.strings[i]->lppszA = mapi_sprop->value.MVszA.strings[i].lppszA;
+			size += strlen(sprop->value.MVszA.strings[i]->lppszA) + 1;
+		}
+		return size;
+		}
+	}
+	return 0;
+}
+
+
 _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SPropValue)
 {
 	TALLOC_CTX		*mem_ctx;

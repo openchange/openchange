@@ -181,7 +181,7 @@ sub mapitags_interface($)
 		mparse sprintf "{ %-51s, %-13s, \"%s\" },", $prop[1], $prop_types{$prop_type}, $prop[1];
 		if (($prop_type == 0x1e) || ($prop_type == 0x101e)) {
 		    $prop_type++;
-		    mparse sprintf "{ %-51s, %-13s, \"%s\" },", "$prop[1]_UNICODE", $prop_types{$prop_type}, $prop[1];
+		    mparse sprintf "{ %-51s, %-13s, \"%s\" },", "$prop[1]_UNICODE", $prop_types{$prop_type}, "$prop[1]_UNICODE";
 		}
 		    $prop_type = 0xa;
 		mparse sprintf "{ %-51s, %-13s, \"%s\" },", "$prop[1]_ERROR", $prop_types{$prop_type}, $prop[1];

@@ -118,6 +118,8 @@ do {								\
 #define	OCPF_INITIALIZED		"OCPF context has already been initialized"
 #define	OCPF_NOT_INITIALIZED		"OCPF context has not been initialized"
 
+#define	OCPF_WRITE_NOT_INITIALIZED	"OCPF write context has not been initialized"
+
 #define	OCPF_FATAL_ERROR		"Fatal error encountered"
 #define	OCPF_WARN_FILENAME_INVALID	"Invalid filename"
 #define	OCPF_WARN_FILENAME_STAT		"Unable to stat file"
@@ -130,7 +132,7 @@ do {								\
 #define	OCPF_WARN_OOM_REGISTERED	"OOM already registered"
 
 #define	OCPF_WARN_LID_UNKNOWN		"Unknown MNID_ID"
-#define	OCPF_WARN_LID_REGISTEERED	"MNID_ID already registered"
+#define	OCPF_WARN_LID_REGISTERED	"MNID_ID already registered"
 
 #define	OCPF_WARN_STRING_UNKNOWN	"Unknown MNID_STRING"
 #define	OCPF_WARN_STRING_REGISTERED	"MNID_STRING already registered"
@@ -148,6 +150,15 @@ do {								\
 #define	OCPF_WARN_FOLDER_ID_UNKNOWN	"Unknown Folder"
 
 #define	OCPF_WARN_PROPVALUE_MISMATCH	"Property type and value mismatch"
+
+#define	OCPF_INVALID_PROPARRAY		"Invalid property array"
+#define	OCPF_INVALID_FILEHANDLE		"Invalid file handle"
+
+
+#define	OCPF_PROPERTY_BEGIN		"PROPERTY {\n"
+#define	OCPF_NPROPERTY_BEGIN		"NPROPERTY {\n"
+#define	OCPF_END			"};\n"
+#define	OCPF_NEWLINE			"\n"
 
 #define	DATE_FORMAT     "%Y-%m-%d %H:%M:%S"
 

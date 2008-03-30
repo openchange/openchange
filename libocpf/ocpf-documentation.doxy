@@ -1,7 +1,9 @@
 /**
-\page ocpf OpenChange Property File (OCPF)
+\mainpage OpenChange Property File (OCPF)
 
-<h2>Contents</h2>
+\section ocpf OpenChange Property File (OCPF)
+
+\section Contents
 <ul>
  <li><a href="#revision">        Revision History        </a></li>
  <li><a href="#introduction"> 1. Introduction            </a></li>

@@ -927,8 +927,8 @@ doxygen:
 		$(DOXYGEN) libmapi/Doxyfile;				\
 		$(DOXYGEN) libocpf/Doxyfile;				\
 		cp -f doc/doxygen/pictures/* apidocs/html/;		\
-		cp -f doc/doxygen/pictures/* apidocs/libmapi/html/;	\
-		cp -f doc/doxygen/pictures/* apidocs/libocpf/html/;	\
+		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;	\
+		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;	\
 	fi								
 
 etags:

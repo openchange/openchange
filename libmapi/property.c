@@ -518,6 +518,7 @@ _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPr
 
 		sprop->value.MVszA.strings = talloc_array(global_mapi_ctx->mem_ctx, struct LPSTR *, sprop->value.MVszA.cValues);
 		for (i = 0; i < sprop->value.MVszA.cValues; i++) {
+			sprop->value.MVszA.strings[i] = talloc_zero((TALLOC_CTX *)sprop->value.MVszA.strings, struct LPSTR);
 			sprop->value.MVszA.strings[i]->lppszA = mapi_sprop->value.MVszA.strings[i].lppszA;
 			size += strlen(sprop->value.MVszA.strings[i]->lppszA) + 1;
 		}

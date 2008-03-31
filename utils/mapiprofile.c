@@ -312,7 +312,6 @@ static void mapiprofile_dump(const char *profdb, const char *profname)
 	printf("\tpassword       == %s\n", profile.password);
 	printf("\tmailbox        == %s\n", profile.mailbox);
 	printf("\tworkstation    == %s\n", profile.workstation);
-	printf("\trealm          == %s\n", profile.realm);
 	printf("\tserver         == %s\n", profile.server);
 
 	MAPIUninitialize();
@@ -394,6 +393,7 @@ int main(int argc, const char *argv[])
 	const char	*profname = NULL;
 	const char	*attribute = NULL;
 	uint32_t	nopass = 0;
+	char		hostname[256];
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_ADDRESS, OPT_WORKSTATION,
 	      OPT_DOMAIN, OPT_USERNAME, OPT_LCID, OPT_PASSWORD, OPT_CREATE_PROFILE, 
@@ -529,6 +529,12 @@ int main(int argc, const char *argv[])
 	}
 
 	/* Process the code here */
+
+	if (!workstation) {
+		gethostname(hostname, sizeof(hostname) - 1);
+		hostname[sizeof(hostname) - 1] = 0;
+		workstation = hostname;
+	}
 
 	if (create == true) {
 		if (!profname) show_help(pc, "profile");

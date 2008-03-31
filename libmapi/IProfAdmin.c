@@ -1185,7 +1185,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	struct nspi_context	*nspi;
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		rowset;
-	struct SPropValue	*lpProp;
+	struct SPropValue	*lpProp = NULL;
 	const char		*profname;
 	uint32_t		index = 0;
 
@@ -1215,6 +1215,9 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 					  );
 	retval = nspi_GetMatches(nspi, SPropTagArray, &rowset, username);
 	if (retval != MAPI_E_SUCCESS) return retval;
+
+	/* if there's no match */
+	MAPI_RETVAL_IF(!rowset.cRows, MAPI_E_NOT_FOUND, NULL);
 
 	/* if rowset count is superior than 1 an callback is specified, call it */
 	if (rowset.cRows > 1 && callback) {
@@ -1252,8 +1255,6 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 
 	retval = nspi_QueryRows(nspi, SPropTagArray, &rowset, 1);
 	if (retval != MAPI_E_SUCCESS) return retval;
-
-	printf("nspi_QueryRows success\n");
 
 	lpProp = get_SPropValue_SRowSet(&rowset, PR_EMS_AB_HOME_MDB);
 	MAPI_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, NULL);

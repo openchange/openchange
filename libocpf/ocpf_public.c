@@ -57,6 +57,7 @@ _PUBLIC_ int ocpf_init(void)
 	ocpf->oleguid = talloc_zero(mem_ctx, struct ocpf_oleguid);
 	ocpf->props = talloc_zero(mem_ctx, struct ocpf_property);
 	ocpf->nprops = talloc_zero(mem_ctx, struct ocpf_nproperty);
+	ocpf->recipients = talloc_zero(mem_ctx, struct ocpf_recipients);
 	ocpf->lpProps = NULL;
 	ocpf->cValues = 0;
 	ocpf->folder = 0;
@@ -181,7 +182,11 @@ static enum MAPISTATUS ocpf_stream(TALLOC_CTX *mem_ctx,
    \param obj_message pointer to the message object we use for
    internal MAPI operations
 
-   \return OCPF_SUCCESS on success, otherwise OCPF_ERROR.
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
 
    \sa ocpf_get_SPropValue
  */
@@ -399,6 +404,150 @@ _PUBLIC_ enum MAPISTATUS ocpf_OpenFolder(mapi_object_t *obj_store,
 					    obj_store, id_tis, obj_folder);
 		MAPI_RETVAL_IF(retval, retval, NULL);
 	}
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+ * We set external recipients at the end of aRow
+ */
+static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, const char *username, enum ulRecipClass RecipClass)
+{
+	uint32_t		last;
+	struct SPropValue	SPropValue;
+
+	SRowSet->aRow = talloc_realloc(mem_ctx, SRowSet->aRow, struct SRow, SRowSet->cRows + 2);
+	last = SRowSet->cRows;
+	SRowSet->aRow[last].cValues = 0;
+	SRowSet->aRow[last].lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	
+	/* PR_OBJECT_TYPE */
+	SPropValue.ulPropTag = PR_OBJECT_TYPE;
+	SPropValue.value.l = MAPI_MAILUSER;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_DISPLAY_TYPE */
+	SPropValue.ulPropTag = PR_DISPLAY_TYPE;
+	SPropValue.value.l = 0;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_GIVEN_NAME */
+	SPropValue.ulPropTag = PR_GIVEN_NAME;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_DISPLAY_NAME */
+	SPropValue.ulPropTag = PR_DISPLAY_NAME;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_7BIT_DISPLAY_NAME */
+	SPropValue.ulPropTag = PR_7BIT_DISPLAY_NAME;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_SMTP_ADDRESS */
+	SPropValue.ulPropTag = PR_SMTP_ADDRESS;
+	SPropValue.value.lpszA = username;
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	/* PR_ADDRTYPE */
+	SPropValue.ulPropTag = PR_ADDRTYPE;
+	SPropValue.value.lpszA = "SMTP";
+	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
+
+	SetRecipientType(&(SRowSet->aRow[last]), RecipClass);
+
+	SRowSet->cRows += 1;
+	return true;
+}
+
+
+/**
+   \details Set the message recipients from ocpf context
+
+   This function sets the recipient (To, Cc, Bcc) from the ocpf
+   context and information stored.
+
+   \param mem_ctx the memory context to use for memory allocation
+   \param obj_message pointer to the message object we use for
+   internal MAPI operations
+
+   \return OCPF_SUCCESS on success, otherwise OCPF_ERROR.
+
+   \sa ocpf
+ */
+_PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
+					     mapi_object_t *obj_message)
+{
+	enum MAPISTATUS		retval;
+	struct ocpf_recipients	*element;
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	SPropValue;
+	struct SRowSet		*SRowSet = NULL;
+	struct FlagList		*flaglist = NULL;
+	char			**usernames = NULL;
+	int			*recipClass = NULL;
+	uint32_t		count;
+	uint32_t		counter;
+	uint32_t		i;
+
+	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
+					  PR_OBJECT_TYPE,
+					  PR_DISPLAY_TYPE,
+					  PR_7BIT_DISPLAY_NAME,
+					  PR_DISPLAY_NAME,
+					  PR_SMTP_ADDRESS,
+					  PR_GIVEN_NAME);
+
+	/* Step 1. Group recipients and run ResolveNames */
+	usernames = talloc_array(mem_ctx, char *, 2);
+	recipClass = talloc_array(mem_ctx, int, 2);
+	for (element = ocpf->recipients, count = 0; element->next; element = element->next, count ++) {
+		usernames = talloc_realloc(mem_ctx, usernames, char *, count + 2);
+		recipClass = talloc_realloc(mem_ctx, recipClass, int, count + 2);
+		usernames[count] = talloc_strdup((TALLOC_CTX *)usernames, element->name);
+		recipClass[count] = element->class;
+	}
+	usernames[count] = 0;
+
+	retval = ResolveNames((const char **)usernames, SPropTagArray, &SRowSet, &flaglist, 0);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPI_RETVAL_IF(retval, retval, usernames);
+
+	/* Step2. Associate resolved recipients to their respective recipClass */
+	if (!SRowSet) {
+		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	}
+
+	count = 0;
+	counter = 0;
+	for (i = 0; usernames[i]; i++) {
+		if (flaglist->ulFlags[count] == MAPI_UNRESOLVED) {
+			set_external_recipients(mem_ctx, SRowSet, usernames[i], recipClass[i]);
+		}
+		if (flaglist->ulFlags[count] == MAPI_RESOLVED) {
+			SetRecipientType(&(SRowSet->aRow[counter]), recipClass[i]);
+			counter++;
+		}
+		count++;
+	}
+
+	/* Step3. Finish to build the ModifyRecipients SRowSet */
+	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
+	SPropValue.value.l = 0;
+	SRowSet_propcpy(mem_ctx, SRowSet, SPropValue);
+
+	/* Step4. Call ModifyRecipients */
+	retval = ModifyRecipients(obj_message, SRowSet);
+	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(flaglist);
+	MAPIFreeBuffer(usernames);
+	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }

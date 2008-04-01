@@ -16,8 +16,9 @@
 	<li><a href="#folder">    5.2. FOLDER            </a></li>
 	<li><a href="#set">       5.3. SET               </a></li>
 	<li><a href="#oleguid">   5.4. OLEGUID           </a></li>
-	<li><a href="#property">  5.5. PROPERTY section  </a></li>
-	<li><a href="#nproperty"> 5.6. NPROPERTY section </a></li>
+	<li><a href="#recipient"> 5.5. RECIPIENT	 </a></li>
+	<li><a href="#property">  5.6. PROPERTY section  </a></li>
+	<li><a href="#nproperty"> 5.7. NPROPERTY section </a></li>
    </ul>
  </li>
  <li><a href="#properties">  6. Known Properties         </a>
@@ -65,6 +66,12 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">01/04/08</td>
+	   <td style="text-align:center"><strong>0.5</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:center">Add RECIPIENT support</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">29/03/08</td>
@@ -142,7 +149,6 @@ different purposes:
 OCPF is a pretty new library and it currently has a some limitations:
 <ul>
     <li> It only supports a very limited set of property types </li>
-    <li> It can't set emails recipients </li>
     <li> It doesn't support attachment yet </li>
 </ul>
 
@@ -335,8 +341,32 @@ NPROPERTY {
 </ul>
 <br/>
 
+<a name="recipient"></a><h3>5.5. RECIPIENT </h3>
+<ul>
+  <li><strong>Format:</strong>
+\code
+      RECIPIENT TO STRING;STRING;STRING
+      RECIPIENT CC STRING;STRING
+      RECIPIENT BCC STRING
+\endcode
+  </li>
+  <li><strong>Description:</strong>
 
-<a name="property"></a><h3>5.5. PROPERTY section</h3>
+  This keyword declares recipients. RECIPIENT is followed by a
+  recipient type (TO, CC or BCC) and a set of STRING (recipients)
+  separated with semicolon.
+  </li>
+  <li><strong>Example:</strong>
+\code
+      RECIPIENT TO "recipient1";"recipient2";"recipient3"
+      RECIPIENT CC "recipient4"
+      RECIPIENT BCC "recipient5@remote.corp";"recipient6"
+\endcode
+  </li>
+</ul>
+<br/>
+
+<a name="property"></a><h3>5.6. PROPERTY section</h3>
 <ul>
   <li><strong>Format:</strong>
 \code
@@ -370,7 +400,7 @@ NPROPERTY {
 <br/>
 
 
-<a name="nproperty"></a><h3>5.6. NPROPERTY section</h3>
+<a name="nproperty"></a><h3>5.7. NPROPERTY section</h3>
 <ul>
   <li><strong>Format:</strong>
 \code
@@ -413,7 +443,7 @@ NPROPERTY {
 
 A known properties is any property where the value doesn't change
 across Exchange servers and versions. Known properties can only be
-registered within a PROPERTY section (See <a href="#property">5.5
+registered within a PROPERTY section (See <a href="#property">5.6
 PROPERTY section</a>). Known properties have the same general syntax:
 
 \code

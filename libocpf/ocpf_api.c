@@ -560,3 +560,19 @@ int ocpf_binary_add(const char *filename, struct SBinary *bin)
 
 	return OCPF_SUCCESS;
 }
+
+int ocpf_recipient_add(uint8_t recipClass, char *recipient)
+{
+	struct ocpf_recipients	*element;
+
+	if (!ocpf || !ocpf->mem_ctx) return OCPF_ERROR;
+	if (!recipient) return OCPF_ERROR;
+
+	element = talloc_zero(ocpf->mem_ctx, struct ocpf_recipients);
+	element->name = talloc_strdup((TALLOC_CTX *)element, recipient);
+	element->class = recipClass;
+
+	DLIST_ADD(ocpf->recipients, element);
+
+	return OCPF_SUCCESS;
+}

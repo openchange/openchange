@@ -76,6 +76,20 @@ struct ocpf_nproperty
 	const void		*value;
 };
 
+enum ocpf_recipClass {
+	OCPF_MAPI_TO = 0x1,
+	OCPF_MAPI_CC,
+	OCPF_MAPI_BCC
+};
+
+struct ocpf_recipients
+{
+	struct ocpf_recipients	*prev;
+	struct ocpf_recipients	*next;
+	char			*name;
+	enum ocpf_recipClass	class;
+};
+
 struct ocpf
 {
 	TALLOC_CTX		*mem_ctx;
@@ -84,6 +98,7 @@ struct ocpf
 	struct ocpf_oleguid    	*oleguid;
 	struct ocpf_property	*props;
 	struct ocpf_nproperty	*nprops;
+	struct ocpf_recipients	*recipients;
 	const char		*filename;
 	struct SPropValue	*lpProps;
 	uint32_t		cValues;
@@ -159,6 +174,9 @@ do {								\
 #define	OCPF_NPROPERTY_BEGIN		"NPROPERTY {\n"
 #define	OCPF_END			"};\n"
 #define	OCPF_NEWLINE			"\n"
+#define	OCPF_RECIPIENT_TO		"RECIPIENT TO "
+#define	OCPF_RECIPIENT_CC		"RECIPIENT CC "
+#define	OCPF_RECIPIENT_BCC		"RECIPIENT BCC "
 
 #define	DATE_FORMAT     "%Y-%m-%d %H:%M:%S"
 

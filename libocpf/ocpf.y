@@ -30,6 +30,7 @@ struct ocpf_nprop      	nprop;
 int		       	typeset;
 uint16_t       	       	type;
 int			folderset;
+uint8_t			recip_type;
 
 %}
 
@@ -64,6 +65,10 @@ int			folderset;
 %token kw_SET
 %token kw_PROPERTY
 %token kw_NPROPERTY
+%token kw_RECIPIENT
+%token kw_TO
+%token kw_CC
+%token kw_BCC
 %token kw_OOM
 %token kw_MNID_ID
 %token kw_MNID_STRING
@@ -102,6 +107,7 @@ kvalues		: Type
 		| Set
 		| Property
 		| NProperty
+		| Recipient
 		;
 
 Type		: 
@@ -402,6 +408,44 @@ known_kind	: kw_MNID_ID COLON INTEGER COLON IDENTIFIER
 			nprop.guid = $5;
 		}
 		;
+
+Recipient	: 
+		kw_RECIPIENT recipClass recipients STRING
+		{
+			char	*recipient = NULL;
+
+			recipient = talloc_strdup(ocpf->mem_ctx, $4);
+			ocpf_recipient_add(recip_type, recipient);
+			talloc_free(recipient);
+
+			recip_type = 0;
+		}
+		;
+
+recipClass	: kw_TO
+		{
+			recip_type = MAPI_TO;
+		}
+		| kw_CC
+		{
+			recip_type = MAPI_CC;
+		}
+		| kw_BCC
+		{
+			recip_type = MAPI_BCC;
+		}
+		;
+
+recipients	: | recipients recipient
+
+recipient	: STRING SEMICOLON
+		{
+			char	*recipient = NULL;
+
+			recipient = talloc_strdup(ocpf->mem_ctx, $1);
+			ocpf_recipient_add(recip_type, recipient);
+			talloc_free(recipient);
+		}
 
 %%
 

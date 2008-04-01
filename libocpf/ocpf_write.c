@@ -322,6 +322,64 @@ static char *ocpf_write_property(bool *found, uint32_t ulPropTag, const void *va
 }
 
 
+static char *ocpf_write_recipients(enum ocpf_recipClass recipClass)
+{
+	struct ocpf_recipients	*element;
+	char			*line = NULL;
+	bool			found = false;
+
+	line = talloc_zero(ocpf->mem_ctx, char);
+	for (element = ocpf->recipients, found = false; element->next; element = element->next) {
+		if (found && element->class == recipClass) {
+			line = talloc_asprintf_append(line, ";");
+			found = false;
+		}
+		if (element->class == recipClass) {
+			line = talloc_asprintf_append(line, "\"%s\"", element->name);
+			found = true;
+		}
+	}
+	return line;
+}
+
+
+static int ocpf_write_add_recipients(enum ocpf_recipClass recipClass, const char *recipients)
+{
+	char		*tmp = NULL;
+	uint32_t	i = 0;
+
+	if (!recipients) return OCPF_ERROR;
+
+	if ((tmp = strtok((char *)recipients, ";")) == NULL) {
+		return OCPF_ERROR;
+	}
+
+	ocpf_recipient_add(recipClass, tmp);
+
+	for (i = 1; (tmp = strtok(NULL, ";")) != NULL; i++) {
+		ocpf_recipient_add(recipClass, tmp);
+	}
+
+	return OCPF_SUCCESS;
+}
+
+static bool ocpf_write_exclude_property(uint32_t ulPropTag)
+{
+	uint32_t	i;
+	uint32_t	propArray[] = { PR_DISPLAY_TO, 
+					PR_DISPLAY_CC, 
+					PR_DISPLAY_BCC, 
+					0};
+
+	for (i = 0; propArray[i]; i++) {
+		if (propArray[i] == ulPropTag) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /**
    \details Specify the OCPF file name to write
  
@@ -372,6 +430,7 @@ _PUBLIC_ int ocpf_write_auto(mapi_object_t *obj_message,
 	uint16_t		propID;
 	struct SPropValue	lpProps;
 	const char		*type;
+	const char		*recipient;
 	char			*tmp_guid;
 	const char     		*guid;
 	struct MAPINAMEID	*nameid;
@@ -386,20 +445,32 @@ _PUBLIC_ int ocpf_write_auto(mapi_object_t *obj_message,
 	type = (const char *) find_mapi_SPropValue_data(mapi_lpProps, PR_MESSAGE_CLASS);
 	ocpf_type_add(type);
 
+	/* store recipients */
+	recipient = (const char *) find_mapi_SPropValue_data(mapi_lpProps, PR_DISPLAY_TO);
+	ocpf_write_add_recipients(OCPF_MAPI_TO, recipient);
+
+	recipient = (const char *) find_mapi_SPropValue_data(mapi_lpProps, PR_DISPLAY_CC);
+	ocpf_write_add_recipients(OCPF_MAPI_CC, recipient);
+
+	recipient = (const char *) find_mapi_SPropValue_data(mapi_lpProps, PR_DISPLAY_BCC);
+	ocpf_write_add_recipients(OCPF_MAPI_BCC, recipient);
+
 	/* store properties and OLEGUID in OCPF context */
 	for (i = 0; i < mapi_lpProps->cValues; i++) {
 		propID = mapi_lpProps->lpProps[i].ulPropTag >> 16;
 		cast_SPropValue(&mapi_lpProps->lpProps[i], &lpProps);
 		
 		if (propID < 0x8000) {
-			/* HACK: replace PR_CONVERSATION_TOPIC with PR_SUBJECT */
-			if (lpProps.ulPropTag == PR_CONVERSATION_TOPIC) {
-				lpProps.ulPropTag = PR_SUBJECT;
-				ocpf_propvalue(lpProps.ulPropTag, NULL, lpProps.value, lpProps.ulPropTag & 0xFFFF, false);
-				cast_SPropValue(&mapi_lpProps->lpProps[i], &lpProps);
+			if (ocpf_write_exclude_property(lpProps.ulPropTag) == false) {
+				/* HACK: replace PR_CONVERSATION_TOPIC with PR_SUBJECT */
+				if (lpProps.ulPropTag == PR_CONVERSATION_TOPIC) {
+					lpProps.ulPropTag = PR_SUBJECT;
+					ocpf_propvalue(lpProps.ulPropTag, NULL, lpProps.value, lpProps.ulPropTag & 0xFFFF, false);
+					cast_SPropValue(&mapi_lpProps->lpProps[i], &lpProps);
+				}
+				ocpf_propvalue(mapi_lpProps->lpProps[i].ulPropTag, NULL, 
+					       lpProps.value, mapi_lpProps->lpProps[i].ulPropTag & 0xFFFF, false);
 			}
-			ocpf_propvalue(mapi_lpProps->lpProps[i].ulPropTag, NULL, 
-				       lpProps.value, mapi_lpProps->lpProps[i].ulPropTag & 0xFFFF, false);
 		} else {
 			nameid = talloc_zero(ocpf->mem_ctx, struct MAPINAMEID);
 			retval = GetNamesFromIDs(obj_message, ((lpProps.ulPropTag & 0xFFFF0000) | PT_NULL),
@@ -471,6 +542,35 @@ _PUBLIC_ int ocpf_write_commit(void)
 		fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);
 	}
+	fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+
+	/* RECIPIENT TO */
+	line = ocpf_write_recipients(OCPF_MAPI_TO);
+	if (line && strlen(line)) {
+		fwrite(OCPF_RECIPIENT_TO, strlen(OCPF_RECIPIENT_TO), 1, fp);
+		fwrite(line, strlen(line), 1, fp);
+		fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+		talloc_free(line);
+	}
+
+	/* RECIPIENT CC */
+	line = ocpf_write_recipients(OCPF_MAPI_CC);
+	if (line && strlen(line)) {
+		fwrite(OCPF_RECIPIENT_CC, strlen(OCPF_RECIPIENT_CC), 1, fp);
+		fwrite(line, strlen(line), 1, fp);
+		fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+		talloc_free(line);
+	}
+
+	/* RECIPIENT BCC */
+	line = ocpf_write_recipients(OCPF_MAPI_BCC);
+	if (line && strlen(line)) {
+		fwrite(OCPF_RECIPIENT_BCC, strlen(OCPF_RECIPIENT_BCC), 1, fp);
+		fwrite(line, strlen(line), 1, fp);
+		fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+		talloc_free(line);
+	}
+
 	fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
 
 	/* known properties */

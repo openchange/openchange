@@ -53,6 +53,10 @@ OLEGUID		{ return kw_OLEGUID; }
 SET		{ return kw_SET; }
 PROPERTY	{ return kw_PROPERTY; }
 NPROPERTY	{ return kw_NPROPERTY; }
+TO		{ return kw_TO; }
+CC		{ return kw_CC; }
+BCC		{ return kw_BCC; }
+RECIPIENT	{ return kw_RECIPIENT; }
 OOM		{ return kw_OOM; }
 MNID_ID		{ return kw_MNID_ID; }
 MNID_STRING	{ return kw_MNID_STRING; }

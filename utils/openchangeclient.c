@@ -1962,8 +1962,8 @@ static bool openchangeclient_updateitem(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	}
 
 	fid_str = strsep((char **)&item, "/");
-	if (!fid_str) {
-		DEBUG(0, ("Invalid ID\n"));
+	if (!fid_str || !item) {
+		DEBUG(0, ("    Invalid ID: %s\n", fid_str ? fid_str : "null"));
 		errno = MAPI_E_INVALID_PARAMETER;
 		return false;
 	}
@@ -2031,8 +2031,8 @@ static bool openchangeclient_deleteitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	}
 	
 	fid_str = strsep((char **)&item, "/");
-	if (!fid_str) {
-		DEBUG(0, ("Invalid ID"));;
+	if (!fid_str || !item) {
+		DEBUG(0, ("    Invalid ID: %s\n", fid_str ? fid_str : "null"));
 		errno = MAPI_E_INVALID_PARAMETER;
 		return false;
 	}
@@ -2442,18 +2442,22 @@ static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	retval = CreateMessage(&obj_folder, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	/* Step5. Set message properties */
-	retval = ocpf_set_SPropValue(mem_ctx, &obj_folder, &obj_message);
+	/* Step5, Set message recipients */
+	retval = ocpf_set_Recipients(mem_ctx, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Step6. Set message properties */
+	retval = ocpf_set_SPropValue(mem_ctx, &obj_folder, &obj_message);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Step7. Set message properties */
 	lpProps = ocpf_get_SPropValue(&cValues);
 
 	retval = SetProps(&obj_message, lpProps, cValues);
 	MAPIFreeBuffer(lpProps);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	/* Step7. Save message */
+	/* Step8. Save message */
 	retval = SaveChangesMessage(&obj_folder, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -2483,8 +2487,8 @@ static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_s
 	item = oclient->ocpf_dump;
 
 	fid_str = strsep((char **)&item, "/");
-	if (!fid_str) {
-		DEBUG(0, ("Invalid ID\n"));
+	if (!fid_str || !item) {
+		DEBUG(0, ("    Invalid ID: %s\n", fid_str ? fid_str : "null"));
 		errno = MAPI_E_INVALID_PARAMETER;
 		return false;
 	}

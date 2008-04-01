@@ -75,6 +75,47 @@ _PUBLIC_ void ocpf_dump_folder(void)
 
 
 /**
+   \details Dump OCPF Recipients
+
+   Dump OCPF Recipients
+ */
+_PUBLIC_ void ocpf_dump_recipients(void)
+{
+	struct ocpf_recipients	*element;
+
+	OCPF_DUMP_TITLE(indent, "RECIPIENTS", OCPF_DUMP_TOPLEVEL);
+	indent++;
+
+	INDENT();
+	printf("* To: ");
+	for (element = ocpf->recipients; element->next; element = element->next) {
+		if (element->class == OCPF_MAPI_TO) {
+			printf("%s;", element->name);
+		}
+	}
+	printf("\n");
+
+	INDENT();
+	printf("* Cc: ");
+	for (element = ocpf->recipients; element->next; element = element->next) {
+		if (element->class == OCPF_MAPI_CC) {
+			printf("%s;", element->name);
+		}
+	}
+	printf("\n");
+
+	INDENT();
+	printf("* Bcc: ");
+	for (element = ocpf->recipients; element->next; element = element->next) {
+		if (element->class == OCPF_MAPI_BCC) {
+			printf("%s;", element->name);
+		}
+	}
+	printf("\n");
+}
+
+
+/**
    \details Dump OCPF OLEGUID
 
    Dump OCPF Registered OLEGUID
@@ -171,6 +212,7 @@ _PUBLIC_ void ocpf_dump(void)
 	ocpf_dump_type();
 	ocpf_dump_folder();
 	ocpf_dump_oleguid();
+	ocpf_dump_recipients();
 	ocpf_dump_variable();
 	ocpf_dump_property();
 	ocpf_dump_named_property();

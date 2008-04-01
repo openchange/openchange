@@ -163,7 +163,7 @@ OLEGUID		:
 Set		:
 		kw_SET VAR EQUAL propvalue
 		{
-			ocpf_variable_add($2, lpProp, type);
+			ocpf_variable_add($2, lpProp, type, true);
 			memset(&lpProp, 0, sizeof (union SPropValue_CTR));
 		}
 		;
@@ -182,21 +182,21 @@ pcontent       	: | pcontent content
 content		:
 		IDENTIFIER EQUAL propvalue
 		{
-			ocpf_propvalue_s($1, lpProp, type);
+		  ocpf_propvalue_s($1, lpProp, type, true);
 			ocpf_propvalue_free(lpProp, type);
 		}
 		| INTEGER EQUAL propvalue
 		{
-			ocpf_propvalue($1, "UNNAMED", lpProp, type);
+			ocpf_propvalue($1, "UNNAMED", lpProp, type, true);
 			ocpf_propvalue_free(lpProp, type);
 		}
 		| IDENTIFIER EQUAL VAR
 		{
-			ocpf_propvalue_var($1, 0x0, $3);
+			ocpf_propvalue_var($1, 0x0, $3, true);
 		}
 		| INTEGER EQUAL VAR
 		{
-			ocpf_propvalue_var(NULL, $1, $3);
+			ocpf_propvalue_var(NULL, $1, $3, true);
 		}
 		;
 
@@ -309,19 +309,19 @@ npcontent	: | npcontent ncontent
 
 ncontent	: kind EQUAL propvalue
 		{
-			ocpf_nproperty_add(&nprop, lpProp, NULL, type);
+			ocpf_nproperty_add(&nprop, lpProp, NULL, type, true);
 		}
 		| known_kind EQUAL propvalue
 		{
-			ocpf_nproperty_add(&nprop, lpProp, NULL, type);
+			ocpf_nproperty_add(&nprop, lpProp, NULL, type, true);
 		}
 		| kind EQUAL VAR
 		{
-			ocpf_nproperty_add(&nprop, lpProp, $3, type);
+			ocpf_nproperty_add(&nprop, lpProp, $3, type, true);
 		}
 		| known_kind EQUAL VAR
 		{
-			ocpf_nproperty_add(&nprop, lpProp, $3, type);
+			ocpf_nproperty_add(&nprop, lpProp, $3, type, true);
 		}
 		;
 

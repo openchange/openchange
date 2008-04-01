@@ -52,7 +52,7 @@ const char *ocpf_get_filename(void)
 }
 
 
-int ocpf_propvalue_var(const char *propname, uint32_t proptag, const char *variable)
+int ocpf_propvalue_var(const char *propname, uint32_t proptag, const char *variable, bool unescape)
 {
 	struct ocpf_var		*vel;
 	struct ocpf_property	*element;
@@ -79,7 +79,12 @@ int ocpf_propvalue_var(const char *propname, uint32_t proptag, const char *varia
 			element = NULL;
 			element = talloc_zero(ocpf->mem_ctx, struct ocpf_property);
 			element->aulPropTag = aulPropTag;
-			element->value = vel->value;
+			if (unescape && (((aulPropTag & 0xFFFF) == PT_STRING8) || 
+					 ((aulPropTag & 0xFFFF) == PT_UNICODE))) {
+				element->value = ocpf_write_unescape_string(vel->value);
+			} else {
+				element->value = vel->value;
+			}
 			DLIST_ADD(ocpf->props, element);
 			return OCPF_SUCCESS;
 		}
@@ -90,16 +95,30 @@ int ocpf_propvalue_var(const char *propname, uint32_t proptag, const char *varia
 
 
 int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptype, uint16_t sproptype, 
-		       union SPropValue_CTR lpProp)
+		       union SPropValue_CTR lpProp, bool unescape)
 {
+	char	*str = NULL;
+
 	OCPF_RETVAL_IF(proptype != sproptype, OCPF_WARN_PROPVALUE_MISMATCH, NULL);
 
 	switch (proptype) {
 	case PT_STRING8:
-		*value = talloc_memdup(mem_ctx, (const void *)lpProp.lpszA, strlen(lpProp.lpszA) + 1);
+		if (unescape) {
+			str = ocpf_write_unescape_string(lpProp.lpszA);
+		} else {
+			str = talloc_strdup(ocpf->mem_ctx, lpProp.lpszA);
+		}
+		*value = talloc_memdup(mem_ctx, str, strlen(str) + 1);
+		talloc_free(str);
 		return OCPF_SUCCESS;
 	case PT_UNICODE:
-		*value = talloc_memdup(mem_ctx, (const void *)lpProp.lpszW, strlen(lpProp.lpszW) + 1);
+		if (unescape) {
+			str = ocpf_write_unescape_string(lpProp.lpszW);
+		} else {
+			str = talloc_strdup(ocpf->mem_ctx, lpProp.lpszW);
+		}
+		*value = talloc_memdup(mem_ctx, str, strlen(str) + 1);
+		talloc_free(str);
 		return OCPF_SUCCESS;
 	case PT_SHORT:
 		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.i, sizeof (uint16_t));
@@ -133,7 +152,13 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 
 			for (i = 0; i < lpProp.MVszA.cValues; i++) {
 				((struct SLPSTRArray *)*value)->strings[i] = talloc_zero(mem_ctx, struct LPSTR);
-				((struct SLPSTRArray *)*value)->strings[i]->lppszA = talloc_strdup(mem_ctx, lpProp.MVszA.strings[i]->lppszA);
+				if (unescape) {
+					str = ocpf_write_unescape_string(lpProp.MVszA.strings[i]->lppszA);
+				} else {
+					str = (char *)lpProp.MVszA.strings[i]->lppszA;
+				}
+				((struct SLPSTRArray *)*value)->strings[i]->lppszA = talloc_strdup(mem_ctx, str);
+				talloc_free(str);
 			}
 		}
 		return OCPF_SUCCESS;
@@ -160,7 +185,8 @@ int ocpf_propvalue_free(union SPropValue_CTR lpProp, uint16_t proptype)
 	return OCPF_SUCCESS;
 }
 
-int ocpf_propvalue(uint32_t aulPropTag, const char *propname, union SPropValue_CTR lpProp, uint16_t proptype)
+int ocpf_propvalue(uint32_t aulPropTag, const char *propname, union SPropValue_CTR lpProp, 
+		   uint16_t proptype, bool unescape)
 {
 	struct ocpf_property	*element;
 	int			ret;
@@ -175,7 +201,7 @@ int ocpf_propvalue(uint32_t aulPropTag, const char *propname, union SPropValue_C
 	element = NULL;
 	element = talloc_zero(ocpf->mem_ctx, struct ocpf_property);
 	element->aulPropTag = aulPropTag;
-	ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, (uint16_t)aulPropTag & 0xFFFF, proptype, lpProp);
+	ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, (uint16_t)aulPropTag & 0xFFFF, proptype, lpProp, unescape);
 	if (ret == -1) {
 		talloc_free(element);
 		return OCPF_ERROR;
@@ -186,12 +212,12 @@ int ocpf_propvalue(uint32_t aulPropTag, const char *propname, union SPropValue_C
 }
 
 
-void ocpf_propvalue_s(const char *propname, union SPropValue_CTR lpProp, uint16_t proptype)
+void ocpf_propvalue_s(const char *propname, union SPropValue_CTR lpProp, uint16_t proptype, bool unescape)
 {
 	uint32_t	aulPropTag;
 
 	aulPropTag = get_proptag_value(propname);
-	ocpf_propvalue(aulPropTag, propname, lpProp, proptype);
+	ocpf_propvalue(aulPropTag, propname, lpProp, proptype, unescape);
 }
 
 
@@ -206,11 +232,12 @@ void ocpf_propvalue_s(const char *propname, union SPropValue_CTR lpProp, uint16_
    \param lpProp named property value
    \param var_name variable name
    \param proptype variable property type
+   \param unescape whether the property value should be escaped
 
    \return OCPF_SUCCESS on success, otherwise OCPF_ERROR.
  */
 int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
-		       const char *var_name, uint16_t proptype)
+		       const char *var_name, uint16_t proptype, bool unescape)
 {
 	enum MAPISTATUS		retval;
 	int			ret = 0;
@@ -295,7 +322,7 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 		}
 		OCPF_RETVAL_IF(!element->value, OCPF_WARN_VAR_NOT_REGISTERED, element);
 	} else {
-		ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, element->propType, proptype, lpProp);
+		ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, element->propType, proptype, lpProp, unescape);
 		if (ret == -1) {
 			talloc_free(element);
 			return OCPF_ERROR;
@@ -490,7 +517,7 @@ int ocpf_add_filetime(const char *date, struct FILETIME *ft)
 }
 
 
-int ocpf_variable_add(const char *name, union SPropValue_CTR lpProp, uint16_t propType)
+int ocpf_variable_add(const char *name, union SPropValue_CTR lpProp, uint16_t propType, bool unescape)
 {
 	struct ocpf_var		*element;
 	int			ret;
@@ -508,7 +535,7 @@ int ocpf_variable_add(const char *name, union SPropValue_CTR lpProp, uint16_t pr
 	element->name = talloc_strdup((TALLOC_CTX *)element, name);
 	element->propType = propType;
 
-	ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, propType, propType, lpProp);
+	ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, propType, propType, lpProp, unescape);
 	OCPF_RETVAL_IF(ret == -1, OCPF_WARN_VAR_TYPE, element);
 
 	DLIST_ADD(ocpf->vars, element);

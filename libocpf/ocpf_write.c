@@ -168,17 +168,124 @@ static char *ocpf_write_binary(const struct SBinary *bin)
 	return line;
 }
 
+static char *ocpf_write_escape_string(const char *value)
+{
+	char	*str = NULL;
+	char	*stmp = NULL;
+	int	value_len;
+	int	len = 0;
+	int	tmp = 0;
+
+	value_len = strlen(value);
+	tmp = strcspn(value, "\\\"");
+
+	if (tmp == value_len) {
+		str = talloc_strdup(ocpf->mem_ctx, value);
+		return str;
+	} else {
+		str = talloc_strndup(ocpf->mem_ctx, value, tmp);
+		str = talloc_asprintf_append_buffer(str, "\\\%c", value[tmp]);
+	}
+	len += tmp + 1;
+
+	while (len < value_len) {
+		tmp = strcspn(value + len, "\\\"");
+		
+		if ((tmp + len) == value_len) {
+			str = talloc_asprintf_append_buffer(str, "%s", value + len);
+			break;
+		} else {
+			stmp = talloc_strndup(ocpf->mem_ctx, value + len, tmp);
+			str = talloc_asprintf_append_buffer(str, "%s\\\%c", stmp, value[len + tmp]);
+			talloc_free(stmp);
+			len += tmp + 1;
+		}
+	}
+
+	return str;
+}
+
+char *ocpf_write_unescape_string(const char *value)
+{
+	char	*str = NULL;
+	char	*stmp = NULL;
+	int	value_len;
+	int	len = 0;
+	int	tmp = 0;
+
+	value_len = strlen(value);
+	tmp = strcspn(value, "\\");
+
+	if (tmp == value_len) {
+		str = talloc_strdup(ocpf->mem_ctx, value);
+		return str;
+	}
+	
+	str = talloc_strndup(ocpf->mem_ctx, value, tmp + 1);
+	if (value[tmp + 1] && value[tmp + 1] == '\\') {
+		len += tmp + 2;
+	} else {
+		len += tmp + 1;
+	}
+
+	while (len < value_len) {
+		tmp = strcspn(value + len, "\\");
+		
+		if ((tmp + len) == value_len) {
+			str = talloc_asprintf_append(str, "%s", value + len);
+			break;
+		}
+			
+		stmp = talloc_strndup(ocpf->mem_ctx, value + len, tmp + 1);
+		str = talloc_asprintf_append(str, stmp);
+		if (value[len + tmp + 1] && 
+		    (value[len + tmp + 1] == '\\' || value[len + tmp + 1] == '"')) {
+			len += tmp + 2;
+		} else {
+			len += tmp + 1;
+		}
+		talloc_free(stmp);
+	}
+
+	return str;
+}
+
+static char *ocpf_write_mv_string8(const struct SLPSTRArray *value)
+{
+	char		*str = NULL;
+	char		*tmp = NULL;
+	uint32_t	i;
+
+	str = talloc_asprintf(ocpf->mem_ctx, "{ ");
+	for (i = 0; i < value->cValues; i++) {
+		tmp = ocpf_write_escape_string((const char *)value->strings[i]->lppszA);
+		if (i != value->cValues - 1) {
+			str = talloc_asprintf_append_buffer(str, "\"%s\", ", tmp);
+		} else {
+			str = talloc_asprintf_append_buffer(str, "\"%s\" }", tmp);
+		}
+		talloc_free(tmp);
+	}
+
+	return str;
+}
+
 static char *ocpf_write_property(bool *found, uint32_t ulPropTag, const void *value)
 {
 	char	*line = NULL;
+	char	*str = NULL;
 
 	switch (ulPropTag & 0xFFFF) {
 	case PT_STRING8:
-		line = talloc_asprintf(ocpf->mem_ctx, "\"%s\"\n", (const char *)value);
+		str = ocpf_write_escape_string((const char *)value);
+		line = talloc_asprintf(ocpf->mem_ctx, "\"%s\"\n", str);
+		talloc_free(str);
 		*found = true;
 		break;
 	case PT_UNICODE:
-		line = talloc_asprintf(ocpf->mem_ctx, "U\"%s\"\n", (const char *)value);
+		str = ocpf_write_escape_string((const char *)value);
+		line = talloc_asprintf(ocpf->mem_ctx, "U\"%s\"\n", str);
+		talloc_free(str);
 		*found = true;
 		break;
 	case PT_SHORT:
@@ -203,6 +310,10 @@ static char *ocpf_write_property(bool *found, uint32_t ulPropTag, const void *va
 		break;
 	case PT_BINARY:
 		line = ocpf_write_binary((const struct SBinary *)value);
+		*found = true;
+		break;
+	case PT_MV_STRING8:
+		line = ocpf_write_mv_string8((const struct SLPSTRArray *)value);
 		*found = true;
 		break;
 	}
@@ -279,16 +390,16 @@ _PUBLIC_ int ocpf_write_auto(mapi_object_t *obj_message,
 	for (i = 0; i < mapi_lpProps->cValues; i++) {
 		propID = mapi_lpProps->lpProps[i].ulPropTag >> 16;
 		cast_SPropValue(&mapi_lpProps->lpProps[i], &lpProps);
-
+		
 		if (propID < 0x8000) {
 			/* HACK: replace PR_CONVERSATION_TOPIC with PR_SUBJECT */
 			if (lpProps.ulPropTag == PR_CONVERSATION_TOPIC) {
 				lpProps.ulPropTag = PR_SUBJECT;
-				ocpf_propvalue(lpProps.ulPropTag, NULL, lpProps.value, lpProps.ulPropTag & 0xFFFF);
+				ocpf_propvalue(lpProps.ulPropTag, NULL, lpProps.value, lpProps.ulPropTag & 0xFFFF, false);
 				cast_SPropValue(&mapi_lpProps->lpProps[i], &lpProps);
 			}
 			ocpf_propvalue(mapi_lpProps->lpProps[i].ulPropTag, NULL, 
-				       lpProps.value, mapi_lpProps->lpProps[i].ulPropTag & 0xFFFF);
+				       lpProps.value, mapi_lpProps->lpProps[i].ulPropTag & 0xFFFF, false);
 		} else {
 			nameid = talloc_zero(ocpf->mem_ctx, struct MAPINAMEID);
 			retval = GetNamesFromIDs(obj_message, ((lpProps.ulPropTag & 0xFFFF0000) | PT_NULL),
@@ -311,7 +422,7 @@ _PUBLIC_ int ocpf_write_auto(mapi_object_t *obj_message,
 				ocpf_oleguid_add(nprop.guid, tmp_guid);
 			
 			nprop.registered = false;
-			ocpf_nproperty_add(&nprop, lpProps.value, NULL, nprop.propType);
+			ocpf_nproperty_add(&nprop, lpProps.value, NULL, nprop.propType, false);
 
 			talloc_free(nameid);
 		}

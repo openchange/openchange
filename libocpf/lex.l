@@ -114,8 +114,8 @@ PT_BINARY	{ return kw_PT_BINARY; }
 			}
 "\""			{ 
 			    int start_lineno = lineno;
-			    int c;
-			    char buf[1024];
+			    int c, c2;
+			    char buf[0x4000];
 			    char *p = buf;
 			    int f = 0;
 			    int skip_ws = 0;
@@ -127,18 +127,30 @@ PT_BINARY	{ return kw_PT_BINARY; }
 				    continue;
 				}
 				skip_ws = 0;
-				
+
+				if (c == '\\') {
+					c2 = c;
+					c = input();
+					if (c == '"') { 
+						*p++ = c;
+						c = input();
+					} else {
+						*p++ = c2;
+					}
+				}
+
 				if(c == '"') {
-				    if(f) {
-					*p++ = '"';
-					f = 0;
-				    } else
-					f = 1;
-				    continue;
+					if(f) {
+						*p++ = '"';
+						f = 0;
+					} else {
+						f = 1;
+					}
+					continue;
 				}
 				if(f == 1) {
-				    unput(c);
-				    break;
+					unput(c);
+					break;
 				}
 				if(c == '\n') {
 				    lineno++;
@@ -155,10 +167,10 @@ PT_BINARY	{ return kw_PT_BINARY; }
 			    ocpf_yylval.name = buf;
 			    return STRING; 
 			}
-W"\""			{
+W"\""			{ 
 			    int start_lineno = lineno;
-			    int c;
-			    char buf[1024];
+			    int c, c2;
+			    char buf[0x4000];
 			    char *p = buf;
 			    int f = 0;
 			    int skip_ws = 0;
@@ -170,18 +182,30 @@ W"\""			{
 				    continue;
 				}
 				skip_ws = 0;
-				
+
+				if (c == '\\') {
+					c2 = c;
+					c = input();
+					if (c == '"') { 
+						*p++ = c;
+						c = input();
+					} else {
+						*p++ = c2;
+					}
+				}
+
 				if(c == '"') {
-				    if(f) {
-					*p++ = '"';
-					f = 0;
-				    } else
-					f = 1;
-				    continue;
+					if(f) {
+						*p++ = '"';
+						f = 0;
+					} else {
+						f = 1;
+					}
+					continue;
 				}
 				if(f == 1) {
-				    unput(c);
-				    break;
+					unput(c);
+					break;
 				}
 				if(c == '\n') {
 				    lineno++;

@@ -113,6 +113,7 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct SPropTagArray *SPropTagArray, struct
 				     uint32_t count, uint8_t ulFlags)
 {
 	struct nspi_context	*nspi;
+	struct SRowSet		*srowset;
 	enum MAPISTATUS		retval;
 	mapi_ctx_t		*mapi_ctx;
 	uint32_t		instance_key = 0;
@@ -135,8 +136,9 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct SPropTagArray *SPropTagArray, struct
 		memset(nspi->settings->service_provider.ab + 12, 0xff, 4);
 	}
 
-	*SRowSet = talloc_zero(mapi_ctx->session, struct SRowSet);
-	retval = nspi_QueryRows(nspi, SPropTagArray, *SRowSet, count);
+	srowset = talloc_zero(mapi_ctx->session, struct SRowSet);
+	retval = nspi_QueryRows(nspi, SPropTagArray, &srowset, count);
+	*SRowSet = srowset;
 
 	nspi->profile_instance_key = instance_key;
 

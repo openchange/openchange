@@ -1184,7 +1184,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi;
 	struct SPropTagArray	*SPropTagArray;
-	struct SRowSet		rowset;
+	struct SRowSet		*rowset;
 	struct SPropValue	*lpProp = NULL;
 	const char		*profname;
 	uint32_t		index = 0;
@@ -1213,19 +1213,21 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 					  PR_INSTANCE_KEY,
 					  PR_EMAIL_ADDRESS
 					  );
+
+	rowset = talloc_zero(nspi->mem_ctx, struct SRowSet);
 	retval = nspi_GetMatches(nspi, SPropTagArray, &rowset, username);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
 	/* if there's no match */
-	MAPI_RETVAL_IF(!rowset.cRows, MAPI_E_NOT_FOUND, NULL);
+	MAPI_RETVAL_IF(!rowset->cRows, MAPI_E_NOT_FOUND, NULL);
 
 	/* if rowset count is superior than 1 an callback is specified, call it */
-	if (rowset.cRows > 1 && callback) {
-		index = callback(&rowset, private);
-		MAPI_RETVAL_IF((index >= rowset.cRows), MAPI_E_USER_CANCEL, NULL);
+	if (rowset->cRows > 1 && callback) {
+		index = callback(rowset, private);
+		MAPI_RETVAL_IF((index >= rowset->cRows), MAPI_E_USER_CANCEL, NULL);
 	}
 
-	lpProp = get_SPropValue_SRow(&(rowset.aRow[index]), PR_INSTANCE_KEY);
+	lpProp = get_SPropValue_SRow(&(rowset->aRow[index]), PR_INSTANCE_KEY);
 	if (lpProp) {
 		struct SBinary bin;
 		
@@ -1235,10 +1237,10 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 		nspi->profile_instance_key = 0;
 	}
 	
-	set_profile_attribute(profname, rowset, index, PR_EMAIL_ADDRESS, "EmailAddress");
-	set_profile_attribute(profname, rowset, index, PR_DISPLAY_NAME, "DisplayName");
-	set_profile_attribute(profname, rowset, index, PR_ACCOUNT, "Account");
-	set_profile_attribute(profname, rowset, index, PR_ADDRTYPE, "AddrType");
+	set_profile_attribute(profname, *rowset, index, PR_EMAIL_ADDRESS, "EmailAddress");
+	set_profile_attribute(profname, *rowset, index, PR_DISPLAY_NAME, "DisplayName");
+	set_profile_attribute(profname, *rowset, index, PR_ACCOUNT, "Account");
+	set_profile_attribute(profname, *rowset, index, PR_ADDRTYPE, "AddrType");
 
 	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x7,
 					  PR_DISPLAY_NAME,
@@ -1256,7 +1258,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	retval = nspi_QueryRows(nspi, SPropTagArray, &rowset, 1);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
-	lpProp = get_SPropValue_SRowSet(&rowset, PR_EMS_AB_HOME_MDB);
+	lpProp = get_SPropValue_SRowSet(rowset, PR_EMS_AB_HOME_MDB);
 	MAPI_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, NULL);
 
 	nspi->org = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG);
@@ -1270,8 +1272,8 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 
 	nspi->servername = x500_get_servername(lpProp->value.lpszA);
 	mapi_profile_add_string_attr(profname, "ServerName", nspi->servername);
-	set_profile_attribute(profname, rowset, 0, PR_EMS_AB_HOME_MDB, "HomeMDB");
-	set_profile_mvstr_attribute(profname, rowset, 0, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
+	set_profile_attribute(profname, *rowset, 0, PR_EMS_AB_HOME_MDB, "HomeMDB");
+	set_profile_mvstr_attribute(profname, *rowset, 0, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
 
 	retval = nspi_DNToEph(nspi);
 	if (retval != MAPI_E_SUCCESS) return retval;
@@ -1279,7 +1281,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x1, PR_EMS_AB_NETWORK_ADDRESS);
 	retval = nspi_GetProps(nspi, SPropTagArray, &rowset);
 	if (retval != MAPI_E_SUCCESS) return retval;
-	set_profile_mvstr_attribute(profname, rowset, 0, PR_EMS_AB_NETWORK_ADDRESS, "NetworkAddress");
+	set_profile_mvstr_attribute(profname, *rowset, 0, PR_EMS_AB_NETWORK_ADDRESS, "NetworkAddress");
 
 	return MAPI_E_SUCCESS;
 }

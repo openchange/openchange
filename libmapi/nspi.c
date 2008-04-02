@@ -179,7 +179,7 @@ _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi)
  */
 
 _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi, struct SPropTagArray *SPropTagArray,
-					struct SRowSet *rowset, uint32_t count)
+					struct SRowSet **rowset, uint32_t count)
 {
 	struct NspiQueryRows		r;
 	NTSTATUS			status;
@@ -210,7 +210,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi, struct SPropT
 	settings = talloc(nspi->mem_ctx, struct MAPI_SETTINGS);
 	r.out.settings = settings;
 
-	r.out.RowSet = &rowset;
+	r.out.RowSet = rowset;
 
 	status = dcerpc_NspiQueryRows(nspi->rpc_connection, nspi->mem_ctx, &r);
 	retval = r.out.result;
@@ -230,7 +230,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi, struct SPropT
  */
 
 _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi, struct SPropTagArray *SPropTagArray,
-					 struct SRowSet *rowset, const char *username)
+					 struct SRowSet **rowset, const char *username)
 {
 	struct NspiGetMatches		r;
 	NTSTATUS			status;
@@ -283,12 +283,14 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi, struct SProp
 	instance_key = talloc(nspi->mem_ctx, struct instance_key);
 	r.out.instance_key = instance_key;
 
-	r.out.RowSet = &rowset;
+	r.out.RowSet = rowset;
 
 	status = dcerpc_NspiGetMatches(nspi->rpc_connection, nspi->mem_ctx, &r);
 	retval = r.out.result;
 	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), MAPI_E_NOT_FOUND, NULL);
 	
+	rowset = r.out.RowSet;
+
 	return MAPI_E_SUCCESS;
 }
 
@@ -343,7 +345,7 @@ _PUBLIC_ enum MAPISTATUS nspi_DNToEph(struct nspi_context *nspi)
 
 _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi, 
 				       struct SPropTagArray *SPropTagArray, 
-				       struct SRowSet *rowset)
+				       struct SRowSet **rowset)
 {
 	struct NspiGetProps	r;
 	NTSTATUS		status;
@@ -370,11 +372,11 @@ _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi,
 	retval = r.out.result;
 	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
 
-	rowset->cRows = 1;
-	rowset->aRow = talloc(nspi->mem_ctx, struct SRow);
-	rowset->aRow->ulAdrEntryPad = REPL_values->ulAdrEntryPad;
-	rowset->aRow->cValues = REPL_values->cValues;
-	rowset->aRow->lpProps = REPL_values->lpProps;
+	rowset[0]->cRows = 1;
+	rowset[0]->aRow = talloc(nspi->mem_ctx, struct SRow);
+	rowset[0]->aRow->ulAdrEntryPad = REPL_values->ulAdrEntryPad;
+	rowset[0]->aRow->cValues = REPL_values->cValues;
+	rowset[0]->aRow->lpProps = REPL_values->lpProps;
 	
 	return MAPI_E_SUCCESS;
 }
@@ -385,7 +387,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi,
  */
 
 _PUBLIC_ enum MAPISTATUS nspi_GetHierarchyInfo(struct nspi_context *nspi, 
-					       struct SRowSet *rowset)
+					       struct SRowSet **rowset)
 {
 	struct NspiGetHierarchyInfo	r;
 	NTSTATUS			status;
@@ -409,7 +411,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetHierarchyInfo(struct nspi_context *nspi,
 	r.in.unknown2 = &unknown;
 	r.out.unknown2 = &unknown;
 
-	r.out.RowSet = &rowset;
+	r.out.RowSet = rowset;
 
 	status = dcerpc_NspiGetHierarchyInfo(nspi->rpc_connection, nspi->mem_ctx, &r);
 	retval = r.out.result;

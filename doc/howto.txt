@@ -1,24 +1,11 @@
-Copyright 2007-2008 OpenChange Project
+Copyright 2005-2008 OpenChange Project
 under the terms at http://creativecommons.org/licenses/by-sa/3.0/
 
 
 OpenChange developer howto
 --------------------------
 
-Revision History:
-=================
-Initial by Julien Kerihuel	<j.kerihuel@openchange.org>,	October 2005.
-Updates by Jelmer Vernooij	<jelmer@samba.org>,		March	2006.
-Updates by Gregory Schiro	<g.schiro@openchange.org>,	April	2006.
-Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	May	2006.
-Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	March	2007.
-Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	April	2007.
-Updates by Dan Shearer		<dan@shearer.org>,		April	2007.
-Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	April	2007.
-Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	June	2007.
-Updates by Dan Shearer		<dan@shearer.org>,		July	2007.
-Updates by Dan Shearer		<dan@shearer.org>,		August	2007.
-Updates by Julien Kerihuel	<j.kerihuel@openchange.org>,	October 2007.
+== Updated on April 2008 ==
 
 
 ###############
@@ -101,36 +88,47 @@ Samba4 had most bugs fixed years ago :-)
 [0x2a] Samba4 Installation
 ==========================
 
-[*] First of all, install Samba 4 correctly (see howto.txt in the
-    Samba4 package). This should give you the libraries, headers and
-    tools you need to compile OpenChange. It is rare that you will
-    need to update Samba, when you have successfully done this once
-    you should not need to do it again.  As a hint, as well as your
-    base compiler (apt-get install build-essential on Debian and
-    Ubuntu) you will need pkg-config.
+[*] First of all, you need to install a Samba 4 version and pidl
+    version compliant with OpenChange. Furthermore talloc became an
+    external dependency and needs to be installed apart from
+    Samba4. This task can automatically be done using the
+    installsamba4.sh script located in the script directory.
+
+    Note that the script relies on sudo for "make install" operations
+    and requires your account to be in the sudoers file.
+
+    You can either run:
+
+$ ./script/installsamba4.sh all
+
+    Or run each rules independently:
+
+$ ./script/installsamba4.sh checkout
+$ ./script/installsamba4.sh packages
+$ ./script/installsamba4.sh compile
+$ ./script/installsamba4.sh install
+
+This should give you the libraries, headers and tools you need to
+compile OpenChange. It is rare that you will need to update Samba,
+when you have successfully done this once you should not need to do it
+again.  As a hint, as well as your base compiler (apt-get install
+build-essential on Debian and Ubuntu) you will need pkg-config.
 
 If you want to control every detail of the Samba build, follow the
-instructions for checking out the subversion tree. You will require
+instructions for checking out the git tree. You will require
 tools such as autoconf (apt-get install automake on Debian and
 Ubuntu), it will take more time and disk space, and there is more to
 go wrong.
 
-Otherwise, use rsync to fetch a tree with many files pre-generated, like this:
-
-$ mkdir samba4 ; cd samba4
-$ rsync -avz samba.org::ftp/unpacked/samba4 .
-$ ./configure --prefix=/usr/local/samba
-$ make 
-# make installlib && make installheader
-
-Since the libraries will be installed in /usr/local/samba/lib, ldconfig needs
-to know about it. On Linux, make sure this directory is listed in /etc/ld.so.conf 
-and run 'ldconfig -v'. On FreeBSD, add this directory to the line 'ldconfig_paths'
-in /etc/rc.conf and then run 'ldconfig -rv'.
+Since the libraries will be installed in /usr/local/samba/lib,
+ldconfig needs to know about it. On Linux, make sure this directory is
+listed in /etc/ld.so.conf and run 'ldconfig -v'. On FreeBSD, add this
+directory to the line 'ldconfig_paths' in /etc/rc.conf and then run
+'ldconfig -rv'.
 
 Similarly, you need to have /usr/local/samba/bin in your PATH for the
-pidl binary. This is also where OpenChange installs its binaries. Eg, if your shell
-is bash:
+pidl binary. This is also where OpenChange installs its binaries. Eg,
+if your shell is bash:
 
 $ export PATH=$PATH:/usr/local/samba/bin
 
@@ -154,40 +152,58 @@ $ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/otherplace/samba/lib/pkgconfig
 
 pkg-config >= 0.20 is required.
 
-[*] Install pidl from Samba4 source directory:
+[*] If you didn't use the installsamba4.sh script, you will need to
+    install pidl from Samba4 source directory: 
+
 # cd pidl && perl Makefile.PL && make && make install
 
-CAUTION: if you update Samba (using svn up, no matter whether you used rsync or svn
-to fetch the original tree) then you may have compilation errors in OpenChange if you 
-are still running an out-of-date pidl. To be safe, you should always rebuild and reinstall
+######################################################################
+CAUTION: if you update Samba (using git-pull) then you may have
+compilation errors in OpenChange if you are still running an
+out-of-date pidl. To be safe, you should always rebuild and reinstall
 Samba and pidl together.
+######################################################################
 
 
 [0x2b] Requirements
 ===================
 
-OpenChange has only these dependencies in addition to Samba4's requirements:
+OpenChange has only these dependencies in addition to Samba4's
+requirements:
 
 * automake (autogen will fail with 'autogen.sh: aclocal not found')
-* libmagic (with development headers, to compile exchange2mbox)
 * flex
 * libpopt
 
-Samba4 can *use* some of the above, and will tell you in the 'configure' summary 
-that some of them have not been found, however it does not *require* them.
+Samba4 can *use* some of the above, and will tell you in the
+'configure' summary that some of them have not been found, however it
+does not *require* them.
 
+OpenChange also includes a new build system which will gathers
+dependencies on your system and only build what can be compiled with
+your current system. If your system doesn't meet the requirements for
+a particular tool or library, you will need to install missing
+dependencies check below for the list of dependencies you need to
+install:
 
-Before attempting the OpenChange build, install libmagic using your
-operating system's package mangement tools, for example with
-Debian/Ubuntu:
+	* libmagic (with development headers): exchange2mbox. For
+          example:
+		# apt-get install libmagic-dev   (Debian, Ubuntu)
+		# pkg_add libmagic               (BSD)
 
-# apt-get install libmagic-dev   (Debian, Ubuntu)
-# pkg_add libmagic               (BSD)
+	* bison: libocpf, openchangeclient
+
+	* dcerpc_samr (samba4 installation): libmapiadmin and
+          openchangepfadmin
+
+	* doxygen: build the documentation
+
 
 Similarly for the others:
 
-# apt-get install automake flex libpopt    or
-# pkg_add automake flex libpopt
+# apt-get install automake flex bison libpopt    or
+# pkg_add automake flex bison libpopt
+
 
 [0x2c] OpenChange libmapi installation
 ======================================
@@ -239,7 +255,6 @@ $ mapiprofile --database=/tmp/profiles.ldb	\
 	      --profile=testuser-2000		\
 	      --username=testuser		\
 	      --password=openchange		\
-	      --workstation=LOCALHOST		\
 	      --domain=OPENCHANGE		\
 	      -I 192.168.194.22			\
 	      --create
@@ -250,7 +265,6 @@ You need to specify:
     - the profile name you want to create
     - the username/password couple mapiprofile will use to connect to
       the Exchange server (you might want to use Administrator, on a test server)
-    - your computer name. This can be any value for testing.
     - the Windows domain your Exchange server belongs to
     - the IP address of the Exchange server (this must be real. Change the example!)
     - the create operation

@@ -82,7 +82,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	TALLOC_CTX		*mem_ctx;
 	struct nspi_context	*nspi;
 	struct SPropTagArray	*SPropTagArray;
-	struct SRowSet		rowset;
+	struct SRowSet		*rowset;
 	struct SPropValue	*lpProp;
 	const char		*profname = lp_parm_string(global_loadparm, NULL, "mapi", 
 							   "profile");
@@ -164,11 +164,12 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 					  PR_INSTANCE_KEY,
 					  PR_EMAIL_ADDRESS
 					  );
+	rowset = talloc_zero(nspi->mem_ctx, struct SRowSet);
 	retval = nspi_GetMatches(nspi, SPropTagArray, &rowset, NULL);
 	mapi_errstr("NspiGetMatches", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	lpProp = get_SPropValue_SRowSet(&rowset, PR_INSTANCE_KEY);
+	lpProp = get_SPropValue_SRowSet(rowset, PR_INSTANCE_KEY);
 	if (lpProp) {
 		struct SBinary bin;
 
@@ -178,7 +179,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 		nspi->profile_instance_key = 0;
 	}
 
-	lpProp = get_SPropValue_SRowSet(&rowset, PR_EMAIL_ADDRESS);
+	lpProp = get_SPropValue_SRowSet(rowset, PR_EMAIL_ADDRESS);
 	if (lpProp) {
 		DEBUG(3, ("PR_EMAIL_ADDRESS: %s\n", lpProp->value.lpszA));
 		nspi->org = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG);
@@ -188,10 +189,10 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	}
 
 	if (profname) {
-		set_profile_attribute(profname, rowset, PR_EMAIL_ADDRESS, "EmailAddress");
-		set_profile_attribute(profname, rowset, PR_DISPLAY_NAME, "DisplayName");
-		set_profile_attribute(profname, rowset, PR_ACCOUNT, "Account");
-		set_profile_attribute(profname, rowset, PR_ADDRTYPE, "AddrType");
+		set_profile_attribute(profname, *rowset, PR_EMAIL_ADDRESS, "EmailAddress");
+		set_profile_attribute(profname, *rowset, PR_DISPLAY_NAME, "DisplayName");
+		set_profile_attribute(profname, *rowset, PR_ACCOUNT, "Account");
+		set_profile_attribute(profname, *rowset, PR_ADDRTYPE, "AddrType");
 		retval = mapi_profile_add_string_attr(profname, "Organization", nspi->org);
 		retval = mapi_profile_add_string_attr(profname, "OrganizationUnit", nspi->org_unit);
 	}
@@ -213,13 +214,13 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	mapi_errstr("NspiQueryRows", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	lpProp = get_SPropValue_SRowSet(&rowset, PR_EMS_AB_HOME_MDB);
+	lpProp = get_SPropValue_SRowSet(rowset, PR_EMS_AB_HOME_MDB);
 	if (lpProp) {
 		nspi->servername = x500_get_servername(lpProp->value.lpszA);
 		if (profname) {
 			mapi_profile_add_string_attr(profname, "ServerName", nspi->servername);
-			set_profile_attribute(profname, rowset, PR_EMS_AB_HOME_MDB, "HomeMDB");
-			set_profile_mvstr_attribute(profname, rowset, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
+			set_profile_attribute(profname, *rowset, PR_EMS_AB_HOME_MDB, "HomeMDB");
+			set_profile_mvstr_attribute(profname, *rowset, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
 		}
 	} else {
 		printf("Unable to find the server name\n");
@@ -238,7 +239,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (profname) {
-		set_profile_mvstr_attribute(profname, rowset, PR_EMS_AB_NETWORK_ADDRESS, "NetworkAddress");
+		set_profile_mvstr_attribute(profname, *rowset, PR_EMS_AB_NETWORK_ADDRESS, "NetworkAddress");
 	}
 
 	retval = nspi_unbind(nspi);

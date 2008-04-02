@@ -2342,7 +2342,6 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx, struct oclient *oclie
 	do {
 		count += 0x2;
 		retval = GetGALTable(SPropTagArray, &SRowSet, count, ulFlags);
-		printf("SRoSet->cRows = %d\n", SRowSet->cRows);
 		if (SRowSet->cRows) {
 			for (i = 0; i < SRowSet->cRows; i++) {
 				mapidump_PAB_entry(&SRowSet->aRow[i]);

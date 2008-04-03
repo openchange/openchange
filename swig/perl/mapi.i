@@ -127,4 +127,4 @@ extern uint32_t		GetPropsAll(mapi_object_t *obj, struct mapi_SPropValue_array *m
 
 extern void		mapidump_SPropTagArray(struct SPropTagArray *lpProps);
 extern void		mapidump_SRowSet(struct SRowSet *SRowSet, const char *sep);
-extern void		mapidump_message(struct mapi_SPropValue_array *mlpProps);
+extern void		mapidump_message(struct mapi_SPropValue_array *mlpProps, char *);

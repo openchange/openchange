@@ -117,7 +117,7 @@ sub mapi_fetchmail()
 		my $props = new_mapi_SPropValue_array();
 		
 		$retval = GetPropsAll($obj_message, $props);
-		mapidump_message($props);
+		mapidump_message($props, "");
 		delete_mapi_object($obj_message);
 	    }
 	}

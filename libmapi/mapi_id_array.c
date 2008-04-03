@@ -28,7 +28,7 @@
 
 
 /**
-   details Initialize a mapi_id_array structure
+   \details Initialize a mapi_id_array structure
 
    \param id pointer to a mapi_id_array structure
 
@@ -41,7 +41,7 @@
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   /sa mapi_id_array_release
+   \sa mapi_id_array_release
  */
 _PUBLIC_ enum MAPISTATUS mapi_id_array_init(mapi_id_array_t *id)
 {

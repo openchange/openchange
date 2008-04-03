@@ -58,12 +58,8 @@ NTSTATUS init_module(void)
 	torture_suite_add_simple_test(suite, "MAPI-ACLS", torture_rpc_mapi_permissions);
 	torture_suite_add_simple_test(suite, "MAPI-RESTRICTIONS", torture_rpc_mapi_restrictions);
 	torture_suite_add_simple_test(suite, "MAPI-CRITERIA", torture_rpc_mapi_criteria);
-	torture_suite_add_simple_test(suite, "MAPI-TABLE", torture_rpc_mapi_table);
 	torture_suite_add_simple_test(suite, "MAPI-SORTTABLE", torture_rpc_mapi_sorttable);
 	torture_suite_add_simple_test(suite, "MAPI-BOOKMARK", torture_rpc_mapi_bookmark);
-	torture_suite_add_simple_test(suite, "MAPI-FOLDER", torture_rpc_mapi_folder);
-	torture_suite_add_simple_test(suite, "MAPI-PROP", torture_rpc_mapi_prop);
-	torture_suite_add_simple_test(suite, "MAPI-MESSAGE", torture_rpc_mapi_message);
 	torture_suite_add_simple_test(suite, "MAPI-RECIPIENT", torture_rpc_mapi_recipient);
 	torture_suite_add_simple_test(suite, "MAPI-NAMEDPROPS", torture_rpc_mapi_namedprops);
 	/* MAPI Fuzzer torture tests */

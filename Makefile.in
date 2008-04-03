@@ -554,7 +554,7 @@ torture-uninstall:
 
 torture-clean:
 	rm -f torture/*.$(SHLIBEXT)
-	rm -f torture/torture/proto.h
+	rm -f torture/torture_proto.h
 	rm -f torture/*.{o,po}
 
 torture/openchange.$(SHLIBEXT):			\
@@ -563,12 +563,8 @@ torture/openchange.$(SHLIBEXT):			\
 	torture/mapi_restrictions.po		\
 	torture/mapi_criteria.po		\
 	torture/mapi_copymail.po		\
-	torture/mapi_prop.po			\
-	torture/mapi_folder.po			\
-	torture/mapi_table.po			\
 	torture/mapi_sorttable.po		\
 	torture/mapi_bookmark.po		\
-	torture/mapi_message.po			\
 	torture/mapi_fetchmail.po		\
 	torture/mapi_sendmail.po		\
 	torture/mapi_sendmail_html.po		\
@@ -600,13 +596,9 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 	torture/mapi_newmail.c		\
 	torture/mapi_fetchmail.c	\
 	torture/mapi_sendattach.c 	\
-	torture/mapi_folder.c		\
-	torture/mapi_table.c		\
 	torture/mapi_sorttable.c	\
 	torture/mapi_bookmark.c		\
 	torture/mapi_copymail.c		\
-	torture/mapi_prop.c		\
-	torture/mapi_message.c		\
 	torture/mapi_fetchattach.c	\
 	torture/mapi_sendmail.c		\
 	torture/mapi_sendmail_html.c	\

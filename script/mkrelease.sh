@@ -1,13 +1,21 @@
 #!/bin/sh
 
+#
+# ./script/mkrelease.sh VERSION NICKNAME FIRST_REVISION
+# ./script/mkrelease.sh 0.7 PHASER 308
+#
+
 TMPDIR=`mktemp libmapi-XXXXX`
 rm $TMPDIR || exit 1
 svn export . $TMPDIR || exit 1
+svn log -r$3:HEAD > $TMPDIR/CHANGELOG || exit 1
 
 ( cd $TMPDIR/
  ./autogen.sh || exit 1
  ./configure || exit 1
- make realdistclean  || exit 1
+ make doxygen || exit 1
+ make distclean  || exit 1
+ rm .bzrignore
 ) || exit 1
 
 VERSION=$1-$2

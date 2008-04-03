@@ -26,4 +26,4 @@ OPENCHANGE_VERSION_IS_SVN_SNAPSHOT=yes
 # e.g. OPENCHANGE_VERSION_RELEASE_NICKNAME=Nicky Nickname   #
 #  ->  "0.7 (Nicky Nickname)"                               #
 #############################################################
-OPENCHANGE_VERSION_RELEASE_NICKNAME=Phaser
+OPENCHANGE_VERSION_RELEASE_NICKNAME=Romulus

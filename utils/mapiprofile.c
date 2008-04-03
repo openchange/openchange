@@ -144,9 +144,9 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 		   a string name (like "English_Australian" to a language code
 		   ID string (like "0x0c09")
 		*/
-		lcid = talloc_asprintf(mem_ctx, "0x%04x", lang2lcid(lcid));
+		lcid = talloc_asprintf(mem_ctx, "0x%04x", lcid_lang2lcid(lcid));
 	}
-	if (!valid_locale(strtoul(lcid, 0, 16))) {
+	if (!lcid_valid_locale(strtoul(lcid, 0, 16))) {
 		lcid = DEFAULT_LCID;
 		printf("Language code not recognised, using default (%s) instead\n", lcid);
 	}
@@ -551,7 +551,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (listlangs == true) {
-		print_languages();
+		lcid_print_languages();
 	}
 
 	if (setdflt == true) {

@@ -315,7 +315,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/emsmdb.po				\
 	libmapi/nspi.po 				\
 	libmapi/simple_mapi.po				\
-	libmapi/util/locale.po 				\
+	libmapi/util/lcid.po 				\
 	libmapi/util/codepage.po			\
 	libmapi/x500.po 				\
 	ndr_mapi.po					\
@@ -367,7 +367,7 @@ libmapi/proto.h libmapi/proto_private.h:		\
 	libmapi/x500.c 					\
 	libmapi/lzfu.c					\
 	libmapi/utils.c 				\
-	libmapi/util/locale.c 				\
+	libmapi/util/lcid.c 				\
 	libmapi/util/codepage.c 			\
 	libmapi/socket/interface.c			\
 	libmapi/socket/netif.c		

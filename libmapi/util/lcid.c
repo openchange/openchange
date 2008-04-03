@@ -213,7 +213,7 @@ static const struct locale_struct locales[] =
   Print locale_id information for a given Language
 */
 
-bool get_locales(const char *lang)
+_PUBLIC_ bool lcid_get_locales(const char *lang)
 {
 	int idx = 0;
 	
@@ -237,7 +237,7 @@ bool get_locales(const char *lang)
   Check if the locale provided exists
 */
 
-bool valid_locale(uint32_t locale)
+_PUBLIC_ bool lcid_valid_locale(uint32_t locale)
 {
 	int idx = 0;
 
@@ -253,7 +253,7 @@ bool valid_locale(uint32_t locale)
   Print locale information for a given locale id
  */
 
-bool print_locale(uint32_t locale)
+_PUBLIC_ bool lcid_print_locale(uint32_t locale)
 {
 	int idx = 0;
 	int i = 0;
@@ -279,7 +279,7 @@ bool print_locale(uint32_t locale)
 /*
   Print all languages
 */
-void print_languages(void)
+_PUBLIC_ void lcid_print_languages(void)
 {
 	int idx = 0;
 
@@ -293,7 +293,7 @@ void print_languages(void)
   Convert language name (as a string) to an integer language code
  */
 
-uint32_t lang2lcid(const char *name)
+_PUBLIC_ uint32_t lcid_lang2lcid(const char *name)
 {
 	int idx = 0;
 
@@ -315,7 +315,7 @@ uint32_t lang2lcid(const char *name)
   Print language groups
  */
 
-void print_group(void)
+_PUBLIC_ void lcid_print_group(void)
 {
 	int idx = 1;
 
@@ -329,7 +329,7 @@ void print_group(void)
   Print languages associated to a single language group
  */
 
-bool print_groupmember(uint32_t group)
+_PUBLIC_ bool lcid_print_groupmember(uint32_t group)
 {
 	uint32_t idx = 0;
 
@@ -352,7 +352,7 @@ bool print_groupmember(uint32_t group)
   Convert language group from string to integer
  */
 
-uint32_t lang2nb(const char *name)
+_PUBLIC_ uint32_t lcid_lang2nb(const char *name)
 {
 	int idx = 0;
 

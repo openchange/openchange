@@ -39,17 +39,17 @@ static void process_one(const char *name)
 {
 	if (options.group) {
 		printf("Language groups:\n");
-		print_group();
+		lcid_print_group();
 	}
 
 	if (options.locale_id) {
-		if (print_locale(options.locale_id) == false) {
+		if (lcid_print_locale(options.locale_id) == false) {
 			DEBUG(0, ("Unknown locale id in the locale database (%s)\n", name));
 		}
 			
 	}
 	if (options.language_group) {
-		if (print_groupmember(lang2nb(options.language_group)) == false) {
+		if (lcid_print_groupmember(lcid_lang2nb(options.language_group)) == false) {
 			DEBUG(0, ("(%s)\n", name));
 			exit (1);
 		}
@@ -63,7 +63,7 @@ static void process_one(const char *name)
 	}
 	if (options.language_info) {
 		printf("######### BEGIN: (copy and paste into smb.conf) #########\n");
-		if (get_locales(options.language_info) == false) {
+		if (lcid_get_locales(options.language_info) == false) {
 			DEBUG(0, ("Invalid language (%s)\n", name));
 			exit (1);
 		}

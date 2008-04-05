@@ -22,7 +22,6 @@
 #include <libmapi/libmapi.h>
 #include <samba/popt.h>
 #include <param.h>
-#include <param/proto.h>
 
 #include <utils/openchange-tools.h>
 #include <utils/mapitest/mapitest.h>

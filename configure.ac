@@ -30,40 +30,29 @@ if test "x$1_set" != "xset"; then
 		OC_$2+=" $1"
    		OC_$2_INSTALL+=" $1-install"
    		OC_$2_UNINSTALL+=" $1-uninstall"
-   		OC_$2_CLEAN+=" $1-clean"
    		OC_$2_INSTALLPC+=" $1-installpc"
    		OC_$2_INSTALLHEADER+=" $1-installheader"
    		OC_$2_INSTALLLIB+=" $1-installlib"
-   		OC_$2_DISTCLEAN+=" $1-distclean"
-   		OC_$2_REALDISTCLEAN+=" $1-realdistclean"
 
 		AC_SUBST(OC_$2_INSTALLPC)
 		AC_SUBST(OC_$2_INSTALLHEADER)
 		AC_SUBST(OC_$2_INSTALLLIB)
-		AC_SUBST(OC_$2_DISTCLEAN)
-		AC_SUBST(OC_$2_REALDISTCLEAN)
 	;;
 	TOOLS|TORTURE)
 		OC_$2+=" $1"
 		OC_$2_INSTALL+=" $1-install"
    		OC_$2_UNINSTALL+=" $1-uninstall"
-   		OC_$2_CLEAN+=" $1-clean"
 	;;
 	SERVER)
 		OC_$2+=" $1"
 		OC_$2_INSTALL+=" $1-install"
    		OC_$2_UNINSTALL+=" $1-uninstall"
-   		OC_$2_CLEAN+=" $1-clean"
-		OC_$2_REALDISTCLEAN=" $1-realdistclean"
-
-		AC_SUBST(OC_$2_REALDISTCLEAN)
 	;;
    esac
 
    AC_SUBST(OC_$2)
    AC_SUBST(OC_$2_INSTALL)
    AC_SUBST(OC_$2_UNINSTALL)
-   AC_SUBST(OC_$2_CLEAN)
 
    enable_$1="yes"
 
@@ -131,21 +120,23 @@ fi
 
 INCDIR=$prefix/include
 
-AC_CHECK_FILE($INCDIR/samba/version.h,,AC_MSG_ERROR([Could not find Samba4 headers. Re-run ./configure with --prefix=XXX where XXX is the same prefix that Samba4 was configured with.]))
+AC_CHECK_FILE($INCDIR/samba/version.h,,AC_MSG_ERROR([Could not find Samba4 headers. Re-run ./configure with --prefix=XXX where
+ XXX is the same prefix that Samba4 was configured with.]))
 
 SAMBA_VERSION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_STRING | grep -v define | cut -d"=" -f2`
 
-if test "$SAMBA_VERSION" != "4.0.0alpha3-GIT-41309dc" ; then
+if test "$SAMBA_VERSION" != "4.0.0alpha4-GIT-7fccd85" ; then
    AC_MSG_WARN([The Samba4 version installed on your system doesn't meet OpenChange requirements.])
-   AC_MSG_ERROR([Please install Samba4 GIT revision 41309dc])
+   AC_MSG_ERROR([Please install Samba4 GIT revision 7fccd85])
 fi
+
 
 dnl ---------------------------------------------------------------------------
 dnl Samba4 modules: talloc, dcerpc, ndr, samba-config, ldb
 dnl ---------------------------------------------------------------------------
 PKG_PROG_PKG_CONFIG([0.20])
 PKG_CHECK_MODULES(TALLOC, talloc)
-PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-config)
+PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig)
 PKG_CHECK_MODULES(LDB, ldb)
 
 dnl ---------------------------------------------------------------------------
@@ -253,7 +244,7 @@ fi
 dnl ##########################################################################
 dnl torture dependencies
 dnl ##########################################################################
-AC_PATH_PROG([SMBTORTURE], [smbtorture], no, "$prefix/bin")
+AC_PATH_PROG([SMBTORTURE], [smbtorture], no)
 
 if test x"$SMBTORTURE" != x""; then
    	TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`
@@ -286,9 +277,6 @@ if test "x${enable_perlswig}" = xyes; then
    SWIGDIRSALL+="swigperl-all"
    SWIGDIRSINSTALL+="swigperl-install"
    SWIGDIRSUNINSTALL+="swigperl-uninstall"
-   SWIGDIRSCLEAN+="swigperl-clean"
-   SWIGDIRSDISTCLEAN+="swigperl-distclean"
-   SWIGDIRSREALDISTCLEAN+="swigperl-realdistclean"
 fi
 
 PERL5DIR=`$PERL -e 'use Config; my $dir = $Config{sitelib}; print $dir'`
@@ -297,9 +285,6 @@ AC_SUBST(PERL5DIR)
 AC_SUBST(SWIGDIRSALL)
 AC_SUBST(SWIGDIRSINSTALL)
 AC_SUBST(SWIGDIRSUNINSTALL)
-AC_SUBST(SWIGDIRSCLEAN)
-AC_SUBST(SWIGDIRSDISTCLEAN)
-AC_SUBST(SWIGDIRSREALDISTCLEAN)
 
 
 
@@ -320,7 +305,7 @@ fi
 dnl ***********************
 dnl Makefiles 
 dnl ***********************
-AC_CONFIG_FILES([Makefile swig/perl/Makefile libmapi.pc libmapiadmin.pc 
+AC_CONFIG_FILES([config.mk swig/perl/Makefile libmapi.pc libmapiadmin.pc 
 		 libocpf.pc Doxyfile libmapi/Doxyfile libocpf/Doxyfile])
 AC_OUTPUT
 

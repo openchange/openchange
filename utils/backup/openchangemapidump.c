@@ -23,7 +23,6 @@
 #include <libmapi/libmapi.h>
 #include <samba/popt.h>
 #include <param.h>
-#include <param/proto.h>
 
 #include "openchangebackup.h"
 

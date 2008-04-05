@@ -20,7 +20,7 @@
 #include <libmapi/libmapi.h>
 #include <samba/popt.h>
 #include <torture/mapi_torture.h>
-#include <torture/torture.h>
+#include <torture.h>
 #include <torture/torture_proto.h>
 
 NTSTATUS ndr_table_init(void);

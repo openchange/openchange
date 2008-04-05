@@ -34,11 +34,11 @@
 #include <ldb_wrap.h>
 #include <util_ldb.h>
 #include <ldap.h>
-#include <ldb/ldap_ndr.h>
+#include <ldap_ndr.h>
 
 #include <core/error.h>
-#include <dcerpc/ndr_samr.h>
-#include <dcerpc/ndr_samr_c.h>
+#include <gen_ndr/ndr_samr.h>
+#include <gen_ndr/ndr_samr_c.h>
 
 #include <time.h>
 

@@ -97,16 +97,11 @@ Samba4 had most bugs fixed years ago :-)
     Note that the script relies on sudo for "make install" operations
     and requires your account to be in the sudoers file.
 
-    You can either run:
+    Run the following command:
 
-$ ./script/installsamba4.sh all
 
-    Or run each rules independently:
+$ make samba4
 
-$ ./script/installsamba4.sh checkout
-$ ./script/installsamba4.sh packages
-$ ./script/installsamba4.sh compile
-$ ./script/installsamba4.sh install
 
 This should give you the libraries, headers and tools you need to
 compile OpenChange. It is rare that you will need to update Samba,
@@ -151,18 +146,6 @@ $ export PATH=$PATH:/opt/otherplace/samba
 $ export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/opt/otherplace/samba/lib/pkgconfig
 
 pkg-config >= 0.20 is required.
-
-[*] If you didn't use the installsamba4.sh script, you will need to
-    install pidl from Samba4 source directory: 
-
-# cd pidl && perl Makefile.PL && make && make install
-
-######################################################################
-CAUTION: if you update Samba (using git-pull) then you may have
-compilation errors in OpenChange if you are still running an
-out-of-date pidl. To be safe, you should always rebuild and reinstall
-Samba and pidl together.
-######################################################################
 
 
 [0x2b] Requirements

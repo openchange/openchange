@@ -24,12 +24,11 @@
 #include <libmapi/libmapi.h>
 
 #include <dcerpc_server.h>
-#include <dcerpc_server/common.h>
 
 #include <util.h>
 #include <param.h>
 
-#include <gen_ndr/ndr_exchange.h>
+#include "gen_ndr/ndr_exchange.h"
 #include "server/dcesrv_exchange.h"
 #include "providers/emsabp.h"
 #include "providers/providers_proto.h"

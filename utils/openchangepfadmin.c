@@ -23,7 +23,6 @@
 #include <libmapiadmin/libmapiadmin.h>
 #include <samba/popt.h>
 #include <param.h>
-#include <param/proto.h>
 
 #include "openchangepfadmin.h"
 

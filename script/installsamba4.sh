@@ -1,6 +1,11 @@
 #!/bin/sh
 
 #
+# VARS
+#
+GITREV="7fccd85"
+
+#
 # Error check
 #
 function error_check() {
@@ -13,11 +18,54 @@ function error_check() {
     fi
 }
 
+function delete_install() {
+
+    # cleanup existing existing samba4 installation
+    if test -d /usr/local/samba; then
+	echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+	echo "A previous samba4 installation has been detected"
+	echo "It is highly recommended to delete it prior compiling Samba4"
+	echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+	echo ""
+	echo -n "Proceed? [Yn]: "
+	read answer
+	case "$answer" in
+	    Y|y|yes)
+		echo "Step0: Removing previous samba4 installation"
+		sudo rm -rf /usr/local/samba
+		;;
+	    N|n|no)
+		echo "Step0: Keep previous samba4 installation"
+		;;
+	esac
+    fi
+
+    # cleanup existing talloc installation
+    if test -f samba4/source/lib/talloc/Makefile; then
+	echo "Step0: cleaning up talloc directory"
+	OLD_PWD=$PWD
+	cd samba4/source/lib/talloc
+	make realdistclean
+	rm -rf ../replace/*.{o,ho}
+	cd $OLD_PWD
+    fi
+
+    # cleanup existing tdb installation
+    if test -f samba/source/lib/tdb/Makefile; then
+	echo "Step0: cleaning up tdb directory"
+	OLD_PWD=$PWD
+	cd samba4/source/lib/tdb
+	make realdistclean
+	rm -rf ../replace/*.{o,ho}
+	cd $OLD_PWD
+    fi
+}
+
 #
 # Checkout Samba4
 #
 function checkout() {
-    OLDPWD=$PWD
+    OLD_PWD=$PWD
 
     GITPATH=`whereis -b git`
 
@@ -36,11 +84,11 @@ function checkout() {
     git checkout -b openchange origin/v4-0-test
     error_check $? "Step2"
 
-    echo "Step3: Revert to commit 41309dc"
-    git reset --hard 41309dc
+    echo "Step3: Revert to commit $GITREV"
+    git reset --hard $GITREV
     error_check $? "Step3"
 
-    cd $OLDPWD
+    cd $OLD_PWD
     return $?
 }
 
@@ -49,10 +97,15 @@ function checkout() {
 # talloc, tdb
 #
 function packages() {
-    OLDPWD=$PWD
+    OLD_PWD=$PWD
+
+    delete_install
 
     echo "Step1: Installing talloc library"
     cd samba4/source/lib/talloc
+    error_check $? "Step1"
+
+    rm -rf ../replace/*.{o,ho}
     error_check $? "Step1"
 
     ./autogen.sh
@@ -73,16 +126,13 @@ function packages() {
     rm -rf ../replace/*.{o,ho}
     error_check $? "Step1"
 
-    cd $OLDPWD
+    cd $OLD_PWD
 
     echo "Step2: Installing tdb library"
 
     cd samba4/source/lib/tdb
     error_check $? "Step2"
 
-    sed -i 's/install-python/installpython/g' configure.ac
-    error_check $? "Step2"
-
     ./autogen.sh
     error_check $? "Step2"
 
@@ -101,7 +151,7 @@ function packages() {
     rm -rf ../replace/*.{o,ho}
     error_check $? "Step2"
 
-    cd $OLDPWD
+    cd $OLD_PWD
 }
 
 #
@@ -109,7 +159,7 @@ function packages() {
 #
 function compile() {
 
-    OLDPWD=$PWD
+    OLD_PWD=$PWD
 
     PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/samba/lib/pkgconfig
 
@@ -127,18 +177,7 @@ function compile() {
     make
     error_check $? "Step2"
 
-
-
-    echo "Step3: Preparing PIDL installation"
-    cd pidl
-
-    perl Makefile.PL
-    error_check $? "Step3"
-
-    make
-    error_check $? "Step3"
-
-    cd $OLDPWD
+    cd $OLD_PWD
 }
 
 
@@ -147,21 +186,17 @@ function compile() {
 #
 function install() {
 
-    OLDPWD=$PWD
+    OLD_PWD=$PWD
 
     echo "Step1: Installing Samba"
+    echo "===> we are in $PWD"
     cd samba4/source
     error_check $? "Step1"
 
     sudo make install
     error_check $? "Step1"
 
-    echo "Step2: Installing PIDL"
-    cd pidl
-    sudo make install
-    error_check $? "Step2"
-
-    cd $OLDPWD
+    cd $OLD_PWD
 }
 
 

@@ -33,17 +33,17 @@
 #include <param.h>
 #include <credentials.h>
 #include <torture/mapi_torture.h>
-#include <torture/torture.h>
+#include <torture.h>
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <ldb_wrap.h>
-#include <ldb/ldap_ndr.h>
+#include <ldap_ndr.h>
 #include <util_ldb.h>
 #include <ldap.h>
-#include <dcerpc/ndr_samr.h>
-#include <dcerpc/ndr_samr_c.h>
+#include <gen_ndr/ndr_samr.h>
+#include <gen_ndr/ndr_samr_c.h>
 #include <time.h>
 #include <core/error.h>
 

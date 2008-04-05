@@ -251,7 +251,7 @@ System Attendant Private Interface
  		[in][size_is(ikey_cnt)][unique]	uint32		*instance_key,
 		[in]				uint32		lRows,
 		[in]				SPropTagArray	*REQ_properties,
-		[out]				SRowSet		**RowSet
+		[out,ref]      			SRowSet		**RowSet
 		);
 
 	void NspiSeekEntries();
@@ -311,7 +311,7 @@ System Attendant Private Interface
 		[in]		uint32		unknown3,
 		[out]		instance_key	*instance_key,
 		[in][unique]	SPropTagArray	*REQ_properties,
-		[out]		SRowSet		**RowSet
+		[out,ref]      	SRowSet		**RowSet
 		);
 
 

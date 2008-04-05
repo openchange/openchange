@@ -23,7 +23,6 @@
 #include <samba/popt.h>
 #include <samba/version.h>
 #include <param.h>
-#include <param/proto.h>
 
 #include <time.h>
 

@@ -1,89 +1,23 @@
 # Makefile for OpenChange
 # Written by Jelmer Vernooij <jelmer@samba.org>, 2005.
 
-# Binary
-CC=@CC@
-BISON=@BISON@
-FLEX=@FLEX@
-PIDL=@PIDL@
-PERL=@PERL@
-DOXYGEN=@DOXYGEN@
-INSTALL=@INSTALL@
-SMBTORTURE=@SMBTORTURE@
+default: all
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-bindir=@bindir@
-libdir=@libdir@
-datarootdir=@datarootdir@
-datadir=@datadir@
-includedir=@includedir@
-mandir=@mandir@
-top_builddir=${PWD}
+config.mk swig/perl/Makefile: config.status config.mk.in swig/perl/Makefile.in
+	./config.status
 
-DSOOPT=-shared -fPIC
-CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 \
-	   -DDEFAULT_LDIF=\"$(datadir)/setup\" 
+config.status: configure
+	./configure
 
-# This value should be determined by configure at some point
-SHLIBEXT=so
-PACKAGE_VERSION=@PACKAGE_VERSION@
-SO_VERSION=0
+configure: configure.ac
+	autoconf -f
 
-# Portability hack...
-CFLAGS+=-Duint_t="unsigned int" 
+samba4: 
+	./script/installsamba4.sh all
 
-CFLAGS+=@SAMBA_CFLAGS@ @LDB_CFLAGS@ @TALLOC_CFLAGS@
-LIBS+=@SAMBA_LIBS@ @LDB_LIBS@ @TALLOC_LIBS@
-
-# OPENCHANGE LIBRARIES
-OC_IDL=@OC_IDL@
-OC_LIBS=@OC_LIBS@
-OC_LIBS_INSTALL=@OC_LIBS_INSTALL@
-OC_LIBS_UNINSTALL=@OC_LIBS_UNINSTALL@
-OC_LIBS_INSTALLPC=@OC_LIBS_INSTALLPC@
-OC_LIBS_INSTALLHEADER=@OC_LIBS_INSTALLHEADER@
-OC_LIBS_INSTALLLIB=@OC_LIBS_INSTALLLIB@
-OC_LIBS_CLEAN=@OC_LIBS_CLEAN@
-OC_LIBS_DISTCLEAN=@OC_LIBS_DISTCLEAN@
-OC_LIBS_REALDISTCLEAN=@OC_LIBS_REALDISTCLEAN@
-LIBMAPIADMIN_LIBS+=@SAMR_LIBS@
-LIBMAPIADMIN_CFLAGS=@SAMR_CFLAGS@
-
-
-# TORTURE
-OC_TORTURE=@OC_TORTURE@
-OC_TORTURE_INSTALL=@OC_TORTURE_INSTALL@
-OC_TORTURE_UNINSTALL=@OC_TORTURE_UNINSTALL@
-OC_TORTURE_CLEAN=@OC_TORTURE_CLEAN@
-TORTURE_MODULESDIR=@TORTURE_MODULESDIR@
-SERVER_MODULESDIR=${prefix}/modules/dcerpc_server
-
-
-# TOOLS
-OC_TOOLS=@OC_TOOLS@
-OC_TOOLS_INSTALL=@OC_TOOLS_INSTALL@
-OC_TOOLS_UNINSTALL=@OC_TOOLS_UNINSTALL@
-OC_TOOLS_CLEAN=@OC_TOOLS_CLEAN@
-MAGIC_LIBS=@MAGIC_LIBS@
-
-
-# SERVER
-OC_SERVER=@OC_SERVER@
-OC_SERVER_INSTALL=@OC_SERVER_INSTALL@
-OC_SERVER_UNINSTALL=@OC_SERVER_UNINSTALL@
-OC_SERVER_CLEAN=@OC_SERVER_CLEAN@
-OC_SERVER_REALDISTCLEAN=@OC_SERVER_REALDISTCLEAN@
-
-
-# SWIG
-SWIGDIRS-ALL=@SWIGDIRSALL@
-SWIGDIRS-INSTALL=@SWIGDIRSINSTALL@
-SWIGDIRS-UNINSTALL=@SWIGDIRSUNINSTALL@
-SWIGDIRS-CLEAN=@SWIGDIRSCLEAN@
-SWIGDIRS-DISTCLEAN=@SWIGDIRSDISTCLEAN@
-SWIGDIRS-REALDISTCLEAN=@SWIGDIRSREALDISTCLEAN@
-
+ifneq ($(MAKECMDGOALS), samba4)
+include config.mk
+endif
 
 #################################################################
 # top level compilation rules
@@ -115,19 +49,19 @@ uninstall: 	$(OC_LIBS_UNINSTALL) 	\
 		$(OC_TORTURE_UNINSTALL) \
 		$(SWIGDIRS-UNINSTALL)
 
-distclean: clean $(OC_LIBS_DISTCLEAN) $(SWIGDIRS-DISTCLEAN)
+distclean:: clean
 	rm -rf autom4te.cache
 	rm -f Doxyfile
 	rm -f libmapi/Doxyfile
 	rm -f libocpf/Doxyfile
-	rm -f Makefile config.status config.log
+	rm -f config.status config.log config.mk
 	rm -f intltool-extract intltool-merge intltool-update
 
-realdistclean: distclean $(OC_LIBS_REALDISTCLEAN) $(OC_SERVER_REALDISTCLEAN) $(SWIGDIRS-REALDISTCLEAN)
+realdistclean:: distclean
 	rm -rf apidocs
 	rm -rf gen_ndr
 
-clean:	$(OC_LIBS_CLEAN) $(OC_TOOLS_CLEAN) $(OC_SERVER_CLEAN) $(OC_TORTURE_CLEAN) $(SWIGDIRS-CLEAN)
+clean::
 	rm -f *~
 	rm -f */*~
 	rm -f */*/*~
@@ -189,6 +123,8 @@ gen_ndr/ndr_%_s.c: %.idl
 # libmapi compilation rules
 #################################################################
 
+LIBMAPI_SO_VERSION = 0
+
 libmapi:	idl					\
 		libmapi/version.h			\
 		libmapi/proto.h				\
@@ -204,7 +140,7 @@ libmapi-uninstall:	libmapi-uninstallpc	\
 			libmapi-uninstallheader	\
 			libmapi-uninstallscript
 
-libmapi-clean:
+clean::
 	rm -f libmapi/*.{o,po}
 	rm -f libmapi/utf8_convert.yy.c
 	rm -f libmapi/tests/*.{o,po}
@@ -225,10 +161,10 @@ libmapi-clean:
 	rm -f */*~
 	rm -f */*/*~
 
-libmapi-distclean:
+distclean::
 	rm -f libmapi.pc
 
-libmapi-realdistclean:
+realdistclean::
 	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 libmapi-installpc:
@@ -325,7 +261,11 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/socket/netif.po				\
 	libmapi/utf8_convert.yy.po
 	@echo "Linking $@"
-	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
+	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) -o $@ $^ $(LIBS)
+
+
+libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION): libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	ln -fs $< $@
 
 libmapi/version.h: VERSION
 	@./script/mkversion.sh 	VERSION libmapi/version.h $(PACKAGE_VERSION) $(top_builddir)/
@@ -389,6 +329,8 @@ libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: \
 # libmapiadmin compilation rules
 #################################################################
 
+LIBMAPIADMIN_SO_VERSION = 0
+
 libmapiadmin:	libmapiadmin/proto.h				\
 		libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 
@@ -400,15 +342,15 @@ libmapiadmin-uninstall:	libmapiadmin-uninstallpc	\
 			libmapiadmin-uninstalllib	\
 			libmapiadmin-uninstallheader
 
-libmapiadmin-clean:
+clean::
 	rm -f libmapiadmin/*.{o,po}
 	rm -f libmapiadmin/proto.h
 	rm -f libmapiadmin/proto_private.h
 
-libmapiadmin-distclean:
+distclean::
 	rm -f libmapiadmin.pc
 
-libmapiadmin-realdistclean:
+realdistclean::
 	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 libmapiadmin-installpc:
@@ -441,7 +383,7 @@ libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	\
 	libmapiadmin/mapiadmin.po 		\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
+	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
 
 libmapiadmin/proto.h libmapiadmin/proto_private.h: 	\
 	libmapiadmin/mapiadmin.c 			\
@@ -455,6 +397,8 @@ libmapiadmin/proto.h libmapiadmin/proto_private.h: 	\
 # libocpf compilation rules
 #################################################################
 
+LIBOCPF_SO_VERSION = 0
+
 libocpf:	libocpf/proto.h				\
 		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
@@ -466,17 +410,17 @@ libocpf-uninstall:	libocpf-uninstallpc	\
 			libocpf-uninstalllib	\
 			libocpf-uninstallheader
 
-libocpf-clean:
+clean::
 	rm -f libocpf/*.{o,po}
 	rm -f libocpf/lex.yy.c
 	rm -f libocpf/ocpf.tab.{c,h}
 	rm -f libocpf/proto.h
 	rm -f libocpf/proto_private.h
 
-libocpf-distclean:
+distclean::
 	rm -f libocpf.pc
 
-libocpf-realdistclean:
+realdistclean::
 	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 libocpf-installpc:
@@ -514,7 +458,7 @@ libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		\
 	libocpf/ocpf_write.po			\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(DSOOPT) -Wl,-soname,libocpf.$(SHLIBEXT).$(SO_VERSION) -o $@ $^ $(LIBS)
+	@$(CC) $(DSOOPT) -Wl,-soname,libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) -o $@ $^ $(LIBS)
 
 libocpf/proto.h:	libocpf/ocpf_public.c	\
 			libocpf/ocpf_dump.c	\
@@ -552,7 +496,7 @@ torture-install:
 torture-uninstall:
 	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
 
-torture-clean:
+clean::
 	rm -f torture/*.$(SHLIBEXT)
 	rm -f torture/torture_proto.h
 	rm -f torture/*.{o,po}
@@ -646,14 +590,14 @@ server-uninstall:
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
 
-server-clean:
+clean::
 	rm -f providers/*.{o,po}
 	rm -f server/*.{o,po}
 	rm -f server/dcesrv_proto.h
 	rm -f providers/providers_proto.h
 	rm -f server/*.$(SHLIBEXT)
 
-server-realdistclean:
+realdistclean::
 	rm -f server/dcesrv_exchange.$(SHLIBEXT)
 	rm -f server/dcesrv_exchange_remote.$(SHLIBEXT)
 
@@ -696,7 +640,7 @@ openchangeclient-install:
 openchangeclient-uninstall:
 	rm -f $(DESTDIR)$(bindir)/openchangeclient
 
-openchangeclient-clean:
+clean::
 	rm -f bin/openchangeclient
 	rm -f utils/openchangeclient.o
 	rm -f utils/openchange-tools.o	
@@ -722,7 +666,7 @@ mapiprofile-install:
 mapiprofile-uninstall:
 	rm -f $(DESTDIR)$(bindir)/mapiprofile
 
-mapiprofile-clean:
+clean::
 	rm -f bin/mapiprofile
 	rm -f utils/mapiprofile.o
 
@@ -743,7 +687,7 @@ openchangepfadmin-install:
 openchangepfadmin-uninstall:
 	rm -f $(DESTDIR)$(bindir)/openchangepfadmin
 
-openchangepfadmin-clean:
+clean::
 	rm -f bin/openchangepfadmin
 	rm -f utils/openchangepfadmin.o
 
@@ -767,7 +711,7 @@ exchange2mbox-install:
 exchange2mbox-uninstall:
 	rm -f $(DESTDIR)$(bindir)/exchange2mbox
 
-exchange2mbox-clean:
+clean::
 	rm -f bin/exchange2mbox
 	rm -f utils/exchange2mbox.o
 	rm -f utils/openchange-tools.o	
@@ -792,7 +736,7 @@ mapitest-install:
 mapitest-uninstall:
 	rm -f $(DESTDIR)$(bindir)/mapitest
 
-mapitest-clean:
+clean::
 	rm -f bin/mapitest
 	rm -f utils/mapitest/mapitest.o
 	rm -f utils/mapitest/mapitest_common.o
@@ -831,7 +775,7 @@ openchangemapidump-uninstall:
 	rm -f bin/openchangemapidump
 	rm -f $(DESTDIR)$(bindir)/openchangemapidump
 
-openchangemapidump-clean:
+clean::
 	rm -f utils/backup/openchangemapidump.o
 	rm -f utils/backup/openchangebackup.o
 
@@ -854,7 +798,7 @@ schemaIDGUID-install:
 schemaIDGUID-uninstall:
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
 
-schemaIDGUID-clean:
+clean::
 	rm -f bin/schemaIDGUID
 	rm -f utils/schemaIDGUID.o
 
@@ -876,7 +820,7 @@ locale_codepage-uninstall:
 	rm -f bin/locale_codepage
 	rm -f $(DESTDIR)$(bindir)/locale_codepage
 
-locale_codepage-clean:
+clean::
 	rm -f libmapi/tests/locale_codepage.o
 
 bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -890,12 +834,12 @@ bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKA
 examples:
 	cd doc/examples && make && cd ${OLD_PWD}
 
-examples-clean:
+clean::
 	rm -f doc/examples/mapi_sample1
 	rm -f doc/examples/fetchappointment
 	rm -f doc/examples/fetchmail
 
-examples-install examples-uninstall examples-realdistclean:
+examples-install examples-uninstall:
 
 manpages = \
 		doc/man/man1/exchange2mbox.1				\
@@ -944,24 +888,21 @@ swigperl-uninstall:
 	@echo "Uninstall Perl bindings ..."
 	@cd swig/perl && $(MAKE) uninstall
 
-swigperl-realdistclean:
+realdistclean::
 	@cd swig/perl && $(MAKE) realdistclean
 
-swigperl-distclean:
+distclean::
 	@cd swig/perl && $(MAKE) distclean
 
-swigperl-clean:
+clean::
 	@echo "Cleaning Perl bindings ..."
 	@cd swig/perl && $(MAKE) clean
 
 .PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h
 
-Makefile: Makefile.in swig/perl/Makefile.in config.status
-	./config.status
-
 test:: check
 
-check:: torture/openchange.$(SHLIBEXT)
+check:: torture/openchange.$(SHLIBEXT) libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
 	# FIXME: Set up server
 	LD_LIBRARY_PATH=`pwd` $(SMBTORTURE) --load-module torture/openchange.$(SHLIBEXT) ncalrpc: OPENCHANGE
 

@@ -23,7 +23,6 @@
 #include <libocpf/ocpf.h>
 #include <samba/popt.h>
 #include <param.h>
-#include <param/proto.h>
 
 #include "openchangeclient.h"
 #include "openchange-tools.h"

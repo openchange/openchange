@@ -24,10 +24,10 @@
 #include <param.h>
 #include <credentials.h>
 #include <torture/mapi_torture.h>
-#include <torture/torture.h>
+#include <torture.h>
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
-#include <dcerpc/samr.h>
+#include <gen_ndr/samr.h>
 
 bool torture_mapi_createuser(struct torture_context *torture)
 {

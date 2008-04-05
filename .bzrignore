@@ -1,4 +1,3 @@
-Makefile
 aclocal.m4
 config.h
 config.h.in
@@ -36,3 +35,15 @@ bin/openchangemapidump
 libmapi/mapi_nameid_private.h
 Doxyfile
 libmapi/version.h
+config.mk
+swig/perl/Makefile
+libocpf/ocpf.tab.c
+libocpf/ocpf.tab.c
+libocpf/lex.yy.c
+bin/mapitest
+libocpf/proto.h
+libocpf/proto_private.h
+libocpf/proto_private.h
+libocpf/ocpf.tab.h
+autom4te.cache
+apidocs

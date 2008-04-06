@@ -683,6 +683,7 @@ openchangepfadmin:	bin/openchangepfadmin
 
 openchangepfadmin-install:
 	$(INSTALL) -d $(DESTDIR)$(bindir) 
+	$(INSTALL) -m 0755 bin/openchangepfadmin $(DESTDIR)$(bindir)
 
 openchangepfadmin-uninstall:
 	rm -f $(DESTDIR)$(bindir)/openchangepfadmin
@@ -776,6 +777,7 @@ openchangemapidump-uninstall:
 	rm -f $(DESTDIR)$(bindir)/openchangemapidump
 
 clean::
+	rm -f bin/openchangemapidump
 	rm -f utils/backup/openchangemapidump.o
 	rm -f utils/backup/openchangebackup.o
 
@@ -821,6 +823,7 @@ locale_codepage-uninstall:
 	rm -f $(DESTDIR)$(bindir)/locale_codepage
 
 clean::
+	rm -f bin/locale_codepage
 	rm -f libmapi/tests/locale_codepage.o
 
 bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)

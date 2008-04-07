@@ -5,9 +5,9 @@ includedir=@includedir@
 datarootdir=@prefix@/share
 datadir=@datadir@
 
-Name: MAPI Adminitration
+Name: MAPI Administration
 Description: MAPI Administration Implementation
 Version: @PACKAGE_VERSION@
 Libs: @LIBS@
 Cflags: @CFLAGS@
-Requires: talloc dcerpc ndr samba-config ldb
+Requires: talloc dcerpc ndr samba-hostconfig ldb

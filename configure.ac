@@ -132,7 +132,7 @@ fi
 
 
 dnl ---------------------------------------------------------------------------
-dnl Samba4 modules: talloc, dcerpc, ndr, samba-config, ldb
+dnl Samba4 modules
 dnl ---------------------------------------------------------------------------
 PKG_PROG_PKG_CONFIG([0.20])
 PKG_CHECK_MODULES(TALLOC, talloc)

@@ -10,4 +10,4 @@ Description: MAPI Protocol Implementation
 Version: @PACKAGE_VERSION@
 Libs: @LIBS@ -lmapi
 Cflags: @CFLAGS@
-Requires: talloc dcerpc ndr samba-config ldb
+Requires: talloc dcerpc ndr samba-hostconfig ldb

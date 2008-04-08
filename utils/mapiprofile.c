@@ -312,6 +312,7 @@ static void mapiprofile_dump(const char *profdb, const char *profname)
 	printf("\tpassword       == %s\n", profile.password);
 	printf("\tmailbox        == %s\n", profile.mailbox);
 	printf("\tworkstation    == %s\n", profile.workstation);
+	printf("\tdomain         == %s\n", profile.domain);
 	printf("\tserver         == %s\n", profile.server);
 
 	MAPIUninitialize();

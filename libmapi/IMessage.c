@@ -380,41 +380,53 @@ uint16_t mapi_recipients_bitmask(struct SRow *aRow)
 		}
 	} else {
 		/* (Bit 8) doesn't seem to work if unset */
-		bitmask |= 0x80;
+		bitmask |= 0x81;
 	}
 
-	/* (Bit 5) recipient_displayname_7bit: always UTF8 encoded? */
-	/* this could also be PR_RECIPIENT_DISPLAY_NAME */
-	lpProp = get_SPropValue_SRow(aRow, PR_7BIT_DISPLAY_NAME);
+	/* Bit 15: DISPLAY_NAME */
+	lpProp = get_SPropValue_SRow(aRow, PR_DISPLAY_NAME);
 	if (lpProp && lpProp->value.lpszA) {
 		bitmask |= 0x400;
 	}
 
-	lpProp = get_SPropValue_SRow(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
+	lpProp = get_SPropValue_SRow(aRow, PR_DISPLAY_NAME_UNICODE);
 	if (lpProp && lpProp->value.lpszW) {
 		bitmask |= 0x600;
 	}
 
-	/* (Bit 11) recipient_firstname: PR_GIVEN_NAME fits here */
+	/* Bit 6: PR_GIVEN_NAME */
 	lpProp = get_SPropValue_SRow(aRow, PR_GIVEN_NAME);
 	if (lpProp && lpProp->value.lpszA) {
-		bitmask |= 0x10;
-	} 
+		bitmask |= 0x20;
+	}
 
 	lpProp = get_SPropValue_SRow(aRow, PR_GIVEN_NAME_UNICODE);
+	if (lpProp && lpProp->value.lpszW) {
+		bitmask |= 0x220;
+	}
+
+	/* Bit 5. PR_7BIT_DISPLAY_NAME */
+	lpProp = get_SPropValue_SRow(aRow, PR_7BIT_DISPLAY_NAME);
+	if (lpProp && lpProp->value.lpszA) {
+		bitmask |= 0x10;
+	}
+
+	lpProp = get_SPropValue_SRow(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
 	if (lpProp && lpProp->value.lpszW) {
 		bitmask |= 0x210;
 	}
 
-	/* (Bit 15) from: recipient_displayname: PR_DISPLAY_NAME */
-	lpProp = get_SPropValue_SRow(aRow, PR_DISPLAY_NAME);
-	if (lpProp && lpProp->value.lpszA) {
-		bitmask |= 0x1;
-	}
-
-	lpProp = get_SPropValue_SRow(aRow, PR_DISPLAY_NAME_UNICODE);
-	if (lpProp && lpProp->value.lpszW) {
-		bitmask |= 0x201;
+	/* Bit 4: PR_EMAIL_ADDRESS */
+	if (bitmask & 0xA) {
+		lpProp = get_SPropValue_SRow(aRow, PR_SMTP_ADDRESS);
+		if (lpProp && lpProp->value.lpszA) {
+			bitmask |= 0x8;
+		}
+		
+		lpProp = get_SPropValue_SRow(aRow, PR_SMTP_ADDRESS_UNICODE);
+		if (lpProp && lpProp->value.lpszW) {
+			bitmask |= 0x208;
+		}
 	}
 
 	return bitmask;
@@ -518,33 +530,35 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		case 0x1: 
 			headers->type.EXCHANGE.organization_length = mapi_recipients_get_org_length(mapi_ctx->session->profile);
 			headers->type.EXCHANGE.addr_type = 0;
-			size += sizeof(uint32_t);
+			headers->type.EXCHANGE.username = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
+			size += sizeof(uint32_t) + strlen(headers->type.EXCHANGE.username) + 1;
 			break;
 		case 0xB:
 			size += sizeof(uint16_t);
 			break;
 		}
 		
-		/* displayname 7bit == username */
-		switch (headers->bitmask & 0x400) {
+		/* Bit 15: PR_DISPLAY_NAME */
+		switch(headers->bitmask & 0x600) {
 		case (0x400):
-			headers->username.lpszA = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
-			if (!headers->username.lpszA) {
-				headers->username.lpszA = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
-			}
-			size += strlen(headers->username.lpszA) + 1;
+			headers->displayname.lpszA = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME);
+			size += strlen(headers->displayname.lpszA) + 1;
+			break;
+		case (0x600):
+			headers->displayname.lpszW = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
+			size += strlen(headers->displayname.lpszW) * 2 + 2;
 			break;
 		default:
 			break;
 		}
-		
-		/* first name */
-		switch (headers->bitmask & 0x210) {
-		case (0x10):
+
+		/* Bit 6: PR_GIVEN_NAME */
+		switch (headers->bitmask & 0x220) {
+		case (0x20):
 			headers->firstname.lpszA = (const char *) find_SPropValue_data(aRow, PR_GIVEN_NAME);
 			size += strlen(headers->firstname.lpszA) + 1;
 			break;
-		case (0x210):
+		case (0x220):
 			headers->firstname.lpszW = (const char *) find_SPropValue_data(aRow, PR_GIVEN_NAME_UNICODE);
 			size += strlen(headers->firstname.lpszW) * 2 + 2;
 			break;
@@ -552,19 +566,34 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 			break;
 		}
 
-		/* display name */
-		switch (headers->bitmask & 0x201) {
-		case (0x1):
-			headers->displayname.lpszA = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME);
-			size += strlen(headers->displayname.lpszA) + 1;
+		/* Bit 5: PR_7BIT_DISPLAY_NAME */
+		switch (headers->bitmask & 0x210) {
+		case (0x10):
+			headers->accountname.lpszA = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
+			size += strlen(headers->accountname.lpszA) + 1;
 			break;
-		case (0x201):
-			headers->displayname.lpszW = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
-			size += strlen(headers->displayname.lpszW) * 2 + 2;
+		case (0x210):
+			headers->accountname.lpszW = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
+			size += strlen(headers->accountname.lpszW) * 2 + 2;
+			break;
 		default:
 			break;
 		}
-		  
+
+		/* Bit 4: PR_SMTP_ADDRESS */
+		switch (headers->bitmask & 0x208) {
+		case (0x8):
+			headers->email.lpszA = (const char *) find_SPropValue_data(aRow, PR_SMTP_ADDRESS);
+			size += strlen(headers->email.lpszA) + 1;
+			break;
+		case (0x208):
+			headers->email.lpszW = (const char *) find_SPropValue_data(aRow, PR_SMTP_ADDRESS_UNICODE);
+			size += strlen(headers->email.lpszW) * 2 + 2;
+			break;
+		default:
+			break;
+		}
+		
 		headers->prop_count = request.prop_count;
 		size += sizeof(uint16_t);
 		headers->layout = 0;

@@ -817,6 +817,7 @@ System Attendant Private Interface
 	typedef  [flag(NDR_NOALIGN)]struct {
 		uint8		organization_length;
 		addr_type	addr_type;
+		astring		username;
 	} RecipExchange;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -828,41 +829,41 @@ System Attendant Private Interface
 		[default];
 	} recipient_type;
 
-	/* Bit 5: always UTF8 encoded */
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x400)] astring		lpszA;
+		[case(0x0)];
+		[case(0x400)] astring				lpszA;
+		[case(0x600)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
-	} recipient_displayname_7bit;
+	} recipient_displayname;
 
-	/* Bit 10 */
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
 		[case(0x20)] astring				lpszA;
 		[case(0x220)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
-	} recipient_email;
+	} recipient_firstname;
 
-	/* Bit 11 */
-	/* First Name = PR_GIVEN_NAME */
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
 		[case(0x10)] astring				lpszA;
 		[case(0x210)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
-	} recipient_firstname;
+	} recipient_accountname;
 
-	/* Bit 15 */
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x1)] astring				lpszA;
-		[case(0x201)][flag(STR_NULLTERM)] string	lpszW;
+		[case(0x0)];
+		[case(0x8)] astring				lpszA;
+		[case(0x208)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
-	} recipient_displayname;
+	} recipient_email;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16							bitmask;
 		[switch_is(bitmask & 0xA)]   recipient_type		type;
-		[switch_is(bitmask & 0x400)] recipient_displayname_7bit	username;
-		[switch_is(bitmask & 0x210)] recipient_firstname       	firstname;
-		[switch_is(bitmask & 0x201)] recipient_displayname	displayname;
-		[switch_is(bitmask & 0x220)] recipient_email   		email_address;
+		[switch_is(bitmask & 0x600)] recipient_displayname     	displayname;
+		[switch_is(bitmask & 0x220)] recipient_firstname       	firstname;
+		[switch_is(bitmask & 0x210)] recipient_accountname    	accountname;
+		[switch_is(bitmask & 0x208)] recipient_email		email;
 		uint16							prop_count;
 		uint8							layout;
 		[flag(NDR_REMAINING)] DATA_BLOB				prop_values;

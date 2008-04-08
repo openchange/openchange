@@ -511,25 +511,28 @@ void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPro
 }
 
 
-void emsmdb_get_SRow(TALLOC_CTX *mem_ctx, struct SRow *aRow, struct SPropTagArray *proptags, DATA_BLOB *content, uint8_t layout, uint8_t align)
+void emsmdb_get_SRow(TALLOC_CTX *mem_ctx, struct SRow *aRow, struct SPropTagArray *proptags, uint16_t propcount, DATA_BLOB *content, uint8_t layout, uint8_t align)
 {
 	uint32_t		i;
 	uint32_t		offset = 0;
+	uint32_t		aulPropTag = 0;
 	const void		*data;
 
-	aRow->cValues = proptags->cValues;
-	aRow->lpProps = talloc_array(mem_ctx, struct SPropValue, proptags->cValues);
+	aRow->cValues = propcount;
+	aRow->lpProps = talloc_array(mem_ctx, struct SPropValue, propcount);
 
-	for (i = 0; i < proptags->cValues; i++) {
+	for (i = 0; i < propcount; i++) {
+		aulPropTag = proptags->aulPropTag[i];
 		if (layout) {
 			if (((uint8_t)(*(content->data + offset))) == PT_ERROR) {
-				proptags->aulPropTag[i] &= 0xFFFF0000;
-				proptags->aulPropTag[i] |= 0xA;			
+				aulPropTag &= 0xFFFF0000;
+				aulPropTag |= 0xA;			
 			}
 			offset += align;
-		}
-		data = pull_emsmdb_property(mem_ctx, &offset, proptags->aulPropTag[i], content);
-		aRow->lpProps[i].ulPropTag = proptags->aulPropTag[i];
+		} 
+
+		data = pull_emsmdb_property(mem_ctx, &offset, aulPropTag, content);
+		aRow->lpProps[i].ulPropTag = aulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
 		set_SPropValue(&(aRow->lpProps[i]), data);
 	}

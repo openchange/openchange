@@ -37,12 +37,6 @@ struct ipv4_addr;
 %include "swig_mapitags.h"
 %include "swig_mapicodes.h"
 
-%typemap(in) uint8_t = unsigned short;
-%apply short { uint8_t };
-%typemap(in) uint32_t = unsigned int;
-%apply int { uint32_t };
-%apply unsigned long long { uint64_t }
-
 %nodefaultctor SPropTagArray;
 %nodefaultdtor SPropTagArray;
 

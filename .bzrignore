@@ -47,3 +47,7 @@ libocpf/proto_private.h
 libocpf/ocpf.tab.h
 autom4te.cache
 apidocs
+swig/perl/mapi.pm
+swig/perl/mapi_wrap.c
+swig/perl/swig_mapicodes.h
+swig/perl/swig_mapitags.h

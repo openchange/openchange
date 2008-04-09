@@ -1,28 +1,16 @@
 #Makefile for libmapi Perl bindings
 #Writen by Julien Kerihuel <j.kerihuel@openchange.org>, 2007.
 
-CC=@CC@
-CFLAGS=@CFLAGS@  `perl -MExtUtils::Embed -e ccopts` -D_SAMBA_UTIL_H_
-SWIG=@SWIG@
-DSOOPT=-shared -fPIC
-PERL5DIR=@PERL5DIR@
+include ../../config.mk
 
-top_builddir=@top_builddir@
+top_builddir = ../..
+
+CFLAGS+=`perl -MExtUtils::Embed -e ccopts` -D_SAMBA_UTIL_H_
 
 # Portability hack...
 CFLAGS+=-Duint_t="unsigned int" 
 
-CFLAGS+=@SAMBA_CFLAGS@
-LIBS+=@SAMBA_LIBS@
-
-CFLAGS+=@LDB_CFLAGS@ @TALLOC_CFLAGS@
-LIBS+=@LDB_LIBS@ @TALLOC_LIBS@
-
 CFLAGS+=-I$(top_builddir)
-
-# This value should be determined by configure at some point
-SHLIBEXT=so
-
 
 all:	swig_mapitags.h 		\
 	swig_mapicodes.h		\
@@ -38,10 +26,9 @@ clean:
 distclean: clean
 	rm -f *.so
 
-realdistclean: distclean
-	rm -f Makefile
+realdistclean:: distclean
 
-install: all
+install:: all
 	cp mapi.pm $(PERL5DIR)
 	cp mapi.so $(PERL5DIR)
 
@@ -49,17 +36,17 @@ uninstall:
 	rm -f $(PERL5DIR)/mapi.pm
 	rm -f $(PERL5DIR)/mapi.so
 
-mapi_wrap.c: mapi.i
+mapi_wrap.c:: mapi.i
 	@echo "Swigify $<"
 	@$(SWIG) -Wall -Werror -perl5 $<
 
 swig_mapitags.h:
 	@echo "Generating Headers (swig_mapitags.h)"
-	@$(top_builddir)/libmapi/conf/mparse.pl --parser=swig_mapitags --outputdir=${PWD}/ $(top_builddir)/libmapi/conf/mapi-properties
+	@$(top_builddir)/libmapi/conf/mparse.pl --parser=swig_mapitags --outputdir=./ $(top_builddir)/libmapi/conf/mapi-properties
 
 swig_mapicodes.h:
 	@echo "Generating Headers (swig_mapicodes.h)"
-	@$(top_builddir)/libmapi/conf/mparse.pl --parser=swig_mapicodes --outputdir=${PWD}/ $(top_builddir)/libmapi/conf/mapi-codes
+	@$(top_builddir)/libmapi/conf/mparse.pl --parser=swig_mapicodes --outputdir=./ $(top_builddir)/libmapi/conf/mapi-codes
 
 
 

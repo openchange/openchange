@@ -3,7 +3,7 @@
 
 default: all
 
-config.mk swig/perl/Makefile: config.status config.mk.in swig/perl/Makefile.in
+config.mk: config.status config.mk.in
 	./config.status
 
 config.status: configure
@@ -881,25 +881,25 @@ ctags:
 
 swigperl-all:
 	@echo "Creating Perl bindings ..."
-	@cd swig/perl && $(MAKE) all
+	@$(MAKE) -C swig/perl all
 
 swigperl-install:
 	@echo "Install Perl bindings ..."
-	@cd swig/perl && $(MAKE) install
+	@$(MAKE) -C swig/perl install
 
 swigperl-uninstall:
 	@echo "Uninstall Perl bindings ..."
-	@cd swig/perl && $(MAKE) uninstall
+	@$(MAKE) -C swig/perl uninstall
 
 realdistclean::
-	@cd swig/perl && $(MAKE) realdistclean
+	@$(MAKE) -C swig/perl realdistclean
 
 distclean::
-	@cd swig/perl && $(MAKE) distclean
+	@$(MAKE) -C swig/perl distclean
 
 clean::
 	@echo "Cleaning Perl bindings ..."
-	@cd swig/perl && $(MAKE) clean
+	@$(MAKE) -C swig/perl clean
 
 .PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h
 

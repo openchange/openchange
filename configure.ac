@@ -9,8 +9,6 @@ AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 AC_ARG_WITH(samba, 
 [AC_HELP_STRING([--with-samba], [Override location Samba is installed])],
 [ 
- PKG_CONFIG_PATH="$withval/lib/pkgconfig"
- PATH="$withval/bin:$PATH"
  sambaprefix="$withval"
 ],[
  sambaprefix=$prefix
@@ -19,6 +17,8 @@ AC_ARG_WITH(samba,
 fi
 ])
 AC_SUBST(sambaprefix)
+PKG_CONFIG_PATH="$sambaprefix/lib/pkgconfig"
+PATH="$sambaprefix/bin:$PATH"
 
 #
 # OC_SETVAL([NAME])
@@ -315,7 +315,7 @@ fi
 dnl ***********************
 dnl Makefiles 
 dnl ***********************
-AC_CONFIG_FILES([config.mk swig/perl/Makefile libmapi.pc libmapiadmin.pc 
+AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc 
 		 libocpf.pc Doxyfile libmapi/Doxyfile libocpf/Doxyfile])
 AC_OUTPUT
 

@@ -11,7 +11,14 @@ AC_ARG_WITH(samba,
 [ 
  PKG_CONFIG_PATH="$withval/lib/pkgconfig"
  PATH="$withval/bin:$PATH"
+ sambaprefix="$withval"
+],[
+ sambaprefix=$prefix
+ if test x"$prefix" = x"NONE"; then
+   sambaprefix=/usr/local/samba
+fi
 ])
+AC_SUBST(sambaprefix)
 
 #
 # OC_SETVAL([NAME])
@@ -121,11 +128,8 @@ AC_SUBST(FLEX)
 dnl ---------------------------------------------------------------------------
 dnl Check a particular Samba4 git revision
 dnl ---------------------------------------------------------------------------
-if test x"$prefix" = x"NONE"; then
-   prefix=/usr/local/samba
-fi
 
-INCDIR=$prefix/include
+INCDIR=$sambaprefix/include
 
 AC_CHECK_FILE($INCDIR/samba/version.h,,AC_MSG_ERROR([Could not find Samba4 headers. Re-run ./configure with --prefix=XXX where
  XXX is the same prefix that Samba4 was configured with.]))
@@ -133,8 +137,7 @@ AC_CHECK_FILE($INCDIR/samba/version.h,,AC_MSG_ERROR([Could not find Samba4 heade
 SAMBA_VERSION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_STRING | grep -v define | cut -d"=" -f2`
 
 if test "$SAMBA_VERSION" != "4.0.0alpha4-GIT-7fccd85" ; then
-   AC_MSG_WARN([The Samba4 version installed on your system doesn't meet OpenChange requirements.])
-   AC_MSG_ERROR([Please install Samba4 GIT revision 7fccd85])
+   AC_MSG_WARN([The Samba4 version installed on your system doesn't meet OpenChange requirements (7fccd85).])
 fi
 
 

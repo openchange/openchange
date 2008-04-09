@@ -19,6 +19,8 @@ includedir=@includedir@
 mandir=@mandir@
 top_builddir=@builddir@
 
+sambaprefix=@sambaprefix@
+
 DSOOPT=-shared -fPIC
 CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 \
 	   -DDEFAULT_LDIF=\"$(datadir)/setup\" 
@@ -50,7 +52,7 @@ OC_TORTURE=@OC_TORTURE@
 OC_TORTURE_INSTALL=@OC_TORTURE_INSTALL@
 OC_TORTURE_UNINSTALL=@OC_TORTURE_UNINSTALL@
 TORTURE_MODULESDIR=@TORTURE_MODULESDIR@
-SERVER_MODULESDIR=${prefix}/modules/dcerpc_server
+SERVER_MODULESDIR=${sambaprefix}/modules/dcerpc_server
 
 
 # TOOLS

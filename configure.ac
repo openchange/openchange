@@ -6,6 +6,13 @@ AC_INIT(openchange, 0.7, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
+AC_ARG_WITH(samba, 
+[AC_HELP_STRING([--with-samba], [Override location Samba is installed])],
+[ 
+ PKG_CONFIG_PATH="$withval/lib/pkgconfig"
+ PATH="$withval/bin:$PATH"
+])
+
 #
 # OC_SETVAL([NAME])
 # -----------------

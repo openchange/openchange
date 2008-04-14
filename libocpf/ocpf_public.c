@@ -59,6 +59,7 @@ _PUBLIC_ int ocpf_init(void)
 	ocpf->nprops = talloc_zero(mem_ctx, struct ocpf_nproperty);
 	ocpf->recipients = talloc_zero(mem_ctx, struct ocpf_recipients);
 	ocpf->lpProps = NULL;
+	ocpf->filename = NULL;
 	ocpf->cValues = 0;
 	ocpf->folder = 0;
 	
@@ -80,6 +81,7 @@ _PUBLIC_ int ocpf_release(void)
 	if (!ocpf || !ocpf->mem_ctx) return OCPF_ERROR;
 
 	talloc_free(ocpf->mem_ctx);
+	ocpf = NULL;
 
 	return OCPF_SUCCESS;
 }
@@ -495,6 +497,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 
 	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ocpf->recipients->next, MAPI_E_NOT_FOUND, NULL);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
 					  PR_OBJECT_TYPE,

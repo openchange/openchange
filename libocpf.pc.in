@@ -8,6 +8,6 @@ datadir=@datadir@
 Name: OpenChange Property File
 Description: OCPF file format support
 Version: @PACKAGE_VERSION@
-Libs: @LIBS@
+Libs: @LIBS@ -locpf
 Cflags: @CFLAGS@
 Requires: libmapi

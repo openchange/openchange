@@ -18,6 +18,30 @@ function error_check() {
     fi
 }
 
+function cleanup_talloc() {
+    # cleanup existing talloc installation
+    if test -f samba4/source/lib/talloc/Makefile; then
+	echo "Step0: cleaning up talloc directory"
+	OLD_PWD=$PWD
+	cd samba4/source/lib/talloc
+	make realdistclean
+	rm -rf ../replace/*.{o,ho}
+	cd $OLD_PWD
+    fi
+}
+
+function clean_tdb() {
+    # cleanup existing tdb installation
+    if test -f samba/source/lib/tdb/Makefile; then
+	echo "Step0: cleaning up tdb directory"
+	OLD_PWD=$PWD
+	cd samba4/source/lib/tdb
+	make realdistclean
+	rm -rf ../replace/*.{o,ho}
+	cd $OLD_PWD
+    fi
+}
+
 function delete_install() {
 
     # cleanup existing existing samba4 installation
@@ -40,25 +64,9 @@ function delete_install() {
 	esac
     fi
 
-    # cleanup existing talloc installation
-    if test -f samba4/source/lib/talloc/Makefile; then
-	echo "Step0: cleaning up talloc directory"
-	OLD_PWD=$PWD
-	cd samba4/source/lib/talloc
-	make realdistclean
-	rm -rf ../replace/*.{o,ho}
-	cd $OLD_PWD
-    fi
+	cleanup_talloc
 
-    # cleanup existing tdb installation
-    if test -f samba/source/lib/tdb/Makefile; then
-	echo "Step0: cleaning up tdb directory"
-	OLD_PWD=$PWD
-	cd samba4/source/lib/tdb
-	make realdistclean
-	rm -rf ../replace/*.{o,ho}
-	cd $OLD_PWD
-    fi
+	cleanup_tdb
 }
 
 #
@@ -162,6 +170,11 @@ function compile() {
     OLD_PWD=$PWD
 
     PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/samba/lib/pkgconfig
+
+	cleanup_talloc
+	cleanup_tdb
+
+	# Cleanup tdb and talloc directories
 
     echo "Step1: Preparing Samba4 system"
     cd samba4/source

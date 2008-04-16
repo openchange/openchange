@@ -61,6 +61,7 @@ distclean:: clean
 realdistclean:: distclean
 	rm -rf apidocs
 	rm -rf gen_ndr
+	rm -f tags
 
 clean::
 	rm -f *~
@@ -161,12 +162,11 @@ clean::
 	rm -f *~
 	rm -f */*~
 	rm -f */*/*~
+	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) \
+		  libmapi.$(SHLIBEXT)
 
 distclean::
 	rm -f libmapi.pc
-
-realdistclean::
-	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 libmapi-installpc:
 	@echo "[*] install: libmapi pc files"
@@ -347,12 +347,11 @@ clean::
 	rm -f libmapiadmin/*.{o,po}
 	rm -f libmapiadmin/proto.h
 	rm -f libmapiadmin/proto_private.h
+	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) \
+		  libmapiadmin.$(SHLIBEXT)
 
 distclean::
 	rm -f libmapiadmin.pc
-
-realdistclean::
-	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 libmapiadmin-installpc:
 	@echo "[*] install: libmapiadmin pc files"
@@ -417,12 +416,11 @@ clean::
 	rm -f libocpf/ocpf.tab.{c,h}
 	rm -f libocpf/proto.h
 	rm -f libocpf/proto_private.h
+	rm -f libocpf.$(SHLIBEXT).$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) \
+		  libocpf.$(SHLIBEXT)
 
 distclean::
 	rm -f libocpf.pc
-
-realdistclean::
-	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 libocpf-installpc:
 	@echo "[*] install: libocpf pc files"
@@ -600,8 +598,6 @@ clean::
 	rm -f server/dcesrv_proto.h
 	rm -f providers/providers_proto.h
 	rm -f server/*.$(SHLIBEXT)
-
-realdistclean::
 	rm -f server/dcesrv_exchange.$(SHLIBEXT)
 	rm -f server/dcesrv_exchange_remote.$(SHLIBEXT)
 
@@ -743,14 +739,7 @@ mapitest-uninstall:
 
 clean::
 	rm -f bin/mapitest
-	rm -f utils/mapitest/mapitest.o
-	rm -f utils/mapitest/mapitest_common.o
-	rm -f utils/mapitest/mapitest_print.o
-	rm -f utils/mapitest/mapitest_calls.o
-	rm -f utils/mapitest/mapitest_calls_ring1.o
-	rm -f utils/mapitest/mapitest_calls_ring2.o
-	rm -f utils/mapitest/mapitest_calls_ring3.o
-	rm -f utils/mapitest/mapitest_calls_ring4.o	
+	rm -f utils/mapitest/*.o
 
 bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/mapitest_common.o		\

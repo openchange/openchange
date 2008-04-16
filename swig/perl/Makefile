@@ -22,6 +22,7 @@ clean:
 	rm -f *.pm
 	rm -f mapi_wrap.c
 	rm -f swig_mapicodes.h swig_mapitags.h
+	rm -f mapi.$(SHLIBEXT)
 
 distclean: clean
 	rm -f *.so

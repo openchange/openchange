@@ -460,6 +460,9 @@ libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		\
 	@echo "Linking $@"
 	@$(CC) $(DSOOPT) -Wl,-soname,libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) -o $@ $^ $(LIBS)
 
+libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION): libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
+	ln -fs $< $@
+
 libocpf/proto.h:	libocpf/ocpf_public.c	\
 			libocpf/ocpf_dump.c	\
 			libocpf/ocpf_api.c	\

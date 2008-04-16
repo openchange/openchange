@@ -37,13 +37,14 @@ install: 	all 			\
 		$(OC_TOOLS_INSTALL) 	\
 		$(OC_SERVER_INSTALL) 	\
 		$(OC_TORTURE_INSTALL) 	\
-		$(SWIGDIRS-INSTALL)
+		$(SWIGDIRS-INSTALL) \
+		installnagios
 
 installlib:	$(OC_LIBS_INSTALL)
 installpc:	$(OC_LIBS_INSTALLPC)
 installheader:	$(OC_LIBS_INSTALLHEADERS)
 
-uninstall: 	$(OC_LIBS_UNINSTALL) 	\
+uninstall:: 	$(OC_LIBS_UNINSTALL) 	\
 		$(OC_TOOLS_UNINSTALL) 	\
 		$(OC_SERVER_UNINSTALL) 	\
 		$(OC_TORTURE_UNINSTALL) \
@@ -833,6 +834,14 @@ bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKA
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
+###################
+# nagios plugin
+###################
+
+nagiosdir = $(libdir)/nagios
+
+installnagios:
+	$(INSTALL) -m 0755 script/check_exchange $(DESTDIR)$(nagiosdir)
 
 ###################
 # libmapi examples

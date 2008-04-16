@@ -70,7 +70,7 @@ getentry:
 	fgets(entry, 10, fd);
 	index = atoi(entry);
 	if (index > i) {
-		printf("Invalid id - Must be contained between 0 and %d\n", i);
+		printf("Invalid id - Must be a value between 0 and %d\n", i);
 		goto getentry;
 	}
 	
@@ -84,7 +84,7 @@ static void signal_delete_profile(const char *profname)
 {
 	enum MAPISTATUS	retval;
 
-	fprintf(stderr, "CTRL-C catched ... Deleting profile\n");
+	fprintf(stderr, "CTRL-C caught ... Deleting profile\n");
 	if ((retval = DeleteProfile(g_profname)) != MAPI_E_SUCCESS) {
 		mapi_errstr("DeleteProfile", GetLastError());
 	}

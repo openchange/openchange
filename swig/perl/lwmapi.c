@@ -17,7 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-typedef unsigned long long uint64_t;
+#include <stdint.h>
+
 typedef uint64_t NTTIME;
 struct ipv4_addr;
 

@@ -2866,7 +2866,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if ((opt_sendmail && oclient.pf == true && !oclient.folder) ||
-	    (oclient.pf == true && !oclient.folder)) {
+	    (oclient.pf == true && !oclient.folder && !opt_mailbox)) {
 		printf("--folder option is mandatory\n");
 		exit (1);
 	}

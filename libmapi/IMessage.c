@@ -75,7 +75,7 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CreateAttach;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_CreateAttach = request;
 	size += 5;
@@ -146,7 +146,7 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t num_a
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_DeleteAttach;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_DeleteAttach = request;
 	size += 5;
@@ -212,7 +212,7 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetAttachmentTable;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetAttachmentTable = request;
 	size += 5;
@@ -290,7 +290,7 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t num_att
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_OpenAttach;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_OpenAttach = request;
 	size += 5;
@@ -622,7 +622,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_ModifyRecipients;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_ModifyRecipients = request;
 	size += 5;
@@ -692,7 +692,7 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SubmitMessage;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SubmitMessage = request;
 	size += 5;
@@ -760,7 +760,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SaveChangesMessage;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SaveChangesMessage = request;
 	size += 5;

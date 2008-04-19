@@ -73,7 +73,7 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CreateMessage;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_CreateMessage = request;
 	size += 5;
@@ -153,7 +153,7 @@ _PUBLIC_ enum MAPISTATUS DeleteMessage(mapi_object_t *obj_folder, mapi_id_t *id_
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_DeleteMessages;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_DeleteMessages = request;
 	size += 5;
@@ -225,7 +225,7 @@ _PUBLIC_ enum MAPISTATUS GetMessageStatus(mapi_object_t *obj_folder,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetMessageStatus;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetMessageStatus = request;
 	size += 5;
@@ -322,7 +322,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageStatus(mapi_object_t *obj_folder,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetMessageStatus;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SetMessageStatus = request;
 	size += 5;
@@ -403,7 +403,7 @@ _PUBLIC_ enum MAPISTATUS CopyMessages(mapi_object_t *obj_src,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CopyMessages;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_CopyMessages = request;
 	size += 5;
@@ -479,7 +479,7 @@ _PUBLIC_ enum MAPISTATUS SetReadFlags(mapi_object_t *obj_folder,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetReadFlags;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SetReadFlags = request;
 	size += 5;
@@ -620,7 +620,7 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CreateFolder;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_CreateFolder = request;
 	size += 5;
@@ -693,7 +693,7 @@ _PUBLIC_ enum MAPISTATUS EmptyFolder(mapi_object_t *obj_folder)
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_EmptyFolder;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_EmptyFolder = request;
 	size += 5;
@@ -764,7 +764,7 @@ _PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent, mapi_id_t folde
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_DeleteFolder;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_DeleteFolder = request;
 	size += 5;

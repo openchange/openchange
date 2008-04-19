@@ -62,8 +62,6 @@ NTSTATUS init_module(void)
 	torture_suite_add_simple_test(suite, "MAPI-BOOKMARK", torture_rpc_mapi_bookmark);
 	torture_suite_add_simple_test(suite, "MAPI-RECIPIENT", torture_rpc_mapi_recipient);
 	torture_suite_add_simple_test(suite, "MAPI-NAMEDPROPS", torture_rpc_mapi_namedprops);
-	/* MAPI Fuzzer torture tests */
-	torture_suite_add_simple_test(suite, "FUZZER-MSGSTORE", torture_fuzzer_msgstore);
 	/* Exchange Administration torture tests */
 	torture_suite_add_simple_test(suite, "EXCHANGE-CREATEUSER", torture_mapi_createuser);
 

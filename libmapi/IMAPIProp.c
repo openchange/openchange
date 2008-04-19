@@ -86,7 +86,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetProps;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetProps = request;
 	size += 5;
@@ -177,7 +177,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *sprops,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetProps;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SetProps = request;
 	size += 5;
@@ -254,7 +254,7 @@ _PUBLIC_ enum MAPISTATUS SaveChanges(mapi_object_t *obj_parent,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SaveChanges;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SaveChanges = request;
 	size += 5;
@@ -321,7 +321,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetPropList;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -405,7 +405,7 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetPropsAll;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetPropsAll = request;
 	size += 5;
@@ -474,7 +474,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_DeleteProps;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_DeleteProps = request;
 	size += 5;
@@ -551,7 +551,7 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetNamesFromIDs;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetNamesFromIDs = request;
 	size += 5;
@@ -664,7 +664,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetIDsFromNames;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetIDsFromNames = request;
 	size += 5;
@@ -739,7 +739,7 @@ _PUBLIC_ enum MAPISTATUS QueryNamesFromIDs(mapi_object_t *obj,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_QueryNamesFromIDs;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_QueryNamesFromIDs = request;
 	size += 5;

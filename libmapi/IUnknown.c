@@ -128,7 +128,7 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_Release;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	size += 5;
 

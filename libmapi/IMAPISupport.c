@@ -99,7 +99,7 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_Advise;
-	mapi_req->mapi_flags = 0;
+	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_Advise = request;
 	size += 5;

@@ -1995,7 +1995,7 @@ System Attendant Private Interface
 
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint8		opnum;
-		uint8		mapi_flags;
+		uint8		logon_id;
 		uint8		handle_idx;
 		[switch_is(opnum)] EcDoRpc_MAPI_REQ_UNION u;
 	} EcDoRpc_MAPI_REQ;

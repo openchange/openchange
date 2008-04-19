@@ -525,7 +525,6 @@ torture/openchange.$(SHLIBEXT):			\
 	torture/mapi_fetchtasks.po		\
 	torture/mapi_sendtasks.po		\
 	torture/mapi_common.po			\
-	torture/fuzzer_msgstore.po		\
 	torture/mapi_permissions.po		\
 	torture/mapi_createuser.po		\
 	torture/exchange_createuser.po		\
@@ -562,7 +561,6 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 	torture/mapi_recipient.c	\
 	torture/mapi_createuser.c	\
 	torture/exchange_createuser.c	\
-	torture/fuzzer_msgstore.c	\
 	torture/openchange.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h $^

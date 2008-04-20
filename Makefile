@@ -747,6 +747,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/mapitest_calls_ring2.o		\
 		utils/mapitest/mapitest_calls_ring3.o		\
 		utils/mapitest/mapitest_calls_ring4.o		\
+		utils/mapitest/mapitest_noserver.o			\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 		libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"

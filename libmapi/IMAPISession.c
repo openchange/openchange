@@ -54,7 +54,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct OpenMsgStore_req	request;
+	struct Logon_req	request;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size;
@@ -71,19 +71,22 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
 
 	size = 0;
 
-	/* Fill the OpenMsgStore operation */
- 	request.codepage = 0x600; 
-	request.padding = 0;
-	request.row = 0x0;
-	request.mailbox_path = "";
-	size += 10;
+	/* Fill the Logon operation */
+ 	request.LogonFlags = 0;
+	size += sizeof (uint8_t);
+	request.OpenFlags = PUBLIC;
+	size += sizeof (uint32_t);
+	request.StoreState = 0;
+	size += sizeof (uint32_t);
+	request.LegacyDN = "";
+	size += 1;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_OpenMsgStore;
+	mapi_req->opnum = op_MAPI_Logon;
 	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
-	mapi_req->u.mapi_OpenMsgStore = request;
+	mapi_req->u.mapi_Logon = request;
 	size += 5;
 
 	/* Fill the mapi_request structure */
@@ -107,14 +110,14 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
 	store = (mapi_object_store_t*)obj_store->private_data;
 	MAPI_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
-	store->fid_pf_public_root = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_pf.folder_id[0];
-	store->fid_pf_ipm_subtree = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_pf.folder_id[1];
-	store->fid_pf_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_pf.folder_id[2];
-	store->fid_pf_eforms_registry = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_pf.folder_id[3];
-	store->fid_pf_schedule_freebusy = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_pf.folder_id[4];
-	store->fid_pf_offline_addrbook = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_pf.folder_id[5];
-	store->fid_pf_schedule_freebusy_adm_group = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_pf.folder_id[7];
-	store->fid_pf_offline_addrbook_sub = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_pf.folder_id[8];
+	store->fid_pf_public_root = mapi_response->mapi_repl->u.mapi_Logon.type.store_pf.folder_id[0];
+	store->fid_pf_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.type.store_pf.folder_id[1];
+	store->fid_pf_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.type.store_pf.folder_id[2];
+	store->fid_pf_eforms_registry = mapi_response->mapi_repl->u.mapi_Logon.type.store_pf.folder_id[3];
+	store->fid_pf_schedule_freebusy = mapi_response->mapi_repl->u.mapi_Logon.type.store_pf.folder_id[4];
+	store->fid_pf_offline_addrbook = mapi_response->mapi_repl->u.mapi_Logon.type.store_pf.folder_id[5];
+	store->fid_pf_schedule_freebusy_adm_group = mapi_response->mapi_repl->u.mapi_Logon.type.store_pf.folder_id[7];
+	store->fid_pf_offline_addrbook_sub = mapi_response->mapi_repl->u.mapi_Logon.type.store_pf.folder_id[8];
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -148,7 +151,7 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct OpenMsgStore_req	request;
+	struct Logon_req	request;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size;
@@ -168,19 +171,22 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 
 	size = 0;
 
-	/* Fill the OpenMsgStore operation */
- 	request.codepage = 0xc01; /*ok values: 0xc01 0xc09 */
-	request.padding = 0;
-	request.row = 0x0;
-	request.mailbox_path = talloc_strdup(mem_ctx, mailbox);
-	size += 9 + strlen(mailbox) + 1;
+	/* Fill the Logon operation */
+	request.LogonFlags = Private;
+	size += sizeof (uint8_t);
+	request.OpenFlags = HOME_LOGON | TAKE_OWNERSHIP | NO_MAIL;
+	size += sizeof (uint32_t);
+	request.StoreState = 0;
+	size += sizeof (uint32_t);
+	request.LegacyDN = talloc_strdup(mem_ctx, mailbox);
+	size += strlen(request.LegacyDN) + 1;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_OpenMsgStore;
+	mapi_req->opnum = op_MAPI_Logon;
 	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
-	mapi_req->u.mapi_OpenMsgStore = request;
+	mapi_req->u.mapi_Logon = request;
 	size += 5;
 
 	/* Fill the mapi_request structure */
@@ -204,19 +210,19 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 	store = (mapi_object_store_t*)obj_store->private_data;
 	MAPI_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
-	store->fid_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[0];
-	store->fid_deferred_actions = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[1];
-	store->fid_spooler_queue = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[2];
-	store->fid_top_information_store = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[3];
-	store->fid_inbox = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[4]; 
-	store->fid_outbox = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[5];
-	store->fid_sent_items = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[6];
-	store->fid_deleted_items = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[7];
-	store->fid_common_views = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[8];
-	store->fid_schedule = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[9];
-	store->fid_finder = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[10];
-	store->fid_views = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[11];
-	store->fid_shortcuts = mapi_response->mapi_repl->u.mapi_OpenMsgStore.type.store_mailbox.folder_id[12];
+	store->fid_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[0];
+	store->fid_deferred_actions = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[1];
+	store->fid_spooler_queue = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[2];
+	store->fid_top_information_store = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[3];
+	store->fid_inbox = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[4]; 
+	store->fid_outbox = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[5];
+	store->fid_sent_items = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[6];
+	store->fid_deleted_items = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[7];
+	store->fid_common_views = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[8];
+	store->fid_schedule = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[9];
+	store->fid_finder = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[10];
+	store->fid_views = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[11];
+	store->fid_shortcuts = mapi_response->mapi_repl->u.mapi_Logon.type.store_mailbox.folder_id[12];
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

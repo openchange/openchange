@@ -677,7 +677,7 @@ System Attendant Private Interface
 			op_MAPI_EmptyFolder		= 0x58,
 			op_MAPI_QueryNamesFromIDs	= 0x5f,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
-			op_MAPI_OpenMsgStore		= 0xfe
+			op_MAPI_Logon			= 0xfe
 		} MAPI_OPNUM;
 
 
@@ -1835,12 +1835,33 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0xFE */
+	typedef [enum8bit] enum {
+		Private		= 0x1,
+		UnderCover	= 0x2,
+		Ghosted		= 0x4,
+		SpIProcess	= 0x8
+	} LogonFlags;
+
+	typedef [bitmap32bit] bitmap {
+		PUBLIC				= 0x2,
+		HOME_LOGON			= 0x4,
+		TAKE_OWNERSHIP			= 0x8,
+		ALTERNATE_SERVER		= 0x100,
+		IGNORE_HOME_MDB			= 0x200,
+		NO_MAIL				= 0x400,
+		USE_PER_MDB_REPLID_MAPPING	= 0x010000000
+	} OpenFlags;
+
+	typedef [bitmap32bit] bitmap {
+		STORE_HAS_SEARCHES		= 0x010000000
+	} StoreState;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32	codepage;
-		uint32	padding;
-		uint8	row;
-		ascstr3	mailbox_path;
-	} OpenMsgStore_req;
+		LogonFlags	LogonFlags;
+		OpenFlags	OpenFlags;
+		StoreState	StoreState;
+		ascstr3		LegacyDN;
+	} Logon_req;
 
  	typedef [flag(NDR_NOALIGN)] struct {
 		hyper		folder_id[13];
@@ -1876,7 +1897,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		PROVIDER_TYPE	PR_OBJECT_TYPE;
 		[switch_is(PR_OBJECT_TYPE)] store_type type;
-	} OpenMsgStore_repl;
+	} Logon_repl;
 
 	typedef [public, nodiscriminant] union {
 		[case(op_MAPI_Release)] Release_req mapi_Release;
@@ -1932,7 +1953,7 @@ System Attendant Private Interface
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_req mapi_QueryNamesFromIDs;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
-		[case(op_MAPI_OpenMsgStore)] OpenMsgStore_req mapi_OpenMsgStore;
+		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
 	} EcDoRpc_MAPI_REQ_UNION;
 
 	typedef [public, nodiscriminant] union {
@@ -1989,7 +2010,7 @@ System Attendant Private Interface
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_repl mapi_QueryNamesFromIDs;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
-		[case(op_MAPI_OpenMsgStore)] OpenMsgStore_repl mapi_OpenMsgStore;
+		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;
 
 	} EcDoRpc_MAPI_REPL_UNION;
 

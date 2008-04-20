@@ -67,7 +67,7 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store, mapi_id_t id_folde
 	/* Fill the OpenFolder operation */
 	request.handle_idx = 0x1;
 	request.folder_id = id_folder;
-	request.unknown = 0x0;
+	request.OpenModeFlags = OpenModeFlags_Folder;
 	size += sizeof (uint8_t) + sizeof(uint64_t) + sizeof(uint8_t);
 
 	/* Fill the MAPI_REQ request */

@@ -24,7 +24,7 @@
 #include <param.h>
 
 #include <utils/openchange-tools.h>
-#include <utils/mapitest/mapitest.h>
+#include "utils/mapitest/mapitest.h"
 
 /**
  * Initialize mapitest structure
@@ -116,10 +116,11 @@ int main(int argc, const char *argv[])
 	const char	*opt_profname = NULL;
 	const char	*opt_password = NULL;
 	const char	*opt_outfile = NULL;
+	bool 		opt_noserver = false;
 
 	enum { OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_USERNAME, OPT_PASSWORD,
 	       OPT_CONFIDENTIAL, OPT_OUTFILE, OPT_MAPI_ALL, OPT_MAPI_CALLS,
-	       OPT_MAPIADMIN_ALL };
+	       OPT_MAPIADMIN_ALL, OPT_NO_SERVER };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -132,6 +133,7 @@ int main(int argc, const char *argv[])
 		{"mapi-all", 0, POPT_ARG_NONE, NULL, OPT_MAPI_ALL, "full test of the mapi implementation"},
 		{"mapi-calls", 0, POPT_ARG_NONE, NULL, OPT_MAPI_CALLS, "test mapi atomic calls"},
 		{"mapiadmin-all", 0, POPT_ARG_NONE, NULL, OPT_MAPIADMIN_ALL, "full test of the mapiadmin implementation"},
+		{"no-server", 0, POPT_ARG_NONE, NULL, OPT_NO_SERVER, "only run tests that do not require server connection"},
 		{ NULL }
 	};
 
@@ -161,6 +163,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_MAPIADMIN_ALL:
 			break;
+		case OPT_NO_SERVER:
+			opt_noserver = true;
+			break;
 		case OPT_USERNAME:
 			break;
 		case OPT_PASSWORD:
@@ -169,7 +174,14 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	poptFreeContext(pc);
+
 	mapitest_init_stream(&mt, opt_outfile);
+	if (opt_noserver) {
+		mapitest_calls_noserver(&mt);
+		goto cleanup;
+	}
+
 	mapitest_get_server_info(&mt, opt_profdb, opt_profname, opt_password);
 
 	/* print mapitest report headers */
@@ -184,9 +196,12 @@ int main(int argc, const char *argv[])
 		mapitest_calls(&mt);
 	}
 
+ cleanup:
 	if (opt_outfile) fclose(mt.stream);
 
 	MAPIUninitialize();
+
+	talloc_free(mem_ctx);
 
 	return 0;
 }

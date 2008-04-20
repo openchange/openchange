@@ -91,6 +91,7 @@ void	mapitest_calls_ring2(struct mapitest *);
 void	mapitest_calls_ring3(struct mapitest *);
 void	mapitest_calls_ring4(struct mapitest *);
 
+void	mapitest_calls_noserver(struct mapitest *);
 __END_DECLS
 
 

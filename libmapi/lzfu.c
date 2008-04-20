@@ -100,17 +100,8 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 {
 	enum MAPISTATUS	retval;
 	TALLOC_CTX	*mem_ctx;
-	uint8_t		dict[4096];
-	uint32_t	dict_length = 0;
-	lzfuheader	lzfuhdr;
-	uint8_t		flags;
-	uint8_t		flag_mask;
-	uint8_t		i;
 	uint32_t	in_size;
 	uint8_t		*rtfcomp;
-	uint8_t		*out_buf;
-	uint32_t	out_ptr = 0;
-	uint32_t	out_size = 0;
 	uint32_t	read_size;
 	unsigned char	buf[0x1000];
 
@@ -133,6 +124,23 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 			in_size += read_size;
 		}
 	} while (read_size);
+
+	return uncompress_rtf(mem_ctx, rtfcomp, in_size, rtf);
+}
+
+_PUBLIC_ enum MAPISTATUS uncompress_rtf(TALLOC_CTX *mem_ctx, 
+					 uint8_t *rtfcomp, uint32_t in_size,
+					 DATA_BLOB *rtf)
+{
+	lzfuheader	lzfuhdr;
+	uint8_t		i;
+	uint8_t		*out_buf;
+	uint32_t	out_ptr = 0;
+	uint32_t	out_size = 0;
+	uint8_t		flags;
+	uint8_t		flag_mask;
+	uint8_t		dict[4096];
+	uint32_t	dict_length = 0;
 
 	memcpy(dict, LZFU_INITDICT, LZFU_INITLENGTH);
 	dict_length = LZFU_INITLENGTH;
@@ -211,8 +219,7 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 	if (out_ptr < out_size) out_buf[out_ptr++] = '\0';
 
 	/* check if out_ptr matches with expected size */
-	MAPI_RETVAL_IF(out_ptr != lzfuhdr.cbRawSize, 
-		       MAPI_E_CORRUPT_DATA, out_buf);
+	MAPI_RETVAL_IF(out_ptr != (lzfuhdr.cbRawSize-1), MAPI_E_CORRUPT_DATA, out_buf);
 
 	rtf->data = out_buf;
 	rtf->length = out_ptr;

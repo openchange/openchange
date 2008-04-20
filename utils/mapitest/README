@@ -7,6 +7,7 @@ OpenChange Test Suite HOW-TO
 Revision History:
 =================
 Initial by Julien Kerihuel	<j.kerihuel@openchange.org>,	January 2008.
+--no-server (unittests) by Brad Hards <bradh@openchange.org>,	April 2008.
 
 
 ###############
@@ -90,9 +91,21 @@ backtrace if SIGSEGV is encountered. [NOT IMPLEMENTED]
 	   profile. If --username or --profile is supplied but not the
 	   password, then the user will be prompted on stdout.
 
+--no-server option:
+	   Only run local unit tests that do not require server access
+
 
 [0x1c] Internals
 ================
+
+0. No-server unit tests
+-----------------------
+
+	While most tests require a server to test with, there are
+	things we can test without a server. These tests report
+	pass / failure for each unit test run:
+		* lzfu test - checks decompression of compressed RTF
+
 
 1. MAPI Report Headers
 ----------------------
@@ -140,7 +153,6 @@ backtrace if SIGSEGV is encountered. [NOT IMPLEMENTED]
 
 X	Not yet tested
 N	Not yet implemented
-
 
 	Ring 1:
 	      [*] OpenMsgStore

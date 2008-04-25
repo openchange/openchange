@@ -635,6 +635,7 @@ System Attendant Private Interface
 			op_MAPI_SetProps		= 0xa,
 			op_MAPI_DeleteProps		= 0xb,
 			op_MAPI_SaveChangesMessage	= 0xc,
+			op_MAPI_RemoveAllRecipients	= 0xd,
 			op_MAPI_ModifyRecipients	= 0xe,
 			op_MAPI_SetReadFlags		= 0x11,
 			op_MAPI_SetColumns		= 0x12,
@@ -1005,6 +1006,15 @@ System Attendant Private Interface
 		uint8		unknown;
 		hyper		message_id;
 	} SaveChangesMessage_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0xd  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		ulReserved;
+	} RemoveAllRecipients_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} RemoveAllRecipients_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0xe  */
@@ -1934,6 +1944,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
 		[case(op_MAPI_SortTable)] SortTable_req mapi_SortTable;
 		[case(op_MAPI_Restrict)] Restrict_req mapi_Restrict;
+		[case(op_MAPI_RemoveAllRecipients)] RemoveAllRecipients_req mapi_RemoveAllRecipients;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_req mapi_ModifyRecipients;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
 		[case(op_MAPI_GetRowCount)] GetRowCount_req mapi_GetRowCount;
@@ -1988,6 +1999,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetProps)] SetProps_repl mapi_SetProps;
 		[case(op_MAPI_DeleteProps)] DeleteProps_repl mapi_DeleteProps;
 		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_repl mapi_SaveChangesMessage;		
+		[case(op_MAPI_RemoveAllRecipients)] RemoveAllRecipients_repl mapi_RemoveAllRecipients;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
 		[case(op_MAPI_SetReadFlags)] SetReadFlags_repl mapi_SetReadFlags;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;

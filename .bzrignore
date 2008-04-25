@@ -51,3 +51,5 @@ swig/perl/mapi.pm
 swig/perl/mapi_wrap.c
 swig/perl/swig_mapicodes.h
 swig/perl/swig_mapitags.h
+utils/mapitest/mapitest_proto.h
+utils/mapitest/proto.h

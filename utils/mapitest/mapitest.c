@@ -112,7 +112,9 @@ static void mapitest_list(struct mapitest *mt, const char *name)
 static int mapitest_get_server_info(struct mapitest *mt,
 				    const char *profdb,
 				    const char *profname,
-				    const char *password)
+				    const char *password,
+				    bool opt_dumpdata,
+				    const char *opt_debug)
 {
 	enum MAPISTATUS		retval;
 	struct emsmdb_info	*info = NULL;
@@ -136,6 +138,14 @@ static int mapitest_get_server_info(struct mapitest *mt,
 			return -1;
 		}
 	}
+
+	if (opt_debug) {
+		lp_set_cmdline(global_mapi_ctx->lp_ctx, "log level", opt_debug);
+	}
+
+	if (opt_dumpdata == true) {
+		global_mapi_ctx->dumpdata = true;
+	}	
 
 	retval = MapiLogonEx(&session, profname, password);
 	if (retval != MAPI_E_SUCCESS) {
@@ -165,6 +175,8 @@ int main(int argc, const char *argv[])
 	poptContext		pc;
 	int			opt;
 	bool			ret;
+	bool			opt_dumpdata = false;
+	const char     		*opt_debug = NULL;
 	const char		*opt_profdb = NULL;
 	const char		*opt_profname = NULL;
 	const char		*opt_username = NULL;
@@ -173,7 +185,8 @@ int main(int argc, const char *argv[])
 
 	enum { OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_USERNAME, OPT_PASSWORD,
 	       OPT_CONFIDENTIAL, OPT_OUTFILE, OPT_MAPI_ALL, OPT_MAPI_CALLS,
-	       OPT_MAPIADMIN_ALL, OPT_NO_SERVER, OPT_LIST_ALL };
+	       OPT_MAPIADMIN_ALL, OPT_NO_SERVER, OPT_LIST_ALL, OPT_DUMP_DATA,
+	       OPT_DEBUG };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -186,6 +199,8 @@ int main(int argc, const char *argv[])
 		{ "mapi-calls",    0,  POPT_ARG_STRING, NULL, OPT_MAPI_CALLS,    "test custom ExchangeRPC tests" },
 		{ "list-all",      0,  POPT_ARG_NONE,   NULL, OPT_LIST_ALL,      "list suite and tests - names and description" },
 		{ "no-server",     0,  POPT_ARG_NONE,   NULL, OPT_NO_SERVER,     "only run tests that do not require server connection" },
+		{ "dump-data",     0,  POPT_ARG_NONE,   NULL, OPT_DUMP_DATA,     "dump the hex data" },
+		{ "debuglevel",   'd', POPT_ARG_STRING, NULL, OPT_DEBUG,         "set debug level" },
 		{ NULL }
 	};
 
@@ -197,6 +212,12 @@ int main(int argc, const char *argv[])
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+		case OPT_DUMP_DATA:
+			opt_dumpdata = true;
+			break;
+		case OPT_DEBUG:
+			opt_debug = poptGetOptArg(pc);
+			break;
 		case OPT_PROFILE_DB:
 			opt_profdb = poptGetOptArg(pc);
 			break;
@@ -241,7 +262,8 @@ int main(int argc, const char *argv[])
 	mapitest_init_stream(&mt, opt_outfile);
 	
 	if (mt.no_server == false) {
-		mapitest_get_server_info(&mt, opt_profdb, opt_profname, opt_password);
+		mapitest_get_server_info(&mt, opt_profdb, opt_profname, opt_password,
+					 opt_dumpdata, opt_debug);
 	}
 
 	mapitest_print_headers(&mt);

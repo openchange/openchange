@@ -104,6 +104,85 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store, mapi_id_t id_folde
 
 
 /**
+   \details Open a NNTP Public Folder given its name
+
+   \param obj_folder the parent folder
+   \param obj_child the resulting open folder
+   \param name the folder name
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenPublicFolder
+ */
+_PUBLIC_ enum MAPISTATUS OpenPublicFolderByName(mapi_object_t *obj_folder,
+						mapi_object_t *obj_child,
+						const char *name)
+{
+	struct mapi_request			*mapi_request;
+	struct mapi_response			*mapi_response;
+	struct EcDoRpc_MAPI_REQ			*mapi_req;
+	struct OpenPublicFolderByName_req	request;
+	NTSTATUS				status;
+	enum MAPISTATUS				retval;
+	uint32_t				size = 0;
+	TALLOC_CTX				*mem_ctx;
+	mapi_ctx_t				*mapi_ctx;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj_child, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!name, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("OpenPublicFolderByName");
+	size = 0;
+
+	/* Fill the OpenPublicFolderByName operation */
+	request.handle_idx = 0x1;
+	size += sizeof (uint8_t);
+
+	/* name is prefixed with 32 bit [size] */
+	request.name = name;
+	size += strlen(name) + 1 + sizeof (uint32_t);
+	
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_OpenPublicFolderByName;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_OpenPublicFolderByName = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_folder);
+	mapi_request->handles[1] = 0xffffffff;
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	mapi_object_set_handle(obj_child, mapi_response->handles[1]);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details Sets a folder as the destination for incoming messages of
    a particular message class.
 

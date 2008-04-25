@@ -74,7 +74,7 @@ _PUBLIC_ uint32_t module_oxcfold_init(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite = NULL;
 
-	suite = mapitest_suite_init(mt, "FOLDER", "Folder Object Protocol");
+	suite = mapitest_suite_init(mt, "OXCFOLD", "Folder Object Protocol");
 
 	mapitest_suite_add_test(suite, "OPEN",   "Open a folder", mapitest_oxcfold_OpenFolder);
 	mapitest_suite_add_test(suite, "CREATE", "Create a folder", mapitest_oxcfold_CreateFolder);

@@ -677,6 +677,7 @@ System Attendant Private Interface
 			op_MAPI_EmptyFolder		= 0x58,
 			op_MAPI_QueryNamesFromIDs	= 0x5f,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
+			op_MAPI_OpenPublicFolderByName	= 0x87,
 			op_MAPI_Logon			= 0xfe
 		} MAPI_OPNUM;
 
@@ -1839,6 +1840,18 @@ System Attendant Private Interface
 	} GetReceiveFolderTable_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x87 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		handle_idx;
+		asclstr		name;
+	} OpenPublicFolderByName_req; 
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8	HasRules;
+		boolean8	IsGhosted;
+	} OpenPublicFolderByName_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0xFE */
 	typedef [enum8bit] enum {
 		Private		= 0x1,
@@ -1958,6 +1971,7 @@ System Attendant Private Interface
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_req mapi_QueryNamesFromIDs;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
+		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
 		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
 	} EcDoRpc_MAPI_REQ_UNION;
 
@@ -2015,6 +2029,7 @@ System Attendant Private Interface
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_repl mapi_QueryNamesFromIDs;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
+		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;
 
 	} EcDoRpc_MAPI_REPL_UNION;

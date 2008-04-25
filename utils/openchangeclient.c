@@ -1665,7 +1665,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 				printf("|   ");
 			}
 			newname = utf8tolinux(mem_ctx, name);
-			printf("|---+ %-15s\n", newname);
+			printf("|---+ %-15s [FID: 0x%llx]\n", newname, *fid);
 			MAPIFreeBuffer(newname);
 			if (*child) {
 				ret = get_child_folders_pf(mem_ctx, &obj_folder, *fid, count + 1);

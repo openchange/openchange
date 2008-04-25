@@ -1,7 +1,7 @@
 /*
    Stand-alone MAPI testsuite
 
-   OpenChange Project
+   OpenChange Project - Non connection oriented tests
 
    Copyright (C) Brad Hards 2008
 
@@ -20,61 +20,47 @@
 */
 
 #include <libmapi/libmapi.h>
-#include <samba/popt.h>
-#include <param.h>
+#include "utils/mapitest/mapitest.h"
+#include "utils/mapitest/proto.h"
 
-#include <utils/openchange-tools.h>
-#include <utils/mapitest/mapitest.h>
+/**
+   \file module_noserver.c
+
+   \brief Non connection oriented tests
+*/
 
 #define RTF_COMPRESSED1_HEX "d60000000b0100004c5a467556c587aa03000a0072637067313235163200f80b606e0e103033334f01f702a403e3020063680ac073b065743020071302807d0a809d00002a09b009f00490617405b11a520de068098001d020352e4035302e39392e01d031923402805c760890776b0b807464340c606300500b030bb520284a757305407303706520d7129014d003702005a06d07800230390ac0792e0aa20a840a80416eac6f74132005c06c0b806517dbc24f05c074776f2e0ae31a13fa6119132003f018d0086005401b405b026000706b191a11e1001da0"
 
 #define RTF_UNCOMPRESSED1 "{\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}\r\n{\\*\\generator Riched20 5.50.99.2014;}\\viewkind4\\uc1\\pard\\f0\\fs20 Just some random commentary.\\par\r\n\\par\r\nAnother line.\\par\r\n\\par\r\nOr two. \\par\r\nOr a line without a blank line.\\par\r\n}}"
 
-static void mapitest_call_test_lzfu(struct mapitest *mt)
+_PUBLIC_ bool mapitest_noserver_lzfu(struct mapitest *mt)
 {
-	enum MAPISTATUS retval;
-	TALLOC_CTX *mem_ctx;
-	DATA_BLOB uncompressed;
-	uint8_t compressed_hex[1024];
-	uint8_t *compressed;
-	uint32_t compressed_length;
+	enum MAPISTATUS		retval;
+	DATA_BLOB		uncompressed;
+	uint8_t			compressed_hex[1024];
+	uint8_t			*compressed;
+	uint32_t		compressed_length;
 
-	mapitest_print(mt, MT_HDR_FMT_SECTION, "lzfu decompression");
-	mem_ctx = talloc_init("mapitest_call_test_lzfu");
-
-	compressed = talloc_array(mem_ctx, uint8_t, 1024);
+	compressed = talloc_array(mt->mem_ctx, uint8_t, 1024);
 	memcpy(compressed_hex, RTF_COMPRESSED1_HEX, 434);
 	compressed_length = strhex_to_str((char*)compressed, 434, (char*)compressed_hex);
-	if (compressed_length !=217) {
-		mapitest_print(mt, MT_HDR_FMT, "uncompress_rtf", "bad length");
-		goto cleanup;
+	if (compressed_length != 217) {
+		mapitest_print(mt, "* %-35s: uncompress RTF - Bad length\n", "LZFU");
+		return false;
 	}
 
-	retval = uncompress_rtf(mem_ctx, compressed, compressed_length, &uncompressed);
+	retval = uncompress_rtf(mt->mem_ctx, compressed, compressed_length, &uncompressed);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "uncompress_rtf", GetLastError());
 	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print_subcall(mt,  "uncompress_rtf", GetLastError());
-		goto cleanup;
+		return false;
 	}	   
 
-	if (0 == strncmp((char*)uncompressed.data, RTF_UNCOMPRESSED1, uncompressed.length)) {
-		mapitest_print(mt, MT_HDR_FMT, "uncompress_rtf", "passed");
+	if (!strncmp((char*)uncompressed.data, RTF_UNCOMPRESSED1, uncompressed.length)) {
+		mapitest_print(mt, "* %-35s: PASSED\n", "uncompress_rtf");
 	} else {
-		mapitest_print(mt, MT_HDR_FMT, "uncompress_rtf", "failed comparison");
+		mapitest_print(mt, "* %-35s: FAILED\n", "uncompress_rtf");
+		return false;
 	}
- cleanup:
-	talloc_free(mem_ctx);
-}
-
-
-void mapitest_calls_noserver(struct mapitest *mt)
-{
-	mapitest_print(mt, MT_HDR_START);
-
-	mapitest_print_interface_start(mt, "Unit tests that do not require a server");
-
-	mapitest_call_test_lzfu(mt);
-
-	mapitest_print_interface_end(mt);
-
-	mapitest_print(mt, MT_HDR_END);
+	
+	return true;
 }

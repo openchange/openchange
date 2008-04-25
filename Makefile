@@ -726,7 +726,9 @@ bin/exchange2mbox:	utils/exchange2mbox.o				\
 # mapitest
 ###################
 
-mapitest:		bin/mapitest
+mapitest:	libmapi			\
+		utils/mapitest/proto.h 	\
+		bin/mapitest
 
 mapitest-install:
 	$(INSTALL) -d $(DESTDIR)$(bindir)
@@ -735,24 +737,46 @@ mapitest-install:
 mapitest-uninstall:
 	rm -f $(DESTDIR)$(bindir)/mapitest
 
-clean::
+mapitest-clean:
 	rm -f bin/mapitest
 	rm -f utils/mapitest/*.o
+	rm -f utils/mapitest/modules/*.o
+	rm -f utils/mapitest/proto.h
+	rm -f utils/mapitest/mapitest_proto.h
+
+
+clean:: mapitest-clean
 
 bin/mapitest:	utils/mapitest/mapitest.o			\
-		utils/mapitest/mapitest_common.o		\
+		utils/mapitest/mapitest_suite.o			\
 		utils/mapitest/mapitest_print.o			\
-		utils/mapitest/mapitest_calls.o			\
-		utils/mapitest/mapitest_calls_ring1.o		\
-		utils/mapitest/mapitest_calls_ring2.o		\
-		utils/mapitest/mapitest_calls_ring3.o		\
-		utils/mapitest/mapitest_calls_ring4.o		\
-		utils/mapitest/mapitest_noserver.o			\
-		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-		libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
+		utils/mapitest/mapitest_common.o		\
+		utils/mapitest/module.o				\
+		utils/mapitest/modules/module_oxcstor.o		\
+		utils/mapitest/modules/module_folder.o		\
+		utils/mapitest/modules/module_oxomsg.o		\
+		utils/mapitest/modules/module_oxcmsg.o		\
+		utils/mapitest/modules/module_oxcprpt.o		\
+		utils/mapitest/modules/module_oxctable.o	\
+		utils/mapitest/modules/module_noserver.o	\
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
+utils/mapitest/proto.h:					\
+	utils/mapitest/mapitest_suite.c			\
+	utils/mapitest/mapitest_print.c			\
+	utils/mapitest/mapitest_common.c		\
+	utils/mapitest/module.c				\
+	utils/mapitest/modules/module_oxcstor.c		\
+	utils/mapitest/modules/module_folder.c		\
+	utils/mapitest/modules/module_oxomsg.c		\
+	utils/mapitest/modules/module_oxcmsg.c		\
+	utils/mapitest/modules/module_oxcprpt.c		\
+	utils/mapitest/modules/module_oxctable.c	\
+	utils/mapitest/modules/module_noserver.c	
+	@echo "Generating $@"
+	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
 
 #####################
 # openchangemapidump

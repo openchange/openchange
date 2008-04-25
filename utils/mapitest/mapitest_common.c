@@ -20,8 +20,6 @@
 */
 
 #include <libmapi/libmapi.h>
-#include <samba/popt.h>
-#include <param.h>
 
 #include <utils/openchange-tools.h>
 #include <utils/mapitest/mapitest.h>
@@ -30,20 +28,25 @@
 /**
  * Opens a default folder
  */
-bool mapitest_folder_open(struct mapitest *mt,
-			  mapi_object_t *obj_parent, 
-			  mapi_object_t *obj_child,
-			  uint32_t olNum,
-			  const char *call)
+_PUBLIC_ bool mapitest_common_folder_open(struct mapitest *mt,
+					  mapi_object_t *obj_parent, 
+					  mapi_object_t *obj_child,
+					  uint32_t olNum)
 {
 	enum MAPISTATUS	retval;
 	mapi_id_t	id_child;
 
 	retval = GetDefaultFolder(obj_parent, &id_child, olNum);
-	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "GetDefaultFolder");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetDefaultFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	retval = OpenFolder(obj_parent, id_child, obj_child);
-	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "OpenFolder");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	return true;
 }
@@ -54,13 +57,13 @@ bool mapitest_folder_open(struct mapitest *mt,
  * specified subject. Note: this function doesn't use the Restrict
  * call so we can respect the ring policy we defined.
  */
-bool mapitest_message_find_subject(struct mapitest *mt,
-				   mapi_object_t *obj_folder,
-				   mapi_object_t *obj_message,
-				   uint8_t mode,
-				   const char *subject,
-				   const char *call,
-				   uint32_t *index)
+_PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
+						   mapi_object_t *obj_folder,
+						   mapi_object_t *obj_message,
+						   uint8_t mode,
+						   const char *subject,
+						   const char *call,
+						   uint32_t *index)
 {
 	enum MAPISTATUS		retval;
 	mapi_object_t		obj_ctable;
@@ -80,7 +83,10 @@ bool mapitest_message_find_subject(struct mapitest *mt,
 	/* Retrieve the contents table */
 	mapi_object_init(&obj_ctable);
 	retval = GetContentsTable(obj_folder, &obj_ctable);
-	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "GetContentsTable");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	/* Customize the content table view */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3,
@@ -89,15 +95,24 @@ bool mapitest_message_find_subject(struct mapitest *mt,
 					  PR_SUBJECT);
 	retval = SetColumns(&obj_ctable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "SetColumns");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetColumns", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	/* Count the total number of rows */
 	retval = GetRowCount(&obj_ctable, &count);
-	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "GetRowCount");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRowCount", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	/* Position the table at the latest know position */
 	retval = SeekRow(&obj_ctable, BOOKMARK_BEGINNING, *index, &count2);
-	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "SeekRow");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SeekRow", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	/* Substract current position from the total */
 	count -= count2;
@@ -139,11 +154,10 @@ bool mapitest_message_find_subject(struct mapitest *mt,
 /**
  * Create a message ready to submit
  */
-bool mapitest_message_create(struct mapitest *mt,
-			     mapi_object_t *obj_folder, 
-			     mapi_object_t *obj_message,
-			     const char *subject,
-			     const char *call)
+_PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
+					     mapi_object_t *obj_folder, 
+					     mapi_object_t *obj_message,
+					     const char *subject)
 {
 	enum MAPISTATUS		retval;
 	struct SPropTagArray	*SPropTagArray;
@@ -156,11 +170,13 @@ bool mapitest_message_create(struct mapitest *mt,
 
 	/* Sanity checks */
 	if (subject == NULL) return false;
-	if (call == NULL) return false;
 
 	/* Create the mesage */
 	retval = CreateMessage(obj_folder, obj_message);
-	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "CreateMessage");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateMessage", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	/* Resolve recipients */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x6,
@@ -178,7 +194,10 @@ bool mapitest_message_create(struct mapitest *mt,
 	retval = ResolveNames((const char **)username, SPropTagArray,
 			      &SRowSet, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
-	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "ResolveNames");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "ResolveNames", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
 	SPropValue.value.l = 0;
@@ -189,14 +208,20 @@ bool mapitest_message_create(struct mapitest *mt,
 	retval = ModifyRecipients(obj_message, SRowSet);
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(flaglist);
-	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "ModifyRecipients");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "ModifyRecipients", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	/* Set message properties */
 	msgflag = MSGFLAG_SUBMIT;
 	set_SPropValue_proptag(&lpProps[0], PR_SUBJECT, (const void *) subject);
 	set_SPropValue_proptag(&lpProps[1], PR_MESSAGE_FLAGS, (const void *)&msgflag);
 	retval = SetProps(obj_message, lpProps, 2);
-	MT_ERRNO_IF_CALL_BOOL(mt, retval, call, "SetProps");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetProps", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	return true;
 }

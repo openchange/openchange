@@ -20,47 +20,55 @@
 */
 
 #include <libmapi/libmapi.h>
-#include <samba/popt.h>
 #include <samba/version.h>
-#include <param.h>
+#include <utils/mapitest/mapitest.h>
 
 #include <time.h>
 
-#include <utils/openchange-tools.h>
-#include <utils/mapitest/mapitest.h>
-
-static int	count = 0;
+static int count = 0;
 
 #define	CNT_INDENT()	{ count++; }
 #define	CNT_DEINDENT()	{ count--; if (count < 0) count = 0; }
-#define	CNT_PRINT(s)	{ int i; for (i = 0; i < count; i++) { fprintf(s, "\t");} }
-#define	SYMB_PRINT(s,t,n) { int i; for (i = 0; i < n; i++) {fprintf(s,t);} fprintf(s, "\n"); }
+#define	CNT_PRINT(s)	{ int i; for (i = 0; i < count; i++) { fprintf(s, "\t"); } }
 
 
-void mapitest_print_line(struct mapitest *mt, unsigned int number)
-{
-	int	i;
-
-	if (number <= 0) number = 1;
-
-	for (i = 0; i < number; i++) {
-		fprintf(mt->stream, "\n");
-	}
-}
-
-
-void mapitest_indent(void)
+/**
+   \details indent the mapitest_print tabulation counter
+ */
+_PUBLIC_ void mapitest_indent(void)
 {
 	CNT_INDENT();
 }
 
 
-void mapitest_deindent(void)
+/**
+   \details deindent the mapitest_print tabulation counter
+ */
+_PUBLIC_ void mapitest_deindent(void)
 {
 	CNT_DEINDENT();
 }
 
-void mapitest_print(struct mapitest *mt, const char *format, ...)
+
+/**
+   \details print tabulations given the internal counter
+
+   \param mt pointer on the top-level mapitest structure
+ */
+_PUBLIC_ void mapitest_print_tab(struct mapitest *mt)
+{
+	CNT_PRINT(mt->stream);
+}
+
+
+/**
+   \details print a string in the stream
+
+   \param mt pointer on the top-level mapitest structure
+   \param format the format string
+   \param ... the format string parameters
+ */
+_PUBLIC_ void mapitest_print(struct mapitest *mt, const char *format, ...)
 {
 	va_list		ap;
 	char		*s = NULL;
@@ -69,129 +77,253 @@ void mapitest_print(struct mapitest *mt, const char *format, ...)
 	vasprintf(&s, format, ap);
 	va_end(ap);
 
-	CNT_PRINT(mt->stream);
+	mapitest_print_tab(mt);
 	fprintf(mt->stream, s, strlen(s));
 	free(s);
 }
 
+/**
+   \details print newline characters
 
-void mapitest_print_bool(struct mapitest *mt, const char *format, 
-			 const char *section, bool val)
+   \param mt pointer on the top-level mapitest structure
+   \param count number of newline characters to print
+ */
+_PUBLIC_ void mapitest_print_newline(struct mapitest *mt, int count)
 {
-	CNT_PRINT(mt->stream);
-	fprintf(mt->stream, format, section, (val == true) ? MT_YES : MT_NO);
+	int	i;
+
+	for (i = 0; i < count; i++) {
+		fprintf(mt->stream, "\n");
+	}
+}
+
+/**
+   \details print a line using a delimiter
+
+   \param mt pointer on the top-level mapitest structure
+   \param len the length of the line to print
+   \param delim the line delimiter
+ */
+_PUBLIC_ void mapitest_print_line(struct mapitest *mt, int len, char delim)
+{
+	int	i;
+
+	for (i = 0; i < len; i++) {
+		fprintf(mt->stream, "%c", delim);
+	}
+	mapitest_print_newline(mt, 1);
 }
 
 
-void mapitest_print_headers_start(struct mapitest *mt)
+/**
+   \details underline a string
+
+   \param mt pointer on the top-level mapitest structure
+   \param str string to underline
+   \param delim the line delimiter
+ */
+_PUBLIC_ void mapitest_underline(struct mapitest *mt, const char *str, char delim)
+{
+	if (!str) return;
+
+	/* print str */
+	mapitest_print_tab(mt);
+	fprintf(mt->stream, str);
+
+	/* underline str using delim */
+	mapitest_print_tab(mt);
+	mapitest_print_line(mt, strlen(str), delim);
+}
+
+/**
+   \details private general routine used to print a title
+
+   Avoid code redundancy over the API
+
+   \param mt pointer on the top-level mapitest structure
+   \param str the title
+   \param delim the underline delimiter
+ */
+_PUBLIC_ void mapitest_print_title(struct mapitest *mt, const char *str, char delim)
+{
+	mapitest_underline(mt, str, delim);
+	mapitest_indent();
+}
+
+
+/**
+   \details print the module title
+
+   \param mt pointer on the top-level mapitest structure
+   \param str the module title string
+ */
+_PUBLIC_ void mapitest_print_module_title_start(struct mapitest *mt, const char *str)
+{
+	char	*title = NULL;
+
+	if (!str) return;
+
+	title = talloc_asprintf(mt->mem_ctx, MODULE_TITLE, str);
+	mapitest_print(mt, "%s", title);
+	mapitest_print_tab(mt);
+	mapitest_print_line(mt, MODULE_TITLE_LINELEN, MODULE_TITLE_DELIM);
+	mapitest_indent();
+	talloc_free(title);
+}
+
+/**
+   \details print the content at the end of the module
+
+   \param mt pointer on the top-level mapitest structure
+ */
+_PUBLIC_ void mapitest_print_module_title_end(struct mapitest *mt)
+{
+	mapitest_deindent();
+
+	mapitest_print_tab(mt);
+	mapitest_print_line(mt, MODULE_TITLE_LINELEN, MODULE_TITLE_DELIM);
+	mapitest_print_newline(mt, MODULE_TITLE_NEWLINE);
+}
+
+
+/**
+   \details print the test tile
+   
+   \param mt pointer on the top-level mapitest structure
+   \param str the test title
+ */
+_PUBLIC_ void mapitest_print_test_title_start(struct mapitest *mt, const char *str)
+{
+	char		*title = NULL;
+
+	if (!str) return;
+
+	title = talloc_asprintf(mt->mem_ctx, MODULE_TEST_TITLE, str);
+	mapitest_print(mt, "%s", title);
+	mapitest_print_tab(mt);
+	mapitest_print_line(mt, MODULE_TEST_LINELEN, MODULE_TEST_DELIM);
+	mapitest_indent();
+	talloc_free(title);
+}
+
+
+/**
+   \details write the content at the end of a test
+
+   \param mt pointer on the top-level mapitest structure
+ */
+_PUBLIC_ void mapitest_print_test_title_end(struct mapitest *mt)
+{
+	mapitest_deindent();
+
+	mapitest_print_tab(mt);
+	mapitest_print_line(mt, MODULE_TEST_LINELEN, MODULE_TEST_DELIM);
+}
+
+
+/**
+   \details starts the headers output
+
+   \param mt pointer on the top-level mapitest structure
+ */
+static void mapitest_print_headers_start(struct mapitest *mt)
 {
 	mapitest_print(mt, MT_HDR_START);
 }
 
 
-void mapitest_print_headers_end(struct mapitest *mt)
+/**
+   \details ends the headers output
+ */
+static void mapitest_print_headers_end(struct mapitest *mt)
 {
 	mapitest_print(mt, MT_HDR_END);
 }
 
-
-void mapitest_print_headers_info(struct mapitest *mt)
+/**
+   \details print mapitest report headers information
+   
+   \param mt pointer on the top-level mapitest structure
+ */
+_PUBLIC_ void mapitest_print_headers_info(struct mapitest *mt)
 {
 	time_t		t;
 	char		*date;
 
-	if (mt == NULL) return;
-
-	time(&t);
+	time (&t);
 	date = ctime(&t);
 
 	mapitest_print(mt, MT_HDR_FMT_DATE, "Date", date);
-	mapitest_print_bool(mt, MT_HDR_FMT, "Confidential mode", mt->confidential);
+	mapitest_print(mt, MT_HDR_FMT, "Confidential mode", 
+		       (mt->confidential == true) ? MT_YES : MT_NO);
 	mapitest_print(mt, MT_HDR_FMT, "Samba Information", SAMBA_VERSION_STRING);
 	mapitest_print(mt, MT_HDR_FMT, "OpenChange Information", OPENCHANGE_VERSION_STRING);
 
-	mapitest_print_line(mt, 1);
-	mapitest_print(mt, MT_HDR_FMT_SECTION, "System Information");
-	CNT_INDENT();
+	mapitest_print_newline(mt, 1);
+	mapitest_print(mt, MT_HDR_FMT, "System Information");
+	mapitest_indent();
 	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Kernel name", OPENCHANGE_SYS_KERNEL_NAME);
 	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Kernel release", OPENCHANGE_SYS_KERNEL_RELEASE);
-	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Processor", OPENCHANGE_SYS_PROCESSOR);	
-	CNT_DEINDENT();
+	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Processor", OPENCHANGE_SYS_PROCESSOR);
+	mapitest_deindent();
 }
 
-void mapitest_print_server_info(struct mapitest *mt)
+
+/**
+   \details print mapitest report Exchange and account information
+
+   \param mt pointer on the top-level mapitest structure
+ */
+_PUBLIC_ void mapitest_print_headers_server_info(struct mapitest *mt)
 {
-	char	*mailbox = NULL;
-
-	if (mt == NULL || mt->info.username == NULL) return;
-
-	mailbox = talloc_asprintf(mt->mem_ctx, "%s%s", 
-				  mt->info.mailbox, mt->info.username);
-
-	mapitest_print_line(mt, 1);
+	mapitest_print_newline(mt, 1);
 	mapitest_print(mt, MT_HDR_FMT_SECTION, "Exchange Server");
-	CNT_INDENT();
+	mapitest_indent();
 	mapitest_print(mt, MT_HDR_FMT_STORE_VER, "Store version",
 		       mt->info.store_version[0],
 		       mt->info.store_version[1],
 		       mt->info.store_version[2]);
 	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Username",
 		       (mt->confidential == true) ? MT_CONFIDENTIAL : mt->info.username);
-	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Organization", 
+	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Organization",
 		       (mt->confidential == true) ? MT_CONFIDENTIAL : mt->org);
-	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Organization Unit", 
+	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Organization Unit",
 		       (mt->confidential == true) ? MT_CONFIDENTIAL : mt->org_unit);
-
-	CNT_DEINDENT();
+	mapitest_deindent();
 }
 
 
-void mapitest_print_options(struct mapitest *mt)
+/**
+   \details print mapitest report headers
+
+   \param mt pointer on the top-level mapitest structure
+ */
+_PUBLIC_ void mapitest_print_headers(struct mapitest *mt)
 {
-	mapitest_print_line(mt, 1);
-	mapitest_print(mt, MT_HDR_FMT_SECTION, "MapiTest Options");
-	CNT_INDENT();
-	mapitest_print_bool(mt, MT_HDR_FMT_SUBSECTION, "mapi all", mt->mapi_all);
-	mapitest_print_bool(mt, MT_HDR_FMT_SUBSECTION, "mapi atomic calls", mt->mapi_calls);
-	CNT_DEINDENT();
-}
-
-
-void mapitest_print_interface_start(struct mapitest *mt, const char *name)
-{
-	static int int_nb = 1;
-
-	mapitest_print_line(mt, 1);
-	mapitest_print(mt, MT_INTERFACE_FMT, int_nb, name);
-	SYMB_PRINT(mt->stream, "-", strlen(name) + 7);
-	CNT_INDENT();
-	int_nb++;
-}
-
-
-void mapitest_print_interface_end(struct mapitest *mt)
-{
-	CNT_DEINDENT();
-}
-
-
-void mapitest_print_call(struct mapitest *mt, const char *call, 
-			 enum MAPISTATUS retval)
-{
-	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print(mt, MT_CALL_FMT_KO, call, GetLastError());
-	} else {
-		mapitest_print(mt, MT_CALL_FMT_OK, call);
+	mapitest_print_headers_start(mt);
+	mapitest_indent();
+	mapitest_print_headers_info(mt);
+	if (mt->no_server == false) {
+		mapitest_print_headers_server_info(mt);
 	}
+	mapitest_deindent();
+	mapitest_print_headers_end(mt);
+	mapitest_print_newline(mt, 2);
 }
 
 
-void mapitest_print_subcall(struct mapitest *mt, const char *call, 
-			    enum MAPISTATUS retval)
+/**
+   \details print mapitest test result
+
+   \param mt pointer on the top-level mapitest structure
+   \param name the test name
+   \param ret boolean value with the test result
+ */
+_PUBLIC_ void mapitest_print_test_result(struct mapitest *mt, char *name, bool ret)
 {
-	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print(mt, MT_SUBCALL_FMT_KO, call, GetLastError());
-	} else {
-		mapitest_print(mt, MT_SUBCALL_FMT_OK, call);
-	}
+	mapitest_print(mt, MODULE_TEST_RESULT, name, (ret == true) ? 
+		       MODULE_TEST_SUCCESS : MODULE_TEST_FAILURE);
+	mapitest_print_tab(mt);
+	mapitest_print_line(mt, MODULE_TEST_LINELEN, MODULE_TEST_DELIM2);
+	mapitest_print_newline(mt, MODULE_TEST_NEWLINE);
 }

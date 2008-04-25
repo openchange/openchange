@@ -25,154 +25,101 @@
 #include <errno.h>
 #include <err.h>
 
+/* forward declaration */
+struct mapitest;
+struct mapitest_suite;
+
+#include "utils/mapitest/proto.h"
 
 /**
  * Data structures
  */
 
+struct mapitest_test {
+	struct mapitest_test	*prev;
+	struct mapitest_test	*next;
+	char			*name;
+	char			*description;
+	void			*fn;
+};
+
+struct mapitest_suite {
+	struct mapitest_suite	*prev;
+	struct mapitest_suite	*next;
+	char			*name;
+	char			*description;
+	struct mapitest_test	*tests;
+};
+
+struct mapitest_unit {
+	struct mapitest_unit	*prev;
+	struct mapitest_unit	*next;
+	char			*name;
+};
+
 struct mapitest {
 	TALLOC_CTX		*mem_ctx;
-	struct emsmdb_info	info;
 	bool			confidential;
+	bool			no_server;
 	bool			mapi_all;
-	bool			mapi_calls;
+	struct emsmdb_info	info;
+	struct mapitest_suite	*mapi_suite;
+	struct mapitest_unit   	*cmdline_calls;
+	struct mapitest_unit   	*cmdline_suite;
 	const char		*org;
 	const char		*org_unit;
 	FILE			*stream;
 };
 
+struct mapitest_module {
+	char			*name;
+	
+};
 
 /**
- * Prototypes and definitions
+ *  Defines
  */
+#define	MAPITEST_SUCCESS	0
+#define	MAPITEST_ERROR		-1
 
-#ifndef __BEGIN_DECLS
-#ifdef __cplusplus
-#define __BEGIN_DECLS		extern "C" {
-#define __END_DECLS		}
-#else
-#define __BEGIN_DECLS
-#define __END_DECLS
-#endif
-#endif
-
-__BEGIN_DECLS
-
-/* Definitions from mapitest_print.c */
-void	mapitest_print_headers_start(struct mapitest *);
-void	mapitest_print_headers_end(struct mapitest *);
-void	mapitest_print_line(struct mapitest *, unsigned int);
-void	mapitest_print(struct mapitest *, const char *, ...);
-void	mapitest_print_bool(struct mapitest *, const char *, const char *, bool);
-void	mapitest_print_headers_info(struct mapitest *);
-void	mapitest_print_server_info(struct mapitest *);
-void	mapitest_print_options(struct mapitest *);
-void	mapitest_print_call(struct mapitest *, const char *, enum MAPISTATUS);
-void	mapitest_print_subcall(struct mapitest *, const char *, enum MAPISTATUS);
-void	mapitest_print_interface_start(struct mapitest *, const char *);
-void	mapitest_print_interface_end(struct mapitest *);
-
-void	mapitest_indent(void);
-void	mapitest_deindent(void);
-
-/* Definitions from mapitest_common.c */
-bool	mapitest_folder_open(struct mapitest *, mapi_object_t *, 
-			     mapi_object_t *, uint32_t, const char *);
-bool	mapitest_message_find_subject(struct mapitest *, mapi_object_t *,
-				      mapi_object_t *, uint8_t, const char *, 
-				      const char *, uint32_t *);
-bool	mapitest_message_create(struct mapitest *, mapi_object_t *, 
-				mapi_object_t *, const char *, const char *);
-
-/* Definitions required by mapitest_calls.c */
-void	mapitest_calls(struct mapitest *);
-void	mapitest_calls_ring1(struct mapitest *);
-void	mapitest_calls_ring2(struct mapitest *);
-void	mapitest_calls_ring3(struct mapitest *);
-void	mapitest_calls_ring4(struct mapitest *);
-
-void	mapitest_calls_noserver(struct mapitest *);
-__END_DECLS
-
-
-/**
- * Defines
- */
-
-#define	MT_YES		"[yes]"
-#define	MT_NO		"[no]"
-#define	MT_ERROR       	"[ERROR]: %s\n"
-#define	MT_ERRNO       	"[*] %-45s: [ERROR]: 0x%.8x\n"
-#define	MT_CALLOK	"[CALL]: %s OK\n"
-#define	MT_WARN		"[WARNING]: %s\n"
+#define	MT_YES			"[yes]"
+#define	MT_NO			"[no]"
 
 #define	MT_CONFIDENTIAL	"[Confidential]"
 
 #define	MT_HDR_START		"#############################[mapitest report]#################################\n"
 #define	MT_HDR_END		"###############################################################################\n"
-#define	MT_HDR_FMT		"[*] %-45s: %-20s\n"
-#define	MT_HDR_FMT_DATE		"[*] %-45s: %-20s"
-#define	MT_HDR_FMT_SECTION	"[*] %-45s:\n"
-#define	MT_HDR_FMT_SUBSECTION	"%-41s: %-10s\n"
-#define	MT_HDR_FMT_STORE_VER	"%-41s: %d.%d.%d\n"
-#define	MT_INTERFACE_FMT	"[0x%.2x] %s\n"
-#define	MT_CALL_FMT_OK		"[*] %-45s: [PASSED]\n"
-#define	MT_CALL_FMT_KO		"[*] %-45s: [FAILED]: 0x%.8x\n"
-#define	MT_SUBCALL_FMT_OK	"%-41s: [PASSED]\n"
-#define	MT_SUBCALL_FMT_KO	"%-41s: [FAILED]: 0x%.8x\n"
+#define	MT_HDR_FMT		"[*] %-25s: %-20s\n"
+#define	MT_HDR_FMT_DATE		"[*] %-25s: %-20s"
+#define	MT_HDR_FMT_SECTION	"[*] %-25s:\n"
+#define	MT_HDR_FMT_SUBSECTION	"%-21s: %-10s\n"
+#define	MT_HDR_FMT_STORE_VER	"%-21s: %d.%d.%d\n"
 
+#define	MT_DIRNAME_TOP		"[MT] Top of Mailbox"
+#define	MT_DIRNAME_APPOINTMENT	"[MT] Calendar"
+#define	MT_DIRNAME_CONTACT	"[MT] Contact"
+#define	MT_DIRNAME_JOURNAL	"[MT] Journal"
+#define	MT_DIRNAME_POST		"[MT] Post"
+#define	MT_DIRNAME_NOTE		"[MT] Note"
+#define	MT_DIRNAME_STICKYNOTE	"[MT] Sticky Notes"
+#define	MT_DIRNAME_TASK		"[MT] Tasks"
 
-#define	MT_DIRNAME_TOP		"[MP] Top of Mailbox"
-#define	MT_DIRNAME_APPOINTMENT	"[MP] Calendar"
-#define	MT_DIRNAME_CONTACT	"[MP] Contact"
-#define	MT_DIRNAME_JOURNAL	"[MP] Journal"
-#define	MT_DIRNAME_POST		"[MP] Post"
-#define	MT_DIRNAME_NOTE		"[MP] Note"
-#define	MT_DIRNAME_STICKYNOTE	"[MP] Sticky Notes"
-#define	MT_DIRNAME_TASK		"[MP] Tasks"
+#define	MT_MAIL_SUBJECT		"[MT] Sample E-MAIL"
 
-#define	MT_MAIL_SUBJECT			"[MP] Mail"
-#define	MT_MAIL_SUBJECT_ATTACH		"[MP] Mail - Attach"
-#define	MT_MAIL_SUBJECT_READFLAGS	"[MP] Mail - ReadFlags"
+#define	MODULE_TITLE		"[MODULE] %s\n"
+#define	MODULE_TITLE_DELIM	'#'
+#define	MODULE_TITLE_NEWLINE	2
+#define	MODULE_TITLE_LINELEN	80
 
-#define	MT_MAIL_ATTACH_NAME	"MP_attach.txt"
-#define	MT_MAIL_ATTACH_BLOB	"[MP] OpenChange MAPI TestSuite: mapitest [MP]"
+#define	MODULE_TEST_TITLE	"[TEST] %s\n"
+#define	MODULE_TEST_RESULT	"[RESULT] %s: %s\n"
+#define	MODULE_TEST_DELIM	'-'
+#define	MODULE_TEST_DELIM2	'='
+#define	MODULE_TEST_LINELEN	72
+#define	MODULE_TEST_NEWLINE	1
+#define	MODULE_TEST_SUCCESS	"[SUCCESS]"
+#define	MODULE_TEST_FAILURE	"[FAILURE]"
 
-/**
- * Macros
- */
+#define	MT_ERROR       	"[ERROR]: %s\n"
 
-#define	MT_ERRNO_IF(mt, x, s) {						\
-		if (x != MAPI_E_SUCCESS) {				\
-			mapitest_print(mt, MT_ERRNO, s, GetLastError());\
-			errno = 0;					\
-			return;						\
-		}							\
-	}
-
-#define	MT_ERRNO_IF_CALL(mt, x, c, s) {						\
-		if (x != MAPI_E_SUCCESS) {					\
-			char	*str;						\
-										\
-			str = talloc_asprintf(mt->mem_ctx, "%s:%s", c, s);	\
-			mapitest_print(mt, MT_ERRNO, str, GetLastError());	\
-			talloc_free(str);					\
-			errno = 0;						\
-			return;							\
-		}								\
-	}
-
-
-#define	MT_ERRNO_IF_CALL_BOOL(mt, x, c, s) {   					\
-		if (x != MAPI_E_SUCCESS) {					\
-			char	*str;						\
-										\
-			str = talloc_asprintf(mt->mem_ctx, "%s:%s", c, s);	\
-			mapitest_print(mt, MT_ERRNO, str, GetLastError());	\
-			talloc_free(str);					\
-			errno = 0;						\
-			return false;							\
-		}								\
-	}
-
-#endif /* ! __MAPITEST_H__ */
+#endif /* !__MAPITEST_H__ */

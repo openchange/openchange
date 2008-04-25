@@ -28,7 +28,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	uint32_t	ret;
 
 	ret = module_oxcstor_init(mt);
-	ret = module_folder_init(mt);
+	ret = module_oxcfold_init(mt);
 	ret = module_oxctable_init(mt);
 	ret = module_oxomsg_init(mt);
 	ret = module_oxcmsg_init(mt);
@@ -70,16 +70,16 @@ _PUBLIC_ uint32_t module_oxcstor_init(struct mapitest *mt)
 
    \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
  */
-_PUBLIC_ uint32_t module_folder_init(struct mapitest *mt)
+_PUBLIC_ uint32_t module_oxcfold_init(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite = NULL;
 
 	suite = mapitest_suite_init(mt, "FOLDER", "Folder Object Protocol");
 
-	mapitest_suite_add_test(suite, "OPEN",   "Open a folder", mapitest_folder_OpenFolder);
-	mapitest_suite_add_test(suite, "CREATE", "Create a folder", mapitest_folder_CreateFolder);
-	mapitest_suite_add_test(suite, "GET-HIERARCHY-TABLE", "Retrieve the hierarchy table", mapitest_folder_GetHierarchyTable);
-	mapitest_suite_add_test(suite, "GET-CONTENTS-TABLE", "Retrieve the contents table", mapitest_folder_GetContentsTable);
+	mapitest_suite_add_test(suite, "OPEN",   "Open a folder", mapitest_oxcfold_OpenFolder);
+	mapitest_suite_add_test(suite, "CREATE", "Create a folder", mapitest_oxcfold_CreateFolder);
+	mapitest_suite_add_test(suite, "GET-HIERARCHY-TABLE", "Retrieve the hierarchy table", mapitest_oxcfold_GetHierarchyTable);
+	mapitest_suite_add_test(suite, "GET-CONTENTS-TABLE", "Retrieve the contents table", mapitest_oxcfold_GetContentsTable);
 
 	mapitest_suite_register(mt, suite);
 	

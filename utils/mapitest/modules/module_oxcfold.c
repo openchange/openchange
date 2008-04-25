@@ -24,7 +24,7 @@
 #include "utils/mapitest/proto.h"
 
 /**
-   \file module_folder.c
+   \file module_oxcfold.c
 
    \brief Folder Object Protocol test suite
 */
@@ -92,7 +92,7 @@ static struct test_folders subfolders[] = {
 
    \return true on success, otherwise false
  */
-_PUBLIC_ bool mapitest_folder_OpenFolder(struct mapitest *mt)
+_PUBLIC_ bool mapitest_oxcfold_OpenFolder(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;
@@ -175,7 +175,7 @@ _PUBLIC_ bool mapitest_folder_OpenFolder(struct mapitest *mt)
 
    \return true on success, otherwise false
  */
-_PUBLIC_ bool mapitest_folder_CreateFolder(struct mapitest *mt)
+_PUBLIC_ bool mapitest_oxcfold_CreateFolder(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	lpProp[1];
@@ -260,7 +260,7 @@ _PUBLIC_ bool mapitest_folder_CreateFolder(struct mapitest *mt)
 
    \return true on success, otherwise false
  */
-_PUBLIC_ bool mapitest_folder_GetHierarchyTable(struct mapitest *mt)
+_PUBLIC_ bool mapitest_oxcfold_GetHierarchyTable(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;
@@ -312,7 +312,7 @@ _PUBLIC_ bool mapitest_folder_GetHierarchyTable(struct mapitest *mt)
 
    \return true on success, otherwise false
  */
-_PUBLIC_ bool mapitest_folder_GetContentsTable(struct mapitest *mt)
+_PUBLIC_ bool mapitest_oxcfold_GetContentsTable(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;

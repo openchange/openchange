@@ -753,7 +753,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/mapitest_common.o		\
 		utils/mapitest/module.o				\
 		utils/mapitest/modules/module_oxcstor.o		\
-		utils/mapitest/modules/module_folder.o		\
+		utils/mapitest/modules/module_oxcfold.o		\
 		utils/mapitest/modules/module_oxomsg.o		\
 		utils/mapitest/modules/module_oxcmsg.o		\
 		utils/mapitest/modules/module_oxcprpt.o		\
@@ -769,7 +769,7 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/mapitest_common.c		\
 	utils/mapitest/module.c				\
 	utils/mapitest/modules/module_oxcstor.c		\
-	utils/mapitest/modules/module_folder.c		\
+	utils/mapitest/modules/module_oxcfold.c		\
 	utils/mapitest/modules/module_oxomsg.c		\
 	utils/mapitest/modules/module_oxcmsg.c		\
 	utils/mapitest/modules/module_oxcprpt.c		\

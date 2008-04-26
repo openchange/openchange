@@ -463,6 +463,142 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 }
 
 
+/**
+   \details Test the ReadRecipients (0xf) operation
+
+      This function:
+	1. Log on the use private mailbox
+	2. Open the Outbox folder
+	3. Create the message, set recipients
+	4. Save the message
+	5. Read message recipients
+	6. Delete the message
+
+   \param mt point on the top-level mapitest structure
+   
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = false;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_message;
+	mapi_id_t		id_folder;
+	char			**username = NULL;
+	struct SPropTagArray	*SPropTagArray = NULL;
+	struct SPropValue	SPropValue;
+	struct SRowSet		*SRowSet = NULL;
+	struct FlagList		*flaglist = NULL;
+	struct ReadRecipientRow	*RecipientRows;
+	uint8_t			count;
+	mapi_id_t		id_msgs[1];
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Open Outbox folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3. Create the message */
+	mapi_object_init(&obj_message);
+	retval = CreateMessage(&obj_folder, &obj_message);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateMessage", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x6,
+					  PR_OBJECT_TYPE,
+					  PR_DISPLAY_TYPE,
+					  PR_7BIT_DISPLAY_NAME,
+					  PR_DISPLAY_NAME,
+					  PR_SMTP_ADDRESS,
+					  PR_GIVEN_NAME);
+
+	username = talloc_array(mt->mem_ctx, char *, 2);
+	username[0] = mt->info.username;
+	username[1] = NULL;
+
+	retval = ResolveNames((const char **)username, SPropTagArray, 
+			      &SRowSet, &flaglist, 0);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "ResolveNames", GetLastError());
+
+	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
+	SPropValue.value.l = 0;
+	SRowSet_propcpy(mt->mem_ctx, SRowSet, SPropValue);
+
+	SetRecipientType(&(SRowSet->aRow[0]), MAPI_TO);
+	retval = ModifyRecipients(&obj_message, SRowSet);
+	mapitest_print(mt, "* %-35s: MAPI_TO 0x%.8x\n", "ModifyRecipients", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	SetRecipientType(&(SRowSet->aRow[0]), MAPI_CC);
+	retval = ModifyRecipients(&obj_message, SRowSet);
+	mapitest_print(mt, "* %-35s: MAPI_CC 0x%.8x\n", "ModifyRecipients", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+
+	SetRecipientType(&(SRowSet->aRow[0]), MAPI_BCC);
+	retval = ModifyRecipients(&obj_message, SRowSet);
+	mapitest_print(mt, "* %-35s: MAPI_BCC 0x%.8x\n", "ModifyRecipients", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	ret = true;
+
+	/* Step 4. Save the message */
+	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesMessage", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 5. Read recipients */
+	RecipientRows = talloc_zero(mt->mem_ctx, struct ReadRecipientRow);
+	retval = ReadRecipients(&obj_message, 0, &count, &RecipientRows);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "ReadRecipients", GetLastError());
+	MAPIFreeBuffer(RecipientRows);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 6. Delete the message */
+	errno = 0;
+	id_msgs[0] = mapi_object_get_id(&obj_message);
+	retval = DeleteMessage(&obj_folder, id_msgs, 1);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Release */
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return ret;
+}
+
 
 /**
    \details Test the SaveChangesMessage (0xc) operation

@@ -637,6 +637,7 @@ System Attendant Private Interface
 			op_MAPI_SaveChangesMessage	= 0xc,
 			op_MAPI_RemoveAllRecipients	= 0xd,
 			op_MAPI_ModifyRecipients	= 0xe,
+			op_MAPI_ReadRecipients		= 0xf,
 			op_MAPI_SetReadFlags		= 0x11,
 			op_MAPI_SetColumns		= 0x12,
 			op_MAPI_SortTable		= 0x13,
@@ -814,8 +815,6 @@ System Attendant Private Interface
 		MAPI_BCC		= 0x3
 	} ulRecipClass;
 
-	/**************** EXPERIMENTAL ******************/
-
 	typedef [enum8bit, flag(NDR_PAHEX)] enum {
 		SINGLE_RECIPIENT	= 0x0,
 		DISTRIBUTION_LIST	= 0x1
@@ -841,47 +840,45 @@ System Attendant Private Interface
 		[case(0x400)] astring				lpszA;
 		[case(0x600)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
-	} recipient_displayname;
+	} recipient_SimpleDisplayName;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x0)];
 		[case(0x20)] astring				lpszA;
 		[case(0x220)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
-	} recipient_firstname;
+	} recipient_TransmittableDisplayName;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x0)];
 		[case(0x10)] astring				lpszA;
 		[case(0x210)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
-	} recipient_accountname;
+	} recipient_DisplayName;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x0)];
 		[case(0x8)] astring				lpszA;
 		[case(0x208)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
-	} recipient_email;
+	} recipient_EmailAddress;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16							bitmask;
-		[switch_is(bitmask & 0xA)]   recipient_type		type;
-		[switch_is(bitmask & 0x600)] recipient_displayname     	displayname;
-		[switch_is(bitmask & 0x220)] recipient_firstname       	firstname;
-		[switch_is(bitmask & 0x210)] recipient_accountname    	accountname;
-		[switch_is(bitmask & 0x208)] recipient_email		email;
-		uint16							prop_count;
-		uint8							layout;
-		[flag(NDR_REMAINING)] DATA_BLOB				prop_values;
-	} recipients_headers;
-	
-	/**************** EXPERIMENTAL *****************/
+		uint16									RecipientFlags;
+		[switch_is(RecipientFlags & 0xA)]   recipient_type			type;
+		[switch_is(RecipientFlags & 0x600)] recipient_SimpleDisplayName    	SimpleDisplayName;
+		[switch_is(RecipientFlags & 0x220)] recipient_TransmittableDisplayName	TransmittableDisplayName;
+		[switch_is(RecipientFlags & 0x210)] recipient_DisplayName		DisplayName;
+		[switch_is(RecipientFlags & 0x208)] recipient_EmailAddress	       	EmailAddress;
+		uint16									prop_count;
+		uint8									layout;
+		[flag(NDR_REMAINING)] DATA_BLOB						prop_values;
+	} RecipientRow;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		ulRecipClass	RecipClass;
 		CODEPAGEID	codepage;
-		[subcontext(2)] recipients_headers recipients_headers;
+		[subcontext(2)] RecipientRow	RecipientRow;
 	} OpenMessage_recipients;
 
 	typedef [public, nodiscriminant]union {
@@ -1014,6 +1011,7 @@ System Attendant Private Interface
 	} RemoveAllRecipients_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
+
 	} RemoveAllRecipients_repl;
 
 	/*************************/
@@ -1034,19 +1032,39 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)]struct {
 		uint32		idx;
 		ulRecipClass	RecipClass;		
-		[subcontext(2),flag(NDR_REMAINING)] recipients_headers headers;
-	} recipients;
+		[subcontext(2),flag(NDR_REMAINING)] RecipientRow RecipientRow;
+	} ModifyRecipientRow;
 
 	typedef [flag(NDR_NOALIGN)] struct {
  		uint16				prop_count;
  		MAPITAGS			properties[prop_count];
 		uint16				cValues;
-		recipients			recipient[cValues];
+		ModifyRecipientRow     		RecipientRow[cValues];
 	} ModifyRecipients_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 
 	} ModifyRecipients_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0xf  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		RowId;
+		uint16		ulReserved;
+	} ReadRecipients_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32				RowId;
+		ulRecipClass			RecipientType;
+		uint16				CodePageId;
+		uint16				ulReserved;
+		[subcontext(2)] RecipientRow	RecipientRow;
+	} ReadRecipientRow;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+ 		uint8			RowCount;
+ 		ReadRecipientRow	RecipientRows[RowCount];
+	} ReadRecipients_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x11 */
@@ -1946,6 +1964,7 @@ System Attendant Private Interface
 		[case(op_MAPI_Restrict)] Restrict_req mapi_Restrict;
 		[case(op_MAPI_RemoveAllRecipients)] RemoveAllRecipients_req mapi_RemoveAllRecipients;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_req mapi_ModifyRecipients;
+		[case(op_MAPI_ReadRecipients)] ReadRecipients_req mapi_ReadRecipients;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
 		[case(op_MAPI_GetRowCount)] GetRowCount_req mapi_GetRowCount;
 		[case(op_MAPI_SeekRow)] SeekRow_req mapi_SeekRow;
@@ -2001,6 +2020,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_repl mapi_SaveChangesMessage;		
 		[case(op_MAPI_RemoveAllRecipients)] RemoveAllRecipients_repl mapi_RemoveAllRecipients;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
+		[case(op_MAPI_ReadRecipients)] ReadRecipients_repl mapi_ReadRecipients;
 		[case(op_MAPI_SetReadFlags)] SetReadFlags_repl mapi_SetReadFlags;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
 		[case(op_MAPI_SortTable)] SortTable_repl mapi_SortTable;

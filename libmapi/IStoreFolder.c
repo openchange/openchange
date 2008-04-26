@@ -129,9 +129,9 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 
 	for (i = 0; i < reply->recipient_count; i++) {
 		emsmdb_get_SRow((TALLOC_CTX *)message, &(message->SRowSet.aRow[i]), &message->SPropTagArray, 
-				reply->recipients[i].recipients_headers.prop_count,
-				&reply->recipients[i].recipients_headers.prop_values,
-				reply->recipients[i].recipients_headers.layout, 1);
+				reply->recipients[i].RecipientRow.prop_count,
+				&reply->recipients[i].RecipientRow.prop_values,
+				reply->recipients[i].RecipientRow.layout, 1);
 
 		lpProp.ulPropTag = PR_RECIPIENT_TYPE;
 		lpProp.value.l = reply->recipients[i].RecipClass;

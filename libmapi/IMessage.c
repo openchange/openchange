@@ -500,11 +500,11 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 
 	request.cValues = SRowSet->cRows;
 	size += sizeof(uint16_t);
-	request.recipient = talloc_array(mem_ctx, struct recipients, request.cValues);
+	request.RecipientRow = talloc_array(mem_ctx, struct ModifyRecipientRow, request.cValues);
 
 	for (i_recip = 0; i_recip < request.cValues; i_recip++) {
 		struct SRow			*aRow;
-		struct recipients_headers	*headers;
+		struct RecipientRow		*RecipientRow;
 		struct ndr_push			*ndr;
 		struct mapi_SPropValue		mapi_sprop;
 		const uint32_t			*RecipClass = 0;
@@ -513,25 +513,25 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
 
 		aRow = &(SRowSet->aRow[i_recip]);
-		headers = &(request.recipient[i_recip].headers);
+		RecipientRow = &(request.RecipientRow[i_recip].RecipientRow);
 		
-		request.recipient[i_recip].idx = i_recip;
+		request.RecipientRow[i_recip].idx = i_recip;
 		size += sizeof(uint32_t);
 
 		RecipClass = (const uint32_t *) find_SPropValue_data(aRow, PR_RECIPIENT_TYPE);
 		MAPI_RETVAL_IF(!RecipClass, MAPI_E_INVALID_PARAMETER, mem_ctx);
-		request.recipient[i_recip].RecipClass = (uint8_t) *RecipClass;
+		request.RecipientRow[i_recip].RecipClass = (uint8_t) *RecipClass;
 		size += sizeof(uint8_t);
 		
-		headers->bitmask = mapi_recipients_bitmask(aRow);
+		RecipientRow->RecipientFlags = mapi_recipients_bitmask(aRow);
 		
 		/* recipient type EXCHANGE or SMTP */
-		switch (headers->bitmask & 0xB) {
+		switch (RecipientRow->RecipientFlags & 0xB) {
 		case 0x1: 
-			headers->type.EXCHANGE.organization_length = mapi_recipients_get_org_length(mapi_ctx->session->profile);
-			headers->type.EXCHANGE.addr_type = 0;
-			headers->type.EXCHANGE.username = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
-			size += sizeof(uint32_t) + strlen(headers->type.EXCHANGE.username) + 1;
+			RecipientRow->type.EXCHANGE.organization_length = mapi_recipients_get_org_length(mapi_ctx->session->profile);
+			RecipientRow->type.EXCHANGE.addr_type = 0;
+			RecipientRow->type.EXCHANGE.username = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
+			size += sizeof(uint32_t) + strlen(RecipientRow->type.EXCHANGE.username) + 1;
 			break;
 		case 0xB:
 			size += sizeof(uint16_t);
@@ -539,64 +539,64 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		}
 		
 		/* Bit 15: PR_DISPLAY_NAME */
-		switch(headers->bitmask & 0x600) {
+		switch(RecipientRow->RecipientFlags & 0x600) {
 		case (0x400):
-			headers->displayname.lpszA = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME);
-			size += strlen(headers->displayname.lpszA) + 1;
+			RecipientRow->SimpleDisplayName.lpszA = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME);
+			size += strlen(RecipientRow->SimpleDisplayName.lpszA) + 1;
 			break;
 		case (0x600):
-			headers->displayname.lpszW = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
-			size += strlen(headers->displayname.lpszW) * 2 + 2;
+			RecipientRow->SimpleDisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
+			size += strlen(RecipientRow->SimpleDisplayName.lpszW) * 2 + 2;
 			break;
 		default:
 			break;
 		}
 
 		/* Bit 6: PR_GIVEN_NAME */
-		switch (headers->bitmask & 0x220) {
+		switch (RecipientRow->RecipientFlags & 0x220) {
 		case (0x20):
-			headers->firstname.lpszA = (const char *) find_SPropValue_data(aRow, PR_GIVEN_NAME);
-			size += strlen(headers->firstname.lpszA) + 1;
+			RecipientRow->TransmittableDisplayName.lpszA = (const char *) find_SPropValue_data(aRow, PR_GIVEN_NAME);
+			size += strlen(RecipientRow->TransmittableDisplayName.lpszA) + 1;
 			break;
 		case (0x220):
-			headers->firstname.lpszW = (const char *) find_SPropValue_data(aRow, PR_GIVEN_NAME_UNICODE);
-			size += strlen(headers->firstname.lpszW) * 2 + 2;
+			RecipientRow->TransmittableDisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_GIVEN_NAME_UNICODE);
+			size += strlen(RecipientRow->TransmittableDisplayName.lpszW) * 2 + 2;
 			break;
 		default:
 			break;
 		}
 
 		/* Bit 5: PR_7BIT_DISPLAY_NAME */
-		switch (headers->bitmask & 0x210) {
+		switch (RecipientRow->RecipientFlags & 0x210) {
 		case (0x10):
-			headers->accountname.lpszA = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
-			size += strlen(headers->accountname.lpszA) + 1;
+			RecipientRow->DisplayName.lpszA = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
+			size += strlen(RecipientRow->DisplayName.lpszA) + 1;
 			break;
 		case (0x210):
-			headers->accountname.lpszW = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
-			size += strlen(headers->accountname.lpszW) * 2 + 2;
+			RecipientRow->DisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
+			size += strlen(RecipientRow->DisplayName.lpszW) * 2 + 2;
 			break;
 		default:
 			break;
 		}
 
 		/* Bit 4: PR_SMTP_ADDRESS */
-		switch (headers->bitmask & 0x208) {
+		switch (RecipientRow->RecipientFlags & 0x208) {
 		case (0x8):
-			headers->email.lpszA = (const char *) find_SPropValue_data(aRow, PR_SMTP_ADDRESS);
-			size += strlen(headers->email.lpszA) + 1;
+			RecipientRow->EmailAddress.lpszA = (const char *) find_SPropValue_data(aRow, PR_SMTP_ADDRESS);
+			size += strlen(RecipientRow->EmailAddress.lpszA) + 1;
 			break;
 		case (0x208):
-			headers->email.lpszW = (const char *) find_SPropValue_data(aRow, PR_SMTP_ADDRESS_UNICODE);
-			size += strlen(headers->email.lpszW) * 2 + 2;
+			RecipientRow->EmailAddress.lpszW = (const char *) find_SPropValue_data(aRow, PR_SMTP_ADDRESS_UNICODE);
+			size += strlen(RecipientRow->EmailAddress.lpszW) * 2 + 2;
 			break;
 		default:
 			break;
 		}
 		
-		headers->prop_count = request.prop_count;
+		RecipientRow->prop_count = request.prop_count;
 		size += sizeof(uint16_t);
-		headers->layout = 0;
+		RecipientRow->layout = 0;
 		size += sizeof(uint8_t);
 		
 		/* for each property, we set the switch values and ndr_flags then call mapi_SPropValue_CTR */
@@ -612,11 +612,11 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 			}
 		}
 		
-		headers->prop_values.length = ndr->offset;
-		headers->prop_values.data = ndr->data;
+		RecipientRow->prop_values.length = ndr->offset;
+		RecipientRow->prop_values.data = ndr->data;
 		/* add the blob size field */
 		size += sizeof(uint16_t);
-		size += headers->prop_values.length;
+		size += RecipientRow->prop_values.length;
 	}
 	
 	/* Fill the MAPI_REQ request */
@@ -647,6 +647,86 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 
 
 /**
+   \details Read Recipients from a message
+
+   \param obj_message the message we want to read recipients from
+   \param RowId the row index we start reading recipients from
+   \param RowCount pointer on the number of recipients
+   \param RecipientRows pointer on the recipients array
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+  \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa ModifyRecipients, RemoveAllRecipients, GetRecipientTable,
+   OpenMessage
+ */
+_PUBLIC_ enum MAPISTATUS ReadRecipients(mapi_object_t *obj_message, 
+					uint32_t RowId, uint8_t *RowCount,
+					struct ReadRecipientRow **RecipientRows)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct ReadRecipients_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(RowId < 0, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("ReadRecipients");
+
+	size = 0;
+
+	/* Fill the ReadRecipients operation */
+	request.RowId = RowId;
+	size += sizeof (uint32_t);
+
+	request.ulReserved = 0;
+	size += sizeof (uint16_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_ReadRecipients;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_ReadRecipients = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
+	
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Retrieve the recipients */
+	*RowCount = mapi_response->mapi_repl->u.mapi_ReadRecipients.RowCount;
+	*RecipientRows = mapi_response->mapi_repl->u.mapi_ReadRecipients.RecipientRows;
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details Deletes all recipients from a message
 
    \param obj_message the message we want to remove all recipients from
@@ -659,7 +739,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   \sa ModifyRecipients
+   \sa ModifyRecipients, ReadRecipients
 */
 _PUBLIC_ enum MAPISTATUS RemoveAllRecipients(mapi_object_t *obj_message)
 {

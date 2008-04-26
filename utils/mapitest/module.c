@@ -126,6 +126,7 @@ _PUBLIC_ uint32_t module_oxcmsg_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "CREATE-MESSAGE", "Create message", mapitest_oxcmsg_CreateMessage);
 	mapitest_suite_add_test(suite, "SET-READ-FLAGS", "Set message read flag", mapitest_oxcmsg_SetReadFlags);
 	mapitest_suite_add_test(suite, "MODIFY-RECIPIENTS", "Add new recipients", mapitest_oxcmsg_ModifyRecipients);
+	mapitest_suite_add_test(suite, "READ-RECIPIENTS", "Read recipients from a message", mapitest_oxcmsg_ReadRecipients);
 	mapitest_suite_add_test(suite, "REMOVE-ALL-RECIPIENTS", "Remove all recipients from a message", mapitest_oxcmsg_RemoveAllRecipients);
 	mapitest_suite_add_test(suite, "SAVE-CHANGES-MESSAGE", "Save changes on message", mapitest_oxcmsg_SaveChangesMessage);
 	mapitest_suite_add_test(suite, "GET-MESSAGE-STATUS", "Get message status", mapitest_oxcmsg_GetMessageStatus);

@@ -34,7 +34,8 @@
  */
 _PUBLIC_ struct mapitest_suite *mapitest_suite_init(struct mapitest *mt, 
 						    const char *name,
-						    const char *description)
+						    const char *description,
+						    bool online)
 {
 	struct mapitest_suite	*suite = NULL;
 
@@ -51,6 +52,8 @@ _PUBLIC_ struct mapitest_suite *mapitest_suite_init(struct mapitest *mt,
 	} else {
 		suite->description = talloc_strdup((TALLOC_CTX *)suite, description);
 	}
+
+	suite->online = online;
 
 	return suite;
 }
@@ -212,6 +215,7 @@ _PUBLIC_ bool mapitest_suite_run_test(struct mapitest *mt,
 
 	for (el = suite->tests; el; el = el->next) {
 		if (!strcmp(el->name, name)) {
+			errno = 0;
 			mapitest_print_test_title_start(mt, el->name);
 			fn = el->fn;
 			ret = fn(mt);
@@ -293,6 +297,7 @@ _PUBLIC_ bool mapitest_run_test(struct mapitest *mt, const char *name)
 	for (suite = mt->mapi_suite; suite; suite = suite->next) {
 		for (el = suite->tests; el; el = el->next) {
 			if (!strcmp(name, el->name)) {
+				errno = 0;
 				ret = mapitest_suite_run_test(mt, suite, name);
 				return ret;
 			}
@@ -325,19 +330,22 @@ _PUBLIC_ bool mapitest_run_all(struct mapitest *mt)
 	bool			ret = false;
 
 	for (suite = mt->mapi_suite; suite; suite = suite->next) {
-		mapitest_print_module_title_start(mt, suite->name);
+		if (mt->online == suite->online) {
+			mapitest_print_module_title_start(mt, suite->name);
 
-		for (el = suite->tests; el; el = el->next) {
-			mapitest_print_test_title_start(mt, el->name);
+			for (el = suite->tests; el; el = el->next) {
+				errno = 0;
+				mapitest_print_test_title_start(mt, el->name);
+				
+				fn = el->fn;
+				ret = fn(mt);
+				
+				mapitest_print_test_title_end(mt);
+				mapitest_print_test_result(mt, el->name, ret);
+			}
 
-			fn = el->fn;
-			ret = fn(mt);
-
-			mapitest_print_test_title_end(mt);
-			mapitest_print_test_result(mt, el->name, ret);
+			mapitest_print_module_title_end(mt);
 		}
-
-		mapitest_print_module_title_end(mt);
 	}
 	return ret;
 }

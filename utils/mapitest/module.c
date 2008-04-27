@@ -50,7 +50,7 @@ _PUBLIC_ uint32_t module_oxcstor_init(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite = NULL;
 
-	suite = mapitest_suite_init(mt, "OXCSTOR", "Store Object Protocol");
+	suite = mapitest_suite_init(mt, "OXCSTOR", "Store Object Protocol", true);
 
 	mapitest_suite_add_test(suite, "LOGON", "Logon operation", mapitest_oxcstor_Logon);
 	mapitest_suite_add_test(suite, "GET-RECEIVE-FOLDER", "Retrieve the receive folder ID", mapitest_oxcstor_GetReceiveFolder);
@@ -74,7 +74,7 @@ _PUBLIC_ uint32_t module_oxcfold_init(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite = NULL;
 
-	suite = mapitest_suite_init(mt, "OXCFOLD", "Folder Object Protocol");
+	suite = mapitest_suite_init(mt, "OXCFOLD", "Folder Object Protocol", true);
 
 	mapitest_suite_add_test(suite, "OPEN",   "Open a folder", mapitest_oxcfold_OpenFolder);
 	mapitest_suite_add_test(suite, "CREATE", "Create a folder", mapitest_oxcfold_CreateFolder);
@@ -98,7 +98,7 @@ _PUBLIC_ uint32_t module_oxomsg_init(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite = NULL;
 
-	suite = mapitest_suite_init(mt, "OXOMSG", "E-mail Object Protocol");
+	suite = mapitest_suite_init(mt, "OXOMSG", "E-mail Object Protocol", true);
 	
 	mapitest_suite_add_test(suite, "ADDRESS-TYPES", "Address Types", 
 				mapitest_oxomsg_AddressTypes);
@@ -121,7 +121,7 @@ _PUBLIC_ uint32_t module_oxcmsg_init(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite = NULL;
 
-	suite =  mapitest_suite_init(mt, "OXCMSG", "Message and Attachment Object Protocol");
+	suite =  mapitest_suite_init(mt, "OXCMSG", "Message and Attachment Object Protocol", true);
 
 	mapitest_suite_add_test(suite, "CREATE-MESSAGE", "Create message", mapitest_oxcmsg_CreateMessage);
 	mapitest_suite_add_test(suite, "SET-READ-FLAGS", "Set message read flag", mapitest_oxcmsg_SetReadFlags);
@@ -149,7 +149,7 @@ _PUBLIC_ uint32_t module_oxctable_init(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite = NULL;
 
-	suite = mapitest_suite_init(mt, "OXCTABLE", "Table Object Protocol");
+	suite = mapitest_suite_init(mt, "OXCTABLE", "Table Object Protocol", true);
 	
 	mapitest_suite_add_test(suite, "SETCOLUMNS", "Set Table Columns", mapitest_oxctable_SetColumns);
 	mapitest_suite_add_test(suite, "QUERYCOLUMNS", "Query Table Columns", mapitest_oxctable_QueryColumns);
@@ -177,7 +177,7 @@ _PUBLIC_ uint32_t module_oxcprpt_init(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite = NULL;
 
-	suite = mapitest_suite_init(mt, "OXCPRPT", "Property and Stream Object Protocol");
+	suite = mapitest_suite_init(mt, "OXCPRPT", "Property and Stream Object Protocol", true);
 
 	mapitest_suite_add_test(suite, "GET-PROPS", "Retrieve a specific set of properties", mapitest_oxcprpt_GetProps);
 	mapitest_suite_add_test(suite, "GET-PROPSALL", "Retrieve the whole property array", mapitest_oxcprpt_GetPropsAll);
@@ -197,7 +197,7 @@ _PUBLIC_ uint32_t module_noserver_init(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite = NULL;
 
-	suite = mapitest_suite_init(mt, "NOSERVER", "No server operations");
+	suite = mapitest_suite_init(mt, "NOSERVER", "No server operations", false);
 
 	mapitest_suite_add_test(suite, "LZFU", "Test LZFU operations", mapitest_noserver_lzfu);
 

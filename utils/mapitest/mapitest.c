@@ -38,6 +38,7 @@ static void mapitest_init(TALLOC_CTX *mem_ctx, struct mapitest *mt)
 	mt->mapi_all = true;
 	mt->confidential = false;
 	mt->no_server = false;
+	mt->online = false;
 	mt->mapi_suite = false;
 	mt->cmdline_calls = NULL;
 	mt->cmdline_suite = NULL;
@@ -109,12 +110,12 @@ static void mapitest_list(struct mapitest *mt, const char *name)
 /**
  * Retrieve server specific information
  */
-static int mapitest_get_server_info(struct mapitest *mt,
-				    const char *profdb,
-				    const char *profname,
-				    const char *password,
-				    bool opt_dumpdata,
-				    const char *opt_debug)
+static bool mapitest_get_server_info(struct mapitest *mt,
+				     const char *profdb,
+				     const char *profname,
+				     const char *password,
+				     bool opt_dumpdata,
+				     const char *opt_debug)
 {
 	enum MAPISTATUS		retval;
 	struct emsmdb_info	*info = NULL;
@@ -128,14 +129,14 @@ static int mapitest_get_server_info(struct mapitest *mt,
 	retval = MAPIInitialize(profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", retval);
-		return -1;
+		return false;
 	}
 
 	if (!profname) {
 		retval = GetDefaultProfile(&profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", retval);
-			return -1;
+			return false;
 		}
 	}
 
@@ -150,7 +151,7 @@ static int mapitest_get_server_info(struct mapitest *mt,
 	retval = MapiLogonEx(&session, profname, password);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", retval);
-		return -1;
+		return false;
 	}
 
 	info = emsmdb_get_info();
@@ -160,7 +161,7 @@ static int mapitest_get_server_info(struct mapitest *mt,
 	mt->org = x500_get_dn_element(mt->mem_ctx, info->mailbox, "/o=");
 	mt->org_unit = x500_get_dn_element(mt->mem_ctx, info->mailbox, "/ou=");
 	
-	return 0;
+	return true;
 }
 
 
@@ -262,8 +263,8 @@ int main(int argc, const char *argv[])
 	mapitest_init_stream(&mt, opt_outfile);
 	
 	if (mt.no_server == false) {
-		mapitest_get_server_info(&mt, opt_profdb, opt_profname, opt_password,
-					 opt_dumpdata, opt_debug);
+	  mt.online = mapitest_get_server_info(&mt, opt_profdb, opt_profname, opt_password,
+					       opt_dumpdata, opt_debug);
 	}
 
 	mapitest_print_headers(&mt);

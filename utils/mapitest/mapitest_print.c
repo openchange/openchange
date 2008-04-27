@@ -276,6 +276,10 @@ _PUBLIC_ void mapitest_print_headers_info(struct mapitest *mt)
  */
 _PUBLIC_ void mapitest_print_headers_server_info(struct mapitest *mt)
 {
+	if (mt->online == false) {
+		return;
+	}
+
 	mapitest_print_newline(mt, 1);
 	mapitest_print(mt, MT_HDR_FMT_SECTION, "Exchange Server");
 	mapitest_indent();

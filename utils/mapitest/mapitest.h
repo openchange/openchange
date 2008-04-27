@@ -48,6 +48,7 @@ struct mapitest_suite {
 	struct mapitest_suite	*next;
 	char			*name;
 	char			*description;
+	bool			online;
 	struct mapitest_test	*tests;
 };
 
@@ -62,6 +63,7 @@ struct mapitest {
 	bool			confidential;
 	bool			no_server;
 	bool			mapi_all;
+	bool			online;
 	struct emsmdb_info	info;
 	struct mapitest_suite	*mapi_suite;
 	struct mapitest_unit   	*cmdline_calls;

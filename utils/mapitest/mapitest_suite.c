@@ -330,7 +330,7 @@ _PUBLIC_ bool mapitest_run_all(struct mapitest *mt)
 	bool			ret = false;
 
 	for (suite = mt->mapi_suite; suite; suite = suite->next) {
-		if (mt->online == suite->online) {
+		if ((mt->online == suite->online) || (suite->online == false)) {
 			mapitest_print_module_title_start(mt, suite->name);
 
 			for (el = suite->tests; el; el = el->next) {

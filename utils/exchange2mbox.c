@@ -120,7 +120,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 {
 	enum MAPISTATUS		retval;
 	struct mapi_profile	profile;
-	uint32_t		read_size;
+	size_t			read_size;
 	char			*line = NULL;
 	size_t			size;
 	const char		*msgid;

@@ -368,6 +368,7 @@ libmapiadmin-installheader:
 	@echo "[*] install: libmapiadmin headers"
 	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapiadmin 
 	$(INSTALL) -m 0644 libmapiadmin/proto.h $(DESTDIR)$(includedir)/libmapiadmin/
+	$(INSTALL) -m 0644 libmapiadmin/libmapiadmin.h $(DESTDIR)$(includedir)/libmapiadmin/
 
 libmapiadmin-uninstallpc:
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapiadmin.pc

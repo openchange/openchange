@@ -240,6 +240,61 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 	return true;
 }
 
+/**
+   \details Test the GetStatus (0x16) operation
+
+   This function:
+	1. Open the Top Information store folder
+	2. Open the hiearchy tabke
+	3. Call GetStatus
+ */
+_PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = true;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_htable;
+	uint8_t			TableStatus;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Open Top Information Store folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, 
+					  olFolderTopInformationStore);
+	if (ret == false) {
+		return false;
+	}
+
+	/* Step 3. GetHierarchyTable */
+	mapi_object_init(&obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 4. GetStatus */
+	retval = GetStatus(&obj_htable, &TableStatus);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetStatus", GetLastError());
+	mapitest_print(mt, "* %-35s: TableStatus: %d\n", "GetStatus", TableStatus);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Release */
+	mapi_object_release(&obj_htable);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_htable);
+
+	return ret;
+}
+
 
 /**
    \details Test the SeekRow (0x18) operation

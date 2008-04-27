@@ -643,6 +643,7 @@ System Attendant Private Interface
 			op_MAPI_SortTable		= 0x13,
 			op_MAPI_Restrict		= 0x14,
 			op_MAPI_QueryRows		= 0x15,
+			op_MAPI_GetStatus		= 0x16,
 			op_MAPI_GetRowCount		= 0x17,
 			op_MAPI_SeekRow			= 0x18,
 			op_MAPI_SeekRowBookmark		= 0x19,
@@ -1293,6 +1294,26 @@ System Attendant Private Interface
  		uint8		layout;
 		[flag(NDR_REMAINING)]DATA_BLOB	rows;
 	} QueryRows_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x16  */
+	typedef [flag(NDR_NOALIGN)] struct {
+	} GetStatus_req;
+
+
+	typedef [enum8bit] enum {
+		TBLSTAT_COMPLETE	= 0x0,
+		TBLSTAT_SORTING		= 0x9,
+		TBLSTAT_SORT_ERROR	= 0xA,
+		TBLSTAT_SETTING_COLS	= 0xB,
+		TBLSTAT_SETCOL_ERROR	= 0xD,
+		TBLSTAT_RESTRICTING	= 0xE,
+		TBLSTAT_RESTRICT_ERROR	= 0xF
+	} TableStatus;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		TableStatus	TableStatus;
+	} GetStatus_repl;
 
 	/**************************/
 	/* EcDoRpc Function 0x17  */
@@ -1966,6 +1987,7 @@ System Attendant Private Interface
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_req mapi_ModifyRecipients;
 		[case(op_MAPI_ReadRecipients)] ReadRecipients_req mapi_ReadRecipients;
 		[case(op_MAPI_QueryRows)] QueryRows_req mapi_QueryRows;
+		[case(op_MAPI_GetStatus)] GetStatus_req mapi_GetStatus;
 		[case(op_MAPI_GetRowCount)] GetRowCount_req mapi_GetRowCount;
 		[case(op_MAPI_SeekRow)] SeekRow_req mapi_SeekRow;
 		[case(op_MAPI_SeekRowBookmark)] SeekRowBookmark_req mapi_SeekRowBookmark;
@@ -2026,6 +2048,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SortTable)] SortTable_repl mapi_SortTable;
 		[case(op_MAPI_Restrict)] Restrict_repl mapi_Restrict;
 		[case(op_MAPI_QueryRows)] QueryRows_repl mapi_QueryRows;
+		[case(op_MAPI_GetStatus)] GetStatus_repl mapi_GetStatus;
 		[case(op_MAPI_GetRowCount)] GetRowCount_repl mapi_GetRowCount;
 		[case(op_MAPI_SeekRow)] SeekRow_repl mapi_SeekRow;
 		[case(op_MAPI_SeekRowBookmark)] SeekRowBookmark_repl mapi_SeekRowBookmark;

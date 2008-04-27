@@ -154,6 +154,7 @@ _PUBLIC_ uint32_t module_oxctable_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "SETCOLUMNS", "Set Table Columns", mapitest_oxctable_SetColumns);
 	mapitest_suite_add_test(suite, "QUERYCOLUMNS", "Query Table Columns", mapitest_oxctable_QueryColumns);
 	mapitest_suite_add_test(suite, "QUERYROWS", "Query Table Rows", mapitest_oxctable_QueryRows);
+	mapitest_suite_add_test(suite, "GETSTATUS", "Get Table Status", mapitest_oxctable_GetStatus);
 	mapitest_suite_add_test(suite, "SEEKROW", "Seek a row", mapitest_oxctable_SeekRow);
 	mapitest_suite_add_test(suite, "SEEKROW-APPROX", "Seek an approximative row", mapitest_oxctable_SeekRowApprox);
 	mapitest_suite_add_test(suite, "CREATE-BOOKMARK", "Create a table bookmark", mapitest_oxctable_CreateBookmark);

@@ -260,7 +260,7 @@ _PUBLIC_ void mapitest_print_headers_info(struct mapitest *mt)
 	mapitest_print(mt, MT_HDR_FMT, "OpenChange Information", OPENCHANGE_VERSION_STRING);
 
 	mapitest_print_newline(mt, 1);
-	mapitest_print(mt, MT_HDR_FMT, "System Information");
+	mapitest_print(mt, MT_HDR_FMT_SECTION, "System Information");
 	mapitest_indent();
 	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Kernel name", OPENCHANGE_SYS_KERNEL_NAME);
 	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Kernel release", OPENCHANGE_SYS_KERNEL_RELEASE);

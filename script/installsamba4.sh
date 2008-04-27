@@ -8,7 +8,7 @@ GITREV="7fccd85"
 #
 # Error check
 #
-function error_check() {
+error_check() {
     error=$1
     step=$2
 
@@ -18,31 +18,31 @@ function error_check() {
     fi
 }
 
-function cleanup_talloc() {
+cleanup_talloc() {
     # cleanup existing talloc installation
     if test -f samba4/source/lib/talloc/Makefile; then
 	echo "Step0: cleaning up talloc directory"
 	OLD_PWD=$PWD
 	cd samba4/source/lib/talloc
 	make realdistclean
-	rm -rf ../replace/*.{o,ho}
+	rm -rf ../replace/*.o ../replace/*.ho
 	cd $OLD_PWD
     fi
 }
 
-function clean_tdb() {
+clean_tdb() {
     # cleanup existing tdb installation
     if test -f samba/source/lib/tdb/Makefile; then
 	echo "Step0: cleaning up tdb directory"
 	OLD_PWD=$PWD
 	cd samba4/source/lib/tdb
 	make realdistclean
-	rm -rf ../replace/*.{o,ho}
+	rm -rf ../replace/*.o ../replace/*.ho
 	cd $OLD_PWD
     fi
 }
 
-function delete_install() {
+delete_install() {
 
     # cleanup existing existing samba4 installation
     if test -d /usr/local/samba; then
@@ -72,7 +72,7 @@ function delete_install() {
 #
 # Checkout Samba4
 #
-function checkout() {
+checkout() {
     OLD_PWD=$PWD
 
     GITPATH=`whereis -b git`
@@ -104,7 +104,7 @@ function checkout() {
 # Compile and Install samba4 packages:
 # talloc, tdb
 #
-function packages() {
+packages() {
     OLD_PWD=$PWD
 
     delete_install
@@ -113,7 +113,7 @@ function packages() {
     cd samba4/source/lib/talloc
     error_check $? "Step1"
 
-    rm -rf ../replace/*.{o,ho}
+    rm -rf ../replace/*.o ../replace/*.ho
     error_check $? "Step1"
 
     ./autogen.sh
@@ -131,7 +131,7 @@ function packages() {
     make realdistclean
     error_check $? "Step1"
 
-    rm -rf ../replace/*.{o,ho}
+    rm -rf ../replace/*.o ../replace/*.ho
     error_check $? "Step1"
 
     cd $OLD_PWD
@@ -156,7 +156,7 @@ function packages() {
     make realdistclean
     error_check $? "Step2"
 
-    rm -rf ../replace/*.{o,ho}
+    rm -rf ../replace/*.o ../replace/*.ho
     error_check $? "Step2"
 
     cd $OLD_PWD
@@ -165,7 +165,7 @@ function packages() {
 #
 # Compile Samba4
 #
-function compile() {
+compile() {
 
     OLD_PWD=$PWD
 
@@ -197,7 +197,7 @@ function compile() {
 #
 # Install Samba4
 #
-function install() {
+install() {
 
     OLD_PWD=$PWD
 

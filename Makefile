@@ -142,7 +142,7 @@ libmapi-uninstall:	libmapi-uninstallpc	\
 			libmapi-uninstallheader	\
 			libmapi-uninstallscript
 
-clean::
+libmapi-clean::
 	rm -f libmapi/*.{o,po}
 	rm -f libmapi/utf8_convert.yy.c
 	rm -f libmapi/tests/*.{o,po}
@@ -165,8 +165,12 @@ clean::
 	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) \
 		  libmapi.$(SHLIBEXT)
 
-distclean::
+clean:: libmapi-clean
+
+libmapi-distclean::
 	rm -f libmapi.pc
+
+distclean:: libmapi-distclean
 
 libmapi-installpc:
 	@echo "[*] install: libmapi pc files"
@@ -343,15 +347,19 @@ libmapiadmin-uninstall:	libmapiadmin-uninstallpc	\
 			libmapiadmin-uninstalllib	\
 			libmapiadmin-uninstallheader
 
-clean::
+libmapiadmin-clean::
 	rm -f libmapiadmin/*.{o,po}
 	rm -f libmapiadmin/proto.h
 	rm -f libmapiadmin/proto_private.h
 	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) \
 		  libmapiadmin.$(SHLIBEXT)
 
-distclean::
+clean:: libmapiadmin-clean
+
+libmapiadmin-distclean::
 	rm -f libmapiadmin.pc
+
+distclean:: libmapiadmin-distclean
 
 libmapiadmin-installpc:
 	@echo "[*] install: libmapiadmin pc files"
@@ -411,7 +419,7 @@ libocpf-uninstall:	libocpf-uninstallpc	\
 			libocpf-uninstalllib	\
 			libocpf-uninstallheader
 
-clean::
+libocpf-clean::
 	rm -f libocpf/*.{o,po}
 	rm -f libocpf/lex.yy.c
 	rm -f libocpf/ocpf.tab.{c,h}
@@ -420,8 +428,12 @@ clean::
 	rm -f libocpf.$(SHLIBEXT).$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) \
 		  libocpf.$(SHLIBEXT)
 
-distclean::
+clean:: libocpf-clean
+
+libocpf-distclean::
 	rm -f libocpf.pc
+
+distclean:: libocpf-distclean
 
 libocpf-installpc:
 	@echo "[*] install: libocpf pc files"
@@ -499,10 +511,12 @@ torture-install:
 torture-uninstall:
 	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
 
-clean::
+torture-clean::
 	rm -f torture/*.$(SHLIBEXT)
 	rm -f torture/torture_proto.h
 	rm -f torture/*.{o,po}
+
+clean:: torture-clean
 
 torture/openchange.$(SHLIBEXT):			\
 	torture/nspi_profile.po			\
@@ -591,7 +605,7 @@ server-uninstall:
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
 
-clean::
+server-clean::
 	rm -f providers/*.{o,po}
 	rm -f server/*.{o,po}
 	rm -f server/dcesrv_proto.h
@@ -599,6 +613,8 @@ clean::
 	rm -f server/*.$(SHLIBEXT)
 	rm -f server/dcesrv_exchange.$(SHLIBEXT)
 	rm -f server/dcesrv_exchange_remote.$(SHLIBEXT)
+
+clean:: server-clean
 
 server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.po 	\
 				server/dcesrv_exchange.po	\
@@ -639,10 +655,12 @@ openchangeclient-install:
 openchangeclient-uninstall:
 	rm -f $(DESTDIR)$(bindir)/openchangeclient
 
-clean::
+openchangeclient-clean::
 	rm -f bin/openchangeclient
 	rm -f utils/openchangeclient.o
 	rm -f utils/openchange-tools.o	
+
+clean:: openchangeclient-clean
 
 bin/openchangeclient: 	utils/openchangeclient.o			\
 			utils/openchange-tools.o			\
@@ -665,9 +683,11 @@ mapiprofile-install:
 mapiprofile-uninstall:
 	rm -f $(DESTDIR)$(bindir)/mapiprofile
 
-clean::
+mapiprofile-clean::
 	rm -f bin/mapiprofile
 	rm -f utils/mapiprofile.o
+
+clean:: mapiprofile-clean
 
 bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
@@ -687,9 +707,11 @@ openchangepfadmin-install:
 openchangepfadmin-uninstall:
 	rm -f $(DESTDIR)$(bindir)/openchangepfadmin
 
-clean::
+openchangepfadmin-clean::
 	rm -f bin/openchangepfadmin
 	rm -f utils/openchangepfadmin.o
+
+clean:: openchangepfadmin-clean
 
 bin/openchangepfadmin:	utils/openchangepfadmin.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
@@ -711,10 +733,12 @@ exchange2mbox-install:
 exchange2mbox-uninstall:
 	rm -f $(DESTDIR)$(bindir)/exchange2mbox
 
-clean::
+exchange2mbox-clean::
 	rm -f bin/exchange2mbox
 	rm -f utils/exchange2mbox.o
 	rm -f utils/openchange-tools.o	
+
+clean:: exchange2mbox-clean
 
 bin/exchange2mbox:	utils/exchange2mbox.o				\
 			utils/openchange-tools.o			\
@@ -744,7 +768,6 @@ mapitest-clean:
 	rm -f utils/mapitest/modules/*.o
 	rm -f utils/mapitest/proto.h
 	rm -f utils/mapitest/mapitest_proto.h
-
 
 clean:: mapitest-clean
 
@@ -793,10 +816,12 @@ openchangemapidump-uninstall:
 	rm -f bin/openchangemapidump
 	rm -f $(DESTDIR)$(bindir)/openchangemapidump
 
-clean::
+openchangemapidump-clean::
 	rm -f bin/openchangemapidump
 	rm -f utils/backup/openchangemapidump.o
 	rm -f utils/backup/openchangebackup.o
+
+clean:: openchangemapidump-clean
 
 bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
 			utils/backup/openchangebackup.o			\
@@ -817,9 +842,11 @@ schemaIDGUID-install:
 schemaIDGUID-uninstall:
 	rm -f $(DESTDIR)$(bindir)/schemaIDGUID
 
-clean::
+schemaIDGUID-clean::
 	rm -f bin/schemaIDGUID
 	rm -f utils/schemaIDGUID.o
+
+clean:: schemaIDGUID-clean
 
 bin/schemaIDGUID: utils/schemaIDGUID.o
 	@echo "Linking $@"
@@ -839,9 +866,11 @@ locale_codepage-uninstall:
 	rm -f bin/locale_codepage
 	rm -f $(DESTDIR)$(bindir)/locale_codepage
 
-clean::
+locale_codepage-clean::
 	rm -f bin/locale_codepage
 	rm -f libmapi/tests/locale_codepage.o
+
+clean:: locale_codepage-clean
 
 bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
@@ -862,10 +891,12 @@ installnagios:
 examples:
 	cd doc/examples && make && cd ${OLD_PWD}
 
-clean::
+examples-clean::
 	rm -f doc/examples/mapi_sample1
 	rm -f doc/examples/fetchappointment
 	rm -f doc/examples/fetchmail
+
+clean:: examples-clean
 
 examples-install examples-uninstall:
 

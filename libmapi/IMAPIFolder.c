@@ -143,8 +143,10 @@ _PUBLIC_ enum MAPISTATUS DeleteMessage(mapi_object_t *obj_folder, mapi_id_t *id_
 	size = 0;
 
 	/* Fill the DeleteMessages operation */
-	request.flags = 0x100;
-	size += sizeof(uint16_t);
+	request.WantAsynchronous = 0x0;
+	size += sizeof (uint8_t);
+	request.NotifyNonRead = 0x1;
+	size += sizeof(uint8_t);
 	request.cn_ids = (uint16_t)cn_messages;
 	size += sizeof(uint16_t);
 	request.message_ids = id_messages;

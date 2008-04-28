@@ -1432,13 +1432,14 @@ System Attendant Private Interface
 	/**************************/
 	/* EcDoRpc Function 0x1e  */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		flags;
+		boolean8	WantAsynchronous;
+		boolean8	NotifyNonRead;
 		uint16		cn_ids;
 		hyper		message_ids[cn_ids];
 	} DeleteMessages_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		align_pad;
+		boolean8	PartialCompletion;
 	} DeleteMessages_repl;
 
 	/**************************/

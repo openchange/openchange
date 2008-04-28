@@ -24,7 +24,7 @@
 #include "utils/mapitest/proto.h"
 
 /**
-   \file module_oxcstore.c
+   \file module_oxcstor.c
 
    \brief Store Object Protocol test suite
 */
@@ -75,7 +75,7 @@ _PUBLIC_ bool mapitest_oxcstor_Logon(struct mapitest *mt)
 	1. Log on the user private mailbox
 	2. Call the GetReceiveFolder operation
    
-   \param mt, pointer on the top-level mapitest structure
+   \param mt the top-level mapitest structure
 
    \return true on success, otherwise false
  */
@@ -113,7 +113,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolder(struct mapitest *mt)
 	1. Log on the user private mailbox
 	2. Call the SetReceiveFolder operation
 
-   \param mt, pointer on the top-level mapitest structure
+   \param mt the top-level mapitest structure
    
    \return true on success, otherwise false
  */
@@ -216,7 +216,7 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
 	1. Log on the user private mailbox
 	2. Call the GetReceiveFolderTable operation
    
-   \param mt, pointer on the top-level mapitest structure
+   \param mt the top-level mapitest structure
 
    \return true on success, otherwise false
  */

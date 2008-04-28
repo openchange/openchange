@@ -88,7 +88,7 @@ static struct test_folders subfolders[] = {
 	2. Open folders located within the top information store folder
 	3. Open folders located within the Inbox folder
 
-   \param mt, pointer on the top-level mapitest structure
+   \param mt the top-level mapitest structure
 
    \return true on success, otherwise false
  */

@@ -123,7 +123,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	mem_ctx = talloc_init("GetDefaultFolder");
 
 	mapi_object_init(&obj_inbox);
-	retval = GetReceiveFolder(obj_store, &id_inbox);
+	retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (id > 6) {

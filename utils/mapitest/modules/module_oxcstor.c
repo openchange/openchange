@@ -93,7 +93,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolder(struct mapitest *mt)
 	}
 	
 	/* Step 2. Call the GetReceiveFolder operation */
-	retval = GetReceiveFolder(&obj_store, &id_inbox);
+	retval = GetReceiveFolder(&obj_store, &id_inbox, "IPF.Post");
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetReceiveFolder", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -136,7 +136,7 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
 	}
 
 	/* Step 2. Get the original ReceiveFolder */
-	retval = GetReceiveFolder(&obj_store, &id_inbox);
+	retval = GetReceiveFolder(&obj_store, &id_inbox, NULL);
 	mapitest_print(mt, "* Step 2. %-35s: 0x%.8x\n", "GetReceiveFolder", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;

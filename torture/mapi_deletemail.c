@@ -70,7 +70,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 	mapi_object_debug(&obj_store);
 
 	/* id_inbox = store->GetReceiveFolder */
-	retval = GetReceiveFolder(&obj_store, &id_inbox);
+	retval = GetReceiveFolder(&obj_store, &id_inbox, NULL);
 	mapi_errstr("GetReceiveFolder", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

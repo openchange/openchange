@@ -1533,7 +1533,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x27 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		astring		MessageClass;
 	} GetReceiveFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {

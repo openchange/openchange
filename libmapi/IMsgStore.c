@@ -257,7 +257,8 @@ _PUBLIC_ enum MAPISTATUS SetReceiveFolder(mapi_object_t *obj_store,
 
 
 /**
-   \details Retrieves the receive folder (INBOX) for a given store
+   \details Gets the receive folder for incoming messages of a
+   particular message class.
 
    This function obtains the folder that was established as the
    destination for incoming messages of a specified message class, or
@@ -265,6 +266,8 @@ _PUBLIC_ enum MAPISTATUS SetReceiveFolder(mapi_object_t *obj_store,
 
    \param obj_store the store to get the receiver folder for
    \param id_folder the resulting folder identification
+   \param MessageClass which message class to find the receivefolder
+   for
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -278,17 +281,18 @@ _PUBLIC_ enum MAPISTATUS SetReceiveFolder(mapi_object_t *obj_store,
    GetReceiveFolderTable
 */
 _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store, 
-					  mapi_id_t *id_folder)
+					  mapi_id_t *id_folder,
+					  const char *MessageClass)
 {
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct GetReceiveFolder_req request;
-	NTSTATUS		status;
-	enum MAPISTATUS		retval;
-	uint32_t		size = 0;
-	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetReceiveFolder_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
@@ -298,8 +302,13 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store,
 	*id_folder = 0;
 
 	/* Fill the GetReceiveFolder operation */
-	request.unknown = 0x0;
-	size += sizeof (uint8_t);
+	if (!MessageClass) {
+		request.MessageClass = "";
+		size += 1;
+	} else {
+		request.MessageClass = MessageClass;
+		size += strlen (MessageClass) + 1;
+	}
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);

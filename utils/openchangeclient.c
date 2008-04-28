@@ -410,7 +410,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_inbox, oclient->folder);
 		MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
 	} else {
-		retval = GetReceiveFolder(obj_store, &id_inbox);
+		retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
 		MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 		retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
@@ -955,7 +955,7 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_inbox, oclient->folder);
 		if (retval != MAPI_E_SUCCESS) return retval;
 	} else {
-		retval = GetReceiveFolder(obj_store, &id_inbox);
+		retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
 		if (retval != MAPI_E_SUCCESS) return false;
 
 		retval = OpenFolder(obj_store, id_inbox, &obj_inbox);

@@ -69,7 +69,7 @@ static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Open Inbox */
-	retval = GetReceiveFolder(&obj_store, &id_inbox);
+	retval = GetReceiveFolder(&obj_store, &id_inbox, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_inbox);
@@ -663,7 +663,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* Open Inbox */
-	retval = GetReceiveFolder(&obj_store, &id_inbox);
+	retval = GetReceiveFolder(&obj_store, &id_inbox, NULL);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	mapi_object_init(&obj_inbox);

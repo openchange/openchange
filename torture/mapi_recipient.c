@@ -66,7 +66,7 @@ bool torture_rpc_mapi_recipient(struct torture_context *torture)
 
 	/* Get Receive Folder */
 	mapi_object_init(&obj_inbox);
-	retval = GetReceiveFolder(&obj_store, &id_inbox);
+	retval = GetReceiveFolder(&obj_store, &id_inbox, NULL);
 	mapi_errstr("GetReceiveFolder", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

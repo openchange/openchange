@@ -678,6 +678,8 @@ System Attendant Private Interface
 			op_MAPI_GetNamesFromIDs		= 0x55,
 			op_MAPI_GetIDsFromNames		= 0x56,
 			op_MAPI_EmptyFolder		= 0x58,
+			op_MAPI_CommitStream		= 0x5d,
+			op_MAPI_GetStreamSize		= 0x5e,
 			op_MAPI_QueryNamesFromIDs	= 0x5f,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
 			op_MAPI_OpenPublicFolderByName	= 0x87,
@@ -1860,6 +1862,23 @@ System Attendant Private Interface
 	} EmptyFolder_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x5d */
+	typedef [flag(NDR_NOALIGN)] struct {
+	} CommitStream_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} CommitStream_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x5e */
+	typedef [flag(NDR_NOALIGN)] struct {
+	} GetStreamSize_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		StreamSize;
+	} GetStreamSize_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x5f */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		propID;
@@ -2021,6 +2040,8 @@ System Attendant Private Interface
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
+		[case(op_MAPI_CommitStream)] CommitStream_req mapi_CommitStream;
+		[case(op_MAPI_GetStreamSize)] GetStreamSize_req mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_req mapi_QueryNamesFromIDs;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
@@ -2082,6 +2103,8 @@ System Attendant Private Interface
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;
+		[case(op_MAPI_CommitStream)] CommitStream_repl mapi_CommitStream;
+		[case(op_MAPI_GetStreamSize)] GetStreamSize_repl mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_repl mapi_QueryNamesFromIDs;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;

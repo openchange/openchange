@@ -107,6 +107,7 @@ struct mapitest_module {
 #define	MT_DIRNAME_TASK		"[MT] Tasks"
 
 #define	MT_MAIL_SUBJECT		"[MT] Sample E-MAIL"
+#define	MT_MAIL_ATTACH		"[MT]_Sample_Attachment.txt"
 
 #define	MODULE_TITLE		"[MODULE] %s\n"
 #define	MODULE_TITLE_DELIM	'#'

@@ -159,6 +159,19 @@ _PUBLIC_ bool mapitest_oxcprpt_GetPropList(struct mapitest *mt)
 }
 
 
+/**
+   \details Test the SetProps (0xa) operation
+
+   This function:
+	1. Logon Private mailbox
+	2. Use GetProps to retrieve the mailbox name
+	3. Change it using SetProps
+	4. Reset the mailbox name to its original value
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
 _PUBLIC_ bool mapitest_oxcprpt_SetProps(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
@@ -238,4 +251,219 @@ _PUBLIC_ bool mapitest_oxcprpt_SetProps(struct mapitest *mt)
 	mapi_object_release(&obj_store);
 
 	return true;
+}
+
+
+
+/**
+   \details Test Stream operations. This test uses all related stream
+   operations: OpenStream (0x2b), WriteStream (0x2d), CommitStream
+   (0x5d), ReadStream (0x2c)
+   
+   This function:
+	* Logon 
+	* Open Outbox folder
+	* Create message
+	* Create attachment and set properties
+	* Open the stream
+	* Write into the stream
+	* Commit the stream
+	* Save the message
+	* Get stream size and compare values
+	* Open the stream again with different permissions
+	* Read the stream and compare buffers
+	* Delete the message;
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise -1
+ */
+_PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = true;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_attach;
+	mapi_object_t		obj_stream;
+	mapi_id_t		id_folder;
+	DATA_BLOB		data;
+	struct SPropValue	attach[3];
+	char			*stream = NULL;
+	char			*out_stream = NULL;
+	uint32_t		stream_len = 0x32146;
+	unsigned char		buf[0x4000];
+	uint32_t		StreamSize = 0;
+	uint32_t		read_size = 0;
+	uint16_t		write_len = 0;
+	uint32_t		len = 0;
+	uint32_t		offset = 0;
+	mapi_id_t		id_msgs[1];
+	uint32_t		i;
+
+	stream = mapitest_common_genblob(mt->mem_ctx, stream_len);
+	if (stream == NULL) {
+		return false;
+	}
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Open Outbox folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3. Create the message */
+	mapi_object_init(&obj_message);
+	mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+
+	/* Step 4. Create the attachment */
+	mapi_object_init(&obj_attach);
+	retval = CreateAttach(&obj_message, &obj_attach);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateAttach", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	attach[0].ulPropTag = PR_ATTACH_METHOD;
+	attach[0].value.l = ATTACH_BY_VALUE;
+	attach[1].ulPropTag = PR_RENDERING_POSITION;
+	attach[1].value.l = 0;
+	attach[2].ulPropTag = PR_ATTACH_FILENAME;
+	attach[2].value.lpszA = MT_MAIL_ATTACH;
+
+	retval = SetProps(&obj_attach, attach, 3);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 5. Open the stream */
+	mapi_object_init(&obj_stream);
+	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 2, &obj_stream);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenStream", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 6. Write the stream */
+	write_len = 0;
+
+	if (stream_len < 0x4000) {
+		data.length = stream_len;
+		data.data = (uint8_t *) stream;
+		retval = WriteStream(&obj_stream, &data, &write_len);
+		mapitest_print(mt, "* %-35s: (0x%x bytes written) 0x%.8x\n", "WriteStream", write_len, GetLastError());
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+		}
+	} else {
+		uint32_t	StreamSize = stream_len;
+
+		for (offset = 0, len = 0x4000, i = 0; StreamSize; i++) {
+			data.length = len;
+			data.data = (uint8_t *)stream + offset;
+			retval = WriteStream(&obj_stream, &data, &write_len);
+			mapitest_print(mt, "* %-35s: [%d] (0x%x bytes written) 0x%.8x\n", "WriteStream", i, write_len, GetLastError());
+
+			StreamSize -= write_len;
+			if (StreamSize > 0x4000) {
+				offset += 0x4000;
+			} else {
+				offset += write_len;
+				len = StreamSize;
+			}
+		}
+	}
+
+ 	/* Step 7. Commit the stream */
+	retval = CommitStream(&obj_stream);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CommitStream", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 8. Save the message */
+	retval = SaveChanges(&obj_message, &obj_attach, KEEP_OPEN_READONLY);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChanges", GetLastError());
+	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesMessage", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 9. Get stream size */
+	retval = GetStreamSize(&obj_stream, &StreamSize);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetStreamSize", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	mapitest_print(mt, "* %-35s: %s\n", "StreamSize comparison", 
+		       (StreamSize == stream_len) ? "[PASSED]" : "[FAILURE]");
+
+	/* Step 10. Read the stream */
+	mapi_object_release(&obj_stream);
+	mapi_object_init(&obj_stream);
+
+	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenStream", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	offset = 0;
+	out_stream = talloc_size(mt->mem_ctx, StreamSize + 1);
+	do {
+		retval = ReadStream(&obj_stream, buf, 0x4000, &read_size);
+		mapitest_print(mt, "* %-35s: (0x%x bytes read) 0x%.8x\n", "ReadStream", read_size, GetLastError());
+		memcpy(out_stream + offset, buf, read_size);
+		offset += read_size;
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+			break;
+		}
+	} while (read_size || offset != StreamSize);
+	out_stream[offset] = '\0';
+
+	if (offset) {
+		if (!strcmp(stream, out_stream)) {
+			mapitest_print(mt, "* %-35s: [IN,OUT] stream [PASSED]\n", "Comparison");
+		} else {
+			mapitest_print(mt, "* %-35s: [IN,OUT] stream [FAILURE]\n", "Comparison");
+
+		}
+	}
+
+	/* Step 11. Delete the message */
+	errno = 0;
+	id_msgs[0] = mapi_object_get_id(&obj_message);
+	retval = DeleteMessage(&obj_folder, id_msgs, 1);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Release */
+	mapi_object_release(&obj_stream);
+	mapi_object_release(&obj_attach);
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	talloc_free(stream);
+	talloc_free(out_stream);
+
+	return ret;
 }

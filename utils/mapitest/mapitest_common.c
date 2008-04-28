@@ -24,6 +24,7 @@
 #include <utils/openchange-tools.h>
 #include <utils/mapitest/mapitest.h>
 
+#include <fcntl.h>
 
 /**
  * Opens a default folder
@@ -224,4 +225,44 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 	}
 
 	return true;
+}
+
+
+/**
+   Generate a random blob of reable data
+ */
+_PUBLIC_ char *mapitest_common_genblob(TALLOC_CTX *mem_ctx, size_t len)
+{
+	int		fd;
+	int		ret;
+	int		i;
+	char		*retstr;
+	const char	*list = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,";
+	int		list_len = strlen(list);
+
+	/* Sanity check */
+	if (!mem_ctx || (len < 0)) {
+		return NULL;
+	}
+
+	fd = open("/dev/urandom", O_RDONLY, 0);
+	if (fd == -1) {
+		return NULL;
+	}
+
+	retstr = talloc_array(mem_ctx, char, len + 1);
+	if ((ret = read(fd, retstr, len)) == -1) {
+		talloc_free(retstr);
+		return NULL;
+	}
+
+	for (i = 0; i < len; i++) {
+		retstr[i] = list[retstr[i] % list_len];
+		if (!retstr[i]) {
+			retstr[i] = 'X';
+		}
+	}
+	retstr[i] = '\0';
+
+	return retstr;
 }

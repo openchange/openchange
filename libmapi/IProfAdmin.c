@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007.
+   Copyright (C) Julien Kerihuel 2007-2008.
    Copyright (C) Fabien Le Mentec 2007.
 
    This program is free software; you can redistribute it and/or modify

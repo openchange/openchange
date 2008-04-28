@@ -4,7 +4,7 @@
    This work is based on libpst-0.5.2, and the author(s) of
    that code will also hold appropriate copyrights.
 
-   Copyright (C) Julien Kerihuel 2007.
+   Copyright (C) Julien Kerihuel 2007-2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

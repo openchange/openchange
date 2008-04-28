@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007.
+   Copyright (C) Julien Kerihuel 2007-2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -503,12 +503,12 @@ _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("GetSearchCriteria");
+	size = 0;
 
 	/* Fill the GetSearchCriteria operation */
-	size = 0;
-	request.unknown[0] = 0x1;
-	request.unknown[1] = 0x1;
-	request.unknown[2] = 0x1;
+	request.UseUnicode = 0x1;
+	request.IncludeRestriction = 0x1;
+	request.IncludeFolders = 0x1;
 	size += 3 * sizeof (uint8_t);
 
 	/* Fill the MAPI_REQ request */

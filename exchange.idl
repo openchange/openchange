@@ -1733,7 +1733,9 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x31 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown[3];
+		boolean8	UseUnicode;
+		boolean8	IncludeRestriction;
+		boolean8	IncludeFolders;
 	} GetSearchCriteria_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {

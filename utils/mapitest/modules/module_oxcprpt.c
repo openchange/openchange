@@ -257,8 +257,8 @@ _PUBLIC_ bool mapitest_oxcprpt_SetProps(struct mapitest *mt)
 
 /**
    \details Test Stream operations. This test uses all related stream
-   operations: OpenStream (0x2b), WriteStream (0x2d), CommitStream
-   (0x5d), ReadStream (0x2c)
+   operations: OpenStream (0x2b), SetStreamSize (0x2f), WriteStream
+   (0x2d), CommitStream (0x5d), ReadStream (0x2c), SeekStream (0x2e)
    
    This function:
 	* Logon 
@@ -266,12 +266,15 @@ _PUBLIC_ bool mapitest_oxcprpt_SetProps(struct mapitest *mt)
 	* Create message
 	* Create attachment and set properties
 	* Open the stream
+	* Set the stream size
 	* Write into the stream
 	* Commit the stream
 	* Save the message
 	* Get stream size and compare values
 	* Open the stream again with different permissions
 	* Read the stream and compare buffers
+	* SeekStream at 0x1000 from the end of the stream
+	* Read the 0x1000 last bytes and check if it matches
 	* Delete the message;
 
    \param mt pointer to the top-level mapitest structure
@@ -301,6 +304,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	uint32_t		offset = 0;
 	mapi_id_t		id_msgs[1];
 	uint32_t		i;
+	uint64_t		NewPosition;
 
 	stream = mapitest_common_genblob(mt->mem_ctx, stream_len);
 	if (stream == NULL) {
@@ -358,7 +362,14 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 		ret = false;
 	}
 
-	/* Step 6. Write the stream */
+	/* Step 6. Set the stream size */
+	retval = SetStreamSize(&obj_stream, (uint64_t) stream_len);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetStreamSize", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 7. Write the stream */
 	write_len = 0;
 
 	if (stream_len < 0x4000) {
@@ -388,14 +399,14 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 		}
 	}
 
- 	/* Step 7. Commit the stream */
+ 	/* Step 8. Commit the stream */
 	retval = CommitStream(&obj_stream);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CommitStream", GetLastError());
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
-	/* Step 8. Save the message */
+	/* Step 9. Save the message */
 	retval = SaveChanges(&obj_message, &obj_attach, KEEP_OPEN_READONLY);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChanges", GetLastError());
 	retval = SaveChangesMessage(&obj_folder, &obj_message);
@@ -404,7 +415,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 		ret = false;
 	}
 
-	/* Step 9. Get stream size */
+	/* Step 10. Get stream size */
 	retval = GetStreamSize(&obj_stream, &StreamSize);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetStreamSize", GetLastError());
 	if (retval != MAPI_E_SUCCESS) {
@@ -413,7 +424,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	mapitest_print(mt, "* %-35s: %s\n", "StreamSize comparison", 
 		       (StreamSize == stream_len) ? "[PASSED]" : "[FAILURE]");
 
-	/* Step 10. Read the stream */
+	/* Step 11. Read the stream */
 	mapi_object_release(&obj_stream);
 	mapi_object_init(&obj_stream);
 
@@ -446,7 +457,30 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 		}
 	}
 
-	/* Step 11. Delete the message */
+	/* Step 12. SeekStream from the end of the stream */
+	retval = SeekStream(&obj_stream, 0x2, (uint64_t) -0x1000, &NewPosition);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SeekStream", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+
+	talloc_free(out_stream);
+	out_stream = talloc_size(mt->mem_ctx, 0x1000);
+	retval = ReadStream(&obj_stream, (uint8_t *)out_stream, 0x1000, &read_size);
+	out_stream[read_size] = '\0';
+	mapitest_print(mt, "* %-35s: (0x%x bytes read) 0x%.8x\n", "ReadStream", read_size, GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	
+	if (read_size && !strcmp(out_stream, stream + StreamSize - read_size)) {
+		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Comparison");
+	} else {
+		mapitest_print(mt, "* %-35s: [FAILURE]\n", "Comparison");
+	}
+
+	/* Step 14. Delete the message */
 	errno = 0;
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);

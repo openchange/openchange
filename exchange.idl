@@ -666,6 +666,8 @@ System Attendant Private Interface
 			op_MAPI_OpenStream		= 0x2b,
 			op_MAPI_ReadStream		= 0x2c,
 			op_MAPI_WriteStream		= 0x2d,
+			op_MAPI_SeekStream		= 0x2e,
+			op_MAPI_SetStreamSize		= 0x2f,
 			op_MAPI_SetSearchCriteria	= 0x30,
 			op_MAPI_GetSearchCriteria      	= 0x31,
 			op_MAPI_SubmitMessage		= 0x32,
@@ -1687,6 +1689,26 @@ System Attendant Private Interface
 	} WriteStream_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x2e */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		Origin;
+		hyper		Offset;
+	} SeekStream_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		NewPosition;
+	} SeekStream_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x2f */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		SizeStream;
+	} SetStreamSize_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} SetStreamSize_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x30 */
 	typedef [bitmap32bit, flag(NDR_PAHEX)] bitmap {
 		STOP_SEARCH		= 0x1,
@@ -2028,6 +2050,8 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenStream)] OpenStream_req mapi_OpenStream;
 		[case(op_MAPI_ReadStream)] ReadStream_req mapi_ReadStream;
 		[case(op_MAPI_WriteStream)] WriteStream_req mapi_WriteStream;
+		[case(op_MAPI_SeekStream)] SeekStream_req mapi_SeekStream;
+		[case(op_MAPI_SetStreamSize)] SetStreamSize_req mapi_SetStreamSize;
 		[case(op_MAPI_SetSearchCriteria)] SetSearchCriteria_req mapi_SetSearchCriteria;
 		[case(op_MAPI_GetSearchCriteria)] GetSearchCriteria_req mapi_GetSearchCriteria;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_req mapi_SubmitMessage;
@@ -2091,6 +2115,8 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenStream)] OpenStream_repl mapi_OpenStream;
 		[case(op_MAPI_ReadStream)] ReadStream_repl mapi_ReadStream;
 		[case(op_MAPI_WriteStream)] WriteStream_repl mapi_WriteStream;
+		[case(op_MAPI_SeekStream)] SeekStream_repl mapi_SeekStream;
+		[case(op_MAPI_SetStreamSize)] SetStreamSize_repl mapi_SetStreamSize;
 		[case(op_MAPI_SetSearchCriteria)] SetSearchCriteria_repl mapi_SetSearchCriteria;
 		[case(op_MAPI_GetSearchCriteria)] GetSearchCriteria_repl mapi_GetSearchCriteria;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_repl mapi_SubmitMessage;

@@ -417,3 +417,164 @@ _PUBLIC_ enum MAPISTATUS GetStreamSize(mapi_object_t *obj_stream, uint32_t *Stre
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Seek a specific position within the stream
+
+   \param obj_stream the stream object
+   \param Origin origin location for the seek operation
+   \param Offset the seek offset
+   \param NewPosition pointer on the new position after the operation
+
+   Origin can either take one of the following values:
+
+   * 0x0 The new seek pointer is an offset relative to the beginning
+   of the stream.
+   * 0x1 The new seek pointer is an offset relative to the current
+   seek pointer location.
+   * 0x2 The new seek pointer is an offset relative to the end of the
+   stream.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
+     beyond the last row requested.
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   
+   \sa OpenStream, ReadStream 
+ */
+_PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, uint64_t Offset, 
+				    uint64_t *NewPosition)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct SeekStream_req	request;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	TALLOC_CTX		*mem_ctx;
+	mapi_ctx_t		*mapi_ctx;
+	uint32_t		size;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF((Origin > 2), MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(Offset < 0, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!NewPosition, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("SeekStream");
+	size = 0;
+
+	/* Fill the SeekStream operation */
+	request.Origin = Origin;
+	size += sizeof (uint8_t);
+
+	request.Offset = Offset;
+	size += sizeof (uint64_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SeekStream;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SeekStream = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	*NewPosition = mapi_response->mapi_repl->u.mapi_SeekStream.NewPosition;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Set the stream size
+
+   \param obj_stream the stream object
+   \param SizeStream the size of the stream
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
+     beyond the last row requested.
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   
+   \sa OpenStream, GetStreamSize
+ */
+_PUBLIC_ enum MAPISTATUS SetStreamSize(mapi_object_t *obj_stream, uint64_t SizeStream)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SetStreamSize_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+	uint32_t			size;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(SizeStream < 0, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("SetStreamSize");
+	size = 0;
+
+	/* Fill the SetStreamSize operation */
+	request.SizeStream = SizeStream;
+	size += sizeof (uint64_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetStreamSize;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SetStreamSize = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}

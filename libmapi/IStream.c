@@ -578,3 +578,94 @@ _PUBLIC_ enum MAPISTATUS SetStreamSize(mapi_object_t *obj_stream, uint64_t SizeS
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Copy a number of bytes from a source stream to another
+   stream
+
+   \param obj_src the source stream object
+   \param obj_dst the destination stream object
+   \param ByteCount the number of bytes to copy
+   \param ReadByteCount pointer on the number of bytes read from the
+   source object
+   \param WrittenByteCount pointer on the number of bytes written to
+   the destination object
+ 
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
+     beyond the last row requested.
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   
+   \sa OpenStream
+*/
+_PUBLIC_ enum MAPISTATUS CopyToStream(mapi_object_t *obj_src, mapi_object_t *obj_dst,
+				      uint64_t ByteCount, uint64_t *ReadByteCount,
+				      uint64_t *WrittenByteCount)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct CopyToStream_req	request;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	TALLOC_CTX		*mem_ctx;
+	mapi_ctx_t		*mapi_ctx;
+	uint32_t		size;
+
+	/* Sanity Check */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_src, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ByteCount, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ReadByteCount, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!WrittenByteCount, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("CopyToStream");
+	size = 0;
+
+	/* Fill the CopyToStream operation */
+	request.handle_idx = 0x1;
+	size += sizeof (uint8_t);
+
+	request.ByteCount = ByteCount;
+	size += sizeof (uint64_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_CopyToStream;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_CopyToStream = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_src);
+	mapi_request->handles[1] = mapi_object_get_handle(obj_dst);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	*ReadByteCount = mapi_response->mapi_repl->u.mapi_CopyToStream.ReadByteCount;
+	*WrittenByteCount = mapi_response->mapi_repl->u.mapi_CopyToStream.WrittenByteCount;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}

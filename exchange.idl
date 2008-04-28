@@ -1746,12 +1746,17 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x32 */
+	typedef [enum8bit] enum {
+		None		= 0x0,	/* None */
+		PreProcess	= 0x1,	/* Needs to be preprocessed by the server */
+		NeedsSpooler	= 0x2	/* Is to be processed by a client spooler */
+	} SubmitFlags;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		SubmitFlags    	SubmitFlags;
 	} SubmitMessage_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-//		uint8		unknown[3];
 	} SubmitMessage_repl;
 
 	/*************************/

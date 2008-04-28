@@ -833,7 +833,7 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 	size = 0;
 
 	/* Fill the SubmitMessage operation */
-	request.unknown = 0x0;
+	request.SubmitFlags = 0x0;
 	size += sizeof(uint8_t);
 
 	/* Fill the MAPI_REQ request */
@@ -882,15 +882,15 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 					    mapi_object_t *obj_message)
 {
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct SaveChangesMessage_req request;
-	NTSTATUS		status;
-	enum MAPISTATUS		retval;
-	uint32_t		size = 0;
-	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SaveChangesMessage_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	

@@ -37,6 +37,36 @@
    \param obj_container the object to get the contents of
    \param obj_table the resulting table containing the container's
    contents.
+   \param TableFlags flags controlling the type of table
+   \param RowCount the number of rows in the hierarchy table
+
+   TableFlags possible values:
+
+   - TableFlags_Depth (0x4): Fills the hierarchy table with containers
+   from all levels. If this flag is not set, the hierarchy table
+   contains only the container's immediate child containers.
+
+   - TableFlags_DeferredErrors (0x8): The call response can return immediately,
+   possibly before the call execution is complete and in this case the
+   ReturnValue as well the RowCount fields in the return buffer might
+   not be accurate.  Only retval reporting failure can be considered
+   valid in this case.
+
+   - TableFlags_NoNotifications (0x10): Disables all notifications on .this Table
+   object.
+
+   - TableFlags_SoftDeletes (0x20): Enables the client to get a list of the soft
+   deleted folders.
+
+   - TableFlags_UseUnicode (0x40): Requests that the columns that contain string
+   data be returned in Unicode format.
+
+   - TableFlags_SuppressNotifications (0x80): Suppresses notifications generated
+   by this client’s actions on this Table object.
+
+   Developers can either set RowCount to a valid pointer on uint32_t
+   or set it to NULL. In this last case, GetHierarchyTable won't
+   return any value to the calling function.
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -48,7 +78,8 @@
 
    \sa OpenFolder, GetHierarchyTable, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_object_t *obj_table)
+_PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_object_t *obj_table,
+					  uint8_t TableFlags, uint32_t *RowCount)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -67,7 +98,7 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 
 	/* Fill the GetContentsTable operation */
 	request.handle_idx = 0x1;
-	request.unknown = 0x0;
+	request.TableFlags = TableFlags;
 	size += 2;
 
 	/* Fill the MAPI_REQ request */
@@ -94,6 +125,11 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 
 	/* set handle */
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
+
+	/* Retrieve RowCount if a valid pointer was set */
+	if (RowCount) {
+		*RowCount = mapi_response->mapi_repl->u.mapi_GetContentsTable.RowCount;
+	}
 	
 	/* new table */
 	mapi_object_table_init(obj_table);
@@ -114,6 +150,36 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
    \param obj_container the object to get the contents of
    \param obj_table the resulting table containing the container's
    hierarchy
+   \param TableFlags flags controlling the type of table
+   \param RowCount the number of rows in the hierarchy table
+
+   TableFlags possible values:
+
+   - TableFlags_Depth (0x4): Fills the hierarchy table with containers
+   from all levels. If this flag is not set, the hierarchy table
+   contains only the container's immediate child containers.
+
+   - TableFlags_DeferredErrors (0x8): The call response can return immediately,
+   possibly before the call execution is complete and in this case the
+   ReturnValue as well the RowCount fields in the return buffer might
+   not be accurate.  Only retval reporting failure can be considered
+   valid in this case.
+
+   - TableFlags_NoNotifications (0x10): Disables all notifications on .this Table
+   object.
+
+   - TableFlags_SoftDeletes (0x20): Enables the client to get a list of the soft
+   deleted folders.
+
+   - TableFlags_UseUnicode (0x40): Requests that the columns that contain string
+   data be returned in Unicode format.
+
+   - TableFlags_SuppressNotifications (0x80): Suppresses notifications generated
+   by this client’s actions on this Table object.
+
+   Developers can either set RowCount to a valid pointer on uint32_t
+   or set it to NULL. In this last case, GetHierarchyTable won't
+   return any value to the calling function.
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -125,7 +191,8 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 
    \sa OpenFolder, GetContentsTable, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_object_t *obj_table)
+_PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_object_t *obj_table,
+					   uint8_t TableFlags, uint32_t *RowCount)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -144,7 +211,7 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 
 	/* Fill the GetHierarchyTable operation */
 	request.handle_idx = 0x1;
-	request.unknown = 0x0;
+	request.TableFlags = TableFlags;
 	size += 2;
 
 	/* Fill the MAPI_REQ request */
@@ -172,6 +239,11 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	/* set handle */
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
 	
+	/* Retrieve RowCount if a valid pointer was set */
+	if (RowCount) {
+		*RowCount = mapi_response->mapi_repl->u.mapi_GetHierarchyTable.RowCount;
+	}
+
 	/* new table */
 	mapi_object_table_init(obj_table);
 

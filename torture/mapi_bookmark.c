@@ -70,7 +70,7 @@ bool torture_rpc_mapi_bookmark(struct torture_context *torture)
 
 	/* Retrieve the Contents Table */
 	mapi_object_init(&obj_ctable);
-	retval = GetContentsTable(&obj_folder, &obj_ctable);
+	retval = GetContentsTable(&obj_folder, &obj_ctable, 0, &count);
 	mapi_errstr("GetContentsTable", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -79,11 +79,6 @@ bool torture_rpc_mapi_bookmark(struct torture_context *torture)
 	retval = SetColumns(&obj_ctable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	mapi_errstr("SetColumns", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return false;
-
-	/* Count the total number of rows in the table */
-	retval = GetRowCount(&obj_ctable, &count);
-	mapi_errstr("GetRowCount", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	halfcount = count / 2;

@@ -77,7 +77,7 @@ static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_table);
-	retval = GetContentsTable(&obj_inbox, &obj_table);
+	retval = GetContentsTable(&obj_inbox, &obj_table, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
@@ -671,7 +671,7 @@ int main(int argc, const char *argv[])
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	mapi_object_init(&obj_table);
-	retval = GetContentsTable(&obj_inbox, &obj_table);
+	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
@@ -684,9 +684,6 @@ int main(int argc, const char *argv[])
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	retval = GetRowCount(&obj_table, &count);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
-	
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		for (i = 0; i < rowset.cRows; i++) {
 			mapi_object_init(&obj_message);

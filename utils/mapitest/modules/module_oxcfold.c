@@ -267,6 +267,7 @@ _PUBLIC_ bool mapitest_oxcfold_GetHierarchyTable(struct mapitest *mt)
 	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	mapi_id_t		id_folder;
+	uint32_t		RowCount;
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
@@ -285,8 +286,8 @@ _PUBLIC_ bool mapitest_oxcfold_GetHierarchyTable(struct mapitest *mt)
 
 	/* Step 3. Get the Hierarchy Table */
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetHierarchyTable", GetLastError());
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, &RowCount);
+	mapitest_print(mt, "* %-35s: (%d rows) 0x%.8x\n", "GetHierarchyTable", RowCount, GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -319,6 +320,7 @@ _PUBLIC_ bool mapitest_oxcfold_GetContentsTable(struct mapitest *mt)
 	mapi_object_t		obj_folder;
 	mapi_object_t		obj_ctable;
 	mapi_id_t		id_folder;
+	uint32_t		RowCount;
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
@@ -337,8 +339,8 @@ _PUBLIC_ bool mapitest_oxcfold_GetContentsTable(struct mapitest *mt)
 
 	/* Step 3. Get the Contents Table */
 	mapi_object_init(&obj_ctable);
-	retval = GetContentsTable(&obj_folder, &obj_ctable);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
+	retval = GetContentsTable(&obj_folder, &obj_ctable, 0, &RowCount);
+	mapitest_print(mt, "* %-35s: (%d rows) 0x%.8x\n", "GetContentsTable", RowCount, GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}

@@ -75,7 +75,7 @@ bool torture_rpc_mapi_fetchappointment(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Operations on the calendar folder */
-	retval = GetContentsTable(&obj_calendar, &obj_cal_table);
+	retval = GetContentsTable(&obj_calendar, &obj_cal_table, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,

@@ -82,7 +82,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 
 	/* Retrieve the folder contents */
 	mapi_object_init(&obj_table);
-	retval = GetContentsTable(&obj_folder, &obj_table);
+	retval = GetContentsTable(&obj_folder, &obj_table, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,

@@ -144,7 +144,7 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 	uint32_t		index;
 
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(obj_container, &obj_htable);
+	retval = GetHierarchyTable(obj_container, &obj_htable, 0, NULL);
 	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
@@ -417,8 +417,10 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 		MAPI_RETVAL_IF(retval, retval, mem_ctx);
 	}
 
-	retval = GetContentsTable(&obj_inbox, &obj_table);
+	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	printf("MAILBOX (%d messages)\n", count);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
 					  PR_FID,
@@ -429,11 +431,6 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
-
-	retval = GetRowCount(&obj_table, &count);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
-
-	printf("MAILBOX (%d messages)\n", count);
 
 	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		count -= rowset.cRows;
@@ -962,7 +959,7 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 		if (retval != MAPI_E_SUCCESS) return false;
 	}
 
-	retval = GetContentsTable(&obj_inbox, &obj_table);
+	retval = GetContentsTable(&obj_inbox, &obj_table, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
@@ -1584,7 +1581,7 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
@@ -1644,7 +1641,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
@@ -1765,8 +1762,10 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 
 	/* Operations on the  folder */
 	mapi_object_init(&obj_table);
-	retval = GetContentsTable(&obj_folder, &obj_table);
+	retval = GetContentsTable(&obj_folder, &obj_table, 0, &count);
 	if (retval != MAPI_E_SUCCESS) return false;
+
+	printf("MAILBOX (%d messages)\n", count);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
 					  PR_FID,
@@ -1780,11 +1779,6 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
-
-	retval = GetRowCount(&obj_table, &count);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
-
-	printf("MAILBOX (%d messages)\n", count);
 
 	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
 		count -= SRowSet.cRows;
@@ -1860,7 +1854,7 @@ static enum MAPISTATUS folder_lookup(TALLOC_CTX *mem_ctx,
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_FID);
@@ -1908,7 +1902,7 @@ static enum MAPISTATUS message_lookup(TALLOC_CTX *mem_ctx,
 	const uint64_t		*mid;
 
 	mapi_object_init(&obj_htable);
-	retval = GetContentsTable(obj_folder, &obj_htable);
+	retval = GetContentsTable(obj_folder, &obj_htable, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2, PR_FID, PR_MID);
@@ -2103,7 +2097,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 
 	/* Retrieve contents table */
 	mapi_object_init(&obj_table);
-	retval = GetContentsTable(&obj_inbox, &obj_table);
+	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
 	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
@@ -2111,9 +2105,6 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 					  PR_MID);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
-
-	retval = GetRowCount(&obj_table, &count);
 	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
 
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {

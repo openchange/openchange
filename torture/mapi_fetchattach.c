@@ -143,7 +143,7 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* table = inbox->GetContentsTable() */
-	retval = GetContentsTable(&obj_inbox, &obj_tb_contents);
+	retval = GetContentsTable(&obj_inbox, &obj_tb_contents, 0, NULL);
 	mapi_errstr("GetContentsTable", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

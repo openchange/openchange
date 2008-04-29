@@ -185,7 +185,7 @@ static enum MAPISTATUS mapidump_walk_content(TALLOC_CTX *mem_ctx,
 
 	/* Get Contents Table */
 	mapi_object_init(&obj_ctable);
-	retval = GetContentsTable(obj_folder, &obj_ctable);
+	retval = GetContentsTable(obj_folder, &obj_ctable, 0, &count);
 	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
 	/* Customize the table view */
@@ -197,10 +197,6 @@ static enum MAPISTATUS mapidump_walk_content(TALLOC_CTX *mem_ctx,
 					  PR_SUBJECT);
 	retval = SetColumns(&obj_ctable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
-
-	/* Walk through the table */
-	retval = GetRowCount(&obj_ctable, &count);
 	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
 	while ((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
@@ -300,7 +296,7 @@ static enum MAPISTATUS mapidump_walk_container(TALLOC_CTX *mem_ctx,
 
 	if (child_folder && *child_folder >= 1) {
 		mapi_object_init(&obj_htable);
-		retval = GetHierarchyTable(&obj_folder, &obj_htable);
+		retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, &rcount);
 		MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
 		SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
@@ -309,9 +305,6 @@ static enum MAPISTATUS mapidump_walk_container(TALLOC_CTX *mem_ctx,
 						  PR_FOLDER_CHILD_COUNT);
 		retval = SetColumns(&obj_htable, SPropTagArray);
 		MAPIFreeBuffer(SPropTagArray);
-		MAPI_RETVAL_IF(retval, GetLastError(), NULL);
-
-		retval = GetRowCount(&obj_htable, &rcount);
 		MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
 		while ((retval = QueryRows(&obj_htable, rcount, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {

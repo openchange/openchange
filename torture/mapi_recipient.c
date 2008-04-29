@@ -76,7 +76,7 @@ bool torture_rpc_mapi_recipient(struct torture_context *torture)
 
 	/* Get Contents Table */
 	mapi_object_init(&obj_table);
-	retval = GetContentsTable(&obj_inbox, &obj_table);
+	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
 	mapi_errstr("GetContentsTable", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -89,10 +89,6 @@ bool torture_rpc_mapi_recipient(struct torture_context *torture)
 	MAPIFreeBuffer(SPropTagArray);
 	mapi_errstr("SetColumns", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
-
-	/* Get total number of messages */
-	retval = GetRowCount(&obj_table, &count);
-	mapi_errstr("GetRowCount", GetLastError());
 
 	while (((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
 		count -= SRowSet.cRows;

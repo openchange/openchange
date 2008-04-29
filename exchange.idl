@@ -671,7 +671,7 @@ System Attendant Private Interface
 			op_MAPI_SetSearchCriteria	= 0x30,
 			op_MAPI_GetSearchCriteria      	= 0x31,
 			op_MAPI_SubmitMessage		= 0x32,
-			op_MAPI_CopyMessages		= 0x33,
+			op_MAPI_CopyMessages       	= 0x33,
 			op_MAPI_QueryColumns		= 0x37,
 			op_MAPI_CopyToStream		= 0x3a,
 			op_MAPI_GetTable		= 0x3e,
@@ -907,26 +907,33 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x4   */
+	typedef [bitmap8bit] bitmap {
+		TableFlags_Depth			= 0x4,
+		TableFlags_DeferredErrors		= 0x8,
+		TableFlags_NoNotifications		= 0x10,
+		TableFlags_SoftDeletes			= 0x20,
+		TableFlags_UseUnicode			= 0x40,
+		TableFlags_SuppressNotifications	= 0x80
+	} TableFlags;
+
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
-		uint8		unknown;
+		TableFlags	TableFlags;
 	} GetHierarchyTable_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		cn_rows;
-		uint16		unknown;
+		uint32		RowCount;
 	} GetHierarchyTable_repl;
 
 	/**************************/
 	/* EcDoRpc Function 0x5   */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
-		uint8		unknown;
+		TableFlags	TableFlags;
 	} GetContentsTable_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16          cn_rows;
-		uint16          unknown;
+		uint32		RowCount;
 	} GetContentsTable_repl;
 
 	/**************************/
@@ -1768,11 +1775,11 @@ System Attendant Private Interface
  		uint8		handle_idx;
  		uint16		count;
  		hyper		message_id[count];
- 		uint16		row_nb;
+		uint16		row_nb;
 	} CopyMessages_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		boolean8       	PartialCompletion;
 	} CopyMessages_repl;
 
 	/*************************/

@@ -103,7 +103,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
@@ -151,7 +151,7 @@ static enum MAPISTATUS openchangepfadmin_getdir(TALLOC_CTX *mem_ctx,
 	uint32_t		index;
 
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(obj_container, &obj_htable);
+	retval = GetHierarchyTable(obj_container, &obj_htable, 0, NULL);
 	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,

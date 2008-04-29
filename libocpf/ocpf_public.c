@@ -320,7 +320,7 @@ static enum MAPISTATUS ocpf_folder_lookup(TALLOC_CTX *mem_ctx,
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_FID);

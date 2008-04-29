@@ -82,7 +82,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 	mapi_object_debug(&obj_inbox);
 
 	/* table = inbox->GetContentsTable() */
-	retval = GetContentsTable(&obj_inbox, &obj_table);
+	retval = GetContentsTable(&obj_inbox, &obj_table, 0, NULL);
 	mapi_errstr("GetContentsTable", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 	mapi_object_debug(&obj_table);

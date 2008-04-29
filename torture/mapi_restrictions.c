@@ -168,8 +168,10 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	}
 
 	/* Get Contents Table */
-	retval = GetContentsTable(&obj_testdir, &obj_table);
+	retval = GetContentsTable(&obj_testdir, &obj_table, 0, &total);
 	if (retval != MAPI_E_SUCCESS) return false;
+
+	DEBUG(0, ("Total number of mails = %d\n", total));
 
 	/* Filter contents table on subject */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
@@ -182,11 +184,6 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
-
-	retval = GetRowCount(&obj_table, &total);
-	if (retval != MAPI_E_SUCCESS) return false;
-
-	DEBUG(0, ("Total number of mails = %d\n", total));
 
 	DEBUG(0, ("\nStep 1. Test Restrict MAPI call\n"));
 	DEBUG(0, ("===============================\n"));

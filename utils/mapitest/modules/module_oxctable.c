@@ -68,7 +68,7 @@ _PUBLIC_ bool mapitest_oxctable_SetColumns(struct mapitest *mt)
 
 	/* Step 3. GetHierarchyTable */
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -132,7 +132,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 
 	/* Step 3. GetHierarchyTable */
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -196,19 +196,12 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 
 	/* Step 3. GetHierarchyTable */
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, &count);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
-	/* Step 4. Get row count */
-	retval = GetRowCount(&obj_htable, &count);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRowCount", GetLastError());
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step 5. Set Table Columns */
+	/* Step 4. Set Table Columns */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3,
 					  PR_DISPLAY_NAME,
 					  PR_FID,
@@ -274,7 +267,7 @@ _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
 
 	/* Step 3. GetHierarchyTable */
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -336,7 +329,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRow(struct mapitest *mt)
 
 	/* Step 3. GetHierarchyTable */
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -406,7 +399,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowApprox(struct mapitest *mt)
 
 	/* Step 3. GetHierarchyTable */
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -484,7 +477,7 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 
 	/* Step 3. GetHierarchyTable */
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, &count);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -500,13 +493,7 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 		return false;
 	}
 
-	/* Step 5. Get the total number of rows */
-	retval = GetRowCount(&obj_htable, &count);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step 6. Create Bookmarks */
+	/* Step 5. Create Bookmarks */
 	bkPosition = talloc_array(mt->mem_ctx, uint32_t, 1);
 	while (((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
 	       SRowSet.cRows) {
@@ -523,7 +510,7 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 
 	retval = mapi_object_bookmark_get_count(&obj_htable, &count);
 
-	/* Step 7. Free Bookmarks */
+	/* Step 6. Free Bookmarks */
 	for (i = 0; i < count; i++) {
 		retval = FreeBookmark(&obj_htable, bkPosition[i]);
 		mapitest_print(mt, "* %-35s (%.2d): 0x%.8x\n", "FreeBookmark", i, GetLastError());
@@ -589,7 +576,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 
 	/* Step 3. GetHierarchyTable */
 	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, &count);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -605,13 +592,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 		return false;
 	}
 
-	/* Step 5. Get the total number of rows */
-	retval = GetRowCount(&obj_htable, &count);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step 6. Create Bookmarks */
+	/* Step 5. Create Bookmarks */
 	bkPosition = talloc_array(mt->mem_ctx, uint32_t, 1);
 	while (((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
 	       SRowSet.cRows) {
@@ -628,7 +609,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 
 	retval = mapi_object_bookmark_get_count(&obj_htable, &count);
 
-	/* Step 7. SeekRowBookmark */
+	/* Step 6. SeekRowBookmark */
 	for (i = 0; i < count; i++) {
 		retval = SeekRowBookmark(&obj_htable, bkPosition[i], 0, &row);
 		mapitest_print(mt, "%-35s (%.2d): 0x%.8x\n", "SeekRowBookmark", i, GetLastError());

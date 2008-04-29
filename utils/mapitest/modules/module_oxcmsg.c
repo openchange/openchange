@@ -740,7 +740,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetMessageStatus(struct mapitest *mt)
 
 	/* Step 5. Get outbox contents table */
 	mapi_object_init(&obj_ctable);
-	retval = GetContentsTable(&obj_folder, &obj_ctable);
+	retval = GetContentsTable(&obj_folder, &obj_ctable, 0, &count);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -749,11 +749,6 @@ _PUBLIC_ bool mapitest_oxcmsg_GetMessageStatus(struct mapitest *mt)
 					  PR_MID, PR_MSG_STATUS);
 	retval = SetColumns(&obj_ctable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	retval = GetRowCount(&obj_ctable, &count);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -872,7 +867,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageStatus(struct mapitest *mt)
 
 	/* Step 5. Get outbox contents table */
 	mapi_object_init(&obj_ctable);
-	retval = GetContentsTable(&obj_folder, &obj_ctable);
+	retval = GetContentsTable(&obj_folder, &obj_ctable, 0, &count);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -881,11 +876,6 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageStatus(struct mapitest *mt)
 					  PR_MID, PR_MSG_STATUS);
 	retval = SetColumns(&obj_ctable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	retval = GetRowCount(&obj_ctable, &count);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}

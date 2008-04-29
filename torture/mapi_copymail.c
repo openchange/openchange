@@ -86,7 +86,7 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 
-	retval = GetContentsTable(&obj_dir_src, &obj_table);
+	retval = GetContentsTable(&obj_dir_src, &obj_table, 0, NULL);
 	mapi_errstr("GetContentsTable", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -103,8 +103,8 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		for (i = 0; i < rowset.cRows; i++) {
-			retval = CopyMessages(&obj_dir_src, &obj_dir_dst, rowset.aRow[i].lpProps[1].value.d);
-			mapi_errstr("CopyMessages", GetLastError());
+			retval = MoveCopyMessages(&obj_dir_src, &obj_dir_dst, rowset.aRow[i].lpProps[1].value.d);
+			mapi_errstr("MoveCopyMessages", GetLastError());
 			if (retval != MAPI_E_SUCCESS) return false;
 		}
 	}

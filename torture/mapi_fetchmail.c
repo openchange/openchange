@@ -91,7 +91,7 @@ bool torture_rpc_mapi_fetchmail(struct torture_context *torture)
 		
 	/* table = inbox->GetContentsTable()
 	 */
-	retval = GetContentsTable(&obj_inbox, &obj_table);
+	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
 	mapi_errstr("GetContentsTable", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -105,11 +105,6 @@ bool torture_rpc_mapi_fetchmail(struct torture_context *torture)
 	talloc_free(SPropTagArray);
 	mapi_errstr("SetColumns", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
-
-	/* Iterate through messages
-	 */
-	retval = GetRowCount(&obj_table, &count);
-	mapi_errstr("GetRowCount", GetLastError());
 
 	printf("Inbox: Total(%d) Unread(%d)\n", total, unread);
 

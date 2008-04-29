@@ -75,7 +75,7 @@ bool torture_rpc_mapi_fetchcontacts(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Operations on the contacts folder */
-	retval = GetContentsTable(&obj_contacts, &obj_table);
+	retval = GetContentsTable(&obj_contacts, &obj_table, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,

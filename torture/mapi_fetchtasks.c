@@ -75,7 +75,7 @@ bool torture_rpc_mapi_fetchtasks(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Operations on the tasks folder */
-	retval = GetContentsTable(&obj_tasks, &obj_tasks_table);
+	retval = GetContentsTable(&obj_tasks, &obj_tasks_table, 0, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,

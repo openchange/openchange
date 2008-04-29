@@ -83,7 +83,7 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 
 	/* Retrieve the contents table */
 	mapi_object_init(&obj_ctable);
-	retval = GetContentsTable(obj_folder, &obj_ctable);
+	retval = GetContentsTable(obj_folder, &obj_ctable, 0, &count);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -97,13 +97,6 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 	retval = SetColumns(&obj_ctable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetColumns", GetLastError());
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Count the total number of rows */
-	retval = GetRowCount(&obj_ctable, &count);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRowCount", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}

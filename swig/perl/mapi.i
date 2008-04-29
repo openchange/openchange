@@ -111,7 +111,7 @@ extern uint32_t		GetDefaultProfile(const char **s);
 extern uint32_t		GetDefaultFolder(mapi_object_t *obj, uint64_t *folder, const uint32_t folder_id);
 extern uint32_t		OpenFolder(mapi_object_t *obj, uint64_t folder, mapi_object_t *obj2);
 extern uint32_t		GetFolderItemsCount(mapi_object_t *obj, uint32_t *unread, uint32_t *total);
-extern uint32_t		GetContentsTable(mapi_object_t *obj, mapi_object_t *obj2);
+extern uint32_t		GetContentsTable(mapi_object_t *obj, mapi_object_t *obj2, uint8_t TableFlags, uint32_t *RowCount);
 extern uint32_t		SetColumns(mapi_object_t *obj, struct SPropTagArray *lpProps);
 extern uint32_t		QueryRows(mapi_object_t *obj, uint32_t nb, uint32_t flg, struct SRowSet *SRowSet);
 extern uint32_t		GetRowCount(mapi_object_t *obj, uint32_t *props);

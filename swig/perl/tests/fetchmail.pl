@@ -81,7 +81,7 @@ sub mapi_fetchmail()
 
     ## GetContentsTable
     my $obj_table = new_mapi_object();
-    $retval = GetContentsTable($obj_inbox, $obj_table);
+    $retval = GetContentsTable($obj_inbox, $obj_table, 0, $count);
     mapi_errstr("GetContentsTable", GetLastError());
 
     ## Prepare MAPI table creation
@@ -95,10 +95,6 @@ sub mapi_fetchmail()
     $retval = SetColumns($obj_table, $SPropTagArray);
     delete_SPropTagArray($SPropTagArray);
     mapi_errstr("SetColumns", GetLastError());
-
-    ## Count numer of rows in the table
-    $retval = GetRowCount($obj_table, $count);
-    mapi_errstr("GetRowCount", GetLastError());
 
     ## Get table rows
     while (($retval = QueryRows($obj_table, int32_value($count), 0, $SRowSet)) != $mapi::MAPI_E_NOT_FOUND 

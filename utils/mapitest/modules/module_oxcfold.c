@@ -84,9 +84,9 @@ static struct test_folders subfolders[] = {
    \details Test the OpenFolder (0x2) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Open folders located within the top information store folder
-	3. Open folders located within the Inbox folder
+	-# Log on the user private mailbox
+	-# Open folders located within the top information store folder
+	-# Open folders located within the Inbox folder
 
    \param mt the top-level mapitest structure
 
@@ -164,12 +164,12 @@ _PUBLIC_ bool mapitest_oxcfold_OpenFolder(struct mapitest *mt)
    \details Test the CreateFolder (0x1c) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Open the top information folder
-	3. Create a test directory
-	4. Create sub directories with different container classes
-	5. Empty the folder
-	6. Delete the folder
+	-# Log on the user private mailbox
+	-# Open the top information folder
+        -# Create a test directory
+	-# Create sub directories with different container classes
+	-# Empty the folder
+	-# Delete the folder
 
    \param mt the top-level mapitest structure
 
@@ -252,9 +252,9 @@ _PUBLIC_ bool mapitest_oxcfold_CreateFolder(struct mapitest *mt)
    \details Test the GetHierarchyTable (0x4) operation
 
   This function:
-	1. Log on the user private mailbox
-	2. Open the top information folder
-	3. Call the GetHierarchyTable operation
+	-# Log on the user private mailbox
+	-# Open the top information folder
+	-# Call the GetHierarchyTable operation
 
    \param mt pointer on the top-level mapitest structure
 
@@ -304,9 +304,9 @@ _PUBLIC_ bool mapitest_oxcfold_GetHierarchyTable(struct mapitest *mt)
    \details Test the GetContentsTable (0x5) operation
 
   This function:
-	1. Log on the user private mailbox
-	2. Open the top information folder
-	3. Call the GetContentsTable operation
+	-# Log on the user private mailbox
+	-# Open the top information folder
+	-# Call the GetContentsTable operation
 
    \param mt pointer on the top-level mapitest structure
 

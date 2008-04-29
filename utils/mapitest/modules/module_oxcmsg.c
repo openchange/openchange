@@ -34,10 +34,10 @@
    \details Test the CreateMessage (0x6) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Open the Outbox folder
-	3. Create the message
-	4. Delete the message
+	-# Log on the user private mailbox
+	-# Open the Outbox folder
+	-# Create the message
+	-# Delete the message
 
    \param mt pointer on the top-level mapitest structure
 
@@ -94,11 +94,11 @@ _PUBLIC_ bool mapitest_oxcmsg_CreateMessage(struct mapitest *mt)
    \details Test the SetReadFlags (0x11) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Open the Inbox folder
-	3. Create a tmp message
-	4. Play with SetReadFlags
-	5. Delete the message
+	-# Log on the user private mailbox
+	-# Open the Inbox folder
+	-# Create a tmp message
+	-# Play with SetReadFlags
+	-# Delete the message
 	
    Note: We can test either SetReadFlags was effective by checking its
    old/new value with GetProps on PR_MESSAGE_FLAGS property.
@@ -217,13 +217,12 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
    \details Test the CreateMessage (0xe) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Open the Outbox folder
-	3. Create the message
-	4. Resolve recipients names
-	5. Call ModifyRecipients operation for MAPI_TO, MAPI_CC,
-	MAPI_BCC
-	6. Delete the message
+   -# Log on the user private mailbox
+   -# Open the Outbox folder
+   -# Create the message
+   -# Resolve recipients names
+   -# Call ModifyRecipients operation for MAPI_TO, MAPI_CC, MAPI_BCC
+   -# Delete the message
 
    \param mt pointer on the top-level mapitest structure
 
@@ -334,12 +333,12 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
    \details Test the RemoveAllRecipients (0xd) operation
 
    This function:
-	1. Log on the use private mailbox
-	2. Open the Outbox folder
-	3. Create the message, set recipients
-	4. Save the message
-	5. Remove all recipients
-	6. Delete the message
+   -# Log on the use private mailbox
+   -# Open the Outbox folder
+   -# Create the message, set recipients
+   -# Save the message
+   -# Remove all recipients
+   -# Delete the message
 
    \param mt point on the top-level mapitest structure
    
@@ -467,12 +466,12 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
    \details Test the ReadRecipients (0xf) operation
 
       This function:
-	1. Log on the use private mailbox
-	2. Open the Outbox folder
-	3. Create the message, set recipients
-	4. Save the message
-	5. Read message recipients
-	6. Delete the message
+      -# Log on the use private mailbox
+      -# Open the Outbox folder
+      -# Create the message, set recipients
+      -# Save the message
+      -# Read message recipients
+      -# Delete the message
 
    \param mt point on the top-level mapitest structure
    
@@ -604,11 +603,11 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
    \details Test the SaveChangesMessage (0xc) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Open the Outbox folder
-	3. Create the message
-	4. Save the message
-	5. Delete the message
+   -# Log on the user private mailbox
+   -# Open the Outbox folder
+   -# Create the message
+   -# Save the message
+   -# Delete the message
 
    \param mt pointer on the top-level mapitest structure
 
@@ -678,13 +677,13 @@ _PUBLIC_ bool mapitest_oxcmsg_SaveChangesMessage(struct mapitest *mt)
    \details Test the GetMessageStatus (0x1f) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Open the outbox folder
-	3. Create the message
-	4. Save the message
-	5. Get outbox contents table
-	6. Get messages status
-	7. Delete the message
+   -# Log on the user private mailbox
+   -# Open the outbox folder
+   -# Create the message
+   -# Save the message
+   -# Get outbox contents table
+   -# Get messages status
+   -# Delete the message
 
    \param mt pointer on the top-level mapitest structure
 
@@ -809,14 +808,13 @@ static struct msgstatus msgstatus[] = {
    \details Test the GetMessageStatus (0x1f) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Open the outbox folder
-	3. Create the message
-	4. Save the message
-	5. Get outbox contents table
-	6. Set different messages status, then get them and compare
-	values
-	7. Delete the message
+   -# Log on the user private mailbox
+   -# Open the outbox folder
+   -# Create the message
+   -# Save the message
+   -# Get outbox contents table
+   -# Set different messages status, then get them and compare values
+   -# Delete the message
 
    \param mt pointer on the top-level mapitest structure
 

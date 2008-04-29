@@ -34,11 +34,11 @@
    \details Test the SetColumns (0x12) operation
 
    This function:
-	1. Open the Inbox folder
-	2. Retrieve the hierarchy table
-	3. Call the SetColumns operation
+   -# Opens the Inbox folder
+   -# Retrieves the hierarchy table
+   -# Calls the SetColumns operation
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
 
    \return true on success, otherwise false
  */
@@ -98,11 +98,11 @@ _PUBLIC_ bool mapitest_oxctable_SetColumns(struct mapitest *mt)
    \details Test the QueryColumns (0x37) operation
 
    This function:
-	1. Open the Inbox folder
-	2. Retrieve the hierarchy table
-	3. Call the QueryColumn operation
+	-# Opens the Inbox folder
+	-# Retrieves the hierarchy table
+	-# Calls the QueryColumn operation
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
 
    \return true on success, otherwise false
  */
@@ -157,11 +157,11 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
    \details Test the QueryRows (0x15) operation
 
    This function:
-	1. Open the Inbox folder
-	2. Retrieve the hierarchy table
-	3. Retrieve the number of rows
-	4. Set the number of columns
-	5. Call QueryRows until the end of the table
+   -# Open the Inbox folder
+   -# Retrieve the hierarchy table
+   -# Retrieve the number of rows
+   -# Set the number of columns
+   -# Call QueryRows until the end of the table
 
    \param mt pointer on the top-level mapitest structure
 
@@ -244,9 +244,9 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
    \details Test the GetStatus (0x16) operation
 
    This function:
-	1. Open the Top Information store folder
-	2. Open the hiearchy tabke
-	3. Call GetStatus
+   -# Open the Top Information store folder
+   -# Open the hiearchy tabke
+   -# Call GetStatus
  */
 _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
 {
@@ -300,11 +300,11 @@ _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
    \details Test the SeekRow (0x18) operation
 
    This function:
-	1. Open the Inbox folder
-	2. Retrieve the hierarchy table
-	3. SeekRow with BOOKMARK_BEGINNING
-	4. SeekRow with BOOKMARK_END
-	5. SeekRow with BOOKMARK_CURRENT
+   -# Open the Inbox folder
+   -# Retrieve the hierarchy table
+   -# SeekRow with BOOKMARK_BEGINNING
+   -# SeekRow with BOOKMARK_END
+   -# SeekRow with BOOKMARK_CURRENT
 
    \param mt pointer on the top-level mapitest structure
    
@@ -373,9 +373,9 @@ _PUBLIC_ bool mapitest_oxctable_SeekRow(struct mapitest *mt)
    \details Test the SeekRowApprox (0x1a) operation
 
    This function:
-	1. Open the Inbox folder
-	2. Retrieve the hierarchy table
-	3. SeekRowApprox with 0/1, 1/1 and 1/2 fractional values
+   -# Open the Inbox folder
+   -# Retrieve the hierarchy table
+   -# SeekRowApprox with 0/1, 1/1 and 1/2 fractional values
 
    \param mt pointer on the top-level mapitest structure
    
@@ -444,11 +444,11 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowApprox(struct mapitest *mt)
    \details Test the CreateBookmark (0x1b) operation
 
    This function:
-	1. Open the Inbox folder
-	2. Retrieve the hierarchy table
-	3. Customize the MAPI table view
-	4. CreateBookmark for each table's row
-	5. Free Bookmark for each created bookmark
+   -# Open the Inbox folder
+   -# Retrieve the hierarchy table
+   -# Customize the MAPI table view
+   -# CreateBookmark for each table's row
+   -# Free Bookmark for each created bookmark
 
    \param mt pointer on the top-level mapitest structure
    
@@ -548,6 +548,11 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
    Test the SeekRowBookmark (0x19) operation
 
    This function:
+   -# Open the Inbox folder
+   -# Retrieve the hierarchy table
+   -# Customize the MAPI table view
+   -# SeekBookmark for each table's row
+   -# Free Bookmark for each created bookmark
 
    \param mt pointer on the top-level mapitest structure
    

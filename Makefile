@@ -3,6 +3,9 @@
 
 default: all
 
+# Until we add proper dependencies for all the C files:
+.NOTPARALLEL:
+
 config.mk: config.status config.mk.in
 	./config.status
 

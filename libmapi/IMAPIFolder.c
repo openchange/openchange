@@ -352,11 +352,17 @@ _PUBLIC_ enum MAPISTATUS SetMessageStatus(mapi_object_t *obj_folder,
 
 
 /**
-   \details Copy or move a message from a folder to another
+   \details Copy or Move a message from a folder to another
 
    \param obj_src The source folder
    \param obj_dst The destination folder
-   \param msgid The message ID to copy
+   \param msgid pointer on an array of message IDs
+   \param WantCopy boolean value, defines whether the operation is a
+   copy or a move
+
+   Possible values for WantCopy:
+   -# 0: Move
+   -# 1: Copy
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -368,18 +374,19 @@ _PUBLIC_ enum MAPISTATUS SetMessageStatus(mapi_object_t *obj_folder,
 
    \sa OpenFolder, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS CopyMessages(mapi_object_t *obj_src,
-				      mapi_object_t *obj_dst,
-				      mapi_id_t msgid)
+_PUBLIC_ enum MAPISTATUS MoveCopyMessages(mapi_object_t *obj_src,
+					  mapi_object_t *obj_dst,
+					  mapi_id_t *message_id,
+					  bool WantCopy)
 {
-	NTSTATUS		status;
-	TALLOC_CTX		*mem_ctx;
-	enum MAPISTATUS		retval;
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct CopyMessages_req	request;
-	uint32_t		size;
+	NTSTATUS			status;
+	TALLOC_CTX			*mem_ctx;
+	enum MAPISTATUS			retval;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct MoveCopyMessages_req	request;
+	uint32_t			size;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
@@ -394,20 +401,25 @@ _PUBLIC_ enum MAPISTATUS CopyMessages(mapi_object_t *obj_src,
 	/* Fill the CopyMessage operation */
 	request.handle_idx = 0x1;
 	size += sizeof (uint8_t);
-	request.count = 0x1;
+
+	for (request.count = 0; message_id[request.count]; request.count++);
 	size += sizeof (uint16_t);
-	request.message_id = talloc_array(mem_ctx, uint64_t, 1);
-	request.message_id[0] = msgid;
-	size += sizeof (mapi_id_t);
-	request.row_nb = 0x0;
-	size += sizeof (uint16_t);
+
+	request.message_id = message_id;
+	size += request.count * sizeof (mapi_id_t);
+
+	request.WantAsynchronous = 0;
+	size += sizeof (uint8_t);
+
+	request.WantCopy = WantCopy;
+	size += sizeof (uint8_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_CopyMessages;
+	mapi_req->opnum = op_MAPI_MoveCopyMessages;
 	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
-	mapi_req->u.mapi_CopyMessages = request;
+	mapi_req->u.mapi_MoveCopyMessages = request;
 	size += 5;
 
 	/* Fill the mapi_request structure */

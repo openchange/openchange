@@ -352,3 +352,76 @@ _PUBLIC_ bool mapitest_oxcfold_GetContentsTable(struct mapitest *mt)
 
 	return true;
 }
+
+
+/**
+   \details Test the MoveCopyMessages (0x33) opetation.
+
+   This function:
+	-# Log on the user private mailbox
+	-# Open the Inbox folder (source)
+	-# Open the Deleted Items folder (destination)
+	-# Creates 3 sample messages
+	-# Move messages from source to destination
+ */
+_PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = true;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder_src;
+	mapi_object_t		obj_folder_dst;
+	mapi_object_t		obj_message;
+	mapi_id_t		msgid[3];
+	mapi_id_t		id_folder;
+	uint32_t		i;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Open Source Inbox folder */
+	mapi_object_init(&obj_folder_src);
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder_src);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+		
+
+	/* Step 3. Open Destination Deleted Items folder */
+	mapi_object_init(&obj_folder_dst);
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderDeletedItems);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder_dst);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 4. Create sample messages */
+	for (i = 0; i < 3; i++) {
+		mapi_object_init(&obj_message);
+		retval = mapitest_common_message_create(mt, &obj_folder_src, &obj_message, MT_MAIL_SUBJECT);
+		if (GetLastError() != MAPI_E_SUCCESS) {
+			ret = false;
+		}
+		
+		retval = SaveChangesMessage(&obj_folder_src, &obj_message);
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+		}
+		msgid[i] = mapi_object_get_id(&obj_message);
+		mapi_object_release(&obj_message);
+	}
+
+	/* Step 5. Move messages from source to destination */
+	retval = MoveCopyMessages(&obj_folder_src, &obj_folder_dst, msgid, 0);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "MoveCopyMessages", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	return ret;
+}

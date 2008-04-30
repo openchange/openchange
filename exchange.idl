@@ -671,7 +671,7 @@ System Attendant Private Interface
 			op_MAPI_SetSearchCriteria	= 0x30,
 			op_MAPI_GetSearchCriteria      	= 0x31,
 			op_MAPI_SubmitMessage		= 0x32,
-			op_MAPI_CopyMessages       	= 0x33,
+			op_MAPI_MoveCopyMessages       	= 0x33,
 			op_MAPI_QueryColumns		= 0x37,
 			op_MAPI_CopyToStream		= 0x3a,
 			op_MAPI_GetTable		= 0x3e,
@@ -1775,12 +1775,13 @@ System Attendant Private Interface
  		uint8		handle_idx;
  		uint16		count;
  		hyper		message_id[count];
-		uint16		row_nb;
-	} CopyMessages_req;
+		boolean8	WantAsynchronous;
+		boolean8	WantCopy;
+	} MoveCopyMessages_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		boolean8       	PartialCompletion;
-	} CopyMessages_repl;
+	} MoveCopyMessages_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x37 */
@@ -2083,7 +2084,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetSearchCriteria)] SetSearchCriteria_req mapi_SetSearchCriteria;
 		[case(op_MAPI_GetSearchCriteria)] GetSearchCriteria_req mapi_GetSearchCriteria;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_req mapi_SubmitMessage;
-		[case(op_MAPI_CopyMessages)] CopyMessages_req mapi_CopyMessages;
+		[case(op_MAPI_MoveCopyMessages)] MoveCopyMessages_req mapi_MoveCopyMessages;
 		[case(op_MAPI_QueryColumns)] QueryColumns_req mapi_QueryColumns;
 		[case(op_MAPI_CopyToStream)] CopyToStream_req mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
@@ -2149,7 +2150,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetSearchCriteria)] SetSearchCriteria_repl mapi_SetSearchCriteria;
 		[case(op_MAPI_GetSearchCriteria)] GetSearchCriteria_repl mapi_GetSearchCriteria;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_repl mapi_SubmitMessage;
-		[case(op_MAPI_CopyMessages)] CopyMessages_repl mapi_CopyMessages;
+		[case(op_MAPI_MoveCopyMessages)] MoveCopyMessages_repl mapi_MoveCopyMessages;
 		[case(op_MAPI_QueryColumns)] QueryColumns_repl mapi_QueryColumns;
 		[case(op_MAPI_CopyToStream)] CopyToStream_repl mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;

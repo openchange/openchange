@@ -428,7 +428,7 @@ libocpf-clean::
 	rm -f libocpf/ocpf.tab.{c,h}
 	rm -f libocpf/proto.h
 	rm -f libocpf/proto_private.h
-	rm -f libocpf.$(SHLIBEXT).$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) \
+	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) \
 		  libocpf.$(SHLIBEXT)
 
 clean:: libocpf-clean

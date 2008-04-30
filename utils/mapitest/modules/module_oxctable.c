@@ -532,7 +532,7 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 
 
 /**
-   Test the SeekRowBookmark (0x19) operation
+   \details Test the SeekRowBookmark (0x19) operation
 
    This function:
    -# Open the Inbox folder

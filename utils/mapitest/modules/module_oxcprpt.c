@@ -33,10 +33,9 @@
    \details Test the GetProps (0x7) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Retrieve the properties list using GetPropList
-	3. Retrieve their associated values using the GetProps
-	operation
+   -# Log on the user private mailbox
+   -# Retrieve the properties list using GetPropList
+   -# Retrieve their associated values using the GetProps operation
 
    \param mt pointer on the top-level mapitest structure
 
@@ -83,9 +82,8 @@ _PUBLIC_ bool mapitest_oxcprpt_GetProps(struct mapitest *mt)
    \details Test the GetPropsAll (0x8) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Retrieve the whole set of properties and values associated
-	to the store object
+   -# Log on the user private mailbox
+   -# Retrieve the whole set of properties and values associated to the store object
 
    \param mt pointer on the top-level mapitest structure
 
@@ -122,9 +120,8 @@ _PUBLIC_ bool mapitest_oxcprpt_GetPropsAll(struct mapitest *mt)
    \details Test the GetPropList (0x9) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Retrieve the list of properties associated to the store object
-	object
+   -# Log on the user private mailbox
+   -# Retrieve the list of properties associated to the store object object
 
    \param mt pointer on the top-level mapitest structure
    
@@ -163,10 +160,10 @@ _PUBLIC_ bool mapitest_oxcprpt_GetPropList(struct mapitest *mt)
    \details Test the SetProps (0xa) operation
 
    This function:
-	1. Logon Private mailbox
-	2. Use GetProps to retrieve the mailbox name
-	3. Change it using SetProps
-	4. Reset the mailbox name to its original value
+   -# Logon Private mailbox
+   -# Use GetProps to retrieve the mailbox name
+   -# Change it using SetProps
+   -# Reset the mailbox name to its original value
 
    \param mt pointer to the top-level mapitest structure
 
@@ -261,21 +258,21 @@ _PUBLIC_ bool mapitest_oxcprpt_SetProps(struct mapitest *mt)
    (0x2d), CommitStream (0x5d), ReadStream (0x2c), SeekStream (0x2e)
    
    This function:
-	* Logon 
-	* Open Outbox folder
-	* Create message
-	* Create attachment and set properties
-	* Open the stream
-	* Set the stream size
-	* Write into the stream
-	* Commit the stream
-	* Save the message
-	* Get stream size and compare values
-	* Open the stream again with different permissions
-	* Read the stream and compare buffers
-	* SeekStream at 0x1000 from the end of the stream
-	* Read the 0x1000 last bytes and check if it matches
-	* Delete the message;
+   -# Logon 
+   -# Open Outbox folder
+   -# Create message
+   -# Create attachment and set properties
+   -# Open the stream
+   -# Set the stream size
+   -# Write into the stream
+   -# Commit the stream
+   -# Save the message
+   -# Get stream size and compare values
+   -# Open the stream again with different permissions
+   -# Read the stream and compare buffers
+   -# SeekStream at 0x1000 from the end of the stream
+   -# Read the 0x1000 last bytes and check if it matches
+   -# Delete the message;
 
    \param mt pointer to the top-level mapitest structure
 
@@ -507,15 +504,15 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
    \details Test the CopyToStream (0x3a) operation
 
    This function:
-   * Logon the mailbox
-   * Open the inbox folder
-   * Create a sample messages with an attachment
-   * Create 2 streams
-   * Fill the first stream with random data
-   * Seek stream positions to the beginning
-   * CopyToStream data from first stream to the second stream
-   * Read dst stream and compare with src stream
-   * Delete the message
+   -# Logon the mailbox
+   -# Open the inbox folder
+   -# Create a sample messages with an attachment
+   -# Create 2 streams
+   -# Fill the first stream with random data
+   -# Seek stream positions to the beginning
+   -# CopyToStream data from first stream to the second stream
+   -# Read dst stream and compare with src stream
+   -# Delete the message
    
    \param mt pointer to the top-level mapitest structure
 

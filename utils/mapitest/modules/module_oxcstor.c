@@ -34,8 +34,8 @@
    \details Test the Logon (0xFE) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Log on the public folder store
+   -# Log on the user private mailbox
+   -# Log on the public folder store
 
    \param mt pointer on the top-level mapitest structure
 
@@ -72,8 +72,8 @@ _PUBLIC_ bool mapitest_oxcstor_Logon(struct mapitest *mt)
    \details Test the GetReceiveFolder (0x27) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Call the GetReceiveFolder operation
+   -# Log on the user private mailbox
+   -# Call the GetReceiveFolder operation
    
    \param mt the top-level mapitest structure
 
@@ -110,8 +110,8 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolder(struct mapitest *mt)
    \details Test the SetReceiveFolder (0x26) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Call the SetReceiveFolder operation
+   -# Log on the user private mailbox
+   -# Call the SetReceiveFolder operation
 
    \param mt the top-level mapitest structure
    
@@ -213,8 +213,8 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
    \details Test the GetReceiveFolderTable (0x68) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Call the GetReceiveFolderTable operation
+   -# Log on the user private mailbox
+   -# Call the GetReceiveFolderTable operation
    
    \param mt the top-level mapitest structure
 

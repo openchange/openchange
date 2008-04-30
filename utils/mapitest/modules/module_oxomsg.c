@@ -34,8 +34,8 @@
    \details Test the AddressTypes (0x49) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Call the AddressTypes operation
+   -# Log on the user private mailbox
+   -# Call the AddressTypes operation
 
    \param mt pointer on the top-level mapitest structure
 
@@ -77,11 +77,11 @@ _PUBLIC_ bool mapitest_oxomsg_AddressTypes(struct mapitest *mt)
    \details Test the SubmitMessage (0x32) operation
 
    This function:
-	1. Log on the user private mailbox
-	2. Open the Outbox folder
-	3. Create a sample message
-	4. Submit the message
-	5. Delete the message
+   -# Log on the user private mailbox
+   -# Open the Outbox folder
+   -# Create a sample message
+   -# Submit the message
+   -# Delete the message
 	
 
    \param mt pointer on the top-level mapitest structure

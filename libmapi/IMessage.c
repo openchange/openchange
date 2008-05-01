@@ -864,6 +864,85 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 
 
 /**
+   \details Aborts a previous message submission.
+
+   \param obj_store the store object
+   \param obj_folder the folder object where the message has been
+   submitted
+   \param obj_message the submitted message object
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+   - MAPI_E_UNABLE_TO_ABORT: The operation can not be aborted
+   - MAPI_E_NOT_IN_QUEUE: The message is no longer in the message store's
+     spooler queue
+   - MAPI_E_NO_SUPPORT: the server object associated with the input
+     handle index in the server object table is not of type Logon or
+     the current logon session is a public logon.
+
+    \sa SubmitMessage
+ */
+_PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
+				     mapi_object_t *obj_folder, 
+				     mapi_object_t *obj_message)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct AbortSubmit_req	request;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	uint32_t		size = 0;
+	TALLOC_CTX		*mem_ctx;
+	mapi_ctx_t		*mapi_ctx;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("ABortSubmit");
+
+	size = 0;
+
+	/* Fill the AbortSubmit operation */
+	request.FolderId = mapi_object_get_id(obj_folder);
+	size += sizeof (uint64_t);
+
+	request.MessageId = mapi_object_get_id(obj_message);
+	size += sizeof (uint64_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_AbortSubmit;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_AbortSubmit = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mem_ctx);
+	
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details Saves all changes to the message
 
    \param parent the parent object for the message

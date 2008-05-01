@@ -672,6 +672,7 @@ System Attendant Private Interface
 			op_MAPI_GetSearchCriteria      	= 0x31,
 			op_MAPI_SubmitMessage		= 0x32,
 			op_MAPI_MoveCopyMessages       	= 0x33,
+			op_MAPI_AbortSubmit		= 0x34,
 			op_MAPI_QueryColumns		= 0x37,
 			op_MAPI_CopyToStream		= 0x3a,
 			op_MAPI_GetTable		= 0x3e,
@@ -1784,6 +1785,16 @@ System Attendant Private Interface
 	} MoveCopyMessages_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x34 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		FolderId;
+		hyper		MessageId;
+	} AbortSubmit_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} AbortSubmit_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x37 */
 	typedef [flag(NDR_NOALIGN)] struct {
 	} QueryColumns_req;
@@ -2085,6 +2096,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetSearchCriteria)] GetSearchCriteria_req mapi_GetSearchCriteria;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_req mapi_SubmitMessage;
 		[case(op_MAPI_MoveCopyMessages)] MoveCopyMessages_req mapi_MoveCopyMessages;
+		[case(op_MAPI_AbortSubmit)] AbortSubmit_req mapi_AbortSubmit;
 		[case(op_MAPI_QueryColumns)] QueryColumns_req mapi_QueryColumns;
 		[case(op_MAPI_CopyToStream)] CopyToStream_req mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
@@ -2151,6 +2163,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetSearchCriteria)] GetSearchCriteria_repl mapi_GetSearchCriteria;
 		[case(op_MAPI_SubmitMessage)] SubmitMessage_repl mapi_SubmitMessage;
 		[case(op_MAPI_MoveCopyMessages)] MoveCopyMessages_repl mapi_MoveCopyMessages;
+		[case(op_MAPI_AbortSubmit)] AbortSubmit_repl mapi_AbortSubmit;
 		[case(op_MAPI_QueryColumns)] QueryColumns_repl mapi_QueryColumns;
 		[case(op_MAPI_CopyToStream)] CopyToStream_repl mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;

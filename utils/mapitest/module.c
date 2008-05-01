@@ -101,9 +101,9 @@ _PUBLIC_ uint32_t module_oxomsg_init(struct mapitest *mt)
 
 	suite = mapitest_suite_init(mt, "OXOMSG", "E-mail Object Protocol", true);
 	
-	mapitest_suite_add_test(suite, "ADDRESS-TYPES", "Address Types", 
-				mapitest_oxomsg_AddressTypes);
+	mapitest_suite_add_test(suite, "ADDRESS-TYPES", "Address Types", mapitest_oxomsg_AddressTypes);
 	mapitest_suite_add_test(suite, "SUBMIT-MESSAGE", "Submit message", mapitest_oxomsg_SubmitMessage);
+	mapitest_suite_add_test(suite, "ABORT-SUBMIT", "Abort submitted message", mapitest_oxomsg_AbortSubmit);
 
 	mapitest_suite_register(mt, suite);
 

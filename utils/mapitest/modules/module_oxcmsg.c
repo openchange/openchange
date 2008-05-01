@@ -759,7 +759,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetMessageStatus(struct mapitest *mt)
 		count -= SRowSet.cRows;
 		for (i = 0; i < SRowSet.cRows; i++) {
 			retval = GetMessageStatus(&obj_folder, SRowSet.aRow[i].lpProps[0].value.d, &status);
-			mapitest_print(mt, "%-35s: 0x%.8x\n", "GetMessageStatus", GetLastError());
+			mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetMessageStatus", GetLastError());
 			if (GetLastError() != MAPI_E_SUCCESS) {
 				return false;
 			}

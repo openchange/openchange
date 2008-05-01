@@ -146,3 +146,90 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 
 	return true;
 }
+
+
+/**
+   \details Test the AbortSubmit (0x34) operation
+
+   This function:
+   -# Log on the user private mailbox
+   -# Open the Outbox folder
+   -# Create a sample message
+   -# Submit the message
+   -# Abort the submit operation
+   -# Delete the message
+	
+   Note: This operation may fail since it depends on how busy the
+   server is when we submit the message. It is possible the message
+   gets already processed before we have time to abort the message.
+
+   From preliminary tests, AbortSubmit returns MAPI_E_SUCCESS when we
+   call SubmitMessage with SubmitFlags set to 0x2.
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_message;
+	mapi_id_t		id_folder;
+	mapi_id_t		id_msgs[1];
+	bool			ret = true;
+	
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Open Outbox folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderOutbox);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3. Create the sample message */
+	mapi_object_init(&obj_message);
+	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+	if (ret == false) {
+		return ret;
+	}
+
+	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 4. Submit Message */
+	retval = SubmitMessage(&obj_message);
+	retval = AbortSubmit(&obj_store, &obj_folder, &obj_message);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "AbortMessage", GetLastError());
+	if ((GetLastError() != MAPI_E_SUCCESS) && 
+	    (GetLastError() != 0x80040114) &&
+	    (GetLastError() != 0x80040601)) {
+		ret = false;
+	}
+
+	/* Step 5. Delete Message */
+	id_msgs[0] = mapi_object_get_id(&obj_message);
+	retval = DeleteMessage(&obj_folder, id_msgs, 1);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError());
+
+	/* Release */
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return ret;
+}

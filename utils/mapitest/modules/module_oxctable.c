@@ -612,7 +612,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 	/* Step 6. SeekRowBookmark */
 	for (i = 0; i < count; i++) {
 		retval = SeekRowBookmark(&obj_htable, bkPosition[i], 0, &row);
-		mapitest_print(mt, "%-35s (%.2d): 0x%.8x\n", "SeekRowBookmark", i, GetLastError());
+		mapitest_print(mt, "* %-35s (%.2d): 0x%.8x\n", "SeekRowBookmark", i, GetLastError());
 	}
 
 

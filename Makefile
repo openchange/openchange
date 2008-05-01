@@ -58,6 +58,7 @@ distclean:: clean
 	rm -f Doxyfile
 	rm -f libmapi/Doxyfile
 	rm -f libocpf/Doxyfile
+	rm -f utils/mapitest/Doxyfile
 	rm -f config.status config.log config.mk
 	rm -f intltool-extract intltool-merge intltool-update
 

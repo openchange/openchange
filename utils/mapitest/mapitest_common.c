@@ -146,6 +146,56 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 
 
 /**
+   Find a folder within a container
+ */
+_PUBLIC_ bool mapitest_common_find_folder(struct mapitest *mt, 
+					  mapi_object_t *obj_parent,
+					  mapi_object_t *obj_child,
+					  const char *name)
+{
+	enum MAPISTATUS		retval;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		rowset;
+	mapi_object_t		obj_htable;
+	const char		*tmp;
+	char			*newname;
+	const uint64_t		*fid;
+	uint32_t		count;
+	uint32_t		index;
+
+	mapi_object_init(&obj_htable);
+	retval = GetHierarchyTable(obj_parent, &obj_htable, 0, &count);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2,
+					  PR_DISPLAY_NAME,
+					  PR_FID);
+	retval = SetColumns(&obj_htable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	while ((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+		for (index = 0; index < rowset.cRows; index++) {
+			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+			tmp = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
+
+			newname = windows_to_utf8(mt->mem_ctx, tmp);
+			if (newname && fid && !strcmp(newname, name)) {
+				retval = OpenFolder(obj_parent, *fid, obj_child);
+				mapi_object_release(&obj_htable);
+				MAPIFreeBuffer(newname);
+				return true;
+			}
+			MAPIFreeBuffer(newname);
+		}
+	}
+
+	mapi_object_release(&obj_htable);
+	return false;
+}
+
+
+/**
  * Create a message ready to submit
  */
 _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,

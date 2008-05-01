@@ -871,6 +871,8 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
    submitted
    \param obj_message the submitted message object
 
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized

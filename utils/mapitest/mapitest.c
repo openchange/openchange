@@ -282,5 +282,12 @@ int main(int argc, const char *argv[])
 		mapitest_run_all(&mt);
 	}
 
+	/* Uninitialize and free memory */
+	if (mt.no_server == false) {
+		MAPIUninitialize();
+	}
+
+	talloc_free(mt.mem_ctx);
+
 	return 0;
 }

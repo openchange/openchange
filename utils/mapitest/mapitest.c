@@ -58,6 +58,10 @@ static void mapitest_init_stream(struct mapitest *mt, const char *filename)
 	}
 }
 
+static void mapitest_cleanup_stream(struct mapitest *mt)
+{
+	fclose(mt->stream);
+}
 
 
 static bool mapitest_get_testnames(TALLOC_CTX *mem_ctx, struct mapitest *mt,
@@ -281,6 +285,8 @@ int main(int argc, const char *argv[])
 	} else {
 		mapitest_run_all(&mt);
 	}
+
+	mapitest_cleanup_stream(&mt);
 
 	/* Uninitialize and free memory */
 	if (mt.no_server == false) {

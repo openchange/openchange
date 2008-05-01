@@ -1083,3 +1083,71 @@ _PUBLIC_ enum MAPISTATUS GetStatus(mapi_object_t *obj_table, uint8_t *TableStatu
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Aborts an asynchronous table operation in progress
+
+   \param obj_table the table object where we want to abort an
+   asynchronous operation
+   \param TableStatus pointer on the table status returned by the
+   operation
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
+     beyond the last row requested.
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+ */
+_PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct Abort_repl	*reply;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	uint32_t		size;
+	TALLOC_CTX		*mem_ctx;
+	mapi_ctx_t		*mapi_ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!TableStatus, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("Abort");
+
+	size = 0;
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_Abort;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	size += 5;
+
+	/* Fill the mapi_request stucture */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Retrieve TableStatus */
+	reply = &mapi_response->mapi_repl->u.mapi_Abort;
+	*TableStatus = reply->TableStatus;
+
+	return MAPI_E_SUCCESS;
+}

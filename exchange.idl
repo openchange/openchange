@@ -676,6 +676,7 @@ System Attendant Private Interface
 			op_MAPI_MoveFolder		= 0x35,
 			op_MAPI_CopyFolder		= 0x36,
 			op_MAPI_QueryColumns		= 0x37,
+			op_MAPI_Abort			= 0x38,
 			op_MAPI_CopyToStream		= 0x3a,
 			op_MAPI_GetTable		= 0x3e,
 			op_MAPI_ModifyTable		= 0x40,
@@ -1841,6 +1842,15 @@ System Attendant Private Interface
 	} QueryColumns_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x38 */
+	typedef [flag(NDR_NOALIGN)] struct {
+	} Abort_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		TableStatus	TableStatus;
+	} Abort_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x3a */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
@@ -2136,6 +2146,7 @@ System Attendant Private Interface
 		[case(op_MAPI_MoveFolder)] MoveFolder_req mapi_MoveFolder;
 		[case(op_MAPI_CopyFolder)] CopyFolder_req mapi_CopyFolder;
 		[case(op_MAPI_QueryColumns)] QueryColumns_req mapi_QueryColumns;
+		[case(op_MAPI_Abort)] Abort_req mapi_Abort;
 		[case(op_MAPI_CopyToStream)] CopyToStream_req mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
@@ -2205,6 +2216,7 @@ System Attendant Private Interface
 		[case(op_MAPI_MoveFolder)] MoveFolder_repl mapi_MoveFolder;
 		[case(op_MAPI_CopyFolder)] CopyFolder_repl mapi_CopyFolder;
 		[case(op_MAPI_QueryColumns)] QueryColumns_repl mapi_QueryColumns;
+		[case(op_MAPI_Abort)] Abort_repl mapi_Abort;
 		[case(op_MAPI_CopyToStream)] CopyToStream_repl mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;

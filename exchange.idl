@@ -674,6 +674,7 @@ System Attendant Private Interface
 			op_MAPI_MoveCopyMessages       	= 0x33,
 			op_MAPI_AbortSubmit		= 0x34,
 			op_MAPI_MoveFolder		= 0x35,
+			op_MAPI_CopyFolder		= 0x36,
 			op_MAPI_QueryColumns		= 0x37,
 			op_MAPI_CopyToStream		= 0x3a,
 			op_MAPI_GetTable		= 0x3e,
@@ -1800,19 +1801,34 @@ System Attendant Private Interface
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x0)] astring			lpszA;
 		[case(0x1)][flag(STR_NULLTERM)] string	lpszW;
-	} MoveFolder_name;
+	} Folder_name;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8					handle_idx;
 		boolean8				WantAsynchronous;
 		boolean8				UseUnicode;
 		hyper					FolderId;
-		[switch_is(UseUnicode)] MoveFolder_name	NewFolderName;
+		[switch_is(UseUnicode)] Folder_name	NewFolderName;
 	} MoveFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		boolean8				PartialCompletion;
 	} MoveFolder_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x36 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8					handle_idx;
+		boolean8				WantAsynchronous;
+		boolean8				WantRecursive;
+		boolean8				UseUnicode;
+		hyper					FolderId;
+		[switch_is(UseUnicode)] Folder_name	NewFolderName;
+	} CopyFolder_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8				PartialCompletion;
+	} CopyFolder_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x37 */
@@ -2118,6 +2134,7 @@ System Attendant Private Interface
 		[case(op_MAPI_MoveCopyMessages)] MoveCopyMessages_req mapi_MoveCopyMessages;
 		[case(op_MAPI_AbortSubmit)] AbortSubmit_req mapi_AbortSubmit;
 		[case(op_MAPI_MoveFolder)] MoveFolder_req mapi_MoveFolder;
+		[case(op_MAPI_CopyFolder)] CopyFolder_req mapi_CopyFolder;
 		[case(op_MAPI_QueryColumns)] QueryColumns_req mapi_QueryColumns;
 		[case(op_MAPI_CopyToStream)] CopyToStream_req mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
@@ -2186,6 +2203,7 @@ System Attendant Private Interface
 		[case(op_MAPI_MoveCopyMessages)] MoveCopyMessages_repl mapi_MoveCopyMessages;
 		[case(op_MAPI_AbortSubmit)] AbortSubmit_repl mapi_AbortSubmit;
 		[case(op_MAPI_MoveFolder)] MoveFolder_repl mapi_MoveFolder;
+		[case(op_MAPI_CopyFolder)] CopyFolder_repl mapi_CopyFolder;
 		[case(op_MAPI_QueryColumns)] QueryColumns_repl mapi_QueryColumns;
 		[case(op_MAPI_CopyToStream)] CopyToStream_repl mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;

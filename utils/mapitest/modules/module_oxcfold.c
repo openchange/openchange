@@ -363,6 +363,10 @@ _PUBLIC_ bool mapitest_oxcfold_GetContentsTable(struct mapitest *mt)
 	-# Open the Deleted Items folder (destination)
 	-# Creates 3 sample messages
 	-# Move messages from source to destination
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
  */
 _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 {
@@ -433,7 +437,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 
 
 /**
-   \details Test the MoveFolder (0x35) opetation.
+   \details Test the MoveFolder (0x35) operation.
 
    This function:
 	-# Log on the user private mailbox
@@ -443,6 +447,10 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	-# Open the Deleted Items folder (destination)
 	-# Move the temporary folder from Inbox to DeletedItems
 	-# Empty and delete the moved temporary folder
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
  */
 _PUBLIC_ bool mapitest_oxcfold_MoveFolder(struct mapitest *mt)
 {
@@ -525,4 +533,115 @@ _PUBLIC_ bool mapitest_oxcfold_MoveFolder(struct mapitest *mt)
 	mapi_object_release(&obj_store);
 
 	return true;
+}
+
+
+/**
+   \details Test the CopyFolder (0x36) operation.
+
+   This function:
+	-# Log on the user private mailbox
+	-# Open the Inbox folder (source)
+	-# Create a temporary folder
+	-# Create a subdirectory
+	-# Open the Deleted Items folder (destination)
+	-# Copy the temporary folder from Inbox to DeletedItems
+	-# Empty and delete the original and copied folder
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcfold_CopyFolder(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;	
+	mapi_object_t		obj_subfolder;
+	mapi_object_t		obj_src;
+	mapi_object_t		obj_dst;
+	bool			ret = true;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Open the inbox folder */
+	mapi_object_init(&obj_src);
+	ret = mapitest_common_folder_open(mt, &obj_store, &obj_src, olFolderInbox);
+	if (ret == false) return ret;
+
+	/* Step 3. Create temporary folder */
+	mapi_object_init(&obj_folder);
+	retval = CreateFolder(&obj_src, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+			      OPEN_IF_EXISTS, &obj_folder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 4. Create the sub folder */
+	mapi_object_init(&obj_subfolder);
+	retval = CreateFolder(&obj_folder, FOLDER_GENERIC, MT_DIRNAME_NOTE, NULL,
+			      OPEN_IF_EXISTS, &obj_subfolder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	mapi_object_release(&obj_subfolder);
+
+	/* Step 5. Open the Deleted items folder */
+	mapi_object_init(&obj_dst);
+	ret = mapitest_common_folder_open(mt, &obj_store, &obj_dst, olFolderDeletedItems);
+
+	/* Step 6. CopyFolder */
+	retval = CopyFolder(&obj_folder, &obj_src, &obj_dst, MT_DIRNAME_TOP, false, false);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "MoveFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 7. Delete the original and copied folder */
+	retval = EmptyFolder(&obj_folder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "EmptyFolder", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	
+	retval = DeleteFolder(&obj_src, mapi_object_get_id(&obj_folder));
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteFolder", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	mapi_object_release(&obj_folder);
+
+	mapi_object_init(&obj_folder);
+	ret = mapitest_common_find_folder(mt, &obj_dst, &obj_folder, MT_DIRNAME_TOP);
+	mapitest_print(mt, "* %-35s: %s\n", "mapitest_common_find_folder", (ret == true) ? "true" : "false");
+
+	if (ret == true) {
+		retval = EmptyFolder(&obj_folder);
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "EmptyFolder", GetLastError());
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+		}
+	
+		retval = DeleteFolder(&obj_dst, mapi_object_get_id(&obj_folder));
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteFolder", GetLastError());
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+		}
+	}
+	
+	/* Release */
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_src);
+	mapi_object_release(&obj_dst);
+	mapi_object_release(&obj_store);
+
+
+	return ret;
 }

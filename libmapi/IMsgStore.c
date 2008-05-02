@@ -433,6 +433,74 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolderTable(mapi_object_t *obj_store,
 
 
 /**
+   \details Retrieves the folder ID of the temporary transport folder.
+
+   \param obj_store the server object
+   \param FolderId pointer on the returning Folder identifier
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+ */
+_PUBLIC_ enum MAPISTATUS GetTransportFolder(mapi_object_t *obj_store,
+					    mapi_id_t *FolderId)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetTransportFolder_repl	*reply;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("GetTransportFolder");
+	size = 0;
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetTransportFolder;
+	mapi_req->logon_id =0;
+	mapi_req->handle_idx = 0;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Retrieve the FolderId parameter */
+	reply = &mapi_response->mapi_repl->u.mapi_GetTransportFolder;
+	*FolderId = reply->FolderId;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+
+/**
    \details Retrieves the sending folder (OUTBOX) for a given store
 
    This function obtains the folder that was established as the

@@ -356,3 +356,39 @@ _PUBLIC_ bool mapitest_oxomsg_SpoolerLockMessage(struct mapitest *mt)
 
 	return ret;
 }
+
+
+/**
+   \details Test the GetTransportFolder (0x6d) operation
+
+   This function:
+   -# Log on the user private mailbox
+   -# Retrieves the folder ID of temporary transport folder
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxomsg_GetTransportFolder(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	mapi_id_t		folder_id;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Get the transport folder */
+	retval = GetTransportFolder(&obj_store, &folder_id);
+	mapitest_print(mt, "* %-35s: 0x%.8x (0x%llx)\n", "GetTransportFolder", 
+		       GetLastError(), folder_id);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	return true;
+}

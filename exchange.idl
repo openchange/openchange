@@ -694,6 +694,7 @@ System Attendant Private Interface
 			op_MAPI_GetStreamSize		= 0x5e,
 			op_MAPI_QueryNamesFromIDs	= 0x5f,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
+			op_MAPI_GetTransportFolder	= 0x6d,
 			op_MAPI_OpenPublicFolderByName	= 0x87,
 			op_MAPI_Logon			= 0xfe
 		} MAPI_OPNUM;
@@ -2059,6 +2060,15 @@ System Attendant Private Interface
 	} GetReceiveFolderTable_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x6d */
+	typedef [flag(NDR_NOALIGN)] struct {
+	} GetTransportFolder_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		FolderId;
+	} GetTransportFolder_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x87 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
@@ -2205,6 +2215,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_req mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_req mapi_QueryNamesFromIDs;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
+		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_req mapi_GetTransportFolder;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
 		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
 	} EcDoRpc_MAPI_REQ_UNION;
@@ -2278,6 +2289,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_repl mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_repl mapi_QueryNamesFromIDs;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
+		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_repl mapi_GetTransportFolder;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;
 

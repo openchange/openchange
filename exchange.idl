@@ -683,6 +683,7 @@ System Attendant Private Interface
 			op_MAPI_GetTable		= 0x3e,
 			op_MAPI_GetRulesTable		= 0x3f,
 			op_MAPI_ModifyTable		= 0x40,
+			op_MAPI_SetSpooler		= 0x47,
 			op_MAPI_FindRow			= 0x4f,
 			op_MAPI_AddressTypes		= 0x49,
 			op_MAPI_GetNamesFromIDs		= 0x55,
@@ -1900,6 +1901,16 @@ System Attendant Private Interface
 	} ModifyTable_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x47 */
+	typedef [flag(NDR_NOALIGN)] struct {
+
+	} SetSpooler_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+
+	} SetSpooler_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x49 */
 	typedef [flag(NDR_NOALIGN)] struct {
 	} AddressTypes_req;
@@ -2168,6 +2179,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_req mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
+		[case(op_MAPI_SetSpooler)] SetSpooler_req mapi_SetSpooler;
 		[case(op_MAPI_AddressTypes)] AddressTypes_req mapi_AddressTypes;
 		[case(op_MAPI_FindRow)] FindRow_req mapi_FindRow;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
@@ -2239,6 +2251,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_repl mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
+		[case(op_MAPI_SetSpooler)] SetSpooler_repl mapi_SetSpooler;
 		[case(op_MAPI_AddressTypes)] AddressTypes_repl mapi_AddressTypes;
 		[case(op_MAPI_FindRow)] FindRow_repl mapi_FindRow;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;

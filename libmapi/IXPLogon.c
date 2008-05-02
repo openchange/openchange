@@ -97,3 +97,64 @@ _PUBLIC_ enum MAPISTATUS AddressTypes(mapi_object_t *obj_store,
 	talloc_free(mem_ctx);
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Informs the server that the client intends to act as a
+   mail spooler.
+
+   \param obj_store: the object server store object
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_store is not initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction 
+ */
+_PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	uint32_t		size = 0;
+	TALLOC_CTX		*mem_ctx;
+	mapi_ctx_t		*mapi_ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("SetSpooler");
+	size = 0;
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetSpooler;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}

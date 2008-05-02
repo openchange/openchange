@@ -233,3 +233,40 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 
 	return ret;
 }
+
+
+/**
+   \details Test the SetSpooler (0x47) operation
+
+   This function:
+   -# Log on the user private mailbox
+   -# Informs the server it will acts as an email spooler
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxomsg_SetSpooler(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. SetSpooler */
+	retval = SetSpooler(&obj_store);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetSpooler", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Release */
+	mapi_object_release(&obj_store);
+
+	return true;
+}

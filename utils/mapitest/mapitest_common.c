@@ -267,6 +267,7 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 		return false;
 	}
 
+	errno = 0;
 	return true;
 }
 

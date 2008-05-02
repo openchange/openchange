@@ -906,7 +906,7 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("ABortSubmit");
+	mem_ctx = talloc_init("AbortSubmit");
 
 	size = 0;
 

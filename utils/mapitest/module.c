@@ -108,6 +108,7 @@ _PUBLIC_ uint32_t module_oxomsg_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "SUBMIT-MESSAGE", "Submit message", mapitest_oxomsg_SubmitMessage);
 	mapitest_suite_add_test(suite, "ABORT-SUBMIT", "Abort submitted message", mapitest_oxomsg_AbortSubmit);
 	mapitest_suite_add_test(suite, "SET-SPOOLER", "Client intends to act as a mail spooler", mapitest_oxomsg_SetSpooler);
+	mapitest_suite_add_test(suite, "SPOOLER-LOCK-MESSAGE", "Lock the specified message for spooling", mapitest_oxomsg_SpoolerLockMessage);
 
 	mapitest_suite_register(mt, suite);
 

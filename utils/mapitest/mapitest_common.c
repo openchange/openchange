@@ -272,7 +272,7 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 
 
 /**
-   Generate a random blob of reable data
+   Generate a random blob of readable data
  */
 _PUBLIC_ char *mapitest_common_genblob(TALLOC_CTX *mem_ctx, size_t len)
 {

@@ -359,6 +359,75 @@ _PUBLIC_ bool mapitest_oxomsg_SpoolerLockMessage(struct mapitest *mt)
 
 
 /**
+   \details Test the TransportSend (0x4a) operation
+
+   This function:
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
+{
+	enum MAPISTATUS			retval;
+	bool				ret = true;
+	mapi_object_t			obj_store;
+	mapi_object_t			obj_folder;
+	mapi_object_t			obj_message;
+	struct mapi_SPropValue_array	lpProps;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3. Open the outbox folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, olFolderOutbox);
+	if (ret == false) return ret;
+
+	/* Step 4. Create the message */
+	mapi_object_init(&obj_message);
+	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+	mapitest_print(mt, "* %-35s: %s\n", "mapitest_common_message_create", 
+		       ret == true ? "TRUE" : "FALSE");
+	if (ret == false) return ret;
+
+	/* Step 5. Save changes on message */
+	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesMessage", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 6. TransportSend */
+	retval = TransportSend(&obj_message, &lpProps);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "TransportSend", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	if (&lpProps) {
+		uint32_t		i;
+		struct SPropValue	lpProp;
+
+		for (i = 0; i < lpProps.cValues; i++) {
+			cast_SPropValue(&lpProps.lpProps[i], &lpProp);
+			mapidump_SPropValue(lpProp, "\t* ");
+		}
+	}
+
+	/* Release */
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return ret;
+}
+
+
+/**
    \details Test the GetTransportFolder (0x6d) operation
 
    This function:

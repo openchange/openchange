@@ -331,6 +331,96 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details Gets the rules table of a folder
+
+   \param obj_folder the folder we want to retrieve the rules table
+   from
+   \param obj_table the rules table
+   \param TableFlags bitmask associated to the rules table
+
+   Possible values for TableFlags:
+
+   - RulesTableFlags_Unicode (0x40): Set if the client is requesting
+     that string values in the table to be returned as Unicode
+     strings.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+    \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction  
+ */
+_PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder, 
+				       mapi_object_t *obj_table,
+				       uint8_t TableFlags)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetRulesTable_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	/* Sanity check */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("GetRulesTable");
+
+	size = 0;
+
+	/* Fill the GetRulesTable operation */
+	request.handle_idx = 0x1;
+	size += sizeof (uint8_t);
+
+	request.TableFlags = TableFlags;
+	size += sizeof (uint8_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetRulesTable;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_GetRulesTable = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_folder);
+	mapi_request->handles[1] = 0xffffffff;
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* set handle */
+	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
+
+	/* new table */
+	mapi_object_table_init(obj_table);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+
 /**
    \details Modify the entries of a permission table
 

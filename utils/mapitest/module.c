@@ -33,6 +33,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	ret = module_oxomsg_init(mt);
 	ret = module_oxcmsg_init(mt);
 	ret = module_oxcprpt_init(mt);
+	ret = module_oxorule_init(mt);
 	ret = module_noserver_init(mt);
 
 	return ret;
@@ -189,6 +190,27 @@ _PUBLIC_ uint32_t module_oxcprpt_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "SET-PROPS", "Set a specific set of properties", mapitest_oxcprpt_SetProps);
 	mapitest_suite_add_test(suite, "STREAM", "Test stream operations", mapitest_oxcprpt_Stream);
 	mapitest_suite_add_test(suite, "COPYTO-STREAM", "Copy stream from source to desination stream", mapitest_oxcprpt_CopyToStream);
+
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
+
+
+/**
+   \details Register the E-Mail Rules Protocol test suite
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_oxorule_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "OXORULE", "E-Mail Rules Protocol", true);
+
+	mapitest_suite_add_test(suite, "GET-RULES-TABLE", "Retrieve the rules table associated to a folder", mapitest_oxorule_GetRulesTable);
 
 	mapitest_suite_register(mt, suite);
 

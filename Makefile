@@ -786,6 +786,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_oxcmsg.o		\
 		utils/mapitest/modules/module_oxcprpt.o		\
 		utils/mapitest/modules/module_oxctable.o	\
+		utils/mapitest/modules/module_oxorule.o		\
 		utils/mapitest/modules/module_noserver.o	\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		
 	@echo "Linking $@"
@@ -802,6 +803,7 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_oxcmsg.c		\
 	utils/mapitest/modules/module_oxcprpt.c		\
 	utils/mapitest/modules/module_oxctable.c	\
+	utils/mapitest/modules/module_oxorule.c		\
 	utils/mapitest/modules/module_noserver.c	
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^

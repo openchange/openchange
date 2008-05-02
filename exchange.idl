@@ -364,6 +364,8 @@ System Attendant Private Interface
 #define	PT_UNICODE	0x001f
 #define	PT_SYSTIME	0x0040
 #define	PT_CLSID       	0x0048
+#define	PT_SVREID	0x00fb
+#define	PT_SRESTRICT	0x00fd
 #define	PT_BINARY	0x0102
 
 /* Multi-valued properties */
@@ -679,6 +681,7 @@ System Attendant Private Interface
 			op_MAPI_Abort			= 0x38,
 			op_MAPI_CopyToStream		= 0x3a,
 			op_MAPI_GetTable		= 0x3e,
+			op_MAPI_GetRulesTable		= 0x3f,
 			op_MAPI_ModifyTable		= 0x40,
 			op_MAPI_FindRow			= 0x4f,
 			op_MAPI_AddressTypes		= 0x49,
@@ -735,7 +738,7 @@ System Attendant Private Interface
 		[case(PT_SYSTIME)]	FILETIME		ft;
 		[case(PT_CLSID)]	GUID			lpguid;
   		[case(PT_BINARY)]	SBinary_short		bin;
-		[case(0xFB)]		SBinary_short		bin;
+		[case(PT_SVREID)]      	SBinary_short		bin;
 		[case(PT_MV_LONG)]	mapi_MV_LONG_STRUCT	MVl;	
 		[case(PT_MV_STRING8)]	mapi_SLPSTRArray	MVszA;
 		[case(PT_MV_CLSID)]	mapi_SGuidArray		MVguid;
@@ -1873,6 +1876,20 @@ System Attendant Private Interface
 	} GetTable_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x3f */
+	typedef [bitmap8bit] bitmap {
+		RulesTableFlags_Unicode	= 0x40
+	} RulesTableFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		handle_idx;
+		RulesTableFlags	TableFlags;
+	} GetRulesTable_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} GetRulesTable_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x40 */
 	typedef [flag(NDR_NOALIGN)] struct {
  		mapi_SRowList		rowList;
@@ -2149,6 +2166,7 @@ System Attendant Private Interface
 		[case(op_MAPI_Abort)] Abort_req mapi_Abort;
 		[case(op_MAPI_CopyToStream)] CopyToStream_req mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
+		[case(op_MAPI_GetRulesTable)] GetRulesTable_req mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
 		[case(op_MAPI_AddressTypes)] AddressTypes_req mapi_AddressTypes;
 		[case(op_MAPI_FindRow)] FindRow_req mapi_FindRow;
@@ -2219,6 +2237,7 @@ System Attendant Private Interface
 		[case(op_MAPI_Abort)] Abort_repl mapi_Abort;
 		[case(op_MAPI_CopyToStream)] CopyToStream_repl mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
+		[case(op_MAPI_GetRulesTable)] GetRulesTable_repl mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
 		[case(op_MAPI_AddressTypes)] AddressTypes_repl mapi_AddressTypes;
 		[case(op_MAPI_FindRow)] FindRow_repl mapi_FindRow;

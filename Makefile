@@ -58,11 +58,9 @@ distclean:: clean
 	rm -f Doxyfile
 	rm -f libmapi/Doxyfile
 	rm -f libocpf/Doxyfile
+	rm -f config.status config.log
 	rm -f utils/mapitest/Doxyfile
-	rm -f config.status config.log config.mk
 	rm -f intltool-extract intltool-merge intltool-update
-
-realdistclean:: distclean
 	rm -rf apidocs
 	rm -rf gen_ndr
 	rm -f tags
@@ -75,9 +73,7 @@ clean::
 	rm -f doc/examples/fetchappointment
 	rm -f doc/examples/fetchmail
 
-re: clean install
-
-
+re:: clean install
 
 #################################################################
 # Suffixes compilation rules
@@ -955,9 +951,6 @@ swigperl-uninstall:
 	@echo "Uninstall Perl bindings ..."
 	@$(MAKE) -C swig/perl uninstall
 
-realdistclean::
-	@$(MAKE) -C swig/perl realdistclean
-
 distclean::
 	@$(MAKE) -C swig/perl distclean
 
@@ -973,3 +966,7 @@ check:: torture/openchange.$(SHLIBEXT) libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
 	# FIXME: Set up server
 	LD_LIBRARY_PATH=`pwd` $(SMBTORTURE) --load-module torture/openchange.$(SHLIBEXT) ncalrpc: OPENCHANGE
 
+# This should be the last line in the makefile since other distclean rules may 
+# need config.mk
+distclean::
+	rm -f config.mk

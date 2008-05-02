@@ -12,32 +12,30 @@ CFLAGS+=-Duint_t="unsigned int"
 
 CFLAGS+=-I$(top_builddir)
 
-all:	swig_mapitags.h 		\
+all::	swig_mapitags.h 		\
 	swig_mapicodes.h		\
 	mapi_wrap.c			\
 	mapi.$(SHLIBEXT)
 
-clean:
+clean::
 	rm -f *.o
 	rm -f *.pm
 	rm -f mapi_wrap.c
 	rm -f swig_mapicodes.h swig_mapitags.h
 	rm -f mapi.$(SHLIBEXT)
 
-distclean: clean
+distclean:: clean
 	rm -f *.so
-
-realdistclean:: distclean
 
 install:: all
 	cp mapi.pm $(PERL5DIR)
 	cp mapi.so $(PERL5DIR)
 
-uninstall:
+uninstall::
 	rm -f $(PERL5DIR)/mapi.pm
 	rm -f $(PERL5DIR)/mapi.so
 
-mapi_wrap.c:: mapi.i
+mapi_wrap.c: mapi.i
 	@echo "Swigify $<"
 	@$(SWIG) -Wall -Werror -perl5 $<
 
@@ -49,12 +47,9 @@ swig_mapicodes.h:
 	@echo "Generating Headers (swig_mapicodes.h)"
 	@$(top_builddir)/libmapi/conf/mparse.pl --parser=swig_mapicodes --outputdir=./ $(top_builddir)/libmapi/conf/mapi-codes
 
-
-
 .c.o:
 	@echo "Compiling $<"
 	@$(CC) $(CFLAGS) -DDEFAULT_LDIF=\"$(DESTDIR)$(datadir)/setup\" -c $< -o $@
-
 
 mapi.$(SHLIBEXT): 	mapi_wrap.o				\
 			lwmapi.o				\

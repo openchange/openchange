@@ -4,6 +4,7 @@
    OpenChange Project - PROPERTY AND STREAM OBJECT PROTOCOL operations
 
    Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Brad Hards 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

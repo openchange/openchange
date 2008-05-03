@@ -251,6 +251,372 @@ _PUBLIC_ bool mapitest_oxcprpt_SetProps(struct mapitest *mt)
 }
 
 
+/**
+   \details Test the CopyProps (0x67) operation
+
+   This function:
+   -# Opens the mailbox
+   -# Creates a test folder
+   -# Creates a reference email, and sets some properties on it
+   -# Checks those properties are set correctly
+   -# Creates a second email, and sets some (different) properties on it
+   -# Checks those properties on the second folder are set correctly
+   -# Copies properties from the reference email to the second email (no overwrite)
+   -# Checks that properties on both emails are correct
+   -# Copies properties again, but with overwrite
+   -# Checks that properties on both emails are correct
+   -# Moves properties from the original email to the second email (no overwrite)
+   -# Checks that properties on both emails are correct
+   -# Deletes both emails and the test folder
+
+   \todo It would be useful to test the problem return values
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_top_folder;
+	mapi_id_t		id_top_folder;
+	mapi_object_t		obj_ref_folder;
+	mapi_object_t		obj_ref_message;
+	const char		*name = NULL;
+	const char		*subject = NULL;
+	struct SPropValue	lpProp[3];
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	*lpProps;
+	uint32_t		cValues;
+	mapi_object_t		obj_target_message;
+	const char		*targ_name = NULL;
+	const char		*targ_dept = NULL;
+	uint16_t		problem_count = 999;
+	struct PropertyProblem *problems = NULL;
+
+	/* Step 1. Logon Private Mailbox */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 1 - Logon Private Mailbox", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	mapi_object_init(&obj_top_folder);
+	retval = GetDefaultFolder(&obj_store, &id_top_folder, olFolderTopInformationStore);
+	retval = OpenFolder(&obj_store, id_top_folder, &obj_top_folder);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2: Create reference folder */
+	mapi_object_init(&obj_ref_folder);
+        retval = CreateFolder(&obj_top_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+                              OPEN_IF_EXISTS, &obj_ref_folder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 2 - Create the test folder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3: Create reference message */
+	mapi_object_init(&obj_ref_message);
+	retval = mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 3A - Create a reference email", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	retval = SaveChangesMessage(&obj_ref_folder, &obj_ref_message);
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+        name = talloc_asprintf(mt->mem_ctx, "Reference: %s", "display name");
+	subject = talloc_asprintf(mt->mem_ctx, "Reference: %s", "subject");
+	set_SPropValue_proptag(&lpProp[0], PR_DISPLAY_NAME, (const void *)name);
+	set_SPropValue_proptag(&lpProp[1], PR_CONVERSATION_TOPIC, (const void *)subject);
+	retval = SetProps(&obj_ref_message, lpProp, 2);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 3B - SetProps on that email", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 4: Double check with GetProps */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 4A - Check: Reference props set - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 4A - Check: Reference props set [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+		}
+	}
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 4B - Check: Reference props set - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 4B - Check: Reference props set [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+		}
+	}
+
+	/* Step 5: Create target message */
+	mapi_object_init(&obj_target_message);
+	retval = mapitest_common_message_create(mt, &obj_ref_folder, &obj_target_message, MT_MAIL_SUBJECT);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 5A - Create target email", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	retval = SaveChangesMessage(&obj_ref_folder, &obj_target_message);
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+        targ_name = talloc_asprintf(mt->mem_ctx, "Target: %s", "display name");
+	targ_dept = talloc_asprintf(mt->mem_ctx, "Target: %s", "department");
+	set_SPropValue_proptag(&lpProp[0], PR_DISPLAY_NAME, (const void *)targ_name);
+	set_SPropValue_proptag(&lpProp[1], PR_DEPARTMENT_NAME, (const void *)targ_dept);
+	retval = SetProps(&obj_target_message, lpProp, 2);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 5B - SetProps on target email", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 6: Double check with GetProps */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_DEPARTMENT_NAME);
+	retval = GetProps(&obj_target_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(targ_name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 6A - Check: Reference props set - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 6A - Check: Reference props set [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+		}
+	}
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp(targ_dept, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 6B - Check: Reference props set - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 6B - Check: Reference props set [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+		}
+	}
+
+
+
+	/* Step 7: Copy properties, no overwrite */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	retval = CopyProps(&obj_ref_message, &obj_target_message, SPropTagArray, CopyFlagsNoOverwrite,
+			   &problem_count, &problems);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 7 - CopyProps (no overwrite)", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	MAPIFreeBuffer(SPropTagArray);
+
+	/* Step 8: Double check with GetProps */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 8A - Check: Reference props still good - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 8A - Check: Reference props still good [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+		}
+	}
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 8B - Check: Reference props still good - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 8B - Check: Reference props still good [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+		}
+	}
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC, PR_DEPARTMENT_NAME);
+	retval = GetProps(&obj_target_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	/* this one shouldn't be overwritten */
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(targ_name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 8C - Check: Reference props copy - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 8C - Check: Reference props copy [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+		}
+	}
+	/* this one should be copied */
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 8D - Check: Reference props copy - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 8D - Check: Reference props copy [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+		}
+	}
+	/* this one should be unchanged */
+	if (lpProps[2].value.lpszA) {
+		if (!strncmp(targ_dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+			mapitest_print(mt, "* Step 8E - Check: Reference props copy - [SUCCESS] (%s)\n",
+				       lpProps[2].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 8E - Check: Reference props copy [FAILURE] (%s)\n",
+				       lpProps[2].value.lpszA);
+		}
+	}
+
+	/* Step 9: Copy properties, with overwrite */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	retval = CopyProps(&obj_ref_message, &obj_target_message, SPropTagArray, 0x0,
+			   &problem_count, &problems);
+	MAPIFreeBuffer(SPropTagArray);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 9 - CopyProps (with overwrite)", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 10: Double check with GetProps */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 10A - Check: Reference props still good - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 10A - Check: Reference props still good [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+		}
+	}
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 10B - Check: Reference props still good - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 10B - Check: Reference props still good [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+		}
+	}
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC, PR_DEPARTMENT_NAME);
+	retval = GetProps(&obj_target_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	/* this one should now be overwritten */
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 10C - Check: Reference props copy - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 10C - Check: Reference props copy [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+		}
+	}
+	/* this one should be copied */
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 10D - Check: Reference props copy - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 10D - Check: Reference props copy [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+		}
+	}
+	/* this one should be unchanged */
+	if (lpProps[2].value.lpszA) {
+		if (!strncmp(targ_dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+			mapitest_print(mt, "* Step 10E - Check: Reference props copy - [SUCCESS] (%s)\n",
+				       lpProps[2].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 10E - Check: Reference props copy [FAILURE] (%s)\n",
+				       lpProps[2].value.lpszA);
+		}
+	}
+
+
+	/* Step 11: Move properties, no overwrite */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	retval = CopyProps(&obj_ref_message, &obj_target_message, SPropTagArray, CopyFlagsNoOverwrite|CopyFlagsMove,
+			   &problem_count, &problems);
+	MAPIFreeBuffer(SPropTagArray);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 11 - CopyProps (move)", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 12: Double check with GetProps */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (cValues == 2) {
+		mapitest_print(mt, "* Step 12A - Properties removed [SUCCESS]\n");
+	} else {
+		mapitest_print(mt, "* Step 12A - Properties removed [FAILURE]\n");
+	}
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC, PR_DEPARTMENT_NAME);
+	retval = GetProps(&obj_target_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 12B - Check: Reference props move - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 12B - Check: Reference props move [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+		}
+	}
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 12C - Check: Reference props move - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 12C - Check: Reference props move [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+		}
+	}
+	if (lpProps[2].value.lpszA) {
+		if (!strncmp(targ_dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+			mapitest_print(mt, "* Step 12D - Check: Reference props move - [SUCCESS] (%s)\n",
+				       lpProps[2].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 12D - Check: Reference props move [FAILURE] (%s)\n",
+				       lpProps[2].value.lpszA);
+		}
+	}
+
+
+	/* Cleanup reference strings */
+	MAPIFreeBuffer((void *)subject);
+	MAPIFreeBuffer((void *)name);
+	MAPIFreeBuffer((void *)targ_name);
+	MAPIFreeBuffer((void *)targ_dept);
+
+	/* Step 13: cleanup folders */
+	retval = EmptyFolder(&obj_ref_folder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 13A - Empty test folder", GetLastError());
+	retval = DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_ref_folder));
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 13B - Delete test folder", GetLastError());
+
+	/* Release */
+	mapi_object_release(&obj_ref_message);
+	mapi_object_release(&obj_ref_folder);
+	mapi_object_release(&obj_top_folder);
+	mapi_object_release(&obj_store);
+
+
+	return true;
+}
+
+
 
 /**
    \details Test Stream operations. This test uses all related stream

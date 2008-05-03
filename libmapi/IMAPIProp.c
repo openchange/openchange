@@ -767,3 +767,109 @@ _PUBLIC_ enum MAPISTATUS QueryNamesFromIDs(mapi_object_t *obj,
 	
 	return MAPI_E_SUCCESS;
 }
+
+/**
+   \details Copy properties from one object to another
+
+   This function copies (or moves) specified properties from
+   one object to another.
+
+   \param src_obj the object to copy properties from
+   \param dest_obj the object to set properties on
+   \param copyFlags flags to determine whether to copy or
+   move, and whether to overwrite existing properties.
+   \param tags the list of properties to copy
+   \param problemCount (return value) number of entries in the problems array
+   \param problems (return value) array of problemCount entries.
+
+   The caller is responsible for freeing the \b problems array
+   using MAPIFreeBuffer(). If the \b problemCount pointer is NULL,
+   then the problems array will not be returned.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa GetProps, SetProps, DeleteProps, SaveChanges, GetLastError
+*/
+_PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *src_obj,
+				   mapi_object_t *dest_obj,
+				   struct SPropTagArray *tags,
+				   uint8_t copyFlags,
+				   uint16_t *problemCount,
+				   struct PropertyProblem **problems)
+
+{
+	TALLOC_CTX			*mem_ctx;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct CopyProperties_req	request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	mapi_ctx_t			*mapi_ctx;
+	int				i;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!src_obj, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!dest_obj, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!tags, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mapi_ctx = global_mapi_ctx; 
+	mem_ctx = talloc_init("CopyProps");
+
+	/* Fill the CopyProperties operation */
+	size = 0;
+	request.handle_idx = 0x1;
+	size += sizeof(uint8_t);
+	request.WantAsynchronous = 0x0;
+	size += sizeof(uint8_t);
+	request.CopyFlags = copyFlags;
+	size += sizeof(uint8_t);
+	request.count = tags->cValues;
+	size += sizeof(uint16_t);
+	request.property_tag = tags->aulPropTag;
+	size += tags->cValues * sizeof(enum MAPITAGS);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_CopyProperties;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_CopyProperties = request;
+	size += 5; // sizeof( EcDoRpc_MAPI_REQ )
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) *2;
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = mapi_object_get_handle(src_obj);
+	mapi_request->handles[1] = mapi_object_get_handle(dest_obj);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	if (problemCount) {
+		*problemCount = mapi_response->mapi_repl->u.mapi_CopyProperties.count;
+		*problems = talloc_array(mapi_ctx, struct PropertyProblem, *problemCount);
+		for(i=0; i < *problemCount; ++i) {
+			(*(problems[i])).index = mapi_response->mapi_repl->u.mapi_CopyProperties.property_problems[i].index;
+			(*(problems[i])).property_tag = mapi_response->mapi_repl->u.mapi_CopyProperties.property_problems[i].property_tag;
+			(*(problems[i])).error_code = mapi_response->mapi_repl->u.mapi_CopyProperties.property_problems[i].error_code;
+		}
+	}
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+
+}

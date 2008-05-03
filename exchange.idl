@@ -694,6 +694,7 @@ System Attendant Private Interface
 			op_MAPI_CommitStream		= 0x5d,
 			op_MAPI_GetStreamSize		= 0x5e,
 			op_MAPI_QueryNamesFromIDs	= 0x5f,
+			op_MAPI_CopyProperties		= 0x67,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
 			op_MAPI_GetTransportFolder	= 0x6d,
 			op_MAPI_OpenPublicFolderByName	= 0x87,
@@ -2059,6 +2060,32 @@ System Attendant Private Interface
 	} QueryNamesFromIDs_repl;
   
 	/*************************/
+	/* EcDoRpc Function 0x67 */
+	typedef [bitmap8bit] bitmap {
+		CopyFlagsMove		= 0x1,	/* Move properties */
+		CopyFlagsNoOverwrite	= 0x2	/* Do not overwrite existing properties */
+	} CopyFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+ 		uint8		handle_idx;
+		boolean8	WantAsynchronous;
+	  	CopyFlags	CopyFlags;
+	  	uint16		count;
+	  	MAPITAGS	property_tag[count];
+	} CopyProperties_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	  	uint32		index; 		/* index into array of property tags */
+		MAPITAGS	property_tag;	/* property for which there was an error */
+		MAPISTATUS	error_code; 	/* the error that occurred for this property */
+	} PropertyProblem;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	  	uint16		count;
+	  	PropertyProblem	property_problems[count];
+	} CopyProperties_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x68 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
@@ -2231,6 +2258,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CommitStream)] CommitStream_req mapi_CommitStream;
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_req mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_req mapi_QueryNamesFromIDs;
+		[case(op_MAPI_CopyProperties)] CopyProperties_req mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_req mapi_GetTransportFolder;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
@@ -2306,6 +2334,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CommitStream)] CommitStream_repl mapi_CommitStream;
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_repl mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_repl mapi_QueryNamesFromIDs;
+		[case(op_MAPI_CopyProperties)] CopyProperties_repl mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_repl mapi_GetTransportFolder;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;

@@ -34,6 +34,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	ret = module_oxcmsg_init(mt);
 	ret = module_oxcprpt_init(mt);
 	ret = module_oxorule_init(mt);
+	ret = module_oxcfxics_init(mt);
 	ret = module_noserver_init(mt);
 
 	return ret;
@@ -216,6 +217,27 @@ _PUBLIC_ uint32_t module_oxorule_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "OXORULE", "E-Mail Rules Protocol", true);
 
 	mapitest_suite_add_test(suite, "GET-RULES-TABLE", "Retrieve the rules table associated to a folder", mapitest_oxorule_GetRulesTable);
+
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
+
+
+/**
+   \details Register the Bulk Data Transfer Protocol test suite
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_oxcfxics_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "OXCFXICS", "Bulk Data Transfer Protocol", true);
+	
+	mapitest_suite_add_test(suite, "GET-LOCAL-REPLICA-IDS", "Reserve a range of IDs for local replica", mapitest_oxcfxics_GetLocalReplicaIds);
 
 	mapitest_suite_register(mt, suite);
 

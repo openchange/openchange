@@ -697,6 +697,7 @@ System Attendant Private Interface
 			op_MAPI_CopyProperties		= 0x67,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
 			op_MAPI_GetTransportFolder	= 0x6d,
+			op_MAPI_GetLocalReplicaIds	= 0x7f,
 			op_MAPI_OpenPublicFolderByName	= 0x87,
 			op_MAPI_Logon			= 0xfe
 		} MAPI_OPNUM;
@@ -2112,6 +2113,17 @@ System Attendant Private Interface
 	} GetTransportFolder_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x7f */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		IdCount;
+	} GetLocalReplicaIds_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		GUID		ReplGuid;
+		uint8		GlobalCount[6];
+	} GetLocalReplicaIds_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x87 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
@@ -2261,6 +2273,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CopyProperties)] CopyProperties_req mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_req mapi_GetTransportFolder;
+		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_req mapi_GetLocalReplicaIds;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
 		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
 	} EcDoRpc_MAPI_REQ_UNION;
@@ -2337,6 +2350,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CopyProperties)] CopyProperties_repl mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_repl mapi_GetTransportFolder;
+		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;
 

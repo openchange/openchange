@@ -30,7 +30,7 @@ cleanup_talloc() {
     fi
 }
 
-cleanup_tdb() {
+clean_tdb() {
     # cleanup existing tdb installation
     if test -f samba/source/lib/tdb/Makefile; then
 	echo "Step0: cleaning up tdb directory"

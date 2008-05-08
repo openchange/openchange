@@ -6,17 +6,25 @@ AC_INIT(openchange, 0.8, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
+AC_MSG_CHECKING([for samba 4 location])
+
 AC_ARG_WITH(samba, 
 [AC_HELP_STRING([--with-samba], [Override location Samba is installed])],
 [ 
  sambaprefix="$withval"
 ],[
- sambaprefix=$prefix
- if test x"$prefix" = x"NONE"; then
-   sambaprefix=/usr/local/samba
-fi
+ for p in "$prefix" /usr/local/samba /usr/local /usr
+ do
+	 if test -f "$p/lib/pkgconfig/samba-hostconfig.pc"; then
+		sambaprefix="$p"
+     fi
+ done
 ])
 AC_SUBST(sambaprefix)
+if ! test -f "$sambaprefix/lib/pkgconfig/samba-hostconfig.pc"; then
+	AC_MSG_ERROR(Samba 4 not found)
+fi
+AC_MSG_RESULT($sambaprefix)
 PKG_CONFIG_PATH="$sambaprefix/lib/pkgconfig"
 PATH="$sambaprefix/bin:$PATH"
 
@@ -72,8 +80,6 @@ if test "x$1_set" != "xset"; then
 
 fi[]
 ])
-
-
 
 dnl ###########################################################################
 dnl libmapi and required dependencies
@@ -131,8 +137,8 @@ dnl ---------------------------------------------------------------------------
 
 INCDIR=$sambaprefix/include
 
-AC_CHECK_FILE($INCDIR/samba/version.h,,AC_MSG_ERROR([Could not find Samba4 headers. Re-run ./configure with --prefix=XXX where
- XXX is the same prefix that Samba4 was configured with.]))
+AC_CHECK_FILE($INCDIR/samba/version.h,,AC_MSG_ERROR([Could not find Samba4 headers. Re-run ./configure with --with-samba=XXX where
+ XXX is the prefix that Samba4 was installed to.]))
 
 SAMBA_VERSION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_STRING | grep -v define | cut -d"=" -f2`
 

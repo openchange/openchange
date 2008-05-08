@@ -80,5 +80,5 @@ $AUTOCONF || exit 1
 
 rm -rf autom4te*.cache
 
-echo "Now run ./configure --prefix=path_to_samba and make"
+echo "Now run ./configure and make"
 exit 0

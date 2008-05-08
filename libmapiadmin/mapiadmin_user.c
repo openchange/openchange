@@ -176,6 +176,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 {
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
+	struct event_context		*ev = NULL;
 	struct mapi_profile		*profile;
 	struct ldb_context		*remote_ldb;
 	struct ldb_request		*req;
@@ -209,9 +210,10 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	mem_ctx = (TALLOC_CTX *)mapiadmin_ctx;
 
 	/* open LDAP connection */
+	ev = event_context_init(talloc_autofree_context());
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);
-	remote_ldb = ldb_wrap_connect(mem_ctx, global_loadparm, remote_ldb_url, 
-								  NULL,
+	remote_ldb = ldb_wrap_connect(mem_ctx, ev, global_mapi_ctx->lp_ctx, remote_ldb_url, 
+				      NULL,
 				      global_mapi_ctx->session->profile->credentials, 0, NULL);
 	MAPI_RETVAL_IF(!remote_ldb, MAPI_E_NETWORK_ERROR, mem_ctx);
 

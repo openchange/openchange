@@ -43,16 +43,19 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 					const struct ndr_interface_table *table,
 					struct loadparm_context *lp_ctx)
 {
-        NTSTATUS status;
+	NTSTATUS		status;
+	struct event_context	*ev;
 
 	if (!binding) {
 		DEBUG(3, ("You must specify a ncacn binding string\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	ev = event_context_init(talloc_autofree_context());
+
 	status = dcerpc_pipe_connect(parent_ctx, 
 				     p, binding, table,
-				     credentials, NULL, lp_ctx); 
+				     credentials, ev, lp_ctx); 
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Failed to connect to remote server: %s %s\n", 

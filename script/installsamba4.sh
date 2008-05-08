@@ -3,7 +3,7 @@
 #
 # VARS
 #
-GITREV="7fccd85"
+GITREV="44d8b70"
 
 #
 # Error check

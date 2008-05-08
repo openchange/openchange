@@ -44,6 +44,7 @@
 /* Samba4 includes */
 #include <talloc.h>
 #include <dcerpc.h>
+#include <events.h>
 
 /* OpenChange includes */
 #include <gen_ndr/exchange.h>

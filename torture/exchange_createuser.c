@@ -46,6 +46,7 @@
 #include <gen_ndr/ndr_samr_c.h>
 #include <time.h>
 #include <core/error.h>
+#include <events.h>
 
 struct tce_async_context {
 	int found;
@@ -85,6 +86,7 @@ NTSTATUS torture_exchange_createuser(TALLOC_CTX *mem_ctx, const char *username,
 				     const struct dom_sid *dom_sid)
 {
 	enum MAPISTATUS		retval;
+	struct event_context	*ev = NULL;
 	struct mapi_profile	*profile;
 	struct ldb_context	*remote_ldb;
 	struct ldb_request	*req;
@@ -99,10 +101,11 @@ NTSTATUS torture_exchange_createuser(TALLOC_CTX *mem_ctx, const char *username,
 
 	profile = global_mapi_ctx->session->profile;
 
+	ev = event_context_init(talloc_autofree_context());
 
 	/* open LDAP connection */
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);
-	remote_ldb = ldb_wrap_connect(mem_ctx, global_loadparm, remote_ldb_url, 
+	remote_ldb = ldb_wrap_connect(mem_ctx, ev, global_mapi_ctx->lp_ctx, remote_ldb_url, 
 								  NULL, cmdline_credentials, 0, NULL);
 	if (!remote_ldb) return NT_STATUS_UNSUCCESSFUL;
 

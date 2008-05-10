@@ -29,14 +29,86 @@
    \brief Table Object Protocol test suite
 */
 
+/**
+   Context for OXCTABL unit tests
+*/
+struct mt_oxctabl_ctx
+{
+	mapi_object_t	obj_store;
+	mapi_object_t	obj_folder;
+};
+
+
+/**
+   Convenience function to login to the server
+
+   This functions logs into the server, gets the top level store, and
+   gets the hierachy table for the top level store (which is returned as
+   obj_htable).
+
+   \param mt pointer to the top-level mapitest structure
+   \param obj_htable the heirachy table for the top level store
+
+   \return true on success, otherwise false
+*/
+_PUBLIC_ bool mapitest_oxctable_setup(struct mapitest *mt, mapi_object_t *obj_htable)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = false;
+	struct mt_oxctabl_ctx	*context;
+
+	context = talloc(mt->mem_ctx, struct mt_oxctabl_ctx);
+
+	mapi_object_init(&(context->obj_store));
+	retval = OpenMsgStore(&(context->obj_store));
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mapi_object_init(&(context->obj_folder));
+	ret = mapitest_common_folder_open(mt, &(context->obj_store), &(context->obj_folder), 
+					  olFolderTopInformationStore);
+	if (ret == false) {
+		return false;
+	}
+
+	mapi_object_init(obj_htable);
+	retval = GetHierarchyTable(&(context->obj_folder), obj_htable, 0, NULL);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mt->priv = context;
+
+	return true;
+}
+
+/**
+   Convenience function to clean up after logging into the server
+
+   This functions cleans up after a mapitest_oxctable_cleanup() call
+
+   \param mt pointer to the top-level mapitest structure
+*/
+_PUBLIC_ void mapitest_oxctable_cleanup(struct mapitest *mt)
+{
+	struct mt_oxctabl_ctx	*context;
+
+	context = mt->priv;
+
+	mapi_object_release(&(context->obj_folder));
+	mapi_object_release(&(context->obj_store));
+
+	talloc_free(mt->priv);
+}
 
 /**
    \details Test the SetColumns (0x12) operation
 
    This function:
-   -# Opens the Inbox folder
-   -# Retrieves the hierarchy table
+   -# Opens the Inbox folder and gets the hierarchy table
    -# Calls the SetColumns operation
+   -# Cleans up
 
    \param mt pointer to the top-level mapitest structure
 
@@ -45,35 +117,15 @@
 _PUBLIC_ bool mapitest_oxctable_SetColumns(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
-	bool			ret = false;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	struct SPropTagArray	*SPropTagArray;
 
 	/* Step 1. Logon */
-	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
 		return false;
 	}
 
-	/* Step 2. Open Top Information Store folder */
-	mapi_object_init(&obj_folder);
-	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, 
-					  olFolderTopInformationStore);
-	if (ret == false) {
-		return false;
-	}
-
-	/* Step 3. GetHierarchyTable */
-	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step 4. SetColumns */
+	/* Step 2. SetColumns */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3,
 					  PR_DISPLAY_NAME,
 					  PR_FID,
@@ -85,10 +137,9 @@ _PUBLIC_ bool mapitest_oxctable_SetColumns(struct mapitest *mt)
 		return false;
 	}
 
-	/* Release */
+	/* Step 3. Release */
 	mapi_object_release(&obj_htable);
-	mapi_object_release(&obj_folder);
-	mapi_object_release(&obj_store);
+	mapitest_oxctable_cleanup(mt);
 
 	return true;
 }
@@ -98,9 +149,9 @@ _PUBLIC_ bool mapitest_oxctable_SetColumns(struct mapitest *mt)
    \details Test the QueryColumns (0x37) operation
 
    This function:
-	-# Opens the Inbox folder
-	-# Retrieves the hierarchy table
+   	-# Opens the Inbox folder and gets the hierarchy table
 	-# Calls the QueryColumn operation
+	-# Cleans up
 
    \param mt pointer to the top-level mapitest structure
 
@@ -109,46 +160,25 @@ _PUBLIC_ bool mapitest_oxctable_SetColumns(struct mapitest *mt)
 _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
-	bool			ret = false;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	struct SPropTagArray	columns;
 
 	/* Step 1. Logon */
-	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
 		return false;
 	}
 
-	/* Step 2. Open Top Information Store folder */
-	mapi_object_init(&obj_folder);
-	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, 
-					  olFolderTopInformationStore);
-	if (ret == false) {
-		return false;
-	}
-
-	/* Step 3. GetHierarchyTable */
-	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step4. QueryColumns */
+	/* Step 2. QueryColumns */
 	retval = QueryColumns(&obj_htable, &columns);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "QueryColumns", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
-	/* Release */
+	/* Step 3. Release */
 	mapi_object_release(&obj_htable);
-	mapi_object_release(&obj_folder);
-	mapi_object_release(&obj_store);
-	
+	mapitest_oxctable_cleanup(mt);
+
 	return true;
 }
 
@@ -157,11 +187,11 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
    \details Test the QueryRows (0x15) operation
 
    This function:
-   -# Open the Inbox folder
-   -# Retrieve the hierarchy table
+   -# Opens the Inbox folder and gets the hierarchy table
    -# Retrieve the number of rows
    -# Set the number of columns
    -# Call QueryRows until the end of the table
+   -# Cleans up
 
    \param mt pointer on the top-level mapitest structure
 
@@ -170,9 +200,6 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
-	bool			ret = false;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	struct SRowSet		SRowSet;
 	struct SPropTagArray	*SPropTagArray;
@@ -180,28 +207,11 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 	uint32_t		count = 0;
 	
 	/* Step 1. Logon */
-	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
 		return false;
 	}
 
-	/* Step 2. Open Top Information Store folder */
-	mapi_object_init(&obj_folder);
-	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, 
-					  olFolderTopInformationStore);
-	if (ret == false) {
-		return false;
-	}
-
-	/* Step 3. GetHierarchyTable */
-	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, &count);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step 4. Set Table Columns */
+	/* Step 2. Set Table Columns */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3,
 					  PR_DISPLAY_NAME,
 					  PR_FID,
@@ -227,8 +237,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 
 	/* Release */
 	mapi_object_release(&obj_htable);
-	mapi_object_release(&obj_folder);
-	mapi_object_release(&obj_store);
+	mapitest_oxctable_cleanup(mt);
 
 	return true;
 }
@@ -237,42 +246,23 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
    \details Test the GetStatus (0x16) operation
 
    This function:
-   -# Open the Top Information store folder
-   -# Open the hiearchy tabke
+   -# Opens the Inbox folder and gets the hierarchy table
    -# Call GetStatus
+   -# Cleans up
  */
 _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	bool			ret = true;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	uint8_t			TableStatus;
 
 	/* Step 1. Logon */
-	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
 		return false;
 	}
 
-	/* Step 2. Open Top Information Store folder */
-	mapi_object_init(&obj_folder);
-	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, 
-					  olFolderTopInformationStore);
-	if (ret == false) {
-		return false;
-	}
-
-	/* Step 3. GetHierarchyTable */
-	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step 4. GetStatus */
+	/* Step 2. GetStatus */
 	retval = GetStatus(&obj_htable, &TableStatus);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetStatus", GetLastError());
 	mapitest_print(mt, "* %-35s: TableStatus: %d\n", "GetStatus", TableStatus);
@@ -280,10 +270,9 @@ _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
 		ret = false;
 	}
 
-	/* Release */
+	/* Step 3. Release */
 	mapi_object_release(&obj_htable);
-	mapi_object_release(&obj_folder);
-	mapi_object_release(&obj_htable);
+	mapitest_oxctable_cleanup(mt);
 
 	return ret;
 }
@@ -293,11 +282,11 @@ _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
    \details Test the SeekRow (0x18) operation
 
    This function:
-   -# Open the Inbox folder
-   -# Retrieve the hierarchy table
+   -# Opens the Inbox folder and gets the hierarchy table
    -# SeekRow with BOOKMARK_BEGINNING
    -# SeekRow with BOOKMARK_END
    -# SeekRow with BOOKMARK_CURRENT
+   -# Cleans up
 
    \param mt pointer on the top-level mapitest structure
    
@@ -306,35 +295,15 @@ _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
 _PUBLIC_ bool mapitest_oxctable_SeekRow(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
-	bool			ret = false;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	uint32_t		count;
 
 	/* Step 1. Logon */
-	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
 		return false;
 	}
 
-	/* Step 2. Open Top Information Store folder */
-	mapi_object_init(&obj_folder);
-	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, 
-					  olFolderTopInformationStore);
-	if (ret == false) {
-		return false;
-	}
-
-	/* Step 3. GetHierarchyTable */
-	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step 4. SeekRow */
+	/* Step 2. SeekRow */
 	retval = SeekRow(&obj_htable, BOOKMARK_BEGINNING, 0, &count);
 	mapitest_print(mt, "* %-35s: BOOKMARK_BEGINNING 0x%.8x\n", "SeekRow", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -355,8 +324,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRow(struct mapitest *mt)
 
 	/* Release */
 	mapi_object_release(&obj_htable);
-	mapi_object_release(&obj_folder);
-	mapi_object_release(&obj_store);
+	mapitest_oxctable_cleanup(mt);
 
 	return true;
 }
@@ -366,9 +334,9 @@ _PUBLIC_ bool mapitest_oxctable_SeekRow(struct mapitest *mt)
    \details Test the SeekRowApprox (0x1a) operation
 
    This function:
-   -# Open the Inbox folder
-   -# Retrieve the hierarchy table
+   -# Opens the Inbox folder and gets the hierarchy table
    -# SeekRowApprox with 0/1, 1/1 and 1/2 fractional values
+   -# Cleans up
 
    \param mt pointer on the top-level mapitest structure
    
@@ -377,34 +345,14 @@ _PUBLIC_ bool mapitest_oxctable_SeekRow(struct mapitest *mt)
 _PUBLIC_ bool mapitest_oxctable_SeekRowApprox(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
-	bool			ret = false;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 
 	/* Step 1. Logon */
-	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
 		return false;
 	}
 
-	/* Step 2. Open Top Information Store folder */
-	mapi_object_init(&obj_folder);
-	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, 
-					  olFolderTopInformationStore);
-	if (ret == false) {
-		return false;
-	}
-
-	/* Step 3. GetHierarchyTable */
-	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step 4. SeekRowApprox */
+	/* Step 2. SeekRowApprox */
 	retval = SeekRowApprox(&obj_htable, 0, 1);
 	mapitest_print(mt, "* %-35s 0/1: 0x%.8x\n", "SeekRowApprox", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -423,10 +371,9 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowApprox(struct mapitest *mt)
 		return false;
 	}
 
-	/* Release */
+	/* Step 3. Release */
 	mapi_object_release(&obj_htable);
-	mapi_object_release(&obj_folder);
-	mapi_object_release(&obj_store);
+	mapitest_oxctable_cleanup(mt);
 
 	return true;
 }
@@ -437,11 +384,11 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowApprox(struct mapitest *mt)
    \details Test the CreateBookmark (0x1b) operation
 
    This function:
-   -# Open the Inbox folder
-   -# Retrieve the hierarchy table
+   -# Opens the Inbox folder and gets the hierarchy table
    -# Customize the MAPI table view
    -# CreateBookmark for each table's row
    -# Free Bookmark for each created bookmark
+   -# Cleans up
 
    \param mt pointer on the top-level mapitest structure
    
@@ -450,9 +397,6 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowApprox(struct mapitest *mt)
 _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
-	bool			ret;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	uint32_t		*bkPosition;
 	uint32_t		count;
@@ -460,29 +404,13 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		SRowSet;
 
+
 	/* Step 1. Logon */
-	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
 		return false;
 	}
 
-	/* Step 2. Open Top Information Store folder */
-	mapi_object_init(&obj_folder);
-	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, 
-					  olFolderTopInformationStore);
-	if (ret == false) {
-		return false;
-	}
-
-	/* Step 3. GetHierarchyTable */
-	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, &count);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step 4. Customize the table view */
+	/* Step 2. Customize the table view */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3,
 					  PR_DISPLAY_NAME,
 					  PR_FID,
@@ -493,7 +421,7 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 		return false;
 	}
 
-	/* Step 5. Create Bookmarks */
+	/* Step 3. Create Bookmarks */
 	bkPosition = talloc_array(mt->mem_ctx, uint32_t, 1);
 	while (((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
 	       SRowSet.cRows) {
@@ -510,7 +438,7 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 
 	retval = mapi_object_bookmark_get_count(&obj_htable, &count);
 
-	/* Step 6. Free Bookmarks */
+	/* Step 4. Free Bookmarks */
 	for (i = 0; i < count; i++) {
 		retval = FreeBookmark(&obj_htable, bkPosition[i]);
 		mapitest_print(mt, "* %-35s (%.2d): 0x%.8x\n", "FreeBookmark", i, GetLastError());
@@ -519,11 +447,9 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 		}
 	}
 
-	/* Release */
+	/* Step 5. Release */
 	mapi_object_release(&obj_htable);
-	mapi_object_release(&obj_folder);
-	mapi_object_release(&obj_store);
-
+	mapitest_oxctable_cleanup(mt);
 	talloc_free(bkPosition);
 
 	return true;
@@ -535,8 +461,7 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
    \details Test the SeekRowBookmark (0x19) operation
 
    This function:
-   -# Open the Inbox folder
-   -# Retrieve the hierarchy table
+   -# Open the Inbox folder and retrieve the hierarchy table
    -# Customize the MAPI table view
    -# SeekBookmark for each table's row
    -# Free Bookmark for each created bookmark
@@ -548,9 +473,6 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
-	bool			ret;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
 	mapi_object_t		obj_htable;
 	uint32_t		*bkPosition;
 	uint32_t		count;
@@ -560,28 +482,11 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 	struct SRowSet		SRowSet;
 
 	/* Step 1. Logon */
-	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
 		return false;
 	}
 
-	/* Step 2. Open Top Information Store folder */
-	mapi_object_init(&obj_folder);
-	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, 
-					  olFolderTopInformationStore);
-	if (ret == false) {
-		return false;
-	}
-
-	/* Step 3. GetHierarchyTable */
-	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, &count);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
-
-	/* Step 4. Customize the table view */
+	/* Step 2. Customize the table view */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3,
 					  PR_DISPLAY_NAME,
 					  PR_FID,
@@ -592,7 +497,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 		return false;
 	}
 
-	/* Step 5. Create Bookmarks */
+	/* Step 3. Create Bookmarks */
 	bkPosition = talloc_array(mt->mem_ctx, uint32_t, 1);
 	while (((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
 	       SRowSet.cRows) {
@@ -609,14 +514,14 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 
 	retval = mapi_object_bookmark_get_count(&obj_htable, &count);
 
-	/* Step 6. SeekRowBookmark */
+	/* Step 4. SeekRowBookmark */
 	for (i = 0; i < count; i++) {
 		retval = SeekRowBookmark(&obj_htable, bkPosition[i], 0, &row);
 		mapitest_print(mt, "* %-35s (%.2d): 0x%.8x\n", "SeekRowBookmark", i, GetLastError());
 	}
 
 
-	/* Step 8. Free Bookmarks */
+	/* Step 5. Free Bookmarks */
 	for (i = 0; i < count; i++) {
 		retval = FreeBookmark(&obj_htable, bkPosition[i]);
 		if (GetLastError() != MAPI_E_SUCCESS) {
@@ -625,10 +530,9 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 	}
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "FreeBookmark", 0);
 
-	/* Release */
+	/* Step 6. Release */
 	mapi_object_release(&obj_htable);
-	mapi_object_release(&obj_folder);
-	mapi_object_release(&obj_store);
+	mapitest_oxctable_cleanup(mt);
 
 	talloc_free(bkPosition);
 

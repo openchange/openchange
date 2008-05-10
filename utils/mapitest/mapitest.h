@@ -71,6 +71,7 @@ struct mapitest {
 	const char		*org;
 	const char		*org_unit;
 	FILE			*stream;
+	void			*priv;
 };
 
 struct mapitest_module {

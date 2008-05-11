@@ -889,6 +889,7 @@ bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKA
 nagiosdir = $(libdir)/nagios
 
 installnagios:
+	$(INSTALL) -d $(DESTDIR)$(nagiosdir)
 	$(INSTALL) -m 0755 script/check_exchange $(DESTDIR)$(nagiosdir)
 
 ###################

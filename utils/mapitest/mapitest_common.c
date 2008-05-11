@@ -38,14 +38,14 @@ _PUBLIC_ bool mapitest_common_folder_open(struct mapitest *mt,
 	mapi_id_t	id_child;
 
 	retval = GetDefaultFolder(obj_parent, &id_child, olNum);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetDefaultFolder", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetDefaultFolder", GetLastError());
 		return false;
 	}
 
 	retval = OpenFolder(obj_parent, id_child, obj_child);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenFolder", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenFolder", GetLastError());
 		return false;
 	}
 
@@ -84,8 +84,8 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 	/* Retrieve the contents table */
 	mapi_object_init(&obj_ctable);
 	retval = GetContentsTable(obj_folder, &obj_ctable, 0, &count);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
 		return false;
 	}
 
@@ -96,8 +96,8 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 					  PR_SUBJECT);
 	retval = SetColumns(&obj_ctable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetColumns", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetColumns", GetLastError());
 		return false;
 	}
 
@@ -217,8 +217,8 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 
 	/* Create the mesage */
 	retval = CreateMessage(obj_folder, obj_message);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateMessage", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateMessage", GetLastError());
 		return false;
 	}
 
@@ -238,8 +238,8 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 	retval = ResolveNames((const char **)username, SPropTagArray,
 			      &SRowSet, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "ResolveNames", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "ResolveNames", GetLastError());
 		return false;
 	}
 
@@ -252,8 +252,8 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 	retval = ModifyRecipients(obj_message, SRowSet);
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(flaglist);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "ModifyRecipients", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "ModifyRecipients", GetLastError());
 		return false;
 	}
 
@@ -262,8 +262,8 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 	set_SPropValue_proptag(&lpProps[0], PR_SUBJECT, (const void *) subject);
 	set_SPropValue_proptag(&lpProps[1], PR_MESSAGE_FLAGS, (const void *)&msgflag);
 	retval = SetProps(obj_message, lpProps, 2);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetProps", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetProps", GetLastError());
 		return false;
 	}
 

@@ -184,7 +184,7 @@ _PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table,
 
    \param obj_table the table we are requesting properties from
    \param row_count the number of rows to retrieve
-   \param flg_advance define is QueryRows is called recursively
+   \param flg_advance define whether QueryRows is called recursively
    \param rowSet the results
 
    flag_advance possible values:
@@ -281,16 +281,16 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table, 
 				      struct SPropTagArray *cols)
 {
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct QueryColumns_repl *reply;
-	NTSTATUS		status;
-	enum MAPISTATUS		retval;
-	uint32_t		size;
-	TALLOC_CTX		*mem_ctx;
-	mapi_object_table_t	*table;
-	mapi_ctx_t		*mapi_ctx;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct QueryColumnsAll_repl	*reply;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_object_table_t		*table;
+	mapi_ctx_t			*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
@@ -302,7 +302,7 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_QueryColumns;
+	mapi_req->opnum = op_MAPI_QueryColumnsAll;
 	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	size += 5;
@@ -324,10 +324,10 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 	table = (mapi_object_table_t *)obj_table->private_data;
 	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
 
-	reply = &mapi_response->mapi_repl->u.mapi_QueryColumns;
-	cols->cValues = reply->count;
+	reply = &mapi_response->mapi_repl->u.mapi_QueryColumnsAll;
+	cols->cValues = reply->PropertyTagCount;
 	cols->aulPropTag = talloc_array((TALLOC_CTX*)table, enum MAPITAGS, cols->cValues);
-	memcpy((void*)cols->aulPropTag, (const void*)reply->tags, cols->cValues * sizeof(enum MAPITAGS));
+	memcpy((void*)cols->aulPropTag, (const void*)reply->PropertyTags, cols->cValues * sizeof(enum MAPITAGS));
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

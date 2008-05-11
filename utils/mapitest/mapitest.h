@@ -106,6 +106,7 @@ struct mapitest_module {
 #define	MT_DIRNAME_NOTE		"[MT] Note"
 #define	MT_DIRNAME_STICKYNOTE	"[MT] Sticky Notes"
 #define	MT_DIRNAME_TASK		"[MT] Tasks"
+#define	MT_DIRNAME_TEST		"[MT] Test Folder1"
 
 #define	MT_MAIL_SUBJECT		"[MT] Sample E-MAIL"
 #define	MT_MAIL_ATTACH		"[MT]_Sample_Attachment.txt"

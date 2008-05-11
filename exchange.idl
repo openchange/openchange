@@ -677,7 +677,7 @@ System Attendant Private Interface
 			op_MAPI_AbortSubmit		= 0x34,
 			op_MAPI_MoveFolder		= 0x35,
 			op_MAPI_CopyFolder		= 0x36,
-			op_MAPI_QueryColumns		= 0x37,
+			op_MAPI_QueryColumnsAll		= 0x37,
 			op_MAPI_Abort			= 0x38,
 			op_MAPI_CopyToStream		= 0x3a,
 			op_MAPI_GetTable		= 0x3e,
@@ -685,9 +685,9 @@ System Attendant Private Interface
 			op_MAPI_ModifyTable		= 0x40,
 			op_MAPI_SetSpooler		= 0x47,
 			op_MAPI_SpoolerLockMessage	= 0x48,
+			op_MAPI_AddressTypes		= 0x49,
 			op_MAPI_TransportSend		= 0x4a,
 			op_MAPI_FindRow			= 0x4f,
-			op_MAPI_AddressTypes		= 0x49,
 			op_MAPI_GetNamesFromIDs		= 0x55,
 			op_MAPI_GetIDsFromNames		= 0x56,
 			op_MAPI_EmptyFolder		= 0x58,
@@ -1843,12 +1843,12 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x37 */
 	typedef [flag(NDR_NOALIGN)] struct {
-	} QueryColumns_req;
+	} QueryColumnsAll_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		count;
-		MAPITAGS	tags[count];
-	} QueryColumns_repl;
+		uint16		PropertyTagCount;
+		MAPITAGS	PropertyTags[PropertyTagCount];
+	} QueryColumnsAll_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x38 */
@@ -2253,7 +2253,7 @@ System Attendant Private Interface
 		[case(op_MAPI_AbortSubmit)] AbortSubmit_req mapi_AbortSubmit;
 		[case(op_MAPI_MoveFolder)] MoveFolder_req mapi_MoveFolder;
 		[case(op_MAPI_CopyFolder)] CopyFolder_req mapi_CopyFolder;
-		[case(op_MAPI_QueryColumns)] QueryColumns_req mapi_QueryColumns;
+		[case(op_MAPI_QueryColumnsAll)] QueryColumnsAll_req mapi_QueryColumnsAll;
 		[case(op_MAPI_Abort)] Abort_req mapi_Abort;
 		[case(op_MAPI_CopyToStream)] CopyToStream_req mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
@@ -2330,7 +2330,7 @@ System Attendant Private Interface
 		[case(op_MAPI_AbortSubmit)] AbortSubmit_repl mapi_AbortSubmit;
 		[case(op_MAPI_MoveFolder)] MoveFolder_repl mapi_MoveFolder;
 		[case(op_MAPI_CopyFolder)] CopyFolder_repl mapi_CopyFolder;
-		[case(op_MAPI_QueryColumns)] QueryColumns_repl mapi_QueryColumns;
+		[case(op_MAPI_QueryColumnsAll)] QueryColumnsAll_repl mapi_QueryColumnsAll;
 		[case(op_MAPI_Abort)] Abort_repl mapi_Abort;
 		[case(op_MAPI_CopyToStream)] CopyToStream_repl mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;

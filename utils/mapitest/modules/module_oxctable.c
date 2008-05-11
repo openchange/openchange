@@ -47,11 +47,12 @@ struct mt_oxctabl_ctx
    obj_htable).
 
    \param mt pointer to the top-level mapitest structure
-   \param obj_htable the heirachy table for the top level store
+   \param obj_htable the hierachy table for the top level store
+   \param count the number of rows in the hierarchy table
 
    \return true on success, otherwise false
 */
-_PUBLIC_ bool mapitest_oxctable_setup(struct mapitest *mt, mapi_object_t *obj_htable)
+_PUBLIC_ bool mapitest_oxctable_setup(struct mapitest *mt, mapi_object_t *obj_htable, uint32_t *count)
 {
 	enum MAPISTATUS		retval;
 	bool			ret = false;
@@ -73,7 +74,7 @@ _PUBLIC_ bool mapitest_oxctable_setup(struct mapitest *mt, mapi_object_t *obj_ht
 	}
 
 	mapi_object_init(obj_htable);
-	retval = GetHierarchyTable(&(context->obj_folder), obj_htable, 0, NULL);
+	retval = GetHierarchyTable(&(context->obj_folder), obj_htable, 0, count);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -121,7 +122,7 @@ _PUBLIC_ bool mapitest_oxctable_SetColumns(struct mapitest *mt)
 	struct SPropTagArray	*SPropTagArray;
 
 	/* Step 1. Logon */
-	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable, NULL)) {
 		return false;
 	}
 
@@ -164,7 +165,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 	struct SPropTagArray	columns;
 
 	/* Step 1. Logon */
-	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable, NULL)) {
 		return false;
 	}
 
@@ -188,8 +189,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 
    This function:
    -# Opens the Inbox folder and gets the hierarchy table
-   -# Retrieve the number of rows
-   -# Set the number of columns
+   -# Set the required columns
    -# Call QueryRows until the end of the table
    -# Cleans up
 
@@ -207,7 +207,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 	uint32_t		count = 0;
 	
 	/* Step 1. Logon */
-	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable, &count)) {
 		return false;
 	}
 
@@ -220,6 +220,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 	MAPIFreeBuffer(SPropTagArray);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetColumns", GetLastError());
 
+	/* Step 3. QueryRows */
 	do {
 		retval = QueryRows(&obj_htable, 0x2, TBL_ADVANCE, &SRowSet);
 		if (SRowSet.cRows > 0) {
@@ -258,7 +259,7 @@ _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
 	uint8_t			TableStatus;
 
 	/* Step 1. Logon */
-	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable, NULL)) {
 		return false;
 	}
 
@@ -299,7 +300,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRow(struct mapitest *mt)
 	uint32_t		count;
 
 	/* Step 1. Logon */
-	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable, NULL)) {
 		return false;
 	}
 
@@ -348,7 +349,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowApprox(struct mapitest *mt)
 	mapi_object_t		obj_htable;
 
 	/* Step 1. Logon */
-	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable, NULL)) {
 		return false;
 	}
 
@@ -406,7 +407,7 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 
 
 	/* Step 1. Logon */
-	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable, &count)) {
 		return false;
 	}
 
@@ -482,7 +483,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 	struct SRowSet		SRowSet;
 
 	/* Step 1. Logon */
-	if (! mapitest_oxctable_setup(mt, &obj_htable)) {
+	if (! mapitest_oxctable_setup(mt, &obj_htable, &count)) {
 		return false;
 	}
 

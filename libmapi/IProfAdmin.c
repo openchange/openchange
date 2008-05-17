@@ -883,6 +883,8 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
 	}
 	
 	MAPI_RETVAL_IF("GetDefaultProfile", MAPI_E_NOT_FOUND, proftable.aRow);
+
+	return MAPI_E_SUCCESS;
 }
 
 /**

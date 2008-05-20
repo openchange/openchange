@@ -327,16 +327,15 @@ enum ndr_err_code ndr_pull_QueryRows_repl(struct ndr_pull *ndr, int ndr_flags, s
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 4));
-			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->unknown));
-			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->results_count));
+			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Origin));
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->RowCount));
 
-			if (r->results_count)
+			if (r->RowCount)
 			{
 				uint32_t _flags_save_DATA_BLOB = ndr->flags;
 
-				NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->layout));
 				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
-				NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->rows));
+				NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->RowData));
 				ndr->flags = _flags_save_DATA_BLOB;
 			}
 		}

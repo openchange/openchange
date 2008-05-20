@@ -183,13 +183,14 @@ _PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table,
    server
 
    \param obj_table the table we are requesting properties from
-   \param row_count the number of rows to retrieve
-   \param flg_advance define whether QueryRows is called recursively
+   \param row_count the maximum number of rows to retrieve
+   \param flags flags to use for the query
    \param rowSet the results
 
-   flag_advance possible values:
+   flags possible values:
    - TBL_ADVANCE: index automatically increased from last rowcount
    - TBL_NOADVANCE: should be used for a single QueryRows call
+   - TBL_ENABLEPACKEDBUFFERS: (not yet implemented)
 
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
@@ -200,7 +201,7 @@ _PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table,
    \sa SetColumns, GetRowCount, QueryColumns, SeekRow
  */
 _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
-				   enum tbl_advance flg_advance, 
+				   enum QueryRowsFlags flags, 
 				   struct SRowSet *rowSet)
 {
 	struct mapi_request	*mapi_request;
@@ -221,9 +222,10 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 	mem_ctx = talloc_init("QueryRows");
 
 	/* Fill the QueryRows operation */
-	request.flag_advance = flg_advance;
-	request.layout = 1;
-	request.row_count = row_count;
+	request.QueryRowsFlags = flags;
+	/* TODO: search backwards for negative row_count */
+	request.ForwardRead = 1;
+	request.RowCount = row_count;
 	size += 4;
 
 	/* Fill the MAPI_REQ request */
@@ -251,10 +253,11 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 	table = (mapi_object_table_t *)obj_table->private_data;
 	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
 
+	/* TODO: handle Origin */
 	reply = &mapi_response->mapi_repl->u.mapi_QueryRows;
-	rowSet->cRows = reply->results_count;
+	rowSet->cRows = reply->RowCount;
 	rowSet->aRow = talloc_array((TALLOC_CTX *)table, struct SRow, rowSet->cRows);
-	emsmdb_get_SRowSet((TALLOC_CTX *)table, rowSet, &table->proptags, &reply->rows, reply->layout, 1);
+	emsmdb_get_SRowSet((TALLOC_CTX *)table, rowSet, &table->proptags, &reply->RowData);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -997,7 +1000,7 @@ _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table,
 	reply = &mapi_response->mapi_repl->u.mapi_FindRow;
 	SRowSet->cRows = 1;
 	SRowSet->aRow = talloc_array((TALLOC_CTX *)table, struct SRow, SRowSet->cRows);
-	emsmdb_get_SRowSet((TALLOC_CTX *)table, SRowSet, &table->proptags, &reply->row, reply->layout, 1);
+	emsmdb_get_SRowSet((TALLOC_CTX *)table, SRowSet, &table->proptags, &reply->row);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

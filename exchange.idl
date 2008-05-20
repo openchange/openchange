@@ -1304,20 +1304,20 @@ System Attendant Private Interface
 
 	typedef [enum8bit] enum {
 		TBL_ADVANCE		= 0x0,
-		TBL_NOADVANCE		= 0x1
-	} tbl_advance;
+		TBL_NOADVANCE		= 0x1,
+		TBL_ENABLEPACKEDBUFFERS = 0x2
+	} QueryRowsFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		tbl_advance	flag_advance;
-		uint8		layout;
-		uint16		row_count;
+		QueryRowsFlags	QueryRowsFlags;
+		uint8		ForwardRead;
+		uint16		RowCount;
 	} QueryRows_req;
 
 	typedef [nopull,flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
-		uint16		results_count;
- 		uint8		layout;
-		[flag(NDR_REMAINING)]DATA_BLOB	rows;
+		uint8		Origin;
+		uint16		RowCount;
+		[flag(NDR_REMAINING)]DATA_BLOB	RowData;
 	} QueryRows_repl;
 
 	/**************************/
@@ -1970,8 +1970,8 @@ System Attendant Private Interface
 	} FindRow_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		unknown;
-		uint8		layout;
+		uint8		RowNoLongerVisible;
+	  	uint8		HasRowData;
 		[flag(NDR_NOALIGN)] DATA_BLOB row;
 	} FindRow_repl;
 

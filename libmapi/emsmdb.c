@@ -471,7 +471,9 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
-void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPropTagArray *proptags, DATA_BLOB *content, uint8_t layout, uint8_t align)
+/* TODO: this doesn't yet handle the TypedPropertyValue and
+   FlaggedPropertyValueWithTypeSpecified variants. */
+void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPropTagArray *proptags, DATA_BLOB *content)
 {
 	struct SRow		*rows;
 	struct SPropValue	*lpProps;
@@ -480,28 +482,50 @@ void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPro
 	uint32_t		offset = 0;
 	const void		*data;
 	uint32_t		row_count;
+	bool			is_FlaggedPropertyRow = false;
+	bool			havePropertyValue;
+	uint8_t			flag;
 
 	/* caller allocated */
 	rows = rowset->aRow;
 	row_count = rowset->cRows;
 
 	for (idx = 0; idx < row_count; idx++) {
+		if (0x1 == *(content->data + offset)) {
+			is_FlaggedPropertyRow = true;
+		}
+		++offset;
+
 		lpProps = talloc_array(mem_ctx, struct SPropValue, proptags->cValues);
 		for (prop = 0; prop < proptags->cValues; prop++) {
-			if (layout) {
-				  if (((uint8_t)(*(content->data + offset))) == PT_ERROR) {
+			havePropertyValue = true;
+			if (is_FlaggedPropertyRow) {
+				flag = (uint8_t)(*(content->data + offset));
+				++offset; /* advance offset for the flag */
+				switch (flag) {
+				case 0x0:
+					/* Property Value is valid */
+					break;
+				case 0x1:
+					/* Property Value is not present */
+					havePropertyValue = false;
+					break;
+				case PT_ERROR:
 					proptags->aulPropTag[prop] &= 0xFFFF0000;
 					proptags->aulPropTag[prop] |= 0xA;
+					break;
+				default:
+					/* unknown FlaggedPropertyValue flag */
+					break;
+
 				}
-				offset += align;
 			}
-			data = pull_emsmdb_property(mem_ctx, &offset, proptags->aulPropTag[prop], content);
-			lpProps[prop].ulPropTag = proptags->aulPropTag[prop];
-			lpProps[prop].dwAlignPad = 0x0;
-			set_SPropValue(&lpProps[prop], data);
-		}
-		if (align) {
-			offset += align;
+			if (havePropertyValue) {
+				data = pull_emsmdb_property(mem_ctx, &offset, proptags->aulPropTag[prop], content);
+				lpProps[prop].ulPropTag = proptags->aulPropTag[prop];
+				lpProps[prop].dwAlignPad = 0x0;
+				set_SPropValue(&lpProps[prop], data);
+			}
 		}
 
 		rows[idx].ulAdrEntryPad = 0;

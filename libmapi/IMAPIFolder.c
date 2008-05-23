@@ -356,7 +356,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageStatus(mapi_object_t *obj_folder,
 
    \param obj_src The source folder
    \param obj_dst The destination folder
-   \param msgid pointer on an array of message IDs
+   \param message_id pointer on an array of message IDs
    \param WantCopy boolean value, defines whether the operation is a
    copy or a move
 

@@ -89,6 +89,7 @@ _PUBLIC_ void mapi_object_release(mapi_object_t *obj)
 	enum MAPISTATUS retval;
 
 	if (!obj) return;
+	if (obj->handle == INVALID_HANDLE_VALUE) return;
 
 	retval = Release(obj);
 	if (retval == MAPI_E_SUCCESS) {

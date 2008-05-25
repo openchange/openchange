@@ -297,9 +297,14 @@ _PUBLIC_ bool mapitest_run_test(struct mapitest *mt, const char *name)
 	for (suite = mt->mapi_suite; suite; suite = suite->next) {
 		for (el = suite->tests; el; el = el->next) {
 			if (!strcmp(name, el->name)) {
-				errno = 0;
-				ret = mapitest_suite_run_test(mt, suite, name);
-				return ret;
+				if ((mt->online == suite->online) || (suite->online == false)) {
+					errno = 0;
+					ret = mapitest_suite_run_test(mt, suite, name);
+					return ret;
+				} else {
+					fprintf(stderr, "Server is offline, skipping test: \"%s\"\n", name);
+					return true;
+				}
 			}
 		}
 	}

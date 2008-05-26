@@ -6,7 +6,25 @@ AC_INIT(openchange, 0.8, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
-AC_MSG_CHECKING([for samba 4 location])
+PKG_PROG_PKG_CONFIG([0.20])
+
+#
+# OC_CHECK_SAMBA_PATH([PATH],[action-if-found],[action-if-not-found])
+# -------------------------------------------------------------------
+AC_DEFUN([OC_CHECK_SAMBA_PATH],
+[
+ 	old_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+	PKG_CONFIG_PATH="$1/lib/pkgconfig"
+	PKG_CHECK_EXISTS([samba-hostconfig], [found=1], [found=0])
+	PKG_CONFIG_PATH="$old_PKG_CONFIG_PATH"
+	if test $found = 1; then
+		ifelse([$2],[], [echo -n ], [$2])
+		ifelse([$3],[],[],[else
+	[$3]])
+	fi
+])
+
+AC_MSG_CHECKING([for samba 4])
 
 AC_ARG_WITH(samba, 
 [AC_HELP_STRING([--with-samba], [Override location Samba is installed])],
@@ -15,15 +33,11 @@ AC_ARG_WITH(samba,
 ],[
  for p in "$prefix" /usr/local/samba /usr/local /usr
  do
-	 if test -f "$p/lib/pkgconfig/samba-hostconfig.pc"; then
-		sambaprefix="$p"
-     fi
+	 OC_CHECK_SAMBA_PATH($p, [sambaprefix="$p"])
  done
 ])
 AC_SUBST(sambaprefix)
-if ! test -f "$sambaprefix/lib/pkgconfig/samba-hostconfig.pc"; then
-	AC_MSG_ERROR(Samba 4 not found)
-fi
+OC_CHECK_SAMBA_PATH($sambaprefix,[], AC_MSG_ERROR(Samba 4 not found))
 AC_MSG_RESULT($sambaprefix)
 PKG_CONFIG_PATH="$sambaprefix/lib/pkgconfig"
 PATH="$sambaprefix/bin:$PATH"
@@ -37,6 +51,18 @@ AC_ARG_VAR([NAME], [var name])
 if test x"$enable_$1" = x""; then
    enable_$1="no"
 fi[]
+])
+
+#
+# OC_CHECK_SAMBA_VERSION([VERSION],[action-if-found],[action-if-not-found],
+#						 [action-if-cross-compiling])
+# -------------------------------------------------------------------------
+AC_DEFUN([OC_CHECK_SAMBA_VERSION], [
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
+#include <samba/version.h>
+int main() { return strcmp(SAMBA_VERSION, "$1"); }
+]])],[$2],[
+	ifelse([$3],[],[AC_MSG_WARN([The Samba4 version installed on your system doesn't meet OpenChange requirements ($1).])],[$3])],[$4])
 ])
 
 #
@@ -132,28 +158,23 @@ fi
 AC_SUBST(FLEX)
 
 dnl ---------------------------------------------------------------------------
-dnl Check a particular Samba4 git revision
-dnl ---------------------------------------------------------------------------
-
-INCDIR=$sambaprefix/include
-
-AC_CHECK_FILE($INCDIR/samba/version.h,,AC_MSG_ERROR([Could not find Samba4 headers. Re-run ./configure with --with-samba=XXX where
- XXX is the prefix that Samba4 was installed to.]))
-
-SAMBA_VERSION=`cat $INCDIR/samba/version.h | grep SAMBA_VERSION_STRING | grep -v define | cut -d"=" -f2`
-
-if test "$SAMBA_VERSION" != "4.0.0alpha4-GIT-7fccd85" ; then
-   AC_MSG_WARN([The Samba4 version installed on your system doesn't meet OpenChange requirements (7fccd85).])
-fi
-
-
-dnl ---------------------------------------------------------------------------
 dnl Samba4 modules
 dnl ---------------------------------------------------------------------------
-PKG_PROG_PKG_CONFIG([0.20])
 PKG_CHECK_MODULES(TALLOC, talloc)
 PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig)
 PKG_CHECK_MODULES(LDB, ldb)
+
+dnl ---------------------------------------------------------------------------
+dnl Check a particular Samba4 git revision
+dnl ---------------------------------------------------------------------------
+
+oc_save_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS `$PKG_CONFIG --cflags-only-I samba-hostconfig`"
+AC_CHECK_HEADER([samba/version.h],, AC_MSG_ERROR([Could not find Samba4 headers. Re-run ./configure with --with-samba=XXX where
+ XXX is the prefix that Samba4 was installed to.]))
+
+OC_CHECK_SAMBA_VERSION([4.0.0alpha4-GIT-7fccd85])
+CPPFLAGS="$oc_save_CPPFLAGS"
 
 dnl ---------------------------------------------------------------------------
 dnl Finally add libmapi to the library list

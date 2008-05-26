@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
         /* Retrieve Inbox content table */
         mapi_object_init(&obj_table);
-        retval = GetContentsTable(&obj_folder, &obj_table);
+        retval = GetContentsTable(&obj_folder, &obj_table, 0x0, NULL);
         MAPI_RETVAL_IF(retval, retval, NULL);
 
         /* Create the MAPI table view */

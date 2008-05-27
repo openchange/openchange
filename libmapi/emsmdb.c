@@ -513,10 +513,10 @@ _PUBLIC_ void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, st
 					/* Property Value is not present */
 					havePropertyValue = false;
 					break;
-				case 0xa:
+				case PT_ERROR:
 					lpProps[prop].ulPropTag = proptags->aulPropTag[prop];
 					lpProps[prop].ulPropTag &= 0xFFFF0000;
-					lpProps[prop].ulPropTag |= 0x000a;
+					lpProps[prop].ulPropTag |= PT_ERROR;
 					break;
 				default:
 					/* unknown FlaggedPropertyValue flag */

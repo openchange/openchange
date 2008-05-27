@@ -473,7 +473,7 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 
 /* TODO: this doesn't yet handle the TypedPropertyValue and
    FlaggedPropertyValueWithTypeSpecified variants. */
-void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPropTagArray *proptags, DATA_BLOB *content)
+_PUBLIC_ void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPropTagArray *proptags, DATA_BLOB *content)
 {
 	struct SRow		*rows;
 	struct SPropValue	*lpProps;
@@ -493,12 +493,15 @@ void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPro
 	for (idx = 0; idx < row_count; idx++) {
 		if (0x1 == *(content->data + offset)) {
 			is_FlaggedPropertyRow = true;
+		} else {
+			is_FlaggedPropertyRow = false;
 		}
 		++offset;
 
 		lpProps = talloc_array(mem_ctx, struct SPropValue, proptags->cValues);
 		for (prop = 0; prop < proptags->cValues; prop++) {
 			havePropertyValue = true;
+			lpProps[prop].ulPropTag = proptags->aulPropTag[prop];
 			if (is_FlaggedPropertyRow) {
 				flag = (uint8_t)(*(content->data + offset));
 				++offset; /* advance offset for the flag */
@@ -510,9 +513,10 @@ void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPro
 					/* Property Value is not present */
 					havePropertyValue = false;
 					break;
-				case PT_ERROR:
-					proptags->aulPropTag[prop] &= 0xFFFF0000;
-					proptags->aulPropTag[prop] |= 0xA;
+				case 0xa:
+					lpProps[prop].ulPropTag = proptags->aulPropTag[prop];
+					lpProps[prop].ulPropTag &= 0xFFFF0000;
+					lpProps[prop].ulPropTag |= 0x000a;
 					break;
 				default:
 					/* unknown FlaggedPropertyValue flag */
@@ -521,9 +525,8 @@ void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPro
 				}
 			}
 			if (havePropertyValue) {
-				data = pull_emsmdb_property(mem_ctx, &offset, proptags->aulPropTag[prop], content);
-				lpProps[prop].ulPropTag = proptags->aulPropTag[prop];
 				lpProps[prop].dwAlignPad = 0x0;
+				data = pull_emsmdb_property(mem_ctx, &offset, lpProps[prop].ulPropTag, content);
 				set_SPropValue(&lpProps[prop], data);
 			}
 		}

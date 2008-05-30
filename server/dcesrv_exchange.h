@@ -213,8 +213,7 @@ void dcesrv_NspiCompareDNTs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_
 		       struct NspiCompareDNTs *r);
 void dcesrv_NspiModProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiModProps *r);
-void dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetTemplateInfo *r);
+enum MAPISTATUS dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct NspiGetTemplateInfo *r);
 void dcesrv_NspiModLInkAtt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiModLInkAtt *r);
 void dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,

@@ -794,10 +794,10 @@ enum MAPISTATUS dcesrv_NspiGetHierarchyInfo(struct dcesrv_call_state *dce_call, 
 /* 
   NspiGetTemplateInfo 
 */
-void dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiGetTemplateInfo *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 

@@ -238,7 +238,7 @@ System Attendant Private Interface
 		[in] policy_handle	*handle,
 		[in] uint32		dwAlignPad,
 		[in,out] MAPI_SETTINGS	settings,
-		[in,out] uint32		unknown
+		[in,out,unique] uint32	*plDelta
 		);
 
 	/*****************/
@@ -366,6 +366,7 @@ System Attendant Private Interface
 #define	PT_CLSID       	0x0048
 #define	PT_SVREID	0x00fb
 #define	PT_SRESTRICT	0x00fd
+#define	PT_ACTIONS	0x00fe
 #define	PT_BINARY	0x0102
 
 /* Multi-valued properties */
@@ -416,6 +417,18 @@ System Attendant Private Interface
 		[size_is(cValues)] LPSTR **strings; 
 	} SLPSTRArray;
 
+	typedef [flag(NDR_ALIGN2)]struct {
+		uint32	size;
+		uint32	offset;
+		uint32	length;
+		[subcontext(0),subcontext_size(size * 2),flag(NDR_REMAINING)] DATA_BLOB lpszW;
+	} LPWSTR;
+
+	typedef struct {
+		[range(0,10000)] uint32 cValues;
+ 		[size_is(cValues)] LPWSTR **strings;
+	} MV_UNICODE_STRUCT;
+
 	typedef struct {
 		uint32 cValues;
 		[size_is(cValues)] SBinary *lpbin;
@@ -426,11 +439,6 @@ System Attendant Private Interface
 		[size_is(cValues)] uint32 *lpguid; 
 	} SGuidArray;
 
-	typedef struct {
-		uint32 cValues;
-		[size_is(cValues)] uint32 *lpi;
-	} MV_UNICODE_STRUCT;
-	
 	typedef struct {
 		uint32 cValues;
 		[size_is(cValues)] FILETIME *lpft;
@@ -485,7 +493,18 @@ System Attendant Private Interface
  		[out] SRowSet		**RowSet
 		);
 
-	void NspiGetTemplateInfo();
+	/*******************/
+	/* Function 0xD    */
+	MAPISTATUS NspiGetTemplateInfo(
+		[in] policy_handle			*handle,
+		[in] uint32				dwFlags,
+		[in] uint32				ulType,
+		[in,unique,string,charset(DOS)] uint8	*pDN,
+		[in] uint32				dwCodePage,
+		[in] uint32				dwLocaleID,
+		[out] SRow				**ppData
+		);
+
 	void NspiModLInkAtt();
 	void NspiDeleteEntries();
 	void NspiQueryColumns();
@@ -1993,11 +2012,11 @@ System Attendant Private Interface
 	typedef struct {
 		uint8				length;
 		[flag(STR_NULLTERM)] string	lpwstrName;
-	} LPWSTR;
+	} mapi_LPWSTR;
 
 	typedef [nodiscriminant] union {
 		[case(MNID_ID)] uint32		lid;
-		[case(MNID_STRING)] LPWSTR	lpwstr;
+		[case(MNID_STRING)] mapi_LPWSTR	lpwstr;
 	} Kind;
 	
 	typedef [flag(NDR_NOALIGN)] struct {

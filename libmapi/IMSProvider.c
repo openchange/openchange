@@ -18,6 +18,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/mapicode.h>
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 #include <core/error.h>
@@ -96,7 +97,7 @@ enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_
 		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
 		MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
-		provider->ctx = (void *)emsmdb_connect(mem_ctx, pipe, profile->credentials);
+		provider->ctx = emsmdb_connect(mem_ctx, pipe, profile->credentials);
 		MAPI_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
 		break;
 	case PROVIDER_ID_NSPI:
@@ -148,7 +149,7 @@ _PUBLIC_ enum MAPISTATUS RegisterNotification(uint32_t ulEventMask)
 	TALLOC_CTX		*mem_ctx;
 	struct NOTIFKEY		*lpKey;
 	static uint8_t		rand = 0;
-	static uint8_t		try = 0;
+	static uint8_t		attempt = 0;
 	
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
@@ -175,9 +176,9 @@ retry:
 
 	status = emsmdb_register_notification(lpKey, ulEventMask);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (try < 5) {
+		if (attempt < 5) {
 			rand++;
-			try++;
+			attempt++;
 			errno = 0;
 			goto retry;
 		} else {

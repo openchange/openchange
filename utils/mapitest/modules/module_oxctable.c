@@ -4,6 +4,7 @@
    OpenChange Project - TABLE OBJECT PROTOCOL operations
 
    Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Brad Hards 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -329,6 +330,110 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 	return true;
 }
 
+/**
+   \details Test the Restrict (0x14) operation
+
+   This function:
+   -# Opens the Inbox folder and creates some test content
+   -# Checks that the content is OK
+   -# Applies a filter
+   -# Checks the results are as expected.
+   -# Resets the table
+   -# Checks the results are as expected.
+   -# Cleans up
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxctable_Restrict(struct mapitest *mt)
+{
+	mapi_object_t		obj_htable;
+	mapi_object_t		obj_test_folder;
+	struct mt_oxctabl_ctx	*context;
+	uint32_t		count = 0;
+	uint32_t		origcount = 0;
+	struct mapi_SRestriction res;
+	bool			ret = true;
+
+	/* Step 1. Logon */
+	if (! mapitest_oxctable_setup(mt, &obj_htable, &count)) {
+		return false;
+	}
+
+	/* Step 2. Get the test folder */
+	context = mt->priv;
+	mapi_object_init(&(obj_test_folder));
+	GetContentsTable(&(context->obj_test_folder), &(obj_test_folder), 0, &origcount);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
+		ret = false;
+		goto cleanup;
+	}
+	if (origcount != 10) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetContentsTable", count);
+		/* This isn't a hard error for this test though, because it might be from a 
+		   previous test failure. Clean up and try again */
+	}
+
+	/* Apply a filter */
+	res.rt = RES_PROPERTY;
+	res.res.resProperty.relop = RES_PROPERTY;
+	res.res.resProperty.ulPropTag = PR_SUBJECT;
+	res.res.resProperty.lpProp.ulPropTag = PR_SUBJECT;
+	res.res.resProperty.lpProp.value.lpszA = MT_MAIL_SUBJECT;
+
+	Restrict(&(obj_test_folder), &res);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Restrict", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Checks the results are as expected */
+	context = mt->priv;
+	GetRowCount(&(obj_test_folder), &count);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRowCount", GetLastError());
+		ret = false;
+		goto cleanup;
+	}
+	if (count != origcount/2) {
+		mapitest_print(mt, "* %-35s: unexpected filtered count (%i)\n", "GetRowCount", count);
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Resets the table */
+	Reset(&(obj_test_folder));
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Reset", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Checks the results are as expected */
+	context = mt->priv;
+	GetRowCount(&(obj_test_folder), &count);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRowCount", GetLastError());
+		ret = false;
+		goto cleanup;
+	}
+	if (count != origcount) {
+		mapitest_print(mt, "* %-35s: unexpected reset count (%i)\n", "GetRowCount", count);
+		ret = false;
+		goto cleanup;
+	}
+
+ cleanup:
+	/* Release */
+	mapi_object_release(&obj_htable);
+	mapi_object_release(&(obj_test_folder));
+	mapitest_oxctable_cleanup(mt);
+
+	return ret;
+}
 
 /**
    \details Test the QueryRows (0x15) operation
@@ -761,4 +866,214 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 	talloc_free(bkPosition);
 
 	return true;
+}
+
+/**
+   \details Test the SortTable (0x13), ExpandRow (0x59), CollapseRow(0x5a),
+   GetCollapseState(0x6b) and SetCollapseState (0x6c) operations
+
+   This function:
+   -# Opens the Inbox folder and creates some test content
+   -# Checks that the content is OK
+   -# Applies a sort and categorisation
+   -# Checks the results are as expected.
+   -# Save away the Row ID and Insatnce Number for the first header
+   -# Collapse the first category
+   -# Checks the results are as expected.
+   -# Save the "collapse state"
+   -# Expand the first category again
+   -# Checks the results are as expected
+   -# Restore the saved "collapse state"
+   -# Checks the results are as expected
+   -# Cleans up
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
+{
+	mapi_object_t		obj_htable;
+	mapi_object_t		obj_test_folder;
+	struct mt_oxctabl_ctx	*context;
+	uint32_t		count = 0;
+	uint32_t		origcount = 0;
+	bool			ret = true;
+	struct SSortOrderSet	criteria;
+	uint64_t		inst_id = 0;
+	uint64_t		inst_num = 0;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	uint32_t                rowcount = 0;
+	struct SBinary_short	collapseState;
+	uint32_t		bookmark;
+
+
+	/* Step 1. Logon */
+	if (! mapitest_oxctable_setup(mt, &obj_htable, &count)) {
+		return false;
+	}
+
+	/* Step 2. Get the test folder */
+	context = mt->priv;
+	mapi_object_init(&(obj_test_folder));
+	GetContentsTable(&(context->obj_test_folder), &(obj_test_folder), 0, &origcount);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
+		ret = false;
+		goto cleanup;
+	}
+	if (origcount != 10) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetContentsTable", count);
+		/* This isn't a hard error for this test though, because it might be from a 
+		   previous test failure. Clean up and try again */
+	}
+
+	/* We need the header row InstanceId to fold/unfold the headers */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x6,
+					  PR_SENDER_NAME,
+					  PR_BODY,
+					  PR_LAST_MODIFICATION_TIME,
+					  PR_SUBJECT,
+					  PR_INST_ID,
+					  PR_INSTANCE_NUM);
+	SetColumns(&(obj_test_folder), SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetColumns", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Apply a categorised sort */
+	memset(&criteria, 0x0, sizeof (struct SSortOrderSet));
+	criteria.cSorts = 1;
+	criteria.cCategories = 1;
+	criteria.cExpanded = 1;
+	criteria.aSort = talloc_array(mt->mem_ctx, struct SSortOrder, criteria.cSorts);
+	criteria.aSort[0].ulPropTag = PR_SENDER_NAME;
+	criteria.aSort[0].ulOrder = TABLE_SORT_ASCEND;
+	SortTable(&(obj_test_folder), &criteria);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SortTable", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	rowcount =  2 * origcount;
+	QueryRows(&(obj_test_folder), rowcount, TBL_ADVANCE, &SRowSet);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "QueryRows", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Checks the results are as expected */
+	GetRowCount(&(obj_test_folder), &rowcount);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRowCount", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	/* the categories are expanded, and there are six unique senders, so there are six
+	   extra rows - one for each header row */
+	if (rowcount != origcount + 6) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetRowCount", rowcount);
+		ret = false;
+		goto cleanup;
+	}
+
+	/* save away ID/instance values for first row header */
+	inst_id = (*(const uint64_t *)get_SPropValue_data(&(SRowSet.aRow[0].lpProps[4])));
+	inst_num = (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[0].lpProps[5])));
+
+	/* Collapse a row header */
+	CollapseRow(&(obj_test_folder), inst_id, &rowcount);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CollapseRow", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Checks the results are as expected */
+	GetRowCount(&(obj_test_folder), &rowcount);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRowCount", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	/* there are still six unique headers, but half of the real entries are under the first
+	   header (usually 10, unless we have some other rubbish hanging around), and when we
+	   collapse the first header row, that half disappear */
+	if (rowcount != origcount/2 + 6) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetRowCount", rowcount);
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Save the table collapse state */
+	GetCollapseState(&(obj_test_folder), inst_id, inst_num, &collapseState);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetCollapseState", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+
+	/* Expand a category */
+	ExpandRow(&(obj_test_folder), inst_id, 20, &SRowSet, &rowcount);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "ExpandRow", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Checks the results are as expected */
+	GetRowCount(&(obj_test_folder), &rowcount);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRowCount", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRowCount", GetLastError());
+		ret = false;
+		goto cleanup;
+	}
+	/* we've expanded the first header row, so we now get all the entries plus the 6 headers */
+	if (rowcount != origcount + 6) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetRowCount", rowcount);
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Restore the collapse state  */
+	SetCollapseState(&(obj_test_folder), &collapseState, &bookmark);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetCollapseState", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Checks the results are as expected */
+	GetRowCount(&(obj_test_folder), &rowcount);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRowCount", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	/* back to the situation with the first heading collapsed */
+	if (rowcount != origcount/2 + 6) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetRowCount", rowcount);
+		ret = false;
+		goto cleanup;
+	}
+
+ cleanup:
+	if (bookmark) {
+		FreeBookmark(&(obj_test_folder), bookmark);
+	}
+
+	/* Release */
+	mapi_object_release(&obj_htable);
+	mapi_object_release(&(obj_test_folder));
+	mapitest_oxctable_cleanup(mt);
+
+	return ret;
 }

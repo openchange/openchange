@@ -691,14 +691,20 @@ System Attendant Private Interface
 			op_MAPI_GetNamesFromIDs		= 0x55,
 			op_MAPI_GetIDsFromNames		= 0x56,
 			op_MAPI_EmptyFolder		= 0x58,
+			op_MAPI_ExpandRow		= 0x59,
+			op_MAPI_CollapseRow		= 0x5a,
 			op_MAPI_CommitStream		= 0x5d,
 			op_MAPI_GetStreamSize		= 0x5e,
 			op_MAPI_QueryNamesFromIDs	= 0x5f,
 			op_MAPI_CopyProperties		= 0x67,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
+			op_MAPI_GetCollapseState	= 0x6b,
+			op_MAPI_SetCollapseState	= 0x6c,
 			op_MAPI_GetTransportFolder	= 0x6d,
+			op_MAPI_ResetTable		= 0x81,
 			op_MAPI_GetLocalReplicaIds	= 0x7f,
 			op_MAPI_OpenPublicFolderByName	= 0x87,
+			op_MAPI_FreeBookmark		= 0x89,
 			op_MAPI_Logon			= 0xfe
 		} MAPI_OPNUM;
 
@@ -1151,12 +1157,22 @@ System Attendant Private Interface
 	} SSortOrderSet;
 
         typedef [flag(NDR_NOALIGN)]struct {
-		uint8		unknown;
+		uint8		SortTableFlags;
 		SSortOrderSet	lpSortCriteria;
         } SortTable_req;
 
+	typedef [enum8bit] enum {
+		TBLSTAT_COMPLETE	= 0x0,
+		TBLSTAT_SORTING		= 0x9,
+		TBLSTAT_SORT_ERROR	= 0xA,
+		TBLSTAT_SETTING_COLS	= 0xB,
+		TBLSTAT_SETCOL_ERROR	= 0xD,
+		TBLSTAT_RESTRICTING	= 0xE,
+		TBLSTAT_RESTRICT_ERROR	= 0xF
+	} TableStatus;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		TableStatus	TableStatus;
 	} SortTable_repl;
 
 	/**************************/
@@ -1324,17 +1340,6 @@ System Attendant Private Interface
 	/* EcDoRpc Function 0x16  */
 	typedef [flag(NDR_NOALIGN)] struct {
 	} GetStatus_req;
-
-
-	typedef [enum8bit] enum {
-		TBLSTAT_COMPLETE	= 0x0,
-		TBLSTAT_SORTING		= 0x9,
-		TBLSTAT_SORT_ERROR	= 0xA,
-		TBLSTAT_SETTING_COLS	= 0xB,
-		TBLSTAT_SETCOL_ERROR	= 0xD,
-		TBLSTAT_RESTRICTING	= 0xE,
-		TBLSTAT_RESTRICT_ERROR	= 0xF
-	} TableStatus;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		TableStatus	TableStatus;
@@ -2032,6 +2037,29 @@ System Attendant Private Interface
 	} EmptyFolder_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x59 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		MaxRowCount;
+		hyper		CategoryId;
+	} ExpandRow_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		ExpandedRowCount;
+		uint16		RowCount;
+		[flag(NDR_REMAINING)]DATA_BLOB  RowData;
+	} ExpandRow_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x5a */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		CategoryId;
+	} CollapseRow_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		CollapsedRowCount;
+	} CollapseRow_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x5d */
 	typedef [flag(NDR_NOALIGN)] struct {
 	} CommitStream_req;
@@ -2104,6 +2132,28 @@ System Attendant Private Interface
 	} GetReceiveFolderTable_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x6b */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		RowId;
+	  	uint32		RowInstanceNumber;
+	} GetCollapseState_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		SBinary_short	CollapseState;
+	} GetCollapseState_repl;
+
+
+	/*************************/
+	/* EcDoRpc Function 0x6c */
+	typedef [flag(NDR_NOALIGN)] struct {
+		SBinary_short	CollapseState;
+	} SetCollapseState_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		SBinary_short	bookmark;
+	} SetCollapseState_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x6d */
 	typedef [flag(NDR_NOALIGN)] struct {
 	} GetTransportFolder_req;
@@ -2124,6 +2174,16 @@ System Attendant Private Interface
 	} GetLocalReplicaIds_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x81 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		/* no args */
+	} ResetTable_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		/* no args */
+	} ResetTable_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x87 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
@@ -2134,6 +2194,16 @@ System Attendant Private Interface
 		boolean8	HasRules;
 		boolean8	IsGhosted;
 	} OpenPublicFolderByName_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x89 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		SBinary_short	bookmark;
+	} FreeBookmark_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		/* no args */
+	} FreeBookmark_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0xFE */
@@ -2267,14 +2337,20 @@ System Attendant Private Interface
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
+		[case(op_MAPI_ExpandRow)] ExpandRow_req mapi_ExpandRow;
+		[case(op_MAPI_CollapseRow)] CollapseRow_req mapi_CollapseRow;
 		[case(op_MAPI_CommitStream)] CommitStream_req mapi_CommitStream;
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_req mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_req mapi_QueryNamesFromIDs;
 		[case(op_MAPI_CopyProperties)] CopyProperties_req mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
+		[case(op_MAPI_GetCollapseState)] GetCollapseState_req mapi_GetCollapseState;
+		[case(op_MAPI_SetCollapseState)] SetCollapseState_req mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_req mapi_GetTransportFolder;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_req mapi_GetLocalReplicaIds;
+		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
+		[case(op_MAPI_FreeBookmark)] FreeBookmark_req mapi_FreeBookmark;
 		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
 	} EcDoRpc_MAPI_REQ_UNION;
 
@@ -2290,7 +2366,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetPropList)] GetPropList_repl mapi_GetPropList;
 		[case(op_MAPI_SetProps)] SetProps_repl mapi_SetProps;
 		[case(op_MAPI_DeleteProps)] DeleteProps_repl mapi_DeleteProps;
-		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_repl mapi_SaveChangesMessage;		
+		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_repl mapi_SaveChangesMessage;
 		[case(op_MAPI_RemoveAllRecipients)] RemoveAllRecipients_repl mapi_RemoveAllRecipients;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
 		[case(op_MAPI_ReadRecipients)] ReadRecipients_repl mapi_ReadRecipients;
@@ -2344,14 +2420,20 @@ System Attendant Private Interface
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;
+		[case(op_MAPI_ExpandRow)] ExpandRow_repl mapi_ExpandRow;
+		[case(op_MAPI_CollapseRow)] CollapseRow_repl mapi_CollapseRow;
 		[case(op_MAPI_CommitStream)] CommitStream_repl mapi_CommitStream;
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_repl mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_repl mapi_QueryNamesFromIDs;
 		[case(op_MAPI_CopyProperties)] CopyProperties_repl mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
+		[case(op_MAPI_GetCollapseState)] GetCollapseState_repl mapi_GetCollapseState;
+		[case(op_MAPI_SetCollapseState)] SetCollapseState_repl mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_repl mapi_GetTransportFolder;
+		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;
+		[case(op_MAPI_FreeBookmark)] FreeBookmark_repl mapi_FreeBookmark;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;
 
 	} EcDoRpc_MAPI_REPL_UNION;

@@ -2,6 +2,7 @@
    OpenChange MAPI implementation.
 
    Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Brad Hards 2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,6 +39,7 @@
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_W_ERROR_RETURNED: Problem encountered while trying to set
    one or more properties
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -60,6 +62,7 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("SetColumns");
@@ -124,6 +127,7 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
 
@@ -142,6 +146,7 @@ _PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table,
 	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("GetRowCount");
@@ -195,6 +200,7 @@ _PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
 
@@ -217,6 +223,7 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("QueryRows");
@@ -276,6 +283,7 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
@@ -296,6 +304,7 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 	mapi_ctx_t			*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("QueryColumns");
@@ -355,6 +364,7 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
 
@@ -362,7 +372,7 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 */
 _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table, 
 				 enum BOOKMARK origin, 
-				 uint32_t offset, uint32_t *row)
+				 int32_t offset, uint32_t *row)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -435,6 +445,7 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_E_INVALID_BOOKMARK: The bookmark specified is invalid or
      beyond the last row requested
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -534,8 +545,7 @@ _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_BOOKMARK: The bookmark specified is invalid or
-   beyond the last row requested
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
 
@@ -608,6 +618,7 @@ _PUBLIC_ enum MAPISTATUS SeekRowApprox(mapi_object_t *obj_table,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
    
@@ -683,6 +694,95 @@ _PUBLIC_ enum MAPISTATUS CreateBookmark(mapi_object_t *obj_table,
 
 
 /**
+   \details Release the resources associated with a bookmark
+
+   \param obj_table the table the bookmark is associated to
+   \param bkPosition the bookmark to be freed
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
+   - MAPI_E_INVALID_BOOKMARK: The bookmark specified is invalid or
+     beyond the last row requested
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+ 
+   \sa CreateBookmark
+*/
+_PUBLIC_ enum MAPISTATUS FreeBookmark(mapi_object_t *obj_table, 
+				      uint32_t bkPosition)
+{
+	mapi_object_table_t		*table;
+	mapi_object_bookmark_t		*bookmark;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct FreeBookmark_req		request;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("FreeBookmark");
+
+	table = (mapi_object_table_t *)obj_table->private_data;
+	bookmark = table->bookmark;
+
+	/* Sanity check */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!bookmark, MAPI_E_INVALID_BOOKMARK, NULL);
+	MAPI_RETVAL_IF(bkPosition > table->bk_last, MAPI_E_INVALID_BOOKMARK, NULL);
+
+	while (bookmark) {
+		if (bookmark->index == bkPosition) {
+			if (bookmark->index == table->bk_last) {
+				table->bk_last--;
+			}
+			size = 0;
+
+			/* Fill the FreeBookmark operation */
+			request.bookmark.cb = bookmark->bin.cb;
+			size += sizeof (uint16_t);
+			request.bookmark.lpb = bookmark->bin.lpb;
+			size += bookmark->bin.cb;
+
+			/* Fill the MAPI_REQ request */
+			mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+			mapi_req->opnum = op_MAPI_FreeBookmark;
+			mapi_req->logon_id = 0;
+			mapi_req->handle_idx = 0;
+			mapi_req->u.mapi_FreeBookmark = request;
+			size += 5;
+
+			/* Fill the mapi_request structure */
+			mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+			mapi_request->mapi_len = size + sizeof (uint32_t);
+			mapi_request->length = size;
+			mapi_request->mapi_req = mapi_req;
+			mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+			mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+
+			status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+			MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+			retval = mapi_response->mapi_repl->error_code;
+			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+			MAPIFreeBuffer(bookmark->bin.lpb);
+			DLIST_REMOVE(table->bookmark, bookmark);
+			return MAPI_E_SUCCESS;
+		}
+		bookmark = bookmark->next;
+	}
+	return MAPI_E_INVALID_BOOKMARK;
+}
+
+
+/**
    \details Order the rows of the table based on a criteria
 
    \param obj_table the table we are ordering rows on
@@ -691,7 +791,7 @@ _PUBLIC_ enum MAPISTATUS CreateBookmark(mapi_object_t *obj_table,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_PARAMETER: lpSortCriteria is NULL
+   - MAPI_E_INVALID_PARAMETER: obj_table or lpSortCriteria is NULL
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
  */
@@ -717,7 +817,7 @@ _PUBLIC_ enum MAPISTATUS SortTable(mapi_object_t *obj_table,
 
 	/* Fill the SortTable operation */
 	size = 0;
-	request.unknown = 0;
+	request.SortTableFlags = 0;
 	size += sizeof (uint8_t);
 	request.lpSortCriteria.cSorts = lpSortCriteria->cSorts;
 	size += sizeof (uint16_t);
@@ -815,6 +915,64 @@ uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
 	return (size);
 }
 
+/**
+   \details Removes all filters that are currently on a table
+
+   \param obj_table the table object to reset
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa Restrict
+*/
+_PUBLIC_ enum MAPISTATUS Reset(mapi_object_t *obj_table)
+{
+	mapi_ctx_t		*mapi_ctx;
+	TALLOC_CTX		*mem_ctx;
+	uint32_t		size;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("Reset");
+
+	size = 0;
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_ResetTable;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
 
 /**
    \details Applies a filter to a table, reducing the row set to only
@@ -823,15 +981,19 @@ uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
    \param obj the object we are filtering
    \param res the filters we want to apply
 
+   Unlike MAPI, you don't pass a null restriction argument to remove 
+   the current restrictions. Use Reset() instead.
+
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
 
-   \sa QueryRows
+   \sa QueryRows, Reset
 */
-_PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj, struct mapi_SRestriction *res)
+_PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table, struct mapi_SRestriction *res)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -845,6 +1007,7 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj, struct mapi_SRestriction *
 	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!res, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
@@ -874,7 +1037,7 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj, struct mapi_SRestriction *
 	mapi_request->length = size;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
-	mapi_request->handles[0] = mapi_object_get_handle(obj);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
@@ -882,6 +1045,7 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj, struct mapi_SRestriction *
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_Restrict;
+	/* TODO: there is some stuff to decode in the reply */
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -913,6 +1077,7 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj, struct mapi_SRestriction *
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
      beyond the last row requested.
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -1029,6 +1194,7 @@ _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
    - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
      beyond the last row requested.
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -1101,8 +1267,7 @@ _PUBLIC_ enum MAPISTATUS GetStatus(mapi_object_t *obj_table, uint8_t *TableStatu
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
-     beyond the last row requested.
+   - MAPI_E_INVALID_PARAMETER: obj_table or TableStatus are null
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
  */
@@ -1151,6 +1316,400 @@ _PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
 	/* Retrieve TableStatus */
 	reply = &mapi_response->mapi_repl->u.mapi_Abort;
 	*TableStatus = reply->TableStatus;
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Expand a collapsed row in a table
+
+   After a contents table has been sorted and categorized using
+   SortTable, rows can be expanded and collapsed (using ExpandRow and
+   CollapseRow repectively).
+
+   \param obj_table the table we are collapsing the category in.
+   \param categoryId the row identification for the heading row for
+   the category being expanded.
+   \param maxRows the maximum number of rows to retrieve (can be zero)
+   \param rowData (result) the data rows under this category heading
+   \param expandedRowCount (result) the number of rows that were added
+   to the table when the row was expanded
+
+   You obtain the categoryId argument from the PR_INST_ID property of
+   the heading row for the category that is being collapsed.
+
+   The maxRows argument specifies the upper limit on how many rows to
+   return (as rowData) when the category is expanded. The
+   expandedRowCount argument returns the number of rows that were
+   added to the table. As an example, consider a collapsed category
+   with 8 entries. If you set maxRows to 3, then rowData will contain
+   the data for the first three rows, and expandedRowCount will be set
+   to 8. If you now use QueryRows(), you can read the 5 additional
+   rows. If you'd specified maxRows as 8 (or more), rowData would have
+   contained all 8 rows and expandedRowCount still would have been 8.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table, rowData or rowCount are NULL
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa CollapseRow
+ */
+_PUBLIC_ enum MAPISTATUS ExpandRow(mapi_object_t *obj_table, uint64_t categoryId,
+				   uint16_t maxRows, struct SRowSet *rowData,
+				   uint32_t *expandedRowCount)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct ExpandRow_req		request;
+	struct ExpandRow_repl		*reply;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	mapi_object_table_t		*table;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!rowData, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!expandedRowCount, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("ExpandRow");
+	size = 0;
+
+	/* Fill the ExpandRow operation */
+	request.MaxRowCount = maxRows;
+	size += sizeof (uint16_t);
+	request.CategoryId = categoryId;
+	size += sizeof (uint64_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_ExpandRow;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_ExpandRow = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* table contains mapitags from previous SetColumns */
+	table = (mapi_object_table_t *)obj_table->private_data;
+	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
+
+	/* Retrieve the rowData and expandedRowCount */
+	reply = &mapi_response->mapi_repl->u.mapi_ExpandRow;
+	rowData->cRows = reply->RowCount;
+	rowData->aRow = talloc_array((TALLOC_CTX *)table, struct SRow, reply->RowCount);
+	emsmdb_get_SRowSet((TALLOC_CTX *)table, rowData, &table->proptags, &reply->RowData);
+	*expandedRowCount = reply->ExpandedRowCount;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Collapse an expanded row in a table
+
+   After a contents table has been sorted and categorized using
+   SortTable, rows can be expanded and collapsed (using ExpandRow and
+   CollapseRow repectively).
+
+   \param obj_table the table we are collapsing the category in.
+   \param categoryId the row identification for the heading row for
+   the category being collapsed.
+   \param rowCount (result) the number of rows that were removed from the 
+   table when the row was collapsed.
+
+   You obtain the categoryId argument from the PR_INST_ID property of
+   the heading row for the category that is being collapsed.
+
+   If you pass rowCount as null, the number of rows will not be returned.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table is NULL
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa ExpandRow
+ */
+_PUBLIC_ enum MAPISTATUS CollapseRow(mapi_object_t *obj_table, uint64_t categoryId,
+				     uint32_t *rowCount)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct CollapseRow_req		request;
+	struct CollapseRow_repl		*reply;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("CollapseRow");
+	size = 0;
+
+	/* Fill the CollapseRow operation */
+	request.CategoryId = categoryId;
+	size += sizeof (uint64_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_CollapseRow;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_CollapseRow = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+	
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Retrieve the RowCount */
+	reply = &mapi_response->mapi_repl->u.mapi_CollapseRow;
+	*rowCount = reply->CollapsedRowCount;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+
+}
+
+/**
+   \details Get the Collapse State of a Table
+
+   After a contents table has been sorted and categorized using
+   SortTable, rows can be expanded and collapsed (using ExpandRow() and
+   CollapseRow() repectively). You can save the state of the table using
+   this function, and restore it using SetCollapseState.
+
+   \param obj_table the table we are retrieving the state from
+   \param rowId the row number for the cursor
+   \param rowInstanceNumber the instance number for the cursor
+   \param CollapseState (result) the returned table Collapse State
+
+   You obtain the row number and row instance number arguments from
+   the PR_INST_ID and  PR_INST_NUM properties of the row you want to
+   use as the cursor.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table or CollapseState are null
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa SetCollapseState
+ */
+_PUBLIC_ enum MAPISTATUS GetCollapseState(mapi_object_t *obj_table, uint64_t rowId,
+					  uint32_t rowInstanceNumber,
+					  struct SBinary_short *CollapseState)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetCollapseState_req	request;
+	struct GetCollapseState_repl	*reply;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("GetCollapseState");
+	size = 0;
+
+	/* Fill the GetCollapseState operation */
+	size = 0;
+	request.RowId = rowId;
+	size += sizeof (uint64_t);
+	request.RowInstanceNumber = rowInstanceNumber;
+	size += sizeof (uint32_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetCollapseState;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_GetCollapseState = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+	
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Retrieve the CollapseState */
+	reply = &mapi_response->mapi_repl->u.mapi_GetCollapseState;
+	CollapseState->cb = reply->CollapseState.cb;
+	CollapseState->lpb = talloc_array(mapi_ctx->session->emsmdb->ctx, uint8_t, reply->CollapseState.cb);
+	memcpy(CollapseState->lpb, reply->CollapseState.lpb, reply->CollapseState.cb);
+	
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Set the Collapse State of a Table
+
+   After a contents table has been sorted and categorized using
+   SortTable, rows can be expanded and collapsed (using ExpandRow() and
+   CollapseRow() repectively). You can save the state of the table using
+   GetCollapseState, and restore it using this function.
+
+   \param obj_table the table we are restoring the state for
+   \param CollapseState the Collapse State to restore
+   \param Bookmark (result) a bookmark specifying the current cursor position.
+
+   You obtain the row number and row instance number arguments from
+   the PR_INST_ID and  PR_INST_NUM properties of the row you want to
+   use as the cursor.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_table or CollapseState are null
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+
+   \sa GetCollapseState
+ */
+_PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
+					  struct SBinary_short *CollapseState,
+					  uint32_t *lpbkPosition)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SetCollapseState_req	request;
+	struct SetCollapseState_repl	*reply;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+	mapi_object_table_t	       	*mapi_table;
+	mapi_object_bookmark_t		*bookmark;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!CollapseState, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("SetCollapseState");
+	size = 0;
+
+	/* Fill the SetCollapseState operation */
+	size = 0;
+	request.CollapseState.cb = CollapseState->cb;
+	size += sizeof (uint16_t);
+	request.CollapseState.lpb = CollapseState->lpb;
+	size += CollapseState->cb;
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetCollapseState;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SetCollapseState = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
+	
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	reply = &mapi_response->mapi_repl->u.mapi_SetCollapseState;
+
+	mapi_table = (mapi_object_table_t *)obj_table->private_data;
+	MAPI_RETVAL_IF(!mapi_table, MAPI_E_INVALID_PARAMETER, mem_ctx);
+
+	/* Store the bookmark in the mapi_object_table private_data */
+	bookmark = talloc_zero((TALLOC_CTX *)mapi_table->bookmark, mapi_object_bookmark_t);
+	mapi_table->bk_last++;
+	bookmark->index = mapi_table->bk_last;
+	bookmark->bin.cb = reply->bookmark.cb;
+	bookmark->bin.lpb = talloc_array((TALLOC_CTX *)bookmark, uint8_t, reply->bookmark.cb);
+	memcpy(bookmark->bin.lpb, reply->bookmark.lpb, reply->bookmark.cb);
+
+	DLIST_ADD(mapi_table->bookmark, bookmark);
+
+	*lpbkPosition = mapi_table->bk_last;
+
+	obj_table->private_data = mapi_table;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }

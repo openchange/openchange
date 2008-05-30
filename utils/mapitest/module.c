@@ -165,9 +165,11 @@ _PUBLIC_ uint32_t module_oxctable_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "QUERYROWS", "Query Table Rows", mapitest_oxctable_QueryRows);
 	mapitest_suite_add_test(suite, "GETSTATUS", "Get Table Status", mapitest_oxctable_GetStatus);
 	mapitest_suite_add_test(suite, "SEEKROW", "Seek a row", mapitest_oxctable_SeekRow);
-	mapitest_suite_add_test(suite, "SEEKROW-APPROX", "Seek an approximative row", mapitest_oxctable_SeekRowApprox);
+	mapitest_suite_add_test(suite, "RESTRICT", "Apply filters to a table", mapitest_oxctable_Restrict);
+	mapitest_suite_add_test(suite, "SEEKROW-APPROX", "Seek an approximate row", mapitest_oxctable_SeekRowApprox);
 	mapitest_suite_add_test(suite, "CREATE-BOOKMARK", "Create a table bookmark", mapitest_oxctable_CreateBookmark);
 	mapitest_suite_add_test(suite, "SEEKROW-BOOKMARK", "Seek a row given a bookmark", mapitest_oxctable_SeekRowBookmark);
+	mapitest_suite_add_test(suite, "CATEGORY", "Expand/collapse category rows", mapitest_oxctable_Category);
 
 	mapitest_suite_register(mt, suite);
 	
@@ -254,7 +256,8 @@ _PUBLIC_ uint32_t module_noserver_init(struct mapitest *mt)
 
 	suite = mapitest_suite_init(mt, "NOSERVER", "No server operations", false);
 
-	mapitest_suite_add_test(suite, "LZFU", "Test LZFU operations", mapitest_noserver_lzfu);
+	mapitest_suite_add_test(suite, "LZFU", "Test Compressed RTF operations", mapitest_noserver_lzfu);
+	mapitest_suite_add_test(suite, "SROWSET", "Test SRowSet parsing", mapitest_noserver_srowset);
 
 	mapitest_suite_register(mt, suite);
 

@@ -108,7 +108,7 @@ _PUBLIC_ bool mapitest_oxcmsg_CreateMessage(struct mapitest *mt)
 
    \return true on success, otherwise false
  */
-_PUBLIC_ bool mapitest_oxcmsg_SetReadFlag(struct mapitest *mt)
+_PUBLIC_ bool mapitest_oxcmsg_SetMessageReadFlag(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	bool			ret;

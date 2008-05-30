@@ -640,7 +640,7 @@ System Attendant Private Interface
 			op_MAPI_RemoveAllRecipients	= 0xd,
 			op_MAPI_ModifyRecipients	= 0xe,
 			op_MAPI_ReadRecipients		= 0xf,
-			op_MAPI_SetReadFlags		= 0x11,
+			op_MAPI_SetMessageReadFlag	= 0x11,
 			op_MAPI_SetColumns		= 0x12,
 			op_MAPI_SortTable		= 0x13,
 			op_MAPI_Restrict		= 0x14,
@@ -696,6 +696,7 @@ System Attendant Private Interface
 			op_MAPI_CommitStream		= 0x5d,
 			op_MAPI_GetStreamSize		= 0x5e,
 			op_MAPI_QueryNamesFromIDs	= 0x5f,
+			op_MAPI_SetReadFlags		= 0x66,
 			op_MAPI_CopyProperties		= 0x67,
 			op_MAPI_GetReceiveFolderTable	= 0x68,
 			op_MAPI_GetCollapseState	= 0x6b,
@@ -1110,14 +1111,15 @@ System Attendant Private Interface
 	       	CLEAR_NRN_PENDING	= 0x40
 	} MSGFLAG_READ;
 
+	/* TODO: there is a variation that can provide "client data" here */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
 		MSGFLAG_READ	flags;
-	} SetReadFlags_req;
+	} SetMessageReadFlag_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		unknown;
-	} SetReadFlags_repl;
+	} SetMessageReadFlag_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x12 */
@@ -2089,6 +2091,28 @@ System Attendant Private Interface
 	} QueryNamesFromIDs_repl;
   
 	/*************************/
+	/* EcDoRpc Function 0x66 */
+	typedef [bitmap8bit] bitmap {
+		SuppressReceipt		= 0x1,	/* Cancel read receipt. set Read bit */
+		ClearReadFlag		= 0x4,	/* Clear the read bit. Requires |0x1 as well */
+		GenerateReadReceiptOnly	= 0x10, /* Send read report, don't change Read bit */
+		ClearNotifyRead		= 0x20, /* Clear the Notify Read */
+		ClearNotifyUnRead	= 0x40  /* Clear the Notify UnRead bit */
+	} ReadFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+ 		uint8		handle_idx;
+		boolean8	WantAsynchronous;
+	  	ReadFlags	ReadFlags;
+	  	uint16		MessageIdCount;
+	  	hyper		MessageIds[MessageIdCount];
+	} SetReadFlags_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8	PartialCompletion;
+	} SetReadFlags_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x67 */
 	typedef [bitmap8bit] bitmap {
 		CopyFlagsMove		= 0x1,	/* Move properties */
@@ -2284,7 +2308,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetProps)] SetProps_req mapi_SetProps;
 		[case(op_MAPI_DeleteProps)] DeleteProps_req mapi_DeleteProps;
 		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_req mapi_SaveChangesMessage;
-		[case(op_MAPI_SetReadFlags)] SetReadFlags_req mapi_SetReadFlags;
+		[case(op_MAPI_SetMessageReadFlag)] SetMessageReadFlag_req mapi_SetMessageReadFlag;
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
 		[case(op_MAPI_SortTable)] SortTable_req mapi_SortTable;
 		[case(op_MAPI_Restrict)] Restrict_req mapi_Restrict;
@@ -2370,7 +2394,7 @@ System Attendant Private Interface
 		[case(op_MAPI_RemoveAllRecipients)] RemoveAllRecipients_repl mapi_RemoveAllRecipients;
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
 		[case(op_MAPI_ReadRecipients)] ReadRecipients_repl mapi_ReadRecipients;
-		[case(op_MAPI_SetReadFlags)] SetReadFlags_repl mapi_SetReadFlags;
+		[case(op_MAPI_SetMessageReadFlag)] SetMessageReadFlag_repl mapi_SetMessageReadFlag;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
 		[case(op_MAPI_SortTable)] SortTable_repl mapi_SortTable;
 		[case(op_MAPI_Restrict)] Restrict_repl mapi_Restrict;

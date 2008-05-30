@@ -88,19 +88,19 @@ _PUBLIC_ bool mapitest_oxcmsg_CreateMessage(struct mapitest *mt)
 	return true;
 }
 
-#define	OXCMSG_SETREADFLAGS	"[OXCMSG] SetReadFlags"
+#define	OXCMSG_SETREADFLAGS	"[OXCMSG] SetMessageReadFlag"
 
 /**
-   \details Test the SetReadFlags (0x11) operation
+   \details Test the SetMessageReadFlag (0x11) operation
 
    This function:
 	-# Log on the user private mailbox
 	-# Open the Inbox folder
 	-# Create a tmp message
-	-# Play with SetReadFlags
+	-# Play with SetMessageReadFlag
 	-# Delete the message
 	
-   Note: We can test either SetReadFlags was effective by checking its
+   Note: We can test either SetMessageReadFlag was effective by checking its
    old/new value with GetProps on PR_MESSAGE_FLAGS property.
 
 
@@ -108,7 +108,7 @@ _PUBLIC_ bool mapitest_oxcmsg_CreateMessage(struct mapitest *mt)
 
    \return true on success, otherwise false
  */
-_PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
+_PUBLIC_ bool mapitest_oxcmsg_SetReadFlag(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	bool			ret;
@@ -143,7 +143,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 		return false;
 	}
 
-	/* Step 4. Play with SetReadFlags */
+	/* Step 4. Play with SetMessageReadFlag */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_MID, PR_MESSAGE_FLAGS);
 	ret = true;
 
@@ -159,8 +159,8 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 	MAPIFreeBuffer(lpProps);
 	
 	/* Set message flags as read */
-	retval = SetReadFlags(&obj_folder, &obj_message, MSGFLAG_READ);
-	mapitest_print(mt, "* %-35s: MSGFLAG_READ 0x%.8x\n", "SetReadFlags", GetLastError());
+	retval = SetMessageReadFlag(&obj_folder, &obj_message, MSGFLAG_READ);
+	mapitest_print(mt, "* %-35s: MSGFLAG_READ 0x%.8x\n", "SetMessageReadFlag", GetLastError());
 
 	/* Check if the operation was successful */
 	retval = GetProps(&obj_message, SPropTagArray, &lpProps, &cValues);
@@ -169,17 +169,17 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 	}
 
 	if (cValues > 1 && status != lpProps[1].value.l) {
-		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS changed\n", "SetReadFlags");
+		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS changed\n", "SetReadFlag");
 		status = lpProps[1].value.l;
 	} else {
-		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS failed\n", "SetReadFlags");
+		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS failed\n", "SetReadFlag");
 		return false;
 	}
 	MAPIFreeBuffer(lpProps);
 		
 	/* Set the message flags as submitted */
-	retval = SetReadFlags(&obj_folder, &obj_message, MSGFLAG_SUBMIT);
-	mapitest_print(mt, "* %-35s: MSGFLAG_SUBMIT 0x%.8x\n", "SetReadFlags", GetLastError());
+	retval = SetMessageReadFlag(&obj_folder, &obj_message, MSGFLAG_SUBMIT);
+	mapitest_print(mt, "* %-35s: MSGFLAG_SUBMIT 0x%.8x\n", "SetMessageReadFlag", GetLastError());
 	
 	/* Check if the operation was successful */
 	retval = GetProps(&obj_message, SPropTagArray, &lpProps, &cValues);
@@ -188,10 +188,10 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 	}
 
 	if (cValues > 1 && status != lpProps[1].value.l) {
-		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS changed\n", "SetReadFlags");
+		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS changed\n", "SetMessageReadFlag");
 		status = lpProps[1].value.l;
 	} else {
-		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS failed\n", "SetReadFlags");
+		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS failed\n", "SetMessageReadFlag");
 		return false;
 	}
 

@@ -3,7 +3,7 @@
 #
 # VARS
 #
-. `pwd $0`/../samba4_ver.sh
+. `dirname $0`/../samba4_ver.sh
 
 #
 # Error check
@@ -84,7 +84,7 @@ checkout() {
     fi
 
     echo "Step1: Fetching Samba4 latest GIT revision"
-    git-clone git://git.samba.org/samba.git samba4
+    git clone git://git.samba.org/samba.git samba4
     error_check $? "Step1"
 
     echo "Step2: Creating openchange local copy"

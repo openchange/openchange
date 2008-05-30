@@ -173,7 +173,7 @@ CPPFLAGS="$CPPFLAGS `$PKG_CONFIG --cflags-only-I samba-hostconfig`"
 AC_CHECK_HEADER([samba/version.h],, AC_MSG_ERROR([Could not find Samba4 headers. Re-run ./configure with --with-samba=XXX where
  XXX is the prefix that Samba4 was installed to.]))
 
-. `pwd $0`/samba4_ver.sh
+. `dirname $0`/samba4_ver.sh
 
 OC_CHECK_SAMBA_VERSION([4.0.0alpha4-GIT-$SAMBA4_GIT_REV])
 CPPFLAGS="$oc_save_CPPFLAGS"

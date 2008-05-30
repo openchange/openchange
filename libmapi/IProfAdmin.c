@@ -1141,10 +1141,10 @@ static bool set_profile_mvstr_attribute(const char *profname, struct SRowSet row
    using the \a username pattern passed as a parameter. The functions
    takes a callback parameter which will be called when the username
    checked matches several usernames. Private data needed by the
-   callback can be supplied using the private data pointer.
+   callback can be supplied using the private_data pointer.
 
    \code
-   typedef int (*mapi_callback_t) callback(struct SRowSet *, void *private);
+   typedef int (*mapi_callback_t) callback(struct SRowSet *, void *private_data);
    \endcode
    
    The callback returns the SRow element index within the SRowSet
@@ -1154,7 +1154,7 @@ static bool set_profile_mvstr_attribute(const char *profname, struct SRowSet row
    \param session the session context
    \param username the username for the network profile
    \param callback function pointer callback function
-   \param private context data that will be provided to the callback
+   \param privat_data context data that will be provided to the callback
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -1174,7 +1174,7 @@ static bool set_profile_mvstr_attribute(const char *profname, struct SRowSet row
    \sa OpenProfileStore, MAPILogonProvider, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, const char *username,
-					       mapi_profile_callback_t callback, const void *private)
+					       mapi_profile_callback_t callback, const void *private_data)
 {
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi;
@@ -1218,7 +1218,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 
 	/* if SRowSet count is superior than 1 an callback is specified, call it */
 	if (SRowSet->cRows > 1 && callback) {
-		index = callback(SRowSet, private);
+		index = callback(SRowSet, private_data);
 		MAPI_RETVAL_IF((index >= SRowSet->cRows), MAPI_E_USER_CANCEL, NULL);
 	}
 

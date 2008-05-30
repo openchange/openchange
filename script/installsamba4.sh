@@ -3,7 +3,7 @@
 #
 # VARS
 #
-GITREV="44d8b70"
+. `pwd $0`/../samba4_ver.sh
 
 #
 # Error check
@@ -92,8 +92,8 @@ checkout() {
     git checkout -b openchange origin/v4-0-test
     error_check $? "Step2"
 
-    echo "Step3: Revert to commit $GITREV"
-    git reset --hard $GITREV
+    echo "Step3: Revert to commit $SAMBA4_GIT_REV"
+    git reset --hard $SAMBA4_GIT_REV
     error_check $? "Step3"
 
     cd $OLD_PWD

@@ -729,6 +729,7 @@ System Attendant Private Interface
 			op_MAPI_GetCollapseState		= 0x6b,
 			op_MAPI_SetCollapseState		= 0x6c,
 			op_MAPI_GetTransportFolder		= 0x6d,
+			op_MAPI_RegisterOptions			= 0x6f,
 			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_GetLocalReplicaIds		= 0x7f,
 			op_MAPI_OpenPublicFolderByName		= 0x87,
@@ -2402,7 +2403,6 @@ System Attendant Private Interface
 		SBinary_short	CollapseState;
 	} GetCollapseState_repl;
 
-
 	/*************************/
 	/* EcDoRpc Function 0x6c */
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2421,6 +2421,23 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper		FolderId;
 	} GetTransportFolder_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x6f */
+	typedef [enum8bit,flag(NDR_NOALIGN)] enum {
+		OPTION_TYPE_RECIPIENT	= 0x1,
+		OPTION_TYPE_MESSAGE	= 0x2
+	} OPTIONDATA_ulFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		astring			transport;
+		OPTIONDATA_ulFlags     	type;
+	} RegisterOptions_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		OPTIONDATA_ulFlags     	ulFlags;
+		DATA_BLOB		data;
+	} RegisterOptions_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x7f */
@@ -2615,6 +2632,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_req mapi_GetCollapseState;
 		[case(op_MAPI_SetCollapseState)] SetCollapseState_req mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_req mapi_GetTransportFolder;
+		[case(op_MAPI_RegisterOptions)] RegisterOptions_req mapi_RegisterOptions;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_req mapi_GetLocalReplicaIds;
 		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
@@ -2706,6 +2724,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_repl mapi_GetCollapseState;
 		[case(op_MAPI_SetCollapseState)] SetCollapseState_repl mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_repl mapi_GetTransportFolder;
+		[case(op_MAPI_RegisterOptions)] RegisterOptions_repl mapi_RegisterOptions;
 		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;

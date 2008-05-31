@@ -78,8 +78,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
 	size += sizeof (uint32_t);
 	request.StoreState = 0;
 	size += sizeof (uint32_t);
-	request.LegacyDN = "";
-	size += 1;
+	request.LegacyDN = NULL;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);

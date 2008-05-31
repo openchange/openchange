@@ -2723,14 +2723,14 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0xFE */
-	typedef [enum8bit] enum {
+	typedef [public,bitmap8bit] bitmap {
 		Private		= 0x1,
 		UnderCover	= 0x2,
 		Ghosted		= 0x4,
 		SpIProcess	= 0x8
 	} LogonFlags;
 
-	typedef [bitmap32bit] bitmap {
+	typedef [public,bitmap32bit] bitmap {
 		PUBLIC				= 0x2,
 		HOME_LOGON			= 0x4,
 		TAKE_OWNERSHIP			= 0x8,
@@ -2740,11 +2740,11 @@ System Attendant Private Interface
 		USE_PER_MDB_REPLID_MAPPING	= 0x010000000
 	} OpenFlags;
 
-	typedef [bitmap32bit] bitmap {
+	typedef [public,bitmap32bit] bitmap {
 		STORE_HAS_SEARCHES		= 0x010000000
 	} StoreState;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [nopush,flag(NDR_NOALIGN)] struct {
 		LogonFlags	LogonFlags;
 		OpenFlags	OpenFlags;
 		StoreState	StoreState;

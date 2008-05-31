@@ -405,6 +405,33 @@ enum ndr_err_code ndr_pull_QueryRows_repl(struct ndr_pull *ndr, int ndr_flags, s
 }
 
 
+enum ndr_err_code ndr_push_Logon_req(struct ndr_push *ndr, int ndr_flags, const struct Logon_req *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_LogonFlags(ndr, NDR_SCALARS, r->LogonFlags));
+			NDR_CHECK(ndr_push_OpenFlags(ndr, NDR_SCALARS, r->OpenFlags));
+			NDR_CHECK(ndr_push_StoreState(ndr, NDR_SCALARS, r->StoreState));
+			if (r->LegacyDN && r->LegacyDN[0] != '\0') {
+				uint32_t _flags_save_string = ndr->flags;
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_SIZE2);
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->LegacyDN));
+				ndr->flags = _flags_save_string;
+			} else {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0));
+			}
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+
 _PUBLIC_ void ndr_print_SBinary_short(struct ndr_print *ndr, const char *name, const struct SBinary_short *r)
 {
 	ndr->print(ndr, "%-25s: SBinary_short cb=%u", name, (unsigned)r->cb);

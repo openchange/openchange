@@ -1154,7 +1154,7 @@ static bool set_profile_mvstr_attribute(const char *profname, struct SRowSet row
    \param session the session context
    \param username the username for the network profile
    \param callback function pointer callback function
-   \param privat_data context data that will be provided to the callback
+   \param private_data context data that will be provided to the callback
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 

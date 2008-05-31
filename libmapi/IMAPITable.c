@@ -612,7 +612,7 @@ _PUBLIC_ enum MAPISTATUS SeekRowApprox(mapi_object_t *obj_table,
    \details Marks the table current position
 
    \param obj_table the table we are creating a bookmark in
-   \param lpbkPosition pointer on the bookmark value. This bookmark
+   \param lpbkPosition pointer to the bookmark value. This bookmark
    can be passed in a call to the SeekRowBookmark method
 
    \note Developers should call GetLastError() to retrieve the last
@@ -978,7 +978,7 @@ _PUBLIC_ enum MAPISTATUS Reset(mapi_object_t *obj_table)
    \details Applies a filter to a table, reducing the row set to only
    those rows matching the specified criteria.
 
-   \param obj the object we are filtering
+   \param obj_table the object we are filtering
    \param res the filters we want to apply
 
    Unlike MAPI, you don't pass a null restriction argument to remove 
@@ -1618,7 +1618,8 @@ _PUBLIC_ enum MAPISTATUS GetCollapseState(mapi_object_t *obj_table, uint64_t row
 
    \param obj_table the table we are restoring the state for
    \param CollapseState the Collapse State to restore
-   \param Bookmark (result) a bookmark specifying the current cursor position.
+   \param lpbkPosition pointer to the bookmark value. This bookmark
+   can be passed in a call to the SeekRowBookmark method
 
    You obtain the row number and row instance number arguments from
    the PR_INST_ID and  PR_INST_NUM properties of the row you want to

@@ -740,8 +740,9 @@ System Attendant Private Interface
 			op_MAPI_SyncImportMessageMove		= 0x78,
 			op_MAPI_DeletePropertiesNoReplicate	= 0x7a,
 			op_MAPI_SyncOpenCollector		= 0x7e,
-			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_GetLocalReplicaIds		= 0x7f,
+			op_MAPI_SyncImportReadStateChanges	= 0x80,
+			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_OpenPublicFolderByName		= 0x87,
 			op_MAPI_FreeBookmark			= 0x89,
 			op_MAPI_Logon				= 0xfe
@@ -2625,6 +2626,22 @@ System Attendant Private Interface
 	} GetLocalReplicaIds_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x80 */
+// 	typedef [flag(NDR_NOALIGN)] struct {
+// 		uint16		MessageSize;
+// 		uint8		MessageId[MessageSize];
+// 		boolean8	MarkAsRead;
+// 	} MessageReadStates;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		MessageReadStateSize;
+		[subcontext(0),subcontext_size(MessageReadStateSize),flag(NDR_REMAINING)] DATA_BLOB MessageStates;
+	} SyncImportReadStateChanges_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} SyncImportReadStateChanges_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x81 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		/* no args */
@@ -2818,6 +2835,7 @@ System Attendant Private Interface
 		[case(op_MAPI_DeletePropertiesNoReplicate)] DeletePropertiesNoReplicate_req mapi_DeletePropertiesNoReplicate;
 		[case(op_MAPI_SyncOpenCollector)] SyncOpenCollector_req mapi_SyncOpenCollector;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_req mapi_GetLocalReplicaIds;
+		[case(op_MAPI_SyncImportReadStateChanges)] SyncImportReadStateChanges_req mapi_SyncImportReadStateChanges;
 		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_req mapi_FreeBookmark;
@@ -2921,6 +2939,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncOpenCollector)] SyncOpenCollector_repl mapi_SyncOpenCollector;
 		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
+		[case(op_MAPI_SyncImportReadStateChanges)] SyncImportReadStateChanges_repl mapi_SyncImportReadStateChanges;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_repl mapi_FreeBookmark;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;

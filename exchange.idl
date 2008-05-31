@@ -730,6 +730,7 @@ System Attendant Private Interface
 			op_MAPI_SetCollapseState		= 0x6c,
 			op_MAPI_GetTransportFolder		= 0x6d,
 			op_MAPI_RegisterOptions			= 0x6f,
+			op_MAPI_SyncConfigure			= 0x70,
 			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_GetLocalReplicaIds		= 0x7f,
 			op_MAPI_OpenPublicFolderByName		= 0x87,
@@ -2440,6 +2441,57 @@ System Attendant Private Interface
 	} RegisterOptions_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x70 */
+	typedef [enum8bit] enum {
+		Contents	= 0x1,
+		Hierarchy	= 0x2
+	} SynchronizationType;
+
+	typedef [bitmap8bit] bitmap {
+		SendOptions_Unicode		= 0x1,
+		SendOptions_ForUpload		= 0x3,
+		SendOptions_RecoverMode		= 0x4,
+		SendOptions_ForceUnicode	= 0x8,
+		SendOptions_Partial		= 0x10
+	} SendOptions;
+
+	typedef [bitmap16bit] bitmap {
+		SynchronizationFlag_Unicode			= 0x1,
+		SynchronizationFlag_NoDeletions			= 0x2,
+		SynchronizationFlag_NoSoftDeletions		= 0x4,
+	       	SynchronizationFlag_ReadState			= 0x8,
+	       	SynchronizationFlag_FAI				= 0x10,
+	       	SynchronizationFlag_Normal			= 0x20,
+	       	SynchronizationFlag_OnlySpecifiedProperties	= 0x80,
+	       	SynchronizationFlag_NoForeignIdentifiers	= 0x100,
+	       	SynchronizationFlag_Reserved			= 0x1000,
+	       	SynchronizationFlag_BestBody			= 0x2000,
+	       	SynchronizationFlag_IgnoreSpecifiedOnFAI	= 0x4000,
+	       	SynchronizationFlag_Progress			= 0x8000
+	} SynchronizationFlag;
+
+	typedef [bitmap32bit] bitmap {
+		Eid			= 0x00000001,
+		MessageSize		= 0x00000002,
+		Cn			= 0x00000004,
+	        OrderByDeliveryTime	= 0x00000008
+	} SynchronizationExtraFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8					handle_idx;
+		SynchronizationType			SynchronizationType;
+		SendOptions				SendOptions;
+		SynchronizationFlag			SynchronizationFlag;
+		uint16					RestrictionSize;
+ 		[subcontext(0),subcontext_size(RestrictionSize),flag(NDR_REMAINING)] DATA_BLOB	RestrictionData;
+		SynchronizationExtraFlags		SynchronizationExtraFlags;
+		mapi_SPropTagArray			PropertyTags;
+	} SyncConfigure_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} SyncConfigure_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x7f */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint32		IdCount;
@@ -2633,6 +2685,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetCollapseState)] SetCollapseState_req mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_req mapi_GetTransportFolder;
 		[case(op_MAPI_RegisterOptions)] RegisterOptions_req mapi_RegisterOptions;
+		[case(op_MAPI_SyncConfigure)] SyncConfigure_req mapi_SyncConfigure;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_req mapi_GetLocalReplicaIds;
 		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
@@ -2725,6 +2778,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetCollapseState)] SetCollapseState_repl mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_repl mapi_GetTransportFolder;
 		[case(op_MAPI_RegisterOptions)] RegisterOptions_repl mapi_RegisterOptions;
+		[case(op_MAPI_SyncConfigure)] SyncConfigure_repl mapi_SyncConfigure;
 		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;

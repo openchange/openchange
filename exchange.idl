@@ -729,6 +729,7 @@ System Attendant Private Interface
 			op_MAPI_GetCollapseState		= 0x6b,
 			op_MAPI_SetCollapseState		= 0x6c,
 			op_MAPI_GetTransportFolder		= 0x6d,
+			op_MAPI_Pending				= 0x6e,
 			op_MAPI_RegisterOptions			= 0x6f,
 			op_MAPI_SyncConfigure			= 0x70,
 			op_MAPI_SyncImportMessageChange		= 0x72,
@@ -2436,6 +2437,12 @@ System Attendant Private Interface
 	} GetTransportFolder_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x6e */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16	SessionIndex;
+	} Pending_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x6f */
 	typedef [enum8bit,flag(NDR_NOALIGN)] enum {
 		OPTION_TYPE_RECIPIENT	= 0x1,
@@ -2945,6 +2952,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetReadFlags)] SetReadFlags_repl mapi_SetReadFlags;
 		[case(op_MAPI_CopyProperties)] CopyProperties_repl mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
+		[case(op_MAPI_Pending)] Pending_repl mapi_Pending;
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_repl mapi_GetCollapseState;
 		[case(op_MAPI_SetCollapseState)] SetCollapseState_repl mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_repl mapi_GetTransportFolder;
@@ -2959,10 +2967,10 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncImportMessageMove)] SyncImportMessageMove_repl mapi_SyncImportMessageMove;
 		[case(op_MAPI_DeletePropertiesNoReplicate)] DeletePropertiesNoReplicate_repl mapi_DeletePropertiesNoReplicate;
 		[case(op_MAPI_SyncOpenCollector)] SyncOpenCollector_repl mapi_SyncOpenCollector;
-		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
-		[case(op_MAPI_SyncGetTransferState)] SyncGetTransferState_repl mapi_SyncGetTransferState;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
 		[case(op_MAPI_SyncImportReadStateChanges)] SyncImportReadStateChanges_repl mapi_SyncImportReadStateChanges;
+		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
+		[case(op_MAPI_SyncGetTransferState)] SyncGetTransferState_repl mapi_SyncGetTransferState;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_repl mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_repl mapi_FreeBookmark;

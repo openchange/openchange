@@ -733,6 +733,7 @@ System Attendant Private Interface
 			op_MAPI_SyncConfigure			= 0x70,
 			op_MAPI_SyncImportMessageChange		= 0x72,
 			op_MAPI_SyncImportHierarchyChange	= 0x73,
+			op_MAPI_SyncImportDeletes		= 0x74,
 			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_GetLocalReplicaIds		= 0x7f,
 			op_MAPI_OpenPublicFolderByName		= 0x87,
@@ -2522,6 +2523,16 @@ System Attendant Private Interface
 	} SyncImportHierarchyChange_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x74 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8		IsHierarchy;
+		mapi_SPropValue_array	PropertyValues;
+	} SyncImportDeletes_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} SyncImportDeletes_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x7f */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint32		IdCount;
@@ -2718,6 +2729,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncConfigure)] SyncConfigure_req mapi_SyncConfigure;
 		[case(op_MAPI_SyncImportMessageChange)] SyncImportMessageChange_req mapi_SyncImportMessageChange;
 		[case(op_MAPI_SyncImportHierarchyChange)] SyncImportHierarchyChange_req mapi_SyncImportHierarchyChange;
+		[case(op_MAPI_SyncImportDeletes)] SyncImportDeletes_req mapi_SyncImportDeletes;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_req mapi_GetLocalReplicaIds;
 		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
@@ -2813,6 +2825,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncConfigure)] SyncConfigure_repl mapi_SyncConfigure;
 		[case(op_MAPI_SyncImportMessageChange)] SyncImportMessageChange_repl mapi_SyncImportMessageChange;
 		[case(op_MAPI_SyncImportHierarchyChange)] SyncImportHierarchyChange_repl mapi_SyncImportHierarchyChange;
+		[case(op_MAPI_SyncImportDeletes)] SyncImportDeletes_repl mapi_SyncImportDeletes;
 		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;

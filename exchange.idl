@@ -732,6 +732,7 @@ System Attendant Private Interface
 			op_MAPI_RegisterOptions			= 0x6f,
 			op_MAPI_SyncConfigure			= 0x70,
 			op_MAPI_SyncImportMessageChange		= 0x72,
+			op_MAPI_SyncImportHierarchyChange	= 0x73,
 			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_GetLocalReplicaIds		= 0x7f,
 			op_MAPI_OpenPublicFolderByName		= 0x87,
@@ -2510,6 +2511,17 @@ System Attendant Private Interface
 	} SyncImportMessageChange_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x73 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		mapi_SPropValue_array	HierarchyValues;
+		mapi_SPropValue_array	PropertyValues;
+	} SyncImportHierarchyChange_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper			FolderId;
+	} SyncImportHierarchyChange_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x7f */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint32		IdCount;
@@ -2705,6 +2717,7 @@ System Attendant Private Interface
 		[case(op_MAPI_RegisterOptions)] RegisterOptions_req mapi_RegisterOptions;
 		[case(op_MAPI_SyncConfigure)] SyncConfigure_req mapi_SyncConfigure;
 		[case(op_MAPI_SyncImportMessageChange)] SyncImportMessageChange_req mapi_SyncImportMessageChange;
+		[case(op_MAPI_SyncImportHierarchyChange)] SyncImportHierarchyChange_req mapi_SyncImportHierarchyChange;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_req mapi_GetLocalReplicaIds;
 		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
@@ -2799,6 +2812,7 @@ System Attendant Private Interface
 		[case(op_MAPI_RegisterOptions)] RegisterOptions_repl mapi_RegisterOptions;
 		[case(op_MAPI_SyncConfigure)] SyncConfigure_repl mapi_SyncConfigure;
 		[case(op_MAPI_SyncImportMessageChange)] SyncImportMessageChange_repl mapi_SyncImportMessageChange;
+		[case(op_MAPI_SyncImportHierarchyChange)] SyncImportHierarchyChange_repl mapi_SyncImportHierarchyChange;
 		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;

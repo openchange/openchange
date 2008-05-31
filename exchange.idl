@@ -1112,8 +1112,14 @@ System Attendant Private Interface
 		uint8		padding;
 	} CreateMessage_req;
 
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
+		[case(0x1)] hyper	MessageId;
+	} CreateMessage_MessageId;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		padding;
+		boolean8						HasMessageId;
+		[switch_is(HasMessageId)] CreateMessage_MessageId	MessageId;
 	} CreateMessage_repl;
 
 	/*************************/

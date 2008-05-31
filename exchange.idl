@@ -1271,8 +1271,20 @@ System Attendant Private Interface
 		[flag(NDR_REMAINING)] DATA_BLOB clientdata;
 	} SetMessageReadFlag_req;
 
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
+		[case(0x1)] uint8	LogonId;
+	} SetMessageReadFlag_LogonId;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
+		[case(0x1)] uint8	ClientData[24];
+	} SetMessageReadFlag_ClientData;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		boolean8							ReadStatusChanged;
+		[switch_is(ReadStatusChanged)] SetMessageReadFlag_LogonId	LogonId;
+		[switch_is(ReadStatusChanged)] SetMessageReadFlag_ClientData	ClientData;
 	} SetMessageReadFlag_repl;
 
 	/*************************/

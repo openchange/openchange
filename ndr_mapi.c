@@ -384,70 +384,180 @@ _PUBLIC_ void ndr_print_fuzzyLevel(struct ndr_print *ndr, const char *name, uint
 }
 
 /*
- * We need to have user defined push,pull,print function for
- * SNotRestriction so we can workaround the no-pointer deep recursion
- * pb in pidl.
+ * Fake wrapper over mapi_SRestriction. Workaround the no-pointer deep
+ * recursion problem in pidl
  */
-
-enum ndr_err_code ndr_push_mapi_SNotRestriction(struct ndr_push *ndr, int ndr_flags, const struct mapi_SNotRestriction *r)
+enum ndr_err_code ndr_push_mapi_SRestriction_wrap(struct ndr_push *ndr, int ndr_flags, const struct mapi_SRestriction_wrap *r)
 {
-	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
-		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-		if (ndr->flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_push_align(ndr, 4));
-			NDR_CHECK(ndr_push_mapi_SRestriction_not(ndr, NDR_SCALARS, &r->res[0]));
-		}
-		if (ndr_flags & NDR_BUFFERS) {
-			NDR_CHECK(ndr_push_mapi_SRestriction_not(ndr, NDR_BUFFERS, &r->res[0]));
-		}
-		ndr->flags = _flags_save_STRUCT;
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-enum ndr_err_code  ndr_pull_mapi_SNotRestriction(struct ndr_pull *ndr, int ndr_flags, struct mapi_SNotRestriction *r)
-{
-	TALLOC_CTX *_mem_save_res_0;
-	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
-		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_pull_align(ndr, 4));
-			NDR_PULL_ALLOC_N(ndr, r->res, 1);
-			_mem_save_res_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->res, 0);
-			NDR_CHECK(ndr_pull_mapi_SRestriction_not(ndr, NDR_SCALARS, &r->res[0]));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_res_0, 0);
-		}
-		if (ndr_flags & NDR_BUFFERS) {
-			_mem_save_res_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->res, 0);
-			NDR_CHECK(ndr_pull_mapi_SRestriction_not(ndr, NDR_BUFFERS, &r->res[0]));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_res_0, 0);
-		}
-		ndr->flags = _flags_save_STRUCT;
-	}
-	return NDR_ERR_SUCCESS;
+	return ndr_push_mapi_SRestriction(ndr, NDR_SCALARS, (const struct mapi_SRestriction *)r);
 }
 
 
-_PUBLIC_ void ndr_print_mapi_SNotRestriction(struct ndr_print *ndr, const char *name, const struct mapi_SNotRestriction *r)
+enum ndr_err_code ndr_pull_mapi_SRestriction_wrap(struct ndr_pull *ndr, int ndr_flags, struct mapi_SRestriction_wrap *r)
 {
-	ndr_print_struct(ndr, name, "mapi_SNotRestriction");
-	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
-		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-		ndr->depth++;
-		ndr_print_mapi_SRestriction_not(ndr, "res", &r->res[0]);
-		ndr->depth--;
-		ndr->flags = _flags_save_STRUCT;
-	}
+	return ndr_pull_mapi_SRestriction(ndr, NDR_SCALARS|NDR_BUFFERS, (struct mapi_SRestriction *)r);
+}
+
+void ndr_print_mapi_SRestriction_wrap(struct ndr_print *ndr, const char *name, const struct mapi_SRestriction_wrap *r)
+{
+	ndr_print_mapi_SRestriction(ndr, name, (const struct mapi_SRestriction *)r);
+}
+
+/*
+ * Fake wrapper over mapi_SPropValue. Workaround the no-pointer deep
+ * recursion problem in pidl
+ */
+enum ndr_err_code ndr_push_mapi_SPropValue_wrap(struct ndr_push *ndr, int ndr_flags, const struct mapi_SPropValue_wrap *r)
+{
+	NDR_CHECK(ndr_push_align(ndr, 8));
+	return ndr_push_mapi_SPropValue(ndr, NDR_SCALARS, (const struct mapi_SPropValue *)r);
+}
+
+enum ndr_err_code ndr_pull_mapi_SPropValue_wrap(struct ndr_pull *ndr, int ndr_flags, struct mapi_SPropValue_wrap *r)
+{
+	return ndr_pull_mapi_SPropValue(ndr, NDR_SCALARS, (struct mapi_SPropValue *)r);
+}
+
+void ndr_print_mapi_SPropValue_wrap(struct ndr_print *ndr, const char *name, const struct mapi_SPropValue_wrap *r)
+{
+	return ndr_print_mapi_SPropValue(ndr, name, (const struct mapi_SPropValue *)r);
+}
+
+
+/*
+ * Fake wrapper over mapi_SPropValue_array. Workaround the no-pointer deep
+ * recursion problem in pidl
+ */
+enum ndr_err_code ndr_push_mapi_SPropValue_array_wrap(struct ndr_push *ndr, int ndr_flags, const struct mapi_SPropValue_array_wrap *r)
+{
+	NDR_CHECK(ndr_push_align(ndr, 8));
+	return ndr_push_mapi_SPropValue_array(ndr, NDR_SCALARS, (const struct mapi_SPropValue_array *)r);
+}
+
+enum ndr_err_code ndr_pull_mapi_SPropValue_array_wrap(struct ndr_pull *ndr, int ndr_flags, struct mapi_SPropValue_array_wrap *r)
+{
+	return ndr_pull_mapi_SPropValue_array(ndr, NDR_SCALARS, (struct mapi_SPropValue_array *)r);
+}
+
+void ndr_print_mapi_SPropValue_array_wrap(struct ndr_print *ndr, const char *name, const struct mapi_SPropValue_array_wrap *r)
+{
+	return ndr_print_mapi_SPropValue_array(ndr, name, (const struct mapi_SPropValue_array *)r);
 }
 
 enum ndr_err_code ndr_push_Release_req(struct ndr_push *ndr, int ndr_flags, const struct Release_req *r)
 {
 	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_RestrictionVariable(struct ndr_push *ndr, int ndr_flags, const union RestrictionVariable *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			switch (level) {
+				case 0x0: {
+					break; }
+
+				case 0x1: {
+					NDR_CHECK(ndr_push_mapi_SRestriction_comment(ndr, NDR_SCALARS, &r->res[0]));
+				break; }
+
+				default:
+					return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+			}
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			int level = ndr_push_get_switch_value(ndr, r);
+			switch (level) {
+				case 0x0:
+				break;
+
+				case 0x1:
+					if (r->res) {
+						NDR_CHECK(ndr_push_mapi_SRestriction_comment(ndr, NDR_BUFFERS, &r->res[0]));
+					}
+				break;
+
+				default:
+					return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code  ndr_pull_RestrictionVariable(struct ndr_pull *ndr, int ndr_flags, union RestrictionVariable *r)
+{
+	int level;
+	TALLOC_CTX *_mem_save_res_0;
+	level = ndr_pull_get_switch_value(ndr, r);
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+
+		if (ndr_flags & NDR_SCALARS) {
+			switch (level) {
+				case 0x0: {
+				break; }
+
+				case 0x1: {
+					NDR_CHECK(ndr_pull_align(ndr, 4));
+					NDR_PULL_ALLOC_N(ndr, r->res, 1);
+					_mem_save_res_0 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->res, 0);
+					NDR_CHECK(ndr_pull_mapi_SRestriction_comment(ndr, NDR_SCALARS, &r->res[0]));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_res_0, 0);
+				break; }
+
+				default:
+					return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+			}
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			switch (level) {
+				case 0x0:
+				break;
+
+				case 0x1:
+					if (r->res) {
+						_mem_save_res_0 = NDR_PULL_GET_MEM_CTX(ndr);
+						NDR_PULL_SET_MEM_CTX(ndr, r->res, 0);
+						NDR_CHECK(ndr_pull_mapi_SRestriction_comment(ndr, NDR_BUFFERS, &r->res[0]));
+						NDR_PULL_SET_MEM_CTX(ndr, _mem_save_res_0, 0);
+				break; }
+
+				default:
+					return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+
+_PUBLIC_ void ndr_print_RestrictionVariable(struct ndr_print *ndr, const char *name, const union RestrictionVariable *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "RestrictionVariable");
+	switch (level) {
+		case 0x0:
+		break;
+
+		case 0x1:
+			ndr_print_ptr(ndr, "res", r->res);
+			ndr->depth++;
+			if (r->res) {
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+				ndr_print_mapi_SRestriction_comment(ndr, "res", &r->res[0]);
+			}
+			ndr->depth--;
+		break;
+	}
 }
 
 enum ndr_err_code ndr_pull_Release_req(struct ndr_pull *ndr, int ndr_flags, struct Release_req *r)

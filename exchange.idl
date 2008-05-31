@@ -767,6 +767,93 @@ System Attendant Private Interface
 		GUID		lpguid[cValues];
 	} mapi_SGuidArray;
 
+	/******* part of the no-pointer deep recursion hack *******/
+	typedef [nopull,nopush,noprint,flag(NDR_NOALIGN)] struct {
+		uint8 wrap[0x8000];
+	} mapi_SRestriction_wrap;
+
+	typedef [nopush,nopull,noprint,flag(NDR_NOALIGN)] struct {
+		uint8	wrap[0x8000];
+	} mapi_SPropValue_wrap;
+
+	typedef [nopush,nopull,noprint,flag(NDR_NOALIGN)] struct {
+		uint8	wrap[0x8000];
+	} mapi_SPropValue_array_wrap;
+	/**********************************************************/	
+
+	typedef [enum8bit] enum {
+		OP_MOVE		= 0x1,
+		OP_COPY		= 0x2,
+		OP_REPLY	= 0x3,
+		OP_OOF_REPLY	= 0x4,
+		OP_DEFER_ACTION	= 0x5,
+		OP_BOUNCE	= 0x6,
+		OP_FORWARD	= 0x7,
+		OP_DELEGATE	= 0x8,
+		OP_TAG		= 0x9,
+		OP_DELETE	= 0xA,
+		OP_MARK_AS_READ	= 0xB
+	} ActionType;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8		FolderInThisStore;
+		SBinary_short		StoreEID;
+		SBinary_short		FolderEID;
+	} MoveCopy_Action;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper			ReplyTemplateFID;
+		hyper			ReplyTemplateMID;
+		GUID			ReplyTemplateGUID;			
+	} ReplyOOF_Action;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8				Reserved;
+		mapi_SPropValue_array_wrap	PropertyValue;
+	} RecipientBlock;
+
+	typedef [flag(NDR_NOALIGN)] enum {
+		BOUNCE_MESSAGE_TOO_LARGE	= 0x0000000d,
+		BOUNCE_MESSAGE_NOT_DISPLAYED	= 0x0000001f,
+		BOUNCE_MESSAGE_DENIED		= 0x00000026
+	} BounceCode;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16			RecipientCount;
+		RecipientBlock		RecipientBlock[RecipientCount];
+	} ForwardDelegate_Action;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(OP_MOVE)]		MoveCopy_Action			MoveAction;
+		[case(OP_COPY)]		MoveCopy_Action			CopyAction;
+		[case(OP_REPLY)]	ReplyOOF_Action			ReplyAction;
+		[case(OP_OOF_REPLY)]	ReplyOOF_Action			ReplyOOFAction;
+		[case(OP_DEFER_ACTION)][flag(NDR_REMAINING)] DATA_BLOB	DeferAction;
+		[case(OP_BOUNCE)]	BounceCode			BounceCode;
+		[case(OP_TAG)]		mapi_SPropValue_wrap	       	PropValue;
+		[case(OP_FORWARD)]	ForwardDelegate_Action		ForwardAction;
+		[case(OP_DELEGATE)]	ForwardDelegate_Action		DelegateAction;
+		[case(OP_DELETE)];
+		[case(OP_MARK_AS_READ)];
+	} ActionData;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		ActionType				ActionType;
+		uint32					ActionFlavor;
+		uint32					ActionFlags;
+		[switch_is(ActionType)] ActionData	ActionDataBuffer;
+	} ActionBlockData;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16					ActionLength;
+		[subcontext(0),subcontext_size(ActionLength),flag(NDR_REMAINING)] ActionBlockData ActionBlockData;
+	} ActionBlock;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		count;
+		ActionBlock	ActionBlock[count];
+	} RuleAction;
+
 	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
 		[case(PT_I2)]		uint16			i;
 		[case(PT_LONG)]     	uint32			l;
@@ -778,6 +865,8 @@ System Attendant Private Interface
 		[case(PT_UNICODE)][flag(STR_NULLTERM)] string	lpszW;
 		[case(PT_SYSTIME)]	FILETIME		ft;
 		[case(PT_CLSID)]	GUID			lpguid;
+ 		[case(PT_SRESTRICT)]	mapi_SRestriction_wrap 	Restrictions;
+		[case(PT_ACTIONS)]	RuleAction		RuleAction;
   		[case(PT_BINARY)]	SBinary_short		bin;
 		[case(PT_SVREID)]      	SBinary_short		bin;
 		[case(PT_MV_LONG)]	mapi_MV_LONG_STRUCT	MVl;	
@@ -792,7 +881,7 @@ System Attendant Private Interface
 		[switch_is(ulPropTag & 0xFFFF)] mapi_SPropValue_CTR value; 
 	} mapi_SPropValue;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint16					cValues;
 		[flag(NDR_REMAINING)]mapi_SPropValue	lpProps[cValues];
 	} mapi_SPropValue_array;
@@ -1218,8 +1307,8 @@ System Attendant Private Interface
     		mapi_SRestriction_or	res[cRes];
 	} mapi_SOrRestriction;
 
-	typedef [nopull,nopush,noprint,flag(NDR_NOALIGN)] struct {
-		mapi_SRestriction_not	*res;
+	typedef [flag(NDR_NOALIGN)] struct {
+		mapi_SRestriction_wrap	res;
 	} mapi_SNotRestriction;
 
  	typedef [noprint, bitmap32bit] bitmap {
@@ -1285,12 +1374,16 @@ System Attendant Private Interface
   		mapi_SRestriction_sub  	res[ulSubObject - ulSubObject + 1]; /* nasty hack - generates fake pointer */
 	} mapi_SSubRestriction;
 
+	typedef [nopush,nopull,noprint,nodiscriminant] union {
+		[case(0x0)];
+		[case(0x1)] mapi_SRestriction_comment *res;
+	} RestrictionVariable;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8				cValues;
-		uint16				cRes;
-		uint16				unknown;
-		mapi_SRestriction_comment	res[cRes];
-		mapi_SPropValue			lpProp[cValues];
+		uint8				TaggedValuesCount;
+		mapi_SPropValue			TaggedValues[TaggedValuesCount];
+		boolean8			RestrictionPresent;
+		[switch_is(RestrictionPresent)] RestrictionVariable Restriction;
 	} mapi_SCommentRestriction;
 
 	typedef [nodiscriminant] union {
@@ -1307,7 +1400,7 @@ System Attendant Private Interface
 		[case(RES_COMMENT)]		mapi_SCommentRestriction	resComment;
 	} mapi_SRestriction_CTR;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint8 rt;
 		[switch_is(rt)] mapi_SRestriction_CTR res;
 	} mapi_SRestriction;
@@ -1321,11 +1414,6 @@ System Attendant Private Interface
 		uint8 rt;
 		[switch_is(rt)] mapi_SRestriction_CTR res;
 	} mapi_SRestriction_or;
-
-	typedef [public,flag(NDR_NOALIGN)] struct _mapi_SRestriction {
-		uint8 rt;
-		[switch_is(rt)] mapi_SRestriction_CTR res;
-	} mapi_SRestriction_not;
 
 	typedef [public,flag(NDR_NOALIGN)] struct _mapi_SRestriction {
 		uint8 rt;

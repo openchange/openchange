@@ -1496,7 +1496,7 @@ System Attendant Private Interface
 		uint16		RowCount;
 	} QueryRows_req;
 
-	typedef [nopull,flag(NDR_NOALIGN)] struct {
+	typedef [nopush,nopull,flag(NDR_NOALIGN)] struct {
 		uint8		Origin;
 		uint16		RowCount;
 		[flag(NDR_REMAINING)]DATA_BLOB	RowData;
@@ -2224,7 +2224,6 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x55 */
-
 	typedef [enum8bit] enum {
 		MNID_ID = 0,
 		MNID_STRING = 1
@@ -2720,7 +2719,6 @@ System Attendant Private Interface
 	} FreeBookmark_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		/* no args */
 	} FreeBookmark_repl;
 
 	/*************************/
@@ -3010,7 +3008,7 @@ System Attendant Private Interface
 		[switch_is(opnum)] EcDoRpc_MAPI_REQ_UNION u;
 	} EcDoRpc_MAPI_REQ;
 
-	typedef [public,nopull,noprint,flag(NDR_NOALIGN)] struct {
+	typedef [public,nopush,nopull,noprint,flag(NDR_NOALIGN)] struct {
 		uint8     	opnum;
 		uint8		handle_idx;
 		MAPISTATUS	error_code;
@@ -3102,6 +3100,33 @@ System Attendant Private Interface
 	/* Function 0x09 */
 	void EcDoRpcExt();
 
+	/*****************/
+	/* Function 0xa  */
+	MAPISTATUS EcDoConnectEx(
+		[out]				policy_handle	*handle,
+		[in,string,charset(DOS)]	uint8		szUserDN[],
+		[in]				uint32		ulFlags,
+		[in]				uint32		ulConMod,
+		[in]				uint32		cbLimit,
+		[in]				uint32		ulCpid,
+		[in]				uint32		ulLcidString,
+		[in]				uint32		ulLcidSort,
+		[in]				uint32		ulIcxrLink,
+		[in]				uint16		usFCanConvertCodePages,
+		[out]				uint32		*pcmsPollsMax,
+		[out]				uint32		*pcRetry,
+		[out]				uint32		*pcmsRetryDelay,
+		[out]				uint32		*picxr,
+		[out,unique,string,charset(DOS)]uint8		*szDNPrefix,
+		[out,unique,string,charset(DOS)]uint8		*szDisplayName,
+		[in]				uint16		rgwClientVersion[3],
+		[out]				uint16		rgwServerVersion[3],
+		[out]				uint16		rgwBestVersion[3],
+		[in,out]			uint32		*pulTimeStamp,
+		[in][subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB rgbAuxIn,
+		[in,out][range(0x0,0x1008)]	uint32		*pcbAuxOut,
+		[in][flag(NDR_REMAINING)] DATA_BLOB data
+		);
 }
 
 [

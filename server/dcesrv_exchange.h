@@ -234,6 +234,8 @@ void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_
 		       struct EcRNetGetDCName *r);
 void dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcDoRpcExt *r);
+enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				     struct EcDoConnectEx *r);
 void dcesrv_unknown_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct unknown_dummy *r);
 NTSTATUS init_module(void);

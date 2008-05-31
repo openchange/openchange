@@ -973,6 +973,15 @@ void dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+/*
+  EcDoConnectEx
+ */
+enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				     struct EcDoConnectEx *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
 /* 
    endpoint server for the exchange_unknown pipe
 */

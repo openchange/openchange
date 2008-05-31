@@ -86,12 +86,7 @@ void ndr_print_mapi_response(struct ndr_print *ndr, const char *name, const stru
 		ndr->print(ndr, "%s: ARRAY(%d)", name, r->length - 2);
 		ndr->depth++;
 		for (cntr_mapi_repl_0=0; r->mapi_repl[cntr_mapi_repl_0].opnum; cntr_mapi_repl_0++) {
-			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_mapi_repl_0);
-			if (idx_0) {
-				ndr_print_EcDoRpc_MAPI_REPL(ndr, "mapi_repl", &r->mapi_repl[cntr_mapi_repl_0]);
-				free(idx_0);
-			} 
+			ndr_print_EcDoRpc_MAPI_REPL(ndr, "mapi_repl", &r->mapi_repl[cntr_mapi_repl_0]);
 		}
 		ndr->depth--;
 	}
@@ -142,27 +137,33 @@ enum ndr_err_code ndr_push_mapi_request(struct ndr_push *ndr, int ndr_flags, con
 	return NDR_ERR_SUCCESS;
 }
 
-enum ndr_err_code ndr_push_mapi_response(struct ndr_push *ndr, int ndr_flags, const struct mapi_response *_blob)
+enum ndr_err_code ndr_push_mapi_response(struct ndr_push *ndr, int ndr_flags, const struct mapi_response *r)
 {
-	uint32_t	remaining_length;
-	struct mapi_response blob = *_blob;
-	uint32_t i,count;
+	uint32_t	cntr_mapi_repl_0;
+	uint32_t	count;
 
-	if (!(ndr->flags & LIBNDR_FLAG_REMAINING)) {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.mapi_len));
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->length));
+
+	if (r->length > sizeof (uint16_t)) {
+		for (count = 0; ndr->offset < r->length - 2; count++) {
+			NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL(ndr, NDR_SCALARS, &r->mapi_repl[count]));
+		}
+
+		/* hack adding padding bytes */
+		count = r->length - ndr->offset;
+		if (count > 0) {
+			for (cntr_mapi_repl_0 =0; cntr_mapi_repl_0 < count; cntr_mapi_repl_0++) {
+				NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, 0));
+			}
+		}
 	}
-	blob.length += 2;
-	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, blob.length));
 
-	blob.mapi_len -= 2;
-	blob.length -= 2;
-
-	remaining_length = blob.mapi_len - blob.length;
-
-	count = remaining_length / sizeof(uint32_t);
-	for (i=0; i < count; i++) {
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, blob.handles[i]));
+	count = (r->mapi_len - r->length) / sizeof (uint32_t);
+	for (cntr_mapi_repl_0 = 0; cntr_mapi_repl_0 <count; cntr_mapi_repl_0++) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->handles[cntr_mapi_repl_0]));
 	}
+
 	obfuscate_data(ndr->data, ndr->alloc_size, 0xA5);
 
 	return NDR_ERR_SUCCESS;
@@ -207,12 +208,15 @@ enum ndr_err_code ndr_pull_mapi_request(struct ndr_pull *ndr, int ndr_flags, str
 			return NDR_ERR_BUFSIZE;
 		}
 		NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_mapi_req, 4, -1));
-	}
-	_mem_save_handles_0 = NDR_PULL_GET_MEM_CTX(ndr);
-	count = (r->mapi_len - r->length) / sizeof(uint32_t);
-	r->handles = talloc_array(_mem_save_handles_0, uint32_t, count + 1);
-	for (cntr_mapi_req_0=0; cntr_mapi_req_0 < count; cntr_mapi_req_0++) {
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->handles[cntr_mapi_req_0]));
+	
+		_mem_save_handles_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		count = (r->mapi_len - r->length) / sizeof(uint32_t);
+		r->handles = talloc_array(_mem_save_handles_0, uint32_t, count + 1);
+		for (cntr_mapi_req_0=0; cntr_mapi_req_0 < count; cntr_mapi_req_0++) {
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->handles[cntr_mapi_req_0]));
+		}
+	} else {
+		r->handles = NULL;
 	}
 
 	return NDR_ERR_SUCCESS;
@@ -239,17 +243,18 @@ enum ndr_err_code ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, st
 	
 	/* If length equals length field then skipping subcontext */
 	if (r->length > sizeof (uint16_t)) {
-	  NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_mapi_repl, 0, r->length - 2));
-	  _mem_save_mapi_repl_0 = NDR_PULL_GET_MEM_CTX(_ndr_mapi_repl);
-	  r->mapi_repl = talloc_zero(_mem_save_mapi_repl_0, struct EcDoRpc_MAPI_REPL);
-	  for (cntr_mapi_repl_0 = 0; _ndr_mapi_repl->offset < _ndr_mapi_repl->data_size - 2; cntr_mapi_repl_0++) {
-	    NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL(_ndr_mapi_repl, NDR_SCALARS, &r->mapi_repl[cntr_mapi_repl_0]));
-	    r->mapi_repl = talloc_realloc(_mem_save_mapi_repl_0, r->mapi_repl, struct EcDoRpc_MAPI_REPL, cntr_mapi_repl_0 + 2);
-	  }
-	  r->mapi_repl = talloc_realloc(_mem_save_mapi_repl_0, r->mapi_repl, struct EcDoRpc_MAPI_REPL, cntr_mapi_repl_0 + 2);
-	  r->mapi_repl[cntr_mapi_repl_0].opnum = 0;
-	  NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_mapi_repl, 4, -1));
+		NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_mapi_repl, 0, r->length - 2));
+		_mem_save_mapi_repl_0 = NDR_PULL_GET_MEM_CTX(_ndr_mapi_repl);
+		r->mapi_repl = talloc_zero(_mem_save_mapi_repl_0, struct EcDoRpc_MAPI_REPL);
+		for (cntr_mapi_repl_0 = 0; _ndr_mapi_repl->offset < _ndr_mapi_repl->data_size - 2; cntr_mapi_repl_0++) {
+			NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL(_ndr_mapi_repl, NDR_SCALARS, &r->mapi_repl[cntr_mapi_repl_0]));
+			r->mapi_repl = talloc_realloc(_mem_save_mapi_repl_0, r->mapi_repl, struct EcDoRpc_MAPI_REPL, cntr_mapi_repl_0 + 2);
+		}
+		r->mapi_repl = talloc_realloc(_mem_save_mapi_repl_0, r->mapi_repl, struct EcDoRpc_MAPI_REPL, cntr_mapi_repl_0 + 2);
+		r->mapi_repl[cntr_mapi_repl_0].opnum = 0;
+		NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_mapi_repl, 4, -1));
 	}
+
 	_mem_save_handles_0 = NDR_PULL_GET_MEM_CTX(ndr);
 	count = (r->mapi_len - r->length) / sizeof(uint32_t);
 	r->handles = talloc_array(_mem_save_handles_0, uint32_t, count + 1);
@@ -264,6 +269,35 @@ enum ndr_err_code ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, st
   We stop processing the IDL if MAPISTATUS is different from MAPI_E_SUCCESS
  */
 
+_PUBLIC_ enum ndr_err_code ndr_push_EcDoRpc_MAPI_REPL(struct ndr_push *ndr, int ndr_flags, const struct EcDoRpc_MAPI_REPL *r)
+{
+	if (r->opnum != op_MAPI_Release)
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 8));
+			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->opnum));
+			if ((r->opnum == op_MAPI_Notify) || (r->opnum == op_MAPI_Pending)) {
+				NDR_CHECK(ndr_push_set_switch_value(ndr, &r->u, r->opnum));
+				NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));				
+			} else {
+				NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->handle_idx));
+				NDR_CHECK(ndr_push_MAPISTATUS(ndr, NDR_SCALARS, r->error_code));
+				if (r->error_code == MAPI_E_SUCCESS) {
+					NDR_CHECK(ndr_push_set_switch_value(ndr, &r->u, r->opnum));
+					NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
+				}
+			}
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_BUFFERS, &r->u));
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
 enum ndr_err_code ndr_pull_EcDoRpc_MAPI_REPL(struct ndr_pull *ndr, int ndr_flags, struct EcDoRpc_MAPI_REPL *r)
 {
 	{
@@ -272,7 +306,7 @@ enum ndr_err_code ndr_pull_EcDoRpc_MAPI_REPL(struct ndr_pull *ndr, int ndr_flags
 		if (ndr_flags & NDR_SCALARS) {
 			NDR_CHECK(ndr_pull_align(ndr, 8));
 			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->opnum));
-			if (r->opnum == op_MAPI_Notify) {
+			if ((r->opnum == op_MAPI_Notify) || (r->opnum == op_MAPI_Pending)) {
 				NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->u, r->opnum));
 				NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
 			} else {
@@ -299,7 +333,7 @@ void ndr_print_EcDoRpc_MAPI_REPL(struct ndr_print *ndr, const char *name, const 
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 		ndr->depth++;
 		ndr_print_uint8(ndr, "opnum", r->opnum);
-		if (r->opnum != op_MAPI_Notify) {
+		if ((r->opnum != op_MAPI_Notify) && (r->opnum != op_MAPI_Pending)) {
 			ndr_print_uint8(ndr, "handle_idx", r->handle_idx);
 			ndr_print_MAPISTATUS(ndr, "error_code", r->error_code);
 			if (r->error_code == MAPI_E_SUCCESS) {
@@ -317,8 +351,32 @@ void ndr_print_EcDoRpc_MAPI_REPL(struct ndr_print *ndr, const char *name, const 
 
 /*
   We need to pull QueryRows replies on our own:
-  If we have no results, do not pull/print the DATA_BLOB
+  If we have no results, do not push/pull the DATA_BLOB
 */
+
+enum ndr_err_code ndr_push_QueryRows_repl(struct ndr_push *ndr, int ndr_flags, const struct QueryRows_repl *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->Origin));
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->RowCount));
+
+			if (r->RowCount) {
+				uint32_t _flags_save_DATA_BLOB = ndr->flags;
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+				NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->RowData));
+				ndr->flags = _flags_save_DATA_BLOB;
+			}
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
 
 enum ndr_err_code ndr_pull_QueryRows_repl(struct ndr_pull *ndr, int ndr_flags, struct QueryRows_repl *r)
 {
@@ -444,11 +502,6 @@ void ndr_print_mapi_SPropValue_array_wrap(struct ndr_print *ndr, const char *nam
 	return ndr_print_mapi_SPropValue_array(ndr, name, (const struct mapi_SPropValue_array *)r);
 }
 
-enum ndr_err_code ndr_push_Release_req(struct ndr_push *ndr, int ndr_flags, const struct Release_req *r)
-{
-	return NDR_ERR_SUCCESS;
-}
-
 enum ndr_err_code ndr_push_RestrictionVariable(struct ndr_push *ndr, int ndr_flags, const union RestrictionVariable *r)
 {
 	{
@@ -558,6 +611,11 @@ _PUBLIC_ void ndr_print_RestrictionVariable(struct ndr_print *ndr, const char *n
 			ndr->depth--;
 		break;
 	}
+}
+
+enum ndr_err_code ndr_push_Release_req(struct ndr_push *ndr, int ndr_flags, const struct Release_req *r)
+{
+	return NDR_ERR_SUCCESS;
 }
 
 enum ndr_err_code ndr_pull_Release_req(struct ndr_pull *ndr, int ndr_flags, struct Release_req *r)

@@ -737,6 +737,7 @@ System Attendant Private Interface
 			op_MAPI_SyncUploadStateStreamBegin	= 0x75,
 			op_MAPI_SyncUploadStateStreamContinue	= 0x76,
 			op_MAPI_SyncUploadStateStreamEnd	= 0x77,
+			op_MAPI_SyncImportMessageMove		= 0x78,
 			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_GetLocalReplicaIds		= 0x7f,
 			op_MAPI_OpenPublicFolderByName		= 0x87,
@@ -2571,6 +2572,25 @@ System Attendant Private Interface
 	} SyncUploadStateStreamEnd_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x78 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		SourceFolderIdSize;
+		uint8		SourceFolderId[SourceFolderIdSize];
+		uint32		SourceMessageIdSize;
+		uint8		SourceMessageId[SourceMessageIdSize];
+		uint32		PredecessorChangeListSize;
+		uint8		PredecessorChangeList[PredecessorChangeListSize];
+		uint32		DestinationMessageIdSize;
+		uint8		DestinationMessageId[DestinationMessageIdSize];
+		uint32		ChangeNumberSize;
+		uint8		ChangeNumber[ChangeNumberSize];
+	} SyncImportMessageMove_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		MessageId;
+	} SyncImportMessageMove_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x7f */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint32		IdCount;
@@ -2771,6 +2791,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncUploadStateStreamBegin)] SyncUploadStateStreamBegin_req mapi_SyncUploadStateStreamBegin;
 		[case(op_MAPI_SyncUploadStateStreamContinue)] SyncUploadStateStreamContinue_req mapi_SyncUploadStateStreamContinue;
 		[case(op_MAPI_SyncUploadStateStreamEnd)] SyncUploadStateStreamEnd_req mapi_SyncUploadStateStreamEnd;
+		[case(op_MAPI_SyncImportMessageMove)] SyncImportMessageMove_req mapi_SyncImportMessageMove;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_req mapi_GetLocalReplicaIds;
 		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
@@ -2870,6 +2891,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncUploadStateStreamBegin)] SyncUploadStateStreamBegin_repl mapi_SyncUploadStateStreamBegin;
 		[case(op_MAPI_SyncUploadStateStreamContinue)] SyncUploadStateStreamContinue_repl mapi_SyncUploadStateStreamContinue;
 		[case(op_MAPI_SyncUploadStateStreamEnd)] SyncUploadStateStreamEnd_repl mapi_SyncUploadStateStreamEnd;
+		[case(op_MAPI_SyncImportMessageMove)] SyncImportMessageMove_repl mapi_SyncImportMessageMove;
 		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;

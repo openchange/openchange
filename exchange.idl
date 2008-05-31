@@ -703,6 +703,8 @@ System Attendant Private Interface
 			op_MAPI_GetRulesTable			= 0x3f,
 			op_MAPI_ModifyTable			= 0x40,
 			op_MAPI_ModifyRules			= 0x41,
+			op_MAPI_LongTermIdFromId		= 0x43,
+			op_MAPI_IdFromLongTermId		= 0x44,
 			op_MAPI_SetSpooler			= 0x47,
 			op_MAPI_SpoolerLockMessage		= 0x48,
 			op_MAPI_AddressTypes			= 0x49,
@@ -2047,6 +2049,32 @@ System Attendant Private Interface
 	} ModifyRules_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x43 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper	Id;
+	} LongTermIdFromId_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		GUID	DatabaseGuid;
+		uint8	GlobalCounter[6];
+		uint16	padding;
+	} LongTermId;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		LongTermId	LongTermId;
+	} LongTermIdFromId_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x44 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		LongTermId	LongTermId;
+	} IdFromLongTermId_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		Id;
+	} IdFromLongTermId_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x47 */
 	typedef [flag(NDR_NOALIGN)] struct {
 	} SetSpooler_req;
@@ -2488,6 +2516,8 @@ System Attendant Private Interface
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_req mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
 		[case(op_MAPI_ModifyRules)] ModifyRules_req mapi_ModifyRules;
+		[case(op_MAPI_LongTermIdFromId)] LongTermIdFromId_req mapi_LongTermIdFromId;
+		[case(op_MAPI_IdFromLongTermId)] IdFromLongTermId_req mapi_IdFromLongTermId;
 		[case(op_MAPI_SetSpooler)] SetSpooler_req mapi_SetSpooler;
 		[case(op_MAPI_SpoolerLockMessage)] SpoolerLockMessage_req mapi_SpoolerLockMessage;
 		[case(op_MAPI_AddressTypes)] AddressTypes_req mapi_AddressTypes;
@@ -2572,6 +2602,8 @@ System Attendant Private Interface
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_repl mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
 		[case(op_MAPI_ModifyRules)] ModifyRules_repl mapi_ModifyRules;
+		[case(op_MAPI_LongTermIdFromId)] LongTermIdFromId_repl mapi_LongTermIdFromId;
+		[case(op_MAPI_IdFromLongTermId)] IdFromLongTermId_repl mapi_IdFromLongTermId;
 		[case(op_MAPI_SetSpooler)] SetSpooler_repl mapi_SetSpooler;
 		[case(op_MAPI_SpoolerLockMessage)] SpoolerLockMessage_repl mapi_SpoolerLockMessage;
 		[case(op_MAPI_AddressTypes)] AddressTypes_repl mapi_AddressTypes;

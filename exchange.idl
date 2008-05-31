@@ -944,12 +944,12 @@ System Attendant Private Interface
 	typedef [enum8bit] enum {
 		OpenModeFlags_Folder		= 0x0,
 		OpenModeFlags_SoftDeleted	= 0x4
-	} OpenModeFlags;
+	} OpenFolder_OpenModeFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		handle_idx;
-		hyper		folder_id;
- 		OpenModeFlags	OpenModeFlags;
+		uint8				handle_idx;
+		hyper				folder_id;
+ 		OpenFolder_OpenModeFlags	OpenModeFlags;
 	} OpenFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -958,12 +958,18 @@ System Attendant Private Interface
 	
 	/**************************/
 	/* EcDoRpc Function 0x3   */
+	typedef [bitmap8bit] bitmap {
+		/* 0x0 means Read Only */
+		ReadWrite	= 0x1,
+		Create		= 0x3
+	} OpenMessage_OpenModeFlags;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		folder_handle_idx;
-		uint16		max_data;
-		hyper		folder_id;
-		uint8		message_permissions;
-		hyper		message_id;
+		uint8				handle_idx;
+		uint16				CodePageId;
+		hyper				FolderId;
+		OpenMessage_OpenModeFlags	OpenModeFlags;
+		hyper				MessageId;
 	} OpenMessage_req;
 
 	typedef [v1_enum, flag(NDR_PAHEX)] enum {

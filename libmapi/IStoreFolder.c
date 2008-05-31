@@ -45,7 +45,8 @@
 
    Possible ulFlags values:
    - 0x0: read only access
-   - MAPI_MODIFY: read/write access
+   - 0x1: ReadWrite
+   - 0x3: Create
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -85,11 +86,11 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	mem_ctx = talloc_init("OpenMessage");
 
 	/* Fill the OpenMessage operation */
-	request.folder_handle_idx = 0x1;
-	request.max_data = 0xfff;
-	request.folder_id = id_folder;
-	request.message_permissions = ulFlags;
-	request.message_id = id_message;
+	request.handle_idx = 0x1;
+	request.CodePageId = 0xfff;
+	request.FolderId = id_folder;
+	request.OpenModeFlags = ulFlags;
+	request.MessageId = id_message;
 	size = sizeof (uint8_t) + sizeof(uint16_t) + sizeof(mapi_id_t) + sizeof(uint8_t) + sizeof(mapi_id_t);
 
 	/* Fill the MAPI_REQ request */

@@ -738,6 +738,7 @@ System Attendant Private Interface
 			op_MAPI_SyncUploadStateStreamContinue	= 0x76,
 			op_MAPI_SyncUploadStateStreamEnd	= 0x77,
 			op_MAPI_SyncImportMessageMove		= 0x78,
+			op_MAPI_DeletePropertiesNoReplicate	= 0x7a,
 			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_GetLocalReplicaIds		= 0x7f,
 			op_MAPI_OpenPublicFolderByName		= 0x87,
@@ -2591,6 +2592,17 @@ System Attendant Private Interface
 	} SyncImportMessageMove_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x7a */
+	typedef [flag(NDR_NOALIGN)] struct {
+		mapi_SPropTagArray	PropertyTags;
+	} DeletePropertiesNoReplicate_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		PropertyProblemCount;
+		PropertyProblem	PropertyProblem[PropertyProblemCount];
+	} DeletePropertiesNoReplicate_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x7f */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint32		IdCount;
@@ -2792,6 +2804,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncUploadStateStreamContinue)] SyncUploadStateStreamContinue_req mapi_SyncUploadStateStreamContinue;
 		[case(op_MAPI_SyncUploadStateStreamEnd)] SyncUploadStateStreamEnd_req mapi_SyncUploadStateStreamEnd;
 		[case(op_MAPI_SyncImportMessageMove)] SyncImportMessageMove_req mapi_SyncImportMessageMove;
+		[case(op_MAPI_DeletePropertiesNoReplicate)] DeletePropertiesNoReplicate_req mapi_DeletePropertiesNoReplicate;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_req mapi_GetLocalReplicaIds;
 		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
@@ -2892,6 +2905,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncUploadStateStreamContinue)] SyncUploadStateStreamContinue_repl mapi_SyncUploadStateStreamContinue;
 		[case(op_MAPI_SyncUploadStateStreamEnd)] SyncUploadStateStreamEnd_repl mapi_SyncUploadStateStreamEnd;
 		[case(op_MAPI_SyncImportMessageMove)] SyncImportMessageMove_repl mapi_SyncImportMessageMove;
+		[case(op_MAPI_DeletePropertiesNoReplicate)] DeletePropertiesNoReplicate_repl mapi_DeletePropertiesNoReplicate;
 		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;

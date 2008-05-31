@@ -702,6 +702,7 @@ System Attendant Private Interface
 			op_MAPI_GetTable			= 0x3e,
 			op_MAPI_GetRulesTable			= 0x3f,
 			op_MAPI_ModifyTable			= 0x40,
+			op_MAPI_ModifyRules			= 0x41,
 			op_MAPI_SetSpooler			= 0x47,
 			op_MAPI_SpoolerLockMessage		= 0x48,
 			op_MAPI_AddressTypes			= 0x49,
@@ -2030,6 +2031,22 @@ System Attendant Private Interface
 	} ModifyTable_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x41 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		ulRowFlags     		RulesDataFlags;
+		mapi_SPropValue_array	PropertyValues;
+	} RulesData;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		ModifyRulesFlags;
+		uint16		RulesCount;
+ 		RulesData	RulesData[RulesCount];
+	} ModifyRules_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} ModifyRules_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x47 */
 	typedef [flag(NDR_NOALIGN)] struct {
 	} SetSpooler_req;
@@ -2470,6 +2487,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_req mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
+		[case(op_MAPI_ModifyRules)] ModifyRules_req mapi_ModifyRules;
 		[case(op_MAPI_SetSpooler)] SetSpooler_req mapi_SetSpooler;
 		[case(op_MAPI_SpoolerLockMessage)] SpoolerLockMessage_req mapi_SpoolerLockMessage;
 		[case(op_MAPI_AddressTypes)] AddressTypes_req mapi_AddressTypes;
@@ -2553,6 +2571,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_repl mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
+		[case(op_MAPI_ModifyRules)] ModifyRules_repl mapi_ModifyRules;
 		[case(op_MAPI_SetSpooler)] SetSpooler_repl mapi_SetSpooler;
 		[case(op_MAPI_SpoolerLockMessage)] SpoolerLockMessage_repl mapi_SpoolerLockMessage;
 		[case(op_MAPI_AddressTypes)] AddressTypes_repl mapi_AddressTypes;

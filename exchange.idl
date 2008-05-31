@@ -1266,8 +1266,9 @@ System Attendant Private Interface
 
 	/* TODO: there is a variation that can provide "client data" here */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		handle_idx;
-		MSGFLAG_READ	flags;
+		uint8				handle_idx;
+		MSGFLAG_READ			flags;
+		[flag(NDR_REMAINING)] DATA_BLOB clientdata;
 	} SetMessageReadFlag_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1471,7 +1472,6 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x15  */
-
 	typedef [enum8bit] enum {
 		TBL_ADVANCE		= 0x0,
 		TBL_NOADVANCE		= 0x1,

@@ -718,6 +718,9 @@ System Attendant Private Interface
 			op_MAPI_CommitStream			= 0x5d,
 			op_MAPI_GetStreamSize			= 0x5e,
 			op_MAPI_QueryNamesFromIDs		= 0x5f,
+			op_MAPI_GetPerUserLongTermIds		= 0x60,
+			op_MAPI_GetPerUserGuid			= 0x61,
+			op_MAPI_ReadPerUserInformation		= 0x63,
 			op_MAPI_SetReadFlags			= 0x66,
 			op_MAPI_CopyProperties			= 0x67,
 			op_MAPI_GetReceiveFolderTable		= 0x68,
@@ -2253,6 +2256,42 @@ System Attendant Private Interface
 	} QueryNamesFromIDs_repl;
   
 	/*************************/
+	/* EcDoRpc Function 0x60 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		GUID	DatabaseGuid;
+	} GetPerUserLongTermIds_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		LongTermIdCount;
+		LongTermId	LongTermIds[LongTermIdCount];
+	} GetPerUserLongTermIds_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x61 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		LongTermId	LongTermId;
+	} GetPerUserGuid_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		GUID		DatabaseGuid;
+	} GetPerUserGuid_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x63 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		FolderId[24];
+		boolean8	WhatIfChanged;
+		uint32		DataOffset;
+		uint16		MaxDataSize;
+	} ReadPerUserInformation_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8	HasFinished;
+		uint16		DataSize;
+		[subcontext(0), subcontext_size(DataSize), flag(NDR_REMAINING)] DATA_BLOB Data;
+	} ReadPerUserInformation_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x66 */
 	typedef [bitmap8bit] bitmap {
 		SuppressReceipt		= 0x1,	/* Cancel read receipt. set Read bit */
@@ -2531,6 +2570,9 @@ System Attendant Private Interface
 		[case(op_MAPI_CommitStream)] CommitStream_req mapi_CommitStream;
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_req mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_req mapi_QueryNamesFromIDs;
+		[case(op_MAPI_GetPerUserLongTermIds)] GetPerUserLongTermIds_req mapi_GetPerUserLongTermIds;
+		[case(op_MAPI_GetPerUserGuid)] GetPerUserGuid_req mapi_GetPerUserGuid;
+		[case(op_MAPI_ReadPerUserInformation)] ReadPerUserInformation_req mapi_ReadPerUserInformation;
 		[case(op_MAPI_CopyProperties)] CopyProperties_req mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_req mapi_GetCollapseState;
@@ -2617,6 +2659,9 @@ System Attendant Private Interface
 		[case(op_MAPI_CommitStream)] CommitStream_repl mapi_CommitStream;
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_repl mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_repl mapi_QueryNamesFromIDs;
+		[case(op_MAPI_GetPerUserLongTermIds)] GetPerUserLongTermIds_repl mapi_GetPerUserLongTermIds;
+		[case(op_MAPI_GetPerUserGuid)] GetPerUserGuid_repl mapi_GetPerUserGuid;
+		[case(op_MAPI_ReadPerUserInformation)] ReadPerUserInformation_repl mapi_ReadPerUserInformation;
 		[case(op_MAPI_CopyProperties)] CopyProperties_repl mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_repl mapi_GetCollapseState;

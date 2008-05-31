@@ -709,6 +709,7 @@ System Attendant Private Interface
 			op_MAPI_SpoolerLockMessage		= 0x48,
 			op_MAPI_AddressTypes			= 0x49,
 			op_MAPI_TransportSend			= 0x4a,
+			op_MAPI_FastTransferSourceGetBuffer	= 0x4e,
 			op_MAPI_FindRow				= 0x4f,
 			op_MAPI_GetNamesFromIDs			= 0x55,
 			op_MAPI_GetIDsFromNames			= 0x56,
@@ -2128,6 +2129,28 @@ System Attendant Private Interface
 	} TransportSend_repl;
 
 	/**************************/
+	/* EcDoRpc Function 0x4e  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		BufferSize;
+	} FastTransferSourceGetBuffer_req;
+
+	typedef [enum16bit] enum {
+		TransferStatus_Error	= 0x0,
+		TransferStatus_Partial	= 0x1,
+		TransferStatus_NoRoom	= 0x2,
+		TransferStatus_Done	= 0x3
+	} TransferStatus;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		TransferStatus	TransferStatus;
+		uint16		InProgressCount;
+		uint16		TotalStepCount;
+		uint8		Reserved;
+		uint16		TransferBufferSize;
+		[subcontext(0),subcontext_size(TransferBufferSize),flag(NDR_REMAINING)] DATA_BLOB TransferBuffer;
+	} FastTransferSourceGetBuffer_repl;
+
+	/**************************/
 	/* EcDoRpc Function 0x4f  */
 	typedef [enum8bit] enum {
 		DIR_FORWARD  = 0x0,
@@ -2561,6 +2584,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SpoolerLockMessage)] SpoolerLockMessage_req mapi_SpoolerLockMessage;
 		[case(op_MAPI_AddressTypes)] AddressTypes_req mapi_AddressTypes;
 		[case(op_MAPI_TransportSend)] TransportSend_req mapi_TransportSend;
+		[case(op_MAPI_FastTransferSourceGetBuffer)] FastTransferSourceGetBuffer_req mapi_FastTransferSourceGetBuffer;
 		[case(op_MAPI_FindRow)] FindRow_req mapi_FindRow;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
@@ -2650,6 +2674,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SpoolerLockMessage)] SpoolerLockMessage_repl mapi_SpoolerLockMessage;
 		[case(op_MAPI_AddressTypes)] AddressTypes_repl mapi_AddressTypes;
 		[case(op_MAPI_TransportSend)] TransportSend_repl mapi_TransportSend;
+		[case(op_MAPI_FastTransferSourceGetBuffer)] FastTransferSourceGetBuffer_repl mapi_FastTransferSourceGetBuffer;
 		[case(op_MAPI_FindRow)] FindRow_repl mapi_FindRow;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;

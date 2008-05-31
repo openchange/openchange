@@ -711,6 +711,7 @@ System Attendant Private Interface
 			op_MAPI_TransportSend			= 0x4a,
 			op_MAPI_FastTransferSourceGetBuffer	= 0x4e,
 			op_MAPI_FindRow				= 0x4f,
+			op_MAPI_Progress			= 0x50,
 			op_MAPI_GetNamesFromIDs			= 0x55,
 			op_MAPI_GetIDsFromNames			= 0x56,
 			op_MAPI_EmptyFolder			= 0x58,
@@ -2170,6 +2171,17 @@ System Attendant Private Interface
 		[flag(NDR_NOALIGN)] DATA_BLOB row;
 	} FindRow_repl;
 
+	/**************************/
+	/* EcDoRpc Function 0x50  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8	WantCancel;
+	} Progress_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		CompletedTaskCount;
+		uint32		TotalTaskCount;
+	} Progress_repl;
+
 	/*************************/
 	/* EcDoRpc Function 0x55 */
 
@@ -2586,6 +2598,7 @@ System Attendant Private Interface
 		[case(op_MAPI_TransportSend)] TransportSend_req mapi_TransportSend;
 		[case(op_MAPI_FastTransferSourceGetBuffer)] FastTransferSourceGetBuffer_req mapi_FastTransferSourceGetBuffer;
 		[case(op_MAPI_FindRow)] FindRow_req mapi_FindRow;
+		[case(op_MAPI_Progress)] Progress_req mapi_Progress;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
@@ -2676,6 +2689,7 @@ System Attendant Private Interface
 		[case(op_MAPI_TransportSend)] TransportSend_repl mapi_TransportSend;
 		[case(op_MAPI_FastTransferSourceGetBuffer)] FastTransferSourceGetBuffer_repl mapi_FastTransferSourceGetBuffer;
 		[case(op_MAPI_FindRow)] FindRow_repl mapi_FindRow;
+		[case(op_MAPI_Progress)] Progress_repl mapi_Progress;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;

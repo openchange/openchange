@@ -24,7 +24,7 @@
 #include "utils/mapitest/proto.h"
 
 /**
-   \file module_oxfxics.c
+   \file module_oxcfxics.c
 
    \brief Bulk Data Transfer Protocol test suite
 */

@@ -2836,6 +2836,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetPerUserLongTermIds)] GetPerUserLongTermIds_req mapi_GetPerUserLongTermIds;
 		[case(op_MAPI_GetPerUserGuid)] GetPerUserGuid_req mapi_GetPerUserGuid;
 		[case(op_MAPI_ReadPerUserInformation)] ReadPerUserInformation_req mapi_ReadPerUserInformation;
+		[case(op_MAPI_SetReadFlags)] SetReadFlags_req mapi_SetReadFlags;
 		[case(op_MAPI_CopyProperties)] CopyProperties_req mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_req mapi_GetCollapseState;
@@ -2941,6 +2942,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetPerUserLongTermIds)] GetPerUserLongTermIds_repl mapi_GetPerUserLongTermIds;
 		[case(op_MAPI_GetPerUserGuid)] GetPerUserGuid_repl mapi_GetPerUserGuid;
 		[case(op_MAPI_ReadPerUserInformation)] ReadPerUserInformation_repl mapi_ReadPerUserInformation;
+		[case(op_MAPI_SetReadFlags)] SetReadFlags_repl mapi_SetReadFlags;
 		[case(op_MAPI_CopyProperties)] CopyProperties_repl mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_repl mapi_GetCollapseState;

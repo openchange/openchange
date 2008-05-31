@@ -137,7 +137,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 				break;
 			case MNID_STRING:
 				printf("\t0x%.8x mapped to %s\n",
-				       propID, nameid->kind.lpwstr.lpwstrName);
+				       propID, nameid->kind.lpwstr.Name);
 				break;
 			}
 			talloc_free(nameid);
@@ -170,7 +170,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 			printf("\tmapped to 0x%.4x\n", nameid[i].kind.lid);
 			break;
 		case MNID_STRING:
-			printf("\tmapped to %s\n", nameid[i].kind.lpwstr.lpwstrName);
+			printf("\tmapped to %s\n", nameid[i].kind.lpwstr.Name);
 			break;
 		}		
 	}
@@ -189,7 +189,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 			printf("0x%.4x mapped to ", nameid[i].kind.lid);
 			break;
 		case MNID_STRING:
-			printf("%s mapped to ", nameid[i].kind.lpwstr.lpwstrName);
+			printf("%s mapped to ", nameid[i].kind.lpwstr.Name);
 			break;
 		}	
 		mapidump_SPropTagArray(SPropTagArray);
@@ -211,8 +211,8 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 
 	  nameid[0].lpguid = guid;
 	  nameid[0].ulKind = MNID_STRING;
-	  nameid[0].kind.lpwstr.lpwstrName = NAMEDPROP_NAME;
-	  nameid[0].kind.lpwstr.length = strlen(NAMEDPROP_NAME) * 2 + 2;
+	  nameid[0].kind.lpwstr.Name = NAMEDPROP_NAME;
+	  nameid[0].kind.lpwstr.NameSize = strlen(NAMEDPROP_NAME) * 2 + 2;
 	  retval = GetIDsFromNames(&obj_folder, 1, &nameid[0], MAPI_CREATE, &SPropTagArray);
 	  if (retval != MAPI_E_SUCCESS) return false;
 	  mapi_errstr("GetIDsFromNames", GetLastError());
@@ -255,7 +255,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 		break;
 	case MNID_STRING:
 		printf("\t0x%.8x mapped to %s\n",
-		       propID, nameid->kind.lpwstr.lpwstrName);
+		       propID, nameid->kind.lpwstr.Name);
 		break;
 	}
 	talloc_free(nameid);

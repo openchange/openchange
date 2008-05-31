@@ -24,7 +24,7 @@ struct mapi_nameid_tags
 {
 	const char          *OOM;
 	uint16_t            lid;
-	const char          *lpwstrName;
+	const char          *Name;
 	uint32_t            propType;
 	uint8_t             ulKind;
 	const char          *OLEGUID;

@@ -481,7 +481,7 @@ _PUBLIC_ int ocpf_write_auto(mapi_object_t *obj_message,
 				nprop.mnid_id = nameid->kind.lid;
 				break;
 			case MNID_STRING:
-				nprop.mnid_string = talloc_strdup(ocpf->mem_ctx, nameid->kind.lpwstr.lpwstrName);
+				nprop.mnid_string = talloc_strdup(ocpf->mem_ctx, nameid->kind.lpwstr.Name);
 				break;
 			}
 			nprop.propType = lpProps.ulPropTag & 0xFFFF;

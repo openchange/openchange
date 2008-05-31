@@ -747,6 +747,15 @@ System Attendant Private Interface
 		uint32 cValues;
 		mapi_LPSTR strings[cValues]; 
 	} mapi_SLPSTRArray;
+
+	typedef struct {
+		[flag(STR_NULLTERM)] string lppszW;
+	} mapi_LPWSTR;
+
+	typedef struct {
+		uint32 cValues;
+		mapi_LPWSTR strings[cValues];
+	} mapi_SPLSTRArrayW;
 	
 	typedef struct {
 		uint32		cValues;
@@ -773,6 +782,7 @@ System Attendant Private Interface
 		[case(PT_SVREID)]      	SBinary_short		bin;
 		[case(PT_MV_LONG)]	mapi_MV_LONG_STRUCT	MVl;	
 		[case(PT_MV_STRING8)]	mapi_SLPSTRArray	MVszA;
+		[case(PT_MV_UNICODE)]	mapi_SPLSTRArrayW	MVszW;
 		[case(PT_MV_CLSID)]	mapi_SGuidArray		MVguid;
 		[case(PT_MV_BINARY)]	mapi_SBinaryArray      	MVbin;
 	} mapi_SPropValue_CTR;
@@ -2009,14 +2019,14 @@ System Attendant Private Interface
 		MNID_STRING = 1
 	} ulKind;
 
-	typedef struct {
-		uint8				length;
-		[flag(STR_NULLTERM)] string	lpwstrName;
-	} mapi_LPWSTR;
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8				NameSize;
+		[flag(STR_NULLTERM)] string	Name;
+	} mapi_name;
 
 	typedef [nodiscriminant] union {
 		[case(MNID_ID)] uint32		lid;
-		[case(MNID_STRING)] mapi_LPWSTR	lpwstr;
+		[case(MNID_STRING)] mapi_name	lpwstr;
 	} Kind;
 	
 	typedef [flag(NDR_NOALIGN)] struct {

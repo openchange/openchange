@@ -110,8 +110,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_add(struct mapi_nameid *mapi_nameid,
 				mapi_nameid->nameid[count].kind.lid = mapi_nameid_tags[i].lid;
 				break;
 			case MNID_STRING:
-				mapi_nameid->nameid[count].kind.lpwstr.lpwstrName = mapi_nameid_tags[i].lpwstrName;
-				mapi_nameid->nameid[count].kind.lpwstr.length = strlen(mapi_nameid_tags[i].lpwstrName) * 2 + 2;
+				mapi_nameid->nameid[count].kind.lpwstr.Name = mapi_nameid_tags[i].Name;
+				mapi_nameid->nameid[count].kind.lpwstr.NameSize = strlen(mapi_nameid_tags[i].Name) * 2 + 2;
 				break;
 			}
 			mapi_nameid->count++;
@@ -175,8 +175,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
 				mapi_nameid->nameid[count].kind.lid = mapi_nameid_tags[i].lid;
 				break;
 			case MNID_STRING:
-				mapi_nameid->nameid[count].kind.lpwstr.lpwstrName = mapi_nameid_tags[i].lpwstrName;
-				mapi_nameid->nameid[count].kind.lpwstr.length = strlen(mapi_nameid_tags[i].lpwstrName) * 2 + 2;
+				mapi_nameid->nameid[count].kind.lpwstr.Name = mapi_nameid_tags[i].Name;
+				mapi_nameid->nameid[count].kind.lpwstr.NameSize = strlen(mapi_nameid_tags[i].Name) * 2 + 2;
 				break;
 			}
 			mapi_nameid->count++;
@@ -189,11 +189,11 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
 
 
 /**
-   \details Add a mapi_nameid entry given its lpwstrName and OLEGUID
+   \details Add a mapi_nameid entry given its Name and OLEGUID
    (MNID_STRING)
 
    \param mapi_nameid the structure where results are stored
-   \param lpwstrName the property name (used by MNID_STRING named
+   \param Name the property name (used by MNID_STRING named
    props only)
    \param OLEGUID the property set this entry belongs to
 
@@ -209,7 +209,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
    \sa mapi_nameid_new
  */
 _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
-						const char *lpwstrName,
+						const char *Name,
 						const char *OLEGUID)
 {
 	uint32_t		i;
@@ -217,12 +217,12 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
 
 	/* Sanity check */
 	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!lpwstrName, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
-		if (mapi_nameid_tags[i].lpwstrName && 
-		    !strcmp(lpwstrName, mapi_nameid_tags[i].lpwstrName) &&
+		if (mapi_nameid_tags[i].Name && 
+		    !strcmp(Name, mapi_nameid_tags[i].Name) &&
 		    !strcmp(OLEGUID, mapi_nameid_tags[i].OLEGUID)) {
 			mapi_nameid->nameid = talloc_realloc(mapi_nameid, 
 							     mapi_nameid->nameid, struct MAPINAMEID,
@@ -242,8 +242,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
 				mapi_nameid->nameid[count].kind.lid = mapi_nameid_tags[i].lid;
 				break;
 			case MNID_STRING:
-				mapi_nameid->nameid[count].kind.lpwstr.lpwstrName = mapi_nameid_tags[i].lpwstrName;
-				mapi_nameid->nameid[count].kind.lpwstr.length = strlen(mapi_nameid_tags[i].lpwstrName) * 2 + 2;
+				mapi_nameid->nameid[count].kind.lpwstr.Name = mapi_nameid_tags[i].Name;
+				mapi_nameid->nameid[count].kind.lpwstr.NameSize = strlen(mapi_nameid_tags[i].Name) * 2 + 2;
 				break;
 			}
 			mapi_nameid->count++;
@@ -312,7 +312,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_lid_add(struct mapi_nameid *mapi_nam
    its string, proptype and OLEGUID.
  
    \param mapi_nameid the structure where results are stored
-   \param lpwstrName the property name (used by MNID_STRING named props only)
+   \param Name the property name (used by MNID_STRING named props only)
    \param propType the named property type
    \param OLEGUID the property set this entry belongs to
 
@@ -326,14 +326,14 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_lid_add(struct mapi_nameid *mapi_nam
    \sa mapi_nameid_new, mapi_nameid_string_add
  */
 _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_string_add(struct mapi_nameid *mapi_nameid,
-						       const char *lpwstrName, uint16_t propType,
+						       const char *Name, uint16_t propType,
 						       const char *OLEGUID)
 {
 	uint16_t	count;
 
 	/* Sanity check */
 	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!lpwstrName, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!propType, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -344,15 +344,15 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_string_add(struct mapi_nameid *mapi_
 					      mapi_nameid->entries, struct mapi_nameid_tags,
 					      mapi_nameid->count + 1);
 	count = mapi_nameid->count;
-	mapi_nameid->entries[count].lpwstrName = lpwstrName;
+	mapi_nameid->entries[count].Name = Name;
 	mapi_nameid->entries[count].propType = propType;
 	mapi_nameid->entries[count].ulKind = MNID_STRING;
 	mapi_nameid->entries[count].OLEGUID = OLEGUID;
 
 	mapi_nameid->nameid[count].ulKind = MNID_STRING;
 	GUID_from_string(OLEGUID, &(mapi_nameid->nameid[count].lpguid));
-	mapi_nameid->nameid[count].kind.lpwstr.lpwstrName = lpwstrName;
-	mapi_nameid->nameid[count].kind.lpwstr.length = strlen(lpwstrName) * 2 + 2;
+	mapi_nameid->nameid[count].kind.lpwstr.Name = Name;
+	mapi_nameid->nameid[count].kind.lpwstr.NameSize = strlen(Name) * 2 + 2;
 
 	mapi_nameid->count++;
 	return MAPI_E_SUCCESS;
@@ -438,7 +438,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup(uint16_t lid, const char *OLEGUI
    \details Search for a given OOM,OLEGUID couple and return the
    associated propType.
 
-   \param lpwstrName the named property name
+   \param Name the named property name
    \param OLEGUID the named property GUID for this entry
    \param propType pointer on returned named property type
 
@@ -449,19 +449,19 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup(uint16_t lid, const char *OLEGUI
    - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
    - MAPI_E_NOT_FOUND: no named property found
  */
-_PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *lpwstrName, 
+_PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *Name, 
 						   const char *OLEGUID,
 						   uint16_t *propType)
 {
 	uint32_t	i;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!lpwstrName, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
-		if (mapi_nameid_tags[i].lpwstrName &&
-		    !strcmp(mapi_nameid_tags[i].lpwstrName, lpwstrName) &&
+		if (mapi_nameid_tags[i].Name &&
+		    !strcmp(mapi_nameid_tags[i].Name, Name) &&
 		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
 			*propType = mapi_nameid_tags[i].propType;
 			return MAPI_E_SUCCESS;

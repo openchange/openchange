@@ -745,6 +745,7 @@ System Attendant Private Interface
 			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_SyncGetTransferState		= 0x82,
 			op_MAPI_OpenPublicFolderByName		= 0x87,
+			op_MAPI_SetSyncNotificationGuid		= 0x88,
 			op_MAPI_FreeBookmark			= 0x89,
 			op_MAPI_Logon				= 0xfe
 		} MAPI_OPNUM;
@@ -2672,6 +2673,15 @@ System Attendant Private Interface
 	} OpenPublicFolderByName_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x88 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		GUID	NotificationGuid;
+	} SetSyncNotificationGuid_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} SetSyncNotificationGuid_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x89 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		SBinary_short	bookmark;
@@ -2847,6 +2857,7 @@ System Attendant Private Interface
 		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_SyncGetTransferState)] SyncGetTransferState_req mapi_SyncGetTransferState;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
+		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_req mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_req mapi_FreeBookmark;
 		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
 	} EcDoRpc_MAPI_REQ_UNION;
@@ -2951,6 +2962,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;
 		[case(op_MAPI_SyncImportReadStateChanges)] SyncImportReadStateChanges_repl mapi_SyncImportReadStateChanges;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;
+		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_repl mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_repl mapi_FreeBookmark;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;
 

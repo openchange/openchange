@@ -1324,7 +1324,7 @@ System Attendant Private Interface
 		SSortOrder	aSort[cSorts];
 	} SSortOrderSet;
 
-        typedef [flag(NDR_NOALIGN)]struct {
+        typedef [flag(NDR_NOALIGN)] struct {
 		uint8		SortTableFlags;
 		SSortOrderSet	lpSortCriteria;
         } SortTable_req;
@@ -1434,7 +1434,7 @@ System Attendant Private Interface
 		[switch_is(RestrictionPresent)] RestrictionVariable Restriction;
 	} mapi_SCommentRestriction;
 
-	typedef [nodiscriminant] union {
+	typedef [public,nodiscriminant] union {
 		[case(RES_AND)]			mapi_SAndRestriction		resAnd;
 		[case(RES_OR)]			mapi_SOrRestriction		resOr;
  		[case(RES_NOT)]			mapi_SNotRestriction		resNot;
@@ -1730,6 +1730,7 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper		folder_id;
+		astring		MessageClass;
 	} GetReceiveFolder_repl;
 
 	/*************************/

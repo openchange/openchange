@@ -169,10 +169,10 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageReadFlag(struct mapitest *mt)
 	}
 
 	if (cValues > 1 && status != lpProps[1].value.l) {
-		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS changed\n", "SetReadFlag");
+		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS changed\n", "SetMessageReadFlag");
 		status = lpProps[1].value.l;
 	} else {
-		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS failed\n", "SetReadFlag");
+		mapitest_print(mt, "* %-35s: PR_MESSAGE_FLAGS failed\n", "SetMessageReadFlag");
 		return false;
 	}
 	MAPIFreeBuffer(lpProps);

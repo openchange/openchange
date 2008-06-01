@@ -257,6 +257,11 @@ if test x"$enable_libpopt" = x"yes"; then
 	OC_RULE_ADD(locale_codepage, TOOLS)
 fi
 
+dnl ##########################################################################
+dnl mapiproxy
+dnl ##########################################################################
+OC_RULE_ADD(mapiproxy, TOOLS)
+
 dnl --------------------------------------------------------------------------
 dnl Check for libmagic
 dnl --------------------------------------------------------------------------
@@ -346,7 +351,7 @@ dnl Makefiles
 dnl ***********************
 AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc 
 		 libocpf.pc Doxyfile libmapi/Doxyfile libocpf/Doxyfile
-		 utils/mapitest/Doxyfile])
+		 mapiproxy/Doxyfile utils/mapitest/Doxyfile])
 AC_OUTPUT
 
 
@@ -384,6 +389,9 @@ OpenChange Configuration (Please review)
 	   * OpenChange Libraries:
 	     - libmapiadmin:		$enable_libmapiadmin
 	     - libocpf:			$enable_libocpf
+
+	   * OpenChange Server:
+	     - mapiproxy:		$enable_mapiproxy
 
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient

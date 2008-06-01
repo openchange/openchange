@@ -58,6 +58,7 @@ distclean:: clean
 	rm -f Doxyfile
 	rm -f libmapi/Doxyfile
 	rm -f libocpf/Doxyfile
+	rm -f mapiproxy/Doxyfile
 	rm -f config.status config.log
 	rm -f utils/mapitest/Doxyfile
 	rm -f intltool-extract intltool-merge intltool-update
@@ -589,12 +590,10 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 #################################################################
 
 server:		providers/providers_proto.h server/dcesrv_proto.h	\
-		server/dcesrv_exchange.$(SHLIBEXT)			\
-		server/dcesrv_exchange_remote.$(SHLIBEXT)
+		server/dcesrv_exchange.$(SHLIBEXT)			
 
 server-install:
 	$(INSTALL) -m 0755 server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -m 0755 server/dcesrv_exchange_remote.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
 	$(INSTALL) -d $(DESTDIR)$(datadir)/js
 	$(INSTALL) -m 0644 scripting/libjs/oc_provision.js $(DESTDIR)$(datadir)/js/
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
@@ -614,7 +613,6 @@ server-clean::
 	rm -f providers/providers_proto.h
 	rm -f server/*.$(SHLIBEXT)
 	rm -f server/dcesrv_exchange.$(SHLIBEXT)
-	rm -f server/dcesrv_exchange_remote.$(SHLIBEXT)
 
 clean:: server-clean
 
@@ -624,21 +622,98 @@ server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.po 	\
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
-server/dcesrv_exchange_remote.$(SHLIBEXT): server/dcesrv_exchange_remote.po	\
-					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
-
 server/dcesrv_exchange.c: providers/providers_proto.h gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
 
 providers/providers_proto.h: providers/emsabp.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=providers/providers_proto.h --public=providers/providers_proto.h $^
 
-server/dcesrv_proto.h: server/dcesrv_exchange.c server/dcesrv_exchange_remote.c
+server/dcesrv_proto.h: server/dcesrv_exchange.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=server/dcesrv_proto.h --public=server/dcesrv_proto.h $^
 
+
+#################################################################
+# mapiproxy compilation rules
+#################################################################
+
+mapiproxy: 	idl 					\
+		mapiproxy/libmapiproxy.$(SHLIBEXT)	\
+		mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) 	\
+		mapiproxy-modules
+
+mapiproxy-install: mapiproxy mapiproxy-modules-install
+	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
+	$(INSTALL) -d $(DESTDIR)$(MODULESDIR)
+	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
+	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT) $(DESTDIR)$(libdir)
+	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.h $(DESTDIR)$(includedir)/
+
+
+mapiproxy-uninstall: mapiproxy-modules-uninstall
+	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_mapiproxy.*
+	rm -f $(DESTDIR)$(libdir)/libmapiproxy.*
+	rm -f $(DESTDIR)$(includedir)/libmapiproxy.h
+
+mapiproxy-clean:: mapiproxy-modules-clean
+	rm -f mapiproxy/*.{o,po}
+	rm -f mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT)
+	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT)
+
+clean:: mapiproxy-clean
+
+
+mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT): 	mapiproxy/dcesrv_mapiproxy.po		\
+						mapiproxy/dcesrv_mapiproxy_nspi.po	\
+						mapiproxy/dcesrv_mapiproxy_unused.po	\
+						ndr_mapi.po				\
+						gen_ndr/ndr_exchange.po				
+
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lutils/mapiproxy -lmapiproxy
+
+mapiproxy/dcesrv_mapiproxy.c: gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
+
+mapiproxy/libmapiproxy.$(SHLIBEXT):	mapiproxy/dcesrv_mapiproxy_module.po
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
+
+
+####################
+# mapiproxy modules
+####################
+
+mapiproxy-modules:	mapiproxy/modules/mpm_downgrade.$(SHLIBEXT)	\
+			mapiproxy/modules/mpm_pack.$(SHLIBEXT)		\
+			mapiproxy/modules/mpm_dummy.$(SHLIBEXT)		
+
+mapiproxy-modules-install: mapiproxy-modules
+	$(INSTALL) -d $(DESTDIR)$(MODULESDIR)/dcerpc_mapiproxy/
+	$(INSTALL) -m 0755 mapiproxy/modules/mpm_downgrade.$(SHLIBEXT) $(DESTDIR)$(MODULESDIR)/dcerpc_mapiproxy/
+	$(INSTALL) -m 0755 mapiproxy/modules/mpm_pack.$(SHLIBEXT) $(DESTDIR)$(MODULESDIR)/dcerpc_mapiproxy/
+	$(INSTALL) -m 0755 mapiproxy/modules/mpm_dummy.$(SHLIBEXT) $(DESTDIR)$(MODULESDIR)/dcerpc_mapiproxy/
+
+mapiproxy-modules-uninstall:
+	rm -rf $(DESTDIR)$(MODULESDIR)/dcerpc_mapiproxy
+
+mapiproxy-modules-clean::
+	rm -f mapiproxy/modules/*.{o,po}
+	rm -f mapiproxy/modules/*.so
+
+clean:: mapiproxy-modules-clean
+
+mapiproxy/modules/mpm_downgrade.$(SHLIBEXT): mapiproxy/modules/mpm_downgrade.po
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy -lmapiproxy
+
+mapiproxy/modules/mpm_pack.$(SHLIBEXT):	mapiproxy/modules/mpm_pack.po	\
+					ndr_mapi.po			\
+					gen_ndr/ndr_exchange.po
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy -lmapiproxy
+
+mapiproxy/modules/mpm_dummy.$(SHLIBEXT): mapiproxy/modules/mpm_dummy.po
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy -lmapiproxy
 
 #################################################################
 # Tools compilation rules
@@ -923,19 +998,22 @@ uninstallman:
 	@./script/uninstallman.sh $(DESTDIR)$(mandir) `ls apidocs/man/man3/*`
 
 doxygen:	
-	@if test ! -d apidocs ; then					\
-		echo "Doxify API documentation: HTML and man pages";	\
-		mkdir -p apidocs/html;					\
-		mkdir -p apidocs/man;					\
-		$(DOXYGEN) Doxyfile;					\
-		$(DOXYGEN) libmapi/Doxyfile;				\
-		$(DOXYGEN) libocpf/Doxyfile;				\
-		$(DOXYGEN) utils/mapitest/Doxyfile;			\
-		cp -f doc/doxygen/index.html apidocs/html;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/overview;	\
-		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;	\
-		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;	\
-		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;	\
+	@if test ! -d apidocs ; then						\
+		echo "Doxify API documentation: HTML and man pages";		\
+		mkdir -p apidocs/html;						\
+		mkdir -p apidocs/man;						\
+		$(DOXYGEN) Doxyfile;						\
+		$(DOXYGEN) libmapi/Doxyfile;					\
+		$(DOXYGEN) libocpf/Doxyfile;					\
+		$(DOXYGEN) mapiproxy/Doxyfile;					\
+		$(DOXYGEN) utils/mapitest/Doxyfile;				\
+		cp -f doc/doxygen/index.html apidocs/html;			\
+		cp -f doc/doxygen/pictures/* apidocs/html/overview;		\
+		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;		\
+		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
+		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;		\
+		cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy;		\
+		cp -f mapiproxy/documentation/pictures/* apidocs/html/mapiproxy;\
 	fi								
 
 etags:

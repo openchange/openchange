@@ -565,7 +565,8 @@ System Attendant Private Interface
   uuid("a4f1db00-ca47-1067-b31f-00dd010662da"),
   pointer_default(unique),
   endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]","ncacn_ip_tcp:"),
-  version(0.81),
+  // version(0.81),
+  version(5308416),
   helpstring("Exchange 5.5 EMSMDB")
 ] interface exchange_emsmdb
 {
@@ -748,7 +749,9 @@ System Attendant Private Interface
 			op_MAPI_OpenPublicFolderByName		= 0x87,
 			op_MAPI_SetSyncNotificationGuid		= 0x88,
 			op_MAPI_FreeBookmark			= 0x89,
-			op_MAPI_Logon				= 0xfe
+			op_MAPI_Logon				= 0xfe,
+			/****** custom MAPI opnum for mapiproxy ******/
+			op_MAPI_proxypack			= 0xa5
 		} MAPI_OPNUM;
 
 
@@ -2787,6 +2790,16 @@ System Attendant Private Interface
 		[switch_is(PR_OBJECT_TYPE)] store_type type;
 	} Logon_repl;
 
+	/*************************/
+	/* EcDoRpc Function 0xA5 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		SBinary_short	bin;
+	} proxypack_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		SBinary_short	bin;
+	} proxypack_repl;
+
 	typedef [public, nodiscriminant] union {
 		[case(op_MAPI_Release)] Release_req mapi_Release;
 		[case(op_MAPI_OpenFolder)] OpenFolder_req mapi_OpenFolder;
@@ -2891,6 +2904,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_req mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_req mapi_FreeBookmark;
 		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
+		[case(op_MAPI_proxypack)] proxypack_req mapi_proxypack;
 	} EcDoRpc_MAPI_REQ_UNION;
 
 	typedef [public, nodiscriminant] union {
@@ -2998,6 +3012,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_repl mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_repl mapi_FreeBookmark;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;
+		[case(op_MAPI_proxypack)] proxypack_repl mapi_proxypack;
 
 	} EcDoRpc_MAPI_REPL_UNION;
 

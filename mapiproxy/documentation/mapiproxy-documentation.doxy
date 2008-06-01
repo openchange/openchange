@@ -1,0 +1,829 @@
+/**
+\mainpage
+
+<center><img src="mapiproxy.png"></center>
+
+\section Contents
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<ul>
+ <li><a href="#revision">        Revision History        </a></li>
+ <li><a href="#introduction"> 1. Introduction            </a>
+  <ul>
+    <li><a href="#purpose"> 1.1. Purpose and Scope</a></li>
+    <li><a href="#overview">1.2. General Overview</a></li>
+    <li><a href="#bugs">    1.3. Bugs and Limitations </a></li>
+  </ul>
+ </li>
+ <li><a href="#install">  2. Installation</a>
+  <ul>
+    <li><a href="#download">  2.1. Download mapiproxy</a></li>
+    <li><a href="#samba4">    2.2. Samba4 installation</a></li>
+    <li><a href="#patches">   2.3. Samba4 patches</a></li>
+    <li><a href="#mpinstall"> 2.4. mapiproxy installation</a></li>
+  </ul>
+ </li>
+ <li><a href="#config"> 3. Configuration</a>
+  <ul>
+    <li><a href="#minute">    3.1. 5-Minute Configuration</a></li>
+  </ul>
+ </li>
+ <li><a href="#concepts"> 4. Technical Concepts</a>
+   <ul>
+    <li><a href="#bindings">   4.1. NSPI Bindings Replacement</a></li>
+    <li><a href="#retrograde"> 4.2. Force EMSMDB Protocol Version</a></li>
+    <li><a href="#idl">        4.3. A Slightly Different IDL file</a></li>
+   </ul>
+ </li>
+ <li><a href="#mod_dev"> 5. Stackable Modules </a>
+   <ul>
+    <li><a href="#mpm_overview"> 5.1. General Overview</a></li>
+    <li><a href="#mpm_ep">       5.2. Module entry point</a></li>
+    <li><a href="#mpm_hooks">    5.3. Module Hooks</a></li>
+   </ul>
+ </li>
+ <li><a href="#modules"> 6. Available Modules </a>
+   <ul>
+    <li><a href="#mod_downgrade"> 6.1. Downgrade Module</a></li>
+    <li><a href="#mod_pack">      6.2. Pack Module</a></li>
+   </ul>
+ </li>
+ <li><a href="#faq">7. Frequently Asked Questions</a>
+  <ul>
+   <li><a href="#notcompleted"> 7.1. The action could not be completed</a></li>
+  </ul>
+ </li>
+</ul>
+</td>
+</tr>
+</table>
+<br/>
+
+<a name="revision"></a><h2>Revision History</h2>
+<table align="center" width="80%">
+	<tr>
+	   <td style="text-align:center"><strong>Date</strong></td>
+	   <td style="text-align:center"><strong>Revision Number</strong></td>
+	   <td style="text-align:center"><strong>Author</strong></td>
+	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">05/27/08</td>
+	   <td style="text-align:center"><strong>0.3</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">Available modules section
+	   added</td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">05/24/08</td>
+	   <td style="text-align:center"><strong>0.2</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">EMSMDB protocol version
+	   subsection updated, modules system section added, 5-minute
+	   configuration updated</td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">05/15/08</td>
+	   <td style="text-align:center"><strong>0.1</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:center">Initial Revision</td>
+	</tr>
+</table>
+<br/>
+
+<a name="introduction"></a><h2>1. Introduction</h2>
+
+<a name="purpose"></a><h3>1.1. Purpose and Scope</h3>
+
+mapiproxy is an endpoint server for Samba4 which proxifies ExchangeRPC
+traffic from MAPI clients (Outlook, openchangeclient, etc.) to
+Microsoft Exchange Server (and reciprocally). It can either act as a
+transparent proxy, for hacking, monitoring or debugging purposes or
+modify traffic on the fly and provide new features. It is primarily
+developed for - but not limited to - third-party implementors looking
+for a development framework they can use for MAPI acceleration
+purposes.
+
+This project is originally based on dcerpc_remote.c code from Stefan
+Metzemacher (Samba4 trunk) and is released under GPLv3 or later. It
+creates a dynamic shared object file which is loaded into smbd and is
+using the Samba configuration file (smb.conf) to set common options.
+
+<br/>
+<a name="overview"></a><h3>1.2. General overview</h3>
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mapiproxy_overview.png" />
+</td>
+</tr>
+</table>
+<center>Figure 1. general mapiproxy network overview</center>
+
+The mapiproxy traffic can be divided into 3 different parts as
+described in the figure above:
+
+<ul>
+<li style="text-align:justify;"><strong>[1] clients to
+mapiproxy:</strong><br/>Origins from the client's connections don't
+have much importance: it can either be an incoming connection from a
+real MAPI client or a connection relayed from another third-party
+proxy or another mapiproxy instance. Mapiproxy runs as an endpoint
+server registered when smbd starts. When the Samba4 endpoint mapper
+receives an incoming connection asking for one of the ExchangeRPC
+endpoints: NSPI (Name Service Provider Interface - Address Book) or
+EMSMDB (Exchange Message Store), the EPM redirects ExchangeRPC traffic
+to mapiproxy which will pull, push and dispatch MAPI operations.</li>
+
+<li style="text-align:justify;"><strong>[2] mapiproxy to
+mapiproxy:</strong><br/>The main objective of mapiproxy is not to
+discuss with the remote server directly, but relay some kind of
+modified MAPI traffic to the next mapiproxy hop. This configuration
+can be used to add a compression layer between mapiproxies or send
+specific third-party vendors information etc. In the meantime, proxify
+connection directly from MAPI clients to Exchange server is possible
+and such <i>client-mapiproxy-server</i> configuration could be used
+for many other purposes.<br/></li>
+
+<li><strong>[3] mapiproxy to server:</strong><br/>This last node is
+responsible for restoring MAPI contents and pushing it to the real
+Exchange server. </li> 
+</ul>
+<br/>
+
+<a name="bugs"></a><h2>1.3. Bugs and Limitations</h2></a>
+
+If you find bugs, limitations or have features you would like to see
+included in mapiproxy, please register on the OpenChange Ticket System
+and create new tickets for the mapiproxy component:
+<ul>
+<li><a
+href="http://trac.openchange.org">http://trac.openchange.org</a>
+(OpenChange Ticket System)</li>
+<li><a
+href="http://trac.openchange.org/query?status=new&status=assigned&status=reopened&component=mapiproxy&order=priority">Mapiproxy
+Component Tickets</a></li>
+</ul>
+<br/>
+
+
+<a name="install"></a><h2>2. Installation</h2>
+<a name="download"></a><h3>2.1. Download mapiproxy</h3>
+
+mapiproxy is only available through SVN at the moment and releases
+tarball may only be pushed when we have a stabilized API with a
+preliminary set of useful features. You will need a <a
+href="http://subversion.tigris.org/">SVN client</a> to download
+mapiproxy branch.
+
+\code
+ $ svn co https://svn.openchange.org/openchange/branches/mapiproxy mapiproxy
+\endcode
+
+<a name="samba4"></a><h3>2.2. Samba4 installation</h3>
+
+The mapiproxy branch comes with the most up to date Samba4 version
+needed to run mapiproxy properly. If Samba4 is planned to be installed
+from scratch for mapiproxy only, please use the <i>make samba4</i>
+compilation rule provided in the build system. This command will
+automate most part of the samba4 installation process. The only
+requirement for this step is to have an up to date <a
+href="http://git.or.cz/">GIT version</a> installed on the system.
+
+\code
+  # make samba4
+\endcode
+
+When the installation process is finished, a running samba4
+installation in <i>/usr/local/samba/</i>. You will possibly be
+required to run <i>ldconfig</i> before you move to next steps. Please
+refer to <i>doc/howto.txt</i> for further information on openchange
+compilation.
+<br/>
+
+<a name="paches"></a><h3>2.3. Samba4 patches</h3>
+
+In the meantime, if you already have a Samba4 installation running,
+mapiproxy can anyway be tested without <i>known</i> impacts on your
+existing installation. You just need to download and apply the
+following GIT patches to your samba4 tree and run
+compilation/installation again:
+<ul>
+ <li><a href="http://gitweb.samba.org/?p=samba.git;a=commit;h=652b8c5f156b357e231057a5a0fbded88f4f9c5f"> Patch #1: 652b8c5f156b357e231057a5a0fbded88f4f9c5f</a></li>
+ <li><a href="http://gitweb.samba.org/?p=samba.git;a=commit;h=718f9ce6889346c92894e868f0678fbe404a43ab"> Patch #2: 718f9ce6889346c92894e868f0678fbe404a43ab</a></li>
+</ul>
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<strong> This step is only mandatory if you do not use a Samba4
+version compliant with mapiproxy requirements</strong> 
+</td>
+</tr>
+</table>
+<br/>
+
+<a name="mpinstall"></a><h3>2.4. mapiproxy installation</h3>
+
+mapiproxy doesn't rely on libmapi nor any other openchange components
+but the IDL which means you can concurrently install libmapi from
+trunk and mapiproxy from the mapiproxy branch. Last but not least, if
+you have existing OpenChange DSO in the
+<i>/usr/local/samba/modules/dcerpc_server/</i> folder, such as
+<i>dcesrv_exchange.so</i> and <i>dcesrv_exchange_remote.so</i>. please
+remove them prior loading smbd with mapiproxy.
+
+\code
+  $ ./autogen.sh
+  $ ./configure --prefix=/usr/local/samba
+  $ make mapiproxy
+  # make mapiproxy-install
+\endcode
+
+<br/>
+
+
+<a name="config"></a><h2>3. Configuration</h2>
+<a name="minute"></a><h3>3.1. 5-Minute Configuration</h3>
+
+This 5-Minute configuration will help you setting a minimal mapiproxy
+using specified credentials and relaying traffic from Outlook clients
+to a remote Exchange server. This configuration will be performed in 3
+steps:
+
+<ul>
+<li><strong>[1] Provision Samba</strong>:<br/>From samba4/source
+directory, run under the root account:
+\code
+# ./bin/smbpython ./setup/provision --realm=OPENCHANGE.LOCAL --domain=OPENCHANGE \
+                                    --adminpass=openchange --server-role='domain controller'
+\endcode
+
+If everything works fine, the provisioning script will have created
+all the databases, populated the AD (Active Directory) and generated a
+valid smb.conf file.
+</li>
+
+<li><strong>[2] Add a user account</strong>:<br/>
+
+In this configuration, we'll set the same credentials both for the
+user in the windows domain and on the Samba4 server. Let say there is
+already a user named <i>testuser</i> with its password set to
+<i>openchange</i> on the Exchange server:
+\code
+# ./bin/smbpython ./setup/newuser testuser
+New Password: openchange
+\endcode
+</li>
+
+<li><strong>[3] Configure mapiproxy options</strong>:<br/>
+
+In this last, we only need to customize a limited set of parameters:
+<ul>
+
+ <li style="text-align:justify;"><strong>dcerpc endpoint
+ servers</strong>:<br/> MUST include epmapper and mapiproxy separated
+ with comma.</li>
+
+ <li
+ style="text-align:justify;"><strong>dcerpc_mapiproxy:binding</strong>:<br/>
+ This is the binding string used to connect to the remote Exchange
+ server. The format of this string is: transport:IP[flags]. In the
+ example below, we'll be using the tcp over ip transport, connect on
+ 192.168.1.1 and add the print flag so MAPI packets get dissected on
+ smbd stdout (or logfile).</li>
+
+ <li
+ style="text-align:justify;"><strong>dcerpc_mapiproxy:username</strong>
+ and <strong>dcerpc_mapiproxy:password</strong>:<br/>The specified
+ credentials we will be using to connect to the remote Exchange
+ server.</li>
+
+ <li
+ style="text-align:justify;"><strong>dcerpc_mapiproxy:domain</strong>:<br/>
+ The Windows domain the remote Exchange server belongs to.</li>
+
+ <li
+ style="text-align:justify;"><strong>dcerpc_mapiproxy:interfaces</strong>:<br/>
+ In our case, we want to relay the whole ExchangeRPC traffic, so we
+ need to load both the emsmdb and nsp interface. In the meantime,
+ people interested in NSPI proxy only would only have to load the
+ exchange_nsp interface.</li>
+
+<li
+style="text-align:justify;"><strong>dcerpc_mapiproxy:modules</strong>:<br/>
+mapiproxy provides a stackable modular system which primary objective
+is to provide developers an API for modules development. In our case
+we want to activate the <i>downgrade</i> module responsible for the
+EcDoConnect/EcDoRpc EMSMDB RPC functions negotiation.</li>
+
+</ul>
+
+\code
+[globals]
+        netbios name    = openchange
+        workgroup       = OPENCHANGE
+        realm           = OPENCHANGE.LOCAL
+        server role     = domain controller
+
+	### Configuration required by mapiproxy ###
+        dcerpc endpoint servers = epmapper, mapiproxy
+
+        dcerpc_mapiproxy:binding = ncacn_ip_tcp:192.168.1.1[print]
+        dcerpc_mapiproxy:username = testuser
+        dcerpc_mapiproxy:password = openchange
+        dcerpc_mapiproxy:domain = EXCHANGE
+        dcerpc_mapiproxy:interfaces = exchange_emsmdb, exchange_nsp
+	dcerpc_mapiproxy:modules = downgrade
+	### Configuration required by mapiproxy ###
+
+
+[netlogon]
+        path = /usr/local/samba/var/locks/sysvol/openchange.local/scripts
+        read only = no
+
+[sysvol]
+        path = /usr/local/samba/var/locks/sysvol
+        read only = no
+\endcode
+</li>
+</ul>
+
+We are now ready to run smbd:
+\code
+ # smbd -d5 -i -M single
+\endcode
+
+If everything works properly, the following lines should be displayed
+in smbd output:
+\code
+DCERPC endpoint server 'exchange_emsmdb' registered
+DCERPC endpoint server 'exchange_nsp' registered
+DCERPC endpoint server 'mapiproxy' registered
+dcesrv_interface_register: interface 'epmapper' registered on endpoint 'ncacn_np:[\pipe\epmapper]'
+dcesrv_interface_register: interface 'epmapper' registered on endpoint 'ncacn_ip_tcp:[135]'
+dcesrv_interface_register: interface 'epmapper' registered on endpoint 'ncalrpc:[EPMAPPER]'
+MAPIPROXY module 'downgrade' registered
+MAPIPROXY module 'downgrade' loaded
+mapiproxy_module_load 'downgrade' (Downgrade EMSMDB protocol version EcDoConnect/EcDoRpc)
+dcesrv_interface_register: interface 'exchange_emsmdb' registered on endpoint 'ncacn_np:[\pipe\lsass]'
+dcesrv_interface_register: interface 'exchange_emsmdb' registered on endpoint 'ncacn_np:[\pipe\protected_storage]'
+dcesrv_interface_register: interface 'exchange_emsmdb' registered on endpoint 'ncacn_ip_tcp:'
+dcesrv_interface_register: interface 'exchange_nsp' registered on endpoint 'ncacn_np:[\pipe\lsass]'
+dcesrv_interface_register: interface 'exchange_nsp' registered on endpoint 'ncacn_np:[\pipe\protected_storage]'
+dcesrv_interface_register: interface 'exchange_nsp' registered on endpoint 'ncacn_ip_tcp:[]'
+\endcode
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<strong>You should now be able to configure an Exchange account using
+the proxy IP address and run Outlook seamlessly (both online or cached
+exchange mode).</strong>
+</td>
+</tr>
+</table>
+<br/>
+
+<a name="concepts"></a><h2>4. Technical Concepts</h2>
+<a name="bindings"></a><h3>4.1. NSPI Bindings Replacement</h3>
+
+When Outlook sets up an Exchange account using either the mail applet
+from the configuration panel or the account editor within Outlook, it
+uses the NSPI protocol (Name Service Provider Interface) - understand
+the address book provider. In this case, NSPI is used to resolve the
+Exchange username and fetch from Exchange server all information
+needed by Outlook to initiate direct connection to the EMSMDB pipe -
+understand message store - the next time it connects to the server.
+<br/>
+
+At some point of the profile's creation process, Outlook queries
+Exchange for some specific connection information using the
+<strong>NspiGetProps (0x9) RPC operation </strong>. More specifically,
+when Outlook requests for the
+<strong>PR_EMS_AB_NETWORK_ADDRESS</strong> MAPI property, Exchange
+returns a list <strong>binding strings</strong>. Outlook next stores
+these binding strings at some location - associated to the Outlook
+profile - in the windows registry and use them from next
+connection. <br/>
+
+mapiproxy needs to avoid Outlook clients being aware of this remote
+server address and trying to communicate directly with it. In order
+mapiproxy to act as a real proxy, we need to alter the
+Outlook-Exchange MAPI traffic and replace these binding strings with
+the mapiproxy host address and netbios name.
+
+<br/>
+<a name="retrograde"></a><h3>4.2. Force EMSMDB Protocol Version</h3>
+
+When Outlook starts and presumably calls MapiLogonEx, it first opens a
+connection to the Exchange server on the NSPI pipe, then on the EMSMDB
+pipe. Under Outlook 2003, the very first EMSMDB RPC call Outlook makes
+can be defined as some kind of <i>protocol version
+negotiation</i>. Depending on how recent is Outlook and how Exchange
+replies to the EMSMDB connect request, Outlook will either keep using
+the same pool of RPC calls or downgrade. 
+
+For example Outlook 2003 (default behavior) tests if the remote server
+supports the 2 new EMSMDB calls (EcDoConnectEx/EcDoRpcEx) introduced
+in Exchange 2003. If Exchange replies to the EcDoConnectEx request
+with a dcerpc_fault, it means the server doesn't support this RPC
+operation, presumably has a version below 2003, and Outlook needs to
+downgrade its version in order to communicate with the server:
+<ul>
+  <li>EcDoConnectEx (0xa) call
+    <ul>
+       <li>On success, Outlook will use EcDoRpcEx (0xb) to handle MAPI traffic</li>
+       <li>On failure (dcerpc_fault: nca_op_rng_error), Outlook calls
+       EcDoConnect (0x0) and use EcDoRpc (0x2) to handle MAPI
+       traffic</li>
+   </ul> 
+  </li>
+</ul>
+
+If mapiproxy proxifies runs in an environment with Outlook clients and
+Exchange servers using a version above 2003, a last step is required
+to abuse Outlook. The EcDoConnect RPC reply returns the Exchange
+server version (array of 3 short integers). When Outlook detects this
+server version, it automatically closes the connection and keep
+requesting undefinitely for EcDoConnectEx. mapiproxy hacks the
+EcDoConnect reply sent by Exchange and replaces the server version
+with a fake one sent by Exchange 2000.
+
+In the meantime, if we reproduce this test with Outlook 2000 which
+doesn't support these 2 new RPC calls, Outlook will directly call
+EcDoConnect.
+
+The main difference between the EcDoConnectEx/EcDoRpcEx couple and
+EcDoConnect/EcDoRpc is that the first uses both xor 0xA5 and LZ77
+compression/Direct2 encoding while the latter only use the xor
+operation to handle MAPI content. If mapiproxy wants to act as an
+intelligent proxy - understand able to analyze MAPI content on the
+fly, compress MAPI data etc. - receiving non compressed MAPI traffic
+would probably improve the overall process.
+
+Below is a list of Exchange/Outlook couples and the EMSMDB connect
+function they will use by default:
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+ <tr style="border:none">
+  <td style="border:none"><strong>Exchange version</strong></td>
+  <td style="border:none"><strong>Outlook version</strong></td>
+  <td style="border:none"><strong>EMSMDB connect function</strong></td>
+ </tr>
+ <tr>
+  <td style="border:none;border-bottom:1px solid #e0e0e0;">5.5/2000</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0;">any</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0;">EcDoConnect (0x0)</td>
+ </tr>
+ <tr>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">2003</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">2000</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">EcDoConnect (0x0)</td>
+ </tr>
+ <tr>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">2007</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">2000</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">EcDoConnect
+  (0x0)<br/>Microsoft officially says it is unsupported</td>
+ </tr>
+ <tr>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">2003</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">2003-2007</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">EcDoConnectEx (0xa)</td>
+ </tr>
+ <tr>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">2007</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">2003</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">EcDoConnectEx (0xa)</td>
+ </tr>
+ <tr>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">2007</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">2007</td>
+  <td style="border:none;border-bottom:1px solid #e0e0e0">EcDoConnectEx (0xa)</td>
+ </tr>
+</table>
+
+mapiproxy reproduces the Exchange 2000 behavior and prevents Outlook
+from communicating with the Exchange server using the
+EcDoConnectEx/EcDoRpcEx as described in Figure 2 below. When Outlook
+sends an EcDoConnectEx request, mapiproxy doesn't relay the request to
+the remote Exchange server and directly returns a dcerpc_fault to
+Outlook. Outlook, assuming the server doesn't support this call uses
+EcDoConnect instead. From this call, mapiproxy relay the information
+to Exchange.
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mapiproxy_emsmdb_graph.png" width="75%" height="75%" />
+</td>
+</tr>
+</table>
+<center>Figure 2. mapiproxy behavior on Outlook EMSMDB connection</center>
+
+From the Exchange side, the server will analyze this EcDoConnect
+request as a call sent by Outlook 2000 or below version. Exchange
+works fine using this protocol version unless Exchange 2007 SP1 which
+sounds to introduce client version restrictions <i>by default</i>. In
+the meantime, existing tests demonstrate similar restrictions would
+apply to Outlook 2003 connection (without mapiproxy) and prevent
+Outlook below 2007 connecting to Exchange 2007. Further information
+and solution is available at the following addresses:
+<ul>
+  <li><a href="http://support.microsoft.com/kb/555851">Earlier Outlook clients cant connect to Exchange 2007 Server</a></li>
+  <li><a href="http://msexchangeteam.com/archive/2006/02/20/419994.aspx">Exchange 12 and Public Folders</a></li>
+</ul>
+<br/>
+
+<a name="idl"></a><h3> 4.3. A Slightly Different IDL File </h3>
+
+IDL stands for Interface Definition Language and OpenChange uses this
+format to describe ExchangeRPC communications. This file is processed
+by pidl (Perl IDL compiler provided by Samba4) which turns this
+protocol description into C-code dealing with the push, pull and print
+operations.
+
+OpenChange development politic in trunk is to push a new MAPI call in
+the IDL only when the associated libmapi implementation and mapitest
+unit is developed. In the meantime, mapiproxy requires full MAPI
+requests contents dissection - incomplete IDL support leading in NDR
+dcerpc_fault. In the mapiproxy branch IDL, you will find several new
+MAPI calls, none of them linked to any libmapi upper layer code.
+
+Moreover, OpenChange has some problems with offset increment in NDR
+responses - affecting mapiproxy but not libmapi - and which leaded
+mapiproxy IDL development in handling - for the moment - MAPI
+responses as an opaque DATA blob rather than a nice dissected output.
+
+Last but not least, some MAPI calls are yet experimental in trunk and
+trying to provide improved decoding in the proxy may produce
+unexpected results (segmentation fault). Improving mapiproxy
+reliability required to turn some custom MAPI call IDL to generic
+ones: moving from complex structures to subcontext with no further
+contents analysis: for example Restrictions: Restrict, FindRow.
+
+Finally, libmapi code in the mapiproxy branch is not designed to work
+at the moment, mostly cause it introduces a few NDR MAPI hacks and
+some controlled IDL regression and improvements. When these issues are
+fixed, it will be possible for mapiproxy to be merged into trunk.
+
+<br/>
+
+
+<a name="mod_dev"></a><h2>5. Stackable Modules</h2>
+<a name="mpm_overview"></a><h3>5.1. General Overview</h3>
+
+The mapiproxy stackable modules system provides implementors a
+development framework designed to facilitate the implementation of new
+features. This stackable mechanism lets developers write modules with
+a very specific scope which modifications will transparently be
+relayed to the next module until it is finally pushed by mapiproxy to
+the next hop (Figure 3.).
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mpm_stack.png" width="75%" height="75%" />
+</td>
+</tr>
+</table>
+<center>Figure 3. mapiproxy module stack and EcDoRpc interaction </center>
+
+With this system, developers can focus their effort on ExchangeRPC
+traffic - or any other protocol smbd supports - interception,
+modification, analysis and avoid spending time on implementing a new
+endpoint server. Furthermore it provides an easier way for
+implementors to divide the work in smaller units and develop each of
+them in a separated module.
+<br/>
+
+mapiproxy modules are dynamic shared objects with an entry point and a
+limited set of hooks. These modules have to be installed in the
+<i>dcerpc_mapiproxy</i> folder within the samba4 modules directory
+(e.g. <i>/usr/local/samba/modules</i>). mapiproxy modules specified
+in the Samba configuration file (smb.conf) will be loaded in mapiproxy
+at runtime and interact one with the other in the same order they got
+defined:
+
+\code
+	dcerpc_mapiproxy:modules = downgrade,dummy
+\endcode
+
+All mapiproxy modules will be registered but only those specified on
+the <strong>dcerpc_mapiproxy:modules</strong> parametric option line
+will be added to the chained list of effective modules.
+<br/><br/>
+
+
+<a name="mpm_ep"></a><h3>5.2. Module entry point</h3>
+
+mapiproxy modules must have an entry point function named
+<strong>init_module</strong>. This function needs to set general
+information about the module, specify the module's hooks and finally
+call the <strong>mapiproxy_module_register</strong> function to
+register itself in the mapiproxy module subsystem.
+
+\code
+NTSTATUS init_module(void)
+{
+	struct mapiproxy_module	module;
+	NTSTATUS		ret;
+
+	/* Fill in our name */
+	module.name        = "sample";
+	module.description = "A sample module";
+	module.endpoint    = "any";
+
+	/* Fill in all the operations */
+	module.init     = sample_init;
+	module.push     = sample_push;
+	module.ndr_pull = sample_ndr_pull;
+	module.pull     = sample_pull;
+	module.dispatch = NULL;
+
+	/* Register ourselves with the MAPIPROXY subsytem */
+	ret = mapiproxy_module_register(&module);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DEBUG(0, ("Failed to register 'sample' mapiproxy module!\n"));
+		return ret;
+	}
+
+	return ret;
+}
+\endcode
+
+<ul>
+    <li><strong>module.name</strong>:<br/>
+    This is the module name. This name will be used by
+    dcerpc_mapiproxy:modules in smb.conf to load the module</li>
+
+    <li><strong>module.description</strong>:<br/> 
+    This field lets developers specify a brief module description for
+    information purpose only.</li>
+
+    <li><strong>module.endpoint</strong>:<br/> 
+    This field defines the interface which this module is designed to
+    work with. The primary objective is to avoid calling the module
+    hooks if the module doesn't have any impact on the requests or
+    replies. For example, a module only interacting with the EcDoRpc
+    function should define <i>exchange_emsmdb</i>.
+
+    In the meantime, it can happen that a module requires to interact
+    with more than a single interface. In such case, use the
+    '<strong>any</strong>' keyword which will call the modules functions
+    with any endpoints proxified by mapiproxy.</li>
+</ul>
+
+
+<a name="mpm_hook"></a><h3> 5.3. Module Hooks</h3>
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<strong>Please note that the module API is still under development and
+is likely to change in further revisions.</strong>
+</td>
+</tr>
+</table>
+
+<br/>
+
+
+<a name="modules"></a><h2> 6. Available Modules </h2>
+<a name="mod_downgrade"></a><h3> 6.1. Downgrade Module</h3>
+
+The <strong>downgrade</strong> module implements the
+EcDoConnect/EcDoRpc negotiation as described in <a
+href="#retrograde">section 4.2</a>. It ensures Outlook won't either
+send compressed information or use other functions than EcDoRpc for
+EMSMDB transport. In order to use the downgrade module, edit smb.conf
+and add <i>downgrade</i> to <i>dcerpc_mapiproxy:modules</i>.
+
+\code
+	dcerpc_mapiproxy:modules = downgrade
+\endcode
+
+<br/>
+
+<a name="mod_pack"></a><h3> 6.2. Pack Module </h3>
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<strong>Note that this module only works with an infrastructure using two or
+more instances of mapiproxy as described in <a href="#overview">Figure
+1</a></strong>
+</td>
+</tr>
+</table>
+
+The <strong>pack</strong> module implements routines designed to
+manipulate and factorize MAPI contents between different mapiproxy
+instances. It also offers a developer overview on how to manipulate
+mapi requests. Last but not least, it provides data which can next be
+used by subsequent mapiproxy modules for example to compress or
+encrypt this proxypack blob.
+
+<ul>
+
+<li>First, mapiproxy extracts and removes specific MAPI calls from the
+request, pack them within the proxypack MAPI call data blob, prefix
+them with their real offset in the array of mapi requests and finally
+append this custom call at the end of the mapi requests array (Figure
+4).</li>
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mpm_pack_pack.png" />
+</td>
+</tr>
+</table>
+<center> Figure 4. Pack process </center>
+
+<li>Final mapiproxy hop will seek the mapi requests array looking for
+the proxypack call. If found, it unpacks MAPI data and restore these
+calls at their initial location within the mapi requests array (Figure
+5).</li>
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mpm_pack_unpack.png" />
+</td>
+</tr>
+</table>
+<center> Figure 5. Unpack process </center>
+
+</ul>
+
+
+This module has two configuration options:
+<ul>
+ <li><strong>mpm_pack:opnums</strong><br/>
+ This option takes a list of MAPI calls to pack into the proxypack
+ data blob. It can take one or more MAPI opnums, each of them
+ separated with a comma.</li>
+
+ <li><strong>mpm_pack:lasthop</strong><br/>
+ This options takes either <i>true</i> or <i>false</i>.the lasthop
+ option defines whether this is a mapiproxy directly connected to
+ Outlook/Exchange or yet another proxy inserted within the mapiproxy
+ chain of hops. If this mapiproxy instance is not a last hop, then it
+ will skip the pack/unpack operations and forward the request to the
+ next one.</li>
+</ul>
+
+\code
+        mpm_pack:opnums = 0x70,0x75,0x76,0x77,0xa
+        mpm_pack:lasthop = true
+\endcode
+
+In order to use the pack module, edit smb.conf and add <i>pack</i> to
+<i>dcerpc_mapiproxy:modules</i>.
+
+\code
+	dcerpc_mapiproxy:modules = downgrade,pack
+\endcode
+
+<br/>
+
+
+<a name="faq"></a><h2>7. Frequently Asked Questions</h2>
+<a name="completed"></a><h3>7.1. The action could not be completed</h3>
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mapiproxy_error_001.png"/>
+</td>
+</tr>
+</table>
+<center>Figure 6. Outlook error: The action could not be completed</center>
+
+If you have followed the <a href="#minute">5-Minute Configuration</a>
+instructions and the above error message box (Figure 6) is displayed
+each time you click the <i>Check Name</i> button, then you need to:
+<ul>
+<li>Click on <strong>More Settings</strong></li>
+<li>Open the security Tab</li>
+<li>Tick the <strong>Always prompt for username and password</strong>
+checkbox in the User Configuration section (Figure 7)</strong></li>
+</ul>
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mapiproxy_error_001_fix.png" />
+</td>
+</tr>
+</table>
+<center>Figure 7. Resolution: Always prompt for username and password</center>
+
+Next time you click on <i>Check Name</i>, Outlook will prompt for
+username and password. Similar credential box will be displayed when
+Outlook is launched.
+
+*/

@@ -7,6 +7,7 @@ Among other things, the OpenChange client libraries provide:
 - MAPI client library (<a href="../libmapi/index.html">libmapi</a>)
 - OpenChange Property Files (<a href="../libocpf/index.html">libocpf</a>)
 - A regression test framework (<a href="../mapitest/index.html">mapitest</a>)
+- MAPIProxy project (<a href="../mapiproxy/index.html">mapiproxy</a>)
 
 <h2>OpenChange Project Goals</h2>
 

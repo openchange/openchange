@@ -917,3 +917,128 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageStatus(struct mapitest *mt)
 
 	return true;
 }
+
+/**
+   \details Test the SetReadFlags (0x66) operation
+
+   This function:
+   -# Opens the Inbox folder and creates some test content
+   -# Checks that the PR_MESSAGE_FLAGS property on each message is 0x0
+   -# Apply SetReadFlags() on every second messages
+   -# Check the results are as expected
+   -# Apply SetReadFlags() again
+   -# Check the results are as expected
+   -# Cleanup
+	
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = true;
+	mapi_object_t		obj_htable;
+	mapi_object_t		obj_test_folder;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	struct mt_common_tf_ctx	*context;
+	int			i;
+	uint64_t		messageIds[5];
+
+	/* Step 1. Logon */
+	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
+		return false;
+	}
+
+	/* Fetch the contents table for the test folder */
+	context = mt->priv;
+	mapi_object_init(&(obj_test_folder));
+	GetContentsTable(&(context->obj_test_folder), &(obj_test_folder), 0, NULL);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
+		ret = false;
+		goto cleanup;
+	}
+
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_MID, PR_MESSAGE_FLAGS);
+	SetColumns(&obj_test_folder, SPropTagArray);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetColumns", GetLastError());
+	MAPIFreeBuffer(SPropTagArray);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	QueryRows(&obj_test_folder, 10, TBL_NOADVANCE, &SRowSet);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "QueryRows", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	for (i = 0; i < 10; ++i) {
+		if (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1])) != 0x0) {
+			mapitest_print(mt, "* %-35s: unexpected flag 0x%x\n", "QueryRows", 
+				       (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1]))));
+			ret = false;
+			goto cleanup;
+		}
+	}	
+
+	for (i = 0; i < 5; ++i) {
+		messageIds[i] = (*(const uint64_t *)get_SPropValue_data(&(SRowSet.aRow[i*2].lpProps[0])));
+	}
+
+	SetReadFlags(&(context->obj_test_folder), 0x0, 5, messageIds);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetReadFlags", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = QueryRows(&obj_test_folder, 10, TBL_NOADVANCE, &SRowSet);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "QueryRows", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	for (i = 0; i < 10; i+=2) {
+		if (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1])) != MSGFLAG_READ) {
+			mapitest_print(mt, "* %-35s: unexpected flag (0) 0x%x\n", "QueryRows", 
+				       (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1]))));
+			ret = false;
+			goto cleanup;
+		}
+		if (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i+1].lpProps[1])) != 0x0) {
+			mapitest_print(mt, "* %-35s: unexpected flag (1) 0x%x\n", "QueryRows", 
+				       (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i+1].lpProps[1]))));
+			ret = false;
+			goto cleanup;
+		}
+	}	
+
+	SetReadFlags(&(context->obj_test_folder), CLEAR_READ_FLAG, 5, messageIds);
+
+	retval = QueryRows(&obj_test_folder, 10, TBL_NOADVANCE, &SRowSet);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "QueryRows", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	for (i = 0; i < 10; ++i) {
+		if (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1])) != 0x0) {
+			mapitest_print(mt, "* %-35s: unexpected flag 0x%x\n", "QueryRows", 
+				       (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1]))));
+			ret = false;
+			goto cleanup;
+		}
+	}
+
+ cleanup:
+	/* Cleanup and release */
+	mapi_object_release(&obj_htable);
+	mapitest_common_cleanup(mt);
+
+	return ret;
+}
+

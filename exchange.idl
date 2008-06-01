@@ -660,6 +660,7 @@ System Attendant Private Interface
 			op_MAPI_RemoveAllRecipients		= 0xd,
 			op_MAPI_ModifyRecipients		= 0xe,
 			op_MAPI_ReadRecipients			= 0xf,
+			op_MAPI_ReloadCachedInformation		= 0x10,
 			op_MAPI_SetMessageReadFlag		= 0x11,
 			op_MAPI_SetColumns			= 0x12,
 			op_MAPI_SortTable			= 0x13,
@@ -1255,6 +1256,52 @@ System Attendant Private Interface
  		uint8			RowCount;
  		ReadRecipientRow	RecipientRows[RowCount];
 	} ReadRecipients_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x10 */
+	typedef [enum8bit] enum {
+		StringType_NONE			= 0x0,
+		StringType_EMPTY		= 0x1,
+		StringType_STRING8		= 0x2,
+		StringType_UNICODE_REDUCED	= 0x3,
+		StringType_UNICODE		= 0x4
+	} StringType;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
+		[case(0x1)];
+		[case(0x2)] astring			lpszA;
+		[case(0x3)] astring			lpszW_reduced;
+		[case(0x4)] [flag(STR_NULLTERM)] string	lpszW;
+	} String;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		StringType			StringType;
+		[switch_is(StringType)] String	String;
+	} TypedString;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		ulRecipClass		RecipientType;
+		uint16			CodePageId;
+		uint16			Reserved;
+		uint16			RecipientRowSize;
+		[subcontext(0),subcontext_size(RecipientRowSize),flag(NDR_REMAINING)]RecipientRow      	RecipientRow;
+	} OpenRecipientRow;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		Reserved;
+	} ReloadCachedInformation_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8		HasNamedProperties;
+		TypedString		SubjectPrefix;
+		TypedString		NormalizedSubject;
+		uint16			RecipientCount;
+		uint16			ColumnCount;
+		MAPITAGS		RecipientColumns[ColumnCount];
+		uint8			RowCount;
+		OpenRecipientRow	RecipientRows[RowCount];
+	} ReloadCachedInformation_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x11 */
@@ -2821,6 +2868,7 @@ System Attendant Private Interface
 		[case(op_MAPI_DeleteProps)] DeleteProps_req mapi_DeleteProps;
 		[case(op_MAPI_SaveChangesMessage)] SaveChangesMessage_req mapi_SaveChangesMessage;
 		[case(op_MAPI_SetMessageReadFlag)] SetMessageReadFlag_req mapi_SetMessageReadFlag;
+		[case(op_MAPI_ReloadCachedInformation)] ReloadCachedInformation_req mapi_ReloadCachedInformation;
 		[case(op_MAPI_SetColumns)] SetColumns_req mapi_SetColumns;
 		[case(op_MAPI_SortTable)] SortTable_req mapi_SortTable;
 		[case(op_MAPI_Restrict)] Restrict_req mapi_Restrict;
@@ -2932,6 +2980,7 @@ System Attendant Private Interface
 		[case(op_MAPI_ModifyRecipients)] ModifyRecipients_repl mapi_ModifyRecipients;
 		[case(op_MAPI_ReadRecipients)] ReadRecipients_repl mapi_ReadRecipients;
 		[case(op_MAPI_SetMessageReadFlag)] SetMessageReadFlag_repl mapi_SetMessageReadFlag;
+		[case(op_MAPI_ReloadCachedInformation)] ReloadCachedInformation_repl mapi_ReloadCachedInformation;
 		[case(op_MAPI_SetColumns)] SetColumns_repl mapi_SetColumns;
 		[case(op_MAPI_SortTable)] SortTable_repl mapi_SortTable;
 		[case(op_MAPI_Restrict)] Restrict_repl mapi_Restrict;

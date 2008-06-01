@@ -120,7 +120,7 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   \sa OpenFolder, DeleteMessage, GetLastError
+   \sa OpenFolder, CreateMessage, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS DeleteMessage(mapi_object_t *obj_folder, mapi_id_t *id_messages,
 				       uint32_t cn_messages)
@@ -926,3 +926,93 @@ _PUBLIC_ enum MAPISTATUS CopyFolder(mapi_object_t *obj_folder,
 	
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Set the Read Flags on one or more messages
+
+   \param obj_folder the folder containing the messages to change
+   \param ReadFlags a bitmap of flags controlling the changes to
+   PR_PROPERTY_FLAGS
+   \param MessageIdCount the number of messages in the MessageIds array
+   \param MessageIds an array of message ids to set Read flags for
+
+   Note that the obj_folder argument is the object corresponding to the
+   folder containing the messages (e.g. the result of CreateFolder() or
+   OpenFolder(). It is \em not the content table of that folder (unlike
+   SetMessageReadFlag().)
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa SetMessageReadFlags for a slightly different version, working on
+   a single message
+*/
+_PUBLIC_ enum MAPISTATUS SetReadFlags(mapi_object_t *obj_folder,
+				      uint8_t ReadFlags, 
+				      uint16_t MessageIdCount,
+				      uint64_t *MessageIds)
+{
+	mapi_ctx_t		*mapi_ctx;
+	TALLOC_CTX		*mem_ctx;
+	uint32_t		size;
+	struct SetReadFlags_req	request;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct mapi_request	*mapi_request;
+	NTSTATUS		status;
+	struct mapi_response	*mapi_response;
+	enum MAPISTATUS		retval;
+
+
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("SetReadFlags");
+
+	size = 0;
+
+	/* Fill the SetReadFlags operation */
+	request.WantAsynchronous = 0;
+	size += sizeof(uint8_t);
+	request.ReadFlags = ReadFlags;
+	size += sizeof(uint8_t);
+	request.MessageIdCount = MessageIdCount;
+	size += sizeof(uint16_t);
+	request.MessageIds = MessageIds;
+	size += sizeof(uint64_t) * MessageIdCount;
+
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetReadFlags;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SetReadFlags = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof(uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_folder);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* TODO: parse response */
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+

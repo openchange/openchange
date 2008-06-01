@@ -2370,18 +2370,9 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x66 */
-	typedef [bitmap8bit] bitmap {
-		SuppressReceipt		= 0x1,	/* Cancel read receipt. set Read bit */
-		ClearReadFlag		= 0x4,	/* Clear the read bit. Requires |0x1 as well */
-		GenerateReadReceiptOnly	= 0x10, /* Send read report, don't change Read bit */
-		ClearNotifyRead		= 0x20, /* Clear the Notify Read */
-		ClearNotifyUnRead	= 0x40  /* Clear the Notify UnRead bit */
-	} ReadFlags;
-
 	typedef [flag(NDR_NOALIGN)] struct {
- 		uint8		handle_idx;
 		boolean8	WantAsynchronous;
-	  	ReadFlags	ReadFlags;
+	  	MSGFLAG_READ	ReadFlags;
 	  	uint16		MessageIdCount;
 	  	hyper		MessageIds[MessageIdCount];
 	} SetReadFlags_req;

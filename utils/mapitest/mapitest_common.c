@@ -310,3 +310,169 @@ _PUBLIC_ char *mapitest_common_genblob(TALLOC_CTX *mem_ctx, size_t len)
 
 	return retstr;
 }
+
+_PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
+{
+	struct mt_common_tf_ctx	*context;
+	enum MAPISTATUS		retval;
+	const char		*from = NULL;
+	const char		*subject = NULL;
+	const char		*body = NULL;
+	struct SPropValue	lpProp[2];
+	int 			i;
+
+	context = mt->priv;
+
+	/* Create test folder */
+	mapi_object_init(&(context->obj_test_folder));
+        retval = CreateFolder(&(context->obj_top_folder), FOLDER_GENERIC,
+			      MT_DIRNAME_TEST, NULL,
+                              OPEN_IF_EXISTS, &(context->obj_test_folder));
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "Create the test folder", GetLastError());
+		return false;
+	}
+
+	/* Create 5 test messages in the test folder with the same subject */
+	for (i = 0; i < 5; ++i) {
+		mapi_object_init(&(context->obj_test_msg[i]));
+		retval = mapitest_common_message_create(mt, &(context->obj_test_folder),
+							&(context->obj_test_msg[i]), MT_MAIL_SUBJECT);
+		if (GetLastError() != MAPI_E_SUCCESS) {
+			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Create test message", GetLastError());
+			return false;
+		}
+
+		from = talloc_asprintf(mt->mem_ctx, "[MT] Dummy%i", i);
+		set_SPropValue_proptag(&lpProp[0], PR_SENDER_NAME, (const void *)from);
+		body = talloc_asprintf(mt->mem_ctx, "Body of message %i", i);
+		set_SPropValue_proptag(&lpProp[1], PR_BODY, (const void *)body);
+		retval = SetProps(&(context->obj_test_msg[i]), lpProp, 2);
+		MAPIFreeBuffer((void *)from);
+		MAPIFreeBuffer((void *)body);
+		if (retval != MAPI_E_SUCCESS) {
+			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Set props on message", GetLastError());
+			return false;
+		}
+		retval = SaveChangesMessage(&(context->obj_test_folder), &(context->obj_test_msg[i]));
+		if (retval != MAPI_E_SUCCESS) {
+			return false;
+		}
+	}
+
+	/* Create 5 test messages in the test folder with the same sender */
+	for (i = 5; i < 10; ++i) {
+		mapi_object_init(&(context->obj_test_msg[i]));
+		subject = talloc_asprintf(mt->mem_ctx, "[MT] Subject%i", i);
+		retval = mapitest_common_message_create(mt, &(context->obj_test_folder),
+							&(context->obj_test_msg[i]), subject);
+		if (GetLastError() != MAPI_E_SUCCESS) {
+			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Create test message", GetLastError());
+			return false;
+		}
+
+		from = talloc_asprintf(mt->mem_ctx, "[MT] Dummy From");
+		set_SPropValue_proptag(&lpProp[0], PR_SENDER_NAME, (const void *)from);
+		body = talloc_asprintf(mt->mem_ctx, "Body of message %i", i);
+		set_SPropValue_proptag(&lpProp[1], PR_BODY, (const void *)body);
+		retval = SetProps(&(context->obj_test_msg[i]), lpProp, 2);
+		MAPIFreeBuffer((void *)from);
+		MAPIFreeBuffer((void *)body);
+		if (retval != MAPI_E_SUCCESS) {
+			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Set props on message", GetLastError());
+			return false;
+		}
+		retval = SaveChangesMessage(&(context->obj_test_folder), &(context->obj_test_msg[i]));
+		if (retval != MAPI_E_SUCCESS) {
+			return false;
+		}
+	}
+
+	return true;
+};
+
+/**
+   Convenience function to login to the server
+
+   This functions logs into the server, gets the top level store, and
+   gets the hierachy table for the top level store (which is returned as
+   obj_htable). It also creates a test folder with 10 test messages.
+
+   \param mt pointer to the top-level mapitest structure
+   \param obj_htable the hierachy table for the top level store
+   \param count the number of rows in the top level hierarchy table
+
+   \return true on success, otherwise false
+*/
+_PUBLIC_ bool mapitest_common_setup(struct mapitest *mt, mapi_object_t *obj_htable, uint32_t *count)
+{
+	bool			ret = false;
+	struct mt_common_tf_ctx	*context;
+
+	context = talloc(mt->mem_ctx, struct mt_common_tf_ctx);
+	mt->priv = context;
+
+	mapi_object_init(&(context->obj_store));
+	OpenMsgStore(&(context->obj_store));
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mapi_object_init(&(context->obj_top_folder));
+	ret = mapitest_common_folder_open(mt, &(context->obj_store), &(context->obj_top_folder), 
+					  olFolderTopInformationStore);
+	if (ret == false) {
+		return false;
+	}
+
+	/* We do this before getting the hierachy table, because otherwise the new
+	   test folder will be omitted, and the count will be wrong */
+	ret = mapitest_common_create_filled_test_folder(mt);
+	if (ret == false) {
+		return false;
+	}
+
+	mapi_object_init(obj_htable);
+	GetHierarchyTable(&(context->obj_top_folder), obj_htable, 0, count);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	return true;
+}
+
+/**
+   Convenience function to clean up after logging into the server
+
+   This functions cleans up after a mapitest_common_setup() call
+
+   \param mt pointer to the top-level mapitest structure
+*/
+_PUBLIC_ void mapitest_common_cleanup(struct mapitest *mt)
+{
+	struct mt_common_tf_ctx	*context;
+	int			i;
+
+	context = mt->priv;
+
+	for (i = 0; i<10; ++i) {
+		mapi_object_release(&(context->obj_test_msg[i]));
+	}
+
+	EmptyFolder(&(context->obj_test_folder));
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "Empty test folder", GetLastError());
+	}
+
+	DeleteFolder(&(context->obj_top_folder), mapi_object_get_id(&(context->obj_test_folder)));
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "Delete test folder", GetLastError());
+	}
+
+	mapi_object_release(&(context->obj_test_folder));
+	mapi_object_release(&(context->obj_top_folder));
+	mapi_object_release(&(context->obj_store));
+
+	talloc_free(mt->priv);
+}
+

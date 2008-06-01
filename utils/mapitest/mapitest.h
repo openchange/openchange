@@ -80,6 +80,18 @@ struct mapitest_module {
 };
 
 /**
+   Context for mapitest test folder
+*/
+struct mt_common_tf_ctx
+{
+	mapi_object_t	obj_store;
+	mapi_object_t	obj_top_folder;
+	mapi_object_t	obj_test_folder;
+	mapi_object_t	obj_test_msg[10];
+};
+
+
+/**
  *  Defines
  */
 #define	MAPITEST_SUCCESS	0

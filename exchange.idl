@@ -699,6 +699,7 @@ System Attendant Private Interface
 			op_MAPI_CopyFolder			= 0x36,
 			op_MAPI_QueryColumnsAll			= 0x37,
 			op_MAPI_Abort				= 0x38,
+			op_MAPI_CopyTo				= 0x39,
 			op_MAPI_CopyToStream			= 0x3a,
 			op_MAPI_GetTable			= 0x3e,
 			op_MAPI_GetRulesTable			= 0x3f,
@@ -2035,6 +2036,32 @@ System Attendant Private Interface
 	} Abort_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x39 */
+	typedef [bitmap8bit] bitmap {
+		CopyFlagsMove		= 0x1,	/* Move properties */
+		CopyFlagsNoOverwrite	= 0x2	/* Do not overwrite existing properties */
+	} CopyFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	  	uint32		index; 		/* index into array of property tags */
+		MAPITAGS	property_tag;	/* property for which there was an error */
+		MAPISTATUS	error_code; 	/* the error that occurred for this property */
+	} PropertyProblem;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8			handle_idx;
+		boolean8		WantAsynchronous;
+		boolean8		WantSubObjects;
+		CopyFlags		CopyFlags;
+		mapi_SPropTagArray	ExcludedTags;
+	} CopyTo_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		PropertyProblemCount;
+		PropertyProblem	PropertyProblem[PropertyProblemCount];
+	} CopyTo_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x3a */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
@@ -2383,11 +2410,6 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x67 */
-	typedef [bitmap8bit] bitmap {
-		CopyFlagsMove		= 0x1,	/* Move properties */
-		CopyFlagsNoOverwrite	= 0x2	/* Do not overwrite existing properties */
-	} CopyFlags;
-
 	typedef [flag(NDR_NOALIGN)] struct {
  		uint8		handle_idx;
 		boolean8	WantAsynchronous;
@@ -2395,12 +2417,6 @@ System Attendant Private Interface
 	  	uint16		count;
 	  	MAPITAGS	property_tag[count];
 	} CopyProperties_req;
-
-	typedef [flag(NDR_NOALIGN)] struct {
-	  	uint32		index; 		/* index into array of property tags */
-		MAPITAGS	property_tag;	/* property for which there was an error */
-		MAPISTATUS	error_code; 	/* the error that occurred for this property */
-	} PropertyProblem;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 	  	uint16		count;
@@ -2845,6 +2861,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CopyFolder)] CopyFolder_req mapi_CopyFolder;
 		[case(op_MAPI_QueryColumnsAll)] QueryColumnsAll_req mapi_QueryColumnsAll;
 		[case(op_MAPI_Abort)] Abort_req mapi_Abort;
+		[case(op_MAPI_CopyTo)] CopyTo_req mapi_CopyTo;
 		[case(op_MAPI_CopyToStream)] CopyToStream_req mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_req mapi_GetRulesTable;
@@ -2952,6 +2969,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CopyFolder)] CopyFolder_repl mapi_CopyFolder;
 		[case(op_MAPI_QueryColumnsAll)] QueryColumnsAll_repl mapi_QueryColumnsAll;
 		[case(op_MAPI_Abort)] Abort_repl mapi_Abort;
+		[case(op_MAPI_CopyTo)] CopyTo_repl mapi_CopyTo;
 		[case(op_MAPI_CopyToStream)] CopyToStream_repl mapi_CopyToStream;
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_repl mapi_GetRulesTable;

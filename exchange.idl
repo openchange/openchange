@@ -1498,6 +1498,7 @@ System Attendant Private Interface
 		[case(RES_EXIST)]		mapi_SExistRestriction		resExist;
 		[case(RES_SUBRESTRICTION)]	mapi_SSubRestriction		resSub;
 		[case(RES_COMMENT)]		mapi_SCommentRestriction	resComment;
+		[default];
 	} mapi_SRestriction_CTR;
 
 	typedef [public,flag(NDR_NOALIGN)] struct {

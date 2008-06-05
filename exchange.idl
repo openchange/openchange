@@ -2481,11 +2481,10 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x67 */
 	typedef [flag(NDR_NOALIGN)] struct {
- 		uint8		handle_idx;
-		boolean8	WantAsynchronous;
-	  	CopyFlags	CopyFlags;
-	  	uint16		count;
-	  	MAPITAGS	property_tag[count];
+ 		uint8			handle_idx;
+		boolean8		WantAsynchronous;
+	  	CopyFlags		CopyFlags;
+		mapi_SPropTagArray	PropertyTags;
 	} CopyProperties_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {

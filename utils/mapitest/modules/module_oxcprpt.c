@@ -830,7 +830,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 
 
 	talloc_free(out_stream);
-	out_stream = talloc_size(mt->mem_ctx, 0x1000);
+	out_stream = talloc_size(mt->mem_ctx, 0x1001);
 	retval = ReadStream(&obj_stream, (uint8_t *)out_stream, 0x1000, &read_size);
 	out_stream[read_size] = '\0';
 	mapitest_print(mt, "* %-35s: (0x%x bytes read) 0x%.8x\n", "ReadStream", read_size, GetLastError());

@@ -390,7 +390,7 @@ _PUBLIC_ enum MAPISTATUS MoveCopyMessages(mapi_object_t *obj_src,
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_init("CopyMessages");
+	mem_ctx = talloc_init("MoveCopyMessages");
 	
 	size = 0;
 

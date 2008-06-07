@@ -251,7 +251,7 @@ const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 	case PT_SYSTIME:
 		return (const void *)(struct FILETIME *)&lpProp->value.ft;
 	case PT_ERROR:
-		return (const void *)lpProp->value.err;
+		return (const void *)&lpProp->value.err;
 	case PT_STRING8:
 		return (const void *)lpProp->value.lpszA;
 	case PT_UNICODE:
@@ -332,7 +332,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.d = *((const uint64_t *)data);
 		break;
 	case PT_BOOLEAN:
-		lpProps->value.b = *((const uint16_t *)data);
+		lpProps->value.b = *((const uint8_t *)data);
 		break;
 	case PT_STRING8:
 		lpProps->value.lpszA = (const char *) data;
@@ -541,7 +541,7 @@ _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SProp
 
 	cValues = aRow->cValues + 1;
 	aRow->lpProps = talloc_realloc(mem_ctx, aRow->lpProps, struct SPropValue, cValues);
-	lpProp = aRow->lpProps[cValues];
+	lpProp = aRow->lpProps[cValues-1];
 	lpProp.ulPropTag = SPropValue.ulPropTag;
 	lpProp.dwAlignPad = 0;
 	set_SPropValue(&(lpProp), get_SPropValue_data(&SPropValue));
@@ -560,7 +560,7 @@ _PUBLIC_ uint32_t SRowSet_propcpy(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, 
 	for (rows = 0; rows < SRowSet->cRows; rows++) {
 		cValues = SRowSet->aRow[rows].cValues + 1;
 		SRowSet->aRow[rows].lpProps = talloc_realloc(mem_ctx, SRowSet->aRow[rows].lpProps, struct SPropValue, cValues);
-		lpProp = SRowSet->aRow[rows].lpProps[cValues];
+		lpProp = SRowSet->aRow[rows].lpProps[cValues-1];
 		lpProp.ulPropTag = SPropValue.ulPropTag;
 		lpProp.dwAlignPad = 0;
 		set_SPropValue(&(lpProp), (void *)&SPropValue.value);

@@ -725,18 +725,19 @@ _PUBLIC_ enum MAPISTATUS FreeBookmark(mapi_object_t *obj_table,
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 
-	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("FreeBookmark");
-
-	table = (mapi_object_table_t *)obj_table->private_data;
-	bookmark = table->bookmark;
-
 	/* Sanity check */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+
+	table = (mapi_object_table_t *)obj_table->private_data;
 	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!bookmark, MAPI_E_INVALID_BOOKMARK, NULL);
 	MAPI_RETVAL_IF(bkPosition > table->bk_last, MAPI_E_INVALID_BOOKMARK, NULL);
+
+	bookmark = table->bookmark;
+	MAPI_RETVAL_IF(!bookmark, MAPI_E_INVALID_BOOKMARK, NULL);
+
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("FreeBookmark");
 
 	while (bookmark) {
 		if (bookmark->index == bkPosition) {
@@ -774,10 +775,15 @@ _PUBLIC_ enum MAPISTATUS FreeBookmark(mapi_object_t *obj_table,
 
 			MAPIFreeBuffer(bookmark->bin.lpb);
 			DLIST_REMOVE(table->bookmark, bookmark);
+
+			talloc_free(mapi_response);
+			talloc_free(mem_ctx);
+
 			return MAPI_E_SUCCESS;
 		}
 		bookmark = bookmark->next;
 	}
+	talloc_free(mem_ctx);
 	return MAPI_E_INVALID_BOOKMARK;
 }
 

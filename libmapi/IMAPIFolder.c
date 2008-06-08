@@ -624,7 +624,7 @@ _PUBLIC_ enum MAPISTATUS EmptyFolder(mapi_object_t *obj_folder)
 
 	size = 0;
 
-	/* Fill the DeleteMessages operation */
+	/* Fill the EmptyFolder operation */
 	request.unknown = 0;
 	size += sizeof(uint16_t);
 
@@ -693,7 +693,7 @@ _PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent, mapi_id_t folde
 
 	size = 0;
 
-	/* Fill the DeleteMessages operation */
+	/* Fill the DeleteFolder operation */
 	request.flags = 0x5;
 	size += sizeof(uint8_t);
 	request.folder_id = folder_id;

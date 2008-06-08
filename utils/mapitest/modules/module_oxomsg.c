@@ -294,6 +294,7 @@ _PUBLIC_ bool mapitest_oxomsg_SpoolerLockMessage(struct mapitest *mt)
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_folder;
 	mapi_object_t		obj_message;
+	mapi_id_t		id_msgs[1];
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
@@ -348,6 +349,12 @@ _PUBLIC_ bool mapitest_oxomsg_SpoolerLockMessage(struct mapitest *mt)
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
+
+	/* Step 9. Delete Message */
+	id_msgs[0] = mapi_object_get_id(&obj_message);
+	retval = DeleteMessage(&obj_folder, id_msgs, 1);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError());
+
 
 	/* Release */
 	mapi_object_release(&obj_message);

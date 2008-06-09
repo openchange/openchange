@@ -1165,7 +1165,14 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
    -# Checks that properties on both emails are correct
    -# Moves properties from the original email to the second email (no overwrite)
    -# Checks that properties on both emails are correct
-   -# Deletes both emails and the test folder
+   -# Creates an attachment (with properties) on the reference email
+   -# Creates an attachment (with different properties) on the target email
+   -# Copies the properties on the reference email to the target
+   -# Checks the properties on both attachments are correct
+   -# Creates another folder
+   -# Copies properties from the test folder to the new folder
+   -# Checks that the properties on both folders are correct
+   -# Deletes both emails and the test folders
 
    \todo It would be useful to test the problem return values
 
@@ -1180,7 +1187,11 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	mapi_object_t		obj_top_folder;
 	mapi_id_t		id_top_folder;
 	mapi_object_t		obj_ref_folder;
+	mapi_object_t		obj_targ_folder;
 	mapi_object_t		obj_ref_message;
+	mapi_object_t		obj_target_message;
+	mapi_object_t		obj_ref_attach;
+	mapi_object_t		obj_targ_attach;
 	const char		*name = NULL;
 	const char		*subject = NULL;
 	const char		*dept = NULL;
@@ -1189,7 +1200,6 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	*lpProps;
 	uint32_t		cValues;
-	mapi_object_t		obj_target_message;
 	const char		*targ_name = NULL;
 	const char		*targ_dept = NULL;
 	uint16_t		problem_count = 999;
@@ -1215,7 +1225,15 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	mapi_object_init(&obj_ref_folder);
         retval = CreateFolder(&obj_top_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
                               OPEN_IF_EXISTS, &obj_ref_folder);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 2 - Create the test folder", GetLastError());
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 2A - Create the test folder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	lpProp[0].ulPropTag = PR_CONTAINER_CLASS;
+	lpProp[0].value.lpszA = "IPF.Note";
+	SetProps(&obj_ref_folder, lpProp, 1);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 2B - SetProps", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -1497,7 +1515,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 
 	/* Step 11: Move properties, no overwrite */
 	exclude = set_SPropTagArray(mt->mem_ctx, 0x0);
-	retval = CopyProps(&obj_ref_message, &obj_target_message, exclude, CopyFlagsNoOverwrite|CopyFlagsMove,
+	retval = CopyTo(&obj_ref_message, &obj_target_message, exclude, CopyFlagsNoOverwrite|CopyFlagsMove,
 			   &problem_count, &problems);
 	MAPIFreeBuffer(exclude);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 11 - CopyTo (move)", GetLastError());
@@ -1554,6 +1572,191 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}
 
+	/* Step 13: Create attachment on reference email, and set properties */
+	mapi_object_init(&obj_ref_attach);
+	CreateAttach(&obj_ref_message, &obj_ref_attach);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 13A - CreateAttach", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	lpProp[0].ulPropTag = PR_ATTACH_METHOD;
+	lpProp[0].value.l = ATTACH_BY_VALUE;
+	lpProp[1].ulPropTag = PR_RENDERING_POSITION;
+	lpProp[1].value.l = 0;
+	lpProp[2].ulPropTag = PR_ATTACH_FILENAME;
+	lpProp[2].value.lpszA = MT_MAIL_ATTACH;
+	SetProps(&obj_ref_attach, lpProp, 3);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 13B - SetProps", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	SaveChanges(&obj_ref_message, &obj_ref_attach, KEEP_OPEN_READWRITE);
+
+	/* Step 14: Create attachment on target email */
+	mapi_object_init(&obj_targ_attach);
+	CreateAttach(&obj_target_message, &obj_targ_attach);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 14A - CreateAttach", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	lpProp[0].ulPropTag = PR_ATTACH_METHOD;
+	lpProp[0].value.l = ATTACH_BY_VALUE;
+	lpProp[1].ulPropTag = PR_RENDERING_POSITION;
+	lpProp[1].value.l = 0;
+	lpProp[2].ulPropTag = PR_ATTACH_FILENAME;
+	lpProp[2].value.lpszA = MT_MAIL_ATTACH2;
+	SetProps(&obj_targ_attach, lpProp, 3);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 14B - SetProps", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	SaveChanges(&obj_target_message, &obj_targ_attach, 0x0);
+
+	/* Step 15: Copy props from reference email attachment to target email attachment */
+	exclude = set_SPropTagArray(mt->mem_ctx, 0x0);
+	CopyTo(&obj_ref_attach, &obj_targ_attach, exclude, 0x0, &problem_count, &problems);
+	MAPIFreeBuffer(exclude);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 15 - CopyTo (attachments)", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 16: Check properties on both attachments are correct */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_ATTACH_FILENAME);
+	GetProps(&obj_ref_attach, SPropTagArray, &lpProps, &cValues);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 16A - GetProps", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(MT_MAIL_ATTACH, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 16B - Check: Reference attachment props - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 16B - Check: Reference attachment props [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+			ret = false;
+			goto cleanup;
+		}
+	}	
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_ATTACH_FILENAME);
+	GetProps(&obj_targ_attach, SPropTagArray, &lpProps, &cValues);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 16C - GetProps", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(MT_MAIL_ATTACH, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 16D - Check: Target attachment props - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 16D - Check: Target attachment props [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+			ret = false;
+			goto cleanup;
+		}
+	}	
+
+	/* Create another folder */
+	mapi_object_init(&obj_targ_folder);
+        retval = CreateFolder(&obj_top_folder, FOLDER_GENERIC, "[MT] Target Folder", NULL,
+                              OPEN_IF_EXISTS, &obj_targ_folder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 17A - Create a target folder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	lpProp[0].ulPropTag = PR_CONTAINER_CLASS;
+	lpProp[0].value.lpszA = "IPF.Journal";
+	SetProps(&obj_targ_folder, lpProp, 1);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 17B - SetProps", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Copy properties from the test folder to the new folder */
+	exclude = set_SPropTagArray(mt->mem_ctx, 0x1, PR_DISPLAY_NAME);
+	CopyTo(&obj_ref_folder, &obj_targ_folder, exclude, 0x0, &problem_count, &problems);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 18 - CopyTo (folder)", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}	
+	MAPIFreeBuffer(exclude);
+
+	/* Check that the properties on both folders are correct */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONTAINER_CLASS);
+	GetProps(&obj_ref_folder, SPropTagArray, &lpProps, &cValues);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 19A - GetProps", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(MT_DIRNAME_TOP, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 19B - Check: Reference folder props - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 19B - Check: Reference folder props [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+			ret = false;
+			goto cleanup;
+		}
+	}	
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp("IPF.Note", lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 19C - Check: Reference folder props - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 19C - Check: Reference folder props [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+			ret = false;
+			goto cleanup;
+		}
+	}
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONTAINER_CLASS);
+	GetProps(&obj_targ_folder, SPropTagArray, &lpProps, &cValues);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 19D - GetProps", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp("[MT] Target Folder", lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 19E - Check: Target folder props - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 19E - Check: Target folder props [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+			ret = false;
+			goto cleanup;
+		}
+	}	
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp("IPF.Note", lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 19F - Check: Target folder props - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 19F - Check: Target folder props [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+			ret = false;
+			goto cleanup;
+		}
+	}	
+
+
  cleanup:
 	/* Cleanup reference strings */
 	MAPIFreeBuffer((void *)subject);
@@ -1561,13 +1764,17 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	MAPIFreeBuffer((void *)targ_name);
 	MAPIFreeBuffer((void *)targ_dept);
 
-	/* Step 13: cleanup folders */
+	/* Cleanup folders */
 	retval = EmptyFolder(&obj_ref_folder);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 13A - Empty test folder", GetLastError());
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 20A - Empty test folder", GetLastError());
+	retval = DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_targ_folder));
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 20B - Delete target folder", GetLastError());
 	retval = DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_ref_folder));
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 13B - Delete test folder", GetLastError());
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 20C - Delete test folder", GetLastError());
 
 	/* Release */
+	mapi_object_release(&obj_targ_attach);
+	mapi_object_release(&obj_ref_attach);
 	mapi_object_release(&obj_ref_message);
 	mapi_object_release(&obj_ref_folder);
 	mapi_object_release(&obj_top_folder);

@@ -41,7 +41,7 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	mapi_object_t		obj_table;
 	mapi_id_t		id_src;
 	mapi_id_t		id_dst;
-	mapi_id_t		*msgid;
+	mapi_id_array_t		msg_id_array;
 	struct SPropTagArray	*SPropTagArray = NULL;
 	struct SRowSet		rowset;
 	int			i;
@@ -102,18 +102,20 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	mapi_errstr("SetColumns", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
+	mapi_id_array_init(&msg_id_array);
+
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
-		msgid = talloc_array(mem_ctx, uint64_t, rowset.cRows);
 		for (i = 0; i < rowset.cRows; i++) {
-			msgid[i] = rowset.aRow[i].lpProps[1].value.d;
+			mapi_id_array_add_id(&msg_id_array, rowset.aRow[i].lpProps[1].value.d);
 		}
-		retval = MoveCopyMessages(&obj_dir_src, &obj_dir_dst, msgid, 1);
+		retval = MoveCopyMessages(&obj_dir_src, &obj_dir_dst, &msg_id_array, 1);
 		mapi_errstr("MoveCopyMessages", GetLastError());
 		if (retval != MAPI_E_SUCCESS) return false;
 	}
 
 	/* release mapi objects
 	 */
+	mapi_id_array_release(&msg_id_array);
 	mapi_object_release(&obj_table);
 	mapi_object_release(&obj_dir_src);
 	mapi_object_release(&obj_dir_dst);

@@ -376,7 +376,13 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	mapi_object_t		obj_folder_src;
 	mapi_object_t		obj_folder_dst;
 	mapi_object_t		obj_message;
-	mapi_id_t		msgid[3];
+	mapi_object_t		dst_contents;
+	uint32_t		dst_count;
+	struct mapi_SRestriction res;
+	struct SPropTagArray    *SPropTagArray;
+	struct SRowSet		SRowSet;
+	mapi_id_array_t		msg_id_array;
+	mapi_id_t		msgid[20];
 	mapi_id_t		id_folder;
 	uint32_t		i;
 
@@ -403,8 +409,15 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
+	mapi_object_init(&(dst_contents));
+	GetContentsTable(&(obj_folder_dst), &(dst_contents), 0, &dst_count);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
+		ret = false;
+	}
 
 	/* Step 4. Create sample messages */
+	mapi_id_array_init(&msg_id_array);
 	for (i = 0; i < 3; i++) {
 		mapi_object_init(&obj_message);
 		retval = mapitest_common_message_create(mt, &obj_folder_src, &obj_message, MT_MAIL_SUBJECT);
@@ -416,16 +429,48 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 		if (retval != MAPI_E_SUCCESS) {
 			ret = false;
 		}
-		msgid[i] = mapi_object_get_id(&obj_message);
+		mapi_id_array_add_obj(&msg_id_array, &obj_message);
 		mapi_object_release(&obj_message);
 	}
 
 	/* Step 5. Move messages from source to destination */
-	retval = MoveCopyMessages(&obj_folder_src, &obj_folder_dst, msgid, 0);
+	retval = MoveCopyMessages(&obj_folder_src, &obj_folder_dst, &msg_id_array, 0);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "MoveCopyMessages", GetLastError());
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
+	mapi_id_array_release(&msg_id_array);
+
+	/* Step 6. Apply a filter */
+	res.rt = RES_PROPERTY;
+	res.res.resProperty.relop = RES_PROPERTY;
+	res.res.resProperty.ulPropTag = PR_SUBJECT;
+	res.res.resProperty.lpProp.ulPropTag = PR_SUBJECT;
+	res.res.resProperty.lpProp.value.lpszA = MT_MAIL_SUBJECT;
+
+	Restrict(&(dst_contents), &res);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Restrict", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 7. Get the filtered row */
+        SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_MID);
+        SetColumns(&(dst_contents), SPropTagArray);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetColumns", GetLastError());
+	MAPIFreeBuffer(SPropTagArray);
+
+	QueryRows(&(dst_contents), 20, TBL_NOADVANCE, &SRowSet);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "QueryRows", GetLastError());
+	if ( (retval == MAPI_E_SUCCESS) && (SRowSet.cRows > 0) ) {
+		for (i = 0; i < SRowSet.cRows; ++i) {
+			msgid[i] = SRowSet.aRow[i].lpProps[0].value.d;
+		}
+	}
+
+	/* Step 8. Delete Messages */
+	retval = DeleteMessage(&obj_folder_dst, msgid, i); 
+        mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError()); 
 
 	/* Release */
 	mapi_object_release(&obj_folder_src);

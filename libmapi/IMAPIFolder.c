@@ -356,7 +356,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageStatus(mapi_object_t *obj_folder,
 
    \param obj_src The source folder
    \param obj_dst The destination folder
-   \param message_id pointer on an array of message IDs
+   \param message_id pointer to container object for message ids.
    \param WantCopy boolean value, defines whether the operation is a
    copy or a move
 
@@ -376,7 +376,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageStatus(mapi_object_t *obj_folder,
 */
 _PUBLIC_ enum MAPISTATUS MoveCopyMessages(mapi_object_t *obj_src,
 					  mapi_object_t *obj_dst,
-					  mapi_id_t *message_id,
+					  mapi_id_array_t *message_id,
 					  bool WantCopy)
 {
 	NTSTATUS			status;
@@ -394,18 +394,15 @@ _PUBLIC_ enum MAPISTATUS MoveCopyMessages(mapi_object_t *obj_src,
 	
 	size = 0;
 
-	/* FIXME: the function can take an array of msgids and is not
-	 * limited to a unique msgid 
-	 */
-
 	/* Fill the CopyMessage operation */
 	request.handle_idx = 0x1;
 	size += sizeof (uint8_t);
 
-	for (request.count = 0; message_id[request.count]; request.count++);
+	request.count = message_id->count;
 	size += sizeof (uint16_t);
 
-	request.message_id = message_id;
+	retval = mapi_id_array_get(mem_ctx, message_id, &(request.message_id));
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 	size += request.count * sizeof (mapi_id_t);
 
 	request.WantAsynchronous = 0;

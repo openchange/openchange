@@ -13,6 +13,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 libdir=@libdir@
+modulesdir=@modulesdir@
 datarootdir=@datarootdir@
 datadir=@datadir@
 includedir=@includedir@
@@ -52,8 +53,8 @@ OC_TORTURE=@OC_TORTURE@
 OC_TORTURE_INSTALL=@OC_TORTURE_INSTALL@
 OC_TORTURE_UNINSTALL=@OC_TORTURE_UNINSTALL@
 TORTURE_MODULESDIR=${sambaprefix}/torture/
-MODULESDIR=${sambaprefix}/modules/
-SERVER_MODULESDIR=${MODULESDIR}dcerpc_server/
+SAMBA_MODULESDIR=${sambaprefix}/modules/
+SERVER_MODULESDIR=${SAMBA_MODULESDIR}dcerpc_server/
 
 # TOOLS
 OC_TOOLS=@OC_TOOLS@

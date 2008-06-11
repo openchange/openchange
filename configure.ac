@@ -303,6 +303,12 @@ dnl Server compilation
 dnl ##########################################################################
 OC_RULE_ADD(server, SERVER)
 
+AC_ARG_WITH(modulesdir, 
+[AS_HELP_STRING([--with-modulesdir], [Modules path to use])],
+[modulesdir="$withval"; ],
+[modulesdir="\${prefix}/modules"; ])
+
+AC_SUBST(modulesdir)
 
 dnl ##########################################################################
 dnl Swig bindings dependencies

@@ -644,7 +644,6 @@ mapiproxy: 	idl 					\
 
 mapiproxy-install: mapiproxy mapiproxy-modules-install
 	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -d $(DESTDIR)$(MODULESDIR)
 	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
 	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT) $(DESTDIR)$(libdir)
 	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.h $(DESTDIR)$(includedir)/
@@ -687,13 +686,13 @@ mapiproxy-modules:	mapiproxy/modules/mpm_downgrade.$(SHLIBEXT)	\
 			mapiproxy/modules/mpm_dummy.$(SHLIBEXT)		
 
 mapiproxy-modules-install: mapiproxy-modules
-	$(INSTALL) -d $(DESTDIR)$(MODULESDIR)/dcerpc_mapiproxy/
-	$(INSTALL) -m 0755 mapiproxy/modules/mpm_downgrade.$(SHLIBEXT) $(DESTDIR)$(MODULESDIR)/dcerpc_mapiproxy/
-	$(INSTALL) -m 0755 mapiproxy/modules/mpm_pack.$(SHLIBEXT) $(DESTDIR)$(MODULESDIR)/dcerpc_mapiproxy/
-	$(INSTALL) -m 0755 mapiproxy/modules/mpm_dummy.$(SHLIBEXT) $(DESTDIR)$(MODULESDIR)/dcerpc_mapiproxy/
+	$(INSTALL) -d $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy/
+	$(INSTALL) -m 0755 mapiproxy/modules/mpm_downgrade.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy/
+	$(INSTALL) -m 0755 mapiproxy/modules/mpm_pack.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy/
+	$(INSTALL) -m 0755 mapiproxy/modules/mpm_dummy.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy/
 
 mapiproxy-modules-uninstall:
-	rm -rf $(DESTDIR)$(MODULESDIR)/dcerpc_mapiproxy
+	rm -rf $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy
 
 mapiproxy-modules-clean::
 	rm -f mapiproxy/modules/*.{o,po}

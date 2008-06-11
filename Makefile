@@ -636,16 +636,18 @@ server/dcesrv_proto.h: server/dcesrv_exchange.c
 #################################################################
 # mapiproxy compilation rules
 #################################################################
+LIBMAPIPROXY_SO_VERSION = 0
 
 mapiproxy: 	idl 					\
-		mapiproxy/libmapiproxy.$(SHLIBEXT)	\
+		mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 		mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) 	\
 		mapiproxy-modules
 
 mapiproxy-install: mapiproxy mapiproxy-modules-install
 	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
 	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT) $(DESTDIR)$(libdir)
+	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiproxy.$(SHLIBEXT)
 	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.h $(DESTDIR)$(includedir)/
 
 
@@ -657,7 +659,8 @@ mapiproxy-uninstall: mapiproxy-modules-uninstall
 mapiproxy-clean:: mapiproxy-modules-clean
 	rm -f mapiproxy/*.{o,po}
 	rm -f mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT)
-	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT)
+	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) \
+		  mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
 
 clean:: mapiproxy-clean
 
@@ -673,8 +676,11 @@ mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT): 	mapiproxy/dcesrv_mapiproxy.po		\
 
 mapiproxy/dcesrv_mapiproxy.c: gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
 
-mapiproxy/libmapiproxy.$(SHLIBEXT):	mapiproxy/dcesrv_mapiproxy_module.po
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
+mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/dcesrv_mapiproxy_module.po
+	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS)
+
+mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION): libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+	ln -fs $< $@
 
 
 ####################

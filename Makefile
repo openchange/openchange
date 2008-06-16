@@ -144,20 +144,20 @@ libmapi-uninstall:	libmapi-uninstallpc	\
 			libmapi-uninstallscript
 
 libmapi-clean::
-	rm -f libmapi/*.{o,po}
+	rm -f libmapi/*.o libmapi/*.po
 	rm -f libmapi/utf8_convert.yy.c
-	rm -f libmapi/tests/*.{o,po}
-	rm -f libmapi/socket/*.{o,po}
-	rm -f libmapi/util/*.{o,po}
+	rm -f libmapi/tests/*.o, libmapi/tests/*.po
+	rm -f libmapi/socket/*.o libmapi/socket/*.po
+	rm -f libmapi/util/*.o, libmapi/util/*.po
 	rm -f libmapi/version.h
-	rm -f libmapi/mapicode.{c,h}
-	rm -f libmapi/mapitags.{c,h}
+	rm -f libmapi/mapicode.c libmapi/mapicode.h
+	rm -f libmapi/mapitags.c libmapi/mapitags.h
 	rm -f libmapi/mapi_nameid_private.h
 	rm -f libmapi/proto.h
 	rm -f libmapi/proto_private.h
 	rm -f gen_ndr/ndr_exchange*
 	rm -f gen_ndr/exchange.h
-	rm -f ndr_mapi.{o,po}
+	rm -f ndr_mapi.o ndr_mapi.po
 	rm -f mapicodes_enum.h
 	rm -f mapitags_enum.h
 	rm -f *~
@@ -351,7 +351,7 @@ libmapiadmin-uninstall:	libmapiadmin-uninstallpc	\
 			libmapiadmin-uninstallheader
 
 libmapiadmin-clean::
-	rm -f libmapiadmin/*.{o,po}
+	rm -f libmapiadmin/*.o libmapiadmin/*.po
 	rm -f libmapiadmin/proto.h
 	rm -f libmapiadmin/proto_private.h
 	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) \
@@ -423,9 +423,9 @@ libocpf-uninstall:	libocpf-uninstallpc	\
 			libocpf-uninstallheader
 
 libocpf-clean::
-	rm -f libocpf/*.{o,po}
+	rm -f libocpf/*.o libocpf/*.po
 	rm -f libocpf/lex.yy.c
-	rm -f libocpf/ocpf.tab.{c,h}
+	rm -f libocpf/ocpf.tab.c libocpf/ocpf.tab.h
 	rm -f libocpf/proto.h
 	rm -f libocpf/proto_private.h
 	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) \
@@ -517,7 +517,7 @@ torture-uninstall:
 torture-clean::
 	rm -f torture/*.$(SHLIBEXT)
 	rm -f torture/torture_proto.h
-	rm -f torture/*.{o,po}
+	rm -f torture/*.o torture/*.po
 
 clean:: torture-clean
 
@@ -607,8 +607,8 @@ server-uninstall:
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
 
 server-clean::
-	rm -f providers/*.{o,po}
-	rm -f server/*.{o,po}
+	rm -f providers/*.o providers/*.po
+	rm -f server/*.o server/*.po
 	rm -f server/dcesrv_proto.h
 	rm -f providers/providers_proto.h
 	rm -f server/*.$(SHLIBEXT)
@@ -659,7 +659,7 @@ mapiproxy-uninstall: mapiproxy-modules-uninstall
 	rm -f $(DESTDIR)$(includedir)/libmapiproxy.h
 
 mapiproxy-clean:: mapiproxy-modules-clean
-	rm -f mapiproxy/*.{o,po}
+	rm -f mapiproxy/*.o mapiproxy/*.po
 	rm -f mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT)
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		  mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
@@ -703,7 +703,7 @@ mapiproxy-modules-uninstall:
 	rm -rf $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy
 
 mapiproxy-modules-clean::
-	rm -f mapiproxy/modules/*.{o,po}
+	rm -f mapiproxy/modules/*.o mapiproxy/modules/*.po
 	rm -f mapiproxy/modules/*.so
 
 clean:: mapiproxy-modules-clean

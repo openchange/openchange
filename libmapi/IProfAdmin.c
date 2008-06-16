@@ -431,14 +431,18 @@ enum MAPISTATUS OpenProfileStore(TALLOC_CTX *mem_ctx, struct ldb_context **ldb_c
 {
 	int			ret;
 	struct ldb_context	*tmp_ctx;
+	struct event_context *ev;
 	
 	*ldb_ctx = 0;
 	
 	/* store path */
 	if (!profiledb) return MAPI_E_NOT_FOUND;
 
+	ev = event_context_init(mem_ctx);
+	if (!ev) return MAPI_E_NOT_ENOUGH_RESOURCES;
+
 	/* connect to the store */
-	tmp_ctx = ldb_init(mem_ctx);
+	tmp_ctx = ldb_init(mem_ctx, ev);
 	if (!tmp_ctx) return MAPI_E_NOT_ENOUGH_RESOURCES;
 
 	ret = ldb_connect(tmp_ctx, profiledb, 0, NULL);
@@ -492,13 +496,17 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 	char			*url = NULL;
 	char			*filename = NULL;
 	FILE			*f;
+	struct event_context *ev;
 
 	MAPI_RETVAL_IF(!profiledb, MAPI_E_CALL_FAILED, NULL);
 	MAPI_RETVAL_IF(!ldif_path, MAPI_E_CALL_FAILED, NULL);
 
 	mem_ctx = talloc_init("CreateProfileStore");
 
-	ldb_ctx = ldb_init(mem_ctx);
+	ev = event_context_init(mem_ctx);
+	MAPI_RETVAL_IF(!ev, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+
+	ldb_ctx = ldb_init(mem_ctx, ev);
 	MAPI_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	url = talloc_asprintf(mem_ctx, "tdb://%s", profiledb);

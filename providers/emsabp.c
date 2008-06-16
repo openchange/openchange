@@ -112,14 +112,18 @@ struct emsabp_ctx *emsabp_init(void)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct emsabp_ctx	*emsabp_ctx;
+	struct event_context *ev;
 
 	mem_ctx = talloc_init(EMSABP_CTX);
 	emsabp_ctx = talloc(mem_ctx, struct emsabp_ctx);
 	if (!emsabp_ctx) return NULL;
 	emsabp_ctx->mem_ctx = mem_ctx;
 
+	ev = event_context_init(mem_ctx);
+	if (!ev) return NULL;
+
 	/* return an opaque context pointer on the configuration database */
-	emsabp_ctx->conf_ctx = ldb_init(emsabp_ctx->mem_ctx);
+	emsabp_ctx->conf_ctx = ldb_init(emsabp_ctx->mem_ctx, ev);
 	if (ldb_connect(emsabp_ctx->conf_ctx, 
 			private_path(emsabp_ctx->mem_ctx, global_loadparm, 
 						 "configuration.ldb"), 
@@ -129,7 +133,7 @@ struct emsabp_ctx *emsabp_init(void)
 	}
 
 	/* return an opaque context pointer on the users database*/
-	emsabp_ctx->users_ctx = ldb_init(emsabp_ctx->mem_ctx);
+	emsabp_ctx->users_ctx = ldb_init(emsabp_ctx->mem_ctx, ev);
 	if (ldb_connect(emsabp_ctx->users_ctx, 
 			private_path(emsabp_ctx->mem_ctx, global_loadparm, 
 						 "users.ldb"),

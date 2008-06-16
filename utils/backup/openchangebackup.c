@@ -30,15 +30,19 @@ struct ocb_context *ocb_init(TALLOC_CTX *mem_ctx, const char *dbpath)
 	struct ocb_context	*ocb_ctx = NULL;
 	char			*url = NULL;
 	int			ret;
+	struct event_context *ev;
 
 	/* sanity check */
 	OCB_RETVAL_IF_CODE(!mem_ctx, "invalid memory context", NULL, NULL);
 	OCB_RETVAL_IF_CODE(!dbpath, "dbpath not set", NULL, NULL);
-	
+
 	ocb_ctx = talloc_zero(mem_ctx, struct ocb_context);
 
+	ev = event_context_init(ocb_ctx);
+	if (!ev) goto failed;
+
 	/* init ldb store */
-	ocb_ctx->ldb_ctx = ldb_init((TALLOC_CTX *)ocb_ctx);
+	ocb_ctx->ldb_ctx = ldb_init((TALLOC_CTX *)ocb_ctx, ev);
 	if (!ocb_ctx->ldb_ctx) goto failed;
 
 	url = talloc_asprintf(mem_ctx, "tdb://%s", dbpath);

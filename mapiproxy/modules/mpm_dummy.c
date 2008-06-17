@@ -22,7 +22,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
 
-NTSTATUS init_module(void);
+NTSTATUS samba_init_module(void);
 
 /**
    \details Dummy init function which reads a parametric option from
@@ -65,7 +65,7 @@ static NTSTATUS dummy_dispatch(struct dcesrv_call_state *dce_call,
 }
 
 
-NTSTATUS init_module(void)
+NTSTATUS samba_init_module(void)
 {
 	struct mapiproxy_module	module;
 	NTSTATUS		ret;

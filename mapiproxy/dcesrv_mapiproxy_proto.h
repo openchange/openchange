@@ -36,7 +36,7 @@ __BEGIN_DECLS
 
 /* definitions from dcesrv_mapiproxy.c */
 NTSTATUS dcerpc_server_mapiproxy_init(void);
-NTSTATUS init_module(void);
+NTSTATUS samba_init_module(void);
 
 NTSTATUS dcerpc_server_exchange_nsp_init(void);
 NTSTATUS dcerpc_server_exchange_emsmdb_init(void);

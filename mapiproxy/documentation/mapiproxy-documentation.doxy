@@ -1,4 +1,4 @@
-x/**
+/**
 \mainpage
 
 <center><img src="mapiproxy.png"></center>
@@ -619,13 +619,13 @@ will be added to the chained list of effective modules.
 <a name="mpm_ep"></a><h3>5.2. Module entry point</h3>
 
 mapiproxy modules must have an entry point function named
-<strong>init_module</strong>. This function needs to set general
+<strong>samba_init_module</strong>. This function needs to set general
 information about the module, specify the module's hooks and finally
 call the <strong>mapiproxy_module_register</strong> function to
 register itself in the mapiproxy module subsystem.
 
 \code
-NTSTATUS init_module(void)
+NTSTATUS samba_init_module(void)
 {
 	struct mapiproxy_module	module;
 	NTSTATUS		ret;

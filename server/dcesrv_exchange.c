@@ -999,7 +999,7 @@ void dcesrv_unknown_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
 /* include the generated boilerplate */
 #include "gen_ndr/ndr_exchange_s.c"
 
-NTSTATUS init_module(void)
+NTSTATUS samba_init_module(void)
 {
 	NTSTATUS ret;
 

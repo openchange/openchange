@@ -28,7 +28,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy.h"
 
-NTSTATUS init_module(void);
+NTSTATUS samba_init_module(void);
 
 
 /**
@@ -106,7 +106,7 @@ static NTSTATUS downgrade_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
    
    \return NT_STATUS_OK on success, otherwise NTSTATUS error
  */
-NTSTATUS init_module(void)
+NTSTATUS samba_init_module(void)
 {
 	struct mapiproxy_module	module;
 	NTSTATUS		ret;

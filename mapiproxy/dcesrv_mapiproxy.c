@@ -433,7 +433,7 @@ NTSTATUS dcerpc_server_mapiproxy_init(void)
 
    \return NT_STATUS_OK on success, otherwise NT_STATUS_UNSUCCESSFUL;
  */
-NTSTATUS init_module(void)
+NTSTATUS samba_init_module(void)
 {
 	NTSTATUS status;
 

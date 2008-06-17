@@ -31,7 +31,7 @@
 #define	MPM_NAME	"mpm_pack"
 #define	MPM_PACK_ERROR	"[ERROR] mpm_pack:"
 
-NTSTATUS init_module(void);
+NTSTATUS samba_init_module(void);
 
 static struct mpm_pack {
 	uint8_t		*mapi_calls;
@@ -338,7 +338,7 @@ static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 
    \return NT_STATUS_OK on success, otherwise NTSTATUS error
  */
-NTSTATUS init_module(void)
+NTSTATUS samba_init_module(void)
 {
 	struct mapiproxy_module	module;
 	NTSTATUS		ret;

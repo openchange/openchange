@@ -175,7 +175,7 @@ AC_CHECK_HEADER([samba/version.h],, AC_MSG_ERROR([Could not find Samba4 headers.
 
 . `dirname $0`/script/samba4_ver.sh
 
-OC_CHECK_SAMBA_VERSION([4.0.0alpha4-GIT-$SAMBA4_GIT_REV])
+OC_CHECK_SAMBA_VERSION([4.0.0alpha5-GIT--e $SAMBA4_GIT_REV])
 CPPFLAGS="$oc_save_CPPFLAGS"
 
 dnl ---------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 #
 # VARS
 #
-. `dirname $0`/../samba4_ver.sh
+. `dirname $0`/samba4_ver.sh
 
 #
 # Error check

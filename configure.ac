@@ -278,6 +278,10 @@ AC_CHECK_LIB([magic], [magic_open],
  	     ])
 
 if test x"$enable_libmagic" = x"yes"; then
+   	AC_CHECK_LIB([z], [gzopen], [], 
+		     [
+		       AC_MSG_ERROR([Z library not found, please install zlib-devel.], [1])
+		     ])
    	if test x"$enable_libpopt" = x"yes"; then
 	   OC_RULE_ADD(exchange2mbox, TOOLS)
 	fi

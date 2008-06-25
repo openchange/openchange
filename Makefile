@@ -40,7 +40,7 @@ install: 	all 			\
 		$(OC_TOOLS_INSTALL) 	\
 		$(OC_SERVER_INSTALL) 	\
 		$(OC_TORTURE_INSTALL) 	\
-		$(SWIGDIRS-INSTALL) \
+		$(SWIGDIRS-INSTALL) 	\
 		installnagios
 
 installlib:	$(OC_LIBS_INSTALL)
@@ -508,6 +508,7 @@ torture:	torture/torture_proto.h		\
 		torture/openchange.$(SHLIBEXT)
 
 torture-install:
+	@echo "[*] install: openchange torture suite"
 	$(INSTALL) -d $(DESTDIR)$(TORTURE_MODULESDIR)
 	$(INSTALL) -m 0755 torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
 

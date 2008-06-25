@@ -26,7 +26,7 @@
 
 NTSTATUS ndr_table_init(void);
 
-NTSTATUS init_module(void)
+NTSTATUS samba_init_module(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "OPENCHANGE");
 

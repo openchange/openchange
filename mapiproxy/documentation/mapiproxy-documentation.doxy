@@ -69,6 +69,12 @@
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
 	</tr>
 	<tr>
+	   <td style="text-align:center">06/25/08</td>
+	   <td style="text-align:center"><strong>0.3.2</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">Minor installation update</td>
+	</tr>
+	<tr>
 	   <td style="text-align:center">06/04/08</td>
 	   <td style="text-align:center"><strong>0.3.1</strong></td>
 	   <td style="text-align:center">Brad Hards</td>
@@ -261,8 +267,8 @@ steps:
 <li><strong>[1] Provision Samba</strong>:<br/>From samba4/source
 directory, run under the root account:
 \code
-# ./bin/smbpython ./setup/provision --realm=OPENCHANGE.LOCAL --domain=OPENCHANGE \
-                                    --adminpass=openchange --server-role='domain controller'
+# ./setup/provision --realm=OPENCHANGE.LOCAL --domain=OPENCHANGE \
+                    --adminpass=openchange --server-role='domain controller'
 \endcode
 
 If everything works fine, the provisioning script will have created
@@ -277,7 +283,7 @@ user in the windows domain and on the Samba4 server. Let say there is
 already a user named <i>testuser</i> with its password set to
 <i>openchange</i> on the Exchange server:
 \code
-# ./bin/smbpython ./setup/newuser testuser
+# ./setup/newuser testuser
 New Password: openchange
 \endcode
 </li>

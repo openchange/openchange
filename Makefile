@@ -858,6 +858,7 @@ clean:: mapitest-clean
 bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/mapitest_suite.o			\
 		utils/mapitest/mapitest_print.o			\
+		utils/mapitest/mapitest_stat.o			\
 		utils/mapitest/mapitest_common.o		\
 		utils/mapitest/module.o				\
 		utils/mapitest/modules/module_oxcstor.o		\
@@ -876,6 +877,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 utils/mapitest/proto.h:					\
 	utils/mapitest/mapitest_suite.c			\
 	utils/mapitest/mapitest_print.c			\
+	utils/mapitest/mapitest_stat.c			\
 	utils/mapitest/mapitest_common.c		\
 	utils/mapitest/module.c				\
 	utils/mapitest/modules/module_oxcstor.c		\

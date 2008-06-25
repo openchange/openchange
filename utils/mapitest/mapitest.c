@@ -286,6 +286,8 @@ int main(int argc, const char *argv[])
 		mapitest_run_all(&mt);
 	}
 
+	mapitest_stat_dump(&mt);
+
 	mapitest_cleanup_stream(&mt);
 
 	/* Uninitialize and free memory */

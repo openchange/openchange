@@ -225,6 +225,9 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
 
 	/* Release */
 	mapi_object_release(&obj_message);
@@ -424,7 +427,7 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 	}
 
 	/* Step 6. Dump the properties */
-	if (&lpProps) {
+	if (&lpProps != NULL) {
 		uint32_t		i;
 		struct SPropValue	lpProp;
 

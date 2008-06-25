@@ -43,6 +43,20 @@ struct mapitest_test {
 	void			*fn;
 };
 
+struct mapitest_unit {
+	struct mapitest_unit	*prev;
+	struct mapitest_unit	*next;
+	char			*name;
+};
+
+
+struct mapitest_stat {
+	uint32_t		success;
+	uint32_t		failure;
+	struct mapitest_unit	*failure_info;
+	bool			enabled;
+};
+
 struct mapitest_suite {
 	struct mapitest_suite	*prev;
 	struct mapitest_suite	*next;
@@ -50,12 +64,7 @@ struct mapitest_suite {
 	char			*description;
 	bool			online;
 	struct mapitest_test	*tests;
-};
-
-struct mapitest_unit {
-	struct mapitest_unit	*prev;
-	struct mapitest_unit	*next;
-	char			*name;
+	struct mapitest_stat	*stat;
 };
 
 struct mapitest {
@@ -141,5 +150,8 @@ struct mt_common_tf_ctx
 #define	MODULE_TEST_FAILURE	"[FAILURE]"
 
 #define	MT_ERROR       	"[ERROR]: %s\n"
+
+#define	MT_STAT_TITLE	"[STAT] FAILURE REPORT\n"
+#define	MT_STAT_FAILURE	"* %-35s: %s\n"
 
 #endif /* !__MAPITEST_H__ */

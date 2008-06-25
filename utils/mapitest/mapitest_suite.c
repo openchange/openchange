@@ -45,6 +45,7 @@ _PUBLIC_ struct mapitest_suite *mapitest_suite_init(struct mapitest *mt,
 
 	suite = talloc_zero(mt->mem_ctx, struct mapitest_suite);
 	suite->tests = NULL;
+	suite->stat = mapitest_stat_init((TALLOC_CTX *)suite);
 
 	suite->name = talloc_strdup((TALLOC_CTX *) suite, name);
 	if (!description) {
@@ -220,6 +221,7 @@ _PUBLIC_ bool mapitest_suite_run_test(struct mapitest *mt,
 			fn = el->fn;
 			ret = fn(mt);
 
+			mapitest_stat_add_result(suite, el->name, ret);
 			mapitest_print_test_title_end(mt);
 			mapitest_print_test_result(mt, el->name, ret);
 			return ret;
@@ -345,6 +347,7 @@ _PUBLIC_ bool mapitest_run_all(struct mapitest *mt)
 				fn = el->fn;
 				ret = fn(mt);
 				
+				mapitest_stat_add_result(suite, el->name, ret);
 				mapitest_print_test_title_end(mt);
 				mapitest_print_test_result(mt, el->name, ret);
 			}

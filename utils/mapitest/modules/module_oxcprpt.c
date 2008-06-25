@@ -660,7 +660,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	char			*stream = NULL;
 	char			*out_stream = NULL;
 	uint32_t		stream_len = 0x32146;
-	unsigned char		buf[0x4000];
+	unsigned char		buf[MT_STREAM_MAX_SIZE];
 	uint32_t		StreamSize = 0;
 	uint32_t		read_size = 0;
 	uint16_t		write_len = 0;
@@ -736,7 +736,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	/* Step 7. Write the stream */
 	write_len = 0;
 
-	if (stream_len < 0x4000) {
+	if (stream_len < MT_STREAM_MAX_SIZE) {
 		data.length = stream_len;
 		data.data = (uint8_t *) stream;
 		retval = WriteStream(&obj_stream, &data, &write_len);
@@ -747,15 +747,15 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	} else {
 		uint32_t	StreamSize = stream_len;
 
-		for (offset = 0, len = 0x4000, i = 0; StreamSize; i++) {
+		for (offset = 0, len = MT_STREAM_MAX_SIZE, i = 0; StreamSize; i++) {
 			data.length = len;
 			data.data = (uint8_t *)stream + offset;
 			retval = WriteStream(&obj_stream, &data, &write_len);
 			mapitest_print(mt, "* %-35s: [%d] (0x%x bytes written) 0x%.8x\n", "WriteStream", i, write_len, GetLastError());
 
 			StreamSize -= write_len;
-			if (StreamSize > 0x4000) {
-				offset += 0x4000;
+			if (StreamSize > MT_STREAM_MAX_SIZE) {
+				offset += MT_STREAM_MAX_SIZE;
 			} else {
 				offset += write_len;
 				len = StreamSize;
@@ -801,7 +801,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	offset = 0;
 	out_stream = talloc_size(mt->mem_ctx, StreamSize + 1);
 	do {
-		retval = ReadStream(&obj_stream, buf, 0x4000, &read_size);
+		retval = ReadStream(&obj_stream, buf, MT_STREAM_MAX_SIZE, &read_size);
 		mapitest_print(mt, "* %-35s: (0x%x bytes read) 0x%.8x\n", "ReadStream", read_size, GetLastError());
 		memcpy(out_stream + offset, buf, read_size);
 		offset += read_size;
@@ -809,7 +809,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 			ret = false;
 			break;
 		}
-	} while (read_size || offset != StreamSize);
+	} while (read_size && (offset != StreamSize));
 	out_stream[offset] = '\0';
 
 	if (offset) {
@@ -903,7 +903,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	char			*stream = NULL;
 	char			*dst_stream = NULL;
 	uint32_t		stream_len = 0x32146;
-	unsigned char		buf[0x4000];
+	unsigned char		buf[MT_STREAM_MAX_SIZE];
 	uint32_t		StreamSize = 0;
 	uint16_t		write_len = 0;
 	uint32_t		read_size = 0;
@@ -980,7 +980,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	/* Step 7. Write the stream */
 	write_len = 0;
 
-	if (stream_len < 0x4000) {
+	if (stream_len < MT_STREAM_MAX_SIZE) {
 		data.length = stream_len;
 		data.data = (uint8_t *) stream;
 		retval = WriteStream(&obj_stream, &data, &write_len);
@@ -991,15 +991,15 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	} else {
 		uint32_t	StreamSize = stream_len;
 
-		for (offset = 0, len = 0x4000, i = 0; StreamSize; i++) {
+		for (offset = 0, len = MT_STREAM_MAX_SIZE, i = 0; StreamSize; i++) {
 			data.length = len;
 			data.data = (uint8_t *)stream + offset;
 			retval = WriteStream(&obj_stream, &data, &write_len);
 			mapitest_print(mt, "* %-35s: [%d] (0x%x bytes written) 0x%.8x\n", "WriteStream", i, write_len, GetLastError());
 
 			StreamSize -= write_len;
-			if (StreamSize > 0x4000) {
-				offset += 0x4000;
+			if (StreamSize > MT_STREAM_MAX_SIZE) {
+				offset += MT_STREAM_MAX_SIZE;
 			} else {
 				offset += write_len;
 				len = StreamSize;
@@ -1105,7 +1105,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	offset = 0;
 	dst_stream = talloc_size(mt->mem_ctx, StreamSize + 1);
 	do {
-		retval = ReadStream(&obj_stream2, buf, 0x4000, &read_size);
+		retval = ReadStream(&obj_stream2, buf, MT_STREAM_MAX_SIZE, &read_size);
 		mapitest_print(mt, "* %-35s: (0x%x bytes read) 0x%.8x\n", "ReadStream", read_size, GetLastError());
 		memcpy(dst_stream + offset, buf, read_size);
 		offset += read_size;

@@ -97,6 +97,8 @@ struct mt_common_tf_ctx
 #define	MAPITEST_SUCCESS	0
 #define	MAPITEST_ERROR		-1
 
+#define	MT_STREAM_MAX_SIZE	0x3000
+
 #define	MT_YES			"[yes]"
 #define	MT_NO			"[no]"
 

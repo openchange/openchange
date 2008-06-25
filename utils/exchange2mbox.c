@@ -332,7 +332,6 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	const char			*bcc = NULL;
 	const char			*subject = NULL;
 	const char			*msgid;
-	const uint32_t			*editor;
 	DATA_BLOB			body;
 	const char			*attach_filename;
 	const uint32_t			*attach_size;
@@ -346,6 +345,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	struct SRow			aRow2;
 	struct SRowSet			rowset_attach;
 	uint32_t			count;
+	uint8_t				format;
 	int				i;
 
 	has_attach = (const uint32_t *) octool_get_propval(aRow, PR_HASATTACH);
@@ -367,9 +367,8 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 
 	subject = (const char *) octool_get_propval(aRow, PR_CONVERSATION_TOPIC);
 	msgid = (const char *) octool_get_propval(aRow, PR_INTERNET_MESSAGE_ID);
-	editor = (const uint32_t *) octool_get_propval(aRow, PR_MSG_EDITOR_FORMAT);
 
-	retval = octool_get_body(mem_ctx, obj_message, aRow, editor, &body);
+	retval = octool_get_body(mem_ctx, obj_message, aRow, &body);
 
 	/* First line From */
 	line = talloc_asprintf(mem_ctx, "From \"%s\" %s\n", from, date);
@@ -432,8 +431,9 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
 		}
-		switch (*editor) {
-		case EDITOR_FORMAT_PLAINTEXT:
+		retval = GetBestBody(obj_message, &format);
+		switch (format) {
+		case olEditorText:
 			line = talloc_asprintf(mem_ctx, "Content-Type: text/plain; charset=us-ascii\n");
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
@@ -443,12 +443,12 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
 			break;
-		case EDITOR_FORMAT_HTML:
+		case olEditorHTML:
 			line = talloc_asprintf(mem_ctx, "Content-Type: text/html\n");
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);		
 			break;
-		case EDITOR_FORMAT_RTF:
+		case olEditorRTF:
 			line = talloc_asprintf(mem_ctx, "Content-Type: text/rtf\n");
 			if (line) fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);					

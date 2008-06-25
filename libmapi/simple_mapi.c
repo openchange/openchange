@@ -539,3 +539,141 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 
 	return ((found == true) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);
 }
+
+
+/**
+   \details Implement the BestBody algorithm and return the best body
+   content type for a given message.
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND. If
+   MAPI_E_NOT_FOUND is returned then format is set to 0x0
+   (undefined). If MAPI_E_SUCCESS is returned, then format can have
+   one of the following values:
+   - olEditorText: format is plain text
+   - olEditorHTML: format is HTML
+   - olEditorRTF: format is RTF
+
+   \param obj_message the message we find the best body for
+ */
+_PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format)
+{
+	enum MAPISTATUS		retval;
+	struct SPropTagArray	*SPropTagArray = NULL;
+	struct SPropValue	*lpProps;
+	struct SRow		aRow;
+	uint32_t		count;
+	uint8_t			RtfInSync;
+	uint32_t		PlainStatus;
+	uint32_t		RtfStatus;
+	uint32_t		HtmlStatus;
+	const uint32_t		*err_code;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Retrieve properties needed by the BestBody algorithm */
+	SPropTagArray = set_SPropTagArray(global_mapi_ctx->mem_ctx, 0x4,
+					  PR_BODY,
+					  PR_RTF_COMPRESSED,
+					  PR_HTML,
+					  PR_RTF_IN_SYNC);
+	retval = GetProps(obj_message, SPropTagArray, &lpProps, &count);
+	MAPIFreeBuffer(SPropTagArray);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		*format = 0;
+		return MAPI_E_NOT_FOUND;
+	}
+
+	aRow.ulAdrEntryPad = 0;
+	aRow.cValues = count;
+	aRow.lpProps = lpProps;
+
+	/* Step 2. Retrieve properties values and map errors */
+	RtfInSync = *(const uint8_t *)find_SPropValue_data(&aRow, PR_RTF_IN_SYNC);
+
+	err_code = (const uint32_t *)find_SPropValue_data(&aRow, PR_BODY_ERROR);
+	PlainStatus = (err_code) ? *err_code : 0;
+
+	err_code = (const uint32_t *)find_SPropValue_data(&aRow, PR_RTF_COMPRESSED_ERROR);
+	RtfStatus = (err_code) ? *err_code : 0;
+
+	err_code = (const uint32_t *)find_SPropValue_data(&aRow, PR_BODY_HTML_ERROR);
+	HtmlStatus = (err_code) ? *err_code : 0;
+
+	/* Step 3. Determine the body format (9 possible cases) */
+
+	/* case 1 */
+	if ((PlainStatus == MAPI_E_NOT_FOUND) && (RtfStatus == MAPI_E_NOT_FOUND) && 
+	    (HtmlStatus == MAPI_E_NOT_FOUND)) {
+		*format = 0;
+		return MAPI_E_NOT_FOUND;
+	}
+	
+	/* case 2 */
+	if (((PlainStatus == MAPI_E_NOT_ENOUGH_MEMORY) || (PlainStatus == 0)) && 
+	    (RtfStatus == MAPI_E_NOT_FOUND) && (HtmlStatus == MAPI_E_NOT_FOUND)) {
+		*format = olEditorText;
+		return MAPI_E_SUCCESS;
+	}
+
+	/* case 3 */
+	if ((PlainStatus == MAPI_E_NOT_ENOUGH_MEMORY) &&
+	    (RtfStatus == MAPI_E_NOT_ENOUGH_MEMORY) && 
+	    (HtmlStatus == MAPI_E_NOT_FOUND)) {
+		*format = olEditorRTF;
+		return MAPI_E_SUCCESS;
+	}
+
+	/* case 4 */
+	if ((PlainStatus == MAPI_E_NOT_ENOUGH_MEMORY) &&
+	    (RtfStatus == MAPI_E_NOT_ENOUGH_MEMORY) &&
+	    (HtmlStatus == MAPI_E_NOT_ENOUGH_MEMORY) &&
+	    (RtfInSync == 1)) {
+		*format = olEditorRTF;
+		return MAPI_E_SUCCESS;
+	}
+
+	/* case 5 */
+	if ((PlainStatus == MAPI_E_NOT_ENOUGH_MEMORY) &&
+	    (RtfStatus == MAPI_E_NOT_ENOUGH_MEMORY) &&
+	    (HtmlStatus == MAPI_E_NOT_ENOUGH_MEMORY) &&
+	    (RtfInSync == 0)) {
+		*format = olEditorHTML;
+		return MAPI_E_SUCCESS;
+	}
+
+	/* case 6 */
+	if (((RtfStatus == 0) || (RtfStatus == MAPI_E_NOT_ENOUGH_MEMORY)) &&
+	    ((HtmlStatus == 0) || (HtmlStatus == MAPI_E_NOT_ENOUGH_MEMORY)) &&
+	    (RtfInSync == 1)) {
+		*format = olEditorRTF;
+		return MAPI_E_SUCCESS;
+	}
+
+	/* case 7 */
+	if (((RtfStatus == 0) || (RtfStatus == MAPI_E_NOT_ENOUGH_MEMORY)) &&
+	    ((HtmlStatus == 0) || (HtmlStatus == MAPI_E_NOT_ENOUGH_MEMORY)) &&
+	    (RtfInSync == 0)) {
+		*format = olEditorHTML;
+		return MAPI_E_SUCCESS;
+	}
+	
+	/* case 8 */
+	if (((PlainStatus == 0) || (PlainStatus == MAPI_E_NOT_ENOUGH_MEMORY)) &&
+	    ((RtfStatus == 0) || (RtfStatus == MAPI_E_NOT_ENOUGH_MEMORY)) &&
+	    (RtfInSync == 1)) {
+		*format = olEditorRTF;
+		return MAPI_E_SUCCESS;
+	}
+
+	/* case 9 */
+	if (((PlainStatus == 0) || (PlainStatus == MAPI_E_NOT_ENOUGH_MEMORY)) &&
+	    ((RtfStatus == 0) || (RtfStatus == MAPI_E_NOT_ENOUGH_MEMORY)) &&
+	    (RtfInSync == 0)) {
+		*format = olEditorText;
+		return MAPI_E_SUCCESS;
+	}
+
+	return MAPI_E_NOT_FOUND;
+}

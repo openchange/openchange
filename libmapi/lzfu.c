@@ -214,9 +214,9 @@ _PUBLIC_ enum MAPISTATUS uncompress_rtf(TALLOC_CTX *mem_ctx,
 	/* the compressed version doesn't appear to drop the closing braces onto the doc.
 	 * we should do that
 	 */
-	if (out_ptr < out_size) out_buf[out_ptr++] = '}';
-	if (out_ptr < out_size) out_buf[out_ptr++] = '}';
-	if (out_ptr < out_size) out_buf[out_ptr++] = '\0';
+/* 	if (out_ptr < out_size) out_buf[out_ptr++] = '}'; */
+/* 	if (out_ptr < out_size) out_buf[out_ptr++] = '}'; */
+/* 	if (out_ptr < out_size) out_buf[out_ptr++] = '\0'; */
 
 	/* check if out_ptr matches with expected size */
 	MAPI_RETVAL_IF(out_ptr != (lzfuhdr.cbRawSize-1), MAPI_E_CORRUPT_DATA, out_buf);

@@ -86,24 +86,26 @@ static enum MAPISTATUS octool_get_stream(TALLOC_CTX *mem_ctx,
 _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
 				       mapi_object_t *obj_message,
 				       struct SRow *aRow,
-				       const uint32_t *editor, 
 				       DATA_BLOB *body)
 {
 	enum MAPISTATUS			retval;
 	const struct SBinary_short	*bin;
 	mapi_object_t			obj_stream;
 	char				*data;
+	uint8_t				format;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* initialize body DATA_BLOB */
 	body->data = NULL;
 	body->length = 0;
 
-	/* sanity check */
-	if (!obj_message) return false;
-	if (!editor || *editor == 0) return false;
+	retval = GetBestBody(obj_message, &format);
+	MAPI_RETVAL_IF(retval, retval, NULL);
 
-	switch (*editor) {
-	case EDITOR_FORMAT_PLAINTEXT:
+	switch (format) {
+	case olEditorText:
 		data = octool_get_propval(aRow, PR_BODY);
 		if (data) {
 			body->data = talloc_memdup(mem_ctx, data, strlen(data));
@@ -112,14 +114,14 @@ _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
 			mapi_object_init(&obj_stream);
 			retval = OpenStream(obj_message, PR_BODY, 0, &obj_stream);
 			MAPI_RETVAL_IF(retval, GetLastError(), NULL);
-
+			
 			retval = octool_get_stream(mem_ctx, &obj_stream, body);
 			MAPI_RETVAL_IF(retval, GetLastError(), NULL);
-
+			
 			mapi_object_release(&obj_stream);
 		}
 		break;
-	case EDITOR_FORMAT_HTML:
+	case olEditorHTML:
 		bin = (const struct SBinary_short *) octool_get_propval(aRow, PR_HTML);
 		if (bin) {
 			body->data = talloc_memdup(mem_ctx, bin->lpb, bin->cb);
@@ -135,7 +137,7 @@ _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
 			mapi_object_release(&obj_stream);
 		}			
 		break;
-	case EDITOR_FORMAT_RTF:
+	case olEditorRTF:
 		mapi_object_init(&obj_stream);
 
 		retval = OpenStream(obj_message, PR_RTF_COMPRESSED, 0, &obj_stream);
@@ -145,6 +147,9 @@ _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
 		MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
 		mapi_object_release(&obj_stream);
+		break;
+	default:
+		DEBUG(0, ("Undefined Body\n"));
 		break;
 	}
 
@@ -171,8 +176,6 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 	const uint8_t			*has_attach;
 	const uint32_t			*cp;
 	const char			*codepage;
-	const uint32_t			*editor;
-	uint32_t			dflt;
 
 	/* Build the array of properties we want to fetch */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x13,
@@ -207,15 +210,8 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 
 	msgid =	(const char *) octool_get_propval(&aRow, PR_INTERNET_MESSAGE_ID);
 	subject = (const char *) octool_get_propval(&aRow, PR_CONVERSATION_TOPIC);
-	editor = (const uint32_t *) octool_get_propval(&aRow, PR_MSG_EDITOR_FORMAT);
 
-	/* if PR_MSG_EDITOR_FORMAT doesn't exist, set it to PLAINTEXT */
-	if (!editor) {
-		dflt = EDITOR_FORMAT_PLAINTEXT;
-		editor = &dflt;
-	}
-
-	retval = octool_get_body(mem_ctx, obj_message, &aRow, editor, &body);
+	retval = octool_get_body(mem_ctx, obj_message, &aRow, &body);
 
 	if (retval != MAPI_E_SUCCESS) {
 		printf("Invalid Message: %s\n", msgid ? msgid : "");

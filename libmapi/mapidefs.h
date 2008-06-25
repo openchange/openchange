@@ -206,6 +206,11 @@
 #define	EDITOR_FORMAT_HTML		2
 #define	EDITOR_FORMAT_RTF		3
 
+#define	olEditorText			1
+#define	olEditorHTML			2
+#define	olEditorRTF			3
+#define	olEditorWord			4
+
 /*
  * Default folders
  */

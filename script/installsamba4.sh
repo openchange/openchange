@@ -180,9 +180,6 @@ compile() {
     cd samba4/source
     error_check $? "Step1"
 
-    echo "Patching ldb.pc.in"
-    sed -i 's/events//g' lib/ldb/ldb.pc.in
-
     ./autogen.sh
     error_check $? "Step1"
 

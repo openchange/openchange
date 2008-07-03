@@ -580,7 +580,7 @@ _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format
 					  PR_RTF_IN_SYNC);
 	retval = GetProps(obj_message, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		*format = 0;
 		return MAPI_E_NOT_FOUND;
 	}

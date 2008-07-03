@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include <param.h>
 #include <magic.h>
 
 #include "openchange-tools.h"
@@ -561,9 +562,12 @@ int main(int argc, const char *argv[])
 	const char			*opt_password = NULL;
 	const char			*opt_mbox = NULL;
 	bool				opt_update = false;
+	bool				opt_dumpdata = false;
+	const char			*opt_debug = NULL;
 	const char			*msgid;
 
-	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_MBOX, OPT_UPDATE};
+	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_MBOX, OPT_UPDATE,
+	      OPT_DEBUG, OPT_DUMPDATA};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -572,6 +576,8 @@ int main(int argc, const char *argv[])
 		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
 		{"mbox", 'm', POPT_ARG_STRING, NULL, OPT_MBOX, "set the mbox file"},
 		{"update", 'u', POPT_ARG_NONE, 0, OPT_UPDATE, "mirror mbox changes back to the Exchange server"},
+		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUG, "set the debug level"},
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
 		{ NULL }
 	};
 
@@ -595,6 +601,12 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_UPDATE:
 			opt_update = true;
+			break;
+		case OPT_DEBUG:
+			opt_debug = poptGetOptArg(pc);
+			break;
+		case OPT_DUMPDATA:
+			opt_dumpdata = true;
 			break;
 		}
 	}
@@ -636,6 +648,15 @@ int main(int argc, const char *argv[])
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
+	}
+
+	/* debug options */
+	if (opt_debug) {
+		lp_set_cmdline(global_mapi_ctx->lp_ctx, "log level", opt_debug);
+	}
+
+	if (opt_dumpdata == true) {
+		global_mapi_ctx->dumpdata = true;
 	}
 
 	/* if no profile is supplied use the default one */

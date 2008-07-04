@@ -300,7 +300,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	struct SPropTagArray	*SPropTagArray;
-	const char		*names[1];
+	const char		*names[2];
 	struct SRowSet		*rows = NULL;
 	struct FlagList		*flaglist = NULL;
 	struct mapi_SRowList	rowList;
@@ -361,7 +361,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	struct SPropTagArray	*SPropTagArray;
-	const char		*names[1];
+	const char		*names[2];
 	const char		*user = NULL;
 	struct SRowSet		*rows = NULL;
 	struct SRowSet		rowset;
@@ -465,7 +465,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	struct SPropTagArray	*SPropTagArray;
-	const char		*names[1];
+	const char		*names[2];
 	const char		*user = NULL;
 	struct SRowSet		*rows = NULL;
 	struct SRowSet		rowset;

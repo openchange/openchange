@@ -208,7 +208,7 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 	struct SRowSet		*SRowSet = NULL;
 	struct FlagList		*flaglist = NULL;
 	struct SPropValue	SPropValue;
-	struct SPropValue	lpProps[1];
+	struct SPropValue	lpProps[2];
 	char			**username = NULL;
 	uint32_t		msgflag;
 

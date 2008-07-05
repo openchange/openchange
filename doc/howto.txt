@@ -100,7 +100,7 @@ Samba4 had most bugs fixed years ago :-)
     Run the following command:
 
 
-$ make samba4
+$ make samba
 
 
 This should give you the libraries, headers and tools you need to

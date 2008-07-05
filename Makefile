@@ -15,11 +15,16 @@ config.status: configure
 configure: configure.ac
 	autoconf -f
 
-samba4: 
+samba:
 	./script/installsamba4.sh all
 
-ifneq ($(MAKECMDGOALS), samba4)
+samba-git: 
+	./script/installsamba4.sh git-all
+
+ifneq ($(MAKECMDGOALS), samba)
+ifneq ($(MAKECMDGOALS), samba-git)
 include config.mk
+endif
 endif
 
 #################################################################

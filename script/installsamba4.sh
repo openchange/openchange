@@ -101,6 +101,62 @@ checkout() {
 }
 
 #
+# Download Samba4 release
+#
+download() {
+    OLD_PWD=$PWD
+
+    WGETPATH=`whereis -b wget`
+    TARPATH=`whereis -b tar`
+
+    if test x"$WGETPATH" = x"wget:"; then
+	echo "wget was not found in your path!"
+	echo "Please install wget"
+	exit 1
+    fi
+
+    if test x"$TARPATH" = x"tar:"; then
+	echo "tar was not found in your path!"
+	echo "Please install tar"
+	exit 1
+    fi
+
+    echo "Step0: Checking for previous samba4 directory"
+    if test -d samba4; then
+	echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+	echo "A previous samba4 directory has been detected in current folder."
+	echo "Should we delete the existing samba4 directory?"
+	echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+	echo ""
+	echo -n "Proceed? [Yn]: "
+	read answer
+	case "$answer" in
+	    Y|y|yes)
+		echo "Step0: removing previous samba4 directory"
+		sudo rm -rf samba4
+		;;
+	    N|n|no)
+		echo "Step0: Keep existing directory"
+		return
+		;;
+	esac
+    fi
+
+    echo "Step2: Fetching samba-$SAMBA4_RELEASE tarball"
+    rm -rf samba-$SAMBA4_RELEASE.tar.gz
+    wget http://us1.samba.org/samba/ftp/samba4/samba-$SAMBA4_RELEASE.tar.gz
+    error_check $? "Step1"
+
+    echo "Step3: Extracting $SAMBA4_RELEASE"
+    tar xzvf samba-$SAMBA4_RELEASE.tar.gz
+    error_check $? "Step2"
+    mv samba-$SAMBA4_RELEASE samba4
+
+    cd $OLD_PWD
+    return $?
+}
+
+#
 # Compile and Install samba4 packages:
 # talloc, tdb
 #
@@ -220,6 +276,9 @@ case $1 in
     checkout)
 	checkout
 	;;
+    download)
+	download
+	;;
     packages)
 	packages
 	;;
@@ -229,14 +288,21 @@ case $1 in
     install)
 	install
 	;;
-    all)
+    git-all)
 	checkout
 	packages
 	compile
 	install
 	;;
+    all)
+	download
+	packages
+	compile
+	install
+	;;
     *)
-	echo $"Usage: $0 {checkout|packages|compile|install|all}"
+	echo $"Usage: $0 {checkout|packages|compile|install|git-all}"
+	echo $"Usage: $0 {download|packages|compile|install|all}"
 	;;
 esac
 

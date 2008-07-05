@@ -54,15 +54,15 @@ fi[]
 ])
 
 #
-# OC_CHECK_SAMBA_VERSION([VERSION],[action-if-found],[action-if-not-found],
-#						 [action-if-cross-compiling])
-# -------------------------------------------------------------------------
+# OC_CHECK_SAMBA_VERSION([RELEASE],[VERSION], [action-if-found],[action-if-not-found],
+#			       	 	      [action-if-cross-compiling])
+# ------------------------------------------------------------------------------------
 AC_DEFUN([OC_CHECK_SAMBA_VERSION], [
 AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <samba/version.h>
-int main() { return strcmp(SAMBA_VERSION_STRING, "$1"); }
-]])],[$2],[
-	ifelse([$3],[],[AC_MSG_WARN([The Samba4 version installed on your system doesn't meet OpenChange requirements ($1).])],[$3])],[$4])
+int main() { if (!strcmp(SAMBA_VERSION_STRING, "$1") || !strcmp(SAMBA_VERSION_STRING, "$2")) {return 0; } else { return -1;} }
+]])],[$3],[
+	ifelse([$4],[],[AC_MSG_WARN([The Samba4 version installed on your system doesn't meet OpenChange requirements ($1 or $2).])],[$4])],[$5])
 ])
 
 #
@@ -175,7 +175,7 @@ AC_CHECK_HEADER([samba/version.h],, AC_MSG_ERROR([Could not find Samba4 headers.
 
 . `dirname $0`/script/samba4_ver.sh
 
-OC_CHECK_SAMBA_VERSION([4.0.0alpha5-GIT-$SAMBA4_GIT_REV])
+OC_CHECK_SAMBA_VERSION([$SAMBA4_RELEASE],[$SAMBA4_GIT_VER-GIT-$SAMBA4_GIT_REV])
 CPPFLAGS="$oc_save_CPPFLAGS"
 
 dnl ---------------------------------------------------------------------------

@@ -1780,6 +1780,275 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	mapi_object_release(&obj_top_folder);
 	mapi_object_release(&obj_store);
 
+	return ret;
+}
+
+#define NAMEDPROP_NAME "mapitest_namedprop"
+#define NAMEDPROP_IDNUM 0xDB
+
+/**
+   \details Test the GetPropertyIdsFromNames (0x56),
+   GetNamesFromPropertyIds (0x55) and QueryNamesFromIDs (0x5f) 
+   operations
+
+   This function:
+   -# Logs into the server
+   -# Create a test folder and test message
+   -# Creates one MNID_ID property
+   -# Creates one MNID_STRING property
+   -# Builds a table of Name, ID pairs using QueryNamesFromIDs()
+   -# Iterates over names, and calls GetIDsFromNames() on each name
+   -# Iterates over IDs, and calls GetNamesFromIDs() on each ID
+   -# Cleans up
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
+{
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_top_folder;
+	mapi_id_t		id_top_folder;
+	mapi_object_t		obj_ref_folder;
+	mapi_object_t		obj_ref_message;
+	struct MAPINAMEID	*nameid;
+	struct MAPINAMEID	checknameid;
+	struct MAPINAMEID	*checknameidarray;
+	uint16_t		checkcount;
+	uint16_t		count;
+	struct SPropTagArray	*SPropTagArray;
+	uint32_t		propID;
+	uint16_t		*propIDs;
+	struct GUID 		guid;
+	bool 			ret = true;
+	int			i;
+
+	/* Log into the server */
+	mapi_object_init(&obj_store);
+	OpenMsgStore(&obj_store);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 1A - Logon Private Mailbox", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	mapi_object_init(&obj_top_folder);
+	GetDefaultFolder(&obj_store, &id_top_folder, olFolderTopInformationStore);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 1B - GetDefaultFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	OpenFolder(&obj_store, id_top_folder, &obj_top_folder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 1C - OpenFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 2: Create test folder */
+	mapi_object_init(&obj_ref_folder);
+        CreateFolder(&obj_top_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+		     OPEN_IF_EXISTS, &obj_ref_folder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 2A - Create the test folder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	mapi_object_init(&obj_ref_message);
+	mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 2B - Create a test email", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	SaveChangesMessage(&obj_ref_folder, &obj_ref_message);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 2C - SaveChangeMessage", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3: Create one MNID_ID property */
+	GUID_from_string(PS_MAPI, &guid);
+	nameid = talloc_zero(mt->mem_ctx, struct MAPINAMEID);
+	SPropTagArray = talloc_zero(mt->mem_ctx, struct SPropTagArray);
+	  
+	nameid[0].lpguid = guid;
+	nameid[0].ulKind = MNID_ID;
+	nameid[0].kind.lid = NAMEDPROP_IDNUM;
+	GetIDsFromNames(&obj_ref_folder, 1, &nameid[0], MAPI_CREATE, &SPropTagArray);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 3A - GetIDsFromNames", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	propID = SPropTagArray->aulPropTag[0] | PT_STRING8;
+	// printf("PS_MAPI - 0x01 mapped to 0x%.8x\n", propID);
+	talloc_free(nameid);
+
+	propID = (propID & 0xFFFF0000) | PT_NULL;
+	nameid = talloc_zero(mt->mem_ctx, struct MAPINAMEID);
+	GetNamesFromIDs(&obj_ref_message, propID, &count, &nameid);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 3B - GetNamesFromIDs", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	if ( (nameid->ulKind != MNID_ID) || (nameid->kind.lid != NAMEDPROP_IDNUM) ) {
+		mapitest_print(mt, "* %-35s: %s\n", "Step 3C - GetNamesFromIDs", "Unexpected result");		
+		printf("\t ulKind: %x mapped to 0x%.4x\n", nameid->ulKind, nameid->kind.lid);
+		ret = false;
+		goto cleanup;
+	}
+	
+	talloc_free(nameid);
+	talloc_free(SPropTagArray);
+
+
+	/* Step 4: Create one MNID_STRING property */
+	GUID_from_string(PS_MAPI, &guid);
+	nameid = talloc_zero(mt->mem_ctx, struct MAPINAMEID);
+	SPropTagArray = talloc_zero(mt->mem_ctx, struct SPropTagArray);
+	  
+	nameid[0].lpguid = guid;
+	nameid[0].ulKind = MNID_STRING;
+	nameid[0].kind.lpwstr.Name = NAMEDPROP_NAME;
+	nameid[0].kind.lpwstr.NameSize = strlen(NAMEDPROP_NAME) * 2 + 2;
+	GetIDsFromNames(&obj_ref_folder, 1, &nameid[0], MAPI_CREATE, &SPropTagArray);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 4  - GetIDsFromNames", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	propID = SPropTagArray->aulPropTag[0] | PT_STRING8;
+	// printf("%s mapped to 0x%.8x\n", NAMEDPROP_NAME, propID);
+
+	talloc_free(nameid);
+	talloc_free(SPropTagArray);
+
+	/* Builds an array of Name, ID pairs using QueryNamesFromIDs() */
+        nameid = talloc_zero(mt->mem_ctx, struct MAPINAMEID);
+        propIDs = talloc_zero(mt->mem_ctx, uint16_t);
+        QueryNamedProperties(&obj_ref_message, 0, NULL, &count, &propIDs, &nameid);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 5  - QueryNamedProperties", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Iterate over names, and call GetIDsFromNames() on each name */
+        for (i = 0; i < count; i++) {
+		checknameid.lpguid = nameid[i].lpguid;
+		checknameid.ulKind = nameid[i].ulKind;
+
+                switch (nameid[i].ulKind) {
+                case MNID_ID:
+			checknameid.kind.lid = nameid[i].kind.lid;
+                        break;
+                case MNID_STRING:
+			checknameid.kind.lpwstr.Name = nameid[i].kind.lpwstr.Name;
+			checknameid.kind.lpwstr.NameSize = nameid[i].kind.lpwstr.NameSize;
+                        break;
+                }
+		SPropTagArray = talloc_zero(mt->mem_ctx, struct SPropTagArray);
+		GetIDsFromNames(&obj_ref_folder, 1, &checknameid, 0, &SPropTagArray);
+		if (GetLastError() != MAPI_E_SUCCESS) {
+			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 6A  - GetIDsFromNames", GetLastError());
+			ret = false;
+			goto cleanup;
+		}
+		// mapidump_SPropTagArray(SPropTagArray);
+		// check we got the right number of IDs
+		if (SPropTagArray->cValues != 1) {
+			mapitest_print(mt, "* Step 6B - Check: Unexpected ID count [FAILURE] (%i)\n",
+				       SPropTagArray->cValues);
+			ret = false;
+			goto cleanup;
+		}
+		// check the ID is the one we expected
+		if (SPropTagArray->aulPropTag[0] != (propIDs[i]<<16)) {
+			mapitest_print(mt, "* Step 6C - Check: Unexpected ID  [FAILURE] (0x%x, expected 0x%x)\n",
+				       SPropTagArray->aulPropTag[0], (propIDs[i]<<16));
+			ret = false;
+			goto cleanup;
+		}
+
+		talloc_free(SPropTagArray);
+        }
+	mapitest_print(mt, "* Step 6  - Check: All IDs matched [SUCCESS]\n");
+
+	/* Iterates over IDs, and call GetNamesFromIDs() on each ID */
+        for (i = 0; i < count; i++) {
+		checknameidarray = talloc_zero(mt->mem_ctx, struct MAPINAMEID);
+		GetNamesFromIDs(&obj_ref_folder, ((propIDs[i]<<16) & 0xFFFF0000) | PT_NULL, &checkcount, &checknameidarray);
+		if (GetLastError() != MAPI_E_SUCCESS) {
+			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 7A  - GetNamesFromIDs", GetLastError());
+			ret = false;
+			goto cleanup;
+		}
+		// check we got the right number of Namess
+		if (checkcount != 1) {
+			mapitest_print(mt, "* Step 7B - Check: Unexpected name count [FAILURE] (%i)\n", count);
+			ret = false;
+			goto cleanup;
+		}
+
+		// check we got the right kind of name
+		if (checknameidarray[0].ulKind != nameid[i].ulKind) {
+			mapitest_print(mt, "* Step 7C - Check: Unexpected kind  [FAILURE] (0x%x, expected 0x%x)\n",
+				       checknameidarray[0].ulKind, nameid[i].ulKind);
+			ret = false;
+			goto cleanup;
+		}
+
+                switch (nameid[i].ulKind) {
+                case MNID_ID:
+			if (checknameidarray[0].kind.lid != nameid[i].kind.lid) {
+				mapitest_print(mt, "* Step 7D - Check: Unexpected hex name  [FAILURE] (0x%x, expected 0x%x)\n",
+					       checknameidarray[0].kind.lid, nameid[i].kind.lid);
+				ret = false;
+				goto cleanup;
+			}
+                        break;
+                case MNID_STRING:
+			if (checknameidarray[0].kind.lpwstr.NameSize != nameid[i].kind.lpwstr.NameSize) {
+				mapitest_print(mt, "* Step 7E - Check: Unexpected name length [FAILURE] (%i, expected %i)\n",
+					       checknameidarray[0].kind.lpwstr.NameSize, nameid[i].kind.lpwstr.NameSize);
+				ret = false;
+				goto cleanup;
+			}
+			if (strncmp(checknameidarray[0].kind.lpwstr.Name, nameid[i].kind.lpwstr.Name, nameid[i].kind.lpwstr.NameSize) != 0 ) {
+				mapitest_print(mt, "* Step 7F - Check: Unexpected name [FAILURE] (%s, expected %s)\n",
+					       checknameidarray[0].kind.lpwstr.Name, nameid[i].kind.lpwstr.Name);
+				ret = false;
+				goto cleanup;
+			}			
+                        break;
+                }
+		talloc_free(checknameidarray);
+        }
+	mapitest_print(mt, "* Step 7  - Check: All Names matched [SUCCESS]\n");
+
+        talloc_free(propIDs);
+        talloc_free(nameid);
+
+ cleanup:
+	/* Clean up */
+	EmptyFolder(&obj_ref_folder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 8A - Empty test folder", GetLastError());
+	DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_ref_folder));
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 8B - Delete test folder", GetLastError());
+
+	/* Release */
+	mapi_object_release(&obj_ref_message);
+	mapi_object_release(&obj_ref_folder);
+	mapi_object_release(&obj_top_folder);
+	mapi_object_release(&obj_store);
 
 	return ret;
 }

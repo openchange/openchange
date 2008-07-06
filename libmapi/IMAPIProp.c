@@ -702,24 +702,34 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
    \details Provides the property names that correspond to one or more
    property identifiers.
 
-   variant of GetNamesFromIDs(). This function works almost like
-   GetNamesFromIDs() except that it can take ulPropTag = 0 and return
-   the whole set of named properties available.
+   \param queryFlags A set of flags that can restrict the type of properties
+   \param guid a pointer to the GUID for the property set to fetch (null for all
+   property sets.
+   \param count count of property names pointed to by the nameid and propID
+   parameters returned by the server
+   \param propID pointer to an array of property IDs returned by the server
+   \param nameid pointer to an array of property names returned by
+   the server
+
+   \note queryFlags can be NoStrings (0x1) or NoIds (0x2), neither or both.
+   NoStrings will produce only ID properties, NoIds will produce only named
+   properties, and both will result in no output.
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
    \sa GetNamesFromIDs
 */
-_PUBLIC_ enum MAPISTATUS QueryNamesFromIDs(mapi_object_t *obj,
-					   uint16_t ulPropTag,
-					   uint16_t *count,
-					   uint16_t **propID,
-					   struct MAPINAMEID **nameid)
+_PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
+					      uint8_t queryFlags,
+					      struct GUID *guid,
+					      uint16_t *count,
+					      uint16_t **propID,
+					      struct MAPINAMEID **nameid)
 {
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
-	struct QueryNamesFromIDs_req	request;
+	struct QueryNamedProperties_req	request;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size;
@@ -733,16 +743,26 @@ _PUBLIC_ enum MAPISTATUS QueryNamesFromIDs(mapi_object_t *obj,
 	mem_ctx = talloc_init("QueryNamesFromIDs");
 	size = 0;
 
-	/* Fill the QueryNamesFromIDs operation */
-	request.propID = ulPropTag;
-	size += sizeof (uint16_t);
+	/* Fill the QueryNamedProperties operation */
+	request.QueryFlags = queryFlags;
+	size += sizeof (uint8_t);
+
+	if (guid) {
+		request.HasGuid = 0x1; /* true */
+		size += sizeof (uint8_t);
+		request.PropertyGuid.guid = *guid;
+		size += sizeof (struct GUID);
+	} else {
+		request.HasGuid = 0x0; /* false */
+		size += sizeof (uint8_t);
+	}
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_QueryNamesFromIDs;
+	mapi_req->opnum = op_MAPI_QueryNamedProperties;
 	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
-	mapi_req->u.mapi_QueryNamesFromIDs = request;
+	mapi_req->u.mapi_QueryNamedProperties = request;
 	size += 5;
 
 	/* Fill the mapi_request structure */
@@ -760,9 +780,9 @@ _PUBLIC_ enum MAPISTATUS QueryNamesFromIDs(mapi_object_t *obj,
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Fill [out] parameters */
-	*count = mapi_response->mapi_repl->u.mapi_QueryNamesFromIDs.count;
-	*propID = mapi_response->mapi_repl->u.mapi_QueryNamesFromIDs.propID;
-	*nameid = mapi_response->mapi_repl->u.mapi_QueryNamesFromIDs.nameid;
+	*count = mapi_response->mapi_repl->u.mapi_QueryNamedProperties.IdCount;
+	*propID = mapi_response->mapi_repl->u.mapi_QueryNamedProperties.PropertyIds;
+	*nameid = mapi_response->mapi_repl->u.mapi_QueryNamedProperties.PropertyNames;
 
 	talloc_free(mem_ctx);
 	

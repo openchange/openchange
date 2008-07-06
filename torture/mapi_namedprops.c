@@ -149,11 +149,11 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 	 * This function seems to be the only one accepting 0 for
 	 * input ulPropTag and returning the whole set of named properties
 	 */
-	printf("\n\n2. QueryNamesFromIDs\n");
+	printf("\n\n2. QueryNamedProperties\n");
 	nameid = talloc_zero(mem_ctx, struct MAPINAMEID);
 	propIDs = talloc_zero(mem_ctx, uint16_t);
-	retval = QueryNamesFromIDs(&obj_message, 0, &count, &propIDs, &nameid);
-	mapi_errstr("QueryNamesFromIDs", GetLastError());
+	retval = QueryNamedProperties(&obj_message, 0, NULL, &count, &propIDs, &nameid);
+	mapi_errstr("QueryNamedProperties", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	for (i = 0; i < count; i++) {

@@ -722,7 +722,7 @@ System Attendant Private Interface
 			op_MAPI_CollapseRow			= 0x5a,
 			op_MAPI_CommitStream			= 0x5d,
 			op_MAPI_GetStreamSize			= 0x5e,
-			op_MAPI_QueryNamesFromIDs		= 0x5f,
+			op_MAPI_QueryNamedProperties		= 0x5f,
 			op_MAPI_GetPerUserLongTermIds		= 0x60,
 			op_MAPI_GetPerUserGuid			= 0x61,
 			op_MAPI_ReadPerUserInformation		= 0x63,
@@ -2418,15 +2418,27 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x5f */
-	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		propID;
-	} QueryNamesFromIDs_req;
+	typedef [bitmap8bit] bitmap {
+		NoStrings	= 0x01,
+		NoIds	        = 0x02
+	} QueryFlags;
+
+	typedef [nodiscriminant] union {
+		[case(0x0)];
+	  	[case(0x1)] GUID guid;
+	} QueryNamedProperties_guid;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		count;
-		uint16		propID[count];
-		MAPINAMEID	nameid[count];
-	} QueryNamesFromIDs_repl;
+		QueryFlags		QueryFlags;
+		boolean8		HasGuid;
+		[switch_is(HasGuid)]	QueryNamedProperties_guid PropertyGuid;
+	} QueryNamedProperties_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		IdCount;
+		uint16		PropertyIds[IdCount];
+		MAPINAMEID	PropertyNames[IdCount];
+	} QueryNamedProperties_repl;
   
 	/*************************/
 	/* EcDoRpc Function 0x60 */
@@ -2953,7 +2965,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CollapseRow)] CollapseRow_req mapi_CollapseRow;
 		[case(op_MAPI_CommitStream)] CommitStream_req mapi_CommitStream;
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_req mapi_GetStreamSize;
-		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_req mapi_QueryNamesFromIDs;
+		[case(op_MAPI_QueryNamedProperties)] QueryNamedProperties_req mapi_QueryNamedProperties;
 		[case(op_MAPI_GetPerUserLongTermIds)] GetPerUserLongTermIds_req mapi_GetPerUserLongTermIds;
 		[case(op_MAPI_GetPerUserGuid)] GetPerUserGuid_req mapi_GetPerUserGuid;
 		[case(op_MAPI_ReadPerUserInformation)] ReadPerUserInformation_req mapi_ReadPerUserInformation;
@@ -3063,7 +3075,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CollapseRow)] CollapseRow_repl mapi_CollapseRow;
 		[case(op_MAPI_CommitStream)] CommitStream_repl mapi_CommitStream;
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_repl mapi_GetStreamSize;
-		[case(op_MAPI_QueryNamesFromIDs)] QueryNamesFromIDs_repl mapi_QueryNamesFromIDs;
+		[case(op_MAPI_QueryNamedProperties)] QueryNamedProperties_repl mapi_QueryNamedProperties;
 		[case(op_MAPI_GetPerUserLongTermIds)] GetPerUserLongTermIds_repl mapi_GetPerUserLongTermIds;
 		[case(op_MAPI_GetPerUserGuid)] GetPerUserGuid_repl mapi_GetPerUserGuid;
 		[case(op_MAPI_ReadPerUserInformation)] ReadPerUserInformation_repl mapi_ReadPerUserInformation;

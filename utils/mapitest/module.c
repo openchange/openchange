@@ -200,6 +200,7 @@ _PUBLIC_ uint32_t module_oxcprpt_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "STREAM", "Test stream operations", mapitest_oxcprpt_Stream);
 	mapitest_suite_add_test(suite, "COPYTO", "Copy or move properties", mapitest_oxcprpt_CopyTo);
 	mapitest_suite_add_test(suite, "COPYTO-STREAM", "Copy stream from source to desination stream", mapitest_oxcprpt_CopyToStream);
+	mapitest_suite_add_test(suite, "NAME-ID", "Convert between Names and IDs", mapitest_oxcprpt_NameId);
 
 	mapitest_suite_register(mt, suite);
 

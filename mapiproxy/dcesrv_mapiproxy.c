@@ -264,11 +264,11 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	private->c_pipe->last_fault_code = 0;
-	dcerpc_ndr_request(private->c_pipe, NULL, table, opnum, mem_ctx, r);
+	status = dcerpc_ndr_request(private->c_pipe, NULL, table, opnum, mem_ctx, r);
 
 	dce_call->fault_code = private->c_pipe->last_fault_code;
-	if (dce_call->fault_code != 0) {
-		DEBUG(0, ("mapiproxy: call[%s] failed with %s!\n", name, dcerpc_errstr(mem_ctx, dce_call->fault_code)));
+	if (dce_call->fault_code != 0 || !NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("mapiproxy: call[%s] failed with %s! (status = %s)\n", name, dcerpc_errstr(mem_ctx, dce_call->fault_code), nt_errstr(status)));
 		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}

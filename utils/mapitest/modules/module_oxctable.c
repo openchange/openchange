@@ -891,6 +891,10 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
  cleanup:
 	if (bookmark) {
 		FreeBookmark(&(obj_test_folder), bookmark);
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "FreeBookmark", GetLastError());
+		if (GetLastError() != MAPI_E_SUCCESS) {
+			ret = false;
+		}
 	}
 
 	/* Release */

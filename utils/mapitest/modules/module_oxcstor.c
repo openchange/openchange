@@ -248,3 +248,76 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolderTable(struct mapitest *mt)
 
 	return true;
 }
+
+/**
+   \details Test the LongTermIdFromId (0x43) and IdFromLongTermId (0x44)
+   operations
+
+   This function:
+   -# Logs into the user private mailbox
+   -# Open the Receive Folder
+   -# Looks up the long term id for the receive folder FID
+   -# Looks up the short term id for the long term id
+   -# Checks the id matches the original FID
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcstor_LongTermId(struct mapitest *mt)
+{
+	mapi_object_t		obj_store;
+	mapi_id_t		id_inbox;
+	struct LongTermId	long_term_id;
+	mapi_id_t		id_check;
+	bool			ret = true;
+
+	/* Step 1. Logon Private Mailbox */
+	mapi_object_init(&obj_store);
+	OpenMsgStore(&obj_store);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenMsgStore", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 2. Call the GetReceiveFolder operation */
+	GetReceiveFolder(&obj_store, &id_inbox, "IPF.Post");
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetReceiveFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3. Call GetLongTermIdFromId on Folder ID */
+	GetLongTermIdFromId(&obj_store, id_inbox, &long_term_id);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetLongTermIdFromId", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 4. Call GetIdFromLongTermId on LongTermId from previous step*/
+	GetIdFromLongTermId(&obj_store, long_term_id, &id_check);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetIdFromLongTermId", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 5. Check whether ids are the same */
+	if ( id_check == id_inbox ) {
+		mapitest_print(mt, "* Check: IDs match - [SUCCESS]\n" );
+	} else {
+		mapitest_print(mt, "* Check: IDs do not match - [SUCCESS] (0x%x, expected 0x%x)\n",
+			       id_check, id_inbox);
+		ret=false;
+		goto cleanup;
+	}
+
+ cleanup:
+	/* Release */
+	mapi_object_release(&obj_store);
+
+	return ret;
+}

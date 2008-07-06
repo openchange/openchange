@@ -66,7 +66,7 @@ _PUBLIC_ struct mapitest_suite *mapitest_suite_init(struct mapitest *mt,
    \param mt the top-level mapitest structure
    \param suite the mapitest suite we want to add
 
-   \return MAPITEST_SUCCESS on success, otherwise MAPITETS_ERROR
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
 
    \sa mapitest_suite_init
  */

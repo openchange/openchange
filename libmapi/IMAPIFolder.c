@@ -54,7 +54,7 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
 	struct CreateMessage_req request;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
-	uint32_t		size = 0;
+	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
 	mapi_ctx_t		*mapi_ctx;
 
@@ -62,13 +62,17 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("CreateMessage");
+	size = 0;
 
 	/* Fill the OpenFolder operation */
 	request.handle_idx = 0x1;
-	request.max_data = 0xfff;
-	request.folder_id = mapi_object_get_id(obj_folder);
-	request.padding = 0;
-	size = sizeof (uint8_t) + sizeof(uint16_t) + sizeof(mapi_id_t) + sizeof(uint8_t);
+	size += sizeof (uint8_t);
+	request.CodePageId = 0xfff;
+	size += sizeof (uint16_t);
+	request.FolderId = mapi_object_get_id(obj_folder);
+	size += sizeof (uint64_t);
+	request.AssociatedFlag = 0;
+	size += sizeof (uint8_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);

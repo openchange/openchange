@@ -1140,9 +1140,9 @@ System Attendant Private Interface
 	/* EcDoRpc Function 0x6   */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
-		uint16		max_data;
-		hyper		folder_id;
-		uint8		padding;
+		uint16		CodePageId;
+		hyper		FolderId;
+		boolean8	AssociatedFlag;
 	} CreateMessage_req;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {

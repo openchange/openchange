@@ -708,6 +708,7 @@ System Attendant Private Interface
 			op_MAPI_ModifyRules			= 0x41,
 			op_MAPI_LongTermIdFromId		= 0x43,
 			op_MAPI_IdFromLongTermId		= 0x44,
+			op_MAPI_PublicFolderIsGhosted		= 0x45,
 			op_MAPI_OpenEmbeddedMessage		= 0x46,
 			op_MAPI_SetSpooler			= 0x47,
 			op_MAPI_SpoolerLockMessage		= 0x48,
@@ -959,7 +960,20 @@ System Attendant Private Interface
 	} OpenFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		unknown;
+		uint16		ServerCount;
+		uint16		CheapServerCount;
+		astring		Servers[ServerCount];
+	} OpenFolder_Replicas;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
+		[case(0x1)] OpenFolder_Replicas	Replicas;
+	} IsGhosted;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8				       	HasRules;
+		boolean8				       	IsGhosted;
+		[switch_is(IsGhosted)] IsGhosted		Ghost;
 	} OpenFolder_repl;
 	
 	/**************************/
@@ -1664,8 +1678,20 @@ System Attendant Private Interface
 	} CreateFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		folder_id;
-		uint8		unknown;
+		boolean8				HasRules;
+		boolean8				IsGhosted;
+		[switch_is(IsGhosted)] IsGhosted	Ghost;
+	} CreateFolder_GhostInfo;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
+		[case(0x1)] CreateFolder_GhostInfo	GhostInfo;
+	} CreateFolder_GhostUnion;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper							folder_id;
+		boolean8						IsExistingFolder;
+		[switch_is(IsExistingFolder)]	CreateFolder_GhostUnion	GhostUnion;
 	} CreateFolder_repl;
 
 	/**************************/
@@ -2203,6 +2229,17 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper		Id;
 	} IdFromLongTermId_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x45 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		FolderId;
+	} PublicFolderIsGhosted_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8				IsGhosted;
+		[switch_is(IsGhosted)] IsGhosted	Ghost;
+	} PublicFolderIsGhosted_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x46 */
@@ -2796,8 +2833,9 @@ System Attendant Private Interface
 	} OpenPublicFolderByName_req; 
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		boolean8	HasRules;
-		boolean8	IsGhosted;
+		boolean8				HasRules;
+		boolean8				IsGhosted;
+		[switch_is(IsGhosted)] IsGhosted	Ghost;
 	} OpenPublicFolderByName_repl;
 
 	/*************************/
@@ -2957,8 +2995,9 @@ System Attendant Private Interface
 		[case(op_MAPI_ModifyRules)] ModifyRules_req mapi_ModifyRules;
 		[case(op_MAPI_LongTermIdFromId)] LongTermIdFromId_req mapi_LongTermIdFromId;
 		[case(op_MAPI_IdFromLongTermId)] IdFromLongTermId_req mapi_IdFromLongTermId;
-		[case(op_MAPI_SetSpooler)] SetSpooler_req mapi_SetSpooler;
+		[case(op_MAPI_PublicFolderIsGhosted)] PublicFolderIsGhosted_req mapi_PublicFolderIsGhosted;
 		[case(op_MAPI_OpenEmbeddedMessage)] OpenEmbeddedMessage_req mapi_OpenEmbeddedMessage;
+		[case(op_MAPI_SetSpooler)] SetSpooler_req mapi_SetSpooler;
 		[case(op_MAPI_SpoolerLockMessage)] SpoolerLockMessage_req mapi_SpoolerLockMessage;
 		[case(op_MAPI_AddressTypes)] AddressTypes_req mapi_AddressTypes;
 		[case(op_MAPI_TransportSend)] TransportSend_req mapi_TransportSend;
@@ -3067,8 +3106,9 @@ System Attendant Private Interface
 		[case(op_MAPI_ModifyRules)] ModifyRules_repl mapi_ModifyRules;
 		[case(op_MAPI_LongTermIdFromId)] LongTermIdFromId_repl mapi_LongTermIdFromId;
 		[case(op_MAPI_IdFromLongTermId)] IdFromLongTermId_repl mapi_IdFromLongTermId;
-		[case(op_MAPI_SetSpooler)] SetSpooler_repl mapi_SetSpooler;
+		[case(op_MAPI_PublicFolderIsGhosted)] PublicFolderIsGhosted_repl mapi_PublicFolderIsGhosted;
 		[case(op_MAPI_OpenEmbeddedMessage)] OpenEmbeddedMessage_repl mapi_OpenEmbeddedMessage;
+		[case(op_MAPI_SetSpooler)] SetSpooler_repl mapi_SetSpooler;
 		[case(op_MAPI_SpoolerLockMessage)] SpoolerLockMessage_repl mapi_SpoolerLockMessage;
 		[case(op_MAPI_AddressTypes)] AddressTypes_repl mapi_AddressTypes;
 		[case(op_MAPI_TransportSend)] TransportSend_repl mapi_TransportSend;

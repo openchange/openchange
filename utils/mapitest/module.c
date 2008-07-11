@@ -58,6 +58,7 @@ _PUBLIC_ uint32_t module_oxcstor_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "GET-RECEIVE-FOLDER", "Retrieve the receive folder ID", mapitest_oxcstor_GetReceiveFolder);
 	mapitest_suite_add_test(suite, "SET-RECEIVE-FOLDER", "Set the receive folder", mapitest_oxcstor_SetReceiveFolder);
 	mapitest_suite_add_test(suite, "GET-RECEIVE-FOLDER-TABLE", "Retrieve the Receive Folder Table", mapitest_oxcstor_GetReceiveFolderTable);
+	mapitest_suite_add_test(suite, "PUBLICFOLDER-ISGHOSTED", "Determine if a public folder is ghosted", mapitest_oxcstor_PublicFolderIsGhosted);
 	mapitest_suite_add_test(suite, "LONGTERMID", "Map to / from a Long Term ID", mapitest_oxcstor_LongTermId);
 
 	mapitest_suite_register(mt, suite);

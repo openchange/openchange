@@ -208,6 +208,67 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
 	return true;
 }
 
+/**
+   \details Test the PublicFolderIsGhosted (0x45) operation
+
+   This function:
+   -# Log on the user public store
+   -# Open a public folder
+   -# Call the PublicFolderIsGhosted operation
+
+   \param mt the top-level mapitest structure
+
+   \return true on success, otherwise false
+*/
+_PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = true;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	uint64_t		folderId;
+	bool			IsGhosted;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenPublicFolder(&obj_store);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenPublicFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	
+	/* Step 2. Open IPM Subtree folder */
+	retval = GetDefaultPublicFolder(&obj_store, &folderId, olFolderPublicIPMSubtree);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetDefaultPublicFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(&obj_store, folderId, &obj_folder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3. Call PublicFolderIsGhosted */
+	retval = PublicFolderIsGhosted(&obj_store, &obj_folder, &IsGhosted);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "PublicFolderIsGhosted", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	mapitest_print(mt, "* %-35s: IsGhosted is set to %s\n", "PublicFolderIsGhosted", ((IsGhosted) ? "true" : "false"));
+
+	/* cleanup objects */
+	mapi_object_release(&obj_folder);
+
+cleanup:
+	mapi_object_release(&obj_store);
+
+	return ret;
+}
 
 /**
    \details Test the GetReceiveFolderTable (0x68) operation

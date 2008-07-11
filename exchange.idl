@@ -744,6 +744,7 @@ System Attendant Private Interface
 			op_MAPI_SyncUploadStateStreamContinue	= 0x76,
 			op_MAPI_SyncUploadStateStreamEnd	= 0x77,
 			op_MAPI_SyncImportMessageMove		= 0x78,
+			op_MAPI_SetPropertiesNoReplicate	= 0x79,
 			op_MAPI_DeletePropertiesNoReplicate	= 0x7a,
 			op_MAPI_SyncOpenCollector		= 0x7e,
 			op_MAPI_GetLocalReplicaIds		= 0x7f,
@@ -1158,7 +1159,8 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x7  */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32		unknown;
+		uint16		PropertySizeLimit;
+		uint16		WantUnicode;
 		uint16		prop_count;
 		MAPITAGS	properties[prop_count];
 	} GetProps_req;
@@ -1171,8 +1173,8 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x8  */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16			dwAlignPad;
-		uint16			unknown;
+		uint16		PropertySizeLimit;
+		uint16		WantUnicode;
 	} GetPropsAll_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1191,13 +1193,19 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0xa  */
+	typedef [flag(NDR_NOALIGN)] struct {
+	  	uint32		index; 		/* index into array of property tags */
+		MAPITAGS	property_tag;	/* property for which there was an error */
+		MAPISTATUS	error_code; 	/* the error that occurred for this property */
+	} PropertyProblem;
 
 	typedef [flag(NDR_NOALIGN)] struct {
  		[subcontext(2)] mapi_SPropValue_array values;
 	} SetProps_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		unknown;
+		uint16		PropertyProblemCount;
+		PropertyProblem	PropertyProblem[PropertyProblemCount];		
 	} SetProps_repl;
 
 	/*************************/
@@ -1208,7 +1216,8 @@ System Attendant Private Interface
 	} DeleteProps_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		unknown;
+		uint16		PropertyProblemCount;
+		PropertyProblem	PropertyProblem[PropertyProblemCount];
 	} DeleteProps_repl;
 
 	/*************************/
@@ -2116,12 +2125,6 @@ System Attendant Private Interface
 	} CopyFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-	  	uint32		index; 		/* index into array of property tags */
-		MAPITAGS	property_tag;	/* property for which there was an error */
-		MAPISTATUS	error_code; 	/* the error that occurred for this property */
-	} PropertyProblem;
-
-	typedef [flag(NDR_NOALIGN)] struct {
 		uint8			handle_idx;
 		boolean8		WantAsynchronous;
 		boolean8		WantSubObjects;
@@ -2535,8 +2538,8 @@ System Attendant Private Interface
 	} CopyProperties_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-	  	uint16		count;
-	  	PropertyProblem	property_problems[count];
+		uint16		PropertyProblemCount;
+		PropertyProblem	PropertyProblem[PropertyProblemCount];
 	} CopyProperties_repl;
 
 	/*************************/
@@ -2751,6 +2754,17 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper		MessageId;
 	} SyncImportMessageMove_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x79 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		[subcontext(2)] mapi_SPropValue_array	values;
+	} SetPropertiesNoReplicate_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		PropertyProblemCount;
+		PropertyProblem	PropertyProblem[PropertyProblemCount];
+	} SetPropertiesNoReplicate_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x7a */
@@ -3022,6 +3036,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncUploadStateStreamContinue)] SyncUploadStateStreamContinue_req mapi_SyncUploadStateStreamContinue;
 		[case(op_MAPI_SyncUploadStateStreamEnd)] SyncUploadStateStreamEnd_req mapi_SyncUploadStateStreamEnd;
 		[case(op_MAPI_SyncImportMessageMove)] SyncImportMessageMove_req mapi_SyncImportMessageMove;
+		[case(op_MAPI_SetPropertiesNoReplicate)] SetPropertiesNoReplicate_req mapi_SetPropertiesNoReplicate;
 		[case(op_MAPI_DeletePropertiesNoReplicate)] DeletePropertiesNoReplicate_req mapi_DeletePropertiesNoReplicate;
 		[case(op_MAPI_SyncOpenCollector)] SyncOpenCollector_req mapi_SyncOpenCollector;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_req mapi_GetLocalReplicaIds;
@@ -3134,6 +3149,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncUploadStateStreamContinue)] SyncUploadStateStreamContinue_repl mapi_SyncUploadStateStreamContinue;
 		[case(op_MAPI_SyncUploadStateStreamEnd)] SyncUploadStateStreamEnd_repl mapi_SyncUploadStateStreamEnd;
 		[case(op_MAPI_SyncImportMessageMove)] SyncImportMessageMove_repl mapi_SyncImportMessageMove;
+		[case(op_MAPI_SetPropertiesNoReplicate)] SetPropertiesNoReplicate_repl mapi_SetPropertiesNoReplicate;
 		[case(op_MAPI_DeletePropertiesNoReplicate)] DeletePropertiesNoReplicate_repl mapi_DeletePropertiesNoReplicate;
 		[case(op_MAPI_SyncOpenCollector)] SyncOpenCollector_repl mapi_SyncOpenCollector;
 		[case(op_MAPI_GetLocalReplicaIds)] GetLocalReplicaIds_repl mapi_GetLocalReplicaIds;

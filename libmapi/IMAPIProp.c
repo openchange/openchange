@@ -38,9 +38,9 @@
    returns associated values within the SPropValue values pointer.
 
    \param obj the object to get properties on
-   \param tags an array of MAPI property tags
-   \param vals the result of the query
-   \param cn_vals the count of property tags
+   \param SPropTagArray an array of MAPI property tags
+   \param lpProps the result of the query
+   \param PropCount the count of property tags
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -54,8 +54,8 @@
    GetLastError
 */
 _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj, 
-				  struct SPropTagArray *tags,
-				  struct SPropValue **vals, uint32_t *cn_vals)
+				  struct SPropTagArray *SPropTagArray,
+				  struct SPropValue **lpProps, uint32_t *PropCount)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -74,15 +74,19 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	mem_ctx = talloc_init("GetProps");
 
 	/* Reset */
-	*cn_vals = 0;
-	*vals = 0;
+	*PropCount = 0;
+	*lpProps = 0;
 	size = 0;
 
 	/* Fill the GetProps operation */
-	request.unknown = 0x0;
-	request.prop_count = (uint16_t)tags->cValues;
-	request.properties = tags->aulPropTag;
-	size = sizeof(uint32_t) + sizeof(uint16_t) + request.prop_count * sizeof(uint32_t);
+	request.PropertySizeLimit = 0x0;
+	size += sizeof (uint16_t);
+	request.WantUnicode = 0x0;
+	size += sizeof (uint16_t);
+	request.prop_count = (uint16_t) SPropTagArray->cValues;
+	size += sizeof (uint16_t);
+	request.properties = SPropTagArray->aulPropTag;
+	size += request.prop_count * sizeof(uint32_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -110,7 +114,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	*/
 	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)mapi_ctx->session,
 					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
-					   tags, vals, cn_vals, 
+					   SPropTagArray, lpProps, PropCount, 
 					   mapi_response->mapi_repl->u.mapi_GetProps.layout);
 	MAPI_RETVAL_IF(!mapistatus && (retval == MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
 	
@@ -398,9 +402,9 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 
 	/* Fill the GetPropsAll operation */
 	size = 0;
-	request.dwAlignPad = 0;
+	request.PropertySizeLimit = 0;
 	size += sizeof (uint16_t);
-	request.unknown = 0;
+	request.WantUnicode = 0;
 	size += sizeof (uint16_t);
 
 	/* Fill the MAPI_REQ request */
@@ -882,12 +886,12 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (problemCount) {
-		*problemCount = mapi_response->mapi_repl->u.mapi_CopyProperties.count;
+		*problemCount = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblemCount;
 		*problems = talloc_array(mapi_ctx, struct PropertyProblem, *problemCount);
 		for(i=0; i < *problemCount; ++i) {
-			(*(problems[i])).index = mapi_response->mapi_repl->u.mapi_CopyProperties.property_problems[i].index;
-			(*(problems[i])).property_tag = mapi_response->mapi_repl->u.mapi_CopyProperties.property_problems[i].property_tag;
-			(*(problems[i])).error_code = mapi_response->mapi_repl->u.mapi_CopyProperties.property_problems[i].error_code;
+			(*(problems[i])).index = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblem[i].index;
+			(*(problems[i])).property_tag = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblem[i].property_tag;
+			(*(problems[i])).error_code = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblem[i].error_code;
 		}
 	}
 

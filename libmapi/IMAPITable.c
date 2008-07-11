@@ -70,7 +70,7 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 	size = 0;
 
 	/* Fill the SetColumns operation */
-	request.unknown = 0;
+	request.SetColumnsFlags = SetColumns_TBL_SYNC;
 	request.prop_count = properties->cValues;
 	request.properties = properties->aulPropTag;
 	size += 3 + request.prop_count * sizeof (uint32_t);

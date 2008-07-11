@@ -1340,14 +1340,29 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x12 */
+	typedef [enum8bit] enum {
+		SetColumns_TBL_SYNC	= 0x0,
+		SetColumns_TBL_ASYNC	= 0x1
+	} SetColumnsFlags;
+	
+	typedef [enum8bit] enum {
+		TBLSTAT_COMPLETE	= 0x0,
+		TBLSTAT_SORTING		= 0x9,
+		TBLSTAT_SORT_ERROR	= 0xA,
+		TBLSTAT_SETTING_COLS	= 0xB,
+		TBLSTAT_SETCOL_ERROR	= 0xD,
+		TBLSTAT_RESTRICTING	= 0xE,
+		TBLSTAT_RESTRICT_ERROR	= 0xF
+	} TableStatus;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		SetColumnsFlags	SetColumnsFlags;
 		uint16		prop_count;
 		MAPITAGS	properties[prop_count];
 	} SetColumns_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		TableStatus	TableStatus;
 	} SetColumns_repl;
 
 	/**************************/
@@ -1379,16 +1394,6 @@ System Attendant Private Interface
 		uint8		SortTableFlags;
 		SSortOrderSet	lpSortCriteria;
         } SortTable_req;
-
-	typedef [enum8bit] enum {
-		TBLSTAT_COMPLETE	= 0x0,
-		TBLSTAT_SORTING		= 0x9,
-		TBLSTAT_SORT_ERROR	= 0xA,
-		TBLSTAT_SETTING_COLS	= 0xB,
-		TBLSTAT_SETCOL_ERROR	= 0xD,
-		TBLSTAT_RESTRICTING	= 0xE,
-		TBLSTAT_RESTRICT_ERROR	= 0xF
-	} TableStatus;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		TableStatus	TableStatus;

@@ -399,7 +399,7 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
 	size += 1;
 	request.offset = offset;
 	size += 4;
-	request.unknown_1 = 0;
+	request.WantRowMovedCount = 0;
 	size += 1;
 
 	/* Fill the MAPI_REQ request */
@@ -424,7 +424,7 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_SeekRow;
-	*row = reply->row;
+	*row = reply->RowsSought;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -439,7 +439,7 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
 
    \param obj_table the table we are moving cursor on
    \param lpbkPosition the bookmarked position 
-   \param offset an relative offset to the bookmark
+   \param RowCount a relative number of rows to the bookmark
    \param row the position of the seeked row is returned in rows
 
    \note Developers should call GetLastError() to retrieve the last
@@ -455,7 +455,7 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
  */
 _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
 					 uint32_t lpbkPosition,
-					 uint32_t offset,
+					 uint32_t RowCount,
 					 uint32_t *row)
 {
 	struct mapi_request		*mapi_request;
@@ -482,13 +482,13 @@ _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
 
 	/* Fill the SeekRowBookmark operation */
 	size = 0;
-	request.bookmark.cb = bin.cb;
+	request.Bookmark.cb = bin.cb;
 	size += sizeof (uint16_t);
-	request.bookmark.lpb = bin.lpb;
+	request.Bookmark.lpb = bin.lpb;
 	size += bin.cb;
-	request.offset = offset;
+	request.RowCount = RowCount;
 	size += sizeof (uint32_t);
-	request.unknown = 0x1;
+	request.WantRowMovedCount = 0x1;
 	size += sizeof (uint8_t);
 
 	/* Fill the MAPI_REQ request */
@@ -513,7 +513,7 @@ _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_SeekRowBookmark;
-	*row = reply->row;
+	*row = reply->RowsSought;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

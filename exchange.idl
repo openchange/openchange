@@ -1590,25 +1590,26 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		BOOKMARK	origin;
 		int32		offset;
-		uint8		unknown_1;
+		boolean8	WantRowMovedCount;
 	} SeekRow_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32		row;
-		uint8		unknown;
+		boolean8	HasSoughtLess;
+		uint32		RowsSought;
 	} SeekRow_repl;
 
 	/**************************/
 	/* EcDoRpc Function 0x19  */
 	typedef [flag(NDR_NOALIGN)] struct {
-		SBinary_short	bookmark;
-		uint32		offset;
-		uint8		unknown;
+		SBinary_short	Bookmark;
+		uint32		RowCount;
+		boolean8	WantRowMovedCount;
 	} SeekRowBookmark_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		unknown;
-		uint32		row;
+		boolean8	RowNoLongerVisible;
+		boolean8	HasSoughtLess;
+		uint32		RowsSought;
 	} SeekRowBookmark_repl;
 
 	/**************************/

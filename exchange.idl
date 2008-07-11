@@ -971,13 +971,34 @@ System Attendant Private Interface
 	} IsGhosted;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		boolean8				       	HasRules;
-		boolean8				       	IsGhosted;
-		[switch_is(IsGhosted)] IsGhosted		Ghost;
+		boolean8		       	       	HasRules;
+		boolean8			       	IsGhosted;
+		[switch_is(IsGhosted)] IsGhosted	Ghost;
 	} OpenFolder_repl;
 	
 	/**************************/
 	/* EcDoRpc Function 0x3   */
+	typedef [enum8bit] enum {
+		StringType_NONE			= 0x0,
+		StringType_EMPTY		= 0x1,
+		StringType_STRING8		= 0x2,
+		StringType_UNICODE_REDUCED	= 0x3,
+		StringType_UNICODE		= 0x4
+	} StringType;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
+		[case(0x1)];
+		[case(0x2)] astring			lpszA;
+		[case(0x3)] astring			lpszW_reduced;
+		[case(0x4)] [flag(STR_NULLTERM)] string	lpszW;
+	} String;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		StringType			StringType;
+		[switch_is(StringType)] String	String;
+	} TypedString;
+
 	typedef [bitmap8bit] bitmap {
 		/* 0x0 means Read Only */
 		ReadWrite	= 0x1,
@@ -1074,22 +1095,14 @@ System Attendant Private Interface
 		[subcontext(2)] RecipientRow	RecipientRow;
 	} OpenMessage_recipients;
 
-	typedef [public, nodiscriminant]union {
-		[case(0x0)];
-		[case(0x1)];
-		[case(0x3)] astring subject;
-	} OpenMessage_repl_UNION;
-
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
-		uint8		type_prefix;
-		[switch_is(type_prefix)] OpenMessage_repl_UNION prefix;
-		uint8		type_subject;
-		[switch_is(type_subject)] OpenMessage_repl_UNION subject;
-		uint16			recipient_count;
-		mapi_SPropTagArray	SPropTagArray;
-		uint8			recipient_count_again;
-		OpenMessage_recipients	recipients[recipient_count];
+		boolean8		HasNamedProperties;
+		TypedString		SubjectPrefix;
+		TypedString		NormalizedSubject;
+		uint16			RecipientCount;
+		mapi_SPropTagArray	RecipientColumns;
+		uint8			RowCount;
+		OpenMessage_recipients	recipients[RowCount];
 	} OpenMessage_repl;
 
 	/**************************/
@@ -1274,27 +1287,6 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x10 */
-	typedef [enum8bit] enum {
-		StringType_NONE			= 0x0,
-		StringType_EMPTY		= 0x1,
-		StringType_STRING8		= 0x2,
-		StringType_UNICODE_REDUCED	= 0x3,
-		StringType_UNICODE		= 0x4
-	} StringType;
-
-	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x0)];
-		[case(0x1)];
-		[case(0x2)] astring			lpszA;
-		[case(0x3)] astring			lpszW_reduced;
-		[case(0x4)] [flag(STR_NULLTERM)] string	lpszW;
-	} String;
-
-	typedef [flag(NDR_NOALIGN)] struct {
-		StringType			StringType;
-		[switch_is(StringType)] String	String;
-	} TypedString;
-
 	typedef [flag(NDR_NOALIGN)] struct {
 		ulRecipClass		RecipientType;
 		uint16			CodePageId;

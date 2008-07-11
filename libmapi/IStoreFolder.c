@@ -121,14 +121,14 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	reply = &mapi_response->mapi_repl->u.mapi_OpenMessage;
 
 	message = talloc_zero((TALLOC_CTX *)mapi_ctx->session, mapi_object_message_t);
-	message->cValues = reply->SPropTagArray.cValues;
-	message->SRowSet.cRows = reply->recipient_count;
-	message->SRowSet.aRow = talloc_array((TALLOC_CTX *)message, struct SRow, reply->recipient_count + 1);
+	message->cValues = reply->RecipientColumns.cValues;
+	message->SRowSet.cRows = reply->RowCount;
+	message->SRowSet.aRow = talloc_array((TALLOC_CTX *)message, struct SRow, reply->RowCount + 1);
 
-	message->SPropTagArray.cValues = reply->SPropTagArray.cValues;
-	message->SPropTagArray.aulPropTag = reply->SPropTagArray.aulPropTag;
+	message->SPropTagArray.cValues = reply->RecipientColumns.cValues;
+	message->SPropTagArray.aulPropTag = reply->RecipientColumns.aulPropTag;
 
-	for (i = 0; i < reply->recipient_count; i++) {
+	for (i = 0; i < reply->RowCount; i++) {
 		emsmdb_get_SRow((TALLOC_CTX *)message, &(message->SRowSet.aRow[i]), &message->SPropTagArray, 
 				reply->recipients[i].RecipientRow.prop_count,
 				&reply->recipients[i].RecipientRow.prop_values,

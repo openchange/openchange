@@ -706,6 +706,7 @@ System Attendant Private Interface
 			op_MAPI_GetRulesTable			= 0x3f,
 			op_MAPI_ModifyTable			= 0x40,
 			op_MAPI_ModifyRules			= 0x41,
+			op_MAPI_GetOwningServers		= 0x42,
 			op_MAPI_LongTermIdFromId		= 0x43,
 			op_MAPI_IdFromLongTermId		= 0x44,
 			op_MAPI_PublicFolderIsGhosted		= 0x45,
@@ -2200,6 +2201,18 @@ System Attendant Private Interface
 	} ModifyRules_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x42 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		FolderId;
+	} GetOwningServers_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		OwningServersCount;
+		uint16		CheapServersCount;
+		astring		OwningServers[OwningServersCount];
+	} GetOwningServers_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x43 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper	Id;
@@ -2999,6 +3012,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_req mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
 		[case(op_MAPI_ModifyRules)] ModifyRules_req mapi_ModifyRules;
+		[case(op_MAPI_GetOwningServers)] GetOwningServers_req mapi_GetOwningServers;
 		[case(op_MAPI_LongTermIdFromId)] LongTermIdFromId_req mapi_LongTermIdFromId;
 		[case(op_MAPI_IdFromLongTermId)] IdFromLongTermId_req mapi_IdFromLongTermId;
 		[case(op_MAPI_PublicFolderIsGhosted)] PublicFolderIsGhosted_req mapi_PublicFolderIsGhosted;
@@ -3111,6 +3125,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_repl mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
 		[case(op_MAPI_ModifyRules)] ModifyRules_repl mapi_ModifyRules;
+		[case(op_MAPI_GetOwningServers)] GetOwningServers_repl mapi_GetOwningServers;
 		[case(op_MAPI_LongTermIdFromId)] LongTermIdFromId_repl mapi_LongTermIdFromId;
 		[case(op_MAPI_IdFromLongTermId)] IdFromLongTermId_repl mapi_IdFromLongTermId;
 		[case(op_MAPI_PublicFolderIsGhosted)] PublicFolderIsGhosted_repl mapi_PublicFolderIsGhosted;

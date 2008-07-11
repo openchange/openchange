@@ -208,11 +208,87 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
 	return true;
 }
 
+
+/**
+   \details Test the GetOwningServers (0x42) operation
+
+   This function:
+   -# Log on the public folders store
+   -# Open a public folder
+   -# Call the GetOwningServers operation
+
+   \param mt the top-level mapitest structure
+
+   \return true on success, otherwise false
+*/
+_PUBLIC_ bool mapitest_oxcstor_GetOwningServers(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = true;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	uint64_t		folderId;
+	uint16_t		OwningServersCount;
+	uint16_t		CheapServersCount;
+	char			*OwningServers;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenPublicFolder(&obj_store);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenPublicFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	
+	/* Step 2. Open IPM Subtree folder */
+	retval = GetDefaultPublicFolder(&obj_store, &folderId, olFolderPublicIPMSubtree);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetDefaultPublicFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(&obj_store, folderId, &obj_folder);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenFolder", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3. Call GetOwningServers */
+	retval = GetOwningServers(&obj_store, &obj_folder, &OwningServersCount, &CheapServersCount, &OwningServers);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetOwningServers", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS && GetLastError() != 0x000000469) {
+		ret = false;
+	} else if (GetLastError() == 0x00000469) {
+		mapitest_print(mt, "* %-35s: No active replica for the folder\n", "GetOwningServers");
+	} else {
+		mapitest_print(mt, "* %-35s: OwningServersCount: %d\n", "PublicFolderIsGhosted", OwningServersCount);
+		if (OwningServersCount) {
+			uint16_t	i;
+			
+			for (i = 0; i < OwningServersCount; i++) {
+				mapitest_print(mt, "* %-35s: OwningServers: %s\n", "GetOwningServers", &OwningServers[i]);
+			}
+			talloc_free(&OwningServers);
+		}
+	}
+
+	/* cleanup objects */
+	mapi_object_release(&obj_folder);
+
+cleanup:
+	mapi_object_release(&obj_store);
+
+	return ret;
+}
+
 /**
    \details Test the PublicFolderIsGhosted (0x45) operation
 
    This function:
-   -# Log on the user public store
+   -# Log on the public folders store
    -# Open a public folder
    -# Call the PublicFolderIsGhosted operation
 

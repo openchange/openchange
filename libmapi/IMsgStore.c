@@ -577,6 +577,110 @@ _PUBLIC_ enum MAPISTATUS GetTransportFolder(mapi_object_t *obj_store,
 }
 
 
+/**
+   \details Get the list of servers that host replicas of a given
+   public folder.
+
+   \param obj_store the public folder store object
+   \param obj_folder the folder object we search replica for
+   \param OwningServersCount number of OwningServers
+   \param CheapServersCount number of low-cost servers
+   \param OwningServers pointer on the list of NULL terminated ASCII
+   string representing replica servers
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note ecNoReplicaAvailable (0x469) can be returned if no replica is
+   available for the folder.
+
+   Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+ */
+_PUBLIC_ enum MAPISTATUS GetOwningServers(mapi_object_t *obj_store,
+					  mapi_object_t *obj_folder,
+					  uint16_t *OwningServersCount,
+					  uint16_t *CheapServersCount,
+					  char **OwningServers)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetOwningServers_req	request;
+	struct GetOwningServers_repl	response;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+	mapi_ctx_t			*mapi_ctx;
+	mapi_id_t			FolderId;
+	uint32_t			i;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!OwningServersCount, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!CheapServersCount, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!OwningServers, MAPI_E_INVALID_PARAMETER, NULL);
+
+	FolderId = mapi_object_get_id(obj_folder);
+	MAPI_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
+		
+	
+	mapi_ctx = global_mapi_ctx;
+	mem_ctx = talloc_init("GetOwningServers");
+	
+	size = 0;
+
+	/* Fill the GetOwningServers operation */
+	request.FolderId = FolderId;
+	size += sizeof (uint64_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetOwningServers;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_GetOwningServers = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
+
+	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Retrieve GetOwningServers response */
+	response = mapi_response->mapi_repl->u.mapi_GetOwningServers;
+
+	*OwningServersCount = response.OwningServersCount;
+	*CheapServersCount = response.CheapServersCount;
+	if (*OwningServersCount) {
+		OwningServers = talloc_array(mapi_ctx->mem_ctx, char *, *OwningServersCount + 1);
+		for (i = 0; i != *OwningServersCount; i++) {
+			OwningServers[i] = talloc_strdup(mapi_ctx->mem_ctx, response.OwningServers[i]);
+		}
+		OwningServers[i] = NULL;
+	} else {
+		OwningServers = NULL;
+	}
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
 
 /**
    \details Retrieves the sending folder (OUTBOX) for a given store

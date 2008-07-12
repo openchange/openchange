@@ -706,6 +706,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
    \details Provides the property names that correspond to one or more
    property identifiers.
 
+   \param obj the object to obtain the properties for
    \param queryFlags A set of flags that can restrict the type of properties
    \param guid a pointer to the GUID for the property set to fetch (null for all
    property sets.

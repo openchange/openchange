@@ -47,13 +47,14 @@ _PUBLIC_ bool mapitest_oxcfxics_GetLocalReplicaIds(struct mapitest *mt)
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(&obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Step 2. Reserve a range of IDs */
 	retval = GetLocalReplicaIds(&obj_store, 0x1000, &ReplGuid, GlobalCount);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetLocalReplicaIds", GetLastError());
+	mapitest_print_retval(mt, "GetLocalReplicaIds");
 	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}

@@ -73,6 +73,7 @@ struct mapitest {
 	bool			no_server;
 	bool			mapi_all;
 	bool			online;
+	bool			color;
 	struct emsmdb_info	info;
 	struct mapitest_suite	*mapi_suite;
 	struct mapitest_unit   	*cmdline_calls;
@@ -153,5 +154,9 @@ struct mt_common_tf_ctx
 
 #define	MT_STAT_TITLE	"[STAT] FAILURE REPORT\n"
 #define	MT_STAT_FAILURE	"* %-35s: %s\n"
+
+#define	MT_WHITE	   "\033[0;29m"
+#define MT_RED             "\033[1;31m"
+#define MT_GREEN           "\033[1;32m"
 
 #endif /* !__MAPITEST_H__ */

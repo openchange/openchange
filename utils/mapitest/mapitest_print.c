@@ -331,3 +331,134 @@ _PUBLIC_ void mapitest_print_test_result(struct mapitest *mt, char *name, bool r
 	mapitest_print_line(mt, MODULE_TEST_LINELEN, MODULE_TEST_DELIM2);
 	mapitest_print_newline(mt, MODULE_TEST_NEWLINE);
 }
+
+
+/**
+   \details print mapitest return value
+
+   \param mt pointer on the top-level mapitest structure
+   \param name the test name
+ */
+_PUBLIC_ void mapitest_print_retval(struct mapitest *mt, char *name)
+{
+	const char	*retstr = NULL;
+
+	retstr = mapi_get_errstr(GetLastError());
+
+	if (mt->color == true) {
+		if (retstr) {
+			mapitest_print(mt, "* %-35s: %s %s %s \n", name, (GetLastError() ? MT_RED : MT_GREEN), retstr, MT_WHITE);
+		} else {
+			mapitest_print(mt, "* %-35s: %s Unknown Error (0x%.8x) %s\n", name, MT_RED, GetLastError(), MT_WHITE);
+		}
+	} else {
+		if (retstr) {
+			mapitest_print(mt, "* %-35s: %s\n", name, retstr);
+		} else {
+			mapitest_print(mt, "* %-35s: Unknown Error (0x%.8x)\n", name, GetLastError());
+		}
+	}
+}
+
+
+/**
+   \details print mapitest return value with additional format string
+
+   \param mt pointer on the top-level mapitest structure
+   \param name the test name
+   \param format the format string
+   \param ... the format string parameters
+ */
+_PUBLIC_ void mapitest_print_retval_fmt(struct mapitest *mt, char *name, const char *format, ...)
+{
+	const char	*retstr = NULL;
+	va_list		ap;
+	char		*s = NULL;
+
+	va_start(ap, format);
+	vasprintf(&s, format, ap);
+	va_end(ap);
+
+	retstr = mapi_get_errstr(GetLastError());
+
+	if (mt->color == true) {
+		if (retstr) {
+			mapitest_print(mt, "* %-35s: %s %s %s %s\n", name, (GetLastError() ? MT_RED: MT_GREEN), retstr, MT_WHITE, s);
+		} else {
+			mapitest_print(mt, "* %-35s: %s Unknown Error (0x%.8x) %s %s\n", name, MT_RED, GetLastError(), MT_WHITE, s);
+		}
+	} else {
+		if (retstr) {
+			mapitest_print(mt, "* %-35s: %s %s\n", name, retstr, s);
+		} else {
+			mapitest_print(mt, "* %-35s: Unknown Error (0x%.8x) %s\n", name, GetLastError(), s);
+		}
+	}
+}
+
+
+/**
+   \details print mapitest return value for a given step
+
+   \param mt pointer on the top-level mapitest structure
+   \param step the test step
+   \param name the test name
+ */
+_PUBLIC_ void mapitest_print_retval_step(struct mapitest *mt, char *step, char *name)
+{
+	const char	*retstr = NULL;
+
+	retstr = mapi_get_errstr(GetLastError());
+
+	if (mt->color == true) {
+		if (retstr) {
+			mapitest_print(mt, "* Step %-5s %-35s: %s %s %s\n", step, name, (GetLastError() ? MT_RED : MT_GREEN), retstr, MT_WHITE);
+		} else {
+			mapitest_print(mt, "* Step %-5s %-35s: %s Unknown Error (0x%.8x) %s\n", step, name, MT_RED, GetLastError(), MT_WHITE);
+		}
+	} else {
+		if (retstr) {
+			mapitest_print(mt, "* Step %-5s %-35s: %s\n", step, name, retstr);
+		} else {
+			mapitest_print(mt, "* Step %-5s %-35s: Unknown Error (0x%.8x)\n", step, name, GetLastError());
+		}
+	}
+}
+
+
+/**
+   \details print mapitest return value for a given step with
+   additional format string
+
+   \param mt pointer on the top-level mapitest structure
+   \param step the test step
+   \param name the test name
+   \param format the format string
+   \param ... the format string parameters
+ */
+_PUBLIC_ void mapitest_print_retval_step_fmt(struct mapitest *mt, char *step, char *name, const char *format, ...)
+{
+	const char	*retstr = NULL;
+	va_list		ap;
+	char		*s = NULL;
+
+	va_start(ap, format);
+	vasprintf(&s, format, ap);
+	va_end(ap);
+
+	retstr = mapi_get_errstr(GetLastError());
+
+	if (mt->color == true) {
+		if (retstr) {
+			mapitest_print(mt, "* Step %-5s %-35s: %s %s %s %s\n", step, name, (GetLastError() ? MT_RED : MT_GREEN), retstr, MT_WHITE, s);
+		} else {
+			mapitest_print(mt, "* Step %-5s %-35s: %s Unknown Error (0x%.8x) %s %s\n", step, name, MT_RED, GetLastError(), MT_WHITE, s);
+		}
+	} else {
+		if (retstr) {
+			mapitest_print(mt, "* Step %-5s %-35s: %s %s\n", step, name, retstr, s);
+		} else {
+			mapitest_print(mt, "* Step %-5s %-35s: Unknown Error (0x%.8x) %s\n", step, name, GetLastError(), s);
+		}
+	}
+}

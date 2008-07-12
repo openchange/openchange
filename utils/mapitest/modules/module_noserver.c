@@ -62,7 +62,7 @@ _PUBLIC_ bool mapitest_noserver_lzfu(struct mapitest *mt)
 	}
 
 	retval = uncompress_rtf(mt->mem_ctx, compressed, compressed_length, &uncompressed);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "uncompress_rtf", GetLastError());
+	mapitest_print_retval(mt, "uncompress_rtf");
 	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}	   

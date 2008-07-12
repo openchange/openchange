@@ -38,6 +38,7 @@ static void mapitest_init(TALLOC_CTX *mem_ctx, struct mapitest *mt)
 	mt->mapi_all = true;
 	mt->confidential = false;
 	mt->no_server = false;
+	mt->color = false;
 	mt->online = false;
 	mt->mapi_suite = false;
 	mt->cmdline_calls = NULL;
@@ -191,7 +192,7 @@ int main(int argc, const char *argv[])
 	enum { OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_USERNAME, OPT_PASSWORD,
 	       OPT_CONFIDENTIAL, OPT_OUTFILE, OPT_MAPI_ALL, OPT_MAPI_CALLS,
 	       OPT_MAPIADMIN_ALL, OPT_NO_SERVER, OPT_LIST_ALL, OPT_DUMP_DATA,
-	       OPT_DEBUG };
+	       OPT_DEBUG, OPT_COLOR };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -200,6 +201,7 @@ int main(int argc, const char *argv[])
 		{ "username",     'u', POPT_ARG_STRING, NULL, OPT_USERNAME,      "set the account username" },
 		{ "password",     'p', POPT_ARG_STRING, NULL, OPT_PASSWORD,      "set the profile or account password" },
 		{ "confidential",  0,  POPT_ARG_NONE,   NULL, OPT_CONFIDENTIAL,  "remove any sensitive data from the report" },
+		{ "color",         0,  POPT_ARG_NONE,   NULL, OPT_COLOR,         "color MAPI retval"},
 		{ "outfile",      'o', POPT_ARG_STRING, NULL, OPT_OUTFILE,       "set the report output file" },
 		{ "mapi-calls",    0,  POPT_ARG_STRING, NULL, OPT_MAPI_CALLS,    "test custom ExchangeRPC tests" },
 		{ "list-all",      0,  POPT_ARG_NONE,   NULL, OPT_LIST_ALL,      "list suite and tests - names and description" },
@@ -248,6 +250,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_NO_SERVER:
 			mt.no_server = true;
+			break;
+		case OPT_COLOR:
+			mt.color = true;
 			break;
 		case OPT_LIST_ALL:
 			mapitest_list(&mt, NULL);

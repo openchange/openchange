@@ -49,7 +49,7 @@ _PUBLIC_ bool mapitest_oxcstor_Logon(struct mapitest *mt)
 	/* Step 1. Logon Private Mailbox */
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(&obj_store);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenMsgStore", GetLastError());
+	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -58,7 +58,7 @@ _PUBLIC_ bool mapitest_oxcstor_Logon(struct mapitest *mt)
 	/* Step 2. Logon Public Folder store */
 	mapi_object_init(&obj_store);
 	retval = OpenPublicFolder(&obj_store);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenPublicFolder", GetLastError());
+	mapitest_print_retval(mt, "OpenPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -88,13 +88,14 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolder(struct mapitest *mt)
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(&obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 	
 	/* Step 2. Call the GetReceiveFolder operation */
 	retval = GetReceiveFolder(&obj_store, &id_inbox, "IPF.Post");
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetReceiveFolder", GetLastError());
+	mapitest_print_retval(mt, "GetReceiveFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -130,14 +131,14 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(&obj_store);
-	mapitest_print(mt, "* Step 1. %-35s: 0x%.8x\n", "Logon", GetLastError());
+	mapitest_print_retval_step(mt, "1.", "Logon");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Step 2. Get the original ReceiveFolder */
 	retval = GetReceiveFolder(&obj_store, &id_inbox, NULL);
-	mapitest_print(mt, "* Step 2. %-35s: 0x%.8x\n", "GetReceiveFolder", GetLastError());
+	mapitest_print_retval_step(mt, "2.", "GetReceiveFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -145,21 +146,21 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
 	/* Step 3. Open the ReceiveFolder */
 	mapi_object_init(&obj_inbox);
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
-	mapitest_print(mt, "* Step 3. %-35s: 0x%.8x\n", "OpenFolder", GetLastError());
+	mapitest_print_retval_step(mt, "3.", "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Step 4. Open the Top Information Store folder */
 	retval = GetDefaultFolder(&obj_store, &id_tis, olFolderTopInformationStore);
-	mapitest_print(mt, "* Step 4. %-35s: 0x%.8x\n", "GetDefaultFolder", GetLastError());
+	mapitest_print_retval_step(mt, "4.", "GetDefaultFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	mapi_object_init(&obj_tis);
 	retval = OpenFolder(&obj_store, id_tis, &obj_tis);
-	mapitest_print(mt, "* Step 4.1. %-33s: 0x%.8x\n", "OpenFolder", GetLastError());
+	mapitest_print_retval_step(mt, "4.1.", "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -168,33 +169,33 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
 	mapi_object_init(&obj_folder);
 	retval = CreateFolder(&obj_tis, FOLDER_GENERIC, "New Inbox", NULL,
 			      OPEN_IF_EXISTS, &obj_folder);
-	mapitest_print(mt, "* Step 5. %-35s: 0x%.8x\n", "CreateFolder", GetLastError());
+	mapitest_print_retval_step(mt, "5.", "CreateFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Set IPM.Note receive folder to New Inbox */
 	retval = SetReceiveFolder(&obj_store, &obj_folder, "IPM.Note");
-	mapitest_print(mt, "* Step 6. %-35s: 0x%.8x (New Inbox)\n", "SetReceiveFolder", GetLastError());
+	mapitest_print_retval_step_fmt(mt, "6.", "SetReceiveFolder", "%s", "(New Inbox)");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Reset receive folder to Inbox */
 	retval = SetReceiveFolder(&obj_store, &obj_inbox, "IPM.Note");
-	mapitest_print(mt, "* Step 6.1 %-34s: 0x%.8x\n", "SetReceiveFolder", GetLastError());
+	mapitest_print_retval_step(mt, "6.1.", "SetReceiveFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 	/* Delete New Inbox folder */
 	retval = EmptyFolder(&obj_folder);
-	mapitest_print(mt, "* Step 7. %-35s: 0x%.8x\n", "EmptyFolder", GetLastError());
+	mapitest_print_retval_step(mt, "7.", "EmptyFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	retval = DeleteFolder(&obj_tis, mapi_object_get_id(&obj_folder));
-	mapitest_print(mt, "* Step 8. %-35s: 0x%.8x\n", "DeleteFolder", GetLastError());
+	mapitest_print_retval_step(mt, "8.", "DeleteFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -235,14 +236,14 @@ _PUBLIC_ bool mapitest_oxcstor_GetOwningServers(struct mapitest *mt)
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	retval = OpenPublicFolder(&obj_store);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenPublicFolder", GetLastError());
+	mapitest_print_retval(mt, "OpenPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 	
 	/* Step 2. Open IPM Subtree folder */
 	retval = GetDefaultPublicFolder(&obj_store, &folderId, olFolderPublicIPMSubtree);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetDefaultPublicFolder", GetLastError());
+	mapitest_print_retval(mt, "GetDefaultPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -250,7 +251,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetOwningServers(struct mapitest *mt)
 
 	mapi_object_init(&obj_folder);
 	retval = OpenFolder(&obj_store, folderId, &obj_folder);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenFolder", GetLastError());
+	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -258,10 +259,10 @@ _PUBLIC_ bool mapitest_oxcstor_GetOwningServers(struct mapitest *mt)
 
 	/* Step 3. Call GetOwningServers */
 	retval = GetOwningServers(&obj_store, &obj_folder, &OwningServersCount, &CheapServersCount, &OwningServers);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetOwningServers", GetLastError());
-	if (GetLastError() != MAPI_E_SUCCESS && GetLastError() != 0x000000469) {
+	mapitest_print_retval(mt, "GetOwningServers");
+	if (GetLastError() != MAPI_E_SUCCESS && GetLastError() != ecNoReplicaAvailable) {
 		ret = false;
-	} else if (GetLastError() == 0x00000469) {
+	} else if (GetLastError() == ecNoReplicaAvailable) {
 		mapitest_print(mt, "* %-35s: No active replica for the folder\n", "GetOwningServers");
 	} else {
 		mapitest_print(mt, "* %-35s: OwningServersCount: %d\n", "PublicFolderIsGhosted", OwningServersCount);
@@ -308,14 +309,14 @@ _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	retval = OpenPublicFolder(&obj_store);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenPublicFolder", GetLastError());
+	mapitest_print_retval(mt, "OpenPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 	
 	/* Step 2. Open IPM Subtree folder */
 	retval = GetDefaultPublicFolder(&obj_store, &folderId, olFolderPublicIPMSubtree);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetDefaultPublicFolder", GetLastError());
+	mapitest_print_retval(mt, "GetDefaultPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -323,7 +324,7 @@ _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 
 	mapi_object_init(&obj_folder);
 	retval = OpenFolder(&obj_store, folderId, &obj_folder);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenFolder", GetLastError());
+	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -331,7 +332,7 @@ _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 
 	/* Step 3. Call PublicFolderIsGhosted */
 	retval = PublicFolderIsGhosted(&obj_store, &obj_folder, &IsGhosted);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "PublicFolderIsGhosted", GetLastError());
+	mapitest_print_retval(mt, "PublicFolderIsGhosted");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 	}
@@ -345,6 +346,7 @@ cleanup:
 
 	return ret;
 }
+
 
 /**
    \details Test the GetReceiveFolderTable (0x68) operation
@@ -366,13 +368,14 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolderTable(struct mapitest *mt)
  	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(&obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Step 2. Call the GetReceiveFolderTable operation */
 	retval = GetReceiveFolderTable(&obj_store, &SRowSet);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetReceiveFolderTable", GetLastError());
+	mapitest_print_retval(mt, "GetReceiveFolderTable");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -412,7 +415,7 @@ _PUBLIC_ bool mapitest_oxcstor_LongTermId(struct mapitest *mt)
 	/* Step 1. Logon Private Mailbox */
 	mapi_object_init(&obj_store);
 	OpenMsgStore(&obj_store);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenMsgStore", GetLastError());
+	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -420,7 +423,7 @@ _PUBLIC_ bool mapitest_oxcstor_LongTermId(struct mapitest *mt)
 
 	/* Step 2. Call the GetReceiveFolder operation */
 	GetReceiveFolder(&obj_store, &id_inbox, "IPF.Post");
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetReceiveFolder", GetLastError());
+	mapitest_print_retval(mt, "GetReceiveFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -428,7 +431,7 @@ _PUBLIC_ bool mapitest_oxcstor_LongTermId(struct mapitest *mt)
 
 	/* Step 3. Call GetLongTermIdFromId on Folder ID */
 	GetLongTermIdFromId(&obj_store, id_inbox, &long_term_id);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetLongTermIdFromId", GetLastError());
+	mapitest_print_retval(mt, "GetLongTermIdFromId");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -436,7 +439,7 @@ _PUBLIC_ bool mapitest_oxcstor_LongTermId(struct mapitest *mt)
 
 	/* Step 4. Call GetIdFromLongTermId on LongTermId from previous step*/
 	GetIdFromLongTermId(&obj_store, long_term_id, &id_check);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetIdFromLongTermId", GetLastError());
+	mapitest_print_retval(mt, "GetIdFromLongTermId");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;

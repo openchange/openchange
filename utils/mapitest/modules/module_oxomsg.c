@@ -126,7 +126,7 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 
 	/* Step 4. Submit Message */
 	retval = SubmitMessage(&obj_message);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SubmitMessage", GetLastError());
+	mapitest_print_retval(mt, "SubmitMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -134,7 +134,7 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 	/* Step 5. Delete Message */
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError());
+	mapitest_print_retval(mt, "DeleteMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -214,17 +214,17 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 	/* Step 4. Submit Message */
 	retval = SubmitMessage(&obj_message);
 	retval = AbortSubmit(&obj_store, &obj_folder, &obj_message);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "AbortMessage", GetLastError());
+	mapitest_print_retval(mt, "AbortSubmit");
 	if ((GetLastError() != MAPI_E_SUCCESS) && 
-	    (GetLastError() != 0x80040114) &&
-	    (GetLastError() != 0x80040601)) {
+	    (GetLastError() != MAPI_E_UNABLE_TO_ABORT) &&
+	    (GetLastError() != MAPI_E_NOT_IN_QUEUE)) {
 		ret = false;
 	}
 
 	/* Step 5. Delete Message */
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError());
+	mapitest_print_retval(mt, "DeleteMessage");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
@@ -263,7 +263,7 @@ _PUBLIC_ bool mapitest_oxomsg_SetSpooler(struct mapitest *mt)
 
 	/* Step 2. SetSpooler */
 	retval = SetSpooler(&obj_store);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetSpooler", GetLastError());
+	mapitest_print_retval(mt, "SetSpooler");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -309,7 +309,7 @@ _PUBLIC_ bool mapitest_oxomsg_SpoolerLockMessage(struct mapitest *mt)
 
 	/* Step 2. SetSpooler */
 	retval = SetSpooler(&obj_store);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetSpooler", GetLastError());
+	mapitest_print_retval(mt, "SetSpooler");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -328,28 +328,28 @@ _PUBLIC_ bool mapitest_oxomsg_SpoolerLockMessage(struct mapitest *mt)
 
 	/* Step 5. Save changes on message */
 	retval = SaveChangesMessage(&obj_folder, &obj_message);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesMessage", GetLastError());
+	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
 	/* Step 6. Submit the message */
 	retval = SubmitMessage(&obj_message);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SubmitMessage", GetLastError());
+	mapitest_print_retval(mt, "SubmitMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
 	/* Step 7. Lock the message */
 	retval = SpoolerLockMessage(&obj_store, &obj_message, LockState_1stLock);
-	mapitest_print(mt, "* %-35s: %s 0x%.8x\n", "SpoolerLockMessage", "1stLock", GetLastError());
+	mapitest_print_retval_fmt(mt, "SpoolerLockMessage", "1stLock");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
 	/* Step 8. finish locking the message */
 	retval = SpoolerLockMessage(&obj_store, &obj_message, LockState_1stFinished);
-	mapitest_print(mt, "* %-35s: %s 0x%.8x\n", "SpoolerLockMessage", "1stFinished", GetLastError());
+	mapitest_print_retval_fmt(mt, "SpoolerLockMessage", "1stFinished");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
@@ -357,8 +357,7 @@ _PUBLIC_ bool mapitest_oxomsg_SpoolerLockMessage(struct mapitest *mt)
 	/* Step 9. Delete Message */
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError());
-
+	mapitest_print_retval(mt, "DeleteMessage");
 
 	/* Release */
 	mapi_object_release(&obj_message);
@@ -414,14 +413,14 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 
 	/* Step 4. Save changes on message */
 	retval = SaveChangesMessage(&obj_folder, &obj_message);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesMessage", GetLastError());
+	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
 	/* Step 5. TransportSend */
 	retval = TransportSend(&obj_message, &lpProps);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "TransportSend", GetLastError());
+	mapitest_print_retval(mt, "TransportSend");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 	}
@@ -472,8 +471,7 @@ _PUBLIC_ bool mapitest_oxomsg_GetTransportFolder(struct mapitest *mt)
 
 	/* Step 2. Get the transport folder */
 	retval = GetTransportFolder(&obj_store, &folder_id);
-	mapitest_print(mt, "* %-35s: 0x%.8x (0x%llx)\n", "GetTransportFolder", 
-		       GetLastError(), folder_id);
+	mapitest_print_retval_fmt(mt, "GetTransportFolder", "(0x%llx)", folder_id);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}

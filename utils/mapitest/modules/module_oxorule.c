@@ -65,7 +65,7 @@ _PUBLIC_ bool mapitest_oxorule_GetRulesTable(struct mapitest *mt)
 	/* Step 3. Retrieve the rules table */
 	mapi_object_init(&obj_rtable);
 	retval = GetRulesTable(&obj_folder, &obj_rtable, RulesTableFlags_Unicode);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRulesTable", GetLastError());
+	mapitest_print_retval(mt, "GetRulesTable");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}

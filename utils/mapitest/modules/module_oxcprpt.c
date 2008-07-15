@@ -695,7 +695,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -946,7 +946,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;

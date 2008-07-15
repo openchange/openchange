@@ -262,7 +262,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -382,7 +382,7 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -520,7 +520,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -651,7 +651,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SaveChangesMessage(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -736,7 +736,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetMessageStatus(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -867,7 +867,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageStatus(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -1046,7 +1046,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 	SetReadFlags(&(context->obj_test_folder), CLEAR_READ_FLAG, 5, messageIds);
 
 	retval = QueryRows(&obj_test_folder, 10, TBL_NOADVANCE, &SRowSet);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "QueryRows", GetLastError());
+	mapitest_print_retval(mt, "QueryRows");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;

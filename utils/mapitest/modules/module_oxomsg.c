@@ -112,7 +112,7 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -194,7 +194,7 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_folder, id_folder, &obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}

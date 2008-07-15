@@ -50,8 +50,7 @@
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   \sa SetProps, GetPropList, GetPropsAll, DeleteProps, SaveChanges,
-   GetLastError
+   \sa SetProps, GetPropList, GetPropsAll, DeleteProps, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj, 
 				  struct SPropTagArray *SPropTagArray,
@@ -142,8 +141,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   \sa GetProps, GetPropList, GetPropsAll, DeleteProps, SaveChanges,
-   GetLastError
+   \sa GetProps, GetPropList, GetPropsAll, DeleteProps, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *sprops, 
 				  unsigned long cn_props)

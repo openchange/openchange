@@ -581,6 +581,8 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	/* Fill MAPINAMEID struct */
 	*nameid = mapi_response->mapi_repl->u.mapi_GetNamesFromIDs.nameid;
 
+	talloc_free(mem_ctx);
+
 	return MAPI_E_SUCCESS;
 }
 

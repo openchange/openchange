@@ -398,7 +398,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_lookup(const char *OOM, const char *OLE
 
 
 /**
-   \details Search for a given OOM,OLEGUID couple and return the
+   \details Search for a given lid,OLEGUID couple and return the
    associated propType.
 
    \param lid the named property light ID
@@ -435,7 +435,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup(uint16_t lid, const char *OLEGUI
 
 
 /**
-   \details Search for a given OOM,OLEGUID couple and return the
+   \details Search for a given Name,OLEGUID couple and return the
    associated propType.
 
    \param Name the named property name

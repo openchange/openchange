@@ -1824,20 +1824,18 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 {
+	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_top_folder;
 	mapi_id_t		id_top_folder;
 	mapi_object_t		obj_ref_folder;
 	mapi_object_t		obj_ref_message;
-	struct MAPINAMEID	*nameid;
+	struct mapi_nameid	*nameid;
+	struct mapi_nameid	*nameid2;
 	struct MAPINAMEID	checknameid;
-	struct MAPINAMEID	*checknameidarray;
-	uint16_t		checkcount;
-	uint16_t		count;
 	struct SPropTagArray	*SPropTagArray;
 	uint32_t		propID;
 	uint16_t		*propIDs;
-	struct GUID 		guid;
 	bool 			ret = true;
 	int			i;
 
@@ -1887,172 +1885,197 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	/* Step 3: Create one MNID_ID property */
-	GUID_from_string(PS_MAPI, &guid);
-	nameid = talloc_zero(mt->mem_ctx, struct MAPINAMEID);
+	/* Step 3: Create and Retrieve one MNID_ID property */
+
+	/* Build the list of named properties we want to create */
+	nameid = mapi_nameid_new(mt->mem_ctx);
+	mapi_nameid_custom_lid_add(nameid, NAMEDPROP_IDNUM, PT_STRING8, PS_MAPI);
+
+	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mt->mem_ctx, struct SPropTagArray);
-	  
-	nameid[0].lpguid = guid;
-	nameid[0].ulKind = MNID_ID;
-	nameid[0].kind.lid = NAMEDPROP_IDNUM;
-	GetIDsFromNames(&obj_ref_folder, 1, &nameid[0], MAPI_CREATE, &SPropTagArray);
+	retval = GetIDsFromNames(&obj_ref_folder, nameid->count, 
+				 nameid->nameid, MAPI_CREATE, &SPropTagArray);
 	mapitest_print_retval(mt, "GetIDsFromNames");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
+		MAPIFreeBuffer(nameid);
 		goto cleanup;
 	}
 
-	propID = SPropTagArray->aulPropTag[0] | PT_STRING8;
-	// printf("PS_MAPI - 0x01 mapped to 0x%.8x\n", propID);
-	talloc_free(nameid);
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+	
+	propID = (SPropTagArray->aulPropTag[0] & 0xFFFF0000) | PT_NULL;
+	MAPIFreeBuffer(SPropTagArray);
 
-	propID = (propID & 0xFFFF0000) | PT_NULL;
-	nameid = talloc_zero(mt->mem_ctx, struct MAPINAMEID);
-	GetNamesFromIDs(&obj_ref_message, propID, &count, &nameid);
+	nameid = mapi_nameid_new(mt->mem_ctx);
+	GetNamesFromIDs(&obj_ref_message, propID, &nameid->count, &nameid->nameid);
 	mapitest_print_retval(mt, "GetNamesFromIDs");
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(nameid);
 		ret = false;
 		goto cleanup;
 	}
 
-	if ( (nameid->ulKind != MNID_ID) || (nameid->kind.lid != NAMEDPROP_IDNUM) ) {
-		mapitest_print(mt, "* %-35s: %s\n", "Step 3C - GetNamesFromIDs", "Unexpected result");		
-		printf("\t ulKind: %x mapped to 0x%.4x\n", nameid->ulKind, nameid->kind.lid);
+	if ((nameid->nameid[0].ulKind != MNID_ID) || (nameid->nameid[0].kind.lid != NAMEDPROP_IDNUM)) {
+		errno = MAPI_E_RESERVED;
+		mapitest_print_retval_fmt(mt, "GetNamesFromIDs", 
+					  "Unexpected result: ulKind: %x mapped to 0x%.4x", 
+					  nameid->nameid[0].ulKind, nameid->nameid[0].kind.lid);
 		ret = false;
 		goto cleanup;
 	}
-	
-	talloc_free(nameid);
-	talloc_free(SPropTagArray);
 
+	MAPIFreeBuffer(nameid);
 
 	/* Step 4: Create one MNID_STRING property */
-	GUID_from_string(PS_MAPI, &guid);
-	nameid = talloc_zero(mt->mem_ctx, struct MAPINAMEID);
+	nameid = mapi_nameid_new(mt->mem_ctx);
 	SPropTagArray = talloc_zero(mt->mem_ctx, struct SPropTagArray);
-	  
-	nameid[0].lpguid = guid;
-	nameid[0].ulKind = MNID_STRING;
-	nameid[0].kind.lpwstr.Name = NAMEDPROP_NAME;
-	nameid[0].kind.lpwstr.NameSize = strlen(NAMEDPROP_NAME) * 2 + 2;
-	GetIDsFromNames(&obj_ref_folder, 1, &nameid[0], MAPI_CREATE, &SPropTagArray);
+
+	mapi_nameid_custom_string_add(nameid, NAMEDPROP_NAME, PT_STRING8, PS_MAPI);
+	GetIDsFromNames(&obj_ref_folder, nameid->count, nameid->nameid, MAPI_CREATE, &SPropTagArray);
 	mapitest_print_retval(mt, "GetIDsFromNames");
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(nameid);
 		ret = false;
 		goto cleanup;
 	}
 
-	propID = SPropTagArray->aulPropTag[0] | PT_STRING8;
-	// printf("%s mapped to 0x%.8x\n", NAMEDPROP_NAME, propID);
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
 
-	talloc_free(nameid);
-	talloc_free(SPropTagArray);
+	propID = SPropTagArray->aulPropTag[0];
+	MAPIFreeBuffer(SPropTagArray);
 
-	/* Builds an array of Name, ID pairs using QueryNamesFromIDs() */
-        nameid = talloc_zero(mt->mem_ctx, struct MAPINAMEID);
-        propIDs = talloc_zero(mt->mem_ctx, uint16_t);
-        QueryNamedProperties(&obj_ref_message, 0, NULL, &count, &propIDs, &nameid);
+	/* Builds an array of Name,ID pairs using QueryNamesFromIDs() */
+	nameid = mapi_nameid_new(mt->mem_ctx);
+	propIDs = talloc_zero(mt->mem_ctx, uint16_t);
+	QueryNamedProperties(&obj_ref_message, 0, NULL, &nameid->count, &propIDs, &nameid->nameid);
 	mapitest_print_retval(mt, "QueryNamedProperties");
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(nameid);
+		talloc_free(propIDs);
 		ret = false;
 		goto cleanup;
 	}
 
-	/* Iterate over names, and call GetIDsFromNames() on each name */
-        for (i = 0; i < count; i++) {
-		checknameid.lpguid = nameid[i].lpguid;
-		checknameid.ulKind = nameid[i].ulKind;
+	/* Iterate over names and call GetIDsFromNames() on each name */
+	for (i = 0; i < nameid->count; i++) {
+		checknameid.lpguid = nameid->nameid[i].lpguid;
+		checknameid.ulKind = nameid->nameid[i].ulKind;
 
-                switch (nameid[i].ulKind) {
-                case MNID_ID:
-			checknameid.kind.lid = nameid[i].kind.lid;
-                        break;
-                case MNID_STRING:
-			checknameid.kind.lpwstr.Name = nameid[i].kind.lpwstr.Name;
-			checknameid.kind.lpwstr.NameSize = nameid[i].kind.lpwstr.NameSize;
-                        break;
-                }
+		switch (nameid->nameid[i].ulKind) {
+		case MNID_ID:
+			checknameid.kind.lid = nameid->nameid[i].kind.lid;
+			break;
+		case MNID_STRING:
+			checknameid.kind.lpwstr.Name = nameid->nameid[i].kind.lpwstr.Name;
+			checknameid.kind.lpwstr.NameSize = nameid->nameid[i].kind.lpwstr.NameSize;
+			break;
+		}
+
 		SPropTagArray = talloc_zero(mt->mem_ctx, struct SPropTagArray);
 		GetIDsFromNames(&obj_ref_folder, 1, &checknameid, 0, &SPropTagArray);
 		if (GetLastError() != MAPI_E_SUCCESS) {
 			mapitest_print_retval(mt, "GetIDsFromNames");
-			ret = false;
-			goto cleanup;
-		}
-		// mapidump_SPropTagArray(SPropTagArray);
-		// check we got the right number of IDs
-		if (SPropTagArray->cValues != 1) {
-			mapitest_print(mt, "* Step 6B - Check: Unexpected ID count [FAILURE] (%i)\n",
-				       SPropTagArray->cValues);
-			ret = false;
-			goto cleanup;
-		}
-		// check the ID is the one we expected
-		if (SPropTagArray->aulPropTag[0] != (propIDs[i]<<16)) {
-			mapitest_print(mt, "* Step 6C - Check: Unexpected ID  [FAILURE] (0x%x, expected 0x%x)\n",
-				       SPropTagArray->aulPropTag[0], (propIDs[i]<<16));
+			MAPIFreeBuffer(nameid);
+			MAPIFreeBuffer(SPropTagArray);
 			ret = false;
 			goto cleanup;
 		}
 
-		talloc_free(SPropTagArray);
-        }
-	mapitest_print(mt, "* Step 6  - Check: All IDs matched [SUCCESS]\n");
+		/* check we got the right number of IDs */
+		if (SPropTagArray->cValues != 1) {
+			errno = MAPI_E_RESERVED;
+			mapitest_print_retval_fmt(mt, "GetIDsFromNames", "Unexpected ID count (%i)", SPropTagArray->cValues);
+			MAPIFreeBuffer(nameid);
+			MAPIFreeBuffer(SPropTagArray);
+			ret = false;
+			goto cleanup;
+		}
+
+		/* check if the ID is the one we expected */
+		if (SPropTagArray->aulPropTag[0] != (propIDs[i] << 16)) {
+			errno = MAPI_E_RESERVED;
+			mapitest_print_retval_fmt(mt, "GetIDsFromNames", "Unexpected ID (0x%x, expected 0x%x)",
+						  SPropTagArray->aulPropTag[0], (propIDs[i] << 16));
+			MAPIFreeBuffer(nameid);
+			MAPIFreeBuffer(SPropTagArray);
+			ret = false;
+			goto cleanup;
+		}
+		MAPIFreeBuffer(SPropTagArray);
+	}
+	mapitest_print(mt, "* Step 6: All IDs matched [SUCCESS]\n");
 
 	/* Iterates over IDs, and call GetNamesFromIDs() on each ID */
-        for (i = 0; i < count; i++) {
-		checknameidarray = talloc_zero(mt->mem_ctx, struct MAPINAMEID);
-		GetNamesFromIDs(&obj_ref_folder, ((propIDs[i]<<16) & 0xFFFF0000) | PT_NULL, &checkcount, &checknameidarray);
+        for (i = 0; i < nameid->count; i++) {
+		nameid2 = mapi_nameid_new(mt->mem_ctx);
+		GetNamesFromIDs(&obj_ref_folder, ((propIDs[i] << 16) & 0xFFFF0000) | PT_NULL, &nameid2->count, &nameid2->nameid);
 		if (GetLastError() != MAPI_E_SUCCESS) {
 			mapitest_print_retval(mt, "GetNamesFromIDs");
-			ret = false;
-			goto cleanup;
-		}
-		// check we got the right number of Namess
-		if (checkcount != 1) {
-			mapitest_print(mt, "* Step 7B - Check: Unexpected name count [FAILURE] (%i)\n", count);
+			MAPIFreeBuffer(nameid2);
 			ret = false;
 			goto cleanup;
 		}
 
-		// check we got the right kind of name
-		if (checknameidarray[0].ulKind != nameid[i].ulKind) {
-			mapitest_print(mt, "* Step 7C - Check: Unexpected kind  [FAILURE] (0x%x, expected 0x%x)\n",
-				       checknameidarray[0].ulKind, nameid[i].ulKind);
+		/* Check we got the right number of names */
+		if (nameid2->count != 1) {
+			mapitest_print_retval_fmt(mt, "GetNamesFromIDs", "Unexpected name count (%i)", nameid2->count);
+			MAPIFreeBuffer(nameid);
+			MAPIFreeBuffer(nameid2);
 			ret = false;
 			goto cleanup;
 		}
 
-                switch (nameid[i].ulKind) {
-                case MNID_ID:
-			if (checknameidarray[0].kind.lid != nameid[i].kind.lid) {
-				mapitest_print(mt, "* Step 7D - Check: Unexpected hex name  [FAILURE] (0x%x, expected 0x%x)\n",
-					       checknameidarray[0].kind.lid, nameid[i].kind.lid);
+		/* Check we got the right kind of name */
+		if (nameid2->nameid[0].ulKind != nameid->nameid[i].ulKind) {
+			mapitest_print_retval_fmt(mt, "GetIDsFromNames", "Unexpected kind (0x%x, expected 0x%x)",
+						  nameid2->nameid[0].ulKind, nameid->nameid[i].ulKind);
+			MAPIFreeBuffer(nameid);
+			MAPIFreeBuffer(nameid2);
+			ret = false;
+			goto cleanup;
+		}
+
+		switch (nameid->nameid[i].ulKind) {
+		case MNID_ID:
+			if (nameid2->nameid[0].kind.lid != nameid->nameid[i].kind.lid) {
+				mapitest_print_retval_fmt(mt, "GetIDsFromNames", "Unexpected hex name (0x%x, expected 0x%x)",
+							  nameid2->nameid[0].kind.lid, nameid->nameid[i].kind.lid);
+				MAPIFreeBuffer(nameid);
+				MAPIFreeBuffer(nameid2);
 				ret = false;
 				goto cleanup;
 			}
-                        break;
-                case MNID_STRING:
-			if (checknameidarray[0].kind.lpwstr.NameSize != nameid[i].kind.lpwstr.NameSize) {
-				mapitest_print(mt, "* Step 7E - Check: Unexpected name length [FAILURE] (%i, expected %i)\n",
-					       checknameidarray[0].kind.lpwstr.NameSize, nameid[i].kind.lpwstr.NameSize);
+			break;
+		case MNID_STRING:
+			if (nameid2->nameid[0].kind.lpwstr.NameSize != nameid->nameid[i].kind.lpwstr.NameSize) {
+				mapitest_print_retval_fmt(mt, "GetIDsFromNames", "Unexpected name length (0x%x, expected 0x%x)",
+							  nameid2->nameid[0].kind.lpwstr.NameSize, 
+							  nameid->nameid[i].kind.lpwstr.NameSize);
+				MAPIFreeBuffer(nameid);
+				MAPIFreeBuffer(nameid2);
 				ret = false;
 				goto cleanup;
 			}
-			if (strncmp(checknameidarray[0].kind.lpwstr.Name, nameid[i].kind.lpwstr.Name, nameid[i].kind.lpwstr.NameSize) != 0 ) {
-				mapitest_print(mt, "* Step 7F - Check: Unexpected name [FAILURE] (%s, expected %s)\n",
-					       checknameidarray[0].kind.lpwstr.Name, nameid[i].kind.lpwstr.Name);
+			if (strncmp(nameid2->nameid[0].kind.lpwstr.Name, nameid->nameid[i].kind.lpwstr.Name, nameid->nameid[i].kind.lpwstr.NameSize) != 0) {
+				mapitest_print_retval_fmt(mt, "GetIDsFromNames", "Unexpected name (%s, expected %s)",
+							  nameid2->nameid[0].kind.lpwstr.Name, 
+							  nameid->nameid[i].kind.lpwstr.Name);
+				MAPIFreeBuffer(nameid);
+				MAPIFreeBuffer(nameid2);
 				ret = false;
-				goto cleanup;
-			}			
-                        break;
-                }
-		talloc_free(checknameidarray);
-        }
-	mapitest_print(mt, "* Step 7  - Check: All Names matched [SUCCESS]\n");
+				goto cleanup;				
+			}
+			break;
+		}
 
-        talloc_free(propIDs);
-        talloc_free(nameid);
+		MAPIFreeBuffer(nameid2);
+	}		
+	
+	MAPIFreeBuffer(nameid);
+	MAPIFreeBuffer(propIDs);
 
  cleanup:
 	/* Clean up */

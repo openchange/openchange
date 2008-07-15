@@ -681,7 +681,7 @@ System Attendant Private Interface
 			op_MAPI_OpenAttach			= 0x22,
 			op_MAPI_CreateAttach			= 0x23,
 			op_MAPI_DeleteAttach			= 0x24,
-			op_MAPI_SaveChanges			= 0x25,
+			op_MAPI_SaveChangesAttachment  		= 0x25,
 			op_MAPI_SetReceiveFolder		= 0x26,
 			op_MAPI_GetReceiveFolder		= 0x27,
 			op_MAPI_Advise				= 0x29,
@@ -1791,13 +1791,19 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x25 */
-	typedef [flag(NDR_NOALIGN)] struct {
-		uint8 handle_idx;
-		uint8 ulFlags;
-	} SaveChanges_req;
+	typedef [enum8bit] enum {
+		KeepOpenReadOnly	= 0x9,
+		KeepOpenReadWrite	= 0xA,
+		ForceSave		= 0xC
+	} SaveFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-	} SaveChanges_repl;
+		uint8		handle_idx;
+		SaveFlags	SaveFlags;
+	} SaveChangesAttachment_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} SaveChangesAttachment_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x26 */
@@ -2988,7 +2994,7 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenAttach)] OpenAttach_req mapi_OpenAttach;
 		[case(op_MAPI_CreateAttach)] CreateAttach_req mapi_CreateAttach;
 		[case(op_MAPI_DeleteAttach)] DeleteAttach_req mapi_DeleteAttach;
-		[case(op_MAPI_SaveChanges)] SaveChanges_req mapi_SaveChanges;
+		[case(op_MAPI_SaveChangesAttachment)] SaveChangesAttachment_req mapi_SaveChangesAttachment;
 		[case(op_MAPI_SetReceiveFolder)] SetReceiveFolder_req mapi_SetReceiveFolder;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_req mapi_GetReceiveFolder;
 		[case(op_MAPI_Advise)] Advise_req mapi_Advise;
@@ -3100,7 +3106,7 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenAttach)] OpenAttach_repl mapi_OpenAttach;
 		[case(op_MAPI_CreateAttach)] CreateAttach_repl mapi_CreateAttach;
 		[case(op_MAPI_DeleteAttach)] DeleteAttach_repl mapi_DeleteAttach;
-		[case(op_MAPI_SaveChanges)] SaveChanges_repl mapi_SaveChanges;
+		[case(op_MAPI_SaveChangesAttachment)] SaveChangesAttachment_repl mapi_SaveChangesAttachment;
 		[case(op_MAPI_SetReceiveFolder)] SetReceiveFolder_repl mapi_SetReceiveFolder;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_repl mapi_GetReceiveFolder;
 		[case(op_MAPI_Advise)] Advise_repl mapi_Advise;

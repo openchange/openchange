@@ -208,7 +208,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *sprops,
 
 
 /**
-   \details Makes permanent any changes made to an object since the
+   \details Makes permanent any changes made to an attachment since the
    last save operation.
 
    \param obj_parent the parent of the object to save changes for
@@ -216,9 +216,9 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *sprops,
    \param flags the access flags to set on the saved object 
 
    Possible flags:
-   - KEEP_OPEN_READONLY
-   - KEEP_OPEN_READWRITE
-   - FORCE_SAVE
+   - KeepOpenReadOnly
+   - KeepOpenReadWrite
+   - ForceSave
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -230,38 +230,41 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *sprops,
 
    \sa SetProps, ModifyRecipients, GetLastError
  */
-_PUBLIC_ enum MAPISTATUS SaveChanges(mapi_object_t *obj_parent, 
-				     mapi_object_t *obj_child,
-				     uint8_t flags)
+_PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent, 
+					       mapi_object_t *obj_child,
+					       uint8_t flags)
 {
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct SaveChanges_req	request;
-	NTSTATUS		status;
-	enum MAPISTATUS		retval;
-	uint32_t		size = 0;
-	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
+	struct mapi_request			*mapi_request;
+	struct mapi_response			*mapi_response;
+	struct EcDoRpc_MAPI_REQ			*mapi_req;
+	struct SaveChangesAttachment_req	request;
+	NTSTATUS				status;
+	enum MAPISTATUS				retval;
+	uint32_t				size = 0;
+	TALLOC_CTX				*mem_ctx;
+	mapi_ctx_t				*mapi_ctx;
 
+	/* Sanity Checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF((flags != 0x9) && (flags != 0xA) && (flags != 0xC), 
+		       MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("SaveChanges");
+	mem_ctx = talloc_init("SaveChangesAttachment");
 
 	size = 0;
 
-	/* Fill the SaveChanges operation */
+	/* Fill the SaveChangesAttachment operation */
 	request.handle_idx = 0x0;
-	request.ulFlags = flags;
+	request.SaveFlags = flags;
 	size += sizeof(uint8_t) + sizeof(uint8_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_SaveChanges;
+	mapi_req->opnum = op_MAPI_SaveChangesAttachment;
 	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
-	mapi_req->u.mapi_SaveChanges = request;
+	mapi_req->u.mapi_SaveChangesAttachment = request;
 	size += 5;
 
 	/* Fill the mapi_request structure */

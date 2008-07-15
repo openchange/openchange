@@ -897,8 +897,8 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			/* Stream operations */
 			openchangeclient_stream(mem_ctx, obj_attach, obj_stream, PR_ATTACH_DATA_BIN, 2, oclient->attach[i].bin);
 
-			/* Save changes */
-			retval = SaveChanges(&obj_message, &obj_attach, KEEP_OPEN_READWRITE);
+			/* Save changes on attachment */
+			retval = SaveChangesAttachment(&obj_message, &obj_attach, KeepOpenReadWrite);
 			if (retval != MAPI_E_SUCCESS) return retval;
 
 			mapi_object_release(&obj_attach);

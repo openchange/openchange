@@ -777,9 +777,13 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 		ret = false;
 	}
 
-	/* Step 9. Save the message */
-	retval = SaveChanges(&obj_message, &obj_attach, KEEP_OPEN_READONLY);
-	mapitest_print_retval(mt, "SaveChanges");
+	/* Step 9. Save the attachment */
+	retval = SaveChangesAttachment(&obj_message, &obj_attach, KeepOpenReadOnly);
+	mapitest_print_retval(mt, "SaveChangesAttachment");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
 	retval = SaveChangesMessage(&obj_folder, &obj_message);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -1025,8 +1029,8 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	}
 
 	/* Step 9. Save the attachment */
-	retval = SaveChanges(&obj_message, &obj_attach, KEEP_OPEN_READONLY);
-	mapitest_print_retval(mt, "SaveChanges");
+	retval = SaveChangesAttachment(&obj_message, &obj_attach, KeepOpenReadOnly);
+	mapitest_print_retval(mt, "SaveChangesAttachment");
 
 	/* Step 10. Create the second attachment */
 	mapi_object_init(&obj_attach2);
@@ -1083,9 +1087,9 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 		ret = false;
 	}
 
-	/* Step 14. Save the message */
-	retval = SaveChanges(&obj_message, &obj_attach2, KEEP_OPEN_READONLY);
-	mapitest_print_retval(mt, "SaveChanges");
+	/* Step 14. Save the attachment */
+	retval = SaveChangesAttachment(&obj_message, &obj_attach2, KeepOpenReadOnly);
+	mapitest_print_retval(mt, "SaveChangesAttachment");
 	retval = SaveChangesMessage(&obj_folder, &obj_message);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -1607,8 +1611,8 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	SaveChanges(&obj_ref_message, &obj_ref_attach, KEEP_OPEN_READWRITE);
-	mapitest_print_retval(mt, "SaveChanges");
+	SaveChangesAttachment(&obj_ref_message, &obj_ref_attach, KeepOpenReadWrite);
+	mapitest_print_retval(mt, "SaveChangesAttachment");
 
 	/* Step 14: Create attachment on target email */
 	mapi_object_init(&obj_targ_attach);
@@ -1630,8 +1634,8 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	SaveChanges(&obj_target_message, &obj_targ_attach, 0x0);
-	mapitest_print_retval(mt, "SaveChanges");
+	SaveChangesAttachment(&obj_target_message, &obj_targ_attach, KeepOpenReadWrite);
+	mapitest_print_retval(mt, "SaveChangesAttachment");
 
 	/* Step 15: Copy props from reference email attachment to target email attachment */
 	exclude = set_SPropTagArray(mt->mem_ctx, 0x0);

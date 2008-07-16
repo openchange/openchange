@@ -133,6 +133,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 		retval = GetPropsAll(&obj_inbox, &properties_array);
 		MAPI_RETVAL_IF(retval, retval, mem_ctx);
 	} 
+	mapi_object_release(&obj_inbox);
 
 	switch (id) {
 	case olFolderTopInformationStore:
@@ -230,15 +231,11 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	*lpProps;
 	uint32_t		count;
-	mapi_object_t		obj_table;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("GetFolderIteamsCount");
-
-	/* Init mapi objects */
-	mapi_object_init(&obj_table);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2, 
 					  PR_CONTENT_UNREAD,
@@ -250,8 +247,6 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 
 	*unread = lpProps[0].value.l;
 	*total = lpProps[1].value.l;
-
-	mapi_object_release(&obj_table);
 
 	talloc_free(mem_ctx);
 	

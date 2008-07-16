@@ -394,6 +394,7 @@ _PUBLIC_ void mapitest_print_retval_fmt(struct mapitest *mt, char *name, const c
 			mapitest_print(mt, "* %-35s: Unknown Error (0x%.8x) %s\n", name, GetLastError(), s);
 		}
 	}
+	free(s);
 }
 
 
@@ -461,4 +462,5 @@ _PUBLIC_ void mapitest_print_retval_step_fmt(struct mapitest *mt, char *step, ch
 			mapitest_print(mt, "* Step %-5s %-35s: Unknown Error (0x%.8x) %s\n", step, name, GetLastError(), s);
 		}
 	}
+	free(s);
 }

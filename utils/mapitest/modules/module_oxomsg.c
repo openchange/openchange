@@ -225,7 +225,7 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
 	mapitest_print_retval(mt, "DeleteMessage");
-	if (retval != MAPI_E_SUCCESS) {
+	if ((retval != MAPI_E_SUCCESS) && (GetLastError() != ecNoDelSubmitMsg)) {
 		ret = false;
 	}
 

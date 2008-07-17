@@ -28,8 +28,6 @@
 /* forward declarations
  */
 struct mapi_session;
-struct mapi_handles;
-
 
 /* generic mapi object definition
  */
@@ -40,7 +38,6 @@ typedef uint32_t mapi_handle_t;
 typedef struct mapi_object {
 	uint64_t		id;
 	mapi_handle_t		handle;
-	struct mapi_handles	*handles;
 	void			*private_data;
 } mapi_object_t;
 

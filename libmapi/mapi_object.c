@@ -43,7 +43,6 @@ static void mapi_object_reset(mapi_object_t *obj)
 {
 	obj->handle = INVALID_HANDLE_VALUE;
 	obj->id = 0;
-	obj->handles = 0;
 	obj->private_data = 0;
 }
 

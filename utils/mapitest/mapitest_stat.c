@@ -68,7 +68,6 @@ _PUBLIC_ uint32_t mapitest_stat_add_result(struct mapitest_suite *suite,
 	if (result == true) {
 		suite->stat->success++;
 	} else {
-		printf("Failure detected\n");
 		suite->stat->failure++;
 		el = talloc_zero((TALLOC_CTX *) suite->stat, struct mapitest_unit);
 		el->name = talloc_strdup((TALLOC_CTX *)el, (char *)name);

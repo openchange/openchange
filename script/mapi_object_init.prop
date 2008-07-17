@@ -1,0 +1,31 @@
+void
+uno_check(void)
+{	/* warning, named args to select() are currently not supported */
+
+	if (select("mapi_object_init", FCALL, NONE))	/* unmarked symbols of type function call */
+	{	if (select("", USE, NONE))		/* unmarked symbols USEd in those stmnts */
+		{	if (match(1, DEF, NONE))	/* are there matching symbols with mark 1? */
+				error("mapi_object_init follows mapi_object_init");
+			else
+				mark(1);		/* mark 1 */
+		}
+	}
+
+	if (select("mapi_object_release", FCALL, NONE))
+	{	if (select("", USE, NONE))
+		{	if (match(1, USE, NONE))
+				unmark();		/* remove mark */
+			else
+				error("mapi_object_release without mapi_object_init");
+		} else
+			error("no argument to mapi_object_release");
+	}
+
+	if (path_ends())
+	{	if (marked(1, ANY, NONE))
+		{	if (known_zero())
+				no_error();
+			else
+				error("mapi_object_init without mapi_object_release");
+	}	}
+}

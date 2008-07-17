@@ -49,7 +49,7 @@
 /* OpenChange includes */
 #include <gen_ndr/exchange.h>
 
-#include <dlinklist.h>
+#include <libmapi/dlinklist.h>
 #include <libmapi/version.h>
 #include <libmapi/nspi.h>
 #include <libmapi/emsmdb.h>

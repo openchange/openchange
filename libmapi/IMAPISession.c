@@ -171,7 +171,7 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 	size = 0;
 
 	/* Fill the Logon operation */
-	request.LogonFlags = Private;
+	request.LogonFlags = LogonPrivate;
 	size += sizeof (uint8_t);
 	request.OpenFlags = HOME_LOGON | TAKE_OWNERSHIP | NO_MAIL;
 	size += sizeof (uint32_t);

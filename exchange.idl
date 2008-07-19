@@ -2884,7 +2884,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0xFE */
 	typedef [public,bitmap8bit] bitmap {
-		Private		= 0x1,
+		LogonPrivate	= 0x1,
 		UnderCover	= 0x2,
 		Ghosted		= 0x4,
 		SpIProcess	= 0x8

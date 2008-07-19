@@ -109,7 +109,7 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
    to be deleted is specified by its PR_ATTACH_NUM
 
    \param obj_message the message to operate on
-   \param num_attach the attachment number
+   \param AttachmentID the attachment number
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -121,7 +121,7 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 
    \sa CreateMessage, GetAttachmentTable, GetLastError
  */
-_PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t num_attach)
+_PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t AttachmentID)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -140,7 +140,7 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t num_a
 
 	size = 0;
 	/* Fill the DeleteAttach operation */
-	request.num_attach = num_attach;
+	request.AttachmentID = AttachmentID;
 	size += sizeof (uint32_t);
 
 	/* Fill the MAPI_REQ request */
@@ -246,7 +246,7 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
    to be opened is specified by its PR_ATTACH_NUM.
 
    \param obj_message the message to operate on
-   \param num_attach the attachment number
+   \param AttachmentID the attachment number
    \param obj_attach the resulting attachment object
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
@@ -259,7 +259,7 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 
    \sa CreateMessage, CreateAttach, GetAttachmentTable, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t num_attach,
+_PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t AttachmentID,
 				    mapi_object_t *obj_attach)
 {
 	struct mapi_request	*mapi_request;
@@ -282,9 +282,9 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t num_att
 	/* Fill the OpenAttach operation */
 	request.handle_idx = 0x1;
 	size += sizeof(uint8_t);
-	request.unknown = 0x0;
+	request.OpenAttachmentFlags = OpenAttachmentFlags_ReadOnly;
 	size += sizeof(uint8_t);
-	request.num_attach = num_attach;
+	request.AttachmentID = AttachmentID;
 	size += sizeof(uint32_t);
 
 	/* Fill the MAPI_REQ request */

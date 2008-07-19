@@ -1760,10 +1760,16 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x22 */
+	typedef [enum8bit] enum {
+		OpenAttachmentFlags_ReadOnly	= 0x0,
+		OpenAttachmentFlags_ReadWrite	= 0x1,
+		OpenAttachmentFlags_BestAccess	= 0x3
+	} OpenAttachmentFlags;
+
   	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		handle_idx;
-		uint8		unknown;
-		uint32		num_attach;
+		uint8			handle_idx;
+		OpenAttachmentFlags	OpenAttachmentFlags;
+		uint32			AttachmentID;
 	} OpenAttach_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1776,13 +1782,13 @@ System Attendant Private Interface
 	} CreateAttach_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32	unknown;
+		uint32	AttachmentID;
 	} CreateAttach_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x24 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32		num_attach;
+		uint32		AttachmentID;
 	} DeleteAttach_req;
 
 

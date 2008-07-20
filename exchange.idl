@@ -1950,20 +1950,33 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x2b */
+	typedef [enum8bit] enum {
+		OpenStream_ReadOnly	= 0x0,
+		OpenStream_ReadWrite	= 0x1,
+		OpenStream_Create	= 0x2,
+		OpenStream_BestAccess	= 0x3
+	} OpenStream_OpenModeFlags;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		stream_handle_idx;
-		MAPITAGS	prop;
-		uint8		access_flags;
+		uint8				handle_idx;
+		MAPITAGS			PropertyTag;
+		OpenStream_OpenModeFlags       	OpenModeFlags;
 	} OpenStream_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint32		length;
+		uint32		StreamSize;
 	} OpenStream_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x2c */
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0xBABE)] uint32	value;
+		[default];
+	} MaximumByteCount;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		size;
+		uint16						ByteCount;
+		[switch_is(ByteCount)]	MaximumByteCount	MaximumByteCount;
 	} ReadStream_req;
 
 	typedef [flag(NDR_ALIGN2)] struct {
@@ -1978,7 +1991,7 @@ System Attendant Private Interface
 
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		size;
+		uint16		WrittenSize;
 	} WriteStream_repl;
 
 	/*************************/

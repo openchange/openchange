@@ -37,11 +37,14 @@
    object \a obj_stream.
 
    \param obj_related the object to open.
-   \param prop the property name for the object to create a stream
+   \param PropertyTag the property name for the object to create a stream
    for.
-   \param access_flags sets the access mode for the stream and is one
-   of the following values: 0 for reading, 1 for writing, 2 for read
-   and write access.
+   \param OpenModeFlags sets the access mode for the stream and is one
+   of the following values:
+   * 0x0: ReadOnly
+   * 0x1: ReadWrite
+   * 0x2: Create
+   * 0x3: BestAccess
    \param obj_stream the resulting stream object.
 
    \return MAPI_E_SUCCESS on success, otherwise -1. 
@@ -55,9 +58,8 @@
    \sa ReadStream, WriteStream, GetLastError
  */
 
-_PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t prop,
-				    uint32_t access_flags,
-				    mapi_object_t *obj_stream)
+_PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t PropertyTag,
+				    uint8_t OpenModeFlags, mapi_object_t *obj_stream)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -77,11 +79,11 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t prop,
 	size = 0;
 
 	/* Fill the OpenStream operation */
-	request.stream_handle_idx = 0x1;
-	request.prop = prop;
+	request.handle_idx = 0x1;
+	request.PropertyTag = PropertyTag;
 
 	/* STGM_XXX (obj_base.h windows header) */
-	request.access_flags = access_flags;
+	request.OpenModeFlags = OpenModeFlags;
 	size += sizeof(uint8_t) + sizeof(uint32_t) + sizeof(uint8_t);
 
 	/* Fill the MAPI_REQ request */
@@ -125,9 +127,9 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t prop,
    \param obj_stream the opened stream object
    \param buf_data the buffer where data read from the stream will be
    stored
-   \param sz_data the number of bytes requested to be read from the
+   \param ByteCount the number of bytes requested to be read from the
    stream
-   \param sz_read the number of bytes effectively read from the stream
+   \param ByteRead the number of bytes effectively read from the stream
 
    \return MAPI_E_SUCCESS on success, otherwise -1. 
 
@@ -145,7 +147,7 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t prop,
    \sa OpenStream, WriteStream, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *buf_data, 
-				    int sz_data, uint32_t *sz_read)
+				    uint16_t ByteCount, uint16_t *ByteRead)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -162,11 +164,11 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("ReadStream");
 
-	*sz_read = 0;
+	*ByteRead = 0;
 	size = 0;
 
 	/* Fill the ReadStream operation */
-	request.size = sz_data;
+	request.ByteCount = ByteCount;
 	size += sizeof(uint16_t);
 
 	/* Fill the MAPI_REQ request */
@@ -191,12 +193,12 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* copy no more than sz_data into buffer */
-	*sz_read = mapi_response->mapi_repl->u.mapi_ReadStream.data.length;
-	if (*sz_read > 0) {
-		if (*sz_read > sz_data) {
-			*sz_read = sz_data;
+	*ByteRead = mapi_response->mapi_repl->u.mapi_ReadStream.data.length;
+	if (*ByteRead > 0) {
+		if (*ByteRead > ByteCount) {
+			*ByteRead = ByteCount;
 		}
-		memcpy(buf_data, mapi_response->mapi_repl->u.mapi_ReadStream.data.data, *sz_read);
+		memcpy(buf_data, mapi_response->mapi_repl->u.mapi_ReadStream.data.data, *ByteRead);
 	}
 
 	talloc_free(mapi_response);
@@ -214,7 +216,7 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 
    \param obj_stream the opened stream object
    \param blob the DATA_BLOB to write to the stream
-   \param write_size the effective number of bytes written to the
+   \param WrittenSize the effective number of bytes written to the
    stream
 
    \return MAPI_E_SUCCESS on success, otherwise -1. 
@@ -232,7 +234,7 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 
    \sa OpenStream, ReadStream, GetLastError
   */
-_PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob, uint16_t *write_size)
+_PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob, uint16_t *WrittenSize)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -244,6 +246,7 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 	mapi_ctx_t		*mapi_ctx;
 	uint32_t		size;
 
+	/* Sanity Checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!blob, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(blob->length > 0x7000, MAPI_E_TOO_BIG, NULL);
@@ -280,7 +283,7 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	*write_size = mapi_response->mapi_repl->u.mapi_WriteStream.size;
+	*WrittenSize = mapi_response->mapi_repl->u.mapi_WriteStream.WrittenSize;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

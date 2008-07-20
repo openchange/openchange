@@ -263,7 +263,7 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 	const char     	*tmp;
 	mapi_object_t	obj_stream;
 	uint32_t	stream_size;
-	uint32_t	read_size;
+	uint16_t	read_size;
 	unsigned char  	buf[MAX_READ_SIZE];
 	uint32_t	max_read_size = MAX_READ_SIZE;
 	DATA_BLOB	data;

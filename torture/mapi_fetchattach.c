@@ -35,7 +35,7 @@ static enum MAPISTATUS read_attach_stream(TALLOC_CTX *ctx_mem,
 					  uint8_t** buf_data,
 					  uint32_t* sz_data)
 {
-  uint32_t		cn_read;
+  uint16_t		cn_read;
   uint32_t		off_data;
   enum MAPISTATUS	status;
   int			done;

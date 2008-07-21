@@ -336,7 +336,7 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	enum MAPISTATUS	retval;
 	char		*path;
 	mapi_object_t	obj_stream;
-	uint32_t	read_size;
+	uint16_t	read_size;
 	int		fd;
 	unsigned char  	buf[MAX_READ_SIZE];
 

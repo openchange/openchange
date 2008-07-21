@@ -58,7 +58,7 @@ static enum MAPISTATUS octool_get_stream(TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *body)
 {
 	enum MAPISTATUS	retval;
-	uint32_t	read_size;
+	uint16_t	read_size;
 	uint8_t		buf[0x1000];
 
 	body->length = 0;

@@ -666,7 +666,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	uint32_t		stream_len = 0x32146;
 	unsigned char		buf[MT_STREAM_MAX_SIZE];
 	uint32_t		StreamSize = 0;
-	uint32_t		read_size = 0;
+	uint16_t		read_size = 0;
 	uint16_t		write_len = 0;
 	uint32_t		len = 0;
 	uint32_t		offset = 0;
@@ -917,7 +917,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	unsigned char		buf[MT_STREAM_MAX_SIZE];
 	uint32_t		StreamSize = 0;
 	uint16_t		write_len = 0;
-	uint32_t		read_size = 0;
+	uint16_t		read_size = 0;
 	uint32_t		len = 0;
 	uint32_t		offset = 0;
 	uint32_t		i;

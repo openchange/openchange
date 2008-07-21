@@ -102,7 +102,7 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 	TALLOC_CTX	*mem_ctx;
 	uint32_t	in_size;
 	uint8_t		*rtfcomp;
-	uint32_t	read_size;
+	uint16_t	read_size;
 	unsigned char	buf[0x1000];
 
 	/* sanity check and init */

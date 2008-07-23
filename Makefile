@@ -696,12 +696,14 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION): libmapiproxy.$(SH
 
 mapiproxy-modules:	mapiproxy/modules/mpm_downgrade.$(SHLIBEXT)	\
 			mapiproxy/modules/mpm_pack.$(SHLIBEXT)		\
+			mapiproxy/modules/mpm_cache.$(SHLIBEXT)		\
 			mapiproxy/modules/mpm_dummy.$(SHLIBEXT)		
 
 mapiproxy-modules-install: mapiproxy-modules
 	$(INSTALL) -d $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy/
 	$(INSTALL) -m 0755 mapiproxy/modules/mpm_downgrade.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy/
 	$(INSTALL) -m 0755 mapiproxy/modules/mpm_pack.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy/
+	$(INSTALL) -m 0755 mapiproxy/modules/mpm_cache.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy/
 	$(INSTALL) -m 0755 mapiproxy/modules/mpm_dummy.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy/
 
 mapiproxy-modules-uninstall:
@@ -722,6 +724,14 @@ mapiproxy/modules/mpm_pack.$(SHLIBEXT):	mapiproxy/modules/mpm_pack.po	\
 					gen_ndr/ndr_exchange.po
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+mapiproxy/modules/mpm_cache.$(SHLIBEXT): mapiproxy/modules/mpm_cache.po		\
+					 mapiproxy/modules/mpm_cache_ldb.po	\
+					 mapiproxy/modules/mpm_cache_stream.po	\
+					 ndr_mapi.po				\
+					 gen_ndr/ndr_exchange.po
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 mapiproxy/modules/mpm_dummy.$(SHLIBEXT): mapiproxy/modules/mpm_dummy.po
 	@echo "Linking $@"

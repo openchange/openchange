@@ -41,12 +41,14 @@
     <li><a href="#mpm_overview"> 5.1. General Overview</a></li>
     <li><a href="#mpm_ep">       5.2. Module entry point</a></li>
     <li><a href="#mpm_hooks">    5.3. Module Hooks</a></li>
+    <li><a href="#mpm_mapiproxy">5.4. mapiproxy structure</a></li>
    </ul>
  </li>
  <li><a href="#modules"> 6. Available Modules </a>
    <ul>
     <li><a href="#mod_downgrade"> 6.1. Downgrade Module</a></li>
     <li><a href="#mod_pack">      6.2. Pack Module</a></li>
+    <li><a href="#mod_cache">     6.3. Cache Module</a></li>
    </ul>
  </li>
  <li><a href="#faq">7. Frequently Asked Questions</a>
@@ -67,6 +69,14 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">07/23/08</td>
+	   <td style="text-align:center"><strong>0.4</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">mapiproxy API hooks, IDL
+	   update, mapiproxy structure description and documentation
+	   added for the cache module</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">06/25/08</td>
@@ -199,14 +209,14 @@ openchange (including  mapiproxy)..
 
 The mapiproxy implementation requires a very recent Samba4 version
 in order to run properly. If Samba4 is planned to be installed
-from scratch for mapiproxy only, please use the <i>make samba4</i>
+from scratch for mapiproxy only, please use the <i>make samba</i>
 compilation rule provided in the build system. This command will
 automate most part of the samba4 installation process. The only
 requirement for this step is to have an up to date <a
 href="http://git.or.cz/">GIT version</a> installed on the system.
 
 \code
-  # make samba4
+  # make samba
 \endcode
 
 When the installation process is finished, a running samba4
@@ -232,7 +242,8 @@ compilation/installation again:
 <tr style="border:none;">
 <td style="border:none;">
 <strong> These patches are only required if you do not use a Samba4
-version compliant with mapiproxy requirements</strong> 
+version compliant with mapiproxy requirements and older than
+samba4-alpha5 release</strong>
 </td>
 </tr>
 </table>
@@ -242,14 +253,15 @@ version compliant with mapiproxy requirements</strong>
 
 If you have existing OpenChange DSO in the
 <i>/usr/local/samba/modules/dcerpc_server/</i> folder, such as
-<i>dcesrv_exchange.so</i> and <i>dcesrv_exchange_remote.so</i>. please
-remove them prior loading smbd with mapiproxy.
+<i>dcesrv_exchange.so</i>, <strong>please remove them prior loading
+smbd with mapiproxy.</strong>
 
 \code
   $ ./autogen.sh
   $ ./configure --prefix=/usr/local/samba
-  $ make mapiproxy
-  # make mapiproxy-install
+  $ make
+  # make install
+  # rm -rf /usr/local/samba/modules/dcerpc_server/dcesrv_exchange.so
 \endcode
 
 <br/>
@@ -270,6 +282,11 @@ directory, run under the root account:
 # ./setup/provision --realm=OPENCHANGE.LOCAL --domain=OPENCHANGE \
                     --adminpass=openchange --server-role='domain controller'
 \endcode
+
+If you don't have DNS resolution and your realm can't be resolved,
+smbd will be unable to authenticate the user in its user database. You
+can work around this problem and replace realm and domain with your
+local IP address instead.
 
 If everything works fine, the provisioning script will have created
 all the databases, populated the AD (Active Directory) and generated a
@@ -548,7 +565,7 @@ and solution is available at the following addresses:
 </ul>
 <br/>
 
-<a name="idl"></a><h3> 4.3. A Slightly Different IDL File </h3>
+<a name="idl"></a><h3> 4.3. OpenChange IDL File </h3>
 
 IDL stands for Interface Definition Language and OpenChange uses this
 format to describe ExchangeRPC communications. This file is processed
@@ -556,23 +573,12 @@ by pidl (Perl IDL compiler provided by Samba4) which turns this
 protocol description into C-code dealing with the push, pull and print
 operations.
 
-OpenChange development policy in trunk is to push a new MAPI call in
+OpenChange development policy in trunk used to push a new MAPI call in
 the IDL only when the associated libmapi implementation and mapitest
-unit is developed. In the meantime, mapiproxy requires full MAPI
-requests contents dissection - incomplete IDL support leading in NDR
-dcerpc_fault.
-
-Moreover, OpenChange has some problems with offset increment in NDR
-responses - affecting mapiproxy but not libmapi - and which led to
-mapiproxy IDL development in handling - for the moment - MAPI
-responses as an opaque DATA blob rather than a nice dissected output.
-
-Last but not least, some MAPI calls are yet experimental in trunk and
-trying to provide improved decoding in the proxy may produce
-unexpected results (segmentation fault). Improving mapiproxy
-reliability required converting  some custom MAPI call IDL to generic
-ones: moving from complex structures to subcontext with no further
-contents analysis: for example Restrictions: Restrict, FindRow.
+unit is developed, but this was preventing from distributing mapiproxy
+with further openchange releases. Furthermore, the OpenChange IDL is
+now almost complete and merging back to the trunk helps improving
+libmapi reliability.
 
 <br/>
 
@@ -684,6 +690,49 @@ NTSTATUS samba_init_module(void)
 
 <a name="mpm_hook"></a><h3> 5.3. Module Hooks</h3>
 
+mapiproxy offers a set of hooks which modules can implement to
+modify/change/alter client to server MAPI traffic. The figure below
+shows how and when hooks are called during a request/response
+lifetime.
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mapiproxy_hook_life.png" />
+</td>
+</tr>
+</table>
+<center> Figure 4. Usage of mapiproxy Hooks during a request/response life time </center>
+
+<ul>
+
+<li><strong>init</strong>: This is the initialization function for the
+module which is only called once - when the module is loaded. It is
+generally used to retrieve smb.conf parametric options for the module
+and initialize some global structures</li>
+
+<li><strong>pull</strong>: This is the function called when mapiproxy
+receives a MAPI request. The request has already been extracted and
+its information filled into MAPI structures
+
+<li><strong>push</strong>: This is the function called when mapiproxy
+receive a MAPI response. The response has already been extracted and
+its information filled into MAPI structures</li>
+
+<li><strong>dispatch</strong></li>: Similarly to the mapiproxy
+top-level dispatch function, it is used to dispatch the
+information. This function is called after the pull but before the
+push. Moreover it is called before the request is forward to the
+remote endpoint.
+
+<li><strong>ndr_pull</strong></li>: This is the function called before
+data from a request is extracted from the NDR blob.
+
+<li><strong>ndr_push</strong></li>: This is the function called before
+data from a response is extracted from the NDR blob.
+
+</ul>
+
 <table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
 <tr style="border:none;">
 <td style="border:none;">
@@ -693,7 +742,22 @@ is likely to change in further revisions.</strong>
 </tr>
 </table>
 
+
+<a name="mpm_mapiproxy"></a><h3> 5.4. mapiproxy structure </h3>
+mapiproxy uses a structure modules can modify in their dispatch routine
+and which impact on the general mapiproxy behavior.
+
+<ul> 
+<li><strong>norelay</strong>: This boolean variable can be used by
+modules to tell mapiproxy not to relay the incoming request to the
+remote server through <i>dcerpc_ndr_request()</i> but directly jump to
+the push (response) mapiproxy code. This variable is for example in
+use within the cache module when we read stream from the local
+filesystem and play it back to MAPI clients.</li>
+</ul>
+
 <br/>
+
 
 
 <a name="modules"></a><h2> 6. Available Modules </h2>
@@ -746,7 +810,7 @@ append this custom call at the end of the mapi requests array (Figure
 </td>
 </tr>
 </table>
-<center> Figure 4. Pack process </center>
+<center> Figure 5. Pack process </center>
 
 <li>Final mapiproxy hop will seek the mapi requests array looking for
 the proxypack call. If found, it unpacks MAPI data and restore these
@@ -760,7 +824,7 @@ calls at their initial location within the mapi requests array (Figure
 </td>
 </tr>
 </table>
-<center> Figure 5. Unpack process </center>
+<center> Figure 6. Unpack process </center>
 
 </ul>
 
@@ -796,6 +860,59 @@ In order to use the pack module, edit smb.conf and add <i>pack</i> to
 <br/>
 
 
+<a name="mod_cache"></a><h3> 6.3. Cache Module </h3>
+
+The <strong>cache</strong> module implements a cache mechanism for
+streams related to messages or attachments. This module reduces
+latency for MAPI clients communicating with Exchange using <i>online
+mode</i>. When using online mode, MAPI clients retrieve data from
+Exchange each time they access a message and don't have any offline
+browsing mechanisms enabled.
+
+The cache module is designed to cover the scenario below:
+<ul>
+
+ <li><strong>1. Outlook read an attachment for the first time</strong>:</br>
+ mapiproxy monitors the Outlook-Exchange traffic and store the
+ attachment on the local filesystem. </li>
+
+ <li><strong>2. Outlook requests this attachment again</strong>:<br/>
+ mapiproxy looks over its cache, find the requested stream and
+directly communicate with Outlook without forwarding requests to the
+remote server.</li>
+
+</ul>
+
+The module monitors OpenMessage, OpenAttach, OpenStream, ReadStream
+and Release MAPI calls and stores streams on the local filesystem with
+indexation in a TDB database. Note that the module doesn't yet provide
+semantics needed to remove entries from the TDB database.
+
+
+This module only has a single configuration option:
+<ul>
+ <li><strong>mpm_cache:path</strong><br/>
+ This options takes the full path to an existing folder on the
+ filesystem. This folder will be the storage root path for the cache
+ module and will hold the TDB store, a folder hierarchy and stream
+ files.</li>
+
+</ul>
+
+\code
+	mpm_cache:path = /tmp/cache
+\endcode
+
+In order to use the cache module, edit smb.conf and add <i>cache</i>
+to <i>dcerpc_mapiproxy:modules</i>.
+
+\code
+	dcerpc_mapiproxy:modules = downgrade,cache
+\endcode
+
+<br/>
+
+
 <a name="faq"></a><h2>7. Frequently Asked Questions</h2>
 <a name="completed"></a><h3>7.1. The action could not be completed</h3>
 
@@ -806,16 +923,16 @@ In order to use the pack module, edit smb.conf and add <i>pack</i> to
 </td>
 </tr>
 </table>
-<center>Figure 6. Outlook error: The action could not be completed</center>
+<center>Figure 7. Outlook error: The action could not be completed</center>
 
 If you have followed the <a href="#minute">5-Minute Configuration</a>
-instructions and the above error message box (Figure 6) is displayed
+instructions and the above error message box (Figure 7) is displayed
 each time you click the <i>Check Name</i> button, then you need to:
 <ul>
 <li>Click on <strong>More Settings</strong></li>
 <li>Open the security Tab</li>
 <li>Tick the <strong>Always prompt for username and password</strong>
-checkbox in the User Configuration section (Figure 7)</li>
+checkbox in the User Configuration section (Figure 8)</li>
 </ul>
 
 <table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
@@ -825,7 +942,7 @@ checkbox in the User Configuration section (Figure 7)</li>
 </td>
 </tr>
 </table>
-<center>Figure 7. Resolution: Always prompt for username and password</center>
+<center>Figure 8. Resolution: Always prompt for username and password</center>
 
 Next time you click on <i>Check Name</i>, Outlook will prompt for
 username and password. A similar credentials dialog will be displayed

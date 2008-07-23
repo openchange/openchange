@@ -103,7 +103,8 @@ NTSTATUS mapiproxy_module_pull(struct dcesrv_call_state *dce_call,
 
 
 NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *dce_call,
-				   TALLOC_CTX *mem_ctx, void *r)
+				   TALLOC_CTX *mem_ctx, void *r, 
+				   struct mapiproxy *mapiproxy)
 {
 	struct mapiproxy_module_list		*mpm;
 	const struct ndr_interface_table	*table;
@@ -116,7 +117,7 @@ NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *dce_call,
 		    ((strcmp(mpm->module->endpoint, "any") == 0) ||
 		     (table->name && (strcmp(table->name, mpm->module->endpoint) == 0)))) {
 			if (mpm->module->dispatch) {
-				status = mpm->module->dispatch(dce_call, mem_ctx, r);
+			  status = mpm->module->dispatch(dce_call, mem_ctx, r, mapiproxy);
 				NT_STATUS_NOT_OK_RETURN(status);
 			}
 		}

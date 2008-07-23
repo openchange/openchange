@@ -59,7 +59,8 @@ static NTSTATUS dummy_pull(struct dcesrv_call_state *dce_call,
 }
 
 static NTSTATUS dummy_dispatch(struct dcesrv_call_state *dce_call,
-			       TALLOC_CTX *mem_ctx, void *r)
+			       TALLOC_CTX *mem_ctx, void *r,
+			       struct mapiproxy *mapiproxy)
 {
 	return NT_STATUS_OK;
 }

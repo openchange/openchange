@@ -245,7 +245,7 @@ static NTSTATUS pack_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /**
    \details pack EcDoRpc MAPI requests
 
-   This functions searches for MAPI opnums to pack in the requests,
+   This function searches for MAPI opnums to pack in the requests,
    add this opnums to the mapiproxy opnum DATA blob and refactor the
    request to remove references to these calls in the original
    request.

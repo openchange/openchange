@@ -158,6 +158,8 @@ static NTSTATUS mapiproxy_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
 
+	DEBUG(5, ("mapiproxy::mapiproxy_op_ndr_pull\n"));
+
 	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
 	opnum = dce_call->pkt.u.request.opnum;
 
@@ -200,6 +202,8 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 	uint16_t				opnum;
 	const char				*name;
 
+	DEBUG(5, ("mapiproxy::mapiproxy_op_ndr_push\n"));
+
 	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
 	opnum = dce_call->pkt.u.request.opnum;
 
@@ -230,6 +234,7 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
 	struct dcesrv_mapiproxy_private		*private;
+	struct mapiproxy			mapiproxy;
 	const struct ndr_interface_table	*table;
 	const struct ndr_interface_call		*call;
 	uint16_t				opnum;
@@ -242,6 +247,8 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 
 	name = table->calls[opnum].name;
 	call = &table->calls[opnum];
+
+	mapiproxy.norelay = false;
 
 	if (!private) {
 		dce_call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
@@ -257,14 +264,16 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 
 	private->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
-	status = mapiproxy_module_dispatch(dce_call, mem_ctx, r);
+	status = mapiproxy_module_dispatch(dce_call, mem_ctx, r, &mapiproxy);
 	if (!NT_STATUS_IS_OK(status)) {
 		private->c_pipe->last_fault_code = dce_call->fault_code;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
 	private->c_pipe->last_fault_code = 0;
-	status = dcerpc_ndr_request(private->c_pipe, NULL, table, opnum, mem_ctx, r);
+	if (mapiproxy.norelay == false) {
+	  status = dcerpc_ndr_request(private->c_pipe, NULL, table, opnum, mem_ctx, r);
+	}
 
 	dce_call->fault_code = private->c_pipe->last_fault_code;
 	if (dce_call->fault_code != 0 || !NT_STATUS_IS_OK(status)) {
@@ -275,7 +284,7 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	if ((dce_call->fault_code == 0) && 
-	    (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_OUT)) {
+	    (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_OUT) && mapiproxy.norelay == false) {
 		ndr_print_function_debug(call->ndr_print, name, NDR_OUT | NDR_SET_VALUES, r);
 	}
 

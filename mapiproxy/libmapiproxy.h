@@ -26,6 +26,10 @@
 #include <talloc.h>
 #include <libmapi/dlinklist.h>
 
+struct mapiproxy {
+	bool			norelay;
+};
+
 struct mapiproxy_module {
 	const char		*name;
 	const char		*description;
@@ -34,7 +38,7 @@ struct mapiproxy_module {
 	NTSTATUS		(*push)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
 	NTSTATUS		(*ndr_pull)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_pull *);
 	NTSTATUS		(*pull)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
-	NTSTATUS		(*dispatch)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
+	NTSTATUS		(*dispatch)(struct dcesrv_call_state *, TALLOC_CTX *, void *, struct mapiproxy *);
 };
 
 struct mapiproxy_module_list {
@@ -61,7 +65,7 @@ NTSTATUS mapiproxy_module_init(struct dcesrv_context *);
 NTSTATUS mapiproxy_module_push(struct dcesrv_call_state *, TALLOC_CTX *, void *);
 NTSTATUS mapiproxy_module_pull(struct dcesrv_call_state *, TALLOC_CTX *, void *);
 NTSTATUS mapiproxy_module_ndr_pull(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_pull *);
-NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *, TALLOC_CTX *, void *);
+NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *, TALLOC_CTX *, void *, struct mapiproxy *);
 
 const struct mapiproxy_module *mapiproxy_module_byname(const char *);
 

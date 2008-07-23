@@ -85,7 +85,8 @@ static NTSTATUS downgrade_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
    \details returns NT_STATUS_NET_WRITE_FAULT when EcDoConnectEx is
    found, otherwise NT_STATUS_OK
 */
-static NTSTATUS downgrade_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
+static NTSTATUS downgrade_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r,
+				   struct mapiproxy *mapiproxy)
 {
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;

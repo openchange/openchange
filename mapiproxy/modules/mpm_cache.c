@@ -30,6 +30,8 @@
 #include "mapiproxy/libmapiproxy.h"
 #include "mapiproxy/modules/mpm_cache.h"
 
+#include <time.h>
+
 struct mpm_cache *mpm = NULL;
 
 
@@ -58,6 +60,56 @@ static uint32_t cache_find_call_request_index(uint8_t opnum, struct EcDoRpc_MAPI
 	return -1;
 }
 
+/**
+   \details Dump time statistic between OpenStream and Release
+
+   This function monitors the effective time required to open, read
+   and close a stream.
+
+   \param stream the mpm_stream entry
+ */
+static void cache_dump_stream_stat(struct mpm_stream *stream)
+{
+	TALLOC_CTX	*mem_ctx;
+	struct timeval	tv_end;
+	uint64_t       	sec;
+	uint64_t       	usec;
+	char		*name;
+
+	mem_ctx = (TALLOC_CTX *)mpm;
+
+	if (stream->attachment) {
+		name = talloc_asprintf(mem_ctx, "0x%llx/0x%llx/%d",
+				       stream->attachment->message->FolderId,
+				       stream->attachment->message->MessageId,
+				       stream->attachment->AttachmentID);
+	} else if (stream->message) {
+		name = talloc_asprintf(mem_ctx, "0x%llx/0x%llx",
+				       stream->message->FolderId,
+				       stream->message->MessageId);
+	} else {
+		return;
+	}
+
+	gettimeofday(&tv_end, NULL);
+	sec = tv_end.tv_sec - stream->tv_start.tv_sec;
+	if ((tv_end.tv_usec - stream->tv_start.tv_usec) < 0) {
+		sec -= 1;
+		usec = tv_end.tv_usec + stream->tv_start.tv_usec;
+		while (usec > 1000000) {
+			usec -= 1000000;
+			sec += 1;
+		}
+	} else {
+		usec = tv_end.tv_usec - stream->tv_start.tv_usec;
+	}
+
+	DEBUG(1, ("STATISTIC: %s The difference is %ld seconds %ld microseconds\n", 
+		  name, (long int)sec, (long int)usec));
+
+	talloc_free(name);
+}
+
 
 /**
    \details Track down Release calls and update the mpm_cache global
@@ -81,6 +133,7 @@ static NTSTATUS cache_pull_Release(struct EcDoRpc *EcDoRpc, uint32_t handle_idx)
 				  MPM_LOCATION, message->FolderId, 
 				  message->MessageId, message->handle));
 			DLIST_REMOVE(mpm->messages, message);
+			talloc_free(message);
 			return NT_STATUS_OK;
 		}
 	}
@@ -91,6 +144,7 @@ static NTSTATUS cache_pull_Release(struct EcDoRpc *EcDoRpc, uint32_t handle_idx)
 			DEBUG(2, ("* [%s:%d] Del: Attachment %d: 0x%x\n", MPM_LOCATION, 
 				  attach->AttachmentID, attach->handle));
 			DLIST_REMOVE(mpm->attachments, attach);
+			talloc_free(attach);
 			return NT_STATUS_OK;
 		}
 	}
@@ -101,6 +155,8 @@ static NTSTATUS cache_pull_Release(struct EcDoRpc *EcDoRpc, uint32_t handle_idx)
 			DEBUG(2, ("* [%s:%d] Del: Stream 0x%x\n", MPM_LOCATION, stream->handle)); 
 			mpm_cache_stream_close(stream);
 			DLIST_REMOVE(mpm->streams, stream);
+			talloc_free(stream->filename);
+			talloc_free(stream);
 			return NT_STATUS_OK;
 		}
 	}
@@ -353,6 +409,7 @@ static NTSTATUS cache_pull_OpenStream(TALLOC_CTX *mem_ctx,
 			stream->attachment = attach;
 			stream->cached = false;
 			stream->message = NULL;
+			gettimeofday(&stream->tv_start, NULL);
 			DEBUG(2, ("* [%s:%d] Stream::attachment added\n", MPM_LOCATION));
 			DLIST_ADD_END(mpm->streams, stream, struct mpm_stream *);
 			return NT_STATUS_OK;
@@ -370,13 +427,16 @@ static NTSTATUS cache_pull_OpenStream(TALLOC_CTX *mem_ctx,
 			stream->filename = NULL;
 			stream->attachment = NULL;
 			stream->cached = false;
-			stream->message = message;
+			gettimeofday(&stream->tv_start, NULL);
 			DEBUG(2, ("* [%s:%d] Stream::message added\n", MPM_LOCATION));
+			stream->message = message;
 			DLIST_ADD_END(mpm->streams, stream, struct mpm_stream *);
 			return NT_STATUS_OK;
 		}
 	}
 
+	DEBUG(1, ("* [%s:%d] Stream: Not related to any attachment or message ?!?\n",
+		      MPM_LOCATION));
 	return NT_STATUS_OK;
 }
 
@@ -477,6 +537,9 @@ static NTSTATUS cache_push_ReadStream(struct EcDoRpc_MAPI_REQ mapi_req,
 				DEBUG(5, ("* [%s:%d] %d bytes from remove server\n", 
 					  MPM_LOCATION, response.data.length));
 				mpm_cache_stream_write(stream, response.data.length, response.data.data);
+				if (stream->offset == stream->StreamSize) {
+					cache_dump_stream_stat(stream);
+				}
 			} else if (stream->cached == true) {
 				/* This is managed by the dispatch routine */
 			}
@@ -566,6 +629,9 @@ static NTSTATUS cache_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 	}
 
 	EcDoRpc = (struct EcDoRpc *) r;
+	if (!EcDoRpc) return NT_STATUS_OK;
+	if (!&(EcDoRpc->out)) return NT_STATUS_OK;
+	if (!EcDoRpc->out.mapi_response) return NT_STATUS_OK;
 	if (!EcDoRpc->out.mapi_response->mapi_repl) return NT_STATUS_OK;
 
 	/* If this is an idle request, do not got further */
@@ -597,6 +663,8 @@ static NTSTATUS cache_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 			index = cache_find_call_request_index(op_MAPI_ReadStream, mapi_req);
 			if (index == -1) break;
 			cache_push_ReadStream(mapi_req[index], mapi_repl[i], EcDoRpc);
+			break;
+		default:
 			break;
 		}
 	}
@@ -679,6 +747,9 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 						mpm_cache_stream_read(stream, request.ByteCount, 
 								      &mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length,
 								      &mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data);
+						if (stream->offset == stream->StreamSize) {
+							cache_dump_stream_stat(stream);
+						}
 						DEBUG(5, ("* [%s:%d] %d bytes read from cache\n", MPM_LOCATION,
 							  mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length));
 						mapi_response->handles = talloc_array(mem_ctx, uint32_t, 1);

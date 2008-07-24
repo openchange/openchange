@@ -67,6 +67,7 @@ struct mpm_stream {
 	FILE			*fp;
 	char			*filename;
 	bool			cached;
+	struct timeval		tv_start;
 	struct mpm_attachment	*attachment;
 	struct mpm_message	*message;
 	struct mpm_stream	*prev;

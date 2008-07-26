@@ -188,7 +188,26 @@ dnl libraries require libmapi and libmapi require IDL
 OC_IDL="idl"
 AC_SUBST(OC_IDL)
 
+dnl ###########################################################################
+dnl libmapi++ dependencies
+dnl ###########################################################################
 
+dnl ---------------------------------------------------------------------------
+dnl Check for g++
+dnl ---------------------------------------------------------------------------
+AC_CACHE_CHECK([C++ compiler availability], [libmapixx_gxx_works],
+	       [
+		AC_LANG_PUSH([C++])
+		AC_COMPILE_IFELSE([int main() { return 0; }], 
+				  [libmapixx_gxx_works=yes],
+				  [libmapixx_gxx_works=no])
+		AC_LANG_POP([C++])
+		])
+
+if test x"$libmapixx_gxx_works" = "xyes"; then
+   AC_PROG_CXX 
+   OC_RULE_ADD(libmapixx, LIBS)
+fi
 
 dnl ###########################################################################
 dnl libocpf dependencies
@@ -372,6 +391,7 @@ dnl ##########################################################################
 OC_SETVAL(libmapi)
 OC_SETVAL(libmapiadmin)
 OC_SETVAL(libocpf)
+OC_SETVAL(libmapixx)
 
 OC_SETVAL(openchangeclient)
 OC_SETVAL(mapiprofile)
@@ -397,6 +417,7 @@ OpenChange Configuration (Please review)
 	   * OpenChange MAPI library:	$enable_libmapi
 
 	   * OpenChange Libraries:
+	     - libmapi++:		$enable_libmapixx
 	     - libmapiadmin:		$enable_libmapiadmin
 	     - libocpf:			$enable_libocpf
 

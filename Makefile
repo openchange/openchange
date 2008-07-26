@@ -335,7 +335,72 @@ libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: \
 	libmapi/conf/mparse.pl
 	@./libmapi/conf/build.sh
 
+#################################################################
+# libmapi++ compilation rules
+#################################################################
 
+libmapixx: libmapi libmapixx-tests
+
+libmapixx-installpc:
+
+libmapixx-clean: libmapixx-tests-clean
+
+libmapixx-install: libmapixx-installheader
+
+libmapixx-uninstall: libmapixx-uninstallheader
+
+libmapixx-installheader:
+	@echo "[*] install: libmapi++ headers"
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi++
+	$(INSTALL) -m 0644 libmapi++/attachment.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -m 0644 libmapi++/clibmapi.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -m 0644 libmapi++/folder.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -m 0644 libmapi++/libmapi++.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -m 0644 libmapi++/mapi_exception.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -m 0644 libmapi++/message.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -m 0644 libmapi++/message_store.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -m 0644 libmapi++/object.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -m 0644 libmapi++/profile.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -m 0644 libmapi++/property_container.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -m 0644 libmapi++/session.h $(DESTDIR)$(includedir)/libmapi++/
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi++/impl
+	$(INSTALL) -m 0644 libmapi++/impl/* $(DESTDIR)$(includedir)/libmapi++/impl/
+
+libmapixx-uninstallheader:
+	rm -rf $(DESTDIR)$(includedir)/libmapi++
+
+
+libmapixx-tests:	libmapixx-test		\
+			libmapixx-attach
+
+libmapixx-tests-clean:	libmapixx-test-clean	\
+			libmapixx-attach-clean	
+
+libmapixx-test: bin/libmapixx-test
+
+libmapixx-test-clean:
+	rm -f bin/libmapixx-test
+	rm -f libmapi++/tests/*.o
+
+bin/libmapixx-test:	libmapi++/tests/test.cpp	\
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking sample application $@"
+	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+clean:: libmapixx-test-clean
+
+libmapixx-attach: bin/libmapixx-attach
+
+libmapixx-attach-clean:
+	rm -f bin/libmapixx-attach
+	rm -f libmapi++/tests/*.o
+
+bin/libmapixx-attach: libmapi++/tests/attach_test.cpp	\
+		  libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking sample application $@"
+	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+clean:: libmapixx-attach-clean
 
 #################################################################
 # libmapiadmin compilation rules

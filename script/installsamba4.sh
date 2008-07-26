@@ -157,6 +157,17 @@ download() {
 }
 
 #
+# Apply patches to samba4
+#
+patch() {
+    echo "Step1: Patching samba4/source/lib/events/events.h"
+    sed -i 's/void\s*\*private/void \*private_data/g' samba4/source/lib/events/events.h
+    error_check $? "Step1"
+
+    return $?
+}
+
+#
 # Compile and Install samba4 packages:
 # talloc, tdb
 #
@@ -279,6 +290,9 @@ case $1 in
     download)
 	download
 	;;
+    patch)
+	patch
+	;;
     packages)
 	packages
 	;;
@@ -290,19 +304,21 @@ case $1 in
 	;;
     git-all)
 	checkout
+	patch
 	packages
 	compile
 	install
 	;;
     all)
 	download
+	patch
 	packages
 	compile
 	install
 	;;
     *)
-	echo $"Usage: $0 {checkout|packages|compile|install|git-all}"
-	echo $"Usage: $0 {download|packages|compile|install|all}"
+	echo $"Usage: $0 {checkout|patch|packages|compile|install|git-all}"
+	echo $"Usage: $0 {download|patch|packages|compile|install|all}"
 	;;
 esac
 

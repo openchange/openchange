@@ -72,7 +72,9 @@ void print_folder_tree(folder& up_folder, session& mapi_session, unsigned int de
 int main()
 {
 	try {
-		session mapi_session("FIXME");
+		session mapi_session;
+
+		mapi_session.login();
 
 		// Get Default Top Information Store folder ID
 		mapi_id_t top_folder_id = mapi_session.get_message_store().get_default_folder(olFolderTopInformationStore);

@@ -65,7 +65,9 @@ int main ()
 {
 	try {
 		// Initialize MAPI Session
-		session mapi_session("FIXME");
+		session mapi_session;
+
+		mapi_session.login();
 
 		property_container store_properties = mapi_session.get_message_store().get_property_container();
 		store_properties << PR_DISPLAY_NAME;

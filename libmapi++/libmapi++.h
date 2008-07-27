@@ -2,7 +2,7 @@
    libmapi C++ Wrapper
    MAPI Exception Class
 
-   Copyright (C) Alan Alvarez 2007.
+   Copyright (C) Alan Alvarez 2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,5 +29,6 @@
 #include <libmapi++/message.h>
 #include <libmapi++/attachment.h>
 #include <libmapi++/property_container.h>
+#include <libmapi++/profile.h>
 
 #endif /* ! __LIBMAPIPP_H */

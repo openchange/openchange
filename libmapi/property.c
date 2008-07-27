@@ -260,6 +260,8 @@ const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 		return (const void *)(struct SBinary_short *)&lpProp->value.bin;
 	case PT_MV_STRING8:
 		return (const void *)(struct mapi_SLPSTRArray *)&lpProp->value.MVszA;
+	case PT_MV_BINARY:
+		return (const void *)(struct mapi_SBinaryArray *)&lpProp->value.MVbin;
 	default:
 		return NULL;
 	}

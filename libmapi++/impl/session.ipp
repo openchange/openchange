@@ -19,6 +19,7 @@
 */
 
 #include <libmapi++/message_store.h>
+#include <libmapi++/profile.h>
 
 namespace libmapipp {
 
@@ -34,8 +35,8 @@ inline std::string session::get_default_profile_path()
 	return retval;
 }
 
-session::session(const std::string& profile_name, const std::string& profiledb, const std::string& password, bool debug) 
-throw(std::runtime_error, mapi_exception) : m_session(NULL), m_memory_ctx(talloc_init("libmapi++")), m_message_store(new message_store(*this))
+session::session(const std::string& profiledb, bool debug)throw(std::runtime_error, mapi_exception) 
+: m_session(NULL), m_memory_ctx(talloc_init("libmapi++")), m_message_store(new message_store(*this))
 {
 	mapi_exception::fill_status_map();
 
@@ -50,8 +51,7 @@ throw(std::runtime_error, mapi_exception) : m_session(NULL), m_memory_ctx(talloc
 			delete m_message_store;
 			throw std::runtime_error("libmapipp::session(): Failed to get $HOME env variable");
 		}
-	}
-	else {
+	} else {
 		profile_path = profiledb;
 	}
 
@@ -62,16 +62,28 @@ throw(std::runtime_error, mapi_exception) : m_session(NULL), m_memory_ctx(talloc
 	}
 
 	if (debug) global_mapi_ctx->dumpdata = true;
+}
 
-	if (MapiLogonEx(&m_session, profile_name.c_str(), (password != "") ? password.c_str() : 0 ) != MAPI_E_SUCCESS) {
+void session::login(const std::string& profile_name, const std::string& password) throw (mapi_exception)
+{
+	m_profile_name = profile_name;
+	if (m_profile_name == "") { // if profile is not set, try to get default profile
+		try {
+			m_profile_name = profile::get_default_profile();
+		} catch(mapi_exception e) {
+			uninitialize();
+			throw;
+		}
+	}
+
+	if (MapiLogonEx(&m_session, m_profile_name.c_str(), (password != "") ? password.c_str() : 0 ) != MAPI_E_SUCCESS) {
 		uninitialize();
 		throw mapi_exception(GetLastError(), "session::session : MapiLogonEx");
 	}
 
 	try {
 		m_message_store->open();
-	}
-	catch (mapi_exception e) {
+	} catch (mapi_exception e) {
 		throw;
 	}
 }

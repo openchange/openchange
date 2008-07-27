@@ -32,12 +32,21 @@ class profile
 
 		bool static set_default(const char* profname)
 		{
-			return (setDefaultProfile(profname) == MAPI_E_SUCCESS);
+			return (SetDefaultProfile(profname) == MAPI_E_SUCCESS);
 		}
 
 		bool static set_default(const std::string& profname)
 		{
 			return set_default(profname.c_str());
+		}
+
+		std::string static get_default_profile() throw (mapi_exception)
+		{
+			const char* profname = NULL;
+			if (GetDefaultProfile(&profname) != MAPI_E_SUCCESS)
+				throw mapi_exception(GetLastError(), "profile::get_default_profile : GetDefaultProfile()");
+
+			return std::string(profname);
 		}
 
 		~profile()

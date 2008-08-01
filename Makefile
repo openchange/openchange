@@ -1075,16 +1075,15 @@ manpages = \
 		doc/man/man1/exchange2mbox.1				\
 		doc/man/man1/mapiprofile.1				\
 		doc/man/man1/openchangeclient.1				\
-		doc/man/man1/openchangepfadmin.1			
+		doc/man/man1/openchangepfadmin.1			\
+		$(wildcard apidocs/man/man3/*)
 
 installman: doxygen
 	@./script/installman.sh $(DESTDIR)$(mandir) $(manpages)
-	@./script/installman.sh $(DESTDIR)$(mandir) `ls apidocs/man/man3/*`
 
 
 uninstallman:
 	@./script/uninstallman.sh $(DESTDIR)$(mandir) $(manpages)
-	@./script/uninstallman.sh $(DESTDIR)$(mandir) `ls apidocs/man/man3/*`
 
 doxygen:	
 	@if test ! -d apidocs ; then						\

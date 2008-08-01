@@ -1,6 +1,6 @@
 #!/usr/bin/python
-# OpenChange provision script
-#
+
+# OpenChange Python bindings
 # Copyright (C) Jelmer Vernooij <jelmer@openchange.org> 2008
 #   
 # This program is free software; you can redistribute it and/or modify
@@ -16,31 +16,5 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-import optparse
-import samba.getopt as options
-from samba.samdb import SamDB
-from samba.auth import system_session
-from openchange.provision import newuser
-import sys
 
-parser = optparse.OptionParser("oc_newuser [options] <username>")
-
-sambaopts = options.SambaOptions(parser)
-parser.add_option_group(sambaopts)
-
-credopts = options.CredentialsOptions(parser)
-parser.add_option_group(credopts)
-
-opts, args = parser.parse_args()
-
-if len(args) == 0:
-	parser.print_usage()
-	sys.exit(1)
-
-lp = sambaopts.get_loadparm()
-creds = credopts.get_credentials(lp)
-
-samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), 
-              credentials=creds, lp=lp)
-
-newuser(samdb, args[0])
+__docformat__ = 'restructuredText'

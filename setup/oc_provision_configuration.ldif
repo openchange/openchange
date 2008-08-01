@@ -96,7 +96,7 @@ networkAddress: ncacn_vns_spp:${NETBIOSNAME}
 networkAddress: netbios:${NETBIOSNAME}
 networkAddress: ncacn_np:${NETBIOSNAME}
 networkAddress: ncacn_spx:${NETBIOSNAME}
-networkAddress: ncacn_ip_tcp:${REALM}
+networkAddress: ncacn_ip_tcp:${HOSTNAME}
 networkAddress: ncalrpc:${NETBIOSNAME}
 objectCategory: CN=ms-Exch-Exchange-Server,CN=Schema,CN=Configuration,${BASEDN}
 objectClass: top

@@ -1136,6 +1136,7 @@ test:: check
 check:: torture/openchange.$(SHLIBEXT) libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
 	# FIXME: Set up server
 	LD_LIBRARY_PATH=`pwd` $(SMBTORTURE) --load-module torture/openchange.$(SHLIBEXT) ncalrpc: OPENCHANGE
+	./bin/mapitest --mapi-calls 
 
 # This should be the last line in the makefile since other distclean rules may 
 # need config.mk

@@ -16,12 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+
+import sys
+sys.path.append("scripting/python")
+
 import optparse
 import samba.getopt as options
 from samba.samdb import SamDB
 from samba.auth import system_session
 from openchange.provision import newuser
-import sys
 
 parser = optparse.OptionParser("oc_newuser [options] <username>")
 
@@ -43,4 +46,4 @@ creds = credopts.get_credentials(lp)
 samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), 
               credentials=creds, lp=lp)
 
-newuser(samdb, args[0])
+newuser(samdb, lp, args[0])

@@ -17,12 +17,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import sys
+sys.path.append("scripting/python")
+
 import optparse
 import samba.getopt as options
 from samba.samdb import SamDB
 from samba.auth import system_session
 from openchange.provision import install_schemas
-import sys
+import os
 
 parser = optparse.OptionParser("oc_provision [options]")
 
@@ -44,8 +47,11 @@ creds = credopts.get_credentials(lp)
 samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), 
               credentials=creds, lp=lp)
 
-netbios = lp.get("netbios name")
-hostname = netbios.lower()
+netbiosname = lp.get("netbios name")
+hostname = netbiosname.lower()
 basedn = samdb.domain_dn()
 
-install_schemas(samdb, basedn, netbiosname, hostname)
+def setup_path(*args):
+	return os.path.join(os.path.dirname(__file__), *args)
+
+install_schemas(samdb, setup_path, basedn, netbiosname, hostname)

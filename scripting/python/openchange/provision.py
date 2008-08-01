@@ -27,40 +27,41 @@ import ldb
 
 __docformat__ = 'restructuredText'
 
-def install_schemas(samdb, basedn, netbiosname, hostname):
+def install_schemas(samdb, setup_path, basedn, netbiosname, hostname):
     """Install the OpenChange-specific schemas in the SAM LDAP database.
     
     :param samdb: Samba SamDB object.
     :param basedn: BaseDN.
     """
     # Add new Active Directory classes schemas
-    setup_add_ldif(samdb, "oc_provision_schema.ldif")
+    setup_add_ldif(samdb, setup_path("oc_provision_schema.ldif"),
+             { "BASEDN": basedn})
 
     # Extend existing Active Directory schemas
-    setup_modify_ldif(samdb, "oc_provision_schema_modify.ldif", 
+    setup_modify_ldif(samdb, setup_path("oc_provision_schema_modify.ldif"), 
             {"BASEDN": basedn})
 
     # Add Configuration objects
-    setup_add_ldif(samdb, "oc_provision_configuration.ldif", {
+    setup_add_ldif(samdb, setup_path("oc_provision_configuration.ldif"), {
         "BASEDN": basedn,
         "NETBIOSNAME": netbiosname,
         "HOSTNAME": hostname})
 
 
-def newuser(samdb, username):
+def newuser(samdb, lp, username):
     """extend user record with OpenChange settings.
     
     :param samdb: Sam Database handle.
     :param username: Name of user to extend.
     """
-    dnsdomain    = strlower(lp.get("realm"))
-    hostname    = hostname()
-    netbiosname = strupper(hostname)
+    dnsdomain    = lp.get("realm").lower()
+    netbiosname = lp.get("netbios name")
 
     samdb.transaction_start()
     try:
         # find the DNs for the domain and the domain users group
-        res = samdb.search("defaultNamingContext=*", "", ldb.SCOPE_BASE, 
+        res = samdb.search(expression="defaultNamingContext=*", base="", 
+                           scope=ldb.SCOPE_BASE, 
                            attrs=["defaultNamingContext"])
         domain_dn = res[0]["defaultNamingContext"]
         dom_users = samdb.searchone("dn", domain_dn, "name=Domain Users")
@@ -83,7 +84,7 @@ def newuser(samdb, username):
 
         samdb.modify_ldif(extended_user)
     except:
-        samdb.transaction_abort()
+        samdb.transaction_cancel()
         raise
     samdb.transaction_commit()
 

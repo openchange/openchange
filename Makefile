@@ -1047,6 +1047,22 @@ bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKA
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
 ###################
+# python code
+###################
+
+pythonscriptdir = scripting/python
+
+PYTHON_MODULES = `find -name "*.py" $(pythonscriptdir)`
+
+install-python::
+	$(INSTALL) -d $(dir $(foreach $(pythonscriptdir)/%,%,$(PYTHON_MODULES)))
+	$(foreach $(pythonscriptdir)
+
+uninstall-python::
+	rm -f $(foreach $(pythonscriptdir)/%,$(DESTDIR)$(pythondir)/%,$(PYTHON_MODULES))
+
+
+###################
 # nagios plugin
 ###################
 

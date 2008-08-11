@@ -40,6 +40,13 @@ static NTSTATUS dummy_init(struct dcesrv_context *dce_ctx)
 	return NT_STATUS_OK;
 }
 
+
+static NTSTATUS dummy_unbind(uint32_t context_id)
+{
+	return NT_STATUS_OK;
+}
+
+
 static NTSTATUS dummy_push(struct dcesrv_call_state *dce_call, 
 			   TALLOC_CTX *mem_ctx,  void *r)
 {
@@ -78,6 +85,7 @@ NTSTATUS samba_init_module(void)
 
 	/* Fill in all the operations */
 	module.init = dummy_init;
+	module.unbind = dummy_unbind;
 	module.push = dummy_push;
 	module.ndr_pull = dummy_ndr_pull;
 	module.pull = dummy_pull;

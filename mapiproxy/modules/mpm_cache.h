@@ -39,6 +39,8 @@
 #endif
 
 struct mpm_message {
+	struct server_id	server_id;
+	uint32_t		context_id;
 	uint32_t		handle;
 	uint64_t       		FolderId;
 	uint64_t       		MessageId;
@@ -47,6 +49,8 @@ struct mpm_message {
 };
 
 struct mpm_attachment {
+	struct server_id	server_id;
+	uint32_t		context_id;
 	uint32_t		parent_handle;
 	uint32_t		handle;
 	uint32_t		AttachmentID;
@@ -59,6 +63,8 @@ struct mpm_attachment {
    A stream can either be for a message or attachment
  */
 struct mpm_stream {
+	struct server_id	server_id;
+	uint32_t		context_id;
 	uint32_t		parent_handle;
 	uint32_t		handle;
 	enum MAPITAGS		PropertyTag;
@@ -67,6 +73,7 @@ struct mpm_stream {
 	FILE			*fp;
 	char			*filename;
 	bool			cached;
+	bool			ahead;
 	struct timeval		tv_start;
 	struct mpm_attachment	*attachment;
 	struct mpm_message	*message;
@@ -82,6 +89,10 @@ struct mpm_cache {
 	struct mpm_attachment	*attachments;
 	struct mpm_stream	*streams;
 	const char		*dbpath;
+	bool			ahead;
+	bool			sync;
+	int			sync_min;
+	const char     		**sync_cmd;
 };
 
 __BEGIN_DECLS
@@ -96,7 +107,8 @@ NTSTATUS	mpm_cache_ldb_add_stream(struct mpm_cache *, struct ldb_context *, stru
 NTSTATUS	mpm_cache_stream_open(struct mpm_cache *, struct mpm_stream *);
 NTSTATUS	mpm_cache_stream_close(struct mpm_stream *);
 NTSTATUS	mpm_cache_stream_write(struct mpm_stream *, uint16_t, uint8_t *);
-NTSTATUS	mpm_cache_stream_read(struct mpm_stream *, uint16_t, uint32_t *, uint8_t **);
+NTSTATUS	mpm_cache_stream_read(struct mpm_stream *, uint32_t, uint32_t *, uint8_t **);
+NTSTATUS	mpm_cache_stream_reset(struct mpm_stream *);
 
 __END_DECLS
 
@@ -110,5 +122,6 @@ __END_DECLS
 #define	MPM_DB_STORAGE	"data"
 
 #define	MPM_LOCATION	__FUNCTION__, __LINE__
+#define	MPM_SESSION(x)	x->server_id.id, x->server_id.id2, x->server_id.node, x->context_id
 
 #endif /* __MPM_CACHE_H */

@@ -60,7 +60,7 @@ NTSTATUS mpm_cache_stream_open(struct mpm_cache *mpm, struct mpm_stream *stream)
 	if (stream->message) {
 		/* Create the folder */
 		file = talloc_asprintf(mem_ctx, "%s/0x%llx", mpm->dbpath, stream->message->FolderId);
-		ret = mkdir(file, 0700);
+		ret = mkdir(file, 0777);
 		talloc_free(file);
 		if ((ret == -1) && (errno != EEXIST)) return NT_STATUS_UNSUCCESSFUL;
 
@@ -70,10 +70,11 @@ NTSTATUS mpm_cache_stream_open(struct mpm_cache *mpm, struct mpm_stream *stream)
 				       stream->message->MessageId);
 
 		DEBUG(2, ("* [%s:%d]: Opening Message stream %s\n", MPM_LOCATION, file));
-		stream->filename = file;
+		stream->filename = talloc_strdup(mem_ctx, file);
 		stream->fp = fopen(file, "w+");
 		stream->offset = 0;
-
+		talloc_free(file);
+		
 		return NT_STATUS_OK;
 	}
 
@@ -81,14 +82,14 @@ NTSTATUS mpm_cache_stream_open(struct mpm_cache *mpm, struct mpm_stream *stream)
 		/* Create the folders */
 		file = talloc_asprintf(mem_ctx, "%s/0x%llx", mpm->dbpath, 
 				       stream->attachment->message->FolderId);
-		ret = mkdir(file, 0700);
+		ret = mkdir(file, 0777);
 		talloc_free(file);
 		if ((ret == -1) && (errno != EEXIST)) return NT_STATUS_UNSUCCESSFUL;
 
 		file = talloc_asprintf(mem_ctx, "%s/0x%llx/0x%llx", mpm->dbpath,
 				       stream->attachment->message->FolderId, 
 				       stream->attachment->message->MessageId);
-		ret = mkdir(file, 0700);
+		ret = mkdir(file, 0777);
 		talloc_free(file);
 		if ((ret == -1) && (errno != EEXIST)) return NT_STATUS_UNSUCCESSFUL;
 
@@ -120,8 +121,9 @@ NTSTATUS mpm_cache_stream_open(struct mpm_cache *mpm, struct mpm_stream *stream)
  */
 NTSTATUS mpm_cache_stream_close(struct mpm_stream *stream)
 {
-	if (stream->fp) {
+	if (stream && stream->fp) {
 		fclose(stream->fp);
+		stream->fp = NULL;
 	} else {
 		return NT_STATUS_NOT_FOUND;
 	}
@@ -141,7 +143,7 @@ NTSTATUS mpm_cache_stream_close(struct mpm_stream *stream)
 
    \return NT_STATUS_OK
  */
-NTSTATUS mpm_cache_stream_read(struct mpm_stream *stream, uint16_t input_size, uint32_t *length, uint8_t **data)
+NTSTATUS mpm_cache_stream_read(struct mpm_stream *stream, uint32_t input_size, uint32_t *length, uint8_t **data)
 {
 	fseek(stream->fp, stream->offset, SEEK_SET);
 	*length = fread(*data, sizeof (uint8_t), input_size, stream->fp);
@@ -169,11 +171,27 @@ NTSTATUS mpm_cache_stream_write(struct mpm_stream *stream, uint16_t length, uint
 	fseek(stream->fp, stream->offset, SEEK_SET);
 	WrittenSize = fwrite(data, sizeof (uint8_t), length, stream->fp);
 	if (WrittenSize != length) {
-		DEBUG(0, ("* [%s:%d] WrittenSize != length", MPM_LOCATION));
+		DEBUG(0, ("* [%s:%d] WrittenSize != length\n", MPM_LOCATION));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	stream->offset += WrittenSize;
+
+	return NT_STATUS_OK;
+}
+
+
+/**
+   \details Rewind a stream to the beginning
+
+   \param stream pointer to the mpm_stream entry
+
+   \return NT_STATUS_OK on success
+ */
+NTSTATUS mpm_cache_stream_reset(struct mpm_stream *stream)
+{
+	fseek(stream->fp, 0, SEEK_SET);
+	stream->offset = 0;
 
 	return NT_STATUS_OK;
 }

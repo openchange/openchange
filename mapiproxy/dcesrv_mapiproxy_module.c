@@ -117,9 +117,25 @@ NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *dce_call,
 		    ((strcmp(mpm->module->endpoint, "any") == 0) ||
 		     (table->name && (strcmp(table->name, mpm->module->endpoint) == 0)))) {
 			if (mpm->module->dispatch) {
-			  status = mpm->module->dispatch(dce_call, mem_ctx, r, mapiproxy);
+				status = mpm->module->dispatch(dce_call, mem_ctx, r, mapiproxy);
 				NT_STATUS_NOT_OK_RETURN(status);
 			}
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+NTSTATUS mapiproxy_module_unbind(struct server_id server_id, uint32_t context_id)
+{
+	struct mapiproxy_module_list	*mpm;
+	NTSTATUS			status;
+
+	for (mpm = mpm_list; mpm; mpm = mpm->next) {
+		if (mpm->module->unbind) {
+			status = mpm->module->unbind(server_id, context_id);
+			NT_STATUS_NOT_OK_RETURN(status);
 		}
 	}
 

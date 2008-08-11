@@ -119,6 +119,7 @@ NTSTATUS samba_init_module(void)
 
 	/* Fill in all the operations */
 	module.init = NULL;
+	module.unbind = NULL;
 	module.push = downgrade_push;
 	module.ndr_pull = downgrade_ndr_pull;
 	module.pull = downgrade_pull;

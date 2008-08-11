@@ -350,6 +350,7 @@ NTSTATUS samba_init_module(void)
 
 	/* Fill in all the operations */
 	module.init = pack_init;
+	module.unbind = NULL;
 	module.push = pack_push;
 	module.ndr_pull = pack_ndr_pull;
 	module.pull = pack_pull;

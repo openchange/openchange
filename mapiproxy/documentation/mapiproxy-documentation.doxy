@@ -71,6 +71,13 @@
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
 	</tr>
 	<tr>
+	   <td style="text-align:center">08/11/08</td>
+	   <td style="text-align:center"><strong>0.5</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">unbind hook added, cache
+	   module documentation and scenario added </td>
+	</tr>
+	<tr>
 	   <td style="text-align:center">07/23/08</td>
 	   <td style="text-align:center"><strong>0.4</strong></td>
 	   <td style="text-align:center">Julien Kerihuel</td>
@@ -653,6 +660,7 @@ NTSTATUS samba_init_module(void)
 	module.ndr_pull = sample_ndr_pull;
 	module.pull     = sample_pull;
 	module.dispatch = NULL;
+	module.unbind   = NULL;
 
 	/* Register ourselves with the MAPIPROXY subsytem */
 	ret = mapiproxy_module_register(&module);
@@ -719,17 +727,21 @@ its information filled into MAPI structures
 receive a MAPI response. The response has already been extracted and
 its information filled into MAPI structures</li>
 
-<li><strong>dispatch</strong></li>: Similarly to the mapiproxy
+<li><strong>dispatch</strong>: Similarly to the mapiproxy
 top-level dispatch function, it is used to dispatch the
 information. This function is called after the pull but before the
 push. Moreover it is called before the request is forward to the
-remote endpoint.
+remote endpoint.</li>
 
-<li><strong>ndr_pull</strong></li>: This is the function called before
-data from a request is extracted from the NDR blob.
+<li><strong>ndr_pull</strong>: This is the function called before
+data from a request is extracted from the NDR blob.</li>
 
-<li><strong>ndr_push</strong></li>: This is the function called before
-data from a response is extracted from the NDR blob.
+<li><strong>ndr_push</strong>: This is the function called before
+data from a response is extracted from the NDR blob.</li>
+
+<li><strong>unbind</strong>: This is the function called when the
+connection closes. It can be used to free data associated to a given
+session and stored within a module global list.</li>
 
 </ul>
 
@@ -747,13 +759,33 @@ is likely to change in further revisions.</strong>
 mapiproxy uses a structure modules can modify in their dispatch routine
 and which impact on the general mapiproxy behavior.
 
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mapiproxy_struct.png" />
+</td>
+</tr>
+</table>
+<center> Figure 5. overview of mapiproxy structure variables scope </center>
+
 <ul> 
+
 <li><strong>norelay</strong>: This boolean variable can be used by
-modules to tell mapiproxy not to relay the incoming request to the
-remote server through <i>dcerpc_ndr_request()</i> but directly jump to
-the push (response) mapiproxy code. This variable is for example in
-use within the cache module when we read stream from the local
-filesystem and play it back to MAPI clients.</li>
+modules to tell mapiproxy not to relay the incoming
+<strong>request</strong> to the remote server through
+<i>dcerpc_ndr_request()</i> but directly jump to the push (response)
+mapiproxy code. This variable is for example in use within the cache
+module when we read stream from the local filesystem and play it back
+to MAPI clients.</li>
+
+<li><strong>ahead</strong>: This boolean variable can be used by
+modules to tell mapiproxy not to relay the incoming
+<strong>response</strong> to the client through the <i>push</i> and
+<i>dcerpc_ndr_request</i> routine but loop over the dispatch
+routine. This variable is for example in use wihin the cache module
+when we want to read a stream ahead from Exchange server to the remote
+mapiproxy instance.</li>
+
 </ul>
 
 <br/>
@@ -810,12 +842,12 @@ append this custom call at the end of the mapi requests array (Figure
 </td>
 </tr>
 </table>
-<center> Figure 5. Pack process </center>
+<center> Figure 6. Pack process </center>
 
 <li>Final mapiproxy hop will seek the mapi requests array looking for
 the proxypack call. If found, it unpacks MAPI data and restore these
 calls at their initial location within the mapi requests array (Figure
-5).</li>
+6).</li>
 
 <table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
 <tr style="border:none;">
@@ -824,7 +856,7 @@ calls at their initial location within the mapi requests array (Figure
 </td>
 </tr>
 </table>
-<center> Figure 6. Unpack process </center>
+<center> Figure 7. Unpack process </center>
 
 </ul>
 
@@ -864,24 +896,105 @@ In order to use the pack module, edit smb.conf and add <i>pack</i> to
 
 The <strong>cache</strong> module implements a cache mechanism for
 streams related to messages or attachments. This module reduces
-latency for MAPI clients communicating with Exchange using <i>online
-mode</i>. When using online mode, MAPI clients retrieve data from
-Exchange each time they access a message and don't have any offline
-browsing mechanisms enabled.
+communication latency between MAPI clients (using <i>online</i> mode)
+and Exchange. When configured with online mode, MAPI clients retrieve
+data from Exchange each time they access a message and don't have any
+offline storage mechanisms enabled - data are downloaded and stored
+within a <i>temporary files</i> folder. This module also offers a
+preliminary synchronization mechanism which can be used to transfer
+files between different mapiproxy instances and use different
+protocols than MAPI for data transfer (such as rsync or wget).
 
-The cache module is designed to cover the scenario below:
+The cache module is designed to cover different cases:
+
+<h4>Scenario 1: Replay attachments</h4>
+
+This scenario only requires a single mapiproxy instance and requires a
+single configuration option:
+\code
+	mpm_cache:path = /tmp/cache
+\endcode
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mpm_cache_case_one.png" />
+</td>
+</tr>
+</table>
+<center> Figure 8. Replay stream scenario </center>
+
 <ul>
 
- <li><strong>1. Outlook read an attachment for the first time</strong>:</br>
+ <li style="text-align:justify;"><strong>1. Outlook reads a stream for the first time</strong>:</br>
  mapiproxy monitors the Outlook-Exchange traffic and store the
  attachment on the local filesystem. </li>
 
- <li><strong>2. Outlook requests this attachment again</strong>:<br/>
+ <li style="text-align:justify;"><strong>2. Outlook requests this stream again</strong>:<br/>
  mapiproxy looks over its cache, find the requested stream and
 directly communicate with Outlook without forwarding requests to the
 remote server.</li>
 
+</ul><br/>
+
+<h4>Scenario 2: Read stream ahead</h4>
+
+This scenario requires two mapiproxy instances and requires different
+configuration options for local and remote mapiproxy:
+
+<ul>
+<li><strong>local mapiproxy smb.conf sample</strong>:<br/>
+\code
+	mpm_cache:path = /tmp/cache
+	mpm_cache:ahead = false
+	mpm_cache:sync = true
+	mpm_cache:sync_cmd = /usr/bin/rsync -z mapiproxy@192.168.102.2:__FILE__  __FILE__
+\endcode
+</li>
+
+<li><strong>remote mapiproxy smb.conf sample</strong>:<br/>
+\code
+	mpm_cache:path = /tmp/cache
+	mpm_cache:ahead = true
+	mpm_cache:sync = false
+\endcode
+</li>
+
 </ul>
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mpm_cache_case_two.png" />
+</td>
+</tr>
+</table>
+<center> Figure 9. Read ahead scenario with synchronization mechanism </center>
+
+<ul>
+
+<li style="text-align:justify;"><strong>This scenario uses 2 mapiproxy instances</strong>. We call
+<i>remote mapiproxy</i>, the mapiproxy instance connected to the
+Exchange server network and <i>local mapiproxy</i> the instance
+connected to the MAPI clients network.</li>
+
+<li style="text-align:justify;"><strong>1. Outlook wants to read an attachment for the first
+time</strong>:<br/> The remote mapiproxy monitors the first ReadStream
+request and read the full stream ahead on its own and stores it on its
+local filesystem.</li>
+
+<li style="text-align:justify;"><strong>2. remote mapiproxy replies to local mapiproxy and local
+mapiproxy runs the synchronization mechanism.</strong> The current
+implementation provides a fork/execve/waitpid process which allows to
+run any command with parameters. When local mapiproxy finishes to
+store the file locally through the synchronization mechanism, it marks
+the stream as being cached.</li>
+
+<li style="text-align:justify;"><strong>3. local mapiproxy plays the attachment back to the client
+from cache</strong>.</li>
+
+</ul>
+
 
 The module monitors OpenMessage, OpenAttach, OpenStream, ReadStream
 and Release MAPI calls and stores streams on the local filesystem with
@@ -889,19 +1002,59 @@ indexation in a TDB database. Note that the module doesn't yet provide
 semantics needed to remove entries from the TDB database.
 
 
-This module only has a single configuration option:
+This module has different configuration options and modes:
 <ul>
- <li><strong>mpm_cache:path</strong><br/>
- This options takes the full path to an existing folder on the
+ <li style="text-align:justify;"><strong>mpm_cache:path</strong><br/>
+ This option takes the full path to an existing folder on the
  filesystem. This folder will be the storage root path for the cache
  module and will hold the TDB store, a folder hierarchy and stream
- files.</li>
-
-</ul>
+ files.
 
 \code
 	mpm_cache:path = /tmp/cache
 \endcode
+</li>
+
+<li style="text-align:justify;"><strong>mpm_cache:ahead</strong><br/>
+This option takes a boolean value (true or false) and defines whether
+the ahead mecachism should be enabled or not. This mode should only be
+enabled on the remote mapiproxy instance. It can be enabled on local
+mapiproxy instance, however there won't be any benefit but Outlook
+unexpectly falling in some time out mode and close the connection.
+
+\code
+	mpm_cache:ahead = true
+\endcode
+</li>
+
+<li style="text-align:justify;"><strong>mpm_cache:sync</strong><br/>
+This option takes a boolean value (true or false) and defines whether
+the synchronization mechanism should be enabled or not. This mode only
+makes sense on the local mapiproxy instance and
+<strong>mpm_cache:sync_cmd</strong> must also be configured.
+
+\code
+	mpm_cache:sync = true
+\endcode
+</li>
+
+<li
+style="text-align:justify;"><strong>mpm_cache:sync_cmd</strong><br/>
+This option takes the command line to execute for the synchronization
+process. A preliminary substitution variable mechanism is available
+but should be improved over time. For the moment, the cache module
+only provides <strong>__FILE__</strong> which will be substitued by
+the full path to the cached file. The synchronization process
+currently assumes local and remote mapiproxy instances have the same
+storage path (<i>mpm_cache:path</i>).
+
+\code
+	mpm_cache:sync_cmd = /usr/bin/rsync -z mapiproxy@192.168.102.2:__FILE__  __FILE__
+\endcode
+
+</li>
+
+</ul>
 
 In order to use the cache module, edit smb.conf and add <i>cache</i>
 to <i>dcerpc_mapiproxy:modules</i>.
@@ -909,8 +1062,25 @@ to <i>dcerpc_mapiproxy:modules</i>.
 \code
 	dcerpc_mapiproxy:modules = downgrade,cache
 \endcode
-
 <br/>
+
+<h4>Notes</h4>
+
+<ul>
+<li style="text-align:justify;">While the cache module implements a
+preliminary <i>session</i> mechanism (multiple clients support), this
+mode is currently only implemented up to 50%. Multiple clients will
+work for files already cached, but will cause unexpected behaviors
+while synchronizing a remote file at the same moment from different
+session. This bug should be fixed when the streaming and lock
+mechanism will be implemented.</li>
+
+<li style="text-align:justify;">The synchronization mechanism is yet
+experimental and we have deliberately changed the storage path
+permissions from 0700 to 0777 for trivial setup. File permissions will
+become parametric smb.conf options in the future.</li>
+
+</ul>
 
 
 <a name="faq"></a><h2>7. Frequently Asked Questions</h2>
@@ -923,16 +1093,16 @@ to <i>dcerpc_mapiproxy:modules</i>.
 </td>
 </tr>
 </table>
-<center>Figure 7. Outlook error: The action could not be completed</center>
+<center>Figure 10. Outlook error: The action could not be completed</center>
 
 If you have followed the <a href="#minute">5-Minute Configuration</a>
-instructions and the above error message box (Figure 7) is displayed
+instructions and the above error message box (Figure 10) is displayed
 each time you click the <i>Check Name</i> button, then you need to:
 <ul>
 <li>Click on <strong>More Settings</strong></li>
 <li>Open the security Tab</li>
 <li>Tick the <strong>Always prompt for username and password</strong>
-checkbox in the User Configuration section (Figure 8)</li>
+checkbox in the User Configuration section (Figure 11)</li>
 </ul>
 
 <table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
@@ -942,7 +1112,7 @@ checkbox in the User Configuration section (Figure 8)</li>
 </td>
 </tr>
 </table>
-<center>Figure 8. Resolution: Always prompt for username and password</center>
+<center>Figure 11. Resolution: Always prompt for username and password</center>
 
 Next time you click on <i>Check Name</i>, Outlook will prompt for
 username and password. A similar credentials dialog will be displayed

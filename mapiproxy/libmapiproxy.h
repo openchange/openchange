@@ -28,6 +28,7 @@
 
 struct mapiproxy {
 	bool			norelay;
+	bool			ahead;
 };
 
 struct mapiproxy_module {
@@ -39,6 +40,7 @@ struct mapiproxy_module {
 	NTSTATUS		(*ndr_pull)(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_pull *);
 	NTSTATUS		(*pull)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
 	NTSTATUS		(*dispatch)(struct dcesrv_call_state *, TALLOC_CTX *, void *, struct mapiproxy *);
+	NTSTATUS		(*unbind)(struct server_id, uint32_t);
 };
 
 struct mapiproxy_module_list {
@@ -66,6 +68,7 @@ NTSTATUS mapiproxy_module_push(struct dcesrv_call_state *, TALLOC_CTX *, void *)
 NTSTATUS mapiproxy_module_pull(struct dcesrv_call_state *, TALLOC_CTX *, void *);
 NTSTATUS mapiproxy_module_ndr_pull(struct dcesrv_call_state *, TALLOC_CTX *, struct ndr_pull *);
 NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *, TALLOC_CTX *, void *, struct mapiproxy *);
+NTSTATUS mapiproxy_module_unbind(struct server_id, uint32_t);
 
 const struct mapiproxy_module *mapiproxy_module_byname(const char *);
 

@@ -30,9 +30,61 @@
 #include "mapiproxy/libmapiproxy.h"
 #include "mapiproxy/modules/mpm_cache.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
 #include <time.h>
 
 struct mpm_cache *mpm = NULL;
+
+
+/**
+   \details Check if the server_id and context_id matches with the
+   session one.
+
+   \param sid reference to the session context server id structure
+   \param context_id reference to the session context id
+   \param sid2 reference to a mpm entry server id structure
+   \param context_id2 reference to a mpm_entry context id
+
+   \return 0 on success, otherwise -1.
+ */
+static int cache_cmp_session_sub(struct server_id sid,  uint32_t context_id,
+				 struct server_id sid2, uint32_t context_id2)
+{
+	if ((sid.id == sid2.id) && (sid.id2 == sid2.id2) && 
+	    (sid.node == sid2.node) && (context_id == context_id2)) {
+		return 0;
+	}
+
+	return -1;
+}
+
+
+/**
+   \details Check if the server_id and context_id matches with the
+   session one.
+
+   This is a wrapper over cache_cmp_session_sub
+
+   \param dce_call pointer to the session context
+   \param sid2 reference to a mpm entry server id structure
+   \param context_id2 reference to a mpm_entry context id
+
+   \return 0 on success, otherwise -1.
+ */
+static int cache_cmp_session(struct dcesrv_call_state *dce_call, 
+			     struct server_id sid2, 
+			     uint32_t context_id2)
+{
+	struct server_id	sid;
+	uint32_t		context_id;
+
+	sid = dce_call->conn->server_id;
+	context_id = dce_call->context->context_id;
+	
+	return cache_cmp_session_sub(sid, context_id, sid2, context_id2);
+}
 
 
 /**
@@ -75,6 +127,7 @@ static void cache_dump_stream_stat(struct mpm_stream *stream)
 	uint64_t       	sec;
 	uint64_t       	usec;
 	char		*name;
+	const char	*stage;
 
 	mem_ctx = (TALLOC_CTX *)mpm;
 
@@ -104,10 +157,90 @@ static void cache_dump_stream_stat(struct mpm_stream *stream)
 		usec = tv_end.tv_usec - stream->tv_start.tv_usec;
 	}
 
-	DEBUG(1, ("STATISTIC: %s The difference is %ld seconds %ld microseconds\n", 
-		  name, (long int)sec, (long int)usec));
+	if (stream->ahead == true) {
+		stage = "[read ahead]";
+	} else if ((stream->ahead == false) && (stream->cached == true)) {
+		stage = "[cached mode]";
+	} else {
+		stage = "[non cached]";
+	}
 
+	DEBUG(1, ("STATISTIC: %-20s %s The difference is %ld seconds %ld microseconds\n", 
+		  stage, name, (long int)sec, (long int)usec));
 	talloc_free(name);
+}
+
+
+/**
+   \details
+
+   1. close the existing FILE *
+   2. build complete file path
+   3. replace __FILE__ arguments with complete file path
+   4. call execve
+   5. stat the sync'd file
+   6. open the stream again
+   7. mark the file as cached
+
+   \param stream pointer on the mpm_stream entry
+ */
+static NTSTATUS cache_exec_sync_cmd(struct mpm_stream *stream)
+{
+	uint32_t	i;
+	int		ret = 0;
+	char		**args;
+	struct stat	sb;
+	pid_t		pid;
+	int		status;
+
+	mpm_cache_stream_close(stream);
+
+	for (i = 0; mpm->sync_cmd[i]; i++);
+
+	args = talloc_array((TALLOC_CTX *)mpm, char *, i + 1);
+
+	for (i = 0; mpm->sync_cmd[i]; i++){
+		if (strstr(mpm->sync_cmd[i], "__FILE__")) {
+			args[i] = string_sub_talloc((TALLOC_CTX *)args, mpm->sync_cmd[i], "__FILE__", stream->filename);
+		} else {
+			args[i] = talloc_strdup((TALLOC_CTX *)args, mpm->sync_cmd[i]);
+		}
+	}
+	args[i] = NULL;
+
+	for (i = 0; args[i]; i++){
+		DEBUG(0, ("'%s' ", args[i]));
+	}
+	DEBUG(0, ("\n"));
+
+	switch(pid = fork()) {
+	case -1:
+		DEBUG(0, ("Failed to fork\n"));
+		break;
+	case 0:
+		ret = execve(args[0], args, NULL);
+		break;
+	default:
+		wait(&status);
+		break;
+	}
+	talloc_free(args);
+	if (ret == -1) {
+		perror("execve: ");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	stat(stream->filename, &sb);
+	if (sb.st_size != stream->StreamSize) {
+		DEBUG(0, ("Sync'd file size is 0x%x and 0x%x was expected\n",
+			  (uint32_t)sb.st_size, stream->StreamSize));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	mpm_cache_stream_open(mpm, stream);
+	stream->cached = true;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -115,12 +248,17 @@ static void cache_dump_stream_stat(struct mpm_stream *stream)
    \details Track down Release calls and update the mpm_cache global
    list - removing associated entries.
 
+   This function recursively remove child entries whenever necessary.
+
+   \param dce_call pointer to the session context
    \param EcDoRpc pointer to the EcDoRpc operation
    \param handle_idx the handle to track down
 
    \return NT_STATUS_OK
  */
-static NTSTATUS cache_pull_Release(struct EcDoRpc *EcDoRpc, uint32_t handle_idx)
+static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
+				   struct EcDoRpc *EcDoRpc, 
+				   uint32_t handle_idx)
 {
 	struct mpm_message		*message;
 	struct mpm_attachment		*attach;
@@ -128,21 +266,93 @@ static NTSTATUS cache_pull_Release(struct EcDoRpc *EcDoRpc, uint32_t handle_idx)
 
 	/* Look over messages */
 	for (message = mpm->messages; message; message = message->next) {
-		if (EcDoRpc->in.mapi_request->handles[handle_idx] == message->handle) {
-			DEBUG(2, ("* [%s:%d] Del: Message 0x%llx 0x%llx: 0x%x\n", 
-				  MPM_LOCATION, message->FolderId, 
+		if (!cache_cmp_session(dce_call, message->server_id, message->context_id) &&
+		    (EcDoRpc->in.mapi_request->handles[handle_idx] == message->handle)) {
+			DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Message 0x%llx 0x%llx: 0x%x\n", 
+				  MPM_LOCATION, MPM_SESSION(message), message->FolderId, 
 				  message->MessageId, message->handle));
+
+			/* Loop over children attachments */
+			attach = mpm->attachments;
+			while (attach) {
+				if (!cache_cmp_session(dce_call, attach->server_id, attach->context_id) &&
+				    (message->handle == attach->parent_handle)) {
+					DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del recursive 1: Attachment %d: 0x%x\n", MPM_LOCATION,
+						  MPM_SESSION(attach), attach->AttachmentID, attach->handle));
+
+					/* Loop over children streams */
+					stream = mpm->streams;
+					while (stream) {
+						if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
+						    (attach->handle == stream->parent_handle)) {
+							DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del recursive 1-2: Stream 0x%x\n", 
+								  MPM_LOCATION, MPM_SESSION(stream), stream->handle));
+							mpm_cache_stream_close(stream);
+							talloc_free(stream->filename);
+							DLIST_REMOVE(mpm->streams, stream);
+							talloc_free(stream);
+							stream = mpm->streams;
+						} else {
+							stream = stream->next;
+						}
+					}
+
+					DLIST_REMOVE(mpm->attachments, attach);
+					talloc_free(attach);
+					attach = mpm->attachments;
+				} else {
+					attach = attach->next;
+				}
+			}
+
+			/* Look over children streams */
+			stream = mpm->streams;
+			while (stream) {
+				if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
+				    (message->handle == stream->parent_handle)) {
+					DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del recursive 1: Stream 0x%x\n", 
+						  MPM_LOCATION, MPM_SESSION(stream), stream->handle));
+					mpm_cache_stream_close(stream);
+					DLIST_REMOVE(mpm->streams, stream);
+					talloc_free(stream->filename);
+					talloc_free(stream);
+					stream = mpm->streams;
+				} else {
+					stream = stream->next;
+				}
+			}
+
 			DLIST_REMOVE(mpm->messages, message);
 			talloc_free(message);
 			return NT_STATUS_OK;
 		}
 	}
 
-	/* Look over attachments */
+ 	/* Look over attachments */
 	for (attach = mpm->attachments; attach; attach = attach->next) {
-		if (EcDoRpc->in.mapi_request->handles[handle_idx] == attach->handle) {
-			DEBUG(2, ("* [%s:%d] Del: Attachment %d: 0x%x\n", MPM_LOCATION, 
-				  attach->AttachmentID, attach->handle));
+		if (!cache_cmp_session(dce_call, attach->server_id, attach->context_id) && 
+		    (EcDoRpc->in.mapi_request->handles[handle_idx] == attach->handle)) {
+			DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Attachment %d: 0x%x\n", MPM_LOCATION, 
+				  MPM_SESSION(attach), attach->AttachmentID, attach->handle));
+
+
+			/* Loop over children streams */
+			stream = mpm->streams;
+			while (stream) {
+				if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
+				    (attach->handle == stream->parent_handle)) {
+					DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del recursive 2: Stream 0x%x\n", 
+						  MPM_LOCATION, MPM_SESSION(stream), stream->handle));
+					mpm_cache_stream_close(stream);
+					DLIST_REMOVE(mpm->streams, stream);
+					talloc_free(stream->filename);
+					talloc_free(stream);
+					stream = mpm->streams;
+				} else {
+					stream = stream->next;
+				}
+			}			
+
 			DLIST_REMOVE(mpm->attachments, attach);
 			talloc_free(attach);
 			return NT_STATUS_OK;
@@ -151,8 +361,10 @@ static NTSTATUS cache_pull_Release(struct EcDoRpc *EcDoRpc, uint32_t handle_idx)
 
 	/* Look over streams */
 	for (stream = mpm->streams; stream; stream = stream->next) {
-		if (EcDoRpc->in.mapi_request->handles[handle_idx] == stream->handle) {
-			DEBUG(2, ("* [%s:%d] Del: Stream 0x%x\n", MPM_LOCATION, stream->handle)); 
+		if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
+		    (EcDoRpc->in.mapi_request->handles[handle_idx] == stream->handle)) {
+			DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Stream 0x%x\n", MPM_LOCATION, 
+				  MPM_SESSION(stream), stream->handle)); 
 			mpm_cache_stream_close(stream);
 			DLIST_REMOVE(mpm->streams, stream);
 			talloc_free(stream->filename);
@@ -174,27 +386,35 @@ static NTSTATUS cache_pull_Release(struct EcDoRpc *EcDoRpc, uint32_t handle_idx)
    * set the handle to 0xFFFFFFFF
    * Insert the message to the list
 
+   \param dce_call pointer to the session context
    \param mem_ctx the memory context
    \param request reference to the OpenMessage request
 
    \return NT_STATUS_OK on success
  */
-static NTSTATUS cache_pull_OpenMessage(TALLOC_CTX *mem_ctx, 
+static NTSTATUS cache_pull_OpenMessage(struct dcesrv_call_state *dce_call,
+				       TALLOC_CTX *mem_ctx, 
 				       struct OpenMessage_req request)
 {
 	struct mpm_message		*message;
 
 	/* Check if the message has already been registered */
 	for (message = mpm->messages; message; message = message->next) {
-		if ((request.FolderId == message->FolderId) &&
-		    (request.MessageId == message->MessageId)) {			
+		if (!cache_cmp_session(dce_call, message->server_id, message->context_id) &&
+		    (request.FolderId == message->FolderId) &&
+		    (request.MessageId == message->MessageId)) {
 			DLIST_REMOVE(mpm->messages, message);
 		}
 	}
 
 	message = talloc(mem_ctx, struct mpm_message);
 	NT_STATUS_HAVE_NO_MEMORY(message);
-	
+
+	message->server_id.id = dce_call->conn->server_id.id;
+	message->server_id.id2 = dce_call->conn->server_id.id2;
+	message->server_id.node = dce_call->conn->server_id.node;
+	message->context_id = dce_call->context->context_id;
+
 	message->FolderId = request.FolderId;
 	message->MessageId = request.MessageId;
 	message->handle = 0xFFFFFFFF;
@@ -220,13 +440,16 @@ static NTSTATUS cache_pull_OpenMessage(TALLOC_CTX *mem_ctx,
    * If retval is different from MAPI_E_SUCCESS, then delete the
      record
 
+
+   \param dce_call pointer to the session context
    \param mapi_req reference to the OpenMessage MAPI request entry
    \param mapi_repl reference to the OpenMessage MAPI response entry
    \param EcDoRpc pointer to the current EcDoRpc operation
 
    \return NT_STATUS_OK
  */
-static NTSTATUS cache_push_OpenMessage(struct EcDoRpc_MAPI_REQ mapi_req, 
+static NTSTATUS cache_push_OpenMessage(struct dcesrv_call_state *dce_call,
+				       struct EcDoRpc_MAPI_REQ mapi_req, 
 				       struct EcDoRpc_MAPI_REPL mapi_repl, 
 				       struct EcDoRpc *EcDoRpc)
 {
@@ -239,15 +462,16 @@ static NTSTATUS cache_push_OpenMessage(struct EcDoRpc_MAPI_REQ mapi_req,
 	mapi_response = EcDoRpc->out.mapi_response;
 
 	for (el = mpm->messages; el; el = el->next) {
-		if ((el->FolderId == request.FolderId) && (el->MessageId == request.MessageId)) {
+		if ((el->FolderId == request.FolderId) && (el->MessageId == request.MessageId) && 
+		    (!cache_cmp_session(dce_call, el->server_id, el->context_id))) {
 			if (mapi_repl.error_code == MAPI_E_SUCCESS) {
 				mpm_cache_ldb_add_message((TALLOC_CTX *)mpm, mpm->ldb_ctx, el);
 				el->handle = mapi_response->handles[request.handle_idx];
-				DEBUG(2, ("* [%s:%d] Add: Message 0x%llx 0x%llx 0x%x\n", 
-					  MPM_LOCATION, el->FolderId, el->MessageId, el->handle));
+				DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Add: Message 0x%llx 0x%llx 0x%x\n", 
+					  MPM_LOCATION, MPM_SESSION(el), el->FolderId, el->MessageId, el->handle));
 			} else {
-				DEBUG(0, ("* [%s:%d] Del: Message OpenMessage returned %s\n", 
-					  MPM_LOCATION, mapi_get_errstr(mapi_repl.error_code)));
+				DEBUG(0, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Message OpenMessage returned %s\n", 
+					  MPM_LOCATION, MPM_SESSION(el), mapi_get_errstr(mapi_repl.error_code)));
 				DLIST_REMOVE(mpm->messages, el);
 			}
 			return NT_STATUS_OK;
@@ -266,13 +490,17 @@ static NTSTATUS cache_push_OpenMessage(struct EcDoRpc_MAPI_REQ mapi_req,
    otherwise delete it. It next creates the attachment entry in the
    global mpm_message structure.
 
+   \param dce_call pointer to the session context
    \param mem_ctx the memory context
    \param mapi_req reference to the OpenAttach EcDoRpc_MAPI_REQ entry
    \param EcDoRpc pointer to the EcDoRpc operation
 
    \return NT_STATUS_OK on success, otherwise NT_STATUS_NO_MEMORY
  */
-static NTSTATUS cache_pull_OpenAttach(TALLOC_CTX *mem_ctx, struct EcDoRpc_MAPI_REQ mapi_req, struct EcDoRpc *EcDoRpc)
+static NTSTATUS cache_pull_OpenAttach(struct dcesrv_call_state *dce_call,
+				      TALLOC_CTX *mem_ctx, 
+				      struct EcDoRpc_MAPI_REQ mapi_req, 
+				      struct EcDoRpc *EcDoRpc)
 {
 	struct mpm_message	*el;
 	struct mpm_attachment	*attach;
@@ -284,26 +512,35 @@ static NTSTATUS cache_pull_OpenAttach(TALLOC_CTX *mem_ctx, struct EcDoRpc_MAPI_R
 
 	for (attach = mpm->attachments; attach; attach = attach->next) {
 		/* Check if the attachment has already been registered */
-		if ((mapi_request->handles[mapi_req.handle_idx] == attach->parent_handle) && (request.AttachmentID == attach->AttachmentID)) {
+		if (!cache_cmp_session(dce_call, attach->server_id, attach->context_id) &&
+		    (mapi_request->handles[mapi_req.handle_idx] == attach->parent_handle) && (request.AttachmentID == attach->AttachmentID)) {
 			DLIST_REMOVE(mpm->attachments, attach);
 		}
 	}
 
-	attach = talloc(mem_ctx, struct mpm_attachment);
+	attach = talloc((TALLOC_CTX *)mpm, struct mpm_attachment);
 	if (!attach) return NT_STATUS_NO_MEMORY;
+
+	attach->server_id.id = dce_call->conn->server_id.id;
+	attach->server_id.id2 = dce_call->conn->server_id.id2;
+	attach->server_id.node = dce_call->conn->server_id.node;
+	attach->context_id = dce_call->context->context_id;
 
 	attach->AttachmentID = request.AttachmentID;
 	attach->parent_handle = mapi_request->handles[mapi_req.handle_idx];
 	attach->handle = 0xFFFFFFFF;
 
 	for (el = mpm->messages; el; el = el->next) {
-		if (attach->parent_handle == el->handle) {
+		if (!cache_cmp_session(dce_call, el->server_id, el->context_id) &&
+		    attach->parent_handle == el->handle) {
 			attach->message = el;
 			break;
 		}
 	}
 
-	DEBUG(2, ("* [%s:%d] Add [1]: Attachment %d added to the list\n", MPM_LOCATION, request.AttachmentID));
+	DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Add [1]: Attachment %d  parent handle (0x%x) 0x%llx, 0x%llx added to the list\n", 
+		  MPM_LOCATION, MPM_SESSION(attach), request.AttachmentID, attach->parent_handle, 
+		  attach->message->FolderId, attach->message->MessageId));
 	DLIST_ADD_END(mpm->attachments, attach, struct mpm_attachment *);
 	
 	return NT_STATUS_OK;
@@ -326,6 +563,7 @@ static NTSTATUS cache_pull_OpenAttach(TALLOC_CTX *mem_ctx, struct EcDoRpc_MAPI_R
    * If retval is different from MAPI_E_SUCCESS, then delete the
      element.
      
+   \param dce_call pointer to the session context
    \param mapi_req reference to the OpenAttach request entry
    \param mapi_repl reference to the OpenAttach MAPI response entry
    \param EcDoRpc pointer to the current EcDoRpc operation
@@ -333,7 +571,8 @@ static NTSTATUS cache_pull_OpenAttach(TALLOC_CTX *mem_ctx, struct EcDoRpc_MAPI_R
    \return NT_STATUS_OK
 
  */
-static NTSTATUS cache_push_OpenAttach(struct EcDoRpc_MAPI_REQ mapi_req, 
+static NTSTATUS cache_push_OpenAttach(struct dcesrv_call_state *dce_call,
+				      struct EcDoRpc_MAPI_REQ mapi_req, 
 				      struct EcDoRpc_MAPI_REPL mapi_repl, 
 				      struct EcDoRpc *EcDoRpc)
 {
@@ -347,16 +586,17 @@ static NTSTATUS cache_push_OpenAttach(struct EcDoRpc_MAPI_REQ mapi_req,
 	request = mapi_req.u.mapi_OpenAttach;
 
 	for (el = mpm->attachments; el; el = el->next) {
-		if ((mapi_request->handles[mapi_req.handle_idx] == el->parent_handle) &&
+		if (!cache_cmp_session(dce_call, el->server_id, el->context_id) &&
+		    (mapi_request->handles[mapi_req.handle_idx] == el->parent_handle) &&
 		    (request.AttachmentID == el->AttachmentID)) {
 			if (mapi_repl.error_code == MAPI_E_SUCCESS) {
 				el->handle = mapi_response->handles[request.handle_idx];
-				DEBUG(2, ("* [%s:%d] Add [2]: Attachment %d with handle 0x%x\n", 
-					  MPM_LOCATION, el->AttachmentID, el->handle));
+				DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Add [2]: Attachment %d with handle 0x%x and parent handle 0x%x\n", 
+					  MPM_LOCATION, MPM_SESSION(el), el->AttachmentID, el->handle, el->parent_handle));
 				mpm_cache_ldb_add_attachment((TALLOC_CTX *)mpm, mpm->ldb_ctx, el);
 			} else {
-				DEBUG(0, ("* [%s:%d] Del: Attachment OpenAttach returned %s\n", 
-					  MPM_LOCATION, mapi_get_errstr(mapi_repl.error_code)));
+				DEBUG(0, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Attachment OpenAttach returned %s\n", 
+					  MPM_LOCATION, MPM_SESSION(el), mapi_get_errstr(mapi_repl.error_code)));
 				DLIST_REMOVE(mpm->attachments, el);
 			}
 			return NT_STATUS_OK;
@@ -378,13 +618,16 @@ static NTSTATUS cache_push_OpenAttach(struct EcDoRpc_MAPI_REQ mapi_req,
    * Fill the stream element according to previous statement
    * Add it to the mpm_stream list
 
+   \param dce_call pointer to the session context
    \param mem_ctx the memory context
    \param mapi_req reference to the OpenStream MAPI request
    \param EcDoRpc pointer to the current EcDoRpc operation
+   \param context_id the session context identifier
    
    \return NT_STATUS_OK on success, otherwise NT_STATUS_NO_MEMORY
  */
-static NTSTATUS cache_pull_OpenStream(TALLOC_CTX *mem_ctx, 
+static NTSTATUS cache_pull_OpenStream(struct dcesrv_call_state *dce_call,
+				      TALLOC_CTX *mem_ctx, 
 				      struct EcDoRpc_MAPI_REQ mapi_req, 
 				      struct EcDoRpc *EcDoRpc)
 {
@@ -398,9 +641,16 @@ static NTSTATUS cache_pull_OpenStream(TALLOC_CTX *mem_ctx,
 	request = mapi_req.u.mapi_OpenStream;
 
 	for (attach = mpm->attachments; attach; attach = attach->next) {
-		if (mapi_request->handles[mapi_req.handle_idx] == attach->handle) {
+		if (!cache_cmp_session(dce_call, attach->server_id, attach->context_id) &&
+		    mapi_request->handles[mapi_req.handle_idx] == attach->handle) {
 			stream = talloc(mem_ctx, struct mpm_stream);
 			if (!stream) return NT_STATUS_NO_MEMORY;
+
+			stream->server_id.id = dce_call->conn->server_id.id;
+			stream->server_id.id2 = dce_call->conn->server_id.id2;
+			stream->server_id.node = dce_call->conn->server_id.node;
+			stream->context_id = dce_call->context->context_id;
+
 			stream->handle = 0xFFFFFFFF;
 			stream->parent_handle = attach->handle;
 			stream->PropertyTag = request.PropertyTag;
@@ -409,17 +659,27 @@ static NTSTATUS cache_pull_OpenStream(TALLOC_CTX *mem_ctx,
 			stream->attachment = attach;
 			stream->cached = false;
 			stream->message = NULL;
+			stream->ahead = (mpm->ahead == true) ? true : false;
 			gettimeofday(&stream->tv_start, NULL);
-			DEBUG(2, ("* [%s:%d] Stream::attachment added\n", MPM_LOCATION));
+			DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Stream::attachment added 0x%x 0x%llx 0x%llx\n", 
+				  MPM_LOCATION, MPM_SESSION(stream), stream->parent_handle, 
+				  stream->attachment->message->FolderId, stream->attachment->message->MessageId));
 			DLIST_ADD_END(mpm->streams, stream, struct mpm_stream *);
 			return NT_STATUS_OK;
 		}
 	}
 
 	for (message = mpm->messages; message; message = message->next) {
-		if (mapi_request->handles[mapi_req.handle_idx] == message->handle) {
+		if (!cache_cmp_session(dce_call, message->server_id, message->context_id) &&
+		    mapi_request->handles[mapi_req.handle_idx] == message->handle) {
 			stream = talloc(mem_ctx, struct mpm_stream);
 			if (!stream) return NT_STATUS_NO_MEMORY;
+
+			stream->server_id.id = dce_call->conn->server_id.id;
+			stream->server_id.id2 = dce_call->conn->server_id.id2;
+			stream->server_id.node = dce_call->conn->server_id.node;
+			stream->context_id = dce_call->context->context_id;
+
 			stream->handle = 0xFFFFFFFF;
 			stream->parent_handle = message->handle;
 			stream->PropertyTag = request.PropertyTag;
@@ -427,8 +687,10 @@ static NTSTATUS cache_pull_OpenStream(TALLOC_CTX *mem_ctx,
 			stream->filename = NULL;
 			stream->attachment = NULL;
 			stream->cached = false;
+			stream->ahead = (mpm->ahead == true) ? true : false;
 			gettimeofday(&stream->tv_start, NULL);
-			DEBUG(2, ("* [%s:%d] Stream::message added\n", MPM_LOCATION));
+			DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Stream::message added 0x%x\n", 
+				  MPM_LOCATION, MPM_SESSION(stream), stream->parent_handle));
 			stream->message = message;
 			DLIST_ADD_END(mpm->streams, stream, struct mpm_stream *);
 			return NT_STATUS_OK;
@@ -457,13 +719,15 @@ static NTSTATUS cache_pull_OpenStream(TALLOC_CTX *mem_ctx,
    * If retval is different from MAPI_E_SUCCESS, then delete the
    * element.
 
+   \param dce_call pointer to the session context
    \param mapi_req reference to the OpenStream MAPI request entry
    \param mapi_repl reference to the OpenStream MAPI response entry
    \param EcDoRpc pointer to the current EcDoRpc operation
 
    \return NT_STATUS_OK
  */
-static NTSTATUS cache_push_OpenStream(struct EcDoRpc_MAPI_REQ mapi_req, 
+static NTSTATUS cache_push_OpenStream(struct dcesrv_call_state *dce_call,
+				      struct EcDoRpc_MAPI_REQ mapi_req, 
 				      struct EcDoRpc_MAPI_REPL mapi_repl, 
 				      struct EcDoRpc *EcDoRpc)
 {
@@ -479,17 +743,18 @@ static NTSTATUS cache_push_OpenStream(struct EcDoRpc_MAPI_REQ mapi_req,
 	response = mapi_repl.u.mapi_OpenStream;
 
 	for (el = mpm->streams; el; el = el->next) {
-		if (mapi_request->handles[mapi_req.handle_idx] == el->parent_handle) {
+		if (!cache_cmp_session(dce_call, el->server_id, el->context_id) &&
+		    (mapi_request->handles[mapi_req.handle_idx] == el->parent_handle)) {
 			if (request.PropertyTag == el->PropertyTag) {
 				if (mapi_repl.error_code == MAPI_E_SUCCESS) {
 					el->handle = mapi_response->handles[request.handle_idx];
 					el->StreamSize = response.StreamSize;
-					DEBUG(2, ("* [%s:%d] Add [2]: Stream for Property Tag 0x%x, handle 0x%x and size = %d\n", 
-						  MPM_LOCATION, el->PropertyTag, el->handle, el->StreamSize));
+					DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Add [2]: Stream for Property Tag 0x%x, handle 0x%x and size = %d\n", 
+						  MPM_LOCATION, MPM_SESSION(el), el->PropertyTag, el->handle, el->StreamSize));
 					mpm_cache_ldb_add_stream(mpm, mpm->ldb_ctx, el);
 				} else {
-					DEBUG(0, ("* [%s:%d] Del: Stream OpenStream returned %s\n", 
-						  MPM_LOCATION, mapi_get_errstr(mapi_repl.error_code)));
+					DEBUG(0, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Stream OpenStream returned %s\n", 
+						  MPM_LOCATION, MPM_SESSION(el), mapi_get_errstr(mapi_repl.error_code)));
 					DLIST_REMOVE(mpm->streams, el);
 				}
 				return NT_STATUS_OK;
@@ -509,15 +774,17 @@ static NTSTATUS cache_push_OpenStream(struct EcDoRpc_MAPI_REQ mapi_req,
    file. This function only writes data if the file is not already
    cached, otherwise it just returns.
 
+   \param dce_call pointer to the session context
    \param mapi_req reference to the ReadStream MAPI request
    \param mapi_repl reference to the ReadStream MAPI reply
    \param EcDoRpc pointer to the current EcDoRpc operation
-   
+
    \return NT_STATUS_OK
 
    \sa cache_dispatch
  */
-static NTSTATUS cache_push_ReadStream(struct EcDoRpc_MAPI_REQ mapi_req,
+static NTSTATUS cache_push_ReadStream(struct dcesrv_call_state *dce_call,
+				      struct EcDoRpc_MAPI_REQ mapi_req,
 				      struct EcDoRpc_MAPI_REPL mapi_repl, 
 				      struct EcDoRpc *EcDoRpc)
 {
@@ -532,13 +799,20 @@ static NTSTATUS cache_push_ReadStream(struct EcDoRpc_MAPI_REQ mapi_req,
 
 	/* Check if the handle is registered */
 	for (stream = mpm->streams; stream; stream = stream->next) {
-		if (mapi_response->handles[mapi_repl.handle_idx] == stream->handle) {
+		if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) &&
+		    mapi_response->handles[mapi_repl.handle_idx] == stream->handle) {
 			if (stream->fp && stream->cached == false) {
-				DEBUG(5, ("* [%s:%d] %d bytes from remove server\n", 
-					  MPM_LOCATION, response.data.length));
-				mpm_cache_stream_write(stream, response.data.length, response.data.data);
-				if (stream->offset == stream->StreamSize) {
-					cache_dump_stream_stat(stream);
+				if (mpm->sync == true && stream->StreamSize > mpm->sync_min) {
+					cache_exec_sync_cmd(stream);
+				} else {
+					DEBUG(5, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] %d bytes from remove server\n", 
+						  MPM_LOCATION, MPM_SESSION(stream), response.data.length));
+					mpm_cache_stream_write(stream, response.data.length, response.data.data);
+					if (stream->offset == stream->StreamSize) {
+						if (response.data.length) {
+							cache_dump_stream_stat(stream);
+						}
+					}
 				}
 			} else if (stream->cached == true) {
 				/* This is managed by the dispatch routine */
@@ -553,7 +827,7 @@ static NTSTATUS cache_push_ReadStream(struct EcDoRpc_MAPI_REQ mapi_req,
 /**
    \details Analyze EcDoRpc MAPI requests
 
-   This function loop over EcDoRpc MAPI calls and search for the
+   This function loops over EcDoRpc MAPI calls and search for the
    opnums required by the cache module to monitor Stream traffic
    properly.
 
@@ -574,6 +848,9 @@ static NTSTATUS cache_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 	}
 
 	EcDoRpc = (struct EcDoRpc *) r;
+	if (!EcDoRpc) return NT_STATUS_OK;
+	if (!&(EcDoRpc->in)) return NT_STATUS_OK;
+	if (!EcDoRpc->in.mapi_request) return NT_STATUS_OK;
 	if (!EcDoRpc->in.mapi_request->mapi_req) return NT_STATUS_OK;
 
 	/* If this is an idle request, do not go further */
@@ -585,16 +862,16 @@ static NTSTATUS cache_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 	for (i = 0; mapi_req[i].opnum; i++) {
 		switch (mapi_req[i].opnum) {
 		case op_MAPI_OpenMessage:
-			cache_pull_OpenMessage((TALLOC_CTX *)mpm, mapi_req[i].u.mapi_OpenMessage);
+			cache_pull_OpenMessage(dce_call, (TALLOC_CTX *)mpm, mapi_req[i].u.mapi_OpenMessage);
 			break;
 		case op_MAPI_OpenAttach:
-			cache_pull_OpenAttach((TALLOC_CTX *)mpm, mapi_req[i], EcDoRpc);
+			cache_pull_OpenAttach(dce_call, (TALLOC_CTX *)mpm, mapi_req[i], EcDoRpc);
 			break;
 		case op_MAPI_OpenStream:
-			cache_pull_OpenStream((TALLOC_CTX *)mpm, mapi_req[i], EcDoRpc);
+			cache_pull_OpenStream(dce_call, (TALLOC_CTX *)mpm, mapi_req[i], EcDoRpc);
 			break;
 		case op_MAPI_Release:
-			cache_pull_Release(EcDoRpc, mapi_req[i].handle_idx);
+			cache_pull_Release(dce_call, EcDoRpc, mapi_req[i].handle_idx);
 			break;
 		}
 	}
@@ -606,11 +883,11 @@ static NTSTATUS cache_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 /**
    \details Analyze EcDoRpc MAPI responses
 
-   This function loop over EcDoRpc MAPI calls and search for the
+   This function loops over EcDoRpc MAPI calls and search for the
    opnums required by the cache module to monitor Stream traffic
    properly.
 
-   \param dce_call the session context
+   \param dce_call pointer to the session context
    \param mem_ctx the memory context
    \param r generic pointer on EcDoRpc operation
 
@@ -647,22 +924,22 @@ static NTSTATUS cache_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
 		case op_MAPI_OpenMessage:
 			index = cache_find_call_request_index(op_MAPI_OpenMessage, mapi_req);
 			if (index == -1) break;
-			cache_push_OpenMessage(mapi_req[index], mapi_repl[i], EcDoRpc);
+			cache_push_OpenMessage(dce_call, mapi_req[index], mapi_repl[i], EcDoRpc);
 			break;
 		case op_MAPI_OpenAttach:
 			index = cache_find_call_request_index(op_MAPI_OpenAttach, mapi_req);
 			if (index == -1) break;
-			cache_push_OpenAttach(mapi_req[index], mapi_repl[i], EcDoRpc);
+			cache_push_OpenAttach(dce_call, mapi_req[index], mapi_repl[i], EcDoRpc);
 			break;
 		case op_MAPI_OpenStream:
 			index = cache_find_call_request_index(op_MAPI_OpenStream, mapi_req);
 			if (index == -1) break;
-			cache_push_OpenStream(mapi_req[index], mapi_repl[i], EcDoRpc);
+			cache_push_OpenStream(dce_call, mapi_req[index], mapi_repl[i], EcDoRpc);
 			break;
 		case op_MAPI_ReadStream:
 			index = cache_find_call_request_index(op_MAPI_ReadStream, mapi_req);
 			if (index == -1) break;
-			cache_push_ReadStream(mapi_req[index], mapi_repl[i], EcDoRpc);
+			cache_push_ReadStream(dce_call, mapi_req[index], mapi_repl[i], EcDoRpc);
 			break;
 		default:
 			break;
@@ -679,6 +956,9 @@ static NTSTATUS cache_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_c
    This function avoids calling dcerpc_ndr_request - understand
    forwarding client request to remove server - when the client is
    reading a message/attachment stream available in the cache.
+
+   This function can also be used to loop over dcerpc_ndr_request and
+   perform a read-ahead operation.
 
    \param dce_call the session context
    \param mem_ctx the memory context
@@ -734,9 +1014,12 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 			request = mapi_req[i].u.mapi_ReadStream;
 			for (stream = mpm->streams; stream; stream = stream->next) {
-				if (mapi_request->handles[mapi_req[i].handle_idx] == stream->handle) {
+				if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) &&
+				    (mapi_request->handles[mapi_req[i].handle_idx] == stream->handle)) {
 					if (stream->cached == true) {
+					cached:
 						mapiproxy->norelay = true;
+						mapiproxy->ahead = false;
 						/* Create a fake ReadStream reply */
 						mapi_response->mapi_repl = talloc_array(mem_ctx, struct EcDoRpc_MAPI_REPL, i + 2);
 						mapi_response->mapi_repl[i].opnum = op_MAPI_ReadStream;
@@ -748,7 +1031,9 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 								      &mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length,
 								      &mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data);
 						if (stream->offset == stream->StreamSize) {
-							cache_dump_stream_stat(stream);
+							if (mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length) {
+								cache_dump_stream_stat(stream);
+							}
 						}
 						DEBUG(5, ("* [%s:%d] %d bytes read from cache\n", MPM_LOCATION,
 							  mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length));
@@ -759,6 +1044,22 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 						*EcDoRpc->out.length = mapi_response->mapi_len;
 						EcDoRpc->out.size = EcDoRpc->in.size;
 						break;
+					} else if ((stream->cached == false) && (stream->ahead == true)) {
+						if (mapiproxy->ahead == true)  {
+							mpm_cache_stream_write(stream,
+									       mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length,
+									       mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data);
+							/* When read ahead is over */
+							if (stream->offset == stream->StreamSize) {
+								cache_dump_stream_stat(stream);
+								mpm_cache_stream_reset(stream);
+								stream->cached = true;
+								stream->ahead = false;
+								goto cached;
+							}
+						} else {
+							mapiproxy->ahead = true;
+						}
 					}
 				}
 			}
@@ -769,6 +1070,64 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 	return NT_STATUS_OK;
 }
+
+
+/**
+   \details 
+ */
+static NTSTATUS cache_unbind(struct server_id server_id, uint32_t context_id)
+{
+	struct mpm_message	*message;
+	struct mpm_attachment	*attach;
+	struct mpm_stream	*stream;
+
+	/* Look over messages still attached to the session */
+	message = mpm->messages;
+	while (message) {
+		if (!cache_cmp_session_sub(server_id, context_id, message->server_id, message->context_id)) {
+			DEBUG(2, ("[%s:%d]: [s(0x%llx-0x%x-0x%x),c(0x%x)] Message - 0x%llx/0x%llx handle(0x%x)\n",
+				  MPM_LOCATION, MPM_SESSION(message), message->FolderId, message->MessageId, 
+				  message->handle));
+			DLIST_REMOVE(mpm->messages, message);
+			talloc_free(message);
+			message = mpm->messages;
+		} else {
+			message = message->next;
+		}
+	}
+
+	/* Look over attachments still attached to the session */
+	attach = mpm->attachments;
+	while (attach) {
+		if (cache_cmp_session_sub(server_id, context_id, attach->server_id, attach->context_id)) {
+			DEBUG(2, ("[%s:%d]: [s(0x%llx-0x%x-0x%x),c(0x%x)] Attachment - AttachmentID(0x%x) handle(0x%x)\n",
+				  MPM_LOCATION, MPM_SESSION(attach), attach->AttachmentID, attach->handle));
+			DLIST_REMOVE(mpm->attachments, attach);
+			talloc_free(attach);
+			attach = mpm->attachments;
+		} else {
+			attach = attach->next;
+		}
+	}
+
+	stream = mpm->streams;
+	while (stream) {
+		if (cache_cmp_session_sub(server_id, context_id, stream->server_id, stream->context_id)) {
+			DEBUG(2, ("[%s:%d]: [s(0x%llx-0x%x-0x%x),c(0x%x)] Stream - handle(0x%x)\n", MPM_LOCATION,
+				  MPM_SESSION(stream), stream->handle));
+			mpm_cache_stream_close(stream);
+			talloc_free(stream->filename);
+			DLIST_REMOVE(mpm->streams, stream);
+			talloc_free(stream);
+			stream = mpm->streams;
+		} else {
+			stream = stream->next;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
 
 /**
    \details Initialize the cache module and retrieve configuration from
@@ -794,7 +1153,17 @@ static NTSTATUS cache_init(struct dcesrv_context *dce_ctx)
 	mpm->attachments = NULL;
 	mpm->streams = NULL;
 
+	mpm->ahead = lp_parm_bool(dce_ctx->lp_ctx, NULL, MPM_NAME, "ahead", false);
+	mpm->sync = lp_parm_bool(dce_ctx->lp_ctx, NULL, MPM_NAME, "sync", false);
+	mpm->sync_min = lp_parm_int(dce_ctx->lp_ctx, NULL, MPM_NAME, "sync_min", 500000);
+	mpm->sync_cmd = str_list_make(dce_ctx, lp_parm_string(dce_ctx->lp_ctx, NULL, MPM_NAME, "sync_cmd"), " ");
 	mpm->dbpath = lp_parm_string(dce_ctx->lp_ctx, NULL, MPM_NAME, "path");
+
+	if ((mpm->ahead == true) && mpm->sync) {
+		DEBUG(0, ("%s: cache:ahead and cache:sync are exclusive!\n", MPM_ERROR));
+		talloc_free(mpm);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	if (!mpm->dbpath) {
 		DEBUG(0, ("%s: Missing mpm_cache:path parameter\n", MPM_ERROR));
@@ -837,6 +1206,7 @@ NTSTATUS samba_init_module(void)
 
 	/* Fill in all the operations */
 	module.init = cache_init;
+	module.unbind = cache_unbind;
 	module.push = cache_push;
 	module.ndr_pull = NULL;
 	module.pull = cache_pull;

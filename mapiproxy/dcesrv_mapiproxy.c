@@ -52,7 +52,8 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	struct cli_credentials			*credentials;
 	bool					machine_account;
 
-	DEBUG(5, ("mapiproxy::mapiproxy_op_bind\n"));
+	DEBUG(5, ("mapiproxy::mapiproxy_op_bind: [session = 0x%x] [session server id = 0x%llx 0x%x 0x%x]\n", dce_call->context->context_id,
+		  dce_call->conn->server_id.id, dce_call->conn->server_id.id2, dce_call->conn->server_id.node));
 
 	/* Retrieve parametric options */
 	binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "binding");
@@ -140,6 +141,8 @@ static void mapiproxy_op_unbind(struct dcesrv_connection_context *context, const
 	struct dcesrv_mapiproxy_private	*private = (struct dcesrv_mapiproxy_private *) context->private;
 
 	DEBUG(5, ("mapiproxy::mapiproxy_op_unbind\n"));
+
+	mapiproxy_module_unbind(context->conn->server_id, context->context_id);
 
 	if (private) {
 		talloc_free(private->c_pipe);
@@ -234,6 +237,8 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
 	struct dcesrv_mapiproxy_private		*private;
+	struct ndr_push				*push;
+	enum ndr_err_code			ndr_err;
 	struct mapiproxy			mapiproxy;
 	const struct ndr_interface_table	*table;
 	const struct ndr_interface_call		*call;
@@ -249,6 +254,7 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	call = &table->calls[opnum];
 
 	mapiproxy.norelay = false;
+	mapiproxy.ahead = false;
 
 	if (!private) {
 		dce_call->fault_code = DCERPC_FAULT_ACCESS_DENIED;
@@ -263,6 +269,19 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	private->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
+
+ ahead:
+	if (mapiproxy.ahead == true) {
+		push = ndr_push_init_ctx(dce_call, 
+					 lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx));
+		NT_STATUS_HAVE_NO_MEMORY(push);
+		ndr_err = call->ndr_push(push, NDR_OUT, r);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DEBUG(0, ("mapiproxy: mapiproxy_op_dispatch:push: ERROR\n"));
+			dce_call->fault_code = DCERPC_FAULT_NDR;
+			return NT_STATUS_NET_WRITE_FAULT;
+		}
+	}
 
 	status = mapiproxy_module_dispatch(dce_call, mem_ctx, r, &mapiproxy);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -287,6 +306,8 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	    (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_OUT) && mapiproxy.norelay == false) {
 		ndr_print_function_debug(call->ndr_print, name, NDR_OUT | NDR_SET_VALUES, r);
 	}
+
+	if (mapiproxy.ahead == true) goto ahead;
 
 	return NT_STATUS_OK;
 }

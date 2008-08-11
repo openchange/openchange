@@ -249,7 +249,7 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 	struct ldb_dn		*dn;
 	const char * const	attrs[] = { "*", NULL };
 	struct ldb_result	*res;
-	char			*basedn;
+	char			*basedn = NULL;
 	char			*attribute;
 	int			ret;
 	uint32_t		i;
@@ -287,6 +287,7 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 				  stream->PropertyTag, basedn));
 			stream->filename = talloc_strdup(mem_ctx, basedn);
 			stream->cached = true;
+			stream->ahead = false;
 			mpm_cache_stream_open(mpm, stream);
 
 			return NT_STATUS_OK;
@@ -319,6 +320,7 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 				  stream->PropertyTag, basedn));
 			stream->filename = talloc_strdup(mem_ctx, basedn);
 			stream->cached = true;
+			stream->ahead = false;
 			mpm_cache_stream_open(mpm, stream);
 
 			return NT_STATUS_OK;

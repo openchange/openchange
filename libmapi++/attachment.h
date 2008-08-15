@@ -65,7 +65,7 @@ class attachment : public object {
 			// Don't load PR_ATTACH_DATA_BIN if it's embedded in message.
 			// NOTE: Use RopOpenEmbeddedMessage when it is implemented.
 			const uint32_t attach_method = *static_cast<const uint32_t*>(properties[PR_ATTACH_METHOD]);
-			if (attach_method == ATTACH_EMBEDDED_MSG)
+			if (attach_method != ATTACH_BY_VALUE)
 				return;
 
 			// Get Binary Data.

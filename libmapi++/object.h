@@ -44,7 +44,7 @@ class object {
 		/** \brief Object Constructor
 		 *  \param mapi_session Session this object is to be associated with.
 		 */
-		object(session& mapi_session, const std::string& object_type = "") throw() : m_object_type(object_type), m_session(mapi_session)
+		object(session& mapi_session, const std::string& object_type = "") throw() : m_session(mapi_session), m_object_type(object_type)
 		{
 			mapi_object_init(&m_object);
 		}

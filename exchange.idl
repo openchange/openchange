@@ -3238,14 +3238,14 @@ System Attendant Private Interface
 	} mapi_response;
 	
 
-	[public,flag(NDR_NOALIGN)] MAPISTATUS  EcDoRpc(
-		[in,out]	policy_handle	*handle,
-		[in,out]	uint32 size,
-		[in,out]	uint32 offset,
-	  	[in][subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] mapi_request  *mapi_request,
-		[out][subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] mapi_response *mapi_response,
-		[in,out]	uint16		*length,
-		[in]		uint16		max_data
+	[public] MAPISTATUS EcDoRpc(
+		[in,out]						policy_handle	*handle,
+		[in,out]						uint32		size,
+		[in,out]						uint32		offset,
+	  	[in] [subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)]	mapi_request	*mapi_request,
+		[out][subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)]	mapi_response	*mapi_response,
+		[in,out]						uint16		*length,
+		[in]							uint16		max_data
 		);
 
 	/*****************/

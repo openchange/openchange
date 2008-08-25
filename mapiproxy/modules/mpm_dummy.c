@@ -41,7 +41,7 @@ static NTSTATUS dummy_init(struct dcesrv_context *dce_ctx)
 }
 
 
-static NTSTATUS dummy_unbind(uint32_t context_id)
+static NTSTATUS dummy_unbind(struct server_id server_id, uint32_t context_id)
 {
 	return NT_STATUS_OK;
 }

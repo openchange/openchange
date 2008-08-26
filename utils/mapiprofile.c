@@ -118,7 +118,6 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	}
 
 	if (opt_dumpdata == true) {
-		printf("dumpdata is true\n");
 		global_mapi_ctx->dumpdata = true;
 	}
 
@@ -247,13 +246,55 @@ static void mapiprofile_get_default(const char *profdb)
 	MAPIUninitialize();
 }
 
+static void mapiprofile_get_fqdn(const char *profdb, 
+				 const char *profname, 
+				 const char *password,
+				 bool opt_dumpdata)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_session	*session;
+	const char		*serverFQDN;
+
+	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
+		mapi_errstr("MAPIInitialize", GetLastError());
+		exit (1);
+	}
+
+	if (opt_dumpdata == true) {
+		global_mapi_ctx->dumpdata = true;
+	}
+
+	if (!profname) {
+		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
+			mapi_errstr("GetDefaultProfile", GetLastError());
+			exit (1);
+		}
+	}
+
+	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_errstr("MapiLogonProvider", GetLastError());
+		exit (1);
+	}
+
+	retval = RfrGetFQDNFromLegacyDN(&serverFQDN);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_errstr("RfrGetFQDNFromLegacyDN", GetLastError());
+		exit (1);
+	}
+
+	printf("%s is at %s\n", global_mapi_ctx->session->profile->homemdb, serverFQDN);
+
+	MAPIUninitialize();
+}
+
 static void mapiprofile_list(const char *profdb)
 {
 	enum MAPISTATUS retval;
 	struct SRowSet	proftable;
 	uint32_t	count = 0;
 
-	if ((retval = MAPIInitialize(profdb))) {
+	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
@@ -381,6 +422,7 @@ int main(int argc, const char *argv[])
 	bool		newdb = false;
 	bool		setdflt = false;
 	bool		getdflt = false;
+	bool		getfqdn = false;
 	bool		opt_dumpdata = false;
 	const char	*ldif = NULL;
 	const char	*address = NULL;
@@ -400,7 +442,7 @@ int main(int argc, const char *argv[])
 	      OPT_DOMAIN, OPT_USERNAME, OPT_LCID, OPT_PASSWORD, OPT_CREATE_PROFILE, 
 	      OPT_DELETE_PROFILE, OPT_LIST_PROFILE, OPT_DUMP_PROFILE, 
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
-	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN,
+	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
 	      OPT_NOPASS, OPT_DUMPDATA};
 
 	struct poptOption long_options[] = {
@@ -426,6 +468,7 @@ int main(int argc, const char *argv[])
 		{"dump", 'd', POPT_ARG_NONE, NULL, OPT_DUMP_PROFILE, "dump a profile entry"},
 		{"attr", 'a', POPT_ARG_STRING, NULL, OPT_DUMP_ATTR, "print an attribute value"},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
+		{"getfqdn", 0, POPT_ARG_NONE, NULL, OPT_GETFQDN, "returns the DNS FQDN of the NSPI server matching the legacyDN"},
 		{ NULL }
 	};
 
@@ -437,6 +480,7 @@ int main(int argc, const char *argv[])
 		switch(opt) {
 		case OPT_DUMPDATA:
 			opt_dumpdata = true;
+			break;
 		case OPT_PROFILE_LDIF:
 			ldif = poptGetOptArg(pc);
 			break;
@@ -497,6 +541,9 @@ int main(int argc, const char *argv[])
 		case OPT_DUMP_ATTR:
 			attribute = poptGetOptArg(pc);
 			break;
+		case OPT_GETFQDN:
+			getfqdn = true;
+			break;
 		}
 	}
 
@@ -514,7 +561,7 @@ int main(int argc, const char *argv[])
 					 getenv("HOME"));
 	}
 
-	if ((list == false) && (newdb == false) && (listlangs == false)
+	if ((list == false) && (getfqdn == false) && (newdb == false) && (listlangs == false)
 	    && (getdflt == false) && (dump == false) && 
 	    (!attribute) && (!profname || !profdb)) {
 		poptPrintUsage(pc, stderr, 0);
@@ -549,6 +596,10 @@ int main(int argc, const char *argv[])
 		}
 		mapiprofile_create(profdb, profname, pattern, username, password, address,
 				   lcid, workstation, domain, nopass, opt_dumpdata);
+	}
+
+	if (getfqdn == true) {
+		mapiprofile_get_fqdn(profdb, profname, password, opt_dumpdata);
 	}
 
 	if (listlangs == true) {

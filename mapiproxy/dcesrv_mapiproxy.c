@@ -475,11 +475,17 @@ NTSTATUS samba_init_module(void)
 	status = dcerpc_server_exchange_nsp_init();
 	NT_STATUS_NOT_OK_RETURN(status);
 
+	status = dcerpc_server_exchange_ds_rfr_init();
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	/* Step2. Register Exchange ndr tables */
 	status = ndr_table_register(&ndr_table_exchange_emsmdb);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	status = ndr_table_register(&ndr_table_exchange_nsp);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = ndr_table_register(&ndr_table_exchange_ds_rfr);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* Step3. Finally register mapiproxy endpoint */

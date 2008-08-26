@@ -40,18 +40,33 @@ import "misc.idl";
 
 [
   uuid("1544f5e0-613c-11d1-93df-00c04fd7bd09"),
+  endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]","ncacn_ip_tcp:[]"),
   pointer_default(unique),
   version(1.0),
   helpstring("Exchange 2003 Directory Request For Response")
 ] interface exchange_ds_rfr
 {
-	/*****************/
-	/* Function 0x00 */
-	void RfrGetNewDSA();
+
+#include "mapitags_enum.h"
+#include "mapicodes_enum.h"
 
 	/*****************/
+	/* Function 0x00 */
+	MAPISTATUS RfrGetNewDSA(
+		[in]                                    uint32  ulFlags,
+		[in,string,charset(DOS)]                uint8   *pUserDN,
+		[in,out,unique,string,charset(DOS)]     uint8   **ppszUnused,
+		[in,out,unique,string,charset(DOS)]     uint8   **ppszServer
+		);
+	
+	/*****************/
 	/* Function 0x01 */
-	void RfrGetFQDNFromLegacyDN();
+	MAPISTATUS RfrGetFQDNFromLegacyDN(
+		[in]							uint32	ulFlags,
+		[in,range(10,1024)]					uint32	cbMailboxServerDN,
+		[in,string,charset(DOS),size_is(cbMailboxServerDN)]	uint8	*szMailboxServerDN,
+		[out,ref,string,charset(DOS)]				uint8	**ppszServerFQDN
+		);
 }
 
 [
@@ -169,9 +184,6 @@ System Attendant Private Interface
   helpstring("Exchange 5.5 Name Service Provider")
 ] interface exchange_nsp
 {
-
-#include "mapitags_enum.h"
-#include "mapicodes_enum.h"
 
 	/*****************/
 	/* Function 0x00 */

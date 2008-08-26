@@ -139,10 +139,10 @@ void dcesrv_ec_store_admin2_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		       struct ec_store_admin2_dummy *r);
 void dcesrv_ec_store_admin1_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct ec_store_admin1_dummy *r);
-void dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct RfrGetNewDSA *r);
-void dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct RfrGetFQDNFromLegacyDN *r);
+enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				    struct RfrGetNewDSA *r);
+enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					      struct RfrGetFQDNFromLegacyDN *r);
 void dcesrv_sysatt_cluster_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct sysatt_cluster_dummy *r);
 void dcesrv_sysatt_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,

@@ -74,20 +74,20 @@ void dcesrv_ec_store_admin1_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX
 /*
   RfrGetNewDSA
 */
-void dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct RfrGetNewDSA *r)
+enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				    struct RfrGetNewDSA *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /*
   RfrGetFQDNFromLegacyDN
 */
-void dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct RfrGetFQDNFromLegacyDN *r)
+enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					      struct RfrGetFQDNFromLegacyDN *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 /*

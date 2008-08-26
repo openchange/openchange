@@ -114,6 +114,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 
 	/* allocate session if it doesn't already exist */
 	if (!*session || !global_mapi_ctx->session) {

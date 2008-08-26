@@ -21,6 +21,7 @@
 #include <libmapi/mapicode.h>
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
+#include <gen_ndr/ndr_exchange_c.h>
 #include <core/error.h>
 #include <param.h>
 #include <credentials.h>
@@ -68,6 +69,95 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 	return status;
 }
 
+
+/**
+   \details Returns the name of an NSPI server
+
+   \param server the Exchange server address (IP or FQDN)
+   \param userDN optional user mailbox DN
+
+   \return a valid string on success, otherwise NULL
+ */
+_PUBLIC_ const char *RfrGetNewDSA(const char *server, const char *userDN)
+{
+	NTSTATUS		status;
+	TALLOC_CTX		*mem_ctx;
+	struct mapi_profile	*profile;
+	struct RfrGetNewDSA	r;
+	struct dcerpc_pipe	*pipe;
+	char			*binding;
+	const char		*ppszServer = NULL;
+
+	/* Sanity Checks */
+	if (!global_mapi_ctx) return server;
+	if (!global_mapi_ctx->session) return server;
+
+	mem_ctx = (TALLOC_CTX *)global_mapi_ctx->session;
+	profile = global_mapi_ctx->session->profile;
+
+	binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s%s", server, ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
+	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, global_mapi_ctx->lp_ctx);
+	talloc_free(binding);
+
+	r.in.ulFlags = 0x0;
+	r.in.pUserDN = userDN ? userDN : "";
+	r.in.ppszUnused = NULL;
+	r.in.ppszServer = &ppszServer;
+
+	status = dcerpc_RfrGetNewDSA(pipe, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) return server;
+
+	return (ppszServer ? ppszServer : server);
+}
+
+
+/**
+   \details Returns the FQDN of the NSPI server corresponding to a DN
+
+   \param pointer on pointer on the server FQDN returned
+
+   \return MAPI_E_SUCCESS on success, otherwise a MAPI error and
+   serverFQDN content set to NULL.
+ */
+_PUBLIC_ enum MAPISTATUS RfrGetFQDNFromLegacyDN(const char **serverFQDN)
+{
+	NTSTATUS			status;
+	TALLOC_CTX			*mem_ctx;
+	struct mapi_profile		*profile;
+	struct RfrGetFQDNFromLegacyDN	r;
+	struct dcerpc_pipe		*pipe;
+	char				*binding;
+	const char     			*ppszServerFQDN;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mem_ctx = (TALLOC_CTX *)global_mapi_ctx->session;
+	profile = global_mapi_ctx->session->profile;
+	*serverFQDN = NULL;
+
+	binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s%s", profile->server, ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
+	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, global_mapi_ctx->lp_ctx);
+	talloc_free(binding);
+
+	r.in.ulFlags = 0x0;
+	r.in.cbMailboxServerDN = strlen(profile->homemdb) + 1;
+	r.in.szMailboxServerDN = profile->homemdb;
+	r.out.ppszServerFQDN = &ppszServerFQDN;
+
+	status = dcerpc_RfrGetFQDNFromLegacyDN(pipe, mem_ctx, &r);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	
+	if (ppszServerFQDN) {
+		*serverFQDN = ppszServerFQDN;
+	} else {
+		*serverFQDN = NULL;
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
 enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_id)
 {
 	NTSTATUS		status;
@@ -82,14 +172,9 @@ enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_
 	mem_ctx = (TALLOC_CTX *)provider;
 	profile = global_mapi_ctx->session->profile;
 	
-	if (global_mapi_ctx->dumpdata == false) {
-		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s", profile->server);
-	} else {
-		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s[print]", profile->server);
-	}
-
 	switch(provider_id) {
 	case PROVIDER_ID_EMSMDB:
+		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s%s", profile->server, ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_emsmdb, global_mapi_ctx->lp_ctx);
 		talloc_free(binding);
 		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
@@ -101,6 +186,9 @@ enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_
 		MAPI_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
 		break;
 	case PROVIDER_ID_NSPI:
+		/* Call RfrGetNewDSA prior any NSPI call */
+		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s%s", RfrGetNewDSA(profile->server, profile->mailbox), 
+					  ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_nsp, global_mapi_ctx->lp_ctx);
 		talloc_free(binding);
 		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);

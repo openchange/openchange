@@ -46,6 +46,12 @@
 #include <gen_ndr/ndr_exchange.h>
 #include <mapiproxy/libmapiproxy.h>
 
-#define MAXHOSTNAMELEN 255
+struct dcesrv_mapiproxy_private {
+	struct dcerpc_pipe	*c_pipe;
+	char			*exchname;
+};
+
+#define MAXHOSTNAMELEN	255
+#define	SERVERNAME      "/cn=Servers/cn="
 
 #endif	/* !__DCESRV_MAPIPROXY_H__ */

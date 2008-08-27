@@ -20,7 +20,7 @@
  */
 
 /**
-   \file mpm_cache_file.c
+   \file mpm_cache_stream.c
 
    \brief Storage routines for the cache module
  */

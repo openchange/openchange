@@ -25,9 +25,12 @@
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
 #include <libmapi/dlinklist.h>
 
-struct dcesrv_mapiproxy_private {
-	struct dcerpc_pipe	*c_pipe;
-};
+/**
+   \file dcesrv_mapiproxy.c
+
+   \brief mapiproxy main file
+ */
+
 
 static NTSTATUS mapiproxy_op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
@@ -39,6 +42,12 @@ static NTSTATUS mapiproxy_op_reply(struct dcesrv_call_state *dce_call, TALLOC_CT
 /**
    \details This function is called when the client binds to one of
    the interfaces mapiproxy handles.
+
+   \param dce_call pointer to the session context
+   \param iface pointer to the dcesrv interface structure with
+   function hooks
+
+   \return NT_STATUS_OK on success, otherwise NTSTATUS error
  */
 static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
@@ -65,6 +74,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	}
 
 	private->c_pipe = NULL;
+	private->exchname = NULL;
 	dce_call->context->private = private;
 
 	if (!binding) {
@@ -135,6 +145,10 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 /**
    \details Called when the client disconnects from one of the
    endpoints managed by mapiproxy.
+
+   \param context pointer to the connection context
+   \param iface pointer to the dcesrv interface structure with
+   function hooks
  */
 static void mapiproxy_op_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)
 {
@@ -153,7 +167,16 @@ static void mapiproxy_op_unbind(struct dcesrv_connection_context *context, const
 
 
 /**
-   Retrieve either the user request or the remote server reply
+   \detail This is the function called when mapiproxy receives a
+   request. The request has already been extracted and its information
+   filled into structures
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param pull pointer on pointer to the ndr_pull structure
+   \param r generic pointer on pointer to the pulled ndr content
+
+   \return NT_STATUS_OK on success, other NTSTATUS error
  */
 static NTSTATUS mapiproxy_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
@@ -197,6 +220,18 @@ static NTSTATUS mapiproxy_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC
 }
 
 
+/**
+   \detail This is the function called when mapiproxy receive a
+   response. The response has already been extracted and its
+   information filled into structures
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param push pointer to the ndr_push structure
+   \param r generic pointer to the data pushed
+
+   \return NT_STATUS_OK on success, otherwise a NTSTATUS error
+ */
 static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)
 {
 	enum ndr_err_code			ndr_err;
@@ -220,12 +255,18 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 		if (name && !strcmp(name, "NspiGetProps")) {
 			mapiproxy_NspiGetProps(dce_call, (struct NspiGetProps *)r);
 		}
+
+		if (name && !strcmp(name, "NspiQueryRows")) {
+			mapiproxy_NspiQueryRows(dce_call, (struct NspiQueryRows *)r);
+		}
 	}	
 
 	/* RfrGetNewDSA FQDN replacement */
 	if (table->name && !strcmp(table->name, "exchange_ds_rfr")) {
 		if (name && !strcmp(name, "RfrGetNewDSA")) {
 			mapiproxy_RfrGetNewDSA(dce_call, (struct RfrGetNewDSA *)r);
+		} else {
+			DEBUG(0, ("exchange_ds_rfr: OTHER DS-RFR CALL DETECTED!\n"));
 		}
 	}
 
@@ -241,6 +282,18 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 	return NT_STATUS_OK;
 }
 
+
+/**
+   \details This function is called after the pull but before the
+   push. Moreover it is called before the request is forward to the
+   remote endpoint.
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r generic pointer to the call mapped data
+
+   \return NT_STATUS_OK on success, otherwise NTSTATUS error
+ */
 static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)
 {
 	struct dcesrv_mapiproxy_private		*private;
@@ -277,6 +330,12 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 
 	private->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
+	if (table->name && !strcmp(table->name, "exchange_nsp")) {
+		if (name && !strcmp(name, "NspiDNToEph")) {
+			mapiproxy_NspiDNToEph(dce_call, (struct NspiDNToEph *)r);
+		}
+	}
+
  ahead:
 	if (mapiproxy.ahead == true) {
 		push = ndr_push_init_ctx(dce_call, 
@@ -305,7 +364,6 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	if (dce_call->fault_code != 0 || !NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("mapiproxy: call[%s] failed with %s! (status = %s)\n", name, 
 			  dcerpc_errstr(mem_ctx, dce_call->fault_code), nt_errstr(status)));
-		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
@@ -321,7 +379,12 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 
 
 /**
-   \details Register an interface
+   \details Register an endpoint
+
+   \param dce_ctx pointer to the dcerpc context
+   \param iface pointer to the dcesrv interface with function hooks
+
+   \return NT_STATUS_OK on success, otherwise NTSTATUS error
  */
 static NTSTATUS mapiproxy_register_one_iface(struct dcesrv_context *dce_ctx, const struct dcesrv_interface *iface)
 {
@@ -344,7 +407,13 @@ static NTSTATUS mapiproxy_register_one_iface(struct dcesrv_context *dce_ctx, con
 
 
 /**
-   \details Initializes the server and register emsmdb and nspi interfaces
+   \details Initializes the server and register emsmdb,nspi and rfr
+   interfaces
+
+   \param dce_ctx pointer to the dcesrv context
+   \param ep_server pointer to the endpoint server list
+
+   \return NT_STATUS_OK on success, otherwise NTSTATUS error
  */
 static NTSTATUS mapiproxy_op_init_server(struct dcesrv_context *dce_ctx, const struct dcesrv_endpoint_server *ep_server)
 {
@@ -427,6 +496,8 @@ static bool mapiproxy_op_interface_by_name(struct dcesrv_interface *iface, const
 
 /**
    \details register the mapiproxy endpoint server.
+
+   \return NT_STATUS_OK on success, otherwise NTSTATUS error
  */
 NTSTATUS dcerpc_server_mapiproxy_init(void)
 {

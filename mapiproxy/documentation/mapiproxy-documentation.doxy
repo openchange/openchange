@@ -55,6 +55,7 @@
  <li><a href="#faq">7. Frequently Asked Questions</a>
   <ul>
    <li><a href="#notcompleted"> 7.1. The action could not be completed</a></li>
+   <li><a href="#dc">           7.2. Does mapiproxy need to be domain controller?</a></li>
   </ul>
  </li>
 </ul>
@@ -70,6 +71,13 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">08/26/08</td>
+	   <td style="text-align:center"><strong>0.5.2</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">documentation update on NSPI
+	   replacement and new FAQ question added</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">08/26/08</td>
@@ -451,13 +459,28 @@ when Outlook requests for the
 returns a list <strong>binding strings</strong>. Outlook next stores
 these binding strings at some location - associated to the Outlook
 profile - in the windows registry and uses them for future
-connections. <br/>
+connections.<br/>
+
+Outlook can also rely on other information returned by NSPI functions
+and connect to the real Exchange server rather than mapiproxy. Such
+case occurs when Outlook is able to resolve the exchange server using
+its hostname. This reference to the original Exchange server can be
+found when Outlook requests for the
+<strong>PR_EMS_AB_HOME_MDB</strong> MAPI property during the
+<strong>NspiQueryRows (0x3) RPC operation</strong>. mapiproxy replaces
+the Exchange server name with its own netbios name and forward the
+reply to the client.<br/>
+
+In the meantime, this information is next used by Outlook to query a
+minimal entry ID for a distinguished name using this server
+name. mapiproxy needs to substitute the server name in the inbound
+request string with the original exchange one.<br/>
 
 mapiproxy needs to avoid Outlook clients being aware of this remote
 server address and trying to communicate directly with the remote server
 instead of using the proxy. In order to do this, mapiproxy alters the
 Outlook-Exchange MAPI traffic and replaces these binding strings with
-the mapiproxy host address and netbios name.
+the mapiproxy FQDN and netbios name.
 
 <br/>
 <a name="rfr"></a><h3>4.2. NSPI Referral Replacement</h3>
@@ -473,7 +496,8 @@ mapiproxy needs to avoid Outlook clients being aware of this server
 address and trying to communicate directly with the remote server
 instead of using the proxy. In order to do this, mapiproxy alters the
 Outlook-Exchange MAPI traffic and replaces the server DN returned by
-RfrGetNewDSA with the mapiproxy realm as specified in smb.conf.
+<strong>RfrGetNewDSA (0x0) RPC operation</strong> with the mapiproxy
+realm as specified in smb.conf.
 
 <br/>
 <a name="retrograde"></a><h3>4.3. Force EMSMDB Protocol Version</h3>
@@ -722,7 +746,7 @@ NTSTATUS samba_init_module(void)
 </ul>
 
 
-<a name="mpm_hook"></a><h3> 5.3. Module Hooks</h3>
+<a name="mpm_hooks"></a><h3> 5.3. Module Hooks</h3>
 
 mapiproxy offers a set of hooks which modules can implement to
 modify/change/alter client to server MAPI traffic. The figure below
@@ -952,7 +976,7 @@ single configuration option:
 
 <ul>
 
- <li style="text-align:justify;"><strong>1. Outlook reads a stream for the first time</strong>:</br>
+ <li style="text-align:justify;"><strong>1. Outlook reads a stream for the first time</strong>:<br/>
  mapiproxy monitors the Outlook-Exchange traffic and store the
  attachment on the local filesystem. </li>
 
@@ -1143,5 +1167,20 @@ checkbox in the User Configuration section (Figure 11)</li>
 Next time you click on <i>Check Name</i>, Outlook will prompt for
 username and password. A similar credentials dialog will be displayed
 each time Outlook is launched.
+
+<br/>
+
+<a name="dc"></a><h3>7.2. Does mapiproxy need to be domain controller?</h3>
+
+No it doesn't. mapiproxy works fine as a member server of a Windows
+domain. However, since delegated credentials and forwarded kerberos
+credentials don't yet work, you'll need to force samba to rely on the
+local SAM database. To force this behavior, add to smb.conf within the
+global section:
+
+\code
+	server role               = member server
+	aux_methods:member server = sam
+\endcode
 
 */

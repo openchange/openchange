@@ -26,15 +26,19 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "mapiproxy/dcesrv_mapiproxy_proto.h"
 #include "mapiproxy/libmapiproxy.h"
-
-NTSTATUS samba_init_module(void);
 
 
 /**
    \details This function replaces the store_version short array
    returned by Exchange in EcDoConnect with a version matching
    Exchange 2000. Otherwise Outlook tries to upgrade indefinitely.
+
+   \param dce_call pointer to the session context
+   \param r pointer to the EcDoConnect structure
+
+   \return true on success
  */
 static bool downgrade_EcDoConnect(struct dcesrv_call_state *dce_call, struct EcDoConnect *r)
 {
@@ -78,12 +82,19 @@ static NTSTATUS downgrade_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 	return NT_STATUS_OK;
 }
 
-/**
-   \details Return a dcerpc_fault rng_error to Outlook when it
-   receives EcDoConnectEx requests
 
-   \details returns NT_STATUS_NET_WRITE_FAULT when EcDoConnectEx is
-   found, otherwise NT_STATUS_OK
+/**
+   \details Returns the nca_op_rng_error DCERPC status code when
+   Outlook sends an EcDoConnectEx requrest.
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r generic pointer to EcDoConnectEx structure
+   \param mapiproxy pointer to the mapiproxy structure
+
+   \return NT_STATUS_NET_WRITE_FAULT when EcDoConnectEx is detected,
+   otherwise NT_STATUS_OK
+
 */
 static NTSTATUS downgrade_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r,
 				   struct mapiproxy *mapiproxy)

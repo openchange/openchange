@@ -22,6 +22,12 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy.h"
 
+/**
+   \file dcesrv_mapiproxy_module.c
+
+   \brief mapiproxy modules management
+ */
+
 static struct mp_module {
 	struct mapiproxy_module	*mp_module;
 } *mp_modules = NULL;

@@ -99,6 +99,9 @@ _PUBLIC_ const char *RfrGetNewDSA(const char *server, const char *userDN)
 	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, global_mapi_ctx->lp_ctx);
 	talloc_free(binding);
 
+	if (!NT_STATUS_IS_OK(status)) return server;
+
+
 	r.in.ulFlags = 0x0;
 	r.in.pUserDN = userDN ? userDN : "";
 	r.in.ppszUnused = NULL;
@@ -140,6 +143,8 @@ _PUBLIC_ enum MAPISTATUS RfrGetFQDNFromLegacyDN(const char **serverFQDN)
 	binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s%s", profile->server, ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
 	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, global_mapi_ctx->lp_ctx);
 	talloc_free(binding);
+
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);
 
 	r.in.ulFlags = 0x0;
 	r.in.cbMailboxServerDN = strlen(profile->homemdb) + 1;

@@ -32,8 +32,9 @@
  <li><a href="#concepts"> 4. Technical Concepts</a>
    <ul>
     <li><a href="#bindings">   4.1. NSPI Bindings Replacement</a></li>
-    <li><a href="#retrograde"> 4.2. Force EMSMDB Protocol Version</a></li>
-    <li><a href="#idl">        4.3. A Slightly Different IDL file</a></li>
+    <li><a href="#rfr">        4.2. NSPI Referral FQDN Replacement</a></li>
+    <li><a href="#retrograde"> 4.3. Force EMSMDB Protocol Version</a></li>
+    <li><a href="#idl">        4.4. OpenChange IDL file</a></li>
    </ul>
  </li>
  <li><a href="#mod_dev"> 5. Stackable Modules </a>
@@ -69,6 +70,12 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">08/26/08</td>
+	   <td style="text-align:center"><strong>0.5.1</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">documentation on NSPI referral added</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">08/11/08</td>
@@ -286,14 +293,13 @@ steps:
 <li><strong>[1] Provision Samba</strong>:<br/>From samba4/source
 directory, run under the root account:
 \code
-# ./setup/provision --realm=OPENCHANGE.LOCAL --domain=OPENCHANGE \
+# ./setup/provision --realm=MAPIPROXY.OPENCHANGE.LOCAL --domain=OPENCHANGE \
                     --adminpass=openchange --server-role='domain controller'
 \endcode
 
 If you don't have DNS resolution and your realm can't be resolved,
 smbd will be unable to authenticate the user in its user database. You
-can work around this problem and replace realm and domain with your
-local IP address instead.
+must specify a realm which MAPI clients and mapiproxy can resolve.
 
 If everything works fine, the provisioning script will have created
 all the databases, populated the AD (Active Directory) and generated a
@@ -357,9 +363,9 @@ EcDoConnect/EcDoRpc EMSMDB RPC functions negotiation.</li>
 
 \code
 [globals]
-        netbios name    = openchange
+        netbios name    = MAPIPROXY
         workgroup       = OPENCHANGE
-        realm           = OPENCHANGE.LOCAL
+        realm           = MAPIPROXY.OPENCHANGE.LOCAL
         server role     = domain controller
 
 	### Configuration required by mapiproxy ###
@@ -369,7 +375,7 @@ EcDoConnect/EcDoRpc EMSMDB RPC functions negotiation.</li>
         dcerpc_mapiproxy:username = testuser
         dcerpc_mapiproxy:password = openchange
         dcerpc_mapiproxy:domain = EXCHANGE
-        dcerpc_mapiproxy:interfaces = exchange_emsmdb, exchange_nsp
+        dcerpc_mapiproxy:interfaces = exchange_emsmdb, exchange_nsp, exchange_ds_rfr
 	dcerpc_mapiproxy:modules = downgrade
 	### Configuration required by mapiproxy ###
 
@@ -395,6 +401,7 @@ in smbd output:
 \code
 DCERPC endpoint server 'exchange_emsmdb' registered
 DCERPC endpoint server 'exchange_nsp' registered
+DCERPC endpoint server 'exchange_ds_rfr' registered
 DCERPC endpoint server 'mapiproxy' registered
 dcesrv_interface_register: interface 'epmapper' registered on endpoint 'ncacn_np:[\pipe\epmapper]'
 dcesrv_interface_register: interface 'epmapper' registered on endpoint 'ncacn_ip_tcp:[135]'
@@ -408,6 +415,9 @@ dcesrv_interface_register: interface 'exchange_emsmdb' registered on endpoint 'n
 dcesrv_interface_register: interface 'exchange_nsp' registered on endpoint 'ncacn_np:[\pipe\lsass]'
 dcesrv_interface_register: interface 'exchange_nsp' registered on endpoint 'ncacn_np:[\pipe\protected_storage]'
 dcesrv_interface_register: interface 'exchange_nsp' registered on endpoint 'ncacn_ip_tcp:[]'
+dcesrv_interface_register: interface 'exchange_ds_rfr' registered on endpoint 'ncacn_np:[\pipe\lsass]'
+dcesrv_interface_register: interface 'exchange_ds_rfr' registered on endpoint 'ncacn_np:[\pipe\protected_storage]'
+dcesrv_interface_register: interface 'exchange_ds_rfr' registered on endpoint 'ncacn_ip_tcp:[]'
 \endcode
 
 <table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
@@ -446,11 +456,27 @@ connections. <br/>
 mapiproxy needs to avoid Outlook clients being aware of this remote
 server address and trying to communicate directly with the remote server
 instead of using the proxy. In order to do this, mapiproxy alters the
-Outlook-Exchange MAPI traffic and replace these binding strings with
+Outlook-Exchange MAPI traffic and replaces these binding strings with
 the mapiproxy host address and netbios name.
 
 <br/>
-<a name="retrograde"></a><h3>4.2. Force EMSMDB Protocol Version</h3>
+<a name="rfr"></a><h3>4.2. NSPI Referral Replacement</h3>
+
+The Address Book Name Service Provider Interface (NSPI) Referral
+Service is a service used by Outlook to retrieve the name of an NSPI
+server. No NSPI connection should be initiated without first querying
+for the correct NSPI server. In this case, RFR returns the fully
+qualified domain name of the real Exchange server and starts using it
+if available. <br/>
+
+mapiproxy needs to avoid Outlook clients being aware of this server
+address and trying to communicate directly with the remote server
+instead of using the proxy. In order to do this, mapiproxy alters the
+Outlook-Exchange MAPI traffic and replaces the server DN returned by
+RfrGetNewDSA with the mapiproxy realm as specified in smb.conf.
+
+<br/>
+<a name="retrograde"></a><h3>4.3. Force EMSMDB Protocol Version</h3>
 
 When Outlook starts and presumably calls MapiLogonEx, it first opens a
 connection to the Exchange server on the NSPI pipe, then on the EMSMDB
@@ -572,7 +598,7 @@ and solution is available at the following addresses:
 </ul>
 <br/>
 
-<a name="idl"></a><h3> 4.3. OpenChange IDL File </h3>
+<a name="idl"></a><h3> 4.4. OpenChange IDL File </h3>
 
 IDL stands for Interface Definition Language and OpenChange uses this
 format to describe ExchangeRPC communications. This file is processed

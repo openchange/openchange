@@ -43,7 +43,6 @@ bool mapiproxy_NspiGetProps(struct dcesrv_call_state *dce_call, struct NspiGetPr
 	struct SRow		*SRow;
 	struct SLPSTRArray	*slpstr;
 	struct SPropValue	*lpProp;
-	struct socket_address	*sockaddr;
 
 	/* Sanity checks */
 	if (!r->out.REPL_values) return false;
@@ -70,9 +69,8 @@ bool mapiproxy_NspiGetProps(struct dcesrv_call_state *dce_call, struct NspiGetPr
 	slpstr = &(lpProp->value.MVszA);
 
 	/* Step 3. Modify Exchange binding strings and only return ncacn_ip_tcp */
-	sockaddr = dce_call->conn->transport.get_my_addr(dce_call->conn, dce_call);
 	slpstr->cValues = 1;
-	slpstr->strings[0]->lppszA = talloc_asprintf(dce_call, "ncacn_ip_tcp:%s", sockaddr->addr);
+	slpstr->strings[0]->lppszA = talloc_asprintf(dce_call, "ncacn_ip_tcp:%s", lp_realm(dce_call->conn->dce_ctx->lp_ctx));
 
 	return true;
 }

@@ -46,14 +46,6 @@
 #include <gen_ndr/ndr_exchange.h>
 #include <mapiproxy/libmapiproxy.h>
 
-struct socket_address {
-	const char	*family;
-	char		*addr;
-	int		port;
-	struct sockaddr	*sockaddr;
-	size_t		sockaddrlen;
-};
-
 #define MAXHOSTNAMELEN 255
 
 #endif	/* !__DCESRV_MAPIPROXY_H__ */

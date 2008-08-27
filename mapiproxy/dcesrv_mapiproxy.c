@@ -222,6 +222,13 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 		}
 	}	
 
+	/* RfrGetNewDSA FQDN replacement */
+	if (table->name && !strcmp(table->name, "exchange_ds_rfr")) {
+		if (name && !strcmp(name, "RfrGetNewDSA")) {
+			mapiproxy_RfrGetNewDSA(dce_call, (struct RfrGetNewDSA *)r);
+		}
+	}
+
 	mapiproxy_module_push(dce_call, mem_ctx, (void *)r);
 
 	ndr_err = table->calls[opnum].ndr_push(push, NDR_OUT, r);

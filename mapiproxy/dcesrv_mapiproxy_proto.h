@@ -44,6 +44,9 @@ NTSTATUS dcerpc_server_exchange_emsmdb_init(void);
 /* definitions from dcesrv_mapiproxy_nspi.c */
 bool mapiproxy_NspiGetProps(struct dcesrv_call_state *, struct NspiGetProps *);
 
+/* definitions from dcesrv_mapiproxy_rfr.c */
+bool mapiproxy_RfrGetNewDSA(struct dcesrv_call_state *, struct RfrGetNewDSA *);
+
 /* init functions definitions from gen_ndr/ndr_exchange_s.c */
 
 NTSTATUS dcerpc_server_exchange_store_admin3_init(void);

@@ -739,6 +739,7 @@ clean:: mapiproxy-clean
 
 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT): 	mapiproxy/dcesrv_mapiproxy.po		\
 						mapiproxy/dcesrv_mapiproxy_nspi.po	\
+						mapiproxy/dcesrv_mapiproxy_rfr.po	\
 						mapiproxy/dcesrv_mapiproxy_unused.po	\
 						ndr_mapi.po				\
 						gen_ndr/ndr_exchange.po				

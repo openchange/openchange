@@ -586,6 +586,7 @@ int main(int argc, const char *argv[])
 
 	if (create == true) {
 		if (!profname) show_help(pc, "profile");
+		if (!password) show_help(pc, "password");
 		if (!username) show_help(pc, "username");
 		if (!address) show_help(pc, "address");
 		if (!workstation) show_help(pc, "workstation");

@@ -99,7 +99,10 @@ bool mapiproxy_NspiGetProps(struct dcesrv_call_state *dce_call, struct NspiGetPr
 
 	/* Step 3. Modify Exchange binding strings and only return ncacn_ip_tcp */
 	slpstr->cValues = 1;
-	slpstr->strings[0]->lppszA = talloc_asprintf(dce_call, "ncacn_ip_tcp:%s", lp_realm(dce_call->conn->dce_ctx->lp_ctx));
+	slpstr->strings[0]->lppszA = talloc_asprintf(dce_call, "ncacn_ip_tcp:%s.%s", 
+						     lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx), 
+						     lp_realm(dce_call->conn->dce_ctx->lp_ctx));
+	strlower_m((char *)slpstr->strings[0]->lppszA);
 
 	return true;
 }

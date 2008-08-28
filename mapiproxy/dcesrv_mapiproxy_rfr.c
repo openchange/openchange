@@ -40,7 +40,10 @@ bool mapiproxy_RfrGetNewDSA(struct dcesrv_call_state *dce_call, struct RfrGetNew
 	/* Sanity checks */
 	if (!r->out.ppszServer) return false;
 
-	*r->out.ppszServer = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+	*r->out.ppszServer = talloc_asprintf(dce_call, "%s.%s", 
+					     lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx), 
+					     lp_realm(dce_call->conn->dce_ctx->lp_ctx));
+	strlower_m((char *)*r->out.ppszServer);
 
 	return true;
 }

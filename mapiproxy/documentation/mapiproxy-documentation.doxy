@@ -301,7 +301,7 @@ steps:
 <li><strong>[1] Provision Samba</strong>:<br/>From samba4/source
 directory, run under the root account:
 \code
-# ./setup/provision --realm=MAPIPROXY.OPENCHANGE.LOCAL --domain=OPENCHANGE \
+# ./setup/provision --realm=OPENCHANGE.LOCAL --domain=OPENCHANGE \
                     --adminpass=openchange --server-role='domain controller'
 \endcode
 
@@ -373,7 +373,7 @@ EcDoConnect/EcDoRpc EMSMDB RPC functions negotiation.</li>
 [globals]
         netbios name    = MAPIPROXY
         workgroup       = OPENCHANGE
-        realm           = MAPIPROXY.OPENCHANGE.LOCAL
+        realm           = OPENCHANGE.LOCAL
         server role     = domain controller
 
 	### Configuration required by mapiproxy ###

@@ -1023,14 +1023,14 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 	nameid = mapi_nameid_new(mem_ctx);
 	mapi_nameid_OOM_add(nameid, "Location", PSETID_Appointment);
 	mapi_nameid_OOM_add(nameid, "BusyStatus", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "MeetingStatus", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "ApptStateFlags", PSETID_Appointment);
 	mapi_nameid_OOM_add(nameid, "CommonStart", PSETID_Common);
 	mapi_nameid_OOM_add(nameid, "CommonEnd", PSETID_Common);
 	mapi_nameid_OOM_add(nameid, "Label", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ReminderMinutesBeforeStart", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "ReminderDelta", PSETID_Common);
 	mapi_nameid_OOM_add(nameid, "Private", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "Start", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "End", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "ApptStartWhole", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "ApptEndWhole", PSETID_Appointment);
 
 	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
@@ -1186,9 +1186,9 @@ static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
 
 	/* Build the list of named properties we want to set */
 	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "FileAs", PSETID_Address);
-	mapi_nameid_lid_add(nameid, 0x8084, PSETID_Address);
-	mapi_nameid_OOM_add(nameid, "Email1Address", PSETID_Address);
+	mapi_nameid_OOM_add(nameid, "FileUnder", PSETID_Address);
+	mapi_nameid_OOM_add(nameid, "Email1OriginalDisplayName", PSETID_Address);
+	mapi_nameid_OOM_add(nameid, "Email1EmailAddress", PSETID_Address);
 	mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
 
 	/* GetIDsFromNames and map property types */
@@ -1291,9 +1291,9 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 
 	/* Build the list of named properties we want to set */
 	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "Status", PSETID_Task);
-	mapi_nameid_OOM_add(nameid, "StartDate", PSETID_Task);
-	mapi_nameid_OOM_add(nameid, "DueDate", PSETID_Task);
+	mapi_nameid_OOM_add(nameid, "TaskStatus", PSETID_Task);
+	mapi_nameid_OOM_add(nameid, "TaskStartDate", PSETID_Task);
+	mapi_nameid_OOM_add(nameid, "TaskDueDate", PSETID_Task);
 
 	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
@@ -1425,9 +1425,9 @@ static enum MAPISTATUS note_SetProps(TALLOC_CTX *mem_ctx,
 
 	/* Build the list of named properties we want to set */
 	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "Color", PSETID_Note);
-	mapi_nameid_OOM_add(nameid, "Width", PSETID_Note);
-	mapi_nameid_OOM_add(nameid, "Height", PSETID_Note);
+	mapi_nameid_OOM_add(nameid, "NoteColor", PSETID_Note);
+	mapi_nameid_OOM_add(nameid, "NoteWidth", PSETID_Note);
+	mapi_nameid_OOM_add(nameid, "NoteHeight", PSETID_Note);
 	mapi_nameid_lid_add(nameid, 0x8510, PSETID_Common);
 	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);

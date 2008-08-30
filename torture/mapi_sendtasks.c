@@ -90,7 +90,7 @@ bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 
 	/* Build the list of named properties we want to set */
 	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "Status", PSETID_Task);
+	mapi_nameid_OOM_add(nameid, "TaskStatus", PSETID_Task);
 
 	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);

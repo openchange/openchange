@@ -87,7 +87,7 @@ bool torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 
 	/* Build the list of named properties we want to set */
 	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "FileAs", PSETID_Address);
+	mapi_nameid_OOM_add(nameid, "FileUnder", PSETID_Address);
 	mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
 
 

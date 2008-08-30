@@ -105,11 +105,11 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	nameid = mapi_nameid_new(mem_ctx);
 	mapi_nameid_OOM_add(nameid, "Location", PSETID_Appointment);
 	mapi_nameid_OOM_add(nameid, "BusyStatus", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "MeetingStatus", PSETID_Appointment);
+	mapi_nameid_OOM_add(nameid, "ApptStateFlags", PSETID_Appointment);
 	mapi_nameid_OOM_add(nameid, "CommonStart", PSETID_Common);
 	mapi_nameid_OOM_add(nameid, "CommonEnd", PSETID_Common);
 	mapi_nameid_OOM_add(nameid, "Label", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ReminderMinutesBeforeStart", PSETID_Common);
+	mapi_nameid_OOM_add(nameid, "ReminderDelta", PSETID_Common);
 
 	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);

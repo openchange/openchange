@@ -367,6 +367,9 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAP
 	struct GUID		*pt_clsid;
 	struct SBinary_short	pt_binary;
 	struct SBinary		*sbin;
+	struct mapi_SLPSTRArray	pt_slpstr;
+	struct SLPSTRArray	*slpstr;
+	uint32_t		i;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_pull);
 	ndr->offset = *offset;
@@ -411,7 +414,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAP
 		pt_filetime = talloc_zero(mem_ctx, struct FILETIME);
 		ndr_pull_hyper(ndr, NDR_SCALARS, (uint64_t *) pt_filetime);
 		*offset = ndr->offset;
-		return (void*) pt_filetime;
+		return (void *) pt_filetime;
 	case PT_CLSID:
 		pt_clsid = talloc_zero(mem_ctx, struct GUID);
 		ndr_pull_GUID(ndr, NDR_SCALARS, pt_clsid);
@@ -425,6 +428,17 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAP
 		sbin->cb = pt_binary.cb;
 		sbin->lpb = pt_binary.lpb;
 		return (void *) sbin;
+	case PT_MV_STRING8:
+		ndr_pull_mapi_SLPSTRArray(ndr, NDR_SCALARS, &pt_slpstr);
+		*offset = ndr->offset;
+		slpstr = talloc_zero(mem_ctx, struct SLPSTRArray);
+		slpstr->cValues = pt_slpstr.cValues;
+		slpstr->strings = talloc_array(mem_ctx, struct LPSTR *, pt_slpstr.cValues);
+		for (i = 0; i < slpstr->cValues; i++) {
+			slpstr->strings[i] = talloc_zero(mem_ctx, struct LPSTR);
+			slpstr->strings[i]->lppszA = talloc_strdup(mem_ctx, pt_slpstr.strings[i].lppszA);
+		}
+		return (const void *) slpstr;
 	default:
 		return NULL;
 	}	

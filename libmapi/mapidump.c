@@ -29,9 +29,11 @@
 
 _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 {
-	const char	*proptag;
-	const void	*data;
-	TALLOC_CTX	*mem_ctx = NULL;
+	const char			*proptag;
+	const void			*data;
+	TALLOC_CTX			*mem_ctx = NULL;
+	const struct SLPSTRArray	*SLPSTRArray = NULL;
+	uint32_t			i;
 
 	proptag = get_proptag_name(lpProp.ulPropTag);
 	if (!proptag) {
@@ -64,6 +66,14 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	case PT_LONG:
 		data = get_SPropValue_data(&lpProp);
 		printf("%s%s: %d\n", sep?sep:"", proptag, (*(const uint32_t *)data));
+		break;
+	case PT_MV_STRING8:
+		SLPSTRArray = (const struct SLPSTRArray *) get_SPropValue_data(&lpProp);
+		printf("%s%s: ", sep?sep:"", proptag);
+		for (i = 0; i < SLPSTRArray->cValues - 1; i++) {
+			printf("%s, ", SLPSTRArray->strings[i]->lppszA);
+		}
+		printf("%s\n", SLPSTRArray->strings[i]->lppszA);
 		break;
 	default:
 		break;
@@ -155,7 +165,7 @@ _PUBLIC_ void mapidump_date(struct mapi_SPropValue_array *properties, uint32_t m
 {
 	TALLOC_CTX		*mem_ctx;
 	NTTIME			time;
-	const struct FILETIME		*filetime;
+	const struct FILETIME	*filetime;
 	const char		*date;
 
 	mem_ctx = talloc_init("mapidump_date");

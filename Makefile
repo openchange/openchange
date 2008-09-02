@@ -105,7 +105,7 @@ re:: clean install
 # IDL compilation rules
 #################################################################
 
-idl: gen_ndr gen_ndr/ndr_exchange.h
+idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h
 
 exchange.idl: mapitags_enum.h mapicodes_enum.h
 
@@ -162,6 +162,8 @@ libmapi-clean::
 	rm -f libmapi/proto_private.h
 	rm -f gen_ndr/ndr_exchange*
 	rm -f gen_ndr/exchange.h
+	rm -f gen_ndr/ndr_property*
+	rm -f gen_ndr/property.h
 	rm -f ndr_mapi.o ndr_mapi.po
 	rm -f mapicodes_enum.h
 	rm -f mapitags_enum.h
@@ -211,6 +213,7 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
 	$(INSTALL) -m 0644 gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
+	$(INSTALL) -m 0644 gen_ndr/property.h $(DESTDIR)$(includedir)/gen_ndr/
 
 libmapi-installscript:
 	$(INSTALL) -d $(DESTDIR)$(datadir)/js
@@ -227,6 +230,7 @@ libmapi-uninstalllib:
 libmapi-uninstallheader:
 	rm -rf $(DESTDIR)$(includedir)/libmapi
 	rm -f $(DESTDIR)$(includedir)/gen_ndr/exchange.h
+	rm -f $(DESTDIR)$(includedir)/gen_ndr/property.h
 
 libmapi-uninstallscript:
 	rm -f $(DESTDIR)$(datadir)/js/oc_profiles.js
@@ -268,6 +272,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	ndr_mapi.po					\
 	gen_ndr/ndr_exchange.po				\
 	gen_ndr/ndr_exchange_c.po			\
+	gen_ndr/ndr_property.po				\
 	libmapi/socket/interface.po			\
 	libmapi/socket/netif.po				\
 	libmapi/utf8_convert.yy.po
@@ -910,6 +915,39 @@ bin/exchange2mbox:	utils/exchange2mbox.o				\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt  $(MAGIC_LIBS)
+
+
+###################
+# exchange2ical
+###################
+
+exchange2ical:		bin/exchange2ical
+
+exchange2ical-install:
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/exchange2ical $(DESTDIR)$(bindir)
+
+exchange2ical-uninstall:
+	rm -f $(DESTDIR)$(bindir)/exchange2ical
+
+exchange2ical-clean::
+	rm -f bin/exchange2ical
+	rm -f utils/exchange2ical/exchange2ical.o
+	rm -f utils/exchange2ical/exchange2ical_utils.o
+	rm -f utils/exchange2ical/exchange2ical_component.o
+	rm -f utils/exchange2ical/exchange2ical_property.o
+	rm -f utils/openchange-tools.o	
+
+clean:: exchange2ical-clean
+
+bin/exchange2ical:	utils/exchange2ical/exchange2ical.o		\
+			utils/exchange2ical/exchange2ical_component.o	\
+			utils/exchange2ical/exchange2ical_property.o	\
+			utils/exchange2ical/exchange2ical_utils.o	\
+			utils/openchange-tools.o			\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
 
 ###################

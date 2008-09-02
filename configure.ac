@@ -294,6 +294,7 @@ if test x"$enable_libpopt" = x"yes"; then
 	fi
 
 	OC_RULE_ADD(mapiprofile, TOOLS)
+	OC_RULE_ADD(exchange2ical, TOOLS)
 	OC_RULE_ADD(openchangemapidump, TOOLS)
 	OC_RULE_ADD(schemaIDGUID, TOOLS)
 	OC_RULE_ADD(locale_codepage, TOOLS)
@@ -420,6 +421,7 @@ OC_SETVAL(openchangeclient)
 OC_SETVAL(mapiprofile)
 OC_SETVAL(openchangepfadmin)
 OC_SETVAL(exchange2mbox)
+OC_SETVAL(exchange2ical)
 OC_SETVAL(mapitest)
 OC_SETVAL(openchangemapidump)
 OC_SETVAL(schemaIDGUID)
@@ -452,6 +454,7 @@ OpenChange Configuration (Please review)
 	     - mapiprofile:		$enable_mapiprofile
 	     - openchangepfadmin:	$enable_openchangepfadmin
 	     - exchange2mbox:		$enable_exchange2mbox
+	     - exchange2ical:		$enable_exchange2ical
 	     - mapitest:		$enable_mapitest
 	     - openchangemapidump:	$enable_openchangemapidump
 	     - schemaIDGUID:		$enable_schemaIDGUID

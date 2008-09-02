@@ -1,0 +1,156 @@
+#include "idl_types.h"
+
+import "misc.idl";
+import "exchange.idl";
+
+[
+	pointer_default(unique)
+]
+interface property
+{
+	typedef [enum16bit] enum {
+		RecurFrequency_Daily	= 0x200A,
+		RecurFrequency_Weekly	= 0x200B,
+		RecurFrequency_Monthly	= 0x200C,
+		RecurFrequency_Yearly	= 0x200D
+	} RecurFrequency;
+	
+	typedef [enum16bit] enum {
+		PatternType_Day		= 0x0,
+		PatternType_Week	= 0x1,
+		PatternType_Month	= 0x2,
+		PatternType_MonthNth	= 0x3,
+		PatternType_MonthEnd	= 0x4,
+		PatternType_HjMonth	= 0xA,
+		PatternType_HjMonthNth	= 0xB,
+		PatternType_HjMonthEnd	= 0xC
+	} PatternType;
+
+	typedef [enum16bit] enum {
+		CAL_DEFAULT			= 0x0,
+		CAL_GREGORIAN			= 0x1,
+		CAL_GREGORIAN_US		= 0x2,
+		CAL_JAPAN			= 0x3,
+		CAL_TAIWAN			= 0x4,
+		CAL_KOREA			= 0x5,
+		CAL_HIJRI			= 0x6,
+		CAL_THAI			= 0x7,
+		CAL_HEBREW			= 0x8,
+		CAL_GREGORIAN_ME_FRENCH		= 0x9,
+		CAL_GREGORIAN_ARABIC		= 0xA,
+		CAL_GREGORIAN_XLIT_ENGLISH	= 0xB,
+		CAL_GREGORIAN_XLIT_FRENCH	= 0xC,
+		CAL_LUNAR_JAPANESE		= 0xE,
+		CAL_CHINESE_LUNAR		= 0xF,
+		CAL_SAKA			= 0x10,
+		CAL_LUNAR_KOREAN		= 0x14
+	} CalendarType;
+
+	typedef [bitmap32bit] bitmap {
+		Su		= 0x00000001,
+		M		= 0x00000002,
+		Tu		= 0x00000004,
+		W		= 0x00000008,
+		Th		= 0x00000010,
+		F		= 0x00000020,
+		Sa		= 0x00000040
+	} WeekRecurrencePattern;
+
+	typedef [v1_enum] enum {
+		RecurrenceN_First	=	0x1,
+		RecurrenceN_Second	=	0x2,
+		RecurrenceN_Third	=	0x3,
+		RecurrenceN_Fourth	=	0x4,
+		RecurrenceN_Last	=	0x5
+	} RecurrenceN;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		WeekRecurrencePattern	WeekRecurrencePattern;
+		RecurrenceN		N;
+	} MonthRecurrencePattern;
+
+	typedef [nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(0x1)] WeekRecurrencePattern     		WeekRecurrencePattern;
+		[case(0x3)] MonthRecurrencePattern		MonthRecurrencePattern;
+		[case(0x4)] uint32				Day;
+		[case(0xA)] uint32				Day;
+		[case(0xB)] MonthRecurrencePattern		MonthRecurrencePattern;
+		[case(0xC)] uint32				Day;
+		[case(0x0)];
+		[default];
+	} PatternTypeSpecific;
+
+	typedef [v1_enum] enum {
+		END_AFTER_DATE		= 0x00002021,
+		END_AFTER_N_OCCURRENCES	= 0x00002022,
+		END_NEVER_END		= 0x00002023,
+		NEVER_END		= 0xFFFFFFFF
+	} EndType;
+
+	typedef [v1_enum] enum {
+		FirstDOW_Sunday		= 0x0,
+		FirstDOW_Monday		= 0x1,
+		FirstDOW_Tuesday	= 0x2,
+		FirstDOW_Wednesday	= 0x3,
+		FirstDOW_Thursday	= 0x4,
+		FirstDOW_Friday		= 0x5,
+		FirstDOW_Saturday	= 0x6
+	} FirstDOW;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint16						ReaderVersion;
+		uint16						WriterVersion;
+		RecurFrequency					RecurFrequency;
+		PatternType					PatternType;
+		CalendarType					CalendarType;
+		uint32						FirstDateTime;
+		uint32						Period;
+		uint32						SlidingFlag;
+		[switch_is(PatternType)] PatternTypeSpecific   	PatternTypeSpecific;
+		EndType						EndType;
+		uint32						OccurrenceCount;
+		FirstDOW       					FirstDOW;
+		uint32						DeletedInstanceCount;
+		uint32						DeletedInstanceDates[DeletedInstanceCount];
+		uint32						ModifiedInstanceCount;
+		uint32						ModifiedInstanceDates[ModifiedInstanceCount];
+		uint32						StartDate;
+		uint32						EndDate;
+	} RecurrencePattern;
+
+	/* [MS-DIF].pdf Section 2.3.6 */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint16	wYear;
+		uint16	wMonth;
+		uint16	wDayOfWeek;
+		uint16	wDay;
+		uint16	wHour;
+		uint16	wMinute;
+		uint16	wSecond;
+		uint16	wMilliseconds;
+	} SYSTEMTIME;
+
+	/* pidLidTimeZoneStruct */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32			lBias;
+		uint32			lStandardBias;
+		uint32			lDaylightBias;
+		uint16			wStandardYear;
+		SYSTEMTIME     		stStandardDate;
+		uint16			wDaylightYear;
+		SYSTEMTIME		stDaylightDate;
+	} TimeZoneStruct;
+
+	/* pidLidGlobalObjectId */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint8			ByteArrayID[16];
+		uint8			YH;
+		uint8			YL;
+ 		uint8			Month;
+ 		uint8			D;
+		FILETIME		CreationTime;
+		uint8			X[8];
+		uint32			Size;
+		uint8			Data[Size];
+	} GlobalObjectId;
+}

@@ -48,6 +48,7 @@
 
 /* OpenChange includes */
 #include <gen_ndr/exchange.h>
+#include <gen_ndr/property.h>
 
 #include <libmapi/dlinklist.h>
 #include <libmapi/version.h>

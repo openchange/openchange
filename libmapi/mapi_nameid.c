@@ -500,8 +500,10 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_name
 	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < mapi_nameid->count; i++) {
-		SPropTagArray->aulPropTag[i] = (SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
-			mapi_nameid->entries[i].propType;
+		if (mapi_nameid->entries[i].propType) {
+			SPropTagArray->aulPropTag[i] = (SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
+				mapi_nameid->entries[i].propType;
+		}
 	}
 	
 	return MAPI_E_SUCCESS;

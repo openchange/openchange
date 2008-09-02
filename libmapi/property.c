@@ -21,7 +21,7 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
 #include <libmapi/mapitags.h>
-#include <gen_ndr/ndr_exchange.h>
+#include <gen_ndr/ndr_property.h>
 #include <param.h>
 
 /**
@@ -232,7 +232,7 @@ _PUBLIC_ const void *find_mapi_SPropValue_data(
 	return NULL;
 }
 
-const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
+_PUBLIC_ const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 {
 	if (lpProp->ulPropTag == 0) {
 		return NULL;
@@ -294,6 +294,8 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 		return (const void *)(struct GUID *)&lpProps->value.lpguid;
 	case PT_BINARY:
 		return (const void *)&lpProps->value.bin;
+	case PT_MV_STRING8:
+		return (const void *)(struct SLPSTRArray *)&lpProps->value.MVszA;
 	default:
 		return NULL;
 	}
@@ -452,21 +454,20 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 		mapi_sprop->value.bin.cb = sprop->value.bin.cb;
 		mapi_sprop->value.bin.lpb = sprop->value.bin.lpb;
 		return (mapi_sprop->value.bin.cb + sizeof(uint16_t));
-
 	case PT_MV_STRING8:
 		{
-		uint32_t	i;
-		uint32_t	size = 0;
+			uint32_t	i;
+			uint32_t	size = 0;
 
-		mapi_sprop->value.MVszA.cValues = sprop->value.MVszA.cValues;
-		size += 4;
+			mapi_sprop->value.MVszA.cValues = sprop->value.MVszA.cValues;
+			size += 4;
 
-		mapi_sprop->value.MVszA.strings = talloc_array(global_mapi_ctx->mem_ctx, struct mapi_LPSTR, mapi_sprop->value.MVszA.cValues);
-		for (i = 0; i < mapi_sprop->value.MVszA.cValues; i++) {
-			mapi_sprop->value.MVszA.strings[i].lppszA = sprop->value.MVszA.strings[i]->lppszA;
-			size += strlen(mapi_sprop->value.MVszA.strings[i].lppszA) + 1;
-		}
-		return size;
+			mapi_sprop->value.MVszA.strings = talloc_array(global_mapi_ctx->mem_ctx, struct mapi_LPSTR, mapi_sprop->value.MVszA.cValues);
+			for (i = 0; i < mapi_sprop->value.MVszA.cValues; i++) {
+				mapi_sprop->value.MVszA.strings[i].lppszA = sprop->value.MVszA.strings[i]->lppszA;
+				size += strlen(mapi_sprop->value.MVszA.strings[i].lppszA) + 1;
+			}
+			return size;
 		}
 	}
 	return 0;
@@ -663,4 +664,143 @@ _PUBLIC_ bool set_SPropValue_proptag_date_timeval(struct SPropValue *lpProps, ui
 	filetime.dwHighDateTime = time >> 32;
 
 	return set_SPropValue_proptag(lpProps, aulPropTag, &filetime);
+}
+
+
+/**
+   \details Retrieve a RecurrencePattern structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the SBinary structure with non-mapped
+   reccurrence data
+
+   \return Allocated RecurrencePattern structure on success,
+   otherwise NULL
+
+   \note Developers must free the allocated RecurrencePattern when
+   finished.
+ */
+_PUBLIC_ struct RecurrencePattern *get_RecurrencePattern(TALLOC_CTX *mem_ctx, 
+struct SBinary *bin)
+{
+        struct RecurrencePattern	*RecurrencePattern = NULL;
+        struct ndr_pull			*ndr;
+        enum ndr_err_code		ndr_err_code;
+	
+        /* Sanity checks */
+        if (!bin) return NULL;
+        if (!bin->cb) return NULL;
+        if (!bin->lpb) return NULL;
+
+        ndr = talloc_zero(mem_ctx, struct ndr_pull);
+        ndr->offset = 0;
+        ndr->data = bin->lpb;
+        ndr->data_size = bin->cb;
+
+        ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+        ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
+        RecurrencePattern = talloc_zero(mem_ctx, struct RecurrencePattern);
+        ndr_err_code = ndr_pull_RecurrencePattern(ndr, NDR_SCALARS, RecurrencePattern);
+
+        talloc_free(ndr);
+
+        if (ndr_err_code != NDR_ERR_SUCCESS) {
+                talloc_free(RecurrencePattern);
+                return NULL;
+        }
+
+        return RecurrencePattern;
+}
+
+
+/**
+   \details Retrieve a TimeZoneStruct structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the SBinary structure with raw TimeZoneStruct
+   data
+
+   \return Allocated TimeZoneStruct structure on success, otherwise
+   NULL
+
+   \note Developers must free the allocated TimeZoneStruct when
+   finished.
+ */
+_PUBLIC_ struct TimeZoneStruct *get_TimeZoneStruct(TALLOC_CTX *mem_ctx, 
+						   struct SBinary *bin)
+{
+	struct TimeZoneStruct	*TimeZoneStruct = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
+	TimeZoneStruct = talloc_zero(mem_ctx, struct TimeZoneStruct);
+	ndr_err_code = ndr_pull_TimeZoneStruct(ndr, NDR_SCALARS, TimeZoneStruct);
+
+	talloc_free(ndr);
+	
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(TimeZoneStruct);
+		return NULL;
+	}
+
+	return TimeZoneStruct;
+}
+
+
+/**
+   \details Retrieve a GlobalObjectId structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+
+   \param bin pointer to the SBinary structure with raw GlobalObjectId
+   data
+
+   \return Allocated GlobalObjectId structure on success, otherwise
+   NULL
+
+   \note Developers must free the allocated GlobalObjectId when
+   finished.
+ */
+_PUBLIC_ struct GlobalObjectId *get_GlobalObjectId(TALLOC_CTX *mem_ctx,
+						   struct SBinary *bin)
+{
+	struct GlobalObjectId	*GlobalObjectId = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
+	GlobalObjectId = talloc_zero(mem_ctx, struct GlobalObjectId);
+	ndr_err_code = ndr_pull_GlobalObjectId(ndr, NDR_SCALARS, GlobalObjectId);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(GlobalObjectId);
+		return NULL;
+	}
+
+	return GlobalObjectId;
 }

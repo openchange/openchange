@@ -466,7 +466,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	res.res.resProperty.lpProp.ulPropTag = PR_SUBJECT;
 	res.res.resProperty.lpProp.value.lpszA = MT_MAIL_SUBJECT;
 
-	retval = Restrict(&(dst_contents), &res);
+	retval = Restrict(&(dst_contents), &res, NULL);
 	mapitest_print_retval(mt, "Restrict");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;

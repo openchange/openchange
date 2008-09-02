@@ -986,9 +986,23 @@ _PUBLIC_ enum MAPISTATUS Reset(mapi_object_t *obj_table)
 
    \param obj_table the object we are filtering
    \param res the filters we want to apply
+   \param TableStatus the table status result
+
+   TableStatus can either hold:
+	- TBLSTAT_COMPLETE (0x0)
+	- TBLSTAT_SORTING (0x9)
+	- TBLSTAT_SORT_ERROR (0xA)
+	- TBLSTAT_SETTING_COLS (0xB)
+	- TBLSTAT_SETCOL_ERROR (0xD)
+	- TBLSTAT_RESTRICTING (0xE)
+	- TBLSTAT_RESTRICT_ERROR (0xF)
+
 
    Unlike MAPI, you don't pass a null restriction argument to remove 
    the current restrictions. Use Reset() instead.
+
+   TableStatus should be set to NULL if you don't want to retrieve the
+   status of the table.
 
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
@@ -999,7 +1013,9 @@ _PUBLIC_ enum MAPISTATUS Reset(mapi_object_t *obj_table)
 
    \sa QueryRows, Reset
 */
-_PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table, struct mapi_SRestriction *res)
+_PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table, 
+				  struct mapi_SRestriction *res,
+				  uint8_t *TableStatus)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -1050,8 +1066,10 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table, struct mapi_SRestric
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	reply = &mapi_response->mapi_repl->u.mapi_Restrict;
-	/* TODO: there is some stuff to decode in the reply */
+	if (TableStatus) {
+		reply = &mapi_response->mapi_repl->u.mapi_Restrict;
+		*TableStatus = reply->TableStatus;
+	}
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

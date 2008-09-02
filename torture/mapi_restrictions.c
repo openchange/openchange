@@ -195,7 +195,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resProperty.lpProp.ulPropTag = PR_SUBJECT;
 	res.res.resProperty.lpProp.value.lpszA = "Same subject";
 
-	retval = Restrict(&obj_table, &res);
+	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
 	retval = GetRowCount(&obj_table, &total);
@@ -213,7 +213,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resBitmask.ulPropTag = PR_MESSAGE_FLAGS;
 	res.res.resBitmask.ulMask = MSGFLAG_READ;
 
-	retval = Restrict(&obj_table, &res);
+	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);
@@ -231,7 +231,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resSize.ulPropTag = PR_BODY;
 	res.res.resSize.size = 30;
 
-	retval = Restrict(&obj_table, &res);
+	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);
@@ -247,7 +247,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.rt = RES_EXIST;
 	res.res.resExist.ulPropTag = PR_HTML;
 
-	retval = Restrict(&obj_table, &res);
+	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);
@@ -265,7 +265,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resCompareProps.relop = RELOP_EQ;
 	res.res.resCompareProps.ulPropTag1 = PR_BODY;
 	res.res.resCompareProps.ulPropTag2 = PR_SUBJECT;
-	retval = Restrict(&obj_table, &res);
+	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);
@@ -283,7 +283,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resContent.ulPropTag = PR_BODY;
 	res.res.resContent.lpProp.ulPropTag = PR_BODY;
 	res.res.resContent.lpProp.value.lpszA = "openchange";
-	retval = Restrict(&obj_table, &res);
+	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetRowCount(&obj_table, &total);

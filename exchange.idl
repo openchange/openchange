@@ -1565,7 +1565,7 @@ System Attendant Private Interface
 	} Restrict_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		TableStatus	TableStatus;
 	} Restrict_repl;
 
 	/**************************/

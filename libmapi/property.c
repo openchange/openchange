@@ -583,7 +583,7 @@ _PUBLIC_ void mapi_SPropValue_array_named(mapi_object_t *obj,
 	uint16_t		count;
 	uint32_t		i;
 
-	mem_ctx = talloc_init("mapidump_named");
+	mem_ctx = talloc_init("mapi_SPropValue_array_named");
 
 	for (i = 0; i < props->cValues; i++) {
 		if ((props->lpProps[i].ulPropTag & 0xFFFF0000) > 0x80000000) {

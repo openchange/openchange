@@ -206,7 +206,7 @@ _PUBLIC_ bool mapitest_oxctable_Restrict(struct mapitest *mt)
 	res.res.resProperty.lpProp.ulPropTag = PR_SUBJECT;
 	res.res.resProperty.lpProp.value.lpszA = MT_MAIL_SUBJECT;
 
-	Restrict(&(obj_test_folder), &res);
+	Restrict(&(obj_test_folder), &res, NULL);
 	mapitest_print_retval(mt, "Restrict");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;

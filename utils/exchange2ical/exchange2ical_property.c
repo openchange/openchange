@@ -157,6 +157,9 @@ void ical_property_DTSTART(struct exchange2ical *exchange2ical)
 	struct tm	*tm;
 	char		outstr[200];
 
+	/* Sanity check */
+	if (!exchange2ical->apptStartWhole) return;
+
 	tm = get_tm_from_FILETIME(exchange2ical->apptStartWhole);
 
 	/* If this is an all-day appointment */
@@ -182,6 +185,9 @@ void ical_property_DTEND(struct exchange2ical *exchange2ical)
 {
 	struct tm	*tm;
 	char		outstr[200];
+
+	/* Sanity check */
+	if (!exchange2ical->apptEndWhole) return;
 
 	tm = get_tm_from_FILETIME(exchange2ical->apptEndWhole);
 

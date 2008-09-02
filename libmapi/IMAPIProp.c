@@ -37,6 +37,9 @@
    specified in mapitags, and the count of properties.  The function
    returns associated values within the SPropValue values pointer.
 
+   The array of MAPI property tags can be filled with both known and
+   named properties.
+
    \param obj the object to get properties on
    \param SPropTagArray an array of MAPI property tags
    \param lpProps the result of the query
@@ -60,17 +63,36 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct GetProps_req	request;
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray2 = NULL;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	enum MAPISTATUS		mapistatus;
 	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
 	mapi_ctx_t		*mapi_ctx;
-
+	bool			named = false;
+	
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("GetProps");
+
+	/* Named property mapping */
+	nameid = mapi_nameid_new(mem_ctx);
+	retval = mapi_nameid_lookup_SPropTagArray(nameid, SPropTagArray);
+	if (retval == MAPI_E_SUCCESS) {
+		named = true;
+		SPropTagArray2 = talloc_zero(mem_ctx, struct SPropTagArray);
+		retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray2);
+		MAPI_RETVAL_IF(retval, retval, mem_ctx);		
+		mapi_nameid_map_SPropTagArray(nameid, SPropTagArray, SPropTagArray2);
+		MAPIFreeBuffer(SPropTagArray2);
+
+	}
+	errno = 0;
 
 	/* Reset */
 	*PropCount = 0;
@@ -111,6 +133,11 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	/* Read the SPropValue array from data blob.
 	   fixme: replace the memory context by the object one.
 	*/
+	if (named == true) {
+		mapi_nameid_unmap_SPropTagArray(nameid, SPropTagArray);
+	}
+	talloc_free(nameid);
+
 	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)mapi_ctx->session,
 					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
 					   SPropTagArray, lpProps, PropCount, 
@@ -143,35 +170,51 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 
    \sa GetProps, GetPropList, GetPropsAll, DeleteProps, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *sprops, 
-				  unsigned long cn_props)
+_PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps, 
+				  unsigned long PropCount)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct SetProps_req	request;
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray = NULL;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
-	unsigned long		i_prop;
+	unsigned long		i;
 	struct mapi_SPropValue	*mapi_props;
 	mapi_ctx_t		*mapi_ctx;
+	bool			named = false;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("SetProps");
 
+	/* Named property mapping */
+	nameid = mapi_nameid_new(mem_ctx);
+	retval = mapi_nameid_lookup_SPropValue(nameid, lpProps, PropCount);
+	if (retval == MAPI_E_SUCCESS) {
+		named = true;
+		SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+		retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray);
+		MAPI_RETVAL_IF(retval, retval, mem_ctx);
+		mapi_nameid_map_SPropValue(nameid, lpProps, PropCount, SPropTagArray);
+		MAPIFreeBuffer(SPropTagArray);
+	}
+	errno = 0;
+
 	/* build the array */
-	request.values.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, cn_props);
+	request.values.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, PropCount);
 	mapi_props = request.values.lpProps;
-	for (i_prop = 0; i_prop < cn_props; i_prop++) {
-		size += cast_mapi_SPropValue(&mapi_props[i_prop], &sprops[i_prop]);
+	for (i = 0; i < PropCount; i++) {
+		size += cast_mapi_SPropValue(&mapi_props[i], &lpProps[i]);
 		size += sizeof(uint32_t);
 	}
 
-	request.values.cValues = cn_props;
+	request.values.cValues = PropCount;
 	size += sizeof(uint16_t);
 
 	/* add the size of the subcontext that will be added on ndr layer */
@@ -197,6 +240,11 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *sprops,
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	if (named == true) {
+		mapi_nameid_unmap_SPropValue(nameid, lpProps, PropCount);
+	}
+	talloc_free(nameid);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

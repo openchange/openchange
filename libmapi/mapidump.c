@@ -315,12 +315,12 @@ _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties, con
 	const uint8_t	       	*priv = NULL;
 	int			i;
 
-	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, 0x853A101e);
+	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PidLidContacts);
 	subject = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	timezone = (const char *)find_mapi_SPropValue_data(properties, 0x8234001e);
-	location = (const char *)find_mapi_SPropValue_data(properties, 0x8208001e);
-	status = (const uint32_t *)find_mapi_SPropValue_data(properties, 0x82050003);
-	priv = (const uint8_t *)find_mapi_SPropValue_data(properties, 0x8506000b);
+	timezone = (const char *)find_mapi_SPropValue_data(properties, PidLidTimeZoneDescription);
+	location = (const char *)find_mapi_SPropValue_data(properties, PidLidLocation);
+	status = (const uint32_t *)find_mapi_SPropValue_data(properties, PidLidBusyStatus);
+	priv = (const uint8_t *)find_mapi_SPropValue_data(properties, PidLidPrivate);
 
 	printf("|== %s ==| %s\n", subject?subject:"", id?id:"");
 	fflush(0);
@@ -390,7 +390,7 @@ _PUBLIC_ void mapidump_contact(struct mapi_SPropValue_array *properties, const c
 	const char      *business_fax = NULL;
 	const char      *business_home_page = NULL;
 
-	card_name = (const char *)find_mapi_SPropValue_data(properties, 0x8005001e);
+	card_name = (const char *)find_mapi_SPropValue_data(properties, PidLidFileUnder);
 	topic = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
 	company = (const char *)find_mapi_SPropValue_data(properties, PR_COMPANY_NAME);
 	title = (const char *)find_mapi_SPropValue_data(properties, PR_TITLE);
@@ -398,7 +398,7 @@ _PUBLIC_ void mapidump_contact(struct mapi_SPropValue_array *properties, const c
 	given_name = (const char *)find_mapi_SPropValue_data(properties, PR_GIVEN_NAME);
 	surname = (const char *)find_mapi_SPropValue_data(properties, PR_SURNAME);
 	department = (const char *)find_mapi_SPropValue_data(properties, PR_DEPARTMENT_NAME);
-	email = (const char *)find_mapi_SPropValue_data(properties, 0x8084001e);
+	email = (const char *)find_mapi_SPropValue_data(properties, PidLidEmail1OriginalDisplayName);
 	office_phone = (const char *)find_mapi_SPropValue_data(properties, PR_OFFICE_TELEPHONE_NUMBER);
 	home_phone = (const char *)find_mapi_SPropValue_data(properties, PR_HOME_TELEPHONE_NUMBER);
 	mobile_phone = (const char *)find_mapi_SPropValue_data(properties, PR_MOBILE_TELEPHONE_NUMBER);
@@ -510,13 +510,13 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties, const char
 	const uint8_t			*private;
 	int				i;
 
-	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, 0x853a101e);
+	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PidLidContacts);
 	subject = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
 	body = (const char *)find_mapi_SPropValue_data(properties, PR_BODY);
-	complete = (const double *)find_mapi_SPropValue_data(properties, 0x81020005);
-	status = (const uint32_t *)find_mapi_SPropValue_data(properties, 0x81010003);
+	complete = (const double *)find_mapi_SPropValue_data(properties, PidLidPercentComplete);
+	status = (const uint32_t *)find_mapi_SPropValue_data(properties, PidLidTaskStatus);
 	importance = (const uint32_t *)find_mapi_SPropValue_data(properties, PR_IMPORTANCE);
-	private = (const uint8_t *)find_mapi_SPropValue_data(properties, 0x8506000b);
+	private = (const uint8_t *)find_mapi_SPropValue_data(properties, PidLidPrivate);
 
 	printf("|== %s ==| %s\n", subject?subject:"", id?id:"");
 	fflush(0);
@@ -533,7 +533,7 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties, const char
 		printf("\tStatus: %s\n", get_task_status(*status));
 		fflush(0);
 		if (*status == olTaskComplete) {
-			mapidump_date(properties, 0x810F0040, "Date Completed");
+			mapidump_date(properties, PidLidTaskDateCompleted, "Date Completed");
 		}
 	}
 
@@ -542,8 +542,8 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties, const char
 		fflush(0);
 	}
 
-	mapidump_date(properties, 0x81050040,"Due Date");
-	mapidump_date(properties, 0x81040040, "Start Date");
+	mapidump_date(properties, PidLidTaskDueDate,"Due Date");
+	mapidump_date(properties, PidLidTaskStartDate, "Start Date");
 
 	if (private) {
 		printf("\tPrivate: %s\n", (*private == true)?"True":"False");

@@ -1009,8 +1009,6 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	*lpProps;
-	struct mapi_nameid	*nameid;
-	struct SPropTagArray	*SPropTagArray;
 	struct FILETIME		*start_date;
 	struct FILETIME		*end_date;
 	uint32_t		cValues = 0;
@@ -1019,27 +1017,6 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 	uint32_t		flag;
 	uint8_t			flag2;
 	
-	/* Build the list of named properties we want to set */
-	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "Location", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "BusyStatus", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ApptStateFlags", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "CommonStart", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "CommonEnd", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "Label", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ReminderDelta", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "Private", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "ApptStartWhole", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ApptEndWhole", PSETID_Appointment);
-
-	/* GetIDsFromNames and map property types */
-	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = GetIDsFromNames(obj_folder, nameid->count,
-				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
-	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
-	MAPIFreeBuffer(nameid);
-
 	cValues = 0;
 	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
 
@@ -1053,7 +1030,7 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_BODY, (const void *)oclient->pr_body);
 	}
 	if (oclient->location) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)oclient->location);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidLocation, (const void *)oclient->location);
 	}
 	if (oclient->dtstart) {
 		if (!strptime(oclient->dtstart, DATE_FORMAT, &tm)) {
@@ -1065,8 +1042,8 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 		start_date->dwLowDateTime = (nt << 32) >> 32;
 		start_date->dwHighDateTime = (nt >> 32);
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_START_DATE, (const void *)start_date);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[3], (const void *)start_date);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[8], (const void *) start_date);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidCommonStart, (const void *)start_date);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidAppointmentStartWhole, (const void *) start_date);
 	}
 	if (oclient->dtend) {
 		if (!strptime(oclient->dtend, DATE_FORMAT, &tm)) {
@@ -1078,8 +1055,8 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 		end_date->dwLowDateTime = (nt << 32) >> 32;
 		end_date->dwHighDateTime = (nt >> 32);
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_END_DATE, (const void *) end_date);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[4], (const void *) end_date);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[9], (const void *) end_date);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidCommonEnd, (const void *) end_date);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidAppointmentEndWhole, (const void *) end_date);
 	}
 
 	if (!oclient->update) {
@@ -1089,26 +1066,26 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_FLAGS, (const void *)&flag);
 
 		flag= MEETING_STATUS_NONMEETING;
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[2], (const void *) &flag);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidAppointmentStateFlags, (const void *) &flag);
 
 		flag = 30;
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[6], (const void *)&flag);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidReminderDelta, (const void *)&flag);
 		
 		/* WARNING needs to replace private */
 		flag2 = oclient->private;
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[7], (const void *)&flag2);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidPrivate, (const void *)&flag2);
 
 		oclient->label = (oclient->label == -1) ? 0 : oclient->label;
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[5], (const void *) &oclient->label);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidAppointmentColor, (const void *) &oclient->label);
 
 		oclient->busystatus = (oclient->busystatus == -1) ? 0 : oclient->busystatus;
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *) &oclient->busystatus);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidBusyStatus, (const void *) &oclient->busystatus);
 	} else {
 		if (oclient->busystatus != -1) {
-			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *) &oclient->busystatus);
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidBusyStatus, (const void *) &oclient->busystatus);
 		}
 		if (oclient->label != -1) {
-			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[5], (const void *) &oclient->label);
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidAppointmentColor, (const void *) &oclient->label);
 		}
 	}
 
@@ -1116,7 +1093,6 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 	lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_SENSITIVITY, (const void *)&flag);
 	
 	retval = SetProps(obj_message, lpProps, cValues);
-	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(lpProps);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
@@ -1186,9 +1162,6 @@ static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
 
 	/* Build the list of named properties we want to set */
 	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "FileUnder", PSETID_Address);
-	mapi_nameid_OOM_add(nameid, "Email1OriginalDisplayName", PSETID_Address);
-	mapi_nameid_OOM_add(nameid, "Email1EmailAddress", PSETID_Address);
 	mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
 
 	/* GetIDsFromNames and map property types */
@@ -1204,15 +1177,15 @@ static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
 
 	if (oclient->card_name) {
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidFileUnder, (const void *)oclient->card_name);
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)oclient->card_name);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[3], (const void *)oclient->card_name);
 	}
 	if (oclient->full_name) {
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_DISPLAY_NAME, (const void *)oclient->full_name);
 	}
 	if (oclient->email) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *)oclient->email);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[2], (const void *)oclient->email);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidEmail1OriginalDisplayName, (const void *)oclient->email);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidEmail1EmailAddress, (const void *)oclient->email);
 	}
 	if (!oclient->update) {
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Contact");
@@ -1281,27 +1254,11 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	*lpProps;
-	struct mapi_nameid	*nameid;
-	struct SPropTagArray	*SPropTagArray;
 	struct FILETIME		*start_date;
 	struct FILETIME		*end_date;
 	uint32_t		cValues = 0;
 	NTTIME			nt;
 	struct tm		tm;
-
-	/* Build the list of named properties we want to set */
-	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "TaskStatus", PSETID_Task);
-	mapi_nameid_OOM_add(nameid, "TaskStartDate", PSETID_Task);
-	mapi_nameid_OOM_add(nameid, "TaskDueDate", PSETID_Task);
-
-	/* GetIDsFromNames and map property types */
-	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = GetIDsFromNames(obj_folder, nameid->count,
-				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
-	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
-	MAPIFreeBuffer(nameid);
 
 	cValues = 0;
 	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
@@ -1320,7 +1277,7 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 		start_date = talloc(mem_ctx, struct FILETIME);
 		start_date->dwLowDateTime = (nt << 32) >> 32;
 		start_date->dwHighDateTime = (nt >> 32);		
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *)start_date);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidTaskStartDate, (const void *)start_date);
 	}
 
 	if (oclient->dtend) {
@@ -1332,7 +1289,7 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 		end_date = talloc(mem_ctx, struct FILETIME);
 		end_date->dwLowDateTime = (nt << 32) >> 32;
 		end_date->dwHighDateTime = (nt >> 32);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[2], (const void *)end_date);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidTaskDueDate, (const void *)end_date);
 	}
 
 	if (oclient->pr_body) {
@@ -1344,18 +1301,17 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 		oclient->importance = (oclient->importance == -1) ? 1 : oclient->importance;
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_IMPORTANCE, (const void *)&oclient->importance);
 		oclient->taskstatus = (oclient->taskstatus == -1) ? 0 : oclient->taskstatus;
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)&oclient->taskstatus);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidTaskStatus, (const void *)&oclient->taskstatus);
 	} else {
 		if (oclient->importance != -1) {
 			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_IMPORTANCE, (const void *)&oclient->importance);
 		}
 		if (oclient->taskstatus != -1) {
-			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)&oclient->taskstatus);
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidTaskStatus, (const void *)&oclient->taskstatus);
 		}
 	}
 
 	retval = SetProps(obj_message, lpProps, cValues);
-	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(lpProps);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
@@ -1418,24 +1374,8 @@ static enum MAPISTATUS note_SetProps(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	*lpProps;
-	struct mapi_nameid	*nameid;
-	struct SPropTagArray	*SPropTagArray;
 	uint32_t		cValues = 0;
 	uint32_t		value;
-
-	/* Build the list of named properties we want to set */
-	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_OOM_add(nameid, "NoteColor", PSETID_Note);
-	mapi_nameid_OOM_add(nameid, "NoteWidth", PSETID_Note);
-	mapi_nameid_OOM_add(nameid, "NoteHeight", PSETID_Note);
-	mapi_nameid_lid_add(nameid, 0x8510, PSETID_Common);
-	/* GetIDsFromNames and map property types */
-	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = GetIDsFromNames(obj_folder, nameid->count,
-				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
-	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
-	MAPIFreeBuffer(nameid);
 
 	cValues = 0;
 	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
@@ -1457,32 +1397,31 @@ static enum MAPISTATUS note_SetProps(TALLOC_CTX *mem_ctx,
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_ICON_INDEX, (const void *)&value);
 		
 		value = 272;
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[3], (const void *)&value);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidSideEffects, (const void *)&value);
 
 		oclient->color = (oclient->color == -1) ? olYellow : oclient->color;
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)&oclient->color);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidNoteColor, (const void *)&oclient->color);
 
 		oclient->width = (oclient->width == -1) ? 166 : oclient->width;
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *)&oclient->width);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidNoteWidth, (const void *)&oclient->width);
 
 		oclient->height = (oclient->height == -1) ? 200 : oclient->height;
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[2], (const void *)&oclient->height);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidNoteHeight, (const void *)&oclient->height);
 
 	} else {
 		if (oclient->color != -1) {
-			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)&oclient->color);
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidNoteColor, (const void *)&oclient->color);
 		}
 		if (oclient->width != -1) {
-			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[1], (const void *)&oclient->width);
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidNoteWidth, (const void *)&oclient->width);
 		}
 		if (oclient->height != -1) {
-			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[2], (const void *)&oclient->height);
+			lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidNoteHeight, (const void *)&oclient->height);
 		}
 	}
 
 	
 	retval = SetProps(obj_message, lpProps, cValues);
-	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(lpProps);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 	

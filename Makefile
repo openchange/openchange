@@ -157,7 +157,7 @@ libmapi-clean::
 	rm -f libmapi/version.h
 	rm -f libmapi/mapicode.c libmapi/mapicode.h
 	rm -f libmapi/mapitags.c libmapi/mapitags.h
-	rm -f libmapi/mapi_nameid_private.h
+	rm -f libmapi/mapi_nameid.h libmapi/mapi_nameid_private.h
 	rm -f libmapi/proto.h
 	rm -f libmapi/proto_private.h
 	rm -f gen_ndr/ndr_exchange*

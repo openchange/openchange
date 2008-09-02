@@ -90,133 +90,54 @@ static void exchange2ical_reset(struct exchange2ical *exchange2ical)
 	exchange2ical_init(exchange2ical->mem_ctx, exchange2ical);
 }
 
-static struct SPropTagArray *exchange2ical_set_properties(TALLOC_CTX *mem_ctx, mapi_object_t *obj_message)
-{
-	enum MAPISTATUS		retval;
-	struct mapi_nameid	*nameid;
-	struct SPropTagArray	*SPropTagArray = NULL;
-
-	/* Build the list of named properties we want to fetch */
-	nameid = mapi_nameid_new(mem_ctx);
-
-	mapi_nameid_string_add(nameid, "Keywords", PS_PUBLIC_STRINGS);
-
-	mapi_nameid_OOM_add(nameid, "Recurring", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ApptRecur", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ApptStateFlags", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "TimeZoneDesc", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "TimeZoneStruct", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "Contacts", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "ApptStartWhole", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ApptEndWhole", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ApptSubType", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "LID_OWNER_CRITICAL_CHANGE", PSETID_Meeting);
-	mapi_nameid_OOM_add(nameid, "Location", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ExceptionReplaceTime", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "NonSendableBCC", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "ApptSequence", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "BusyStatus", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "IntendedBusyStatus", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "CleanGlobalObjId", PSETID_Meeting);
-	mapi_nameid_OOM_add(nameid, "LID_ATTENDEE_CRITICAL_CHANGE", PSETID_Meeting);
-	mapi_nameid_OOM_add(nameid, "ApptReplyTime", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ApptNotAllowPropose", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "AllowExternCheck", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ApptLastSequence", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ApptSeqTime", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "AutoFillLocation", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "AutoStartCheck", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "CollaborateDoc", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ConfCheck", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ConfType", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "Directory", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "MWSURL", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "NetShowURL", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "OnlinePassord", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "OrgAlias", PSETID_Appointment);
-	mapi_nameid_OOM_add(nameid, "ReminderSet", PSETID_Common);
-	mapi_nameid_OOM_add(nameid, "ReminderDelta", PSETID_Common);
-
-	/* GetIDsFromNames and map property types */
-	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = GetIDsFromNames(obj_message, nameid->count, nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("GetIDsFromNames", GetLastError());
-		return NULL;
-	}
-	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
-	MAPIFreeBuffer(nameid);
-
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_MESSAGE_CLASS_UNICODE);
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_SENSITIVITY);
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_BODY_UNICODE);
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_CREATION_TIME);
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_LAST_MODIFICATION_TIME);
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_IMPORTANCE);
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_RESPONSE_REQUESTED);
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_SUBJECT_UNICODE);
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_OWNER_APPT_ID);
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_SENDER_NAME);
-	SPropTagArray_add(mem_ctx, SPropTagArray, PR_SENDER_EMAIL_ADDRESS);
-
-	return SPropTagArray;
-}
-
 static int exchange2ical_get_properties(TALLOC_CTX *mem_ctx, struct SRow *aRow, struct exchange2ical *exchange2ical)
 {
 	struct SBinary	*apptrecur;
 	struct SBinary	*TimeZoneStruct;
 
-	/* We don't have convenient way to retrieve MNID_STRING tags */
-	if ((aRow->lpProps[0].ulPropTag & 0xFFFF) == PT_ERROR) {
-		exchange2ical->Keywords = NULL;
-	} else {
-		exchange2ical->Keywords = (const struct SLPSTRArray *)get_SPropValue_data(&(aRow->lpProps[0]));
-	}
-
+	exchange2ical->Keywords = (const struct SLPSTRArray *) octool_get_propval(aRow, PidNameKeywords);
 	exchange2ical->method = get_ical_method((const char *) octool_get_propval(aRow, PR_MESSAGE_CLASS_UNICODE));
-
 	if (!exchange2ical->method) return -1;
 
-	exchange2ical->Recurring = (uint8_t *) octool_get_propval(aRow, 0x8223000B);
-	apptrecur = (struct SBinary *) octool_get_propval(aRow, 0x82160102);
+	exchange2ical->Recurring = (uint8_t *) octool_get_propval(aRow, PidLidRecurring);
+	apptrecur = (struct SBinary *) octool_get_propval(aRow, PidLidAppointmentRecur);
 	exchange2ical->RecurrencePattern = get_RecurrencePattern(mem_ctx, apptrecur);
 
-	exchange2ical->TimeZoneDesc = (const char *) octool_get_propval(aRow, 0x8234001F);
-	TimeZoneStruct = (struct SBinary *) octool_get_propval(aRow, 0x82330102);
+	exchange2ical->TimeZoneDesc = (const char *) octool_get_propval(aRow, PidLidTimeZoneDescription);
+	TimeZoneStruct = (struct SBinary *) octool_get_propval(aRow, PidLidTimeZoneStruct);
 	exchange2ical->TimeZoneStruct = get_TimeZoneStruct(mem_ctx, TimeZoneStruct);
 
-	exchange2ical->GlobalObjectId = (struct SBinary *) octool_get_propval(aRow, 0x00230102);
-	exchange2ical->apptStateFlags = (uint32_t *) octool_get_propval(aRow, 0x82170003);
-	exchange2ical->Contacts = (const struct SLPSTRArray *)octool_get_propval(aRow, 0x853A101E);
-	exchange2ical->apptStartWhole = (const struct FILETIME *)octool_get_propval(aRow, 0x820D0040);
-	exchange2ical->apptEndWhole = (const struct FILETIME *)octool_get_propval(aRow, 0x820E0040);
-	exchange2ical->apptSubType = (uint8_t *) octool_get_propval(aRow, 0x8215000B);
-	exchange2ical->OwnerCriticalChange = (const struct FILETIME *)octool_get_propval(aRow, 0x001A0040);
-	exchange2ical->Location = (const char *) octool_get_propval(aRow, 0x8208001F);
-	exchange2ical->ExceptionReplaceTime = (const struct FILETIME *)octool_get_propval(aRow, 0x82280040);
-	exchange2ical->NonSendableBcc = (const char *) octool_get_propval(aRow, 0x8538001F);
-	exchange2ical->Sequence = (uint32_t *) octool_get_propval(aRow, 0x82010003);
-	exchange2ical->BusyStatus = (uint32_t *) octool_get_propval(aRow, 0x82050003);
-	exchange2ical->IntendedBusyStatus = (uint32_t *) octool_get_propval(aRow, 0x82240003);
-	exchange2ical->AttendeeCriticalChange = (const struct FILETIME *) octool_get_propval(aRow, 0x00010040);
-	exchange2ical->apptReplyTime = (const struct FILETIME *)octool_get_propval(aRow, 0x82200040);
-	exchange2ical->NotAllowPropose = (uint8_t *) octool_get_propval(aRow, 0x825A000B);
-	exchange2ical->AllowExternCheck = (uint8_t *) octool_get_propval(aRow, 0x8246000B);
-	exchange2ical->apptLastSequence = (uint32_t *) octool_get_propval(aRow, 0x82030003);
-	exchange2ical->apptSeqTime = (const struct FILETIME *)octool_get_propval(aRow, 0x82020040);
-	exchange2ical->AutoFillLocation = (uint8_t *) octool_get_propval(aRow, 0x823A000B);
-	exchange2ical->AutoStartCheck = (uint8_t *) octool_get_propval(aRow, 0x8244000B);
-	exchange2ical->CollaborateDoc = (const char *) octool_get_propval(aRow, 0x8247001F);
-	exchange2ical->ConfCheck = (uint8_t *) octool_get_propval(aRow, 0x8240000B);
-	exchange2ical->ConfType = (uint32_t *) octool_get_propval(aRow, 0x82410003);
-	exchange2ical->Directory = (const char *) octool_get_propval(aRow, 0x8242001F);
-	exchange2ical->MWSURL = (const char *) octool_get_propval(aRow, 0x8209001F);
-	exchange2ical->NetShowURL = (const char *) octool_get_propval(aRow, 0x8248001F);
-	exchange2ical->OnlinePassword = (const char *) octool_get_propval(aRow, 0x8249001F);
-	exchange2ical->OrgAlias = (const char *) octool_get_propval(aRow, 0x8243001F);
-	exchange2ical->ReminderSet = (uint8_t *) octool_get_propval(aRow, 0x8503000B);
-	exchange2ical->ReminderDelta = (uint32_t *) octool_get_propval(aRow, 0x85010003);
+	exchange2ical->GlobalObjectId = (struct SBinary *) octool_get_propval(aRow, PidLidCleanGlobalObjectId);
+	exchange2ical->apptStateFlags = (uint32_t *) octool_get_propval(aRow, PidLidAppointmentStateFlags);
+	exchange2ical->Contacts = (const struct SLPSTRArray *)octool_get_propval(aRow, PidLidContacts);
+	exchange2ical->apptStartWhole = (const struct FILETIME *)octool_get_propval(aRow, PidLidAppointmentStartWhole);
+	exchange2ical->apptEndWhole = (const struct FILETIME *)octool_get_propval(aRow, PidLidAppointmentEndWhole);
+	exchange2ical->apptSubType = (uint8_t *) octool_get_propval(aRow, PidLidAppointmentSubType);
+	exchange2ical->OwnerCriticalChange = (const struct FILETIME *)octool_get_propval(aRow, PidLidOwnerCriticalChange);
+	exchange2ical->Location = (const char *) octool_get_propval(aRow, PidLidLocation);
+	exchange2ical->ExceptionReplaceTime = (const struct FILETIME *)octool_get_propval(aRow, PidLidExceptionReplaceTime);
+	exchange2ical->NonSendableBcc = (const char *) octool_get_propval(aRow, PidLidNonSendableBcc);
+	exchange2ical->Sequence = (uint32_t *) octool_get_propval(aRow, PidLidAppointmentSequence);
+	exchange2ical->BusyStatus = (uint32_t *) octool_get_propval(aRow, PidLidBusyStatus);
+	exchange2ical->IntendedBusyStatus = (uint32_t *) octool_get_propval(aRow, PidLidIntendedBusyStatus);
+	exchange2ical->AttendeeCriticalChange = (const struct FILETIME *) octool_get_propval(aRow, PidLidAttendeeCriticalChange);
+	exchange2ical->apptReplyTime = (const struct FILETIME *)octool_get_propval(aRow, PidLidAppointmentReplyTime);
+	exchange2ical->NotAllowPropose = (uint8_t *) octool_get_propval(aRow, PidLidAppointmentNotAllowPropose);
+	exchange2ical->AllowExternCheck = (uint8_t *) octool_get_propval(aRow, PidLidAllowExternalCheck);
+	exchange2ical->apptLastSequence = (uint32_t *) octool_get_propval(aRow, PidLidAppointmentLastSequence);
+	exchange2ical->apptSeqTime = (const struct FILETIME *)octool_get_propval(aRow, PidLidAppointmentSequenceTime);
+	exchange2ical->AutoFillLocation = (uint8_t *) octool_get_propval(aRow, PidLidAutoFillLocation);
+	exchange2ical->AutoStartCheck = (uint8_t *) octool_get_propval(aRow, PidLidAutoStartCheck);
+	exchange2ical->CollaborateDoc = (const char *) octool_get_propval(aRow, PidLidCollaborateDoc);
+	exchange2ical->ConfCheck = (uint8_t *) octool_get_propval(aRow, PidLidConferencingCheck);
+	exchange2ical->ConfType = (uint32_t *) octool_get_propval(aRow, PidLidConferencingType);
+	exchange2ical->Directory = (const char *) octool_get_propval(aRow, PidLidDirectory);
+	exchange2ical->MWSURL = (const char *) octool_get_propval(aRow, PidLidMeetingWorkspaceUrl);
+	exchange2ical->NetShowURL = (const char *) octool_get_propval(aRow, PidLidNetShowUrl);
+	exchange2ical->OnlinePassword = (const char *) octool_get_propval(aRow, PidLidOnlinePassword);
+	exchange2ical->OrgAlias = (const char *) octool_get_propval(aRow, PidLidOrganizerAlias);
+	exchange2ical->ReminderSet = (uint8_t *) octool_get_propval(aRow, PidLidReminderSet);
+	exchange2ical->ReminderDelta = (uint32_t *) octool_get_propval(aRow, PidLidReminderDelta);
 
 	exchange2ical->sensitivity = (uint32_t *) octool_get_propval(aRow, PR_SENSITIVITY);
 	exchange2ical->partstat = get_ical_partstat((const char *) octool_get_propval(aRow, PR_MESSAGE_CLASS_UNICODE));
@@ -242,7 +163,6 @@ int main(int argc, const char *argv[])
 	struct SRow			aRow;
 	struct SPropValue		*lpProps;
 	struct SPropTagArray		*SPropTagArray = NULL;
-	struct mapi_SPropValue_array	properties_array;
 	struct exchange2ical		exchange2ical;
 	mapi_object_t			obj_store;
 	mapi_object_t			obj_folder;
@@ -373,26 +293,59 @@ int main(int argc, const char *argv[])
 							   &exchange2ical.Recipients.SRowSet,
 							   &exchange2ical.Recipients.SPropTagArray);
 
-				SPropTagArray = exchange2ical_set_properties(mem_ctx, &obj_message);
+				SPropTagArray = set_SPropTagArray(mem_ctx, 0x2F,
+								  PidNameKeywords,
+								  PidLidRecurring,
+								  PidLidAppointmentRecur,
+								  PidLidAppointmentStateFlags,
+								  PidLidTimeZoneDescription,
+								  PidLidTimeZoneStruct,
+								  PidLidContacts,
+								  PidLidAppointmentStartWhole,
+								  PidLidAppointmentEndWhole,
+								  PidLidAppointmentSubType,
+								  PidLidOwnerCriticalChange,
+								  PidLidLocation,
+								  PidLidExceptionReplaceTime,
+								  PidLidNonSendableBcc,
+								  PidLidAppointmentSequence,
+								  PidLidBusyStatus,
+								  PidLidIntendedBusyStatus,
+								  PidLidCleanGlobalObjectId,
+								  PidLidAttendeeCriticalChange,
+								  PidLidAppointmentReplyTime,
+								  PidLidAppointmentNotAllowPropose,
+								  PidLidAllowExternalCheck,
+								  PidLidAppointmentLastSequence,
+								  PidLidAppointmentSequenceTime,
+								  PidLidAutoFillLocation,
+								  PidLidAutoStartCheck,
+								  PidLidCollaborateDoc,
+								  PidLidConferencingCheck,
+								  PidLidConferencingType,
+								  PidLidDirectory,
+								  PidLidMeetingWorkspaceUrl,
+								  PidLidNetShowUrl,
+								  PidLidOnlinePassword,
+								  PidLidOrganizerAlias,
+								  PidLidReminderSet,
+								  PidLidReminderDelta,
+								  PR_MESSAGE_CLASS_UNICODE,
+								  PR_SENSITIVITY,
+								  PR_BODY_UNICODE,
+								  PR_CREATION_TIME,
+								  PR_LAST_MODIFICATION_TIME,
+								  PR_IMPORTANCE,
+								  PR_RESPONSE_REQUESTED,
+								  PR_SUBJECT_UNICODE,
+								  PR_OWNER_APPT_ID,
+								  PR_SENDER_NAME,
+								  PR_SENDER_EMAIL_ADDRESS);
+
 				retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
 
 				if (retval == MAPI_E_SUCCESS) {
-					uint32_t j;
-					properties_array.cValues = count;
-					properties_array.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, count + 1);
-
-					for (j = 0; j < count; j++) {
-						cast_mapi_SPropValue(&properties_array.lpProps[j], &lpProps[j]);
-					}
-					mapi_SPropValue_array_named(&obj_message, &properties_array);
-					talloc_free(lpProps);
-					
-					lpProps = talloc_array(mem_ctx, struct SPropValue, count + 1);
-					for (j = 0; j < count; j++) {
-						cast_SPropValue(&properties_array.lpProps[j], &lpProps[j]);
-					}
-
 					aRow.ulAdrEntryPad = 0;
 					aRow.cValues = count;
 					aRow.lpProps = lpProps;

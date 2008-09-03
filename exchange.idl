@@ -696,7 +696,7 @@ System Attendant Private Interface
 			op_MAPI_SaveChangesAttachment  		= 0x25,
 			op_MAPI_SetReceiveFolder		= 0x26,
 			op_MAPI_GetReceiveFolder		= 0x27,
-			op_MAPI_Advise				= 0x29,
+			op_MAPI_RegisterNotification   		= 0x29,
 			op_MAPI_Notify				= 0x2a,
 			op_MAPI_OpenStream			= 0x2b,
 			op_MAPI_ReadStream			= 0x2c,
@@ -1847,38 +1847,38 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x29 */
 	typedef [bitmap16bit] bitmap {
-		fnevCriticalError	= 0x00000001,
-	        fnevNewMail		= 0x00000002,
-	        fnevObjectCreated       = 0x00000004,
-		fnevObjectDeleted       = 0x00000008,
-		fnevObjectModified      = 0x00000010,
-		fnevObjectMoved         = 0x00000020,
-		fnevObjectCopied        = 0x00000040,
-		fnevSearchComplete      = 0x00000080,
-		fnevTableModified       = 0x00000100,
-		fnevStatusObjectModified= 0x00000200,
-		fnevReservedForMapi     = 0x40000000,
-		fnevExtended            = 0x80000000
-	} ulEventType;
+		fnevCriticalError		= 0x0001,
+		fnevNewMail			= 0x0002,
+		fnevObjectCreated		= 0x0004,
+		fnevObjectDeleted		= 0x0008,
+		fnevObjectModified		= 0x0010,
+		fnevObjectMoved			= 0x0020,
+		fnevObjectCopied		= 0x0040,
+		fnevSearchComplete		= 0x0080,
+		fnevTableModified		= 0x0100,
+		fnevStatusObjectModified	= 0x0200,
+		fnevReserved			= 0x0400,
+		fnevTbit       			= 0x1000,
+		fnevUbit			= 0x2000,
+		fnevSbit			= 0x4000,
+		fnevMbit			= 0x8000
+	} NotificationFlags;
 
-	typedef struct {
-		hyper	entryid[2];
-	} notif_entryid;
-
-	typedef [nodiscriminant] union {
-		[case (0x0)] notif_entryid entryids;
-		[case (0x1)];
-	} notification_data;
-
-	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		handle_idx;
-		ulEventType    	notification_type;
-		uint8		layout;
-		[switch_is(layout)] notification_data	u;
-	} Advise_req;
+	typedef [nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(0x0)] hyper	ID;
+		[case(0x1)];
+	} hyperbool;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-	} Advise_repl;
+		uint8					handle_idx;
+		NotificationFlags			NotificationFlags;
+		boolean8				WantWholeStore;
+		[switch_is(WantWholeStore)] hyperbool	FolderId;
+		[switch_is(WantWholeStore)] hyperbool	MessageId;
+	} RegisterNotification_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} RegisterNotification_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x2a */
@@ -3028,7 +3028,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SaveChangesAttachment)] SaveChangesAttachment_req mapi_SaveChangesAttachment;
 		[case(op_MAPI_SetReceiveFolder)] SetReceiveFolder_req mapi_SetReceiveFolder;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_req mapi_GetReceiveFolder;
-		[case(op_MAPI_Advise)] Advise_req mapi_Advise;
+		[case(op_MAPI_RegisterNotification)] RegisterNotification_req mapi_RegisterNotification;
 		[case(op_MAPI_OpenStream)] OpenStream_req mapi_OpenStream;
 		[case(op_MAPI_ReadStream)] ReadStream_req mapi_ReadStream;
 		[case(op_MAPI_WriteStream)] WriteStream_req mapi_WriteStream;
@@ -3140,7 +3140,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SaveChangesAttachment)] SaveChangesAttachment_repl mapi_SaveChangesAttachment;
 		[case(op_MAPI_SetReceiveFolder)] SetReceiveFolder_repl mapi_SetReceiveFolder;
 		[case(op_MAPI_GetReceiveFolder)] GetReceiveFolder_repl mapi_GetReceiveFolder;
-		[case(op_MAPI_Advise)] Advise_repl mapi_Advise;
+		[case(op_MAPI_RegisterNotification)] RegisterNotification_repl mapi_RegisterNotification;
 		[case(op_MAPI_Notify)] Notify_repl mapi_Notify;
 		[case(op_MAPI_OpenStream)] OpenStream_repl mapi_OpenStream;
 		[case(op_MAPI_ReadStream)] ReadStream_repl mapi_ReadStream;
@@ -3282,14 +3282,14 @@ System Attendant Private Interface
 	} NOTIFKEY;
 
 	MAPISTATUS EcRRegisterPushNotification(
-               [in,out] policy_handle	*handle,
-               [in] ulEventType ulEventMask,
-	       [in, size_is(notif_len)] uint8 notifkey[*],
-               [in] uint16 notif_len,
-	       [in] uint32 unknown2,
-	       [in, size_is(sockaddr_len)] uint8 sockaddr[*],
-	       [in] uint16 sockaddr_len,
-	       [out,ref] uint32	*retval
+               [in,out] policy_handle		*handle,
+               [in] NotificationFlags		ulEventMask,
+	       [in,size_is(notif_len)] uint8	notifkey[*],
+               [in] uint16			notif_len,
+	       [in] uint32			unknown2,
+	       [in,size_is(sockaddr_len)] uint8 sockaddr[*],
+	       [in] uint16			sockaddr_len,
+	       [out,ref] uint32			*retval
 		);
 
 	/*****************/

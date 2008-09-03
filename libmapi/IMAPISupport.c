@@ -70,38 +70,48 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 				   uint32_t ulEventMask, 
 				   mapi_notify_callback_t notify_callback)
 {
-	TALLOC_CTX		*mem_ctx;
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct Advise_req	request;
-	struct notifications	*notification;
-	struct mapi_notify_ctx	*notify_ctx;
-	enum MAPISTATUS		retval;
-	NTSTATUS		status;
-	uint32_t		size = 0;
-	mapi_ctx_t		*mapi_ctx;
-	static uint32_t		ulConnection = 0;
+	TALLOC_CTX			*mem_ctx;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct RegisterNotification_req	request;
+	struct notifications		*notification;
+	struct mapi_notify_ctx		*notify_ctx;
+	enum MAPISTATUS			retval;
+	NTSTATUS			status;
+	uint32_t			size = 0;
+	mapi_ctx_t			*mapi_ctx;
+	static uint32_t			ulConnection = 0;
 
+	/* Sanity Checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!connection, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("Subscribe");
 
 	/* Fill the Subscribe operation */
 	request.handle_idx = 0x1;
-	request.notification_type = ulEventMask;
-	request.layout = 0x0; /* FIXME: Neither the right nor the correct usage */
-	memset(request.u.entryids.entryid, 0, sizeof (struct notif_entryid));
-	request.u.entryids.entryid[0] = mapi_object_get_id(obj);
-	size += 20;
+	size += sizeof (uint8_t);
+
+	request.NotificationFlags = ulEventMask;
+	size += sizeof (uint16_t);
+
+	request.WantWholeStore = 0x0;
+	size += sizeof (uint8_t);
+
+	request.FolderId.ID = mapi_object_get_id(obj);
+	size += sizeof (uint64_t);
+
+	request.MessageId.ID = 0x0;
+	size += sizeof (uint64_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_Advise;
+	mapi_req->opnum = op_MAPI_RegisterNotification;
 	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
-	mapi_req->u.mapi_Advise = request;
+	mapi_req->u.mapi_RegisterNotification = request;
 	size += 5;
 
 	/* Fill the mapi_request structure */

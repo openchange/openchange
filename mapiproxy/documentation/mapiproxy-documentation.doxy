@@ -511,7 +511,7 @@ the Exchange server replies to the EMSMDB connect request, Outlook will
 either keep using the same pool of RPC calls or downgrade.
 
 For example Outlook 2003 (default behavior) tests if the remote server
-supports the 2 new EMSMDB calls (EcDoConnectEx/EcDoRpcEx) introduced
+supports the 2 new EMSMDB calls (EcDoConnectEx/EcDoRpcExt2) introduced
 in Exchange 2003. If Exchange replies to the EcDoConnectEx request
 with a dcerpc_fault, it means the server does not support the RPC
 operation, presumably has a version before 2003, and Outlook needs to
@@ -519,7 +519,7 @@ downgrade its version in order to communicate with the server:
 <ul>
   <li>EcDoConnectEx (0xa) call
     <ul>
-       <li>On success, Outlook will use EcDoRpcEx (0xb) to handle MAPI traffic</li>
+       <li>On success, Outlook will use EcDoRpcExt2 (0xb) to handle MAPI traffic</li>
        <li>On failure (dcerpc_fault: nca_op_rng_error), Outlook calls
        EcDoConnect (0x0) and use EcDoRpc (0x2) to handle MAPI
        traffic</li>
@@ -540,7 +540,7 @@ In the meantime, if we reproduce this test with Outlook 2000 which
 doesn't support these 2 new RPC calls, Outlook will directly call
 EcDoConnect.
 
-The main difference between the EcDoConnectEx/EcDoRpcEx operations and
+The main difference between the EcDoConnectEx/EcDoRpcExt2 operations and
 the EcDoConnect/EcDoRpc operations is that the former use 
 both XOR 0xA5 obfuscation and LZ77 compression/Direct2 encoding;
 while the latter only use the XOR obfuscation to handle MAPI content.
@@ -592,7 +592,7 @@ function they will use by default:
 
 mapiproxy reproduces the Exchange 2000 behavior and prevents Outlook
 from communicating with the Exchange server using the
-EcDoConnectEx/EcDoRpcEx as described in Figure 2 below. When Outlook
+EcDoConnectEx/EcDoRpcExt2 as described in Figure 2 below. When Outlook
 sends an EcDoConnectEx request, mapiproxy does not relay the request to
 the remote Exchange server and immediately returns a dcerpc_fault to
 Outlook. Outlook, assuming the server doesn't support this call uses

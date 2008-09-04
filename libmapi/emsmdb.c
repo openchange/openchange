@@ -286,7 +286,7 @@ retry:
 /**
  * Register for notifications on a Exchange server
  */
-NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey, uint32_t ulEventMask)
+NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey, uint16_t ulEventMask)
 {
 	struct EcRRegisterPushNotification	request;
 	NTSTATUS				status;
@@ -308,22 +308,22 @@ NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey, uint32_t ulEven
 	request.in.handle = &emsmdb->handle;
 	request.in.ulEventMask = ulEventMask;
 
-	request.in.notifkey = talloc_array(emsmdb->mem_ctx, uint8_t, request.in.notif_len);
-	memcpy(request.in.notifkey, notifkey->ab, request.in.notif_len);
-	request.in.notif_len = notifkey->cb;
+	request.in.cbContext = notifkey->cb;
+	request.in.rgbContext = talloc_array(emsmdb->mem_ctx, uint8_t, request.in.cbContext);
+	memcpy(request.in.rgbContext, notifkey->ab, request.in.cbContext);
 
-	request.in.unknown2 = 0xffffffff;
+	request.in.grbitAdviseBits = 0xffffffff;
 
-	request.in.sockaddr = talloc_array(emsmdb->mem_ctx, uint8_t, sizeof (struct sockaddr));
+	request.in.rgCallbackAddress = talloc_array(emsmdb->mem_ctx, uint8_t, sizeof (struct sockaddr));
 	/* cp address family and length */
-	request.in.sockaddr[0] = (notify_ctx->addr->sa_family & 0xFF);
-	request.in.sockaddr[1] = (notify_ctx->addr->sa_family & 0xFF00) >> 8;
-	memcpy(&request.in.sockaddr[2], notify_ctx->addr->sa_data, 14);
-	request.in.sockaddr_len = sizeof (struct sockaddr);
+	request.in.rgCallbackAddress[0] = (notify_ctx->addr->sa_family & 0xFF);
+	request.in.rgCallbackAddress[1] = (notify_ctx->addr->sa_family & 0xFF00) >> 8;
+	memcpy(&request.in.rgCallbackAddress[2], notify_ctx->addr->sa_data, 14);
+	request.in.cbCallbackAddress = sizeof (struct sockaddr);
 
 	/* out */
 	request.out.handle = &handle;
-	request.out.retval = talloc_zero(emsmdb->mem_ctx, uint32_t);
+	request.out.hNotification = talloc_zero(emsmdb->mem_ctx, uint32_t);
 
 	status = dcerpc_EcRRegisterPushNotification(emsmdb->rpc_connection, emsmdb->mem_ctx, &request);
 	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
@@ -334,7 +334,7 @@ NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey, uint32_t ulEven
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (request.out.retval && *request.out.retval != MAPI_E_SUCCESS) {
+	if (request.out.hNotification && *request.out.hNotification != MAPI_E_SUCCESS) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 

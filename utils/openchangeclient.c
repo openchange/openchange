@@ -2083,26 +2083,138 @@ end:
 }
 
 
-static int callback(uint32_t ulEventType, void *notif_data, void *private_data)
+static int callback(uint16_t NotificationType, void *NotificationData, void *private_data)
 {
-	struct NEWMAIL_NOTIFICATION	*newmail;
+	struct NewMailNotification	*newmail;
+	struct HierarchyTableChange    	*htable;
+	struct ContentsTableChange     	*ctable;
+	struct ContentsTableChange     	*stable;
 	enum MAPISTATUS			retval;
 
-	switch(ulEventType) {
+	switch(NotificationType) {
 	case fnevNewMail:
-		printf("[+]New mail Received!!!!\n");
-		newmail = (struct NEWMAIL_NOTIFICATION *)notif_data;
+	case fnevNewMail|fnevMbit:
+		DEBUG(0, ("[+] New mail Received\n"));
+		newmail = (struct NewMailNotification *) NotificationData;
 		mapidump_newmail(newmail, "\t");
 		retval = openchangeclient_findmail((mapi_object_t *)private_data,
-						   newmail->lpParentID,
-						   newmail->lpEntryID);
+						   newmail->FID, newmail->MID);
 		mapi_errstr("openchangeclient_findmail", GetLastError());
 		break;
 	case fnevObjectCreated:
-		printf("[+]Object Created!!!\n");
+		DEBUG(0, ("[+] Folder Created\n"));
+		break;
+	case fnevObjectDeleted:
+		DEBUG(0, ("[+] Folder Deleted\n"));
+		break;
+	case fnevObjectModified:
+	case fnevTbit|fnevObjectModified:
+	case fnevUbit|fnevObjectModified:
+	case fnevTbit|fnevUbit|fnevObjectModified:
+		DEBUG(0, ("[+] Folder Modified\n"));
+		break;
+	case fnevObjectMoved:
+		DEBUG(0, ("[+] Folder Moved\n"));
+		break;
+	case fnevObjectCopied:
+		DEBUG(0, ("[+] Folder Copied\n"));
+		break;
+	case fnevSearchComplete:
+		DEBUG(0, ("[+] Search complete in search folder\n"));
+		break;
+	case fnevTableModified:
+		htable = (struct HierarchyTableChange *) NotificationData;
+		DEBUG(0, ("[+] Hierarchy Table: "));
+		switch (htable->TableEvent) {
+		case TABLE_CHANGED:
+			DEBUG(0, (" changed\n"));
+			break;
+		case TABLE_ROW_ADDED:
+			DEBUG(0, ("row added\n"));
+			break;
+		case TABLE_ROW_DELETED:
+			DEBUG(0, ("row deleted\n"));
+			break;
+		case TABLE_ROW_MODIFIED:
+			DEBUG(0, ("row modified\n"));
+			break;
+		case TABLE_RESTRICT_DONE:
+			DEBUG(0, ("restriction done\n"));
+			break;
+		default:
+			DEBUG(0, ("\n"));
+			break;
+		}
+		break;
+	case fnevStatusObjectModified:
+		DEBUG(0, ("[+] ICS Notification\n"));
+		break;
+	case fnevMbit|fnevObjectCreated:
+		DEBUG(0, ("[+] Message created\n"));
+		break;
+	case fnevMbit|fnevObjectDeleted:
+		DEBUG(0, ("[+] Message deleted\n"));
+	case fnevMbit|fnevObjectModified:
+		DEBUG(0, ("[+] Message modified\n"));
+	case fnevMbit|fnevObjectMoved:
+		DEBUG(0, ("[+] Message moved\n"));
+	case fnevMbit|fnevObjectCopied:
+		DEBUG(0, ("[+] Message copied\n"));
+	case fnevMbit|fnevTableModified:
+		ctable = (struct ContentsTableChange *) NotificationData;
+		DEBUG(0, ("[+] Contents Table: "));
+		switch (ctable->TableEvent) {
+		case TABLE_CHANGED:
+			DEBUG(0, (" changed\n"));
+			break;
+		case TABLE_ROW_ADDED:
+			DEBUG(0, ("row added\n"));
+			break;
+		case TABLE_ROW_DELETED:
+			DEBUG(0, ("row deleted\n"));
+			break;
+		case TABLE_ROW_MODIFIED:
+			DEBUG(0, ("row modified\n"));
+			break;
+		case TABLE_RESTRICT_DONE:
+			DEBUG(0, ("restriction done\n"));
+			break;
+		default:
+			DEBUG(0, ("\n"));
+			break;
+		}
+		break;
+	case fnevMbit|fnevSbit|fnevObjectDeleted:
+		DEBUG(0, ("[+] A message is no longer part of a search folder\n"));
+		break;
+	case fnevMbit|fnevSbit|fnevObjectModified:
+		DEBUG(0, ("[+] A property on a message in a search folder has changed\n"));
+	case fnevMbit|fnevSbit|fnevTableModified:
+		stable = (struct ContentsTableChange *) NotificationData;
+		DEBUG(0, ("[+] Search Table: "));
+		switch (stable->TableEvent) {
+		case TABLE_CHANGED:
+			DEBUG(0, (" changed\n"));
+			break;
+		case TABLE_ROW_ADDED:
+			DEBUG(0, ("row added\n"));
+			break;
+		case TABLE_ROW_DELETED:
+			DEBUG(0, ("row deleted\n"));
+			break;
+		case TABLE_ROW_MODIFIED:
+			DEBUG(0, ("row modified\n"));
+			break;
+		case TABLE_RESTRICT_DONE:
+			DEBUG(0, ("restriction done\n"));
+			break;
+		default:
+			DEBUG(0, ("\n"));
+			break;
+		}
 		break;
 	default:
-		printf("[+] Unsupported notification (%d)\n", ulEventType);
+		printf("[+] Unsupported notification (0x%x)\n", NotificationType);
 		break;
 	}
 
@@ -2116,7 +2228,7 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 	mapi_object_t	obj_inbox;
 	mapi_id_t	fid;
 	uint32_t	ulConnection;
-	uint32_t	ulEventMask;
+	uint16_t	ulEventMask;
 
 	/* Register notification */
 	retval = RegisterNotification(0);
@@ -2137,7 +2249,10 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 	}
 
 	/* subscribe Inbox to receive newmail notifications */
-	ulEventMask = fnevNewMail;
+	ulEventMask = fnevNewMail|fnevObjectCreated|fnevObjectDeleted|
+		fnevObjectModified|fnevObjectMoved|fnevObjectCopied|
+		fnevSearchComplete|fnevTableModified|fnevStatusObjectModified;
+	retval = Subscribe(obj_store, &ulConnection, ulEventMask, (mapi_notify_callback_t)callback);
 	retval = Subscribe(&obj_inbox, &ulConnection, ulEventMask, (mapi_notify_callback_t)callback);
 	if (retval != MAPI_E_SUCCESS) return false;
 

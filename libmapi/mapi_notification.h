@@ -25,14 +25,14 @@
  * - void * = notification data
  * - void * = private data pointer
 */
-typedef int (*mapi_notify_callback_t)(uint32_t, void *, void *);
+typedef int (*mapi_notify_callback_t)(uint16_t, void *, void *);
 
 struct notifications {
-	uint32_t		ulConnection;	/* connection number */
-	uint32_t		ulEventMask;	/* events mask associated */
-	mapi_id_t		parentID;	/* parent EntryID == FID here */
-	mapi_notify_callback_t	callback;     	/* callback to run when */
-	struct mapi_object     	obj_notif;	/* notification object */
+	uint32_t		ulConnection;		/* connection number */
+	uint32_t		NotificationFlags;	/* events mask associated */
+	mapi_id_t		parentID;		/* parent EntryID == FID here */
+	mapi_notify_callback_t	callback;		/* callback to run when */
+	struct mapi_object     	obj_notif;		/* notification object */
 	struct notifications	*prev;
 	struct notifications	*next;
 };

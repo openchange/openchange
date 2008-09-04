@@ -67,7 +67,7 @@
    GetLastError
 */
 _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection, 
-				   uint32_t ulEventMask, 
+				   uint16_t NotificationFlags, 
 				   mapi_notify_callback_t notify_callback)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -94,7 +94,7 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	request.handle_idx = 0x1;
 	size += sizeof (uint8_t);
 
-	request.NotificationFlags = ulEventMask;
+	request.NotificationFlags = NotificationFlags;
 	size += sizeof (uint16_t);
 
 	request.WantWholeStore = 0x0;
@@ -141,7 +141,7 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	mapi_object_init(&notification->obj_notif);
 	mapi_object_set_handle(&notification->obj_notif, mapi_response->handles[1]);
 
-	notification->ulEventMask = ulEventMask;
+	notification->NotificationFlags = NotificationFlags;
 	notification->callback = notify_callback;
 
 	DLIST_ADD(notify_ctx->notifications, notification);
@@ -208,29 +208,93 @@ static enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
 					   void *private_data)
 {
 	struct notifications	*notification;
-	void			*notif_data;
+	void			*NotificationData;
 	uint32_t		i;
 
 	if (!mapi_response || !mapi_response->mapi_repl) return MAPI_E_INVALID_PARAMETER;
 
 	for (i = 0; mapi_response->mapi_repl[i].opnum; i++) {
-		switch(mapi_response->mapi_repl[i].u.mapi_Notify.ulEventType) {
-		case fnevNewMail:
-			notif_data = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.info.newmail);
-			break;
-		default:
-			notif_data = NULL;
-		}
-		notification = notify_ctx->notifications;
-		while (notification->ulConnection) {
-			if (notification->ulEventMask & mapi_response->mapi_repl[i].u.mapi_Notify.ulEventType) {
-				if (notification->callback) {
-					notification->callback(mapi_response->mapi_repl[i].u.mapi_Notify.ulEventType,
-							       (void *)notif_data,
-							       (void *)private_data);
-				}
+		if (mapi_response->mapi_repl[i].opnum == op_MAPI_Notify) {
+			switch(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationType) {
+			case fnevNewMail:
+			case fnevMbit|fnevNewMail:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.NewMailNotification);
+				break;
+			case fnevObjectCreated:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.FolderCreatedNotification);
+				break;
+			case fnevObjectDeleted:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.FolderDeletedNotification);
+				break;
+			case fnevObjectModified:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.FolderModifiedNotification_10);
+				break;
+			case fnevObjectMoved:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.FolderMoveNotification);
+				break;
+			case fnevObjectCopied:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.FolderCopyNotification);
+				break;			
+			case fnevSearchComplete:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.SearchCompleteNotification);
+				break;
+			case fnevTableModified:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.HierarchyTableChange);
+				break;
+			case fnevStatusObjectModified:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.IcsNotification);
+				break;
+			case fnevTbit|fnevObjectModified:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.FolderModifiedNotification_1010);
+				break;
+			case fnevUbit|fnevObjectModified:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.FolderModifiedNotification_2010);
+				break;
+			case fnevTbit|fnevUbit|fnevObjectModified:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.FolderModifiedNotification_3010);
+				break;
+			case fnevMbit|fnevObjectCreated:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.MessageCreatedNotification);
+				break;
+			case fnevMbit|fnevObjectDeleted:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.MessageDeletedNotification);
+				break;
+			case fnevMbit|fnevObjectModified:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.MessageModifiedNotification);
+				break;
+			case fnevMbit|fnevObjectMoved:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.MessageMoveNotification);
+				break;
+			case fnevMbit|fnevObjectCopied:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.MessageCopyNotification);
+				break;
+			case fnevMbit|fnevTableModified:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.ContentsTableChange);
+				break;
+			case fnevMbit|fnevSbit|fnevObjectDeleted:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.SearchMessageRemovedNotification);
+				break;
+			case fnevMbit|fnevSbit|fnevObjectModified:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.SearchMessageModifiedNotification);
+				break;
+			case fnevMbit|fnevSbit|fnevTableModified:
+				NotificationData = (void *)&(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationData.SearchTableChange);
+				break;			
+			default:
+				NotificationData = NULL;
+				break;
 			}
-			notification = notification->next;
+			notification = notify_ctx->notifications;
+			while (notification->ulConnection) {
+				if (notification->NotificationFlags & mapi_response->mapi_repl[i].u.mapi_Notify.NotificationType) {
+					if (notification->callback) {
+						notification->callback(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationType,
+								       (void *)NotificationData,
+								       (void *)private_data);
+					}
+				}
+				notification = notification->next;
+			}
 		}
 	}
 	return MAPI_E_SUCCESS;
@@ -286,6 +350,7 @@ _PUBLIC_ enum MAPISTATUS MonitorNotification(void *private_data)
 				err = -1;
 			} else {
 				retval = ProcessNotification(notify_ctx, mapi_response, private_data);
+				MAPI_RETVAL_IF(retval, retval, NULL);
 			}
 		}
 		if (err <= 0) is_done = 1;

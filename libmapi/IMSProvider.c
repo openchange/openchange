@@ -221,8 +221,7 @@ enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_
    UDP port to receive Exchange (server side) notifications and
    configures the server to send notifications on this port.
 
-   \param ulEventMask the mask of events to provide notifications
-   for. This should be set to 0 for the moment.
+   \param ulEventMask the mask of events to provide notifications for.
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -234,7 +233,7 @@ enum MAPISTATUS Logon(struct mapi_provider *provider, enum PROVIDER_ID provider_
 
    \sa Subscribe, Unsubscribe, MonitorNotification, GetLastError 
 */
-_PUBLIC_ enum MAPISTATUS RegisterNotification(uint32_t ulEventMask)
+_PUBLIC_ enum MAPISTATUS RegisterNotification(uint16_t ulEventMask)
 {
 	NTSTATUS		status;
 	struct emsmdb_context	*emsmdb;

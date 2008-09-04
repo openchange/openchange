@@ -30,14 +30,14 @@
 #include <samba/popt.h>
 
 
-static int callback(uint32_t ulEventType, void *notif_data, void *private_data)
+static int callback(uint32_t NotificationType, void *NotificationData, void *private_data)
 {
-	struct NEWMAIL_NOTIFICATION	*newmail;
+	struct NewMailNotification	*newmail;
 
-	switch(ulEventType) {
+	switch(NotificationType) {
 	case fnevNewMail:
 		printf("[+]New mail Received!!!!\n");
-		newmail = (struct NEWMAIL_NOTIFICATION *)notif_data;
+		newmail = (struct NewMailNotification *) NotificationData;
 		mapidump_newmail(newmail, "\t");
 		break;
 	case fnevObjectCreated:

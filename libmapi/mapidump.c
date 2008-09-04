@@ -614,15 +614,19 @@ _PUBLIC_ void mapidump_msgflags(uint32_t MsgFlags, const char *sep)
 }
 
 
-_PUBLIC_ void mapidump_newmail(struct NEWMAIL_NOTIFICATION *newmail, const char *sep)
+_PUBLIC_ void mapidump_newmail(struct NewMailNotification *newmail, const char *sep)
 {
-	printf("%sParent Entry ID: 0x%llx\n", sep?sep:"", newmail->lpParentID);
+	printf("%sParent Entry ID: 0x%llx\n", sep?sep:"", newmail->FID);
 	fflush(0);
-	printf("%sMessage Entry ID: 0x%llx\n", sep?sep:"", newmail->lpEntryID);
+	printf("%sMessage Entry ID: 0x%llx\n", sep?sep:"", newmail->MID);
 	fflush(0);
 	printf("%sMessage flags:\n", sep?sep:"");
 	fflush(0);
-	mapidump_msgflags(newmail->MsgFlags, sep);
-	printf("%sMessage Class: %s\n", sep?sep:"", newmail->lpszMessageClass);
+	mapidump_msgflags(newmail->MessageFlags, sep);
+	if (newmail->UnicodeFlag == 0x0) {
+		printf("%sMessage Class: %s\n", sep?sep:"", newmail->MessageClass.lpszA);
+	} else {
+		printf("%sMessage Class: %s\n", sep?sep:"", newmail->MessageClass.lpszW);
+	}
 	fflush(0);
 }

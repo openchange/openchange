@@ -167,7 +167,7 @@ static void mapiproxy_op_unbind(struct dcesrv_connection_context *context, const
 
 
 /**
-   \detail This is the function called when mapiproxy receives a
+   \details This is the function called when mapiproxy receives a
    request. The request has already been extracted and its information
    filled into structures
 
@@ -221,7 +221,7 @@ static NTSTATUS mapiproxy_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC
 
 
 /**
-   \detail This is the function called when mapiproxy receive a
+   \details This is the function called when mapiproxy receive a
    response. The response has already been extracted and its
    information filled into structures
 

@@ -622,7 +622,6 @@ static NTSTATUS cache_push_OpenAttach(struct dcesrv_call_state *dce_call,
    \param mem_ctx the memory context
    \param mapi_req reference to the OpenStream MAPI request
    \param EcDoRpc pointer to the current EcDoRpc operation
-   \param context_id the session context identifier
    
    \return NT_STATUS_OK on success, otherwise NT_STATUS_NO_MEMORY
  */

@@ -117,7 +117,7 @@ _PUBLIC_ const char *RfrGetNewDSA(const char *server, const char *userDN)
 /**
    \details Returns the FQDN of the NSPI server corresponding to a DN
 
-   \param pointer on pointer on the server FQDN returned
+   \param serverFQDN pointer to the server FQDN string (return value)
 
    \return MAPI_E_SUCCESS on success, otherwise a MAPI error and
    serverFQDN content set to NULL.

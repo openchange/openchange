@@ -480,10 +480,10 @@ enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   NspiSeekEntries 
 */
-void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiSeekEntries *r)
+enum MAPISTATUS dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct NspiSeekEntries *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -500,18 +500,18 @@ enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   NspiResortRestriction 
 */
-void dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiResortRestriction *r)
+enum MAPISTATUS dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					     struct NspiResortRestriction *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  NspiDNToEph 
+  NspiDNToMId
 */
-enum MAPISTATUS dcesrv_NspiDNToEph(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiDNToEph *r)
+enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				   struct NspiDNToMId *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -520,10 +520,10 @@ enum MAPISTATUS dcesrv_NspiDNToEph(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   NspiGetPropList 
 */
-void dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetPropList *r)
+enum MAPISTATUS dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct NspiGetPropList *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -538,30 +538,30 @@ enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call, TALLOC_C
 
 
 /* 
-  NspiCompareDNTs 
+  NspiCompareMIds 
 */
-void dcesrv_NspiCompareDNTs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiCompareDNTs *r)
+enum MAPISTATUS dcesrv_NspiCompareMIds(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct NspiCompareMIds *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
   NspiModProps 
 */
-void dcesrv_NspiModProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiModProps *r)
+enum MAPISTATUS dcesrv_NspiModProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				    struct NspiModProps *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  NspiGetHierarchyInfo 
+  NspiGetSpecialTable 
 */
-enum MAPISTATUS dcesrv_NspiGetHierarchyInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetHierarchyInfo *r)
+enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct NspiGetSpecialTable *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
@@ -580,50 +580,50 @@ enum MAPISTATUS dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call, T
 /* 
   NspiModLInkAtt 
 */
-void dcesrv_NspiModLInkAtt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiModLInkAtt *r)
+enum MAPISTATUS dcesrv_NspiModLinkAtt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				      struct NspiModLinkAtt *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
   NspiDeleteEntries 
 */
-void dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiDeleteEntries *r)
+enum MAPISTATUS dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					 struct NspiDeleteEntries *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
   NspiQueryColumns 
 */
-void dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiQueryColumns *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
   NspiGetNamesFromIDs 
 */
-void dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetNamesFromIDs *r)
+enum MAPISTATUS dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					   struct NspiGetNamesFromIDs *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
   NspiGetIDsFromNames 
 */
-void dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetIDsFromNames *r)
+enum MAPISTATUS dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					   struct NspiGetIDsFromNames *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 

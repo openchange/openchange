@@ -22,6 +22,8 @@
 #ifndef __MAPITEST_H__
 #define	__MAPITEST_H__
 
+#include <libmapi/libmapi.h>
+
 #include <errno.h>
 #include <err.h>
 
@@ -69,6 +71,7 @@ struct mapitest_suite {
 
 struct mapitest {
 	TALLOC_CTX		*mem_ctx;
+	struct mapi_session	*session;
 	bool			confidential;
 	bool			no_server;
 	bool			mapi_all;

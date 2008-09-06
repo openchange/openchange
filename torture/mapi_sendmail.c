@@ -50,7 +50,7 @@ bool torture_rpc_mapi_sendmail(struct torture_context *torture)
 	mapi_id_t		id_outbox;
 	struct mapi_session	*session;
 	struct SRowSet		*SRowSet = NULL;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	SPropValue;
 	struct SPropValue	props[CN_MSG_PROPS];

@@ -488,7 +488,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	SPropValue;
 	struct SRowSet		*SRowSet = NULL;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	char			**usernames = NULL;
 	int			*recipClass = NULL;
 	uint32_t		count;
@@ -530,10 +530,10 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 	count = 0;
 	counter = 0;
 	for (i = 0; usernames[i]; i++) {
-		if (flaglist->ulFlags[count] == MAPI_UNRESOLVED) {
+		if (flaglist->aulPropTag[count] == MAPI_UNRESOLVED) {
 			set_external_recipients(mem_ctx, SRowSet, usernames[i], recipClass[i]);
 		}
-		if (flaglist->ulFlags[count] == MAPI_RESOLVED) {
+		if (flaglist->aulPropTag[count] == MAPI_RESOLVED) {
 			SetRecipientType(&(SRowSet->aRow[counter]), recipClass[i]);
 			counter++;
 		}

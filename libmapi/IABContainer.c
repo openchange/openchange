@@ -59,7 +59,7 @@
    
    \sa MAPILogonProvider, GetLastError
  */
-_PUBLIC_ enum MAPISTATUS ResolveNames(const char **usernames, struct SPropTagArray *props, struct SRowSet **rowset, struct FlagList **flaglist, uint32_t flags)
+_PUBLIC_ enum MAPISTATUS ResolveNames(const char **usernames, struct SPropTagArray *props, struct SRowSet **rowset, struct SPropTagArray **flaglist, uint32_t flags)
 {
 	struct nspi_context	*nspi;
 	enum MAPISTATUS		retval;
@@ -75,7 +75,7 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(const char **usernames, struct SPropTagArr
 	nspi = (struct nspi_context *)mapi_ctx->session->nspi->ctx;
 
 	*rowset = talloc_zero(mapi_ctx->session, struct SRowSet);
-	*flaglist = talloc_zero(mapi_ctx->session, struct FlagList);
+	*flaglist = talloc_zero(mapi_ctx->session, struct SPropTagArray);
 
 	switch (flags) {
 	case MAPI_UNICODE:
@@ -116,7 +116,6 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct SPropTagArray *SPropTagArray, struct
 	struct SRowSet		*srowset;
 	enum MAPISTATUS		retval;
 	mapi_ctx_t		*mapi_ctx;
-	uint32_t		instance_key = 0;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
@@ -128,19 +127,16 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct SPropTagArray *SPropTagArray, struct
 	mapi_ctx = global_mapi_ctx;
 	nspi = (struct nspi_context *)mapi_ctx->session->nspi->ctx;
 
-	instance_key = nspi->profile_instance_key;
-	nspi->profile_instance_key = 0;
-       
 	if (ulFlags == TABLE_START) {
-		memset(nspi->settings->service_provider.ab, 0, 16);
-		memset(nspi->settings->service_provider.ab + 12, 0xff, 4);
+		nspi->pStat->CurrentRec = 0;
+		nspi->pStat->Delta = 0;
+		nspi->pStat->NumPos = 0;
+		nspi->pStat->TotalRecs = 0xffffffff;
 	}
 
 	srowset = talloc_zero(mapi_ctx->session, struct SRowSet);
-	retval = nspi_QueryRows(nspi, SPropTagArray, &srowset, count);
+	retval = nspi_QueryRows(nspi, SPropTagArray, NULL, count, &srowset);
 	*SRowSet = srowset;
-
-	nspi->profile_instance_key = instance_key;
 
 	if (retval != MAPI_E_SUCCESS) return retval;
 

@@ -21,6 +21,7 @@
 
 #include <libmapi/libmapi.h>
 #include <samba/popt.h>
+#include <param.h>
 
 #include <stdlib.h>
 #include <signal.h>
@@ -98,7 +99,7 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 			       const char *password, const char *address, 
 			       const char *lcid, const char *workstation,
 			       const char *domain, uint32_t flags,
-			       bool opt_dumpdata)
+			       bool opt_dumpdata, const char *opt_debuglevel)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
@@ -115,6 +116,10 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
+	}
+
+	if (opt_debuglevel) {
+		lp_set_cmdline(global_mapi_ctx->lp_ctx, "log level", opt_debuglevel);
 	}
 
 	if (opt_dumpdata == true) {
@@ -424,6 +429,7 @@ int main(int argc, const char *argv[])
 	bool		getdflt = false;
 	bool		getfqdn = false;
 	bool		opt_dumpdata = false;
+	const char	*opt_debuglevel = NULL;
 	const char	*ldif = NULL;
 	const char	*address = NULL;
 	const char	*workstation = NULL;
@@ -443,7 +449,7 @@ int main(int argc, const char *argv[])
 	      OPT_DELETE_PROFILE, OPT_LIST_PROFILE, OPT_DUMP_PROFILE, 
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
-	      OPT_NOPASS, OPT_DUMPDATA};
+	      OPT_NOPASS, OPT_DUMPDATA, OPT_DEBUGLEVEL};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -465,9 +471,10 @@ int main(int argc, const char *argv[])
 		{"delete", 'r', POPT_ARG_NONE, NULL, OPT_DELETE_PROFILE, "delete a profile in the database"},
 		{"list", 'l', POPT_ARG_NONE, NULL, OPT_LIST_PROFILE, "list existing profiles in the database"},
 		{"listlangs", 0, POPT_ARG_NONE, NULL, OPT_LIST_LANGS, "list all recognised languages"},
-		{"dump", 'd', POPT_ARG_NONE, NULL, OPT_DUMP_PROFILE, "dump a profile entry"},
+		{"dump", 0, POPT_ARG_NONE, NULL, OPT_DUMP_PROFILE, "dump a profile entry"},
 		{"attr", 'a', POPT_ARG_STRING, NULL, OPT_DUMP_ATTR, "print an attribute value"},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
+		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUGLEVEL, "set the debug level"},
 		{"getfqdn", 0, POPT_ARG_NONE, NULL, OPT_GETFQDN, "returns the DNS FQDN of the NSPI server matching the legacyDN"},
 		{ NULL }
 	};
@@ -480,6 +487,9 @@ int main(int argc, const char *argv[])
 		switch(opt) {
 		case OPT_DUMPDATA:
 			opt_dumpdata = true;
+			break;
+		case OPT_DEBUGLEVEL:
+			opt_debuglevel = poptGetOptArg(pc);
 			break;
 		case OPT_PROFILE_LDIF:
 			ldif = poptGetOptArg(pc);
@@ -596,7 +606,7 @@ int main(int argc, const char *argv[])
 		  lcid = talloc_asprintf(mem_ctx, DEFAULT_LCID);
 		}
 		mapiprofile_create(profdb, profname, pattern, username, password, address,
-				   lcid, workstation, domain, nopass, opt_dumpdata);
+				   lcid, workstation, domain, nopass, opt_dumpdata, opt_debuglevel);
 	}
 
 	if (getfqdn == true) {

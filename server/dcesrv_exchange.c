@@ -437,8 +437,7 @@ enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		       struct NspiBind *r)
 {
 	struct GUID		*guid = (struct GUID *) NULL;
-	const char		*exchange_GUID = lp_parm_string(global_loadparm, NULL, 
-													"exchange", "GUID");
+	const char		*exchange_GUID = lp_parm_string(global_loadparm, NULL, "exchange", "GUID");
 	struct emsabp_ctx	*emsabp_context;
 	struct dcesrv_handle	*handle;
 	struct policy_handle	wire_handle;
@@ -464,7 +463,7 @@ enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	}
 
 	/* check if a valid CPID has been provided */
-	if (valid_codepage(r->in.settings->codepage) == false) {
+	if (valid_codepage(r->in.pStat->CodePage) == false) {
 		DEBUG(1, ("Invalid CPID\n"));
 		r->out.mapiuid = r->in.mapiuid;
 		r->out.result = MAPI_E_UNKNOWN_CPID;
@@ -550,20 +549,18 @@ enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
 	emsabp_context = (struct emsabp_ctx *) h->data;
 
-        /* MAPI_SETTINGS */
-	r->out.settings = r->in.settings;
-	r->out.settings->service_provider.ab[0] = (uint8_t)((*r->in.instance_key) & 0xFF);
-	r->out.settings->service_provider.ab[1] = (uint8_t)(((*r->in.instance_key) >> 8) & 0xFF);
+	r->out.pStat = r->in.pStat;
+	r->out.pStat->CurrentRec = *r->in.lpETable;
 
-	row_nb = r->in.lRows;
+	row_nb = r->in.Count;
 
 	/* Row Set */
-	r->out.RowSet = talloc(mem_ctx, struct SRowSet *);
-	r->out.RowSet[0] = talloc(mem_ctx, struct SRowSet);
-	r->out.RowSet[0]->cRows = row_nb;
-	r->out.RowSet[0]->aRow = talloc_size(mem_ctx, sizeof(struct SRow) * row_nb);
+	r->out.ppRows = talloc(mem_ctx, struct SRowSet *);
+	r->out.ppRows[0] = talloc(mem_ctx, struct SRowSet);
+	r->out.ppRows[0]->cRows = row_nb;
+	r->out.ppRows[0]->aRow = talloc_size(mem_ctx, sizeof(struct SRow) * row_nb);
 	while (i < row_nb) {
-		status = emsabp_fetch_attrs(mem_ctx, emsabp_context, &(r->out.RowSet[0]->aRow[i]), r->in.instance_key[i], r->in.REQ_properties);
+		status = emsabp_fetch_attrs(mem_ctx, emsabp_context, &(r->out.ppRows[0]->aRow[i]), r->in.lpETable[i], r->in.pPropTags);
 		if (!NT_STATUS_IS_OK(status))  /* FIXME */
 			return MAPI_E_LOGON_FAILED;
 		i++;
@@ -580,10 +577,10 @@ enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_
 /* 
   NspiSeekEntries 
 */
-void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiSeekEntries *r)
+enum MAPISTATUS dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct NspiSeekEntries *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -595,6 +592,7 @@ enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC
 {
 	struct dcesrv_handle	*h;
 	struct emsabp_ctx	*emsabp_context;
+	struct SPropTagArray	*ppOutMIds;
 	struct instance_key	*instance_keys;
 	NTSTATUS		status;
 	int			nbrows = 0;
@@ -605,32 +603,33 @@ enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC
 	emsabp_context = (struct emsabp_ctx *) h->data;
 
         /* Settings */
-        r->out.settings = r->in.settings;
+        r->out.pStat = r->in.pStat;
 
 	/* Search the provider for the requested recipient */
 	instance_keys = talloc(mem_ctx, struct instance_key);
-	status = emsabp_search(emsabp_context, instance_keys, r->in.restrictions);
+	status = emsabp_search(emsabp_context, instance_keys, r->in.Filter);
 	if (!NT_STATUS_IS_OK(status)) {
 		return MAPI_E_LOGON_FAILED;
 	}
 	
         /* Row Set */
-        r->out.RowSet = talloc(mem_ctx, struct SRowSet *);
-	r->out.RowSet[0] = talloc(mem_ctx, struct SRowSet);
-	r->out.RowSet[0]->cRows = instance_keys->cValues - 1;
-	r->out.RowSet[0]->aRow = talloc_size(mem_ctx, sizeof(struct SRow) * (instance_keys->cValues - 1));
+        r->out.ppRows = talloc(mem_ctx, struct SRowSet *);
+	r->out.ppRows[0] = talloc(mem_ctx, struct SRowSet);
+	r->out.ppRows[0]->cRows = instance_keys->cValues - 1;
+	r->out.ppRows[0]->aRow = talloc_size(mem_ctx, sizeof(struct SRow) * (instance_keys->cValues - 1));
 	/* Instance keys */
-	r->out.instance_key = instance_keys;
+	ppOutMIds = talloc(mem_ctx, struct SPropTagArray);
+	r->out.ppOutMIds = &ppOutMIds;
 
-	DEBUG(0,("All NspiGetMatches instance_keys(%d)\n", instance_keys->cValues));
+	DEBUG(0,("All NspiGetMatches instance_keys(%d)\n", ppOutMIds->cValues));
 	nbrows = 0;
-	while (nbrows < (instance_keys->cValues - 1)) {
-		DEBUG(0,("instance_keys[%d] = 0x%x\n", nbrows, instance_keys->value[nbrows]));
-		status = emsabp_fetch_attrs(mem_ctx, emsabp_context, &(r->out.RowSet[0]->aRow[nbrows]), instance_keys->value[nbrows], r->in.REQ_properties);
+	while (nbrows < (ppOutMIds->cValues - 1)) {
+		DEBUG(0,("instance_keys[%d] = 0x%x\n", nbrows, ppOutMIds->aulPropTag[nbrows]));
+		status = emsabp_fetch_attrs(mem_ctx, emsabp_context, &(r->out.ppRows[0]->aRow[nbrows]), ppOutMIds->aulPropTag[nbrows], r->in.pPropTags);
 		if (!NT_STATUS_IS_OK(status))	/* FIXME */
 			return MAPI_E_LOGON_FAILED;
 
-		DEBUG(0,("NspiGetMatches after set: instance_keys[%d] = 0x%x\n", nbrows, r->out.instance_key->value[nbrows]));
+		DEBUG(0,("NspiGetMatches after set: instance_keys[%d] = 0x%x\n", nbrows, r->out.ppOutMIds[0]->aulPropTag[nbrows]));
 
 		nbrows++;
 	}
@@ -646,25 +645,25 @@ enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC
 /* 
   NspiResortRestriction 
 */
-void dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiResortRestriction *r)
+enum MAPISTATUS dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					     struct NspiResortRestriction *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  NspiDNToEph 
+  NspiDNToMId
 */
-enum MAPISTATUS dcesrv_NspiDNToEph(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiDNToEph *r)
+enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				   struct NspiDNToMId *r)
 {
 	uint32_t		instance_key;
 	struct dcesrv_handle	*h;
 	struct emsabp_ctx	*emsabp_context;
 	NTSTATUS		status;
 
- 	DEBUG(0, ("##### in NspiDNToEph ####\n"));
+ 	DEBUG(0, ("##### in NspiDNToMid ####\n"));
 
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
 	emsabp_context = (struct emsabp_ctx *) h->data;
@@ -672,24 +671,29 @@ enum MAPISTATUS dcesrv_NspiDNToEph(struct dcesrv_call_state *dce_call, TALLOC_CT
 	/* Search the server identifier according to the given legacyExchangeDN */
 
 	/* Instance key */
-        r->out.instance_key = talloc(mem_ctx, struct instance_key);
-        r->out.instance_key->value = talloc_size(mem_ctx, sizeof (uint32_t));
+/*         r->out.instance_key = talloc(mem_ctx, struct instance_key); */
+/*         r->out.instance_key->value = talloc_size(mem_ctx, sizeof (uint32_t)); */
+	r->out.ppMIds = talloc_zero(mem_ctx, struct SPropTagArray *);
 
-	status = emsabp_search_dn(emsabp_context, NULL, &(instance_key), r->in.server_dn->str);
+	status = emsabp_search_dn(emsabp_context, NULL, &(instance_key), r->in.pNames->Strings[0]);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Microsoft Exchange returns success even when the research failed */
-		memset(r->out.instance_key->value, 0, sizeof(uint32_t));
-		r->out.instance_key->cValues = 0x2;
+		r->out.ppMIds[0]->cValues = 0;
+		
+/* 		memset(r->out.instance_key->value, 0, sizeof(uint32_t)); */
+/* 		r->out.instance_key->cValues = 0x2; */
 		return MAPI_E_SUCCESS;
 	}
 
-	r->out.instance_key->value[0] = instance_key;
+	r->out.ppMIds[0]->aulPropTag[0] = instance_key;
+	r->out.ppMIds[0]->cValues = 0x1;
+/* 	r->out.instance_key->value[0] = instance_key; */
 
-        r->out.instance_key->cValues = 0x2;
+/*         r->out.instance_key->cValues = 0x2; */
 
         r->out.result = MAPI_E_SUCCESS;
 
-	DEBUG(0, ("NspiDNToEph : Success\n"));	
+	DEBUG(0, ("NspiDNToMid : Success\n"));	
 
         return MAPI_E_SUCCESS;
 }
@@ -698,10 +702,10 @@ enum MAPISTATUS dcesrv_NspiDNToEph(struct dcesrv_call_state *dce_call, TALLOC_CT
 /* 
   NspiGetPropList 
 */
-void dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetPropList *r)
+enum MAPISTATUS dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct NspiGetPropList *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
@@ -722,14 +726,15 @@ enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call, TALLOC_C
 	emsabp_context = (struct emsabp_ctx *) h->data;
 
 	/* Convert instance_key */
-	instance_key = r->in.settings->service_provider.ab[1];
-	instance_key <<= 8;
-	instance_key |= r->in.settings->service_provider.ab[0];
+/* 	instance_key = r->in.settings->service_provider.ab[1]; */
+/* 	instance_key <<= 8; */
+/* 	instance_key |= r->in.settings->service_provider.ab[0]; */
+	instance_key = r->in.pStat->CurrentRec;
 
-	r->out.REPL_values = talloc_size(mem_ctx, sizeof(struct SRow *));
-	r->out.REPL_values[0] = talloc_size(mem_ctx, sizeof(struct SRow));
+	r->out.ppRows = talloc_size(mem_ctx, sizeof(struct SRow *));
+	r->out.ppRows[0] = talloc_size(mem_ctx, sizeof(struct SRow));
 
-	status = emsabp_fetch_attrs(mem_ctx, emsabp_context, &(r->out.REPL_values[0][0]), instance_key, r->in.REQ_properties);
+	status = emsabp_fetch_attrs(mem_ctx, emsabp_context, &(r->out.ppRows[0][0]), instance_key, r->in.pPropTags);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->out.result = MAPI_W_ERRORS_RETURNED;
 		return MAPI_W_ERRORS_RETURNED;
@@ -744,47 +749,47 @@ enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call, TALLOC_C
 
 
 /* 
-  NspiCompareDNTs 
+  NspiCompareMIds 
 */
-void dcesrv_NspiCompareDNTs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiCompareDNTs *r)
+enum MAPISTATUS dcesrv_NspiCompareMIds(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct NspiCompareMIds *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
   NspiModProps 
 */
-void dcesrv_NspiModProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiModProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiModProps *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
-  NspiGetHierarchyInfo 
+  NspiGetSpecialTable 
 */
-enum MAPISTATUS dcesrv_NspiGetHierarchyInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetHierarchyInfo *r)
+enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					   struct NspiGetSpecialTable *r)
 {
 	struct dcesrv_handle    *h;
 	struct emsabp_ctx       *emsabp_context;
 
-	DEBUG(0, ("##### in NspiGetHierarchyInfo ####\n"));
+	DEBUG(0, ("##### in NspiGetSpecialTable ####\n"));
 
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
         emsabp_context = (struct emsabp_ctx *) h->data;
 
-	r->out.unknown2 = talloc(mem_ctx, uint32_t);
-	*(r->out.unknown2) = 0x1;
+	r->out.lpVersion = talloc(mem_ctx, uint32_t);
+	*(r->out.lpVersion) = 0x1;
 	
-	r->out.RowSet = talloc(mem_ctx, struct SRowSet *);
-	r->out.RowSet[0] = talloc(mem_ctx, struct SRowSet);
-	emsabp_get_hierarchytable(mem_ctx, emsabp_context, r->in.unknown1, r->out.RowSet);
+	r->out.ppRows = talloc(mem_ctx, struct SRowSet *);
+	r->out.ppRows[0] = talloc(mem_ctx, struct SRowSet);
+	emsabp_get_hierarchytable(mem_ctx, emsabp_context, r->in.dwFlags, r->out.ppRows);
 
-	DEBUG(0, ("NspiGetHierarchyInfo : success\n"));
+	DEBUG(0, ("NspiGetSpecialTable : success\n"));
 
 	return MAPI_E_SUCCESS;
 
@@ -804,50 +809,50 @@ enum MAPISTATUS dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call, T
 /* 
   NspiModLInkAtt 
 */
-void dcesrv_NspiModLInkAtt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiModLInkAtt *r)
+enum MAPISTATUS dcesrv_NspiModLinkAtt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				      struct NspiModLinkAtt *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
   NspiDeleteEntries 
 */
-void dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiDeleteEntries *r)
+enum MAPISTATUS dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					 struct NspiDeleteEntries *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
   NspiQueryColumns 
 */
-void dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiQueryColumns *r)
+enum MAPISTATUS dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					struct NspiQueryColumns *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
   NspiGetNamesFromIDs 
 */
-void dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetNamesFromIDs *r)
+enum MAPISTATUS dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					   struct NspiGetNamesFromIDs *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 
 /* 
   NspiGetIDsFromNames 
 */
-void dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetIDsFromNames *r)
+enum MAPISTATUS dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					   struct NspiGetIDsFromNames *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 

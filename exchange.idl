@@ -185,181 +185,6 @@ System Attendant Private Interface
 ] interface exchange_nsp
 {
 
-	/*****************/
-	/* Function 0x00 */
-
-	/*
-	** MAPIUID explanation:
-	** http://msdn.microsoft.com/library/default.asp?url=/library/en-us/mapi/html/c42065c2-b1f5-4930-84a6-6ef90c6162d0.asp
-	*/
-
-	typedef struct _MAPIUID{
-		uint8 ab[16];
-	} MAPIUID;
-
-	/* 
-	** input locale combination: 
-	** http://www.microsoft.com/globaldev/reference/win2k/setup/lcid.mspx
-	*/
-
-	typedef struct {
-		uint32 language;
-		uint32 method;
-	} input_locale;
-
-	typedef [flag(NDR_NOALIGN)] struct {
-		uint32	        handle;
-		uint32		flag;
-		MAPIUID		service_provider;
-		uint32		codepage;	/* CPID */
-		input_locale	input_locale;	/* LCID */
-	} MAPI_SETTINGS;
-
-	typedef struct {
-		[unique, length_is(cValues - 1), size_is(cValues - 1)] MAPITAGS *aulPropTag;
-		uint32 cValues;
-	} SPropTagArray;
-	
-	typedef struct {
-		[length_is(cValues - 1), size_is(cValues - 1)] uint32 *value;
-		uint32 cValues;
-	} instance_key;
-
-
-
-	/*****************/
-	/* Function 0x00 */
-	MAPISTATUS NspiBind(
-		[in] uint32			unknown,
-		[in] MAPI_SETTINGS		*settings,
-		[in,out,unique] GUID		*mapiuid,
-		[out] policy_handle		*handle
-		);
-
-	/*****************/
-	/* Function 0x01 */
-	MAPISTATUS NspiUnbind(
-		[in, out] policy_handle	*handle,
-		[in] uint32	       	status
-		);
-
-
-	/*****************/
-	/* Function 0x02 */
-	MAPISTATUS NspiUpdateStat(
-		[in] policy_handle	*handle,
-		[in] uint32		dwAlignPad,
-		[in,out] MAPI_SETTINGS	settings,
-		[in,out,unique] uint32	*plDelta
-		);
-
-	/*****************/
-	/* Function 0x03 */
-	MAPISTATUS NspiQueryRows(
-		[in]				policy_handle	*handle,
-		[in]				uint32		flag,
-		[in,out]			MAPI_SETTINGS	*settings,
-		[in]				uint32		ikey_cnt,
- 		[in][size_is(ikey_cnt)][unique]	uint32		*instance_key,
-		[in]				uint32		lRows,
-		[in]				SPropTagArray	*REQ_properties,
-		[out,ref]      			SRowSet		**RowSet
-		);
-
-	void NspiSeekEntries();
-
-	/*****************/
-	/* Function 0x05 */
-
-	/* Restriction types */
-#define RES_AND            0
-#define RES_OR             1
-#define RES_NOT            2
-#define RES_CONTENT        3
-#define RES_PROPERTY       4
-#define RES_COMPAREPROPS   5
-#define RES_BITMASK        6
-#define RES_SIZE           7
-#define RES_EXIST          8
-#define RES_SUBRESTRICTION 9
-#define RES_COMMENT        10
-
-	typedef struct {
-		uint32 relop;
-		MAPITAGS ulPropTag;
-		SPropValue *lpProp;
-	} SPropertyRestriction;
-
-	typedef struct {
-		uint32	cRes;
-		[size_is(cRes)][unique]SRestriction *lpRes;
-	} SAndRestriction;
-
-	typedef [switch_type(uint32)] union {
-		[case(RES_AND)           ] SAndRestriction resAnd;
-//     [case(RES_OR)            ] SOrRestriction resOr;
-//     [case(RES_NOT)           ] SNotRestriction resNot;
-//     [case(RES_CONTENT)       ] SContentRestriction resContent;
-		[case(RES_PROPERTY)      ] SPropertyRestriction resProperty;
-//     [case(RES_COMPAREPROPS)  ] SComparePropsRestriction resCompareProps;
-//     [case(RES_BITMASK)       ] SBitMaskRestriction resBitMask;
-//     [case(RES_SUBRESTRICTION)] SSubRestriction resSub;
-//     [case(RES_SIZE)          ] SSizeRestriction resSize;
-//     [case(RES_EXIST)         ] SExistRestriction resExist;
-  } SRestriction_CTR;
-
-	typedef [public] struct _SRestriction{
-		uint32 rt;
-		[switch_is(rt)] SRestriction_CTR res;
-	} SRestriction;
-
-	MAPISTATUS NspiGetMatches(
-		[in]		policy_handle	*handle,
-		[in]		uint32		unknown1,
-		[in,out]	MAPI_SETTINGS	*settings,
-		[in][unique]	SPropTagArray	*PropTagArray,
-		[in]		uint32	       	unknown2,
-		[in][unique]	SRestriction	*restrictions,
-		[in]		uint32		unknown3,
-		[out]		instance_key	*instance_key,
-		[in][unique]	SPropTagArray	*REQ_properties,
-		[out,ref]      	SRowSet		**RowSet
-		);
-
-
-	void NspiResortRestriction();
-
-	/*****************/
-	/* Function 0x07 */
-
-	typedef struct {
- 		[string,charset(DOS)] uint8	*str;
-	} NAME_STRING;
-
-	MAPISTATUS NspiDNToEph(
-		[in] policy_handle	*handle,
-		[in] uint32		flag,
-		[in] uint32		size,
- 		[in][size_is(size)] NAME_STRING	server_dn[],
-		[out] instance_key	*instance_key
-		);
-
-	void NspiGetPropList();
-
-	/*****************/
-	/* Function 0x09 */
-	MAPISTATUS NspiGetProps(
-		[in]   	policy_handle		*handle,
-		[in]   	uint32			flag,
-		[in]	MAPI_SETTINGS		*settings,
-		[in]	SPropTagArray		*REQ_properties,
-		[out]	SRow			**REPL_values
-		);
-
-
-	void NspiCompareDNTs();
-	void NspiModProps();
-
 #define	PT_UNSPECIFIED	0x0000
 #define	PT_NULL		0x0001
 #define	PT_I2		0x0002
@@ -380,9 +205,7 @@ System Attendant Private Interface
 #define	PT_SRESTRICT	0x00fd
 #define	PT_ACTIONS	0x00fe
 #define	PT_BINARY	0x0102
-
 /* Multi-valued properties */
-
 #define	PT_MV_I2       	0x1002
 #define	PT_MV_LONG     	0x1003
 #define	PT_MV_R4       	0x1004
@@ -397,8 +220,54 @@ System Attendant Private Interface
 #define	PT_MV_CLSID	0x1048
 #define	PT_MV_BINARY	0x1102
 
-	/*****************/
-	/* Function 0x0c */
+	typedef [v1_enum] enum {
+		SortTypeDisplayName		= 0x00000000,
+		SortTypePhoneticDisplayName	= 0x00000003,
+		SortTypeDisplayName_RO		= 0x000003E8,
+		SortTypeDisplayName_W		= 0x000003E9
+	} TableSortOrders;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		TableSortOrders	SortType;
+		uint32		ContainerID;
+		uint32		CurrentRec;
+		uint32		Delta;
+		uint32		NumPos;
+		uint32		TotalRecs;
+		uint32		CodePage;
+		uint32		TemplateLocale;
+		uint32		SortLocale;
+	} STAT;
+
+	typedef struct {
+		uint8 ab[16];
+	} MAPIUID;
+
+	typedef struct {
+		MAPIUID	*lpguid;
+		uint32	ulReserved;
+		uint32	lID;
+	} PropertyName_r;
+
+	typedef struct {
+		[range(0,100000)] uint32		cNames;
+		[size_is(cNames)] PropertyName_r	aNames[];
+	} PropertyNameSet_r;
+
+	typedef struct {
+		[range(0,100000)] uint32				Count;
+		[string,size_is(Count),charset(DOS)] uint8		*Strings[];
+	} StringsArray_r;
+
+	typedef struct {
+		[range(0,100000)] uint32				Count;
+		[string,size_is(Count),charset(UTF16)] uint16		*Strings[];
+	} WStringsArray_r;
+
+	typedef struct {
+		[range(0,100001)] uint32       				cValues;
+		[size_is(cValues+1),length_is(cValues)] MAPITAGS	aulPropTag[];
+	} SPropTagArray;
 
 	typedef struct {
 		uint32				cb;
@@ -442,9 +311,9 @@ System Attendant Private Interface
 	} MV_UNICODE_STRUCT;
 
 	typedef struct {
-		uint32 cValues;
-		[size_is(cValues)] SBinary *lpbin;
-	} SBinaryArray;
+		[range(0,100000)] uint32	cValues;
+		[size_is(cValues)] SBinary	*lpbin;
+	} BinaryArray_r;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint32 cValues;
@@ -471,7 +340,7 @@ System Attendant Private Interface
 		[case(PT_MV_I2)]		SShortArray		MVi;
 		[case(PT_MV_LONG)]		MV_LONG_STRUCT		MVl;
 		[case(PT_MV_STRING8)]		SLPSTRArray		MVszA;
-		[case(PT_MV_BINARY)]		SBinaryArray		MVbin;
+		[case(PT_MV_BINARY)]		BinaryArray_r		MVbin;
 		[case(PT_MV_CLSID)]		SGuidArray		MVguid;
 		[case(PT_MV_UNICODE)]		MV_UNICODE_STRUCT	MVszW;
 		[case(PT_MV_SYSTIME)]		SDateTimeArray		MVft;
@@ -497,19 +366,271 @@ System Attendant Private Interface
 		[size_is(cRows)] SRow aRow[*];
 	} SRowSet;
 	
-	MAPISTATUS NspiGetHierarchyInfo(
+	/* 
+	** input locale combination: 
+	** http://www.microsoft.com/globaldev/reference/win2k/setup/lcid.mspx
+	*/
+
+	typedef struct {
+		uint32 language;
+		uint32 method;
+	} input_locale;
+
+	typedef struct {
+		[length_is(cValues - 1), size_is(cValues - 1)] uint32 *value;
+		uint32 cValues;
+	} instance_key;
+
+	typedef struct {
+		[range(0,100000)] uint32		cRes;
+		[size_is(cRes)] Restriction_r		*lpRes;
+	} AndRestriction_r;
+
+	typedef struct {
+		[range(0,100000)] uint32		cRes;
+		[size_is(cRes)] Restriction_r		*lpRes;
+	} OrRestriction_r;
+
+	typedef struct {
+		Restriction_r				*lpRes;
+	} NotRestriction_r;
+
+	typedef struct {
+		uint32					ulFuzzyLevel;
+		MAPITAGS       				ulPropTag;
+		SPropValue				*lpProp;
+	} ContentRestriction_r;
+
+	typedef struct {
+		uint32					relop;
+		MAPITAGS				ulPropTag;
+		SPropValue				*lpProp;
+	} PropertyRestriction_r;
+
+	typedef struct {
+		uint32					relop;
+		MAPITAGS				ulPropTag1;
+		MAPITAGS				ulPropTag2;
+	} ComparePropsRestriction_r;
+
+	typedef struct {
+		uint32					relMBR;
+		MAPITAGS				ulPropTag;
+		uint32					ulMask;
+	} BitMaskRestriction_r;
+
+	typedef struct {
+		uint32					relop;
+		MAPITAGS				ulPropTag;
+		uint32					cb;
+	} SizeRestriction_r;
+
+	typedef struct {
+		uint32					ulReserved1;
+		MAPITAGS				ulPropTag;
+		uint32					ulReserved2;
+	} ExistRestriction_r;
+
+	typedef struct {
+		uint32					ulSubObject;
+		Restriction_r				*lpRes;
+	} SubRestriction_r;
+
+	typedef [v1_enum] enum {
+		RES_AND			= 0x0,
+		RES_OR			= 0x1,
+		RES_NOT			= 0x2,
+		RES_CONTENT		= 0x3,
+		RES_PROPERTY		= 0x4,
+		RES_COMPAREPROPS	= 0x5,
+		RES_BITMASK		= 0x6,
+		RES_SIZE		= 0x7,
+		RES_EXIST		= 0x8,
+		RES_SUBRESTRICTION	= 0x9,
+		RES_COMMENT		= 0xA
+	} RestrictionType_r;
+
+	typedef [switch_type(uint32)] union {
+		[case(RES_AND)]			AndRestriction_r		resAnd;
+		[case(RES_OR)]			OrRestriction_r			resOr;
+		[case(RES_NOT)]			NotRestriction_r		resNot;
+		[case(RES_CONTENT)]		ContentRestriction_r		resContent;
+		[case(RES_PROPERTY)]		PropertyRestriction_r		resProperty;
+		[case(RES_COMPAREPROPS)]	ComparePropsRestriction_r	resCompareProps;
+		[case(RES_BITMASK)]		BitMaskRestriction_r		resBitMask;
+		[case(RES_SIZE)]		SizeRestriction_r		resSize;
+		[case(RES_EXIST)]		ExistRestriction_r		resExist;
+		[case(RES_SUBRESTRICTION)]	SubRestriction_r		resSub;
+	} RestrictionUnion_r;
+
+	typedef [public] struct _Restriction_r{
+		RestrictionType_r      			rt;
+		[switch_is(rt)] RestrictionUnion_r	res;
+	} Restriction_r;
+
+	/*****************/
+	/* Function 0x00 */
+	typedef [bitmap32bit] bitmap {
+		fAnonymousLogin	= 0x00000020
+	} NspiBind_dwFlags;
+
+	MAPISTATUS NspiBind(
+		[in] NspiBind_dwFlags	dwFlags,
+		[in] STAT		*pStat,
+		[in,out,unique] GUID   	*mapiuid,
+		[out] policy_handle    	*handle
+		);
+
+	/*****************/
+	/* Function 0x01 */
+	MAPISTATUS NspiUnbind(
+		[in, out] policy_handle	*handle,
+		[in] uint32	       	Reserved
+		);
+
+	/*****************/
+	/* Function 0x02 */
+	MAPISTATUS NspiUpdateStat(
 		[in] policy_handle	*handle,
-		[in] uint32		unknown1,
-		[in] MAPI_SETTINGS	*settings,
- 		[in,out] uint32		*unknown2,
- 		[out] SRowSet		**RowSet
+		[in] uint32		Reserved,
+		[in,out] STAT		*pStat,
+		[in,out,unique] uint32	*plDelta
+		);
+
+	/*****************/
+	/* Function 0x03 */
+	typedef [bitmap32bit] bitmap {
+		fSkipObjects	= 0x00000001,
+		fEphID		= 0x00000002
+	} NspiQueryRows_dwFlags;
+
+	MAPISTATUS NspiQueryRows(
+		[in]					policy_handle			*handle,
+		[in]					NspiQueryRows_dwFlags		dwFlags,
+		[in,out]				STAT				*pStat,
+		[in,range(0,100000)]			uint32				dwETableCount,
+ 		[in,unique,size_is(dwETableCount)]	uint32				*lpETable,
+		[in]					uint32				Count,
+		[in,unique]    				SPropTagArray			*pPropTags,
+		[out]					SRowSet				**ppRows
+		);
+
+	/*****************/
+	/* Function 0x04 */
+	MAPISTATUS NspiSeekEntries(
+		[in]		policy_handle	*handle,
+		[in]		uint32		Reserved,
+		[in,out]	STAT		*pStat,
+		[in]		SPropValue     	*pTarget,
+		[in,unique]	SPropTagArray	*lpETable,
+		[in,unique]	SPropTagArray	*pPropTags,
+		[out]		SRowSet		**pRows
+		);
+
+	/*****************/
+	/* Function 0x05 */
+	MAPISTATUS NspiGetMatches(
+		[in]		policy_handle	*handle,
+		[in]		uint32		Reserved,
+		[in,out]	STAT		*pStat,
+		[in][unique]	SPropTagArray	*pReserved,
+		[in]		uint32	       	Reserved2,
+		[in][unique]	Restriction_r	*Filter,
+ 		[in][unique]	PropertyName_r	*lpPropName,
+		[in]		uint32		ulRequested,
+		[out]		SPropTagArray	**ppOutMIds,
+		[in][unique]	SPropTagArray	*pPropTags,
+		[out]      	SRowSet		**ppRows
+		);
+
+	/*****************/
+	/* Function 0x06 */
+	MAPISTATUS NspiResortRestriction(
+		[in] policy_handle	*handle,
+		[in] uint32		Reserved,
+		[in,out] STAT		*pStat,
+		[in] SPropTagArray	*pInMIds,
+		[in,out] SPropTagArray	**ppMIds
+		);
+
+	/*****************/
+	/* Function 0x07 */
+	MAPISTATUS NspiDNToMId(
+		[in] policy_handle	*handle,
+		[in] uint32		Reserved,
+		[in] StringsArray_r	*pNames,
+		[out] SPropTagArray	**ppMIds
+		);
+
+	/*****************/
+	/* Function 0x08 */
+	MAPISTATUS NspiGetPropList(
+		[in] policy_handle	*handle,
+		[in] uint32		dwFlags,
+		[in] uint32		dwMId,
+		[in] uint32		CodePage,
+		[out] SPropTagArray	**ppPropTags
+		);
+
+	/*****************/
+	/* Function 0x09 */
+	MAPISTATUS NspiGetProps(
+		[in]   	policy_handle			*handle,
+		[in]   	uint32				dwFlags,
+		[in]	STAT				*pStat,
+		[in,unique] SPropTagArray		*pPropTags,
+		[out]	SRow				**ppRows
+		);
+
+	/*****************/
+	/* Funcion 0xa   */
+	MAPISTATUS NspiCompareMIds(
+		[in] policy_handle     	*handle,
+		[in] uint32	       	Reserved,
+		[in] STAT	       	*pStat,
+		[in] uint32	       	MId1,
+		[in] uint32	       	MId2,
+		[out] uint32	       	*plResult
+		);
+
+	/*****************/
+	/* Function 0xb  */
+	MAPISTATUS NspiModProps(
+		[in] policy_handle		*handle,
+		[in] uint32			Reserved,
+		[in] STAT			*pStat,
+		[in,unique] SPropTagArray	*pPropTags,
+		[in] SRow			*pRow
+		);
+
+	/*****************/
+	/* Function 0x0c */
+	typedef [bitmap32bit] bitmap {
+		NspiAddressCreationTemplates	= 0x00000002,
+		NspiUnicodeStrings		= 0x00000004
+	} NspiGetSpecialTable_dwFlags;
+
+	MAPISTATUS NspiGetSpecialTable(
+		[in] policy_handle			*handle,
+		[in] NspiGetSpecialTable_dwFlags       	dwFlags,
+		[in] STAT				*pStat,
+ 		[in,out] uint32				*lpVersion,
+ 		[out] SRowSet				**ppRows
 		);
 
 	/*******************/
-	/* Function 0xD    */
+	/* Function 0x0d   */
+	typedef [bitmap32bit] bitmap {
+		TI_TEMPLATE		= 0x00000001,
+		TI_SCRIPT		= 0x00000004,
+		TI_EMT			= 0x00000010,
+		TI_HELPFILE_NAME	= 0x00000020,
+		TI_HELPFILE_CONTENTS	= 0x00000040
+	} TI_dwFlags;
+
 	MAPISTATUS NspiGetTemplateInfo(
 		[in] policy_handle			*handle,
-		[in] uint32				dwFlags,
+		[in] TI_dwFlags				dwFlags,
 		[in] uint32				ulType,
 		[in,unique,string,charset(DOS)] uint8	*pDN,
 		[in] uint32				dwCodePage,
@@ -517,59 +638,82 @@ System Attendant Private Interface
 		[out] SRow				**ppData
 		);
 
-	void NspiModLInkAtt();
-	void NspiDeleteEntries();
-	void NspiQueryColumns();
-	void NspiGetNamesFromIDs();
-	void NspiGetIDsFromNames();
+	/*******************/
+	/* Function 0x0e   */
+	MAPISTATUS NspiModLinkAtt(
+		[in] policy_handle			*handle,
+		[in] uint32				dwFlags,
+		[in] uint32				ulPropTag,
+		[in] uint32				MId,
+		[in] BinaryArray_r			*lpEntryIds
+		);
+
+	/*************************************/
+	/* Function 0x0f: Not used on wire   */
+	MAPISTATUS NspiDeleteEntries(
+		[in] policy_handle			*Reserved1,
+		[in] uint32				Reserved2,
+		[in] uint32				Reserved3,
+		[in] BinaryArray_r			*Reserved4
+		);
+
+	/*******************/
+	/* Function 0x10   */
+	typedef [bitmap32bit] bitmap {
+		NspiUnicodeProptypes	= 0x80000000
+	} NspiQueryColumns_dwFlags;
+
+	MAPISTATUS NspiQueryColumns(
+		[in] policy_handle			*handle,
+		[in] uint32				Reserved,
+		[in] NspiQueryColumns_dwFlags		dwFlags,
+		[out] SPropTagArray      		**ppColumns
+		);
+
+	/*******************/
+	/* Function 0x11   */
+	MAPISTATUS NspiGetNamesFromIDs(
+		[in] policy_handle			*handle,
+		[in] uint32				Reserved,
+		[in,unique] MAPIUID			*lpGuid,
+		[in,unique] SPropTagArray		*pPropTags,
+		[out] SPropTagArray			**ppReturnedPropTags,
+		[out] PropertyNameSet_r			**ppNames
+		);
+
+	/*******************/
+	/* Function 0x12   */
+	MAPISTATUS NspiGetIDsFromNames(
+		[in] policy_handle			*handle,
+		[in] uint32				Reserved,
+		[in] uint32				dwFlags,
+		[in,range(0,100000)] uint32		cPropNames,
+		[in,size_is(cPropNames)] PropertyName_r	**ppNames,
+		[out] SPropTagArray			**ppPropTags
+		);
 
 	/*****************/
 	/* Function 0x13 */
-
-	typedef [v1_enum, flag(NDR_PAHEX)] enum {
-		MAPI_UNRESOLVED	= 0x0,
-		MAPI_AMBIGUOUS	= 0x1,
-		MAPI_RESOLVED	= 0x2
-	} flaglist_flags;
-
-	typedef [flag(NDR_NOALIGN)]struct {
- 		uint32		dwAlignPad;
-		uint32		cFlags;
-		uint32		offset;
-		uint32		length;
-		flaglist_flags 	ulFlags[cFlags];
-	} FlagList;
-
- 	typedef struct {
-		uint32				cEntries;
- 		uint32				count;
-		[string,charset(DOS)] uint8	*recipient[count];
- 	} names;
-
 	MAPISTATUS NspiResolveNames(
-		[in] policy_handle	*handle,
-		[in] uint32		dwAlignPad,
-		[in,ref] MAPI_SETTINGS	*settings,
-		[in,ref] SPropTagArray *SPropTagArray,
- 		[in,ref] names		*recipients,
-		[out,ref]FlagList	**flags,
-		[out,ptr]SRowSet        *RowSet
+		[in] policy_handle		*handle,
+		[in] uint32			Reserved,
+		[in] STAT			*pStat,
+		[in,unique] SPropTagArray	*pPropTags,
+ 		[in] StringsArray_r		*paStr,
+		[out] SPropTagArray		**ppMIds,
+		[out] SRowSet			**ppRows
 	);
 
-	typedef struct {
-		uint32		cEntries;
-		uint32		count;
-		[string,charset(UTF16)] uint16	*recipient[count];
-	} namesW;
-
+	/*****************/
+	/* Function 0x14 */
 	MAPISTATUS NspiResolveNamesW(
-		[in] policy_handle	*handle,
-		[in] uint32		dwAlignPad,
-		[in,ref] MAPI_SETTINGS	*settings,
-		[in,ref] SPropTagArray	*SPropTagArray,
-		[in,ref] namesW		*recipients,
-		[out,ref]FlagList	**flags,
-		[out,ptr]SRowSet	*RowSet
+		[in] policy_handle		*handle,
+		[in] uint32			Reserved,
+		[in] STAT			*pStat,
+		[in,unique] SPropTagArray      	*pPropTags,
+		[in] WStringsArray_r       	*paWStr,
+		[out] SPropTagArray		**ppMIds,
+		[out] SRowSet			**ppRows
 		);
 }
 

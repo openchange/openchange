@@ -216,10 +216,10 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 	enum MAPISTATUS		retval;
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		*SRowSet = NULL;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	struct SPropValue	SPropValue;
 	struct SPropValue	lpProps[2];
-	char			**username = NULL;
+	const char	       	*username[2];
 	uint32_t		msgflag;
 
 	/* Sanity checks */
@@ -241,15 +241,19 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 					  PR_SMTP_ADDRESS,
 					  PR_GIVEN_NAME);
 
-	username = talloc_array(mt->mem_ctx, char *, 2);
-	username[0] = mt->info.username;
+	username[0] = (const char *)mt->info.username;
 	username[1] = NULL;
 
-	retval = ResolveNames((const char **)username, SPropTagArray,
-			      &SRowSet, &flaglist, 0);
+	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
+	flaglist = talloc_zero(mt->mem_ctx, struct SPropTagArray);
+
+	retval = ResolveNames(username, SPropTagArray, &SRowSet, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "ResolveNames", GetLastError());
+		talloc_free(SRowSet);
+		talloc_free(SPropTagArray);
+		talloc_free(flaglist);
 		return false;
 	}
 

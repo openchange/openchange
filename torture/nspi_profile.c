@@ -82,18 +82,20 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	TALLOC_CTX		*mem_ctx;
 	struct nspi_context	*nspi;
 	struct SPropTagArray	*SPropTagArray;
+	struct SPropTagArray	*MIds = NULL;
+	struct SPropTagArray	MIds2;
+	struct SPropTagArray	*MId_server = NULL;
+	struct StringsArray_r	pNames;
+	struct Restriction_r	Filter;
 	struct SRowSet		*rowset;
 	struct SPropValue	*lpProp;
-	const char		*profname = lp_parm_string(global_loadparm, NULL, "mapi", 
-							   "profile");
-	const char		*profdb = lp_parm_string(global_loadparm, NULL, "mapi", 
-							 "profile_store");
-	uint32_t		codepage = lp_parm_int(global_loadparm, NULL, "mapi", 
-						       "codepage", 0);
-	uint32_t		language = lp_parm_int(global_loadparm, NULL, "mapi", 
-						       "language", 0);
-	uint32_t		method = lp_parm_int(global_loadparm, NULL, "mapi", 
-						     "method", 0);
+	const char		*profname = lp_parm_string(global_loadparm, NULL, "mapi", "profile");
+	const char		*profdb = lp_parm_string(global_loadparm, NULL, "mapi", "profile_store");
+	uint32_t		codepage = lp_parm_int(global_loadparm, NULL, "mapi", "codepage", 0);
+	uint32_t		language = lp_parm_int(global_loadparm, NULL, "mapi", "language", 0);
+	uint32_t		method = lp_parm_int(global_loadparm, NULL, "mapi", "method", 0);
+	const char		*username = NULL;
+	uint32_t		instance_key = 0;
 
 	mem_ctx = talloc_init("torture_rpc_nspi_profile");
 	
@@ -146,11 +148,11 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	
 	nspi->mem_ctx = mem_ctx;
 
-	retval = nspi_GetHierarchyInfo(nspi, &rowset);
-	mapi_errstr("NspiGetHierarchyInfo", GetLastError());
+	retval = nspi_GetSpecialTable(nspi, 0, &rowset);
+	mapi_errstr("NspiGetSpecialTable", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0xd,
+	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0xc,
 					  PR_DISPLAY_NAME,
 					  PR_OFFICE_TELEPHONE_NUMBER,
 					  PR_OFFICE_LOCATION,
@@ -164,21 +166,29 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 					  PR_INSTANCE_KEY,
 					  PR_EMAIL_ADDRESS
 					  );
+
+	/* Set the username to match */
+	username = cli_credentials_get_username(nspi->cred);
+	if (!username) return false;
+
+	/* Build the restriction we want for NspiGetMatches */
+	lpProp = talloc_zero(nspi->mem_ctx, struct SPropValue);
+	lpProp->ulPropTag = PR_ANR_UNICODE;
+	lpProp->dwAlignPad = 0;
+	lpProp->value.lpszW = username;
+
+	Filter.rt = RES_PROPERTY;
+	Filter.res.resProperty.relop = RES_PROPERTY;
+	Filter.res.resProperty.ulPropTag = PR_ANR_UNICODE;
+	Filter.res.resProperty.lpProp = lpProp;
+
 	rowset = talloc_zero(nspi->mem_ctx, struct SRowSet);
-	retval = nspi_GetMatches(nspi, SPropTagArray, &rowset, NULL);
+	MIds = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
+	retval = nspi_GetMatches(nspi, SPropTagArray, &Filter, &rowset, &MIds);
+	MAPIFreeBuffer(lpProp);
 	mapi_errstr("NspiGetMatches", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	lpProp = get_SPropValue_SRowSet(rowset, PR_INSTANCE_KEY);
-	if (lpProp) {
-		struct SBinary bin;
-
-		bin = lpProp->value.bin;
-		nspi->profile_instance_key = *(uint32_t *)bin.lpb;
-	} else {
-		nspi->profile_instance_key = 0;
-	}
-
 	lpProp = get_SPropValue_SRowSet(rowset, PR_EMAIL_ADDRESS);
 	if (lpProp) {
 		DEBUG(3, ("PR_EMAIL_ADDRESS: %s\n", lpProp->value.lpszA));
@@ -207,10 +217,16 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 					  PR_EMS_AB_PROXY_ADDRESSES
 					  );
 
-	memset(nspi->settings->service_provider.ab, 0, 16);
-	nspi->settings->service_provider.ab[12] = 0x1;
+	nspi->pStat->CurrentRec = 0x0;
+	nspi->pStat->Delta = 0x0;
+	nspi->pStat->NumPos = 0x0;
+	nspi->pStat->TotalRecs = 0x1;
 
-	retval = nspi_QueryRows(nspi, SPropTagArray, &rowset, 1);
+	instance_key = MIds->aulPropTag[0];
+	MIds2.cValues = 0x1;
+	MIds2.aulPropTag = &instance_key;
+
+	retval = nspi_QueryRows(nspi, SPropTagArray, &MIds2, 1, &rowset);
 	mapi_errstr("NspiQueryRows", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -228,13 +244,21 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	}
 
 
-	retval = nspi_DNToEph(nspi);
-	mapi_errstr("NspiDNToEph", GetLastError());
+	MId_server = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
+	pNames.Count = 0x1;
+	pNames.Strings = (const char **) talloc_array(nspi->mem_ctx, char **, 1);
+	pNames.Strings[0] = (const char *) talloc_asprintf(nspi->mem_ctx, SERVER_DN, 
+							   nspi->org, nspi->org_unit, 
+							   nspi->servername);
+	retval = nspi_DNToMId(nspi, &pNames, &MId_server);
+	mapi_errstr("NspiDNToMId", GetLastError());
+	MAPIFreeBuffer((char *)pNames.Strings[0]);
+	MAPIFreeBuffer((char **)pNames.Strings);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x2,
 					  PR_EMS_AB_NETWORK_ADDRESS);
-	retval = nspi_GetProps(nspi, SPropTagArray, &rowset);
+	retval = nspi_GetProps(nspi, SPropTagArray, MId_server, &rowset);
 	mapi_errstr("NspiGetProps", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

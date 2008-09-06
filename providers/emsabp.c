@@ -226,10 +226,10 @@ NTSTATUS emsabp_setEntryId(TALLOC_CTX *mem_ctx, struct entry_id *entry, struct S
   PR_ACCOUNT_NAME is represented in the AD by the samrAccountName attribute
 */
 
-NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, struct instance_key *instance_keys, struct SRestriction *restriction)
+NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, struct instance_key *instance_keys, struct Restriction_r *restriction)
 {
 	enum ldb_scope			scope = LDB_SCOPE_SUBTREE;
-	struct SPropertyRestriction	*res_prop = NULL;
+	struct PropertyRestriction_r	*res_prop = NULL;
 	struct ldb_result		*res = NULL;
 	struct SPropValue		*lpProp = NULL;
 	const char * const		recipient_attrs[] = { "*", NULL};
@@ -242,7 +242,7 @@ NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, struct instance_key *insta
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	res_prop = (struct SPropertyRestriction *)&(restriction->res);
+	res_prop = (struct PropertyRestriction_r *)&(restriction->res);
 	if ((res_prop->ulPropTag != PR_ANR) && (res_prop->ulPropTag != PR_ANR_UNICODE)) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}

@@ -85,19 +85,20 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 
 }
 
-_PUBLIC_ void mapidump_SPropTagArray(struct SPropTagArray *proptags)
+_PUBLIC_ void mapidump_SPropTagArray(struct SPropTagArray *SPropTagArray)
 {
 	uint32_t	count;
 	const char	*proptag;
 
-	if (!proptags) return;
+	if (!SPropTagArray) return;
+	if (!SPropTagArray->cValues) return;
 
-	for (count = 0; count != proptags->cValues; count++) {
-		proptag = get_proptag_name(proptags->aulPropTag[count]);
+	for (count = 0; count != SPropTagArray->cValues; count++) {
+		proptag = get_proptag_name(SPropTagArray->aulPropTag[count]);
 		if (proptag) {
 			printf("%s\n", proptag);
 		} else {
-			printf("0x%.8x\n", proptags->aulPropTag[count]);
+			printf("0x%.8x\n", SPropTagArray->aulPropTag[count]);
 		}
 	}
 }
@@ -105,6 +106,10 @@ _PUBLIC_ void mapidump_SPropTagArray(struct SPropTagArray *proptags)
 _PUBLIC_ void mapidump_SRowSet(struct SRowSet *SRowSet, const char *sep)
 {
 	uint32_t		i;
+
+	/* Sanity checks */
+	if (!SRowSet) return;
+	if (!SRowSet->cRows) return;
 
 	for (i = 0; i < SRowSet->cRows; i++) {
 		mapidump_SRow(&(SRowSet->aRow[i]), sep);
@@ -139,13 +144,13 @@ _PUBLIC_ void mapidump_PAB_entry(struct SRow *aRow)
 }
 
 
-_PUBLIC_ void mapidump_Recipients(const char **usernames, struct SRowSet *rowset, struct FlagList *flaglist)
+_PUBLIC_ void mapidump_Recipients(const char **usernames, struct SRowSet *rowset, struct SPropTagArray *flaglist)
 {
 	uint32_t		i;
 	uint32_t		j;
 
-	for (i = 0, j= 0; i < flaglist->cFlags; i++) {
-		switch (flaglist->ulFlags[i]) {
+	for (i = 0, j= 0; i < flaglist->cValues; i++) {
+		switch (flaglist->aulPropTag[i]) {
 		case MAPI_UNRESOLVED:
 			printf("\tUNRESOLVED (%s)\n", usernames[i]);
 			break;
@@ -156,6 +161,8 @@ _PUBLIC_ void mapidump_Recipients(const char **usernames, struct SRowSet *rowset
 			printf("\tRESOLVED (%s)\n", usernames[i]);
 			mapidump_SRow(&rowset->aRow[j], "\t\t[+] ");
 			j++;
+			break;
+		default:
 			break;
 		}
 	}

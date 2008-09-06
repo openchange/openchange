@@ -41,7 +41,6 @@ _PUBLIC_ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const ch
 	if ((p = strchr(pdn, '/')) != NULL) {
 		p[0] = '\0';
 	}
-	DEBUG(3, ("x500 %s %s\n", element, pdn));
 
 	str = talloc_strdup(mem_ctx, pdn);
 	

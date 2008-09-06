@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2007.
+   Copyright (C) Julien Kerihuel 2005 - 2008.
    Copyright (C) Gregory Schiro 2006
 
    This program is free software; you can redistribute it and/or modify
@@ -31,25 +31,25 @@
  */
 
 _PUBLIC_ struct SPropTagArray *set_SPropTagArray(TALLOC_CTX *mem_ctx, 
-						 uint32_t prop_nb, ...)
+						 uint32_t PropCount, ...)
 {
-	struct SPropTagArray	*SPropTag;
+	struct SPropTagArray	*SPropTagArray;
 	va_list			ap;
 	uint32_t		i;
 	uint32_t		*aulPropTag;
 
-	aulPropTag = talloc_array(mem_ctx, uint32_t, prop_nb);
+	aulPropTag = talloc_array(mem_ctx, uint32_t, PropCount);
 
-	va_start(ap, prop_nb);
-	for (i = 0; i < prop_nb; i++) {
+	va_start(ap, PropCount);
+	for (i = 0; i < PropCount; i++) {
 		aulPropTag[i] = va_arg(ap, int);
 	}
 	va_end(ap);
 
-	SPropTag = talloc(mem_ctx, struct SPropTagArray);
-	SPropTag->aulPropTag = aulPropTag;
-	SPropTag->cValues = prop_nb;
-	return SPropTag;
+	SPropTagArray = talloc(mem_ctx, struct SPropTagArray);
+	SPropTagArray->aulPropTag = aulPropTag;
+	SPropTagArray->cValues = PropCount;
+	return SPropTagArray;
 }
 
 /**
@@ -183,15 +183,15 @@ enum MAPITAGS *get_MAPITAGS_SRow(TALLOC_CTX *mem_ctx, struct SRow *aRow)
   Remove MAPITAGS entries from a MAPITAGS array
 */
 
-uint32_t MAPITAGS_delete_entries(enum MAPITAGS *mapitags, uint32_t final_count, uint32_t prop_nb, ...)
+uint32_t MAPITAGS_delete_entries(enum MAPITAGS *mapitags, uint32_t final_count, uint32_t PropCount, ...)
 {
 	va_list			ap;
 	uint32_t		i,j;
 	uint32_t		aulPropTag;
 	uint32_t		count = 0;
 	
-	va_start(ap, prop_nb);
-	for (i = 0; i != prop_nb; i++) {
+	va_start(ap, PropCount);
+	for (i = 0; i != PropCount; i++) {
 		aulPropTag = va_arg(ap, uint32_t);
 		for (count = 0; mapitags[count]; count++) {
 			if (aulPropTag == (uint32_t)mapitags[count]) {
@@ -366,7 +366,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.MVszA = *((const struct SLPSTRArray *)data);
 		break;
 	case PT_MV_BINARY:
-		lpProps->value.MVbin = *((const struct SBinaryArray *)data);
+		lpProps->value.MVbin = *((const struct BinaryArray_r *)data);
 		break;
 	case PT_MV_CLSID:
 		lpProps->value.MVguid = *((const struct SGuidArray *)data);

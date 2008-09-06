@@ -22,8 +22,6 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
 
-NTSTATUS samba_init_module(void);
-
 /**
    \details Dummy init function which reads a parametric option from
    smb.conf and display it on the log channel.

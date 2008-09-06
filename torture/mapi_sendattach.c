@@ -55,7 +55,7 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 	mapi_object_t		obj_stream;
 	uint64_t		id_outbox;
 	struct SRowSet		*SRowSet = NULL;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	uint32_t		index = 0;
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	SPropValue;

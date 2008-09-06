@@ -35,6 +35,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	ret = module_oxcprpt_init(mt);
 	ret = module_oxorule_init(mt);
 	ret = module_oxcfxics_init(mt);
+	ret = module_nspi_init(mt);
 	ret = module_noserver_init(mt);
 
 	return ret;
@@ -254,7 +255,48 @@ _PUBLIC_ uint32_t module_oxcfxics_init(struct mapitest *mt)
 
 
 /**
-   
+   \details Register the NSPI test suite
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_nspi_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "NSPI", "Name Service Provider Interface", true);
+	
+	mapitest_suite_add_test(suite, "UPDATESTAT", "Update the STAT structure", mapitest_nspi_UpdateStat);
+	mapitest_suite_add_test(suite, "QUERYROWS", "Returns a number of rows from a specified table", mapitest_nspi_QueryRows);
+	mapitest_suite_add_test(suite, "SEEKENTRIES", "Searches for and sets the logical position in a specific table", mapitest_nspi_SeekEntries);
+	mapitest_suite_add_test(suite, "GETMATCHES", "Returns an explicit table", mapitest_nspi_GetMatches);
+	mapitest_suite_add_test(suite, "RESORTRESTRICTION", "Apply a sort order to the objects in a restricted address book container", mapitest_nspi_ResortRestriction);
+	mapitest_suite_add_test(suite, "DNTOMID", "Maps a set of DN to a set of MId", mapitest_nspi_DNToMId);
+	mapitest_suite_add_test(suite, "GETPROPLIST", "Retrieve the list of properties associated to an object", mapitest_nspi_GetPropList);
+	mapitest_suite_add_test(suite, "GETPROPS", "Returns a row containing a set of the properties and values", mapitest_nspi_GetProps);
+	mapitest_suite_add_test(suite, "COMPAREMIDS", "Compare the position in an AB container of two objects", mapitest_nspi_CompareMIds);
+	mapitest_suite_add_test(suite, "MODPROPS", "Modify an address book object", mapitest_nspi_ModProps);
+	mapitest_suite_add_test(suite, "GETSPECIALTABLE", "Returns the rows of a special table to the client", mapitest_nspi_GetSpecialTable);
+	mapitest_suite_add_test(suite, "GETTEMPLATEINFO", "Returns information about template objects", mapitest_nspi_GetTemplateInfo);
+	mapitest_suite_add_test(suite, "MODLINKATT", "Modifies the values of a specific property of a specific row", mapitest_nspi_ModLinkAtt);
+	mapitest_suite_add_test(suite, "QUERYCOLUMNS", "Returns a list of all the properties the NSPI server is aware of", mapitest_nspi_QueryColumns);
+	mapitest_suite_add_test(suite, "GETNAMESFROMIDS", "Returns a list of property names for a set of proptags", mapitest_nspi_GetNamesFromIDs);
+	mapitest_suite_add_test(suite, "GETIDSFROMNAMES", "Returns the property IDs associated with property names", mapitest_nspi_GetIDsFromNames);
+	mapitest_suite_add_test(suite, "RESOLVENAMES", "Resolve usernames", mapitest_nspi_ResolveNames);
+
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
+
+
+/**
+   \details Return the no server test suite
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
  */
 _PUBLIC_ uint32_t module_noserver_init(struct mapitest *mt)
 {

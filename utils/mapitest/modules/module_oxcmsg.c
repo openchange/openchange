@@ -243,7 +243,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 	struct SPropTagArray	*SPropTagArray = NULL;
 	struct SPropValue	SPropValue;
 	struct SRowSet		*SRowSet = NULL;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	mapi_id_t		id_msgs[1];
 
 	/* Step 1. Logon */
@@ -363,7 +363,7 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 	struct SPropTagArray	*SPropTagArray = NULL;
 	struct SPropValue	SPropValue;
 	struct SRowSet		*SRowSet = NULL;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	mapi_id_t		id_msgs[1];
 
 	/* Step 1. Logon */
@@ -499,7 +499,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	struct SPropTagArray	*SPropTagArray = NULL;
 	struct SPropValue	SPropValue;
 	struct SRowSet		*SRowSet = NULL;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	struct ReadRecipientRow	*RecipientRows;
 	uint8_t			count;
 	mapi_id_t		id_msgs[1];

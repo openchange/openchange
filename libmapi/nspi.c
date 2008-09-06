@@ -1,7 +1,7 @@
 /*
    OpenChange NSPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2007.
+   Copyright (C) Julien Kerihuel 2005 - 2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,47 +23,67 @@
 #include <param.h>
 #include <credentials.h>
 
-/*
- * nspi_set_MAPI_SETTINGS
- * set the client language/keyboard preferences (fetched from smb.conf
- * or inline)
+
+/**
+   \file nspi.c
+
+   \brief NSPI stack functions
  */
 
-static struct MAPI_SETTINGS *nspi_set_MAPI_SETTINGS(TALLOC_CTX *mem_ctx, uint32_t codepage,
-						    uint32_t language, uint32_t method)
-{
-	struct MAPI_SETTINGS	*settings;
 
-	if (!codepage || !language || !method) {
-		DEBUG(3, ("nspi_set_dflt_settings: Invalid parameter\n"));
+/**
+   \details Initialize the STAT structure and set common STAT parameters
+
+   \param mem_ctx pointer to the memory context
+   \param CodePage the CodePage value to set in the STAT structure
+   \param TemplateLocale the Locale for the STAT TemplateLocale parameter
+   \param SortLocale the Locale for the STAT SortLocal parameter
+ */
+static struct STAT *nspi_set_STAT(TALLOC_CTX *mem_ctx, 
+				  uint32_t CodePage,
+				  uint32_t TemplateLocale, 
+				  uint32_t SortLocale)
+{
+	struct STAT		*pStat;
+
+	/* Sanity Checks */
+	if (!CodePage || !TemplateLocale || !SortLocale) {
 		return NULL;
 	}
 
-	settings = talloc(mem_ctx, struct MAPI_SETTINGS);
-	settings->handle = 0;
-	settings->flag = 0;
+	pStat = talloc_zero(mem_ctx, struct STAT);
+	pStat->SortType = SortTypeDisplayName;
+	pStat->CodePage = CodePage;
+	pStat->TemplateLocale = TemplateLocale;
+	pStat->SortLocale = SortLocale;
 
-	memset(settings, 0, 16);
-
-	settings->codepage = codepage;
-	settings->input_locale.language = language;
-	settings->input_locale.method = method;
-
-	return settings;
+	return pStat;
 }
 
-/*
- * nspi_bind
- * Bind on the nspi endpoint and returns an opaque nspi_context
- * structure
- */
 
-_PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p,
-					struct cli_credentials *cred, uint32_t codepage,
-					uint32_t language, uint32_t method)
+/**
+   \details Initiates a session between a client and the NSPI server.
+
+   \param mem_ctx pointer to the memory context
+   \param p pointer to the DCERPC pipe
+   \param cred pointer to the user credentials
+   \param codepage the code to set in the STAT structure
+   \param language the language to set in the STAT structure
+   \param method the method to set in the STAT structure
+
+   \return Allocated pointer to a nspi_context structure on success,
+   otherwise NULL
+ */
+_PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, 
+					struct dcerpc_pipe *p,
+					struct cli_credentials *cred, 
+					uint32_t codepage,
+					uint32_t language, 
+					uint32_t method)
 {
 	struct NspiBind		r;
 	NTSTATUS		status;
+	enum MAPISTATUS		retval;
 	struct nspi_context	*ret;
 	struct GUID		guid;
 
@@ -71,21 +91,18 @@ _PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe 
 	ret->rpc_connection = p;
 	ret->mem_ctx = mem_ctx;
 	ret->cred = cred;
-	if (!(ret->settings = nspi_set_MAPI_SETTINGS(mem_ctx, codepage, language, method))) {
-		DEBUG(0, ("nspi_set_MAPI_SETTINGS: Invalid parameter\n"));
+	ret->version = 0;
+
+	/* Sanity Checks */
+	if (!(ret->pStat = nspi_set_STAT(mem_ctx, codepage, language, method))) {
+		talloc_free(ret);
 		return NULL;
 	}
 
-	r.in.unknown = 0;
+	r.in.dwFlags = 0;
 
-	r.in.settings = ret->settings;
-	r.in.settings->flag = 0x0;
-
-	memset(r.in.settings->service_provider.ab, 0, 16);
-	r.in.settings->service_provider.ab[12] = 0xd6;
-	r.in.settings->service_provider.ab[13] = 0x11;
-	r.in.settings->service_provider.ab[14] = 0x43;
-	r.in.settings->service_provider.ab[15] = 0x80;
+	r.in.pStat = ret->pStat;
+	r.in.pStat->ContainerID = 0x0;
 
 	r.in.mapiuid = talloc(mem_ctx, struct GUID);
 	memset(r.in.mapiuid, 0, sizeof(struct GUID));
@@ -99,9 +116,9 @@ _PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe 
 
 
 	status = dcerpc_NspiBind(p, mem_ctx, &r);
-
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status)) || r.out.result != MAPI_E_SUCCESS) {
-		mapi_errstr("NspiBind", r.out.result);
+	retval = r.out.result;
+	if ((!NT_STATUS_IS_OK(status)) || (retval != MAPI_E_SUCCESS)) {
+		talloc_free(ret);
 		return NULL;
 	}
 	
@@ -110,410 +127,1023 @@ _PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx, struct dcerpc_pipe 
 
 
 /**
- * Destructor
+   \details Destructor for the NSPI context. Call the NspiUnbin function
+   
+   param data generic pointer to data with mapi_provider information
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
  */
 
 int nspi_disconnect_dtor(void *data)
 {
-	bool res;
+	enum MAPISTATUS		retval;
 	struct mapi_provider	*provider = (struct mapi_provider *) data;
 
-	res = nspi_unbind(provider->ctx);
-	return 0;
+	retval = nspi_unbind(provider->ctx);
+	return retval;
 }
 
 
-/*
- * nspi_unbind
- * Unbind from the endpoint
- */
+/**
+   \details Destroys the context handle
 
-_PUBLIC_ enum MAPISTATUS nspi_unbind(struct nspi_context *nspi)
+   \param nspi_ctx pointer to the NSPI connection context
+
+   \return return 1 on success or 2 if the input context is NULL
+ */
+_PUBLIC_ enum MAPISTATUS nspi_unbind(struct nspi_context *nspi_ctx)
 {
 	struct NspiUnbind	r;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 
-	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	r.in.handle = r.out.handle = &nspi->handle;
-	r.in.status = 0;
+	r.in.handle = r.out.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0;
 
-	status = dcerpc_NspiUnbind(nspi->rpc_connection, nspi->mem_ctx, &r);
+	status = dcerpc_NspiUnbind(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
 	MAPI_RETVAL_IF((retval != 1) && !MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
 
-/*
- * nspi_UpdateStat
- *
- */
 
-_PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi)
+/**
+   \details Updates the STAT block representing position in a table to
+   reflect positioning changes requested by the client.
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param plDelta pointer to an unsigned long indicating movement
+   within the address book container specified by the input parameter
+   pStat.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi_ctx, 
+					 uint32_t *plDelta)
 {
 	struct NspiUpdateStat		r;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
+	uint32_t			delta;
 
-	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	r.in.handle = &nspi->handle;
+	r.in.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0x0;
 
-	r.in.settings = *nspi->settings;
-	memset(r.in.settings.service_provider.ab, 0, 16);
-	memset(r.in.settings.service_provider.ab + 12, 0xff, 4);
+	r.in.pStat = nspi_ctx->pStat;
+	r.in.plDelta = plDelta;
 
-	status = dcerpc_NspiUpdateStat(nspi->rpc_connection, nspi->mem_ctx, &r);
+	r.out.pStat = nspi_ctx->pStat;
+	r.out.plDelta = &delta;
+
+	status = dcerpc_NspiUpdateStat(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	if (plDelta) {
+		*plDelta = delta;
+	}
 
 	return MAPI_E_SUCCESS;
 }
 
-/*
- * nspi_QueryRows
- * retrieve mapitags/x500 attr values from the object requested in
- * NspiGetMatches
- */
 
-_PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi, struct SPropTagArray *SPropTagArray,
-					struct SRowSet **rowset, uint32_t count)
+/**
+   \details Returns a number of Rows from a specified table.
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param pPropTags pointer to the list of proptags that the client
+   requires to be returned for each row.
+   \param MIds pointer to a list of values representing an Explicit
+   table
+   \param count the number of rows requested
+   \param ppRows pointer on pointer to the the rows returned by the
+   server
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx, 
+					struct SPropTagArray *pPropTags,
+					struct SPropTagArray *MIds, 
+					uint32_t count,
+					struct SRowSet **ppRows)
 {
+	TALLOC_CTX			*mem_ctx;
 	struct NspiQueryRows		r;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
-	struct MAPI_SETTINGS		*settings;
+	struct STAT			*pStat;
 
-	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	r.in.handle = &nspi->handle;
-	r.in.flag = 0x0;
+	mem_ctx = talloc_init("nspi_QueryRows");
 
-	r.in.settings = nspi->settings;
+	r.in.handle = &nspi_ctx->handle;
+	r.in.dwFlags = 0x0;
+	r.in.pStat = nspi_ctx->pStat;
 
-	if (nspi->profile_instance_key) {
-		r.in.ikey_cnt = 0x1;
-		r.in.instance_key = &(nspi->profile_instance_key);
-		DEBUG(5, ("r.in.instance_key = 0x%x\n", *r.in.instance_key));
+	if (MIds && MIds->cValues) {
+		r.in.dwETableCount = MIds->cValues;
+		r.in.lpETable = MIds->aulPropTag;
+		/* We set CurrentRec to the first entry */
+		r.in.pStat->CurrentRec = MIds->aulPropTag[0];
 	} else {
-		r.in.ikey_cnt = 0x0;
-		r.in.instance_key = NULL;
+		r.in.dwETableCount = 0;
+		r.in.lpETable = NULL;
 	}
 
-	r.in.lRows = count;
-	
-	SPropTagArray->cValues += 1;
- 	r.in.REQ_properties = SPropTagArray;
+	r.in.Count = count;	
+ 	r.in.pPropTags = pPropTags;
 
-	settings = talloc(nspi->mem_ctx, struct MAPI_SETTINGS);
-	r.out.settings = settings;
+	pStat = talloc(mem_ctx, struct STAT);
+	r.out.pStat = pStat;
 
-	r.out.RowSet = rowset;
+	r.out.ppRows = ppRows;
 
-	status = dcerpc_NspiQueryRows(nspi->rpc_connection, nspi->mem_ctx, &r);
+	status = dcerpc_NspiQueryRows(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	memcpy(&nspi->settings->service_provider, 
-	       &r.out.settings->service_provider, 16);
+	nspi_ctx->pStat->CurrentRec = r.out.pStat->CurrentRec;
+	nspi_ctx->pStat->Delta = r.out.pStat->Delta;
+	nspi_ctx->pStat->NumPos = r.out.pStat->NumPos;
+	nspi_ctx->pStat->TotalRecs = r.out.pStat->TotalRecs;
+
+	talloc_free(mem_ctx);
+
 	return MAPI_E_SUCCESS;
 
 }
 
-/*
- * nspi_GetMatches
- * Request an exchange server for a view (mapitable) on an Address
- * Book object and retrieve an instance key
- *
- */
 
-_PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi, struct SPropTagArray *SPropTagArray,
-					 struct SRowSet **rowset, const char *username)
+/**
+   \details Searches for and sets the logical position in a specific
+   table to the first entry greater than or equal to a specified
+   value. Optionally, it might also return information about rows in
+   the table.
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param SortType the table sort order to use
+   \param pTarget SPropValue struct holding the value being sought
+   \param pPropTags pointer to an array of property tags of columns
+   that the client wants to be returned for each row returned.
+   \param pMIds pointer to a list of Mid that comprise a restricted
+   address book container
+   \param pRows pointer to pointer to a SRowSet structure holding the
+   rows returned by the server
+
+   SortType can take the following values:
+   -# SortTypeDisplayName
+   -# SortTypePhoneticDisplayName
+
+   If pTarget property tag is not set accordingly to SortType, the
+   function returns MAPI_E_INVALID_PARAMETER. Possible values are:
+   -# SortType set to SortTypeDisplayName and pTarget property tag set
+      to PR_DISPLAY_NAME or PR_DISPLAY_UNICODE
+   -# SortType set to SortTypePhoneticDisplayName and pTarget property
+      tag set to PR_EMS_AB_PHONETIC_DISPLAY_NAME or
+      PR_EMS_AB_PHONETIC_DISPLAY_NAME_UNICODE
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
+					  enum TableSortOrders SortType,
+					  struct SPropValue *pTarget,
+					  struct SPropTagArray *pPropTags,
+					  struct SPropTagArray *pMIds,
+					  struct SRowSet **pRows)
 {
+	struct NspiSeekEntries		r;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	struct STAT			*pStat;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!pTarget, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!pRows, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(((SortType != SortTypeDisplayName) 
+			&& (SortType != SortTypePhoneticDisplayName)), 
+		       MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Sanity Checks on SortType and pTarget combination */
+	MAPI_RETVAL_IF(((SortType == SortTypeDisplayName) && 
+			(pTarget->ulPropTag != PR_DISPLAY_NAME) && 
+			(pTarget->ulPropTag != PR_DISPLAY_NAME_UNICODE)),
+		       MAPI_E_INVALID_PARAMETER, NULL);
+
+	MAPI_RETVAL_IF(((SortType == SortTypePhoneticDisplayName) && 
+			(pTarget->ulPropTag != PR_EMS_AB_PHONETIC_DISPLAY_NAME) &&
+			(pTarget->ulPropTag != PR_EMS_AB_PHONETIC_DISPLAY_NAME_UNICODE)),
+		       MAPI_E_INVALID_PARAMETER, NULL);
+
+
+	r.in.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0x0;
+	r.in.pStat = nspi_ctx->pStat;
+	r.in.pStat->SortType = SortType;
+	r.in.pTarget = pTarget;
+
+	if (pMIds && pMIds->cValues) {
+		r.in.lpETable = pMIds;
+	} else {
+		r.in.lpETable = NULL;
+	}
+
+	r.in.pPropTags = pPropTags;
+
+	r.out.pRows = pRows;
+
+	pStat = talloc(nspi_ctx->mem_ctx, struct STAT);
+	r.out.pStat = pStat;
+
+	status = dcerpc_NspiSeekEntries(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, pStat);
+	MAPI_RETVAL_IF(retval, retval, pStat);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Returns an explicit table.
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param pPropTags pointer to an array of property tags of columns
+   \param Filter pointer to the Restriction to apply to the table
+   \param ppRows pointer to pointer to a SRowSet structure holding the
+   rows returned by the server
+   \param ppOutMIds pointer to pointer to a list of MId that comprise
+   a restricted address book container
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+ */
+_PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx, 
+					 struct SPropTagArray *pPropTags,
+					 struct Restriction_r *Filter,
+					 struct SRowSet **ppRows,
+					 struct SPropTagArray **ppOutMIds)
+{
+	TALLOC_CTX			*mem_ctx;
 	struct NspiGetMatches		r;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
-	struct SPropertyRestriction	*prop_restrictions;
-	struct SPropValue		*lpProp;
-	struct instance_key		*instance_key;
-	struct MAPI_SETTINGS		*settings;
+	struct STAT			*pStat;
 
-	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!ppRows, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ppOutMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
-	if (!username) {
-		username = cli_credentials_get_username(nspi->cred);
-		MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
-	}
-		
-	r.in.handle = &nspi->handle;
-	r.in.unknown1 = 0;
+	mem_ctx = talloc_init("nspi_GetMatches");
+
+	r.in.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0;
 	
-	r.in.settings = nspi->settings;
-	r.in.settings->flag = 0x0;
+	r.in.pStat = nspi_ctx->pStat;
+	r.in.pStat->ContainerID = 0x0;
+	r.in.pStat->CurrentRec = 0x0;
+	r.in.pStat->Delta = 0x0;
+	r.in.pStat->NumPos = 0x0;
+	r.in.pStat->TotalRecs = 0x0;
 
-	memset(r.in.settings->service_provider.ab, 0, 16);
+	r.in.pReserved = NULL;
+	r.in.Reserved2 = 0;
+	r.in.Filter = Filter;
+	r.in.lpPropName = NULL;
+	r.in.ulRequested = 5000;
+	r.in.pPropTags = pPropTags;
 
-	r.in.PropTagArray = NULL;
-	r.in.unknown2 = 0;
+	pStat = talloc(mem_ctx, struct STAT);
+	r.out.pStat = pStat;
+	r.out.ppOutMIds = ppOutMIds;
+	r.out.ppRows = ppRows;
 
-	r.in.restrictions = talloc(nspi->mem_ctx, struct SRestriction);
-	r.in.restrictions->rt = RES_PROPERTY;
-
-	prop_restrictions = talloc(nspi->mem_ctx, struct SPropertyRestriction);
-	prop_restrictions->relop = RES_PROPERTY;
-	prop_restrictions->ulPropTag = PR_ANR;
-
-	lpProp = talloc(nspi->mem_ctx, struct SPropValue);
-	lpProp->ulPropTag = PR_ANR;
-	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = username;
-	prop_restrictions->lpProp = lpProp;
-
-	r.in.restrictions->res.resProperty = *prop_restrictions;
-
-	r.in.unknown3 = 0;
-
-	r.in.REQ_properties = SPropTagArray;
-	
-	settings = talloc(nspi->mem_ctx, struct MAPI_SETTINGS);
-	r.out.settings = settings;
-
-	instance_key = talloc(nspi->mem_ctx, struct instance_key);
-	r.out.instance_key = instance_key;
-
-	r.out.RowSet = rowset;
-
-	status = dcerpc_NspiGetMatches(nspi->rpc_connection, nspi->mem_ctx, &r);
+	status = dcerpc_NspiGetMatches(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), MAPI_E_NOT_FOUND, NULL);
-	
-	rowset = r.out.RowSet;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_NOT_FOUND, mem_ctx);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }
 
-/*
- * nspi_DNToEph
- * Request for an object giving its DN and retrieve its instance key
- * This function is used during MAPI profiles setup to request the
- * Exchange object in the Active Directory
- */
 
-_PUBLIC_ enum MAPISTATUS nspi_DNToEph(struct nspi_context *nspi)
+/**
+   \details Applies a sort order to the objects in a restricted
+   address book container
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param SortType the table sort order to use
+   \param pInMIds pointer on a list of MIds that comprise a
+   restricted addess book container
+   \param ppMIds pointer on pointer to the returned list of MIds that
+   comprise a restricted addess book container.
+
+   SortType can take the following values:
+   -# SortTypeDisplayName
+   -# SortTypePhoneticDisplayName
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_ResortRestriction(struct nspi_context *nspi_ctx,
+						enum TableSortOrders SortType,
+						struct SPropTagArray *pInMIds,
+						struct SPropTagArray **ppMIds)
 {
-	struct NspiDNToEph	r;
+	TALLOC_CTX			*mem_ctx;
+	struct NspiResortRestriction	r;
+	enum MAPISTATUS			retval;
+	NTSTATUS			status;
+	struct SPropTagArray		*ppInMIds = NULL;
+	struct STAT			*pStat = NULL;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!pInMIds, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ppMIds, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Sanity check on SortType */
+	MAPI_RETVAL_IF(((SortType != SortTypeDisplayName) && (SortType != SortTypePhoneticDisplayName)),
+		       MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_init("nspi_ResortRestriction");
+
+	r.in.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0;
+	r.in.pStat = nspi_ctx->pStat;
+	r.in.pStat->SortType = SortType;
+	r.in.pInMIds = pInMIds;
+	r.in.ppMIds = &ppInMIds;
+
+	pStat = talloc_zero(mem_ctx, struct STAT);
+	r.out.pStat = pStat;
+	r.out.ppMIds = ppMIds;
+
+	status = dcerpc_NspiResortRestriction(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Maps a set of DN to a set of MId
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param pNames pointer to a StringsArray_r structure with the DN to
+   map
+   \param ppMIds pointer on pointer to the returned list of MIds
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_DNToMId(struct nspi_context *nspi_ctx, 
+				      struct StringsArray_r *pNames,
+				      struct SPropTagArray **ppMIds)
+{
+	struct NspiDNToMId	r;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
-	struct NAME_STRING	*server_dn;
-	struct instance_key	*instance_key;
 
-	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!nspi->servername, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!nspi->org, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!nspi->org_unit, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!pNames, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!pNames->Count, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ppMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
-	r.in.handle = &nspi->handle;
-	r.in.flag = 0;
-	r.in.size = 1;
+	r.in.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0;
+	r.in.pNames = pNames;
 
-	server_dn = talloc(nspi->mem_ctx, struct NAME_STRING);
-	server_dn->str = talloc_asprintf(nspi->mem_ctx, SERVER_DN, nspi->org,
-					 nspi->org_unit, nspi->servername);
+	r.out.ppMIds = ppMIds;
 
-	r.in.server_dn = server_dn;
-
-	instance_key = talloc(nspi->mem_ctx, struct instance_key);
-	r.out.instance_key = instance_key;
-
-	status = dcerpc_NspiDNToEph(nspi->rpc_connection, nspi->mem_ctx, &r);
+	status = dcerpc_NspiDNToMId(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
-
-	nspi->profile_instance_key = *(instance_key->value);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL)
 
 	return MAPI_E_SUCCESS;
 }
 
 
-/*
- * nspi_GetProps
- * request for properties associated with the given mapiuid (mapiuid
- * is computed with the instance key)
- */
+/**
+   \details Returns a list of all the properties that have values on
+   the specified object
 
-_PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi, 
-				       struct SPropTagArray *SPropTagArray, 
-				       struct SRowSet **rowset)
+   \param nspi_ctx pointer to the NSPI connection context
+   \param WantObject boolean value defining whether we want the server
+   to include properties with the type set to PT_OBJECT
+   \param dwMId the MId of the specified object
+   \param ppPropTags pointer on pointer to the list of property tags
+   associated to the object.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+ */
+_PUBLIC_ enum MAPISTATUS nspi_GetPropList(struct nspi_context *nspi_ctx,
+					  bool WantObject,
+					  uint32_t dwMId,
+					  struct SPropTagArray **ppPropTags)
+{
+	struct NspiGetPropList	r;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!ppPropTags, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	r.in.handle = &nspi_ctx->handle;
+	r.in.dwFlags = (WantObject == true) ? 0x0 : fSkipObjects;
+	r.in.dwMId = dwMId;
+	r.in.CodePage = nspi_ctx->pStat->CodePage;
+	
+	r.out.ppPropTags = ppPropTags;
+
+	status = dcerpc_NspiGetPropList(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+
+/**
+   \details Returns an address book row containing a set of the
+   properties and values that exists on an object
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param pPropTags pointer to the list of property tags that the
+   client wants to be returned
+   \param MId pointer to the MId of the record
+   \param SRowSet pointer on pointer to the row returned by the server
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi_ctx, 
+				       struct SPropTagArray *pPropTags, 
+				       struct SPropTagArray *MId,
+				       struct SRowSet **SRowSet)
+
 {
 	struct NspiGetProps	r;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
-	struct SRow		*REPL_values;
+	struct SRow		*ppRows;
 
-	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!nspi->profile_instance_key, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!MId, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!MId->cValues, MAPI_E_INVALID_PARAMETER, NULL);
 
-	r.in.handle = &nspi->handle;
-	r.in.flag = 0;
+	r.in.handle = &nspi_ctx->handle;
+	r.in.dwFlags = 0;
 
-	r.in.settings = nspi->settings;
-	memset(r.in.settings->service_provider.ab, 0, 16);
-	r.in.settings->service_provider.ab[0] = nspi->profile_instance_key;
-	r.in.settings->service_provider.ab[1] = (nspi->profile_instance_key & 0xFF00) >> 8;
+	r.in.pStat = nspi_ctx->pStat;
+	r.in.pStat->CurrentRec = MId->aulPropTag[0];
+	r.in.pStat->Delta = 0x0;
+	r.in.pStat->NumPos = 0x0;
+	r.in.pStat->TotalRecs = 0x0;
 
- 	r.in.REQ_properties = SPropTagArray;
+ 	r.in.pPropTags = pPropTags;
 
-	REPL_values = talloc(nspi->mem_ctx, struct SRow);
-	r.out.REPL_values = &REPL_values;
+	ppRows = talloc(nspi_ctx->mem_ctx, struct SRow);
+	r.out.ppRows = &ppRows;
 
-	status = dcerpc_NspiGetProps(nspi->rpc_connection, nspi->mem_ctx, &r);
+	status = dcerpc_NspiGetProps(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL)
 
-	rowset[0]->cRows = 1;
-	rowset[0]->aRow = talloc(nspi->mem_ctx, struct SRow);
-	rowset[0]->aRow->ulAdrEntryPad = REPL_values->ulAdrEntryPad;
-	rowset[0]->aRow->cValues = REPL_values->cValues;
-	rowset[0]->aRow->lpProps = REPL_values->lpProps;
+	SRowSet[0]->cRows = 1;
+	SRowSet[0]->aRow = talloc(nspi_ctx->mem_ctx, struct SRow);
+	SRowSet[0]->aRow->ulAdrEntryPad = ppRows->ulAdrEntryPad;
+	SRowSet[0]->aRow->cValues = ppRows->cValues;
+	SRowSet[0]->aRow->lpProps = ppRows->lpProps;
 	
 	return MAPI_E_SUCCESS;
 }
 
-/*
- * nspi_GetHierarchyInfo
- * Retrieve the Address Book container hierarchy
+
+/**
+   \details Compares the position in an address book container of two
+   objects identified by MId and returns the value of the comparison
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param MId1 the first MId to compare
+   \param MId2 the second MId to compare
+   \param plResult pointer to the value of the comparison
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
  */
-
-_PUBLIC_ enum MAPISTATUS nspi_GetHierarchyInfo(struct nspi_context *nspi, 
-					       struct SRowSet **rowset)
+_PUBLIC_ enum MAPISTATUS nspi_CompareMIds(struct nspi_context *nspi_ctx,
+					  uint32_t MId1, uint32_t MId2,
+					  uint32_t *plResult)
 {
-	struct NspiGetHierarchyInfo	r;
-	NTSTATUS			status;
-	enum MAPISTATUS			retval;
-	uint32_t       			unknown = 0;
+	struct NspiCompareMIds	r;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
 
-	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!plResult, MAPI_E_INVALID_PARAMETER, NULL);
 
-	r.in.handle = &nspi->handle;
-	r.in.unknown1 = 0;
+	r.in.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0x0;
+	r.in.pStat = nspi_ctx->pStat;
+	r.in.MId1 = MId1;
+	r.in.MId2 = MId2;
 
-	r.in.settings = nspi->settings;
-	r.in.settings->flag = 0xffff;
+	r.out.plResult = plResult;
 
-	memset(r.in.settings->service_provider.ab, 0, 16);
-	r.in.settings->service_provider.ab[12] = 0x98;
-	r.in.settings->service_provider.ab[13] = 0x6a;
-	r.in.settings->service_provider.ab[14] = 0xf8;
-	r.in.settings->service_provider.ab[15] = 0x77;
-
-	r.in.unknown2 = &unknown;
-	r.out.unknown2 = &unknown;
-
-	r.out.RowSet = rowset;
-
-	status = dcerpc_NspiGetHierarchyInfo(nspi->rpc_connection, nspi->mem_ctx, &r);
+	status = dcerpc_NspiCompareMIds(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
 
-/*
- * nspi_ResolveNames
- * query WAB (Windows Address Book) and try to resolve the provided
- * name and return a SRowSet with the requested property tags fetched
- * values.
- */
 
-_PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi, const char **usernames, 
-					   struct SPropTagArray *props, struct SRowSet ***rowSet,
-					   struct FlagList ***flaglist)
+/**
+   \details Modify the properties of an object in the address book
+   
+   \param nspi_ctx pointer to the NSPI connection context
+   \param MId the MId of the address book object
+   \param pPropTags pointer to the list of properties to be modified
+   on the object
+   \param pRow Contains an address book row
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_ModProps(struct nspi_context *nspi_ctx,
+				       uint32_t MId,
+				       struct SPropTagArray *pPropTags,
+				       struct SRow *pRow)
+{
+	struct NspiModProps	r;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!pPropTags, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!pRow, MAPI_E_INVALID_PARAMETER, NULL);
+
+	r.in.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0x0;
+	r.in.pStat = nspi_ctx->pStat;
+
+	if (MId) {
+		r.in.pStat->CurrentRec = MId;
+	}
+
+	r.in.pPropTags = pPropTags;
+	r.in.pRow = pRow;
+
+	status = dcerpc_NspiModProps(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+
+/**
+   \details Returns the rows of a special table to the client. The
+   special table can be a Hierarchy Table or an Address Creation Table
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param Type bitmap of flags defining the type of the special table
+   \param ppRows pointer on pointer to the rows returned by the server
+
+   Possible values for Type:
+   -# NspiAddressCreationTemplates to access an Address Creation Table
+   -# NspiUnicodeStrings for strings to be returned in Unicode
+
+   If NspiAddressCreationTemplates is not set, then
+   NspiGetSpecialTable will automatically fetch the Hierarchy Table.
+
+   If NspiAddressCreationTemplates is set, then NspiUnicodeStrings is
+   ignored.
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+ */
+_PUBLIC_ enum MAPISTATUS nspi_GetSpecialTable(struct nspi_context *nspi_ctx, 
+					      uint32_t Type,
+					      struct SRowSet **ppRows)
+{
+	struct NspiGetSpecialTable	r;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(((Type != 0x0) && (Type != 0x2) && (Type != 0x4)),
+		       MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ppRows, MAPI_E_INVALID_PARAMETER, NULL);
+
+	r.in.handle = &nspi_ctx->handle;
+	r.in.dwFlags = Type;
+
+	r.in.pStat = nspi_ctx->pStat;
+	r.in.lpVersion = &nspi_ctx->version;
+
+	r.out.lpVersion = &nspi_ctx->version;
+	r.out.ppRows = ppRows;
+
+	status = dcerpc_NspiGetSpecialTable(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Returns information about template objects in the address
+   book.
+
+   \param nspi_ctx pointer to the NSPI memory context
+   \param dwFlags set of bit flags
+   \param ulType specifies the display type of the template
+   \param pDN the DN of the template requested
+   \param ppData pointer on pointer to the data requested
+
+   Possible values for dwFlags:
+   -# TI_TEMPLATE to return the template
+   -# TI_SCRIPT to return the script associated to the template
+   -# TI_EMT to return the e-mail type associated to the template
+   -# TI_HELPFILE_NAME to return the help file associated to the
+      template
+   -# TI_HELPFILE_CONTENTS to return the contents of the help file
+      associated to the template
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+ */
+_PUBLIC_ enum MAPISTATUS nspi_GetTemplateInfo(struct nspi_context *nspi_ctx,
+					      uint32_t dwFlags,
+					      uint32_t ulType,
+					      char *pDN,
+					      struct SRow **ppData)
+{
+	struct NspiGetTemplateInfo	r;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!ppData, MAPI_E_INVALID_PARAMETER, NULL);
+
+	r.in.handle = &nspi_ctx->handle;
+	r.in.dwFlags = dwFlags;
+	r.in.ulType = ulType;
+	r.in.pDN = pDN;
+	r.in.dwCodePage = nspi_ctx->pStat->CodePage;
+	r.in.dwLocaleID = nspi_ctx->pStat->TemplateLocale;
+	
+	r.out.ppData = ppData;
+
+	status = dcerpc_NspiGetTemplateInfo(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+	
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Modifies the values of a specific property of a specific
+   row in the address book. This function only applies only to rows
+   that support the PT_OBJECT Property Type.
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param Delete boolean value defining whether the server must remove
+   all values specified by the input parameter lpEntryIDs from the
+   property specified by ulPropTag
+   \param ulPropTag property tag of the property the client wishes to
+   modify
+   \param MId the MId of the address book object
+   \param lpEntryIds array of BinaryArray_r structures intended to be
+   modified or deleted
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_ModLinkAtt(struct nspi_context *nspi_ctx,
+					 bool Delete,
+					 uint32_t ulPropTag,
+					 uint32_t MId,
+					 struct BinaryArray_r *lpEntryIds)
+{
+	struct NspiModLinkAtt	r;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(((ulPropTag & 0xFFFF) != PT_OBJECT), MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!lpEntryIds, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!lpEntryIds->cValues, MAPI_E_INVALID_PARAMETER, NULL)
+
+	r.in.handle = &nspi_ctx->handle;
+	/* FIXME: need to find fDelete value first */
+	r.in.dwFlags = 0x0; 
+	r.in.ulPropTag = ulPropTag;
+	r.in.MId = MId;
+	r.in.lpEntryIds = lpEntryIds;
+
+	status = dcerpc_NspiModLinkAtt(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Returns a list of all the properties the NSPI server is
+   aware off.
+
+   \param nspi_ctx pointer to the NSPI connection context
+   \param WantUnicode whether we want UNICODE properties or not
+   \param ppColumns pointer on pointer to a property tag array
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+ */
+_PUBLIC_ enum MAPISTATUS nspi_QueryColumns(struct nspi_context *nspi_ctx,
+					   bool WantUnicode,
+					   struct SPropTagArray **ppColumns)
+{
+	struct NspiQueryColumns	r;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!ppColumns, MAPI_E_INVALID_PARAMETER, NULL);
+
+	r.in.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0x0;
+	r.in.dwFlags = (WantUnicode == true) ? NspiUnicodeProptypes : 0x0;
+	
+	r.out.ppColumns = ppColumns;
+
+	status = dcerpc_NspiQueryColumns(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Returns a list of property names for a set of proptags
+
+   \param nspi_ctx pointer on the NSPI connection text
+   \param lpGuid the property set about which the client is requesting
+   information
+   \param pPropTags pointer to the proptags list
+   \param ppReturnedPropTags pointer on pointer to the list of
+   all the proptags in the property set specified in lpGuid
+   \param ppNames pointer on pointer to the list of property names
+   returned by the server
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_GetNamesFromIDs(struct nspi_context *nspi_ctx,
+					      struct MAPIUID *lpGuid,
+					      struct SPropTagArray *pPropTags,
+					      struct SPropTagArray **ppReturnedPropTags,
+					      struct PropertyNameSet_r **ppNames)
+{
+	struct NspiGetNamesFromIDs	r;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!ppReturnedPropTags, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ppNames, MAPI_E_INVALID_PARAMETER, NULL);
+
+	r.in.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0x0;
+	r.in.lpGuid = lpGuid;
+	r.in.pPropTags = pPropTags;
+
+	r.out.ppReturnedPropTags = ppReturnedPropTags;
+	r.out.ppNames = ppNames;
+
+	status = dcerpc_NspiGetNamesFromIDs(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Retrieve the Property IDs associated with property names
+   from the NSPI server.
+
+   \param nspi_ctx pointer on the NSPI connection context
+   \param VerifyNames boolean value defining whether the NSPI server
+   must verify that all client specified names are recognized by the
+   server
+   \param cNames count of PropertyName_r entries
+   \param ppNames pointer to a PropertyName_r structure with the list of
+   property tags supplied by the client
+   \param ppPropTags pointer on pointer to the list of proptags
+   returned by the server
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
+					      bool VerifyNames,
+					      uint32_t cNames,
+					      struct PropertyName_r *ppNames,
+					      struct SPropTagArray **ppPropTags)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct NspiGetIDsFromNames	r;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			i;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!ppPropTags, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_init("nspi_GetIDsFromNames");
+
+	r.in.handle = &nspi_ctx->handle;
+	r.in.dwFlags = (VerifyNames == true) ? 0x2 : 0x0;
+	r.in.cPropNames = cNames;
+
+	r.in.ppNames = talloc_array(mem_ctx, struct PropertyName_r *, cNames);
+	for (i = 0; i < cNames; i++) {
+		r.in.ppNames[i] = &ppNames[i];
+	}
+
+	r.out.ppPropTags = ppPropTags;
+
+	status = dcerpc_NspiGetIDsFromNames(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Takes a set of string values in an 8-bit character set and
+   performs ANR on those strings
+
+   \param nspi_ctx pointer on the NSPI connection context
+   \param usernames pointer on pointer to the list of values we want
+   to perform ANR on
+   \param pPropTags pointer on the property tags list we want for each
+   row returned
+   \param pppRows pointer on pointer on pointer to the rows returned
+   by the server
+   \param pppMIds pointer on pointer on pointer to the MIds matching
+   the array of strings
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+_PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx, 
+					   const char **usernames, 
+					   struct SPropTagArray *pPropTags, 
+					   struct SRowSet ***pppRows,
+					   struct SPropTagArray ***pppMIds)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct NspiResolveNames r;
-	struct names		*names;
+	struct StringsArray_r	*paStr;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		count;
 
-	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
-
-	mem_ctx = nspi->mem_ctx;
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!pppRows, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!pppMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (count = 0; usernames[count]; count++);
+	MAPI_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 
-	r.in.handle = &nspi->handle;
+	mem_ctx = talloc_init("nspi_ResolveNames");
 
-	r.in.settings = nspi->settings;
-	r.in.dwAlignPad = 0;
-	r.in.SPropTagArray = props;
-	r.in.SPropTagArray->cValues += 1;
+	r.in.handle = &nspi_ctx->handle;
 
-	names = talloc(mem_ctx, struct names);
-	names->cEntries = names->count = count;
-	names->recipient = usernames;
-	r.in.recipients = names;
+	r.in.pStat = nspi_ctx->pStat;
+	r.in.Reserved = 0;
+	r.in.pPropTags = pPropTags;
+	
+	paStr = talloc(mem_ctx, struct StringsArray_r);
+	paStr->Count = count;
+	paStr->Strings = usernames;
+	r.in.paStr = paStr;
 
-	r.out.flags = *flaglist;
+	r.out.ppMIds = *pppMIds;
+	r.out.ppRows = *pppRows;
 
-	status = dcerpc_NspiResolveNames(nspi->rpc_connection, mem_ctx, &r);
+	status = dcerpc_NspiResolveNames(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, names);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	rowSet[0][0] = r.out.RowSet;
-
-	talloc_free(names);
+	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }
 
-/*
- * nspi_ResolveNames
- * query WAB (Windows Address Book) and try to resolve the provided
- * name and return a SRowSet with the requested property tags fetched
- * values.
+
+/**
+   \details Takes a set of string values in the Unicode character set
+   and performs ANR on those strings
+
+   \param nspi_ctx pointer on the NSPI connection context
+   \param usernames pointer on pointer to the list of values we want
+   to perform ANR on
+   \param pPropTags pointer on the property tags list we want for each
+   row returned
+   \param pppRows pointer on pointer on pointer to the rows returned
+   by the server
+   \param pppMIds pointer on pointer on pointer to the MIds matching
+   the array of strings
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
  */
-
-_PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi, const char **usernames, 
-					    struct SPropTagArray *props, struct SRowSet ***rowSet,
-					    struct FlagList ***flaglist)
+_PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx, 
+					    const char **usernames, 
+					    struct SPropTagArray *pPropTags, 
+					    struct SRowSet ***pppRows,
+					    struct SPropTagArray ***pppMIds)
 {
-	TALLOC_CTX		*mem_ctx;
-	struct NspiResolveNamesW r;
-	struct namesW		*names;
-	NTSTATUS		status;
-	enum MAPISTATUS		retval;
-	uint32_t		count;
+	TALLOC_CTX			*mem_ctx;
+	struct NspiResolveNamesW	r;
+	struct WStringsArray_r		*paWStr;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			count;
 
-	MAPI_RETVAL_IF(!nspi, MAPI_E_NOT_INITIALIZED, NULL);
-
-	mem_ctx = nspi->mem_ctx;
+	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!pppRows, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!pppMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (count = 0; usernames[count]; count++);
+	MAPI_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 
-	r.in.handle = &nspi->handle;
+	mem_ctx = talloc_init("mapi_ResolveNamesW");
 
-	r.in.settings = nspi->settings;
-	r.in.dwAlignPad = 0;
-	r.in.SPropTagArray = props;
-	r.in.SPropTagArray->cValues += 1;
+	r.in.handle = &nspi_ctx->handle;
 
-	names = talloc(mem_ctx, struct namesW);
-	names->cEntries = names->count = count;
-	names->recipient = usernames;
-	r.in.recipients = names;
+	r.in.pStat = nspi_ctx->pStat;
+	r.in.Reserved = 0;
+	r.in.pPropTags = pPropTags;
 
-	r.out.flags = *flaglist;
+	paWStr = talloc(mem_ctx, struct WStringsArray_r);
+	paWStr->Count = count;
+	paWStr->Strings = usernames;
+	r.in.paWStr = paWStr;
 
-	status = dcerpc_NspiResolveNamesW(nspi->rpc_connection, mem_ctx, &r);
+	r.out.ppMIds = *pppMIds;
+	r.out.ppRows = *pppRows;
+
+	status = dcerpc_NspiResolveNamesW(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, names);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	rowSet[0][0] = r.out.RowSet;
-
-	talloc_free(names);
+	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }

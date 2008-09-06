@@ -158,7 +158,7 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 }
 
 bool set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
-					const char **usernames, struct FlagList *flaglist,
+					const char **usernames, struct SPropTagArray *flaglist,
 					enum ulRecipClass RecipClass)
 {
 	uint32_t	i;
@@ -169,10 +169,10 @@ bool set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SR
 	if (!usernames) return false;
 
 	for (i = 0; usernames[i]; i++) {
-		if (flaglist->ulFlags[count] == MAPI_UNRESOLVED) {
+		if (flaglist->aulPropTag[count] == MAPI_UNRESOLVED) {
 			set_external_recipients(mem_ctx, rowset, usernames[i], RecipClass);
 		}
-		if (flaglist->ulFlags[count] == MAPI_RESOLVED) {
+		if (flaglist->aulPropTag[count] == MAPI_RESOLVED) {
 			SetRecipientType(&(rowset->aRow[counter]), RecipClass);
 			counter++;
 		}
@@ -278,7 +278,7 @@ enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent,
 	struct SPropTagArray	*SPropTagArray = NULL;
 	struct SPropValue	SPropValue;
 	struct SRowSet		*SRowSet = NULL;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	struct SPropValue	props[3];
 	const char			**usernames;
 	uint32_t		index = 0;

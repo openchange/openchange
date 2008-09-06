@@ -691,9 +691,9 @@ server-clean::
 
 clean:: server-clean
 
-server/dcesrv_exchange.$(SHLIBEXT): providers/emsabp.po 	\
-				server/dcesrv_exchange.po	\
-				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+server/dcesrv_exchange.$(SHLIBEXT): 	providers/emsabp.po 		\
+					server/dcesrv_exchange.po	\
+					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
 
@@ -988,6 +988,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_oxctable.o	\
 		utils/mapitest/modules/module_oxorule.o		\
 		utils/mapitest/modules/module_oxcfxics.o	\
+		utils/mapitest/modules/module_nspi.o		\
 		utils/mapitest/modules/module_noserver.o	\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		
 	@echo "Linking $@"
@@ -1007,6 +1008,7 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_oxctable.c	\
 	utils/mapitest/modules/module_oxorule.c		\
 	utils/mapitest/modules/module_oxcfxics.c	\
+	utils/mapitest/modules/module_nspi.c		\
 	utils/mapitest/modules/module_noserver.c	
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^

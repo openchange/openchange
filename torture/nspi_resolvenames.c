@@ -38,7 +38,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	bool                    ret = true;
 	struct SPropTagArray    *SPropTagArray;
 	struct SRowSet		*rowset = NULL;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	const char		*profdb;
 	const char		*profname;
 	const char		*username = lp_parm_string(global_loadparm, NULL, "exchange", "resolvename");

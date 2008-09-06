@@ -297,7 +297,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	struct SPropTagArray	*SPropTagArray;
 	const char		*names[2];
 	struct SRowSet		*rows = NULL;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	struct mapi_SRowList	rowList;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -315,7 +315,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
 
 	/* Check if the username was found */
-	MAPI_RETVAL_IF((*flaglist[0].ulFlags != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
+	MAPI_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
 
 	rowList.cEntries = 1;
 	rowList.aEntries = talloc_array(mem_ctx, struct mapi_SRow, 1);
@@ -360,7 +360,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	const char		*user = NULL;
 	struct SRowSet		*rows = NULL;
 	struct SRowSet		rowset;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	struct mapi_SRowList	rowList;
 	struct SPropValue	*lpProp;
 	mapi_object_t		obj_table;
@@ -380,7 +380,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	if (*flaglist[0].ulFlags == MAPI_RESOLVED) {
+	if (flaglist->aulPropTag[0] == MAPI_RESOLVED) {
 		user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
 	} else {
 		/* Special case: Not a AD user account but Default or
@@ -464,7 +464,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	const char		*user = NULL;
 	struct SRowSet		*rows = NULL;
 	struct SRowSet		rowset;
-	struct FlagList		*flaglist = NULL;
+	struct SPropTagArray   	*flaglist = NULL;
 	struct mapi_SRowList	rowList;
 	struct SPropValue	*lpProp;
 	mapi_object_t		obj_table;
@@ -485,7 +485,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Check if the username was found */
-	MAPI_RETVAL_IF((*flaglist[0].ulFlags != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
+	MAPI_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
 
 	user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
 

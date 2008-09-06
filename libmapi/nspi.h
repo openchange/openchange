@@ -25,13 +25,13 @@ struct nspi_context {
 	struct policy_handle	handle;
 	TALLOC_CTX		*mem_ctx;
 	struct cli_credentials	*cred;
-	struct MAPI_SETTINGS	*settings;
+	struct STAT		*pStat;
 	struct mapi_profile	*profile;
 	struct SRowSet		*rowSet;
 	char			*org;
 	char			*org_unit;
 	char			*servername;
-	uint32_t		profile_instance_key;
+	uint32_t		version;
 };
 
 #define	ORG		"/o="

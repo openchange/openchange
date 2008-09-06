@@ -203,27 +203,27 @@ void dcesrv_exchange_mta_qadmin(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		       struct exchange_mta_qadmin *r);
 void dcesrv_exchange_store_information_dummy(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct exchange_store_information_dummy *r);
-void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiSeekEntries *r);
-void dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiResortRestriction *r);
-void dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetPropList *r);
-void dcesrv_NspiCompareDNTs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiCompareDNTs *r);
-void dcesrv_NspiModProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiModProps *r);
+enum MAPISTATUS dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct NspiSeekEntries *r);
+enum MAPISTATUS dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					     struct NspiResortRestriction *r);
+enum MAPISTATUS dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct NspiGetPropList *r);
+enum MAPISTATUS dcesrv_NspiCompareMIds(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				       struct NspiCompareMIds *r);
+enum MAPISTATUS dcesrv_NspiModProps(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				    struct NspiModProps *r);
 enum MAPISTATUS dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct NspiGetTemplateInfo *r);
-void dcesrv_NspiModLInkAtt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiModLInkAtt *r);
-void dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiDeleteEntries *r);
-void dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+enum MAPISTATUS dcesrv_NspiModLinkAtt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				      struct NspiModLinkAtt *r);
+enum MAPISTATUS dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					 struct NspiDeleteEntries *r);
+enum MAPISTATUS dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct NspiQueryColumns *r);
-void dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetNamesFromIDs *r);
-void dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct NspiGetIDsFromNames *r);
+enum MAPISTATUS dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					   struct NspiGetNamesFromIDs *r);
+enum MAPISTATUS dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+					   struct NspiGetIDsFromNames *r);
 void dcesrv_EcGetMoreRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct EcGetMoreRpc *r);
 void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,

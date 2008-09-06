@@ -331,8 +331,8 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	private->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
 	if (table->name && !strcmp(table->name, "exchange_nsp")) {
-		if (name && !strcmp(name, "NspiDNToEph")) {
-			mapiproxy_NspiDNToEph(dce_call, (struct NspiDNToEph *)r);
+		if (name && !strcmp(name, "NspiDNToMid")) {
+			mapiproxy_NspiDNToMId(dce_call, (struct NspiDNToMId *)r);
 		}
 	}
 

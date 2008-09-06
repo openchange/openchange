@@ -74,12 +74,12 @@ bool mapiproxy_NspiGetProps(struct dcesrv_call_state *dce_call, struct NspiGetPr
 	struct SPropValue	*lpProp;
 
 	/* Sanity checks */
-	if (!r->out.REPL_values) return false;
-	if (!(*r->out.REPL_values)->cValues) return false;
+	if (!r->out.ppRows) return false;
+	if (!(*r->out.ppRows)->cValues) return false;
 
 	/* Step 1. Find PR_EMS_AB_NETWORK_ADDRESS index */
 	propID = -1;
-	SPropTagArray = r->in.REQ_properties;
+	SPropTagArray = r->in.pPropTags;
 	for (i = 0; i < SPropTagArray->cValues - 1; i++) {
 		if (SPropTagArray->aulPropTag[i] == PR_EMS_AB_NETWORK_ADDRESS) {
 			propID = i;
@@ -89,7 +89,7 @@ bool mapiproxy_NspiGetProps(struct dcesrv_call_state *dce_call, struct NspiGetPr
 	if (propID == -1) return false;
 
 	/* Step 2. Retrieve the SLPSTRArray */
-	SRow = *r->out.REPL_values;
+	SRow = *r->out.ppRows;
 	lpProp = &SRow->lpProps[propID];
 
 	if (!lpProp) return false;
@@ -112,12 +112,12 @@ bool mapiproxy_NspiGetProps(struct dcesrv_call_state *dce_call, struct NspiGetPr
    \details This function replaces the Exchange server name with
    mapiproxy netbios name for the PR_EMS_AB_HOME_MDB property and
    saves the original name in a global variable for further usage -
-   such as mapiproxy_NspiDNToEph.
+   such as mapiproxy_NspiDNToMId.
 
    \param dce_call pointer to the session context
    \param r pointer to the NspiQueryRows structure
 
-   \sa mapiproxy_NspiDNToEph
+   \sa mapiproxy_NspiDNToMId
 */
 bool mapiproxy_NspiQueryRows(struct dcesrv_call_state *dce_call, struct NspiQueryRows *r)
 {
@@ -133,12 +133,12 @@ bool mapiproxy_NspiQueryRows(struct dcesrv_call_state *dce_call, struct NspiQuer
 	private = dce_call->context->private;
 
 	/* Sanity checks */
-	if (!r->out.RowSet) return false;
-	if (!(*r->out.RowSet)->cRows) return false;
+	if (!r->out.ppRows) return false;
+	if (!(*r->out.ppRows)->cRows) return false;
 
 	/* Step 1. Find PR_EMS_AB_HOME_MDB index */
 	propID = -1;
-	SPropTagArray = r->in.REQ_properties;
+	SPropTagArray = r->in.pPropTags;
 	for (i = 0; i < SPropTagArray->cValues -1; i++) {
 		if (SPropTagArray->aulPropTag[i] == PR_EMS_AB_HOME_MDB) {
 			propID = i;
@@ -148,7 +148,7 @@ bool mapiproxy_NspiQueryRows(struct dcesrv_call_state *dce_call, struct NspiQuer
 	if (propID == -1) return false;
 
 	/* Retrieve the lpszA */
-	SRowSet = *r->out.RowSet;
+	SRowSet = *r->out.ppRows;
 	lpProp = &(SRowSet->aRow->lpProps[propID]);
 
 	if (!lpProp) return false;
@@ -180,24 +180,27 @@ bool mapiproxy_NspiQueryRows(struct dcesrv_call_state *dce_call, struct NspiQuer
    Exchange server one fetched from NspiQueryRows or NspiGetProps.
 
    \param dce_call pointer to the session context
-   \param r pointer to the NspiDNToEph structure
+   \param r pointer to the NspiDNToMId structure
 
    \return true on success or false if no occurrence of the mapiproxy
    netbios name was found.
 */
-bool mapiproxy_NspiDNToEph(struct dcesrv_call_state *dce_call, struct NspiDNToEph *r)
+bool mapiproxy_NspiDNToMId(struct dcesrv_call_state *dce_call, struct NspiDNToMId *r)
 {
 	struct dcesrv_mapiproxy_private	*private;
 	const char			*proxyname;
-	
+	uint32_t			i;
+
 	private = dce_call->context->private;
 	proxyname = lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
 
 	if (!private->exchname) return false;
 
-	if (strstr(r->in.server_dn->str, proxyname)) {
-		r->in.server_dn->str = string_sub_talloc((TALLOC_CTX *) dce_call, r->in.server_dn->str, proxyname, private->exchname);
-		return true;
+	for (i = 0; i < r->in.pNames->Count; i++) {
+		if (strstr(r->in.pNames->Strings[i], proxyname)) {
+			r->in.pNames->Strings[i] = string_sub_talloc((TALLOC_CTX *) dce_call, r->in.pNames->Strings[i], proxyname, private->exchname);
+			return true;
+		}
 	}
 
 	return false;

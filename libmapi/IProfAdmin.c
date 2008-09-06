@@ -1186,10 +1186,16 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 {
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi;
-	struct SPropTagArray	*SPropTagArray;
+	struct SPropTagArray	*SPropTagArray = NULL;
+	struct Restriction_r	Filter;
 	struct SRowSet		*SRowSet;
 	struct SPropValue	*lpProp = NULL;
+	struct SPropTagArray	*MIds = NULL;
+	struct SPropTagArray	MIds2;
+	struct SPropTagArray	*MId_server = NULL;
+	struct StringsArray_r	pNames;
 	const char		*profname;
+	uint32_t		instance_key = 0;
 	uint32_t		index = 0;
 
 	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1198,11 +1204,13 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	nspi = (struct nspi_context *) session->nspi->ctx;
 	profname = session->profile->profname;
 	index = 0;
-	
-	retval = nspi_GetHierarchyInfo(nspi, &SRowSet);
+
+	SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
+	retval = nspi_GetSpecialTable(nspi, 0x0, &SRowSet);
+	MAPIFreeBuffer(SRowSet);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
-	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0xd,
+	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0xc,
 					  PR_DISPLAY_NAME,
 					  PR_OFFICE_TELEPHONE_NUMBER,
 					  PR_OFFICE_LOCATION,
@@ -1217,29 +1225,51 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 					  PR_EMAIL_ADDRESS
 					  );
 
+	/* Retrieve the username to match */
+	if (!username) {
+		username = cli_credentials_get_username(nspi->cred);
+		MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	}
+
+	/* Build the restriction we want for NspiGetMatches */
+	lpProp = talloc_zero(nspi->mem_ctx, struct SPropValue);
+	lpProp->ulPropTag = PR_ANR_UNICODE;
+	lpProp->dwAlignPad = 0;
+	lpProp->value.lpszW = username;
+
+	Filter.rt = RES_PROPERTY;
+	Filter.res.resProperty.relop = RES_PROPERTY;
+	Filter.res.resProperty.ulPropTag = PR_ANR_UNICODE;
+	Filter.res.resProperty.lpProp = lpProp;
+
 	SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
-	retval = nspi_GetMatches(nspi, SPropTagArray, &SRowSet, username);
-	if (retval != MAPI_E_SUCCESS) return retval;
+	MIds = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
+	retval = nspi_GetMatches(nspi, SPropTagArray, &Filter, &SRowSet, &MIds);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPIFreeBuffer(lpProp);
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(SRowSet);
+		return retval;
+	}
 
 	/* if there's no match */
+	MAPI_RETVAL_IF(!SRowSet, MAPI_E_NOT_FOUND, NULL);
 	MAPI_RETVAL_IF(!SRowSet->cRows, MAPI_E_NOT_FOUND, NULL);
 
 	/* if SRowSet count is superior than 1 an callback is specified, call it */
 	if (SRowSet->cRows > 1 && callback) {
 		index = callback(SRowSet, private_data);
 		MAPI_RETVAL_IF((index >= SRowSet->cRows), MAPI_E_USER_CANCEL, NULL);
-	}
-
-	lpProp = get_SPropValue_SRow(&(SRowSet->aRow[index]), PR_INSTANCE_KEY);
-	if (lpProp) {
-		struct SBinary bin;
-		
-		bin = lpProp->value.bin;
-		nspi->profile_instance_key = *(uint32_t *)bin.lpb;
+		instance_key = MIds->aulPropTag[index];
 	} else {
-		nspi->profile_instance_key = 0;
+		instance_key = MIds->aulPropTag[0];
 	}
+	MAPIFreeBuffer(MIds);
 	
+	MIds2.cValues = 0x1;
+	MIds2.aulPropTag = &instance_key;
+
 	set_profile_attribute(profname, *SRowSet, index, PR_EMAIL_ADDRESS, "EmailAddress");
 	set_profile_attribute(profname, *SRowSet, index, PR_DISPLAY_NAME, "DisplayName");
 	set_profile_attribute(profname, *SRowSet, index, PR_ACCOUNT, "Account");
@@ -1255,11 +1285,15 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 					  PR_EMS_AB_PROXY_ADDRESSES
 					  );
 
-	memset(nspi->settings->service_provider.ab, 0, 16);
-	nspi->settings->service_provider.ab[12] = 0x1;
+	nspi->pStat->CurrentRec = 0x0;
+	nspi->pStat->Delta = 0x0;
+	nspi->pStat->NumPos = 0x0;
+	nspi->pStat->TotalRecs = 0x1;
 
+	MAPIFreeBuffer(SRowSet);
 	SRowSet = talloc(nspi->mem_ctx, struct SRowSet);
-	retval = nspi_QueryRows(nspi, SPropTagArray, &SRowSet, 1);
+	retval = nspi_QueryRows(nspi, SPropTagArray, &MIds2, 1, &SRowSet);
+	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
 	lpProp = get_SPropValue_SRowSet(SRowSet, PR_EMS_AB_HOME_MDB);
@@ -1278,14 +1312,31 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	mapi_profile_add_string_attr(profname, "ServerName", nspi->servername);
 	set_profile_attribute(profname, *SRowSet, 0, PR_EMS_AB_HOME_MDB, "HomeMDB");
 	set_profile_mvstr_attribute(profname, *SRowSet, 0, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
+	MAPIFreeBuffer(SRowSet);
 
-	retval = nspi_DNToEph(nspi);
+	pNames.Count = 0x1;
+	pNames.Strings = (const char **) talloc_array(nspi->mem_ctx, char **, 1);
+	pNames.Strings[0] = (const char *) talloc_asprintf(nspi->mem_ctx, SERVER_DN, 
+							   nspi->org, nspi->org_unit, 
+							   nspi->servername);
+	MId_server = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
+	retval = nspi_DNToMId(nspi, &pNames, &MId_server);
+	MAPIFreeBuffer((char *)pNames.Strings[0]);
+	MAPIFreeBuffer((char **)pNames.Strings);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
+	SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
 	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x1, PR_EMS_AB_NETWORK_ADDRESS);
-	retval = nspi_GetProps(nspi, SPropTagArray, &SRowSet);
-	if (retval != MAPI_E_SUCCESS) return retval;
+	retval = nspi_GetProps(nspi, SPropTagArray, MId_server, &SRowSet);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPIFreeBuffer(MId_server);
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(SRowSet);
+		return retval;
+	}
+
 	set_profile_mvstr_attribute(profname, *SRowSet, 0, PR_EMS_AB_NETWORK_ADDRESS, "NetworkAddress");
+	MAPIFreeBuffer(SRowSet);
 
 	return MAPI_E_SUCCESS;
 }

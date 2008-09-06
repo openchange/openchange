@@ -35,6 +35,7 @@ static void mapitest_init(TALLOC_CTX *mem_ctx, struct mapitest *mt)
 	mt->stream = NULL;
 	memset(&mt->info, 0, sizeof (mt->info));
 
+	mt->session = NULL;
 	mt->mapi_all = true;
 	mt->confidential = false;
 	mt->no_server = false;
@@ -154,6 +155,7 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 	}	
 
 	retval = MapiLogonEx(&session, profname, password);
+	mt->session = session;
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", retval);
 		return false;

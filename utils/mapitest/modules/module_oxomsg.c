@@ -465,7 +465,8 @@ _PUBLIC_ bool mapitest_oxomsg_GetTransportFolder(struct mapitest *mt)
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(&obj_store);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_store);
 		return false;
 	}
 

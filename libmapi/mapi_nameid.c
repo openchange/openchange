@@ -706,7 +706,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_map_SPropValue(struct mapi_nameid *mapi_nam
    \param mapi_nameid the structure where results are stored
    \param lpProps the array of SPropValue structures with original
    property tags
-   \param propCount count of lpProps elements
+   \param PropCount count of lpProps elements
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
    
@@ -788,7 +788,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropTagArray(struct mapi_nameid *na
    \details Loop over lpProps and look for canonical named
    property tags we can add to the nameid structure.
 
-   \param nameid the structure where results are stored
+   \param mapi_nameid the structure where results are stored
    \param lpProps pointer on a SPropValue structure with the property
    tags where to look for canonical named property tags
    \param PropCount count of lpProps elemense

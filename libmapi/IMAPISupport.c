@@ -37,11 +37,11 @@
 
    \param obj the object to get notifications for
    \param connection connection identifier for callabck function
-   \param ulEventMask mask for events to provide notifications for (see
+   \param NotificationFlags mask for events to provide notifications for (see
    below)
    \param notify_callback notification callback function.
    
-   The event bitmask can take the following values:
+   The Notification Flags can take the following values:
    - fnevCriticalError
    - fnevNewMail
    - fnevObjectCreated

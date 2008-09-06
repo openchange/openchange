@@ -86,6 +86,7 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 	retval = GetContentsTable(obj_folder, &obj_ctable, 0, &count);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
+		mapi_object_release(&obj_ctable);
 		return false;
 	}
 
@@ -98,6 +99,7 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetColumns", GetLastError());
+		mapi_object_release(&obj_ctable);
 		return false;
 	}
 
@@ -105,6 +107,7 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 	retval = SeekRow(&obj_ctable, BOOKMARK_BEGINNING, *index, &count2);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SeekRow", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_ctable);
 		return false;
 	}
 
@@ -124,6 +127,7 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 			if (GetLastError() != MAPI_E_SUCCESS && attempt < 3) {
 				sleep(1);
 				attempt++;
+				mapi_object_release(obj_message);
 				goto retry;
 			}
 			attempt = 0;
@@ -165,14 +169,20 @@ _PUBLIC_ bool mapitest_common_find_folder(struct mapitest *mt,
 
 	mapi_object_init(&obj_htable);
 	retval = GetHierarchyTable(obj_parent, &obj_htable, 0, &count);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_htable);
+		return false;
+	}
 
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2,
 					  PR_DISPLAY_NAME,
 					  PR_FID);
 	retval = SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_htable);
+		return false;
+	}
 
 	while ((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
@@ -340,6 +350,7 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 							&(context->obj_test_msg[i]), MT_MAIL_SUBJECT);
 		if (GetLastError() != MAPI_E_SUCCESS) {
 			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Create test message", GetLastError());
+			mapi_object_release(&(context->obj_test_folder));
 			return false;
 		}
 
@@ -352,10 +363,13 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 		MAPIFreeBuffer((void *)body);
 		if (retval != MAPI_E_SUCCESS) {
 			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Set props on message", GetLastError());
+			mapi_object_release(&(context->obj_test_folder));
 			return false;
 		}
 		retval = SaveChangesMessage(&(context->obj_test_folder), &(context->obj_test_msg[i]));
 		if (retval != MAPI_E_SUCCESS) {
+			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Save changes to  message", GetLastError());
+			mapi_object_release(&(context->obj_test_folder));
 			return false;
 		}
 	}

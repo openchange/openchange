@@ -549,6 +549,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
    - olEditorRTF: format is RTF
 
    \param obj_message the message we find the best body for
+   \param format the format - see above.
  */
 _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format)
 {

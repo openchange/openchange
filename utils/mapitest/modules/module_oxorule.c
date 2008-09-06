@@ -53,14 +53,17 @@ _PUBLIC_ bool mapitest_oxorule_GetRulesTable(struct mapitest *mt)
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(&obj_store);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Step 2. Open the Inbox folder */
 	mapi_object_init(&obj_folder);
 	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, olFolderInbox);
-	if (ret == false) return ret;
+	if (ret == false) {
+		goto cleanup;
+	}
 
 	/* Step 3. Retrieve the rules table */
 	mapi_object_init(&obj_rtable);
@@ -68,8 +71,10 @@ _PUBLIC_ bool mapitest_oxorule_GetRulesTable(struct mapitest *mt)
 	mapitest_print_retval(mt, "GetRulesTable");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
+		goto cleanup;
 	}
 
+ cleanup:
 	/* Release */
 	mapi_object_release(&obj_rtable);
 	mapi_object_release(&obj_folder);

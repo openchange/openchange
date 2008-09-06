@@ -157,8 +157,8 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
    This function sets one or more properties on a specified object.
 
    \param obj the object to set properties on
-   \param sprops the list of properties to set
-   \param cn_props the number of properties
+   \param lpProps the list of properties to set
+   \param PropCount the number of properties
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 

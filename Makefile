@@ -1150,11 +1150,13 @@ doxygen:
 		$(DOXYGEN) Doxyfile;						\
 		$(DOXYGEN) libmapi/Doxyfile;					\
 		$(DOXYGEN) libocpf/Doxyfile;					\
+		$(DOXYGEN) libmapi++/Doxyfile;					\
 		$(DOXYGEN) mapiproxy/Doxyfile;					\
 		$(DOXYGEN) utils/mapitest/Doxyfile;				\
 		cp -f doc/doxygen/index.html apidocs/html;			\
 		cp -f doc/doxygen/pictures/* apidocs/html/overview;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;		\
+		cp -f doc/doxygen/pictures/* apidocs/html/libmapi++;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy;		\

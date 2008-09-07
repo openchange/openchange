@@ -1,0 +1,10 @@
+/**
+\mainpage C++ Bindings for OpenChange Clients
+
+<h2>C++ Bindings for OpenChange Clients</h2>
+
+libmapi++ provides C++ bindings for OpenChange client libraries (<a href="../libmapi/index.html">libmapi</a>). It is intended to provide a
+higher level abstraction of the OpenChange client libraries.
+
+
+*/

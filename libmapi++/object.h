@@ -43,6 +43,7 @@ class object {
 	public:
 		/** \brief Object Constructor
 		 *  \param mapi_session Session this object is to be associated with.
+		 *  \param object_type The name of the type of object (to be set in a subclass)
 		 */
 		object(session& mapi_session, const std::string& object_type = "") throw() : m_session(mapi_session), m_object_type(object_type)
 		{
@@ -59,7 +60,7 @@ class object {
 		 */
 		virtual property_container get_property_container();
 
-		/// \brief Returns message associated with this object.
+		/// \brief Returns session associated with this object.
 		virtual session& get_session() { return m_session; }
 
 		/** \brief Destructor\n

@@ -372,7 +372,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.MVguid = *((const struct FlatUIDArray_r *)data);
 		break;
 	case PT_MV_UNICODE:
-		lpProps->value.MVszW = *((const struct MV_UNICODE_STRUCT *)data);
+		lpProps->value.MVszW = *((const struct WStringArray_r *)data);
 		break;
 	case PT_MV_SYSTIME:
 		lpProps->value.MVft = *((const struct DateTimeArray_r *)data);

@@ -87,6 +87,10 @@ _PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx,
 	struct nspi_context	*ret;
 	struct GUID		guid;
 
+	/* Sanity checks */
+	if (!p) return NULL;
+	if (!cred) return NULL;
+
 	ret = talloc(mem_ctx, struct nspi_context);
 	ret->rpc_connection = p;
 	ret->mem_ctx = mem_ctx;
@@ -127,9 +131,10 @@ _PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx,
 
 
 /**
-   \details Destructor for the NSPI context. Call the NspiUnbin function
+   \details Destructor for the NSPI context. Call the NspiUnbind
+   function.
    
-   param data generic pointer to data with mapi_provider information
+   \param data generic pointer to data with mapi_provider information
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
  */

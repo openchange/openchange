@@ -69,7 +69,7 @@ struct mpm_stream {
 	uint32_t		handle;
 	enum MAPITAGS		PropertyTag;
 	uint32_t		StreamSize;
-	uint32_t		offset;
+	size_t			offset;
 	FILE			*fp;
 	char			*filename;
 	bool			cached;
@@ -107,7 +107,7 @@ NTSTATUS	mpm_cache_ldb_add_stream(struct mpm_cache *, struct ldb_context *, stru
 NTSTATUS	mpm_cache_stream_open(struct mpm_cache *, struct mpm_stream *);
 NTSTATUS	mpm_cache_stream_close(struct mpm_stream *);
 NTSTATUS	mpm_cache_stream_write(struct mpm_stream *, uint16_t, uint8_t *);
-NTSTATUS	mpm_cache_stream_read(struct mpm_stream *, uint32_t, uint32_t *, uint8_t **);
+NTSTATUS	mpm_cache_stream_read(struct mpm_stream *, uint32_t, size_t *, uint8_t **);
 NTSTATUS	mpm_cache_stream_reset(struct mpm_stream *);
 
 __END_DECLS

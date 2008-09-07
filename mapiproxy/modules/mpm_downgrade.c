@@ -42,9 +42,9 @@
  */
 static bool downgrade_EcDoConnect(struct dcesrv_call_state *dce_call, struct EcDoConnect *r)
 {
-	r->out.store_version[0] = 0x6;
-	r->out.store_version[1] = 0x1141;
-	r->out.store_version[2] = 0x5;
+	r->out.rgwServerVersion[0] = 0x0006;
+	r->out.rgwServerVersion[1] = 0x1141;
+	r->out.rgwServerVersion[2] = 0x0005;
 
 	return true;
 }

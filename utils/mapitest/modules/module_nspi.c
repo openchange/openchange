@@ -796,7 +796,7 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
 	/* Build the username array */
-	username[0] = (const char *)mt->info.username;
+	username[0] = (const char *)mt->info.szDisplayName;
 	username[1] = NULL;
 
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0xd,

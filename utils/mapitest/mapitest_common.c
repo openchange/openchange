@@ -241,7 +241,7 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 					  PR_SMTP_ADDRESS,
 					  PR_GIVEN_NAME);
 
-	username[0] = (const char *)mt->info.username;
+	username[0] = (const char *)mt->info.szDisplayName;
 	username[1] = NULL;
 
 	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);

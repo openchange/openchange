@@ -165,8 +165,8 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 	memcpy(&mt->info, info, sizeof (struct emsmdb_info));
 
 	/* extract org and org_unit from info.mailbox */
-	mt->org = x500_get_dn_element(mt->mem_ctx, info->mailbox, "/o=");
-	mt->org_unit = x500_get_dn_element(mt->mem_ctx, info->mailbox, "/ou=");
+	mt->org = x500_get_dn_element(mt->mem_ctx, info->szDNPrefix, "/o=");
+	mt->org_unit = x500_get_dn_element(mt->mem_ctx, info->szDNPrefix, "/ou=");
 	
 	return true;
 }

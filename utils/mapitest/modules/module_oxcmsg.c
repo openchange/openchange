@@ -287,7 +287,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 					  PR_GIVEN_NAME);
 
 	username = talloc_array(mt->mem_ctx, char *, 2);
-	username[0] = mt->info.username;
+	username[0] = mt->info.szDisplayName;
 	username[1] = NULL;
 
 	retval = ResolveNames((const char **)username, SPropTagArray, 
@@ -405,7 +405,7 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 					  PR_GIVEN_NAME);
 
 	username = talloc_array(mt->mem_ctx, char *, 2);
-	username[0] = mt->info.username;
+	username[0] = mt->info.szDisplayName;
 	username[1] = NULL;
 
 	retval = ResolveNames((const char **)username, SPropTagArray, 
@@ -543,7 +543,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 					  PR_GIVEN_NAME);
 
 	username = talloc_array(mt->mem_ctx, char *, 2);
-	username[0] = mt->info.username;
+	username[0] = mt->info.szDisplayName;
 	username[1] = NULL;
 
 	retval = ResolveNames((const char **)username, SPropTagArray, 

@@ -143,7 +143,7 @@ NTSTATUS mpm_cache_stream_close(struct mpm_stream *stream)
 
    \return NT_STATUS_OK
  */
-NTSTATUS mpm_cache_stream_read(struct mpm_stream *stream, uint32_t input_size, uint32_t *length, uint8_t **data)
+NTSTATUS mpm_cache_stream_read(struct mpm_stream *stream, size_t input_size, size_t *length, uint8_t **data)
 {
 	fseek(stream->fp, stream->offset, SEEK_SET);
 	*length = fread(*data, sizeof (uint8_t), input_size, stream->fp);

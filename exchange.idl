@@ -731,19 +731,24 @@ System Attendant Private Interface
 
 	MAPISTATUS EcDoConnect(
  		[out]				policy_handle	*handle,
-                [in,string,charset(DOS)]	uint8		name[],
-		[in]				uint32		unknown1[3],
-                [in]				uint32		code_page,
-		[in]				input_locale	input_locale,
-                [in]				uint32          unknown2,
-                [in]				uint16          unknown3,
-		[out]				uint32		unknown4[3],
-                [out]				uint16          *session_nb,
-                [out,unique,string,charset(DOS)]uint8		*org_group,
-                [out,unique,string,charset(DOS)]uint8		*user,
-                [out]				uint16          store_version[3],
-		[in,out]       			uint16          emsmdb_client_version[3],
-                [in,out]			uint32		*alloc_space
+                [in,string,charset(DOS)]	uint8		szUserDN[],
+		[in]				uint32		ulFlags,
+		[in]				uint32		ulConMod,
+		[in]				uint32		cbLimit,
+		[in]				uint32		ulCpid,
+		[in]				uint32		ulLcidString,
+		[in]				uint32		ulLcidSort,
+		[in]				uint32		ulIcxrLink,
+		[in]				uint16		usFCanConvertCodePages,
+		[out]				uint32		*pcmsPollsMax,
+		[out]				uint32		*pcRetry,
+		[out]				uint32		*pcmsRetryDelay,
+		[out]				uint32		*picxr,
+                [out,unique,string,charset(DOS)]uint8		*szDNPrefix,
+                [out,unique,string,charset(DOS)]uint8		*szDisplayName,
+                [out]				uint16          rgwServerVersion[3],
+		[in,out]       			uint16          rgwClientVersion[3],
+                [in,out]			uint32		*pullTimeStamp
 		);
 
 	/*****************/

@@ -1027,7 +1027,7 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 						mapi_response->mapi_repl[i].error_code = MAPI_E_SUCCESS;
 						mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length = 0;
 						mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data = talloc_size(mem_ctx, request.ByteCount);
-						mpm_cache_stream_read(stream, request.ByteCount, 
+						mpm_cache_stream_read(stream, (size_t) request.ByteCount, 
 								      &mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length,
 								      &mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data);
 						if (stream->offset == stream->StreamSize) {

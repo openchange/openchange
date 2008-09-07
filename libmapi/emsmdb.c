@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2007.
+   Copyright (C) Julien Kerihuel 2005 - 2008.
    Copyright (C) Jelmer Vernooij 2005.
  
    This program is free software; you can redistribute it and/or modify
@@ -27,18 +27,66 @@
 #include <param.h>
 #include <credentials.h>
 
-#define	ECDOCONNECT_FORMAT	"/o=%s/ou=%s/cn=Recipients/cn=%s"
-
 /**
- * Create a connection on the exchange_emsmdb pipe
+   \file emsmdb.c
+
+   \brief EMSMDB stack functions
  */
 
-struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p, struct cli_credentials *cred)
+
+/**
+   \details Hash a string and returns a unsigned integer hash value
+
+   \param str the string to hash
+
+   \return a hash value greater than 0 on success, otherwise 0
+
+   \note This function is based on the hash algorithm from gdbm and
+   from Samba4 TDB code.
+ */
+static unsigned int emsmdb_hash(const char *str)
+{
+	uint32_t	value;	/* Used to compute the hash value.  */
+	uint32_t	i;	/* Used to cycle through random values. */
+	uint32_t	len;
+
+	/* Sanity check */
+	if (!str) return 0;
+
+	len = strlen(str);
+
+	/* Set the initial value from the key size. */
+	for (value = 0x238F13AF * len, i = 0; i < len; i++)
+		value = (value + (str[i] << (i * 5 % 24)));
+
+	return (1103515243 * value + 12345);  
+}
+
+
+/**
+   \details Establishes a new Session Context with the server on the
+   exchange_emsmdb pipe
+
+   \param mem_ctx pointer to the memory context
+   \param p pointer to the DCERPC pipe
+   \param cred pointer to the user credentials
+
+   \return an allocated emsmdb_context on success, otherwise NULL
+ */
+struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, 
+				      struct dcerpc_pipe *p, 
+				      struct cli_credentials *cred)
 {
 	struct EcDoConnect	r;
-	NTSTATUS		status;
 	struct emsmdb_context	*ret;
 	mapi_ctx_t		*mapi_ctx;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	uint32_t		pullTimeStamp = 0;
+
+	/* Sanity Checks */
+	if (!p) return NULL;
+	if (!cred) return NULL;
 
 	mapi_ctx = global_mapi_ctx;
 	if (mapi_ctx == 0) return NULL;
@@ -49,45 +97,39 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p
 
 	ret->cache_requests = talloc(mem_ctx, struct EcDoRpc_MAPI_REQ *);
 
-	r.in.name = mapi_ctx->session->profile->mailbox;
-	r.in.unknown1[0] = 0x0;
-	r.in.unknown1[1] = 0x1eeebaac;
-	r.in.unknown1[2] = 0x0;
-	r.in.code_page = mapi_ctx->session->profile->codepage;
-	r.in.input_locale.language = mapi_ctx->session->profile->language;
-	r.in.input_locale.method = mapi_ctx->session->profile->method;
-	r.in.unknown2 = 0xffffffff;
-	r.in.unknown3 = 0x1;
-	r.in.emsmdb_client_version[0] = 0x000a;
-	r.in.emsmdb_client_version[1] = 0x0000;
-	r.in.emsmdb_client_version[2] = 0x1013;
+	r.in.szUserDN = mapi_ctx->session->profile->mailbox;
+	r.in.ulFlags = 0x00000000;
+	r.in.ulConMod = emsmdb_hash(r.in.szUserDN);
+	r.in.cbLimit = 0x00000000;
+	r.in.ulCpid = mapi_ctx->session->profile->codepage;
+	r.in.ulLcidString = mapi_ctx->session->profile->language;
+	r.in.ulLcidSort = mapi_ctx->session->profile->method;
+	r.in.ulIcxrLink = 0xFFFFFFFF;
+	r.in.usFCanConvertCodePages = 0x1;
+	r.in.rgwClientVersion[0] = 0x000c;
+	r.in.rgwClientVersion[1] = 0x183e;
+	r.in.rgwClientVersion[2] = 0x03e8;
+	r.in.pullTimeStamp = &pullTimeStamp;
 
-	r.in.alloc_space = talloc(mem_ctx, uint32_t);
-	*r.in.alloc_space = 0;
-
-	r.out.unknown4[0] = (uint32_t)talloc(mem_ctx, uint32_t);
-	r.out.unknown4[1] = (uint32_t)talloc(mem_ctx, uint32_t);
-	r.out.unknown4[2] = (uint32_t)talloc(mem_ctx, uint32_t);
-	r.out.session_nb = talloc(mem_ctx, uint16_t);
-	r.out.alloc_space = talloc(mem_ctx, uint32_t);
 	r.out.handle = &ret->handle;
+	r.out.pcmsPollsMax = &ret->info.pcmsPollsMax;
+	r.out.pcRetry = &ret->info.pcRetry;
+	r.out.pcmsRetryDelay = &ret->info.pcmsRetryDelay;
+	r.out.picxr = &ret->info.picxr;
+	r.out.rgwServerVersion[0] = ret->info.rgwServerVersion[0];
+	r.out.rgwServerVersion[1] = ret->info.rgwServerVersion[1];
+	r.out.rgwServerVersion[2] = ret->info.rgwServerVersion[2];
+	r.out.pullTimeStamp = &pullTimeStamp;
 
 	status = dcerpc_EcDoConnect(p, mem_ctx, &r);
-
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		mapi_errstr("EcDoConnect", r.out.result);
+	retval = r.out.result;
+	if (!NT_STATUS_IS_OK(status) || retval) {
+		mapi_errstr("EcDoConnect", retval);
 		return NULL;
 	}
 
-	ret->info.username = talloc_strdup(mem_ctx, r.out.user);
-	ret->info.mailbox = talloc_strdup(mem_ctx, r.out.org_group);
-	ret->info.store_version[0] = r.out.store_version[0];
-	ret->info.store_version[1] = r.out.store_version[1];
-	ret->info.store_version[2] = r.out.store_version[2];
-	
-	DEBUG(3, ("emsmdb_connect\n"));
-	DEBUG(3, ("\t\t user = %s\n", r.out.user));
-	DEBUG(3, ("\t\t organization = %s\n", r.out.org_group));
+	ret->info.szDisplayName = talloc_strdup(mem_ctx, r.out.szDisplayName);
+	ret->info.szDNPrefix = talloc_strdup(mem_ctx, r.out.szDNPrefix);
 	
 	ret->cred = cred;
 	ret->max_data = 0xFFF0;
@@ -96,48 +138,63 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, struct dcerpc_pipe *p
 	return ret;
 }
 
-/**
- * Destructor
- */
 
+/**
+   \details Destructor for the EMSMDB context. Call the EcDoDisconnect
+   function.
+
+   \param data generic pointer to data with mapi_provider information
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
 int emsmdb_disconnect_dtor(void *data)
 {
-	NTSTATUS		status;
 	struct mapi_provider	*provider = (struct mapi_provider *)data;
 	struct emsmdb_context	*emsmdb_ctx;
 
 	emsmdb_ctx = (struct emsmdb_context *)provider->ctx;
-	status = emsmdb_disconnect(provider->ctx);	
-		
-	return 0;
+	return emsmdb_disconnect(provider->ctx);	
 }
 
-/**
- * Close the connection on the initialized exchange_emsmdb pipe
- */
 
-NTSTATUS emsmdb_disconnect(struct emsmdb_context *emsmdb)
+/**
+   \details Destroy the EMSMDB context handle
+
+   \param emsmdb_ctx pointer to the EMSMDB context
+
+   \return MAPI_E_SUCCESS on success, otherwise -1
+ */
+enum MAPISTATUS emsmdb_disconnect(struct emsmdb_context *emsmdb_ctx)
 {
 	NTSTATUS		status;
+	enum MAPISTATUS		retval;
 	struct EcDoDisconnect	r;
 
-	r.in.handle = r.out.handle = &emsmdb->handle;
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!emsmdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	status = dcerpc_EcDoDisconnect(emsmdb->rpc_connection, emsmdb, &r);
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		mapi_errstr("EcDoDisconnect", r.out.result);
-		return status;
-	}
+	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
 
-	return NT_STATUS_OK;
+	status = dcerpc_EcDoDisconnect(emsmdb_ctx->rpc_connection, emsmdb_ctx, &r);
+	retval = r.out.result;
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
 }
 
-/**
- * Send a null MAPI packet. 
- * Useful to keep connection up or force notifications
- */
 
-_PUBLIC_ NTSTATUS emsmdb_transaction_null(struct emsmdb_context *emsmdb, struct mapi_response **res)
+/**
+   \details Send an empty MAPI packet - useful to keep connection up
+   or force notifications.
+
+   \param emsmdb_ctx pointer to the EMSMDB connection context
+   \param res pointer on pointer to a MAPI response structure
+
+   \return NT_STATUS_OK on success, otherwise NT status error
+ */
+_PUBLIC_ NTSTATUS emsmdb_transaction_null(struct emsmdb_context *emsmdb_ctx, 
+					  struct mapi_response **res)
 {
 	struct EcDoRpc		r;
 	struct mapi_request	*mapi_request;
@@ -145,25 +202,28 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_null(struct emsmdb_context *emsmdb, struct 
 	NTSTATUS		status;
 	uint16_t		*length;
 
-	mapi_request = talloc_zero(emsmdb->mem_ctx, struct mapi_request);
-	mapi_response = talloc_zero(emsmdb->mem_ctx, struct mapi_response);
+	/* Sanity checks */
+	if(!emsmdb_ctx) return NT_STATUS_INVALID_PARAMETER;
+	if (!res) return NT_STATUS_INVALID_PARAMETER;
+
+	mapi_request = talloc_zero(emsmdb_ctx->mem_ctx, struct mapi_request);
+	mapi_response = talloc_zero(emsmdb_ctx->mem_ctx, struct mapi_response);
 
 	r.in.mapi_request = mapi_request;
 	r.in.mapi_request->mapi_len = 2;
 	r.in.mapi_request->length = 2;
 
-	r.in.handle = r.out.handle = &emsmdb->handle;
-	r.in.size = emsmdb->max_data;
+	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
+	r.in.size = emsmdb_ctx->max_data;
 	r.in.offset = 0x0;
-	r.in.max_data = emsmdb->max_data;
-	length = talloc_zero(emsmdb->mem_ctx, uint16_t);
+	r.in.max_data = emsmdb_ctx->max_data;
+	length = talloc_zero(emsmdb_ctx->mem_ctx, uint16_t);
 	*length = r.in.mapi_request->mapi_len;
 	r.in.length = r.out.length = length;
 
 	r.out.mapi_response = mapi_response;
 
-	status = dcerpc_EcDoRpc(emsmdb->rpc_connection, emsmdb->mem_ctx, &r);
-
+	status = dcerpc_EcDoRpc(emsmdb_ctx->rpc_connection, emsmdb_ctx->mem_ctx, &r);
 	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
 		return status;
 	}
@@ -173,7 +233,20 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_null(struct emsmdb_context *emsmdb, struct 
 	return status;
 }
 
-NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *req, struct mapi_response **repl)
+
+/**
+   \details Make a EMSMDB transaction.
+
+   \param emsmdb_ctx pointer to the EMSMDB connection context
+   \param req pointer to the MAPI request to send
+   \param repl pointer on pointer to the MAPI reply returned by the
+   server
+
+   \return NT_STATUS_OK on success, otherwise NT status error
+ */
+_PUBLIC_ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb_ctx, 
+				     struct mapi_request *req, 
+				     struct mapi_response **repl)
 {
 	struct EcDoRpc		r;
 	struct mapi_response	*mapi_response;
@@ -183,58 +256,63 @@ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb, struct mapi_request *
 	uint8_t			i = 0;
 
 start:
-	r.in.handle = r.out.handle = &emsmdb->handle;
-	r.in.size = emsmdb->max_data;
+	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
+	r.in.size = emsmdb_ctx->max_data;
 	r.in.offset = 0x0;
 
-	mapi_response = talloc_zero(emsmdb->mem_ctx, struct mapi_response);	
+	mapi_response = talloc_zero(emsmdb_ctx->mem_ctx, struct mapi_response);	
 	r.out.mapi_response = mapi_response;
 
 	/* process cached data */
-	if (emsmdb->cache_count) {
-		multi_req = talloc_array(emsmdb->mem_ctx, struct EcDoRpc_MAPI_REQ, emsmdb->cache_count + 2);
-		for (i = 0; i < emsmdb->cache_count; i++) {
-			multi_req[i] = *emsmdb->cache_requests[i];
+	if (emsmdb_ctx->cache_count) {
+		multi_req = talloc_array(emsmdb_ctx->mem_ctx, struct EcDoRpc_MAPI_REQ, emsmdb_ctx->cache_count + 2);
+		for (i = 0; i < emsmdb_ctx->cache_count; i++) {
+			multi_req[i] = *emsmdb_ctx->cache_requests[i];
 		}
 		multi_req[i] = req->mapi_req[0];
 		req->mapi_req = multi_req;
 	}
 
-	req->mapi_req = talloc_realloc(emsmdb->mem_ctx, req->mapi_req, struct EcDoRpc_MAPI_REQ, emsmdb->cache_count + 2);
+	req->mapi_req = talloc_realloc(emsmdb_ctx->mem_ctx, req->mapi_req, struct EcDoRpc_MAPI_REQ, emsmdb_ctx->cache_count + 2);
 	req->mapi_req[i+1].opnum = 0;
 
 	r.in.mapi_request = req;
-	r.in.mapi_request->mapi_len += emsmdb->cache_size;
-	r.in.mapi_request->length += emsmdb->cache_size;
-	length = talloc_zero(emsmdb->mem_ctx, uint16_t);
+	r.in.mapi_request->mapi_len += emsmdb_ctx->cache_size;
+	r.in.mapi_request->length += emsmdb_ctx->cache_size;
+	length = talloc_zero(emsmdb_ctx->mem_ctx, uint16_t);
 	*length = r.in.mapi_request->mapi_len;
 	r.in.length = r.out.length = length;
-	r.in.max_data = (*length >= 0x4000) ? 0x7FFF : emsmdb->max_data;
+	r.in.max_data = (*length >= 0x4000) ? 0x7FFF : emsmdb_ctx->max_data;
 
-	status = dcerpc_EcDoRpc(emsmdb->rpc_connection, emsmdb->mem_ctx, &r);
-
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
-		if (emsmdb->setup == false) {
+	status = dcerpc_EcDoRpc(emsmdb_ctx->rpc_connection, emsmdb_ctx->mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (emsmdb_ctx->setup == false) {
 			errno = 0;
-			emsmdb->max_data = 0x7FFF;
-			emsmdb->setup = true;
+			emsmdb_ctx->max_data = 0x7FFF;
+			emsmdb_ctx->setup = true;
 			goto start;
 		} else {
 			return status;
 		}
 	} else {
-		emsmdb->setup = true;
+		emsmdb_ctx->setup = true;
 	}
-	emsmdb->cache_size = emsmdb->cache_count = 0;
+	emsmdb_ctx->cache_size = emsmdb_ctx->cache_count = 0;
 
 	*repl = r.out.mapi_response;
 
 	return status;
 }
 
+
 /**
- * initialize notify context structure and bind a local udp port for
- * notifications
+   \details Initialize the notify context structure and bind a local
+   UDP port to receive notifications from the server
+
+   \param mem_ctx pointer to the memory context
+
+   \return an allocated mapi_notify_ctx structure on success,
+   otherwise NULL
  */
 struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 {
@@ -244,6 +322,7 @@ struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 	const char		*ipaddr = NULL;
 	uint32_t		try = 0;
 
+	/* Sanity Checks */
 	if (!global_mapi_ctx) return NULL;
 	if (!global_mapi_ctx->session) return NULL;
 	if (!global_mapi_ctx->session->profile) return NULL;
@@ -256,7 +335,11 @@ struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 
 	load_interfaces(mem_ctx, lp_interfaces(global_mapi_ctx->lp_ctx), &ifaces);
 	ipaddr = iface_best_ip(ifaces, global_mapi_ctx->session->profile->server);
-	if (!ipaddr) return NULL;
+	if (!ipaddr) {
+		talloc_free(notify_ctx->notifications);
+		talloc_free(notify_ctx);
+		return NULL;
+	}
 	notify_ctx->addr = talloc_zero(mem_ctx, struct sockaddr);
 	notify_ctx->addr->sa_family = AF_INET;
 	((struct sockaddr_in *)(notify_ctx->addr))->sin_addr.s_addr = inet_addr(ipaddr);
@@ -266,6 +349,9 @@ retry:
 
 	notify_ctx->fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (notify_ctx->fd == -1) {
+		talloc_free(notify_ctx->notifications);
+		talloc_free(notify_ctx->addr);
+		talloc_free(notify_ctx);
 		return NULL;
 	}
 
@@ -277,73 +363,84 @@ retry:
 			errno = 0;
 			goto retry;
 		}
+
+		talloc_free(notify_ctx->notifications);
+		talloc_free(notify_ctx->addr);
+		talloc_free(notify_ctx);
 		return NULL;
 	}
 
 	return notify_ctx;
 }
 
+
 /**
- * Register for notifications on a Exchange server
+   \details Register for notifications on the server
+   
+   \param notifkey The opaque client-generated context data
+   \param ulEventMask Notification flags. Exchange completely ignores
+   this value and it should be set to 0
+
+   \return NTSTATUS_OK on success, otherwise NT status error
  */
-NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey, uint16_t ulEventMask)
+NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey, 
+				      uint16_t ulEventMask)
 {
 	struct EcRRegisterPushNotification	request;
 	NTSTATUS				status;
-	struct emsmdb_context			*emsmdb;
+	enum MAPISTATUS				retval;
+	TALLOC_CTX				*mem_ctx;
+	struct emsmdb_context			*emsmdb_ctx;
 	struct mapi_session			*session;
 	struct mapi_notify_ctx			*notify_ctx;
 	struct policy_handle			handle;
+	uint32_t				hNotification = 0;
 
-	if (!global_mapi_ctx) return NT_STATUS_UNSUCCESSFUL;
-	if (!global_mapi_ctx->session) return NT_STATUS_UNSUCCESSFUL;
-	if (!global_mapi_ctx->session->emsmdb) return NT_STATUS_UNSUCCESSFUL;
-	if (!global_mapi_ctx->session->emsmdb->ctx) return NT_STATUS_UNSUCCESSFUL;
+	/* Sanity Checks*/
+	if (!global_mapi_ctx) return NT_STATUS_INVALID_PARAMETER;
+	if (!global_mapi_ctx->session) return NT_STATUS_INVALID_PARAMETER;
+	if (!global_mapi_ctx->session->emsmdb) return NT_STATUS_INVALID_PARAMETER;
+	if (!global_mapi_ctx->session->emsmdb->ctx) return NT_STATUS_INVALID_PARAMETER;
+	if (!notifkey) return NT_STATUS_INVALID_PARAMETER;
 
 	session = (struct mapi_session *)global_mapi_ctx->session;
-	emsmdb = (struct emsmdb_context *)session->emsmdb->ctx;
+	emsmdb_ctx = (struct emsmdb_context *)session->emsmdb->ctx;
 	notify_ctx = (struct mapi_notify_ctx *)session->notify_ctx;
+	mem_ctx = talloc_init("emsmdb_register_notification");
 
-	/* in */
-	request.in.handle = &emsmdb->handle;
+	request.in.handle = &emsmdb_ctx->handle;
 	request.in.ulEventMask = ulEventMask;
-
 	request.in.cbContext = notifkey->cb;
-	request.in.rgbContext = talloc_array(emsmdb->mem_ctx, uint8_t, request.in.cbContext);
+	request.in.rgbContext = talloc_array(mem_ctx, uint8_t, request.in.cbContext);
 	memcpy(request.in.rgbContext, notifkey->ab, request.in.cbContext);
-
 	request.in.grbitAdviseBits = 0xffffffff;
-
-	request.in.rgCallbackAddress = talloc_array(emsmdb->mem_ctx, uint8_t, sizeof (struct sockaddr));
+	request.in.rgCallbackAddress = talloc_array(mem_ctx, uint8_t, sizeof (struct sockaddr));
 	/* cp address family and length */
 	request.in.rgCallbackAddress[0] = (notify_ctx->addr->sa_family & 0xFF);
 	request.in.rgCallbackAddress[1] = (notify_ctx->addr->sa_family & 0xFF00) >> 8;
 	memcpy(&request.in.rgCallbackAddress[2], notify_ctx->addr->sa_data, 14);
 	request.in.cbCallbackAddress = sizeof (struct sockaddr);
 
-	/* out */
 	request.out.handle = &handle;
-	request.out.hNotification = talloc_zero(emsmdb->mem_ctx, uint32_t);
+	request.out.hNotification = &hNotification;
 
-	status = dcerpc_EcRRegisterPushNotification(emsmdb->rpc_connection, emsmdb->mem_ctx, &request);
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
+	status = dcerpc_EcRRegisterPushNotification(emsmdb_ctx->rpc_connection, emsmdb_ctx->mem_ctx, &request);
+	retval = request.out.result;
+	if (!NT_STATUS_IS_OK(status) || retval) {
+		talloc_free(mem_ctx);
 		return status;
 	}
 
-	if (request.out.result != MAPI_E_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	talloc_free(mem_ctx);
 
-	if (request.out.hNotification && *request.out.hNotification != MAPI_E_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	return NT_STATUS_OK;
+	return status;
 }
 
 
 /**
- * Retrieve the emsmdb server info structure
+   \details Retrieves the EMSMDB context server information structure
+
+   \return the server info structure on success, otherwise NULL
  */
 _PUBLIC_ struct emsmdb_info *emsmdb_get_info(void)
 {
@@ -354,7 +451,21 @@ _PUBLIC_ struct emsmdb_info *emsmdb_get_info(void)
 	return &((struct emsmdb_context *)global_mapi_ctx->session->emsmdb->ctx)->info;
 }
 
-const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAPITAGS tag, DATA_BLOB *data)
+
+/**
+   \details Retrieves a property value from a DATA blob
+
+   \param mem_ctx pointer to the memory context
+   \param offset pointer on pointer to the current offset
+   \param tag the property tag which value is to be retrieved
+   \param data pointer to the data
+
+   \return pointer on constant generic data on success, otherwise NULL
+ */
+const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, 
+				 uint32_t *offset, 
+				 enum MAPITAGS tag, 
+				 DATA_BLOB *data)
 {
 	struct ndr_pull		*ndr;
 	const char		*pt_string8;
@@ -444,11 +555,25 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, uint32_t *offset, enum MAP
 	}	
 }
 
+
+/**
+   \details Get a SPropValue array from a DATA blob
+
+   \param mem_ctx pointer to the memory context
+   \param content pointer to the DATA blob content
+   \param tags pointer to a list of property tags to lookup
+   \param propvals pointer on pointer to the returned SPropValues
+   \param cn_propvals pointer to the number of propvals
+   \param flag describes the type data
+
+   \return MAPI_E_SUCCESS on success
+ */
 enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 				      DATA_BLOB *content,
 				      struct SPropTagArray *tags,
-				      struct SPropValue **propvals, uint32_t *cn_propvals,
-				      uint8_t layout)
+				      struct SPropValue **propvals, 
+				      uint32_t *cn_propvals,
+				      uint8_t flag)
 {
 	struct SPropValue	*p_propval;
 	uint32_t		i_propval;
@@ -463,7 +588,7 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 	*propvals = talloc_array(mem_ctx, struct SPropValue, cn_tags);
 
 	for (i_tag = 0; i_tag < cn_tags; i_tag++) {
-		if (layout) { 
+		if (flag) { 
 			if (((uint8_t)(*(content->data + offset))) == PT_ERROR) {
 				tags->aulPropTag[i_tag] &= 0xFFFF0000;
 				tags->aulPropTag[i_tag] |= PT_ERROR;
@@ -485,9 +610,24 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
-/* TODO: this doesn't yet handle the TypedPropertyValue and
-   FlaggedPropertyValueWithTypeSpecified variants. */
-_PUBLIC_ void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, struct SPropTagArray *proptags, DATA_BLOB *content)
+
+/**
+   \details Get a SRowSet from a DATA blob
+
+   \param mem_ctx pointer to the memory context
+   \param rowset pointer to the returned SRowSe
+   \param proptags pointer to a list of property tags to lookup
+   \param content pointer to the DATA blob content
+
+   \return MAPI_E_SUCCESS on success
+
+   \note TODO: this doesn't yet handle the TypedPropertyValue and
+   FlaggedPropertyValueWithTypeSpecified variants
+ */
+_PUBLIC_ void emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, 
+				 struct SRowSet *rowset, 
+				 struct SPropTagArray *proptags, 
+				 DATA_BLOB *content)
 {
 	struct SRow		*rows;
 	struct SPropValue	*lpProps;
@@ -552,7 +692,28 @@ _PUBLIC_ void	emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, struct SRowSet *rowset, st
 }
 
 
-void emsmdb_get_SRow(TALLOC_CTX *mem_ctx, struct SRow *aRow, struct SPropTagArray *proptags, uint16_t propcount, DATA_BLOB *content, uint8_t layout, uint8_t align)
+/**
+   \details Get a SRow from a DATA blob
+
+   \param mem_ctx pointer to the memory context
+   \param aRow pointer to the returned SRow
+   \param proptags pointer to a list of property tags to lookup
+   \param propcount number of SPropValue entries in aRow
+   \param content pointer to the DATA blob content
+   \param flag the type data
+   \param align alignment pad
+
+   \return MAPI_E_SUCCESS on success
+
+   \note TODO: We shouldn't have any alignment pad here
+ */
+void emsmdb_get_SRow(TALLOC_CTX *mem_ctx, 
+		     struct SRow *aRow, 
+		     struct SPropTagArray *proptags, 
+		     uint16_t propcount, 
+		     DATA_BLOB *content, 
+		     uint8_t flag, 
+		     uint8_t align)
 {
 	uint32_t		i;
 	uint32_t		offset = 0;
@@ -564,7 +725,7 @@ void emsmdb_get_SRow(TALLOC_CTX *mem_ctx, struct SRow *aRow, struct SPropTagArra
 
 	for (i = 0; i < propcount; i++) {
 		aulPropTag = proptags->aulPropTag[i];
-		if (layout) {
+		if (flag) {
 			if (((uint8_t)(*(content->data + offset))) == PT_ERROR) {
 				aulPropTag &= 0xFFFF0000;
 				aulPropTag |= 0xA;			

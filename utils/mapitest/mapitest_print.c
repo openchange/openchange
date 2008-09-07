@@ -284,11 +284,11 @@ _PUBLIC_ void mapitest_print_headers_server_info(struct mapitest *mt)
 	mapitest_print(mt, MT_HDR_FMT_SECTION, "Exchange Server");
 	mapitest_indent();
 	mapitest_print(mt, MT_HDR_FMT_STORE_VER, "Store version",
-		       mt->info.store_version[0],
-		       mt->info.store_version[1],
-		       mt->info.store_version[2]);
+		       mt->info.rgwServerVersion[0],
+		       mt->info.rgwServerVersion[1],
+		       mt->info.rgwServerVersion[2]);
 	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Username",
-		       (mt->confidential == true) ? MT_CONFIDENTIAL : mt->info.username);
+		       (mt->confidential == true) ? MT_CONFIDENTIAL : mt->info.szDisplayName);
 	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Organization",
 		       (mt->confidential == true) ? MT_CONFIDENTIAL : mt->org);
 	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Organization Unit",

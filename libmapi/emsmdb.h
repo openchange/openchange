@@ -2,6 +2,7 @@
    OpenChange MAPI implementation.
 
    Copyright (C) Jelmer Vernooij 2005.
+   Copyright (C) Julien Kerihuel 2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,9 +22,13 @@
 #define	__EMSMDB_H__
 
 struct emsmdb_info {
-	char			*username;
-	char			*mailbox;
-	uint16_t		store_version[3];
+	char			*szDisplayName;
+	char			*szDNPrefix;
+	uint32_t		pcmsPollsMax;
+	uint32_t		pcRetry;
+	uint32_t		pcmsRetryDelay;
+	uint32_t		picxr;
+	uint16_t		rgwServerVersion[3];
 };
 
 struct emsmdb_context {

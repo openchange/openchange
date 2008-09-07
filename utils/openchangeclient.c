@@ -20,6 +20,7 @@
 */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/defs_private.h>
 #include <libocpf/ocpf.h>
 #include <samba/popt.h>
 #include <param.h>
@@ -319,7 +320,7 @@ static char *build_uniqueID(TALLOC_CTX *mem_ctx, mapi_object_t *obj_folder,
 
 	if (!fid || !mid) return NULL;
 
-	id = talloc_asprintf(mem_ctx, "%llX/%llX", *fid, *mid);
+	id = talloc_asprintf(mem_ctx, "%"PRIX64"/%"PRIX64, *fid, *mid);
 	return id;
 }
 
@@ -1547,7 +1548,7 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 				printf("|   ");
 			}
 			newname = utf8tolinux(mem_ctx, name);
-			printf("|---+ %-15s : %-20s (Total: %d / Unread: %d - Container class: %s) [FID: 0x%llx]\n", newname, comment, *total, *unread,
+			printf("|---+ %-15s : %-20s (Total: %d / Unread: %d - Container class: %s) [FID: 0x%"PRIx64"]\n", newname, comment, *total, *unread,
 			       get_container_class(mem_ctx, parent, *fid), *fid);
 			MAPIFreeBuffer(newname);
 			if (*child) {
@@ -1601,7 +1602,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 				printf("|   ");
 			}
 			newname = utf8tolinux(mem_ctx, name);
-			printf("|---+ %-15s [FID: 0x%llx]\n", newname, *fid);
+			printf("|---+ %-15s [FID: 0x%"PRIx64"]\n", newname, *fid);
 			MAPIFreeBuffer(newname);
 			if (*child) {
 				ret = get_child_folders_pf(mem_ctx, &obj_folder, *fid, count + 1);
@@ -1730,7 +1731,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 			if (retval != MAPI_E_NOT_FOUND) {
 				retval = GetPropsAll(&obj_message, &properties_array);
 				if (retval == MAPI_E_SUCCESS) {
-					id = talloc_asprintf(mem_ctx, ": %llX/%llX",
+					id = talloc_asprintf(mem_ctx, ": %"PRIX64"/%"PRIX64,
 							     SRowSet.aRow[i].lpProps[0].value.d,
 							     SRowSet.aRow[i].lpProps[1].value.d);
 					mapi_SPropValue_array_named(&obj_message, 
@@ -2060,7 +2061,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 					if (GetLastError() == MAPI_E_SUCCESS) {
 						retval = GetPropsAll(&obj_message, &properties_array);
 						if (retval != MAPI_E_SUCCESS) return false;
-						id = talloc_asprintf(mem_ctx, ": %llX/%llX",
+						id = talloc_asprintf(mem_ctx, ": %"PRIX64"/%"PRIX64,
 								     SRowSet.aRow[i].lpProps[0].value.d,
 								     SRowSet.aRow[i].lpProps[1].value.d);
 						mapidump_message(&properties_array, id);
@@ -2346,7 +2347,7 @@ static bool openchangeclient_rmdir(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store
 	retval = EmptyFolder(&obj_child);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	printf("obj_child fid = 0x%llx\n", mapi_object_get_id(&obj_child));
+	printf("obj_child fid = 0x%"PRIx64"\n", mapi_object_get_id(&obj_child));
 
 	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_child));
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -2559,7 +2560,7 @@ static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_s
 	/* Step 4. save the message */
 	ret = ocpf_init();
 
-	filename = talloc_asprintf(mem_ctx, "%llx.ocpf", mid);
+	filename = talloc_asprintf(mem_ctx, "%"PRIx64".ocpf", mid);
 	DEBUG(0, ("OCPF output file: %s\n", filename));
 
 	ret = ocpf_write_init(filename, fid);

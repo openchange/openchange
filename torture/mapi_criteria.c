@@ -20,6 +20,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/defs_private.h>
 #include <gen_ndr/ndr_exchange.h>
 #include <param.h>
 #include <credentials.h>
@@ -127,7 +128,7 @@ bool torture_rpc_mapi_criteria(struct torture_context *torture)
 	printf("res.rt = %d\n", res.rt);
 	printf("count = %d\n", count);
 	for (i = 0; i < count; i++) {
-	  printf("lpContainerList[%d] = 0x%llx\n", i, fid[i]);
+	  printf("lpContainerList[%d] = 0x%"PRIx64"\n", i, fid[i]);
 	}
 
 	/* Delete folder */

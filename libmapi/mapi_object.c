@@ -19,7 +19,7 @@
 
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
-
+#include <libmapi/defs_private.h>
 
 /**
    \file mapi_object.c
@@ -150,7 +150,7 @@ _PUBLIC_ void mapi_object_debug(mapi_object_t *obj)
 {
 	DEBUG(0, ("mapi_object {\n"));
 	DEBUG(0, (" .handle == 0x%x\n", obj->handle));
-	DEBUG(0, (" .id     == 0x%llx\n", obj->id));
+	DEBUG(0, (" .id     == 0x%"PRIx64"\n", obj->id));
 	DEBUG(0, ("};\n"));
 }
 

@@ -26,6 +26,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/defs_private.h>
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy.h"
 #include "mapiproxy/modules/mpm_cache.h"
@@ -132,12 +133,12 @@ static void cache_dump_stream_stat(struct mpm_stream *stream)
 	mem_ctx = (TALLOC_CTX *)mpm;
 
 	if (stream->attachment) {
-		name = talloc_asprintf(mem_ctx, "0x%llx/0x%llx/%d",
+		name = talloc_asprintf(mem_ctx, "0x%"PRIx64"/0x%"PRIx64"/%d",
 				       stream->attachment->message->FolderId,
 				       stream->attachment->message->MessageId,
 				       stream->attachment->AttachmentID);
 	} else if (stream->message) {
-		name = talloc_asprintf(mem_ctx, "0x%llx/0x%llx",
+		name = talloc_asprintf(mem_ctx, "0x%"PRIx64"/0x%"PRIx64,
 				       stream->message->FolderId,
 				       stream->message->MessageId);
 	} else {
@@ -268,7 +269,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 	for (message = mpm->messages; message; message = message->next) {
 		if (!cache_cmp_session(dce_call, message->server_id, message->context_id) &&
 		    (EcDoRpc->in.mapi_request->handles[handle_idx] == message->handle)) {
-			DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Message 0x%llx 0x%llx: 0x%x\n", 
+			DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del: Message 0x%"PRIx64" 0x%"PRIx64": 0x%x\n", 
 				  MPM_LOCATION, MPM_SESSION(message), message->FolderId, 
 				  message->MessageId, message->handle));
 
@@ -277,7 +278,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 			while (attach) {
 				if (!cache_cmp_session(dce_call, attach->server_id, attach->context_id) &&
 				    (message->handle == attach->parent_handle)) {
-					DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del recursive 1: Attachment %d: 0x%x\n", MPM_LOCATION,
+					DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del recursive 1: Attachment %d: 0x%x\n", MPM_LOCATION,
 						  MPM_SESSION(attach), attach->AttachmentID, attach->handle));
 
 					/* Loop over children streams */
@@ -285,7 +286,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 					while (stream) {
 						if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
 						    (attach->handle == stream->parent_handle)) {
-							DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del recursive 1-2: Stream 0x%x\n", 
+							DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del recursive 1-2: Stream 0x%x\n", 
 								  MPM_LOCATION, MPM_SESSION(stream), stream->handle));
 							mpm_cache_stream_close(stream);
 							talloc_free(stream->filename);
@@ -310,7 +311,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 			while (stream) {
 				if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
 				    (message->handle == stream->parent_handle)) {
-					DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del recursive 1: Stream 0x%x\n", 
+					DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del recursive 1: Stream 0x%x\n", 
 						  MPM_LOCATION, MPM_SESSION(stream), stream->handle));
 					mpm_cache_stream_close(stream);
 					DLIST_REMOVE(mpm->streams, stream);
@@ -332,7 +333,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 	for (attach = mpm->attachments; attach; attach = attach->next) {
 		if (!cache_cmp_session(dce_call, attach->server_id, attach->context_id) && 
 		    (EcDoRpc->in.mapi_request->handles[handle_idx] == attach->handle)) {
-			DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Attachment %d: 0x%x\n", MPM_LOCATION, 
+			DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del: Attachment %d: 0x%x\n", MPM_LOCATION, 
 				  MPM_SESSION(attach), attach->AttachmentID, attach->handle));
 
 
@@ -341,7 +342,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 			while (stream) {
 				if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
 				    (attach->handle == stream->parent_handle)) {
-					DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del recursive 2: Stream 0x%x\n", 
+					DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del recursive 2: Stream 0x%x\n", 
 						  MPM_LOCATION, MPM_SESSION(stream), stream->handle));
 					mpm_cache_stream_close(stream);
 					DLIST_REMOVE(mpm->streams, stream);
@@ -363,7 +364,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 	for (stream = mpm->streams; stream; stream = stream->next) {
 		if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
 		    (EcDoRpc->in.mapi_request->handles[handle_idx] == stream->handle)) {
-			DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Stream 0x%x\n", MPM_LOCATION, 
+			DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del: Stream 0x%x\n", MPM_LOCATION, 
 				  MPM_SESSION(stream), stream->handle)); 
 			mpm_cache_stream_close(stream);
 			DLIST_REMOVE(mpm->streams, stream);
@@ -467,10 +468,10 @@ static NTSTATUS cache_push_OpenMessage(struct dcesrv_call_state *dce_call,
 			if (mapi_repl.error_code == MAPI_E_SUCCESS) {
 				mpm_cache_ldb_add_message((TALLOC_CTX *)mpm, mpm->ldb_ctx, el);
 				el->handle = mapi_response->handles[request.handle_idx];
-				DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Add: Message 0x%llx 0x%llx 0x%x\n", 
+				DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Add: Message 0x%"PRIx64" 0x%"PRIx64" 0x%x\n", 
 					  MPM_LOCATION, MPM_SESSION(el), el->FolderId, el->MessageId, el->handle));
 			} else {
-				DEBUG(0, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Message OpenMessage returned %s\n", 
+				DEBUG(0, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del: Message OpenMessage returned %s\n", 
 					  MPM_LOCATION, MPM_SESSION(el), mapi_get_errstr(mapi_repl.error_code)));
 				DLIST_REMOVE(mpm->messages, el);
 			}
@@ -538,7 +539,7 @@ static NTSTATUS cache_pull_OpenAttach(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Add [1]: Attachment %d  parent handle (0x%x) 0x%llx, 0x%llx added to the list\n", 
+	DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Add [1]: Attachment %d  parent handle (0x%x) 0x%"PRIx64", 0x%"PRIx64" added to the list\n", 
 		  MPM_LOCATION, MPM_SESSION(attach), request.AttachmentID, attach->parent_handle, 
 		  attach->message->FolderId, attach->message->MessageId));
 	DLIST_ADD_END(mpm->attachments, attach, struct mpm_attachment *);
@@ -591,11 +592,11 @@ static NTSTATUS cache_push_OpenAttach(struct dcesrv_call_state *dce_call,
 		    (request.AttachmentID == el->AttachmentID)) {
 			if (mapi_repl.error_code == MAPI_E_SUCCESS) {
 				el->handle = mapi_response->handles[request.handle_idx];
-				DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Add [2]: Attachment %d with handle 0x%x and parent handle 0x%x\n", 
+				DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Add [2]: Attachment %d with handle 0x%x and parent handle 0x%x\n", 
 					  MPM_LOCATION, MPM_SESSION(el), el->AttachmentID, el->handle, el->parent_handle));
 				mpm_cache_ldb_add_attachment((TALLOC_CTX *)mpm, mpm->ldb_ctx, el);
 			} else {
-				DEBUG(0, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Attachment OpenAttach returned %s\n", 
+				DEBUG(0, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del: Attachment OpenAttach returned %s\n", 
 					  MPM_LOCATION, MPM_SESSION(el), mapi_get_errstr(mapi_repl.error_code)));
 				DLIST_REMOVE(mpm->attachments, el);
 			}
@@ -660,7 +661,7 @@ static NTSTATUS cache_pull_OpenStream(struct dcesrv_call_state *dce_call,
 			stream->message = NULL;
 			stream->ahead = (mpm->ahead == true) ? true : false;
 			gettimeofday(&stream->tv_start, NULL);
-			DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Stream::attachment added 0x%x 0x%llx 0x%llx\n", 
+			DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Stream::attachment added 0x%x 0x%"PRIx64" 0x%"PRIx64"\n", 
 				  MPM_LOCATION, MPM_SESSION(stream), stream->parent_handle, 
 				  stream->attachment->message->FolderId, stream->attachment->message->MessageId));
 			DLIST_ADD_END(mpm->streams, stream, struct mpm_stream *);
@@ -688,7 +689,7 @@ static NTSTATUS cache_pull_OpenStream(struct dcesrv_call_state *dce_call,
 			stream->cached = false;
 			stream->ahead = (mpm->ahead == true) ? true : false;
 			gettimeofday(&stream->tv_start, NULL);
-			DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Stream::message added 0x%x\n", 
+			DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Stream::message added 0x%x\n", 
 				  MPM_LOCATION, MPM_SESSION(stream), stream->parent_handle));
 			stream->message = message;
 			DLIST_ADD_END(mpm->streams, stream, struct mpm_stream *);
@@ -748,11 +749,11 @@ static NTSTATUS cache_push_OpenStream(struct dcesrv_call_state *dce_call,
 				if (mapi_repl.error_code == MAPI_E_SUCCESS) {
 					el->handle = mapi_response->handles[request.handle_idx];
 					el->StreamSize = response.StreamSize;
-					DEBUG(2, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Add [2]: Stream for Property Tag 0x%x, handle 0x%x and size = %d\n", 
+					DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Add [2]: Stream for Property Tag 0x%x, handle 0x%x and size = %d\n", 
 						  MPM_LOCATION, MPM_SESSION(el), el->PropertyTag, el->handle, el->StreamSize));
 					mpm_cache_ldb_add_stream(mpm, mpm->ldb_ctx, el);
 				} else {
-					DEBUG(0, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] Del: Stream OpenStream returned %s\n", 
+					DEBUG(0, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del: Stream OpenStream returned %s\n", 
 						  MPM_LOCATION, MPM_SESSION(el), mapi_get_errstr(mapi_repl.error_code)));
 					DLIST_REMOVE(mpm->streams, el);
 				}
@@ -804,7 +805,7 @@ static NTSTATUS cache_push_ReadStream(struct dcesrv_call_state *dce_call,
 				if (mpm->sync == true && stream->StreamSize > mpm->sync_min) {
 					cache_exec_sync_cmd(stream);
 				} else {
-					DEBUG(5, ("* [%s:%d] [s(0x%llx-0x%x-0x%x),c(0x%x)] %d bytes from remove server\n", 
+					DEBUG(5, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] %zd bytes from remove server\n", 
 						  MPM_LOCATION, MPM_SESSION(stream), response.data.length));
 					mpm_cache_stream_write(stream, response.data.length, response.data.data);
 					if (stream->offset == stream->StreamSize) {
@@ -1034,7 +1035,7 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 								cache_dump_stream_stat(stream);
 							}
 						}
-						DEBUG(5, ("* [%s:%d] %d bytes read from cache\n", MPM_LOCATION,
+						DEBUG(5, ("* [%s:%d] %zd bytes read from cache\n", MPM_LOCATION,
 							  mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length));
 						mapi_response->handles = talloc_array(mem_ctx, uint32_t, 1);
 						mapi_response->handles[0] = stream->handle;
@@ -1084,7 +1085,7 @@ static NTSTATUS cache_unbind(struct server_id server_id, uint32_t context_id)
 	message = mpm->messages;
 	while (message) {
 		if (!cache_cmp_session_sub(server_id, context_id, message->server_id, message->context_id)) {
-			DEBUG(2, ("[%s:%d]: [s(0x%llx-0x%x-0x%x),c(0x%x)] Message - 0x%llx/0x%llx handle(0x%x)\n",
+			DEBUG(2, ("[%s:%d]: [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Message - 0x%"PRIx64"/0x%"PRIx64" handle(0x%x)\n",
 				  MPM_LOCATION, MPM_SESSION(message), message->FolderId, message->MessageId, 
 				  message->handle));
 			DLIST_REMOVE(mpm->messages, message);
@@ -1099,7 +1100,7 @@ static NTSTATUS cache_unbind(struct server_id server_id, uint32_t context_id)
 	attach = mpm->attachments;
 	while (attach) {
 		if (cache_cmp_session_sub(server_id, context_id, attach->server_id, attach->context_id)) {
-			DEBUG(2, ("[%s:%d]: [s(0x%llx-0x%x-0x%x),c(0x%x)] Attachment - AttachmentID(0x%x) handle(0x%x)\n",
+			DEBUG(2, ("[%s:%d]: [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Attachment - AttachmentID(0x%x) handle(0x%x)\n",
 				  MPM_LOCATION, MPM_SESSION(attach), attach->AttachmentID, attach->handle));
 			DLIST_REMOVE(mpm->attachments, attach);
 			talloc_free(attach);
@@ -1112,7 +1113,7 @@ static NTSTATUS cache_unbind(struct server_id server_id, uint32_t context_id)
 	stream = mpm->streams;
 	while (stream) {
 		if (cache_cmp_session_sub(server_id, context_id, stream->server_id, stream->context_id)) {
-			DEBUG(2, ("[%s:%d]: [s(0x%llx-0x%x-0x%x),c(0x%x)] Stream - handle(0x%x)\n", MPM_LOCATION,
+			DEBUG(2, ("[%s:%d]: [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Stream - handle(0x%x)\n", MPM_LOCATION,
 				  MPM_SESSION(stream), stream->handle));
 			mpm_cache_stream_close(stream);
 			talloc_free(stream->filename);

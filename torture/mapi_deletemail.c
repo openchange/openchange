@@ -20,6 +20,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/defs_private.h>
 #include <gen_ndr/ndr_exchange.h>
 #include <param.h>
 #include <credentials.h>
@@ -112,7 +113,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 			if (strncmp(rowset.aRow[i_row].lpProps[4].value.lpszA, s_subject, len_subject) == 0) {
 				id_messages[cn_messages] = rowset.aRow[i_row].lpProps[1].value.d;
 				++cn_messages;
-				DEBUG(0, ("delete(%llx)\n", id_messages[cn_messages - 1]));
+				DEBUG(0, ("delete(%"PRIx64")\n", id_messages[cn_messages - 1]));
 			}
 		}
 

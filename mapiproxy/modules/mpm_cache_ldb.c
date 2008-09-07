@@ -28,7 +28,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy.h"
 #include "mapiproxy/modules/mpm_cache.h"
-
+#include <libmapi/defs_private.h>
 
 /**
    \details Create the cache database
@@ -88,7 +88,7 @@ static NTSTATUS  mpm_cache_ldb_add_folder(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dn = talloc_asprintf(mem_ctx, "CN=0x%llx,CN=Cache", FolderId);
+	dn = talloc_asprintf(mem_ctx, "CN=0x%"PRIx64",CN=Cache", FolderId);
 	msg->dn = ldb_dn_new(ldb_ctx, ldb_ctx, dn);
 	talloc_free(dn);
 	if (!msg->dn) {
@@ -129,20 +129,20 @@ NTSTATUS mpm_cache_ldb_add_message(TALLOC_CTX *mem_ctx,
 	int		       	ret;
 
 	/* First check if the CN=Folder,CN=Cache entry exists */
-	basedn = talloc_asprintf(mem_ctx, "CN=0x%llx,CN=Cache", message->FolderId);
+	basedn = talloc_asprintf(mem_ctx, "CN=0x%"PRIx64",CN=Cache", message->FolderId);
 	dn = ldb_dn_new(mem_ctx, ldb_ctx, basedn);
 	talloc_free(basedn);
 	if (!dn) return NT_STATUS_UNSUCCESSFUL;
 	ret = ldb_search(ldb_ctx, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
 	if (ret == LDB_SUCCESS && !res->count) {
-		DEBUG(5, ("* [%s:%d] We have to create folder TDB record: CN=0x%llx,CN=Cache\n", 
+		DEBUG(5, ("* [%s:%d] We have to create folder TDB record: CN=0x%"PRIx64",CN=Cache\n", 
 			  MPM_LOCATION, message->FolderId));
 		status = mpm_cache_ldb_add_folder(mem_ctx, ldb_ctx, message->FolderId);
 		if (!NT_STATUS_IS_OK(status)) return status;
 	}
 
 	/* Search if the message doesn't already exist */
-	basedn = talloc_asprintf(mem_ctx, "CN=0x%llx,CN=0x%llx,CN=Cache", 
+	basedn = talloc_asprintf(mem_ctx, "CN=0x%"PRIx64",CN=0x%"PRIx64",CN=Cache", 
 				 message->MessageId, message->FolderId);
 	dn = ldb_dn_new(mem_ctx, ldb_ctx, basedn);
 	talloc_free(basedn);
@@ -154,7 +154,7 @@ NTSTATUS mpm_cache_ldb_add_message(TALLOC_CTX *mem_ctx,
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) return NT_STATUS_NO_MEMORY;
 
-	basedn = talloc_asprintf(mem_ctx, "CN=0x%llx,CN=0x%llx,CN=Cache", 
+	basedn = talloc_asprintf(mem_ctx, "CN=0x%"PRIx64",CN=0x%"PRIx64",CN=Cache", 
 				 message->MessageId, message->FolderId);
 	msg->dn = ldb_dn_new(ldb_ctx, ldb_ctx, basedn);
 	talloc_free(basedn);
@@ -195,7 +195,7 @@ NTSTATUS mpm_cache_ldb_add_attachment(TALLOC_CTX *mem_ctx,
 	message = attach->message;
 
 	/* Search if the attachment doesn't already exist */
-	basedn = talloc_asprintf(mem_ctx, "CN=%d,CN=0x%llx,CN=0x%llx,CN=Cache",
+	basedn = talloc_asprintf(mem_ctx, "CN=%d,CN=0x%"PRIx64",CN=0x%"PRIx64",CN=Cache",
 				 attach->AttachmentID, message->MessageId, 
 				 message->FolderId);
 	dn = ldb_dn_new(mem_ctx, ldb_ctx, basedn);
@@ -209,7 +209,7 @@ NTSTATUS mpm_cache_ldb_add_attachment(TALLOC_CTX *mem_ctx,
 	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) return NT_STATUS_NO_MEMORY;
 	
-	basedn = talloc_asprintf(mem_ctx, "CN=%d,CN=0x%llx,CN=0x%llx,CN=Cache",
+	basedn = talloc_asprintf(mem_ctx, "CN=%d,CN=0x%"PRIx64",CN=0x%"PRIx64",CN=Cache",
 				 attach->AttachmentID, message->MessageId, 
 				 message->FolderId);
 	msg->dn = ldb_dn_new(ldb_ctx, ldb_ctx, basedn);
@@ -268,7 +268,7 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 
 	/* This is a stream for an attachment */
 	if (stream->attachment) {
-		basedn = talloc_asprintf(mem_ctx, "CN=%d,CN=0x%llx,CN=0x%llx,CN=Cache",
+		basedn = talloc_asprintf(mem_ctx, "CN=%d,CN=0x%"PRIx64",CN=0x%"PRIx64",CN=Cache",
 					 attach->AttachmentID, message->MessageId,
 					 message->FolderId);
 		dn = ldb_dn_new(mem_ctx, ldb_ctx, basedn);
@@ -294,7 +294,7 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 		}
 
 		/* Otherwise create the stream with basedn above */
-		basedn = talloc_asprintf(mem_ctx, "CN=%d,CN=0x%llx,CN=0x%llx,CN=Cache",
+		basedn = talloc_asprintf(mem_ctx, "CN=%d,CN=0x%"PRIx64",CN=0x%"PRIx64",CN=Cache",
 					 attach->AttachmentID, message->MessageId,
 					 message->FolderId);
 
@@ -302,7 +302,7 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 	} 
 
 	if (stream->message) {
-		basedn = talloc_asprintf(mem_ctx, "CN=0x%llx,CN=0x%llx,CN=Cache",
+		basedn = talloc_asprintf(mem_ctx, "CN=0x%"PRIx64",CN=0x%"PRIx64",CN=Cache",
 					 message->MessageId, message->FolderId);
 		dn = ldb_dn_new(mem_ctx, ldb_ctx, basedn);
 		talloc_free(basedn);
@@ -327,7 +327,7 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 		}
 
 		/* Otherwise create the stream with basedn above */
-		basedn = talloc_asprintf(mem_ctx, "CN=0x%llx,CN=0x%llx,CN=Cache",
+		basedn = talloc_asprintf(mem_ctx, "CN=0x%"PRIx64",CN=0x%"PRIx64",CN=Cache",
 					 message->MessageId, message->FolderId);
 		
 		DEBUG(2, ("* [%s:%d] Modify the message TDB record and append stream information\n",

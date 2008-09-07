@@ -24,6 +24,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
 #include <libmapi/dlinklist.h>
+#include <libmapi/defs_private.h>
 
 /**
    \file dcesrv_mapiproxy.c
@@ -61,7 +62,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	struct cli_credentials			*credentials;
 	bool					machine_account;
 
-	DEBUG(5, ("mapiproxy::mapiproxy_op_bind: [session = 0x%x] [session server id = 0x%llx 0x%x 0x%x]\n", dce_call->context->context_id,
+	DEBUG(5, ("mapiproxy::mapiproxy_op_bind: [session = 0x%x] [session server id = 0x%"PRIx64" 0x%x 0x%x]\n", dce_call->context->context_id,
 		  dce_call->conn->server_id.id, dce_call->conn->server_id.id2, dce_call->conn->server_id.node));
 
 	/* Retrieve parametric options */
@@ -321,7 +322,7 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
-	DEBUG(5, ("mapiproxy::mapiproxy_op_dispatch: %s(0x%x): %d bytes\n", 
+	DEBUG(5, ("mapiproxy::mapiproxy_op_dispatch: %s(0x%x): %zd bytes\n", 
 		  table->calls[opnum].name, opnum, table->calls[opnum].struct_size));
 
 	if (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_IN) {

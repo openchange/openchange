@@ -28,12 +28,12 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy.h"
 #include "mapiproxy/modules/mpm_cache.h"
+#include <libmapi/defs_private.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include <errno.h>
-
 
 /**
    \details Create a file: message or attachment in the cache
@@ -59,13 +59,13 @@ NTSTATUS mpm_cache_stream_open(struct mpm_cache *mpm, struct mpm_stream *stream)
 
 	if (stream->message) {
 		/* Create the folder */
-		file = talloc_asprintf(mem_ctx, "%s/0x%llx", mpm->dbpath, stream->message->FolderId);
+		file = talloc_asprintf(mem_ctx, "%s/0x%"PRIx64, mpm->dbpath, stream->message->FolderId);
 		ret = mkdir(file, 0777);
 		talloc_free(file);
 		if ((ret == -1) && (errno != EEXIST)) return NT_STATUS_UNSUCCESSFUL;
 
 		/* Open the file */
-		file = talloc_asprintf(mem_ctx, "%s/0x%llx/0x%llx.stream",
+		file = talloc_asprintf(mem_ctx, "%s/0x%"PRIx64"/0x%"PRIx64".stream",
 				       mpm->dbpath, stream->message->FolderId,
 				       stream->message->MessageId);
 
@@ -80,20 +80,20 @@ NTSTATUS mpm_cache_stream_open(struct mpm_cache *mpm, struct mpm_stream *stream)
 
 	if (stream->attachment) {
 		/* Create the folders */
-		file = talloc_asprintf(mem_ctx, "%s/0x%llx", mpm->dbpath, 
+		file = talloc_asprintf(mem_ctx, "%s/0x%"PRIx64, mpm->dbpath, 
 				       stream->attachment->message->FolderId);
 		ret = mkdir(file, 0777);
 		talloc_free(file);
 		if ((ret == -1) && (errno != EEXIST)) return NT_STATUS_UNSUCCESSFUL;
 
-		file = talloc_asprintf(mem_ctx, "%s/0x%llx/0x%llx", mpm->dbpath,
+		file = talloc_asprintf(mem_ctx, "%s/0x%"PRIx64"/0x%"PRIx64, mpm->dbpath,
 				       stream->attachment->message->FolderId, 
 				       stream->attachment->message->MessageId);
 		ret = mkdir(file, 0777);
 		talloc_free(file);
 		if ((ret == -1) && (errno != EEXIST)) return NT_STATUS_UNSUCCESSFUL;
 
-		file = talloc_asprintf(mem_ctx, "%s/0x%llx/0x%llx/%d.stream", 
+		file = talloc_asprintf(mem_ctx, "%s/0x%"PRIx64"/0x%"PRIx64"/%d.stream", 
 				       mpm->dbpath,
 				       stream->attachment->message->FolderId, 
 				       stream->attachment->message->MessageId,

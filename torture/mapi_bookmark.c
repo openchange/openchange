@@ -20,6 +20,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/defs_private.h>
 #include <gen_ndr/ndr_exchange.h>
 #include <param.h>
 #include <credentials.h>
@@ -27,6 +28,7 @@
 #include <torture.h>
 #include <torture/torture_proto.h>
 #include <samba/popt.h>
+
 
 bool torture_rpc_mapi_bookmark(struct torture_context *torture)
 {
@@ -120,8 +122,8 @@ bool torture_rpc_mapi_bookmark(struct torture_context *torture)
 		return false;
 	}
 	
-	DEBUG(0, ("[1] mid: %llx, subject = %s\n", mid, subject));
-	DEBUG(0, ("[2] mid: %llx, subject = %s\n", SRowSet.aRow[0].lpProps[0].value.d,
+	DEBUG(0, ("[1] mid: %"PRIx64", subject = %s\n", mid, subject));
+	DEBUG(0, ("[2] mid: %"PRIx64", subject = %s\n", SRowSet.aRow[0].lpProps[0].value.d,
 		  SRowSet.aRow[0].lpProps[1].value.lpszA));
 
 	if (mid == SRowSet.aRow[0].lpProps[0].value.d) {

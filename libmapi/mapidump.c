@@ -20,6 +20,7 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/mapidump.h>
 #include <libmapi/proto_private.h>
+#include <libmapi/defs_private.h>
 
 /**
    \file mapidump.c
@@ -49,7 +50,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		break;
 	case PT_I8:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: %llx\n", sep?sep:"", proptag, (*(const uint64_t *)data));
+		printf("%s%s: %"PRIx64"\n", sep?sep:"", proptag, (*(const uint64_t *)data));
 		break;
 	case PT_STRING8:
 	case PT_UNICODE:
@@ -623,9 +624,9 @@ _PUBLIC_ void mapidump_msgflags(uint32_t MsgFlags, const char *sep)
 
 _PUBLIC_ void mapidump_newmail(struct NewMailNotification *newmail, const char *sep)
 {
-	printf("%sParent Entry ID: 0x%llx\n", sep?sep:"", newmail->FID);
+	printf("%sParent Entry ID: 0x%"PRIx64"\n", sep?sep:"", newmail->FID);
 	fflush(0);
-	printf("%sMessage Entry ID: 0x%llx\n", sep?sep:"", newmail->MID);
+	printf("%sMessage Entry ID: 0x%"PRIx64"\n", sep?sep:"", newmail->MID);
 	fflush(0);
 	printf("%sMessage flags:\n", sep?sep:"");
 	fflush(0);

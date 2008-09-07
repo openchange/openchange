@@ -344,15 +344,15 @@ System Attendant Private Interface
 	} SPropValue;
 	
 	typedef struct {
-		uint32 ulAdrEntryPad;
-		uint32 cValues;
-		[size_is(cValues)][unique] SPropValue *lpProps;
+		uint32			       	ulAdrEntryPad;
+		[range(0,100000)] uint32       	cValues;
+		[size_is(cValues)]SPropValue	*lpProps;
 	} SRow;
 
 
 	typedef [public] struct {
-		uint32 cRows;
-		[size_is(cRows)] SRow aRow[*];
+		[range(0,100000)] uint32	cRows;
+		[size_is(cRows)] SRow		aRow[];
 	} SRowSet;
 	
 	typedef struct {

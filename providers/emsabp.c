@@ -226,7 +226,7 @@ NTSTATUS emsabp_setEntryId(TALLOC_CTX *mem_ctx, struct entry_id *entry, struct B
   PR_ACCOUNT_NAME is represented in the AD by the samrAccountName attribute
 */
 
-NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, struct instance_key *instance_keys, struct Restriction_r *restriction)
+NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, struct SPropTagArray *instance_keys, struct Restriction_r *restriction)
 {
 	enum ldb_scope			scope = LDB_SCOPE_SUBTREE;
 	struct PropertyRestriction_r	*res_prop = NULL;
@@ -259,10 +259,10 @@ NTSTATUS emsabp_search(struct emsabp_ctx *emsabp_ctx, struct instance_key *insta
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	instance_keys->value = talloc_size(emsabp_ctx->mem_ctx, sizeof(uint32_t) * res->count);
+	instance_keys->aulPropTag = talloc_size(emsabp_ctx->mem_ctx, sizeof(uint32_t) * res->count);
 
 	for (i = 0; i < res->count; i++) {
-		if (!emsabp_add_entry(emsabp_ctx, &(instance_keys->value[i]), res->msgs[i])) {
+		if (!emsabp_add_entry(emsabp_ctx, &(instance_keys->aulPropTag[i]), res->msgs[i])) {
 			/* FIXME: Change NTSTATUS value */
 			return NT_STATUS_INVALID_PARAMETER;
 		}

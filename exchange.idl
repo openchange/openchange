@@ -355,21 +355,6 @@ System Attendant Private Interface
 		[size_is(cRows)] SRow aRow[*];
 	} SRowSet;
 	
-	/* 
-	** input locale combination: 
-	** http://www.microsoft.com/globaldev/reference/win2k/setup/lcid.mspx
-	*/
-
-	typedef struct {
-		uint32 language;
-		uint32 method;
-	} input_locale;
-
-	typedef struct {
-		[length_is(cValues - 1), size_is(cValues - 1)] uint32 *value;
-		uint32 cValues;
-	} instance_key;
-
 	typedef struct {
 		[range(0,100000)] uint32		cRes;
 		[size_is(cRes)] Restriction_r		*lpRes;

@@ -593,7 +593,7 @@ enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC
 	struct dcesrv_handle	*h;
 	struct emsabp_ctx	*emsabp_context;
 	struct SPropTagArray	*ppOutMIds;
-	struct instance_key	*instance_keys;
+	struct SPropTagArray	*instance_keys;
 	NTSTATUS		status;
 	int			nbrows = 0;
 
@@ -606,7 +606,7 @@ enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call, TALLOC
         r->out.pStat = r->in.pStat;
 
 	/* Search the provider for the requested recipient */
-	instance_keys = talloc(mem_ctx, struct instance_key);
+	instance_keys = talloc(mem_ctx, struct SPropTagArray);
 	status = emsabp_search(emsabp_context, instance_keys, r->in.Filter);
 	if (!NT_STATUS_IS_OK(status)) {
 		return MAPI_E_LOGON_FAILED;

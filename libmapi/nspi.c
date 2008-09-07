@@ -938,7 +938,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryColumns(struct nspi_context *nspi_ctx,
    \return MAPI_E_SUCCESS on success, otherwise -1
  */
 _PUBLIC_ enum MAPISTATUS nspi_GetNamesFromIDs(struct nspi_context *nspi_ctx,
-					      struct MAPIUID *lpGuid,
+					      struct FlatUID_r *lpGuid,
 					      struct SPropTagArray *pPropTags,
 					      struct SPropTagArray **ppReturnedPropTags,
 					      struct PropertyNameSet_r **ppNames)

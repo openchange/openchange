@@ -348,7 +348,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.lpszW = (const char *) data;
 		break;
 	case PT_CLSID:
-		lpProps->value.lpguid = (struct MAPIUID *) data;
+		lpProps->value.lpguid = (struct FlatUID_r *) data;
 		break;
 	case PT_SYSTIME:
 		lpProps->value.ft = *((const struct FILETIME *) data);

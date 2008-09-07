@@ -241,12 +241,12 @@ System Attendant Private Interface
 
 	typedef struct {
 		uint8 ab[16];
-	} MAPIUID;
+	} FlatUID_r;
 
 	typedef struct {
-		MAPIUID	*lpguid;
-		uint32	ulReserved;
-		uint32	lID;
+		FlatUID_r	*lpguid;
+		uint32		ulReserved;
+		uint32		lID;
 	} PropertyName_r;
 
 	typedef struct {
@@ -333,8 +333,8 @@ System Attendant Private Interface
 		[case(PT_I8)]			dlong			d;
 		[case(PT_STRING8)][unique][string,charset(DOS)] uint8	*lpszA;
 		[case(PT_BINARY)]		SBinary			bin;
-		[case(PT_UNICODE)]		[string,charset(UTF16)] uint16	*lpszW;
-		[case(PT_CLSID)]		MAPIUID			*lpguid;
+		[case(PT_UNICODE)][string,charset(UTF16)] uint16	*lpszW;
+		[case(PT_CLSID)]		FlatUID_r      		*lpguid;
 		[case(PT_SYSTIME)]		FILETIME		ft;
 		[case(PT_ERROR)]		MAPISTATUS		err;
 		[case(PT_MV_I2)]		SShortArray		MVi;
@@ -675,7 +675,7 @@ System Attendant Private Interface
 	MAPISTATUS NspiGetNamesFromIDs(
 		[in] policy_handle			*handle,
 		[in] uint32				Reserved,
-		[in,unique] MAPIUID			*lpGuid,
+		[in,unique] FlatUID_r			*lpGuid,
 		[in,unique] SPropTagArray		*pPropTags,
 		[out] SPropTagArray			**ppReturnedPropTags,
 		[out] PropertyNameSet_r			**ppNames
@@ -3268,16 +3268,16 @@ System Attendant Private Interface
  	typedef [flag(NDR_NOALIGN)] struct {
 		hyper		folder_id[13];
 		uint16		unknown;
-		MAPIUID		entryid;
-		MAPIUID		msgstore;
+		FlatUID_r      	entryid;
+		FlatUID_r      	msgstore;
 	} store_pf;
 
 	typedef [flag(NDR_NOALIGN)] struct {
  		hyper		folder_id[13];
 		uint8		unknown3;
-		MAPIUID		entryid;
+		FlatUID_r      	entryid;
 		uint16		default_store;
-		MAPIUID		msgstore;
+		FlatUID_r      	msgstore;
 		FILETIME	ts_access;
 		astring		creation_date;
 		uint8		terminator;

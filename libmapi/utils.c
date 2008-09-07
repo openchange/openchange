@@ -63,13 +63,13 @@ _PUBLIC_ char *guid_delete_dash(TALLOC_CTX *mem_ctx, const char *recipient_id)
 	return guid;
 }
 
-_PUBLIC_ struct SBinary *generate_recipient_entryid(TALLOC_CTX *mem_ctx, const char *recipient_id)
+_PUBLIC_ struct Binary_r *generate_recipient_entryid(TALLOC_CTX *mem_ctx, const char *recipient_id)
 {
-	struct SBinary *entryid;
+	struct Binary_r	*entryid;
 	uint32_t	off;
 	char		*guid = (char *) NULL;
 
-	entryid = talloc(mem_ctx, struct SBinary);
+	entryid = talloc(mem_ctx, struct Binary_r);
 	entryid->cb = sizeof (uint32_t) + sizeof (MAPI_LOCAL_UID) + sizeof (MAPI_LOCAL_UID_END) + 1;
 
 	if (recipient_id) {

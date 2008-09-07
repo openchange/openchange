@@ -342,7 +342,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.lpszA = (const char *) data;
 		break;
 	case PT_BINARY:
-		lpProps->value.bin = *((const struct SBinary *)data);
+		lpProps->value.bin = *((const struct Binary_r *)data);
 		break;
 	case PT_UNICODE:
 		lpProps->value.lpszW = (const char *) data;
@@ -670,7 +670,7 @@ _PUBLIC_ bool set_SPropValue_proptag_date_timeval(struct SPropValue *lpProps, ui
    \details Retrieve a RecurrencePattern structure from a binary blob
 
    \param mem_ctx pointer to the memory context
-   \param bin pointer to the SBinary structure with non-mapped
+   \param bin pointer to the Binary_r structure with non-mapped
    reccurrence data
 
    \return Allocated RecurrencePattern structure on success,
@@ -680,7 +680,7 @@ _PUBLIC_ bool set_SPropValue_proptag_date_timeval(struct SPropValue *lpProps, ui
    finished.
  */
 _PUBLIC_ struct RecurrencePattern *get_RecurrencePattern(TALLOC_CTX *mem_ctx, 
-struct SBinary *bin)
+							 struct Binary_r *bin)
 {
         struct RecurrencePattern	*RecurrencePattern = NULL;
         struct ndr_pull			*ndr;
@@ -716,8 +716,8 @@ struct SBinary *bin)
    \details Retrieve a TimeZoneStruct structure from a binary blob
 
    \param mem_ctx pointer to the memory context
-   \param bin pointer to the SBinary structure with raw TimeZoneStruct
-   data
+   \param bin pointer to the Binary_r structure with raw
+   TimeZoneStruct data
 
    \return Allocated TimeZoneStruct structure on success, otherwise
    NULL
@@ -726,7 +726,7 @@ struct SBinary *bin)
    finished.
  */
 _PUBLIC_ struct TimeZoneStruct *get_TimeZoneStruct(TALLOC_CTX *mem_ctx, 
-						   struct SBinary *bin)
+						   struct Binary_r *bin)
 {
 	struct TimeZoneStruct	*TimeZoneStruct = NULL;
 	struct ndr_pull		*ndr;
@@ -762,9 +762,8 @@ _PUBLIC_ struct TimeZoneStruct *get_TimeZoneStruct(TALLOC_CTX *mem_ctx,
    \details Retrieve a GlobalObjectId structure from a binary blob
 
    \param mem_ctx pointer to the memory context
-
-   \param bin pointer to the SBinary structure with raw GlobalObjectId
-   data
+   \param bin pointer to the Binary_r structure with raw
+   GlobalObjectId data
 
    \return Allocated GlobalObjectId structure on success, otherwise
    NULL
@@ -773,7 +772,7 @@ _PUBLIC_ struct TimeZoneStruct *get_TimeZoneStruct(TALLOC_CTX *mem_ctx,
    finished.
  */
 _PUBLIC_ struct GlobalObjectId *get_GlobalObjectId(TALLOC_CTX *mem_ctx,
-						   struct SBinary *bin)
+						   struct Binary_r *bin)
 {
 	struct GlobalObjectId	*GlobalObjectId = NULL;
 	struct ndr_pull		*ndr;

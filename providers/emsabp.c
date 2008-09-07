@@ -181,7 +181,7 @@ bool emsabp_add_entry(struct emsabp_ctx *emsabp_ctx, uint32_t *instance_key,
   set an entry id
 */
 
-NTSTATUS emsabp_setEntryId(TALLOC_CTX *mem_ctx, struct entry_id *entry, struct SBinary *bin)
+NTSTATUS emsabp_setEntryId(TALLOC_CTX *mem_ctx, struct entry_id *entry, struct Binary_r *bin)
 {
 	struct GUID	*guid;
 	const char	*guid_str;
@@ -328,7 +328,7 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 	struct ldb_message_element	*ldb_element;
 	struct ldb_message		*ldb_res;
 	struct StringArray_r		*mv_string;
-	struct SBinary			*bin;
+	struct Binary_r			*bin;
 	const char			*ldb_str;
 	const char			*x500 = NULL;
 	NTSTATUS			status;
@@ -344,7 +344,7 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 		data = talloc_strdup(mem_ctx, EMSABP_ADDRTYPE);
 		return (data);
 	case PR_ENTRYID:
-		bin = talloc(mem_ctx, struct SBinary);
+		bin = talloc(mem_ctx, struct Binary_r);
 		emsabp_setEntryId(mem_ctx, entry, bin);
 		return (bin);
 	case PR_OBJECT_TYPE:
@@ -356,7 +356,7 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 		*((uint32_t *)data) = DT_MAILUSER;
 		return (data);
 	case PR_INSTANCE_KEY:
-		bin = talloc(mem_ctx, struct SBinary);
+		bin = talloc(mem_ctx, struct Binary_r);
 		bin->cb = 4;
 		bin->lpb = talloc_size(mem_ctx, sizeof(uint8_t) * bin->cb);
 		memset(bin->lpb, 0, bin->cb);
@@ -482,13 +482,13 @@ NTSTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx,
 
 /*
  * emsabp_hierarchy_get_entryID:
- * Generate the PR_ENTRYID SBinary structure for the given recipient
+ * Generate the PR_ENTRYID Binary_r structure for the given recipient
  *
  */
 
-struct SBinary *emsabp_hierarchy_get_entryID(TALLOC_CTX *mem_ctx, struct GUID *guid, bool containerID)
+struct Binary_r *emsabp_hierarchy_get_entryID(TALLOC_CTX *mem_ctx, struct GUID *guid, bool containerID)
 {
-	struct SBinary	*entryID;
+	struct Binary_r	*entryID;
 	char		*guid_str = (char *) NULL;
 	
 	if (!containerID) {

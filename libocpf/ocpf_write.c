@@ -155,7 +155,7 @@ static char *ocpf_write_systime(const struct FILETIME *ft)
 	return line;
 }
 
-static char *ocpf_write_binary(const struct SBinary *bin)
+static char *ocpf_write_binary(const struct Binary_r *bin)
 {
 	uint32_t	i;
 	char		*line;
@@ -310,7 +310,7 @@ static char *ocpf_write_property(bool *found, uint32_t ulPropTag, const void *va
 		*found = true;
 		break;
 	case PT_BINARY:
-		line = ocpf_write_binary((const struct SBinary *)value);
+		line = ocpf_write_binary((const struct Binary_r *)value);
 		*found = true;
 		break;
 	case PT_MV_STRING8:

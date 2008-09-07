@@ -682,7 +682,7 @@ static char **collapse_recipients(TALLOC_CTX *mem_ctx, struct oclient *oclient)
 
 static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_parent, 
 				    mapi_object_t obj_stream, uint32_t mapitag, 
-				    uint32_t access_flags, struct SBinary bin)
+				    uint32_t access_flags, struct Binary_r bin)
 {
 	enum MAPISTATUS	retval;
 	DATA_BLOB	stream;
@@ -816,7 +816,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 		set_SPropValue_proptag(&props[3], PR_MSG_EDITOR_FORMAT, (const void *)&editor);
 
 		if (strlen(oclient->pr_body) > MAX_READ_SIZE) {
-			struct SBinary	bin;
+			struct Binary_r	bin;
 
 			bin.lpb = (uint8_t *)oclient->pr_body;
 			bin.cb = strlen(oclient->pr_body);
@@ -831,7 +831,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 		set_SPropValue_proptag(&props[3], PR_MSG_EDITOR_FORMAT, (const void *)&editor);
 
 		if (strlen(oclient->pr_html_inline) > MAX_READ_SIZE) {
-			struct SBinary	bin;
+			struct Binary_r	bin;
 			
 			bin.lpb = (uint8_t *)oclient->pr_html_inline;
 			bin.cb = strlen(oclient->pr_html_inline);

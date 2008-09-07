@@ -477,7 +477,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 	struct FILETIME		*pt_filetime;
 	struct GUID		*pt_clsid;
 	struct SBinary_short	pt_binary;
-	struct SBinary		*sbin;
+	struct Binary_r		*sbin;
 	struct mapi_SLPSTRArray	pt_slpstr;
 	struct StringArray_r	*slpstr;
 	uint32_t		i;
@@ -535,7 +535,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 	case PT_BINARY:
 		ndr_pull_SBinary_short(ndr, NDR_SCALARS, &pt_binary);
 		*offset = ndr->offset;
-		sbin = talloc_zero(mem_ctx, struct SBinary);
+		sbin = talloc_zero(mem_ctx, struct Binary_r);
 		sbin->cb = pt_binary.cb;
 		sbin->lpb = pt_binary.lpb;
 		return (void *) sbin;

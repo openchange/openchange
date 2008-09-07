@@ -92,22 +92,22 @@ static void exchange2ical_reset(struct exchange2ical *exchange2ical)
 
 static int exchange2ical_get_properties(TALLOC_CTX *mem_ctx, struct SRow *aRow, struct exchange2ical *exchange2ical)
 {
-	struct SBinary	*apptrecur;
-	struct SBinary	*TimeZoneStruct;
+	struct Binary_r	*apptrecur;
+	struct Binary_r	*TimeZoneStruct;
 
 	exchange2ical->Keywords = (const struct StringArray_r *) octool_get_propval(aRow, PidNameKeywords);
 	exchange2ical->method = get_ical_method((const char *) octool_get_propval(aRow, PR_MESSAGE_CLASS_UNICODE));
 	if (!exchange2ical->method) return -1;
 
 	exchange2ical->Recurring = (uint8_t *) octool_get_propval(aRow, PidLidRecurring);
-	apptrecur = (struct SBinary *) octool_get_propval(aRow, PidLidAppointmentRecur);
+	apptrecur = (struct Binary_r *) octool_get_propval(aRow, PidLidAppointmentRecur);
 	exchange2ical->RecurrencePattern = get_RecurrencePattern(mem_ctx, apptrecur);
 
 	exchange2ical->TimeZoneDesc = (const char *) octool_get_propval(aRow, PidLidTimeZoneDescription);
-	TimeZoneStruct = (struct SBinary *) octool_get_propval(aRow, PidLidTimeZoneStruct);
+	TimeZoneStruct = (struct Binary_r *) octool_get_propval(aRow, PidLidTimeZoneStruct);
 	exchange2ical->TimeZoneStruct = get_TimeZoneStruct(mem_ctx, TimeZoneStruct);
 
-	exchange2ical->GlobalObjectId = (struct SBinary *) octool_get_propval(aRow, PidLidCleanGlobalObjectId);
+	exchange2ical->GlobalObjectId = (struct Binary_r *) octool_get_propval(aRow, PidLidCleanGlobalObjectId);
 	exchange2ical->apptStateFlags = (uint32_t *) octool_get_propval(aRow, PidLidAppointmentStateFlags);
 	exchange2ical->Contacts = (const struct StringArray_r *)octool_get_propval(aRow, PidLidContacts);
 	exchange2ical->apptStartWhole = (const struct FILETIME *)octool_get_propval(aRow, PidLidAppointmentStartWhole);

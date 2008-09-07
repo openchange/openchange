@@ -38,7 +38,7 @@ struct ocpf_file {
 
 struct attach {
 	const char		*filename;
-	struct SBinary		bin;
+	struct Binary_r		bin;
 	int			fd;
 };
 
@@ -53,7 +53,7 @@ struct oclient {
 	char			**mapi_to;
 	char			**mapi_cc;
 	char			**mapi_bcc;
-	struct SBinary		pr_html;
+	struct Binary_r		pr_html;
 	struct attach		*attach;
 	uint32_t		attach_num;
 	const char		*store_folder;

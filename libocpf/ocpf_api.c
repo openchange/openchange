@@ -139,9 +139,9 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.ft, sizeof (struct FILETIME));
 		return OCPF_SUCCESS;
 	case PT_BINARY:
-		*value = (const void *)talloc_zero(mem_ctx, struct SBinary);
-		((struct SBinary *)*value)->cb = lpProp.bin.cb;
-		((struct SBinary *)*value)->lpb = talloc_memdup(mem_ctx, (const void *)lpProp.bin.lpb, lpProp.bin.cb);
+		*value = (const void *)talloc_zero(mem_ctx, struct Binary_r);
+		((struct Binary_r *)*value)->cb = lpProp.bin.cb;
+		((struct Binary_r *)*value)->lpb = talloc_memdup(mem_ctx, (const void *)lpProp.bin.lpb, lpProp.bin.cb);
 		return OCPF_SUCCESS;
 	case PT_MV_STRING8:
 		*value = (const void *)talloc_zero(mem_ctx, struct StringArray_r);
@@ -543,7 +543,7 @@ int ocpf_variable_add(const char *name, union SPropValue_CTR lpProp, uint16_t pr
 }
 
 
-int ocpf_binary_add(const char *filename, struct SBinary *bin)
+int ocpf_binary_add(const char *filename, struct Binary_r *bin)
 {
 	int		fd;
 	struct stat	sb;

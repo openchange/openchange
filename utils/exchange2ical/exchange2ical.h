@@ -71,7 +71,7 @@ struct exchange2ical {
 	const char			*Subject;
 	uint32_t			*BusyStatus;
 	uint32_t			*IntendedBusyStatus;
-	struct SBinary  		*GlobalObjectId;
+	struct Binary_r  		*GlobalObjectId;
 	const struct FILETIME		*AttendeeCriticalChange;
 	uint32_t			*OwnerApptId;
 	const struct FILETIME		*apptReplyTime;

@@ -275,9 +275,9 @@ System Attendant Private Interface
 	} SPropTagArray;
 
 	typedef struct {
-		uint32				cb;
-		[size_is(cb)][unique] uint8    	*lpb;
-	} SBinary;
+		[range(0,2097152)] uint32      	cb;
+		[size_is(cb)] uint8		*lpb;
+	} Binary_r;
 
 	typedef [public] struct {
 		uint32 dwLowDateTime;
@@ -308,7 +308,7 @@ System Attendant Private Interface
 
 	typedef struct {
 		[range(0,100000)] uint32	cValues;
-		[size_is(cValues)] SBinary	*lpbin;
+		[size_is(cValues)] Binary_r	*lpbin;
 	} BinaryArray_r;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -328,7 +328,7 @@ System Attendant Private Interface
 		[case(PT_BOOLEAN)]		uint8			b;
 		[case(PT_I8)]			dlong			d;
 		[case(PT_STRING8)][unique][string,charset(DOS)] uint8	*lpszA;
-		[case(PT_BINARY)]		SBinary			bin;
+		[case(PT_BINARY)]		Binary_r       		bin;
 		[case(PT_UNICODE)][string,charset(UTF16)] uint16	*lpszW;
 		[case(PT_CLSID)]		FlatUID_r      		*lpguid;
 		[case(PT_SYSTIME)]		FILETIME		ft;

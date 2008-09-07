@@ -128,7 +128,7 @@ _PUBLIC_ int ocpf_parse(const char *filename)
 static enum MAPISTATUS ocpf_stream(TALLOC_CTX *mem_ctx,
 				   mapi_object_t *obj_parent,
 				   uint32_t aulPropTag,
-				   struct SBinary *bin)
+				   struct Binary_r *bin)
 {
 	enum MAPISTATUS		retval;
 	mapi_object_t		obj_stream;
@@ -241,9 +241,9 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 		for (nel = ocpf->nprops, i = 0; SPropTagArray->aulPropTag[i] && nel->next; nel = nel->next, i++) {
 			if (SPropTagArray->aulPropTag[i]) {
 				if (((SPropTagArray->aulPropTag[i] & 0xFFFF) == PT_BINARY) && 
-				    (((struct SBinary *)nel->value)->cb > MAX_READ_SIZE)) {
+				    (((struct Binary_r *)nel->value)->cb > MAX_READ_SIZE)) {
 					retval = ocpf_stream(mem_ctx, obj_message, SPropTagArray->aulPropTag[i], 
-							     (struct SBinary *)nel->value);
+							     (struct Binary_r *)nel->value);
 					MAPI_RETVAL_IF(retval, retval, NULL);
 				} else {
 					ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues,
@@ -258,9 +258,9 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 	if (ocpf->props && ocpf->props->next) {
 		for (pel = ocpf->props; pel->next; pel = pel->next) {
 			if (((pel->aulPropTag & 0xFFFF) == PT_BINARY) && 
-			    (((struct SBinary *)pel->value)->cb > MAX_READ_SIZE)) {
+			    (((struct Binary_r *)pel->value)->cb > MAX_READ_SIZE)) {
 				retval = ocpf_stream(mem_ctx, obj_message, pel->aulPropTag, 
-						     (struct SBinary *)pel->value);
+						     (struct Binary_r *)pel->value);
 				MAPI_RETVAL_IF(retval, retval, NULL);
 			} else {
 				ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues, 

@@ -60,7 +60,7 @@ class attachment : public object {
 
 			m_data_size = *(static_cast<const uint32_t*>(properties[PR_ATTACH_SIZE]));
 
-			const SBinary* attachment_data = static_cast<const SBinary*>(properties[PR_ATTACH_DATA_BIN]);
+			const Binary_r* attachment_data = static_cast<const Binary_r*>(properties[PR_ATTACH_DATA_BIN]);
 
 			// Don't load PR_ATTACH_DATA_BIN if it's embedded in message.
 			// NOTE: Use RopOpenEmbeddedMessage when it is implemented.

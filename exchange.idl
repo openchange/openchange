@@ -266,7 +266,7 @@ System Attendant Private Interface
 
 	typedef struct {
 		[range(0,100000)] uint32			cValues;
-		[string,size_is(cValues),charset(DOS)] uint8	**lppszW;
+		[string,size_is(cValues),charset(UTF16)] uint16	**lppszW;
 	} WStringArray_r;
 
 	typedef struct {

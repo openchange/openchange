@@ -63,6 +63,7 @@ distclean:: clean
 	rm -f Doxyfile
 	rm -f libmapi/Doxyfile
 	rm -f libocpf/Doxyfile
+	rm -f libmapi++/Doxyfile
 	rm -f mapiproxy/Doxyfile
 	rm -f config.status config.log
 	rm -f utils/mapitest/Doxyfile

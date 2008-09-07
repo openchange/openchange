@@ -110,9 +110,9 @@ void ical_property_CATEGORIES(struct exchange2ical *exchange2ical)
 
 	DEBUG(0, ("CATEGORIES:"));
 	for (i = 0; i < exchange2ical->Keywords->cValues - 1; i++) {
-		DEBUG(0, ("%s,", exchange2ical->Keywords->strings[i]->lppszA));
+		DEBUG(0, ("%s,", exchange2ical->Keywords->lppszA[i]));
 	}
-	DEBUG(0, ("%s\n", exchange2ical->Keywords->strings[i]->lppszA));
+	DEBUG(0, ("%s\n", exchange2ical->Keywords->lppszA[i]));
 }
 
 
@@ -134,7 +134,7 @@ void ical_property_CONTACT(struct exchange2ical *exchange2ical)
 	if (!exchange2ical->Contacts->cValues) return;
 
 	for (i = 0; i < exchange2ical->Contacts->cValues; i++) {
-		DEBUG(0, ("CONTACT:%s\n", exchange2ical->Contacts->strings[i]->lppszA));
+		DEBUG(0, ("CONTACT:%s\n", exchange2ical->Contacts->lppszA[i]));
 	}
 }
 

@@ -479,7 +479,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 	struct SBinary_short	pt_binary;
 	struct SBinary		*sbin;
 	struct mapi_SLPSTRArray	pt_slpstr;
-	struct SLPSTRArray	*slpstr;
+	struct StringArray_r	*slpstr;
 	uint32_t		i;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_pull);
@@ -542,12 +542,11 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 	case PT_MV_STRING8:
 		ndr_pull_mapi_SLPSTRArray(ndr, NDR_SCALARS, &pt_slpstr);
 		*offset = ndr->offset;
-		slpstr = talloc_zero(mem_ctx, struct SLPSTRArray);
+		slpstr = talloc_zero(mem_ctx, struct StringArray_r);
 		slpstr->cValues = pt_slpstr.cValues;
-		slpstr->strings = talloc_array(mem_ctx, struct LPSTR *, pt_slpstr.cValues);
+		slpstr->lppszA = talloc_array(mem_ctx, const char *, pt_slpstr.cValues);
 		for (i = 0; i < slpstr->cValues; i++) {
-			slpstr->strings[i] = talloc_zero(mem_ctx, struct LPSTR);
-			slpstr->strings[i]->lppszA = talloc_strdup(mem_ctx, pt_slpstr.strings[i].lppszA);
+			slpstr->lppszA[i] = talloc_strdup(mem_ctx, pt_slpstr.strings[i].lppszA);
 		}
 		return (const void *) slpstr;
 	default:

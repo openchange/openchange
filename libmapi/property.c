@@ -295,7 +295,7 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	case PT_BINARY:
 		return (const void *)&lpProps->value.bin;
 	case PT_MV_STRING8:
-		return (const void *)(struct SLPSTRArray *)&lpProps->value.MVszA;
+		return (const void *)(struct StringArray_r *)&lpProps->value.MVszA;
 	default:
 		return NULL;
 	}
@@ -363,7 +363,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.MVl = *((const struct MV_LONG_STRUCT *)data);
 		break;
 	case PT_MV_STRING8:
-		lpProps->value.MVszA = *((const struct SLPSTRArray *)data);
+		lpProps->value.MVszA = *((const struct StringArray_r *)data);
 		break;
 	case PT_MV_BINARY:
 		lpProps->value.MVbin = *((const struct BinaryArray_r *)data);
@@ -464,7 +464,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 
 			mapi_sprop->value.MVszA.strings = talloc_array(global_mapi_ctx->mem_ctx, struct mapi_LPSTR, mapi_sprop->value.MVszA.cValues);
 			for (i = 0; i < mapi_sprop->value.MVszA.cValues; i++) {
-				mapi_sprop->value.MVszA.strings[i].lppszA = sprop->value.MVszA.strings[i]->lppszA;
+				mapi_sprop->value.MVszA.strings[i].lppszA = sprop->value.MVszA.lppszA[i];
 				size += strlen(mapi_sprop->value.MVszA.strings[i].lppszA) + 1;
 			}
 			return size;
@@ -519,11 +519,10 @@ _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPr
 		sprop->value.MVszA.cValues = mapi_sprop->value.MVszA.cValues;
 		size += 4;
 
-		sprop->value.MVszA.strings = talloc_array(global_mapi_ctx->mem_ctx, struct LPSTR *, sprop->value.MVszA.cValues);
+		sprop->value.MVszA.lppszA = talloc_array(global_mapi_ctx->mem_ctx, const char *, sprop->value.MVszA.cValues);
 		for (i = 0; i < sprop->value.MVszA.cValues; i++) {
-			sprop->value.MVszA.strings[i] = talloc_zero((TALLOC_CTX *)sprop->value.MVszA.strings, struct LPSTR);
-			sprop->value.MVszA.strings[i]->lppszA = mapi_sprop->value.MVszA.strings[i].lppszA;
-			size += strlen(sprop->value.MVszA.strings[i]->lppszA) + 1;
+			sprop->value.MVszA.lppszA[i] = mapi_sprop->value.MVszA.strings[i].lppszA;
+			size += strlen(sprop->value.MVszA.lppszA[i]) + 1;
 		}
 		return size;
 		}

@@ -33,7 +33,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	const char			*proptag;
 	const void			*data;
 	TALLOC_CTX			*mem_ctx = NULL;
-	const struct SLPSTRArray	*SLPSTRArray = NULL;
+	const struct StringArray_r	*StringArray_r = NULL;
 	uint32_t			i;
 
 	proptag = get_proptag_name(lpProp.ulPropTag);
@@ -69,12 +69,12 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		printf("%s%s: %d\n", sep?sep:"", proptag, (*(const uint32_t *)data));
 		break;
 	case PT_MV_STRING8:
-		SLPSTRArray = (const struct SLPSTRArray *) get_SPropValue_data(&lpProp);
+		StringArray_r = (const struct StringArray_r *) get_SPropValue_data(&lpProp);
 		printf("%s%s: ", sep?sep:"", proptag);
-		for (i = 0; i < SLPSTRArray->cValues - 1; i++) {
-			printf("%s, ", SLPSTRArray->strings[i]->lppszA);
+		for (i = 0; i < StringArray_r->cValues - 1; i++) {
+			printf("%s, ", StringArray_r->lppszA[i]);
 		}
-		printf("%s\n", SLPSTRArray->strings[i]->lppszA);
+		printf("%s\n", StringArray_r->lppszA[i]);
 		break;
 	default:
 		break;

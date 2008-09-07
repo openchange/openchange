@@ -51,8 +51,8 @@ struct exchange2ical {
 	struct RecurrencePattern	*RecurrencePattern;
 	struct TimeZoneStruct		*TimeZoneStruct;
 	const char			*TimeZoneDesc;
-	const struct SLPSTRArray       	*Keywords;
-	const struct SLPSTRArray	*Contacts;
+	const struct StringArray_r     	*Keywords;
+	const struct StringArray_r	*Contacts;
 	uint32_t			*apptStateFlags;
 	uint32_t			*sensitivity;
 	uint32_t			*Importance;

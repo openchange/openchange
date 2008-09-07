@@ -255,13 +255,18 @@ System Attendant Private Interface
 	} PropertyNameSet_r;
 
 	typedef struct {
-		[range(0,100000)] uint32				Count;
-		[string,size_is(Count),charset(DOS)] uint8		*Strings[];
+		[range(0,100000)] uint32			cValues;
+		[string,size_is(cValues),charset(DOS)] uint8	**lppszA;
+	} StringArray_r;
+
+	typedef struct {
+		[range(0,100000)] uint32		       	Count;
+		[string,size_is(Count),charset(DOS)] uint8     	*Strings[];
 	} StringsArray_r;
 
 	typedef struct {
-		[range(0,100000)] uint32				Count;
-		[string,size_is(Count),charset(UTF16)] uint16		*Strings[];
+		[range(0,100000)] uint32		       	Count;
+		[string,size_is(Count),charset(UTF16)] uint16  	*Strings[];
 	} WStringsArray_r;
 
 	typedef struct {
@@ -288,15 +293,6 @@ System Attendant Private Interface
 		uint32 cValues;
 		[size_is(cValues)] uint32 *lpl; 
 	} MV_LONG_STRUCT;
-
-	typedef struct {
-		[flag(STR_ASCII|STR_SIZE4|STR_LEN4)] string lppszA;
-	} LPSTR;
-
-	typedef struct {
-		uint32 cValues;
-		[size_is(cValues)] LPSTR **strings; 
-	} SLPSTRArray;
 
 	typedef [flag(NDR_ALIGN2)]struct {
 		uint32	size;
@@ -339,7 +335,7 @@ System Attendant Private Interface
 		[case(PT_ERROR)]		MAPISTATUS		err;
 		[case(PT_MV_I2)]		SShortArray		MVi;
 		[case(PT_MV_LONG)]		MV_LONG_STRUCT		MVl;
-		[case(PT_MV_STRING8)]		SLPSTRArray		MVszA;
+		[case(PT_MV_STRING8)]		StringArray_r		MVszA;
 		[case(PT_MV_BINARY)]		BinaryArray_r		MVbin;
 		[case(PT_MV_CLSID)]		SGuidArray		MVguid;
 		[case(PT_MV_UNICODE)]		MV_UNICODE_STRUCT	MVszW;

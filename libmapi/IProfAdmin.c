@@ -1132,7 +1132,7 @@ static bool set_profile_mvstr_attribute(const char *profname, struct SRowSet row
 	}
 
 	for (i = 0; i < lpProp->value.MVszA.cValues; i++) {
-		ret = mapi_profile_add_string_attr(profname, attr, lpProp->value.MVszA.strings[i]->lppszA);
+		ret = mapi_profile_add_string_attr(profname, attr, lpProp->value.MVszA.lppszA[i]);
 		if (ret != MAPI_E_SUCCESS) {
 			DEBUG(3, ("Problem adding attribute %s in profile %s\n", attr, profname));
 			return false;

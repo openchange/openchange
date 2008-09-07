@@ -44,7 +44,7 @@ uint8_t			recip_type;
 	char				*nameW;
 	char				*date;
 	char				*var;
-	struct SLPSTRArray		MVszA;
+	struct StringArray_r		MVszA;
 }
 
 %token <i> UINT8
@@ -231,15 +231,13 @@ propvalue	: STRING
 
 			if (!lpProp.MVszA.cValues) {
 				lpProp.MVszA.cValues = 0;
-				lpProp.MVszA.strings = talloc_array(ocpf->mem_ctx, struct LPSTR *, 2);
+				lpProp.MVszA.lppszA = talloc_array(ocpf->mem_ctx, const char *, 2);
 			} else {
-				lpProp.MVszA.strings = talloc_realloc(NULL, lpProp.MVszA.strings, struct LPSTR *,
-								      lpProp.MVszA.cValues + 2);
+				lpProp.MVszA.lppszA = talloc_realloc(NULL, lpProp.MVszA.lppszA, const char *,
+								     lpProp.MVszA.cValues + 2);
 			}
-			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.strings;
-			lpProp.MVszA.strings[lpProp.MVszA.cValues] = talloc_zero(mem_ctx, struct LPSTR);
-			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.strings[lpProp.MVszA.cValues];
-			lpProp.MVszA.strings[lpProp.MVszA.cValues]->lppszA = talloc_strdup(mem_ctx, $3);
+			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.lppszA;
+			lpProp.MVszA.lppszA[lpProp.MVszA.cValues] = talloc_strdup(mem_ctx, $3);
 			lpProp.MVszA.cValues += 1;
 
 			type = PT_MV_STRING8;
@@ -266,15 +264,13 @@ mvstring_content  : STRING COMMA
 
 			if (!lpProp.MVszA.cValues) {
 				lpProp.MVszA.cValues = 0;
-				lpProp.MVszA.strings = talloc_array(ocpf->mem_ctx, struct LPSTR *, 2);
+				lpProp.MVszA.lppszA = talloc_array(ocpf->mem_ctx, const char *, 2);
 			} else {
-				lpProp.MVszA.strings = talloc_realloc(NULL, lpProp.MVszA.strings, struct LPSTR *,
-								      lpProp.MVszA.cValues + 2);
+				lpProp.MVszA.lppszA = talloc_realloc(NULL, lpProp.MVszA.lppszA, const char *,
+								     lpProp.MVszA.cValues + 2);
 			}
-			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.strings;
-			lpProp.MVszA.strings[lpProp.MVszA.cValues] = talloc_zero(mem_ctx, struct LPSTR);
-			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.strings[lpProp.MVszA.cValues];
-			lpProp.MVszA.strings[lpProp.MVszA.cValues]->lppszA = talloc_strdup(mem_ctx, $1);
+			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.lppszA;
+			lpProp.MVszA.lppszA[lpProp.MVszA.cValues] = talloc_strdup(mem_ctx, $1);
 			lpProp.MVszA.cValues += 1;
 		  }
 		  ;

@@ -144,20 +144,19 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 		((struct SBinary *)*value)->lpb = talloc_memdup(mem_ctx, (const void *)lpProp.bin.lpb, lpProp.bin.cb);
 		return OCPF_SUCCESS;
 	case PT_MV_STRING8:
-		*value = (const void *)talloc_zero(mem_ctx, struct SLPSTRArray);
-		((struct SLPSTRArray *)*value)->cValues = lpProp.MVszA.cValues;
-		((struct SLPSTRArray *)*value)->strings = talloc_array(mem_ctx, struct LPSTR *, lpProp.MVszA.cValues);
+		*value = (const void *)talloc_zero(mem_ctx, struct StringArray_r);
+		((struct StringArray_r *)*value)->cValues = lpProp.MVszA.cValues;
+		((struct StringArray_r *)*value)->lppszA = talloc_array(mem_ctx, const char *, lpProp.MVszA.cValues);
 		{
 			uint32_t	i;
 
 			for (i = 0; i < lpProp.MVszA.cValues; i++) {
-				((struct SLPSTRArray *)*value)->strings[i] = talloc_zero(mem_ctx, struct LPSTR);
 				if (unescape) {
-					str = ocpf_write_unescape_string(lpProp.MVszA.strings[i]->lppszA);
+					str = ocpf_write_unescape_string(lpProp.MVszA.lppszA[i]);
 				} else {
-					str = (char *)lpProp.MVszA.strings[i]->lppszA;
+					str = (char *)lpProp.MVszA.lppszA[i];
 				}
-				((struct SLPSTRArray *)*value)->strings[i]->lppszA = talloc_strdup(mem_ctx, str);
+				((struct StringArray_r *)*value)->lppszA[i] = talloc_strdup(mem_ctx, str);
 				talloc_free(str);
 			}
 		}
@@ -179,7 +178,7 @@ int ocpf_propvalue_free(union SPropValue_CTR lpProp, uint16_t proptype)
 		talloc_free((char *)lpProp.lpszW);
 		break;
 	case PT_MV_STRING8:
-		talloc_free(lpProp.MVszA.strings);
+		talloc_free(lpProp.MVszA.lppszA);
 		break;
 	}
 	return OCPF_SUCCESS;

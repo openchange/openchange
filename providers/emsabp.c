@@ -327,7 +327,7 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 {
 	struct ldb_message_element	*ldb_element;
 	struct ldb_message		*ldb_res;
-	struct SLPSTRArray		*mv_string;
+	struct StringArray_r		*mv_string;
 	struct SBinary			*bin;
 	const char			*ldb_str;
 	const char			*x500 = NULL;
@@ -413,16 +413,15 @@ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_ctx *emsabp_ctx, struct en
 		data = (void *)num;
 		break;
 	case PT_MV_STRING8:
-		mv_string = talloc(mem_ctx, struct SLPSTRArray);
+		mv_string = talloc(mem_ctx, struct StringArray_r);
 		ldb_element = ldb_msg_find_element(entry->msg, x500);
 		if (!ldb_element) {
 			return NULL;
 		}
 		mv_string->cValues = ldb_element[0].num_values & 0xFFFFFFFF;
-		mv_string->strings = talloc_size(mem_ctx, sizeof(struct SLPSTRArray *) * mv_string->cValues);
+		mv_string->lppszA = talloc_array(mem_ctx, const char *, mv_string->cValues);
 		for (i = 0; i < mv_string->cValues; i++) {
-			mv_string->strings[i] = talloc(mem_ctx, struct LPSTR);
-			mv_string->strings[i]->lppszA = talloc_strdup(mem_ctx, (char *)ldb_element->values[i].data);
+			mv_string->lppszA[i] = talloc_strdup(mem_ctx, (char *)ldb_element->values[i].data);
 		}
 		data = mv_string;
 		break;

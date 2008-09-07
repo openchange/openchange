@@ -95,7 +95,7 @@ static int exchange2ical_get_properties(TALLOC_CTX *mem_ctx, struct SRow *aRow, 
 	struct SBinary	*apptrecur;
 	struct SBinary	*TimeZoneStruct;
 
-	exchange2ical->Keywords = (const struct SLPSTRArray *) octool_get_propval(aRow, PidNameKeywords);
+	exchange2ical->Keywords = (const struct StringArray_r *) octool_get_propval(aRow, PidNameKeywords);
 	exchange2ical->method = get_ical_method((const char *) octool_get_propval(aRow, PR_MESSAGE_CLASS_UNICODE));
 	if (!exchange2ical->method) return -1;
 
@@ -109,7 +109,7 @@ static int exchange2ical_get_properties(TALLOC_CTX *mem_ctx, struct SRow *aRow, 
 
 	exchange2ical->GlobalObjectId = (struct SBinary *) octool_get_propval(aRow, PidLidCleanGlobalObjectId);
 	exchange2ical->apptStateFlags = (uint32_t *) octool_get_propval(aRow, PidLidAppointmentStateFlags);
-	exchange2ical->Contacts = (const struct SLPSTRArray *)octool_get_propval(aRow, PidLidContacts);
+	exchange2ical->Contacts = (const struct StringArray_r *)octool_get_propval(aRow, PidLidContacts);
 	exchange2ical->apptStartWhole = (const struct FILETIME *)octool_get_propval(aRow, PidLidAppointmentStartWhole);
 	exchange2ical->apptEndWhole = (const struct FILETIME *)octool_get_propval(aRow, PidLidAppointmentEndWhole);
 	exchange2ical->apptSubType = (uint8_t *) octool_get_propval(aRow, PidLidAppointmentSubType);

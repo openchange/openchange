@@ -251,7 +251,7 @@ char *ocpf_write_unescape_string(const char *value)
 	return str;
 }
 
-static char *ocpf_write_mv_string8(const struct SLPSTRArray *value)
+static char *ocpf_write_mv_string8(const struct StringArray_r *value)
 {
 	char		*str = NULL;
 	char		*tmp = NULL;
@@ -259,7 +259,7 @@ static char *ocpf_write_mv_string8(const struct SLPSTRArray *value)
 
 	str = talloc_asprintf(ocpf->mem_ctx, "{ ");
 	for (i = 0; i < value->cValues; i++) {
-		tmp = ocpf_write_escape_string((const char *)value->strings[i]->lppszA);
+		tmp = ocpf_write_escape_string((const char *)value->lppszA[i]);
 		if (i != value->cValues - 1) {
 			str = talloc_asprintf_append_buffer(str, "\"%s\", ", tmp);
 		} else {
@@ -314,7 +314,7 @@ static char *ocpf_write_property(bool *found, uint32_t ulPropTag, const void *va
 		*found = true;
 		break;
 	case PT_MV_STRING8:
-		line = ocpf_write_mv_string8((const struct SLPSTRArray *)value);
+		line = ocpf_write_mv_string8((const struct StringArray_r *)value);
 		*found = true;
 		break;
 	}

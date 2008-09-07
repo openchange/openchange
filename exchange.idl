@@ -290,9 +290,9 @@ System Attendant Private Interface
 	} ShortArray_r;
 
 	typedef struct {
-		uint32 cValues;
-		[size_is(cValues)] uint32 *lpl; 
-	} MV_LONG_STRUCT;
+		[range(0,100000)] uint32	cValues;
+		[size_is(cValues)] uint32	*lpl; 
+	} LongArray_r;
 
 	typedef [flag(NDR_ALIGN2)]struct {
 		uint32	size;
@@ -334,7 +334,7 @@ System Attendant Private Interface
 		[case(PT_SYSTIME)]		FILETIME		ft;
 		[case(PT_ERROR)]		MAPISTATUS		err;
 		[case(PT_MV_I2)]		ShortArray_r		MVi;
-		[case(PT_MV_LONG)]		MV_LONG_STRUCT		MVl;
+		[case(PT_MV_LONG)]		LongArray_r		MVl;
 		[case(PT_MV_STRING8)]		StringArray_r		MVszA;
 		[case(PT_MV_BINARY)]		BinaryArray_r		MVbin;
 		[case(PT_MV_CLSID)]		SGuidArray		MVguid;

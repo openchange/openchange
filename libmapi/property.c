@@ -360,7 +360,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.err = *((const uint32_t *)data);
 		break;
 	case PT_MV_LONG:
-		lpProps->value.MVl = *((const struct MV_LONG_STRUCT *)data);
+		lpProps->value.MVl = *((const struct LongArray_r *)data);
 		break;
 	case PT_MV_STRING8:
 		lpProps->value.MVszA = *((const struct StringArray_r *)data);

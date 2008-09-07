@@ -369,7 +369,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.MVbin = *((const struct BinaryArray_r *)data);
 		break;
 	case PT_MV_CLSID:
-		lpProps->value.MVguid = *((const struct SGuidArray *)data);
+		lpProps->value.MVguid = *((const struct FlatUIDArray_r *)data);
 		break;
 	case PT_MV_UNICODE:
 		lpProps->value.MVszW = *((const struct MV_UNICODE_STRUCT *)data);

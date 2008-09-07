@@ -317,9 +317,9 @@ System Attendant Private Interface
 	} FlatUIDArray_r;
 
 	typedef struct {
-		uint32 cValues;
-		[size_is(cValues)] FILETIME *lpft;
-	} SDateTimeArray;
+		[range(0,100000)] uint32	cValues;
+		[size_is(cValues)] FILETIME	*lpft;
+	} DateTimeArray_r;
 
 	typedef [switch_type(uint32)] union {
 		[case(PT_I2)]			uint16			i;
@@ -339,7 +339,7 @@ System Attendant Private Interface
 		[case(PT_MV_BINARY)]		BinaryArray_r		MVbin;
 		[case(PT_MV_CLSID)]		FlatUIDArray_r		MVguid;
 		[case(PT_MV_UNICODE)]		MV_UNICODE_STRUCT	MVszW;
-		[case(PT_MV_SYSTIME)]		SDateTimeArray		MVft;
+		[case(PT_MV_SYSTIME)]		DateTimeArray_r		MVft;
 		[case(PT_NULL)]			uint32			null;
 		[case(PT_OBJECT)]		uint32			object;
 	} SPropValue_CTR;

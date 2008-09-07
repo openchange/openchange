@@ -375,7 +375,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.MVszW = *((const struct MV_UNICODE_STRUCT *)data);
 		break;
 	case PT_MV_SYSTIME:
-		lpProps->value.MVft = *((const struct SDateTimeArray *)data);
+		lpProps->value.MVft = *((const struct DateTimeArray_r *)data);
 		break;
 	case PT_NULL:
 		lpProps->value.null = *((const uint32_t *)data);

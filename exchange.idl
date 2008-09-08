@@ -1839,13 +1839,19 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x1d  */
+	typedef [bitmap8bit] bitmap {
+		DEL_MESSAGES		= 0x1,
+		DEL_FOLDERS		= 0x4,
+		DELETE_HARD_DELETE	= 0x10
+	} DeleteFolderFlags;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		flags;
-		hyper		folder_id;
+		DeleteFolderFlags      	DeleteFolderFlags;
+		hyper			FolderId;
 	} DeleteFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		boolean8		PartialCompletion;
 	} DeleteFolder_repl;
 
 	/**************************/

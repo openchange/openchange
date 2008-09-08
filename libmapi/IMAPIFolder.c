@@ -663,7 +663,15 @@ _PUBLIC_ enum MAPISTATUS EmptyFolder(mapi_object_t *obj_folder)
    The function deletes a specified folder.
 
    \param obj_parent the folder containing the folder to be deleted
-   \param folder_id the folder to delete
+   \param FolderId the ID of the folder to delete
+   \param DeleteFolderFlags control DeleteFolder operation behavior
+   \param PartialCompletion pointer on a boolean value which specify
+   whether the operation was partially completed or not
+
+   Possible values for DeleteFolderFlags are:
+   -# DEL_MESSAGES Delete all the messages in the folder
+   -# DEL_FOLDERS Delete the subfolder and all of its subfolders
+   -# DELETE_HARD_DELETE Hard delete the folder
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -675,7 +683,10 @@ _PUBLIC_ enum MAPISTATUS EmptyFolder(mapi_object_t *obj_folder)
 
    \sa OpenFolder, CreateFolder, EmptyFolder, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent, mapi_id_t folder_id)
+_PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent, 
+				      mapi_id_t FolderId,
+				      uint8_t DeleteFolderFlags,
+				      bool *PartialCompletion)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -687,7 +698,13 @@ _PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent, mapi_id_t folde
 	TALLOC_CTX		*mem_ctx;
 	mapi_ctx_t		*mapi_ctx;
 
+	/* Sanity Checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_parent, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF((!(DeleteFolderFlags & 0x1)) &&
+		       (!(DeleteFolderFlags & 0x4)) &&
+		       (!(DeleteFolderFlags & 0x10)), 
+		       MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("DeleteFolder");
@@ -695,10 +712,10 @@ _PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent, mapi_id_t folde
 	size = 0;
 
 	/* Fill the DeleteFolder operation */
-	request.flags = 0x5;
-	size += sizeof(uint8_t);
-	request.folder_id = folder_id;
-	size += 8;
+	request.DeleteFolderFlags = DeleteFolderFlags;
+	size += sizeof (uint8_t);
+	request.FolderId = FolderId;
+	size += sizeof (uint64_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -720,6 +737,10 @@ _PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent, mapi_id_t folde
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	if (PartialCompletion) {
+		*PartialCompletion = mapi_response->mapi_repl->u.mapi_DeleteFolder.PartialCompletion;
+	}
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

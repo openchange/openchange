@@ -222,7 +222,8 @@ static enum MAPISTATUS openchangepfadmin_rmdir(TALLOC_CTX *mem_ctx,
 	retval = EmptyFolder(&obj_folder);
 	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
-	retval = DeleteFolder(obj_container, mapi_object_get_id(&obj_folder));
+	retval = DeleteFolder(obj_container, mapi_object_get_id(&obj_folder),
+			      DEL_FOLDERS, NULL);
 	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
 	mapi_object_release(&obj_folder);

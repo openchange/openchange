@@ -132,7 +132,8 @@ bool torture_rpc_mapi_criteria(struct torture_context *torture)
 	}
 
 	/* Delete folder */
-	retval = DeleteFolder(&obj_search, mapi_object_get_id(&obj_searchdir));
+	retval = DeleteFolder(&obj_search, mapi_object_get_id(&obj_searchdir),
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
 	mapi_errstr("DeleteFolder", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

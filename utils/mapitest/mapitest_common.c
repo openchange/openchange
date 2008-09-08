@@ -482,7 +482,8 @@ _PUBLIC_ void mapitest_common_cleanup(struct mapitest *mt)
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "Empty test folder", GetLastError());
 	}
 
-	DeleteFolder(&(context->obj_top_folder), mapi_object_get_id(&(context->obj_test_folder)));
+	DeleteFolder(&(context->obj_top_folder), mapi_object_get_id(&(context->obj_test_folder)),
+		     DEL_FOLDERS, NULL);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "Delete test folder", GetLastError());
 	}

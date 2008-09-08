@@ -352,7 +352,8 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("\n[+] Removing messages from testdir\n"));
 
-	retval = DeleteFolder(&obj_inbox, mapi_object_get_id(&obj_testdir));
+	retval = DeleteFolder(&obj_inbox, mapi_object_get_id(&obj_testdir), 
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("[+] Deleting testdir folder\n"));
 

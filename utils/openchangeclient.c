@@ -2349,7 +2349,8 @@ static bool openchangeclient_rmdir(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store
 	
 	printf("obj_child fid = 0x%"PRIx64"\n", mapi_object_get_id(&obj_child));
 
-	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_child));
+	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_child),
+			      DEL_FOLDERS, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
 	mapi_object_release(&obj_child);

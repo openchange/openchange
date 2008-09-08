@@ -366,6 +366,236 @@ _PUBLIC_ bool mapitest_oxcfold_GetContentsTable(struct mapitest *mt)
 
 
 /**
+   \details Test the SetSearchCriteria (0x30) operation
+
+   This function:
+	-# Log on the user private mailbox
+	-# Retrieve the inbox folder ID
+	-# Open the default search folder
+	-# Create a search folder within this folder
+	-# Set the message class property on this container
+	-# Set a restriction criteria
+	-# Call SetSearchCriteria
+	-# Delete the test search folder
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcfold_SetSearchCriteria(struct mapitest *mt)
+{
+	enum MAPISTATUS			retval;
+	bool				ret = true;
+	mapi_object_t			obj_store;
+	mapi_object_t			obj_search;
+	mapi_object_t			obj_searchdir;
+	mapi_id_t			id_inbox;
+	mapi_id_t			id_search;
+	mapi_id_array_t			id;
+	struct SPropValue		lpProps[1];
+	struct mapi_SRestriction	res;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Open Inbox folder */
+	retval = GetDefaultFolder(&obj_store, &id_inbox, olFolderInbox);
+	mapitest_print_retval(mt, "GetDefaultFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3. Open Search folder */
+	retval = GetDefaultFolder(&obj_store, &id_search, olFolderFinder);
+	mapitest_print_retval(mt, "GetDefaultFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mapi_object_init(&obj_search);
+	retval = OpenFolder(&obj_store, id_search, &obj_search);
+	mapitest_print_retval(mt, "OpenFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 4. Create a search folder */
+	mapi_object_init(&obj_searchdir);
+	retval = CreateFolder(&obj_search, FOLDER_SEARCH, "mapitest", 
+			      "mapitest search folder", OPEN_IF_EXISTS,
+			      &obj_searchdir);
+	mapitest_print_retval(mt, "CreateFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 5. Set properties on this search folder */
+	lpProps[0].ulPropTag = PR_CONTAINER_CLASS;
+	lpProps[0].value.lpszA = IPF_NOTE;
+	retval = SetProps(&obj_searchdir, lpProps, 1);
+	mapitest_print_retval(mt, "SetProps");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto error;
+	}
+
+	/* Step 6. Search criteria on this folder */
+	mapi_id_array_init(&id);
+	mapi_id_array_add_id(&id, id_inbox);
+
+	res.rt = RES_CONTENT;
+	res.res.resContent.fuzzy = FL_SUBSTRING;
+	res.res.resContent.ulPropTag = PR_SUBJECT;
+	res.res.resContent.lpProp.ulPropTag = PR_SUBJECT;
+	res.res.resContent.lpProp.value.lpszA = "[MT]";
+
+	retval = SetSearchCriteria(&obj_searchdir, &res,
+				   BACKGROUND_SEARCH|RECURSIVE_SEARCH, &id);
+	mapitest_print_retval(mt, "SetSearchCriteria");
+	mapi_id_array_release(&id);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+error:
+	retval = DeleteFolder(&obj_search, mapi_object_get_id(&obj_searchdir),
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
+	mapitest_print_retval(mt, "DeleteFolder");
+	mapi_object_release(&obj_searchdir);
+	mapi_object_release(&obj_search);
+	mapi_object_release(&obj_store);
+	return ret;
+}
+
+
+/**
+   \details Test the GetSearchCriteria (0x31) operation
+
+   This function:
+	-# Log on the user private mailbox
+	-# Retrieve the inbox folder ID
+	-# Open the default search folder
+	-# Create a search folder within this folder
+	-# Set the message class property on this container
+	-# Set a restriction criteria
+	-# Call SetSearchCriteria
+	-# Call GetSearchCriteria
+	-# Delete the test search folder
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcfold_GetSearchCriteria(struct mapitest *mt)
+{
+	enum MAPISTATUS			retval;
+	bool				ret = true;
+	mapi_object_t			obj_store;
+	mapi_object_t			obj_search;
+	mapi_object_t			obj_searchdir;
+	mapi_id_t			id_inbox;
+	mapi_id_t			id_search;
+	mapi_id_array_t			id;
+	struct SPropValue		lpProps[1];
+	struct mapi_SRestriction	res;
+	uint32_t			ulSearchFlags;
+	uint16_t			count;
+	mapi_id_t			*fid;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(&obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Open Inbox folder */
+	retval = GetDefaultFolder(&obj_store, &id_inbox, olFolderInbox);
+	mapitest_print_retval(mt, "GetDefaultFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3. Open Search folder */
+	retval = GetDefaultFolder(&obj_store, &id_search, olFolderFinder);
+	mapitest_print_retval(mt, "GetDefaultFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mapi_object_init(&obj_search);
+	retval = OpenFolder(&obj_store, id_search, &obj_search);
+	mapitest_print_retval(mt, "OpenFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 4. Create a search folder */
+	mapi_object_init(&obj_searchdir);
+	retval = CreateFolder(&obj_search, FOLDER_SEARCH, "mapitest", 
+			      "mapitest search folder", OPEN_IF_EXISTS,
+			      &obj_searchdir);
+	mapitest_print_retval(mt, "CreateFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 5. Set properties on this search folder */
+	lpProps[0].ulPropTag = PR_CONTAINER_CLASS;
+	lpProps[0].value.lpszA = IPF_NOTE;
+	retval = SetProps(&obj_searchdir, lpProps, 1);
+	mapitest_print_retval(mt, "SetProps");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto error;
+	}
+
+	/* Step 6. Search criteria on this folder */
+	mapi_id_array_init(&id);
+	mapi_id_array_add_id(&id, id_inbox);
+
+	res.rt = RES_CONTENT;
+	res.res.resContent.fuzzy = FL_SUBSTRING;
+	res.res.resContent.ulPropTag = PR_SUBJECT;
+	res.res.resContent.lpProp.ulPropTag = PR_SUBJECT;
+	res.res.resContent.lpProp.value.lpszA = "[MT]";
+
+	retval = SetSearchCriteria(&obj_searchdir, &res,
+				   BACKGROUND_SEARCH|RECURSIVE_SEARCH, &id);
+	mapitest_print_retval(mt, "SetSearchCriteria");
+	mapi_id_array_release(&id);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto error;
+	}
+
+	/* Step 7. Call GetSearchCriteria */
+	retval = GetSearchCriteria(&obj_searchdir, &res, &ulSearchFlags, &count, &fid);
+	mapitest_print_retval(mt, "GetSearchCriteria");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto error;
+	}
+
+
+error:
+	retval = DeleteFolder(&obj_search, mapi_object_get_id(&obj_searchdir),
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
+	mapitest_print_retval(mt, "DeleteFolder");
+	mapi_object_release(&obj_searchdir);
+	mapi_object_release(&obj_search);
+	mapi_object_release(&obj_store);
+	return ret;
+}
+
+
+/**
    \details Test the MoveCopyMessages (0x33) opetation.
 
    This function:

@@ -2332,19 +2332,22 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x30 */
 	typedef [bitmap32bit, flag(NDR_PAHEX)] bitmap {
-		STOP_SEARCH		= 0x1,
-		RESTART_SEARCH		= 0x2,
-		RECURSIVE_SEARCH	= 0x4,
-		SHALLOW_SEARCH		= 0x8,
-		FOREGROUND_SEARCH	= 0x10,
-		BACKGROUND_SEARCH	= 0x20
-	} ulSearchFlags;
+		STOP_SEARCH			= 0x00000001,
+		RESTART_SEARCH			= 0x00000002,
+		RECURSIVE_SEARCH		= 0x00000004,
+		SHALLOW_SEARCH			= 0x00000008,
+		FOREGROUND_SEARCH		= 0x00000010,
+		BACKGROUND_SEARCH		= 0x00000020,
+	        CONTENT_INDEXED_SEARCH		= 0x00010000,
+		NON_CONTENT_INDEXED_SEARCH	= 0x00020000,
+		STATIC_SEARCH			= 0x00040000
+	} SearchFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		[subcontext(2)] mapi_SRestriction res;
-		uint16		count;
-		hyper		lpContainerList[count];
-		ulSearchFlags	ulSearchFlags;
+		[subcontext(2)] mapi_SRestriction	res;
+		uint16					FolderIdCount;
+		hyper					FolderIds[FolderIdCount];
+		SearchFlags				SearchFlags;
 	} SetSearchCriteria_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2360,10 +2363,10 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		[subcontext(2)] mapi_SRestriction	res;
-		uint8		unknown;
-		uint16		count;
-		hyper		lpContainerList[count];
-		ulSearchFlags	ulSearchFlags;
+ 		uint8					unknown;
+		uint16					FolderIdCount;
+		hyper					FolderIds[FolderIdCount];
+		SearchFlags				SearchFlags;
 	} GetSearchCriteria_repl;
 
 	/*************************/

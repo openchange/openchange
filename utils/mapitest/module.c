@@ -86,6 +86,8 @@ _PUBLIC_ uint32_t module_oxcfold_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "CREATE", "Create a folder", mapitest_oxcfold_CreateFolder);
 	mapitest_suite_add_test(suite, "GET-HIERARCHY-TABLE", "Retrieve the hierarchy table", mapitest_oxcfold_GetHierarchyTable);
 	mapitest_suite_add_test(suite, "GET-CONTENTS-TABLE", "Retrieve the contents table", mapitest_oxcfold_GetContentsTable);
+	mapitest_suite_add_test(suite, "SET-SEARCHCRITERIA", "Set a search criteria on a container", mapitest_oxcfold_SetSearchCriteria);
+	mapitest_suite_add_test(suite, "GET-SEARCHCRITERIA", "Retrieve a search criteria associated to a container", mapitest_oxcfold_GetSearchCriteria);
 	mapitest_suite_add_test(suite, "MOVECOPY-MESSAGES", "Move or copy messages from a source to destination folder", mapitest_oxcfold_MoveCopyMessages);
 	mapitest_suite_add_test(suite, "MOVEFOLDER", "Move folder from source to destination", mapitest_oxcfold_MoveFolder);
 	mapitest_suite_add_test(suite, "COPYFOLDER", "Copy folder from source to destination", mapitest_oxcfold_CopyFolder);

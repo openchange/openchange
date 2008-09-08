@@ -510,12 +510,12 @@ _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowL
    \param obj_container the object we apply search criteria on
    \param res pointer to a mapi_SRestriction structure defining the
    search criteria
-   \param ulSearchFlags bitmask of flags that controls how the search
+   \param SearchFlags bitmask of flags that controls how the search
    is performed
    \param lpContainerList pointer to a list of identifiers
    representing containers to be included in the search
 
-   ulSearchFlags can take the following values:
+   SearchFlags can take the following values:
 
    - BACKGROUND_SEARCH: Search run at normal priority relative to
      other searches. This flag is mutually exclusive with the
@@ -550,7 +550,7 @@ _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowL
  */
 _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container, 
 					   struct mapi_SRestriction *res, 
-					   uint32_t ulSearchFlags,
+					   uint32_t SearchFlags,
 					   mapi_id_array_t *lpContainerList)
 {
 	struct mapi_request		*mapi_request;
@@ -576,17 +576,17 @@ _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container,
 	request.res = *res;
 	size += get_mapi_SRestriction_size(res);
 	if (lpContainerList != NULL) {
-		request.count = lpContainerList->count;
+		request.FolderIdCount = lpContainerList->count;
 		size += sizeof (uint16_t);
 
-		mapi_id_array_get(mem_ctx, lpContainerList, &request.lpContainerList);
+		mapi_id_array_get(mem_ctx, lpContainerList, &request.FolderIds);
 		size += lpContainerList->count * sizeof (uint64_t);
 	} else {
-		request.count = 0;
+		request.FolderIdCount = 0;
 		size += sizeof (uint16_t);
-		request.lpContainerList = NULL;
+		request.FolderIds = NULL;
 	}
-	request.ulSearchFlags = ulSearchFlags;
+	request.SearchFlags = SearchFlags;
 	size += sizeof (uint32_t);
 
 	/* add subcontext size */
@@ -626,10 +626,10 @@ _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container,
    \param obj_container the object we retrieve search criteria from
    \param res pointer to a mapi_SRestriction structure defining the
    search criteria 
-   \param ulSearchFlags bitmask of flags that controls how the search
+   \param SearchFlags bitmask of flags that controls how the search
    is performed
-   \param cValues number of lpContainerList entries
-   \param lpContainerList pointer to a list of identifiers
+   \param FolderIdCount number of FolderIds entries
+   \param FolderIds pointer to a list of identifiers
    representing containers included in the search
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
@@ -644,9 +644,9 @@ _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container,
  */
 _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 					   struct mapi_SRestriction *res,
-					   uint32_t *ulSearchFlags,
-					   uint16_t *cValues,
-					   uint64_t **lpContainerList)
+					   uint32_t *SearchFlags,
+					   uint16_t *FolderIdCount,
+					   uint64_t **FolderIds)
 {
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
@@ -662,6 +662,9 @@ _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_container, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!SearchFlags, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!FolderIdCount, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!FolderIds, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("GetSearchCriteria");
@@ -697,9 +700,9 @@ _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 	reply = &mapi_response->mapi_repl->u.mapi_GetSearchCriteria;
 
 	res = &reply->res;
-	*cValues = reply->count;
-	*lpContainerList = reply->lpContainerList;
-	*ulSearchFlags = reply->ulSearchFlags;
+	*FolderIdCount = reply->FolderIdCount;
+	*FolderIds = reply->FolderIds;
+	*SearchFlags = reply->SearchFlags;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

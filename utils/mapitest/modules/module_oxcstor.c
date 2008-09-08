@@ -462,3 +462,40 @@ _PUBLIC_ bool mapitest_oxcstor_LongTermId(struct mapitest *mt)
 
 	return ret;
 }
+
+
+/**
+   \details Test the GetStoreState (0x7b) operation 
+
+   This function:
+   -# Logs into the user private mailbox
+   -# Retrieve the store state
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcstor_GetStoreState(struct mapitest *mt)
+{
+	mapi_object_t  	obj_store;
+	uint32_t       	StoreState = 0;
+	bool	       	ret = true;
+
+	/* Step 1. Logon Private Mailbox */
+	mapi_object_init(&obj_store);
+	OpenMsgStore(&obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Get the store state */
+	GetStoreState(&obj_store, &StoreState);
+	mapitest_print_retval(mt, "GetStoreState");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	mapi_object_release(&obj_store);
+	return ret;
+}

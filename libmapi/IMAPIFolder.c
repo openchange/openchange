@@ -626,8 +626,11 @@ _PUBLIC_ enum MAPISTATUS EmptyFolder(mapi_object_t *obj_folder)
 	size = 0;
 
 	/* Fill the EmptyFolder operation */
-	request.unknown = 0;
-	size += sizeof(uint16_t);
+	request.WantSynchronous = 0x0;
+	size += sizeof (uint8_t);
+
+	request.WantDeleteAssociated = 0x0;
+	size += sizeof (uint8_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);

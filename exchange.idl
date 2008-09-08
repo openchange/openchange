@@ -2764,11 +2764,12 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x58 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		unknown;
+		boolean8	WantAsynchronous;
+		boolean8	WantDeleteAssociated;
 	} EmptyFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		boolean8	PartialCompletion;
 	} EmptyFolder_repl;
 
 	/*************************/

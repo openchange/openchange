@@ -238,7 +238,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 		if (retval != MAPI_E_SUCCESS) return false;
 		mapi_errstr("SetProps", GetLastError());
 		
-		retval = SaveChangesMessage(&obj_folder, &obj_message);
+		retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 		mapi_errstr("SaveChangesMessage", GetLastError());
 		if (retval != MAPI_E_SUCCESS) return false;
 	}

@@ -140,7 +140,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageReadFlag(struct mapitest *mt)
 	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, OXCMSG_SETREADFLAGS);
 	if (ret == false) return ret;
 
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadWrite);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -448,7 +448,7 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 	}
 
 	/* Step 4. Save the message */
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -579,7 +579,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	ret = true;
 
 	/* Step 4. Save the message */
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -666,7 +666,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SaveChangesMessage(struct mapitest *mt)
 	}
 
 	/* Step 4. Save the message */
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -751,7 +751,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetMessageStatus(struct mapitest *mt)
 	}
 
 	/* Step 4. Save the message */
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -882,7 +882,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageStatus(struct mapitest *mt)
 	}
 
 	/* Step 4. Save the message */
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;

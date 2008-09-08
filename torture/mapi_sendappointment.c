@@ -163,7 +163,7 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 
-	retval = SaveChangesMessage(&obj_calendar, &obj_message);
+	retval = SaveChangesMessage(&obj_calendar, &obj_message, KeepOpenReadOnly);
 	mapi_errstr("SaveChangesMessage", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

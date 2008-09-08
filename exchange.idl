@@ -1358,14 +1358,20 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0xc  */
+	typedef [enum8bit] enum {
+		KeepOpenReadOnly	= 0x9,
+		KeepOpenReadWrite	= 0xA,
+		ForceSave		= 0xC
+	} SaveFlags;
+
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
-		uint8		prop_nb;
+		uint8		SaveFlags;
 	} SaveChangesMessage_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
-		hyper		message_id;
+		uint8		handle_idx;
+		hyper		MessageId;
 	} SaveChangesMessage_repl;
 
 	/*************************/
@@ -1932,12 +1938,6 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x25 */
-	typedef [enum8bit] enum {
-		KeepOpenReadOnly	= 0x9,
-		KeepOpenReadWrite	= 0xA,
-		ForceSave		= 0xC
-	} SaveFlags;
-
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
 		SaveFlags	SaveFlags;

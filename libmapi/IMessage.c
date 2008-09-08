@@ -949,6 +949,14 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 
    \param parent the parent object for the message
    \param obj_message the message to save
+   \param SaveFlags specify how the save operation behaves
+
+   Possible value for SaveFlags:
+   -# KeepReadOnly Keep the Message object open with read-only access
+   -# KeepOpenReadWrite Keep the Message object open with read-write
+      access
+   -# ForceSave Commit the changes and keep the message object open
+      with read-write access
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -961,7 +969,8 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
    \sa SetProps, ModifyRecipients, GetLastError
  */
 _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
-					    mapi_object_t *obj_message)
+					    mapi_object_t *obj_message,
+					    enum SaveFlags SaveFlags)
 {
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
@@ -973,8 +982,13 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	TALLOC_CTX			*mem_ctx;
 	mapi_ctx_t			*mapi_ctx;
 
+	/* Sanity Checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	
+	MAPI_RETVAL_IF(!parent, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF((SaveFlags != 0x9) && (SaveFlags != 0xA) && 
+		       (SaveFlags != 0xC), MAPI_E_INVALID_PARAMETER, NULL);
+
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("SaveChangesMessage");
 
@@ -982,8 +996,10 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 
 	/* Fill the SaveChangesMessage operation */
 	request.handle_idx = 0x1;
-	request.prop_nb = 0xa;
-	size += sizeof(uint16_t);
+	size += sizeof (uint8_t);
+
+	request.SaveFlags = SaveFlags;
+	size += sizeof(uint8_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -1008,7 +1024,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* store the message_id */
-	mapi_object_set_id(obj_message, mapi_response->mapi_repl->u.mapi_SaveChangesMessage.message_id);
+	mapi_object_set_id(obj_message, mapi_response->mapi_repl->u.mapi_SaveChangesMessage.MessageId);
 
 	talloc_free(mem_ctx);
 

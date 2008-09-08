@@ -370,7 +370,7 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 			mapi_object_release(&(context->obj_test_folder));
 			return false;
 		}
-		retval = SaveChangesMessage(&(context->obj_test_folder), &(context->obj_test_msg[i]));
+		retval = SaveChangesMessage(&(context->obj_test_folder), &(context->obj_test_msg[i]), KeepOpenReadWrite);
 		if (retval != MAPI_E_SUCCESS) {
 			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Save changes to  message", GetLastError());
 			mapi_object_release(&(context->obj_test_folder));
@@ -400,7 +400,7 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Set props on message", GetLastError());
 			return false;
 		}
-		retval = SaveChangesMessage(&(context->obj_test_folder), &(context->obj_test_msg[i]));
+		retval = SaveChangesMessage(&(context->obj_test_folder), &(context->obj_test_msg[i]), KeepOpenReadWrite);
 		if (retval != MAPI_E_SUCCESS) {
 			return false;
 		}

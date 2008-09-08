@@ -327,7 +327,7 @@ enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent,
 	retval = SetProps(&obj_message, props, 3);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	retval = SaveChangesMessage(obj_parent, &obj_message);
+	retval = SaveChangesMessage(obj_parent, &obj_message, KeepOpenReadOnly);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	mapi_object_release(&obj_message);

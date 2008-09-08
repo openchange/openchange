@@ -907,7 +907,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	}
 
 	if (oclient->pf) {
-		retval = SaveChangesMessage(&obj_outbox, &obj_message);
+		retval = SaveChangesMessage(&obj_outbox, &obj_message, KeepOpenReadOnly);
 		if (retval != MAPI_E_SUCCESS);
 
 	} else {
@@ -1132,7 +1132,7 @@ static bool openchangeclient_sendappointment(TALLOC_CTX *mem_ctx, mapi_object_t 
 	retval = appointment_SetProps(mem_ctx, &obj_calendar, &obj_message, oclient);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = SaveChangesMessage(&obj_calendar, &obj_message);
+	retval = SaveChangesMessage(&obj_calendar, &obj_message, KeepOpenReadOnly);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Fetch and Display the message unique ID */
@@ -1230,7 +1230,7 @@ static bool openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	retval = contact_SetProps(mem_ctx, &obj_contact, &obj_message, oclient);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = SaveChangesMessage(&obj_contact, &obj_message);
+	retval = SaveChangesMessage(&obj_contact, &obj_message, KeepOpenReadOnly);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Fetch and Display the message unique ID */
@@ -1349,7 +1349,7 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	/* Set contact properties */
 	retval = task_SetProps(mem_ctx, &obj_task, &obj_message, oclient);
 
-	retval = SaveChangesMessage(&obj_task, &obj_message);
+	retval = SaveChangesMessage(&obj_task, &obj_message, KeepOpenReadOnly);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Fetch and Display the message unique ID */
@@ -1460,7 +1460,7 @@ static bool openchangeclient_sendnote(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	retval = note_SetProps(mem_ctx, &obj_note, &obj_message, oclient);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = SaveChangesMessage(&obj_note, &obj_message);
+	retval = SaveChangesMessage(&obj_note, &obj_message, KeepOpenReadOnly);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Fetch and Display the message unique ID */
@@ -1931,7 +1931,7 @@ static bool openchangeclient_updateitem(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Step 4: save the message */
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_release(&obj_message);
@@ -2503,7 +2503,7 @@ static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Step8. Save message */
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_release(&obj_message);

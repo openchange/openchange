@@ -330,7 +330,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
-	retval = SaveChangesMessage(&obj_ref_folder, &obj_ref_message);
+	retval = SaveChangesMessage(&obj_ref_folder, &obj_ref_message, KeepOpenReadWrite);
 	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -375,7 +375,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
-	retval = SaveChangesMessage(&obj_ref_folder, &obj_target_message);
+	retval = SaveChangesMessage(&obj_ref_folder, &obj_target_message, KeepOpenReadWrite);
 	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -784,7 +784,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 		ret = false;
 	}
 
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -1090,7 +1090,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	/* Step 14. Save the attachment */
 	retval = SaveChangesAttachment(&obj_message, &obj_attach2, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesAttachment");
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -1264,7 +1264,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	retval = SaveChangesMessage(&obj_ref_folder, &obj_ref_message);
+	retval = SaveChangesMessage(&obj_ref_folder, &obj_ref_message, KeepOpenReadWrite);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -1331,7 +1331,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	retval = SaveChangesMessage(&obj_ref_folder, &obj_target_message);
+	retval = SaveChangesMessage(&obj_ref_folder, &obj_target_message, KeepOpenReadWrite);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -1882,7 +1882,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	SaveChangesMessage(&obj_ref_folder, &obj_ref_message);
+	SaveChangesMessage(&obj_ref_folder, &obj_ref_message, KeepOpenReadWrite);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;

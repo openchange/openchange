@@ -109,7 +109,7 @@ bool torture_rpc_mapi_sendcontacts(struct torture_context *torture)
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = SaveChangesMessage(&obj_contacts, &obj_message);
+	retval = SaveChangesMessage(&obj_contacts, &obj_message, KeepOpenReadOnly);
 	mapi_errstr("SaveChangesMessage", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

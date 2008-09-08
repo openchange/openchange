@@ -442,7 +442,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 			ret = false;
 		}
 		
-		retval = SaveChangesMessage(&obj_folder_src, &obj_message);
+		retval = SaveChangesMessage(&obj_folder_src, &obj_message, KeepOpenReadOnly);
 		mapitest_print_retval(mt, "SaveChangesMessage");
 		if (retval != MAPI_E_SUCCESS) {
 			ret = false;
@@ -552,7 +552,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveFolder(struct mapitest *mt)
 	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
 	mapitest_print_retval(mt, "mapitest_common_message_create");
 
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;

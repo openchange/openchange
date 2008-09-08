@@ -206,7 +206,7 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 		return ret;
 	}
 
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadWrite);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 	}
@@ -327,7 +327,7 @@ _PUBLIC_ bool mapitest_oxomsg_SpoolerLockMessage(struct mapitest *mt)
 	if (ret == false) return ret;
 
 	/* Step 5. Save changes on message */
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadWrite);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -412,7 +412,7 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 	if (ret == false) return ret;
 
 	/* Step 4. Save changes on message */
-	retval = SaveChangesMessage(&obj_folder, &obj_message);
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadWrite);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;

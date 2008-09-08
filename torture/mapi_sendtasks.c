@@ -110,7 +110,7 @@ bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = SaveChangesMessage(&obj_task, &obj_message);
+	retval = SaveChangesMessage(&obj_task, &obj_message, KeepOpenReadOnly);
 	mapi_errstr("SaveChangesMessage", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

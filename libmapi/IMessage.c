@@ -970,7 +970,7 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
  */
 _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 					    mapi_object_t *obj_message,
-					    enum SaveFlags SaveFlags)
+					    uint8_t SaveFlags)
 {
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;

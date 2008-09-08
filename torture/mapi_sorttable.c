@@ -101,10 +101,6 @@ bool torture_rpc_mapi_sorttable(struct torture_context *torture)
 	retval = SeekRow(&obj_ctable, BOOKMARK_BEGINNING, 0, &count);
 	mapi_errstr("SeekRow", GetLastError());
 
-	/* Count the total number of rows in the table */
-	retval = GetRowCount(&obj_ctable, &count);
-	mapi_errstr("GetRowCount", GetLastError());
-	
 	/* Browse and print table content */
 	printf("\nAfter SortTable ASCENDING:\n");
 	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&

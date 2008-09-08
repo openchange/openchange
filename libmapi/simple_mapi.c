@@ -364,7 +364,8 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	struct mapi_SRowList	rowList;
 	struct SPropValue	*lpProp;
 	mapi_object_t		obj_table;
-	uint32_t		row_count;
+	uint32_t		Numerator;
+	uint32_t		Denominator;
 	bool			found = false;
 	uint32_t		i = 0;
 
@@ -403,10 +404,10 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	retval = GetRowCount(&obj_table, &row_count);
+	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	retval = QueryRows(&obj_table, row_count, TBL_ADVANCE, &rowset);
+	retval = QueryRows(&obj_table, Denominator, TBL_ADVANCE, &rowset);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	for (i = 0; i < rowset.cRows; i++) {
@@ -468,7 +469,8 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	struct mapi_SRowList	rowList;
 	struct SPropValue	*lpProp;
 	mapi_object_t		obj_table;
-	uint32_t		row_count;
+	uint32_t		Numerator;
+	uint32_t		Denominator;
 	bool			found = false;
 	uint32_t		i = 0;
 
@@ -502,10 +504,10 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	retval = GetRowCount(&obj_table, &row_count);
+	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	retval = QueryRows(&obj_table, row_count, TBL_ADVANCE, &rowset);
+	retval = QueryRows(&obj_table, Denominator, TBL_ADVANCE, &rowset);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	for (i = 0; i < rowset.cRows; i++) {

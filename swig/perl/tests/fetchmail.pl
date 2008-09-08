@@ -117,7 +117,6 @@ sub mapi_fetchmail()
 		delete_mapi_object($obj_message);
 	    }
 	}
-	$retval = GetRowCount($obj_table, $count);
     }
 
     delete_mapi_object($obj_table);

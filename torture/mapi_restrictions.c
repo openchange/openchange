@@ -129,6 +129,8 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	struct SRowSet			SRowSet_row;
 	struct mapi_SRestriction	res;
 	uint32_t			total;
+	uint32_t			Numerator;
+	uint32_t			Denominator;
 	uint32_t			row_idx;
 	uint32_t			bookmark;
 
@@ -198,14 +200,14 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	retval = GetRowCount(&obj_table, &total);
+	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_PROPERTY\n"));
 	DEBUG(0, ("  -------------------------\n"));
 	DEBUG(0, ("\tFilter on PR_SUBJECT\n"));
 	DEBUG(0, (("\tCheck for subject eq \"%s\"\n"), SAME_SUBJECT));
-	DEBUG(0, (("\tResult = %d\n"), total));
+	DEBUG(0, ("\tCursor is at %d / %d\n", Numerator, Denominator));
 
 	/* RES_BITMASK test */
 	res.rt = RES_BITMASK;
@@ -216,14 +218,14 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = GetRowCount(&obj_table, &total);
+	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_BITMASK\n"));
 	DEBUG(0, ("  --------------------------\n"));
 	DEBUG(0, ("\tFilter on PR_MESSAGE_FLAG bitmask\n"));
 	DEBUG(0, ("\tCheck for all emails with MSGFLAG_READ set\n"));
-	DEBUG(0, (("\tResult = %d\n"), total));
+	DEBUG(0, ("\tCursor is at %d / %d\n", Numerator, Denominator));
 
 	/* RES_SIZE test */
 	res.rt = RES_SIZE;
@@ -234,14 +236,14 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = GetRowCount(&obj_table, &total);
+	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_SIZE\n"));
 	DEBUG(0, ("  --------------------------\n"));
 	DEBUG(0, ("\tFilter on property size\n"));
 	DEBUG(0, ("\tCheck for all emails with PR_BODY size > 30 chars\n"));
-	DEBUG(0, (("\tResult = %d\n"), total));
+	DEBUG(0, ("\tCursor is at %d / %d\n", Numerator, Denominator));
 
 	/* RES_EXIST test */
 	res.rt = RES_EXIST;
@@ -250,14 +252,14 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = GetRowCount(&obj_table, &total);
+	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_EXIST\n"));
 	DEBUG(0, ("  --------------------------\n"));
 	DEBUG(0, ("\tFilter on an existing property\n"));
 	DEBUG(0, ("\tCheck for all emails with PR_HTML\n"));
-	DEBUG(0, (("\tResult = %d\n"), total));
+	DEBUG(0, ("\tCursor is at %d / %d\n", Numerator, Denominator));
 
 
 	/* RES_COMPAREPROPS */
@@ -268,14 +270,14 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = GetRowCount(&obj_table, &total);
+	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_COMPAREPROPS\n"));
 	DEBUG(0, ("  --------------------------\n"));
 	DEBUG(0, ("\tFilter on properties comparison\n"));
 	DEBUG(0, ("\tCheck for all emails with PR_SUBJECT == PR_BODY\n"));
-	DEBUG(0, (("\tResult = %d\n"), total));
+	DEBUG(0, ("\tCursor is at %d / %d\n", Numerator, Denominator));
 
 	/* RES_CONTENT */
 	res.rt = RES_CONTENT;
@@ -286,14 +288,14 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	retval = Restrict(&obj_table, &res, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = GetRowCount(&obj_table, &total);
+	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no Restriction: RES_CONTENT\n"));
 	DEBUG(0, ("  --------------------------\n"));
 	DEBUG(0, ("\tFilter on insensitive substring within content\n"));
 	DEBUG(0, ("\tCheck for all emails with PR_SUBJECT contained \"openchange\"\n"));
-	DEBUG(0, (("\tResult = %d\n"), total));
+	DEBUG(0, ("\tCursor is at %d / %d\n", Numerator, Denominator));
 
 	/* We now test the FindRow MAPI call */
 

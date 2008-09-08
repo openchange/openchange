@@ -80,7 +80,11 @@ identifiers to classify objects. These identifiers are double values
 location.
 
 We now enter the last step of the fetching process:
-- Call GetRowCount() to retrieve the number of rows in the contents table
+
+- Call QueryPosition() to retrieve the current cursor position in the
+  contents table. The function returns the approximate fractional
+  position with a Numerator and Denominator. Denominator is the total
+  number of rows in the table.
 - Recursively call QueryRows() with the TBL_ADVANCE flag to fetch table rows.
 - Iterate through QueryRows results
 - Retrieve columns values for each row with the convenient find_SPropValue_data()

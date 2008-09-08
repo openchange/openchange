@@ -176,6 +176,8 @@ _PUBLIC_ bool mapitest_oxctable_Restrict(struct mapitest *mt)
 	struct mt_common_tf_ctx	*context;
 	uint32_t		count = 0;
 	uint32_t		origcount = 0;
+	uint32_t		Numerator = 0;
+	uint32_t		Denominator = 0;
 	struct mapi_SRestriction res;
 	bool			ret = true;
 
@@ -215,14 +217,14 @@ _PUBLIC_ bool mapitest_oxctable_Restrict(struct mapitest *mt)
 
 	/* Checks the results are as expected */
 	context = mt->priv;
-	GetRowCount(&(obj_test_folder), &count);
+	QueryPosition(&(obj_test_folder), &Numerator, &Denominator);
 	if (GetLastError() != MAPI_E_SUCCESS) {
-		mapitest_print_retval(mt, "GetRowCount");
+		mapitest_print_retval(mt, "QueryPosition");
 		ret = false;
 		goto cleanup;
 	}
-	if (count != origcount/2) {
-		mapitest_print(mt, "* %-35s: unexpected filtered count (%i)\n", "GetRowCount", count);
+	if (Denominator != origcount/2) {
+		mapitest_print(mt, "* %-35s: unexpected filtered count (%i)\n", "QueryPosition", Denominator);
 		ret = false;
 		goto cleanup;
 	}
@@ -237,14 +239,14 @@ _PUBLIC_ bool mapitest_oxctable_Restrict(struct mapitest *mt)
 
 	/* Checks the results are as expected */
 	context = mt->priv;
-	GetRowCount(&(obj_test_folder), &count);
+	QueryPosition(&(obj_test_folder), &Numerator, &Denominator);
 	if (GetLastError() != MAPI_E_SUCCESS) {
-		mapitest_print_retval(mt, "GetRowCount");
+		mapitest_print_retval(mt, "QueryPosition");
 		ret = false;
 		goto cleanup;
 	}
-	if (count != origcount) {
-		mapitest_print(mt, "* %-35s: unexpected reset count (%i)\n", "GetRowCount", count);
+	if (Denominator != origcount) {
+		mapitest_print(mt, "* %-35s: unexpected reset count (%i)\n", "QueryPosition", Denominator);
 		ret = false;
 		goto cleanup;
 	}
@@ -728,6 +730,8 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		SRowSet;
 	uint32_t                rowcount = 0;
+	uint32_t		Numerator = 0;
+	uint32_t		Denominator = 0;
 	struct SBinary_short	collapseState;
 	uint32_t		bookmark;
 
@@ -792,16 +796,16 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	}
 
 	/* Checks the results are as expected */
-	GetRowCount(&(obj_test_folder), &rowcount);
-	mapitest_print_retval(mt, "GetRowCount");
+	QueryPosition(&(obj_test_folder), &Numerator, &Denominator);
+	mapitest_print_retval(mt, "QueryPosition");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
 	/* the categories are expanded, and there are six unique senders, so there are six
 	   extra rows - one for each header row */
-	if (rowcount != origcount + 6) {
-		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetRowCount", rowcount);
+	if (Denominator != origcount + 6) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "QueryPosition", Numerator);
 		ret = false;
 		goto cleanup;
 	}
@@ -819,8 +823,8 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	}
 
 	/* Checks the results are as expected */
-	GetRowCount(&(obj_test_folder), &rowcount);
-	mapitest_print_retval(mt, "GetRowcount");
+	QueryPosition(&(obj_test_folder), &Numerator, &Denominator);
+	mapitest_print_retval(mt, "QueryPosition");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -828,8 +832,8 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	/* there are still six unique headers, but half of the real entries are under the first
 	   header (usually 10, unless we have some other rubbish hanging around), and when we
 	   collapse the first header row, that half disappear */
-	if (rowcount != origcount/2 + 6) {
-		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetRowCount", rowcount);
+	if (Denominator != origcount/2 + 6) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "QueryPosition", Denominator);
 		ret = false;
 		goto cleanup;
 	}
@@ -852,15 +856,15 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	}
 
 	/* Checks the results are as expected */
-	GetRowCount(&(obj_test_folder), &rowcount);
-	mapitest_print_retval(mt, "GetRowCount");
+	QueryPosition(&(obj_test_folder), &Numerator, &Denominator);
+	mapitest_print_retval(mt, "QueryPosition");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
 	/* we've expanded the first header row, so we now get all the entries plus the 6 headers */
-	if (rowcount != origcount + 6) {
-		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetRowCount", rowcount);
+	if (Denominator != origcount + 6) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "QueryPosition", Denominator);
 		ret = false;
 		goto cleanup;
 	}
@@ -874,15 +878,15 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	}
 
 	/* Checks the results are as expected */
-	GetRowCount(&(obj_test_folder), &rowcount);
-	mapitest_print_retval(mt, "GetRowCount");
+	QueryPosition(&(obj_test_folder), &Numerator, &Denominator);
+	mapitest_print_retval(mt, "QueryPosition");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
 	/* back to the situation with the first heading collapsed */
-	if (rowcount != origcount/2 + 6) {
-		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetRowCount", rowcount);
+	if (Denominator != origcount/2 + 6) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "QueryPosition", Denominator);
 		ret = false;
 		goto cleanup;
 	}

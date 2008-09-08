@@ -18,7 +18,9 @@ int main(int argc, char *argv[])
         mapi_id_t                       *fid, *mid;
         const char                      *profname;
 	char				*profdb;
-        uint32_t                        i, count;
+	uint32_t			Numerator;
+	uint32_t			Denominator;
+        uint32_t                        i;
 
 	mem_ctx = talloc_init("fetchappointment");
 
@@ -62,13 +64,12 @@ int main(int argc, char *argv[])
         MAPI_RETVAL_IF(retval, retval, mem_ctx);
         talloc_free(mem_ctx);
 
-        /* Get MAPI table rows count */
-        retval = GetRowCount(&obj_table, &count);
+        /* Get current cursor position */
+        retval = QueryPosition(&obj_table, &Numerator, &Denominator);
         MAPI_RETVAL_IF(retval, retval, NULL);
 
         /* Iterate through rows */
-        while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &rowset)) 
-	       != -1 && rowset.cRows) {
+        while ((retval = QueryRows(&obj_table, Denominator, TBL_ADVANCE, &rowset)) != -1 && rowset.cRows) {
                 for (i = 0; i < rowset.cRows; i++) {
 			fid = (mapi_id_t *)find_SPropValue_data(&(rowset.aRow[i]), PR_FID);
 			mid = (mapi_id_t *)find_SPropValue_data(&(rowset.aRow[i]), PR_MID);

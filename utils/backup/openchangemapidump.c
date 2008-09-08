@@ -111,7 +111,8 @@ static enum MAPISTATUS mapidump_walk_attachment(TALLOC_CTX *mem_ctx,
 	struct mapi_SPropValue_array	props;
 	mapi_object_t			obj_atable;
 	mapi_object_t			obj_attach;
-	uint32_t			count = 0;
+	uint32_t			Numerator = 0;
+	uint32_t			Denominator = 0;
 	uint32_t			i;
 	const uint32_t			*attach_num;
 	const struct SBinary_short	*sbin;
@@ -130,9 +131,9 @@ static enum MAPISTATUS mapidump_walk_attachment(TALLOC_CTX *mem_ctx,
 	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
 	/* Walk through the table */
-	retval = GetRowCount(&obj_atable, &count);
+	retval = QueryPosition(&obj_atable, &Numerator, &Denominator);
 
-	while ((retval = QueryRows(&obj_atable, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
+	while ((retval = QueryRows(&obj_atable, Denominator, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		for (i = 0; i < rowset.cRows; i++) {
 			attach_num = (const uint32_t *)find_SPropValue_data(&(rowset.aRow[i]), PR_ATTACH_NUM);
 			/* Open attachment */

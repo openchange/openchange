@@ -119,10 +119,13 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 
 
 /**
-   \details returns the total number of rows in the table
+   \details Returns the approximate cursor position
  
    \param obj_table pointer to the table's object
-   \param cn_rows pointer to the total number of rows in the table
+   \param Numerator pointer to the numerator of the fraction
+   identifying the table position
+   \param Denominator pointer to the denominator of the fraction
+   identifying the table position
 
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
@@ -133,8 +136,9 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 
    \sa QueryRows
 */
-_PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table, 
-				     uint32_t *cn_rows)
+_PUBLIC_ enum MAPISTATUS QueryPosition(mapi_object_t *obj_table, 
+				       uint32_t *Numerator,
+				       uint32_t *Denominator)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -145,18 +149,17 @@ _PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table,
 	TALLOC_CTX		*mem_ctx;
 	mapi_ctx_t		*mapi_ctx;
 
+	/* Sanity Checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("GetRowCount");
+	mem_ctx = talloc_init("QueryPosition");
 
-	*cn_rows = 0;
 	size = 0;
-
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_GetRowCount;
+	mapi_req->opnum = op_MAPI_QueryPosition;
 	mapi_req->logon_id = 0;
 	mapi_req->handle_idx = 0;
 	size += 5;
@@ -174,7 +177,13 @@ _PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table,
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 	
-	*cn_rows = mapi_response->mapi_repl->u.mapi_GetRowCount.count;
+	if (Numerator) {
+		*Numerator = mapi_response->mapi_repl->u.mapi_QueryPosition.Numerator;
+	}
+
+	if (Denominator) {
+		*Denominator = mapi_response->mapi_repl->u.mapi_QueryPosition.Denominator;
+	}
 	
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -204,7 +213,7 @@ _PUBLIC_ enum MAPISTATUS GetRowCount(mapi_object_t *obj_table,
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
 
-   \sa SetColumns, GetRowCount, QueryColumns, SeekRow
+   \sa SetColumns, QueryPosition, QueryColumns, SeekRow
  */
 _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 				   enum QueryRowsFlags flags, 

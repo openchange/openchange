@@ -148,7 +148,7 @@ NTSTATUS mpm_cache_stream_read(struct mpm_stream *stream, size_t input_size, siz
 	fseek(stream->fp, stream->offset, SEEK_SET);
 	*length = fread(*data, sizeof (uint8_t), input_size, stream->fp);
 	stream->offset += *length;
-	DEBUG(5, ("* [%s:%d]: Current offset: 0x%x\n", MPM_LOCATION,
+	DEBUG(5, ("* [%s:%d]: Current offset: 0x%zx\n", MPM_LOCATION,
 		  stream->offset));
 
 	return NT_STATUS_OK;

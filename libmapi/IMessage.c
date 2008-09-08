@@ -174,7 +174,7 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t Attac
    \details Retrieve the attachment table for a message
 
    \param obj_message the message
-   \param obj_tb_attch the attachment table for the message
+   \param obj_table the attachment table for the message
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -187,7 +187,7 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t Attac
    \sa CreateMessage, OpenMessage, CreateAttach, OpenAttach, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message, 
-					    mapi_object_t *obj_tb_attch)
+					    mapi_object_t *obj_table)
 {
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
@@ -199,15 +199,20 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	uint32_t			size = 0;
 	mapi_ctx_t			*mapi_ctx;
 
+	/* Sanity Checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("GetAttachmentTable");
 
 	/* Fill the GetAttachmentTable operation */
 	request.handle_idx = 1;
-	request.unknown = 0x0;
-	size += sizeof(request.handle_idx) + sizeof(request.unknown);
+	size += sizeof (uint8_t);
+
+	request.TableFlags = 0x0;
+	size += sizeof (uint8_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -231,7 +236,7 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	mapi_object_set_handle(obj_tb_attch, mapi_response->handles[mapi_response->mapi_repl->handle_idx]);
+	mapi_object_set_handle(obj_table, mapi_response->handles[mapi_response->mapi_repl->handle_idx]);
 
 	talloc_free(mem_ctx);
 

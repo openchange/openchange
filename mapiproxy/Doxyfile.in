@@ -551,11 +551,13 @@ INPUT_FILTER           = "sed \
 		         -e 's/.*\<libmapi\/proto_private.h\>//'	\
 			 -e 's/.*\<gen_ndr\/ndr_exchange.h\>//'		\
 			 -e 's/.*\<param.h\>//'				\
+			 -e 's/.*\<errno.h\>//'				\
 			 -e 's/.*\<core\/error.h\>//'			\
 			 -e 's/.*\<credentials.h\>//'			\
 			 -e 's/.*\<ldb.h\>//'				\
 			 -e 's/.*\<ldb_errors.h\>//'			\
 			 -e 's/.*\<libmapi\/dlinklist.h\>//'		\
+			 -e 's/.*\<libmapi\/defs_private.h\>//'		\
 			 -e 's/.*\<libmapi\/mapi_nameid.h\>//'		\
 			 -e 's/.*\<libmapi\/mapi_nameid_private.h\>//'	\
 			 -e 's/.*\<libocpf\/proto_private.h\>//'	\

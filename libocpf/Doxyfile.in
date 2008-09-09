@@ -556,11 +556,13 @@ INPUT_FILTER           = "sed \
 			 -e 's/.*\<ldb.h\>//'				\
 			 -e 's/.*\<ldb_errors.h\>//'			\
 			 -e 's/.*\<libmapi\/dlinklist.h\>//'		\
+			 -e 's/.*\<libmapi\/defs_private.h\>//'		\
 			 -e 's/.*\<libmapi\/mapi_nameid.h\>//'		\
 			 -e 's/.*\<libmapi\/mapi_nameid_private.h\>//'	\
 			 -e 's/.*\<libocpf\/proto_private.h\>//'	\
 			 -e 's/.*\<libocpf\/ocpf_api.h\>//'		\
 			 -e 's/.*\<libocpf\/ocpf.tab.h\>//'		\
+			 -e 's/.*\<libocpf\/ocpf_dump.h\>//'		\
 			 -e 's/.*\<libgen.h\>//'			\
 			 -e 's/.*\<time.h\>//'				\
 			 -e 's/.*\<sys\/*\>//'				\

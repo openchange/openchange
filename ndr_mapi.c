@@ -3,7 +3,7 @@
 
    libndr mapi support
 
-   Copyright (C) Julien Kerihuel 2005-2007
+   Copyright (C) Julien Kerihuel 2005-2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -415,10 +415,10 @@ enum ndr_err_code ndr_push_Logon_req(struct ndr_push *ndr, int ndr_flags, const 
 			NDR_CHECK(ndr_push_LogonFlags(ndr, NDR_SCALARS, r->LogonFlags));
 			NDR_CHECK(ndr_push_OpenFlags(ndr, NDR_SCALARS, r->OpenFlags));
 			NDR_CHECK(ndr_push_StoreState(ndr, NDR_SCALARS, r->StoreState));
-			if (r->LegacyDN && r->LegacyDN[0] != '\0') {
+			if (r->EssDN && r->EssDN[0] != '\0') {
 				uint32_t _flags_save_string = ndr->flags;
 				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_SIZE2);
-				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->LegacyDN));
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->EssDN));
 				ndr->flags = _flags_save_string;
 			} else {
 				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0));

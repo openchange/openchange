@@ -63,18 +63,20 @@ typedef struct mapi_obj_store
 	uint64_t	fid_deleted_items;
 	uint64_t	fid_common_views;
 	uint64_t	fid_schedule;
-	uint64_t	fid_finder;
+	uint64_t	fid_search;
 	uint64_t	fid_views;
 	uint64_t	fid_shortcuts;
 	/* Public Folders */
 	uint64_t	fid_pf_public_root;
 	uint64_t	fid_pf_ipm_subtree;
 	uint64_t	fid_pf_non_ipm_subtree;
-	uint64_t	fid_pf_eforms_registry;
-	uint64_t	fid_pf_schedule_freebusy;
-	uint64_t	fid_pf_offline_addrbook;
-	uint64_t	fid_pf_schedule_freebusy_adm_group;
-	uint64_t	fid_pf_offline_addrbook_sub;
+	uint64_t	fid_pf_EFormsRegistryRoot;
+	uint64_t	fid_pf_FreeBusyRoot;
+	uint64_t	fid_pf_OfflineAB;
+	uint64_t	fid_pf_EFormsRegistry;
+	uint64_t	fid_pf_LocalSiteFreeBusy;
+	uint64_t	fid_pf_LocalSiteOfflineAB;
+	uint64_t	fid_pf_NNTPArticle;
 } mapi_object_store_t;
 
 

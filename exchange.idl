@@ -3252,47 +3252,65 @@ System Attendant Private Interface
 		USE_PER_MDB_REPLID_MAPPING	= 0x010000000
 	} OpenFlags;
 
+	typedef [enum8bit] enum {
+		DayOfWeek_Sunday	= 0x0,
+		DayOfWeek_Monday	= 0x1,
+		DayOfWeek_Tuesday	= 0x2,
+		DayOfWeek_Wednesday	= 0x3,
+		DayOfWeek_Thursday	= 0x4,
+		DayOfWeek_Friday	= 0x5,
+		DayOfWeek_Saturday	= 0x6
+	} DayOfWeek;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		Seconds;
+		uint8		Minutes;
+		uint8		Hour;
+		DayOfWeek	DayOfWeek;
+		uint8		Day;
+		uint16		Year;
+	} LogonTime;
+
+	typedef [bitmap8bit] bitmap {
+		ResponseFlags_Reserved		= 0x1,
+		ResponseFlags_OwnerRight	= 0x2,
+		ResponseFlags_SendAsRight	= 0x4,
+		ResponseFlags_OOF		= 0x10
+	} ResponseFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper			FolderIds[13];
+		uint16			ReplId;
+		GUID			Guid;
+		GUID			PerUserGuid;
+	} store_pf;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper			FolderIds[13];
+		ResponseFlags		ResponseFlags;
+		GUID			MailboxGuid;
+		uint16			ReplId;
+		GUID			ReplGUID;
+		LogonTime		LogonTime;
+		hyper			GwartTime;
+		StoreState		StoreState;
+	} store_mailbox;
+
+	typedef [nodiscriminant] union {
+ 		[case(0x0)]		store_pf	store_pf;
+		[case(LogonPrivate)]	store_mailbox	store_mailbox;
+	} LogonType;
+
 	typedef [nopush,flag(NDR_NOALIGN)] struct {
 		LogonFlags	LogonFlags;
 		OpenFlags	OpenFlags;
 		StoreState	StoreState;
-		ascstr3		LegacyDN;
+		ascstr3		EssDN;
 	} Logon_req;
 
- 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		folder_id[13];
-		uint16		unknown;
-		FlatUID_r      	entryid;
-		FlatUID_r      	msgstore;
-	} store_pf;
-
 	typedef [flag(NDR_NOALIGN)] struct {
- 		hyper		folder_id[13];
-		uint8		unknown3;
-		FlatUID_r      	entryid;
-		uint16		default_store;
-		FlatUID_r      	msgstore;
-		FILETIME	ts_access;
-		astring		creation_date;
-		uint8		terminator;
-		uint16		unknown4;
-	} store_mailbox;
-
-	typedef [nodiscriminant] union {
-		[case(0x0)] store_pf store_pf;
-		[case(0x1)] store_mailbox store_mailbox;
-	} store_type;
-
-	typedef [enum8bit,flag(NDR_NOALIGN)] enum {
-		PROVIDER_TYPE_PF = 0x0,
-		PROVIDER_TYPE_MAILBOX = 0x1
-	} PROVIDER_TYPE;
-
-
-
-	typedef [flag(NDR_NOALIGN)] struct {
-		PROVIDER_TYPE	PR_OBJECT_TYPE;
-		[switch_is(PR_OBJECT_TYPE)] store_type type;
+		LogonFlags				LogonFlags;
+		[switch_is(LogonFlags)] LogonType	LogonType;
 	} Logon_repl;
 
 	/*************************/

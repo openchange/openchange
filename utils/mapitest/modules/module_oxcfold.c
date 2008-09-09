@@ -46,7 +46,7 @@ static struct folders top_folders[] = {
 	{ 0x7, 0x0, "Deleted Items" },
 	{ 0x8, 0x0, "Common Views" },
 	{ 0x9, 0x0, "Schedule" },
-	{ 0xa, 0x0, "Finder" },
+	{ 0xa, 0x0, "Search" },
 	{ 0xb, 0x0, "Views" },
 	{ 0xc, 0x0, "Shortcuts" },
 	{ 0xd, 0x0, NULL }
@@ -121,7 +121,7 @@ _PUBLIC_ bool mapitest_oxcfold_OpenFolder(struct mapitest *mt)
 	top_folders[7].fid = store->fid_deleted_items;
 	top_folders[8].fid = store->fid_common_views;
 	top_folders[9].fid = store->fid_schedule;
-	top_folders[10].fid = store->fid_finder;
+	top_folders[10].fid = store->fid_search;
 	top_folders[11].fid = store->fid_views;
 	top_folders[12].fid = store->fid_shortcuts;
 

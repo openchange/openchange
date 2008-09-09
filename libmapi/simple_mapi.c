@@ -173,7 +173,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_DRAFTS_ENTRYID);
 		break;		
 	case olFolderFinder:
-		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_finder;
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_search;
 		return MAPI_E_SUCCESS;
 	default:
 		*folder = 0;

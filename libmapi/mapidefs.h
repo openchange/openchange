@@ -240,6 +240,14 @@
 #define	olFolderFinder			24
 #define	olFolderPublicRoot		25
 #define	olFolderPublicIPMSubtree	26
+#define	olFolderPublicNonIPMSubtree	27
+#define	olFolderPublicEFormsRoot	28
+#define	olFolderPublicFreeBusyRoot	29
+#define	olFolderPublicOfflineAB		30
+#define	olFolderPublicEFormsRegistry	31
+#define	olFolderPublicLocalFreeBusy	32
+#define	olFolderPublicLocalOfflineAB	33
+#define	olFolderPublicNNTPArticle	34
 
 /*
  * IPF container class

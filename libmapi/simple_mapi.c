@@ -38,8 +38,16 @@
    \param folder the resulting folder reference
 
    The following types of folders are supported:
-   - olFolderPublicRoot
-   - olFolderPublicIPMSubtree
+   - olFolderPublicRoot - the parent (directly or indirectly) for the folders below
+   - olFolderPublicIPMSubtree - Interpersonal Messages (IPM) folders
+   - olFolderPublicNonIPMSubtree - Non-interpersonal message folders
+   - olFolderPublicEFormsRoot - EForms Registry Root Folder
+   - olFolderPublicFreeBusyRoot - Free/busy root folder
+   - olFolderPublicOfflineAB - Offline address book root folder
+   - olFolderPublicEFormsRegistry - EForms Registry for the users locale
+   - olFolderPublicLocalFreeBusy - Site local free/busy folders
+   - olFolderPublicLocalOfflineAB - Site local Offline address book
+   - olFolderPublicNNTPArticle - NNTP article index folder
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -65,6 +73,30 @@ _PUBLIC_ enum MAPISTATUS GetDefaultPublicFolder(mapi_object_t *obj_store,
 		break;
 	case olFolderPublicIPMSubtree:
 		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_ipm_subtree;
+		break;
+	case olFolderPublicNonIPMSubtree:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_non_ipm_subtree;
+		break;
+	case olFolderPublicEFormsRoot:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_EFormsRegistryRoot;
+		break;
+	case olFolderPublicFreeBusyRoot:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_FreeBusyRoot;
+		break;
+	case olFolderPublicOfflineAB:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_OfflineAB;
+		break;
+	case olFolderPublicEFormsRegistry:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_EFormsRegistry;
+		break;
+	case olFolderPublicLocalFreeBusy:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_LocalSiteFreeBusy;
+		break;
+	case olFolderPublicLocalOfflineAB:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_LocalSiteOfflineAB;
+		break;
+	case olFolderPublicNNTPArticle:
+		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_NNTPArticle;
 		break;
 	default:
 		return MAPI_E_NOT_FOUND;

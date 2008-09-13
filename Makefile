@@ -62,6 +62,7 @@ distclean:: clean
 	rm -rf autom4te.cache
 	rm -f Doxyfile
 	rm -f libmapi/Doxyfile
+	rm -f libmapiadmin/Doxyfile
 	rm -f libocpf/Doxyfile
 	rm -f libmapi++/Doxyfile
 	rm -f mapiproxy/Doxyfile
@@ -1150,6 +1151,7 @@ doxygen:
 		mkdir -p apidocs/man;						\
 		$(DOXYGEN) Doxyfile;						\
 		$(DOXYGEN) libmapi/Doxyfile;					\
+		$(DOXYGEN) libmapiadmin/Doxyfile;				\
 		$(DOXYGEN) libocpf/Doxyfile;					\
 		$(DOXYGEN) libmapi++/Doxyfile;					\
 		$(DOXYGEN) mapiproxy/Doxyfile;					\
@@ -1157,6 +1159,7 @@ doxygen:
 		cp -f doc/doxygen/index.html apidocs/html;			\
 		cp -f doc/doxygen/pictures/* apidocs/html/overview;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;		\
+		cp -f doc/doxygen/pictures/* apidocs/html/libmapiadmin;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapi++;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;		\

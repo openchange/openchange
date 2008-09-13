@@ -43,10 +43,14 @@
 #include <time.h>
 
 /**
+	\file
+	User management functions for mapiadmin
+*/
+
+/**
  * open connection so SAMR + Join Domain
  * common code needed when adding or removing users
  */
-
 static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ctx,
 					      TALLOC_CTX *mem_ctx)
 {
@@ -135,9 +139,6 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 	return MAPI_E_SUCCESS;
 }
 
-/**
- * Extend user attributes to be Exchange user
- */
 
 struct tce_async_context {
 	int	found;
@@ -172,6 +173,9 @@ static int tce_search_callback(struct ldb_context *ldb, void *context,
         return LDB_SUCCESS;
 }
 
+/**
+ * Extend user attributes to be Exchange user
+ */
 _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_ctx)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -337,7 +341,6 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 /**
  * Add a user to Active Directory 
  */
-
 _PUBLIC_ enum MAPISTATUS mapiadmin_user_add(struct mapiadmin_ctx *mapiadmin_ctx)
 {
 	TALLOC_CTX			*mem_ctx;

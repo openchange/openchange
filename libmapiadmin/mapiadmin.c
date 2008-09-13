@@ -20,6 +20,17 @@
 #include <libmapiadmin/libmapiadmin.h>
 #include <libmapiadmin/proto_private.h>
 
+/**
+	\file
+	Housekeeping functions for mapiadmin
+*/
+
+/**
+	Create and initialise a mapiadmin_ctx structure
+
+	You should use mapiadmin_release to clean up the mapiadmin_ctx
+	structure when done.
+*/
 _PUBLIC_ struct mapiadmin_ctx *mapiadmin_init(void)
 {
 	struct mapiadmin_ctx	*mapiadmin_ctx;
@@ -36,6 +47,12 @@ _PUBLIC_ struct mapiadmin_ctx *mapiadmin_init(void)
 	return mapiadmin_ctx;
 }
 
+/**
+	Clean up a mapiadmin_ctx structure
+
+	The structure is assumed to have been allocated uding mapiadmin_init() or
+	equivalent code.
+*/
 _PUBLIC_ enum MAPISTATUS mapiadmin_release(struct mapiadmin_ctx *mapiadmin_ctx)
 {
 	MAPI_RETVAL_IF(!mapiadmin_ctx, MAPI_E_NOT_INITIALIZED, NULL);

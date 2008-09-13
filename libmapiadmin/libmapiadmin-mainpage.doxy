@@ -1,0 +1,11 @@
+/**
+\mainpage libmapiadmin
+
+<h2>Client library for OpenChange Administration</h2>
+
+libmapiadmin provides administration client capabilities for
+OpenChange and Exchange servers.
+
+\note As of version 0.8, libmapiadmin is considered alpha quality.
+
+*/

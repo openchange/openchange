@@ -57,6 +57,11 @@ struct mapiadmin_ctx;
 #define	MAX(p,q) (((p) >= (q)) ? (p) : (q))
 #endif
 
+/**
+	\file
+	Structures for MAPI admin functions
+*/
+
 struct test_join {
 	struct dcerpc_pipe		*p;
 	struct policy_handle		user_handle;
@@ -69,6 +74,9 @@ struct test_join {
 	const char			*netbios_name;
 };
 
+/**
+	MAPI admin function context
+*/
 struct mapiadmin_ctx
 {
 	const char		*username;

@@ -238,7 +238,7 @@ _PUBLIC_ bool mapitest_oxcfold_CreateFolder(struct mapitest *mt)
 
 	/* Step 6. DeleteFolder */
 	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_top),
-			      DEL_MESSAGES|DEL_FOLDERS, NULL);
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
 	mapitest_print_retval(mt, "DeleteFolder");
 	
 	/* Release */
@@ -816,7 +816,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveFolder(struct mapitest *mt)
 		}
 	
 		retval = DeleteFolder(&obj_dst, mapi_object_get_id(&obj_folder),
-				      DEL_MESSAGES|DEL_FOLDERS, NULL);
+				      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
 		mapitest_print_retval(mt, "DeleteFolder");
 		if (retval != MAPI_E_SUCCESS) {
 			ret = false;
@@ -911,7 +911,7 @@ _PUBLIC_ bool mapitest_oxcfold_CopyFolder(struct mapitest *mt)
 	}
 	
 	retval = DeleteFolder(&obj_src, mapi_object_get_id(&obj_folder),
-			      DEL_MESSAGES|DEL_FOLDERS, NULL);
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
 	mapitest_print_retval(mt, "DeleteFolder");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -930,7 +930,7 @@ _PUBLIC_ bool mapitest_oxcfold_CopyFolder(struct mapitest *mt)
 		}
 	
 		retval = DeleteFolder(&obj_dst, mapi_object_get_id(&obj_folder),
-				      DEL_MESSAGES|DEL_FOLDERS, NULL);
+				      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
 		mapitest_print_retval(mt, "DeleteFolder");
 		if (retval != MAPI_E_SUCCESS) {
 			ret = false;

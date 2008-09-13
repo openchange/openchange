@@ -606,10 +606,8 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	MAPIFreeBuffer((void *)targ_dept);
 
 	/* Step 13: cleanup folders */
-	retval = EmptyFolder(&obj_ref_folder);
-	mapitest_print_retval_step(mt, "13.1.", "EmptyFolder");
 	retval = DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_ref_folder),
-			      DEL_FOLDERS, NULL);
+			      DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);
 	mapitest_print_retval_step(mt, "13.1.", "DeleteFolder");
 
 	/* Release */
@@ -1787,13 +1785,11 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	MAPIFreeBuffer((void *)targ_dept);
 
 	/* Cleanup folders */
-	retval = EmptyFolder(&obj_ref_folder);
-	mapitest_print_retval(mt, "EmptyFolder");
 	retval = DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_targ_folder),
-			      DEL_FOLDERS, NULL);
+			      DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);
 	mapitest_print_retval(mt, "DeleteFolder");
 	retval = DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_ref_folder),
-			      DEL_FOLDERS, NULL);
+			      DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);
 	mapitest_print_retval(mt, "DeleteFolder");
 
 	/* Release */
@@ -2086,10 +2082,8 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 
  cleanup:
 	/* Clean up */
-	EmptyFolder(&obj_ref_folder);
-	mapitest_print_retval(mt, "EmptyFolder");
 	DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_ref_folder),
-		     DEL_FOLDERS, NULL);
+		     DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);
 	mapitest_print_retval(mt, "DeleteFolder");
 
 	/* Release */

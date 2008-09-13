@@ -195,7 +195,7 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
 	}
 
 	retval = DeleteFolder(&obj_tis, mapi_object_get_id(&obj_folder),
-			      DEL_FOLDERS, NULL);
+			      DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);
 	mapitest_print_retval_step(mt, "8.", "DeleteFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;

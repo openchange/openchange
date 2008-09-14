@@ -27,7 +27,36 @@
 #include <fcntl.h>
 
 /**
- * Opens a default folder
+	\file
+	Support functions for %mapitest modules
+
+	These functions implement commonly needed functionality that
+	would otherwise be copied into each module implementation
+*/
+
+/**
+     Opens a default folder
+
+     This function opens one of the default (standard) folders,
+     returning the folder as obj_child. olNum may be one of:
+	- olFolderTopInformationStore
+	- olFolderDeletedItems
+	- olFolderOutbox
+	- olFolderSentMail
+	- olFolderInbox
+	- olFolderCalendar
+	- olFolderContacts
+	- olFolderJournal
+	- olFolderNotes
+	- olFolderTasks
+	- olFolderDrafts
+
+     \param mt pointer to the top level mapitest structure
+     \param obj_parent parent folder (usually the message store, must be opened)
+     \param obj_child the folder that has been opened
+     \param olNum the folder identifier (see list above)
+
+     \return true on success, false on failure
  */
 _PUBLIC_ bool mapitest_common_folder_open(struct mapitest *mt,
 					  mapi_object_t *obj_parent, 
@@ -54,9 +83,8 @@ _PUBLIC_ bool mapitest_common_folder_open(struct mapitest *mt,
 
 
 /**
- * This convenient function searches for an obj_message given the
- * specified subject. Note: this function doesn't use the Restrict
- * call so we can respect the ring policy we defined.
+    This convenience function searches for an obj_message given the
+    specified subject.
  */
 _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 						   mapi_object_t *obj_folder,
@@ -111,7 +139,7 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 		return false;
 	}
 
-	/* Substract current position from the total */
+	/* Subtract current position from the total */
 	count -= count2;
 
 	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
@@ -152,7 +180,7 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 /**
    Find a folder within a container
  */
-_PUBLIC_ bool mapitest_common_find_folder(struct mapitest *mt, 
+_PUBLIC_ bool mapitest_common_find_folder(struct mapitest *mt,
 					  mapi_object_t *obj_parent,
 					  mapi_object_t *obj_child,
 					  const char *name)
@@ -288,6 +316,16 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 
 /**
    Generate a random blob of readable data
+
+   \param mem_ctx the talloc memory context to create the blob in
+   \param len the length of the blob to create
+
+   \return random blob of readable data, of length len bytes, with a
+           null terminator.
+
+   \note the data is from 0..len, and the null terminator is at position
+         len+1. So the returned array is actually len+1 bytes in total.
+
  */
 _PUBLIC_ char *mapitest_common_genblob(TALLOC_CTX *mem_ctx, size_t len)
 {
@@ -325,6 +363,15 @@ _PUBLIC_ char *mapitest_common_genblob(TALLOC_CTX *mem_ctx, size_t len)
 	return retstr;
 }
 
+/**
+	Create a test folder, and fill with 10 sample messages
+
+	This function creates a test folder (name set by the MT_DIRNAME_TEST define),
+	and fills it with 5 messages with the same subject and 5 messages with the
+	same sender.
+
+	\param mt pointer to the mapitest context
+*/
 _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 {
 	struct mt_common_tf_ctx	*context;

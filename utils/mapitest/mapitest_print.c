@@ -31,9 +31,13 @@ static int count = 0;
 #define	CNT_DEINDENT()	{ count--; if (count < 0) count = 0; }
 #define	CNT_PRINT(s)	{ int i; for (i = 0; i < count; i++) { fprintf(s, "\t"); } }
 
+/**
+	\file
+	Print / display functions for %mapitest output
+*/
 
 /**
-   \details indent the mapitest_print tabulation counter
+   \details Indent the mapitest_print tabulation counter
  */
 _PUBLIC_ void mapitest_indent(void)
 {
@@ -42,7 +46,7 @@ _PUBLIC_ void mapitest_indent(void)
 
 
 /**
-   \details deindent the mapitest_print tabulation counter
+   \details Deindent the mapitest_print tabulation counter
  */
 _PUBLIC_ void mapitest_deindent(void)
 {
@@ -51,9 +55,9 @@ _PUBLIC_ void mapitest_deindent(void)
 
 
 /**
-   \details print tabulations given the internal counter
+   \details Print tabulations given the internal counter
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
  */
 _PUBLIC_ void mapitest_print_tab(struct mapitest *mt)
 {
@@ -62,9 +66,9 @@ _PUBLIC_ void mapitest_print_tab(struct mapitest *mt)
 
 
 /**
-   \details print a string in the stream
+   \details Print a string in the stream
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param format the format string
    \param ... the format string parameters
  */
@@ -83,9 +87,9 @@ _PUBLIC_ void mapitest_print(struct mapitest *mt, const char *format, ...)
 }
 
 /**
-   \details print newline characters
+   \details Print newline characters
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param count number of newline characters to print
  */
 _PUBLIC_ void mapitest_print_newline(struct mapitest *mt, int count)
@@ -98,9 +102,9 @@ _PUBLIC_ void mapitest_print_newline(struct mapitest *mt, int count)
 }
 
 /**
-   \details print a line using a delimiter
+   \details Print a line using a delimiter
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param len the length of the line to print
    \param delim the line delimiter
  */
@@ -116,9 +120,9 @@ _PUBLIC_ void mapitest_print_line(struct mapitest *mt, int len, char delim)
 
 
 /**
-   \details underline a string
+   \details Underline a string
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param str string to underline
    \param delim the line delimiter
  */
@@ -136,11 +140,11 @@ _PUBLIC_ void mapitest_underline(struct mapitest *mt, const char *str, char deli
 }
 
 /**
-   \details private general routine used to print a title
+   \details Private general routine used to print a title
 
    Avoid code redundancy over the API
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param str the title
    \param delim the underline delimiter
  */
@@ -152,9 +156,9 @@ _PUBLIC_ void mapitest_print_title(struct mapitest *mt, const char *str, char de
 
 
 /**
-   \details print the module title
+   \details Print the module title
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param str the module title string
  */
 _PUBLIC_ void mapitest_print_module_title_start(struct mapitest *mt, const char *str)
@@ -172,9 +176,9 @@ _PUBLIC_ void mapitest_print_module_title_start(struct mapitest *mt, const char 
 }
 
 /**
-   \details print the content at the end of the module
+   \details Print the content at the end of the module
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
  */
 _PUBLIC_ void mapitest_print_module_title_end(struct mapitest *mt)
 {
@@ -189,7 +193,7 @@ _PUBLIC_ void mapitest_print_module_title_end(struct mapitest *mt)
 /**
    \details print the test tile
    
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param str the test title
  */
 _PUBLIC_ void mapitest_print_test_title_start(struct mapitest *mt, const char *str)
@@ -208,9 +212,9 @@ _PUBLIC_ void mapitest_print_test_title_start(struct mapitest *mt, const char *s
 
 
 /**
-   \details write the content at the end of a test
+   \details Write the content at the end of a test
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
  */
 _PUBLIC_ void mapitest_print_test_title_end(struct mapitest *mt)
 {
@@ -222,7 +226,7 @@ _PUBLIC_ void mapitest_print_test_title_end(struct mapitest *mt)
 
 
 /**
-   \details starts the headers output
+   \details Starts the header output
 
    \param mt pointer on the top-level mapitest structure
  */
@@ -233,7 +237,7 @@ static void mapitest_print_headers_start(struct mapitest *mt)
 
 
 /**
-   \details ends the headers output
+   \details Ends the header output
  */
 static void mapitest_print_headers_end(struct mapitest *mt)
 {
@@ -241,9 +245,9 @@ static void mapitest_print_headers_end(struct mapitest *mt)
 }
 
 /**
-   \details print mapitest report headers information
+   \details Print mapitest report headers information
    
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
  */
 _PUBLIC_ void mapitest_print_headers_info(struct mapitest *mt)
 {
@@ -270,9 +274,9 @@ _PUBLIC_ void mapitest_print_headers_info(struct mapitest *mt)
 
 
 /**
-   \details print mapitest report Exchange and account information
+   \details Print a report of the Exchange server and account information
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
  */
 _PUBLIC_ void mapitest_print_headers_server_info(struct mapitest *mt)
 {
@@ -298,9 +302,9 @@ _PUBLIC_ void mapitest_print_headers_server_info(struct mapitest *mt)
 
 
 /**
-   \details print mapitest report headers
+   \details Print mapitest report headers
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
  */
 _PUBLIC_ void mapitest_print_headers(struct mapitest *mt)
 {
@@ -317,9 +321,9 @@ _PUBLIC_ void mapitest_print_headers(struct mapitest *mt)
 
 
 /**
-   \details print mapitest test result
+   \details Print %mapitest test result
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param name the test name
    \param ret boolean value with the test result
  */
@@ -334,10 +338,12 @@ _PUBLIC_ void mapitest_print_test_result(struct mapitest *mt, char *name, bool r
 
 
 /**
-   \details print mapitest return value
+   \details Print %mapitest return value
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param name the test name
+
+   \sa mapitest_print_retval_fmt for a version providing an additional format string
  */
 _PUBLIC_ void mapitest_print_retval(struct mapitest *mt, char *name)
 {
@@ -362,9 +368,9 @@ _PUBLIC_ void mapitest_print_retval(struct mapitest *mt, char *name)
 
 
 /**
-   \details print mapitest return value with additional format string
+   \details Print %mapitest return value with additional format string
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param name the test name
    \param format the format string
    \param ... the format string parameters
@@ -399,11 +405,13 @@ _PUBLIC_ void mapitest_print_retval_fmt(struct mapitest *mt, char *name, const c
 
 
 /**
-   \details print mapitest return value for a given step
+   \details Print %mapitest return value for a given step
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer tp the top-level mapitest structure
    \param step the test step
    \param name the test name
+
+   \sa mapitest_print_retval_step_fmt for a version providing an additional format string
  */
 _PUBLIC_ void mapitest_print_retval_step(struct mapitest *mt, char *step, char *name)
 {
@@ -428,10 +436,9 @@ _PUBLIC_ void mapitest_print_retval_step(struct mapitest *mt, char *step, char *
 
 
 /**
-   \details print mapitest return value for a given step with
-   additional format string
+   \details Print %mapitest return value for a given step with additional format string
 
-   \param mt pointer on the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param step the test step
    \param name the test name
    \param format the format string

@@ -22,6 +22,13 @@
 #include <libmapi/libmapi.h>
 #include "utils/mapitest/mapitest.h"
 
+/**
+	\file
+	mapitest statistics functions
+
+	mapitest records and prints the results of each test
+	using these functions
+*/
 
 /**
    \details Initialize the mapitest statistic structure

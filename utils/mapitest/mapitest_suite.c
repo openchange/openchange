@@ -22,6 +22,11 @@
 #include <libmapi/libmapi.h>
 #include "utils/mapitest/mapitest.h"
 
+/**
+	\file
+
+	mapitest test suite functions
+*/
 
 /**
    \details Initialize a mapitest suite
@@ -29,6 +34,7 @@
    \param mt the top-level mapitest structure
    \param name the suite name
    \param description the suite description
+   \param online whether this suite requires online (server) access
 
    \return An allocated mapitest_suite pointer, otherwise NULL.
  */

@@ -462,7 +462,7 @@ WARN_LOGFILE           =
 # directories like "/usr/src/myproject". Separate the files or directories 
 # with spaces.
 
-INPUT                  = utils/mapitest/modules
+INPUT                  = utils/mapitest utils/mapitest/modules
 
 # This tag can be used to specify the character encoding of the source files that 
 # doxygen parses. Internally doxygen uses the UTF-8 encoding, which is also the default 
@@ -548,10 +548,18 @@ IMAGE_PATH             = doc/doxygen/pictures/
 # ignored.
 
 INPUT_FILTER           = "sed \
-		         -e 's/.*\<libmapi\/libmapi.h\>//'	\
-		         -e 's/.*\<utils\/mapitest\/mapitest.h\>//'	\
-		         -e 's/.*\<utils\/mapitest\/proto.h\>//'	\
-                         -e 's/_PUBLIC_//'"
+			-e '20,40s/.*\<libmapi\/libmapi.h\>//'			\
+			-e '20,40s/.*\<samba\/popt.h\>//'			\
+			-e '20,40s/.*\<samba\/version.h\>//'			\
+			-e '20,40s/.*\<utils\/openchange-tools.h\>//'		\
+			-e '20,40s/.*\<utils\/mapitest\/mapitest.h\>//'		\
+			-e '20,40s/.*\<utils\/mapitest\/proto.h\>//'		\
+			-e '20,40s/.*\<errno.h\>//'				\
+			-e '20,40s/.*\<err.h\>//'				\
+			-e '20,40s/.*\<fcntl.h\>//'				\
+			-e '20,40s/.*\<param.h\>//'				\
+			-e '20,40s/.*\<time.h\>//'				\
+			-e 's/_PUBLIC_//'"
 
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern 

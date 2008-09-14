@@ -1,12 +1,12 @@
 /**
-\mainpage mapitest documentation
+\mainpage %mapitest documentation
 
-mapitest acts as stand-alone torture test of a range of MAPI function
+%mapitest acts as stand-alone torture test of a range of MAPI function
 calls. It is intended to validate the implementation of various
 functions, and to ensure that existing functionality does not suffer
 regression between releases.
 
-As a general principle, mapitest calls should leave the system in the
+As a general principle, %mapitest calls should leave the system in the
 same state at the end as at the start - it is meant to clean up after
 itself.
 

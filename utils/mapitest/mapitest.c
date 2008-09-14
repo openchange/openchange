@@ -27,7 +27,12 @@
 #include "utils/mapitest/mapitest.h"
 
 /**
-   Initialize mapitest structure
+	\file
+	Core of %mapitest implementation
+*/
+
+/**
+   Initialize %mapitest structure
  */
 static void mapitest_init(TALLOC_CTX *mem_ctx, struct mapitest *mt)
 {
@@ -46,7 +51,12 @@ static void mapitest_init(TALLOC_CTX *mem_ctx, struct mapitest *mt)
 	mt->cmdline_suite = NULL;
 }
 
+/**
+  Initialize %mapitest output stream
 
+  \param mt pointer to mapitest context
+  \param filename filename to write to (can be null, for output to stdout)
+*/
 static void mapitest_init_stream(struct mapitest *mt, const char *filename)
 {
 	if (filename == NULL) {
@@ -60,6 +70,11 @@ static void mapitest_init_stream(struct mapitest *mt, const char *filename)
 	}
 }
 
+/**
+  Clean up %mapitest output stream
+
+  \param mt pointer to mapitest context
+*/
 static void mapitest_cleanup_stream(struct mapitest *mt)
 {
 	fclose(mt->stream);

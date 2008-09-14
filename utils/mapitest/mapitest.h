@@ -34,51 +34,88 @@ struct mapitest_suite;
 #include "utils/mapitest/proto.h"
 
 /**
- * Data structures
+	\file mapitest.h
+ 	Data structures for %mapitest
  */
 
+/**
+	A list of %mapitest tests
+
+	%mapitest tests are grouped into test suites. This linked
+	list data structure represents the various tests as a
+	list of tests (i.e. the linked list is a suite of tests).
+
+	The function that executes the test is pointed to by the
+	fn element (i.e. fn is a function pointer).
+*/
 struct mapitest_test {
-	struct mapitest_test	*prev;
-	struct mapitest_test	*next;
-	char			*name;
-	char			*description;
-	void			*fn;
+	struct mapitest_test	*prev;		/*!< The previous test in the list */
+	struct mapitest_test	*next;		/*!< The next test in the list */
+	char			*name;		/*!< The name of this test */
+	char			*description;	/*!< The description of this test */
+	void			*fn;		/*!< pointer to the test function */
 };
 
+/**
+	List of test names
+
+	This linked list data structure has a list of names of tests. It is
+	used with mapitest_stat to record the failed tests.
+*/
 struct mapitest_unit {
-	struct mapitest_unit	*prev;
-	struct mapitest_unit	*next;
-	char			*name;
+	struct mapitest_unit	*prev;		/*!< The previous test in the list */
+	struct mapitest_unit	*next;		/*!< The next test in the list */
+	char			*name;		/*!< The name of the test */
 };
 
+/**
+	%mapitest statistics
 
+	During a %mapitest run, %mapitest collects statistics on each test suite.
+
+	This data structure records the results for one run of a test suite.
+
+	There should be one entry in the failure_info list for each failure.
+*/
 struct mapitest_stat {
-	uint32_t		success;
-	uint32_t		failure;
-	struct mapitest_unit	*failure_info;
-	bool			enabled;
+	uint32_t		success;       /*!< Number of tests in this suite that passed */
+	uint32_t		failure;       /*!< Number of tests in this suite that failed */
+	struct mapitest_unit	*failure_info; /*!< List of names of the tests that failed */
+	bool			enabled;       /*!< Whether this statistics structure is valid */
 };
 
+/**
+	A list of test suites
+
+	%mapitest executes a set of tests. Those tests are grouped into
+	suites of related tests (e.g. all tests that do not require a 
+	server are in one suite, the tests for NSPI are in another suite,
+	and so on). This linked list data structure represents the various
+	test suites to be executed.
+*/
 struct mapitest_suite {
-	struct mapitest_suite	*prev;
-	struct mapitest_suite	*next;
-	char			*name;
-	char			*description;
-	bool			online;
-	struct mapitest_test	*tests;
-	struct mapitest_stat	*stat;
+	struct mapitest_suite	*prev;        /*!< Pointer to the previous test suite */
+	struct mapitest_suite	*next;        /*!< Pointer to the next test suite */
+	char			*name;        /*!< The name of the test suite */
+	char			*description; /*!< Description of the test suite */
+	bool			online;       /*!< Whether this suite requires a server */
+	struct mapitest_test	*tests;       /*!< The tests in this suite */
+	struct mapitest_stat	*stat;        /*!< Results of running this test */
 };
 
+/**
+	The context structure for a %mapitest run
+*/
 struct mapitest {
-	TALLOC_CTX		*mem_ctx;
+	TALLOC_CTX		*mem_ctx;	/*!< talloc memory context for memory allocations */
 	struct mapi_session	*session;
-	bool			confidential;
-	bool			no_server;
-	bool			mapi_all;
-	bool			online;
-	bool			color;
+	bool			confidential;	/*!< true if confidential information should be omitted */
+	bool			no_server;	/*!< true if only non-server tests should be run */
+	bool			mapi_all;	/*!< true if all tests should be run */
+	bool			online;		/*!< true if the server could be accessed */
+	bool			color;		/*!< true if the output should be colored */
 	struct emsmdb_info	info;
-	struct mapitest_suite	*mapi_suite;
+	struct mapitest_suite	*mapi_suite;	/*!< the various test suites */
 	struct mapitest_unit   	*cmdline_calls;
 	struct mapitest_unit   	*cmdline_suite;
 	const char		*org;
@@ -93,7 +130,7 @@ struct mapitest_module {
 };
 
 /**
-   Context for mapitest test folder
+   Context for %mapitest test folder
 */
 struct mt_common_tf_ctx
 {
@@ -104,7 +141,7 @@ struct mt_common_tf_ctx
 };
 
 
-/**
+/*
  *  Defines
  */
 #define	MAPITEST_SUCCESS	0

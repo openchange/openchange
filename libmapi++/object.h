@@ -28,6 +28,10 @@
 #include <libmapi++/clibmapi.h>
 #include <libmapi++/session.h>
 
+/**
+ *  The libmapi++ classes and other definitions are all enclosed in
+ *  the libmapipp namespace.
+ */
 namespace libmapipp
 {
 // #define INVALID_HANDLE_VALUE 0xffffffff

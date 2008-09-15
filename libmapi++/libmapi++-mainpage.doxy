@@ -1,10 +1,29 @@
 /**
-\mainpage C++ Bindings for OpenChange Clients
+\mainpage libmapi++
 
-<h2>C++ Bindings for OpenChange Clients</h2>
+<h2>libmapi++ - C++ Bindings for OpenChange Clients</h2>
 
-libmapi++ provides C++ bindings for OpenChange client libraries (<a href="../libmapi/index.html">libmapi</a>). It is intended to provide a
-higher level abstraction of the OpenChange client libraries.
+libmapi++ provides C++ bindings for OpenChange client libraries (<a href="../libmapi/index.html">libmapi</a>).
+It is intended to provide a higher level abstraction of the OpenChange client libraries for C++ users who
+would prefer to work with an object-oriented API.
 
+<h2>Using libmapi++</h2>
+
+\note libmapi++ classes live in the libmapipp namespace.
+
+When using libmapi++, you start by creating a session, and logging in to the server.
+\code
+// Initialize MAPI Session
+libmapipp::session mapi_session;
+
+// login() can use an optional profile_name, and an optional password
+mapi_session.login();
+\endcode
+
+The session can then access the message store, which is the tree of private folders associated
+with a single user (containing various folders, such as the Inbox, Sent Mail, Calendar, Journal
+and so on).
+
+\todo Explain message_store, container properties, hierarchy tables, and messages.
 
 */

@@ -346,7 +346,7 @@ libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: \
 # libmapi++ compilation rules
 #################################################################
 
-libmapixx: libmapi libmapixx-tests
+libmapixx: libmapi libmapixx-tests libmapixx-examples
 
 libmapixx-installpc:
 
@@ -408,6 +408,21 @@ bin/libmapixx-attach: libmapi++/tests/attach_test.cpp	\
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-attach-clean
+
+
+libmapixx-examples: libmapi++/examples/foldertree
+
+libmapixx-foldertree-clean:
+	rm -f libmapi++/examples/foldertree
+	rm -f libmapi++/examples/*.o
+
+libmapi++/examples/foldertree: libmapi++/examples/foldertree.cpp	\
+		  libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking foldertree example application $@"
+	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+clean:: libmapixx-foldertree-clean
+
 
 #################################################################
 # libmapiadmin compilation rules

@@ -9,3 +9,27 @@ An example that shows reading mail.
 An example that shows reading of attachments.
 
 */
+
+/** \example foldertree.cpp
+
+This example lists the top level folders in the message store,
+with output like:
+\code
+Message store display name: Mailbox - Test User1
+|-----> Calendar (0 items, 0 unread)
+|-----> Contacts (0 items, 0 unread)
+|-----> Deleted Items (0 items, 0 unread)
+|-----> Drafts (0 items, 0 unread)
+|-----> Inbox (26 items, 24 unread)
+|-----> Journal (0 items, 0 unread)
+|-----> Notes (0 items, 0 unread)
+|-----> Outbox (9 items, 0 unread)
+|-----> Sent Items (0 items, 0 unread)
+|-----> Tasks (0 items, 0 unread)
+\endcode
+
+The example shows how to create a session, get the message_store, get
+properties of the message store, and then gets the list of child folders and
+some associated folder properties.
+
+*/

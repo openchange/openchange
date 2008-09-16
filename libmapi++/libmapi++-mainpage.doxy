@@ -24,6 +24,14 @@ The session can then access the message store, which is the tree of private fold
 with a single user (containing various folders, such as the Inbox, Sent Mail, Calendar, Journal
 and so on).
 
-\todo Explain message_store, container properties, hierarchy tables, and messages.
+The message store is associated with the session, so you don't create it yourself. Instead,
+you obtain it using the session object's get_message_store() method.
+\code
+// Take a reference to the message store
+libmapipp::message_store &msg_store = mapi_session.get_message_store();
+\endcode
+\note It has to be a reference, not a copy / assignment.
+
+\todo Explain container properties, hierarchy tables, and messages.
 
 */

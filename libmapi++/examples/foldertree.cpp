@@ -32,8 +32,11 @@ int main ()
 		// You could log in with a non-default profile here
                 mapi_session.login();
 
+		// Get the private (user) folders message store
+		libmapipp::message_store &msg_store = mapi_session.get_message_store();
+
 		// Get a property of the top level message store
-		libmapipp::property_container msg_store_props = mapi_session.get_message_store().get_property_container();
+		libmapipp::property_container msg_store_props = msg_store.get_property_container();
 		msg_store_props << PR_DISPLAY_NAME; // you could use other properties here
 		msg_store_props.fetch();
 
@@ -45,15 +48,14 @@ int main ()
 
 		// Fetch the folder list.
 		// We start off by fetching the top level folder
-		mapi_id_t top_folder_id = mapi_session.get_message_store().get_default_folder(olFolderTopInformationStore);
-		libmapipp::folder top_folder(mapi_session.get_message_store(), top_folder_id);
+		mapi_id_t top_folder_id = msg_store.get_default_folder(olFolderTopInformationStore);
+		libmapipp::folder top_folder(msg_store, top_folder_id);
 		// Now get the child folders of the top level folder. These are returned as
 		// a std::vector of pointers to folders
 		libmapipp::folder::hierarchy_container_type child_folders = top_folder.fetch_hierarchy();
 		// Display the name, total item count and unread item count for each folder
         	for (unsigned int i = 0; i < child_folders.size(); ++i) {
-			libmapipp::property_container child_props;
-			child_props = child_folders[i]->get_property_container();
+			libmapipp::property_container child_props = child_folders[i]->get_property_container();
 			child_props << PR_DISPLAY_NAME << PR_CONTENT_COUNT << PR_CONTENT_UNREAD;
 			child_props.fetch();
 			std::cout << "|-----> " << (const char*)child_props[PR_DISPLAY_NAME]

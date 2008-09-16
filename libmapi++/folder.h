@@ -36,10 +36,21 @@ namespace libmapipp
 /// This class represents a folder or container within Exchange
 class folder : public object {
 	public:
+		/**
+			Pointer to a message
+		*/
 		typedef boost::shared_ptr<message>		message_shared_ptr;
 		typedef std::vector<message_shared_ptr >	message_container_type;
 
+		/**
+			Pointer to a folder
+		*/
 		typedef boost::shared_ptr<folder>		folder_shared_ptr;
+		/**
+			Hierarchy folders
+
+			This is a vector (list) of child folders for a given folder
+		*/
 		typedef std::vector<folder_shared_ptr>		hierarchy_container_type;
 
 		/** \brief Constructor

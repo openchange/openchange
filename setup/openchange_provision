@@ -17,41 +17,37 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
+import optparse
+import os,sys
+
 sys.path.append("scripting/python")
 
-import optparse
+import samba
 import samba.getopt as options
-from samba.samdb import SamDB
 from samba.auth import system_session
-from openchange.provision import install_schemas
-import os
+import openchange.provision as openchange
 
-parser = optparse.OptionParser("oc_provision [options]")
+parser = optparse.OptionParser("openchange_provision [options]")
 
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+parser.add_option("--firstorg", type="string", metavar="FIRSTORG", 
+                  help="set OpenChange First Organization (otherwise First Organization)")
+parser.add_option("--firstou", type="string", metavar="FIRSTOU", 
+                  help="set OpenChange First Organization Unit (otherwise First Organization Unit)")
 
-opts, args = parser.parse_args()
-
+opts,args = parser.parse_args()
 if len(args) != 0:
-	parser.print_usage()
-	sys.exit(1)
-
+    parser.print_usage()
+    sys.exit(1)
+    
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
-samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), 
-              credentials=creds, lp=lp)
-
-netbiosname = lp.get("netbios name")
-hostname = netbiosname.lower()
-basedn = samdb.domain_dn()
-
 def setup_path(*args):
-	return os.path.join(os.path.dirname(__file__), *args)
+    return os.path.join(os.path.dirname(__file__), *args)
 
-install_schemas(samdb, setup_path, basedn, netbiosname, hostname)
+openchange.provision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)

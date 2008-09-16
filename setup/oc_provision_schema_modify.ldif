@@ -1,10 +1,674 @@
-dn: CN=User,CN=Schema,CN=Configuration,${BASEDN}
-changetype: modify
-add: auxiliaryClass
-auxiliaryClass: msExchBaseClass
-auxiliaryClass: msExchMailStorage
+# Some of the classes Exchange needs to extend do not exist in
+# Samba4. These classes are added in oc_provision_schema_ADSC.ldif
+#
+#	Classes Added:
+#  	  	* Address-Book-Container
+#		* Contact
+#		* Display-Template
+#		* DSA
+#		* Group-Of-Names
+#
+# ms-Exch-Configuraion-Container class: see oc_provision_schema.ldif
+#
 
-dn: CN=Server,CN=Schema,CN=Configuration,${BASEDN}
+
+#
+# Computer class
+# Represents a computer account in the domain
+#
+dn: CN=Computer,${SCHEMADN}
 changetype: modify
 add: mayContain
+mayContain: msExchExchangeServerLink
+mayContain: logRolloverInterval
+mayContain: monitoredConfigurations
+mayContain: monitoredServices
+mayContain: monitoringAvailabilityStyle
+mayContain: monitoringAvailabilityWindow
+mayContain: monitoringCachedViaMail
+mayContain: monitoringCachedViaRPC
+mayContain: monitoringMailUpdateInterval
+mayContain: monitoringMailUpdateUnits
+mayContain: monitoringRPCUpdateInterval
+mayContain: monitoringRPCUpdateUnits
+mayContain: ms-Exch-Policy-List Attribute
+mayContain: ms-Exch-Policy-Option-List Attribute
+mayContain: promoExpiration
+mayContain: securityProtocol
+mayContain: trackingLogPathName
+mayContain: type
+
+
+
+#
+# Container Class
+# Used to hold other classes
+dn: CN=Container,${SCHEMADN}
+changetype: modify
+add: auxiliaryClass
+add: possSuperiors
+add: mayContain
+auxiliaryClass: msExchBaseClass
+possSuperiors: protocolCfgSharedServer
+mayContain: containerInfo
+mayContain: msExchPolicyList
+mayContain: msExchTemplateRDNs
+mayContain: x500RDN
+mayContain: msExchExportContainersBL
+
+
+
+#
+# Domain-DNS
+# Windows NT domain with DNS-based (DC=) naming. 
+#
+dn: CN=Domain-DNS,${SCHEMADN}
+changetype: modify
+add: mayContain
+mayContain: msExchPolicyList
+
+
+
+#
+# Group
+# Stores a list of user names. Used to apply security principals on
+# resources.
+#
+dn: CN=Group,${SCHEMADN}
+changetype: modify
+add: auxiliaryClass
+add: mayContain
+auxiliaryClass: msExchCustomAttributes
+auxiliaryClass: msExchBaseClass
+auxiliaryClass: msExchIMRecipient
+mayContain: hideDLMembership
+mayContain: oOFReplyToOriginator
+mayContain: reportToOriginator
+mayContain: reportToOwner
+mayContain: dLMemberRule
+mayContain: owner
+mayContain: msExchOriginatingForest
+
+
+
+#
+# Mail-Recipient
+# Stores e-mail configuration information.
+#
+dn: CN=Mail-Recipient,${SCHEMADN}
+changetype: modify
+add: mayContain
+mayContain: assistant
+mayContain: altRecipient
+mayContain: authOrig
+mayContain: autoReplyMessage
+mayContain: delivContLength
+mayContain: deliverAndRedirect
+mayContain: dLMemRejectPerms
+mayContain: dLMemSubmitPerms
+mayContain: enabledProtocols
+mayContain: msExchExpansionServerName
+mayContain: expirationTime
+mayContain: folderPathname
+mayContain: formData
+mayContain: forwardingAddress
+mayContain: homeMTA
+mayContain: internetEncoding
+mayContain: languageCode
+mayContain: language
+mayContain: mailNickname
+mayContain: mAPIRecipient
+mayContain: pOPCharacterSet
+mayContain: pOPContentFormat
+mayContain: protocolSettings
+mayContain: publicDelegates
+mayContain: replicationSensitivity
+mayContain: securityProtocol
+mayContain: submissionContLength
+mayContain: targetAddress
+mayContain: unauthOrig
+mayContain: dnQualifier
+mayContain: msExchMailboxSecurityDescriptor
+mayContain: msExchMasterAccountSid
+mayContain: importedFrom
+mayContain: versionNumber
+mayContain: msExchPreviousAccountSid
+mayContain: msExchCustomProxyAddresses
+mayContain: dLMemDefault
+mayContain: mail
+mayContain: deliveryMechanism
+mayContain: extensionData
+mayContain: delivExtContTypes
+mayContain: msExchFBURL
+mayContain: msExchRecipLimit
+mayContain: altRecipientBL
+mayContain: authOrigBL
+mayContain: dLMemRejectPermsBL
+mayContain: dLMemSubmitPermsBL
+mayContain: publicDelegatesBL
+mayContain: unauthOrigBL
+mayContain: msExchPoliciesExcluded
+mayContain: msExchPoliciesIncluded
+mayContain: msExchPolicyEnabled
+mayContain: msExchPolicyOptionList
+mayContain: msExchProxyCustomProxy 
+mayContain: msExchUserAccountControl 
+mayContain: msExchMailboxFolderSet 
+mayContain: msExchRequireAuthToSendTo 
+
+
+
+#
+# NTDS-DSA
+# Represents the Active Directory DSA process on the server.
+#
+dn: CN=NTDS-DSA,${SCHEMADN}
+changetype: modify
+add: mayContain
+mayContain: deliveryMechanism
+mayContain: diagnosticRegKey
+
+
+
+#
+# Organizational-Person
+# Contains organizational information about a user.
+#
+dn: CN=Organizational-Person,${SCHEMADN}
+changetype: modify
+add: mayContain
+mayContain: employeeType
+mayContain: businessRoles
+mayContain: telephoneAssistant
+mayContain: personalPager
+mayContain: employeeNumber
+
+
+
+
+#
+# Organizational-Unit
+# A container for storing users, computers, and other account objects.
+#
+dn: CN=Organizational-Unit,${SCHEMADN}
+changetype: modify
+add: auxiliaryClass
+add: mayContain
+auxiliaryClass: msExchBaseClass
+mayContain: msExchPolicyList
+
+
+
+#
+# Sam-Domain
+# Auxiliary class holding common properties for Windows NT domains.
+#
+dn: CN=Sam-Domain,${SCHEMADN}
+changetype: modify
+add: mayContain
+mayContain: msExchAddGroupsToToken
+
+
+
+#
+# Server
+# Represents a server computer within a site.
+#
+dn: CN=Server,${SCHEMADN}
+changetype: modify
+add: mayContain
+mayContain: activationSchedule
+mayContain: activationStyle
+mayContain: type
 mayContain: networkAddress
+
+
+#
+# Site
+# A container for storing server objects. Represents a physical
+# location containing computers. Used to manage replication.
+#
+dn: CN=Site,${SCHEMADN}
+changetype: modify
+add: mayContain
+mayContain: msExchConferenceZoneBL
+mayContain: msExchMCUHostsSitesBL
+
+
+#
+# User
+# Used to store information about an employee or contractor who works
+# for an organization. Can also be applied to long-term visitors.
+#
+dn: CN=User,${SCHEMADN}
+changetype: modify
+add: auxiliaryClass
+add: possSuperiors
+add: mayContain
+auxiliaryClass: msExchCustomAttributes
+auxiliaryClass: msExchMailStorage
+auxiliaryClass: msExchBaseClass
+auxiliaryClass: msExchMultiMediaUser
+auxiliaryClass: msExchCertificateInformation
+auxiliaryClass: msExchIMRecipient
+auxiliaryClass: msExchOmaUser
+possSuperiors: msExchSystemObjectsContainer
+mayContain: msExchQueryBaseDN
+mayContain: msExchControllingZone
+mayContain: msExchResourceGUID
+mayContain: msExchResourceProperties
+mayContain: msExchConferenceMailboxBL
+mayContain: kMServer
+mayContain: msExchIMAPOWAURLPrefixOverride
+mayContain: msExchOriginatingForest
+
+
+
+##################################################################
+# Attributes
+##################################################################
+
+
+#
+# Address
+# The user's address
+#
+dn: CN=Address,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+#
+# Admin-Display-Name
+# The name to be displayed on administrator screens.
+#
+dn: CN=Admin-Display-Name,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+#
+# Attribute-Syntax
+# The object identifier (OID) for the syntax for this attribute.
+#
+dn: CN=Attribute-Syntax,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Comment
+# The user's comments. Can be a null string.
+#
+dn: CN=Comment,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Company
+# The user's company name.
+#
+dn: CN=Company,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Department
+# Contains the name for the department in which the user works.
+#
+dn: CN=Department,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Display-Name-Printable
+# The name displayed in the address book for a particular
+# user. Usually the combination of the user's first name, middle
+# initial, and last name.
+#
+dn: CN=Display-Name-Printable,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# E-mail-Addresses
+# The list of e-mail addresses for a contact.
+#
+dn: CN=E-mail-Addresses,${SCHEMADN}
+changetype: modify
+replace: searchFlags
+searchFlags: 5
+
+
+
+#
+# Facsimile-Telephone-Number
+# Contains the telephone number of the user's business fax machine.
+#
+dn: CN=Facsimile-Telephone-Number,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Garbage-Coll-Period
+# Located on the CN=Directory Service,CN=Windows
+# NT,CN=Services,CN=Configuration,... object. Represents the period in
+# hours between Directory Service (DS) garbage collection runs.
+#
+dn: CN=Garbage-Coll-Period,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+replace: searchFlags
+isMemberOfPartialAttributeSet: TRUE
+searchFlags: 16
+
+
+
+#
+# Given-Name
+# Contains the given name (first name) of the user. 
+#
+#dn: CN=Given-Name,${SCHEMADN}
+#changetype: modify
+#add: isMemberOfPartialAttributeSet
+#isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Initials
+# Contains the initials for parts of the user's full name. May be used
+# as the middle initial in the Windows Address Book.
+#
+dn: CN=Initials,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Managed-By
+# The distinguished name of the user that is assigned to manage this
+# object.
+#
+dn: CN=Managed-By,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Network-Address
+# The TCP/IP address for a network segment. Also called the subnet
+# address.
+#
+dn: CN=Network-Address,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# NT-Mixed-Domain
+# Indicates that the domain is in native mode or mixed mode. Found in
+# the domainDNS (head) object for the domain.
+#
+dn: CN=NT-Mixed-Domain,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# OM-Syntax
+# A number representing the OM type for the attribute. 
+#
+dn: CN=OM-Syntax,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Phone-Fax-Other
+# A list of alternate facsimile numbers. 
+#
+dn: CN=Phone-Fax-Other,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Phone-Home-Other
+# A list of alternate home phone numbers.
+#
+dn: CN=Phone-Home-Other,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Phone-Mobile-Other
+# A list of alternate cell phone numbers.
+#
+dn: CN=Phone-Mobile-Other,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Phone-Mobile-Primary
+# The primary cell phone number
+#
+dn: CN=Phone-Mobile-Primary,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Phone-Office-Other
+# A list of alternate office phone numbers
+#
+dn: CN=Phone-Office-Other,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Phone-Pager-Other
+# A list of alternate pager numbers
+#
+dn: CN=Phone-Pager-Other,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Phone-Pager-Primary
+# The primary pager number
+#
+dn: CN=Phone-Pager-Primary,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Physical-Delivery-Office-Name
+# Contains the office location of the user's place of business.
+#
+dn: CN=Physical-Delivery-Office-Name,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Postal-Code
+# The postal or zip code for mail delivery. 
+#
+dn: CN=Postal-Code,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Post-Office-Box
+# The post office box number for this object. 
+#
+dn: CN=Post-Office-Box,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Proxy-Addresses
+# Address by which a Microsoft Exchange Server recipient object is
+# recognized in a foreign mail system. Required not just for users,
+# but for all recipient objects such as custom recipients and
+# distribution lists.
+#
+dn: CN=Proxy-Addresses,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+replace: searchFlags
+isMemberOfPartialAttributeSet: TRUE
+searchFlags: 13
+
+
+
+#
+# Show-In-Address-Book
+# 
+dn: CN=Show-In-Address-Book,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Sub-Class-Of
+# The parent class of a class
+#
+dn: CN=Sub-Class-Of,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Text-Country
+# The country/region in which the user is located.
+#
+dn: CN=Text-Country,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# Text-Encoded-Or-Address
+#
+dn: CN=Text-Encoded-Or-Address,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+replace: searchFlags
+replace: attributeSecurityGuid
+isMemberOfPartialAttributeSet: TRUE
+searchFlags: 1
+attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
+
+
+
+#
+# Title
+# Contains the user's job title. Property commonly used to indicate
+# the formal job title, such as Senior Programmer, rather than
+# occupational class, such as programmer. Not typically used for
+# suffix titles such as Esq. or D.D.S.
+#
+dn: CN=Title,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+replace: searchFlags
+isMemberOfPartialAttributeSet: TRUE
+searchFlags: 16
+
+
+
+#
+# Version-Number
+# A general-purpose version number.
+#
+dn: CN=Version-Number,${SCHEMADN}
+changetype: modify
+replace: searchFlags
+searchFlags: 8
+
+
+
+#
+# WWW-Home-Page
+# The primary Web page
+#
+dn: CN=WWW-Home-Page,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+
+
+
+#
+# WWW-Page-Other
+# A list of alternate Web pages
+#
+dn: CN=WWW-Page-Other,${SCHEMADN}
+changetype: modify
+add: isMemberOfPartialAttributeSet
+isMemberOfPartialAttributeSet: TRUE
+

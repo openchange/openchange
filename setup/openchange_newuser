@@ -17,16 +17,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
+import optparse
+import os,sys
+
 sys.path.append("scripting/python")
 
-import optparse
+import samba
 import samba.getopt as options
-from samba.samdb import SamDB
 from samba.auth import system_session
-from openchange.provision import newuser
+import openchange.provision as openchange
 
-parser = optparse.OptionParser("oc_newuser [options] <username>")
+parser = optparse.OptionParser("openchange_newuser [options] <username>")
 
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
@@ -43,7 +44,4 @@ if len(args) == 0:
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
-samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), 
-              credentials=creds, lp=lp)
-
-newuser(samdb, lp, args[0])
+openchange.newuser(lp, creds, username=args[0])

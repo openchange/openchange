@@ -245,6 +245,7 @@ legacyExchangeDN: /o=%s/ou=First Administrative Group/cn=Recipients/cn=%s
 proxyAddresses: smtp:postmaster@%s
 proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%s
 proxyAddresses: SMTP:%s@%s
+msExchUserAccountControl: 0
     """ % (user_dn, username, username, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.firstorg, username, names.dnsdomain, username, username, names.dnsdomain)
 
         samdb.modify_ldif(extended_user)
@@ -252,6 +253,43 @@ proxyAddresses: SMTP:%s@%s
         samdb.transaction_cancel()
         raise
     samdb.transaction_commit()
+
+    print "[+] User %s extended and enabled" % username
+
+
+def accountcontrol(lp, creds, username=None, value=0):
+    """enable/disable an OpenChange user account.
+
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param username: Name of user to disable
+    :param value: the control value
+    """
+
+    names = guess_names_from_smbconf(lp, None, None)
+
+    samdb = SamDB(url="users.ldb", session_info=system_session(),
+                  credentials=creds, lp=lp)
+
+    samdb.transaction_start()
+    try:
+        user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
+        extended_user = """
+dn: %s
+changetype: modify
+replace: msExchUserAccountControl
+msExchUserAccountControl: %d
+""" % (user_dn, value)
+        samdb.modify_ldif(extended_user)
+    except:
+        samdb.transaction_cancel()
+        raise
+    samdb.transaction_commit()
+    if value == 2:
+        print "[+] Account %s disabled" % username
+    else:
+        print "[+] Account %s enabled" % username
+
 
 def provision(setup_path, lp, creds, firstorg=None, firstou=None):
     """Extend Samba4 with OpenChange data.

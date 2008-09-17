@@ -758,6 +758,10 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 			data.data = (uint8_t *)stream + offset;
 			retval = WriteStream(&obj_stream, &data, &write_len);
 			mapitest_print_retval_fmt(mt, "WriteStream", "[%d] (0x%x bytes written)", i, write_len);
+			if (retval != MAPI_E_SUCCESS) {
+				ret = false;
+				break;
+			}
 
 			StreamSize -= write_len;
 			if (StreamSize > MT_STREAM_MAX_SIZE) {

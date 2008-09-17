@@ -252,19 +252,19 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 	dce_call->fault_code = 0;
 
 	/* NspiGetProps binding strings replacement */
-	if (table->name && !strcmp(table->name, "exchange_nsp")) {
-		if (name && !strcmp(name, "NspiGetProps")) {
+	if (table->name && !strcmp(table->name, NDR_EXCHANGE_NSP_NAME)) {
+	  if (opnum == NDR_NSPIGETPROPS) {
 			mapiproxy_NspiGetProps(dce_call, (struct NspiGetProps *)r);
 		}
 
-		if (name && !strcmp(name, "NspiQueryRows")) {
+	  if (opnum == NDR_NSPIQUERYROWS) {
 			mapiproxy_NspiQueryRows(dce_call, (struct NspiQueryRows *)r);
 		}
 	}	
 
 	/* RfrGetNewDSA FQDN replacement */
-	if (table->name && !strcmp(table->name, "exchange_ds_rfr")) {
-		if (name && !strcmp(name, "RfrGetNewDSA")) {
+	if (table->name && !strcmp(table->name, NDR_EXCHANGE_DS_RFR_NAME)) {
+	  if (opnum == NDR_RFRGETNEWDSA) {
 			mapiproxy_RfrGetNewDSA(dce_call, (struct RfrGetNewDSA *)r);
 		} else {
 			DEBUG(0, ("exchange_ds_rfr: OTHER DS-RFR CALL DETECTED!\n"));
@@ -331,8 +331,8 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 
 	private->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 
-	if (table->name && !strcmp(table->name, "exchange_nsp")) {
-		if (name && !strcmp(name, "NspiDNToMid")) {
+	if (table->name && !strcmp(table->name, NDR_EXCHANGE_NSP_NAME)) {
+		if (opnum == NDR_NSPIDNTOMID) {
 			mapiproxy_NspiDNToMId(dce_call, (struct NspiDNToMId *)r);
 		}
 	}

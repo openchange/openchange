@@ -81,32 +81,28 @@ _PUBLIC_ bool mapitest_common_folder_open(struct mapitest *mt,
 	return true;
 }
 
-
 /**
-    This convenience function searches for an obj_message given the
-    specified subject.
- */
-_PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
-						   mapi_object_t *obj_folder,
-						   mapi_object_t *obj_message,
-						   uint8_t mode,
-						   const char *subject,
-						   const char *call,
-						   uint32_t *index)
+   This function deletes messages in a folder, based on matching the subject
+   name. This is meant to clean up a folder after a test has been run.
+
+   \param mt pointer to the top level mapitest structure
+   \param obj_folder the folder to search through
+   \param subject the message subject to match
+*/
+_PUBLIC_ bool mapitest_common_message_delete_by_subject(struct mapitest *mt,
+							mapi_object_t *obj_folder,
+							const char *subject)
 {
 	enum MAPISTATUS		retval;
 	mapi_object_t		obj_ctable;
+	mapi_id_t		msgids[1];
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		SRowSet;
 	uint32_t		count;
-	uint32_t		count2 = 0;
-	uint32_t		attempt = 0;
 	const char		*msubject = NULL;
 	uint32_t		i;
 
 	/* Sanity checks */
-	if (index == NULL) return false;
-	if (call == NULL) return false;
 	if (subject == NULL) return false;
 
 	/* Retrieve the contents table */
@@ -119,8 +115,7 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 	}
 
 	/* Customize the content table view */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3,
-					  PR_FID,
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2,
 					  PR_MID,
 					  PR_SUBJECT);
 	retval = SetColumns(&obj_ctable, SPropTagArray);
@@ -131,46 +126,16 @@ _PUBLIC_ bool mapitest_common_message_find_subject(struct mapitest *mt,
 		return false;
 	}
 
-	/* Position the table at the latest know position */
-	retval = SeekRow(&obj_ctable, BOOKMARK_BEGINNING, *index, &count2);
-	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SeekRow", GetLastError());
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		mapi_object_release(&obj_ctable);
-		return false;
-	}
-
-	/* Subtract current position from the total */
-	count -= count2;
-
-	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
-	       SRowSet.cRows) {
+	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
 		for (i = 0; i < SRowSet.cRows; i++) {
-		retry:
-			errno = 0;
-			mapi_object_init(obj_message);
-			retval = OpenMessage(obj_folder,
-					     SRowSet.aRow[i].lpProps[0].value.d,
-					     SRowSet.aRow[i].lpProps[1].value.d,
-					     obj_message, mode);
-			if (GetLastError() != MAPI_E_SUCCESS && attempt < 3) {
-				sleep(1);
-				attempt++;
-				mapi_object_release(obj_message);
-				goto retry;
-			}
-			attempt = 0;
-
 			if (retval == MAPI_E_SUCCESS) {
-				msubject = SRowSet.aRow[i].lpProps[2].value.lpszA;
+				msgids[0] = SRowSet.aRow[i].lpProps[0].value.d;
+				msubject = SRowSet.aRow[i].lpProps[1].value.lpszA;
 				if (msubject && !strncmp(subject, msubject, strlen(subject))) {
-					*index += i + 1;
-					mapi_object_release(&obj_ctable);
-					return true;
+					DeleteMessage(obj_folder, msgids, 1);
 				}
 			}
-			mapi_object_release(obj_message);
 		}
-		*index += SRowSet.cRows;
 	}
 	mapi_object_release(&obj_ctable);
 	return false;

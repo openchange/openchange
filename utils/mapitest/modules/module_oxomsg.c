@@ -82,7 +82,7 @@ _PUBLIC_ bool mapitest_oxomsg_AddressTypes(struct mapitest *mt)
    -# Create a sample message
    -# Submit the message
    -# Delete the message
-	
+   -# Clean up folders
 
    \param mt pointer on the top-level mapitest structure
 
@@ -139,6 +139,12 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 		return false;
 	}
 
+	/* Step 6. Clean up anything else */
+	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
+	GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
+	OpenFolder(&obj_store, id_folder, &obj_folder);
+	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
+
 	/* Release */
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_folder);
@@ -158,6 +164,7 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
    -# Submit the message
    -# Abort the submit operation
    -# Delete the message
+   -# Clean up folders
 	
    Note: This operation may fail since it depends on how busy the
    server is when we submit the message. It is possible the message
@@ -184,31 +191,35 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(&obj_store);
 	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Step 2. Open Outbox folder */
 	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderOutbox);
 	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+		ret = false;
+		goto cleanup;
 	}
 
 	mapi_object_init(&obj_folder);
 	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Step 3. Create the sample message */
 	mapi_object_init(&obj_message);
 	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
 	if (ret == false) {
-		return ret;
+		goto cleanup;
 	}
 
 	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadWrite);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
+		goto cleanup;
 	}
 
 	/* Step 4. Submit Message */
@@ -222,12 +233,18 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 	}
 
 	/* Step 5. Delete Message */
+cleanup:
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
 	mapitest_print_retval(mt, "DeleteMessage");
 	if ((retval != MAPI_E_SUCCESS) && (GetLastError() != ecNoDelSubmitMsg)) {
 		ret = false;
 	}
+	/* Step 6. Clean up anything else */
+	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
+	GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
+	OpenFolder(&obj_store, id_folder, &obj_folder);
+	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
 
 	/* Release */
 	mapi_object_release(&obj_message);
@@ -378,6 +395,7 @@ _PUBLIC_ bool mapitest_oxomsg_SpoolerLockMessage(struct mapitest *mt)
    -# Save changes to the message
    -# Perform the TransportSend operation
    -# Dump the properties
+   -# Clean up folders
 
    \param mt pointer on the top-level mapitest structure
 
@@ -391,6 +409,7 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 	mapi_object_t			obj_folder;
 	mapi_object_t			obj_message;
 	struct mapi_SPropValue_array	lpProps;
+	mapi_id_t			id_folder;
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
@@ -435,6 +454,12 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 			mapidump_SPropValue(lpProp, "\t* ");
 		}
 	}
+
+	/* Step 6. Clean up anything else */
+	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
+	GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
+	OpenFolder(&obj_store, id_folder, &obj_folder);
+	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
 
 	/* Release */
 	mapi_object_release(&obj_message);

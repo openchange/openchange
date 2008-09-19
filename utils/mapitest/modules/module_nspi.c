@@ -239,7 +239,7 @@ _PUBLIC_ bool mapitest_nspi_ResortRestriction(struct mapitest *mt)
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
 	/* Build the array of columns we want to retrieve */
-	SPropTagArray = set_SPropTagArray(nspi_ctx->mem_ctx, 0xc,
+	SPropTagArray = set_SPropTagArray(nspi_ctx->mem_ctx, 0xb,
 					  PR_DISPLAY_NAME,
 					  PR_OFFICE_TELEPHONE_NUMBER,
 					  PR_OFFICE_LOCATION,

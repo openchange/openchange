@@ -193,10 +193,10 @@ _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi_ctx,
 	struct NspiUpdateStat		r;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
-	uint32_t			delta;
 
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!plDelta, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0x0;
@@ -205,16 +205,12 @@ _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi_ctx,
 	r.in.plDelta = plDelta;
 
 	r.out.pStat = nspi_ctx->pStat;
-	r.out.plDelta = &delta;
+	r.out.plDelta = r.in.plDelta;
 
 	status = dcerpc_NspiUpdateStat(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
 	MAPI_RETVAL_IF(retval, retval, NULL);
-
-	if (plDelta) {
-		*plDelta = delta;
-	}
 
 	return MAPI_E_SUCCESS;
 }

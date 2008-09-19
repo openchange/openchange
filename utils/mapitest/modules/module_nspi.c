@@ -41,7 +41,7 @@ _PUBLIC_ bool mapitest_nspi_UpdateStat(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi_ctx;
-	uint32_t       		plDelta = 0;
+	uint32_t       		plDelta = 1;
 	struct SRowSet		*SRowSet;
 
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
@@ -53,13 +53,12 @@ _PUBLIC_ bool mapitest_nspi_UpdateStat(struct mapitest *mt)
 		return false;
 	}
 
-	plDelta = 1;
 	retval = nspi_UpdateStat(nspi_ctx, &plDelta);
 	mapitest_print_retval(mt, "NspiUpdateStat");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
-	mapitest_print(mt, "%-35s: %d\n", "plDelta", plDelta);
+	mapitest_print(mt, "* %-35s: %d\n", "plDelta", plDelta);
 
 	return true;
 }
@@ -601,7 +600,16 @@ _PUBLIC_ bool mapitest_nspi_GetSpecialTable(struct mapitest *mt)
 	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
 	retval = nspi_GetSpecialTable(nspi_ctx, 0x0, &SRowSet);
 	MAPIFreeBuffer(SRowSet);
-	mapitest_print_retval(mt, "NspiGetSpecialTable");
+	mapitest_print_retval(mt, "NspiGetSpecialTable (Hierarchy Table)");
+
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
+	retval = nspi_GetSpecialTable(nspi_ctx, 0x2, &SRowSet);
+	MAPIFreeBuffer(SRowSet);
+	mapitest_print_retval(mt, "NspiGetSpecialTable (Address Creation Template)");
 
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;

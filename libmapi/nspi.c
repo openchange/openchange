@@ -995,11 +995,13 @@ _PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
 
 	/* Sanity Checks */
 	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!ppNames, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!ppPropTags, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("nspi_GetIDsFromNames");
 
 	r.in.handle = &nspi_ctx->handle;
+	r.in.Reserved = 0;
 	r.in.dwFlags = (VerifyNames == true) ? 0x2 : 0x0;
 	r.in.cPropNames = cNames;
 
@@ -1009,7 +1011,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
 	}
 
 	r.out.ppPropTags = ppPropTags;
-
+	
 	status = dcerpc_NspiGetIDsFromNames(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);

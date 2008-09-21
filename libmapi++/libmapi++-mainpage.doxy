@@ -32,6 +32,50 @@ libmapipp::message_store &msg_store = mapi_session.get_message_store();
 \endcode
 \note It has to be a reference, not a copy / assignment.
 
-\todo Explain container properties, hierarchy tables, and messages.
+Most objects in libmapi++ (and any kind of MAPI library) can be considered to have properties
+that belong to them, and subordinate (child) objects. For example, the name of the message
+store is a property of the message store, but the various folders in the message store (or equally,
+the messages in a folder, or the attachments to a message) are part of a hierachy. 
+
+To get access to the properties of an object, you obtain the property_container associated
+with the object, set the properties you want to access, call fetch(), and then read off the
+various properties.
+\code
+// Get a property of the top level message store
+libmapipp::property_container msg_store_props = msg_store.get_property_container();
+msg_store_props << PR_DISPLAY_NAME; // you could use other properties here
+msg_store_props.fetch();
+std::cout << "Message store display name: "
+	  << (const char*)msg_store_props[PR_DISPLAY_NAME]
+	  << std::endl;
+\endcode
+
+Note that the operator[] is essentially a lookup operator. If you'd prefer to use an
+iterator, look at libmapipp::property_container_iterator.
+
+As noted above, the objects in libmapi++ can be considered as a hierachy. To get the
+child elements for an object, you use the hierachy table for that element. For example,
+to get the various folders in the private information store, you could use code like this:
+\code
+// We start off by fetching the top level folder
+mapi_id_t top_folder_id = msg_store.get_default_folder(olFolderTopInformationStore);
+libmapipp::folder top_folder(msg_store, top_folder_id);
+// Now get the child folders of the top level folder. These are returned as
+// a std::vector of pointers to folders
+libmapipp::folder::hierarchy_container_type child_folders = top_folder.fetch_hierarchy();
+
+// Display the name, total item count and unread item count for each folder
+for (unsigned int i = 0; i < child_folders.size(); ++i) {
+    libmapipp::property_container child_props = child_folders[i]->get_property_container();
+    child_props << PR_DISPLAY_NAME << PR_CONTENT_COUNT << PR_CONTENT_UNREAD;
+    child_props.fetch();
+    std::cout << "|-----> " << (const char*)child_props[PR_DISPLAY_NAME]
+              << " (" << (*(int*)child_props[PR_CONTENT_COUNT]) << " items, "
+              << (*(int*)child_props[PR_CONTENT_UNREAD]) << " unread)"
+              << std::endl;
+}
+\endcode
+
+\todo Explain messages and attachments.
 
 */

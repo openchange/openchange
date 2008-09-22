@@ -33,3 +33,19 @@ properties of the message store, and then gets the list of child folders and
 some associated folder properties.
 
 */
+
+/** \example messages.cpp
+
+This example displays information about the messages in the inbox, with
+output like:
+\code
+Inbox contains 2 messages
+|-----> Test User1              | Working Remotely with Windows Small Business Server
+|-----> Test User1              | Welcome to Windows Small Business Server 2003
+\endcode
+
+The example shows how to create a session, get the message_store, and open 
+the inbox folder. It then determines how many messages are in the inbox folder,
+and retrieves and prints the intended addressee and the message subject.
+
+*/

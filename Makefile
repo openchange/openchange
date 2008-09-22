@@ -410,10 +410,15 @@ bin/libmapixx-attach: libmapi++/tests/attach_test.cpp	\
 clean:: libmapixx-attach-clean
 
 
-libmapixx-examples: libmapi++/examples/foldertree
+libmapixx-examples: libmapi++/examples/foldertree \
+		  libmapi++/examples/messages
 
 libmapixx-foldertree-clean:
 	rm -f libmapi++/examples/foldertree
+	rm -f libmapi++/examples/*.o
+
+libmapixx-messages-clean:
+	rm -f libmapi++/examples/messages
 	rm -f libmapi++/examples/*.o
 
 libmapi++/examples/foldertree: libmapi++/examples/foldertree.cpp	\
@@ -423,6 +428,12 @@ libmapi++/examples/foldertree: libmapi++/examples/foldertree.cpp	\
 
 clean:: libmapixx-foldertree-clean
 
+libmapi++/examples/messages: libmapi++/examples/messages.cpp	\
+		  libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking messages example application $@"
+	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+clean:: libmapixx-messages-clean
 
 #################################################################
 # libmapiadmin compilation rules

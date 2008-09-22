@@ -76,6 +76,41 @@ for (unsigned int i = 0; i < child_folders.size(); ++i) {
 }
 \endcode
 
-\todo Explain messages and attachments.
+As an alternative to working through the folder tree hierachy, you can also open 
+folders directly. In the example below, we open the Inbox. The API documentation
+for message_store::get_default_folder() provides a list of other folder IDs that
+you may find useful.
+\code
+mapi_id_t inbox_id = msg_store.get_default_folder(olFolderInbox);
+libmapipp::folder inbox_folder(msg_store, inbox_id);
+\endcode
+
+You can then get each message in the folder:
+\code
+// These are returned as a std::vector of pointers to messages
+libmapipp::folder::message_container_type messages = inbox_folder.fetch_messages();
+std::cout << "Inbox contains " << messages.size() << " messages" << std::endl;
+\endcode
+
+You can then get the various properties of each message in the same way as was
+used for the folder properties - you get the associated property_container, set
+the required properties, and call fetch() before reading off the required
+properties:
+\code
+// Work through each message
+for (unsigned int i = 0; i < messages.size(); ++i) {
+	// Get the properties we are interested in
+	libmapipp::property_container msg_props = messages[i]->get_property_container();
+	// We get the "to" addressee, and the subject
+	msg_props << PR_DISPLAY_TO << PR_CONVERSATION_TOPIC;
+	msg_props.fetch();
+	// Display those properties
+	std::cout << "|-----> " << (const char*)msg_props[PR_DISPLAY_TO]
+		  << "\t\t| " << (const char*)msg_props[PR_CONVERSATION_TOPIC]
+		  << std::endl;
+}
+\endcode
+
+\todo Explain attachments.
 
 */

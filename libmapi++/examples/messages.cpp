@@ -36,11 +36,11 @@ int main ()
 		libmapipp::message_store &msg_store = mapi_session.get_message_store();
 
 		// We start off by fetching the inbox
-		mapi_id_t top_folder_id = msg_store.get_default_folder(olFolderInbox);
-		libmapipp::folder top_folder(msg_store, top_folder_id);
+		mapi_id_t inbox_id = msg_store.get_default_folder(olFolderInbox);
+		libmapipp::folder inbox_folder(msg_store, inbox_id);
 		// Now get the messages in this folder These are returned as
 		// a std::vector of pointers to messages
-		libmapipp::folder::message_container_type messages = top_folder.fetch_messages();
+		libmapipp::folder::message_container_type messages = inbox_folder.fetch_messages();
 		std::cout << "Inbox contains " << messages.size() << " messages" << std::endl;
 
 		// Work through each message

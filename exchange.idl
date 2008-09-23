@@ -279,7 +279,7 @@ System Attendant Private Interface
 		[size_is(cValues+1),length_is(cValues)] MAPITAGS	aulPropTag[];
 	} SPropTagArray;
 
-	typedef struct {
+	typedef [public] struct {
 		[range(0,2097152)] uint32      	cb;
 		[size_is(cb)] uint8		*lpb;
 	} Binary_r;

@@ -44,7 +44,6 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 {
 	int			ret;
 	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
-	char			*ldb_filter;
 	struct ldb_result	*res;
 	struct ldb_message	*msg;
 	const char * const	attrs[] = { "*", NULL };
@@ -55,11 +54,8 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 
 	/* ldb query */
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
-	ldb_filter = talloc_asprintf(mem_ctx, "(cn=%s)(cn=Profiles)", profile->profname);
-	if (!ldb_filter) return MAPI_E_NOT_ENOUGH_RESOURCES;
 
-	ret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), scope, ldb_filter, attrs, &res);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profile->profname);
 	if (ret != LDB_SUCCESS) return MAPI_E_NOT_FOUND;
 
 	/* profile not found */
@@ -106,7 +102,7 @@ static enum MAPISTATUS ldb_clear_default_profile(TALLOC_CTX *mem_ctx)
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
-	ret = ldb_search(ldb_ctx, basedn, scope, "(cn=*)", attrs, &res);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, scope, attrs, "(cn=*)");
 	
 	if (ret != LDB_SUCCESS) return MAPI_E_NOT_FOUND;
 	if (!res->count) return MAPI_E_NOT_FOUND;
@@ -140,13 +136,11 @@ static enum MAPISTATUS ldb_test_password(TALLOC_CTX *mem_ctx, const char *profil
 	const char		*attrs[] = {"cn", "password", NULL };
 	const char		*ldb_password;
 	int			ret;
-	char			*ldb_filter;
 
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 	
-	ldb_filter = talloc_asprintf(mem_ctx, "(cn=%s)(cn=Profiles)", profile);
-	ret = ldb_search(ldb_ctx, 0, scope, ldb_filter, attrs, &res);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, NULL, scope, attrs, 
+					 "(cn=%s)(cn=Profiles)", profile);
 
 	if (ret != LDB_SUCCESS) return MAPI_E_NO_SUPPORT;
 	if (!res->count) return MAPI_E_NOT_FOUND;
@@ -175,7 +169,6 @@ static enum MAPISTATUS ldb_create_profile(TALLOC_CTX *mem_ctx,
 	struct ldb_result		*res;
 	struct ldb_dn			*basedn;
 	char				*dn;
-	char				*ldb_filter;
 	int				ret;
 	const char * const		attrs[] = { "*", NULL };
 
@@ -184,9 +177,8 @@ static enum MAPISTATUS ldb_create_profile(TALLOC_CTX *mem_ctx,
 		return MAPI_E_BAD_VALUE;
 
 	/* Does the profile already exists? */
-	ldb_filter = talloc_asprintf(mem_ctx, "(cn=%s)(cn=Profiles)", profname);
-	ret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), scope, ldb_filter, attrs, &res);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), 
+					 scope, attrs, "(cn=%s)(cn=Profiles)", profname);
 	if (res->msgs) return MAPI_E_NO_ACCESS;
 
 	/*
@@ -232,13 +224,10 @@ static enum MAPISTATUS ldb_delete_profile(TALLOC_CTX *mem_ctx,
 {
 	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
 	struct ldb_result	*res;
-	char			*ldb_filter;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
 
-	ldb_filter = talloc_asprintf(mem_ctx, "(cn=%s)(cn=Profiles)", profname);
-	ret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), scope, ldb_filter, attrs, &res);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profname);
 	if (!res->msgs) return MAPI_E_NOT_FOUND;
 
 	ret = ldb_delete(ldb_ctx, res->msgs[0]->dn);
@@ -267,7 +256,6 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(const char *profile,
 	struct ldb_context		*ldb_ctx;
 	struct ldb_dn			*basedn;
 	char				*dn;
-	char				*ldb_filter;
 	int				ret;
 	const char * const		attrs[] = { "*", NULL };
 
@@ -279,9 +267,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(const char *profile,
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 
 	/* Retrieve the profile from the database */
-	ldb_filter = talloc_asprintf(mem_ctx, "(cn=%s)(cn=Profiles)", profile);
-	ret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), scope, ldb_filter, attrs, &res);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profile);
 	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_BAD_VALUE, mem_ctx);
 
 	/* Preparing for the transaction */
@@ -324,7 +310,6 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_modify_string_attr(const char *profname,
 	struct ldb_context		*ldb_ctx;
 	struct ldb_dn			*basedn;
 	char				*dn;
-	char				*ldb_filter;
 	int				ret;
 	const char * const		attrs[] = { "*", NULL };
 
@@ -335,9 +320,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_modify_string_attr(const char *profname,
 	mem_ctx = talloc_init("mapi_profile_modify_string_attr");
 
 	/* Retrieve the profile from the database */
-	ldb_filter = talloc_asprintf(mem_ctx, "(cn=%s)(cn=Profiles)", profname);
-	ret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), scope, ldb_filter, attrs, &res);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profname);
 	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_BAD_VALUE, mem_ctx);
 
 	/* Preparing for the transaction */
@@ -381,7 +364,6 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_delete_string_attr(const char *profname,
 	struct ldb_context		*ldb_ctx;
 	struct ldb_dn			*basedn;
 	char				*dn;
-	char				*ldb_filter;
 	int				ret;
 	const char * const		attrs[] = { "*", NULL };
 
@@ -392,9 +374,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_delete_string_attr(const char *profname,
 	mem_ctx = talloc_init("mapi_profile_delete_string_attr");
 
 	/* Retrieve the profile from the database */
-	ldb_filter = talloc_asprintf(mem_ctx, "(cn=%s)(cn=Profiles)", profname);
-	ret = ldb_search(ldb_ctx, ldb_get_default_basedn(ldb_ctx), scope, ldb_filter, attrs, &res);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profname);
 	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_BAD_VALUE, mem_ctx);
 
 	/* Preparing for the transaction */
@@ -946,7 +926,7 @@ _PUBLIC_ enum MAPISTATUS GetProfileTable(struct SRowSet *proftable)
 	mem_ctx = (TALLOC_CTX *)ldb_ctx;
 
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
-	ret = ldb_search(ldb_ctx, basedn, scope, "(cn=*)", attrs, &res);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, scope, attrs, "(cn=*)");
 	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
 
 	/* Allocate Arow */
@@ -1007,7 +987,6 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 	struct ldb_message		*msg;
 	struct ldb_message_element	*ldb_element;
 	struct ldb_dn			*basedn;
-	char				*ldb_filter;
 	const char			*attrs[] = {"*", NULL};
 	int				ret;
 	int				i;
@@ -1020,10 +999,8 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
-	ldb_filter = talloc_asprintf(mem_ctx, "(cn=%s)", profile->profname);
 
-	ret = ldb_search(ldb_ctx, basedn, LDB_SCOPE_SUBTREE, ldb_filter, attrs, &res);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, LDB_SCOPE_SUBTREE, attrs, "(cn=%s)", profile->profname);
 	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
 
 	msg = res->msgs[0];
@@ -1060,7 +1037,6 @@ _PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile, const cha
 	struct ldb_message_element	*ldb_element;
 	struct ldb_val			val;
 	struct ldb_dn			*basedn;
-	char				*ldb_filter;
 	const char			*attrs[] = {"*", NULL};
 	int				ret;
 
@@ -1073,10 +1049,8 @@ _PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile, const cha
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
-	ldb_filter = talloc_asprintf(mem_ctx, "(CN=%s)", profile->profname);
 
-	ret = ldb_search(ldb_ctx, basedn, LDB_SCOPE_SUBTREE, ldb_filter, attrs, &res);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, LDB_SCOPE_SUBTREE, attrs, "(CN=%s)", profile->profname);
 	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
 	MAPI_RETVAL_IF(!res->count, MAPI_E_NOT_FOUND, NULL);
 

@@ -133,7 +133,7 @@ NTSTATUS mpm_cache_ldb_add_message(TALLOC_CTX *mem_ctx,
 	dn = ldb_dn_new(mem_ctx, ldb_ctx, basedn);
 	talloc_free(basedn);
 	if (!dn) return NT_STATUS_UNSUCCESSFUL;
-	ret = ldb_search(ldb_ctx, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	if (ret == LDB_SUCCESS && !res->count) {
 		DEBUG(5, ("* [%s:%d] We have to create folder TDB record: CN=0x%"PRIx64",CN=Cache\n", 
 			  MPM_LOCATION, message->FolderId));
@@ -147,7 +147,7 @@ NTSTATUS mpm_cache_ldb_add_message(TALLOC_CTX *mem_ctx,
 	dn = ldb_dn_new(mem_ctx, ldb_ctx, basedn);
 	talloc_free(basedn);
 	if (!dn) return NT_STATUS_UNSUCCESSFUL;
-	ret = ldb_search(ldb_ctx, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	if (res->count) return NT_STATUS_OK;
 
 	/* Create the CN=Message,CN=Folder,CN=Cache */
@@ -201,7 +201,7 @@ NTSTATUS mpm_cache_ldb_add_attachment(TALLOC_CTX *mem_ctx,
 	dn = ldb_dn_new(mem_ctx, ldb_ctx, basedn);
 	talloc_free(basedn);
 	if (!dn) return NT_STATUS_UNSUCCESSFUL;
-	ret = ldb_search(ldb_ctx, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_BASE, NULL, NULL);
 	if (ret == LDB_SUCCESS && res->count) return NT_STATUS_OK;
 
 	DEBUG(2, ("* [%s:%d] Create the attachment TDB record\n", MPM_LOCATION));
@@ -276,7 +276,8 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 		if (!dn) return NT_STATUS_UNSUCCESSFUL;
 		
 		attribute = talloc_asprintf(mem_ctx, "(0x%x=*)", stream->PropertyTag);
-		ret = ldb_search(ldb_ctx, dn, LDB_SCOPE_BASE, (const char *)attribute, attrs, &res);
+		ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_BASE, attrs, 
+						 attribute);
 		talloc_free(attribute);
 
 		if (ret == LDB_SUCCESS && res->count == 1) {
@@ -309,7 +310,7 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 		if (!dn) return NT_STATUS_UNSUCCESSFUL;
 
 		attribute = talloc_asprintf(mem_ctx, "(0x%x=*)", stream->PropertyTag);
-		ret = ldb_search(ldb_ctx, dn, LDB_SCOPE_BASE, (const char *)attribute, attrs, &res);
+		ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_BASE, attrs, attribute);
 		talloc_free(attribute);
 
 		if (ret == LDB_SUCCESS && res->count == 1) {

@@ -300,11 +300,6 @@ if test x"$enable_libpopt" = x"yes"; then
 	OC_RULE_ADD(locale_codepage, TOOLS)
 fi
 
-dnl ##########################################################################
-dnl mapiproxy
-dnl ##########################################################################
-OC_RULE_ADD(mapiproxy, TOOLS)
-
 dnl --------------------------------------------------------------------------
 dnl Check for libmagic
 dnl --------------------------------------------------------------------------
@@ -344,11 +339,10 @@ if test x"$SMBTORTURE" != x""; then
 fi
 
 
-
 dnl ##########################################################################
-dnl Server compilation
+dnl mapiproxy server
 dnl ##########################################################################
-OC_RULE_ADD(server, SERVER)
+OC_RULE_ADD(mapiproxy, SERVER)
 
 AC_ARG_WITH(modulesdir, 
 [AS_HELP_STRING([--with-modulesdir], [Modules path to use])],

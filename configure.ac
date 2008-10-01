@@ -145,6 +145,19 @@ if test x"$PIDL" = x""; then
 fi
 AC_SUBST(PIDL)
 
+dnl ---------------------------------------------------------------------------
+dnl Check for Python
+dnl ---------------------------------------------------------------------------
+
+dnl FIXME: Checks for Python?
+PYTHON=python
+
+AC_MSG_CHECKING(python library directory)
+pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
+AC_MSG_RESULT($pythondir)
+
+AC_SUBST(pythondir)
+
 dnl ----------------------------------------------------------------------------
 dnl Check for Flex
 dnl ----------------------------------------------------------------------------

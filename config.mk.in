@@ -20,6 +20,7 @@ datadir=@datadir@
 includedir=@includedir@
 mandir=@mandir@
 top_builddir=@builddir@
+pythondir=@pythondir@
 
 sambaprefix=@sambaprefix@
 

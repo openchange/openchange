@@ -195,12 +195,12 @@ dnl ###########################################################################
 dnl ---------------------------------------------------------------------------
 dnl Check for g++
 dnl ---------------------------------------------------------------------------
-AC_CACHE_CHECK([C++ compiler availability], [libmapixx_gxx_works],
+AC_CACHE_CHECK([C++ compiler availability], [ac_cv_libmapixx_gxx_works],
 	       [
 		AC_LANG_PUSH([C++])
 		AC_COMPILE_IFELSE([int main() { return 0; }], 
-				  [libmapixx_gxx_works=yes],
-				  [libmapixx_gxx_works=no])
+				  [ac_cv_libmapixx_gxx_works=yes],
+				  [ac_cv_libmapixx_gxx_works=no])
 		AC_LANG_POP([C++])
 		])
 
@@ -224,7 +224,7 @@ AC_CACHE_CHECK([for boost_thread$BOOST_LIB_SUFFIX library], [ov_cv_boost_thread]
 	       ])
 
 
-if test x"$libmapixx_gxx_works" = "xyes"; then
+if test x"$ac_cv_libmapixx_gxx_works" = "xyes"; then
    if test x"$ov_cv_boost_thread" = "xyes"; then
       AC_PROG_CXX 
       OC_RULE_ADD(libmapixx, LIBS)

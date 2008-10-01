@@ -20,24 +20,22 @@ error_check() {
 
 cleanup_talloc() {
     # cleanup existing talloc installation
-    if test -f samba4/source/lib/talloc/Makefile; then
+    if test -f samba4/lib/talloc/Makefile; then
 	echo "Step0: cleaning up talloc directory"
 	OLD_PWD=$PWD
-	cd samba4/source/lib/talloc
+	cd samba4/lib/talloc
 	make realdistclean
-	rm -rf ../replace/*.o ../replace/*.ho
 	cd $OLD_PWD
     fi
 }
 
 cleanup_tdb() {
     # cleanup existing tdb installation
-    if test -f samba/source/lib/tdb/Makefile; then
+    if test -f samba/lib/tdb/Makefile; then
 	echo "Step0: cleaning up tdb directory"
 	OLD_PWD=$PWD
-	cd samba4/source/lib/tdb
+	cd samba4/lib/tdb
 	make realdistclean
-	rm -rf ../replace/*.o ../replace/*.ho
 	cd $OLD_PWD
     fi
 }
@@ -160,8 +158,8 @@ download() {
 # Apply patches to samba4
 #
 patch() {
-    echo "Step1: Patching samba4/source/lib/events/events.h"
-    sed -i 's/void\s*\*private/void \*private_data/g' samba4/source/lib/events/events.h
+    echo "Step1: Patching samba4/source4/lib/events/events.h"
+    sed -i 's/void\s*\*private/void \*private_data/g' samba4/source4/lib/events/events.h
     error_check $? "Step1"
 
     return $?
@@ -177,10 +175,7 @@ packages() {
     delete_install
 
     echo "Step1: Installing talloc library"
-    cd samba4/source/lib/talloc
-    error_check $? "Step1"
-
-    rm -rf ../replace/*.o ../replace/*.ho
+    cd samba4/lib/talloc
     error_check $? "Step1"
 
     ./autogen.sh
@@ -196,16 +191,13 @@ packages() {
     error_check $? "Step1"
 
     make realdistclean
-    error_check $? "Step1"
-
-    rm -rf ../replace/*.o ../replace/*.ho
     error_check $? "Step1"
 
     cd $OLD_PWD
 
     echo "Step2: Installing tdb library"
 
-    cd samba4/source/lib/tdb
+    cd samba4/lib/tdb
     error_check $? "Step2"
 
     ./autogen.sh
@@ -221,9 +213,6 @@ packages() {
     error_check $? "Step2"
 
     make realdistclean
-    error_check $? "Step2"
-
-    rm -rf ../replace/*.o ../replace/*.ho
     error_check $? "Step2"
 
     cd $OLD_PWD
@@ -244,7 +233,7 @@ compile() {
 	# Cleanup tdb and talloc directories
 
     echo "Step1: Preparing Samba4 system"
-    cd samba4/source
+    cd samba4/source4
     error_check $? "Step1"
 
     ./autogen.sh
@@ -270,7 +259,7 @@ install() {
 
     echo "Step1: Installing Samba"
     echo "===> we are in $PWD"
-    cd samba4/source
+    cd samba4/source4
     error_check $? "Step1"
 
     sudo make install

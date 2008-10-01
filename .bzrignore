@@ -55,3 +55,6 @@ utils/mapitest/mapitest_proto.h
 utils/mapitest/proto.h
 samba4
 tags
+bin/exchange2ical
+libmapi/mapi_namedid.h
+libmapi/mapi_nameid.h

@@ -1,6 +1,6 @@
 #include "idl_types.h"
 
-import "misc.idl";
+cpp_quote("#include <gen_ndr/ndr_misc.h>")
 
 /*
    http://support.microsoft.com/default.aspx?scid=KB;en-us;q159298

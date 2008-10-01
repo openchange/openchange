@@ -218,8 +218,6 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 gen_ndr/property.h $(DESTDIR)$(includedir)/gen_ndr/
 
 libmapi-installscript:
-	$(INSTALL) -d $(DESTDIR)$(datadir)/js
-	# $(INSTALL) -m 0644 scripting/libjs/oc_profiles.js $(DESTDIR)$(datadir)/js/
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
 	# $(INSTALL) -m 0644 setup/oc_profiles* $(DESTDIR)$(datadir)/setup/
 
@@ -235,7 +233,6 @@ libmapi-uninstallheader:
 	rm -f $(DESTDIR)$(includedir)/gen_ndr/property.h
 
 libmapi-uninstallscript:
-	rm -f $(DESTDIR)$(datadir)/js/oc_profiles.js
 	rm -f $(DESTDIR)$(datadir)/setup/oc_profiles*
 
 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
@@ -697,14 +694,11 @@ server:		providers/providers_proto.h server/dcesrv_proto.h	\
 
 server-install:
 	$(INSTALL) -m 0755 server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -d $(DESTDIR)$(datadir)/js
-	# $(INSTALL) -m 0644 scripting/libjs/oc_provision.js $(DESTDIR)$(datadir)/js/
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
 	# $(INSTALL) -m 0644 setup/oc_provision* $(DESTDIR)$(datadir)/setup/
 
 server-uninstall:
 	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_exchange.*
-	rm -f $(DESTDIR)$(datadir)/js/oc_provision.js
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif

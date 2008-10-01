@@ -144,10 +144,9 @@ struct tce_async_context {
 	int	found;
 };
 
-static int tce_search_callback(struct ldb_context *ldb, void *context, 
-			       struct ldb_reply *ares)
+static int tce_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct tce_async_context *actx = talloc_get_type(context, struct tce_async_context);
+	struct tce_async_context *actx = talloc_get_type(req->context, struct tce_async_context);
 	int ret;
 
         switch (ares->type) {
@@ -301,7 +300,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 
 	tce_ctx = talloc_zero(mem_ctx, struct tce_async_context);
 	req->context = tce_ctx;
-	req->callback = &tce_search_callback;
+	req->callback = tce_search_callback;
 	ldb_set_timeout(mem_ctx, req, 60);
 
 	ret = ldb_request(remote_ldb, req);
@@ -311,10 +310,8 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	ret =  ldb_modify(remote_ldb, msg);
 	MAPI_RETVAL_IF((ret != 0), MAPI_E_CORRUPT_DATA, mem_ctx);
 	
-	while ((tce_ctx->found == 0) && (req->handle->state != LDB_ASYNC_DONE)) {
-		ret = ldb_wait(req->handle, LDB_WAIT_NONE);
-		MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CALL_FAILED, mem_ctx);
-	}
+	ret = ldb_wait(req->handle, LDB_WAIT_NONE);
+	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CALL_FAILED, mem_ctx);
 	MAPI_RETVAL_IF(!tce_ctx->found, MAPI_E_CALL_FAILED, mem_ctx);
 
 	/* If successful replace UserAccountControl attr in the user

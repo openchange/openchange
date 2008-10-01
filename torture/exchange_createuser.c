@@ -52,9 +52,9 @@ struct tce_async_context {
 	int found;
 };
 
-static int tce_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
+static int tce_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-        struct tce_async_context *actx = talloc_get_type(context, struct tce_async_context);
+        struct tce_async_context *actx = talloc_get_type(req->context, struct tce_async_context);
 	int ret;
 
         switch (ares->type) {
@@ -195,7 +195,7 @@ NTSTATUS torture_exchange_createuser(TALLOC_CTX *mem_ctx, const char *username,
 
 		tce_ctx = talloc_zero(mem_ctx, struct tce_async_context);
 		req->context = tce_ctx;
-		req->callback = &tce_search_callback;
+		req->callback = tce_search_callback;
 		ldb_set_timeout(mem_ctx, req, 60);
 
 		rtn = ldb_request(remote_ldb, req);
@@ -213,12 +213,10 @@ NTSTATUS torture_exchange_createuser(TALLOC_CTX *mem_ctx, const char *username,
 		int rtn;
 
 		DEBUG(0, ("Waiting for Exchange mailbox creation\n"));
-		while ((tce_ctx->found == 0) && (req->handle->state != LDB_ASYNC_DONE)) {
-			rtn = ldb_wait(req->handle, LDB_WAIT_NONE);
-			if (rtn != LDB_SUCCESS) {
-				printf("rtn = %d (loop - unsuccessful)\n", rtn);
-				return NT_STATUS_UNSUCCESSFUL;
-			}
+		rtn = ldb_wait(req->handle, LDB_WAIT_NONE);
+		if (rtn != LDB_SUCCESS) {
+			printf("rtn = %d (loop - unsuccessful)\n", rtn);
+			return NT_STATUS_UNSUCCESSFUL;
 		}
 		if (!tce_ctx->found) { /* timeout */
 			printf("Timeout\n");

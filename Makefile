@@ -692,12 +692,12 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 server:		providers/providers_proto.h server/dcesrv_proto.h	\
 		server/dcesrv_exchange.$(SHLIBEXT)			
 
-server-install:
+server-install: python-install
 	$(INSTALL) -m 0755 server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
-	# $(INSTALL) -m 0644 setup/oc_provision* $(DESTDIR)$(datadir)/setup/
+	$(INSTALL) -m 0644 setup/oc_provision* $(DESTDIR)$(datadir)/setup/
 
-server-uninstall:
+server-uninstall: python-uninstall
 	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_exchange.*
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
@@ -1113,17 +1113,19 @@ bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKA
 # python code
 ###################
 
-pythonscriptdir = scripting/python
+pythonscriptdir = python
 
-PYTHON_MODULES = `find -name "*.py" $(pythonscriptdir)`
+PYTHON_MODULES = $(patsubst $(pythonscriptdir)/%,%,$(shell find  $(pythonscriptdir) -name "*.py"))
 
-install-python::
-	$(INSTALL) -d $(dir $(foreach $(pythonscriptdir)/%,%,$(PYTHON_MODULES)))
-	$(foreach $(pythonscriptdir)
+python-install::
+	@echo "Installing Python modules"
+	@$(foreach MODULE, $(PYTHON_MODULES), \
+		$(INSTALL) -d $(DESTDIR)$(pythondir)/$(dir $(MODULE)); \
+		$(INSTALL) -m 0644 $(pythonscriptdir)/$(MODULE) $(DESTDIR)$(pythondir)/$(dir $(MODULE)); \
+	)
 
-uninstall-python::
-	rm -f $(foreach $(pythonscriptdir)/%,$(DESTDIR)$(pythondir)/%,$(PYTHON_MODULES))
-
+python-uninstall::
+	rm -rf $(DESTDIR)$(pythondir)/openchange
 
 ###################
 # nagios plugin

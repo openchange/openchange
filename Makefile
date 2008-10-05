@@ -1127,6 +1127,11 @@ python-install::
 python-uninstall::
 	rm -rf $(DESTDIR)$(pythondir)/openchange
 
+EPYDOC_OPTIONS = --no-private --url http://www.openchange.org/ --no-sourcecode
+
+epydoc::
+	PYTHONPATH=$(pythonscriptdir) epydoc $(EPYDOC_OPTIONS) openchange
+
 ###################
 # nagios plugin
 ###################

@@ -3268,6 +3268,7 @@ System Attendant Private Interface
 		uint8		Hour;
 		DayOfWeek	DayOfWeek;
 		uint8		Day;
+		uint8		Month;
 		uint16		Year;
 	} LogonTime;
 

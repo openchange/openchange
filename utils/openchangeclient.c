@@ -130,48 +130,71 @@ static char *utf8tolinux(TALLOC_CTX *mem_ctx, const char *wstring)
 	return newstr;
 }
 
-static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx, 
+static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 					       mapi_object_t *obj_container,
 					       mapi_object_t *obj_child,
-					       const char *folder)
+					       const char *path)
 {
 	enum MAPISTATUS		retval;
-	struct SPropTagArray	*SPropTagArray;
-	struct SRowSet		rowset;
+	struct SPropTagArray	*SPropTagArray = NULL;
+	struct SRowSet		SRowSet;
 	mapi_object_t		obj_htable;
+	mapi_object_t		obj_folder;
 	char			*newname;
+	const char     		**folder  = NULL;
 	const char		*name;
 	const uint64_t		*fid;
+	const uint32_t		*child;
+	bool			found = false;
 	uint32_t		index;
+	uint32_t		i;
 
-	mapi_object_init(&obj_htable);
-	retval = GetHierarchyTable(obj_container, &obj_htable, 0, NULL);
-	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+	/* Step 1. Extract the folder list from full path */
+	folder = str_list_make(mem_ctx, path, "/");
+	mapi_object_copy(&obj_folder, obj_container);
 
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
-					  PR_DISPLAY_NAME,
-					  PR_FID);
-	retval = SetColumns(&obj_htable, SPropTagArray);
-	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
-	
-	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
-		for (index = 0; index < rowset.cRows; index++) {
-			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
-			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
+	for (i = 0; folder[i]; i++) {
+		found = false;
 
-			newname = utf8tolinux(mem_ctx, name);
-			if (newname && fid && !strcmp(newname, folder)) {
-				retval = OpenFolder(obj_container, *fid, obj_child);
-				MAPI_RETVAL_IF(retval, GetLastError(), NULL);
-				return MAPI_E_SUCCESS;
+		mapi_object_init(&obj_htable);
+		retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
+		MAPI_RETVAL_IF(retval, GetLastError(), folder);
+
+		SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
+						  PR_DISPLAY_NAME,
+						  PR_FID,
+						  PR_FOLDER_CHILD_COUNT);
+		retval = SetColumns(&obj_htable, SPropTagArray);
+		MAPIFreeBuffer(SPropTagArray);
+		MAPI_RETVAL_IF(retval, retval, folder);
+
+		while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
+			for (index = 0; index < SRowSet.cRows || found == false; index++) {
+				fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[index], PR_FID);
+				name = (const char *)find_SPropValue_data(&SRowSet.aRow[index], PR_DISPLAY_NAME);
+				child = (const uint32_t *)find_SPropValue_data(&SRowSet.aRow[index], PR_FOLDER_CHILD_COUNT);
+
+				newname = utf8tolinux(mem_ctx, name);
+				if (newname && fid && !strcmp(newname, folder[i])) {
+					retval = OpenFolder(&obj_folder, *fid, obj_child);
+					MAPI_RETVAL_IF(retval, GetLastError(), folder);
+
+					found = true;
+					mapi_object_copy(&obj_folder, obj_child);
+				}
+				MAPIFreeBuffer(newname);
 			}
-			MAPIFreeBuffer(newname);
 		}
+
+		mapi_object_release(&obj_htable);
 	}
 
-	return MAPI_E_NOT_FOUND;
+	talloc_free(folder);
+	MAPI_RETVAL_IF(found == false, MAPI_E_NOT_FOUND, NULL);
+
+	return MAPI_E_SUCCESS;
 }
+
 
 static enum MAPISTATUS openchangeclient_getpfdir(TALLOC_CTX *mem_ctx, 
 						 mapi_object_t *obj_store,
@@ -386,6 +409,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 	enum MAPISTATUS			retval;
 	bool				status;
 	TALLOC_CTX			*mem_ctx;
+	mapi_object_t			obj_tis;
 	mapi_object_t			obj_inbox;
 	mapi_object_t			obj_message;
 	mapi_object_t			obj_table;
@@ -404,6 +428,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 	
 	mem_ctx = talloc_init("openchangeclient_fetchmail");
 
+	mapi_object_init(&obj_tis);
 	mapi_object_init(&obj_inbox);
 	mapi_object_init(&obj_table);
 
@@ -411,11 +436,22 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_inbox, oclient->folder);
 		MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
 	} else {
-		retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
-		MAPI_RETVAL_IF(retval, retval, mem_ctx);
+		if (oclient->folder) {
+			retval = GetDefaultFolder(obj_store, &id_inbox, olFolderTopInformationStore);
+			MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-		retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
-		MAPI_RETVAL_IF(retval, retval, mem_ctx);
+			retval = OpenFolder(obj_store, id_inbox, &obj_tis);
+			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+			retval = openchangeclient_getdir(mem_ctx, &obj_tis, &obj_inbox, oclient->folder);
+			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+		} else {
+			retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
+			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+			retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
+			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+		}
 	}
 
 	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
@@ -521,6 +557,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 
 	mapi_object_release(&obj_table);
 	mapi_object_release(&obj_inbox);
+	mapi_object_release(&obj_tis);
 
 	talloc_free(mem_ctx);
 
@@ -1664,6 +1701,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 					struct oclient *oclient)
 {
 	enum MAPISTATUS			retval;
+	mapi_object_t			obj_tis;
 	mapi_object_t			obj_folder;
 	mapi_object_t			obj_table;
 	mapi_object_t			obj_message;
@@ -1678,6 +1716,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	
 	if (!item) return false;
 
+	mapi_object_init(&obj_tis);
 	mapi_object_init(&obj_folder);
 
 	for (i = 0; defaultFolders[i].olFolder; i++) {
@@ -1692,12 +1731,23 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_folder, oclient->folder);
 		if (retval != MAPI_E_SUCCESS) return retval;
 	} else {
-		retval = GetDefaultFolder(obj_store, &fid, olFolder);
-		if (retval != MAPI_E_SUCCESS) return false;
+		if (oclient->folder) {
+			retval = GetDefaultFolder(obj_store, &fid, olFolderTopInformationStore);
+			MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-		/* We now open the folder */
-		retval = OpenFolder(obj_store, fid, &obj_folder);
-		if (retval != MAPI_E_SUCCESS) return false;
+			retval = OpenFolder(obj_store, fid, &obj_tis);
+			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+			retval = openchangeclient_getdir(mem_ctx, &obj_tis, &obj_folder, oclient->folder);
+			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+		} else {
+			retval = GetDefaultFolder(obj_store, &fid, olFolder);
+			if (retval != MAPI_E_SUCCESS) return false;
+
+			/* We now open the folder */
+			retval = OpenFolder(obj_store, fid, &obj_folder);
+			if (retval != MAPI_E_SUCCESS) return false;
+		}
 	}
 
 	/* Operations on the  folder */
@@ -1762,6 +1812,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	
 	mapi_object_release(&obj_table);
 	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_tis);
 
 	return true;
 }

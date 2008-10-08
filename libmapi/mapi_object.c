@@ -109,6 +109,30 @@ int mapi_object_is_invalid(mapi_object_t *obj)
 	return MAPI_E_SUCCESS;
 }
 
+/**
+   \details Copy MAPI object
+
+   This function copies mapi_object data from source to destination.
+
+   \param dst pointer on the destination mapi object
+   \param src pointer on the source mapi object
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_INITIALIZED
+
+ */
+_PUBLIC_ enum MAPISTATUS mapi_object_copy(mapi_object_t *dst, mapi_object_t *src)
+{
+	mapi_object_reset(dst);
+
+	MAPI_RETVAL_IF(!dst || !src, MAPI_E_NOT_INITIALIZED, NULL);
+
+	dst->id = src->id;
+	dst->handle = src->handle;
+	dst->private_data = src->private_data;
+
+	return MAPI_E_SUCCESS;
+}
+
 
 /**
    \details Retrieve an object ID for a given MAPI object

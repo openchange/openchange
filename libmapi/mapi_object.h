@@ -77,6 +77,14 @@ typedef struct mapi_obj_store
 	uint64_t	fid_pf_LocalSiteFreeBusy;
 	uint64_t	fid_pf_LocalSiteOfflineAB;
 	uint64_t	fid_pf_NNTPArticle;
+	/* cached data */
+	bool		cached_mailbox_fid;
+	uint64_t	fid_calendar;
+	uint64_t	fid_contact;
+	uint64_t	fid_journal;
+	uint64_t	fid_note;
+	uint64_t	fid_task;
+	uint64_t	fid_drafts;
 } mapi_object_store_t;
 
 

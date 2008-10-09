@@ -119,7 +119,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
 	store->fid_pf_LocalSiteFreeBusy = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[7];
 	store->fid_pf_LocalSiteOfflineAB = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[8];
 	store->fid_pf_NNTPArticle = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[9];
-	
+	store->cached_mailbox_fid = false;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -225,6 +225,7 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 	store->fid_search = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[10];
 	store->fid_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[11];
 	store->fid_shortcuts = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[12];
+	store->cached_mailbox_fid = false;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

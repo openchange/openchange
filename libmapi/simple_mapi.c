@@ -106,6 +106,94 @@ _PUBLIC_ enum MAPISTATUS GetDefaultPublicFolder(mapi_object_t *obj_store,
 }
 
 
+static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
+{
+	enum MAPISTATUS		retval;
+	TALLOC_CTX		*mem_ctx;
+	mapi_object_store_t	*store;
+	mapi_object_t		obj_inbox;
+	mapi_id_t		id_inbox;
+	struct SPropTagArray	*SPropTagArray = NULL;
+	struct SRow		aRow;
+	struct SPropValue	*lpProps;
+	uint32_t		count;
+	const struct Binary_r	*entryid;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+
+	store = (mapi_object_store_t *)obj_store->private_data;
+	MAPI_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mem_ctx = talloc_init("GetDefaultFolder");
+
+	mapi_object_init(&obj_inbox);
+	retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	
+	retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
+					  PR_IPM_APPOINTMENT_ENTRYID,
+					  PR_IPM_CONTACT_ENTRYID,
+					  PR_IPM_JOURNAL_ENTRYID,
+					  PR_IPM_NOTE_ENTRYID,
+					  PR_IPM_TASK_ENTRYID,
+					  PR_IPM_DRAFTS_ENTRYID);
+	
+	retval = GetProps(&obj_inbox, SPropTagArray, &lpProps, &count);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	
+	aRow.cValues = count;
+	aRow.lpProps = lpProps;
+	
+	/* set cached calendar FID */
+	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_APPOINTMENT_ENTRYID);
+	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_calendar);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	
+	/* set cached contact FID */
+	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_CONTACT_ENTRYID);
+	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_contact);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	
+	/* set cached journal FID */
+	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_JOURNAL_ENTRYID);
+	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_journal);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	
+	/* set cached note FID */
+	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_NOTE_ENTRYID);
+	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_note);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	
+	/* set cached task FID */
+	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_TASK_ENTRYID);
+	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_task);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	
+	/* set cached drafts FID */
+	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_DRAFTS_ENTRYID);
+	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_drafts);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	
+	store->cached_mailbox_fid = true;
+	
+	mapi_object_release(&obj_inbox);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
 /**
    \details Retrieves the folder id for the specified default folder
    in a mailbox store
@@ -127,7 +215,11 @@ _PUBLIC_ enum MAPISTATUS GetDefaultPublicFolder(mapi_object_t *obj_store,
    - olFolderTasks
    - olFolderDrafts
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   Note that this function will cache FID values for common accessed
+   folders such as calendar, contact, journal, note, task and drafts
+   until the store object got released.
+
+o   \return MAPI_E_SUCCESS on success, otherwise -1.
 
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
@@ -143,81 +235,131 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 					  const uint32_t id)
 {
 	enum MAPISTATUS			retval;
-	mapi_object_t			obj_inbox;
-	mapi_id_t			id_inbox;
-	struct mapi_SPropValue_array	properties_array;
-	const struct SBinary_short     	*entryid;
+	mapi_object_store_t		*store;
 
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_object_init(&obj_inbox);
-	retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	store = (mapi_object_store_t *)obj_store->private_data;
+	MAPI_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);
 
-	if (id > 6) {
-		retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
-		MAPI_RETVAL_IF(retval, retval, NULL);
-
-		retval = GetPropsAll(&obj_inbox, &properties_array);
+	if ((id > 6) && (store->cached_mailbox_fid == false)) {
+		retval = CacheDefaultFolders(obj_store);
 		MAPI_RETVAL_IF(retval, retval, NULL);
 	} 
-	mapi_object_release(&obj_inbox);
 
 	switch (id) {
 	case olFolderTopInformationStore:
-		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_top_information_store;
+		*folder = store->fid_top_information_store;
 		return MAPI_E_SUCCESS;
 	case olFolderDeletedItems:
-		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_deleted_items;
+		*folder = store->fid_deleted_items;
 		return MAPI_E_SUCCESS;
 	case olFolderOutbox:
-		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_outbox;
+		*folder = store->fid_outbox;
 		return MAPI_E_SUCCESS;
 	case olFolderSentMail:
-		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_sent_items;
+		*folder = store->fid_sent_items;
 		return MAPI_E_SUCCESS;
 	case olFolderInbox:
-		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_inbox;
+		*folder = store->fid_inbox;
 		return MAPI_E_SUCCESS;
 	case olFolderCommonView:
-		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_common_views;
+		*folder = store->fid_common_views;
 		return MAPI_E_SUCCESS;
 	case olFolderCalendar:
-		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_APPOINTMENT_ENTRYID);
-		break;
+		*folder = store->fid_calendar;
+		return MAPI_E_SUCCESS;
 	case olFolderContacts:
-		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_CONTACT_ENTRYID);
-		break;
+		*folder = store->fid_contact;
+		return MAPI_E_SUCCESS;
 	case olFolderJournal:
-		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_JOURNAL_ENTRYID);
-		break;
+		*folder = store->fid_journal;
+		return MAPI_E_SUCCESS;
 	case olFolderNotes:
-		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_NOTE_ENTRYID);
-		break;		
+		*folder = store->fid_note;
+		return MAPI_E_SUCCESS;
 	case olFolderTasks:
-		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_TASK_ENTRYID);
-		break;
+		*folder = store->fid_task;
+		return MAPI_E_SUCCESS;
 	case olFolderDrafts:
-		entryid = (const struct SBinary_short *)find_mapi_SPropValue_data(&properties_array, PR_IPM_DRAFTS_ENTRYID);
-		break;		
+		*folder = store->fid_drafts;
+		return MAPI_E_SUCCESS;
 	case olFolderFinder:
-		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_search;
+		*folder = store->fid_search;
 		return MAPI_E_SUCCESS;
 	default:
 		*folder = 0;
 		return MAPI_E_NOT_FOUND;
 	}
 
-	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, NULL);
-
-	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, folder);
-	MAPI_RETVAL_IF(retval, retval, NULL);
-
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details Check if a given folder identifier matches with a
+   system/default one and optionally returns the olFolder type
+
+   \param obj_store pointer to the store object
+   \param fid reference to the folder identifier to check
+   \param olFolder pointer to the returned olFolder
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool IsMailboxFolder(mapi_object_t *obj_store, 
+			      uint64_t fid, 
+			      uint32_t *olFolder)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_store_t	*store;
+	uint32_t		olFolderNum;
+	bool			ret = true;
+
+	if (!obj_store) return false;
+	store = (mapi_object_store_t *) obj_store->private_data;
+	if (!store) return false;
+
+	if (store->cached_mailbox_fid == false) {
+		retval = CacheDefaultFolders(obj_store);
+		if (retval) return false;
+	}
+
+	if(fid == store->fid_top_information_store) {
+		olFolderNum = olFolderTopInformationStore;
+	} else if (fid == store->fid_deleted_items) {
+		olFolderNum = olFolderDeletedItems;
+	} else if (fid == store->fid_outbox) {
+		olFolderNum = olFolderOutbox;
+	} else if (fid == store->fid_sent_items) {
+		olFolderNum = olFolderSentMail;
+	} else if (fid == store->fid_inbox) {
+		olFolderNum = olFolderInbox;
+	} else if (fid == store->fid_common_views) {
+		olFolderNum = olFolderCommonView;
+	} else if (fid == store->fid_calendar) {
+		olFolderNum = olFolderCalendar;
+	} else if (fid == store->fid_contact) {
+		olFolderNum = olFolderContacts;
+	} else if (fid == store->fid_journal) {
+		olFolderNum = olFolderJournal;
+	} else if (fid == store->fid_note) {
+		olFolderNum = olFolderNotes;
+	} else if (fid == store->fid_task) {
+		olFolderNum = olFolderTasks;
+	} else if (fid == store->fid_drafts) {
+		olFolderNum = olFolderDrafts;
+	} else if (fid == store->fid_search) {
+		olFolderNum = olFolderFinder;
+	} else {
+		olFolderNum = -1;
+		ret = false;
+	}
+
+	if (olFolder) *olFolder = olFolderNum;
+	return ret;
+}
 
 /**
    \details Retrieves the total and unread number of items for a

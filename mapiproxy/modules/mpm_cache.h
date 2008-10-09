@@ -39,8 +39,7 @@
 #endif
 
 struct mpm_message {
-	struct server_id	server_id;
-	uint32_t		context_id;
+	struct mpm_session	*session;
 	uint32_t		handle;
 	uint64_t       		FolderId;
 	uint64_t       		MessageId;
@@ -49,8 +48,7 @@ struct mpm_message {
 };
 
 struct mpm_attachment {
-	struct server_id	server_id;
-	uint32_t		context_id;
+	struct mpm_session	*session;
 	uint32_t		parent_handle;
 	uint32_t		handle;
 	uint32_t		AttachmentID;
@@ -63,8 +61,7 @@ struct mpm_attachment {
    A stream can either be for a message or attachment
  */
 struct mpm_stream {
-	struct server_id	server_id;
-	uint32_t		context_id;
+	struct mpm_session	*session;
 	uint32_t		parent_handle;
 	uint32_t		handle;
 	enum MAPITAGS		PropertyTag;
@@ -122,6 +119,6 @@ __END_DECLS
 #define	MPM_DB_STORAGE	"data"
 
 #define	MPM_LOCATION	__FUNCTION__, __LINE__
-#define	MPM_SESSION(x)	x->server_id.id, x->server_id.id2, x->server_id.node, x->context_id
+#define	MPM_SESSION(x)	x->session->server_id.id, x->session->server_id.id2, x->session->server_id.node, x->session->context_id
 
 #endif /* __MPM_CACHE_H */

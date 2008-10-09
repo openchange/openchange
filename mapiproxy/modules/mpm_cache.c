@@ -38,56 +38,6 @@
 
 struct mpm_cache *mpm = NULL;
 
-
-/**
-   \details Check if the server_id and context_id matches with the
-   session one.
-
-   \param sid reference to the session context server id structure
-   \param context_id reference to the session context id
-   \param sid2 reference to a mpm entry server id structure
-   \param context_id2 reference to a mpm_entry context id
-
-   \return 0 on success, otherwise -1.
- */
-static int cache_cmp_session_sub(struct server_id sid,  uint32_t context_id,
-				 struct server_id sid2, uint32_t context_id2)
-{
-	if ((sid.id == sid2.id) && (sid.id2 == sid2.id2) && 
-	    (sid.node == sid2.node) && (context_id == context_id2)) {
-		return 0;
-	}
-
-	return -1;
-}
-
-
-/**
-   \details Check if the server_id and context_id matches with the
-   session one.
-
-   This is a wrapper over cache_cmp_session_sub
-
-   \param dce_call pointer to the session context
-   \param sid2 reference to a mpm entry server id structure
-   \param context_id2 reference to a mpm_entry context id
-
-   \return 0 on success, otherwise -1.
- */
-static int cache_cmp_session(struct dcesrv_call_state *dce_call, 
-			     struct server_id sid2, 
-			     uint32_t context_id2)
-{
-	struct server_id	sid;
-	uint32_t		context_id;
-
-	sid = dce_call->conn->server_id;
-	context_id = dce_call->context->context_id;
-	
-	return cache_cmp_session_sub(sid, context_id, sid2, context_id2);
-}
-
-
 /**
    \details Find the position of the given MAPI call in a serialized
    MAPI request.
@@ -267,7 +217,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 
 	/* Look over messages */
 	for (message = mpm->messages; message; message = message->next) {
-		if (!cache_cmp_session(dce_call, message->server_id, message->context_id) &&
+		if ((mpm_session_cmp(message->session, dce_call) == true) &&
 		    (EcDoRpc->in.mapi_request->handles[handle_idx] == message->handle)) {
 			DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del: Message 0x%"PRIx64" 0x%"PRIx64": 0x%x\n", 
 				  MPM_LOCATION, MPM_SESSION(message), message->FolderId, 
@@ -276,7 +226,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 			/* Loop over children attachments */
 			attach = mpm->attachments;
 			while (attach) {
-				if (!cache_cmp_session(dce_call, attach->server_id, attach->context_id) &&
+				if ((mpm_session_cmp(attach->session, dce_call) == true) &&
 				    (message->handle == attach->parent_handle)) {
 					DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del recursive 1: Attachment %d: 0x%x\n", MPM_LOCATION,
 						  MPM_SESSION(attach), attach->AttachmentID, attach->handle));
@@ -284,10 +234,11 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 					/* Loop over children streams */
 					stream = mpm->streams;
 					while (stream) {
-						if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
+						if ((mpm_session_cmp(stream->session, dce_call) == true) &&
 						    (attach->handle == stream->parent_handle)) {
 							DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del recursive 1-2: Stream 0x%x\n", 
 								  MPM_LOCATION, MPM_SESSION(stream), stream->handle));
+							mpm_session_release(stream->session);
 							mpm_cache_stream_close(stream);
 							talloc_free(stream->filename);
 							DLIST_REMOVE(mpm->streams, stream);
@@ -298,6 +249,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 						}
 					}
 
+					mpm_session_release(attach->session);
 					DLIST_REMOVE(mpm->attachments, attach);
 					talloc_free(attach);
 					attach = mpm->attachments;
@@ -309,10 +261,11 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 			/* Look over children streams */
 			stream = mpm->streams;
 			while (stream) {
-				if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
+				if ((mpm_session_cmp(stream->session, dce_call) == true) &&
 				    (message->handle == stream->parent_handle)) {
 					DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del recursive 1: Stream 0x%x\n", 
 						  MPM_LOCATION, MPM_SESSION(stream), stream->handle));
+					mpm_session_release(stream->session);
 					mpm_cache_stream_close(stream);
 					DLIST_REMOVE(mpm->streams, stream);
 					talloc_free(stream->filename);
@@ -323,6 +276,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 				}
 			}
 
+			mpm_session_release(message->session);
 			DLIST_REMOVE(mpm->messages, message);
 			talloc_free(message);
 			return NT_STATUS_OK;
@@ -331,7 +285,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 
  	/* Look over attachments */
 	for (attach = mpm->attachments; attach; attach = attach->next) {
-		if (!cache_cmp_session(dce_call, attach->server_id, attach->context_id) && 
+		if ((mpm_session_cmp(attach->session, dce_call) == true) &&
 		    (EcDoRpc->in.mapi_request->handles[handle_idx] == attach->handle)) {
 			DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del: Attachment %d: 0x%x\n", MPM_LOCATION, 
 				  MPM_SESSION(attach), attach->AttachmentID, attach->handle));
@@ -340,10 +294,11 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 			/* Loop over children streams */
 			stream = mpm->streams;
 			while (stream) {
-				if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
+				if ((mpm_session_cmp(stream->session, dce_call) == true) &&
 				    (attach->handle == stream->parent_handle)) {
 					DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del recursive 2: Stream 0x%x\n", 
 						  MPM_LOCATION, MPM_SESSION(stream), stream->handle));
+					mpm_session_release(stream->session);
 					mpm_cache_stream_close(stream);
 					DLIST_REMOVE(mpm->streams, stream);
 					talloc_free(stream->filename);
@@ -354,6 +309,7 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 				}
 			}			
 
+			mpm_session_release(attach->session);
 			DLIST_REMOVE(mpm->attachments, attach);
 			talloc_free(attach);
 			return NT_STATUS_OK;
@@ -362,10 +318,11 @@ static NTSTATUS cache_pull_Release(struct dcesrv_call_state *dce_call,
 
 	/* Look over streams */
 	for (stream = mpm->streams; stream; stream = stream->next) {
-		if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) && 
+		if ((mpm_session_cmp(stream->session, dce_call) == true) &&
 		    (EcDoRpc->in.mapi_request->handles[handle_idx] == stream->handle)) {
 			DEBUG(2, ("* [%s:%d] [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Del: Stream 0x%x\n", MPM_LOCATION, 
-				  MPM_SESSION(stream), stream->handle)); 
+				  MPM_SESSION(stream), stream->handle));
+			mpm_session_release(stream->session);
 			mpm_cache_stream_close(stream);
 			DLIST_REMOVE(mpm->streams, stream);
 			talloc_free(stream->filename);
@@ -401,20 +358,18 @@ static NTSTATUS cache_pull_OpenMessage(struct dcesrv_call_state *dce_call,
 
 	/* Check if the message has already been registered */
 	for (message = mpm->messages; message; message = message->next) {
-		if (!cache_cmp_session(dce_call, message->server_id, message->context_id) &&
+		if ((mpm_session_cmp(message->session, dce_call) == true) &&
 		    (request.FolderId == message->FolderId) &&
 		    (request.MessageId == message->MessageId)) {
 			DLIST_REMOVE(mpm->messages, message);
 		}
 	}
 
-	message = talloc(mem_ctx, struct mpm_message);
+	message = talloc((TALLOC_CTX *)mpm, struct mpm_message);
 	NT_STATUS_HAVE_NO_MEMORY(message);
-
-	message->server_id.id = dce_call->conn->server_id.id;
-	message->server_id.id2 = dce_call->conn->server_id.id2;
-	message->server_id.node = dce_call->conn->server_id.node;
-	message->context_id = dce_call->context->context_id;
+	
+	message->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+	NT_STATUS_HAVE_NO_MEMORY(message->session);
 
 	message->FolderId = request.FolderId;
 	message->MessageId = request.MessageId;
@@ -463,8 +418,8 @@ static NTSTATUS cache_push_OpenMessage(struct dcesrv_call_state *dce_call,
 	mapi_response = EcDoRpc->out.mapi_response;
 
 	for (el = mpm->messages; el; el = el->next) {
-		if ((el->FolderId == request.FolderId) && (el->MessageId == request.MessageId) && 
-		    (!cache_cmp_session(dce_call, el->server_id, el->context_id))) {
+		if ((el->FolderId == request.FolderId) && (el->MessageId == request.MessageId) &&
+		    (mpm_session_cmp(el->session, dce_call) == true)) {
 			if (mapi_repl.error_code == MAPI_E_SUCCESS) {
 				mpm_cache_ldb_add_message((TALLOC_CTX *)mpm, mpm->ldb_ctx, el);
 				el->handle = mapi_response->handles[request.handle_idx];
@@ -513,27 +468,24 @@ static NTSTATUS cache_pull_OpenAttach(struct dcesrv_call_state *dce_call,
 
 	for (attach = mpm->attachments; attach; attach = attach->next) {
 		/* Check if the attachment has already been registered */
-		if (!cache_cmp_session(dce_call, attach->server_id, attach->context_id) &&
+		if ((mpm_session_cmp(attach->session, dce_call) == true) &&
 		    (mapi_request->handles[mapi_req.handle_idx] == attach->parent_handle) && (request.AttachmentID == attach->AttachmentID)) {
 			DLIST_REMOVE(mpm->attachments, attach);
 		}
 	}
 
 	attach = talloc((TALLOC_CTX *)mpm, struct mpm_attachment);
-	if (!attach) return NT_STATUS_NO_MEMORY;
+	NT_STATUS_HAVE_NO_MEMORY(attach);
 
-	attach->server_id.id = dce_call->conn->server_id.id;
-	attach->server_id.id2 = dce_call->conn->server_id.id2;
-	attach->server_id.node = dce_call->conn->server_id.node;
-	attach->context_id = dce_call->context->context_id;
+	attach->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+	NT_STATUS_HAVE_NO_MEMORY(attach->session);
 
 	attach->AttachmentID = request.AttachmentID;
 	attach->parent_handle = mapi_request->handles[mapi_req.handle_idx];
 	attach->handle = 0xFFFFFFFF;
 
 	for (el = mpm->messages; el; el = el->next) {
-		if (!cache_cmp_session(dce_call, el->server_id, el->context_id) &&
-		    attach->parent_handle == el->handle) {
+		if ((mpm_session_cmp(el->session, dce_call) == true) && attach->parent_handle == el->handle) {
 			attach->message = el;
 			break;
 		}
@@ -587,7 +539,7 @@ static NTSTATUS cache_push_OpenAttach(struct dcesrv_call_state *dce_call,
 	request = mapi_req.u.mapi_OpenAttach;
 
 	for (el = mpm->attachments; el; el = el->next) {
-		if (!cache_cmp_session(dce_call, el->server_id, el->context_id) &&
+		if ((mpm_session_cmp(el->session, dce_call) == true) &&
 		    (mapi_request->handles[mapi_req.handle_idx] == el->parent_handle) &&
 		    (request.AttachmentID == el->AttachmentID)) {
 			if (mapi_repl.error_code == MAPI_E_SUCCESS) {
@@ -641,15 +593,13 @@ static NTSTATUS cache_pull_OpenStream(struct dcesrv_call_state *dce_call,
 	request = mapi_req.u.mapi_OpenStream;
 
 	for (attach = mpm->attachments; attach; attach = attach->next) {
-		if (!cache_cmp_session(dce_call, attach->server_id, attach->context_id) &&
+		if ((mpm_session_cmp(attach->session, dce_call) == true) &&
 		    mapi_request->handles[mapi_req.handle_idx] == attach->handle) {
-			stream = talloc(mem_ctx, struct mpm_stream);
-			if (!stream) return NT_STATUS_NO_MEMORY;
+			stream = talloc((TALLOC_CTX *)mpm, struct mpm_stream);
+			NT_STATUS_HAVE_NO_MEMORY(stream);
 
-			stream->server_id.id = dce_call->conn->server_id.id;
-			stream->server_id.id2 = dce_call->conn->server_id.id2;
-			stream->server_id.node = dce_call->conn->server_id.node;
-			stream->context_id = dce_call->context->context_id;
+			stream->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+			NT_STATUS_HAVE_NO_MEMORY(stream->session);
 
 			stream->handle = 0xFFFFFFFF;
 			stream->parent_handle = attach->handle;
@@ -670,15 +620,13 @@ static NTSTATUS cache_pull_OpenStream(struct dcesrv_call_state *dce_call,
 	}
 
 	for (message = mpm->messages; message; message = message->next) {
-		if (!cache_cmp_session(dce_call, message->server_id, message->context_id) &&
+		if ((mpm_session_cmp(message->session, dce_call) == true) &&
 		    mapi_request->handles[mapi_req.handle_idx] == message->handle) {
-			stream = talloc(mem_ctx, struct mpm_stream);
-			if (!stream) return NT_STATUS_NO_MEMORY;
+			stream = talloc((TALLOC_CTX *)mpm, struct mpm_stream);
+			NT_STATUS_HAVE_NO_MEMORY(stream);
 
-			stream->server_id.id = dce_call->conn->server_id.id;
-			stream->server_id.id2 = dce_call->conn->server_id.id2;
-			stream->server_id.node = dce_call->conn->server_id.node;
-			stream->context_id = dce_call->context->context_id;
+			stream->session = mpm_session_init((TALLOC_CTX *)mpm, dce_call);
+			NT_STATUS_HAVE_NO_MEMORY(stream->session);
 
 			stream->handle = 0xFFFFFFFF;
 			stream->parent_handle = message->handle;
@@ -743,7 +691,7 @@ static NTSTATUS cache_push_OpenStream(struct dcesrv_call_state *dce_call,
 	response = mapi_repl.u.mapi_OpenStream;
 
 	for (el = mpm->streams; el; el = el->next) {
-		if (!cache_cmp_session(dce_call, el->server_id, el->context_id) &&
+		if ((mpm_session_cmp(el->session, dce_call) == true) &&
 		    (mapi_request->handles[mapi_req.handle_idx] == el->parent_handle)) {
 			if (request.PropertyTag == el->PropertyTag) {
 				if (mapi_repl.error_code == MAPI_E_SUCCESS) {
@@ -799,7 +747,7 @@ static NTSTATUS cache_push_ReadStream(struct dcesrv_call_state *dce_call,
 
 	/* Check if the handle is registered */
 	for (stream = mpm->streams; stream; stream = stream->next) {
-		if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) &&
+		if ((mpm_session_cmp(stream->session, dce_call) == true) &&
 		    mapi_response->handles[mapi_repl.handle_idx] == stream->handle) {
 			if (stream->fp && stream->cached == false) {
 				if (mpm->sync == true && stream->StreamSize > mpm->sync_min) {
@@ -1014,7 +962,7 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 
 			request = mapi_req[i].u.mapi_ReadStream;
 			for (stream = mpm->streams; stream; stream = stream->next) {
-				if (!cache_cmp_session(dce_call, stream->server_id, stream->context_id) &&
+				if ((mpm_session_cmp(stream->session, dce_call) == true) &&
 				    (mapi_request->handles[mapi_req[i].handle_idx] == stream->handle)) {
 					if (stream->cached == true) {
 					cached:
@@ -1084,10 +1032,11 @@ static NTSTATUS cache_unbind(struct server_id server_id, uint32_t context_id)
 	/* Look over messages still attached to the session */
 	message = mpm->messages;
 	while (message) {
-		if (!cache_cmp_session_sub(server_id, context_id, message->server_id, message->context_id)) {
+		if ((mpm_session_cmp_sub(message->session, server_id, context_id) == true)) {
 			DEBUG(2, ("[%s:%d]: [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Message - 0x%"PRIx64"/0x%"PRIx64" handle(0x%x)\n",
 				  MPM_LOCATION, MPM_SESSION(message), message->FolderId, message->MessageId, 
 				  message->handle));
+			mpm_session_release(message->session);
 			DLIST_REMOVE(mpm->messages, message);
 			talloc_free(message);
 			message = mpm->messages;
@@ -1099,9 +1048,10 @@ static NTSTATUS cache_unbind(struct server_id server_id, uint32_t context_id)
 	/* Look over attachments still attached to the session */
 	attach = mpm->attachments;
 	while (attach) {
-		if (cache_cmp_session_sub(server_id, context_id, attach->server_id, attach->context_id)) {
+		if ((mpm_session_cmp_sub(attach->session, server_id, context_id) == true)) {
 			DEBUG(2, ("[%s:%d]: [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Attachment - AttachmentID(0x%x) handle(0x%x)\n",
 				  MPM_LOCATION, MPM_SESSION(attach), attach->AttachmentID, attach->handle));
+			mpm_session_release(attach->session);
 			DLIST_REMOVE(mpm->attachments, attach);
 			talloc_free(attach);
 			attach = mpm->attachments;
@@ -1112,9 +1062,10 @@ static NTSTATUS cache_unbind(struct server_id server_id, uint32_t context_id)
 
 	stream = mpm->streams;
 	while (stream) {
-		if (cache_cmp_session_sub(server_id, context_id, stream->server_id, stream->context_id)) {
+		if ((mpm_session_cmp_sub(stream->session, server_id, context_id) == true)) {
 			DEBUG(2, ("[%s:%d]: [s(0x%"PRIx64"-0x%x-0x%x),c(0x%x)] Stream - handle(0x%x)\n", MPM_LOCATION,
 				  MPM_SESSION(stream), stream->handle));
+			mpm_session_release(stream->session);
 			mpm_cache_stream_close(stream);
 			talloc_free(stream->filename);
 			DLIST_REMOVE(mpm->streams, stream);

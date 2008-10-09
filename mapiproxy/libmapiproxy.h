@@ -49,6 +49,13 @@ struct mapiproxy_module_list {
 	struct mapiproxy_module_list	*next;
 };
 
+struct mpm_session {
+	struct server_id		server_id;
+	uint32_t			context_id;
+	bool				(*destructor)(void *);
+	void				*private_data;
+};
+
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
 #define __BEGIN_DECLS		extern "C" {
@@ -71,6 +78,15 @@ NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *, TALLOC_CTX *, voi
 NTSTATUS mapiproxy_module_unbind(struct server_id, uint32_t);
 
 const struct mapiproxy_module *mapiproxy_module_byname(const char *);
+
+/* definitions from dcesrv_mapiproxy_session. c */
+struct mpm_session *mpm_session_new(TALLOC_CTX *, struct server_id, uint32_t);
+struct mpm_session *mpm_session_init(TALLOC_CTX *, struct dcesrv_call_state *);
+bool mpm_session_set_destructor(struct mpm_session *, bool (*destructor)(void *));
+bool mpm_session_set_private_data(struct mpm_session *, void *);
+bool mpm_session_release(struct mpm_session *);
+bool mpm_session_cmp_sub(struct mpm_session *, struct server_id, uint32_t);
+bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
 
 __END_DECLS
 

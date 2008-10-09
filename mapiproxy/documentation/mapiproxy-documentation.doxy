@@ -73,6 +73,13 @@
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
 	</tr>
 	<tr>
+	   <td style="text-align:center">10/07/08</td>
+	   <td style="text-align:center"><strong>0.5.3</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">Rename smbd process to samba
+	   session API and update documentation</td>
+	</tr>
+	<tr>
 	   <td style="text-align:center">08/26/08</td>
 	   <td style="text-align:center"><strong>0.5.2</strong></td>
 	   <td style="text-align:center">Julien Kerihuel</td>
@@ -151,7 +158,7 @@ purposes.
 
 This project is originally based on dcerpc_remote.c code from Stefan
 Metzemacher (Samba4 trunk) and is released under GPLv3 or later. It
-creates a dynamic shared object file which is loaded into smbd and 
+creates a dynamic shared object file which is loaded into samba and 
 uses the Samba configuration file (smb.conf) to set common options.
 
 <br/>
@@ -175,7 +182,7 @@ mapiproxy:</strong><br/>The origin of a client connect does not
 have much importance: it can either be an incoming connection from a
 real MAPI client, a connection relayed from another third-party
 proxy or another mapiproxy instance. Mapiproxy runs as an endpoint
-server registered when smbd starts. When the Samba4 endpoint mapper
+server registered when samba starts. When the Samba4 endpoint mapper
 receives an incoming connection asking for one of the ExchangeRPC
 endpoints: NSPI (Name Service Provider Interface - Address Book) or
 EMSMDB (Exchange Message Store), the endpoint mapper redirects
@@ -276,7 +283,7 @@ samba4-alpha5 release</strong>
 If you have existing OpenChange DSO in the
 <i>/usr/local/samba/modules/dcerpc_server/</i> folder, such as
 <i>dcesrv_exchange.so</i>, <strong>please remove them prior loading
-smbd with mapiproxy.</strong>
+samba with mapiproxy.</strong>
 
 \code
   $ ./autogen.sh
@@ -298,7 +305,7 @@ to a remote Exchange server. This configuration will be performed in three
 steps:
 
 <ul>
-<li><strong>[1] Provision Samba</strong>:<br/>From samba4/source
+<li><strong>[1] Provision Samba</strong>:<br/>From samba4/source4
 directory, run under the root account:
 \code
 # ./setup/provision --realm=OPENCHANGE.LOCAL --domain=OPENCHANGE \
@@ -306,7 +313,7 @@ directory, run under the root account:
 \endcode
 
 If you don't have DNS resolution and your realm can't be resolved,
-smbd will be unable to authenticate the user in its user database. You
+samba will be unable to authenticate the user in its user database. You
 must specify a realm which MAPI clients and mapiproxy can resolve.
 
 If everything works fine, the provisioning script will have created
@@ -341,7 +348,7 @@ In this final step, we only need to customize a small set of parameters:
  server. The format of this string is: transport:address[flags]. In the
  example below, we'll be using the TCP over IP transport, connect on
  192.168.1.1 and add the print flag so MAPI packets get dissected on
- smbd stdout (or logfile).</li>
+ samba stdout (or logfile).</li>
 
  <li
  style="text-align:justify;"><strong>dcerpc_mapiproxy:username</strong>
@@ -399,13 +406,13 @@ EcDoConnect/EcDoRpc EMSMDB RPC functions negotiation.</li>
 </li>
 </ul>
 
-We are now ready to run smbd:
+We are now ready to run samba:
 \code
- # smbd -d5 -i -M single
+ # samba -d5 -i -M single
 \endcode
 
 If everything works properly, the following lines should be displayed
-in smbd output:
+in samba output:
 \code
 DCERPC endpoint server 'exchange_emsmdb' registered
 DCERPC endpoint server 'exchange_nsp' registered
@@ -660,7 +667,7 @@ the next hop (Figure 3.).
 <center>Figure 3. mapiproxy module stack and EcDoRpc interaction </center>
 
 With this system, developers can focus their effort on ExchangeRPC
-traffic - or any other protocol smbd supports - interception,
+traffic - or any other protocol samba supports - interception,
 modification, analysis and avoid spending time on implementing a new
 endpoint server. Furthermore it provides an easier way for
 implementors to divide the work in smaller units and develop each of

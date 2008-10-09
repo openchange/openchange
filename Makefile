@@ -219,7 +219,7 @@ libmapi-installheader:
 
 libmapi-installscript:
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
-	# $(INSTALL) -m 0644 setup/oc_profiles* $(DESTDIR)$(datadir)/setup/
+	$(INSTALL) -m 0644 setup/oc_profiles* $(DESTDIR)$(datadir)/setup/
 
 libmapi-uninstallpc:
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapi.pc

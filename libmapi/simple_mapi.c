@@ -143,27 +143,25 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 					  const uint32_t id)
 {
 	enum MAPISTATUS			retval;
-	TALLOC_CTX			*mem_ctx;
 	mapi_object_t			obj_inbox;
 	mapi_id_t			id_inbox;
 	struct mapi_SPropValue_array	properties_array;
 	const struct SBinary_short     	*entryid;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetDefaultFolder");
-
 	mapi_object_init(&obj_inbox);
 	retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	if (id > 6) {
 		retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
-		MAPI_RETVAL_IF(retval, retval, mem_ctx);
+		MAPI_RETVAL_IF(retval, retval, NULL);
 
 		retval = GetPropsAll(&obj_inbox, &properties_array);
-		MAPI_RETVAL_IF(retval, retval, mem_ctx);
+		MAPI_RETVAL_IF(retval, retval, NULL);
 	} 
 	mapi_object_release(&obj_inbox);
 
@@ -209,27 +207,14 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 		return MAPI_E_SUCCESS;
 	default:
 		*folder = 0;
-		talloc_free(mem_ctx);
 		return MAPI_E_NOT_FOUND;
 	}
 
-	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
-	MAPI_RETVAL_IF(entryid->cb < 8, MAPI_E_INVALID_PARAMETER, mem_ctx);
+	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, NULL);
 
-	*folder = 0;
-	*folder += ((uint64_t)entryid->lpb[entryid->cb - 3] << 56);
-	*folder += ((uint64_t)entryid->lpb[entryid->cb - 4] << 48);
-	*folder += ((uint64_t)entryid->lpb[entryid->cb - 5] << 40);
-	*folder += ((uint64_t)entryid->lpb[entryid->cb - 6] << 32);
-	*folder += ((uint64_t)entryid->lpb[entryid->cb - 7] << 24);
-	*folder += ((uint64_t)entryid->lpb[entryid->cb - 8] << 16);
-	/* WARNING: for some unknown reason the latest byte of folder
-	   ID may change (0x1 or 0x4 values identified so far).
-	   However this byte sounds the same than the parent folder
-	   one */
-	*folder += (id_inbox & 0xFF);
+	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, folder);
+	MAPI_RETVAL_IF(retval, retval, NULL);
 
-	talloc_free(mem_ctx);
 	return MAPI_E_SUCCESS;
 }
 

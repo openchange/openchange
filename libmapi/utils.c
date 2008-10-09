@@ -111,3 +111,41 @@ _PUBLIC_ char *windows_to_utf8(TALLOC_CTX *mem_ctx, const char *input)
 	yyparse_utf8(output, input);
 	return output;
 }
+
+
+/**
+   \details Create a FID from an EntryID
+
+   \param cb count of lpb bytes
+   \param lpb pointer on an array of bytes
+   \param parent_fid the parent folder identifier
+   \param pointer on the returned fid
+
+   \return MAPI_E_SUCCESS on success, otherwise
+   MAPI_E_INVALID_PARAMETER
+ */
+_PUBLIC_ enum MAPISTATUS GetFIDFromEntryID(uint16_t cb, 
+					   uint8_t *lpb, 
+					   uint64_t parent_fid, 
+					   uint64_t *fid)
+{
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!lpb, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(cb < 8, MAPI_E_INVALID_PARAMETER, NULL);
+
+	*fid = 0;
+	*fid += ((uint64_t)lpb[cb - 3] << 56);
+	*fid += ((uint64_t)lpb[cb - 4] << 48);
+	*fid += ((uint64_t)lpb[cb - 5] << 40);
+	*fid += ((uint64_t)lpb[cb - 6] << 32);
+	*fid += ((uint64_t)lpb[cb - 7] << 24);
+	*fid += ((uint64_t)lpb[cb - 8] << 16);
+	/* WARNING: for some unknown reason the latest byte of folder
+	   ID may change (0x1 or 0x4 values identified so far).
+	   However this byte sounds the same than the parent folder
+	   one */
+	*fid += (parent_fid & 0xFF);
+
+	return MAPI_E_SUCCESS;
+}

@@ -1,3 +1,38 @@
+2008-10-09  jkerihuel
+
+	* [r812] - Add a session management API for mapiproxy modules.
+	  Similar code
+	  already existed for mpm_cache module. Common functions are now
+	  available to all mapiproxy modules through libmapiproxy
+	  
+	  - replace smbd with samba in mapiproxy documentation
+	* [r811] - Cache calendar, contact, journal, note, task and drafts
+	  folders IDs
+	  when GetDefaultFolder call is performed on one of these folders
+	  and
+	  keep them until obj_store is released.
+	  
+	  - Add a reverse lookup routine which says whether a given FID
+	  belongs
+	  to a default folder and which olFolderType it is.
+	* [r810] - Remove pointless memory context in GetDefaultFolder
+	  - Move entryID to FID code into a separated routine
+	  (GetFIDFromEntryID)
+	* [r809] Restore install rule for mapi profiles ldif files in
+	  libmapi-installscript. Fix the MAPI_E_NO_ACCESS bug when
+	  mapiprofile
+	  tries to create a new mapi profile store.
+
+2008-10-08  jkerihuel
+
+	* [r808] - Ticket #103 resolved. openchangeclient can now perform
+	  custom folder lookup, fetch, mkdir and rmdir.
+	  - mapi_object_copy routine added to mapi_object.c
+
+2008-10-07  occl
+
+	* [r807] Daily ChangeLog Update
+
 2008-10-06  jkerihuel
 
 	* [r806] Fix missing Month field in LogonTime structure

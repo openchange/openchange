@@ -1,5 +1,5 @@
 # Makefile for OpenChange
-# Written by Jelmer Vernooij <jelmer@samba.org>, 2005.
+# Written by Jelmer Vernooij <jelmer@openchange.org>, 2005.
 
 default: all
 

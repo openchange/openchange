@@ -1,5 +1,5 @@
 # Simple configuration script for OpenChange
-# Written by Jelmer Vernooij <jelmer@samba.org>
+# Written by Jelmer Vernooij <jelmer@openchange.org>
 
 AC_PREREQ(2.57)
 AC_INIT(openchange, 0.8, [openchange@openchange.org])

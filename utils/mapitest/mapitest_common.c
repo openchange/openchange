@@ -242,7 +242,8 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
 	flaglist = talloc_zero(mt->mem_ctx, struct SPropTagArray);
 
-	retval = ResolveNames(username, SPropTagArray, &SRowSet, &flaglist, 0);
+	retval = ResolveNames(mapi_object_get_session(obj_message), username, SPropTagArray, 
+			      &SRowSet, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "ResolveNames", GetLastError());
@@ -455,7 +456,7 @@ _PUBLIC_ bool mapitest_common_setup(struct mapitest *mt, mapi_object_t *obj_htab
 	mt->priv = context;
 
 	mapi_object_init(&(context->obj_store));
-	OpenMsgStore(&(context->obj_store));
+	OpenMsgStore(mt->session, &(context->obj_store));
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}

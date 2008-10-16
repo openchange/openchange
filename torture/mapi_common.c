@@ -280,10 +280,14 @@ enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent,
 	struct SRowSet		*SRowSet = NULL;
 	struct SPropTagArray   	*flaglist = NULL;
 	struct SPropValue	props[3];
-	const char			**usernames;
+	struct mapi_session	*session = NULL;
+	const char	       	**usernames;
 	uint32_t		index = 0;
 
 	mem_ctx = talloc_init("torture_simplemail");
+
+	session = mapi_object_get_session(obj_parent);
+	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mapi_object_init(&obj_message);
 	retval = CreateMessage(obj_parent, &obj_message);
@@ -297,10 +301,10 @@ enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent,
 					   PR_SMTP_ADDRESS,
 					   PR_GIVEN_NAME);
 
-	lp_set_cmdline(global_loadparm, "mapi:to", global_mapi_ctx->session->profile->username);
+	lp_set_cmdline(global_loadparm, "mapi:to", session->profile->username);
 	usernames = get_cmdline_recipients(mem_ctx, "to");
 
-	retval = ResolveNames(usernames, SPropTagArray, &SRowSet, &flaglist, 0);
+	retval = ResolveNames(session, usernames, SPropTagArray, &SRowSet, &flaglist, 0);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (!SRowSet) {

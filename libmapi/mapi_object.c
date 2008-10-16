@@ -43,6 +43,7 @@ static void mapi_object_reset(mapi_object_t *obj)
 {
 	obj->handle = INVALID_HANDLE_VALUE;
 	obj->id = 0;
+	obj->session = NULL;
 	obj->private_data = 0;
 }
 
@@ -135,6 +136,38 @@ _PUBLIC_ enum MAPISTATUS mapi_object_copy(mapi_object_t *dst, mapi_object_t *src
 
 
 /**
+   \details Retrieve the session associated to the MAPI object
+
+   \param obj the object to get the session for
+
+   \return pointer on a MAPI session on success, otherwise NULL
+ */
+_PUBLIC_ struct mapi_session *mapi_object_get_session(mapi_object_t *obj)
+{
+	if (!obj) return NULL;
+	if (!obj->session) return NULL;
+
+	return obj->session;
+}
+
+
+/**
+   \details Set the session for a given MAPI object
+
+   \param obj pointer to the object to set the session for
+   \param session pointer to the MAPI session to associate to the MAPI
+   object
+ */
+_PUBLIC_ void mapi_object_set_session(mapi_object_t *obj, 
+				      struct mapi_session *session)
+{
+	if (obj) {
+		obj->session = session;
+	}
+}
+
+
+/**
    \details Retrieve an object ID for a given MAPI object
  
    \param obj the object to get the ID for
@@ -179,15 +212,12 @@ _PUBLIC_ void mapi_object_debug(mapi_object_t *obj)
 }
 
 
-void mapi_object_table_init(mapi_object_t *obj_table)
+void mapi_object_table_init(TALLOC_CTX *mem_ctx, mapi_object_t *obj_table)
 {
-	mapi_ctx_t		*mapi_ctx;
 	mapi_object_table_t	*table = NULL;
 
-	mapi_ctx = global_mapi_ctx;
-
 	if (obj_table->private_data == NULL) {
-		obj_table->private_data = talloc_zero((TALLOC_CTX *)mapi_ctx->session, mapi_object_table_t);
+		obj_table->private_data = talloc_zero((TALLOC_CTX *)mem_ctx, mapi_object_table_t);
 	}
 
 	table = (mapi_object_table_t *) obj_table->private_data;

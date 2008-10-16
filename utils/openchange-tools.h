@@ -48,8 +48,7 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *, mapi_object_t *);
 _PUBLIC_ void *octool_get_propval(struct SRow *, uint32_t);
 _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *, mapi_object_t *,
 					 struct SRow *, DATA_BLOB *);
-_PUBLIC_ enum MAPISTATUS octool_init_mapi(TALLOC_CTX *, const char *, const char *,
-					  uint32_t);
+_PUBLIC_ struct mapi_session *octool_init_mapi(TALLOC_CTX *, const char *, const char *, uint32_t);
 __END_DECLS
 
 #endif /*!__OPENCHANGETOOLS_H__ */

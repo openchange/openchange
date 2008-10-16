@@ -23,6 +23,7 @@
 
 
 /* forward decls */
+struct mapi_object;
 struct mapi_profile;
 struct mapi_notify_ctx;
 
@@ -37,11 +38,18 @@ struct mapi_provider {
 	void			*ctx;
 };
 
+struct mapi_objects {
+	struct mapi_object	*object;
+	struct mapi_objects	*prev;
+	struct mapi_objects	*next;
+};
+
 struct mapi_session {
 	struct mapi_provider		*emsmdb;
 	struct mapi_provider		*nspi;
 	struct mapi_profile		*profile;
 	struct mapi_notify_ctx		*notify_ctx;
+	struct mapi_objects		*objects;
 
 	struct mapi_session		*next;
 	struct mapi_session		*prev;

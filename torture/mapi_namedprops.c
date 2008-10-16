@@ -68,7 +68,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 
 	/* OpenMsgStore */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(session, &obj_store);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Retrieve the specified folder ID */

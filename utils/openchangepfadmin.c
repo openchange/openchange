@@ -469,7 +469,7 @@ int main(int argc, const char *argv[])
 	 */
 
 	mapi_object_init(&obj_store);
-	retval = OpenPublicFolder(&obj_store);
+	retval = OpenPublicFolder(session, &obj_store);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("OpenPublicFolder", GetLastError());
 		goto end;

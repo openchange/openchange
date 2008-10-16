@@ -486,7 +486,7 @@ _PUBLIC_ bool mapitest_nspi_CompareMIds(struct mapitest *mt)
 
 	/* Ensure we have at least two result to compare */
 	if (MIds->cValues < 2) {
-		mapitest_print(mt, "* Only one result found, can't compare");
+		mapitest_print(mt, "* Only one result found, can't compare\n");
 		MAPIFreeBuffer(MIds);
 		return false;
 	}
@@ -826,7 +826,7 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	flaglist = talloc_zero(mt->mem_ctx, struct SPropTagArray);
 	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
 
-	retval = ResolveNames((const char **)username, SPropTagArray, &SRowSet, &flaglist, 0);
+	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &SRowSet, &flaglist, 0);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "NspiResolveNames");
 		MAPIFreeBuffer(SPropTagArray);
@@ -839,7 +839,7 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	mapitest_print_retval(mt, "NspiResolveNames");
 
 	/* NspiResolveNamesW (0x14) */
-	retval = ResolveNames((const char **)username, SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
+	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "NspiResolveNamesW");

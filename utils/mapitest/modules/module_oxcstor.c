@@ -48,7 +48,7 @@ _PUBLIC_ bool mapitest_oxcstor_Logon(struct mapitest *mt)
 
 	/* Step 1. Logon Private Mailbox */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -57,7 +57,7 @@ _PUBLIC_ bool mapitest_oxcstor_Logon(struct mapitest *mt)
 
 	/* Step 2. Logon Public Folder store */
 	mapi_object_init(&obj_store);
-	retval = OpenPublicFolder(&obj_store);
+	retval = OpenPublicFolder(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -87,7 +87,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolder(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -130,7 +130,7 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval_step(mt, "1.", "Logon");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -236,7 +236,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetOwningServers(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenPublicFolder(&obj_store);
+	retval = OpenPublicFolder(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -309,7 +309,7 @@ _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenPublicFolder(&obj_store);
+	retval = OpenPublicFolder(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -368,7 +368,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolderTable(struct mapitest *mt)
 	
  	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -415,7 +415,7 @@ _PUBLIC_ bool mapitest_oxcstor_LongTermId(struct mapitest *mt)
 
 	/* Step 1. Logon Private Mailbox */
 	mapi_object_init(&obj_store);
-	OpenMsgStore(&obj_store);
+	OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -483,7 +483,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetStoreState(struct mapitest *mt)
 
 	/* Step 1. Logon Private Mailbox */
 	mapi_object_init(&obj_store);
-	OpenMsgStore(&obj_store);
+	OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;

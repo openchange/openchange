@@ -52,7 +52,7 @@ _PUBLIC_ bool mapitest_oxorule_GetRulesTable(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;

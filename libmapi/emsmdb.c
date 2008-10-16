@@ -68,28 +68,27 @@ static unsigned int emsmdb_hash(const char *str)
    exchange_emsmdb pipe
 
    \param mem_ctx pointer to the memory context
+   \param session pointer to the MAPI session context
    \param p pointer to the DCERPC pipe
    \param cred pointer to the user credentials
 
    \return an allocated emsmdb_context on success, otherwise NULL
  */
 struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, 
+				      struct mapi_session *session,
 				      struct dcerpc_pipe *p, 
 				      struct cli_credentials *cred)
 {
 	struct EcDoConnect	r;
 	struct emsmdb_context	*ret;
-	mapi_ctx_t		*mapi_ctx;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		pullTimeStamp = 0;
 
 	/* Sanity Checks */
+	if (!session) return NULL;
 	if (!p) return NULL;
 	if (!cred) return NULL;
-
-	mapi_ctx = global_mapi_ctx;
-	if (mapi_ctx == 0) return NULL;
 
 	ret = talloc_zero(mem_ctx, struct emsmdb_context);
 	ret->rpc_connection = p;
@@ -97,13 +96,13 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx,
 
 	ret->cache_requests = talloc(mem_ctx, struct EcDoRpc_MAPI_REQ *);
 
-	r.in.szUserDN = mapi_ctx->session->profile->mailbox;
+	r.in.szUserDN = session->profile->mailbox;
 	r.in.ulFlags = 0x00000000;
 	r.in.ulConMod = emsmdb_hash(r.in.szUserDN);
 	r.in.cbLimit = 0x00000000;
-	r.in.ulCpid = mapi_ctx->session->profile->codepage;
-	r.in.ulLcidString = mapi_ctx->session->profile->language;
-	r.in.ulLcidSort = mapi_ctx->session->profile->method;
+	r.in.ulCpid = session->profile->codepage;
+	r.in.ulLcidString = session->profile->language;
+	r.in.ulLcidSort = session->profile->method;
 	r.in.ulIcxrLink = 0xFFFFFFFF;
 	r.in.usFCanConvertCodePages = 0x1;
 	r.in.rgwClientVersion[0] = 0x000c;
@@ -440,15 +439,17 @@ NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey,
 /**
    \details Retrieves the EMSMDB context server information structure
 
+   \param session pointer to the MAPI session context
+
    \return the server info structure on success, otherwise NULL
  */
-_PUBLIC_ struct emsmdb_info *emsmdb_get_info(void)
+_PUBLIC_ struct emsmdb_info *emsmdb_get_info(struct mapi_session *session)
 {
-	if (!global_mapi_ctx || !global_mapi_ctx->session->emsmdb->ctx) {
+	if (!global_mapi_ctx || !session->emsmdb->ctx) {
 		return NULL;
 	}
 
-	return &((struct emsmdb_context *)global_mapi_ctx->session->emsmdb->ctx)->info;
+	return &((struct emsmdb_context *)session->emsmdb->ctx)->info;
 }
 
 

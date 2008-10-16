@@ -841,7 +841,7 @@ mapiproxy/modules/mpm_dummy.$(SHLIBEXT): mapiproxy/modules/mpm_dummy.po
 
 openchangeclient:	bin/openchangeclient
 
-openchangeclient-install:
+openchangeclient-install:	openchangeclient
 	$(INSTALL) -d $(DESTDIR)$(bindir) 
 	$(INSTALL) -m 0755 bin/openchangeclient $(DESTDIR)$(bindir)
 
@@ -869,7 +869,7 @@ bin/openchangeclient: 	utils/openchangeclient.o			\
 
 mapiprofile:		bin/mapiprofile
 
-mapiprofile-install:
+mapiprofile-install:	mapiprofile
 	$(INSTALL) -d $(DESTDIR)$(bindir) 
 	$(INSTALL) -m 0755 bin/mapiprofile $(DESTDIR)$(bindir)
 
@@ -893,7 +893,7 @@ bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 openchangepfadmin:	bin/openchangepfadmin
 
-openchangepfadmin-install:
+openchangepfadmin-install:	openchangepfadmin
 	$(INSTALL) -d $(DESTDIR)$(bindir) 
 	$(INSTALL) -m 0755 bin/openchangepfadmin $(DESTDIR)$(bindir)
 
@@ -919,7 +919,7 @@ bin/openchangepfadmin:	utils/openchangepfadmin.o			\
 
 exchange2mbox:		bin/exchange2mbox
 
-exchange2mbox-install:
+exchange2mbox-install:	exchange2mbox
 	$(INSTALL) -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/exchange2mbox $(DESTDIR)$(bindir)
 
@@ -946,7 +946,7 @@ bin/exchange2mbox:	utils/exchange2mbox.o				\
 
 exchange2ical:		bin/exchange2ical
 
-exchange2ical-install:
+exchange2ical-install:	exchange2ical
 	$(INSTALL) -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/exchange2ical $(DESTDIR)$(bindir)
 
@@ -981,7 +981,7 @@ mapitest:	libmapi			\
 		utils/mapitest/proto.h 	\
 		bin/mapitest
 
-mapitest-install:
+mapitest-install:	mapitest
 	$(INSTALL) -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/mapitest $(DESTDIR)$(bindir)
 
@@ -1042,7 +1042,7 @@ utils/mapitest/proto.h:					\
 
 openchangemapidump:		bin/openchangemapidump
 
-openchangemapidump-install:
+openchangemapidump-install:	openchangemapidump
 	$(INSTALL) -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/openchangemapidump $(DESTDIR)$(bindir)
 
@@ -1070,7 +1070,7 @@ bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
 
 schemaIDGUID:		bin/schemaIDGUID
 
-schemaIDGUID-install:
+schemaIDGUID-install:	schemaIDGUID
 	$(INSTALL) -m 0755 bin/schemaIDGUID $(DESTDIR)$(bindir)
 
 schemaIDGUID-uninstall:
@@ -1093,7 +1093,7 @@ bin/schemaIDGUID: utils/schemaIDGUID.o
 
 locale_codepage:	bin/locale_codepage
 
-locale_codepage-install:
+locale_codepage-install:	locale_codepage
 	$(INSTALL) -m 0755 bin/locale_codepage $(DESTDIR)$(bindir)
 
 locale_codepage-uninstall:

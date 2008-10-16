@@ -56,18 +56,21 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct CreateAttach_req	request;
+	struct mapi_session	*session;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("CreateAttach");
-
 	size = 0;
+
 	/* Fill the CreateAttach operation */
 	request.handle_idx = 0x1;
 	size += sizeof (uint8_t);
@@ -89,11 +92,13 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
 	mapi_request->handles[1] = 0xffffffff;
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
+	/* Set object session and handle */
+	mapi_object_set_session(obj_attach, session);
 	mapi_object_set_handle(obj_attach, mapi_response->handles[1]);
 
 	talloc_free(mem_ctx);
@@ -127,18 +132,21 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t Attac
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct DeleteAttach_req	request;
+	struct mapi_session	*session;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("DeleteAttach");
-
 	size = 0;
+
 	/* Fill the DeleteAttach operation */
 	request.AttachmentID = AttachmentID;
 	size += sizeof (uint32_t);
@@ -159,7 +167,7 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t Attac
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -193,19 +201,21 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct GetAttachmentTable_req	request;
+	struct mapi_session		*session;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			size = 0;
-	mapi_ctx_t			*mapi_ctx;
 
-	/* Sanity Checks */
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("GetAttachmentTable");
+	size = 0;
 
 	/* Fill the GetAttachmentTable operation */
 	request.handle_idx = 1;
@@ -231,11 +241,13 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
 	mapi_request->handles[1] = 0xffffffff;
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
+	/* Set object session and handle */
+	mapi_object_set_session(obj_table, session);
 	mapi_object_set_handle(obj_table, mapi_response->handles[mapi_response->mapi_repl->handle_idx]);
 
 	talloc_free(mem_ctx);
@@ -271,17 +283,19 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t Attachm
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct OpenAttach_req	request;
+	struct mapi_session	*session;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("OpenAttach");
-
 	size = 0;
 
 	/* Fill the OpenAttach operation */
@@ -309,11 +323,13 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t Attachm
 	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
 	mapi_request->handles[1] = 0xffffffff;
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
+	/* Set object session and handle */
+	mapi_object_set_session(obj_attach, session);
 	mapi_object_set_handle(obj_attach, mapi_response->handles[1]);
 
 	talloc_free(mem_ctx);
@@ -460,27 +476,29 @@ uint16_t mapi_recipients_bitmask(struct SRow *aRow)
 _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message, 
 					  struct SRowSet *SRowSet)
 {
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct ModifyRecipients_req request;
-	NTSTATUS		status;
-	enum MAPISTATUS		retval;
-	uint32_t		size = 0;
-	TALLOC_CTX		*mem_ctx;
-	unsigned long		i_prop, j;
-	unsigned long		i_recip;
-	mapi_ctx_t		*mapi_ctx;
-	uint32_t		count;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct ModifyRecipients_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	unsigned long			i_prop, j;
+	unsigned long			i_recip;
+	uint32_t			count;
 
-
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!SRowSet, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!SRowSet->aRow, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("ModifyRecipients");
+	session = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
+	mem_ctx = talloc_init("ModifyRecipients");
 	size = 0;
 
 	/* Fill the ModifyRecipients operation */
@@ -533,7 +551,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		/* recipient type EXCHANGE or SMTP */
 		switch (RecipientRow->RecipientFlags & 0xB) {
 		case 0x1: 
-			RecipientRow->type.EXCHANGE.organization_length = mapi_recipients_get_org_length(mapi_ctx->session->profile);
+			RecipientRow->type.EXCHANGE.organization_length = mapi_recipients_get_org_length(session->profile);
 			RecipientRow->type.EXCHANGE.addr_type = 0;
 			RecipientRow->type.EXCHANGE.username = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
 			size += sizeof(uint32_t) + strlen(RecipientRow->type.EXCHANGE.username) + 1;
@@ -640,13 +658,14 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mem_ctx);
 
+	errno = 0;
 	return MAPI_E_SUCCESS;
 }
 
@@ -678,19 +697,21 @@ _PUBLIC_ enum MAPISTATUS ReadRecipients(mapi_object_t *obj_message,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct ReadRecipients_req	request;
+	struct mapi_session		*session;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
-	mapi_ctx_t			*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(RowId < 0, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("ReadRecipients");
+	session = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
+	mem_ctx = talloc_init("ReadRecipients");
 	size = 0;
 
 	/* Fill the ReadRecipients operation */
@@ -716,7 +737,7 @@ _PUBLIC_ enum MAPISTATUS ReadRecipients(mapi_object_t *obj_message,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
 	
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -752,18 +773,20 @@ _PUBLIC_ enum MAPISTATUS RemoveAllRecipients(mapi_object_t *obj_message)
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct RemoveAllRecipients_req	request;
+	struct mapi_session		*session;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
-	mapi_ctx_t			*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("RemoveAllRecipients");
+	session = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
+	mem_ctx = talloc_init("RemoveAllRecipients");
 	size = 0;
 
 	/* Fill the RemoveAllRecipients operation */
@@ -786,7 +809,7 @@ _PUBLIC_ enum MAPISTATUS RemoveAllRecipients(mapi_object_t *obj_message)
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -820,21 +843,24 @@ _PUBLIC_ enum MAPISTATUS RemoveAllRecipients(mapi_object_t *obj_message)
 */
 _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 {
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct SubmitMessage_req request;
-	NTSTATUS		status;
-	enum MAPISTATUS		retval;
-	uint32_t		size = 0;
-	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SubmitMessage_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	
-	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("SubmitMessage");
+	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 
+	session = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_init("SubmitMessage");
 	size = 0;
 
 	/* Fill the SubmitMessage operation */
@@ -857,7 +883,7 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -900,19 +926,24 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct AbortSubmit_req	request;
+	struct mapi_session	*session[2];
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("AbortSubmit");
+	session[0] = mapi_object_get_session(obj_store);
+	session[1] = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
+	mem_ctx = talloc_init("AbortSubmit");
 	size = 0;
 
 	/* Fill the AbortSubmit operation */
@@ -938,7 +969,7 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -981,22 +1012,25 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct SaveChangesMessage_req	request;
+	struct mapi_session		*session[2];
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
-	mapi_ctx_t			*mapi_ctx;
 
-	/* Sanity Checks */
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!parent, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF((SaveFlags != 0x9) && (SaveFlags != 0xA) && 
 		       (SaveFlags != 0xC), MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("SaveChangesMessage");
+	session[0] = mapi_object_get_session(parent);
+	session[1] = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
+	mem_ctx = talloc_init("SaveChangesMessage");
 	size = 0;
 
 	/* Fill the SaveChangesMessage operation */
@@ -1023,7 +1057,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	mapi_request->handles[0] = mapi_object_get_handle(parent);
 	mapi_request->handles[1] = mapi_object_get_handle(obj_message);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -1048,18 +1082,20 @@ _PUBLIC_ enum MAPISTATUS TransportSend(mapi_object_t *obj_message,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct TransportSend_repl	*reply;
+	struct mapi_session		*session;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
-	mapi_ctx_t			*mapi_ctx;
 
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!lpProps, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
+	session = mapi_object_get_session(obj_message);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
 	mem_ctx = talloc_init("TransportSend");
 	size = 0;
 
@@ -1078,7 +1114,7 @@ _PUBLIC_ enum MAPISTATUS TransportSend(mapi_object_t *obj_message,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -1159,17 +1195,23 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct SetMessageReadFlag_req	request;
+	struct mapi_session		*session[2];
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size;
 	TALLOC_CTX			*mem_ctx;
-	mapi_ctx_t			*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj_child, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
+	session[0] = mapi_object_get_session(obj_folder);
+	session[1] = mapi_object_get_session(obj_child);
+	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
+
 	mem_ctx = talloc_init("SetMessageReadFlags");
-
 	size = 0;
 
 	/* Fill the SetMessageReadFlags operation */
@@ -1198,7 +1240,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_folder);
 	mapi_request->handles[1] = mapi_object_get_handle(obj_child);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);

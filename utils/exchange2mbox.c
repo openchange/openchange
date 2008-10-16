@@ -66,7 +66,7 @@ static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 
 	/* Open the default message store */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(session, &obj_store);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Open Inbox */
@@ -677,7 +677,7 @@ int main(int argc, const char *argv[])
 
 	/* Open the default message store */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(session, &obj_store);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("OpenMsgStore", GetLastError());
 		exit (1);

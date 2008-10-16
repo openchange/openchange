@@ -39,6 +39,7 @@ static void mapitest_init(TALLOC_CTX *mem_ctx, struct mapitest *mt)
 	mt->mem_ctx = mem_ctx;
 	mt->stream = NULL;
 	memset(&mt->info, 0, sizeof (mt->info));
+	mt->session = NULL;
 
 	mt->session = NULL;
 	mt->mapi_all = true;
@@ -170,13 +171,13 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 	}	
 
 	retval = MapiLogonEx(&session, profname, password);
-	mt->session = session;
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", retval);
 		return false;
 	}
+	mt->session = session;
 
-	info = emsmdb_get_info();
+	info = emsmdb_get_info(session);
 	memcpy(&mt->info, info, sizeof (struct emsmdb_info));
 
 	/* extract org and org_unit from info.mailbox */

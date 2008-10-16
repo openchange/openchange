@@ -60,7 +60,7 @@ bool torture_rpc_mapi_fetchcontacts(struct torture_context *torture)
 	mapi_object_init(&obj_table);
 
 	/* session::OpenMsgStore */
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(session, &obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

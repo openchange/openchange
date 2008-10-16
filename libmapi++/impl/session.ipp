@@ -82,7 +82,7 @@ void session::login(const std::string& profile_name, const std::string& password
 	}
 
 	try {
-		m_message_store->open();
+		m_message_store->open(m_session);
 	} catch (mapi_exception e) {
 		throw;
 	}

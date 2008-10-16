@@ -38,6 +38,7 @@ typedef uint32_t mapi_handle_t;
 typedef struct mapi_object {
 	uint64_t		id;
 	mapi_handle_t		handle;
+  struct mapi_session		*session;
 	void			*private_data;
 } mapi_object_t;
 

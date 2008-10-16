@@ -275,10 +275,10 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 /*
  * OpenChange MAPI programs initialization routine
  */
-_PUBLIC_ enum MAPISTATUS octool_init_mapi(TALLOC_CTX *mem_ctx,
-					  const char *opt_profname,
-					  const char *opt_password,
-					  uint32_t provider)
+_PUBLIC_ struct mapi_session *octool_init_mapi(TALLOC_CTX *mem_ctx,
+					       const char *opt_profname,
+					       const char *opt_password,
+					       uint32_t provider)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
@@ -287,7 +287,7 @@ _PUBLIC_ enum MAPISTATUS octool_init_mapi(TALLOC_CTX *mem_ctx,
 		retval = GetDefaultProfile(&opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
-			return retval;
+			return NULL;
 		}
 	}
 
@@ -299,8 +299,8 @@ _PUBLIC_ enum MAPISTATUS octool_init_mapi(TALLOC_CTX *mem_ctx,
 
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
-		return retval;
+		return NULL;
 	}
 
-	return MAPI_E_SUCCESS;
+	return session;
 }

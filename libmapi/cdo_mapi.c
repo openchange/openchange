@@ -111,32 +111,50 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 	struct mapi_provider	*provider_emsmdb;
 	struct mapi_provider	*provider_nspi;
 	struct mapi_profile	*profile;
+	struct mapi_session	*el;
+	bool			found = false;
+	bool			exist = false;
 
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 
-	/* allocate session if it doesn't already exist */
-	if (!*session || !global_mapi_ctx->session) {
-		*session = talloc_zero(global_mapi_ctx->mem_ctx, struct mapi_session);
-		MAPI_RETVAL_IF(!(*session), MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
-		global_mapi_ctx->session = *session;
+	/* If no MAPI session has already been created */
+	if (!global_mapi_ctx->session) {
+		global_mapi_ctx->session = talloc_zero(global_mapi_ctx->mem_ctx, struct mapi_session);
 	}
 	
-	mem_ctx = (TALLOC_CTX *) global_mapi_ctx->session;
+	/* If the session doesn't exist, create a new one */
+	if (!*session) {
+		el = talloc_zero((TALLOC_CTX *)global_mapi_ctx->session, struct mapi_session);
+		MAPI_RETVAL_IF(!el, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+	} else {
+		/* Lookup the session within the chained list */
+		for (el = global_mapi_ctx->session; el; el = el->next) {
+			if (*session == el) {
+				found = true;
+				break;
+			}
+		}
+		MAPI_RETVAL_IF(found == false, MAPI_E_NOT_FOUND, NULL);
+		exist = true;
+	}
+
+	mem_ctx = (TALLOC_CTX *) el;
 
 	/* Open the profile */
-	if (!global_mapi_ctx->session->profile) {
+	if (!el->profile) {
 		profile = talloc_zero(mem_ctx, struct mapi_profile);
-		MAPI_RETVAL_IF(!profile, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+		MAPI_RETVAL_IF(!profile, MAPI_E_NOT_ENOUGH_RESOURCES, el);
 
 		retval = OpenProfile(profile, profname, password);
-		if (retval != MAPI_E_SUCCESS) return retval;
+		MAPI_RETVAL_IF(retval, retval, el);
 		
 		retval = LoadProfile(profile);
-		if (retval != MAPI_E_SUCCESS) return retval;
+		MAPI_RETVAL_IF(retval, retval, el);
 
-		global_mapi_ctx->session->profile = profile;
+		el->profile = profile;
 	}
 
 	switch (provider) {
@@ -144,21 +162,27 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 		provider_emsmdb = talloc_zero(mem_ctx, struct mapi_provider);
 		MAPI_RETVAL_IF(!provider_emsmdb, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 		talloc_set_destructor((void *)provider_emsmdb, (int (*)(void *))emsmdb_disconnect_dtor);
-		retval = Logon(provider_emsmdb, PROVIDER_ID_EMSMDB);
+		retval = Logon(el, provider_emsmdb, PROVIDER_ID_EMSMDB);
 		if (retval) return retval;
-		global_mapi_ctx->session->emsmdb = provider_emsmdb;
+		el->emsmdb = provider_emsmdb;
 		break;
 	case PROVIDER_ID_NSPI:
 		provider_nspi = talloc_zero(mem_ctx, struct mapi_provider);
 		MAPI_RETVAL_IF(!provider_nspi, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 		talloc_set_destructor((void *)provider_nspi, (int (*)(void *))nspi_disconnect_dtor);
-		retval = Logon(provider_nspi, PROVIDER_ID_NSPI);
+		retval = Logon(el, provider_nspi, PROVIDER_ID_NSPI);
 		if (retval) return retval;
-		global_mapi_ctx->session->nspi = provider_nspi;
+		el->nspi = provider_nspi;
 		break;
 	default:
-		MAPI_RETVAL_IF(1, MAPI_E_NO_SUPPORT, NULL);
+		MAPI_RETVAL_IF(1, MAPI_E_NO_SUPPORT, el);
 		break;
+	}
+
+	/* Add the element to the session list */
+	if (exist == false) {
+		DLIST_ADD(global_mapi_ctx->session, el);
+		*session = el;
 	}
 
 	return MAPI_E_SUCCESS;
@@ -204,6 +228,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 	global_mapi_ctx->mem_ctx = mem_ctx;
 	global_mapi_ctx->dumpdata = false;
+	global_mapi_ctx->session = NULL;
 	global_mapi_ctx->lp_ctx = loadparm_init(global_mapi_ctx);
 
 	/* profile store */

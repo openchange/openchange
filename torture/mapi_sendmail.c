@@ -73,7 +73,7 @@ bool torture_rpc_mapi_sendmail(struct torture_context *torture)
 	mapi_object_init(&obj_message);
 
 	/* session::OpenMsgStore() */
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(session, &obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -106,7 +106,8 @@ bool torture_rpc_mapi_sendmail(struct torture_context *torture)
 	usernames = collapse_recipients(mem_ctx, usernames_to, usernames_cc, usernames_bcc);
 
 	/* ResolveNames */
-	retval = ResolveNames(usernames, SPropTagArray, &SRowSet, &flaglist, 0);
+	retval = ResolveNames(mapi_object_get_session(&obj_store), usernames, 
+			      SPropTagArray, &SRowSet, &flaglist, 0);
 	mapi_errstr("ResolveNames", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 	

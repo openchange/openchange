@@ -52,10 +52,9 @@ _PUBLIC_ enum MAPISTATUS MAPIAllocateBuffer(uint32_t size, void **ptr)
 	TALLOC_CTX	*mem_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
 	MAPI_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = (TALLOC_CTX *) global_mapi_ctx->session;
+	mem_ctx = (TALLOC_CTX *) global_mapi_ctx->mem_ctx;
 
 	*ptr = talloc_size(mem_ctx, size);
 	MAPI_RETVAL_IF(!ptr, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
@@ -115,14 +114,16 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ *mapi_req;
+	struct mapi_session	*session;
 	NTSTATUS		status;
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		size = 0;
-	mapi_ctx_t		*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("Release");
 
 	/* Fill the MAPI_REQ request */
@@ -140,7 +141,7 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 
 	talloc_free(mapi_response);
@@ -190,17 +191,19 @@ _PUBLIC_ enum MAPISTATUS GetLongTermIdFromId(mapi_object_t *obj, mapi_id_t id,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ 	*mapi_req;
 	struct LongTermIdFromId_req	request;
+	struct mapi_session		*session;
 	NTSTATUS			status;
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			size = 0;
-	mapi_ctx_t			*mapi_ctx;
 	enum MAPISTATUS			retval;
 	int				i;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("LongTermIdFromId");
 
 	/* Fill the LongTermIdFromId operation */
@@ -223,7 +226,7 @@ _PUBLIC_ enum MAPISTATUS GetLongTermIdFromId(mapi_object_t *obj, mapi_id_t id,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -269,17 +272,20 @@ _PUBLIC_ enum MAPISTATUS GetIdFromLongTermId(mapi_object_t *obj, struct LongTerm
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ 	*mapi_req;
 	struct IdFromLongTermId_req	request;
+	struct mapi_session		*session;
 	NTSTATUS			status;
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			size = 0;
-	mapi_ctx_t			*mapi_ctx;
 	enum MAPISTATUS			retval;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("IdFromLongTermId");
+	size = 0;
 
 	/* Fill the IdFromLongTermId operation */
 	request.LongTermId = long_term_id;
@@ -301,7 +307,7 @@ _PUBLIC_ enum MAPISTATUS GetIdFromLongTermId(mapi_object_t *obj, struct LongTerm
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);

@@ -459,7 +459,9 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	struct SPropTagArray   	*flaglist = NULL;
 	struct mapi_SRowList	rowList;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("AddUserPermission");
@@ -469,7 +471,8 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
 	names[0] = username;
 	names[1] = NULL;
-	retval = ResolveNames((const char **)names, SPropTagArray, &rows, &flaglist, 0);
+	retval = ResolveNames(mapi_object_get_session(obj_folder), (const char **)names, 
+			      SPropTagArray, &rows, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
 
@@ -529,6 +532,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	uint32_t		i = 0;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("ModifyUserPermission");
@@ -536,7 +540,8 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
 	names[0] = username;
 	names[1] = NULL;
-	retval = ResolveNames((const char **)names, SPropTagArray, &rows, &flaglist, 0);
+	retval = ResolveNames(mapi_object_get_session(obj_folder), (const char **)names, 
+			      SPropTagArray, &rows, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
@@ -634,6 +639,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	uint32_t		i = 0;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("RemoveUserPermission");
@@ -641,7 +647,8 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
 	names[0] = username;
 	names[1] = NULL;
-	retval = ResolveNames((const char **)names, SPropTagArray, &rows, &flaglist, 0);
+	retval = ResolveNames(mapi_object_get_session(obj_folder), (const char **)names, 
+			      SPropTagArray, &rows, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 

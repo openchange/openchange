@@ -59,23 +59,26 @@
    
    \sa MAPILogonProvider, GetLastError
  */
-_PUBLIC_ enum MAPISTATUS ResolveNames(const char **usernames, struct SPropTagArray *props, struct SRowSet **rowset, struct SPropTagArray **flaglist, uint32_t flags)
+_PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
+				      const char **usernames, 
+				      struct SPropTagArray *props, 
+				      struct SRowSet **rowset, 
+				      struct SPropTagArray **flaglist, 
+				      uint32_t flags)
 {
 	struct nspi_context	*nspi;
 	enum MAPISTATUS		retval;
-	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session->nspi, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
 	MAPI_RETVAL_IF(!rowset, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
-	nspi = (struct nspi_context *)mapi_ctx->session->nspi->ctx;
+	nspi = (struct nspi_context *)session->nspi->ctx;
 
-	*rowset = talloc_zero(mapi_ctx->session, struct SRowSet);
-	*flaglist = talloc_zero(mapi_ctx->session, struct SPropTagArray);
+	*rowset = talloc_zero(session, struct SRowSet);
+	*flaglist = talloc_zero(session, struct SPropTagArray);
 
 	switch (flags) {
 	case MAPI_UNICODE:
@@ -109,23 +112,24 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(const char **usernames, struct SPropTagArr
 
    \sa MapiLogonEx, MapiLogonProvider
  */
-_PUBLIC_ enum MAPISTATUS GetGALTable(struct SPropTagArray *SPropTagArray, struct SRowSet **SRowSet, 
-				     uint32_t count, uint8_t ulFlags)
+_PUBLIC_ enum MAPISTATUS GetGALTable(struct mapi_session *session,
+				     struct SPropTagArray *SPropTagArray, 
+				     struct SRowSet **SRowSet, 
+				     uint32_t count, 
+				     uint8_t ulFlags)
 {
 	struct nspi_context	*nspi;
 	struct SRowSet		*srowset;
 	enum MAPISTATUS		retval;
-	mapi_ctx_t		*mapi_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session->nspi, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
+	MAPI_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
 	MAPI_RETVAL_IF(!SRowSet, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
-	nspi = (struct nspi_context *)mapi_ctx->session->nspi->ctx;
+	nspi = (struct nspi_context *)session->nspi->ctx;
 
 	if (ulFlags == TABLE_START) {
 		nspi->pStat->CurrentRec = 0;
@@ -134,7 +138,7 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct SPropTagArray *SPropTagArray, struct
 		nspi->pStat->TotalRecs = 0xffffffff;
 	}
 
-	srowset = talloc_zero(mapi_ctx->session, struct SRowSet);
+	srowset = talloc_zero(session, struct SRowSet);
 	retval = nspi_QueryRows(nspi, SPropTagArray, NULL, count, &srowset);
 	*SRowSet = srowset;
 

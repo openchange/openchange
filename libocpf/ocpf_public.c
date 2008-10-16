@@ -518,7 +518,8 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 	}
 	usernames[count] = 0;
 
-	retval = ResolveNames((const char **)usernames, SPropTagArray, &SRowSet, &flaglist, 0);
+	retval = ResolveNames(mapi_object_get_session(obj_message), (const char **)usernames, 
+			      SPropTagArray, &SRowSet, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, usernames);
 

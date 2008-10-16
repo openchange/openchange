@@ -36,6 +36,7 @@
    the public folders.
 
    \param obj_store the result of opening the store
+   \param session pointer to the MAPI session context
 
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -49,7 +50,8 @@
    \sa GetLastError to check the result of a failed call, if necessary
    \sa OpenMsgStore if you need access to the message store folders
 */
-_PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
+_PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
+					  mapi_object_t *obj_store)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -60,15 +62,13 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
 	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
 	mapi_object_store_t	*store;
-	mapi_ctx_t		*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session->profile, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("OpenPublicFolder");
-
 	size = 0;
 
 	/* Fill the Logon operation */
@@ -96,16 +96,17 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = 0xffffffff;
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* retrieve object handle */
+	/* retrieve object session and handle */
+	mapi_object_set_session(obj_store, session);
 	mapi_object_set_handle(obj_store, mapi_response->handles[0]);
 
 	/* retrieve store content */
-	obj_store->private_data = talloc((TALLOC_CTX *)mapi_ctx->session, mapi_object_store_t);
+	obj_store->private_data = talloc((TALLOC_CTX *)session, mapi_object_store_t);
 	store = (mapi_object_store_t*)obj_store->private_data;
 	MAPI_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
@@ -148,7 +149,8 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(mapi_object_t *obj_store)
    \sa GetLastError to check the result of a failed call, if necessary
    \sa OpenPublicFolder if you need access to the public folders
 */
-_PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
+_PUBLIC_ enum MAPISTATUS OpenMsgStore(struct mapi_session *session,
+				      mapi_object_t *obj_store)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
@@ -159,19 +161,17 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
 	mapi_object_store_t	*store;
-	mapi_ctx_t		*mapi_ctx;
 	const char		*mailbox;
 
+	/* sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session->profile, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("OpenMsgStore");
-
-	mailbox = mapi_ctx->session->profile->mailbox;
-
 	size = 0;
+
+	mailbox = session->profile->mailbox;
 
 	/* Fill the Logon operation */
 	request.LogonFlags = LogonPrivate;
@@ -199,17 +199,18 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(mapi_object_t *obj_store)
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = 0xffffffff;
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* retrieve object handle */
+	/* set object session and handle */
+	mapi_object_set_session(obj_store, session);
 	mapi_object_set_handle(obj_store, mapi_response->handles[0]);
 
 	/* retrieve store content */
-	obj_store->private_data = talloc((TALLOC_CTX *)mapi_ctx->session, mapi_object_store_t);
-	store = (mapi_object_store_t*)obj_store->private_data;
+	obj_store->private_data = talloc((TALLOC_CTX *)session, mapi_object_store_t);
+	store = (mapi_object_store_t *)obj_store->private_data;
 	MAPI_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	store->fid_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[0];

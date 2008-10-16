@@ -74,9 +74,9 @@ class message_store : public object {
 		message_store(session& mapi_session) throw() : object(mapi_session, "message_store")
 		{}
 
-		void open() throw(mapi_exception)
+		void open(mapi_session *mapi_session) throw(mapi_exception)
 		{
-			if (OpenMsgStore(&m_object) != MAPI_E_SUCCESS)
+			if (OpenMsgStore(mapi_session, &m_object) != MAPI_E_SUCCESS)
 				throw mapi_exception(GetLastError(), "message_store::open() : OpenMsgStore");
 		}
 

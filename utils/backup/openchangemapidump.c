@@ -458,7 +458,7 @@ int main(int argc, const char *argv[])
 
 	/* Open default message store */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(session, &obj_store);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("OpenMsgStore", GetLastError());
 		exit (1);

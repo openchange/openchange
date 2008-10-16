@@ -536,10 +536,19 @@ _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SProp
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		cValues;
 	struct SPropValue	lpProp;
+	uint32_t		i;
 	
 	MAPI_RETVAL_IF(!aRow, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = (TALLOC_CTX *) aRow;
+
+	/* If the property tag already exist, overwrite its value */
+	for (i = 0; i < aRow->cValues; i++) {
+		if (aRow->lpProps[i].ulPropTag == SPropValue.ulPropTag) {
+			aRow->lpProps[i] = SPropValue;
+			return MAPI_E_SUCCESS;
+		}
+	}
 
 	cValues = aRow->cValues + 1;
 	aRow->lpProps = talloc_realloc(mem_ctx, aRow->lpProps, struct SPropValue, cValues);

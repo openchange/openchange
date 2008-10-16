@@ -76,10 +76,10 @@ class session {
 		}
 
 	private:
-		mapi_session	*m_session;
-		TALLOC_CTX      *m_memory_ctx;
-		message_store	*m_message_store;
-		std::string	m_profile_name;
+		mapi_session		*m_session;
+		TALLOC_CTX		*m_memory_ctx;
+		message_store		*m_message_store;
+		std::string		m_profile_name;
 
 		void uninitialize() throw();
 };

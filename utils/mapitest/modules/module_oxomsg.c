@@ -51,7 +51,7 @@ _PUBLIC_ bool mapitest_oxomsg_AddressTypes(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -100,7 +100,7 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 	
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -189,7 +189,7 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 	
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -273,7 +273,7 @@ _PUBLIC_ bool mapitest_oxomsg_SetSpooler(struct mapitest *mt)
 	
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -319,7 +319,7 @@ _PUBLIC_ bool mapitest_oxomsg_SpoolerLockMessage(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -413,7 +413,7 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -489,7 +489,7 @@ _PUBLIC_ bool mapitest_oxomsg_GetTransportFolder(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_object_release(&obj_store);
 		return false;

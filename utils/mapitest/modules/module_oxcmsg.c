@@ -54,7 +54,7 @@ _PUBLIC_ bool mapitest_oxcmsg_CreateMessage(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -124,7 +124,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageReadFlag(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -248,7 +248,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -290,7 +290,8 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 	username[0] = mt->info.szDisplayName;
 	username[1] = NULL;
 
-	retval = ResolveNames((const char **)username, SPropTagArray, 
+	retval = ResolveNames(mapi_object_get_session(&obj_message), 
+			      (const char **)username, SPropTagArray, 
 			      &SRowSet, &flaglist, 0);
 	mapitest_print_retval(mt, "ResolveNames");
 
@@ -299,6 +300,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 	SRowSet_propcpy(mt->mem_ctx, SRowSet, SPropValue);
 
 	SetRecipientType(&(SRowSet->aRow[0]), MAPI_TO);
+	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_TO");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -306,6 +308,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 	}
 
 	SetRecipientType(&(SRowSet->aRow[0]), MAPI_CC);
+	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_CC");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -314,6 +317,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 
 
 	SetRecipientType(&(SRowSet->aRow[0]), MAPI_BCC);
+	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_BCC");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -368,7 +372,7 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -408,7 +412,8 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 	username[0] = mt->info.szDisplayName;
 	username[1] = NULL;
 
-	retval = ResolveNames((const char **)username, SPropTagArray, 
+	retval = ResolveNames(mapi_object_get_session(&obj_message),
+			      (const char **)username, SPropTagArray, 
 			      &SRowSet, &flaglist, 0);
 	mapitest_print_retval(mt, "ResolveNames");
 
@@ -506,7 +511,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -546,7 +551,8 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	username[0] = mt->info.szDisplayName;
 	username[1] = NULL;
 
-	retval = ResolveNames((const char **)username, SPropTagArray, 
+	retval = ResolveNames(mapi_object_get_session(&obj_message),
+			      (const char **)username, SPropTagArray, 
 			      &SRowSet, &flaglist, 0);
 	mapitest_print_retval(mt, "ResolveNames");
 
@@ -554,7 +560,8 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	SPropValue.value.l = 0;
 	SRowSet_propcpy(mt->mem_ctx, SRowSet, SPropValue);
 
-	SetRecipientType(&(SRowSet->aRow[0]), MAPI_TO);
+	retval = SetRecipientType(&(SRowSet->aRow[0]), MAPI_TO);
+	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_TO");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -562,6 +569,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	}
 
 	SetRecipientType(&(SRowSet->aRow[0]), MAPI_CC);
+	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_CC");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -570,6 +578,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 
 
 	SetRecipientType(&(SRowSet->aRow[0]), MAPI_BCC);
+	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_BCC");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -637,7 +646,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SaveChangesMessage(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -722,7 +731,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetMessageStatus(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -853,7 +862,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageStatus(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;

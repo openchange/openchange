@@ -55,7 +55,7 @@ bool torture_rpc_mapi_bookmark(struct torture_context *torture)
 
 	/* Open Message Store */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(session, &obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

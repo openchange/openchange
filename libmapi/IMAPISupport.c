@@ -77,17 +77,20 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	struct RegisterNotification_req	request;
 	struct notifications		*notification;
 	struct mapi_notify_ctx		*notify_ctx;
+	struct mapi_session		*session;
 	enum MAPISTATUS			retval;
 	NTSTATUS			status;
 	uint32_t			size = 0;
-	mapi_ctx_t			*mapi_ctx;
 	static uint32_t			ulConnection = 0;
 
 	/* Sanity Checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!connection, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
 	mem_ctx = talloc_init("Subscribe");
 
 	/* Fill the Subscribe operation */
@@ -123,15 +126,15 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 	mapi_request->handles[1] = 0xffffffff;
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* add the notification to the list */
 	ulConnection++;
-	notify_ctx = global_mapi_ctx->session->notify_ctx;
-	notification = talloc_zero((TALLOC_CTX *)global_mapi_ctx->mem_ctx, struct notifications);
+	notify_ctx = session->notify_ctx;
+	notification = talloc_zero((TALLOC_CTX *)session, struct notifications);
 
 	notification->ulConnection = ulConnection;
 	notification->parentID = mapi_object_get_id(obj);
@@ -178,14 +181,18 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
    \sa RegisterNotification, Subscribe, MonitorNotification,
    GetLastError
 */
-_PUBLIC_ enum MAPISTATUS Unsubscribe(uint32_t ulConnection)
+_PUBLIC_ enum MAPISTATUS Unsubscribe(struct mapi_session *session, uint32_t ulConnection)
 {
-	enum MAPISTATUS	retval;
+	enum MAPISTATUS		retval;
 	struct mapi_notify_ctx	*notify_ctx;
 	struct notifications	*notification;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	notify_ctx = global_mapi_ctx->session->notify_ctx;
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+
+	notify_ctx = session->notify_ctx;
 	notification = notify_ctx->notifications;
 
 	while (notification) {
@@ -327,7 +334,8 @@ static enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
    non-threaded, only supports fnevNewmail and fnevCreatedObject
    notifications and will block your process until you send a signal.
 */
-_PUBLIC_ enum MAPISTATUS MonitorNotification(void *private_data)
+_PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session,
+					     void *private_data)
 {
 	struct mapi_response	*mapi_response;
 	struct mapi_notify_ctx	*notify_ctx;
@@ -337,15 +345,18 @@ _PUBLIC_ enum MAPISTATUS MonitorNotification(void *private_data)
 	int			err;
 	char			buf[512];
 	
+	/* sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 
-	notify_ctx = global_mapi_ctx->session->notify_ctx;
+	notify_ctx = session->notify_ctx;
 
 	is_done = 0;
 	while (!is_done) {
 		err = read(notify_ctx->fd, buf, sizeof(buf));
 		if (err > 0) {
-			status = emsmdb_transaction_null((struct emsmdb_context *)global_mapi_ctx->session->emsmdb->ctx, &mapi_response);
+			status = emsmdb_transaction_null((struct emsmdb_context *)session->emsmdb->ctx, &mapi_response);
 			if (!NT_STATUS_IS_OK(status)) {
 				err = -1;
 			} else {

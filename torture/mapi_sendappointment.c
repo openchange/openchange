@@ -83,7 +83,7 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	mapi_object_init(&obj_calendar);
 
 	/* session::OpenMsgStore */
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(session, &obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

@@ -164,6 +164,7 @@ int main(int argc, const char *argv[])
 	struct SPropValue		*lpProps;
 	struct SPropTagArray		*SPropTagArray = NULL;
 	struct exchange2ical		exchange2ical;
+	struct mapi_session		*session = NULL;
 	mapi_object_t			obj_store;
 	mapi_object_t			obj_folder;
 	mapi_object_t			obj_table;
@@ -237,12 +238,12 @@ int main(int argc, const char *argv[])
 		global_mapi_ctx->dumpdata = true;
 	}
 
-	retval = octool_init_mapi(mem_ctx, opt_profname, opt_password, 0);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	session = octool_init_mapi(mem_ctx, opt_profname, opt_password, 0);
+	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, mem_ctx);
 
 	/* Open Mailbox */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(session, &obj_store);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("OpenMsgStore", GetLastError());
 		exit (1);

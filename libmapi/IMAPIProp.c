@@ -63,6 +63,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct GetProps_req	request;
+	struct mapi_session	*session;
 	struct mapi_nameid	*nameid;
 	struct SPropTagArray	*SPropTagArray2 = NULL;
 	NTSTATUS		status;
@@ -70,14 +71,16 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	enum MAPISTATUS		mapistatus;
 	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
 	bool			named = false;
 	
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
 	mem_ctx = talloc_init("GetProps");
 
 	/* Named property mapping */
@@ -125,7 +128,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF((retval && retval != MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
@@ -138,7 +141,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	}
 	talloc_free(nameid);
 
-	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)mapi_ctx->session,
+	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)session,
 					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
 					   SPropTagArray, lpProps, PropCount, 
 					   mapi_response->mapi_repl->u.mapi_GetProps.layout);
@@ -178,6 +181,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct SetProps_req	request;
+	struct mapi_session	*session;
 	struct mapi_nameid	*nameid;
 	struct SPropTagArray	*SPropTagArray = NULL;
 	NTSTATUS		status;
@@ -185,13 +189,17 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
 	uint32_t		size = 0;
 	unsigned long		i;
 	struct mapi_SPropValue	*mapi_props;
-	mapi_ctx_t		*mapi_ctx;
 	bool			named = false;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
 	mem_ctx = talloc_init("SetProps");
+	size = 0;
 
 	/* Named property mapping */
 	nameid = mapi_nameid_new(mem_ctx);
@@ -236,7 +244,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -284,20 +292,26 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 	struct mapi_response			*mapi_response;
 	struct EcDoRpc_MAPI_REQ			*mapi_req;
 	struct SaveChangesAttachment_req	request;
+	struct mapi_session			*session[2];
 	NTSTATUS				status;
 	enum MAPISTATUS				retval;
 	uint32_t				size = 0;
 	TALLOC_CTX				*mem_ctx;
-	mapi_ctx_t				*mapi_ctx;
 
 	/* Sanity Checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_parent, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!obj_child, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF((flags != 0x9) && (flags != 0xA) && (flags != 0xC), 
 		       MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
-	mem_ctx = talloc_init("SaveChangesAttachment");
+	session[0] = mapi_object_get_session(obj_parent);
+	session[1] = mapi_object_get_session(obj_child);
+	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
+	mem_ctx = talloc_init("SaveChangesAttachment");
 	size = 0;
 
 	/* Fill the SaveChangesAttachment operation */
@@ -322,7 +336,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_child);
 	mapi_request->handles[1] = mapi_object_get_handle(obj_parent);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -357,15 +371,19 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct mapi_session	*session;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
-	mapi_ctx_t		*mapi_ctx;
 
+	/* sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("GetPropList");
 
 	/* Reset */
@@ -387,7 +405,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -396,8 +414,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	proptags->cValues = mapi_response->mapi_repl->u.mapi_GetPropList.count;
 	if (proptags->cValues) {
 		size = proptags->cValues * sizeof(enum MAPITAGS);
-		proptags->aulPropTag = talloc_array((TALLOC_CTX *)mapi_ctx->session,
-						    enum MAPITAGS, proptags->cValues);
+		proptags->aulPropTag = talloc_array((TALLOC_CTX *)session, enum MAPITAGS, proptags->cValues);
 		memcpy((void*)proptags->aulPropTag,
 		       (void*)mapi_response->mapi_repl->u.mapi_GetPropList.tags,
 		       size);
@@ -438,19 +455,22 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct GetPropsAll_req	request;
+	struct mapi_session	*session;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size;
-	mapi_ctx_t		*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx;
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
 	mem_ctx = talloc_init("GetPropsAll");
+	size = 0;
 
 	/* Fill the GetPropsAll operation */
-	size = 0;
 	request.PropertySizeLimit = 0;
 	size += sizeof (uint16_t);
 	request.WantUnicode = 0;
@@ -472,7 +492,7 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -508,18 +528,22 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct DeleteProps_req	request;
+	struct mapi_session	*session;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size;
-	mapi_ctx_t		*mapi_ctx;
 
+	/* sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx; 
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
 	mem_ctx = talloc_init("DeleteProps");
+	size = 0;
 
 	/* Fill the DeleteProps operation */
-	size = 0;
 	request.count = tags->cValues;
 	size += sizeof(uint16_t);
 	request.tags = tags->aulPropTag;
@@ -541,7 +565,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -585,16 +609,20 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct GetNamesFromIDs_req	request;
+	struct mapi_session		*session;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size= 0;
 	TALLOC_CTX			*mem_ctx;
-	mapi_ctx_t			*mapi_ctx;
 
+	/* sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Initialization */
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("GetNamesFromIDs");
 	size = 0;
 
@@ -618,8 +646,7 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, 
-				    mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -678,21 +705,25 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct GetIDsFromNames_req	request;
+	struct mapi_session		*session;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
-	mapi_ctx_t			*mapi_ctx;
 	uint32_t			i;
 
+	/* sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!nameid, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!proptags[0], MAPI_E_INVALID_PARAMETER, NULL);
 
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
 	/* Initialization */
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("GetIDsFromNames");
 	size = 0;
 	
@@ -733,8 +764,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, 
-				    mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -786,16 +816,20 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct QueryNamedProperties_req	request;
+	struct mapi_session		*session;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size;
 	TALLOC_CTX			*mem_ctx;
-	mapi_ctx_t			*mapi_ctx;
 
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Initialization */
-	mapi_ctx = global_mapi_ctx;
 	mem_ctx = talloc_init("QueryNamesFromIDs");
 	size = 0;
 
@@ -829,8 +863,7 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx,
-				    mapi_request, &mapi_response);
+	status = emsmdb_transaction(session->emsmdb->ctx,mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -887,10 +920,10 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct CopyProperties_req	request;
+	struct mapi_session		*session[2];
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size;
-	mapi_ctx_t			*mapi_ctx;
 	int				i;
 
 	/* Sanity checks */
@@ -899,7 +932,12 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	MAPI_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!tags, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx; 
+	session[0] = mapi_object_get_session(obj_src);
+	session[1] = mapi_object_get_session(obj_dst);
+	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
+
 	mem_ctx = talloc_init("CopyProps");
 	size = 0;
 
@@ -932,14 +970,14 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_src);
 	mapi_request->handles[1] = mapi_object_get_handle(obj_dst);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (problemCount) {
 		*problemCount = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblemCount;
-		*problems = talloc_array(mapi_ctx, struct PropertyProblem, *problemCount);
+		*problems = talloc_array((TALLOC_CTX *)session[0], struct PropertyProblem, *problemCount);
 		for(i=0; i < *problemCount; ++i) {
 			(*(problems[i])).index = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblem[i].index;
 			(*(problems[i])).property_tag = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblem[i].property_tag;
@@ -983,11 +1021,11 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
    \sa GetProps, SetProps, DeleteProps, CopyProps
 */
 _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
-				   mapi_object_t *obj_dst,
-				   struct SPropTagArray *excludeTags,
-				   uint8_t copyFlags,
-				   uint16_t *problemCount,
-				   struct PropertyProblem **problems)
+				mapi_object_t *obj_dst,
+				struct SPropTagArray *excludeTags,
+				uint8_t copyFlags,
+				uint16_t *problemCount,
+				struct PropertyProblem **problems)
 
 {
 	TALLOC_CTX		*mem_ctx;
@@ -995,10 +1033,10 @@ _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct CopyTo_req	request;
+	struct mapi_session	*session[2];
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
 	uint32_t		size;
-	mapi_ctx_t		*mapi_ctx;
 	int			i;
 
 	/* Sanity checks */
@@ -1007,7 +1045,12 @@ _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
 	MAPI_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!excludeTags, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_ctx = global_mapi_ctx; 
+	session[0] = mapi_object_get_session(obj_src);
+	session[1] = mapi_object_get_session(obj_dst);
+	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
+
 	mem_ctx = talloc_init("CopyProps");
 	size = 0;
 
@@ -1042,14 +1085,14 @@ _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_src);
 	mapi_request->handles[1] = mapi_object_get_handle(obj_dst);
 
-	status = emsmdb_transaction(mapi_ctx->session->emsmdb->ctx, mapi_request, &mapi_response);
+	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (problemCount) {
 		*problemCount = mapi_response->mapi_repl->u.mapi_CopyTo.PropertyProblemCount;
-		*problems = talloc_array(mapi_ctx, struct PropertyProblem, *problemCount);
+		*problems = talloc_array((TALLOC_CTX *)session[0], struct PropertyProblem, *problemCount);
 		for(i=0; i < *problemCount; ++i) {
 			(*(problems[i])).index = mapi_response->mapi_repl->u.mapi_CopyTo.PropertyProblem[i].index;
 			(*(problems[i])).property_tag = mapi_response->mapi_repl->u.mapi_CopyTo.PropertyProblem[i].property_tag;

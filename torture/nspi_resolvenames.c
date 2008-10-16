@@ -118,7 +118,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	}
 	usernames[j] = 0;
 
-	retval = ResolveNames((const char **)usernames, SPropTagArray, &rowset, &flaglist, unicode?MAPI_UNICODE:0);
+	retval = ResolveNames(session, (const char **)usernames, SPropTagArray, &rowset, &flaglist, unicode?MAPI_UNICODE:0);
 	mapi_errstr("ResolveNames", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

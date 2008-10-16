@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 
         /* Open Message Store */
         mapi_object_init(&obj_store);
-        retval = OpenMsgStore(&obj_store);
+        retval = OpenMsgStore(session, &obj_store);
         MAPI_RETVAL_IF(retval, retval, NULL);
 
         /* Find Inbox default folder */
@@ -87,7 +87,8 @@ int main(int argc, char *argv[])
         /* Release MAPI objects */
         mapi_object_release(&obj_table);
         mapi_object_release(&obj_folder);
-        mapi_object_release(&obj_store);
+
+	Logoff(&obj_store);
 
         /* Uninitialize MAPI */
         MAPIUninitialize();

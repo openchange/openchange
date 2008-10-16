@@ -282,7 +282,7 @@ static void mapiprofile_get_fqdn(const char *profdb,
 		exit (1);
 	}
 
-	retval = RfrGetFQDNFromLegacyDN(&serverFQDN);
+	retval = RfrGetFQDNFromLegacyDN(session, &serverFQDN);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("RfrGetFQDNFromLegacyDN", GetLastError());
 		exit (1);

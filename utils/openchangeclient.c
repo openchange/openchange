@@ -817,7 +817,8 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	oclient->usernames = collapse_recipients(mem_ctx, oclient);
 
 	/* ResolveNames */
-	retval = ResolveNames((const char **)oclient->usernames, SPropTagArray, &SRowSet, &flaglist, 0);
+	retval = ResolveNames(mapi_object_get_session(&obj_message), (const char **)oclient->usernames, 
+			      SPropTagArray, &SRowSet, &flaglist, 0);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (!SRowSet) {
@@ -2309,10 +2310,10 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* wait for notifications: infinite loop */
-	retval = MonitorNotification((void *)obj_store);
+	retval = MonitorNotification(mapi_object_get_session(obj_store), (void *)obj_store);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	retval = Unsubscribe(ulConnection);
+	retval = Unsubscribe(mapi_object_get_session(obj_store), ulConnection);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	mapi_object_release(&obj_inbox);
@@ -2411,7 +2412,9 @@ static bool openchangeclient_rmdir(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store
 	return true;
 }
 
-static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx, struct oclient *oclient)
+static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx, 
+				      struct mapi_session *session, 
+				      struct oclient *oclient)
 {
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		*SRowSet;
@@ -2438,7 +2441,7 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx, struct oclient *oclie
 	ulFlags = TABLE_START;
 	do {
 		count += 0x2;
-		retval = GetGALTable(SPropTagArray, &SRowSet, count, ulFlags);
+		retval = GetGALTable(session, SPropTagArray, &SRowSet, count, ulFlags);
 		if (SRowSet->cRows) {
 			for (i = 0; i < SRowSet->cRows; i++) {
 				mapidump_PAB_entry(&SRowSet->aRow[i]);
@@ -3057,7 +3060,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_userlist) {
-		retval = openchangeclient_userlist(mem_ctx, &oclient);
+		retval = openchangeclient_userlist(mem_ctx, session, &oclient);
 		exit (0);
 	}
 
@@ -3067,13 +3070,13 @@ int main(int argc, const char *argv[])
 
 	mapi_object_init(&obj_store);
 	if (oclient.pf == true) {
-		retval = OpenPublicFolder(&obj_store);
+		retval = OpenPublicFolder(session, &obj_store);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("OpenPublicFolder", GetLastError());
 			exit (1);
 		}
 	} else {
-		retval = OpenMsgStore(&obj_store);
+		retval = OpenMsgStore(session, &obj_store);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("OpenMsgStore", GetLastError());
 			exit (1);

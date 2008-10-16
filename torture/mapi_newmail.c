@@ -78,7 +78,7 @@ bool torture_rpc_mapi_newmail(struct torture_context *torture)
 	mapi_object_init(&obj_inbox);
 
 	/* session::OpenMsgStore() */
-	retval = OpenMsgStore(&obj_store);
+	retval = OpenMsgStore(session, &obj_store);
 	mapi_errstr("OpenMsgStore", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -109,7 +109,7 @@ bool torture_rpc_mapi_newmail(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
  	/* wait for notifications */
-	MonitorNotification((void *)&obj_store);
+	MonitorNotification(mapi_object_get_session(&obj_inbox),(void *)&obj_store);
 
 	mapi_object_release(&obj_inbox);
 	mapi_object_release(&obj_store);

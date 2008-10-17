@@ -135,6 +135,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
    This function opens the main message store. This allows access to
    the normal user folders.
 
+   \param session pointer to the MAPI session context
    \param obj_store the result of opening the store
 
    \return MAPI_E_SUCCESS on success, otherwise -1.

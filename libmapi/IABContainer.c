@@ -32,6 +32,7 @@
 /**
    \details Resolve user names against the Windows Address Book Provider
 
+   \param session pointer to the MAPI session context
    \param usernames list of user names to resolve
    \param rowset resulting list of user details
    \param props resulting list of resolved names
@@ -98,6 +99,7 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
 /**
    \details Retrieve the global address list
    
+   \param session pointer to the MAPI session context
    \param SPropTagArray pointer on an array of MAPI properties we want
    to fetch
    \param SRowSet pointer on the rows returned

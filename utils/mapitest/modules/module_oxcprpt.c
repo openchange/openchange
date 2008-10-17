@@ -257,6 +257,138 @@ _PUBLIC_ bool mapitest_oxcprpt_SetProps(struct mapitest *mt)
 
 
 /**
+   \details Test the DeleteProps (0xb) operation)
+
+   This function:
+   -# Opens the mailbox
+   -# Create a test folder
+   -# Creates a reference email, and sets some properties on it
+   -# Delete properties from this message
+   -# Checks that properties got deleted
+   -# Deletes both email and the test folder
+
+   \todo It would be useful to test the problem return values
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcprpt_DeleteProps(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_top_folder;
+	mapi_id_t		id_top_folder;
+	mapi_object_t		obj_ref_folder;
+	mapi_object_t		obj_ref_message;
+	const char		*name = NULL;
+	const char		*subject = NULL;
+	struct SPropValue	lpProp[3];
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	*lpProps;
+	uint32_t		cValues;
+
+	/* Step 1. Logon Private Mailbox */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval_step_fmt(mt, "1.", "OpenMsgStore", "(%s)", "Logon Private Mailbox");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	mapi_object_init(&obj_top_folder);
+	retval = GetDefaultFolder(&obj_store, &id_top_folder, olFolderTopInformationStore);
+	retval = OpenFolder(&obj_store, id_top_folder, &obj_top_folder);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2: Create reference folder */
+	mapi_object_init(&obj_ref_folder);
+        retval = CreateFolder(&obj_top_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+                              OPEN_IF_EXISTS, &obj_ref_folder);
+	mapitest_print_retval_step_fmt(mt, "2.", "CreateFolder", "(%s)", "Create the test folder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3: Create reference message */
+	mapi_object_init(&obj_ref_message);
+	retval = mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
+	mapitest_print_retval_step_fmt(mt, "3.1.", "mapitest_common_message_create", "(%s)", "Create a reference email");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	retval = SaveChangesMessage(&obj_ref_folder, &obj_ref_message, KeepOpenReadWrite);
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+        name = talloc_asprintf(mt->mem_ctx, "Reference: %s", "display name");
+	subject = talloc_asprintf(mt->mem_ctx, "Reference: %s", "subject");
+	set_SPropValue_proptag(&lpProp[0], PR_DISPLAY_NAME, (const void *)name);
+	set_SPropValue_proptag(&lpProp[1], PR_CONVERSATION_TOPIC, (const void *)subject);
+	retval = SetProps(&obj_ref_message, lpProp, 2);
+	mapitest_print_retval_step_fmt(mt, "3.2.", "SetProps", "(%s)", "Set email properties");
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 4: Double check with GetProps */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 4.1. - Check: Reference props set - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 4.1. - Check: Reference props set [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+		}
+	}
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 4.2. - Check: Reference props set - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 4.2. - Check: Reference props set [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+		}
+	}
+
+	/* Step 5. Delete Properties */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_CONVERSATION_TOPIC);
+	retval = DeleteProps(&obj_ref_message, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	mapitest_print_retval_step_fmt(mt, "5.", "DeleteProps", "PR_CONVERSATION_TOPIC");
+
+	/* Step 6. Double check with GetProps */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_CONVERSATION_TOPIC);
+	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (get_SPropValue(lpProps, PR_CONVERSATION_TOPIC) == NULL) {
+		mapitest_print(mt, "* Step 5.1. - GetProps verifier [SUCCESS]\n");
+	} else {
+		mapitest_print(mt, "* Step 5.1. - GetProps verifier [FAILURE]:\n");
+	}
+
+	/* Step 7: cleanup folders */
+	retval = DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_ref_folder),
+			      DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);
+	mapitest_print_retval_step(mt, "6.", "DeleteFolder");
+
+	/* Release */
+	mapi_object_release(&obj_ref_message);
+	mapi_object_release(&obj_ref_folder);
+	mapi_object_release(&obj_top_folder);
+	mapi_object_release(&obj_store);
+
+
+	return true;
+}
+
+
+/**
    \details Test the CopyProps (0x67) operation
 
    This function:
@@ -2097,4 +2229,136 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	mapi_object_release(&obj_store);
 
 	return ret;
+}
+
+
+/**
+   \details Test the DeletePropertiesNoReplicate (0x7a) operation
+
+   This function:
+   -# Opens the mailbox
+   -# Create a test folder
+   -# Creates a reference email, and sets some properties on it
+   -# Delete properties from this message
+   -# Checks that properties got deleted
+   -# Deletes both email and the test folder
+
+   \todo It would be useful to test the problem return values
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcprpt_DeletePropertiesNoReplicate(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_top_folder;
+	mapi_id_t		id_top_folder;
+	mapi_object_t		obj_ref_folder;
+	mapi_object_t		obj_ref_message;
+	const char		*name = NULL;
+	const char		*subject = NULL;
+	struct SPropValue	lpProp[3];
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	*lpProps;
+	uint32_t		cValues;
+
+	/* Step 1. Logon Private Mailbox */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval_step_fmt(mt, "1.", "OpenMsgStore", "(%s)", "Logon Private Mailbox");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	mapi_object_init(&obj_top_folder);
+	retval = GetDefaultFolder(&obj_store, &id_top_folder, olFolderTopInformationStore);
+	retval = OpenFolder(&obj_store, id_top_folder, &obj_top_folder);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2: Create reference folder */
+	mapi_object_init(&obj_ref_folder);
+        retval = CreateFolder(&obj_top_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+                              OPEN_IF_EXISTS, &obj_ref_folder);
+	mapitest_print_retval_step_fmt(mt, "2.", "CreateFolder", "(%s)", "Create the test folder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3: Create reference message */
+	mapi_object_init(&obj_ref_message);
+	retval = mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
+	mapitest_print_retval_step_fmt(mt, "3.1.", "mapitest_common_message_create", "(%s)", "Create a reference email");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+	retval = SaveChangesMessage(&obj_ref_folder, &obj_ref_message, KeepOpenReadWrite);
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+        name = talloc_asprintf(mt->mem_ctx, "Reference: %s", "display name");
+	subject = talloc_asprintf(mt->mem_ctx, "Reference: %s", "subject");
+	set_SPropValue_proptag(&lpProp[0], PR_DISPLAY_NAME, (const void *)name);
+	set_SPropValue_proptag(&lpProp[1], PR_CONVERSATION_TOPIC, (const void *)subject);
+	retval = SetProps(&obj_ref_message, lpProp, 2);
+	mapitest_print_retval_step_fmt(mt, "3.2.", "SetProps", "(%s)", "Set email properties");
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 4: Double check with GetProps */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (lpProps[0].value.lpszA) {
+		if (!strncmp(name, lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+			mapitest_print(mt, "* Step 4.1. - Check: Reference props set - [SUCCESS] (%s)\n",
+				       lpProps[0].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 4.1. - Check: Reference props set [FAILURE] (%s)\n",
+				       lpProps[0].value.lpszA);
+		}
+	}
+	if (lpProps[1].value.lpszA) {
+		if (!strncmp(subject, lpProps[1].value.lpszA, strlen(lpProps[1].value.lpszA))) {
+			mapitest_print(mt, "* Step 4.2. - Check: Reference props set - [SUCCESS] (%s)\n",
+				       lpProps[1].value.lpszA);
+		} else {
+			mapitest_print(mt, "* Step 4.2. - Check: Reference props set [FAILURE] (%s)\n",
+				       lpProps[1].value.lpszA);
+		}
+	}
+
+	/* Step 5. Delete Properties */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_CONVERSATION_TOPIC);
+	retval = DeletePropertiesNoReplicate(&obj_ref_message, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	mapitest_print_retval_step_fmt(mt, "5.", "DeletePropertiesNoReplicate", "PR_CONVERSATION_TOPIC");
+
+	/* Step 6. Double check with GetProps */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_CONVERSATION_TOPIC);
+	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (get_SPropValue(lpProps, PR_CONVERSATION_TOPIC) == NULL) {
+		mapitest_print(mt, "* Step 5.1. - GetProps verifier [SUCCESS]\n");
+	} else {
+		mapitest_print(mt, "* Step 5.1. - GetProps verifier [FAILURE]:\n");
+	}
+
+	/* Step 7: cleanup folders */
+	retval = DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_ref_folder),
+			      DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);
+	mapitest_print_retval_step(mt, "6.", "DeleteFolder");
+
+	/* Release */
+	mapi_object_release(&obj_ref_message);
+	mapi_object_release(&obj_ref_folder);
+	mapi_object_release(&obj_top_folder);
+	mapi_object_release(&obj_store);
+
+
+	return true;
 }

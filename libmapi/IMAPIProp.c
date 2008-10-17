@@ -508,7 +508,7 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
    \details Delete one or more properties from an object
 
    \param obj the object to remove properties from
-   \param tags the properties to remove from the given object
+   \param proptags the properties to remove from the given object
        
    \return MAPI_E_SUCCESS on success, otherwise -1.
 
@@ -521,7 +521,7 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
    \sa SetProps, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj, 
-				     struct SPropTagArray *tags)
+				     struct SPropTagArray *proptags)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_request	*mapi_request;
@@ -533,9 +533,10 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	enum MAPISTATUS		retval;
 	uint32_t		size;
 
-	/* sanity checks */
+	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
 	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
@@ -544,10 +545,10 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	size = 0;
 
 	/* Fill the DeleteProps operation */
-	request.count = tags->cValues;
+	request.count = proptags->cValues;
 	size += sizeof(uint16_t);
-	request.tags = tags->aulPropTag;
-	size += tags->cValues * sizeof(enum MAPITAGS);
+	request.tags = proptags->aulPropTag;
+	size += proptags->cValues * sizeof(enum MAPITAGS);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -574,6 +575,81 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Deletes property values from an object without invoking
+   replication.
+
+   \param obj the object to remove properties from
+   \param proptags the properties to remove from the given object
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+     \sa DeleteProps
+ */
+_PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
+						     struct SPropTagArray *proptags)
+{
+	TALLOC_CTX				*mem_ctx;
+	struct mapi_request			*mapi_request;
+	struct mapi_response			*mapi_response;
+	struct EcDoRpc_MAPI_REQ			*mapi_req;
+	struct DeletePropertiesNoReplicate_req	request;
+	struct mapi_session			*session;
+	NTSTATUS				status;
+	enum MAPISTATUS				retval;
+	uint32_t				size;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj);
+	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_init("DeletePropertiesNoReplicate");
+	size = 0;
+
+	/* Fill the DeletePropertiesNoReplicate operation */
+	request.PropertyTags.cValues = proptags->cValues;
+	size += sizeof (uint16_t);
+	request.PropertyTags.aulPropTag = proptags->aulPropTag;
+	size += proptags->cValues * sizeof (enum MAPITAGS);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_DeletePropertiesNoReplicate;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_DeletePropertiesNoReplicate = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj);
+
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
+	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;	
 }
 
 

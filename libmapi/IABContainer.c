@@ -156,7 +156,7 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct mapi_session *session,
    \param session pointer to the MAPI session context
    \param username pointer to the username to retrieve information from
    \param pPropTags pointer to the property tags array to lookup
-   \param SRowSet pointer on pointer to the results
+   \param ppRowSet pointer on pointer to the results
 
    Note that if pPropTags is NULL, then GetABNameInfo will fetch
    the following default property tags:

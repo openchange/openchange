@@ -153,6 +153,41 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 _PUBLIC_ enum MAPISTATUS OpenMsgStore(struct mapi_session *session,
 				      mapi_object_t *obj_store)
 {
+	/* sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
+
+	return OpenUserMailbox(session, session->profile->username, obj_store);
+}
+
+
+/**
+   \details Open another user mailbox
+
+   This function opens the main message store. This allows access to
+   the normal user folders.
+
+   \param session pointer to the MAPI session context
+   \param username name of the user's mailbox to open
+   \param obj_store the result of opening the store
+
+   \return MAPI_E_SUCCESS on success, otherwise -1.
+
+   \note Developers should call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa MAPIInitialize which is required before opening the store
+   \sa GetLastError to check the result of a failed call, if necessary
+   \sa OpenPublicFolder if you need access to the public folders
+ */
+_PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
+					 const char *username,
+					 mapi_object_t *obj_store)
+{
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
@@ -162,7 +197,7 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(struct mapi_session *session,
 	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
 	mapi_object_store_t	*store;
-	const char		*mailbox;
+	char			*mailbox;
 
 	/* sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -172,7 +207,8 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(struct mapi_session *session,
 	mem_ctx = talloc_init("OpenMsgStore");
 	size = 0;
 
-	mailbox = session->profile->mailbox;
+	mailbox = talloc_asprintf(mem_ctx, "/o=%s/ou=%s/cn=Recipients/cn=%s", session->profile->org,
+				  session->profile->ou, username);
 
 	/* Fill the Logon operation */
 	request.LogonFlags = LogonPrivate;

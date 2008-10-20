@@ -32,6 +32,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <time.h>
+#include <ctype.h>
 
 /**
  * init sendmail struct
@@ -61,6 +62,7 @@ static void init_oclient(struct oclient *oclient)
 	oclient->busystatus = -1;
 	oclient->label = -1;
 	oclient->private = false;
+	oclient->freebusy = NULL;
 
 	/* contact related parameters */
 	oclient->email = NULL;
@@ -819,6 +821,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	/* ResolveNames */
 	retval = ResolveNames(mapi_object_get_session(&obj_message), (const char **)oclient->usernames, 
 			      SPropTagArray, &SRowSet, &flaglist, 0);
+	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (!SRowSet) {
@@ -2635,6 +2638,77 @@ static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_s
 }
 
 
+static bool openchangeclient_freebusy(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+{
+	enum MAPISTATUS			retval;
+	struct SRow			aRow;
+	const char     			*message_name;
+	uint32_t			i;
+	const uint32_t			*publish_start;
+	const uint32_t			*publish_end;
+	const struct LongArray_r       	*busy_months;
+	const struct BinaryArray_r	*busy_events;
+	const struct LongArray_r       	*tentative_months;
+	const struct BinaryArray_r	*tentative_events;
+	const struct LongArray_r       	*oof_months;
+	const struct BinaryArray_r	*oof_events;
+	uint32_t			year;
+
+	/* Step 1. Retrieve FreeBusy data for the given user */
+	retval = GetUserFreeBusyData(obj_store, oclient->freebusy, &aRow);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	/* Step 2. Dump properties */
+	message_name = (const char *) find_SPropValue_data(&aRow, PR_NORMALIZED_SUBJECT);
+	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_START_RANGE);
+	publish_end = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_END_RANGE);
+	busy_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_BUSY_MONTHS);
+	busy_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_BUSY_EVENTS);
+	tentative_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_TENTATIVE_MONTHS);
+	tentative_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_TENTATIVE_EVENTS);
+	oof_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_OOF_MONTHS);
+	oof_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_OOF_EVENTS);
+
+	year = GetFreeBusyYear(publish_start);
+
+	DEBUG(0, ("FreeBusy (%s):\n", message_name));
+	mapidump_date_SPropValue(aRow.lpProps[1], "* FreeBusy Last Modification Time");
+	mapidump_freebusy_date(*publish_start, "\t* FreeBusy Publishing Start:");
+	mapidump_freebusy_date(*publish_end, "\t *FreeBusy Publishing End:  ");
+
+	if (busy_months && ((uint32_t) busy_months != MAPI_E_NOT_FOUND) &&
+	    busy_events && ((uint32_t) busy_events != MAPI_E_NOT_FOUND)) {
+		DEBUG(0, ("\t* Busy Events:\n"));
+		for (i = 0; i < busy_months->cValues; i++) {
+			DEBUG(0, ("\t\t* %s %d:\n", mapidump_freebusy_month(busy_months->lpl[i], year), year)); 
+			mapidump_freebusy_event(&busy_events->lpbin[i], busy_months->lpl[i], year, "\t\t\t* ");
+		}
+	}
+
+	if (tentative_months && ((uint32_t) tentative_months != MAPI_E_NOT_FOUND) &&
+	    tentative_events && ((uint32_t) tentative_events != MAPI_E_NOT_FOUND)) {
+		DEBUG(0, ("\t* Tentative Events:\n"));
+		for (i = 0; i < tentative_months->cValues; i++) {
+			DEBUG(0, ("\t\t* %s %d:\n", mapidump_freebusy_month(tentative_months->lpl[i], year), year));
+			mapidump_freebusy_event(&tentative_events->lpbin[i], tentative_months->lpl[i], year, "\t\t\t* ");
+		}
+	}
+
+	if (oof_months && ((uint32_t) oof_months != MAPI_E_NOT_FOUND) &&
+	    oof_events && ((uint32_t) oof_events != MAPI_E_NOT_FOUND)) {
+		DEBUG(0, ("\t* Out Of Office Events:\n"));
+		for (i = 0; i < oof_months->cValues; i++) {
+			DEBUG(0, ("\t\t* %s %d:\n", mapidump_freebusy_month(oof_months->lpl[i], year), year));
+			mapidump_freebusy_event(&oof_events->lpbin[i], oof_months->lpl[i], year, "\t\t\t* ");
+		}
+	}
+
+	MAPIFreeBuffer(aRow.lpProps);
+
+	return true;
+}
+
+
 static void list_argument(const char *label, struct oc_element *oc_items)
 {
 	uint32_t	i;
@@ -2707,7 +2781,7 @@ int main(int argc, const char *argv[])
 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
 	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE,
 	      OPT_UPDATE, OPT_DELETEITEMS, OPT_MAPI_PROPS, OPT_OCPF_FILE, OPT_OCPF_SYNTAX,
-	      OPT_OCPF_SENDER, OPT_OCPF_DUMP};
+	      OPT_OCPF_SENDER, OPT_OCPF_DUMP, OPT_FREEBUSY};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -2723,6 +2797,7 @@ int main(int argc, const char *argv[])
 		{"fetchmail", 'F', POPT_ARG_NONE, NULL, OPT_FETCHMAIL, "fetch user INBOX mails"},
 		{"storemail", 'G', POPT_ARG_STRING, NULL, OPT_STOREMAIL, "retrieve a mail on the filesystem"},
 		{"fetch-items", 'i', POPT_ARG_STRING, NULL, OPT_FETCHITEMS, "fetch specified user INBOX items"},
+		{"freebusy", 0, POPT_ARG_STRING, NULL, OPT_FREEBUSY, "display freebusy information for the specified user"},
 		{"delete", 0, POPT_ARG_STRING, NULL, OPT_DELETEITEMS, "delete message given its unique ID"},
 		{"update", 'u', POPT_ARG_STRING, NULL, OPT_UPDATE, "update the specified item"},
 		{"mailbox", 'm', POPT_ARG_NONE, NULL, OPT_MAILBOX, "list mailbox folder summary"},
@@ -2822,6 +2897,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_DELETEITEMS:
 			oclient.delete = poptGetOptArg(pc);
+			break;
+		case OPT_FREEBUSY:
+			oclient.freebusy = poptGetOptArg(pc);
 			break;
 		case OPT_UPDATE:
 			oclient.update = poptGetOptArg(pc);
@@ -2967,7 +3045,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if ((opt_sendmail && oclient.pf == true && !oclient.folder) ||
-	    (oclient.pf == true && !oclient.folder && !opt_mailbox)) {
+	    (oclient.pf == true && !oclient.folder && !opt_mailbox && !oclient.freebusy)) {
 		printf("--folder option is mandatory\n");
 		exit (1);
 	}
@@ -3183,6 +3261,15 @@ int main(int argc, const char *argv[])
 			retval = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_APPOINTMENT);
 			mapi_errstr("update appointment", GetLastError());
 		}
+		if (retval != true) {
+			goto end;
+		}
+	}
+
+	if (oclient.freebusy) {
+		retval = openchangeclient_freebusy(mem_ctx, &obj_store, &oclient);
+		mapi_errstr("freebusy", GetLastError());
+
 		if (retval != true) {
 			goto end;
 		}

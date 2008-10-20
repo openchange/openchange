@@ -38,5 +38,6 @@ struct nspi_context {
 #define	ORG_UNIT	"/ou="
 #define	SERVER_DN	"/o=%s/ou=%s/cn=Configuration/cn=Servers/cn=%s"
 #define	SERVERNAME	"/cn=Servers/cn="
+#define	RECIPIENT_DN	"/o=%s/ou=%s/cn=Recipients/cn=%s"
 
 #endif /* __NSPI_H__ */

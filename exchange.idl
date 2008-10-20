@@ -902,7 +902,7 @@ System Attendant Private Interface
 		[flag(NDR_BUFFERS)]uint8	lpb[cb];
 	} SBinary_short;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 cValues;
 		uint32 lpl[cValues]; 
 	} mapi_MV_LONG_STRUCT;
@@ -925,7 +925,7 @@ System Attendant Private Interface
 		mapi_LPWSTR strings[cValues];
 	} mapi_SPLSTRArrayW;
 	
-	typedef struct {
+	typedef [public] struct {
 		uint32		cValues;
 		SBinary_short	bin[cValues];
 	} mapi_SBinaryArray;

@@ -468,20 +468,24 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 				 enum MAPITAGS tag, 
 				 DATA_BLOB *data)
 {
-	struct ndr_pull		*ndr;
-	const char		*pt_string8;
-	const char		*pt_unicode;
-	uint16_t		*pt_i2;
-	uint64_t		*pt_i8;
-	uint32_t		*pt_long;
-	uint8_t			*pt_boolean;
-	struct FILETIME		*pt_filetime;
-	struct GUID		*pt_clsid;
-	struct SBinary_short	pt_binary;
-	struct Binary_r		*sbin;
-	struct mapi_SLPSTRArray	pt_slpstr;
-	struct StringArray_r	*slpstr;
-	uint32_t		i;
+	struct ndr_pull			*ndr;
+	const char			*pt_string8;
+	const char			*pt_unicode;
+	uint16_t			*pt_i2;
+	uint64_t			*pt_i8;
+	uint32_t			*pt_long;
+	uint8_t				*pt_boolean;
+	struct FILETIME			*pt_filetime;
+	struct GUID			*pt_clsid;
+	struct SBinary_short		pt_binary;
+	struct Binary_r			*sbin;
+	struct mapi_SLPSTRArray		pt_slpstr;
+	struct StringArray_r		*slpstr;
+	struct mapi_MV_LONG_STRUCT	pt_MVl;
+	struct LongArray_r		*MVl;
+	struct mapi_SBinaryArray	pt_MVbin;
+	struct BinaryArray_r		*MVbin;
+	uint32_t			i;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_pull);
 	ndr->offset = *offset;
@@ -540,6 +544,16 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		sbin->cb = pt_binary.cb;
 		sbin->lpb = pt_binary.lpb;
 		return (void *) sbin;
+	case PT_MV_LONG:
+		ndr_pull_mapi_MV_LONG_STRUCT(ndr, NDR_SCALARS, &pt_MVl);
+		*offset = ndr->offset;
+		MVl = talloc_zero(mem_ctx, struct LongArray_r);
+		MVl->cValues = pt_MVl.cValues;
+		MVl->lpl = talloc_array(mem_ctx, uint32_t, pt_MVl.cValues);
+		for (i = 0; i < MVl->cValues; i++) {
+			MVl->lpl[i] = pt_MVl.lpl[i];
+		}
+		return (const void *) MVl;
 	case PT_MV_STRING8:
 		ndr_pull_mapi_SLPSTRArray(ndr, NDR_SCALARS, &pt_slpstr);
 		*offset = ndr->offset;
@@ -550,6 +564,18 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 			slpstr->lppszA[i] = talloc_strdup(mem_ctx, pt_slpstr.strings[i].lppszA);
 		}
 		return (const void *) slpstr;
+	case PT_MV_BINARY:
+		ndr_pull_mapi_SBinaryArray(ndr, NDR_SCALARS, &pt_MVbin);
+		*offset = ndr->offset;
+		MVbin = talloc_zero(mem_ctx, struct BinaryArray_r);
+		MVbin->cValues = pt_MVbin.cValues;
+		MVbin->lpbin = talloc_array(mem_ctx, struct Binary_r, pt_MVbin.cValues);
+		for (i = 0; i < MVbin->cValues; i++) {
+			MVbin->lpbin[i].cb = pt_MVbin.bin[i].cb;
+			MVbin->lpbin[i].lpb = talloc_size(mem_ctx, MVbin->lpbin[i].cb);
+			memcpy(MVbin->lpbin[i].lpb, pt_MVbin.bin[i].lpb, MVbin->lpbin[i].cb);
+		}
+		return (const void *) MVbin;
 	default:
 		return NULL;
 	}	

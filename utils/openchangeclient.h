@@ -74,6 +74,7 @@ struct oclient {
 	const char		*card_name;
 	const char		*folder_name;
 	const char		*folder_comment;
+	const char		*freebusy;
 	/* PF related options */
 	bool			pf;
 	const char		*folder;

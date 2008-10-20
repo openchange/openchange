@@ -281,5 +281,8 @@
 #define	PS_INTERNET_HEADERS	"00020386-0000-0000-c000-000000000046"
 #define	PS_MAPI			"00020328-0000-0000-c000-000000000046"
 
+/* FreeBusy strings for Exchange 2003 and below */
+#define	FREEBUSY_FOLDER		"EX:/o=%s/ou=%s"
+#define	FREEBUSY_USER		"USER-/CN=RECIPIENTS/CN=%s"
 
 #endif /*!__MAPIDEFS_H__ */

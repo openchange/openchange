@@ -1264,7 +1264,7 @@ _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table,
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
 
-   \sa SetColumns, Restrict, FindRow, GetHiearchyTable, GetContentsTable
+   \sa SetColumns, Restrict, FindRow, GetHierarchyTable, GetContentsTable
  */
 _PUBLIC_ enum MAPISTATUS GetStatus(mapi_object_t *obj_table, uint8_t *TableStatus)
 {

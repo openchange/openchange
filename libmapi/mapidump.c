@@ -21,6 +21,7 @@
 #include <libmapi/mapidump.h>
 #include <libmapi/proto_private.h>
 #include <libmapi/defs_private.h>
+#include <time.h>
 
 /**
    \file mapidump.c
@@ -637,4 +638,104 @@ _PUBLIC_ void mapidump_newmail(struct NewMailNotification *newmail, const char *
 		printf("%sMessage Class: %s\n", sep?sep:"", newmail->MessageClass.lpszW);
 	}
 	fflush(0);
+}
+
+
+_PUBLIC_ const char *mapidump_freebusy_month(uint32_t month, uint32_t year)
+{
+	uint32_t	realmonth;
+
+	realmonth = month - (year * 16);
+
+	switch (realmonth) {
+	case 0x1:
+		return "January";
+	case 0x2:
+		return "February";
+	case 0x3:
+		return "March";
+	case 0x4:
+		return "April";
+	case 0x5:
+		return "May";
+	case 0x6:
+		return "June";
+	case 0x7:
+		return "July";
+	case 0x8:
+		return "August";
+	case 0x9:
+		return "September";
+	case 0xa:
+		return "October";
+	case 0xb:
+		return "November";
+	case 0xc:
+		return "December";
+	}
+	return NULL;
+}
+
+
+_PUBLIC_ void mapidump_freebusy_date(uint32_t t, const char *sep)
+{
+	TALLOC_CTX	*mem_ctx;
+	NTTIME		time;
+	const char	*date;
+
+	mem_ctx = talloc_init("mapidump_freebusy_date");
+
+	time = t;
+	time *= 60;
+	time *= 10000000;
+
+	date = nt_time_string(mem_ctx, time);
+	DEBUG(0, ("%s %-30s\n", sep, date));
+	talloc_free((char *)date);
+	talloc_free(mem_ctx);
+}
+
+
+_PUBLIC_ void mapidump_freebusy_event(struct Binary_r *bin, uint32_t month, uint32_t year, const char *sep)
+{
+	uint16_t	event_start;
+	uint16_t	event_end;
+	uint32_t	i;
+	uint32_t       	hour;
+	uint32_t       	hours;
+	uint32_t	day;
+	const char	*month_name;
+	uint32_t	last;
+	uint32_t	minutes;
+
+	if (!bin) return;
+	/* bin.cb must be a multiple of 4 */
+	if (bin->cb % 4) return;
+
+	month_name = mapidump_freebusy_month(month, year);
+
+	for (i = 0; i < bin->cb; i+= 4) {
+		event_start = (bin->lpb[i + 1] << 8) | bin->lpb[i];
+		event_end = (bin->lpb[i + 3] << 8) | bin->lpb[i + 2];
+
+		for (hour = 0; hour < 24; hour++) {
+			if (!((event_start - (60 * hour)) % 1440)) {
+				day = ((event_start - (60 * hour)) / 1440);
+				last = event_end - event_start;
+				DEBUG(0, ("%s %d %s %d at %d hours and lasts ", sep ? sep : "", day, month_name, year, hour + daylight));
+				if (last < 60) {
+					DEBUG(0, ("%d minutes\n", last));
+				} else {
+					hours = last / 60;
+					minutes = last - hours * 60;
+					if (minutes > 0) {
+						DEBUG(0, ("%d hours and %d minutes\n", hours, minutes));
+					} else {
+						DEBUG(0, ("%d hours\n", hours));
+					}
+				}
+			}
+		}
+		
+	}	
 }

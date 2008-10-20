@@ -267,6 +267,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/simple_mapi.po				\
 	libmapi/util/lcid.po 				\
 	libmapi/util/codepage.po			\
+	libmapi/freebusy.po				\
 	libmapi/x500.po 				\
 	ndr_mapi.po					\
 	gen_ndr/ndr_exchange.po				\
@@ -320,6 +321,7 @@ libmapi/proto.h libmapi/proto_private.h:		\
 	libmapi/IStream.c				\
 	libmapi/IXPLogon.c				\
 	libmapi/FXICS.c					\
+	libmapi/freebusy.c				\
 	libmapi/x500.c 					\
 	libmapi/lzfu.c					\
 	libmapi/utils.c 				\

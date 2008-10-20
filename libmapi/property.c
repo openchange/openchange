@@ -258,6 +258,8 @@ _PUBLIC_ const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 		return (const void *)lpProp->value.lpszW;
 	case PT_BINARY:
 		return (const void *)(struct SBinary_short *)&lpProp->value.bin;
+	case PT_MV_LONG:
+		return (const void *)(struct mapi_MV_LONG_STRUCT *)&lpProp->value.MVl;
 	case PT_MV_STRING8:
 		return (const void *)(struct mapi_SLPSTRArray *)&lpProp->value.MVszA;
 	case PT_MV_BINARY:
@@ -294,8 +296,12 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 		return (const void *)(struct GUID *)&lpProps->value.lpguid;
 	case PT_BINARY:
 		return (const void *)&lpProps->value.bin;
+	case PT_MV_LONG:
+		return (const void *)(struct LongArray_r *)&lpProps->value.MVl;
 	case PT_MV_STRING8:
 		return (const void *)(struct StringArray_r *)&lpProps->value.MVszA;
+	case PT_MV_BINARY:
+		return (const void *)(struct BinaryArray_r *)&lpProps->value.MVbin;
 	default:
 		return NULL;
 	}

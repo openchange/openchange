@@ -720,7 +720,7 @@ _PUBLIC_ void mapidump_freebusy_event(struct Binary_r *bin, uint32_t month, uint
 
 		for (hour = 0; hour < 24; hour++) {
 			if (!((event_start - (60 * hour)) % 1440)) {
-				day = ((event_start - (60 * hour)) / 1440);
+				day = ((event_start - (60 * hour)) / 1440) + 1;
 				last = event_end - event_start;
 				DEBUG(0, ("%s %d %s %d at %d hours and lasts ", sep ? sep : "", day, month_name, year, hour + daylight));
 				if (last < 60) {

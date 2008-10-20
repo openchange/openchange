@@ -75,6 +75,7 @@ struct oclient {
 	const char		*folder_name;
 	const char		*folder_comment;
 	const char		*freebusy;
+	bool			force;
 	/* PF related options */
 	bool			pf;
 	const char		*folder;

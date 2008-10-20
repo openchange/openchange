@@ -63,6 +63,7 @@ static void init_oclient(struct oclient *oclient)
 	oclient->label = -1;
 	oclient->private = false;
 	oclient->freebusy = NULL;
+	oclient->force = false;
 
 	/* contact related parameters */
 	oclient->email = NULL;
@@ -1040,6 +1041,34 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 }
 
 
+static enum MAPISTATUS check_conflict_date(mapi_object_t *obj,
+					   struct FILETIME *ft)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	struct mapi_session	*session;
+	struct mapi_session	*session2;
+	bool			conflict;
+			
+	session = mapi_object_get_session(obj);
+	retval = MapiLogonEx(&session2, session->profile->profname, session->profile->password);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	mapi_object_init(&obj_store);
+	retval = OpenPublicFolder(session2, &obj_store);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	retval = IsFreeBusyConflict(&obj_store, ft, &conflict);
+	Logoff(&obj_store);
+
+	if (conflict == true) {
+		printf("[WARNING]: This start date conflicts with another appointment\n");
+		return MAPI_E_INVALID_PARAMETER;
+	}	
+
+	return MAPI_E_SUCCESS;
+}
+
 /**
  * Send appointment
  */
@@ -1058,7 +1087,7 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 	struct tm		tm;
 	uint32_t		flag;
 	uint8_t			flag2;
-	
+
 	cValues = 0;
 	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
 
@@ -1083,6 +1112,12 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 		start_date = talloc(mem_ctx, struct FILETIME);
 		start_date->dwLowDateTime = (nt << 32) >> 32;
 		start_date->dwHighDateTime = (nt >> 32);
+
+		retval = check_conflict_date(obj_folder, start_date);
+		if (oclient->force == false) {
+			MAPI_RETVAL_IF(retval, retval, NULL);
+		}
+
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_START_DATE, (const void *)start_date);
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidCommonStart, (const void *)start_date);
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidAppointmentStartWhole, (const void *) start_date);
@@ -1096,6 +1131,12 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 		end_date = talloc(mem_ctx, struct FILETIME);
 		end_date->dwLowDateTime = (nt << 32) >> 32;
 		end_date->dwHighDateTime = (nt >> 32);
+
+		retval = check_conflict_date(obj_folder, end_date);
+		if (oclient->force == false) {
+			MAPI_RETVAL_IF(retval, retval, NULL);
+		}
+
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_END_DATE, (const void *) end_date);
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidCommonEnd, (const void *) end_date);
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidAppointmentEndWhole, (const void *) end_date);
@@ -2781,7 +2822,7 @@ int main(int argc, const char *argv[])
 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
 	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE,
 	      OPT_UPDATE, OPT_DELETEITEMS, OPT_MAPI_PROPS, OPT_OCPF_FILE, OPT_OCPF_SYNTAX,
-	      OPT_OCPF_SENDER, OPT_OCPF_DUMP, OPT_FREEBUSY};
+	      OPT_OCPF_SENDER, OPT_OCPF_DUMP, OPT_FREEBUSY, OPT_FORCE};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -2798,6 +2839,7 @@ int main(int argc, const char *argv[])
 		{"storemail", 'G', POPT_ARG_STRING, NULL, OPT_STOREMAIL, "retrieve a mail on the filesystem"},
 		{"fetch-items", 'i', POPT_ARG_STRING, NULL, OPT_FETCHITEMS, "fetch specified user INBOX items"},
 		{"freebusy", 0, POPT_ARG_STRING, NULL, OPT_FREEBUSY, "display freebusy information for the specified user"},
+		{"force", 0, POPT_ARG_NONE, NULL, OPT_FORCE, "force openchangeclient behavior in some circunstances"},
 		{"delete", 0, POPT_ARG_STRING, NULL, OPT_DELETEITEMS, "delete message given its unique ID"},
 		{"update", 'u', POPT_ARG_STRING, NULL, OPT_UPDATE, "update the specified item"},
 		{"mailbox", 'm', POPT_ARG_NONE, NULL, OPT_MAILBOX, "list mailbox folder summary"},
@@ -3024,6 +3066,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_OCPF_DUMP:
 			oclient.ocpf_dump = poptGetOptArg(pc);
+			break;
+		case OPT_FORCE:
+			oclient.force = true;
 			break;
 		}
 	}

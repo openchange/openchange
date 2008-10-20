@@ -140,7 +140,8 @@ libmapi:	idl					\
 		libmapi/proto.h				\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)	
 
-libmapi-install:	libmapi-installpc	\
+libmapi-install:	libmapi			\
+			libmapi-installpc	\
 			libmapi-installlib	\
 			libmapi-installheader	\
 			libmapi-installscript

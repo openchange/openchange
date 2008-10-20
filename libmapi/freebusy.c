@@ -236,6 +236,110 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 
 
 /**
+   \details Check if a date conflicts with existing FreeBusy Busy/Out
+   Of Office events
+
+   \param obj_store pointer to the public folder MAPI object
+   \param date pointer to the date to check
+   \param conflict pointer to the returned boolean value
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS IsFreeBusyConflict(mapi_object_t *obj_store,
+					    struct FILETIME *date,
+					    bool *conflict)
+{
+	enum MAPISTATUS			retval;
+	struct mapi_session		*session;
+	struct SRow			aRow;
+	const struct LongArray_r	*all_months;
+	const struct BinaryArray_r	*all_events;
+	struct Binary_r			bin;
+	const uint32_t			*publish_start;
+	NTTIME				nttime;
+	time_t				time;
+	struct tm			*tm;
+	uint32_t			fbusytime;
+	uint32_t			fmonth;
+	uint32_t			month;
+	uint32_t			year;
+	uint32_t			idx;
+	uint32_t			i;
+	bool				found = false;
+	uint32_t			start;
+	uint32_t			end;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!date, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!conflict, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj_store);
+	MAPI_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
+
+	*conflict = false;
+
+	/* Step 1. Retrieve the freebusy data for the user */
+	retval = GetUserFreeBusyData(obj_store, session->profile->username, &aRow);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_START_RANGE);
+	all_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_ALL_MONTHS);
+	all_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_ALL_EVENTS);
+
+	if (!all_months || (uint32_t)all_months == MAPI_E_NOT_FOUND ||
+	    !all_events || (uint32_t)all_events == MAPI_E_NOT_FOUND) {
+		return MAPI_E_SUCCESS;
+	}
+
+	/* Step 2. Convert the input date to freebusy */
+	nttime = ((uint64_t) date->dwHighDateTime << 32);
+	nttime |= (uint64_t) date->dwLowDateTime;
+	time = nt_time_to_unix(nttime);
+	tm = localtime(&time);
+
+	fmonth = tm->tm_mon + 1;
+	fbusytime = ((tm->tm_mday - 1) * 60 * 24) + (tm->tm_hour * 60);
+
+	/* Step 3. Check if the years matches */
+	year = GetFreeBusyYear(publish_start);
+
+	if (year != (tm->tm_year + 1900)) {
+		return MAPI_E_SUCCESS;
+	}
+
+	/* Step 4. Check if we have already registered events for the month */
+	
+	for (idx = 0; idx < all_months->cValues; idx++) {
+		month = all_months->lpl[idx] - (year * 16);
+		if (month == fmonth) {
+			found = true;
+			break;
+		}
+	}
+	if (found == false) return MAPI_E_SUCCESS;
+
+	/* Step 5. Check if one this months events conflicts with the date */
+	bin = all_events->lpbin[idx];
+	if (bin.cb % 4) {
+		return MAPI_E_INVALID_PARAMETER;
+	}
+
+	for (i = 0; i < bin.cb; i += 4) {
+		start = (bin.lpb[i + 1] << 8) | bin.lpb[i];
+		end = (bin.lpb[i + 3] << 8) | bin.lpb[i + 2];
+		if ((fbusytime >= start) && (fbusytime <= end)) {
+			*conflict = true;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details Return the year associated to the FreeBusy start range
 
    \param publish_start pointer to the publish start integer

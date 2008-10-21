@@ -346,7 +346,7 @@ _PUBLIC_ enum MAPISTATUS IsFreeBusyConflict(mapi_object_t *obj_store,
 
    \return a valid year on success, otherwise 0
  */
-_PUBLIC_ const uint32_t GetFreeBusyYear(const uint32_t *publish_start)
+_PUBLIC_ uint32_t GetFreeBusyYear(const uint32_t *publish_start)
 {
 	struct tm	*tm;
 	uint32_t	year;

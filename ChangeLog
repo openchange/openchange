@@ -1,3 +1,7 @@
+2008-10-31  jkerihuel
+
+	* [r833] Fix OpenMsgStore binding in swig perl and fetchmail script
+
 2008-10-21  jkerihuel
 
 	* [r824] Fix pointless const definition for GetFreeBusyYear return
@@ -18,10 +22,10 @@
 	  behavior
 	  
 	  - Fix a counter bug in mapidump_freebusy_events
-	* [r821] Fix doxygen typo error
 
 2008-10-20  jkerihuel
 
+	* [r821] Fix doxygen typo error
 	* [r820] - Add GetUserFreeBusyData convenient function which
 	  retrieves FreeBusy
 	  data in public folders for a given user. Note: Ambiguous name is
@@ -142,10 +146,10 @@
 2008-10-01  jelmer
 
 	* [r798] ignore generated files.
-	* [r797] Stop installing js files.
 
 2008-10-01  jelmer
 
+	* [r797] Stop installing js files.
 	* [r796] Use autoconf cache prefix.
 
 2008-10-01  jelmer
@@ -353,6 +357,9 @@
 2008-09-08  jkerihuel
 
 	* [r749] Update GetAttachmentTable IDL and remove the unknown field
+
+2008-09-08  jkerihuel
+
 	* [r748] - Update DeleteFolder IDL and implementation
 	  - It now supports DeleteFolderFlags as input parameter and can
 	  return the ParticalCompletion state
@@ -403,6 +410,9 @@
 2008-09-07  jkerihuel
 
 	* [r737] Rename SGuidArray to FlatUIDArray_r and fix the IDL
+
+2008-09-07  jkerihuel
+
 	* [r736] Rename MV_LONG_STRUCT to LongArray_r
 	* [r735] Rename SBinary to Binary_r
 	* [r734] - Add removal of libmapi++ Doxyfile in make distclean rule
@@ -463,6 +473,9 @@
 2008-09-06  bradh
 
 	* [r720] API documentation fix.
+
+2008-09-06  bradh
+
 	* [r719] API documentation fix.
 	* [r718] API documentation fixes.
 
@@ -813,6 +826,9 @@
 	  IDL: make these call able to check whether the folder is ghosted
 	  or
 	  not.
+
+2008-07-11  jkerihuel
+
 	* [r640] Revert emsmdb pipe version to the hacked one. Makes
 	  mapiproxy work with samba4-alpha5 release.
 	* [r639] SeekRow and SeekRowBookmark IDL improved
@@ -1142,9 +1158,6 @@
 	* [r574] Build fix for relocation of mapiproxy/ to be under the
 	  top level directory (instead of under the utils/
 	  directory)
-
-2008-06-01  jkerihuel
-
 	* [r573] - Update the Samba4 GIT revision needed to run openchange
 	  properly
 
@@ -1198,6 +1211,9 @@
 
 	* [r562] merge from mapiproxy branch:
 	  * Fix CreateMessage [out] IDL
+
+2008-05-31  jkerihuel
+
 	* [r561] merge from mapiproxy branch:
 	  * rename OpenModeFlags to OpenFolder_OpenModeFlags in OpenFolder
 	  * rewrite OpenMessage [in] IDL and report changes in
@@ -1562,6 +1578,9 @@
 	* [r474] Clean up / flush the stream after use.
 	  
 	  Saves a bit more "still reachable" in valgrind too.
+
+2008-05-01  jkerihuel
+
 	* [r473] - Uninitialize MAPI and general memory context at the end
 	  of mapitest
 
@@ -1636,6 +1655,9 @@
 
 	* [r456] - Add CopyToStream MAPI call (IDL + implementation +
 	  mapitest)
+
+2008-04-28  jkerihuel
+
 	* [r455] - Add SeekStream MAPI call (IDL + implementation +
 	  mapitest)
 	  - Add SetStreamSize MAPI call (IDL + implementation + mapitest)
@@ -1883,13 +1905,13 @@
 2008-04-03  jkerihuel
 
 	* [r402] Add ChangeLog and apidocs to the releases
+
+2008-04-03  jkerihuel
+
 	* [r400] - Delete unmaintained regression suite
 	  - Fix typo error in torture-clean rule
 	* [r399] Add modified release script originally from
 	  abartlett/samba4
-
-2008-04-03  jkerihuel
-
 	* [r398] - Check for specific Samba4 git revision in configure.ac
 	  - Prefix locale functions with lcid and make them _PUBLIC_
 

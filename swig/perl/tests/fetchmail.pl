@@ -42,6 +42,8 @@ sub mapi_init()
 
     $retval = MapiLogonEx($session, $profname, $password);
     mapi_errstr("MapiLogonEx", $retval);
+
+    return $session;
 }
 
 sub mapi_finalize()
@@ -49,8 +51,9 @@ sub mapi_finalize()
     MAPIUninitialize();
 }
 
-sub mapi_fetchmail()
+sub mapi_fetchmail($)
 {
+    my $session = shift;
     my $inbox_id = new_int64();
     my $cRows;
     my $count = new_int32();
@@ -60,7 +63,7 @@ sub mapi_fetchmail()
 
     ## Open Message Store
     my $obj_store = new_mapi_object();
-    $retval = OpenMsgStore($obj_store);
+    $retval = OpenMsgStore(mapi_session_t_value($session), $obj_store);
     mapi_errstr("OpenMsgStore", GetLastError());
 
     ## Open Inbox
@@ -124,6 +127,6 @@ sub mapi_fetchmail()
     delete_mapi_object($obj_store);
 }
 
-&mapi_init();
-&mapi_fetchmail();
+my $session = &mapi_init();
+&mapi_fetchmail($session);
 &mapi_finalize();

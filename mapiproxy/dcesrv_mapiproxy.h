@@ -36,6 +36,7 @@
 #include <talloc.h>
 #include <dcerpc.h>
 #include <samba/session.h>
+#include <util/debug.h>
 
 #include <dcerpc_server.h>
 #include <util.h>

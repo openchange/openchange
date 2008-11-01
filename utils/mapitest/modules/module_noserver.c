@@ -55,7 +55,7 @@ _PUBLIC_ bool mapitest_noserver_lzfu(struct mapitest *mt)
 
 	compressed = talloc_array(mt->mem_ctx, uint8_t, 1024);
 	memcpy(compressed_hex, RTF_COMPRESSED1_HEX, 434);
-	compressed_length = strhex_to_str((char*)compressed, 434, (char*)compressed_hex);
+	compressed_length = strhex_to_str((char*)compressed, 1024, (char*)compressed_hex, 434);
 	if (compressed_length != 217) {
 		mapitest_print(mt, "* %-35s: uncompress RTF - Bad length\n", "LZFU");
 		return false;
@@ -92,7 +92,7 @@ _PUBLIC_ bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 
 	rawData.data = talloc_array(mt->mem_ctx, uint8_t, 1024);
 	memcpy(rawDataHex, SROWSET_UNTAGGED, 2*SROWSET_UNTAGGED_LEN);
-	rawData.length = strhex_to_str((char*)rawData.data, 2*SROWSET_UNTAGGED_LEN, (char*)rawDataHex);
+	rawData.length = strhex_to_str((char*)rawData.data, 1024, (char*)rawDataHex, 2*SROWSET_UNTAGGED_LEN);
 	if (rawData.length != SROWSET_UNTAGGED_LEN) {
 		mapitest_print(mt, "* %-35s: untagged - Bad length\n", "SRowSet");
 		return false;
@@ -182,7 +182,7 @@ _PUBLIC_ bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 
 	rawData.data = talloc_array(mt->mem_ctx, uint8_t, 1024);
 	memcpy(rawDataHex, SROWSET_TAGGED, 2*SROWSET_TAGGED_LEN);
-	rawData.length = strhex_to_str((char*)rawData.data, 2*SROWSET_TAGGED_LEN, (char*)rawDataHex);
+	rawData.length = strhex_to_str((char*)rawData.data, 1024, (char*)rawDataHex, 2*SROWSET_TAGGED_LEN);
 	if (rawData.length != SROWSET_TAGGED_LEN) {
 		mapitest_print(mt, "* %-35s: tagged - Bad length\n", "SRowSet");
 		return false;

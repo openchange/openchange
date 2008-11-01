@@ -144,7 +144,7 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 	mapi_object_t		obj_htable;
 	mapi_object_t		obj_folder;
 	char			*newname;
-	const char     		**folder  = NULL;
+	char     		**folder  = NULL;
 	const char		*name;
 	const uint64_t		*fid;
 	const uint32_t		*child;

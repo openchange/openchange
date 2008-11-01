@@ -29,6 +29,7 @@
 #include "mapiproxy/libmapiproxy.h"
 #include "mapiproxy/modules/mpm_cache.h"
 #include <libmapi/defs_private.h>
+#include <util/debug.h>
 
 /**
    \details Create the cache database

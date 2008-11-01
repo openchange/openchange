@@ -21,6 +21,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
+#include <util/debug.h>
 
 /**
    \details Dummy init function which reads a parametric option from

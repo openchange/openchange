@@ -1,3 +1,14 @@
+2008-11-01  jelmer
+
+	* [r842] Fix includes for DEBUG(), fix some more warnings.
+	* [r841] Use same_net_v4 rather than deprecated same_net().
+	* [r840] Fix Samba 4 git revision.
+	* [r839] Fix includes - debug.h can only be included once.
+	* [r838] Include debug header.
+	* [r837] Cope with API changes in Samba functions.
+	* [r836] Use new function is_zero_ip_v4 rather than removed
+	  is_zero_ip.
+
 2008-10-31  jkerihuel
 
 	* [r833] Fix OpenMsgStore binding in swig perl and fetchmail script
@@ -26,6 +37,9 @@
 2008-10-20  jkerihuel
 
 	* [r821] Fix doxygen typo error
+
+2008-10-20  jkerihuel
+
 	* [r820] - Add GetUserFreeBusyData convenient function which
 	  retrieves FreeBusy
 	  data in public folders for a given user. Note: Ambiguous name is
@@ -150,10 +164,10 @@
 2008-10-01  jelmer
 
 	* [r797] Stop installing js files.
-	* [r796] Use autoconf cache prefix.
 
 2008-10-01  jelmer
 
+	* [r796] Use autoconf cache prefix.
 	* [r795] Use newer version of Samba 4.
 
 2008-09-30  jkerihuel
@@ -364,6 +378,9 @@
 	  - It now supports DeleteFolderFlags as input parameter and can
 	  return the ParticalCompletion state
 	  - Sanity checks added at the beginning of the function
+
+2008-09-08  jkerihuel
+
 	* [r747] - Rename GetRowCount to QueryPosition
 	  - IDL, implementation, documentation and openchange code updated
 	  - ActionType enum fields prefixed with 'ActionType_'. Original
@@ -414,6 +431,9 @@
 2008-09-07  jkerihuel
 
 	* [r736] Rename MV_LONG_STRUCT to LongArray_r
+
+2008-09-07  jkerihuel
+
 	* [r735] Rename SBinary to Binary_r
 	* [r734] - Add removal of libmapi++ Doxyfile in make distclean rule
 	  - Add Doxyfile to svn:ignore
@@ -477,6 +497,9 @@
 2008-09-06  bradh
 
 	* [r719] API documentation fix.
+
+2008-09-06  bradh
+
 	* [r718] API documentation fixes.
 
 2008-09-05  bradh
@@ -831,6 +854,9 @@
 
 	* [r640] Revert emsmdb pipe version to the hacked one. Makes
 	  mapiproxy work with samba4-alpha5 release.
+
+2008-07-11  jkerihuel
+
 	* [r639] SeekRow and SeekRowBookmark IDL improved
 	* [r638] Improve the SetColumns IDL: remove unknown fields
 
@@ -1160,9 +1186,6 @@
 	  directory)
 	* [r573] - Update the Samba4 GIT revision needed to run openchange
 	  properly
-
-2008-06-01  jkerihuel
-
 	* [r572] - import mapiproxy project from mapiproxy branch
 	  - add custom proxypack MAPI call
 	  - remove deprecated dcesrv_exchange_remote
@@ -1218,6 +1241,9 @@
 	  * rename OpenModeFlags to OpenFolder_OpenModeFlags in OpenFolder
 	  * rewrite OpenMessage [in] IDL and report changes in
 	  libmapi/IStoreFolder.c
+
+2008-05-31  jkerihuel
+
 	* [r560] merge from mapiproxy branch:
 	  * Add IDL for Pending (0x6e) MAPI call
 	  * Reorder some MAPI calls in EcDoRpc_MAPI_REPL_UNION
@@ -1661,6 +1687,9 @@
 	* [r455] - Add SeekStream MAPI call (IDL + implementation +
 	  mapitest)
 	  - Add SetStreamSize MAPI call (IDL + implementation + mapitest)
+
+2008-04-28  jkerihuel
+
 	* [r454] - Add CommitStream MAPI call (IDL + implementation +
 	  mapitest)
 	  - Add GetStreamSize MAPI call (IDL + implementation + mapitest)
@@ -1910,6 +1939,9 @@
 
 	* [r400] - Delete unmaintained regression suite
 	  - Fix typo error in torture-clean rule
+
+2008-04-03  jkerihuel
+
 	* [r399] Add modified release script originally from
 	  abartlett/samba4
 	* [r398] - Check for specific Samba4 git revision in configure.ac

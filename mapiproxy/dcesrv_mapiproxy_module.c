@@ -21,6 +21,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy.h"
+#include <util/debug.h>
 
 /**
    \file dcesrv_mapiproxy_module.c
@@ -171,7 +172,7 @@ extern NTSTATUS mapiproxy_module_register(const void *_mp_module)
 
 static NTSTATUS mapiproxy_module_load(struct dcesrv_context *dce_ctx)
 {
-	const char			**modules;
+	char			**modules;
 	struct mapiproxy_module_list	*module;
 	int				i;
 	NTSTATUS			status;

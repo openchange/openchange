@@ -25,6 +25,7 @@
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
 #include <libmapi/dlinklist.h>
 #include <libmapi/defs_private.h>
+#include <util/debug.h>
 
 /**
    \file dcesrv_mapiproxy.c
@@ -420,7 +421,7 @@ static NTSTATUS mapiproxy_op_init_server(struct dcesrv_context *dce_ctx, const s
 {
 	NTSTATUS		ret;
 	struct dcesrv_interface	iface;
-	const char     		**ifaces;
+	char     		**ifaces;
 	uint32_t		i;
 
 	/* Register mapiproxy modules */

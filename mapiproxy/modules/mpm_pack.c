@@ -27,6 +27,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy.h"
+#include <util/debug.h>
 
 #define	MPM_NAME	"mpm_pack"
 #define	MPM_PACK_ERROR	"[ERROR] mpm_pack:"
@@ -290,7 +291,7 @@ static NTSTATUS pack_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
  */
 static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 {
-	const char		**calls;
+	char		**calls;
 	unsigned long		opnum;
 	int			i;
 	int			j;

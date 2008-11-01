@@ -89,7 +89,7 @@ struct mpm_cache {
 	bool			ahead;
 	bool			sync;
 	int			sync_min;
-	const char     		**sync_cmd;
+	char     		**sync_cmd;
 };
 
 __BEGIN_DECLS

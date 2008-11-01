@@ -28,6 +28,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
 #include "mapiproxy/libmapiproxy.h"
+#include <util/debug.h>
 
 
 /**

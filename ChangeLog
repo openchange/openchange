@@ -1,6 +1,18 @@
+2008-11-03  bradh
+
+	* [r846] Update to a more recent Samba4.
+
+2008-11-03  jelmer
+
+	* [r845] Remove some usages of deprecated global_loadparm.
+	* [r844] Cope with new argument to dcerpc_log_packet().
+
 2008-11-01  jelmer
 
 	* [r842] Fix includes for DEBUG(), fix some more warnings.
+
+2008-11-01  jelmer
+
 	* [r841] Use same_net_v4 rather than deprecated same_net().
 	* [r840] Fix Samba 4 git revision.
 	* [r839] Fix includes - debug.h can only be included once.
@@ -168,6 +180,9 @@
 2008-10-01  jelmer
 
 	* [r796] Use autoconf cache prefix.
+
+2008-10-01  jelmer
+
 	* [r795] Use newer version of Samba 4.
 
 2008-09-30  jkerihuel
@@ -387,6 +402,9 @@
 	  values were causing conflicts while building Perl bindings with
 	  'i386-linux-thread-multi/CORE/opnames.h where OP_DELETE was
 	  already defined'
+
+2008-09-08  jkerihuel
+
 	* [r746] Change enum SaveFlags to uint8_t for doxygen documentation
 	  to be generated properly
 
@@ -435,6 +453,9 @@
 2008-09-07  jkerihuel
 
 	* [r735] Rename SBinary to Binary_r
+
+2008-09-07  jkerihuel
+
 	* [r734] - Add removal of libmapi++ Doxyfile in make distclean rule
 	  - Add Doxyfile to svn:ignore
 	* [r733] Rename SShortArray to ShortArray_r
@@ -858,6 +879,9 @@
 2008-07-11  jkerihuel
 
 	* [r639] SeekRow and SeekRowBookmark IDL improved
+
+2008-07-11  jkerihuel
+
 	* [r638] Improve the SetColumns IDL: remove unknown fields
 
 2008-07-06  jkerihuel
@@ -1247,6 +1271,9 @@
 	* [r560] merge from mapiproxy branch:
 	  * Add IDL for Pending (0x6e) MAPI call
 	  * Reorder some MAPI calls in EcDoRpc_MAPI_REPL_UNION
+
+2008-05-31  jkerihuel
+
 	* [r559] - Add SetReadFlags to EcDoRpc_MAPI_{REQ,REPL}_UNION
 	* [r558] merge from mapiproxy branch:
 	  * Add IDL for SetSyncNotificationGuid (0x88) MAPI call
@@ -1944,6 +1971,9 @@
 
 	* [r399] Add modified release script originally from
 	  abartlett/samba4
+
+2008-04-03  jkerihuel
+
 	* [r398] - Check for specific Samba4 git revision in configure.ac
 	  - Prefix locale functions with lcid and make them _PUBLIC_
 

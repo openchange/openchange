@@ -321,7 +321,7 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	int policy_min_pw_len = 0;
 	struct test_join *join;
 	char *random_pw;
-	const char *dc_binding = lp_parm_string(global_loadparm,
+	const char *dc_binding = lp_parm_string(torture->lp_ctx,
 											NULL, "torture", "dc_binding");
 
 	join = talloc(NULL, struct test_join);
@@ -474,7 +474,7 @@ again:
 	
 	u.info21.description.string = talloc_asprintf(join, 
 					 "Samba4 torture account created by host %s: %s", 
-					 lp_netbios_name(global_loadparm), 
+					 lp_netbios_name(torture->lp_ctx), 
 					 timestring(join, time(NULL)));
 
 	printf("Resetting ACB flags, force pw change time\n");

@@ -89,11 +89,11 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	struct Restriction_r	Filter;
 	struct SRowSet		*rowset;
 	struct SPropValue	*lpProp;
-	const char		*profname = lp_parm_string(global_loadparm, NULL, "mapi", "profile");
-	const char		*profdb = lp_parm_string(global_loadparm, NULL, "mapi", "profile_store");
-	uint32_t		codepage = lp_parm_int(global_loadparm, NULL, "mapi", "codepage", 0);
-	uint32_t		language = lp_parm_int(global_loadparm, NULL, "mapi", "language", 0);
-	uint32_t		method = lp_parm_int(global_loadparm, NULL, "mapi", "method", 0);
+	const char		*profname = lp_parm_string(torture->lp_ctx, NULL, "mapi", "profile");
+	const char		*profdb = lp_parm_string(torture->lp_ctx, NULL, "mapi", "profile_store");
+	uint32_t		codepage = lp_parm_int(torture->lp_ctx, NULL, "mapi", "codepage", 0);
+	uint32_t		language = lp_parm_int(torture->lp_ctx, NULL, "mapi", "language", 0);
+	uint32_t		method = lp_parm_int(torture->lp_ctx, NULL, "mapi", "method", 0);
 	const char		*username = NULL;
 	uint32_t		instance_key = 0;
 
@@ -128,7 +128,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 		{
 			const char *workstation = cli_credentials_get_workstation(cmdline_credentials);
 			const char *domain = cli_credentials_get_domain(cmdline_credentials);
-			const char *binding = lp_parm_string(global_loadparm, 
+			const char *binding = lp_parm_string(torture->lp_ctx, 
 												 NULL, "torture", "binding");
 			struct dcerpc_binding *dcerpc_binding;
 			char *p_codepage = talloc_asprintf(mem_ctx, "0x%x", codepage);

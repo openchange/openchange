@@ -437,7 +437,7 @@ enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		       struct NspiBind *r)
 {
 	struct GUID		*guid = (struct GUID *) NULL;
-	const char		*exchange_GUID = lp_parm_string(global_loadparm, NULL, "exchange", "GUID");
+	const char		*exchange_GUID = lp_parm_string(dce_call->dce_ctx->lp_ctx, NULL, "exchange", "GUID");
 	struct emsabp_ctx	*emsabp_context;
 	struct dcesrv_handle	*handle;
 	struct policy_handle	wire_handle;

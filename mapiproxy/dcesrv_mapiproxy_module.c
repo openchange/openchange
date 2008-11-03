@@ -209,9 +209,7 @@ _PUBLIC_ NTSTATUS mapiproxy_module_init(struct dcesrv_context *dce_ctx)
 	init_module_fn			*mpm;
 	NTSTATUS			ret;
 
-	
-
-	mpm = load_samba_modules(NULL, global_loadparm, "dcerpc_mapiproxy");
+	mpm = load_samba_modules(NULL, dce_ctx->lp_ctx, "dcerpc_mapiproxy");
 
 	run_init_functions(mpm);
 	talloc_free(mpm);

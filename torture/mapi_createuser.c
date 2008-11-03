@@ -36,8 +36,8 @@ bool torture_mapi_createuser(struct torture_context *torture)
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_profile	*profile;
 	struct test_join        *user_ctx = (struct test_join *) NULL;
-	const char		*username = lp_parm_string(global_loadparm, NULL, "exchange", "username");
-	const char		*user_password = lp_parm_string(global_loadparm, NULL, "exchange", "password");
+	const char		*username = lp_parm_string(torture->lp_ctx, NULL, "exchange", "username");
+	const char		*user_password = lp_parm_string(torture->lp_ctx, NULL, "exchange", "password");
 
 	/* sanity checks */
 	if (!username) {

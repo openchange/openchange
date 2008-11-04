@@ -87,7 +87,7 @@ checkout() {
 
     echo "Step2: Creating openchange local copy"
     cd samba4
-    git checkout -b openchange origin/v4-0-test
+    git checkout -b openchange origin/master
     error_check $? "Step2"
 
     echo "Step3: Revert to commit $SAMBA4_GIT_REV"
@@ -158,11 +158,7 @@ download() {
 # Apply patches to samba4
 #
 patch() {
-    echo "Step1: Patching samba4/source4/lib/events/events.h"
-    sed -i 's/void\s*\*private/void \*private_data/g' samba4/source4/lib/events/events.h
-    error_check $? "Step1"
 
-    return $?
 }
 
 #

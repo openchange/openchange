@@ -31,9 +31,15 @@
 namespace libmapipp
 {
 class session;
+
 /**
- * \brief This class represents the Message Store in Exchange.\n
- * It is not possible for you, the user, to create a message_store object.\n
+ * \brief This class represents the Message Store in Exchange.
+ *
+ * The message_store is the grouping of message folders (which could be the 
+ * users private store including mail, calendar, todo list, journal, contacts
+ * and so on) or could be the public store (e.g. shared public folders).
+ *
+ * It is not possible for you, the user, to create a message_store object.
  * Instead, you should retrieve the message_store associated with a session
  * using session::get_message_store()
  */
@@ -41,6 +47,7 @@ class message_store : public object {
 	public:
 		/**
 		 * \brief Retrieves the folder id for the specified default folder in the Message Store.
+		 *
 		 * \param id The type of folder to search for.
 		 *
 		 * The following types of folders are supported:
@@ -55,6 +62,10 @@ class message_store : public object {
 		 * - olFolderNotes
 		 * - olFolderTasks
 		 * - olFolderDrafts
+		 *
+		 * If you are trying to enumerate all folders, you should open the 
+		 * olFolderTopInformationStore, and then get the hierachy container for
+		 * that top level folder.
 		 *
 		 * \return The resulting folder id.
 		 */

@@ -1,3 +1,28 @@
+2008-11-04  jkerihuel
+
+	* [r852] - remove usage of global_loadparm in libmapiadmin
+	  - make use of session context rather than global_mapi_ctx in
+	  libmapiadmin
+	  - use local context rather than mapiadmin context in libmapiadmin
+	  - libmapiadmin now uses ldb helper rather than raw implementation
+	  (ldb async code)
+	  - libmapiadmin and openchangepfadmin now works again (user
+	  creation/deletion) !! ;-)
+	  - remove global_loadparm in torture test and replace it with
+	  torture context
+	  - fix dcerpc_init to match latest samba4 API
+	  - update samba4 version required to build openchange
+
+2008-11-04  jelmer
+
+	* [r851] Remove unnecessary patching of lib/events/events.h.
+
+2008-11-04  bradh
+
+	* [r850] More API documentation tweaks.
+	* [r849] More API documentation tweaks.
+	* [r848] Some API dox fixes for libmapi++.
+
 2008-11-03  bradh
 
 	* [r846] Update to a more recent Samba4.
@@ -5,6 +30,9 @@
 2008-11-03  jelmer
 
 	* [r845] Remove some usages of deprecated global_loadparm.
+
+2008-11-03  jelmer
+
 	* [r844] Cope with new argument to dcerpc_log_packet().
 
 2008-11-01  jelmer
@@ -14,6 +42,9 @@
 2008-11-01  jelmer
 
 	* [r841] Use same_net_v4 rather than deprecated same_net().
+
+2008-11-01  jelmer
+
 	* [r840] Fix Samba 4 git revision.
 	* [r839] Fix includes - debug.h can only be included once.
 	* [r838] Include debug header.
@@ -458,6 +489,9 @@
 
 	* [r734] - Add removal of libmapi++ Doxyfile in make distclean rule
 	  - Add Doxyfile to svn:ignore
+
+2008-09-07  jkerihuel
+
 	* [r733] Rename SShortArray to ShortArray_r
 	* [r732] - Move from SLPSTRArray to StringArray_r
 	  - LPSTR structure removed
@@ -1208,6 +1242,9 @@
 	* [r574] Build fix for relocation of mapiproxy/ to be under the
 	  top level directory (instead of under the utils/
 	  directory)
+
+2008-06-01  jkerihuel
+
 	* [r573] - Update the Samba4 GIT revision needed to run openchange
 	  properly
 	* [r572] - import mapiproxy project from mapiproxy branch
@@ -1275,6 +1312,9 @@
 2008-05-31  jkerihuel
 
 	* [r559] - Add SetReadFlags to EcDoRpc_MAPI_{REQ,REPL}_UNION
+
+2008-05-31  jkerihuel
+
 	* [r558] merge from mapiproxy branch:
 	  * Add IDL for SetSyncNotificationGuid (0x88) MAPI call
 	* [r557] merge from mapiproxy branch:

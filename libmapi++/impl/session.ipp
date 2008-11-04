@@ -35,7 +35,7 @@ inline std::string session::get_default_profile_path()
 	return retval;
 }
 
-session::session(const std::string& profiledb, bool debug)throw(std::runtime_error, mapi_exception) 
+session::session(const std::string& profiledb, bool debug) throw(std::runtime_error, mapi_exception) 
 : m_session(NULL), m_memory_ctx(talloc_init("libmapi++")), m_message_store(new message_store(*this))
 {
 	mapi_exception::fill_status_map();
@@ -43,7 +43,7 @@ session::session(const std::string& profiledb, bool debug)throw(std::runtime_err
 	std::string profile_path;
 
 	// If profile is not provided, attempt to get it from default location
-	// ~/.openchange/profiles.ldb
+	// (~/.openchange/profiles.ldb)
 	if (profiledb == "") {
 		profile_path = get_default_profile_path();
 		if (profile_path == "") {

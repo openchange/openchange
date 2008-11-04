@@ -26,20 +26,43 @@
 
 namespace libmapipp {
 
+/**
+ * This class represents a user %profile database
+ *
+ * \todo possibly rename profile class to profile_database?
+ * \todo we should be able to create a profile using libmapi++ classes
+ * \todo we should be able to delete a profile using libmapi++ classes
+ * \todo maybe move some of the session.h documentation on profiles to profile.h?
+ */
 class profile 
 {
 	public:
 
+		/**
+		 * Make the specified profile the default profile
+		 *
+		 * \param profname the name of the profile to make default
+		 */
 		bool static set_default(const char* profname)
 		{
 			return (SetDefaultProfile(profname) == MAPI_E_SUCCESS);
 		}
 
+		/**
+		 * Make the specified profile the default profile
+		 *
+		 * \param profname the name of the profile to make default
+		 */
 		bool static set_default(const std::string& profname)
 		{
 			return set_default(profname.c_str());
 		}
 
+		/**
+		 * Get the default profile name
+		 *
+		 * \return the name of the default profile
+		 */
 		std::string static get_default_profile() throw (mapi_exception)
 		{
 			const char* profname = NULL;

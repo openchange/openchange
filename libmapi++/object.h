@@ -37,38 +37,52 @@ namespace libmapipp
 // #define INVALID_HANDLE_VALUE 0xffffffff
 class property_container;
 
-/** \brief Base Object class. \n
- *  Most classes such as folder, message and message_store derive from this class.
- *  It is important that objects be passed around as references and that no unnecessary 
- *  copies are made as this will call the class destructor which will call mapi_object_release()
- *  and release the handle associated with this object.
+/**
+ * Base Object class
+ *
+ * Most classes such as folder, message and message_store derive from this class.
+ * It is important that objects be passed around as references and that no unnecessary
+ * copies are made as this will call the class destructor which will call
+ * mapi_object_release() and release the handle associated with this object.
  */
 class object {
 	public:
-		/** \brief Object Constructor
-		 *  \param mapi_session Session this object is to be associated with.
-		 *  \param object_type The name of the type of object (to be set in a subclass)
+		/**
+		 * \brief Object Constructor
+		 *
+		 * \param mapi_session Session this object is to be associated with.
+		 * \param object_type The name of the type of object (to be set in a subclass)
 		 */
 		object(session& mapi_session, const std::string& object_type = "") throw() : m_session(mapi_session), m_object_type(object_type)
 		{
 			mapi_object_init(&m_object);
 		}
 
-		/** \brief Returns a reference to the mapi_object_t associated with this object
-		 *  \return A reference to the C struct mapi_object_t associated with this object
+		/**
+		 * \brief Obtain a reference to the mapi_object_t associated with this object
+		 * 
+		 * \return A reference to the C struct mapi_object_t associated with this object
 		 */
 		virtual mapi_object_t& data() throw() { return m_object; }
 
-		/** \brief Returns a property_container to be used with this object.
-		 *  \return A property_container to be used with this object.
+		/**
+		 * \brief Obtain a property_container to be used with this object.
+		 *
+		 * \return A property_container to be used with this object.
 		 */
 		virtual property_container get_property_container();
 
-		/// \brief Returns session associated with this object.
+		/**
+		 * \brief Obtain the session associated with this object.
+		 *
+		 * \return The session associated with this object
+		 */
 		virtual session& get_session() { return m_session; }
 
-		/** \brief Destructor\n
-		 *  calls mapi_object_release() which releases the handle associated with this object.
+		/**
+		 * \brief Destructor
+		 *
+		 * Calls mapi_object_release() which releases the handle associated with this object.
 		 */ 
 		virtual ~object() throw()
 		{

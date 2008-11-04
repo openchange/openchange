@@ -37,13 +37,36 @@ using std::endl;
 namespace libmapipp
 {
 class message_store;
-/// This class represents a MAPI session with the Exchange Server
+/**
+ * This class represents a MAPI %session with the Exchange Server
+ *
+ * The %session is best thought of as the connection by a single user to a
+ * single server. It is possible to have multiple sessions open at the same
+ * time.
+ *
+ * A key concept in the %session is that of a \em profile, and the %profile
+ * database. The %profile is a pre-established data set that specifies the
+ * server information (e.g. server name / IP address, and Exchange domain)
+ * and client information (e.g. the user name, preferred language, and
+ * optionally the users password). The profiles are stored in a local store
+ * (Samba LDB database) known as the %profile store or %profile database. One
+ * of the profiles in the %profile database can be designated as the default
+ * %profile (which is particularly useful given that most users may only have
+ * one). See the profile class documentation for more information.
+ *
+ * The general concept is that you create a %session %object, log in to the
+ * %session using a selected %profile name, and then work with the message_store
+ * associated with that %session. The message_store is only valid so long
+ * as the session is valid.
+ */
 class session {
 	public:
 		/**
 		 * \brief Constructor
-		 * \param profiledb An absolute path specifying where the profile database is.\n
-		 *        If none or ""  is specified the default location will be used (~/.openchange.profiles.ldb).
+		 *
+		 * \param profiledb An absolute path specifying the location of the
+		 * %profile database. If not specified (or ""  is specified) the default
+		 * location will be used (~/.openchange.profiles.ldb).
 		 *
 		 * \param debug Whether to output debug information to stdout
 		 */
@@ -51,25 +74,50 @@ class session {
 
 		/**
 		 * \brief Log-in to the Exchange Server
-		 * \param profile_name The name of the profile, if left blank the default profile will be used.
-		 * \param password The password to use to login with.\n
-		 *        It is possible to omit this if the password is stored in the profile database.
+		 *
+		 * \param profile_name The name of the profile to use to login with.
+		 * If not specified (or "" is specified), then the default %profile will
+		 * be used.
+		 *
+		 * \param password The password to use to login with. It is possible to
+		 * omit this if the password is stored in the %profile database.
 		 */
 		void login(const std::string& profile_name = "", const std::string& password = "") throw(mapi_exception); 
 
+		/**
+		 * \brief The path to the default %profile database
+		 *
+		 * This method is not normally required to be called by user applications
+		 * but might be useful under some circumstances.
+		 */
 		static std::string get_default_profile_path();
 
+		/**
+		 * \brief The name of the profile that is in use
+		 *
+		 * Calling this method only makes sense if login() has been called with
+		 * this %session object.
+		*/
 		std::string get_profile_name() const { return m_profile_name; }
 
-		/** \brief Returns a reference to the message_store associated with this session
-		 *  \return The message_store associated with this session.
+		/**
+		 * \brief Obtain a reference to the message_store associated with this %session
+		 *
+		 * \return The message_store associated with this %session.
 		 */
 		message_store& get_message_store() throw() { return *m_message_store; }
 
-		/// \brief Get Session TALLOC Memory Context pointer.
+		/**
+		 * \brief Obtain a talloc memory context for this %session
+		 *
+		 * This pointer can be used for subsequent memory allocations, and
+		 * these will be cleaned up when the %session is terminated.
+		 */
 		TALLOC_CTX* get_memory_ctx() throw() { return m_memory_ctx; }
 
-		/// Uninitializes the MAPI session.
+		/**
+		 * \brief Uninitialize and clean up the MAPI %session.
+		 */
 		~session()
 		{
 			uninitialize();

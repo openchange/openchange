@@ -85,8 +85,10 @@ class property_container_iterator {
 			}
 		}
 
-		/** \brief Get Property Tag of the Property Value this operator points to.
-		 *  \return Property Tag of Property this iterator points to or MAPI_PROP_RESERVED if this is an invalid iterator.
+		/**
+		 * \brief Get Property Tag of the Property Value this operator points to.
+		 *
+		 * \return Property Tag of Property this iterator points to or MAPI_PROP_RESERVED if this is an invalid iterator.
 		 */
 		int get_tag()
 		{
@@ -134,8 +136,10 @@ class property_container_iterator {
 			return !(*this == rhs);
 		}
 
-		/** \brief operator*
-		 *  \return The property value as a void pointer.\n
+		/**
+		 * \brief operator*
+		 *
+		 * \return The property value as a void pointer.
 		 */
 		const void* operator*()
 		{
@@ -164,8 +168,10 @@ class property_container {
 		{
 		}
 
-		/** \brief Fetches properties with the tags supplied using operator<<
-		 *  \return The number of objects that were fetched.
+		/**
+		 * \brief Fetches properties with the tags supplied using operator<<
+		 *
+		 * \return The number of objects that were fetched.
 		 */
 		uint32_t fetch()
 		{
@@ -207,9 +213,12 @@ class property_container {
 			return *this;
 		}
 
-		/** \brief Finds the property value associated with a property tag
-		 *  \param property_tag The Property Tag to be searched for
-		 *  \return Property Value as a const void pointer
+		/**
+		 * \brief Finds the property value associated with a property tag
+		 *
+		 * \param property_tag The Property Tag to be searched for
+		 *
+		 * \return Property Value as a const void pointer
 		 */
 		const void* operator[](uint32_t property_tag)
 		{

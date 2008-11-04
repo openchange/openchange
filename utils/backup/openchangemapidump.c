@@ -419,7 +419,7 @@ int main(int argc, const char *argv[])
 
 	/* debug options */
 	if (opt_debug) {
-		lp_set_cmdline(global_loadparm, "log level", opt_debug);
+		lp_set_cmdline(global_mapi_ctx->lp_ctx, "log level", opt_debug);
 	}
 
 	if (opt_dumpdata == true) {

@@ -31,18 +31,19 @@
 	You should use mapiadmin_release to clean up the mapiadmin_ctx
 	structure when done.
 */
-_PUBLIC_ struct mapiadmin_ctx *mapiadmin_init(void)
+_PUBLIC_ struct mapiadmin_ctx *mapiadmin_init(struct mapi_session *session)
 {
 	struct mapiadmin_ctx	*mapiadmin_ctx;
 
 	if (!global_mapi_ctx) return NULL;
-	if (!global_mapi_ctx->session) return NULL;
-	if (!global_mapi_ctx->session->profile) return NULL;
+	if (!session) return NULL;
+	if (!session->profile) return NULL;
 
-	mapiadmin_ctx = talloc_zero((TALLOC_CTX *)global_mapi_ctx, struct mapiadmin_ctx);
+	mapiadmin_ctx = talloc_zero((TALLOC_CTX *)session, struct mapiadmin_ctx);
 
 	mapiadmin_ctx->binding = talloc_asprintf((TALLOC_CTX *)mapiadmin_ctx, "ncacn_np:%s", 
-						 global_mapi_ctx->session->profile->server);
+						 session->profile->server);
+	mapiadmin_ctx->session = session;
 
 	return mapiadmin_ctx;
 }

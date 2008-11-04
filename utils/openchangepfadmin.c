@@ -409,7 +409,7 @@ int main(int argc, const char *argv[])
 
 	/* debug options */
 	if (opt_debug) {
-		lp_set_cmdline(global_loadparm, "log level", opt_debug);
+		lp_set_cmdline(global_mapi_ctx->lp_ctx, "log level", opt_debug);
 	}
 
 	if (opt_dumpdata == true) {
@@ -441,7 +441,7 @@ int main(int argc, const char *argv[])
 	if (opt_adduser) {
 		struct mapiadmin_ctx	*mapiadmin_ctx;
 
-		mapiadmin_ctx = mapiadmin_init();
+		mapiadmin_ctx = mapiadmin_init(session);
 		mapiadmin_ctx->username = opt_adduser;
 		mapiadmin_ctx->password = opt_apassword;
 		mapiadmin_ctx->description = opt_adesc;
@@ -450,6 +450,9 @@ int main(int argc, const char *argv[])
 
 		retval = mapiadmin_user_add(mapiadmin_ctx);
 		mapi_errstr("mapiadmin_user_add", GetLastError());
+		if (retval != MAPI_E_SUCCESS) {
+			exit (1);
+		}
 		printf("username: %s\n", mapiadmin_ctx->username);
 		printf("password: %s\n", mapiadmin_ctx->password);
 	}
@@ -457,7 +460,7 @@ int main(int argc, const char *argv[])
 	if (opt_rmuser) {
 		struct mapiadmin_ctx *mapiadmin_ctx;
 		
-		mapiadmin_ctx = mapiadmin_init();
+		mapiadmin_ctx = mapiadmin_init(session);
 		mapiadmin_ctx->username = opt_rmuser;
 
 		retval = mapiadmin_user_del(mapiadmin_ctx);

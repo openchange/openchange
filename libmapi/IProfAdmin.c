@@ -582,6 +582,8 @@ _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_profile *profile, const char *p
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: The profile parameter is not
+     initialized
    - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
      the necessary resources to perform the operation
 
@@ -592,6 +594,7 @@ _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_profile *profile)
 	TALLOC_CTX *mem_ctx;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = (TALLOC_CTX *) global_mapi_ctx->session;
 

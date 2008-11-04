@@ -48,7 +48,7 @@ const char **get_cmdline_recipients(TALLOC_CTX *mem_ctx, const char *type)
 		return 0;
 	}
 
-	recipients = lp_parm_string(global_loadparm, NULL, "mapi", type);
+	recipients = lp_parm_string(global_mapi_ctx->lp_ctx, NULL, "mapi", type);
 
 	/* no recipients */
 	if (recipients == 0) {
@@ -188,14 +188,16 @@ bool set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SR
  * Initialize MAPI and Load Profile
  *
  */
-enum MAPISTATUS torture_load_profile(TALLOC_CTX *mem_ctx)
+enum MAPISTATUS torture_load_profile(TALLOC_CTX *mem_ctx, 
+				     struct loadparm_context *lp_ctx,
+				     struct mapi_session **s)
 {
 	enum MAPISTATUS		retval;
-	struct mapi_session	*session;
 	const char		*profdb;
 	const char		*profname;
+	struct mapi_session	*session = NULL;
 
-	profdb = lp_parm_string(global_loadparm, NULL, "mapi", "profile_store");
+	profdb = lp_parm_string(lp_ctx, NULL, "mapi", "profile_store");
 	if (!profdb) {
 		profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB_PATH, getenv("HOME"));
 		if (!profdb) {
@@ -208,18 +210,20 @@ enum MAPISTATUS torture_load_profile(TALLOC_CTX *mem_ctx)
 	mapi_errstr("MAPIInitialize", GetLastError());
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
-	profname = lp_parm_string(global_loadparm, NULL, "mapi", "profile");
+	profname = lp_parm_string(lp_ctx, NULL, "mapi", "profile");
 	if (!profname) {
 		retval = GetDefaultProfile(&profname);
 		MAPI_RETVAL_IF(retval, retval, NULL);
 	}
 
 	/* MapiLogonProvider returns MAPI_E_NO_SUPPORT: reset errno */
-	retval = MapiLogonProvider(&session, profname, NULL, PROVIDER_ID_UNKNOWN);
+	retval = MapiLogonProvider(&session, profname, NULL, PROVIDER_ID_NSPI);
 	errno = 0;
 
-	retval = LoadProfile(global_mapi_ctx->session->profile);
+	retval = LoadProfile(session->profile);
 	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	*s = session;
 
 	return MAPI_E_SUCCESS;
 }
@@ -229,7 +233,8 @@ enum MAPISTATUS torture_load_profile(TALLOC_CTX *mem_ctx)
  * profile
  */
 
-struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
+struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx, 
+				       struct loadparm_context *lp_ctx)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session;
@@ -237,7 +242,7 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
 	const char		*profname;
 	const char		*password;
 
-	profdb = lp_parm_string(global_loadparm, NULL, "mapi", "profile_store");
+	profdb = lp_parm_string(lp_ctx, NULL, "mapi", "profile_store");
 	if (!profdb) {
 		profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB_PATH, getenv("HOME"));
 		if (!profdb) {
@@ -251,7 +256,7 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
 	if (retval != MAPI_E_SUCCESS) return NULL;
 
 
-	profname = lp_parm_string(global_loadparm, NULL, "mapi", "profile");
+	profname = lp_parm_string(lp_ctx, NULL, "mapi", "profile");
 	if (!profname) {
 		retval = GetDefaultProfile(&profname);
 		if (retval != MAPI_E_SUCCESS) {
@@ -260,7 +265,7 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
 		}
 	}
 
-	password = lp_parm_string(global_loadparm, NULL, "mapi", "password");
+	password = lp_parm_string(lp_ctx, NULL, "mapi", "password");
 	retval = MapiLogonEx(&session, profname, password);
 	mapi_errstr("MapiLogonEx", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return NULL;
@@ -268,7 +273,8 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx)
 	return session;
 }
 
-enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent, 
+enum MAPISTATUS torture_simplemail_fromme(struct loadparm_context *lp_ctx,
+					  mapi_object_t *obj_parent, 
 					  const char *subject, const char *body,
 					  uint32_t flags)
 {
@@ -301,7 +307,7 @@ enum MAPISTATUS torture_simplemail_fromme(mapi_object_t *obj_parent,
 					   PR_SMTP_ADDRESS,
 					   PR_GIVEN_NAME);
 
-	lp_set_cmdline(global_loadparm, "mapi:to", session->profile->username);
+	lp_set_cmdline(lp_ctx, "mapi:to", session->profile->username);
 	usernames = get_cmdline_recipients(mem_ctx, "to");
 
 	retval = ResolveNames(session, usernames, SPropTagArray, &SRowSet, &flaglist, 0);

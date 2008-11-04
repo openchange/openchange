@@ -6,7 +6,7 @@
    Original source code available in SAMBA_4_0:
    source/torture/rpc/testjoin.c
 
-   Copyright (C) Julien Kerihuel 2007.
+   Copyright (C) Julien Kerihuel 2007-2008.
 
    SAMR related code
 
@@ -55,6 +55,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 					      TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS			status;
+	struct event_context		*ev;
 	struct mapi_profile		*profile;
 	struct samr_Connect		c;
 	struct samr_OpenDomain		o;
@@ -64,18 +65,20 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 	struct lsa_String		name;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session->profile, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session->profile->credentials, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!mapiadmin_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!mapiadmin_ctx->session->profile, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!mapiadmin_ctx->session->profile->credentials, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->username, MAPI_E_NOT_INITIALIZED, NULL);
 
-	profile = global_mapi_ctx->session->profile;
+	profile = mapiadmin_ctx->session->profile;
 	
 	mapiadmin_ctx->user_ctx = talloc_zero(mem_ctx, struct test_join);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->user_ctx, MAPI_E_NOT_ENOUGH_RESOURCES ,NULL);
 
 	DEBUG(3, ("Connecting to SAMR\n"));
+
+	ev = event_context_init(mem_ctx);
 
 	status = dcerpc_pipe_connect(mapiadmin_ctx->user_ctx,
 				     &mapiadmin_ctx->user_ctx->p,
@@ -83,11 +86,11 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 				     mapiadmin_ctx->dc_binding : 
 				     mapiadmin_ctx->binding,
 				     &ndr_table_samr,
-				     profile->credentials, NULL, global_mapi_ctx->lp_ctx);
+				     profile->credentials, ev, global_mapi_ctx->lp_ctx);
 					     
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);	
 
-	profile = global_mapi_ctx->session->profile;
+	profile = mapiadmin_ctx->session->profile;
 
 	c.in.system_name = NULL;
 	c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
@@ -146,30 +149,34 @@ struct tce_async_context {
 
 static int tce_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
-	struct tce_async_context *actx = talloc_get_type(req->context, struct tce_async_context);
-	int ret;
+	struct tce_async_context	*actx = talloc_get_type(req->context, struct tce_async_context);
+	int				ret;
 
         switch (ares->type) {
 
         case LDB_REPLY_ENTRY:
 		if (ldb_msg_find_element(ares->message, "msExchMailboxGuid") != NULL) {
+			DEBUG(3, ("[%s:%d]: msExchMailboxGuid found!\n", __FUNCTION__, __LINE__));
 			actx->found = 1;
+			talloc_free(ares);
+			return ldb_request_done(req, LDB_SUCCESS);
 		}
                 break;
         case LDB_REPLY_DONE:
                 ret = 0;
                 break;
         default:
-		DEBUG(3, ("unknown Reply Type ignore it\n"));
+		DEBUG(3, ("[%s:%d]: unknown Reply Type ignore it\n", __FUNCTION__, __LINE__));
+		talloc_free(ares);
                 return LDB_ERR_OTHER;
         }
 
         if (talloc_free(ares) == -1) {
-		DEBUG(3, ("talloc_free failed\n"));
+		DEBUG(3, ("[%s:%d]: talloc_free failed\n", __FUNCTION__, __LINE__));
                 return LDB_ERR_OPERATIONS_ERROR;
         }
 	
-        return LDB_SUCCESS;
+	return LDB_SUCCESS;
 }
 
 /**
@@ -184,11 +191,13 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	struct ldb_context		*remote_ldb;
 	struct ldb_request		*req;
 	struct ldb_message		*msg;
-	struct ldb_message		**res;
+	struct ldb_result		*res;
+	struct ldb_control		**controls;
+	const char			*control_strings[2] = { "notification:0", NULL };
 	struct tce_async_context	*tce_ctx;
 	const struct dom_sid		*dom_sid;
 	char				*remote_ldb_url;
-	const char * const		dom_attrs[] = { "objectSid", NULL };
+	const char * const		dom_attrs[] = { "*", NULL };
 	int				ret;
 	uint32_t			count;
 	char				**values;
@@ -197,41 +206,45 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	char				*realm = NULL;
 	char				*org = NULL;
 	const char			*UserAccountControl;
+	struct ldb_dn			*account_dn;
 
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session->profile, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session->profile->credentials, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!mapiadmin_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!mapiadmin_ctx->session->profile, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!mapiadmin_ctx->session->profile->credentials, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->user_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	profile = global_mapi_ctx->session->profile;
+	profile = mapiadmin_ctx->session->profile;
 	dom_sid = mapiadmin_ctx->user_ctx->user_sid;
 
 	/* initialize memory context */
-	mem_ctx = (TALLOC_CTX *)mapiadmin_ctx;
+	mem_ctx = talloc_init("mapiadmin_user_extend");
 
 	/* open LDAP connection */
 	ev = event_context_init(talloc_autofree_context());
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);
+	MAPI_RETVAL_IF(!remote_ldb_url, MAPI_E_CORRUPT_DATA, mem_ctx);
 	remote_ldb = ldb_wrap_connect(mem_ctx, ev, global_mapi_ctx->lp_ctx, remote_ldb_url, 
-				      NULL,
-				      global_mapi_ctx->session->profile->credentials, 0, NULL);
+				      NULL, mapiadmin_ctx->session->profile->credentials, 0, NULL);
 	MAPI_RETVAL_IF(!remote_ldb, MAPI_E_NETWORK_ERROR, mem_ctx);
 
-	/* search the user's record using the user dom_sid */
-	ret = gendb_search(remote_ldb, mem_ctx, NULL, &res,
-			   dom_attrs, "(objectSid=%s)",
-			   ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
-	MAPI_RETVAL_IF((ret == -1), MAPI_E_CORRUPT_DATA, mem_ctx);
-	MAPI_RETVAL_IF((ret == 0), MAPI_E_NOT_FOUND, mem_ctx);
+	/* Search the user_dn */
+	account_dn = samdb_search_dn(remote_ldb, mem_ctx, NULL, 
+				     "(&(objectSid=%s)(objectClass=user))", 
+				     ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
+
+	ret = ldb_search(remote_ldb, mem_ctx, &res, account_dn, LDB_SCOPE_SUBTREE, dom_attrs, "(objectSid=%s)",
+			 ldap_encode_ndr_dom_sid(mem_ctx, dom_sid));
+	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
+	MAPI_RETVAL_IF(res->count != 1, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Prepare a new message for modify */
 	msg = ldb_msg_new(mem_ctx);
 	MAPI_RETVAL_IF(!msg, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
-	msg->dn = res[0]->dn;
+	msg->dn = res->msgs[0]->dn;
 
 	/* message: givenName */
 	exch_attrs[0] = talloc_strdup(mem_ctx, mapiadmin_ctx->username);
@@ -243,6 +256,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, "userAccountControl", 
 				   exch_attrs[1]);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	msg->elements[1].flags = LDB_FLAG_MOD_REPLACE;
 
 	/* message: mail */
 	retval = GetProfileAttr(profile, "ProxyAddress", &count, &values);
@@ -286,41 +300,48 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 				   "msExchHomeServerName", exch_attrs[6]);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
-
 	/* Prior we call ldb_modify, set up async ldb request on
 	 * msExchMailboxGuid 
 	 */
 	req = talloc_zero(mem_ctx, struct ldb_request);
-	req->operation = LDB_SEARCH;
-	req->op.search.base = res[0]->dn;
-	req->op.search.scope = LDB_SCOPE_BASE;
-	req->op.search.tree = ldb_parse_tree(remote_ldb, "(objectclass=*)");
-	req->op.search.attrs = NULL;
-	ldb_request_add_control(req, LDB_CONTROL_NOTIFICATION_OID, false, NULL);
-
 	tce_ctx = talloc_zero(mem_ctx, struct tce_async_context);
-	req->context = tce_ctx;
-	req->callback = tce_search_callback;
+	controls = ldb_parse_control_strings(remote_ldb, mem_ctx, control_strings);
+
+	ret = ldb_build_search_req(&req, remote_ldb, mem_ctx, 
+				   msg->dn,
+				   LDB_SCOPE_BASE,
+				   "(objectclass=*)",
+				   NULL,
+				   controls, 
+				   (void *)tce_ctx, 
+				   tce_search_callback, 
+				   NULL);
+	DEBUG(3, (MAPIADMIN_DEBUG_STR, "ldb_build_search_req", ldb_strerror(ret)));
+	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CALL_FAILED, mem_ctx);
+
 	ldb_set_timeout(mem_ctx, req, 60);
 
 	ret = ldb_request(remote_ldb, req);
+	DEBUG(3, (MAPIADMIN_DEBUG_STR, "ldb_request", ldb_strerror(ret)));
 	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CALL_FAILED, mem_ctx);
 
-	/* We modify the user record with Exchange attributes */
-	ret =  ldb_modify(remote_ldb, msg);
-	MAPI_RETVAL_IF((ret != 0), MAPI_E_CORRUPT_DATA, mem_ctx);
-	
-	ret = ldb_wait(req->handle, LDB_WAIT_NONE);
+	ret = ldb_modify(remote_ldb, msg);
+	DEBUG(3, (MAPIADMIN_DEBUG_STR, "ldb_modify", ldb_strerror(ret)));
+	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CORRUPT_DATA, mem_ctx);
+
+	/* async search */
+	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+	DEBUG(3, (MAPIADMIN_DEBUG_STR, "ldb_wait", ldb_strerror(ret)));
 	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CALL_FAILED, mem_ctx);
 	MAPI_RETVAL_IF(!tce_ctx->found, MAPI_E_CALL_FAILED, mem_ctx);
-
-	/* If successful replace UserAccountControl attr in the user
+	
+	/* When successful replace UserAccountControl attr in the user
 	 * record 
 	 */
 	talloc_free(msg);
 	msg = ldb_msg_new(mem_ctx);
 	MAPI_RETVAL_IF(!msg, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
-	msg->dn = res[0]->dn;
+	msg->dn = res->msgs[0]->dn;
 
 	UserAccountControl = talloc_asprintf(mem_ctx, "66048");
 	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, 
@@ -328,10 +349,12 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	ret = samdb_replace(remote_ldb, mem_ctx, msg);
+	DEBUG(3, (MAPIADMIN_DEBUG_STR, "samdb_replace", ldb_strerror(ret)));
 	MAPI_RETVAL_IF((ret != 0), MAPI_E_CORRUPT_DATA, mem_ctx);
 
 	/* reset errno before leaving */
 	errno = 0;
+	talloc_free(mem_ctx);
 	return MAPI_E_SUCCESS;
 }
 
@@ -360,7 +383,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_add(struct mapiadmin_ctx *mapiadmin_ctx)
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	DEBUG(3, ("Creating account %s\n", mapiadmin_ctx->username));
-	profile = global_mapi_ctx->session->profile;
+	profile = mapiadmin_ctx->session->profile;
 
 again:
 	name.string = mapiadmin_ctx->username;
@@ -459,7 +482,7 @@ again:
 						      mapiadmin_ctx->description ?
 						      mapiadmin_ctx->description :
 						      "OpenChange account created by host %s: %s", 
-					 lp_netbios_name(global_loadparm), 
+					 lp_netbios_name(global_mapi_ctx->lp_ctx), 
 					 timestring(mapiadmin_ctx->user_ctx, time(NULL)));
 
 	DEBUG(3, ("Resetting ACB flags, force pw change time\n"));
@@ -471,6 +494,7 @@ again:
 	}
 	retval = mapiadmin_user_extend(mapiadmin_ctx);
 	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(3, ("mapiadmin_user_extend: 0x%x\n", GetLastError()));
 	        mapiadmin_user_del(mapiadmin_ctx);
 	        MAPI_RETVAL_IF(1, MAPI_E_CALL_FAILED,mem_ctx);
 	}
@@ -511,11 +535,11 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_del(struct mapiadmin_ctx *mapiadmin_ctx)
 	n.in.num_names = 1;
 	n.in.names = &sname;
 
-	status = dcerpc_samr_LookupNames(mapiadmin_ctx->user_ctx->p, 
-					 (TALLOC_CTX *) mapiadmin_ctx, &n);
+	status = dcerpc_samr_LookupNames(mapiadmin_ctx->user_ctx->p, mem_ctx, &n);
 	if (NT_STATUS_IS_OK(status)) {
 		rid = n.out.rids.ids[0];
 	} else {
+		talloc_free(mem_ctx);
 		return MAPI_E_NOT_FOUND;
 	}
 
@@ -524,7 +548,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_del(struct mapiadmin_ctx *mapiadmin_ctx)
 	r.in.rid = rid;
 	r.out.user_handle = &user_handle;
 
-	status = dcerpc_samr_OpenUser(mapiadmin_ctx->user_ctx->p, (TALLOC_CTX *)mapiadmin_ctx, &r);
+	status = dcerpc_samr_OpenUser(mapiadmin_ctx->user_ctx->p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("OpenUser(%s) failed - %s\n", mapiadmin_ctx->username, nt_errstr(status)));
 		MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_NOT_FOUND, mem_ctx);

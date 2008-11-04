@@ -32,7 +32,9 @@
 #define	SAME_SUBJECT_BODY	"Same subject and body"
 #define	UNIQUE_BODY		"The secret word is OpenChange and is hidden"
 
-bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
+bool torture_create_environment(struct loadparm_context *lp_ctx,
+				TALLOC_CTX *mem_ctx, 
+				mapi_object_t *parent,
 				mapi_object_t *child)
 {
 	enum MAPISTATUS	retval;
@@ -56,7 +58,7 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 	for (i = 0; i < 5; i++) {
 		subject = talloc_asprintf(mem_ctx, "Subject: %s %d", 
 					  "MSGFLAG_READ: Sample mail", i);
-		retval = torture_simplemail_fromme(child, subject, 
+		retval = torture_simplemail_fromme(lp_ctx, child, subject, 
 						   "This is sample content", 
 						   MSGFLAG_READ|MSGFLAG_SUBMIT);
 		talloc_free(subject);
@@ -68,7 +70,7 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 	for (i = 0; i < 5; i++) {
 		subject = talloc_asprintf(mem_ctx, "Subject: %s %d", 
 					  "Sample mail", i);
-		retval = torture_simplemail_fromme(child, subject, 
+		retval = torture_simplemail_fromme(lp_ctx, child, subject, 
 						   "This is sample content", 
 						   MSGFLAG_SUBMIT);
 		talloc_free(subject);
@@ -78,7 +80,7 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 
 	/* Create 2 mails with the same subject */
 	for (i = 0; i < 2; i++) {
-		retval = torture_simplemail_fromme(child, SAME_SUBJECT,
+		retval = torture_simplemail_fromme(lp_ctx, child, SAME_SUBJECT,
 						   "Different content",
 						   MSGFLAG_SUBMIT);
 		if (retval != MAPI_E_SUCCESS) return false;
@@ -88,7 +90,7 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 
 	/* Create 3 mails with the same subject and same body */
 	for (i = 0; i < 3; i++) {
-		retval = torture_simplemail_fromme(child, SAME_SUBJECT_BODY,
+		retval = torture_simplemail_fromme(lp_ctx, child, SAME_SUBJECT_BODY,
 						   SAME_SUBJECT_BODY,
 						   MSGFLAG_SUBMIT);
 		if (retval != MAPI_E_SUCCESS) return false;
@@ -98,12 +100,12 @@ bool torture_create_environment(TALLOC_CTX *mem_ctx, mapi_object_t *parent,
 
 	/* Create 1 mail with a long body */
 	body = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-	retval = torture_simplemail_fromme(child, "Long body", body, MSGFLAG_SUBMIT);
+	retval = torture_simplemail_fromme(lp_ctx, child, "Long body", body, MSGFLAG_SUBMIT);
 	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("[+] 1 mail with  body > 39 chars\n"));
 
 	/* Create 1 mail with a unique body content */
-	retval = torture_simplemail_fromme(child, "Unique content", UNIQUE_BODY, MSGFLAG_SUBMIT);
+	retval = torture_simplemail_fromme(lp_ctx, child, "Unique content", UNIQUE_BODY, MSGFLAG_SUBMIT);
 	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("[+] 1 mail with  unique body: %s\n", UNIQUE_BODY));
 	
@@ -144,7 +146,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -165,7 +167,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Create test environment */
-	if (torture_create_environment(mem_ctx, &obj_inbox, &obj_testdir) != true) {
+	if (torture_create_environment(torture->lp_ctx, mem_ctx, &obj_inbox, &obj_testdir) != true) {
 		return false;
 	}
 

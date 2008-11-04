@@ -56,7 +56,7 @@ bool torture_rpc_mapi_recipient(struct torture_context *torture)
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* Open Message Store */
 	mapi_object_init(&obj_store);

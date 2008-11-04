@@ -43,6 +43,9 @@ struct mapiadmin_ctx;
 #include <libmapi/libmapi.h>
 #include <libmapiadmin/proto.h>
 
+#undef _PRINTF_ATTRIBUTE
+#define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
+
 #ifndef	__BEGIN_DECLS
 #ifdef	__cplusplus
 #define	__BEGIN_DECLS		extern "C" {
@@ -79,6 +82,7 @@ struct test_join {
 */
 struct mapiadmin_ctx
 {
+	struct mapi_session	*session;
 	const char		*username;
 	const char		*password;
 	const char		*fullname;
@@ -95,6 +99,7 @@ struct mapiadmin_ctx
  */
 
 __BEGIN_DECLS
+struct ldb_dn *samdb_search_dn(struct ldb_context *, TALLOC_CTX *, struct ldb_dn *, const char *, ...) _PRINTF_ATTRIBUTE(4,5);
 int samdb_msg_add_string(struct ldb_context *, TALLOC_CTX *,
 			 struct ldb_message *, const char *, const char *);
 int samdb_replace(struct ldb_context *, TALLOC_CTX *, struct ldb_message *);
@@ -104,5 +109,6 @@ void arcfour_crypt_blob(uint8_t *, int, const DATA_BLOB *);
 __END_DECLS
 
 #define	DEFAULT_PROFDB_PATH	"%s/.openchange/profiles.ldb"
+#define	MAPIADMIN_DEBUG_STR	"[%s:%d]: %s %s\n", __FUNCTION__, __LINE__
 
 #endif /* __LIBMAPIADMIN_H__ */

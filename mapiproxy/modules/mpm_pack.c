@@ -328,7 +328,7 @@ static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 
 	lp_ctx = loadparm_init(dce_ctx);
 	lp_load_default(lp_ctx);
-	dcerpc_init();
+	dcerpc_init(lp_ctx);
 
 	return NT_STATUS_OK;
 }

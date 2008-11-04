@@ -30,7 +30,6 @@ NTSTATUS samba_init_module(void)
 {
 	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "OPENCHANGE");
 
-	dcerpc_init();
 	ndr_table_init();
 
 	DEBUG(0, ("Loading openchange torture test\n"));

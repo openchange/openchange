@@ -38,6 +38,7 @@ bool torture_mapi_createuser(struct torture_context *torture)
 	struct test_join        *user_ctx = (struct test_join *) NULL;
 	const char		*username = lp_parm_string(torture->lp_ctx, NULL, "exchange", "username");
 	const char		*user_password = lp_parm_string(torture->lp_ctx, NULL, "exchange", "password");
+	struct mapi_session	*session;
 
 	/* sanity checks */
 	if (!username) {
@@ -47,10 +48,10 @@ bool torture_mapi_createuser(struct torture_context *torture)
 
 	/* init mapi */
 	mem_ctx = talloc_init("torture_mapi_createuser");
-	retval = torture_load_profile(mem_ctx);
+	retval = torture_load_profile(mem_ctx, torture->lp_ctx, &session);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	profile = global_mapi_ctx->session->profile;
+	profile = session->profile;
 
 	/* Create the user in the AD */
 	user_ctx = torture_create_testuser(torture, username, 

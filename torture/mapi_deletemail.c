@@ -57,7 +57,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 	mem_ctx = talloc_init("torture_rpc_mapi_deletemail");
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* init objets */
 	mapi_object_init(&obj_store);

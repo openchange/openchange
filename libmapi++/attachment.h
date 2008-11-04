@@ -32,11 +32,21 @@ namespace libmapipp
 {
 class object;
 
-/// \brief This class represents a message attachment
+/**
+ * \brief This class represents a message %attachment
+ *
+ * A message can contain both text content, and also have attached
+ * (embedded) files and messages. This class represents the attachments
+ * for one messaage.
+ * 
+ * You may not need to create the attachments yourself, since you can 
+ * create a container with all the attachments using message::fetch_attachments().
+ */
 class attachment : public object {
 	public:
 		/** \brief Constructor
-		 *  \param mapi_message message this attachment belongs to.
+		 *
+		 *  \param mapi_message the message that this attachment belongs to.
 		 *  \param attach_num Attachment Number.
 		 */
 		attachment(message& mapi_message, const uint32_t attach_num) throw(mapi_exception)
@@ -99,14 +109,37 @@ class attachment : public object {
 
 		}
 
-		/// \brief Get Attachment number.
+		/**
+		 * \brief The %attachment number
+		 */
 		uint32_t get_num() const { return m_attach_num; }
 
+		/**
+		 * \brief the contents of the %attachment
+		 *
+		 * \note the length of the array is given by get_data_size()
+		 */
 		const uint8_t* get_data() const  { return m_bin_data; }
+
+		/**
+		 * \brief the size of the %attachment
+		 *
+		 * \return the size of the %attachment in bytes
+		 */
 		uint32_t get_data_size() const { return m_data_size; }
+
+		/**
+		 * \brief the filename of the %attachment
+		 *
+		 * \note not all attachments have file names
+		 *
+		 * \return string containing the file name of the %attachment, if any
+		 */
 		std::string get_filename() const { return m_filename; }
 
-		/// Destructor
+		/**
+		 * Destructor
+		 */
 		virtual ~attachment() throw()
 		{
 			if (m_bin_data) delete m_bin_data;

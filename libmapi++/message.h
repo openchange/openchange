@@ -33,10 +33,12 @@ namespace libmapipp
 {
 class object;
 class attachment;
+
 /** 
- * \brief This class represents a message in Exchange.\n
- * It is important to note that a message is not necessarily an email message.\n
- * It could be a contact, journal or anything else that is not a folder.\n
+ * \brief This class represents a %message in Exchange.
+ *
+ * It is important to note that a %message is not necessarily an email %message.
+ * It could be a contact, journal or anything else that is not a folder.
  */
 class message : public object {
 	public:
@@ -45,9 +47,10 @@ class message : public object {
 
 		/**
 		 * \brief Constructor
-		 * \param mapi_session The session to use to retrieve this message.
-		 * \param folder_id The id of the folder this message belongs to.
-		 * \param message_id The message id.
+		 *
+		 * \param mapi_session The session to use to retrieve this %message.
+		 * \param folder_id The id of the folder this %message belongs to.
+		 * \param message_id The %message id.
 		 */
 		message(session& mapi_session, const mapi_id_t folder_id, const mapi_id_t message_id) throw(mapi_exception) 
 		: object(mapi_session, "message"), m_folder_id(folder_id), m_id(message_id)
@@ -57,18 +60,25 @@ class message : public object {
 		}
 
 		/**
-		 * \brief Fetches all attachments in this message.
+		 * \brief Fetches all attachments in this %message.
+		 *
 		 * \return A container of attachment shared pointers.
 		 */
 		attachment_container_type fetch_attachments();
 
-		/// \brief Get this message's ID.
+		/**
+		 * \brief Get this %message's ID.
+		 */
 		mapi_id_t get_id() const { return m_id; }
 
-		/// \brief Get this message's parent folder ID.
+		/**
+		 * \brief Get this message's parent folder ID.
+		 */
 		mapi_id_t get_folder_id() const { return m_folder_id; } 
 
-		/// Destructor
+		/**
+		 * Destructor
+		 */
 		virtual ~message() throw()
 		{
 		}

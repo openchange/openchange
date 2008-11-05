@@ -181,11 +181,17 @@ install:
 
 	* doxygen: build the documentation
 
+	* boost-thread: threat support for libmapi++
 
 Similarly for the others:
 
 # apt-get install automake flex bison libpopt    or
 # pkg_add automake flex bison libpopt
+
+If you have boost development libraries installed, but they aren't being
+found by the configure script (see below), you may need to set the
+BOOST_LIB_SUFFIX environmental variable:
+$ export BOOST_LIB_SUFFIX=-mt
 
 
 [0x2c] OpenChange libmapi installation

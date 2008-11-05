@@ -158,7 +158,7 @@ download() {
 # Apply patches to samba4
 #
 patch() {
-
+    return $?
 }
 
 #

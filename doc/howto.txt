@@ -181,7 +181,7 @@ install:
 
 	* doxygen: build the documentation
 
-	* boost-thread: threat support for libmapi++
+	* boost-thread: thread support for libmapi++
 
 Similarly for the others:
 

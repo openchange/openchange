@@ -208,18 +208,21 @@ static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
    - olFolderOutbox
    - olFolderSentMail
    - olFolderInbox
+   - olFolderCommonView
    - olFolderCalendar
    - olFolderContacts
    - olFolderJournal
    - olFolderNotes
    - olFolderTasks
    - olFolderDrafts
+   - olFolderReminders
+   - olFolderFinder
 
    Note that this function will cache FID values for common accessed
    folders such as calendar, contact, journal, note, task and drafts
    until the store object got released.
 
-o   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise -1.
 
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:

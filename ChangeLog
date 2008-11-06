@@ -1,14 +1,19 @@
+2008-11-06  bradh
+
+	* [r860] Minor cleanups.
+	* [r859] We probably want to return here, not do nothing.
+
 2008-11-05  bradh
 
 	* [r857] Typo fix.
+
+2008-11-05  bradh
+
 	* [r856] Explain the boost-thread trick.
 
 2008-11-05  jkerihuel
 
 	* [r855] Fix empty patch function problem: add a retval
-
-2008-11-05  bradh
-
 	* [r854] Minor documentation tweaks.
 
 2008-11-04  jkerihuel
@@ -37,6 +42,9 @@
 2008-11-04  bradh
 
 	* [r849] More API documentation tweaks.
+
+2008-11-04  bradh
+
 	* [r848] Some API dox fixes for libmapi++.
 
 2008-11-03  bradh
@@ -66,6 +74,9 @@
 2008-11-01  jelmer
 
 	* [r839] Fix includes - debug.h can only be included once.
+
+2008-11-01  jelmer
+
 	* [r838] Include debug header.
 	* [r837] Cope with API changes in Samba functions.
 	* [r836] Use new function is_zero_ip_v4 rather than removed
@@ -467,6 +478,9 @@
 	* [r744] Filter out some new #include lines.
 	  
 	  This needs to be applied to other modules too.
+
+2008-09-08  jkerihuel
+
 	* [r743] - Update SaveChangesMessage IDL and implementation
 	  - Add a SaveFlags parameter to SaveChangesMessage function
 	  - update openchange code to reflect this change
@@ -517,6 +531,9 @@
 
 	* [r732] - Move from SLPSTRArray to StringArray_r
 	  - LPSTR structure removed
+
+2008-09-07  jkerihuel
+
 	* [r731] Rename MAPIUID to FlatUID_r
 	* [r730] Fix lexer warnings during compilation (ticket #100)
 	* [r729] - Update the EcDoConnect IDL (ref. ticket #99)
@@ -1347,6 +1364,9 @@
 
 	* [r557] merge from mapiproxy branch:
 	  * Add IDL for SyncGetTransferState (0x82) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r556] merge from mapiproxy branch:
 	  * Add IDL for SyncImportReadStateChanges (0x80) MAPI call
 	  

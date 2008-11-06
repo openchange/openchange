@@ -348,7 +348,7 @@ static void mapiprofile_dump(const char *profdb, const char *profname)
 	}
 
 	retval = OpenProfile(&profile, profname, NULL);
-	if (retval && retval != MAPI_E_INVALID_PARAMETER) {
+	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
 		mapi_errstr("OpenProfile", GetLastError());
 		exit (1);
 	}
@@ -371,7 +371,7 @@ static void mapiprofile_attribute(const char *profdb, const char *profname,
 	struct mapi_profile	profile;
 	char			**value = NULL;
 	unsigned int		count = 0;
-	int			i;
+	unsigned int		i;
 
 	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
@@ -386,7 +386,7 @@ static void mapiprofile_attribute(const char *profdb, const char *profname,
 	}
 
 	retval = OpenProfile(&profile, profname, NULL);
-	if (retval && retval != MAPI_E_INVALID_PARAMETER) {
+	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
 		mapi_errstr("OpenProfile", GetLastError());
 		exit (1);
 	}

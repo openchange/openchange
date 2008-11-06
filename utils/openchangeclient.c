@@ -950,7 +950,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 
 	if (oclient->pf) {
 		retval = SaveChangesMessage(&obj_outbox, &obj_message, KeepOpenReadOnly);
-		if (retval != MAPI_E_SUCCESS);
+		if (retval != MAPI_E_SUCCESS) return retval;
 
 	} else {
 		/* Submit the message */

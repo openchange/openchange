@@ -26,7 +26,7 @@
 
 #include "openchangepfadmin.h"
 
-static uint32_t get_aclrights(const char *permission)
+static int32_t get_aclrights(const char *permission)
 {
 	uint32_t	i;
 
@@ -50,7 +50,7 @@ static void list_aclrights(void)
 	}
 }
 
-static uint32_t check_IPF_class(const char *dirclass)
+static int32_t check_IPF_class(const char *dirclass)
 {
 	uint32_t	i;
 
@@ -114,7 +114,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
@@ -161,7 +161,7 @@ static enum MAPISTATUS openchangepfadmin_getdir(TALLOC_CTX *mem_ctx,
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
@@ -259,7 +259,7 @@ int main(int argc, const char *argv[])
 	const char		*opt_folder = NULL;
 	const char		*opt_debug = NULL;
 	const char		*opt_username = NULL;	
-	uint32_t		opt_permission = -1;
+	int32_t			opt_permission = -1;
 	bool			opt_ipm_list = false;
 	bool			opt_mkdir = false;
 	bool			opt_rmdir = false;
@@ -273,28 +273,28 @@ int main(int argc, const char *argv[])
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path"},
-		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name"},
-		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
-		{"apassword", 0, POPT_ARG_STRING, NULL, OPT_APASSWORD, "set the account password"},
-		{"adesc", 0, POPT_ARG_STRING, NULL, OPT_ADESC, "set the account description"},
-		{"acomment", 0, POPT_ARG_STRING, NULL, OPT_ACOMMENT, "set the account comment"},
-		{"afullname", 0, POPT_ARG_STRING, NULL, OPT_AFULLNAME, "set the account full name"},
-		{"list",0, POPT_ARG_NONE, NULL, OPT_IPM_LIST, "list IPM subtree directories"},
-		{"mkdir", 0, POPT_ARG_NONE, NULL, OPT_MKDIR, "create a Public Folder directory"},
-		{"rmdir", 0, POPT_ARG_NONE, NULL, OPT_RMDIR, "delete a Public Folder directory"},
-		{"comment", 0, POPT_ARG_STRING, NULL, OPT_COMMENT, "set the folder comment"},
-		{"dirclass", 0, POPT_ARG_STRING, NULL, OPT_DIRCLASS, "set the folder class"},
-		{"adduser", 0, POPT_ARG_STRING, NULL, OPT_ADDUSER, "add Exchange user"},
-		{"rmuser", 0, POPT_ARG_STRING, NULL, OPT_RMUSER, "delete Exchange user"},
-		{"addright", 0, POPT_ARG_STRING, NULL, OPT_ADDRIGHT, "add MAPI permissions to PF folder"},
-		{"rmright", 0, POPT_ARG_NONE, NULL, OPT_RMRIGHT, "remove MAPI permissions to PF folder"},
-		{"modright", 0, POPT_ARG_STRING, NULL, OPT_MODRIGHT, "modify MAPI permissions to PF folder"},
-		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "set debug level"},
-		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "Dump the hex data"},
-		{"folder", 0, POPT_ARG_STRING, NULL, OPT_FOLDER, "specify the Public Folder directory"},
-		{"username", 0, POPT_ARG_STRING, NULL, OPT_USERNAME, "specify the username to use"},
-		{ NULL }
+		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path", "PATH"},
+		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name", "PROFILE"},
+		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password", "PASSWORD"},
+		{"apassword", 0, POPT_ARG_STRING, NULL, OPT_APASSWORD, "set the account password", "PASSWORD"},
+		{"adesc", 0, POPT_ARG_STRING, NULL, OPT_ADESC, "set the account description", "DESCRIPTION"},
+		{"acomment", 0, POPT_ARG_STRING, NULL, OPT_ACOMMENT, "set the account comment", "COMMENT"},
+		{"afullname", 0, POPT_ARG_STRING, NULL, OPT_AFULLNAME, "set the account full name", "NAME"},
+		{"list",0, POPT_ARG_NONE, NULL, OPT_IPM_LIST, "list IPM subtree directories", NULL},
+		{"mkdir", 0, POPT_ARG_NONE, NULL, OPT_MKDIR, "create a Public Folder directory", NULL},
+		{"rmdir", 0, POPT_ARG_NONE, NULL, OPT_RMDIR, "delete a Public Folder directory", NULL},
+		{"comment", 0, POPT_ARG_STRING, NULL, OPT_COMMENT, "set the folder comment", "COMMENT"},
+		{"dirclass", 0, POPT_ARG_STRING, NULL, OPT_DIRCLASS, "set the folder class", "CLASS"},
+		{"adduser", 0, POPT_ARG_STRING, NULL, OPT_ADDUSER, "add Exchange user", "USERNAME"},
+		{"rmuser", 0, POPT_ARG_STRING, NULL, OPT_RMUSER, "delete Exchange user", "USERNAME"},
+		{"addright", 0, POPT_ARG_STRING, NULL, OPT_ADDRIGHT, "add MAPI permissions to PF folder", "RIGHT"},
+		{"rmright", 0, POPT_ARG_NONE, NULL, OPT_RMRIGHT, "remove MAPI permissions to PF folder", NULL},
+		{"modright", 0, POPT_ARG_STRING, NULL, OPT_MODRIGHT, "modify MAPI permissions to PF folder", "RIGHT"},
+		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "set debug level", "LEVEL"},
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "Dump the hex data", NULL},
+		{"folder", 0, POPT_ARG_STRING, NULL, OPT_FOLDER, "specify the Public Folder directory", "FOLDER"},
+		{"username", 0, POPT_ARG_STRING, NULL, OPT_USERNAME, "specify the username to use", "USERNAME"},
+		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
 
 	mem_ctx = talloc_init("openchangepfadmin");

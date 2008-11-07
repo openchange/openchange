@@ -1,6 +1,21 @@
+2008-11-07  bradh
+
+	* [r864] Fix missing initialisers (issue #110).
+	  
+	  Also fix some signed/unsigned warnings.
+	* [r863] Fix problems with incorrect initialisers (#110) and
+	  operator precedence.
+	  
+	  Also fix a couple of places with signed/unsigned confusion.
+	* [r862] Partial fix for issue #110, and a couple of very minor
+	  cleanups.
+
 2008-11-06  bradh
 
 	* [r860] Minor cleanups.
+
+2008-11-06  bradh
+
 	* [r859] We probably want to return here, not do nothing.
 
 2008-11-05  bradh
@@ -78,6 +93,9 @@
 2008-11-01  jelmer
 
 	* [r838] Include debug header.
+
+2008-11-01  jelmer
+
 	* [r837] Cope with API changes in Samba functions.
 	* [r836] Use new function is_zero_ip_v4 rather than removed
 	  is_zero_ip.
@@ -535,6 +553,9 @@
 2008-09-07  jkerihuel
 
 	* [r731] Rename MAPIUID to FlatUID_r
+
+2008-09-07  jkerihuel
+
 	* [r730] Fix lexer warnings during compilation (ticket #100)
 	* [r729] - Update the EcDoConnect IDL (ref. ticket #99)
 	  - Add new fields to the emsmdb info structure
@@ -1373,6 +1394,9 @@
 	  Note: This IDL is temporary and should be improved after
 	  completion of
 	  the merging process.
+
+2008-05-31  jkerihuel
+
 	* [r555] merge from mapiproxy branch:
 	  * Add IDL for SyncOpenCollector (0x7e) MAPI call
 	* [r554] merge from mapiproxy branch:

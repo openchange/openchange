@@ -54,7 +54,7 @@ static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 	mapi_id_t		id_inbox;
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		SRowSet;
-	int			i;
+	uint32_t		i;
 	uint64_t		id_message;
 
 	if (!msgid) {
@@ -123,14 +123,14 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	struct mapi_profile	profile;
 	size_t			read_size;
 	char			*line = NULL;
-	size_t			size;
+	ssize_t			size;
 	const char		*msgid;
 	char     		*id;
 	char			**mbox_msgids;
 	char			**prof_msgids;
 	unsigned int		mbox_count = 0;
 	unsigned int		count;
-	int			i, j;
+	unsigned int		i, j;
 	bool			found = false;
 
 	retval = MAPIInitialize(profdb);
@@ -347,7 +347,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	struct SRowSet			rowset_attach;
 	uint32_t			count;
 	uint8_t				format;
-	int				i;
+	unsigned int			i;
 
 	has_attach = (const uint32_t *) octool_get_propval(aRow, PR_HASATTACH);
 	from = (const char *) octool_get_propval(aRow, PR_SENT_REPRESENTING_NAME);
@@ -556,7 +556,7 @@ int main(int argc, const char *argv[])
 	poptContext			pc;
 	int				opt;
 	FILE				*fp;
-	int				i;
+	unsigned int			i;
 	const char			*opt_profdb = NULL;
 	const char			*opt_profname = NULL;
 	const char			*opt_password = NULL;
@@ -571,14 +571,14 @@ int main(int argc, const char *argv[])
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path"},
-		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name"},
-		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
-		{"mbox", 'm', POPT_ARG_STRING, NULL, OPT_MBOX, "set the mbox file"},
-		{"update", 'u', POPT_ARG_NONE, 0, OPT_UPDATE, "mirror mbox changes back to the Exchange server"},
-		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUG, "set the debug level"},
-		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
-		{ NULL }
+		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path", "PATH"},
+		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name", "PROFILE"},
+		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password", "PASSWORD"},
+		{"mbox", 'm', POPT_ARG_STRING, NULL, OPT_MBOX, "set the mbox file", "FILENAME"},
+		{"update", 'u', POPT_ARG_NONE, 0, OPT_UPDATE, "mirror mbox changes back to the Exchange server", NULL},
+		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUG, "set the debug level", "LEVEL"},
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data", NULL},
+		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
 
 	mem_ctx = talloc_init("exchange2mbox");

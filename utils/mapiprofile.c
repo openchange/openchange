@@ -453,30 +453,31 @@ int main(int argc, const char *argv[])
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"ldif", 'L', POPT_ARG_STRING, NULL, OPT_PROFILE_LDIF, "set the ldif path"},
-		{"getdefault", 'G', POPT_ARG_NONE, NULL, OPT_PROFILE_GET_DFLT, "get the default profile "},
-		{"default", 'S', POPT_ARG_NONE, NULL, OPT_PROFILE_SET_DFLT, "set the default profile"},
-		{"newdb", 'n', POPT_ARG_NONE, NULL, OPT_PROFILE_NEWDB, "create a new profile store"},
-		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path"},
-		{"profile", 'P', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name"},
-		{"address", 'I', POPT_ARG_STRING, NULL, OPT_ADDRESS, "set the exchange server IP address"},
-		{"workstation", 'M', POPT_ARG_STRING, NULL, OPT_WORKSTATION, "set the workstation"},
-		{"domain", 'D', POPT_ARG_STRING, NULL, OPT_DOMAIN, "set the domain"},
-		{"username", 'u', POPT_ARG_STRING, NULL, OPT_USERNAME, "set the profile username"},
-		{"langcode", 'C', POPT_ARG_STRING, NULL, OPT_LCID, "set the language code ID"},
-		{"pattern", 's', POPT_ARG_STRING, NULL, OPT_PATTERN, "username to search"},
-		{"password", 'p', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
-		{"nopass", 0, POPT_ARG_NONE, NULL, OPT_NOPASS, "do not save password in the profile"},
-		{"create", 'c', POPT_ARG_NONE, NULL, OPT_CREATE_PROFILE, "create a profile in the database"},
-		{"delete", 'r', POPT_ARG_NONE, NULL, OPT_DELETE_PROFILE, "delete a profile in the database"},
-		{"list", 'l', POPT_ARG_NONE, NULL, OPT_LIST_PROFILE, "list existing profiles in the database"},
-		{"listlangs", 0, POPT_ARG_NONE, NULL, OPT_LIST_LANGS, "list all recognised languages"},
-		{"dump", 0, POPT_ARG_NONE, NULL, OPT_DUMP_PROFILE, "dump a profile entry"},
-		{"attr", 'a', POPT_ARG_STRING, NULL, OPT_DUMP_ATTR, "print an attribute value"},
-		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
-		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUGLEVEL, "set the debug level"},
-		{"getfqdn", 0, POPT_ARG_NONE, NULL, OPT_GETFQDN, "returns the DNS FQDN of the NSPI server matching the legacyDN"},
-		{ NULL }
+		{"ldif", 'L', POPT_ARG_STRING, NULL, OPT_PROFILE_LDIF, "set the ldif path", "PATH"},
+		{"getdefault", 'G', POPT_ARG_NONE, NULL, OPT_PROFILE_GET_DFLT, "get the default profile", NULL},
+		{"default", 'S', POPT_ARG_NONE, NULL, OPT_PROFILE_SET_DFLT, "set the default profile", NULL},
+		{"newdb", 'n', POPT_ARG_NONE, NULL, OPT_PROFILE_NEWDB, "create a new profile store", NULL},
+		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path", "PATH"},
+		{"profile", 'P', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name", "PROFILE"},
+		{"address", 'I', POPT_ARG_STRING, NULL, OPT_ADDRESS, "set the exchange server IP address", "xxx.xxx.xxx.xxx"},
+		{"workstation", 'M', POPT_ARG_STRING, NULL, OPT_WORKSTATION, "set the workstation", "WORKSTATION_NAME"},
+		{"domain", 'D', POPT_ARG_STRING, NULL, OPT_DOMAIN, "set the domain", "DOMAIN"},
+		{"username", 'u', POPT_ARG_STRING, NULL, OPT_USERNAME, "set the profile username", "USERNAME"},
+		{"langcode", 'C', POPT_ARG_STRING, NULL, OPT_LCID, "set the language code ID", "LANGCODE"},
+		{"pattern", 's', POPT_ARG_STRING, NULL, OPT_PATTERN, "username to search for", "USERNAME"},
+		{"password", 'p', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password", "PASSWORD"},
+		{"nopass", 0, POPT_ARG_NONE, NULL, OPT_NOPASS, "do not save password in the profile", NULL},
+		{"create", 'c', POPT_ARG_NONE, NULL, OPT_CREATE_PROFILE, "create a profile in the database", NULL},
+		{"delete", 'r', POPT_ARG_NONE, NULL, OPT_DELETE_PROFILE, "delete a profile in the database", NULL},
+		{"list", 'l', POPT_ARG_NONE, NULL, OPT_LIST_PROFILE, "list existing profiles in the database", NULL},
+		{"listlangs", 0, POPT_ARG_NONE, NULL, OPT_LIST_LANGS, "list all recognised languages", NULL},
+		{"dump", 0, POPT_ARG_NONE, NULL, OPT_DUMP_PROFILE, "dump a profile entry", NULL},
+		{"attr", 'a', POPT_ARG_STRING, NULL, OPT_DUMP_ATTR, "print an attribute value", "VALUE"},
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data", NULL},
+		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUGLEVEL, "set the debug level", "LEVEL"},
+		{"getfqdn", 0, POPT_ARG_NONE, NULL, OPT_GETFQDN, "returns the DNS FQDN of the NSPI server matching the legacyDN", NULL},
+		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
+
 	};
 
 	mem_ctx = talloc_init("mapiprofile");
@@ -562,7 +563,7 @@ int main(int argc, const char *argv[])
 		default_path = talloc_asprintf(mem_ctx, DEFAULT_DIR, getenv("HOME"));
 		error = mkdir(default_path, 0700);
 		talloc_free(default_path);
-		if (error == -1 && errno != EEXIST) {
+		if ((error == -1) && (errno != EEXIST)) {
 			perror("mkdir");
 			talloc_free(mem_ctx);
 			exit (1);

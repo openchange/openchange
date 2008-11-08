@@ -61,7 +61,7 @@ static void mapitest_init(TALLOC_CTX *mem_ctx, struct mapitest *mt)
 static void mapitest_init_stream(struct mapitest *mt, const char *filename)
 {
 	if (filename == NULL) {
-		mt->stream = fdopen(STDOUT_FILENO, "r+");
+		mt->stream = fdopen(STDOUT_FILENO, "a");
 	} else {
 		mt->stream = fopen(filename, "w+");
 	}

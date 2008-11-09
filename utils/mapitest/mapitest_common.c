@@ -130,7 +130,7 @@ _PUBLIC_ bool mapitest_common_message_delete_by_subject(struct mapitest *mt,
 		for (i = 0; i < SRowSet.cRows; i++) {
 			if (retval == MAPI_E_SUCCESS) {
 				msgids[0] = SRowSet.aRow[i].lpProps[0].value.d;
-				msubject = SRowSet.aRow[i].lpProps[1].value.lpszA;
+				msubject = (const char *)find_SPropValue_data(&SRowSet.aRow[i], PR_SUBJECT);
 				if (msubject && !strncmp(subject, msubject, strlen(subject))) {
 					DeleteMessage(obj_folder, msgids, 1);
 				}
@@ -177,7 +177,7 @@ _PUBLIC_ bool mapitest_common_find_folder(struct mapitest *mt,
 		return false;
 	}
 
-	while ((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+	while (((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			tmp = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
@@ -304,13 +304,13 @@ _PUBLIC_ char *mapitest_common_genblob(TALLOC_CTX *mem_ctx, size_t len)
 {
 	int		fd;
 	int		ret;
-	int		i;
+	unsigned int	i;
 	char		*retstr;
 	const char	*list = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+_-#.,";
 	int		list_len = strlen(list);
 
 	/* Sanity check */
-	if (!mem_ctx || (len < 0)) {
+	if (!mem_ctx || (len == 0)) {
 		return NULL;
 	}
 

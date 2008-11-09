@@ -1,3 +1,15 @@
+2008-11-09  bradh
+
+	* [r868] Prevent segfault when running mapitest. Looks like the we
+	  can
+	  return MAPI_E_SUCCESS even if one of the property values is
+	  MAPI_E_NOTFOUND. That error then get turned into a char*, and
+	  strncmp faults.
+	  
+	  Also fix a possible bug relating to operator precedence, and
+	  a couple of warnings (one for signed / unsigned comparison, and
+	  the other for an unsigned value never being less than zero).
+
 2008-11-08  bradh
 
 	* [r866] Enable output to stdout.
@@ -18,6 +30,9 @@
 	  operator precedence.
 	  
 	  Also fix a couple of places with signed/unsigned confusion.
+
+2008-11-07  bradh
+
 	* [r862] Partial fix for issue #110, and a couple of very minor
 	  cleanups.
 
@@ -1424,6 +1439,9 @@
 
 	* [r554] merge from mapiproxy branch:
 	  * Add IDL for DeletePropertiesNoReplicate (0x7a) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r553] merge from mapiproxy branch:
 	  * Add IDL for SyncImportMessageMove (0x78) MAPI call
 	* [r552] merge from mapiproxy branch:

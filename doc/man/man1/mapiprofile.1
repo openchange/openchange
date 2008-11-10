@@ -25,27 +25,35 @@
 .\" Process this file with
 .\" groff -man -Tascii mapiprofile.1
 .\"
-.TH MAPIPROFILE 1 2007-11-01 "OpenChange libmapi 0.6" "OpenChange Programmer's Manual"
+.TH MAPIPROFILE 1 2008-11-10 "OpenChange libmapi 0.8" "OpenChange Programmer's Manual"
 
 .SH NAME
-mapiprofile \- administrate OpenChange MAPI Profiles databases
+mapiprofile \- administer OpenChange MAPI Profiles databases
 
 .SH SYNOPSIS
 .nf
-mapiprofile [-?] [-?|--help] [--usage] [-L|--ldif STRING]
-        [-G|--getdefault] [-S|--default] [-n|--newdb] [-f|--database STRING]
-        [-P|--profile STRING] [-I|--address STRING] [-M|--workstation STRING]
-        [-D|--domain STRING] [-u|--username STRING] [-C|--language STRING]
-        [-s|--pattern STRING] [-p|--password STRING] [--nopass] [-c|--create]
-        [-r|--delete] [-l|--list] [--listlangs] [-d|--dump] [-a|--attr STRING]
-        [--dump-data]
+mapiprofile [-?] [-?|--help] [--usage] [-L|--ldif=PATH]
+        [-G|--getdefault] [-S|--default] [-n|--newdb] [-f|--database=PATH]
+        [-P|--profile=PROFILE] [-I|--address=xxx.xxx.xxx.xxx] [-M|--workstation=WORKSTATION_NAME]
+        [-D|--domain=DOMAIN] [-u|--username=USERNAME] [-C|--language=LANGCODE]
+        [-s|--pattern=USERNAME] [-p|--password=PASSWORD] [--nopass] [-c|--create]
+        [-r|--delete] [-l|--list] [--listlangs] [--dump] [-a|--attr=VALUE]
+        [--dump-data] [-d|--debuglevel=LEVEL] [--getfqdn]
 .fi
 
 .SH DESCRIPTION
 mapiprofile is a command line tool designed to provide administrative
-support for openchange mapi profiles. It is designed so it provides
-sample code for developers interested in adding openchange mapi
-profile support to their applications.
+support for OpenChange MAPI profiles. A profile in this context represents a
+single user's connection to a server. It can be thought of as a user's account
+information stored on the client side. Most OpenChange utilities make use of
+the profile information stored in the local profile database, often by referring
+to the name of the profile. In addition, because most users only have a single
+account, it is possible to designate one profile as the default profile. If a
+profile is not specified, other utilities will use the default profile (if any)
+to establish a connection.
+
+mapiprofile is designed so it also provides sample code for developers interested in
+adding OpenChange MAPI profile support to their applications.
 
 .SH COMMANDS
 
@@ -53,43 +61,41 @@ profile support to their applications.
 .B --newdb
 .TP
 .B -n
-Create a new database
+Create a new database.
 
 .TP
 .B --create
 .TP
 .B -c
-Create a new profile in the database
+Create a new profile in the database.
 
 .TP
 .B --delete
 .TP
 .B -r
-Delete a profile from the database
+Delete a profile from the database.
 
 .TP
 .B --default
 .TP
 .B -S
-Set the default profile in the database
+Set the default profile in the database.
 
 .TP
 .B --getdefault
 .TP
 .B -G
-Get the default profile name in the database
+Get the default profile name from the database.
 
 .TP
 .B --dump
-.TP
-.B -d
-Display information from a specific profile stored in the database
+Display information about a specific profile from information stored in the database.
 
 .TP
 .B --list
 .TP
 .B -l
-List existing profiles in the database
+List existing profiles in the database.
 
 .TP
 .B --listlangs
@@ -119,40 +125,40 @@ Path to the ldif files. If no ldif directory is specified then the default one s
 .B --profile PROFILE
 .TP
 .B -p
-Set the profile name
+Set the profile name to use (e.g. the profile to create or delete, or to dump information about).
 
 .TP
 .B --address IP_ADDR
 .TP
 .B -I
-Set the Exchange server IP address
+Set the Exchange server IP address.
 
 .TP
 .B --workstation WORKSTATION
 .TP
 .B -M
-Sets the local computer name
+Sets the local computer name.
 
 .TP
 .B --domain DOMAIN
 .TP
 .B -D
-Set the Windows domain name
+Set the Windows domain name.
 
 .TP
 .B --username
 .TP
 .B -u
-Set the username to use to log on the Exchange server
+Set the username to use to log on the Exchange server.
 
 .TP
 .B --password
 .TP
 .B -p
-Set the password matching with the username described above
+Set the password corresponding to the username described above.
 
 .TP
-.B --language
+.B --langcode
 .TP
 .B -C
 Specify the language to use with the account. This can be specified
@@ -169,6 +175,29 @@ for US English.
 Set a username string pattern mapiprofile should use rather than the
 default username. This option is used during mapi profile creation.
 
+.TP
+.B --nopass
+Do not save password in the profile.
+
+.TP
+.B --attr VALUE
+.TP
+.B -a
+Print an attribute value.
+
+.TP
+.B --dump-data
+Dump the hex data.
+
+.TP
+.B --debuglevel LEVEL
+.TP
+.B -d
+Set the debug level.
+
+.TP
+.B --getfqdn
+Returns the DNS fully qualified domain name of the NSPI server matching the legacyDN.
 
 .SH EXAMPLES
 
@@ -221,6 +250,8 @@ Profile jkerihuel: HomeMDB = /o=First Organization/ou=First Administrative Group
 
 .SH AUTHOR
 Julien Kerihuel <j.kerihuel at openchange dot org>
+
+Brad Hards <bradh at openchange dot org>
 
 .SH "SEE ALSO"
 The codes for various languages can be found in many places, including

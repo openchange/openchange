@@ -1,3 +1,7 @@
+2008-11-10  bradh
+
+	* [r870] Update to reflect latest state of mapiprofile.
+
 2008-11-09  bradh
 
 	* [r868] Prevent segfault when running mapitest. Looks like the we
@@ -1444,6 +1448,9 @@
 
 	* [r553] merge from mapiproxy branch:
 	  * Add IDL for SyncImportMessageMove (0x78) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r552] merge from mapiproxy branch:
 	  * Add IDL for SyncUploadStateStreamBegin (0x75) MAPI call
 	  * Add IDL for SyncUploadStateStreamContinue (0x76) MAPI call

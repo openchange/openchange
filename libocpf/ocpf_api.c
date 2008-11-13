@@ -184,8 +184,7 @@ int ocpf_propvalue_free(union SPropValue_CTR lpProp, uint16_t proptype)
 	return OCPF_SUCCESS;
 }
 
-int ocpf_propvalue(uint32_t aulPropTag, const char *propname, union SPropValue_CTR lpProp, 
-		   uint16_t proptype, bool unescape)
+int ocpf_propvalue(uint32_t aulPropTag, union SPropValue_CTR lpProp, uint16_t proptype, bool unescape)
 {
 	struct ocpf_property	*element;
 	int			ret;
@@ -216,7 +215,7 @@ void ocpf_propvalue_s(const char *propname, union SPropValue_CTR lpProp, uint16_
 	uint32_t	aulPropTag;
 
 	aulPropTag = get_proptag_value(propname);
-	ocpf_propvalue(aulPropTag, propname, lpProp, proptype, unescape);
+	ocpf_propvalue(aulPropTag, lpProp, proptype, unescape);
 }
 
 
@@ -369,7 +368,7 @@ static struct ocpf_olfolder olfolders[] = {
 	{ 0, NULL }
 };
 
-static int ocpf_folder_name_to_id(const char *name)
+static int64_t ocpf_folder_name_to_id(const char *name)
 {
 	uint32_t	i;
 

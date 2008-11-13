@@ -34,8 +34,8 @@ do {					\
 
 #define	OCPF_DUMP_TITLE(indent, txt, type)		\
 do {							\
-	uint32_t	i;				\
-	uint32_t	txt_len;			\
+	int	i;					\
+	int	txt_len;				\
 							\
 	printf("\n");					\
 	INDENT();					\

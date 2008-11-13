@@ -81,7 +81,7 @@ _PUBLIC_ enum MAPISTATUS MAPIAllocateBuffer(uint32_t size, void **ptr)
 */
 _PUBLIC_ enum MAPISTATUS MAPIFreeBuffer(void *ptr)
 {
-	uint32_t	ret;
+	int		ret;
 
 	MAPI_RETVAL_IF(!ptr, MAPI_E_INVALID_PARAMETER, NULL);
 

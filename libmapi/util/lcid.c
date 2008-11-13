@@ -74,7 +74,7 @@ struct combination {
 struct locale_struct {
 	const char		*locale_str;
 	uint32_t		lcid;
-	uint32_t		language_group;
+	int			language_group;
 	struct combination	combination[6];
 };
 
@@ -329,7 +329,7 @@ _PUBLIC_ void lcid_print_group(void)
   Print languages associated to a single language group
  */
 
-_PUBLIC_ bool lcid_print_groupmember(uint32_t group)
+_PUBLIC_ bool lcid_print_groupmember(int group)
 {
 	uint32_t idx = 0;
 
@@ -352,9 +352,9 @@ _PUBLIC_ bool lcid_print_groupmember(uint32_t group)
   Convert language group from string to integer
  */
 
-_PUBLIC_ uint32_t lcid_lang2nb(const char *name)
+_PUBLIC_ int lcid_lang2nb(const char *name)
 {
-	int idx = 0;
+	int		idx = 0;
 
 	if (!name) {
 		return -1;

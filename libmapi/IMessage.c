@@ -706,7 +706,6 @@ _PUBLIC_ enum MAPISTATUS ReadRecipients(mapi_object_t *obj_message,
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(RowId < 0, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_message);
 	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);

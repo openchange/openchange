@@ -401,12 +401,12 @@ sub mapi_nameid_private_header($)
 	    if ($prop[0] eq "NULL") {
 		$prop[0] = "0x00000000";
 	    }
-	    mparse sprintf "{ %-51s, %-40s, %-15s, %-30s, %-30s, %-15s, %-20s },", 
+	    mparse sprintf "{ %-51s, %-40s, %-15s, %-30s, %-30s, %-15s, %-20s, 0x0 },", 
 	    $prop[0], $prop[1], $prop[2], $prop[3], $prop[4], $prop[5], $prop[6];
 	}
     }
 
-    mparse sprintf "{ 0x00000000, NULL, 0x0, NULL, PT_UNSPECIFIED, 0x0, NULL }";
+    mparse sprintf "{ 0x00000000, NULL, 0x0, NULL, PT_UNSPECIFIED, 0x0, NULL, 0x0 }";
     deindent;
     mparse "};";
     mparse "";

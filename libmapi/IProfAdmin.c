@@ -97,7 +97,7 @@ static enum MAPISTATUS ldb_clear_default_profile(TALLOC_CTX *mem_ctx)
 	struct ldb_result	*res;
 	const char		*attrs[] = { "PR_DEFAULT_PROFILE", NULL };
 	int			ret;
-	int			i;
+	uint32_t       		i;
 
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 
@@ -992,7 +992,7 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 	struct ldb_dn			*basedn;
 	const char			*attrs[] = {"*", NULL};
 	int				ret;
-	int				i;
+	uint32_t       			i;
 
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
@@ -1099,7 +1099,7 @@ static bool set_profile_mvstr_attribute(const char *profname, struct SRowSet row
 {
 	struct SPropValue	*lpProp;
 	enum MAPISTATUS		ret;
-	int			i;
+	uint32_t       		i;
 
 	lpProp = get_SPropValue_SRow(&(rowset.aRow[index]), property);
 

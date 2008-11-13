@@ -322,7 +322,7 @@ _PUBLIC_ void mapidump_appointment(struct mapi_SPropValue_array *properties, con
 	const char		*timezone = NULL;
 	const uint32_t		*status;
 	const uint8_t	       	*priv = NULL;
-	int			i;
+	uint32_t       		i;
 
 	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PidLidContacts);
 	subject = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
@@ -517,7 +517,7 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties, const char
 	const uint32_t			*status;
 	const uint32_t			*importance;
 	const uint8_t			*private;
-	int				i;
+	uint32_t       			i;
 
 	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PidLidContacts);
 	subject = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);

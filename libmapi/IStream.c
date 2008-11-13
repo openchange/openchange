@@ -479,7 +479,6 @@ _PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, u
 	session = mapi_object_get_session(obj_stream);
 	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF((Origin > 2), MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(Offset < 0, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!NewPosition, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SeekStream");
@@ -557,7 +556,6 @@ _PUBLIC_ enum MAPISTATUS SetStreamSize(mapi_object_t *obj_stream, uint64_t SizeS
 	MAPI_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_stream);
 	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(SizeStream < 0, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SetStreamSize");
 	size = 0;

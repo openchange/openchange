@@ -868,7 +868,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ModLinkAtt(struct nspi_context *nspi_ctx,
 
 	r.in.handle = &nspi_ctx->handle;
 	/* FIXME: need to find fDelete value first */
-	r.in.dwFlags = 0x0; 
+	r.in.dwFlags = (Delete == true) ? 0x1 : 0x0; 
 	r.in.ulPropTag = ulPropTag;
 	r.in.MId = MId;
 	r.in.lpEntryIds = lpEntryIds;

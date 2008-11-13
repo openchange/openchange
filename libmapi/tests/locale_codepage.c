@@ -80,7 +80,7 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		{ "locale_id",		'L', POPT_ARG_STRING,	&options.locale_id,	OPT_LOCALID,   	"Display locale information for a given locale id", "LOCALE ID" },
 		{ "language_group",	'G', POPT_ARG_STRING,	&options.language_group,OPT_LANGROUPS,	"Display all languages for the specified language group", "LANGUAGE_GROUP" },
-		{"list_groups",		'l', POPT_ARG_NONE,	&options.group,		OPT_GROUPS,	"List existing language groups"},
+		{"list_groups",		'l', POPT_ARG_NONE,	&options.group,		OPT_GROUPS,	"List existing language groups", NULL},
 		{"codepage",		'c', POPT_ARG_INT,	&options.codepage,	OPT_CP,		"Check if CODEPAGE exists and display related information\n", "CODEPAGE"},
 		{"language_info",	'i', POPT_ARG_STRING,	&options.language_info,	OPT_LANGINFO,	"Copy and Paste information into your smb.conf file\n", "LANGUAGE"},
 		POPT_TABLEEND

@@ -193,7 +193,7 @@ content		:
 		}
 		| INTEGER EQUAL propvalue
 		{
-			ocpf_propvalue($1, "UNNAMED", lpProp, type, true);
+			ocpf_propvalue($1, lpProp, type, true);
 			ocpf_propvalue_free(lpProp, type);
 		}
 		| IDENTIFIER EQUAL VAR

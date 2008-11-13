@@ -466,10 +466,10 @@ _PUBLIC_ int ocpf_write_auto(mapi_object_t *obj_message,
 				/* HACK: replace PR_CONVERSATION_TOPIC with PR_SUBJECT */
 				if (lpProps.ulPropTag == PR_CONVERSATION_TOPIC) {
 					lpProps.ulPropTag = PR_SUBJECT;
-					ocpf_propvalue(lpProps.ulPropTag, NULL, lpProps.value, lpProps.ulPropTag & 0xFFFF, false);
+					ocpf_propvalue(lpProps.ulPropTag, lpProps.value, lpProps.ulPropTag & 0xFFFF, false);
 					cast_SPropValue(&mapi_lpProps->lpProps[i], &lpProps);
 				}
-				ocpf_propvalue(mapi_lpProps->lpProps[i].ulPropTag, NULL, 
+				ocpf_propvalue(mapi_lpProps->lpProps[i].ulPropTag, 
 					       lpProps.value, mapi_lpProps->lpProps[i].ulPropTag & 0xFFFF, false);
 			}
 		} else {

@@ -184,12 +184,12 @@ int main(int argc, const char *argv[])
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "database",	'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB,	"set the profile database path" },
-		{ "profile",	'p', POPT_ARG_STRING, NULL, OPT_PROFILE,	"set the profile name" },
-		{ "password",	'P', POPT_ARG_STRING, NULL, OPT_PASSWORD,	"set the profile password" },
-		{ "debuglevel",	'd', POPT_ARG_STRING, NULL, OPT_DEBUG,		"set the debug level" },
-		{ "dump-data",	  0, POPT_ARG_NONE,   NULL, OPT_DUMPDATA,	"dump the hex data" },
-		{ NULL }
+		{ "database",	'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB,	"set the profile database path",	NULL },
+		{ "profile",	'p', POPT_ARG_STRING, NULL, OPT_PROFILE,	"set the profile name",			NULL },
+		{ "password",	'P', POPT_ARG_STRING, NULL, OPT_PASSWORD,	"set the profile password",		NULL },
+		{ "debuglevel",	'd', POPT_ARG_STRING, NULL, OPT_DEBUG,		"set the debug level",			NULL },
+		{ "dump-data",	  0, POPT_ARG_NONE,   NULL, OPT_DUMPDATA,	"dump the hex data",			NULL },
+		{ NULL,		  0, 0,		      NULL, 0,			NULL,					NULL }
 	};
 
 	mem_ctx = talloc_init("exchange2ical");
@@ -238,7 +238,7 @@ int main(int argc, const char *argv[])
 		global_mapi_ctx->dumpdata = true;
 	}
 
-	session = octool_init_mapi(mem_ctx, opt_profname, opt_password, 0);
+	session = octool_init_mapi(opt_profname, opt_password, 0);
 	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, mem_ctx);
 
 	/* Open Mailbox */

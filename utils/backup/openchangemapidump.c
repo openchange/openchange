@@ -34,13 +34,12 @@
 /**
  * write attachment to the database
  */
-static enum MAPISTATUS mapidump_write_attachment(TALLOC_CTX *mem_ctx,
-						 struct ocb_context *ocb_ctx,
+static enum MAPISTATUS mapidump_write_attachment(struct ocb_context *ocb_ctx,
 						 struct mapi_SPropValue_array *props,
 						 const char *contentdn,
 						 const char *uuid)
 {
-	uint32_t		ret;
+	int			ret;
 	uint32_t		i;
 
 	ret = ocb_record_init(ocb_ctx, OCB_OBJCLASS_ATTACHMENT, contentdn, uuid, props);
@@ -56,13 +55,12 @@ static enum MAPISTATUS mapidump_write_attachment(TALLOC_CTX *mem_ctx,
 /**
  * write message to the database (email, appointment, contact, task, note etc.)
  */
-static enum MAPISTATUS mapidump_write_message(TALLOC_CTX *mem_ctx,
-					      struct ocb_context *ocb_ctx,
+static enum MAPISTATUS mapidump_write_message(struct ocb_context *ocb_ctx,
 					      struct mapi_SPropValue_array *props,
 					      const char *contentdn,
 					      const char *uuid)
 {
-	uint32_t		ret;
+	int			ret;
 	uint32_t		i;
 
 	ret = ocb_record_init(ocb_ctx, OCB_OBJCLASS_MESSAGE, contentdn, uuid, props);
@@ -78,13 +76,12 @@ static enum MAPISTATUS mapidump_write_message(TALLOC_CTX *mem_ctx,
 /**
  * write containers to the database (folders)
  */
-static enum MAPISTATUS mapidump_write_container(TALLOC_CTX *mem_ctx,
-						struct ocb_context *ocb_ctx,
+static enum MAPISTATUS mapidump_write_container(struct ocb_context *ocb_ctx,
 						struct mapi_SPropValue_array *props,
 						const char *containerdn,
 						const char *uuid)
 {
-	uint32_t		ret;
+	int			ret;
 	uint32_t		i;
 
 	ret = ocb_record_init(ocb_ctx, OCB_OBJCLASS_CONTAINER, containerdn, uuid, props);
@@ -146,7 +143,7 @@ static enum MAPISTATUS mapidump_walk_attachment(TALLOC_CTX *mem_ctx,
 					sbin = (const struct SBinary_short *)find_mapi_SPropValue_data(&props, PR_RECORD_KEY);
 					uuid = get_record_uuid(mem_ctx, sbin);
 					contentdn = talloc_asprintf(mem_ctx, "cn=%s,%s", uuid, messagedn);
-					mapidump_write_attachment(mem_ctx, ocb_ctx, &props, contentdn, uuid);
+					mapidump_write_attachment(ocb_ctx, &props, contentdn, uuid);
 
 					/* free allocated strings */
 					talloc_free(uuid);
@@ -214,7 +211,7 @@ static enum MAPISTATUS mapidump_walk_content(TALLOC_CTX *mem_ctx,
 					sbin = (const struct SBinary_short *)find_mapi_SPropValue_data(&props, PR_SOURCE_KEY);
 					uuid = get_MAPI_uuid(mem_ctx, sbin);
 					contentdn = talloc_asprintf(mem_ctx, "cn=%s,%s", uuid, containerdn);
-					mapidump_write_message(mem_ctx, ocb_ctx, &props, contentdn, uuid);
+					mapidump_write_message(ocb_ctx, &props, contentdn, uuid);
 
 					/* If Message has attachments then process them */
 					has_attach = (const uint8_t *)find_mapi_SPropValue_data(&props, PR_HASATTACH);
@@ -285,7 +282,7 @@ static enum MAPISTATUS mapidump_walk_container(TALLOC_CTX *mem_ctx,
 	containerdn = talloc_asprintf(mem_ctx, "cn=%s,%s", uuid, parentdn);
 
 	/* Write entry for container */
-	mapidump_write_container(mem_ctx, ocb_ctx, &props, containerdn, uuid);
+	mapidump_write_container(ocb_ctx, &props, containerdn, uuid);
 	talloc_free(uuid);
 
 	/* Get Contents Table if PR_CONTENT_COUNT >= 1 */
@@ -365,14 +362,14 @@ int main(int argc, const char *argv[])
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path"},
-		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name"},
-		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
-		{"config", 'c', POPT_ARG_STRING, NULL, OPT_CONFIG, "set openchangebackup configuration file path"},
-		{"backup-db", 'b', POPT_ARG_STRING, NULL, OPT_BACKUPDB, "set the openchangebackup store path"},
-		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "set the debug level"},
-		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
-		{ NULL }
+		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path", NULL},
+		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name", NULL},
+		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password", NULL},
+		{"config", 'c', POPT_ARG_STRING, NULL, OPT_CONFIG, "set openchangebackup configuration file path", NULL},
+		{"backup-db", 'b', POPT_ARG_STRING, NULL, OPT_BACKUPDB, "set the openchangebackup store path", NULL},
+		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "set the debug level", NULL},
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data", NULL},
+		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
 
 	mem_ctx = talloc_init("openchangemapidump");

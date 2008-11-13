@@ -180,8 +180,7 @@ static enum MAPISTATUS openchangepfadmin_getdir(TALLOC_CTX *mem_ctx,
 	return MAPI_E_NOT_FOUND;
 }
 
-static enum MAPISTATUS openchangepfadmin_mkdir(TALLOC_CTX *mem_ctx, 
-					       mapi_object_t *obj_container, 
+static enum MAPISTATUS openchangepfadmin_mkdir(mapi_object_t *obj_container, 
 					       const char *name, 
 					       const char *comment, 
 					       const char *type)
@@ -493,8 +492,7 @@ int main(int argc, const char *argv[])
 
 	/* create directory */
 	if (opt_mkdir == true) {
-		retval = openchangepfadmin_mkdir(mem_ctx, &obj_ipm_subtree, 
-						 opt_folder, opt_comment, opt_dirclass);
+		retval = openchangepfadmin_mkdir(&obj_ipm_subtree, opt_folder, opt_comment, opt_dirclass);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("mkdir", GetLastError());
 			goto end;

@@ -94,7 +94,6 @@ static void init_oclient(struct oclient *oclient)
 }
 
 static bool oclient_parse_properties(TALLOC_CTX *mem_ctx, 
-				     struct oclient *client,
 				     const char *input)
 {
 	char		**couples;
@@ -1331,7 +1330,6 @@ static bool openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj
  * Create task
  */
 static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
-					mapi_object_t *obj_folder,
 					mapi_object_t *obj_message,
 					struct oclient *oclient)
 {
@@ -1429,7 +1427,7 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Set contact properties */
-	retval = task_SetProps(mem_ctx, &obj_task, &obj_message, oclient);
+	retval = task_SetProps(mem_ctx, &obj_message, oclient);
 
 	retval = SaveChangesMessage(&obj_task, &obj_message, KeepOpenReadOnly);
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -1451,7 +1449,6 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
  * Send notes
  */
 static enum MAPISTATUS note_SetProps(TALLOC_CTX *mem_ctx,
-					mapi_object_t *obj_folder,
 					mapi_object_t *obj_message,
 					struct oclient *oclient)
 {
@@ -1539,7 +1536,7 @@ static bool openchangeclient_sendnote(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Set Note message properties */
-	retval = note_SetProps(mem_ctx, &obj_note, &obj_message, oclient);
+	retval = note_SetProps(mem_ctx, &obj_message, oclient);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = SaveChangesMessage(&obj_note, &obj_message, KeepOpenReadOnly);
@@ -1756,7 +1753,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	struct SPropTagArray		*SPropTagArray;
 	struct mapi_SPropValue_array	properties_array;
 	uint32_t			count;
-	int				i;
+	uint32_t       			i;
 	char				*id;
 	
 	if (!item) return false;
@@ -2019,9 +2016,9 @@ static bool openchangeclient_updateitem(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	} else if (!strcmp(container_class, IPF_CONTACT)) {
 		retval = contact_SetProps(mem_ctx, &obj_folder, &obj_message, oclient);
 	} else if (!strcmp(container_class, IPF_TASK)) {
-		retval = task_SetProps(mem_ctx, &obj_folder, &obj_message, oclient);
+		retval = task_SetProps(mem_ctx, &obj_message, oclient);
 	} else if (!strcmp(container_class, IPF_STICKYNOTE)) {
-		retval = note_SetProps(mem_ctx, &obj_folder, &obj_message, oclient);
+		retval = note_SetProps(mem_ctx, &obj_message, oclient);
 	}
 
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -2102,7 +2099,6 @@ static bool openchangeclient_deleteitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj
  */
 
 static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store, 
-						   mapi_id_t parentID,
 						   mapi_id_t msgid)
 {
 	enum MAPISTATUS			retval;
@@ -2194,8 +2190,7 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 		DEBUG(0, ("[+] New mail Received\n"));
 		newmail = (struct NewMailNotification *) NotificationData;
 		mapidump_newmail(newmail, "\t");
-		retval = openchangeclient_findmail((mapi_object_t *)private_data,
-						   newmail->FID, newmail->MID);
+		retval = openchangeclient_findmail((mapi_object_t *)private_data, newmail->MID);
 		mapi_errstr("openchangeclient_findmail", GetLastError());
 		break;
 	case fnevObjectCreated:
@@ -2457,8 +2452,7 @@ static bool openchangeclient_rmdir(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store
 }
 
 static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx, 
-				      struct mapi_session *session, 
-				      struct oclient *oclient)
+				      struct mapi_session *session)
 {
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		*SRowSet;
@@ -2502,7 +2496,7 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 }
 
 
-static bool openchangeclient_ocpf_syntax(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+static bool openchangeclient_ocpf_syntax(struct oclient *oclient)
 {
 	int			ret;
 	struct ocpf_file	*element;
@@ -2679,7 +2673,7 @@ static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_s
 }
 
 
-static bool openchangeclient_freebusy(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *oclient)
 {
 	enum MAPISTATUS			retval;
 	struct SRow			aRow;
@@ -2826,59 +2820,60 @@ int main(int argc, const char *argv[])
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path"},
-		{"pf", 0, POPT_ARG_NONE, NULL, OPT_PF, "access public folders instead of mailbox"},
-		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name"},
-		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password"},
-		{"sendmail", 'S', POPT_ARG_NONE, NULL, OPT_SENDMAIL, "send a mail"},
-		{"sendappointment", 0, POPT_ARG_NONE, NULL, OPT_SENDAPPOINTMENT, "send an appointment"},
-		{"sendcontact", 0, POPT_ARG_NONE, NULL, OPT_SENDCONTACT, "send a contact"},
-		{"sendtask", 0, POPT_ARG_NONE, NULL, OPT_SENDTASK, "send a task"},
-		{"sendnote", 0, POPT_ARG_NONE, NULL, OPT_SENDNOTE, "send a note"},
-		{"fetchmail", 'F', POPT_ARG_NONE, NULL, OPT_FETCHMAIL, "fetch user INBOX mails"},
-		{"storemail", 'G', POPT_ARG_STRING, NULL, OPT_STOREMAIL, "retrieve a mail on the filesystem"},
-		{"fetch-items", 'i', POPT_ARG_STRING, NULL, OPT_FETCHITEMS, "fetch specified user INBOX items"},
-		{"freebusy", 0, POPT_ARG_STRING, NULL, OPT_FREEBUSY, "display freebusy information for the specified user"},
-		{"force", 0, POPT_ARG_NONE, NULL, OPT_FORCE, "force openchangeclient behavior in some circunstances"},
-		{"delete", 0, POPT_ARG_STRING, NULL, OPT_DELETEITEMS, "delete message given its unique ID"},
-		{"update", 'u', POPT_ARG_STRING, NULL, OPT_UPDATE, "update the specified item"},
-		{"mailbox", 'm', POPT_ARG_NONE, NULL, OPT_MAILBOX, "list mailbox folder summary"},
-		{"deletemail", 'D', POPT_ARG_NONE, NULL, OPT_DELETEMAIL, "delete a mail from user INBOX"},
-		{"attachments", 'A', POPT_ARG_STRING, NULL, OPT_ATTACH, "send a list of attachments"},
-		{"html-inline", 'I', POPT_ARG_STRING, NULL, OPT_HTML_INLINE, "send PR_HTML content"},
-		{"html-file", 'W', POPT_ARG_STRING, NULL, OPT_HTML_FILE, "use HTML file as content"},
-		{"to", 't', POPT_ARG_STRING, NULL, OPT_MAPI_TO, "To recipients"},
-		{"cc", 'c', POPT_ARG_STRING, NULL, OPT_MAPI_CC, "Cc recipients"},
-		{"bcc", 'b', POPT_ARG_STRING, NULL, OPT_MAPI_BCC, "Bcc recipients"},
-		{"subject", 's', POPT_ARG_STRING, NULL, OPT_MAPI_SUBJECT, "Mail subject"},
-		{"body", 'B', POPT_ARG_STRING, NULL, OPT_MAPI_BODY, "Mail body"},
-		{"location", 0, POPT_ARG_STRING, NULL, OPT_MAPI_LOCATION, "Set the item location"},
-		{"label", 0, POPT_ARG_STRING, NULL, OPT_MAPI_LABEL, "Set the event label"},
-		{"dtstart", 0, POPT_ARG_STRING, NULL, OPT_MAPI_STARTDATE, "Set the event start date"},
-		{"dtend", 0, POPT_ARG_STRING, NULL, OPT_MAPI_ENDDATE, "set the event end date"},
-		{"busystatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_BUSYSTATUS, "set the item busy status"},
-		{"taskstatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_TASKSTATUS, "set the task status"},
-		{"priority", 0, POPT_ARG_STRING, NULL, OPT_MAPI_PRIORITY, "set the item priority"},
-		{"importance", 0, POPT_ARG_STRING, NULL, OPT_MAPI_IMPORTANCE, "Set the item importance"},
-		{"email", 0, POPT_ARG_STRING, NULL, OPT_MAPI_EMAIL, "set the email address"},
-		{"fullname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_FULLNAME, "set the full name"},
-		{"cardname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_CARDNAME, "set a contact card name"},
-		{"color", 0, POPT_ARG_STRING, NULL, OPT_MAPI_COLOR, "set the note color"},
-		{"notifications", 0, POPT_ARG_NONE, NULL, OPT_NOTIFICATIONS, "monitor INBOX newmail notifications"},
-		{"folder", 0, POPT_ARG_STRING, NULL, OPT_FOLDER, "set the folder to use instead of inbox"},
-		{"mkdir", 0, POPT_ARG_NONE, NULL, OPT_MKDIR, "create a folder"},
-		{"rmdir", 0, POPT_ARG_NONE, NULL, OPT_RMDIR, "delete a folder"},
-		{"userlist", 0, POPT_ARG_NONE, NULL, OPT_USERLIST, "list PAB entries"},
-		{"folder-name", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_NAME, "set the folder name"},
-		{"folder-comment", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_COMMENT, "set the folder comment"},
-		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level"},
-		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data"},
-		{"private", 0, POPT_ARG_NONE, NULL, OPT_MAPI_PRIVATE, "Set the private flag on messages"},
-		{"properties", 0, POPT_ARG_STRING, NULL, OPT_MAPI_PROPS, "Set MAPI properties manually"},
-		{"ocpf-file", 0, POPT_ARG_STRING, NULL, OPT_OCPF_FILE, "Set OCPF file"},
-		{"ocpf-dump", 0, POPT_ARG_STRING, NULL, OPT_OCPF_DUMP, "Dump message into OCPF file"},
-		{"ocpf-syntax", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SYNTAX, "Check OCPF files syntax"},
-		{"ocpf-sender", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SENDER, "Send message using OCPF files contents"}
+		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path", NULL },
+		{"pf", 0, POPT_ARG_NONE, NULL, OPT_PF, "access public folders instead of mailbox", NULL },
+		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name", NULL },
+		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password", NULL },
+		{"sendmail", 'S', POPT_ARG_NONE, NULL, OPT_SENDMAIL, "send a mail", NULL },
+		{"sendappointment", 0, POPT_ARG_NONE, NULL, OPT_SENDAPPOINTMENT, "send an appointment", NULL },
+		{"sendcontact", 0, POPT_ARG_NONE, NULL, OPT_SENDCONTACT, "send a contact", NULL },
+		{"sendtask", 0, POPT_ARG_NONE, NULL, OPT_SENDTASK, "send a task", NULL },
+		{"sendnote", 0, POPT_ARG_NONE, NULL, OPT_SENDNOTE, "send a note", NULL },
+		{"fetchmail", 'F', POPT_ARG_NONE, NULL, OPT_FETCHMAIL, "fetch user INBOX mails", NULL },
+		{"storemail", 'G', POPT_ARG_STRING, NULL, OPT_STOREMAIL, "retrieve a mail on the filesystem", NULL },
+		{"fetch-items", 'i', POPT_ARG_STRING, NULL, OPT_FETCHITEMS, "fetch specified user INBOX items", NULL },
+		{"freebusy", 0, POPT_ARG_STRING, NULL, OPT_FREEBUSY, "display freebusy information for the specified user", NULL },
+		{"force", 0, POPT_ARG_NONE, NULL, OPT_FORCE, "force openchangeclient behavior in some circunstances", NULL },
+		{"delete", 0, POPT_ARG_STRING, NULL, OPT_DELETEITEMS, "delete message given its unique ID", NULL },
+		{"update", 'u', POPT_ARG_STRING, NULL, OPT_UPDATE, "update the specified item", NULL },
+		{"mailbox", 'm', POPT_ARG_NONE, NULL, OPT_MAILBOX, "list mailbox folder summary", NULL },
+		{"deletemail", 'D', POPT_ARG_NONE, NULL, OPT_DELETEMAIL, "delete a mail from user INBOX", NULL },
+		{"attachments", 'A', POPT_ARG_STRING, NULL, OPT_ATTACH, "send a list of attachments", NULL },
+		{"html-inline", 'I', POPT_ARG_STRING, NULL, OPT_HTML_INLINE, "send PR_HTML content", NULL },
+		{"html-file", 'W', POPT_ARG_STRING, NULL, OPT_HTML_FILE, "use HTML file as content", NULL },
+		{"to", 't', POPT_ARG_STRING, NULL, OPT_MAPI_TO, "To recipients", NULL },
+		{"cc", 'c', POPT_ARG_STRING, NULL, OPT_MAPI_CC, "Cc recipients", NULL },
+		{"bcc", 'b', POPT_ARG_STRING, NULL, OPT_MAPI_BCC, "Bcc recipients", NULL },
+		{"subject", 's', POPT_ARG_STRING, NULL, OPT_MAPI_SUBJECT, "Mail subject", NULL },
+		{"body", 'B', POPT_ARG_STRING, NULL, OPT_MAPI_BODY, "Mail body", NULL },
+		{"location", 0, POPT_ARG_STRING, NULL, OPT_MAPI_LOCATION, "Set the item location", NULL },
+		{"label", 0, POPT_ARG_STRING, NULL, OPT_MAPI_LABEL, "Set the event label", NULL },
+		{"dtstart", 0, POPT_ARG_STRING, NULL, OPT_MAPI_STARTDATE, "Set the event start date", NULL },
+		{"dtend", 0, POPT_ARG_STRING, NULL, OPT_MAPI_ENDDATE, "set the event end date", NULL },
+		{"busystatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_BUSYSTATUS, "set the item busy status", NULL },
+		{"taskstatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_TASKSTATUS, "set the task status", NULL },
+		{"priority", 0, POPT_ARG_STRING, NULL, OPT_MAPI_PRIORITY, "set the item priority", NULL },
+		{"importance", 0, POPT_ARG_STRING, NULL, OPT_MAPI_IMPORTANCE, "Set the item importance", NULL },
+		{"email", 0, POPT_ARG_STRING, NULL, OPT_MAPI_EMAIL, "set the email address", NULL },
+		{"fullname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_FULLNAME, "set the full name", NULL },
+		{"cardname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_CARDNAME, "set a contact card name", NULL },
+		{"color", 0, POPT_ARG_STRING, NULL, OPT_MAPI_COLOR, "set the note color", NULL },
+		{"notifications", 0, POPT_ARG_NONE, NULL, OPT_NOTIFICATIONS, "monitor INBOX newmail notifications", NULL },
+		{"folder", 0, POPT_ARG_STRING, NULL, OPT_FOLDER, "set the folder to use instead of inbox", NULL },
+		{"mkdir", 0, POPT_ARG_NONE, NULL, OPT_MKDIR, "create a folder", NULL },
+		{"rmdir", 0, POPT_ARG_NONE, NULL, OPT_RMDIR, "delete a folder", NULL },
+		{"userlist", 0, POPT_ARG_NONE, NULL, OPT_USERLIST, "list PAB entries", NULL },
+		{"folder-name", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_NAME, "set the folder name", NULL },
+		{"folder-comment", 0, POPT_ARG_STRING, NULL, OPT_FOLDER_COMMENT, "set the folder comment", NULL },
+		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUG, "Set Debug Level", NULL },
+		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data", NULL },
+		{"private", 0, POPT_ARG_NONE, NULL, OPT_MAPI_PRIVATE, "Set the private flag on messages", NULL },
+		{"properties", 0, POPT_ARG_STRING, NULL, OPT_MAPI_PROPS, "Set MAPI properties manually", NULL },
+		{"ocpf-file", 0, POPT_ARG_STRING, NULL, OPT_OCPF_FILE, "Set OCPF file", NULL },
+		{"ocpf-dump", 0, POPT_ARG_STRING, NULL, OPT_OCPF_DUMP, "Dump message into OCPF file", NULL },
+		{"ocpf-syntax", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SYNTAX, "Check OCPF files syntax", NULL },
+		{"ocpf-sender", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SENDER, "Send message using OCPF files contents", NULL },
+		{NULL, 0, 0, NULL, 0, NULL, NULL}
 	};
 
 	mem_ctx = talloc_init("openchangeclient");
@@ -3127,7 +3122,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_properties) {
-		retval = oclient_parse_properties(mem_ctx, &oclient, opt_properties);
+		retval = oclient_parse_properties(mem_ctx, opt_properties);
 		if (retval != true) {
 			exit (1);
 		}
@@ -3137,7 +3132,7 @@ int main(int argc, const char *argv[])
 	 *   initialized 
 	 */
 	if (opt_ocpf_syntax) {
-		retval = openchangeclient_ocpf_syntax(mem_ctx, &obj_store, &oclient);
+		retval = openchangeclient_ocpf_syntax(&oclient);
 		mapi_errstr("OCPF Syntax", GetLastError());
 		if (retval != true) {
 			goto end;
@@ -3183,7 +3178,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_userlist) {
-		retval = openchangeclient_userlist(mem_ctx, session, &oclient);
+		retval = openchangeclient_userlist(mem_ctx, session);
 		exit (0);
 	}
 
@@ -3312,7 +3307,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (oclient.freebusy) {
-		retval = openchangeclient_freebusy(mem_ctx, &obj_store, &oclient);
+		retval = openchangeclient_freebusy(&obj_store, &oclient);
 		mapi_errstr("freebusy", GetLastError());
 
 		if (retval != true) {

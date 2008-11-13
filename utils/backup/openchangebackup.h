@@ -60,7 +60,7 @@ __BEGIN_DECLS
 struct ocb_context	*ocb_init(TALLOC_CTX *, const char *);
 uint32_t		ocb_release(struct ocb_context *);
 
-uint32_t		ocb_record_init(struct ocb_context *, const char *, 
+int			ocb_record_init(struct ocb_context *, const char *, 
 					const char *, const char *, struct mapi_SPropValue_array *);
 uint32_t		ocb_record_commit(struct ocb_context *);
 uint32_t		ocb_record_add_property(struct ocb_context *, struct mapi_SPropValue *);

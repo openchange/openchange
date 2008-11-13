@@ -81,7 +81,7 @@ getentry:
 
 const char *g_profname;
 
-static void signal_delete_profile(const char *profname)
+static void signal_delete_profile(void)
 {
 	enum MAPISTATUS	retval;
 
@@ -477,7 +477,6 @@ int main(int argc, const char *argv[])
 		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUGLEVEL, "set the debug level", "LEVEL"},
 		{"getfqdn", 0, POPT_ARG_NONE, NULL, OPT_GETFQDN, "returns the DNS FQDN of the NSPI server matching the legacyDN", NULL},
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
-
 	};
 
 	mem_ctx = talloc_init("mapiprofile");

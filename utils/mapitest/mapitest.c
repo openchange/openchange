@@ -214,19 +214,19 @@ int main(int argc, const char *argv[])
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "database",     'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB,    "set the profile database" },
-		{ "profile",      'p', POPT_ARG_STRING, NULL, OPT_PROFILE,       "set the profile name" },
-		{ "username",     'u', POPT_ARG_STRING, NULL, OPT_USERNAME,      "set the account username" },
-		{ "password",     'p', POPT_ARG_STRING, NULL, OPT_PASSWORD,      "set the profile or account password" },
-		{ "confidential",  0,  POPT_ARG_NONE,   NULL, OPT_CONFIDENTIAL,  "remove any sensitive data from the report" },
-		{ "color",         0,  POPT_ARG_NONE,   NULL, OPT_COLOR,         "color MAPI retval"},
-		{ "outfile",      'o', POPT_ARG_STRING, NULL, OPT_OUTFILE,       "set the report output file" },
-		{ "mapi-calls",    0,  POPT_ARG_STRING, NULL, OPT_MAPI_CALLS,    "test custom ExchangeRPC tests" },
-		{ "list-all",      0,  POPT_ARG_NONE,   NULL, OPT_LIST_ALL,      "list suite and tests - names and description" },
-		{ "no-server",     0,  POPT_ARG_NONE,   NULL, OPT_NO_SERVER,     "only run tests that do not require server connection" },
-		{ "dump-data",     0,  POPT_ARG_NONE,   NULL, OPT_DUMP_DATA,     "dump the hex data" },
-		{ "debuglevel",   'd', POPT_ARG_STRING, NULL, OPT_DEBUG,         "set debug level" },
-		{ NULL }
+		{ "database",     'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB,    "set the profile database", NULL },
+		{ "profile",      'p', POPT_ARG_STRING, NULL, OPT_PROFILE,       "set the profile name", NULL },
+		{ "username",     'u', POPT_ARG_STRING, NULL, OPT_USERNAME,      "set the account username", NULL },
+		{ "password",     'p', POPT_ARG_STRING, NULL, OPT_PASSWORD,      "set the profile or account password", NULL },
+		{ "confidential",  0,  POPT_ARG_NONE,   NULL, OPT_CONFIDENTIAL,  "remove any sensitive data from the report", NULL },
+		{ "color",         0,  POPT_ARG_NONE,   NULL, OPT_COLOR,         "color MAPI retval", NULL },
+		{ "outfile",      'o', POPT_ARG_STRING, NULL, OPT_OUTFILE,       "set the report output file", NULL },
+		{ "mapi-calls",    0,  POPT_ARG_STRING, NULL, OPT_MAPI_CALLS,    "test custom ExchangeRPC tests", NULL },
+		{ "list-all",      0,  POPT_ARG_NONE,   NULL, OPT_LIST_ALL,      "list suite and tests - names and description", NULL },
+		{ "no-server",     0,  POPT_ARG_NONE,   NULL, OPT_NO_SERVER,     "only run tests that do not require server connection", NULL },
+		{ "dump-data",     0,  POPT_ARG_NONE,   NULL, OPT_DUMP_DATA,     "dump the hex data", NULL },
+		{ "debuglevel",   'd', POPT_ARG_STRING, NULL, OPT_DEBUG,         "set debug level", NULL },
+		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
 
 	mem_ctx = talloc_init("mapitest");

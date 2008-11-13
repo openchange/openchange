@@ -72,8 +72,8 @@ uint32_t ocb_release(struct ocb_context *ocb_ctx)
  * init and prepare a record
  */
 
-uint32_t ocb_record_init(struct ocb_context *ocb_ctx, const char *objclass, const char *dn, 
-			 const char *id, struct mapi_SPropValue_array *props)
+int ocb_record_init(struct ocb_context *ocb_ctx, const char *objclass, const char *dn, 
+		    const char *id, struct mapi_SPropValue_array *props)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_context	*ldb_ctx;

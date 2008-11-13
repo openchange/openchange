@@ -275,8 +275,7 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 /*
  * OpenChange MAPI programs initialization routine
  */
-_PUBLIC_ struct mapi_session *octool_init_mapi(TALLOC_CTX *mem_ctx,
-					       const char *opt_profname,
+_PUBLIC_ struct mapi_session *octool_init_mapi(const char *opt_profname,
 					       const char *opt_password,
 					       uint32_t provider)
 {

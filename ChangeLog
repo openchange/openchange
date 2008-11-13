@@ -1,3 +1,15 @@
+2008-11-13  bradh
+
+	* [r876] Complete initializers here.
+
+2008-11-13  jkerihuel
+
+	* [r875] Fix build errors: wrong number of arguments for
+	  ocpf_propvalue
+	* [r874] Fix warnings when compiling with -Wextra
+	* [r873] Fix warnings when compiling with -Wextra
+	* [r872] Fix warnings when compiling with -Wextra
+
 2008-11-10  bradh
 
 	* [r870] Update to reflect latest state of mapiprofile.
@@ -1455,6 +1467,9 @@
 	  * Add IDL for SyncUploadStateStreamBegin (0x75) MAPI call
 	  * Add IDL for SyncUploadStateStreamContinue (0x76) MAPI call
 	  * Add IDL for SyncUploadStateStreamEnd (0x77) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r551] merge from mapiproxy branch:
 	  * Add IDL for SyncImportDeletes (0x74) MAPI call
 	* [r550] merge from mapiproxy branch:

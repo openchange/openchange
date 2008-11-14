@@ -25,20 +25,18 @@
 .\" Process this file with
 .\" groff -man -Tascii openchangepfadmin.1
 .\"
-.TH OPENCHANGEPFADMIN 1 2007-11-01 "OpenChange libmapi 0.6" "OpenChange Programmer's Manual"
+.TH OPENCHANGEPFADMIN 1 2007-11-14 "OpenChange libmapi 0.8" "OpenChange Users' Manual"
 
 .SH NAME
 openchangepfadmin \- Exchange users and Public Folder administration tool
 
 .SH SYNOPSIS
 .nf
-openchangepfadmin [-?] [-?|--help] [--usage] [-f|--database STRING]
-        [-p|--profile STRING] [-P|--password STRING] [--apassword=STRING]
-        [--adesc=STRING] [--acomment=STRING] [--afullname=STRING] [--list]
-        [--mkdir] [--rmdir] [--comment=STRING] [--dirclass=STRING]
-        [--adduser=STRING] [--rmuser=STRING] [--addright=STRING] [--rmright]
-        [--modright=STRING] [--debuglevel=STRING] [--dump-data]
-        [--folder=STRING] [--username=STRING]
+openchangepfadmin [-?] [-?|--help] [--usage] [-f|--database PATH] [-p|--profile PROFILE]
+    [-P|--password PASSWORD] [--apassword=PASSWORD] [--adesc=DESCRIPTION] [--acomment=COMMENT]
+    [--afullname=NAME] [--list] [--mkdir] [--rmdir] [--comment=COMMENT] [--dirclass=CLASS]
+    [--adduser=USERNAME] [--rmuser=USERNAME] [--addright=RIGHT] [--rmright] [--modright=RIGHT]
+    [--debuglevel=LEVEL] [--dump-data] [--folder=FOLDER] [--username=USERNAME]
 .fi
 
 .SH DESCRIPTION
@@ -50,12 +48,12 @@ permissions.
 .SH COMMANDS
 
 .TP
-.B --adduser=STRING
-Create a Exchange user with the username specified by STRING
+.B --adduser=USERNAME
+Create a Exchange user with the username specified by USERNAME
 
 .TP
-.B --rmuser=STRING
-Delete the Exchange user account specified by STRING
+.B --rmuser=USERNAME
+Delete the Exchange user account specified by USERNAME
 
 .TP
 .B --list
@@ -70,11 +68,11 @@ Create a folder in the Public Folder store
 Delete a folder in the Public Folder store
 
 .TP
-.B --addright=STRING
+.B --addright=RIGHT
 Add permission and roles for a user on a Public Folder directory. 
 
 .TP
-.B --modright=STRING
+.B --modright=RIGHT
 Modify permissions and roles for a user on a Public Folder directory
 
 .TP
@@ -102,49 +100,66 @@ example, using mapiprofile -S), then that default profile will be
 used.
 
 .TP
-.B --apassword=STRING
+.B --password
+.TP
+.B -P
+Set the password for the profile to use. This can be omitted if the
+password is stored in the profile.
+
+.TP
+.B --apassword=PASSWORD
 Define the password to set for the user specified with --adduser. If
 no password is explicitely supplied, openchangepfadmin will arbitrary
 set a random one.
 
 .TP
-.B --adesc=STRING
+.B --adesc=DESCRIPTION
 This command can only be used with --adduser and specifies a
 description for this account
 
 .TP
-.B --acomment=STRING
+.B --acomment=COMMENT
 This command can only be used with --adduser and specifies a comment
 for this account.
 
 .TP
-.B --afullname
+.B --afullname=NAME
 This command can only be used with --adduser and specifies the user
 full name for this account.
 
 .TP
-.B --comment
+.B --comment=COMMENT
 This command can only be used with --mkdir and specifies a comment for
 the folder.
 
 .TP
-.B --dirclass
+.B --dirclass=CLASS
 This command can only be used with --mkdir and specifies the container
 class of the directory we want to create. Possible values are:
 IPF.Appointment, IPF.Contact, IPF.Journal, IPF.Note, IPF.StickyNote,
 IPF.Task, IPF.Post
 
 .TP
-.B --folder=STRING
+.B --folder=FOLDER
 This command can only be used with --addright, --modright and
 --rmright. Specify the folder where permissions and roles have to be
 changed.
 
 .TP
-.B --username=STRING
+.B --username=USERNAME
 This command can only be used with --addright, --modright and
 --rmright. Specify the username we want to change permissions and
 roles for.
+
+.TP
+.B --dump-data
+Dump the hex data. This is only required for debugging or educational purposes.
+
+.TP
+.B --debuglevel LEVEL
+.TP
+.B -d
+Set the debug level.
 
 .SH EXAMPLES
 

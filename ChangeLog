@@ -1,3 +1,8 @@
+2008-11-14  bradh
+
+	* [r879] Update man1 page for openchangepfadmin
+	* [r878] Minor updates for the man pages.
+
 2008-11-13  bradh
 
 	* [r876] Complete initializers here.
@@ -6,6 +11,9 @@
 
 	* [r875] Fix build errors: wrong number of arguments for
 	  ocpf_propvalue
+
+2008-11-13  jkerihuel
+
 	* [r874] Fix warnings when compiling with -Wextra
 	* [r873] Fix warnings when compiling with -Wextra
 	* [r872] Fix warnings when compiling with -Wextra
@@ -1472,6 +1480,9 @@
 
 	* [r551] merge from mapiproxy branch:
 	  * Add IDL for SyncImportDeletes (0x74) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r550] merge from mapiproxy branch:
 	  * Add IDL for SyncImportHierarchyChange (0x73) MAPI call
 	* [r549] merge from mapiproxy branch:

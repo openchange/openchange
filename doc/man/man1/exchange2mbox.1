@@ -23,25 +23,25 @@
 .\" the source, must acknowledge the copyright and authors of this work.
 .\"
 .\" Process this file with
-.\" groff -man -Tascii exchang2mbox.1
+.\" groff -man -Tascii exchange2mbox.1
 .\"
-.TH EXCHANGE2MBOX 1 2007-11-01 "OpenChange libmapi 0.6" "OpenChange Programmer's Manual"
+.TH EXCHANGE2MBOX 1 2008-11-14 "OpenChange libmapi 0.8" "OpenChange Users' Manual"
 
 .SH NAME
 exchange2mbox \- Convert Exchange mailbox to mbox file
 
 .SH SYNOPSIS
 .nf
-exchange2mbox [-?] [-?|--help] [--usage] [-f|--database STRING]
-        [-p|--profile STRING] [-m|--mbox STRING]
-        [-u|--update]
+exchange2mbox [-?|--help] [--usage] [-f|--database PATH] [-p|--profile PROFILE]
+    [-P|--password PASSWORD] [-m|--mbox FILENAME] [-u|--update]
+    [-d|--debuglevel LEVEL] [--dump-data]
 .fi
 
 .SH DESCRIPTION
 exchange2mbox provides a way to synchronize an Exchange mailbox with a
-mbox file. The tool is developed so it only retrieve mails not already
-stored in the message ID index database and reflect changes back to
-the Exchange server if local message copy are deleted.
+mbox file. The tool is developed so it only retrieves mails not already
+stored in the message ID index database and reflects changes back to
+the Exchange server if the local message copy are deleted.
 
 .SH OPTIONS
 
@@ -49,7 +49,7 @@ the Exchange server if local message copy are deleted.
 .B --database
 .TP
 .B -f
-Set the profile database to use
+Set the path to the profile database to use
 
 .TP
 .B --profile
@@ -61,6 +61,13 @@ has been set, exchange2mbox returns
 .B MAPI_E_NOT_FOUND .
 
 .TP
+.B --password
+.TP
+.B -P
+Set the password for the profile to use. This can be omitted if the
+password is stored in the profile.
+
+.TP
 .B --mbox
 .TP
 .B -m
@@ -70,7 +77,17 @@ Set the mbox file full path
 .B --update
 .TP
 .B -u
-Synchonize the local mbox file with the remote Exchange server mailbox.
+Synchronize the local mbox file with the remote Exchange server mailbox.
+
+.TP
+.B --dump-data
+Dump the hex data. This is only required for debugging or educational purposes.
+
+.TP
+.B --debuglevel LEVEL
+.TP
+.B -d
+Set the debug level.
 
 .SH EXAMPLES
 
@@ -89,9 +106,11 @@ exchange2mbox -u
 If no mbox file is specified, one will be automatically created in
 .B $(HOME)/.openchange/mbox .
 If you are using the default profile database path and have set a
-default profile using
-.B mapiprofile --profile=profile_name -S , 
-you can omit to specify these parameters on the command line
+default profile (using
+.B mapiprofile --profile=profile_name -S
+) you do not need to specify these parameters on the command line.
 
 .SH AUTHOR
 Julien Kerihuel <j.kerihuel at openchange dot org>
+
+Brad Hards <bradh at openchange dot org>

@@ -1,0 +1,93 @@
+.\" OpenChange Project Tools Man Pages
+.\"
+.\" This manpage is Copyright (C) 2008 Brad Hards
+.\"
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of this
+.\" manual under the conditions for verbatim copying, provided that the
+.\" entire resulting derived work is distributed under the terms of a
+.\" permission notice identical to this one.
+.\" 
+.\" Since the OpenChange and Samba4 libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume no
+.\" responsibility for errors or omissions, or for damages resulting from
+.\" the use of the information contained herein.  The author(s) may not
+.\" have taken the same level of care in the production of this manual,
+.\" which is licensed free of charge, as they might when working
+.\" professionally.
+.\" 
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\"
+.\" Process this file with
+.\" groff -man -Tascii exchange2ical.1
+.\"
+.TH EXCHANGE2ICAL 1 2008-11-21 "OpenChange libmapi 0.8" "OpenChange Users' Manual"
+
+.SH NAME
+exchange2ical \- Convert Exchange calendar to ical file
+
+.SH SYNOPSIS
+.nf
+exchange2ical [-?|--help] [--usage] [-f|--database=STRING] [-p|--profile=STRING]
+  [-P|--password=STRING] [-d|--debuglevel=STRING] [--dump-data]
+.fi
+
+.SH DESCRIPTION
+exchange2ical provides a way to extract appointments from an Exchange calendar
+into the ical format. The ical is provided on stdout.
+
+.SH OPTIONS
+
+.TP
+.B --database
+.TP
+.B -f
+Set the path to the profile database to use
+
+.TP
+.B --profile
+.TP
+.B -p
+Set the profile to use. If no profile is specified, exchange2ical tries
+to retrieve the default profile in the database. If no default profile
+has been set, exchange2ical returns 
+.B MAPI_E_NOT_FOUND .
+
+.TP
+.B --password
+.TP
+.B -P
+Specify the password for the profile to use. This can be omitted if the
+password is stored in the profile.
+
+.TP
+.B --dump-data
+Dump the hex data. This is only required for debugging or educational purposes.
+
+.TP
+.B --debuglevel
+.TP
+.B -d
+Set the debug level.
+
+.SH EXAMPLES
+
+.B Extract appointments from the Exchange calendar:
+.nf
+exchange2ical > appointments.ical
+.fi
+
+.SH REMARKS
+If you are using the default profile database path and have set a
+default profile (using
+.B mapiprofile --profile=profile_name -S
+) you do not need to specify these parameters on the command line.
+
+.SH AUTHOR
+exchange2ical was written by Julien Kerihuel <j.kerihuel at openchange dot org>
+
+This man page was written by Brad Hards <bradh at openchange dot org>

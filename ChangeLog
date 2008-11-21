@@ -1,6 +1,14 @@
+2008-11-21  bradh
+
+	* [r883] Initial version of man1 page for mapitest
+	* [r882] Initial man1 page for exchange2ical utility.
+
 2008-11-14  bradh
 
 	* [r879] Update man1 page for openchangepfadmin
+
+2008-11-14  bradh
+
 	* [r878] Minor updates for the man pages.
 
 2008-11-13  bradh
@@ -15,6 +23,9 @@
 2008-11-13  jkerihuel
 
 	* [r874] Fix warnings when compiling with -Wextra
+
+2008-11-13  jkerihuel
+
 	* [r873] Fix warnings when compiling with -Wextra
 	* [r872] Fix warnings when compiling with -Wextra
 
@@ -1485,6 +1496,9 @@
 
 	* [r550] merge from mapiproxy branch:
 	  * Add IDL for SyncImportHierarchyChange (0x73) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r549] merge from mapiproxy branch:
 	  * Add IDL for SyncImportMessageChange (0x72) MAPI call
 	* [r548] merge from mapiproxy branch:

@@ -1,6 +1,22 @@
+2008-11-22  bradh
+
+	* [r888] More tweaks on the openchangeclient man1 page.
+	* [r887] More updates for man1 page for openchangeclient.
+	  Still doesn't fully address #113.
+	* [r886] Update the openchangeclient man1 page.
+	  
+	  Partly addresses ticket #113.
+	  
+	  There is still some work to do on this.
+	* [r885] Fix a typo, and try to make the descriptions more
+	  consistent.
+
 2008-11-21  bradh
 
 	* [r883] Initial version of man1 page for mapitest
+
+2008-11-21  bradh
+
 	* [r882] Initial man1 page for exchange2ical utility.
 
 2008-11-14  bradh
@@ -27,6 +43,9 @@
 2008-11-13  jkerihuel
 
 	* [r873] Fix warnings when compiling with -Wextra
+
+2008-11-13  jkerihuel
+
 	* [r872] Fix warnings when compiling with -Wextra
 
 2008-11-10  bradh
@@ -1501,6 +1520,9 @@
 
 	* [r549] merge from mapiproxy branch:
 	  * Add IDL for SyncImportMessageChange (0x72) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r548] merge from mapiproxy branch:
 	  * Add IDL for SyncConfigure (0x70) MAPI call
 	* [r547] merge from mapiproxy branch:

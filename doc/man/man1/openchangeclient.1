@@ -82,14 +82,12 @@ for STRING are Mail, Appointment, Contact, Task, Note.
 
 .TP
 .B --mkdir
-.TP
 Create a folder within the mailbox or public folders store
 hierarchy. This command requires that the --folder-name option
 be used to specify the name of the folder to create.
 
 .TP
 .B --rmdir
-.TP
 Deletes a folder within the mailbox or public folders store
 hierarchy. This option requires that the --folder-name option
 be used to specify the name of the folder to delete.
@@ -143,6 +141,40 @@ use of the --subject option to specify the mail to be deleted.
 .B --userlist
 Display the users listed in the address book.
 
+.TP
+.B --delete=STRING
+Delete a specified item from the store by ID number.
+
+.TP
+.B --ocpf-dump=STRING
+Download a message (specified by the argument, which must be
+the folder ID and unique message ID for the message) as OCPF format.
+The message will be saved to a file given by the message ID, followed
+by a suffix of .ocpf
+
+See the separate (HTML) documentation for libocpf for more information
+on the OCPF format.
+
+.TP
+.B --ocpf-sender
+Send a message given in OCPF format to the server. This requires
+use of the
+.B --ocpf-file
+option to specify the file to load from.
+
+See the separate (HTML) documentation for libocpf for more information
+on the OCPF format.
+
+.TP
+.B --ocpf-syntax
+Check the syntax of an OCPF file. This does not perform any network
+operations. This requires use of the 
+.B --ocpf-file
+option to specify
+the file to load from.
+
+See the separate (HTML) documentation for libocpf for more information
+on the OCPF format.
 
 .SH OPTIONS
 
@@ -170,13 +202,11 @@ password is stored in the profile.
 
 .TP
 .B --pf
-.TP
 Perform operations against the Public Folders store, rather than the normal
 operations against a user's private folders.
 
 .TP
 .B --folder
-.TP
 Specify the folder name we want to work with want to open. This option
 is mandatory for public folders, but can also be used to open specific
 folders in the mailbox store.
@@ -318,14 +348,24 @@ or
 .B --sendtask
 
 .TP
+.B --email=STRING
+Set the email address in a contact message. This is only meaningful with
+.B --sendcontact
+
+.TP
+.B --importance=STRING
+Set the relative importance of a task. Possible values are LOW, NORMAL
+and HIGH. This is only meaningful with
+.B --sendtask
+
+.TP
 .B --color=STRING
-Set the color of the note. The default color is yellow. This is only
-meaningful with
+Set the color of the note. The default color is Yellow. Other options
+are Blue, Green, Pink and White. This is only meaningful with
 .B --sendnote
 
 .TP
 .B --folder-name=STRING
-.TP
 Set the folder name to create. This is only meaningful with 
 .B --mkdir 
 or 
@@ -333,9 +373,29 @@ or
 
 .TP
 .B --folder-comment=STRING
-.TP
 Set the folder comment. This is only meaningful with
 .B --mkdir
+
+.TP
+.B --update=STRING
+.TP
+.B -u
+Change (update) an existing item, rather than creating a new one. This
+is only meaningful with
+.B --sendtask
+, 
+.B --sendnote
+,
+.B --sendappointment
+and
+.B --sendcontact
+
+.TP
+.B --ocpf-file=STRING
+Specify the file to load OCPF data from. This is only meaningful with
+.B --ocpf-sender
+and
+.B --ocpf-syntax
 
 .TP
 .B --dump-data

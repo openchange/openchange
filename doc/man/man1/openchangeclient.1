@@ -1,6 +1,7 @@
 .\" OpenChange Project Tools Man Pages
 .\"
 .\" This manpage is Copyright (C) 2007 Julien Kerihuel;
+.\" This manpage is Copyright (C) 2008 Brad Hards
 .\"
 .\" Permission is granted to make and distribute verbatim copies of this
 .\" manual provided the copyright notice and this permission notice are
@@ -25,28 +26,30 @@
 .\" Process this file with
 .\" groff -man -Tascii openchangeclient.1
 .\"
-.TH OPENCHANGECLIENT 1 2007-11-01 "OpenChange libmapi 0.6" "OpenChange Programmer's Manual"
+.TH OPENCHANGECLIENT 1 2008-11-24 "OpenChange libmapi 0.8" "OpenChange Users' Manual"
 
 .SH NAME
 openchangeclient \- MAPI command line messaging tool
 
 .SH SYNOPSIS
 .nf
-openchangeclient [-?] [-?|--help] [--usage] [-f|--database STRING]
-        [--pf] [-p|--profile STRING] [-P|--password STRING] [-S|--sendmail]
-        [--sendappointment] [--sendcontact] [--sendtask] [--sendnote]
-        [-F|--fetchmail] [-G|--storemail STRING] [-i|--fetch-items STRING]
-        [-m|--mailbox] [-D|--deletemail] [-A|--attachments STRING]
-        [-I|--html-inline STRING] [-W|--html-file STRING] [-t|--to STRING]
-        [-c|--cc STRING] [-b|--bcc STRING] [-s|--subject STRING]
-        [-B|--body STRING] [--location=STRING] [--label=STRING]
-        [--dtstart=STRING] [--dtend=STRING] [--busystatus=STRING]
-        [--taskstatus=STRING] [--priority=STRING] [--importance=STRING]
-        [--email=STRING] [--fullname=STRING] [--cardname=STRING]
-        [--color=STRING] [--notifications] [--folder=STRING] [--mkdir]
-        [--rmdir] [--folder-name=STRING] [--folder-comment=STRING]
-        [--debuglevel=STRING] [--dump-data] [--private]
+openchangeclient [-?|--help] [--usage] [-f|--database=STRING] [--pf]
+  [-p|--profile=STRING] [-P|--password=STRING] [-S|--sendmail] 
+  [--sendappointment] [--sendcontact] [--sendtask] [--sendnote]
+  [-F|--fetchmail] [-G|--storemail=STRING] [-i|--fetch-items=STRING]
+  [--freebusy=STRING] [--force] [--delete=STRING] [-u|--update=STRING]
+  [-m|--mailbox] [-D|--deletemail] [-A|--attachments=STRING]
+  [-I|--html-inline=STRING] [-W|--html-file=STRING] [-t|--to=STRING]
+  [-c|--cc=STRING] [-b|--bcc=STRING] [-s|--subject=STRING] [-B|--body=STRING]
+  [--location=STRING] [--label=STRING] [--dtstart=STRING] [--dtend=STRING]
+  [--busystatus=STRING] [--taskstatus=STRING] [--priority=STRING]
+  [--importance=STRING] [--email=STRING] [--fullname=STRING] [--cardname=STRING]
+  [--color=STRING] [--notifications] [--folder=STRING] [--mkdir] [--rmdir]
+  [--userlist] [--folder-name=STRING] [--folder-comment=STRING]
+  [-d|--debuglevel=STRING] [--dump-data] [--private] [--properties=STRING]
+  [--ocpf-file=STRING] [--ocpf-dump=STRING] [--ocpf-syntax] [--ocpf-sender]
 .fi
+
 
 .SH DESCRIPTION
 openchangeclient is a MAPI command line tool designed to facilitate
@@ -60,13 +63,15 @@ operations.
 .B --fetchmail
 .TP
 .B -F
-Fetch Exchange user mails and dump general information on the standard output.
+Fetch Exchange user mails from the inbox and display general information from
+the mails on the standard output.
 
 .TP
 .B --storemail=DIRECTORY
 .TP
 .B -G
-Store mail attachments on the local filesystem in the specified directory.
+Store mail attachments to the local filesystem in the specified directory. This
+is the normal way to retrieve attachments.
 
 .TP
 .B --fetch-items=STRING
@@ -79,16 +84,18 @@ for STRING are Mail, Appointment, Contact, Task, Note.
 .B --mkdir
 .TP
 Create a folder within the mailbox or public folders store
-hierarchy. This option requires --folder-name to be defined.
+hierarchy. This command requires that the --folder-name option
+be used to specify the name of the folder to create.
 
 .TP
 .B --rmdir
 .TP
 Deletes a folder within the mailbox or public folders store
-hierarchy. This option requires --folder-name to be defined.
+hierarchy. This option requires that the --folder-name option
+be used to specify the name of the folder to delete.
 
 .TP
-.B --mailbox=STRING
+.B --mailbox
 .TP
 .B -m
 Display the user mailbox folder hierarchy with folder names, folder
@@ -104,25 +111,38 @@ on standard output.
 .B --sendmail
 .TP
 .B -S
-Send a mail to a user whom belongs to the Exchange organization.
+Send a mail to a user belonging to the Exchange organization. This
+requires specifying one or more recipients (see the --to, --cc and
+--bcc options), a subject (see the --subject option) and a body
+(see the --body, --html-file and --html-inline options).
 
 .TP
 .B --sendappointment
-Create an appointment in the default Calendar folder
+Create an appointment in the default calendar folder.
 
 .TP
 .B --sendcontact
-Create a contact in the default contact folder
+Create a contact in the default contact folder.
 
 .TP
 .B --sendtask
-Create a task in the default task folder
+Create a task in the default task folder.
+
+.TP
+.B --sendnote
+Create a note in the default notes folder.
 
 .TP
 .B --deletemail
 .TP
 .B -D
-Delete a mail from the exchange user mailbox 
+Delete a mail from the exchange user mailbox. This requires
+use of the --subject option to specify the mail to be deleted. 
+
+.TP
+.B --userlist
+Display the users listed in the address book.
+
 
 .SH OPTIONS
 
@@ -142,9 +162,17 @@ profiles has been set as the default in the profile database
 (for example, using mapiprofile -S), then that default profile will be used.
 
 .TP
+.B --password
+.TP
+.B -P
+Specify the password for the profile to be used. This can be omitted if the
+password is stored in the profile.
+
+.TP
 .B --pf
 .TP
-Specify openchangeclient will work with the Public Folders store.
+Perform operations against the Public Folders store, rather than the normal
+operations against a user's private folders.
 
 .TP
 .B --folder
@@ -175,7 +203,7 @@ This is only meaningful with
 .B --body=STRING
 .TP
 .B -B
-Set the body with the UTF8 text only content specified on the command
+Set the body of the mail to be the UTF8 text only content specified on the command
 line. This is only meaningful with
 .B --sendmail
 
@@ -183,14 +211,16 @@ line. This is only meaningful with
 .B --html-inline=STRING
 .TP
 .B -I
-Set the body with the HTML content specified on command line. This is only meaningful with
+Set the body of the mail to be the HTML content specified on command line. This is
+only meaningful with
 .B --sendmail
 
 .TP
 .B --html-file=FILENAME
 .TP
 .B -W
-Set the body with the content of the specified file. This is only meaningful with
+Set the body of the mail to be the content of the specified file. This is only
+meaningful with
 .B --sendmail
 
 .TP
@@ -199,7 +229,7 @@ Set the body with the content of the specified file. This is only meaningful wit
 .B -t
 Specify
 .B To
-recipients for the mail. Usernames needs to be separated with commas
+recipients for the mail. Usernames need to be separated with commas
 as specified in the example above. This is only meaningful with
 .B --sendmail
 
@@ -209,7 +239,7 @@ as specified in the example above. This is only meaningful with
 .B -c
 Specify
 .B Cc
-recipients for the mail. Usernames needs to be separated with commas
+recipients for the mail. Usernames need to be separated with commas
 as specified in the example above. This is only meaningful with
 .B --sendmail
 
@@ -219,7 +249,7 @@ as specified in the example above. This is only meaningful with
 .B -b
 Specify
 .B Bcc
-recipients for the mail. Usernames needs to be separated with commas
+recipients for the mail. Usernames need to be separated with commas
 as specified in the example above. This is only meaningful with
 .B --sendmail
 
@@ -230,7 +260,7 @@ Specify the appointment location. This is only meaningful with
 
 .TP
 .B --dtstart=STRING
-Specify the start date of an event. The following dat format need to be used:
+Specify the start date of an event. The following date format needs to be used:
 .B "%Y-%m-%d %H:%M:%S"
 e.g: 2007-06-01 14:59:00. This is only meaningful with
 .B --sendappointment
@@ -239,8 +269,8 @@ and
 
 .TP
 .B --dtend=STRING
-Specify either the end date or due date of an event. The following dat
-format need to be used:
+Specify either the end date or due date of an event. The following date
+format needs to be used:
 .B "%Y-%m-%d %H:%M:%S"
 e.g: 2007-06-01 14:59:00
 When no
@@ -251,6 +281,12 @@ This is only meaningful with
 .B --sendappointment
 and
 .B --sendtask
+
+.TP
+.B --force
+Add appointment to the calendar, even if it would overlap with
+an existing appointment. This is only meaningful with
+.B --sendappointment
 
 .TP
 .B --private
@@ -282,19 +318,24 @@ or
 .B --sendtask
 
 .TP
+.B --color=STRING
+Set the color of the note. The default color is yellow. This is only
+meaningful with
+.B --sendnote
+
+.TP
 .B --folder-name=STRING
 .TP
 Set the folder name to create. This is only meaningful with 
 .B --mkdir 
 or 
---rmdir
+.B --rmdir
 
 .TP
 .B --folder-comment=STRING
 .TP
 Set the folder comment. This is only meaningful with
 .B --mkdir
-
 
 .TP
 .B --dump-data
@@ -379,6 +420,10 @@ openchangeclient --database=/tmp/profiles.ldb --profile=2000
 The example above will send a UTF8 body mail to Administrator and
 attach file1,jpg, file2.jpg and file3.jpg to the email.
 
+.B Display the users in the address book
+.nf
+openchangeclient --userlist
+.fi
 
 .B Fetch calendar items:
 .nf

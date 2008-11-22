@@ -487,7 +487,7 @@ openchangeclient --userlist
 
 .B Fetch calendar items:
 .nf
-openchangeclient --fetch-items=Calendar
+openchangeclient --fetch-items=Appointment
 .fi
 
 
@@ -515,9 +515,9 @@ openchangeclient --sendappointment --dtstart="2007-06-01 22:00:00" \\
 
 .B Create Task:
 .nf
-openchangeclient --sendtask --dtstart="2007-06-01 18:00:00"        \\
-                 --cardname="openchangeclient" --priority=HIGH     \\
-                 --taskstatus=COMPLETED
+openchangeclient --sendtask --dtstart="2008-11-01 18:00:00"        \\
+                 --cardname="openchangeclient" --importance=HIGH   \\
+                 --taskstatus=COMPLETED --body="my new task"
 .fi
 
 
@@ -534,7 +534,7 @@ openchangeclient --mkdir --folder-name="openchange"		   \\
 		 --folder-comment="comment"
 .fi
 
-This example will create a generic folder named openchange under
+This example will create a generic folder named openchange under the
 Inbox folder.
 
 .B Delete folder:

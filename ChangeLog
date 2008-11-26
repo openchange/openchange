@@ -1,6 +1,18 @@
+2008-11-26  jelmer
+
+	* [r894] Remove check for unused type 'uint_t'.
+
+2008-11-26  jkerihuel
+
+	* [r893] Make openchange compile and work against latest samba4
+	  master git rev (58db2be)
+
 2008-11-22  bradh
 
 	* [r888] More tweaks on the openchangeclient man1 page.
+
+2008-11-22  bradh
+
 	* [r887] More updates for man1 page for openchangeclient.
 	  Still doesn't fully address #113.
 	* [r886] Update the openchangeclient man1 page.
@@ -1525,6 +1537,9 @@
 
 	* [r548] merge from mapiproxy branch:
 	  * Add IDL for SyncConfigure (0x70) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r547] merge from mapiproxy branch:
 	  * Add IDL for RegisterOptions (0x6f) MAPI call
 	  

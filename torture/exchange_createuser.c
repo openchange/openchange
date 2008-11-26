@@ -266,7 +266,7 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &n);
 	if (NT_STATUS_IS_OK(status)) {
-		rid = n.out.rids.ids[0];
+		rid = n.out.rids->ids[0];
 	} else {
 		return status;
 	}
@@ -377,13 +377,13 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	}
 
 	talloc_steal(join, l.out.sid);
-	join->dom_sid = l.out.sid;
+	join->dom_sid = *l.out.sid;
 	join->dom_netbios_name = talloc_strdup(join, domain);
 	if (!join->dom_netbios_name) goto failed;
 
 	o.in.connect_handle = &handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	o.in.sid = l.out.sid;
+	o.in.sid = *l.out.sid;
 	o.out.domain_handle = &domain_handle;
 
 	status = dcerpc_samr_OpenDomain(join->p, join, &o);
@@ -424,7 +424,7 @@ again:
 
 	status = dcerpc_samr_GetUserPwInfo(join->p, join, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	}
 
 	

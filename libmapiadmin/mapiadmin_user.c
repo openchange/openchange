@@ -113,6 +113,9 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 	l.in.connect_handle = &handle;
 	l.in.domain_name = &name;
 
+	l.out.sid = talloc(mem_ctx, struct dom_sid2 *);
+	talloc_steal(mapiadmin_ctx->user_ctx, l.out.sid);
+
 	status = dcerpc_samr_LookupDomain(mapiadmin_ctx->user_ctx->p, 
 					  mapiadmin_ctx->user_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -120,14 +123,13 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 		return MAPI_E_CALL_FAILED;
 	}
 
-	talloc_steal(mapiadmin_ctx->user_ctx, l.out.sid);
-	mapiadmin_ctx->user_ctx->dom_sid = l.out.sid;
+	mapiadmin_ctx->user_ctx->dom_sid = *l.out.sid;
 	mapiadmin_ctx->user_ctx->dom_netbios_name = talloc_strdup(mapiadmin_ctx->user_ctx, profile->domain);
 	if (!mapiadmin_ctx->user_ctx->dom_netbios_name) return MAPI_E_CALL_FAILED;
 
 	o.in.connect_handle = &handle;
 	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	o.in.sid = l.out.sid;
+	o.in.sid = *l.out.sid;
 	o.out.domain_handle = &domain_handle;
 
 	status = dcerpc_samr_OpenDomain(mapiadmin_ctx->user_ctx->p, mapiadmin_ctx->user_ctx, &o);
@@ -415,10 +417,11 @@ again:
 	mapiadmin_ctx->user_ctx->user_sid = dom_sid_add_rid(mapiadmin_ctx->user_ctx, mapiadmin_ctx->user_ctx->dom_sid, rid);
 
 	pwp.in.user_handle = &mapiadmin_ctx->user_ctx->user_handle;
+	pwp.out.info = talloc_zero(mem_ctx, struct samr_PwInfo);
 
 	status = dcerpc_samr_GetUserPwInfo(mapiadmin_ctx->user_ctx->p, mapiadmin_ctx->user_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
-		policy_min_pw_len = pwp.out.info.min_password_length;
+		policy_min_pw_len = pwp.out.info->min_password_length;
 	} else {
 		DEBUG(3, ("GetUserPwInfo failed - %s\n", nt_errstr(status)));
 	        MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);
@@ -535,9 +538,12 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_del(struct mapiadmin_ctx *mapiadmin_ctx)
 	n.in.num_names = 1;
 	n.in.names = &sname;
 
+	n.out.rids = talloc_zero(mem_ctx, struct samr_Ids);
+	n.out.types = talloc_zero(mem_ctx, struct samr_Ids);
+
 	status = dcerpc_samr_LookupNames(mapiadmin_ctx->user_ctx->p, mem_ctx, &n);
 	if (NT_STATUS_IS_OK(status)) {
-		rid = n.out.rids.ids[0];
+		rid = n.out.rids->ids[0];
 	} else {
 		talloc_free(mem_ctx);
 		return MAPI_E_NOT_FOUND;

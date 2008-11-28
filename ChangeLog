@@ -1,3 +1,7 @@
+2008-11-28  bradh
+
+	* [r896] Document the --label option.
+
 2008-11-26  jelmer
 
 	* [r894] Remove check for unused type 'uint_t'.
@@ -15,6 +19,9 @@
 
 	* [r887] More updates for man1 page for openchangeclient.
 	  Still doesn't fully address #113.
+
+2008-11-22  bradh
+
 	* [r886] Update the openchangeclient man1 page.
 	  
 	  Partly addresses ticket #113.
@@ -1546,6 +1553,9 @@
 	  Note: This call is undocumented in Microsoft documentation, but
 	  MSDN
 	  RegisterOptions function generates this call on the wire.
+
+2008-05-31  jkerihuel
+
 	* [r546] merge from mapiproxy branch:
 	  * Add IDL for Progress (0x50) MAPI call
 	* [r545] merge from mapiproxy branch:

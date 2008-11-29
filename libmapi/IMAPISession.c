@@ -153,12 +153,22 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 _PUBLIC_ enum MAPISTATUS OpenMsgStore(struct mapi_session *session,
 				      mapi_object_t *obj_store)
 {
+	enum MAPISTATUS		retval;
+
 	/* sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
-	return OpenUserMailbox(session, session->profile->username, obj_store);
+	retval = OpenUserMailbox(session, session->profile->username, obj_store);
+
+	/* Exchange clustered case */
+	if ((retval != MAPI_E_SUCCESS) && (GetLastError() == ecUnknownUser)) {
+		errno = 0;
+		retval = OpenUserMailbox(session, NULL, obj_store);
+	}
+
+	return retval;
 }
 
 
@@ -207,8 +217,12 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	mem_ctx = talloc_init("OpenMsgStore");
 	size = 0;
 
-	mailbox = talloc_asprintf(mem_ctx, "/o=%s/ou=%s/cn=Recipients/cn=%s", session->profile->org,
-				  session->profile->ou, username);
+	if (!username) {
+		mailbox = talloc_strdup(mem_ctx, session->profile->mailbox);
+	} else {
+		mailbox = talloc_asprintf(mem_ctx, "/o=%s/ou=%s/cn=Recipients/cn=%s", session->profile->org,
+					  session->profile->ou, username);
+	}
 
 	/* Fill the Logon operation */
 	request.LogonFlags = LogonPrivate;

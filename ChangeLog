@@ -1,3 +1,16 @@
+2008-11-29  jkerihuel
+
+	* [r898] Fix Logon problem for users running Exchange 2k7 in a
+	  clustered Exchange environment.
+	  
+	  This patch first tries to forge EssDN Logon string from "o" and
+	  "ou"
+	  attributes stored in the profile. If Logon fails with
+	  ecUnknownUser,
+	  then try to open the mailbox using the mailbox attribute stored
+	  in
+	  the profile.
+
 2008-11-28  bradh
 
 	* [r896] Document the --label option.
@@ -27,6 +40,9 @@
 	  Partly addresses ticket #113.
 	  
 	  There is still some work to do on this.
+
+2008-11-22  bradh
+
 	* [r885] Fix a typo, and try to make the descriptions more
 	  consistent.
 
@@ -1558,6 +1574,9 @@
 
 	* [r546] merge from mapiproxy branch:
 	  * Add IDL for Progress (0x50) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r545] merge from mapiproxy branch:
 	  * Add IDL for FastTransferSourceGetBuffer (0x4a) MAPI call
 	* [r544] merge from mapiproxy branch:

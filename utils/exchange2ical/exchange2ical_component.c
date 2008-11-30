@@ -129,8 +129,8 @@ void ical_component_VTIMEZONE(struct exchange2ical *exchange2ical)
 void ical_component_STANDARD(struct exchange2ical *exchange2ical)
 {
 	char		*dtstart = NULL;
-	uint32_t	tzoffsetfrom;
-	uint32_t	tzoffsetto;
+	int32_t		tzoffsetfrom;
+	int32_t		tzoffsetto;
 
 	/* Sanity Check */
 	if (!exchange2ical->TimeZoneStruct) return;
@@ -165,8 +165,8 @@ void ical_component_STANDARD(struct exchange2ical *exchange2ical)
 void ical_component_DAYLIGHT(struct exchange2ical *exchange2ical)
 {
 	char		*dtstart = NULL;
-	uint32_t	tzoffsetfrom;
-	uint32_t	tzoffsetto;
+	int32_t		tzoffsetfrom;
+	int32_t		tzoffsetto;
 
 	/* Sanity check */
 	if (has_component_DAYLIGHT(exchange2ical) == false) return;

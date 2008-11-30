@@ -72,7 +72,6 @@ static void init_oclient(struct oclient *oclient)
 
 	/* task related parameters */
 	oclient->importance = -1;
-	oclient->priority = 0;
 	oclient->taskstatus = -1;
 
 	/* note related parameters */
@@ -2811,7 +2810,7 @@ int main(int argc, const char *argv[])
 	      OPT_MAPI_BCC, OPT_MAPI_SUBJECT, OPT_MAPI_BODY, OPT_MAILBOX, 
 	      OPT_FETCHITEMS, OPT_MAPI_LOCATION, OPT_MAPI_STARTDATE, OPT_MAPI_ENDDATE, 
 	      OPT_MAPI_BUSYSTATUS, OPT_NOTIFICATIONS, OPT_DEBUG, OPT_DUMPDATA, 
-	      OPT_MAPI_EMAIL, OPT_MAPI_FULLNAME, OPT_MAPI_CARDNAME, OPT_MAPI_PRIORITY,
+	      OPT_MAPI_EMAIL, OPT_MAPI_FULLNAME, OPT_MAPI_CARDNAME,
 	      OPT_MAPI_TASKSTATUS, OPT_MAPI_IMPORTANCE, OPT_MAPI_LABEL, OPT_PF, 
 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
 	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE,
@@ -2852,7 +2851,6 @@ int main(int argc, const char *argv[])
 		{"dtend", 0, POPT_ARG_STRING, NULL, OPT_MAPI_ENDDATE, "set the event end date", NULL },
 		{"busystatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_BUSYSTATUS, "set the item busy status", NULL },
 		{"taskstatus", 0, POPT_ARG_STRING, NULL, OPT_MAPI_TASKSTATUS, "set the task status", NULL },
-		{"priority", 0, POPT_ARG_STRING, NULL, OPT_MAPI_PRIORITY, "set the item priority", NULL },
 		{"importance", 0, POPT_ARG_STRING, NULL, OPT_MAPI_IMPORTANCE, "Set the item importance", NULL },
 		{"email", 0, POPT_ARG_STRING, NULL, OPT_MAPI_EMAIL, "set the email address", NULL },
 		{"fullname", 0, POPT_ARG_STRING, NULL, OPT_MAPI_FULLNAME, "set the full name", NULL },
@@ -3007,11 +3005,6 @@ int main(int argc, const char *argv[])
 			oclient.label = oc_get_argument(poptGetOptArg(pc),
 							oc_label,
 							"label");
-			break;
-		case OPT_MAPI_PRIORITY:
-			oclient.priority = oc_get_argument(poptGetOptArg(pc),
-							   oc_priority,
-							   "priority");
 			break;
 		case OPT_MAPI_IMPORTANCE:
 			oclient.importance = oc_get_argument(poptGetOptArg(pc), 

@@ -63,7 +63,6 @@ struct oclient {
 	int			busystatus;
 	int			taskstatus;
 	int			label;
-	uint32_t		priority;
 	bool			private;
 	int			importance;
 	int			color;
@@ -109,13 +108,6 @@ struct oc_element	oc_busystatus[] = {
 	{BUSY_STATUS_BUSY,		"BUSY"},
 	{BUSY_STATUS_OUTOFOFFICE,	"OUTOFOFFICE"},
 	{0 , NULL}
-};
-
-struct oc_element	oc_priority[] = {
-	{PRIORITY_LOW,		"LOW"},
-	{PRIORITY_NORMAL,	"NORMAL"},
-	{PRIORITY_HIGH,		"HIGH"},
-	{0, NULL}
 };
 
 struct oc_element	oc_importance[] = {

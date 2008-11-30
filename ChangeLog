@@ -1,3 +1,9 @@
+2008-11-30  bradh
+
+	* [r901] Remove unused --priority option.
+	* [r900] These offsets / values can be negative, so we shouldn't
+	  use unsigned int type to represent them.
+
 2008-11-29  jkerihuel
 
 	* [r898] Fix Logon problem for users running Exchange 2k7 in a
@@ -1579,6 +1585,9 @@
 
 	* [r545] merge from mapiproxy branch:
 	  * Add IDL for FastTransferSourceGetBuffer (0x4a) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r544] merge from mapiproxy branch:
 	  * Add IDL for GetPerUserLongTermIds (0x60) MAPI call
 	  * Add IDL for GetPerUserGuid (0x61) MAPI call

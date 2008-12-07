@@ -1,6 +1,17 @@
+2008-12-07  bradh
+
+	* [r904] Improve building. Partially addresses #94.
+	  
+	  More work required on this as we work on the
+	  portability in the future.
+	* [r903] Expose the underlying session.
+
 2008-11-30  bradh
 
 	* [r901] Remove unused --priority option.
+
+2008-11-30  bradh
+
 	* [r900] These offsets / values can be negative, so we shouldn't
 	  use unsigned int type to represent them.
 
@@ -1592,6 +1603,9 @@
 	  * Add IDL for GetPerUserLongTermIds (0x60) MAPI call
 	  * Add IDL for GetPerUserGuid (0x61) MAPI call
 	  * Add IDL for ReadPerUserInformation (0x63) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r543] merge from mapiproxy branch:
 	  * Add IDL for LongTermIdFromId (0x43) MAPI call
 	  * Add IDL for IdFromLongTermId (0x44) MAPI call

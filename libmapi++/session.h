@@ -123,6 +123,13 @@ class session {
 			uninitialize();
 		}
 
+		/**
+		 * \brief The underlying mapi_session
+		 * 
+		 * Exposing this is temporary. Maybe be removed when we sort it out
+		 */
+		mapi_session* get_mapi_session() throw() { return m_session; }
+
 	private:
 		mapi_session		*m_session;
 		TALLOC_CTX		*m_memory_ctx;

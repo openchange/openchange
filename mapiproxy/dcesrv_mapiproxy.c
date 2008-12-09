@@ -70,7 +70,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "binding");
 	machine_account = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "use_machine_account", false);
 
-	private = talloc(dce_call->conn, struct dcesrv_mapiproxy_private);
+	private = talloc(dce_call->context, struct dcesrv_mapiproxy_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -129,13 +129,52 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	status = dcerpc_pipe_connect(private,
-				     &(private->c_pipe), binding, table,
-				     credentials, dce_call->event_ctx,
-				     dce_call->conn->dce_ctx->lp_ctx);
-	talloc_free(credentials);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (((dce_call->pkt.ptype == DCERPC_PKT_BIND) && dce_call->pkt.u.bind.assoc_group_id) ||
+	    ((dce_call->pkt.ptype == DCERPC_PKT_ALTER) && dce_call->pkt.u.alter.assoc_group_id)) {
+		struct dcerpc_binding		*b;
+		struct composite_context	*pipe_conn_req;
+
+		/* parse binding string to the structure */
+		status = dcerpc_parse_binding(dce_call->context, binding, &b);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Failed to parse dcerpc binding '%s'\n", binding));
+			return status;
+		}
+		
+		DEBUG(3, ("Using binding %s\n", dcerpc_binding_string(dce_call->context, b)));
+		
+		switch (dce_call->pkt.ptype) {
+		case DCERPC_PKT_BIND:
+			b->assoc_group_id = dce_call->pkt.u.bind.assoc_group_id;
+			break;
+		case DCERPC_PKT_ALTER:
+			b->assoc_group_id = dce_call->pkt.u.alter.assoc_group_id;
+			break;
+		default:
+			break;
+		}
+
+		pipe_conn_req = dcerpc_pipe_connect_b_send(dce_call->context, b, table,
+							   credentials, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
+		status = dcerpc_pipe_connect_b_recv(pipe_conn_req, dce_call->context, &(private->c_pipe));
+		
+		talloc_free(credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		dce_call->context->assoc_group_id = private->c_pipe->assoc_group_id;
+ 		
+	} else {
+		status = dcerpc_pipe_connect(dce_call->context,
+					     &(private->c_pipe), binding, table,
+					     credentials, dce_call->event_ctx,
+					     dce_call->conn->dce_ctx->lp_ctx);
+
+		talloc_free(credentials);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		dce_call->context->assoc_group_id = private->c_pipe->assoc_group_id;
 	}
 
 	DEBUG(5, ("dcerpc_mapiproxy: RPC proxy: CONNECTED\n"));
@@ -162,7 +201,10 @@ static void mapiproxy_op_unbind(struct dcesrv_connection_context *context, const
 
 	if (private) {
 		talloc_free(private->c_pipe);
+		talloc_free(private);
 	}
+
+	talloc_free(context);
 
 	return;
 }
@@ -275,6 +317,7 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 	mapiproxy_module_push(dce_call, mem_ctx, (void *)r);
 
 	ndr_err = table->calls[opnum].ndr_push(push, NDR_OUT, r);
+
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0, ("mapiproxy: mapiproxy_ndr_push: ERROR\n"));
 		dce_call->fault_code = DCERPC_FAULT_NDR;
@@ -323,7 +366,7 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
-	DEBUG(5, ("mapiproxy::mapiproxy_op_dispatch: %s(0x%x): %zd bytes\n", 
+	DEBUG(5, ("mapiproxy::mapiproxy_op_dispatch: %s(0x%x): %zd bytes\n",
 		  table->calls[opnum].name, opnum, table->calls[opnum].struct_size));
 
 	if (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_IN) {

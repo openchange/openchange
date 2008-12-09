@@ -439,7 +439,7 @@ again:
 	s.in.level = 24;
 
 	encode_pw_buffer(u.info24.password.data, mapiadmin_ctx->password, STR_UNICODE);
-	u.info24.pw_len = strlen(mapiadmin_ctx->password);
+	u.info24.password_expired = 0;
 
 	status = dcerpc_fetch_session_key(mapiadmin_ctx->user_ctx->p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {

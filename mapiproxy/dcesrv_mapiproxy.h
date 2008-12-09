@@ -51,6 +51,9 @@ struct dcesrv_mapiproxy_private {
 	char			*exchname;
 };
 
+/* Forward declarations */
+struct composite_context;
+
 #define MAXHOSTNAMELEN	255
 #define	SERVERNAME      "/cn=Servers/cn="
 

@@ -20,8 +20,7 @@
   <ul>
     <li><a href="#download">  2.1. Download mapiproxy</a></li>
     <li><a href="#samba4">    2.2. Samba4 installation</a></li>
-    <li><a href="#patches">   2.3. Samba4 patches</a></li>
-    <li><a href="#mpinstall"> 2.4. mapiproxy installation</a></li>
+    <li><a href="#mpinstall"> 2.3. mapiproxy installation</a></li>
   </ul>
  </li>
  <li><a href="#config"> 3. Configuration</a>
@@ -71,6 +70,13 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">09/12/08</td>
+	   <td style="text-align:center"><strong>0.5.4</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">Add dcesrv:assoc group checking
+	   to smb.conf configuration requirements</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">10/07/08</td>
@@ -238,14 +244,14 @@ openchange (including  mapiproxy)..
 
 The mapiproxy implementation requires a very recent Samba4 version
 in order to run properly. If Samba4 is planned to be installed
-from scratch for mapiproxy only, please use the <i>make samba</i>
+from scratch for mapiproxy only, please use the <i>make samba-git</i>
 compilation rule provided in the build system. This command will
 automate most part of the samba4 installation process. The only
 requirement for this step is to have an up to date <a
 href="http://git.or.cz/">GIT version</a> installed on the system.
 
 \code
-  # make samba
+  # make samba-git
 \endcode
 
 When the installation process is finished, a running samba4
@@ -255,30 +261,7 @@ refer to <i>doc/howto.txt</i> for further information on openchange
 compilation.
 <br/>
 
-<a name="paches"></a><h3>2.3. Samba4 patches</h3>
-
-Alternatively, if you already have a Samba4 installation running,
-mapiproxy can be tested without <i>known</i> impacts on your
-existing installation. You just need to download and apply the
-following GIT patches to your samba4 tree and run
-compilation/installation again:
-<ul>
- <li><a href="http://gitweb.samba.org/?p=samba.git;a=commit;h=652b8c5f156b357e231057a5a0fbded88f4f9c5f"> Patch #1: 652b8c5f156b357e231057a5a0fbded88f4f9c5f</a></li>
- <li><a href="http://gitweb.samba.org/?p=samba.git;a=commit;h=718f9ce6889346c92894e868f0678fbe404a43ab"> Patch #2: 718f9ce6889346c92894e868f0678fbe404a43ab</a></li>
-</ul>
-
-<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
-<tr style="border:none;">
-<td style="border:none;">
-<strong> These patches are only required if you do not use a Samba4
-version compliant with mapiproxy requirements and older than
-samba4-alpha5 release</strong>
-</td>
-</tr>
-</table>
-<br/>
-
-<a name="mpinstall"></a><h3>2.4. mapiproxy installation</h3>
+<a name="mpinstall"></a><h3>2.3. mapiproxy installation</h3>
 
 If you have existing OpenChange DSO in the
 <i>/usr/local/samba/modules/dcerpc_server/</i> folder, such as
@@ -384,6 +367,7 @@ EcDoConnect/EcDoRpc EMSMDB RPC functions negotiation.</li>
         server role     = domain controller
 
 	### Configuration required by mapiproxy ###
+	dcesrv:assoc group checking = false
         dcerpc endpoint servers = epmapper, mapiproxy
 
         dcerpc_mapiproxy:binding = ncacn_ip_tcp:192.168.1.1[print]

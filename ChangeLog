@@ -1,9 +1,21 @@
+2008-12-09  jkerihuel
+
+	* [r906] - Update to latest samba4 git master revision (3508a66)
+	  - Fix references to samr info24 struct
+	  - Add support for assoc_group_id proxy
+	  - Add support in mapiproxy for bind/alter connections using
+	  assoc_group_id
+	  - Update mapiproxy documentation
+
 2008-12-07  bradh
 
 	* [r904] Improve building. Partially addresses #94.
 	  
 	  More work required on this as we work on the
 	  portability in the future.
+
+2008-12-07  bradh
+
 	* [r903] Expose the underlying session.
 
 2008-11-30  bradh
@@ -1609,6 +1621,9 @@
 	* [r543] merge from mapiproxy branch:
 	  * Add IDL for LongTermIdFromId (0x43) MAPI call
 	  * Add IDL for IdFromLongTermId (0x44) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r542] merge from mapiproxy branch:
 	  * Add IDL for ModifyRules (0x41) MAPI call
 	* [r541] merge from mapiproxy branch:

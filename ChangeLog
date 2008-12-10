@@ -1,3 +1,7 @@
+2008-12-10  jkerihuel
+
+	* [r908] Fix RecipientRow member's order
+
 2008-12-09  jkerihuel
 
 	* [r906] - Update to latest samba4 git master revision (3508a66)
@@ -1626,6 +1630,9 @@
 
 	* [r542] merge from mapiproxy branch:
 	  * Add IDL for ModifyRules (0x41) MAPI call
+
+2008-05-31  jkerihuel
+
 	* [r541] merge from mapiproxy branch:
 	  * Add PT_SRESTRICT support in mapi_SPropValue_CTR
 	  

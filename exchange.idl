@@ -1218,10 +1218,10 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16									RecipientFlags;
 		[switch_is(RecipientFlags & 0xA)]   recipient_type			type;
+		[switch_is(RecipientFlags & 0x208)] recipient_EmailAddress	       	EmailAddress;
+		[switch_is(RecipientFlags & 0x210)] recipient_DisplayName		DisplayName;
 		[switch_is(RecipientFlags & 0x600)] recipient_SimpleDisplayName    	SimpleDisplayName;
 		[switch_is(RecipientFlags & 0x220)] recipient_TransmittableDisplayName	TransmittableDisplayName;
-		[switch_is(RecipientFlags & 0x210)] recipient_DisplayName		DisplayName;
-		[switch_is(RecipientFlags & 0x208)] recipient_EmailAddress	       	EmailAddress;
 		uint16									prop_count;
 		uint8									layout;
 		[flag(NDR_REMAINING)] DATA_BLOB						prop_values;

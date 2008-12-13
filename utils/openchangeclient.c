@@ -92,37 +92,6 @@ static void init_oclient(struct oclient *oclient)
 	oclient->ocpf_dump = NULL;
 }
 
-static bool oclient_parse_properties(TALLOC_CTX *mem_ctx, 
-				     const char *input)
-{
-	char		**couples;
-	char		*tmp = NULL;
-	uint32_t	i;
-
-	/* 1. split property-value couples */
-	if ((tmp = strtok((char *)input, "&&")) == NULL) {
-		printf("Invalid string format [&&]\n");
-		return false;
-	}
-
-	couples = talloc_array(mem_ctx, char *, 2);
-	couples[0] = strdup(tmp);
-
-	for (i = 1; (tmp = strtok(NULL, "&&")) != NULL; i++) {
-		couples = talloc_realloc(mem_ctx, couples, char *, i+2);
-		couples[i] = strdup(tmp);
-	}
-	couples[i] = 0;
-
-	for (i = 0; couples[i]; i++) {
-		printf("[%d] %s\n", i, couples[i]);
-	}
-
-
-	talloc_free(couples);
-	return true;
-}
-
 static char *utf8tolinux(TALLOC_CTX *mem_ctx, const char *wstring)
 {
 	char		*newstr;
@@ -2802,7 +2771,6 @@ int main(int argc, const char *argv[])
 	const char		*opt_mapi_cc = NULL;
 	const char		*opt_mapi_bcc = NULL;
 	const char		*opt_debug = NULL;
-	const char		*opt_properties = NULL;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_SENDMAIL, OPT_PASSWORD, OPT_SENDAPPOINTMENT, 
 	      OPT_SENDCONTACT, OPT_SENDTASK, OPT_FETCHMAIL, OPT_STOREMAIL,  OPT_DELETEMAIL, 
@@ -2814,7 +2782,7 @@ int main(int argc, const char *argv[])
 	      OPT_MAPI_TASKSTATUS, OPT_MAPI_IMPORTANCE, OPT_MAPI_LABEL, OPT_PF, 
 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
 	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE,
-	      OPT_UPDATE, OPT_DELETEITEMS, OPT_MAPI_PROPS, OPT_OCPF_FILE, OPT_OCPF_SYNTAX,
+	      OPT_UPDATE, OPT_DELETEITEMS, OPT_OCPF_FILE, OPT_OCPF_SYNTAX,
 	      OPT_OCPF_SENDER, OPT_OCPF_DUMP, OPT_FREEBUSY, OPT_FORCE};
 
 	struct poptOption long_options[] = {
@@ -2866,7 +2834,6 @@ int main(int argc, const char *argv[])
 		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUG, "set Debug Level", NULL },
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data", NULL },
 		{"private", 0, POPT_ARG_NONE, NULL, OPT_MAPI_PRIVATE, "set the private flag on messages", NULL },
-		{"properties", 0, POPT_ARG_STRING, NULL, OPT_MAPI_PROPS, "set MAPI properties manually", NULL },
 		{"ocpf-file", 0, POPT_ARG_STRING, NULL, OPT_OCPF_FILE, "set OCPF file", NULL },
 		{"ocpf-dump", 0, POPT_ARG_STRING, NULL, OPT_OCPF_DUMP, "dump message into OCPF file", NULL },
 		{"ocpf-syntax", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SYNTAX, "check OCPF files syntax", NULL },
@@ -2887,9 +2854,6 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_FOLDER:
 			oclient.folder = poptGetOptArg(pc);
-			break;
-		case OPT_MAPI_PROPS:
-			opt_properties = poptGetOptArg(pc);
 			break;
 		case OPT_DEBUG:
 			opt_debug = poptGetOptArg(pc);
@@ -3112,13 +3076,6 @@ int main(int argc, const char *argv[])
 	if (opt_mkdir && !oclient.folder_name) {
 		printf("mkdir requires --folder-name to be defined\n");
 		exit (1);
-	}
-
-	if (opt_properties) {
-		retval = oclient_parse_properties(mem_ctx, opt_properties);
-		if (retval != true) {
-			exit (1);
-		}
 	}
 
 	/* One of the rare options which doesn't require MAPI to get

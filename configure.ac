@@ -147,8 +147,8 @@ dnl ---------------------------------------------------------------------------
 dnl Check for Python
 dnl ---------------------------------------------------------------------------
 
-dnl FIXME: Checks for Python?
-PYTHON=python
+AC_PATH_PROG(PYTHON,python)
+AC_PATH_PROG(PYTHON_CONFIG,python-config)
 
 AC_MSG_CHECKING(python library directory)
 pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`

@@ -1196,6 +1196,9 @@ doxygen:
 		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy;		\
 		cp -f mapiproxy/documentation/pictures/* apidocs/html/mapiproxy;\
+		rm -f apidocs/man/man3/todo.3;					\
+		rm -f apidocs/man/man3/bug.3;					\
+		rm -f apidocs/man/man3/*.c.3;					\
 	fi								
 
 etags:

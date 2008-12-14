@@ -31,19 +31,25 @@ static PyObject *py_session_create(PyTypeObject *type, PyObject *args, PyObject 
 	char *profname, *password;
 	uint32_t provider = 0;
 	PyMapiSessionObject *ret;
+	struct mapi_session *session;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ss|i", kwnames, 
 										&profname, &password, &provider))
 		return NULL;
 
-	ret = PyObject_New(PyMapiSessionObject, type);
-	retval = MapiLogonProvider(&ret->session, profname, password, provider);
+	retval = MapiLogonProvider(&session, profname, password, provider);
 	if (!retval) {
-		PyObject_Del(ret);
 		PyErr_SetMAPISTATUS(retval);
 		return NULL;
 	}
+	return PyMapiSession_FromMapiSession(session);
+}
 
+PyObject *PyMapiSession_FromMapiSession(struct mapi_session *session)
+{
+	PyMapiSessionObject *ret;
+	ret = PyObject_New(PyMapiSessionObject, &PyMapiSessionType);
+	ret->session = session;
 	return (PyObject *)ret;
 }
 

@@ -25,6 +25,7 @@
 
 /* mapi.Session */
 PyAPI_DATA(PyTypeObject) PyMapiSessionType;
+PyObject *PyMapiSession_FromMapiSession(struct mapi_session *session);
 
 /* mapi.Object */
 typedef struct {

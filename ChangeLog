@@ -1,3 +1,31 @@
+2008-12-14  jelmer
+
+	* [r918] Allow retrieving id and session of MAPI objects.
+	* [r917] Add MessageStore and Object Python classes, add bindings
+	  for OpenMsgStore, OpenUserMailbox, OpenPublicFolder.
+	* [r916] Add stubs for Session class.
+	* [r915] Add infrastructure for MAPI python module.
+	* [r914] Look for python and python-config binaries.
+	* [r913] Remove empty directory.
+
+2008-12-14  bradh
+
+	* [r912] Remove entries for --properties and --priority, which have
+	  been removed from the openchangeclient utility.
+	  
+	  Partly fixes #113.
+	* [r911] Don't generate / install man3 pages for libmapi++ or
+	  mapitest.
+	  
+	  Resolves ticket #121.
+	  
+	  Also don't install man3 pages that are just copies of the C
+	  implementation files, or just document bugs / todo items.
+
+2008-12-13  jkerihuel
+
+	* [r910] Remove obsolete --properties option and related code
+
 2008-12-10  jkerihuel
 
 	* [r908] Fix RecipientRow member's order
@@ -1644,6 +1672,9 @@
 	  
 	  * Fix mapi_SComment_Restriction IDL
 	  
+
+2008-05-31  jkerihuel
+
 	* [r540] - Introduce PT_MV_UNICODE support in mapi_SPropValue_CTR
 	  (IDL only)
 	  - use mapi_LPWSTR for PT_MV_UNICODE

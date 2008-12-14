@@ -23,6 +23,24 @@
 #include <libmapi/libmapi.h>
 #include <Python.h>
 
+/* mapi.Session */
 PyAPI_DATA(PyTypeObject) PyMapiSessionType;
+
+/* mapi.Object */
+typedef struct {
+	PyObject_HEAD	
+	mapi_object_t *object;
+} PyMapiObjectObject;
+
+PyAPI_DATA(PyTypeObject) PyMapiObjectType;
+mapi_object_t *PyMapiObject_GetMapiObject(PyObject *);
+#define PyMapiObject_Check(op) PyObject_TypeCheck(op, &PyMapiObjectType)
+
+/* mapi.MessageStore */
+PyAPI_DATA(PyTypeObject) PyMapiMsgStoreType;
+
+/* Set a MAPISTATUS error as a Python exception */
+#define PyErr_FromMAPISTATUS(err) Py_BuildValue("(i,z)", err, NULL)
+#define PyErr_SetMAPISTATUS(err) PyErr_SetObject(PyExc_RuntimeError, PyErr_FromMAPISTATUS(err))
 
 #endif

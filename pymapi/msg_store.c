@@ -19,35 +19,29 @@
 
 #include "pymapi/pymapi.h"
 
-void initmapi(void);
+static PyMethodDef msg_store_methods[] = {
+	{ NULL },
+};
 
-static PyMethodDef mapi_methods[] = {
+static PyGetSetDef msg_store_getsetters[] = {
 	{ NULL }
 };
 
-void initmapi(void)
+static PyObject *msg_store_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
-	PyObject *m;
-
-	if (PyType_Ready(&PyMapiSessionType) < 0)
-		return;
-
-	if (PyType_Ready(&PyMapiObjectType) < 0)
-		return;
-
-	if (PyType_Ready(&PyMapiMsgStoreType) < 0)
-		return;
-
-	m = Py_InitModule3("mapi", mapi_methods, "MAPI/RPC Python bindings");
-	if (m == NULL)
-		return;
-
-	Py_INCREF((PyObject *)&PyMapiSessionType);
-	PyModule_AddObject(m, "Session", (PyObject *)&PyMapiSessionType);
-
-	Py_INCREF((PyObject *)&PyMapiObjectType);
-	PyModule_AddObject(m, "Object", (PyObject *)&PyMapiObjectType);
-
-	Py_INCREF((PyObject *)&PyMapiMsgStoreType);
-	PyModule_AddObject(m, "MessageStore", (PyObject *)&PyMapiMsgStoreType);
+	PyErr_SetString(PyExc_NotImplementedError, "Message Stores can only be obtained from a MAPI Session");
+	return NULL;
 }
+
+PyTypeObject PyMapiMsgStoreType = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "MessageStore",
+	.tp_basicsize = sizeof(PyMapiObjectObject),
+	.tp_methods = msg_store_methods,
+	.tp_getset = msg_store_getsetters,
+	.tp_doc = "MAPI Message Store",
+	.tp_new = msg_store_new,
+	.tp_base = &PyMapiObjectType,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+};
+

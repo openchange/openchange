@@ -19,35 +19,37 @@
 
 #include "pymapi/pymapi.h"
 
-void initmapi(void);
+static PyObject *py_object_create(PyTypeObject *type, PyObject *args, PyObject *kwargs)
+{
+	/* FIXME */
+	return (PyObject *)PyObject_New(PyMapiObjectObject, type);
+}
 
-static PyMethodDef mapi_methods[] = {
+mapi_object_t *PyMapiObject_GetMapiObject(PyObject *obj)
+{
+	PyMapiObjectObject *self = (PyMapiObjectObject *)obj;
+	if (!PyMapiObject_Check(obj))
+		return NULL;
+
+	return self->object;
+}
+
+static PyMethodDef object_methods[] = {
+	{ NULL },
+};
+
+static PyGetSetDef object_getsetters[] = {
 	{ NULL }
 };
 
-void initmapi(void)
-{
-	PyObject *m;
+PyTypeObject PyMapiObjectType = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "Object",
+	.tp_basicsize = sizeof(PyMapiObjectObject),
+	.tp_methods = object_methods,
+	.tp_getset = object_getsetters,
+	.tp_doc = "MAPI Object",
+	.tp_new = py_object_create,
+	.tp_flags = Py_TPFLAGS_DEFAULT,
+};
 
-	if (PyType_Ready(&PyMapiSessionType) < 0)
-		return;
-
-	if (PyType_Ready(&PyMapiObjectType) < 0)
-		return;
-
-	if (PyType_Ready(&PyMapiMsgStoreType) < 0)
-		return;
-
-	m = Py_InitModule3("mapi", mapi_methods, "MAPI/RPC Python bindings");
-	if (m == NULL)
-		return;
-
-	Py_INCREF((PyObject *)&PyMapiSessionType);
-	PyModule_AddObject(m, "Session", (PyObject *)&PyMapiSessionType);
-
-	Py_INCREF((PyObject *)&PyMapiObjectType);
-	PyModule_AddObject(m, "Object", (PyObject *)&PyMapiObjectType);
-
-	Py_INCREF((PyObject *)&PyMapiMsgStoreType);
-	PyModule_AddObject(m, "MessageStore", (PyObject *)&PyMapiMsgStoreType);
-}

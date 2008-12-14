@@ -1119,6 +1119,13 @@ bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKA
 
 pythonscriptdir = python
 
+pymapi: $(pythonscriptdir)/mapi.$(SHLIBEXT)
+
+pymapi/%: CFLAGS+=`$(PYTHON_CONFIG) --cflags` -fPIC
+
+$(pythonscriptdir)/mapi.$(SHLIBEXT): $(patsubst %.c,%.o,$(wildcard pymapi/*.c)) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	$(CC) -o $@ $^ `$(PYTHON_CONFIG) --libs` $(DSOOPT)
+
 PYTHON_MODULES = $(patsubst $(pythonscriptdir)/%,%,$(shell find  $(pythonscriptdir) -name "*.py"))
 
 python-install::

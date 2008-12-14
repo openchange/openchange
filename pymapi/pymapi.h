@@ -17,22 +17,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pymapi/pymapi.h"
+#ifndef _PYMAPI_H_
+#define _PYMAPI_H_
 
-void initmapi(void);
+#include <libmapi/libmapi.h>
+#include <Python.h>
 
-static PyMethodDef mapi_methods[] = {
-	{ NULL }
-};
+PyAPI_DATA(PyTypeObject) PyMapiSessionType;
 
-void initmapi(void)
-{
-	PyObject *m;
-
-	m = Py_InitModule3("mapi", mapi_methods, "MAPI/RPC Python bindings");
-	if (m == NULL)
-		return;
-
-	Py_INCREF((PyObject *)&PyMapiSessionType);
-	PyModule_AddObject(m, "Session", (PyObject *)&PyMapiSessionType);
-}
+#endif

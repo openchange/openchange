@@ -1,6 +1,16 @@
+2008-12-16  jkerihuel
+
+	* [r920] - spnego / gssapi_krb5 authentication now available for
+	  mapiprofile
+	  - add the --realm | -R option
+	  - update mapiprofile man page
+
 2008-12-14  jelmer
 
 	* [r918] Allow retrieving id and session of MAPI objects.
+
+2008-12-14  jelmer
+
 	* [r917] Add MessageStore and Object Python classes, add bindings
 	  for OpenMsgStore, OpenUserMailbox, OpenPublicFolder.
 	* [r916] Add stubs for Session class.
@@ -14,6 +24,9 @@
 	  been removed from the openchangeclient utility.
 	  
 	  Partly fixes #113.
+
+2008-12-14  bradh
+
 	* [r911] Don't generate / install man3 pages for libmapi++ or
 	  mapitest.
 	  

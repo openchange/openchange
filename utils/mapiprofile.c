@@ -98,7 +98,8 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 			       const char *pattern, const char *username, 
 			       const char *password, const char *address, 
 			       const char *lcid, const char *workstation,
-			       const char *domain, uint32_t flags,
+			       const char *domain, const char *realm,
+			       uint32_t flags,
 			       bool opt_dumpdata, const char *opt_debuglevel)
 {
 	enum MAPISTATUS		retval;
@@ -142,6 +143,10 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	mapi_profile_add_string_attr(profname, "binding", address);
 	mapi_profile_add_string_attr(profname, "workstation", workstation);
 	mapi_profile_add_string_attr(profname, "domain", domain);
+
+	if (realm) {
+		mapi_profile_add_string_attr(profname, "realm", realm);
+	}
 
 	if (strncmp(lcid, "0x", 2) != 0) {
 		/* it doesn't look like a hex id, so try to convert it from
@@ -434,6 +439,7 @@ int main(int argc, const char *argv[])
 	const char	*address = NULL;
 	const char	*workstation = NULL;
 	const char	*domain = NULL;
+	const char	*realm = NULL;
 	const char	*username = NULL;
 	const char      *lcid = NULL;
 	const char	*pattern = NULL;
@@ -445,8 +451,8 @@ int main(int argc, const char *argv[])
 	char		hostname[256];
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_ADDRESS, OPT_WORKSTATION,
-	      OPT_DOMAIN, OPT_USERNAME, OPT_LCID, OPT_PASSWORD, OPT_CREATE_PROFILE, 
-	      OPT_DELETE_PROFILE, OPT_LIST_PROFILE, OPT_DUMP_PROFILE, 
+	      OPT_DOMAIN, OPT_REALM, OPT_USERNAME, OPT_LCID, OPT_PASSWORD, 
+	      OPT_CREATE_PROFILE, OPT_DELETE_PROFILE, OPT_LIST_PROFILE, OPT_DUMP_PROFILE, 
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
 	      OPT_NOPASS, OPT_DUMPDATA, OPT_DEBUGLEVEL};
@@ -461,7 +467,8 @@ int main(int argc, const char *argv[])
 		{"profile", 'P', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name", "PROFILE"},
 		{"address", 'I', POPT_ARG_STRING, NULL, OPT_ADDRESS, "set the exchange server IP address", "xxx.xxx.xxx.xxx"},
 		{"workstation", 'M', POPT_ARG_STRING, NULL, OPT_WORKSTATION, "set the workstation", "WORKSTATION_NAME"},
-		{"domain", 'D', POPT_ARG_STRING, NULL, OPT_DOMAIN, "set the domain", "DOMAIN"},
+		{"domain", 'D', POPT_ARG_STRING, NULL, OPT_DOMAIN, "set the domain/workgroup", "DOMAIN"},
+		{"realm", 'R', POPT_ARG_STRING, NULL, OPT_REALM, "set the realm", "REALM"},
 		{"username", 'u', POPT_ARG_STRING, NULL, OPT_USERNAME, "set the profile username", "USERNAME"},
 		{"langcode", 'C', POPT_ARG_STRING, NULL, OPT_LCID, "set the language code ID", "LANGCODE"},
 		{"pattern", 's', POPT_ARG_STRING, NULL, OPT_PATTERN, "username to search for", "USERNAME"},
@@ -517,6 +524,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_DOMAIN:
 			domain = poptGetOptArg(pc);
+			break;
+		case OPT_REALM:
+			realm = poptGetOptArg(pc);
 			break;
 		case OPT_USERNAME:
 			username = poptGetOptArg(pc);
@@ -606,7 +616,7 @@ int main(int argc, const char *argv[])
 		  lcid = talloc_asprintf(mem_ctx, DEFAULT_LCID);
 		}
 		mapiprofile_create(profdb, profname, pattern, username, password, address,
-				   lcid, workstation, domain, nopass, opt_dumpdata, opt_debuglevel);
+				   lcid, workstation, domain, realm, nopass, opt_dumpdata, opt_debuglevel);
 	}
 
 	if (getfqdn == true) {

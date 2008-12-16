@@ -1,6 +1,7 @@
 .\" OpenChange Project Tools Man Pages
 .\"
-.\" This manpage is Copyright (C) 2007 Julien Kerihuel;
+.\" This manpage is Copyright (C) 2007-2008 Julien Kerihuel;
+.\" This manpage is Copyright (C)      2008 Brad Hards;
 .\"
 .\" Permission is granted to make and distribute verbatim copies of this
 .\" manual provided the copyright notice and this permission notice are
@@ -25,7 +26,7 @@
 .\" Process this file with
 .\" groff -man -Tascii mapiprofile.1
 .\"
-.TH MAPIPROFILE 1 2008-11-14 "OpenChange libmapi 0.8" "OpenChange Users' Manual"
+.TH MAPIPROFILE 1 2008-12-16 "OpenChange libmapi 0.8" "OpenChange Users' Manual"
 
 .SH NAME
 mapiprofile \- administer OpenChange MAPI Profiles databases
@@ -35,7 +36,7 @@ mapiprofile \- administer OpenChange MAPI Profiles databases
 mapiprofile [-?] [-?|--help] [--usage] [-L|--ldif=PATH]
         [-G|--getdefault] [-S|--default] [-n|--newdb] [-f|--database=PATH]
         [-P|--profile=PROFILE] [-I|--address=xxx.xxx.xxx.xxx] [-M|--workstation=WORKSTATION_NAME]
-        [-D|--domain=DOMAIN] [-u|--username=USERNAME] [-C|--language=LANGCODE]
+        [-D|--domain=DOMAIN] [-R|--realm=REALM]  [-u|--username=USERNAME] [-C|--language=LANGCODE]
         [-s|--pattern=USERNAME] [-p|--password=PASSWORD] [--nopass] [-c|--create]
         [-r|--delete] [-l|--list] [--listlangs] [--dump] [-a|--attr=VALUE]
         [--dump-data] [-d|--debuglevel=LEVEL] [--getfqdn]
@@ -128,10 +129,10 @@ Path to the ldif files. If no ldif directory is specified then the default one s
 Set the profile name to use (e.g. the profile to create or delete, or to dump information about).
 
 .TP
-.B --address IP_ADDR
+.B --address IP_ADDR|FQDN
 .TP
 .B -I
-Set the Exchange server IP address.
+Set the Exchange server IP address or fully qualified domain name.
 
 .TP
 .B --workstation WORKSTATION
@@ -144,6 +145,12 @@ Sets the local computer name.
 .TP
 .B -D
 Set the Windows domain name.
+
+.TP
+.B --realm REALM
+.TP
+.B -R
+Set the Windows realm
 
 .TP
 .B --username
@@ -206,7 +213,7 @@ Returns the DNS fully qualified domain name of the NSPI server matching the lega
 mapiprofile --database=/tmp/profiles2.ldb --ldif=/usr/local/samba/share/setup --newdb
 .fi
 
-.B Create a new profile:
+.B Create a new profile using NTLMSSP authentication:
 .nf
 mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel
      --username=jkerihuel --password=secret --language=0x040C
@@ -215,6 +222,15 @@ mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel
 Profile jkerihuel completed and added to database /tmp/profiles.ldb. Note
 that this account will use French.
 .fi
+
+.B Create a new profile using Kerberos authentication:
+.nf
+mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel
+     --username=jkerihuel --password=secret --language=0x040C
+     --address=exchange.openchange.local --domain=OPENCHANGE
+     --realm=OPENCHANGE.LOCAL --create
+.fi
+
 
 .B Delete a profile:
 .nf
@@ -234,12 +250,12 @@ We have 2 profiles in the database:
 .nf
 mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel --dump
 Profile: jkerihuel
-        username       == jkerihuel
-        password       == secret
-        mailbox        == /o=First Organization/ou=First Administrative Group/cn=Recipients/cn=jkerihuel
-        workstation    == LOCALHOST
-        realm          == (null)
-        server         == 192.168.194.22
+	username       == jkerihuel
+	password       == secret
+	mailbox        == /o=First Organization/ou=First Administrative Group/cn=Recipients/cn=jkerihuel
+	workstation    == LOCALHOST
+	domain         == OPENCHANGE
+	server         == exchange.openchange.local
 .fi
 
 .B Dump profile attribute:

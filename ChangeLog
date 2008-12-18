@@ -1,3 +1,7 @@
+2008-12-18  bradh
+
+	* [r922] Add namespace prefix to scanner.
+
 2008-12-16  jkerihuel
 
 	* [r920] - spnego / gssapi_krb5 authentication now available for
@@ -13,6 +17,9 @@
 
 	* [r917] Add MessageStore and Object Python classes, add bindings
 	  for OpenMsgStore, OpenUserMailbox, OpenPublicFolder.
+
+2008-12-14  jelmer
+
 	* [r916] Add stubs for Session class.
 	* [r915] Add infrastructure for MAPI python module.
 	* [r914] Look for python and python-config binaries.

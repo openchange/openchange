@@ -289,7 +289,7 @@ libmapi/version.h: VERSION
 
 libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
 	@echo "Generating $@"
-	@$(FLEX) -t $< > $@
+	@$(FLEX) -Plibmapi_utf8_convert_ -t $< > $@
 
 # Avoid warnings:
 libmapi/utf8_convert.yy.o: CFLAGS=

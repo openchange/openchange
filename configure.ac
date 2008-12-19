@@ -388,7 +388,25 @@ AC_SUBST(SWIGDIRSALL)
 AC_SUBST(SWIGDIRSINSTALL)
 AC_SUBST(SWIGDIRSUNINSTALL)
 
+dnl ##########################################################################
+dnl Python bindings dependencies
+dnl ##########################################################################
+AC_ARG_ENABLE(pymapi, AC_HELP_STRING([--enable-pymapi],
+			   [build Python bindings for libmapi]),
+			   enable_pymapi="$enableval",
+			   enable_pymapi=no)
+if test "x${enable_pymapi}" = xyes; then
+   PYMAPIALL+="pymapi"
+   PYMAPIINSTALL+="pymapi-install"
+   PYMAPIUNINSTALL+="pymapi-uninstall"
+fi
 
+PYCDIR=`$PYTHON -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='\\$(prefix)')"`
+AC_SUBST(PYCDIR)
+
+AC_SUBST(PYMAPIALL)
+AC_SUBST(PYMAPIINSTALL)
+AC_SUBST(PYMAPIUNINSTALL)
 
 dnl ##########################################################################
 dnl Documentation dependencies
@@ -469,8 +487,9 @@ OpenChange Configuration (Please review)
 
 	   * OpenChange Documentation:	$enable_doxygen
 
-	   * OpenChange SWIG Bindings:
+	   * OpenChange Bindings:
 	     - Perl:			$enable_perlswig
+	     - Python:			$enable_pymapi
 
 ===============================================================
 

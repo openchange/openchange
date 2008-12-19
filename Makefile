@@ -36,7 +36,8 @@ all: 		$(OC_IDL)		\
 		$(OC_TOOLS)		\
 		$(OC_TORTURE)		\
 		$(OC_SERVER)		\
-		$(SWIGDIRS-ALL)					
+		$(SWIGDIRS-ALL)		\
+		$(PYMAPIALL)
 
 install: 	all 			\
 		installlib 		\
@@ -46,6 +47,7 @@ install: 	all 			\
 		$(OC_SERVER_INSTALL) 	\
 		$(OC_TORTURE_INSTALL) 	\
 		$(SWIGDIRS-INSTALL) 	\
+		$(PYMAPIINSTALL) \
 		installnagios
 
 installlib:	$(OC_LIBS_INSTALL)
@@ -56,7 +58,8 @@ uninstall:: 	$(OC_LIBS_UNINSTALL) 	\
 		$(OC_TOOLS_UNINSTALL) 	\
 		$(OC_SERVER_UNINSTALL) 	\
 		$(OC_TORTURE_UNINSTALL) \
-		$(SWIGDIRS-UNINSTALL)
+		$(SWIGDIRS-UNINSTALL) \
+		$(PYMAPIUNINSTALL)
 
 distclean:: clean
 	rm -rf autom4te.cache

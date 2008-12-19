@@ -1,3 +1,9 @@
+2008-12-19  jelmer
+
+	* [r925] Actually use pymapi variables in Makefile.
+	* [r924] Add configure flags for building and installing Python
+	  MAPI bindings (disabled by default).
+
 2008-12-18  bradh
 
 	* [r922] Add namespace prefix to scanner.
@@ -21,6 +27,9 @@
 2008-12-14  jelmer
 
 	* [r916] Add stubs for Session class.
+
+2008-12-14  jelmer
+
 	* [r915] Add infrastructure for MAPI python module.
 	* [r914] Look for python and python-config binaries.
 	* [r913] Remove empty directory.

@@ -135,6 +135,20 @@ static PyObject *py_open_public_folder(PyObject *self, PyObject *args)
 	return Py_None;
 }
 
+static PyObject *py_unsubscribe(PyMapiSessionObject *self, PyObject *args)
+{
+	uint32_t ulConnection;
+	enum MAPISTATUS status;
+	
+	if (!PyArg_ParseTuple(args, "i", &ulConnection))
+		return NULL;
+
+	status = Unsubscribe(self->session, ulConnection);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return Py_None;
+}
+
 static PyMethodDef session_methods[] = {
 	{ "login", (PyCFunction) py_session_login, METH_VARARGS|METH_KEYWORDS },
 	{ "open_msg_store", (PyCFunction) py_open_msg_store, METH_VARARGS,
@@ -150,6 +164,9 @@ static PyMethodDef session_methods[] = {
 		"S.open_public_folder(object)\n\n"
 		"This function opens the public folder store. This allows access to "
 		"the public folders."
+	},
+	{ "unsubscribe", (PyCFunction) py_unsubscribe, METH_VARARGS,
+		"S.Unsubscribe(int) -> None"
 	},
 	{ NULL },
 };

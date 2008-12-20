@@ -19,6 +19,11 @@
 
 #include "pymapi/pymapi.h"
 
+static PyObject *PyMapiObject_FromMapiObject(mapi_object_t *obj)
+{
+	return NULL; /* FIXME */
+}	
+
 static PyObject *object_create(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	/* FIXME */
@@ -41,7 +46,80 @@ mapi_object_t *PyMapiObject_GetMapiObject(PyObject *obj)
 	return self->object;
 }
 
+static PyObject *py_folder_get_items_count(PyMapiObjectObject *self)
+{
+	enum MAPISTATUS status;
+	uint32_t unread, total;
+
+	status = GetFolderItemsCount(self->object, &unread, &total);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return Py_BuildValue("(ii)", unread, total);
+}
+
+static PyObject *py_folder_remove_user_permissions(PyMapiObjectObject *self, PyObject *args)
+{
+	char *username;
+	enum MAPISTATUS status;
+	if (!PyArg_ParseTuple(args, "s", &username))
+		return NULL;
+
+	status = RemoveUserPermission(self->object, username);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return Py_None;
+}
+
+static PyObject *py_folder_create(PyMapiObjectObject *self, PyObject *args)
+{
+	int foldertype;
+	char *name, *comment;
+	uint32_t flags;
+	enum MAPISTATUS status;
+	mapi_object_t child;
+
+	if (!PyArg_ParseTuple(args, "issI", &foldertype, &name, &comment, &flags))
+		return NULL;
+
+	status = CreateFolder(self->object, foldertype, name, comment, flags, &child);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return PyMapiObject_FromMapiObject(&child);
+}
+
+static PyObject *py_folder_delete(PyMapiObjectObject *self, PyObject *args)
+{
+	mapi_id_t folderid; 
+	int flags;
+	enum MAPISTATUS status;
+	bool partial;
+	if (!PyArg_ParseTuple(args, "ii", &folderid, &flags))
+		return NULL;
+
+	status = DeleteFolder(self->object, folderid, flags, &partial);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return PyBool_FromLong(partial);
+}
+
+static PyObject *py_folder_empty(PyMapiObjectObject *self)
+{
+	enum MAPISTATUS status = EmptyFolder(self->object);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+	return Py_None;
+}
+
 static PyMethodDef object_methods[] = {
+	{ "get_folder_items_count", (PyCFunction)py_folder_get_items_count, METH_NOARGS, 
+		"S.get_folder_items_count() -> (unread, total)" },
+	{ "remove_user_permission", (PyCFunction)py_folder_remove_user_permissions, METH_VARARGS,
+		"S.remove_user_permissions(user) -> None" },
+	{ "create_folder", (PyCFunction)py_folder_create, METH_VARARGS,
+		"S.create_folder(type, name, comment, flags) -> None" },
+	{ "empty_folder", (PyCFunction)py_folder_empty, METH_NOARGS, 
+		"S.empty_folder() -> None" },
+	{ "delete_folder", (PyCFunction)py_folder_delete, METH_VARARGS,
+		"S.delete_folder(folderid, flags) -> None" },
 	{ NULL },
 };
 

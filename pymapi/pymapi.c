@@ -21,7 +21,59 @@
 
 void initmapi(void);
 
+static PyObject *py_get_proptag_value(PyObject *mod, PyObject *args)
+{
+	char *propname;
+	if (!PyArg_ParseTuple(args, "s", &propname))
+		return NULL;
+
+	return PyInt_FromLong(get_proptag_value(propname));
+}
+
+static PyObject *py_get_proptag_name(PyObject *mod, PyObject *args)
+{
+	uint32_t proptag;
+	const char *name;
+	if (!PyArg_ParseTuple(args, "i", &proptag))
+		return NULL;
+
+	name = get_proptag_name(proptag);
+	if (name == NULL)
+		return Py_None;
+	return PyString_FromString(name);
+}
+
+static PyObject *py_get_importance(PyObject *mod, PyObject *args)
+{
+	uint32_t importance;
+	const char *name;
+	if (!PyArg_ParseTuple(args, "i", &importance))
+		return NULL;
+
+	name = get_importance(importance);
+	if (name == NULL)
+		return Py_None;
+	return PyString_FromString(name);
+}
+
+static PyObject *py_get_task_status(PyObject *mod, PyObject *args)
+{
+	uint32_t task_status;
+	const char *name;
+	if (!PyArg_ParseTuple(args, "i", &task_status))
+		return NULL;
+
+	name = get_task_status(task_status);
+	if (name == NULL)
+		return Py_None;
+	return PyString_FromString(name);
+}
+
 static PyMethodDef mapi_methods[] = {
+	{ "get_proptag_value", (PyCFunction)py_get_proptag_value, METH_VARARGS, NULL },
+	{ "get_proptag_name", (PyCFunction)py_get_proptag_name, METH_VARARGS, NULL },
+	{ "get_importance", (PyCFunction)py_get_importance, METH_VARARGS, NULL },
+	{ "get_task_status", (PyCFunction)py_get_task_status, METH_VARARGS, NULL },
 	{ NULL }
 };
 

@@ -19,7 +19,22 @@
 
 #include "pymapi/pymapi.h"
 
+static PyObject *py_is_mailbox_folder(PyMapiObjectObject *self, PyObject *args)
+{
+	uint64_t fid;
+	uint32_t olFolder;
+
+	if (!PyArg_ParseTuple(args, "L", &fid))
+		return NULL;
+
+	if (!IsMailboxFolder(self->object, fid, &olFolder))
+		return Py_None;
+
+	return PyInt_FromLong(olFolder);
+}
+
 static PyMethodDef msg_store_methods[] = {
+	{ "is_mailbox_folder", (PyCFunction)py_is_mailbox_folder, METH_VARARGS, NULL },
 	{ NULL },
 };
 

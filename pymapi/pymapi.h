@@ -43,5 +43,10 @@ PyAPI_DATA(PyTypeObject) PyMapiMsgStoreType;
 /* Set a MAPISTATUS error as a Python exception */
 #define PyErr_FromMAPISTATUS(err) Py_BuildValue("(i,z)", err, NULL)
 #define PyErr_SetMAPISTATUS(err) PyErr_SetObject(PyExc_RuntimeError, PyErr_FromMAPISTATUS(err))
+#define PyErr_MAPISTATUS_IS_ERR_RAISE(err) \
+	if (err != MAPI_E_SUCCESS) { \
+		PyErr_SetMAPISTATUS(err); \
+		return NULL; \
+	}
 
 #endif

@@ -1,6 +1,33 @@
+2008-12-20  bradh
+
+	* [r937] Another minor APIdox edit.
+	* [r936] API documentation tweak.
+	* [r935] API dox fix.
+	* [r934] API dox fix.
+	* [r933] Minor apidox fixes.
+	* [r932] More apidox triviality.
+	* [r931] Trivial APIdox edits.
+	* [r930] Supplement the user's PKG_CONFIG_PATH rather than
+	  overriding it.
+
+2008-12-20  jelmer
+
+	* [r929] Add bindings for GetBestBody(), GetDefaultFolder(),
+	  GetDefaultPublicFolder(), AddUserPermission(),
+	  ModifyUserPermission().
+	* [r928] Add bindings for create_message, delete_messages,
+	  get_message_status, set_read_flags.
+	* [r927] Add Python bindings for Unsubscribe(), get_task_status(),
+	  get_importance(), get_proptag_name(), get_proptag_value(),
+	  DeleteFolder(), CreateFolder(), EmptyFolder(),
+	  RemoveUserPermissions(), IsMailboxFolder().
+
 2008-12-19  jelmer
 
 	* [r925] Actually use pymapi variables in Makefile.
+
+2008-12-19  jelmer
+
 	* [r924] Add configure flags for building and installing Python
 	  MAPI bindings (disabled by default).
 
@@ -31,6 +58,9 @@
 2008-12-14  jelmer
 
 	* [r915] Add infrastructure for MAPI python module.
+
+2008-12-14  jelmer
+
 	* [r914] Look for python and python-config binaries.
 	* [r913] Remove empty directory.
 
@@ -1724,6 +1754,9 @@
 	  renaming.
 	  
 	  This should have been part of r529 - missed it.
+
+2008-05-31  jkerihuel
+
 	* [r536] - Fix emsmdb version
 	  - Change MAPI opnum enum identation -- Helps to fine down merging
 	  from

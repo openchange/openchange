@@ -203,11 +203,84 @@ static PyObject *py_folder_get_message_status(PyMapiObjectObject *self, PyObject
 	return PyInt_FromLong(lstatus);
 }
 
+static PyObject *py_message_get_best_body(PyMapiObjectObject *self)
+{
+	enum MAPISTATUS status;
+	uint8_t format;
+	
+	status = GetBestBody(self->object, &format);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return PyInt_FromLong(status);
+}
+
+static PyObject *py_get_default_folder(PyMapiObjectObject *self, PyObject *args)
+{
+	enum MAPISTATUS status;
+	uint32_t type;
+	uint64_t folder;
+
+	if (!PyArg_ParseTuple(args, "i", &type))
+		return NULL;
+
+	status = GetDefaultFolder(self->object, &folder, type);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return PyLong_FromLong(folder);
+}
+
+static PyObject *py_get_default_public_folder(PyMapiObjectObject *self, PyObject *args)
+{
+	enum MAPISTATUS status;
+	uint32_t type;
+	uint64_t folder;
+
+	if (!PyArg_ParseTuple(args, "i", &type))
+		return NULL;
+
+	status = GetDefaultPublicFolder(self->object, &folder, type);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return PyLong_FromLong(folder);
+}
+
+static PyObject *py_folder_add_user_permission(PyMapiObjectObject *self, PyObject *args)
+{
+	char *name;
+	int rights;
+	enum MAPISTATUS status;
+	if (!PyArg_ParseTuple(args, "si", &name, &rights))
+		return NULL;
+
+	status = AddUserPermission(self->object, name, rights);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return Py_None;
+}
+
+static PyObject *py_folder_modify_user_permission(PyMapiObjectObject *self, PyObject *args)
+{
+	char *name;
+	int rights;
+	enum MAPISTATUS status;
+	if (!PyArg_ParseTuple(args, "si", &name, &rights))
+		return NULL;
+
+	status = ModifyUserPermission(self->object, name, rights);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return Py_None;
+}
+
 static PyMethodDef object_methods[] = {
 	{ "get_folder_items_count", (PyCFunction)py_folder_get_items_count, METH_NOARGS, 
 		"S.get_folder_items_count() -> (unread, total)" },
 	{ "remove_user_permission", (PyCFunction)py_folder_remove_user_permissions, METH_VARARGS,
 		"S.remove_user_permissions(user) -> None" },
+	{ "add_user_permission", (PyCFunction)py_folder_add_user_permission, METH_VARARGS,
+		"S.add_user_permission(user, perm) -> None" },
+	{ "modify_user_permission", (PyCFunction)py_folder_modify_user_permission, METH_VARARGS,
+		"S.modify_user_permission(user, perm) -> None" },
 	{ "create_folder", (PyCFunction)py_folder_create, METH_VARARGS,
 		"S.create_folder(type, name, comment, flags) -> None" },
 	{ "empty_folder", (PyCFunction)py_folder_empty, METH_NOARGS, 
@@ -222,6 +295,12 @@ static PyMethodDef object_methods[] = {
 		"S.get_message_status(id) -> status" },
 	{ "set_read_flags", (PyCFunction)py_folder_set_read_flags, METH_VARARGS,
 		"S.set_read_flags(flags, [ids]) -> None" },
+	{ "get_best_body", (PyCFunction)py_message_get_best_body, METH_NOARGS,
+		"S.get_best_body() -> format" },
+	{ "get_default_folder", (PyCFunction)py_get_default_folder, METH_VARARGS,
+		"S.get_default_folder(type) -> id" },
+	{ "get_default_public_folder", (PyCFunction)py_get_default_public_folder, METH_VARARGS,
+		"S.get_default_public_folder(type) -> id" },
 	{ NULL },
 };
 

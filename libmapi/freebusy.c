@@ -31,14 +31,14 @@
 
 
 /**
-   \details Retrieve FreeBusy data associated to the specified
+   \details Retrieve FreeBusy data associated with the specified
    recipient
 
    \param obj_store pointer to the public folder MAPI object
    \param recipient name of the recipient to fetch freebusy data
    \param pSRow pointer to the returned properties
 
-   \note The function return a SRow structure with the following
+   \note The function returns a SRow structure with the following
    property tags:
    -# PR_NORMALIZED_SUBJECT
    -# PR_FREEBUSY_LAST_MODIFIED
@@ -340,7 +340,7 @@ _PUBLIC_ enum MAPISTATUS IsFreeBusyConflict(mapi_object_t *obj_store,
 
 
 /**
-   \details Return the year associated to the FreeBusy start range
+   \details Return the year associated with the FreeBusy start range
 
    \param publish_start pointer to the publish start integer
 

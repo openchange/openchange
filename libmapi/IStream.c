@@ -223,7 +223,7 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 
    \param obj_stream the opened stream object
    \param blob the DATA_BLOB to write to the stream
-   \param WrittenSize the effective number of bytes written to the
+   \param WrittenSize the actual number of bytes written to the
    stream
 
    \return MAPI_E_SUCCESS on success, otherwise -1. 
@@ -231,6 +231,8 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: A problem occured obtaining the session
+     context, or blob was null.
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 

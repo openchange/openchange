@@ -39,7 +39,7 @@ AC_ARG_WITH(samba,
 AC_SUBST(sambaprefix)
 OC_CHECK_SAMBA_PATH($sambaprefix,[], AC_MSG_ERROR(Samba 4 not found))
 AC_MSG_RESULT($sambaprefix)
-PKG_CONFIG_PATH="$sambaprefix/lib/pkgconfig"
+PKG_CONFIG_PATH="$sambaprefix/lib/pkgconfig:$PKG_CONFIG_PATH"
 PATH="$sambaprefix/bin:$PATH"
 
 #

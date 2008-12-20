@@ -314,8 +314,8 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
    \note Developers should call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
-     beyond the last row requested.
+   - MAPI_E_INVALID_PARAMETER: Either the network stream or session
+   context are not valid.
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
    

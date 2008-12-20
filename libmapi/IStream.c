@@ -126,15 +126,15 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t Propert
    \details Read buffer from a stream
 
    This function reads from an open data stream. It will read up to
-   data_size bytes from the stream, and return the data in data_buf.
-   read_size is set to the number of bytes actually read.
+   ByteCount bytes from the stream, and return the data in data_buf.
+   ByteRead is set to the number of bytes actually read.
 
    \param obj_stream the opened stream object
    \param buf_data the buffer where data read from the stream will be
    stored
    \param ByteCount the number of bytes requested to be read from the
    stream
-   \param ByteRead the number of bytes effectively read from the stream
+   \param ByteRead the number of bytes read from the stream
 
    \return MAPI_E_SUCCESS on success, otherwise -1. 
 

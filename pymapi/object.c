@@ -109,6 +109,100 @@ static PyObject *py_folder_empty(PyMapiObjectObject *self)
 	return Py_None;
 }
 
+static PyObject *py_folder_create_message(PyMapiObjectObject *self)
+{
+	mapi_object_t msg;
+	enum MAPISTATUS status = CreateMessage(self->object, &msg);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+	return PyMapiObject_FromMapiObject(&msg);
+}
+
+static PyObject *py_folder_delete_messages(PyMapiObjectObject *self, PyObject *args)
+{
+	PyObject *py_ids;
+	uint32_t cn_messages;
+	mapi_id_t *ids;
+	enum MAPISTATUS status;
+	int i;
+
+	if (!PyArg_ParseTuple(args, "O", &py_ids))
+		return NULL;
+
+	if (!PySequence_Check(py_ids)) {
+		PyErr_SetString(PyExc_TypeError, "ids should be a list of ids");
+		return NULL;
+	}
+
+	cn_messages = PySequence_Size(py_ids);
+	ids = talloc_array(NULL, mapi_id_t, cn_messages);
+	if (ids == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	for (i = 0; i < cn_messages; i++) {
+		PyObject *item;
+		item = PySequence_GetItem(py_ids, i);
+		ids[i] = PyInt_AsLong(item);
+	}
+
+	status = DeleteMessage(self->object, ids, cn_messages);
+	talloc_free(ids);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return Py_None;
+}
+
+static PyObject *py_folder_set_read_flags(PyMapiObjectObject *self, PyObject *args)
+{
+	int flags;
+	PyObject *py_ids;
+	enum MAPISTATUS status;
+	uint16_t cn_ids;
+    uint64_t *ids;
+	int i;
+	if (!PyArg_ParseTuple(args, "iO", &flags, &py_ids))
+		return NULL;
+
+	if (!PySequence_Check(py_ids)) {
+		PyErr_SetString(PyExc_TypeError, "ids should be a list of ids");
+		return NULL;
+	}
+
+	cn_ids = PySequence_Size(py_ids);
+	ids = talloc_array(NULL, uint64_t, cn_ids);
+	if (ids == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	for (i = 0; i < cn_ids; i++) {
+		PyObject *item;
+		item = PySequence_GetItem(py_ids, i);
+		ids[i] = PyInt_AsLong(item);
+	}
+
+	status = SetReadFlags(self->object, flags, cn_ids, ids);
+	talloc_free(ids);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return Py_None;
+}
+
+static PyObject *py_folder_get_message_status(PyMapiObjectObject *self, PyObject *args)
+{
+	mapi_id_t msgid;
+	uint32_t lstatus;
+	enum MAPISTATUS status;
+	if (!PyArg_ParseTuple(args, "i", &msgid))
+		return NULL;
+	
+	status = GetMessageStatus(self->object, msgid, &lstatus);
+	PyErr_MAPISTATUS_IS_ERR_RAISE(status);
+
+	return PyInt_FromLong(lstatus);
+}
+
 static PyMethodDef object_methods[] = {
 	{ "get_folder_items_count", (PyCFunction)py_folder_get_items_count, METH_NOARGS, 
 		"S.get_folder_items_count() -> (unread, total)" },
@@ -120,6 +214,14 @@ static PyMethodDef object_methods[] = {
 		"S.empty_folder() -> None" },
 	{ "delete_folder", (PyCFunction)py_folder_delete, METH_VARARGS,
 		"S.delete_folder(folderid, flags) -> None" },
+	{ "create_message", (PyCFunction)py_folder_create_message, METH_NOARGS,
+		"S.create_message() -> message" },
+	{ "delete_messages", (PyCFunction)py_folder_delete_messages, METH_VARARGS,
+		"S.delete_messages([ids]) -> None" },
+	{ "get_message_status", (PyCFunction)py_folder_get_message_status, METH_VARARGS,
+		"S.get_message_status(id) -> status" },
+	{ "set_read_flags", (PyCFunction)py_folder_set_read_flags, METH_VARARGS,
+		"S.set_read_flags(flags, [ids]) -> None" },
 	{ NULL },
 };
 

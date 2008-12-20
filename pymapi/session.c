@@ -30,7 +30,6 @@ static PyObject *py_session_create(PyTypeObject *type, PyObject *args, PyObject 
 	char *kwnames[] = { "profname", "password", "provider" };
 	char *profname, *password;
 	uint32_t provider = 0;
-	PyMapiSessionObject *ret;
 	struct mapi_session *session;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ss|i", kwnames, 

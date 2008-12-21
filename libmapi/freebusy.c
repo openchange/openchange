@@ -152,7 +152,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 
 	/* Step 5. Open the folder */
 	fid = (const uint64_t *) get_SPropValue_SRowSet_data(&SRowSet, PR_FID);
-	if (!fid || *fid == MAPI_E_NOT_FOUND) return false;
+	if (!fid || *fid == MAPI_E_NOT_FOUND) return MAPI_E_NOT_FOUND;
 
 	mapi_object_init(&obj_exfreebusy);
 	retval = OpenFolder(&obj_freebusy, *fid, &obj_exfreebusy);

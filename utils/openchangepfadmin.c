@@ -159,7 +159,7 @@ static enum MAPISTATUS openchangepfadmin_getdir(TALLOC_CTX *mem_ctx,
 					  PR_FID);
 	retval = SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return MAPI_E_NOT_FOUND;
 	
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {

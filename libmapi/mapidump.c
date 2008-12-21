@@ -67,7 +67,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		break;
 	case PT_LONG:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: %d\n", sep?sep:"", proptag, (*(const uint32_t *)data));
+		printf("%s%s: %u\n", sep?sep:"", proptag, (*(const uint32_t *)data));
 		break;
 	case PT_MV_STRING8:
 		StringArray_r = (const struct StringArray_r *) get_SPropValue_data(&lpProp);
@@ -534,7 +534,7 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties, const char
 	fflush(0);
 
 	if (complete) {
-		printf("\tComplete: %d %c\n", (uint32_t)(*complete * 100), '%');
+		printf("\tComplete: %u %c\n", (uint32_t)(*complete * 100), '%');
 		fflush(0);
 	}
 
@@ -722,16 +722,16 @@ _PUBLIC_ void mapidump_freebusy_event(struct Binary_r *bin, uint32_t month, uint
 			if (!((event_start - (60 * hour)) % 1440)) {
 				day = ((event_start - (60 * hour)) / 1440) + 1;
 				last = event_end - event_start;
-				DEBUG(0, ("%s %d %s %d at %d hours and lasts ", sep ? sep : "", day, month_name, year, hour + daylight));
+				DEBUG(0, ("%s %u %s %u at %u hours and lasts ", sep ? sep : "", day, month_name, year, hour + daylight));
 				if (last < 60) {
-					DEBUG(0, ("%d minutes\n", last));
+					DEBUG(0, ("%u minutes\n", last));
 				} else {
 					hours = last / 60;
 					minutes = last - hours * 60;
 					if (minutes > 0) {
-						DEBUG(0, ("%d hours and %d minutes\n", hours, minutes));
+						DEBUG(0, ("%u hours and %u minutes\n", hours, minutes));
 					} else {
-						DEBUG(0, ("%d hours\n", hours));
+						DEBUG(0, ("%u hours\n", hours));
 					}
 				}
 			}

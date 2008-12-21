@@ -432,7 +432,7 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 	}
 
 	return true;
-};
+}
 
 /**
    Convenience function to login to the server

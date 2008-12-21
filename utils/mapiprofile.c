@@ -61,17 +61,17 @@ static uint32_t callback(struct SRowSet *rowset, void *private)
 	for (i = 0; i < rowset->cRows; i++) {
 		lpProp = get_SPropValue_SRow(&(rowset->aRow[i]), PR_DISPLAY_NAME);
 		if (lpProp && lpProp->value.lpszA) {
-			printf("\t[%d] %s\n", i, lpProp->value.lpszA);
+			printf("\t[%u] %s\n", i, lpProp->value.lpszA);
 		}
 	}
-	printf("\t[%d] cancel operation\n", i);
+	printf("\t[%u] cancel operation\n", i);
 	fd = fdopen(0, "r");
 getentry:
 	printf("Enter username id [0]: ");
 	fgets(entry, 10, fd);
 	index = atoi(entry);
 	if (index > i) {
-		printf("Invalid id - Must be a value between 0 and %d\n", i);
+		printf("Invalid id - Must be a value between 0 and %u\n", i);
 		goto getentry;
 	}
 	
@@ -315,7 +315,7 @@ static void mapiprofile_list(const char *profdb)
 		exit (1);
 	}
 
-	printf("We have %d profiles in the database:\n", proftable.cRows);
+	printf("We have %u profiles in the database:\n", proftable.cRows);
 
 	for (count = 0; count != proftable.cRows; count++) {
 		const char	*name = NULL;
@@ -401,7 +401,7 @@ static void mapiprofile_attribute(const char *profdb, const char *profname,
 		exit (1);
 	}
 
-	printf("Profile %s: results(%d)\n", profname, count);
+	printf("Profile %s: results(%u)\n", profname, count);
 	for (i = 0; i < count; i++) {
 		printf("\t%s = %s\n", attribute, value[i]);
 	}

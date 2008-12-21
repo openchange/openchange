@@ -221,7 +221,7 @@ static bool oclient_read_file(TALLOC_CTX *mem_ctx, const char *filename,
 			return false;
 		}
 		oclient->attach[oclient->attach_num].fd = fd;
-		printf("filename = %s (size = %d / %d)\n", filename, oclient->attach[oclient->attach_num].bin.cb, (uint32_t)sb.st_size);
+		printf("filename = %s (size = %u / %u)\n", filename, oclient->attach[oclient->attach_num].bin.cb, (uint32_t)sb.st_size);
 		close(fd);
 		break;
 	default:
@@ -427,7 +427,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	printf("MAILBOX (%d messages)\n", count);
+	printf("MAILBOX (%u messages)\n", count);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
 					  PR_FID,
@@ -455,7 +455,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 				lpProps = talloc_zero(mem_ctx, struct SPropValue);
 				retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
-				if (retval != MAPI_E_SUCCESS) return false;
+				if (retval != MAPI_E_SUCCESS) return retval;
 
 				aRow.ulAdrEntryPad = 0;
 				aRow.cValues = count;
@@ -476,7 +476,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 						MAPIFreeBuffer(SPropTagArray);
 						
 						retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
-						if (retval != MAPI_E_SUCCESS) return false;
+						if (retval != MAPI_E_SUCCESS) return retval;
 
 						for (j = 0; j < rowset_attach.cRows; j++) {
 							attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[j]), PR_ATTACH_NUM);
@@ -492,7 +492,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 								lpProps2 = talloc_zero(mem_ctx, struct SPropValue);
 								retval = GetProps(&obj_attach, SPropTagArray, &lpProps2, &count2);
 								MAPIFreeBuffer(SPropTagArray);
-								if (retval != MAPI_E_SUCCESS) return false;
+								if (retval != MAPI_E_SUCCESS) return retval;
 								
 								aRow.ulAdrEntryPad = 0;
 								aRow.cValues = count2;
@@ -503,7 +503,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 									attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_FILENAME));
 								}
 								attach_size = (const uint32_t *) octool_get_propval(&aRow, PR_ATTACH_SIZE);
-								printf("[%d] %s (%d Bytes)\n", j, attach_filename, attach_size ? *attach_size : 0);
+								printf("[%u] %s (%u Bytes)\n", j, attach_filename, attach_size ? *attach_size : 0);
 								fflush(0);
 								if (oclient->store_folder) {
 									status = store_attachment(obj_attach, attach_filename, *attach_size, oclient);
@@ -702,7 +702,7 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* WriteStream operation */
-	printf("We are about to write %d bytes in the stream\n", bin.cb);
+	printf("We are about to write %u bytes in the stream\n", bin.cb);
 	size = MAX_READ_SIZE;
 	offset = 0;
 	while (offset <= bin.cb) {
@@ -790,7 +790,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	retval = ResolveNames(mapi_object_get_session(&obj_message), (const char **)oclient->usernames, 
 			      SPropTagArray, &SRowSet, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return retval;
 
 	if (!SRowSet) {
 		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
@@ -1218,7 +1218,7 @@ static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
 	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
 	retval = GetIDsFromNames(obj_folder, nameid->count,
 				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return retval;
 	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
 	MAPIFreeBuffer(nameid);
 
@@ -1320,7 +1320,7 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 	if (oclient->dtstart) {
 		if (!strptime(oclient->dtstart, DATE_FORMAT, &tm)) {
 			printf("Invalid date format (e.g.: 2007-06-01 22:30:00)\n");
-			return false;
+			return MAPI_E_INVALID_PARAMETER;
 		}
 		unix_to_nt_time(&nt, mktime(&tm));
 		start_date = talloc(mem_ctx, struct FILETIME);
@@ -1332,7 +1332,7 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 	if (oclient->dtend) {
 		if (!strptime(oclient->dtend, DATE_FORMAT, &tm)) {
 			printf("Invalid date format (e.g.: 2007-06-01 22:30:00)\n");
-			return false;
+			return MAPI_E_INVALID_PARAMETER;
 		}
 		unix_to_nt_time(&nt, mktime(&tm));
 		end_date = talloc(mem_ctx, struct FILETIME);
@@ -1582,7 +1582,7 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
@@ -1595,7 +1595,7 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 				printf("|   ");
 			}
 			newname = utf8tolinux(mem_ctx, name);
-			printf("|---+ %-15s : %-20s (Total: %d / Unread: %d - Container class: %s) [FID: 0x%"PRIx64"]\n", newname, comment, *total, *unread,
+			printf("|---+ %-15s : %-20s (Total: %u / Unread: %u - Container class: %s) [FID: 0x%"PRIx64"]\n", newname, comment, *total, *unread,
 			       get_container_class(mem_ctx, parent, *fid), *fid);
 			MAPIFreeBuffer(newname);
 			if (*child) {
@@ -1639,7 +1639,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	while ((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
@@ -1765,7 +1765,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	retval = GetContentsTable(&obj_folder, &obj_table, 0, &count);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	printf("MAILBOX (%d messages)\n", count);
+	printf("MAILBOX (%u messages)\n", count);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
 					  PR_FID,
@@ -1852,16 +1852,16 @@ static enum MAPISTATUS folder_lookup(TALLOC_CTX *mem_ctx,
 
 	mapi_object_init(&obj_folder);
 	retval = OpenFolder(obj_parent, folder_id, &obj_folder);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return retval;
 
 	mapi_object_init(&obj_htable);
 	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return retval;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_FID);
 	retval = SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return retval;
 
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows)) {
 		for (i = 0; i < SRowSet.cRows; i++) {
@@ -1904,12 +1904,12 @@ static enum MAPISTATUS message_lookup(TALLOC_CTX *mem_ctx,
 
 	mapi_object_init(&obj_htable);
 	retval = GetContentsTable(obj_folder, &obj_htable, 0, NULL);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return retval;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2, PR_FID, PR_MID);
 	retval = SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return retval;
 
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
 		for (i = 0; i < SRowSet.cRows; i++) {
@@ -2120,7 +2120,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 							     &obj_message, 0);
 					if (GetLastError() == MAPI_E_SUCCESS) {
 						retval = GetPropsAll(&obj_message, &properties_array);
-						if (retval != MAPI_E_SUCCESS) return false;
+						if (retval != MAPI_E_SUCCESS) return retval;
 						id = talloc_asprintf(mem_ctx, ": %"PRIX64"/%"PRIX64,
 								     SRowSet.aRow[i].lpProps[0].value.d,
 								     SRowSet.aRow[i].lpProps[1].value.d);
@@ -2683,7 +2683,7 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 	    busy_events && ((uint32_t) busy_events != MAPI_E_NOT_FOUND)) {
 		DEBUG(0, ("\t* Busy Events:\n"));
 		for (i = 0; i < busy_months->cValues; i++) {
-			DEBUG(0, ("\t\t* %s %d:\n", mapidump_freebusy_month(busy_months->lpl[i], year), year)); 
+			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(busy_months->lpl[i], year), year)); 
 			mapidump_freebusy_event(&busy_events->lpbin[i], busy_months->lpl[i], year, "\t\t\t* ");
 		}
 	}
@@ -2692,7 +2692,7 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 	    tentative_events && ((uint32_t) tentative_events != MAPI_E_NOT_FOUND)) {
 		DEBUG(0, ("\t* Tentative Events:\n"));
 		for (i = 0; i < tentative_months->cValues; i++) {
-			DEBUG(0, ("\t\t* %s %d:\n", mapidump_freebusy_month(tentative_months->lpl[i], year), year));
+			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(tentative_months->lpl[i], year), year));
 			mapidump_freebusy_event(&tentative_events->lpbin[i], tentative_months->lpl[i], year, "\t\t\t* ");
 		}
 	}
@@ -2701,7 +2701,7 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 	    oof_events && ((uint32_t) oof_events != MAPI_E_NOT_FOUND)) {
 		DEBUG(0, ("\t* Out Of Office Events:\n"));
 		for (i = 0; i < oof_months->cValues; i++) {
-			DEBUG(0, ("\t\t* %s %d:\n", mapidump_freebusy_month(oof_months->lpl[i], year), year));
+			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(oof_months->lpl[i], year), year));
 			mapidump_freebusy_event(&oof_events->lpbin[i], oof_months->lpl[i], year, "\t\t\t* ");
 		}
 	}
@@ -3082,10 +3082,10 @@ int main(int argc, const char *argv[])
 	 *   initialized 
 	 */
 	if (opt_ocpf_syntax) {
-		retval = openchangeclient_ocpf_syntax(&oclient);
+		bool ret = openchangeclient_ocpf_syntax(&oclient);
 		mapi_errstr("OCPF Syntax", GetLastError());
-		if (retval != true) {
-			goto end;
+		if (ret != true) {
+			exit(1);
 		}
 		exit (0);
 	}
@@ -3128,7 +3128,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_userlist) {
-		retval = openchangeclient_userlist(mem_ctx, session);
+		openchangeclient_userlist(mem_ctx, session);
 		exit (0);
 	}
 
@@ -3155,48 +3155,48 @@ int main(int argc, const char *argv[])
 	 * OCPF sending command
 	 */
 	if (opt_ocpf_sender) {
-		retval = openchangeclient_ocpf_sender(mem_ctx, &obj_store, &oclient);
+		bool ret = openchangeclient_ocpf_sender(mem_ctx, &obj_store, &oclient);
 		mapi_errstr("OCPF Sender", GetLastError());
-		if (retval != true) {
+		if (ret != true) {
 			goto end;
 		}
 	}
 
 	if (oclient.ocpf_dump) {
-		retval = openchangeclient_ocpf_dump(mem_ctx, &obj_store, &oclient);
+		bool ret = openchangeclient_ocpf_dump(mem_ctx, &obj_store, &oclient);
 		mapi_errstr("OCPF Dump", GetLastError());
-		if (retval != true) {
+		if (ret != true) {
 			goto end;
 		}
 	}
 
 	if (opt_fetchitems) {
-		retval = openchangeclient_fetchitems(mem_ctx, &obj_store, opt_fetchitems, &oclient);
+		bool ret = openchangeclient_fetchitems(mem_ctx, &obj_store, opt_fetchitems, &oclient);
 		mapi_errstr("fetchitems", GetLastError());
-		if (retval != true) {
+		if (ret != true) {
 			goto end;
 		}
 	}
 
 	if (oclient.delete) {
-		retval = openchangeclient_deleteitems(mem_ctx, &obj_store, &oclient);
+		bool ret = openchangeclient_deleteitems(mem_ctx, &obj_store, &oclient);
 		mapi_errstr("deleteitems", GetLastError());
-		if (retval != true) {
+		if (ret != true) {
 			goto end;
 		}
 	}
 
 	if (opt_mailbox) {
 		if (oclient.pf == true) {
-			retval = openchangeclient_pf(mem_ctx, &obj_store);
+			bool ret = openchangeclient_pf(mem_ctx, &obj_store);
 			mapi_errstr("public folder", GetLastError());
-			if (retval != true) {
+			if (ret != true) {
 				goto end;
 			}
 		} else {
-			retval = openchangeclient_mailbox(mem_ctx, &obj_store);
+			bool ret = openchangeclient_mailbox(mem_ctx, &obj_store);
 			mapi_errstr("mailbox", GetLastError());
-			if (retval != true) {
+			if (ret != true) {
 				goto end;
 			}
 		}
@@ -3225,15 +3225,16 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_deletemail) {
-		retval = openchangeclient_deletemail(mem_ctx, &obj_store, &oclient);
+		bool ret = openchangeclient_deletemail(mem_ctx, &obj_store, &oclient);
 		mapi_errstr("deletemail", GetLastError());
-		if (retval != true) {
+		if (ret != true) {
 			goto end;
 		}
 	}
 
 	/* MAPI calendar operations */
 	if (opt_sendappointment) {
+		bool ret;
 		if (!oclient.dtstart && !oclient.update) {
 			printf("You need to specify a start date (e.g: 2007-06-01 22:30:00)\n");
 			goto end;
@@ -3245,42 +3246,44 @@ int main(int argc, const char *argv[])
 		}
 
 		if (!oclient.update) {
-			retval = openchangeclient_sendappointment(mem_ctx, &obj_store, &oclient);
+			ret = openchangeclient_sendappointment(mem_ctx, &obj_store, &oclient);
 			mapi_errstr("sendappointment", GetLastError());
 		} else {
-			retval = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_APPOINTMENT);
+			ret = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_APPOINTMENT);
 			mapi_errstr("update appointment", GetLastError());
 		}
-		if (retval != true) {
+		if (ret != true) {
 			goto end;
 		}
 	}
 
 	if (oclient.freebusy) {
-		retval = openchangeclient_freebusy(&obj_store, &oclient);
+		bool ret = openchangeclient_freebusy(&obj_store, &oclient);
 		mapi_errstr("freebusy", GetLastError());
 
-		if (retval != true) {
+		if (ret != true) {
 			goto end;
 		}
 	}
 
 	/* MAPI contact operations */
 	if (opt_sendcontact) {
+		bool ret;
 		if (!oclient.update) {
-			retval = openchangeclient_sendcontact(mem_ctx, &obj_store, &oclient);
+			ret = openchangeclient_sendcontact(mem_ctx, &obj_store, &oclient);
 			mapi_errstr("sendcontact", GetLastError());
 		} else {
-			retval = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_CONTACT);
+			ret = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_CONTACT);
 			mapi_errstr("update contact", GetLastError());
 		}
-		if (retval != true) {
+		if (ret != true) {
 			goto end;
 		}
 	}
 
 	/* MAPI task operations */
 	if (opt_sendtask) {
+		bool ret;
 		if (!oclient.dtstart && !oclient.update) {
 			printf("You need to specify a start date (e.g: 2007-06-01 22:30:00)\n");
 			goto end;
@@ -3292,27 +3295,28 @@ int main(int argc, const char *argv[])
 		}
 
 		if (!oclient.update) {
-			retval = openchangeclient_sendtask(mem_ctx, &obj_store, &oclient);
+			ret = openchangeclient_sendtask(mem_ctx, &obj_store, &oclient);
 			mapi_errstr("sendtask", GetLastError());
 		} else {
-			retval = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_TASK);
+			ret = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_TASK);
 			mapi_errstr("update task", GetLastError());
 		}
-		if (retval != true) {
+		if (ret != true) {
 			goto end;
 		}
 	}
 
 	/* MAPI note operations */
 	if (opt_sendnote) {
+		bool ret;
 		if (!oclient.update) {
-			retval = openchangeclient_sendnote(mem_ctx, &obj_store, &oclient);
+			ret = openchangeclient_sendnote(mem_ctx, &obj_store, &oclient);
 			mapi_errstr("sendnote", GetLastError());
 		} else {
-			retval = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_STICKYNOTE);
+			ret = openchangeclient_updateitem(mem_ctx, &obj_store, &oclient, IPF_STICKYNOTE);
 			mapi_errstr("update note", GetLastError());
 		}
-		if (retval != true) {
+		if (ret != true) {
 			goto end;
 		}
 	}

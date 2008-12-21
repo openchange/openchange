@@ -1,6 +1,21 @@
+2008-12-21  bradh
+
+	* [r943] User %u format specifier for unsigned integer.
+	* [r942] Make return value match signature.
+	* [r941] Miscellaneous minor cleanups. Mainly making return types
+	  match signatues, format conversion (%u for unsigned values) and
+	  matching up result variable types (bool instead of enum
+	  MAPISTATUS).
+	* [r940] Return an enum MAPISTATUS, instead of a bool, to match
+	  function signature.
+	* [r939] Use %u instead of %d for unsigned values.
+
 2008-12-20  bradh
 
 	* [r937] Another minor APIdox edit.
+
+2008-12-20  bradh
+
 	* [r936] API documentation tweak.
 	* [r935] API dox fix.
 	* [r934] API dox fix.
@@ -15,6 +30,9 @@
 	* [r929] Add bindings for GetBestBody(), GetDefaultFolder(),
 	  GetDefaultPublicFolder(), AddUserPermission(),
 	  ModifyUserPermission().
+
+2008-12-20  jelmer
+
 	* [r928] Add bindings for create_message, delete_messages,
 	  get_message_status, set_read_flags.
 	* [r927] Add Python bindings for Unsubscribe(), get_task_status(),
@@ -62,6 +80,9 @@
 2008-12-14  jelmer
 
 	* [r914] Look for python and python-config binaries.
+
+2008-12-14  jelmer
+
 	* [r913] Remove empty directory.
 
 2008-12-14  bradh

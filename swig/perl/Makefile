@@ -47,12 +47,14 @@ swig_mapicodes.h:
 	@echo "Generating Headers (swig_mapicodes.h)"
 	@$(top_builddir)/libmapi/conf/mparse.pl --parser=swig_mapicodes --outputdir=./ $(top_builddir)/libmapi/conf/mapi-codes
 
-.c.o:
-	@echo "Compiling $<"
-	@$(CC) $(CFLAGS) -DDEFAULT_LDIF=\"$(DESTDIR)$(datadir)/setup\" -c $< -o $@
+.SUFFIXES: .po
 
-mapi.$(SHLIBEXT): 	mapi_wrap.o				\
-			lwmapi.o				\
+.c.po:
+	@echo "Compiling $< with -fPIC"
+	@$(CC) $(CFLAGS) -DDEFAULT_LDIF=\"$(DESTDIR)$(datadir)/setup\" -fPIC -c $< -o $@
+
+mapi.$(SHLIBEXT): 	mapi_wrap.po				\
+			lwmapi.po				\
 			../../libmapi/utf8_convert.yy.po	\
 			../../libmapi/*.po			\
 			../../gen_ndr/*.po			\

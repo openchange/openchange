@@ -15,6 +15,7 @@ AC_DEFUN([OC_CHECK_SAMBA_PATH],
 [
  	old_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
 	PKG_CONFIG_PATH="$1/lib/pkgconfig"
+	export PKG_CONFIG_PATH
 	PKG_CHECK_EXISTS([samba-hostconfig], [found=1], [found=0])
 	PKG_CONFIG_PATH="$old_PKG_CONFIG_PATH"
 	if test $found = 1; then

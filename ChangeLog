@@ -1,6 +1,15 @@
+2008-12-24  jelmer
+
+	* [r946] Export PKG_CONFIG_PATH if it wasn't exported yet. Patch by
+	  Metze
+	* [r945] Fix PIC object flags for SWIG build. Patch by metze.
+
 2008-12-21  bradh
 
 	* [r943] User %u format specifier for unsigned integer.
+
+2008-12-21  bradh
+
 	* [r942] Make return value match signature.
 	* [r941] Miscellaneous minor cleanups. Mainly making return types
 	  match signatues, format conversion (%u for unsigned values) and
@@ -17,6 +26,9 @@
 2008-12-20  bradh
 
 	* [r936] API documentation tweak.
+
+2008-12-20  bradh
+
 	* [r935] API dox fix.
 	* [r934] API dox fix.
 	* [r933] Minor apidox fixes.
@@ -35,6 +47,9 @@
 
 	* [r928] Add bindings for create_message, delete_messages,
 	  get_message_status, set_read_flags.
+
+2008-12-20  jelmer
+
 	* [r927] Add Python bindings for Unsubscribe(), get_task_status(),
 	  get_importance(), get_proptag_name(), get_proptag_value(),
 	  DeleteFolder(), CreateFolder(), EmptyFolder(),

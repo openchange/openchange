@@ -677,6 +677,20 @@ _PUBLIC_ const char *mapidump_freebusy_month(uint32_t month, uint32_t year)
 }
 
 
+_PUBLIC_ uint32_t mapidump_freebusy_year(uint32_t month, uint32_t year)
+{
+	uint32_t	realmonth;
+
+	realmonth = month - (year * 16);
+	while (realmonth > 0xc) {
+		year++;
+		realmonth = month - (year * 16);
+	}
+
+	return year;
+}
+
+
 _PUBLIC_ void mapidump_freebusy_date(uint32_t t, const char *sep)
 {
 	TALLOC_CTX	*mem_ctx;
@@ -712,7 +726,9 @@ _PUBLIC_ void mapidump_freebusy_event(struct Binary_r *bin, uint32_t month, uint
 	/* bin.cb must be a multiple of 4 */
 	if (bin->cb % 4) return;
 
+	year = mapidump_freebusy_year(month, year);
 	month_name = mapidump_freebusy_month(month, year);
+	if (!month_name) return;
 
 	for (i = 0; i < bin->cb; i+= 4) {
 		event_start = (bin->lpb[i + 1] << 8) | bin->lpb[i];

@@ -2656,6 +2656,7 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 	const struct LongArray_r       	*oof_months;
 	const struct BinaryArray_r	*oof_events;
 	uint32_t			year;
+	uint32_t			event_year;
 
 	/* Step 1. Retrieve FreeBusy data for the given user */
 	retval = GetUserFreeBusyData(obj_store, oclient->freebusy, &aRow);
@@ -2683,8 +2684,9 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 	    busy_events && ((uint32_t) busy_events != MAPI_E_NOT_FOUND)) {
 		DEBUG(0, ("\t* Busy Events:\n"));
 		for (i = 0; i < busy_months->cValues; i++) {
-			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(busy_months->lpl[i], year), year)); 
-			mapidump_freebusy_event(&busy_events->lpbin[i], busy_months->lpl[i], year, "\t\t\t* ");
+			event_year = mapidump_freebusy_year(busy_months->lpl[i], year);
+			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(busy_months->lpl[i], event_year), event_year)); 
+			mapidump_freebusy_event(&busy_events->lpbin[i], busy_months->lpl[i], event_year, "\t\t\t* ");
 		}
 	}
 
@@ -2692,8 +2694,9 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 	    tentative_events && ((uint32_t) tentative_events != MAPI_E_NOT_FOUND)) {
 		DEBUG(0, ("\t* Tentative Events:\n"));
 		for (i = 0; i < tentative_months->cValues; i++) {
-			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(tentative_months->lpl[i], year), year));
-			mapidump_freebusy_event(&tentative_events->lpbin[i], tentative_months->lpl[i], year, "\t\t\t* ");
+			event_year = mapidump_freebusy_year(tentative_months->lpl[i], year);
+			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(tentative_months->lpl[i], event_year), event_year));
+			mapidump_freebusy_event(&tentative_events->lpbin[i], tentative_months->lpl[i], event_year, "\t\t\t* ");
 		}
 	}
 
@@ -2701,8 +2704,9 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 	    oof_events && ((uint32_t) oof_events != MAPI_E_NOT_FOUND)) {
 		DEBUG(0, ("\t* Out Of Office Events:\n"));
 		for (i = 0; i < oof_months->cValues; i++) {
-			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(oof_months->lpl[i], year), year));
-			mapidump_freebusy_event(&oof_events->lpbin[i], oof_months->lpl[i], year, "\t\t\t* ");
+			event_year = mapidump_freebusy_year(oof_months->lpl[i], year);
+			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(oof_months->lpl[i], event_year), event_year));
+			mapidump_freebusy_event(&oof_events->lpbin[i], oof_months->lpl[i], event_year, "\t\t\t* ");
 		}
 	}
 

@@ -1,7 +1,16 @@
+2008-12-27  jkerihuel
+
+	* [r948] Fix mapidump date/month when freebusy period covers end of
+	  one year - beginning of next year
+	  Update openchangeclient to reflect these changes.
+
 2008-12-24  jelmer
 
 	* [r946] Export PKG_CONFIG_PATH if it wasn't exported yet. Patch by
 	  Metze
+
+2008-12-24  jelmer
+
 	* [r945] Fix PIC object flags for SWIG build. Patch by metze.
 
 2008-12-21  bradh
@@ -11,6 +20,9 @@
 2008-12-21  bradh
 
 	* [r942] Make return value match signature.
+
+2008-12-21  bradh
+
 	* [r941] Miscellaneous minor cleanups. Mainly making return types
 	  match signatues, format conversion (%u for unsigned values) and
 	  matching up result variable types (bool instead of enum
@@ -30,6 +42,9 @@
 2008-12-20  bradh
 
 	* [r935] API dox fix.
+
+2008-12-20  bradh
+
 	* [r934] API dox fix.
 	* [r933] Minor apidox fixes.
 	* [r932] More apidox triviality.

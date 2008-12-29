@@ -54,7 +54,10 @@
  <li><a href="#faq">7. Frequently Asked Questions</a>
   <ul>
    <li><a href="#notcompleted"> 7.1. The action could not be completed</a></li>
-   <li><a href="#dc">           7.2. Does mapiproxy need to be domain controller?</a></li>
+   <li><a href="#cantopen">	7.2. Profile creation goes fine, but Outlook can't open your default e-mail folders</a></li>
+   <li><a href="#dc">           7.3. Does mapiproxy need to be domain controller?</a></li>
+   <li><a href="#gnutls">       7.4. Generating Samba's private keys takes infinite time</a></li>
+   <li><a href="#gmake">	7.5. On Ubuntu <i>make samba-git</i> exits with <i>gmake: not found</i></a></li>
   </ul>
  </li>
 </ul>
@@ -70,6 +73,12 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">29/12/08</td>
+	   <td style="text-align:center"><strong>0.5.5</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">Add 3 new questions to FAQ section</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">09/12/08</td>
@@ -1125,7 +1134,7 @@ become parametric smb.conf options in the future.</li>
 
 
 <a name="faq"></a><h2>7. Frequently Asked Questions</h2>
-<a name="completed"></a><h3>7.1. The action could not be completed</h3>
+<a name="notcompleted"></a><h3>7.1. The action could not be completed</h3>
 
 <table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
 <tr style="border:none;">
@@ -1161,7 +1170,40 @@ each time Outlook is launched.
 
 <br/>
 
-<a name="dc"></a><h3>7.2. Does mapiproxy need to be domain controller?</h3>
+<a name="cantopen"></a><h3>7.2. Profile creation goes fine, but Outlook can't open your default e-mail folders</h3>
+
+The profile was properly created using the mail applet from the
+configuration panel (or using Outlook wizard). However when I launch
+Outlook, I keep having the following error message:
+
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<img src="mapiproxy_error_002.png"/>
+</td>
+</tr>
+</table>
+<center>Figure 11. Outlook error: Unable to Open your default e-mail folders</center>
+
+This probably means Outlook is unable to lookup the resolved name of
+your mapiproxy/samba4 server. You can either:
+<ul>
+  <li>1. Make your Windows workstation points to a domain name server
+  able to resolve mapiproxy fully qualified name.</li>
+
+  <li>2. Open \code C:\WINDOWS\System32\etc\drivers\hosts \endcode file and
+  add an entry for mapiproxy. For example if I have
+  mapiproxy.openchange.local pointing at 192.168.102.2, then hosts
+  file should hold the following line:
+  \code
+  192.168.102.2 mapiproxy.openchange.local mapiproxy
+  \endcode
+  </li>
+</ul>
+
+<br/>
+
+<a name="dc"></a><h3>7.3. Does mapiproxy need to be domain controller?</h3>
 
 No it doesn't. mapiproxy works fine as a member server of a Windows
 domain. However, since delegated credentials and forwarded kerberos
@@ -1172,6 +1214,44 @@ global section:
 \code
 	server role               = member server
 	aux_methods:member server = sam
+\endcode
+
+<br/>
+
+<a name="gnutls"></a><h3>7.4. Generating Samba's private keys takes infinite time</h3>
+
+For some configuration, the private keys generation process at Samba
+startup can be very long. In case private keys are not generated
+within a couple of minutes, it is suggested to recompile Samba with
+gnutls disabled as in the example below:
+
+\code
+	$ ./configure.developer --enable-debug --disable-gnutls
+	$ gmake idl_full
+	$ gmake
+	$ sudo gmake install
+\endcode
+
+<br/>
+
+<a name="gmake"></a><h3>7.5. On Ubuntu <i>make samba-git</i> exits with <i>gmake: not found</i></h3>
+
+On Ubuntu, I have the following output while trying to install samba4 from OpenChange sources:
+
+\code
+	To build Samba, run /usr/bin/make
+	Step2: Compile Samba4 (IDL)
+	./script/installsamba4.sh: 332: gmake: not found
+	Step3: Compile Samba4 (Source)
+	./script/installsamba4.sh: 332: gmake: not found
+	Error in Step3 (error code 127)
+\endcode
+
+gmake is make on Ubuntu. Creating the following symbolic link will fix
+the issue:
+
+\code
+	$ sudo ln -s /usr/bin/make /usr/bin/gmake
 \endcode
 
 */

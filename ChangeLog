@@ -1,3 +1,17 @@
+2008-12-29  jkerihuel
+
+	* [r953] Remove references to ldap.h header file - not installed
+	  anymore with samba4 git rev openchange uses
+	* [r952] mapiproxy documentation update: 3 questions added to FAQ
+	  section
+	* [r951] Patch from Corentin Chary:
+	  - Add PR_CONTENT_FILTER_SCL property to libmapi
+	* [r950] - Update openchange to work with samba4 master git rev
+	  f308c2f
+	  - Replace reference to events.h with tevent.h
+	  - Update installsamba4.sh script to reflect latest samba4
+	  compilation changes/requirements
+
 2008-12-27  jkerihuel
 
 	* [r948] Fix mapidump date/month when freebusy period covers end of
@@ -27,6 +41,9 @@
 	  match signatues, format conversion (%u for unsigned values) and
 	  matching up result variable types (bool instead of enum
 	  MAPISTATUS).
+
+2008-12-21  bradh
+
 	* [r940] Return an enum MAPISTATUS, instead of a bool, to match
 	  function signature.
 	* [r939] Use %u instead of %d for unsigned values.
@@ -46,6 +63,9 @@
 2008-12-20  bradh
 
 	* [r934] API dox fix.
+
+2008-12-20  bradh
+
 	* [r933] Minor apidox fixes.
 	* [r932] More apidox triviality.
 	* [r931] Trivial APIdox edits.

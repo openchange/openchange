@@ -33,7 +33,6 @@
 #include <ldb_errors.h>
 #include <ldb_wrap.h>
 #include <util_ldb.h>
-#include <ldap.h>
 #include <ldap_ndr.h>
 
 #include <core/error.h>

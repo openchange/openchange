@@ -46,7 +46,7 @@
 #include <gen_ndr/ndr_samr_c.h>
 #include <time.h>
 #include <core/error.h>
-#include <events.h>
+#include <tevent.h>
 
 struct tce_async_context {
 	int found;

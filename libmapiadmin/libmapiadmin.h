@@ -37,7 +37,7 @@ struct mapiadmin_ctx;
 #include <stdint.h>
 #include <talloc.h>
 #include <ldb.h>
-#include <events.h>
+#include <tevent.h>
 
 /* OpenChange includes */
 #include <libmapi/libmapi.h>

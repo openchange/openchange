@@ -63,7 +63,6 @@ delete_install() {
     fi
 
 	cleanup_talloc
-
 	cleanup_tdb
 }
 
@@ -212,6 +211,28 @@ packages() {
     error_check $? "Step2"
 
     cd $OLD_PWD
+
+    echo "Step3: Installing tevent library"
+
+    cd samba4/lib/tevent
+    error_check $? "Step3"
+
+    ./autogen.sh
+    error_check $? "Step3"
+
+    ./configure --prefix=/usr/local/samba
+    error_check $? "Step3"
+
+    make
+    error_check $? "Step3"
+
+    sudo make install
+    error_check $? "Step3"
+
+    make realdistclean
+    error_check $? "Step3"
+
+    cd $OLD_PWD
 }
 
 #
@@ -235,12 +256,15 @@ compile() {
     ./autogen.sh
     error_check $? "Step1"
 
-    ./configure.developer
+    ./configure.developer --enable-debug
     error_check $? "Step1"
 
-    echo "Step2: Compile Samba4"
-    make
-    error_check $? "Step2"
+    echo "Step2: Compile Samba4 (IDL)"
+    gmake idl_full
+
+    echo "Step3: Compile Samba4 (Source)"
+    gmake
+    error_check $? "Step3"
 
     cd $OLD_PWD
 }
@@ -258,7 +282,7 @@ install() {
     cd samba4/source4
     error_check $? "Step1"
 
-    sudo make install
+    sudo gmake install
     error_check $? "Step1"
 
     cd $OLD_PWD

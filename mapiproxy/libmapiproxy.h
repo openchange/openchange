@@ -24,6 +24,7 @@
 
 #include <dcerpc_server.h>
 #include <talloc.h>
+#include <tevent.h>
 #include <libmapi/dlinklist.h>
 
 struct mapiproxy {

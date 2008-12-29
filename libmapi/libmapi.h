@@ -45,7 +45,7 @@
 #include <talloc.h>
 #include <dcerpc.h>
 #include <util/debug.h>
-#include <events.h>
+#include <tevent.h>
 
 /* OpenChange includes */
 #include <gen_ndr/exchange.h>

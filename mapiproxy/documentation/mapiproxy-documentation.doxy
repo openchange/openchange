@@ -1191,7 +1191,7 @@ your mapiproxy/samba4 server. You can either:
   <li>1. Make your Windows workstation points to a domain name server
   able to resolve mapiproxy fully qualified name.</li>
 
-  <li>2. Open \code C:\WINDOWS\system32\drivers\hosts \endcode file and
+  <li>2. Open \code C:\WINDOWS\system32\etc\drivers\hosts \endcode file and
   add an entry for mapiproxy. For example if I have
   mapiproxy.openchange.local pointing at 192.168.102.2, then hosts
   file should hold the following line:

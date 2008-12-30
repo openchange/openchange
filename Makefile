@@ -1019,6 +1019,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_oxcfxics.o	\
 		utils/mapitest/modules/module_nspi.o		\
 		utils/mapitest/modules/module_noserver.o	\
+		utils/mapitest/modules/module_errorchecks.o	\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
@@ -1038,7 +1039,8 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_oxorule.c		\
 	utils/mapitest/modules/module_oxcfxics.c	\
 	utils/mapitest/modules/module_nspi.c		\
-	utils/mapitest/modules/module_noserver.c	
+	utils/mapitest/modules/module_noserver.c	\
+	utils/mapitest/modules/module_errorchecks.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
 

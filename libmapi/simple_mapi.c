@@ -49,9 +49,10 @@
    - olFolderPublicLocalOfflineAB - Site local Offline address book
    - olFolderPublicNNTPArticle - NNTP article index folder
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise a failure code (MAPISTATUS)
+   indicating the error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
    - MAPI_E_INVALID_PARAMETER: obj_store is undefined
@@ -64,8 +65,8 @@ _PUBLIC_ enum MAPISTATUS GetDefaultPublicFolder(mapi_object_t *obj_store,
 						uint64_t *folder,
 						const uint32_t id)
 {
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 
 	switch (id) {
 	case olFolderPublicRoot:
@@ -99,7 +100,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultPublicFolder(mapi_object_t *obj_store,
 		*folder = ((mapi_object_store_t *)obj_store->private_data)->fid_pf_NNTPArticle;
 		break;
 	default:
-		return MAPI_E_NOT_FOUND;
+		OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, NULL);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -120,19 +121,19 @@ static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
 	const struct Binary_r	*entryid;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 
 	store = (mapi_object_store_t *)obj_store->private_data;
-	MAPI_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mem_ctx = talloc_init("GetDefaultFolder");
 
 	mapi_object_init(&obj_inbox);
 	retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
 					  PR_IPM_APPOINTMENT_ENTRYID,
@@ -144,46 +145,46 @@ static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
 	
 	retval = GetProps(&obj_inbox, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	aRow.cValues = count;
 	aRow.lpProps = lpProps;
 	
 	/* set cached calendar FID */
 	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_APPOINTMENT_ENTRYID);
-	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
 	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_calendar);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	/* set cached contact FID */
 	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_CONTACT_ENTRYID);
-	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
 	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_contact);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	/* set cached journal FID */
 	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_JOURNAL_ENTRYID);
-	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
 	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_journal);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	/* set cached note FID */
 	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_NOTE_ENTRYID);
-	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
 	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_note);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	/* set cached task FID */
 	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_TASK_ENTRYID);
-	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
 	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_task);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	/* set cached drafts FID */
 	entryid = (const struct Binary_r *)find_SPropValue_data(&aRow, PR_IPM_DRAFTS_ENTRYID);
-	MAPI_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
 	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_drafts);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	store->cached_mailbox_fid = true;
 	
@@ -222,9 +223,10 @@ static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
    folders such as calendar, contact, journal, note, task and drafts
    until the store object got released.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise a failure code (MAPISTATUS)
+   indicating the error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
    - MAPI_E_INVALID_PARAMETER: obj_store is undefined
@@ -241,15 +243,15 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	mapi_object_store_t		*store;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 
 	store = (mapi_object_store_t *)obj_store->private_data;
-	MAPI_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);
 
 	if ((id > 6) && (store->cached_mailbox_fid == false)) {
 		retval = CacheDefaultFolders(obj_store);
-		MAPI_RETVAL_IF(retval, retval, NULL);
+		OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 	} 
 
 	switch (id) {
@@ -294,10 +296,8 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 		return MAPI_E_SUCCESS;
 	default:
 		*folder = 0;
-		return MAPI_E_NOT_FOUND;
+		OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, 0);
 	}
-
-	return MAPI_E_SUCCESS;
 }
 
 
@@ -373,9 +373,10 @@ _PUBLIC_ bool IsMailboxFolder(mapi_object_t *obj_store,
     \param total the number of items in the folder, including unread
     items (result)
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise a failure code (MAPISTATUS)
+   indicating the error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
    - MAPI_E_INVALID_PARAMETER: obj_folder is undefined
@@ -394,10 +395,12 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 	struct SPropValue	*lpProps;
 	uint32_t		count;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!unread, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!total, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetFolderIteamsCount");
+	mem_ctx = talloc_init("GetFolderItemsCount");
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2, 
 					  PR_CONTENT_UNREAD,
@@ -405,7 +408,7 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 
 	retval = GetProps(obj_folder, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	*unread = lpProps[0].value.l;
 	*total = lpProps[1].value.l;
@@ -445,7 +448,10 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
    - RightsAll
    - RoleOwner
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise a failure code (MAPISTATUS)
+   indicating the error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
    - MAPI_E_INVALID_PARAMETER: username is NULL
@@ -463,9 +469,9 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	struct mapi_SRowList	rowList;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("AddUserPermission");
 
@@ -477,10 +483,10 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	retval = ResolveNames(mapi_object_get_session(obj_folder), (const char **)names, 
 			      SPropTagArray, &rows, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Check if the username was found */
-	MAPI_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
 
 	rowList.cEntries = 1;
 	rowList.aEntries = talloc_array(mem_ctx, struct mapi_SRow, 1);
@@ -492,7 +498,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	rowList.aEntries[0].lpProps.lpProps[1].value.l = role;
 
 	retval = ModifyTable(obj_folder, &rowList);
-	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mem_ctx);
 
@@ -505,9 +511,12 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
    
    \param obj_folder the folder we add permission for
    \param username the Exchange username we modify permissions for
-   \param role the permission mask value
+   \param role the permission mask value (see AddUserPermission)
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise a failure code (MAPISTATUS)
+   indicating the error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
    - MAPI_E_INVALID_PARAMETER: username is NULL
@@ -534,9 +543,9 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	bool			found = false;
 	uint32_t		i = 0;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("ModifyUserPermission");
 
@@ -546,7 +555,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	retval = ResolveNames(mapi_object_get_session(obj_folder), (const char **)names, 
 			      SPropTagArray, &rows, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (flaglist->aulPropTag[0] == MAPI_RESOLVED) {
 		user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
@@ -560,7 +569,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 
 	mapi_object_init(&obj_table);
 	retval = GetTable(obj_folder, &obj_table);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 4,
 					  PR_ENTRYID,
@@ -569,13 +578,13 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 					  PR_MEMBER_NAME);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	retval = QueryRows(&obj_table, Denominator, TBL_ADVANCE, &rowset);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	for (i = 0; i < rowset.cRows; i++) {
 		lpProp = get_SPropValue_SRow(&rowset.aRow[i], PR_MEMBER_NAME);
@@ -593,7 +602,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 				rowList.aEntries[0].lpProps.lpProps[1].value.l = role;
 				
 				retval = ModifyTable(obj_folder, &rowList);
-				MAPI_RETVAL_IF(retval, retval, mem_ctx);
+				OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 				found = true;
 				break;
 			}
@@ -603,8 +612,9 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	mapi_object_release(&obj_table);
 	talloc_free(mem_ctx);
 	
-	errno = (found == true) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND;
-	return ((found == true) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);	
+	OPENCHANGE_RETVAL_IF((found == true), MAPI_E_NOT_FOUND, 0);
+
+	return MAPI_E_SUCCESS;
 }
 
 
@@ -614,10 +624,13 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
    \param obj_folder the folder we add permission for
    \param username the Exchange username we remove permissions for
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise a failure code (MAPISTATUS)
+   indicating the error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
-   - MAPI_E_INVALID_PARAMETER: username is NULL
+   - MAPI_E_INVALID_PARAMETER: username or obj_folder are NULL
    - MAPI_E_NOT_FOUND: couldn't find or remove permissions for the
      given user
 
@@ -641,9 +654,9 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	bool			found = false;
 	uint32_t		i = 0;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("RemoveUserPermission");
 
@@ -653,16 +666,16 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	retval = ResolveNames(mapi_object_get_session(obj_folder), (const char **)names, 
 			      SPropTagArray, &rows, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Check if the username was found */
-	MAPI_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
 
 	user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
 
 	mapi_object_init(&obj_table);
 	retval = GetTable(obj_folder, &obj_table);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 4,
 					  PR_ENTRYID,
@@ -671,13 +684,13 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 					  PR_MEMBER_NAME);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	retval = QueryRows(&obj_table, Denominator, TBL_ADVANCE, &rowset);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	for (i = 0; i < rowset.cRows; i++) {
 		lpProp = get_SPropValue_SRow(&rowset.aRow[i], PR_MEMBER_NAME);
@@ -693,7 +706,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 				rowList.aEntries[0].lpProps.lpProps[0].value.d = lpProp->value.d;
 				
 				retval = ModifyTable(obj_folder, &rowList);
-				MAPI_RETVAL_IF(retval, retval, mem_ctx);
+				OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 				found = true;
 				break;
 			}
@@ -703,7 +716,9 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	mapi_object_release(&obj_table);
 	talloc_free(mem_ctx);
 
-	return ((found == true) ? MAPI_E_SUCCESS : MAPI_E_NOT_FOUND);
+	OPENCHANGE_RETVAL_IF((found == true), MAPI_E_NOT_FOUND, 0);
+
+	return MAPI_E_SUCCESS;
 }
 
 
@@ -736,8 +751,9 @@ _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format
 	const uint32_t		*err_code;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!format, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Step 1. Retrieve properties needed by the BestBody algorithm */
 	SPropTagArray = set_SPropTagArray(global_mapi_ctx->mem_ctx, 0x4,
@@ -749,7 +765,7 @@ _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) {
 		*format = 0;
-		return MAPI_E_NOT_FOUND;
+		OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, 0);
 	}
 
 	aRow.ulAdrEntryPad = 0;
@@ -774,7 +790,7 @@ _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format
 	if ((PlainStatus == MAPI_E_NOT_FOUND) && (RtfStatus == MAPI_E_NOT_FOUND) && 
 	    (HtmlStatus == MAPI_E_NOT_FOUND)) {
 		*format = 0;
-		return MAPI_E_NOT_FOUND;
+		OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, 0);
 	}
 	
 	/* case 2 */
@@ -842,5 +858,5 @@ _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format
 		return MAPI_E_SUCCESS;
 	}
 
-	return MAPI_E_NOT_FOUND;
+	OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, 0);
 }

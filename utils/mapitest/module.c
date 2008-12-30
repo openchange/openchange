@@ -37,6 +37,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	ret = module_oxcfxics_init(mt);
 	ret = module_nspi_init(mt);
 	ret = module_noserver_init(mt);
+	ret = module_errorchecks_init(mt);
 
 	return ret;
 }
@@ -311,6 +312,26 @@ _PUBLIC_ uint32_t module_noserver_init(struct mapitest *mt)
 
 	mapitest_suite_add_test(suite, "LZFU", "Test Compressed RTF operations", mapitest_noserver_lzfu);
 	mapitest_suite_add_test(suite, "SROWSET", "Test SRowSet parsing", mapitest_noserver_srowset);
+
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
+
+/**
+   \details Initialise the error / sanity-check test suite
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_errorchecks_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "ERRORCHECKS", "Error / sanity-check operations", false);
+
+	mapitest_suite_add_test(suite, "SIMPLEMAPI", "Test failure paths for simplemapi.c", mapitest_errorchecks_simplemapi_c);
 
 	mapitest_suite_register(mt, suite);
 

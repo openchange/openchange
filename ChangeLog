@@ -1,7 +1,30 @@
+2008-12-30  jkerihuel
+
+	* [r959] Initial text was correct - rollback
+	* [r958] Fix path typo
+
+2008-12-30  bradh
+
+	* [r957] Ensure that GetLastError() also returns the correct value.
+	* [r956] Start changing the MAPI_RETVAL_IF() usage to two new
+	  macros:
+	  OPENCHANGE_RETVAL_IF() and OPENCHANGE_RETVAL_ERR().
+	  
+	  simple_mapi.c is the only one converted at this stage.
+	  
+	  Also added a set of unit tests that verify at least some initial
+	  sanity checks.
+	* [r955] Remove unreachable code.
+	  
+	  Partly resolves ticket #124
+
 2008-12-29  jkerihuel
 
 	* [r953] Remove references to ldap.h header file - not installed
 	  anymore with samba4 git rev openchange uses
+
+2008-12-29  jkerihuel
+
 	* [r952] mapiproxy documentation update: 3 questions added to FAQ
 	  section
 	* [r951] Patch from Corentin Chary:
@@ -46,6 +69,9 @@
 
 	* [r940] Return an enum MAPISTATUS, instead of a bool, to match
 	  function signature.
+
+2008-12-21  bradh
+
 	* [r939] Use %u instead of %d for unsigned values.
 
 2008-12-20  bradh
@@ -67,6 +93,9 @@
 2008-12-20  bradh
 
 	* [r933] Minor apidox fixes.
+
+2008-12-20  bradh
+
 	* [r932] More apidox triviality.
 	* [r931] Trivial APIdox edits.
 	* [r930] Supplement the user's PKG_CONFIG_PATH rather than

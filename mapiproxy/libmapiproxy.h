@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Julien Kerihuel 2008-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,7 +32,13 @@ struct mapiproxy {
 	bool			ahead;
 };
 
+enum mapiproxy_status {
+	MAPIPROXY_DEFAULT	= 0x0,
+	MAPIPROXY_CUSTOM	= 0x1
+};
+
 struct mapiproxy_module {
+	enum mapiproxy_status	status;
 	const char		*name;
 	const char		*description;
 	const char		*endpoint;
@@ -69,6 +75,7 @@ struct mpm_session {
 
 __BEGIN_DECLS
 
+/* definitions from dcesrv_mapiproxy_module.c */
 NTSTATUS mapiproxy_module_register(const void *);
 NTSTATUS mapiproxy_module_init(struct dcesrv_context *);
 
@@ -79,6 +86,16 @@ NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *, TALLOC_CTX *, voi
 NTSTATUS mapiproxy_module_unbind(struct server_id, uint32_t);
 
 const struct mapiproxy_module *mapiproxy_module_byname(const char *);
+
+/* definitions from dcesrv_mapiproxy_server.c */
+NTSTATUS mapiproxy_server_register(const void *);
+NTSTATUS mapiproxy_server_init(struct dcesrv_context *);
+NTSTATUS mapiproxy_server_dispatch(struct dcesrv_call_state *, TALLOC_CTX *, void *, struct mapiproxy *);
+bool mapiproxy_server_loaded(const char *);
+
+const struct mapiproxy_module *mapiproxy_server_bystatus(const char *, enum mapiproxy_status);
+const struct mapiproxy_module *mapiproxy_server_byname(const char *);
+
 
 /* definitions from dcesrv_mapiproxy_session. c */
 struct mpm_session *mpm_session_new(TALLOC_CTX *, struct server_id, uint32_t);

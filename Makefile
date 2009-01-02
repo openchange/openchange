@@ -695,6 +695,16 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 # server and providers compilation rules
 #################################################################
 
+provision-install:
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
+	$(INSTALL) -m 0644 setup/oc_provision* $(DESTDIR)$(datadir)/setup/
+
+provision-uninstall:
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
+
+
 server:		providers/providers_proto.h server/dcesrv_proto.h	\
 		server/dcesrv_exchange.$(SHLIBEXT)			
 
@@ -743,12 +753,13 @@ LIBMAPIPROXY_SO_VERSION = 0
 
 .PHONY: mapiproxy
 
-mapiproxy: 	idl 					\
+mapiproxy: 	idl 							\
 		mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)	\
-		mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) 	\
-		mapiproxy-modules
+		mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) 			\
+		mapiproxy-modules					\
+		mapiproxy-servers
 
-mapiproxy-install: mapiproxy mapiproxy-modules-install
+mapiproxy-install: mapiproxy mapiproxy-modules-install mapiproxy-servers-install
 	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
 	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
 	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
@@ -756,12 +767,12 @@ mapiproxy-install: mapiproxy mapiproxy-modules-install
 	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.h $(DESTDIR)$(includedir)/
 
 
-mapiproxy-uninstall: mapiproxy-modules-uninstall
+mapiproxy-uninstall: mapiproxy-modules-uninstall mapiproxy-servers-uninstall
 	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_mapiproxy.*
 	rm -f $(DESTDIR)$(libdir)/libmapiproxy.*
 	rm -f $(DESTDIR)$(includedir)/libmapiproxy.h
 
-mapiproxy-clean:: mapiproxy-modules-clean
+mapiproxy-clean:: mapiproxy-modules-clean mapiproxy-servers-clean
 	rm -f mapiproxy/*.o mapiproxy/*.po
 	rm -f mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT)
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) \
@@ -783,6 +794,7 @@ mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT): 	mapiproxy/dcesrv_mapiproxy.po		\
 mapiproxy/dcesrv_mapiproxy.c: gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
 
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/dcesrv_mapiproxy_module.po	\
+							mapiproxy/dcesrv_mapiproxy_server.po	\
 							mapiproxy/dcesrv_mapiproxy_session.po	
 	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS)
 
@@ -836,6 +848,44 @@ mapiproxy/modules/mpm_cache.$(SHLIBEXT): mapiproxy/modules/mpm_cache.po		\
 mapiproxy/modules/mpm_dummy.$(SHLIBEXT): mapiproxy/modules/mpm_dummy.po
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+
+####################
+# mapiproxy servers
+####################
+
+mapiproxy-servers:	mapiproxy/servers/exchange_nsp.$(SHLIBEXT)		\
+			mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT)		\
+			mapiproxy/servers/exchange_ds_rfr.$(SHLIBEXT)
+
+mapiproxy-servers-install: mapiproxy-servers
+	$(INSTALL) -d $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy_server/
+	$(INSTALL) -m 0755 mapiproxy/servers/exchange_nsp.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy_server/
+	$(INSTALL) -m 0755 mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy_server/
+	$(INSTALL) -m 0755 mapiproxy/servers/exchange_ds_rfr.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy_server/
+
+mapiproxy-servers-uninstall:
+	rm -rf $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy_server
+
+mapiproxy-servers-clean::
+	rm -f mapiproxy/servers/default/nspi/*.o mapiproxy/servers/default/nspi/*.po
+	rm -f mapiproxy/servers/default/emsmdb/*.o mapiproxy/servers/default/emsmdb/*.po
+	rm -f mapiproxy/servers/default/rfr/*.o mapiproxy/servers/default/rfr/*.po
+	rm -f mapiproxy/servers/*.so
+
+clean:: mapiproxy-servers-clean
+
+mapiproxy/servers/exchange_nsp.$(SHLIBEXT):	mapiproxy/servers/default/nspi/dcesrv_exchange_nsp.po
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/dcesrv_exchange_emsmdb.po
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+mapiproxy/servers/exchange_ds_rfr.$(SHLIBEXT):	mapiproxy/servers/default/rfr/dcesrv_exchange_ds_rfr.po
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 #################################################################
 # Tools compilation rules

@@ -5,7 +5,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Julien Kerihuel 2008-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -41,17 +41,7 @@ static NTSTATUS mapiproxy_op_reply(struct dcesrv_call_state *dce_call, TALLOC_CT
 }
 
 
-/**
-   \details This function is called when the client binds to one of
-   the interfaces mapiproxy handles.
-
-   \param dce_call pointer to the session context
-   \param iface pointer to the dcesrv interface structure with
-   function hooks
-
-   \return NT_STATUS_OK on success, otherwise NTSTATUS error
- */
-static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
 	NTSTATUS				status;
 	const struct ndr_interface_table	*table;
@@ -63,21 +53,11 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	struct cli_credentials			*credentials;
 	bool					machine_account;
 
-	DEBUG(5, ("mapiproxy::mapiproxy_op_bind: [session = 0x%x] [session server id = 0x%"PRIx64" 0x%x 0x%x]\n", dce_call->context->context_id,
-		  dce_call->conn->server_id.id, dce_call->conn->server_id.id2, dce_call->conn->server_id.node));
-
 	/* Retrieve parametric options */
 	binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "binding");
 	machine_account = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "use_machine_account", false);
 
-	private = talloc(dce_call->context, struct dcesrv_mapiproxy_private);
-	if (!private) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	private->c_pipe = NULL;
-	private->exchname = NULL;
-	dce_call->context->private = private;
+	private = dce_call->context->private;
 
 	if (!binding) {
 		DEBUG(0, ("You must specify a DCE/RPC binding string\n"));
@@ -184,6 +164,46 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 
 
 /**
+   \details This function is called when the client binds to one of
+   the interfaces mapiproxy handles.
+
+   \param dce_call pointer to the session context
+   \param iface pointer to the dcesrv interface structure with
+   function hooks
+
+   \return NT_STATUS_OK on success, otherwise NTSTATUS error
+ */
+static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+{
+	struct dcesrv_mapiproxy_private		*private;
+	bool					server_mode;
+
+	DEBUG(5, ("mapiproxy::mapiproxy_op_bind: [session = 0x%x] [session server id = 0x%"PRIx64" 0x%x 0x%x]\n", dce_call->context->context_id,
+		  dce_call->conn->server_id.id, dce_call->conn->server_id.id2, dce_call->conn->server_id.node));
+
+	/* Retrieve server mode parametric option */
+	server_mode = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", false);
+
+	/* Initialize private structure */
+	private = talloc(dce_call->context, struct dcesrv_mapiproxy_private);
+	if (!private) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	private->c_pipe = NULL;
+	private->exchname = NULL;
+	private->server_mode = server_mode;
+	dce_call->context->private = private;
+
+	if (server_mode == false) {
+		return mapiproxy_op_bind_proxy(dce_call, iface);
+	}
+
+	return NT_STATUS_OK;
+}
+
+
+/**
    \details Called when the client disconnects from one of the
    endpoints managed by mapiproxy.
 
@@ -278,6 +298,7 @@ static NTSTATUS mapiproxy_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC
  */
 static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)
 {
+	struct dcesrv_mapiproxy_private		*private;
 	enum ndr_err_code			ndr_err;
 	const struct ndr_interface_table	*table;
 	const struct ndr_interface_call		*call;
@@ -286,6 +307,7 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 
 	DEBUG(5, ("mapiproxy::mapiproxy_op_ndr_push\n"));
 
+	private = dce_call->context->private;
 	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
 	opnum = dce_call->pkt.u.request.opnum;
 
@@ -294,23 +316,33 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 
 	dce_call->fault_code = 0;
 
-	/* NspiGetProps binding strings replacement */
-	if (table->name && !strcmp(table->name, NDR_EXCHANGE_NSP_NAME)) {
-	  if (opnum == NDR_NSPIGETPROPS) {
-			mapiproxy_NspiGetProps(dce_call, (struct NspiGetProps *)r);
+	if (private->server_mode == false) {
+		/* NspiGetProps binding strings replacement */
+		if ((mapiproxy_server_loaded(NDR_EXCHANGE_NSP_NAME) == false) &&
+		    table->name && !strcmp(table->name, NDR_EXCHANGE_NSP_NAME)) {
+			switch (opnum) {
+			case NDR_NSPIGETPROPS:
+				mapiproxy_NspiGetProps(dce_call, (struct NspiGetProps *)r);
+				break;
+			case NDR_NSPIQUERYROWS:
+				mapiproxy_NspiQueryRows(dce_call, (struct NspiQueryRows *)r);
+				break;
+			default:
+				break;
+			}
 		}
 
-	  if (opnum == NDR_NSPIQUERYROWS) {
-			mapiproxy_NspiQueryRows(dce_call, (struct NspiQueryRows *)r);
-		}
-	}	
-
-	/* RfrGetNewDSA FQDN replacement */
-	if (table->name && !strcmp(table->name, NDR_EXCHANGE_DS_RFR_NAME)) {
-	  if (opnum == NDR_RFRGETNEWDSA) {
-			mapiproxy_RfrGetNewDSA(dce_call, (struct RfrGetNewDSA *)r);
-		} else {
-			DEBUG(0, ("exchange_ds_rfr: OTHER DS-RFR CALL DETECTED!\n"));
+		/* RfrGetNewDSA FQDN replacement */
+		if ((mapiproxy_server_loaded(NDR_EXCHANGE_DS_RFR_NAME) == false) &&
+		    table->name && !strcmp(table->name, NDR_EXCHANGE_DS_RFR_NAME)) {
+			switch (opnum) {
+			case NDR_RFRGETNEWDSA:
+				mapiproxy_RfrGetNewDSA(dce_call, (struct RfrGetNewDSA *)r);
+				break;
+			default:
+				DEBUG(0, ("exchange_ds_rfr: OTHER DS-RFR CALL DETECTED!\n"));
+				break;
+			}
 		}
 	}
 
@@ -369,56 +401,64 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	DEBUG(5, ("mapiproxy::mapiproxy_op_dispatch: %s(0x%x): %zd bytes\n",
 		  table->calls[opnum].name, opnum, table->calls[opnum].struct_size));
 
-	if (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_IN) {
-		ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);
+	if (private->server_mode == false) {
+		if (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_IN) {
+			ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);
+		}
+
+		private->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
 	}
 
-	private->c_pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;
-
-	if (table->name && !strcmp(table->name, NDR_EXCHANGE_NSP_NAME)) {
-		if (opnum == NDR_NSPIDNTOMID) {
-			mapiproxy_NspiDNToMId(dce_call, (struct NspiDNToMId *)r);
+	if ((private->server_mode == true) || (mapiproxy_server_loaded(NDR_EXCHANGE_NSP_NAME) == true)) {
+		mapiproxy_server_dispatch(dce_call, mem_ctx, r, &mapiproxy);
+	} else {
+		if (table->name && !strcmp(table->name, NDR_EXCHANGE_NSP_NAME)) {
+			if (opnum == NDR_NSPIDNTOMID) {
+				mapiproxy_NspiDNToMId(dce_call, (struct NspiDNToMId *)r);
+			}
 		}
 	}
 
- ahead:
-	if (mapiproxy.ahead == true) {
-		push = ndr_push_init_ctx(dce_call, 
-					 lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx));
-		NT_STATUS_HAVE_NO_MEMORY(push);
-		ndr_err = call->ndr_push(push, NDR_OUT, r);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			DEBUG(0, ("mapiproxy: mapiproxy_op_dispatch:push: ERROR\n"));
-			dce_call->fault_code = DCERPC_FAULT_NDR;
+	if (private->server_mode == false) {
+	ahead:
+		if (mapiproxy.ahead == true) {
+			push = ndr_push_init_ctx(dce_call, 
+						 lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx));
+			NT_STATUS_HAVE_NO_MEMORY(push);
+			ndr_err = call->ndr_push(push, NDR_OUT, r);
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+				DEBUG(0, ("mapiproxy: mapiproxy_op_dispatch:push: ERROR\n"));
+				dce_call->fault_code = DCERPC_FAULT_NDR;
+				return NT_STATUS_NET_WRITE_FAULT;
+			}
+		}
+		
+		status = mapiproxy_module_dispatch(dce_call, mem_ctx, r, &mapiproxy);
+		if (!NT_STATUS_IS_OK(status)) {
+			private->c_pipe->last_fault_code = dce_call->fault_code;
 			return NT_STATUS_NET_WRITE_FAULT;
 		}
+		
+		private->c_pipe->last_fault_code = 0;
+		if (mapiproxy.norelay == false) {
+			status = dcerpc_ndr_request(private->c_pipe, NULL, table, opnum, mem_ctx, r);
+		}
+		
+		dce_call->fault_code = private->c_pipe->last_fault_code;
+		if (dce_call->fault_code != 0 || !NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("mapiproxy: call[%s] failed with %s! (status = %s)\n", name, 
+				  dcerpc_errstr(mem_ctx, dce_call->fault_code), nt_errstr(status)));
+			return NT_STATUS_NET_WRITE_FAULT;
+		}
+		
+		if ((dce_call->fault_code == 0) && 
+		    (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_OUT) && mapiproxy.norelay == false) {
+			ndr_print_function_debug(call->ndr_print, name, NDR_OUT | NDR_SET_VALUES, r);
+		}
+		
+		if (mapiproxy.ahead == true) goto ahead;
 	}
-
-	status = mapiproxy_module_dispatch(dce_call, mem_ctx, r, &mapiproxy);
-	if (!NT_STATUS_IS_OK(status)) {
-		private->c_pipe->last_fault_code = dce_call->fault_code;
-		return NT_STATUS_NET_WRITE_FAULT;
-	}
-
-	private->c_pipe->last_fault_code = 0;
-	if (mapiproxy.norelay == false) {
-	  status = dcerpc_ndr_request(private->c_pipe, NULL, table, opnum, mem_ctx, r);
-	}
-
-	dce_call->fault_code = private->c_pipe->last_fault_code;
-	if (dce_call->fault_code != 0 || !NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("mapiproxy: call[%s] failed with %s! (status = %s)\n", name, 
-			  dcerpc_errstr(mem_ctx, dce_call->fault_code), nt_errstr(status)));
-		return NT_STATUS_NET_WRITE_FAULT;
-	}
-
-	if ((dce_call->fault_code == 0) && 
-	    (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_OUT) && mapiproxy.norelay == false) {
-		ndr_print_function_debug(call->ndr_print, name, NDR_OUT | NDR_SET_VALUES, r);
-	}
-
-	if (mapiproxy.ahead == true) goto ahead;
-
+	
 	return NT_STATUS_OK;
 }
 
@@ -469,6 +509,10 @@ static NTSTATUS mapiproxy_op_init_server(struct dcesrv_context *dce_ctx, const s
 
 	/* Register mapiproxy modules */
 	ret = mapiproxy_module_init(dce_ctx);
+	NT_STATUS_NOT_OK_RETURN(ret);
+
+	/* Register mapiproxy servers */
+	ret = mapiproxy_server_init(dce_ctx);
 	NT_STATUS_NOT_OK_RETURN(ret);
 
 	ifaces = str_list_make(dce_ctx, lp_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "interfaces"), NULL);

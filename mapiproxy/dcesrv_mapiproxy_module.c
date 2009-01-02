@@ -172,7 +172,7 @@ extern NTSTATUS mapiproxy_module_register(const void *_mp_module)
 
 static NTSTATUS mapiproxy_module_load(struct dcesrv_context *dce_ctx)
 {
-	char			**modules;
+	char				**modules;
 	struct mapiproxy_module_list	*module;
 	int				i;
 	NTSTATUS			status;

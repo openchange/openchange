@@ -49,6 +49,7 @@
 struct dcesrv_mapiproxy_private {
 	struct dcerpc_pipe	*c_pipe;
 	char			*exchname;
+	bool			server_mode;
 };
 
 /* Forward declarations */

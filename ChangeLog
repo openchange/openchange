@@ -1,11 +1,25 @@
+2009-01-02  jkerihuel
+
+	* [r961] - Implement mapiproxy server mode architecture
+	  - Add server modules management API
+	  - Add skeletons for default OpenChange servers (nspi, emsmdb,
+	  ds_rfr)
+	  - Add temporary provision Makefile rule
+
 2008-12-30  jkerihuel
 
 	* [r959] Initial text was correct - rollback
+
+2008-12-30  jkerihuel
+
 	* [r958] Fix path typo
 
 2008-12-30  bradh
 
 	* [r957] Ensure that GetLastError() also returns the correct value.
+
+2008-12-30  bradh
+
 	* [r956] Start changing the MAPI_RETVAL_IF() usage to two new
 	  macros:
 	  OPENCHANGE_RETVAL_IF() and OPENCHANGE_RETVAL_ERR().
@@ -27,6 +41,9 @@
 
 	* [r952] mapiproxy documentation update: 3 questions added to FAQ
 	  section
+
+2008-12-29  jkerihuel
+
 	* [r951] Patch from Corentin Chary:
 	  - Add PR_CONTENT_FILTER_SCL property to libmapi
 	* [r950] - Update openchange to work with samba4 master git rev
@@ -97,6 +114,9 @@
 2008-12-20  bradh
 
 	* [r932] More apidox triviality.
+
+2008-12-20  bradh
+
 	* [r931] Trivial APIdox edits.
 	* [r930] Supplement the user's PKG_CONFIG_PATH rather than
 	  overriding it.

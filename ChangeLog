@@ -1,3 +1,7 @@
+2009-01-04  jkerihuel
+
+	* [r963] Add documentation for MAPIProxy 'server mode'
+
 2009-01-02  jkerihuel
 
 	* [r961] - Implement mapiproxy server mode architecture
@@ -28,6 +32,9 @@
 	  
 	  Also added a set of unit tests that verify at least some initial
 	  sanity checks.
+
+2008-12-30  bradh
+
 	* [r955] Remove unreachable code.
 	  
 	  Partly resolves ticket #124
@@ -46,6 +53,9 @@
 
 	* [r951] Patch from Corentin Chary:
 	  - Add PR_CONTENT_FILTER_SCL property to libmapi
+
+2008-12-29  jkerihuel
+
 	* [r950] - Update openchange to work with samba4 master git rev
 	  f308c2f
 	  - Replace reference to events.h with tevent.h
@@ -118,6 +128,9 @@
 2008-12-20  bradh
 
 	* [r931] Trivial APIdox edits.
+
+2008-12-20  bradh
+
 	* [r930] Supplement the user's PKG_CONFIG_PATH rather than
 	  overriding it.
 

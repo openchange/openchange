@@ -1152,9 +1152,12 @@ become parametric smb.conf options in the future.</li>
 <a name="server_overview"></a><h3>7.1. General Overview</h3>
 
 Although <a href="#purpose">section 1.1</a> only describes MAPIProxy
-as a proxy, recent work makes possible to turn MAPIProxy either into a
+as a proxy, recent work makes it possible to turn MAPIProxy either into a
 <strong>complete and real stand-alone server</strong> or server/proxy
-hybrid through the <i>dcerpc_mapiproxy:server</i> parametric option.
+hybrid.
+
+MAPIProxy behaviour is controlled through the <i>dcerpc_mapiproxy:server</i>
+parametric option. To use MAPIProxy as an independent server, set
 
 \code
 	dcerpc_mapiproxy:server = true
@@ -1162,8 +1165,8 @@ hybrid through the <i>dcerpc_mapiproxy:server</i> parametric option.
 
 <ul>
   <li style="text-align:justify"><strong>dcerpc_mapiproxy:server = true</strong><br/>
-  When this parametric option is set to true, MAPIProxy won't initiate
-  any connection to remote server, will redirect client connections to
+  When this parametric option is set to true, MAPIProxy will not initiate
+  connections to a remote server, but instead will direct client connections to
   its own default NSPI, RFR and EMSMDB servers and work as a
   stand-alone server.<br/>
   </li>
@@ -1177,13 +1180,14 @@ hybrid through the <i>dcerpc_mapiproxy:server</i> parametric option.
   </li>
 </ul>
 <br/>
-On top of the server mode described above, MAPIProxy provides an
+
+In addition to the server mode described above, MAPIProxy provides an
 additional set of configuration options which makes possible to
 override and customize MAPIProxy behavior. The server mode has been
 designed to supply a modular mechanism somewhat similar to the modules
 one described in <a href="#mod_dev">section 5</a>. While MAPIProxy
-modules are stackable and can be chained, server modules only let you
-run a single module for a given endpoint:
+modules are stackable and can be chained, server modules only
+support a single module for a given endpoint:
 <ul>
 
   <li style="text-align:justify">When dcerpc_mapiproxy:server is set
@@ -1206,8 +1210,8 @@ run a single module for a given endpoint:
 </li>
 
   <li style="text-align:justify">When dcerpc_mapiproxy:server is set
-to false, MAPIProxy still registers server dynamic shared object but
-don't load any of them, which means that ExchangeRPC traffic will be
+to false, MAPIProxy still registers server dynamic shared objects but
+does not load any of them, which means that ExchangeRPC traffic will be
 relayed to remote server.</li> 
 </ul>
 
@@ -1222,8 +1226,8 @@ configuration is made possible through 3 parametric options:
 	dcerpc_mapiproxy:rfr_server    = exchange_ds_rfr
 \endcode
 
-Each of them specify the server's module name which should be loaded
-for a given endpoint. Note that these options will work whatever
+Each of these options specifies the server module name to be loaded
+for a given endpoint. Note that these options override the
 dcerpc_mapiproxy:server state:
 <ul>
 

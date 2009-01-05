@@ -24,7 +24,7 @@
 #include <util/debug.h>
 
 /**
-   \file dcesrv_mapiproxy_module_server.c
+   \file dcesrv_mapiproxy_server.c
 
    \brief mapiproxy server modules management
  */

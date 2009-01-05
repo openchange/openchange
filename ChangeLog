@@ -1,3 +1,31 @@
+2009-01-05  jkerihuel
+
+	* [r969] - Add doxygen comments for all OpenChange server modules
+	  - Fix doxygen return value for exchange_nsp
+	* [r968] - Add mapiproxy server unbind function and hook in
+	  dcesrv_mapiproxy.c
+	  - Add exchange handle enum to dcesrv_mapiproxy.h
+	  - Add authentication verifier macro to libmapiproxy.h
+	  - Add preliminary EMSABP Address Book Provider implementation:
+	  * supports initialization, destructor (talloc)
+	  * implements user and codepage check routines
+	  * retrieve NSPI server GUID
+	  - Add NspiBind and NspiUnbind support to dcesrv_exchange_nsp.c
+	  - Add internal session mechanism management to NSPI server
+	  - Add init and unbind modules function to NSPI server
+	  - Add doxygen comments to all dcesrv_exchange_nsp.c functions
+	  - Add emsabp_context, session and non-exported Samba structure to
+	  dcesrv_exchange_nsp.h
+	* [r967] OpenChange configuration schema updated with Addressing
+	  schema
+	  (Address-Templates, Address-Types and Display-Templates -
+	  Exchange 2003 based)
+	* [r966] Execute server modules init function when loaded
+
+2009-01-05  bradh
+
+	* [r965] A few API documentation fixes.
+
 2009-01-04  jkerihuel
 
 	* [r963] Add documentation for MAPIProxy 'server mode'

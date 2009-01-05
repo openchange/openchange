@@ -62,6 +62,22 @@ NTSTATUS mapiproxy_server_dispatch(struct dcesrv_call_state *dce_call,
 }
 
 
+NTSTATUS mapiproxy_server_unbind(struct server_id server_id, uint32_t context_id)
+{
+	struct mapiproxy_module_list		*server;
+	NTSTATUS				status;
+
+	for (server = server_list; server; server = server->next) {
+		if (server->module->unbind) {
+			status = server->module->unbind(server_id, context_id);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+
 extern NTSTATUS mapiproxy_server_register(const void *_server_module)
 {
 	const struct mapiproxy_module	*server_module = _server_module;

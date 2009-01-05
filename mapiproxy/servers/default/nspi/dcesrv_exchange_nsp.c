@@ -28,35 +28,158 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy.h"
 #include "dcesrv_exchange_nsp.h"
-#include <util/debug.h>
 
+struct exchange_nsp_session	*nsp_session = NULL;
 
 /**
-   \details exchange_nsp NspiBind (0x0) function
+   \details exchange_nsp NspiBind (0x0) function, Initiates a NSPI
+   session with the client.
+
+   This function checks if the user is an Exchange user and input
+   parameters like codepage are valid. If it passes the tests, the
+   function initializes an emsabp context and returns to the client a
+   valid policy_handle and expected reply parameters.
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiBind call structure
+
+   \return MAPI_E_SUCCESS on success, otherwise a MAPI error
  */
 static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 				       TALLOC_CTX *mem_ctx,
 				       struct NspiBind *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiBind (0x0) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct GUID			*guid = (struct GUID *) NULL;
+	struct emsabp_context		*emsabp_ctx;
+	struct dcesrv_handle		*handle;
+	struct policy_handle		wire_handle;
+	struct exchange_nsp_session	*session;
+
+	DEBUG(5, ("exchange_nsp: NspiBind (0x0)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+
+		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
+		wire_handle.uuid = GUID_zero();
+		*r->out.handle = wire_handle;
+
+		r->out.mapiuid = r->in.mapiuid;
+		r->out.result = MAPI_E_LOGON_FAILED;
+		return MAPI_E_LOGON_FAILED;		
+	}
+	
+	/* Step 1. Initialize the emsabp context */
+	emsabp_ctx = emsabp_init(dce_call->conn->dce_ctx->lp_ctx);
+	OPENCHANGE_RETVAL_IF(!emsabp_ctx, MAPI_E_FAILONEPROVIDER, NULL);
+
+	/* Step 2. Check if incoming user belongs to the Exchange organization */
+	if (emsabp_verify_user(dce_call, emsabp_ctx) == false) {
+		talloc_free(emsabp_ctx);
+
+		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
+		wire_handle.uuid = GUID_zero();
+		*r->out.handle = wire_handle;
+
+		r->out.mapiuid = r->in.mapiuid;
+		r->out.result = MAPI_E_LOGON_FAILED;
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Step 3. Check if valid cpID has been supplied */
+	if (emsabp_verify_codepage(dce_call->conn->dce_ctx->lp_ctx, 
+				   emsabp_ctx, r->in.pStat->CodePage) == false) {
+		talloc_free(emsabp_ctx);
+
+		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
+		wire_handle.uuid = GUID_zero();
+		*r->out.handle = wire_handle;
+
+		r->out.mapiuid = r->in.mapiuid;
+		r->out.result = MAPI_E_UNKNOWN_CPID;
+		return MAPI_E_UNKNOWN_CPID;
+	}
+
+	/* Step 4. Retrieve OpenChange server GUID */
+	guid = emsabp_get_server_GUID(dce_call->conn->dce_ctx->lp_ctx, emsabp_ctx);
+	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_FAILONEPROVIDER, emsabp_ctx);
+
+	/* Step 5. Fill NspiBind reply */
+	handle = dcesrv_handle_new(dce_call->context, EXCHANGE_HANDLE_NSP);
+	OPENCHANGE_RETVAL_IF(!handle, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
+
+	handle->data = (void *) emsabp_ctx;
+	*r->out.handle = handle->wire_handle;
+	r->out.mapiuid = guid;
+	r->out.result = MAPI_E_SUCCESS;
+
+	/* Step 6. Associate this emsabp context to the session */
+	session = talloc((TALLOC_CTX *)nsp_session, struct exchange_nsp_session);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
+
+	session->session = mpm_session_init((TALLOC_CTX *)nsp_session, dce_call);
+	OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
+
+	mpm_session_set_private_data(session->session, (void *) emsabp_ctx);
+	mpm_session_set_destructor(session->session, emsabp_destructor);
+
+	DLIST_ADD_END(nsp_session, session, struct exchange_nsp_session *);
+
+	return MAPI_E_SUCCESS;
 }
 
 
 /**
-   \details exchange_nsp NspiUnbind (0x1) function
+   \details exchange_nsp NspiUnbind (0x1) function, Terminates a NSPI
+   session with the client
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiUnbind call structure
  */
 static enum MAPISTATUS dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 					 TALLOC_CTX *mem_ctx,
 					 struct NspiUnbind *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiUnbind (0x1) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle		*h;
+	struct exchange_nsp_session	*session;
+
+	DEBUG(5, ("exchange_nsp: NspiUnbind (0x1)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Step 1. Retrieve handle and free if emsabp context and session are available */
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	if (h) {
+		for (session = nsp_session; session; session = session->next) {
+			if ((mpm_session_cmp(session->session, dce_call) == true)) {
+				mpm_session_release(session->session);
+				DLIST_REMOVE(nsp_session, session);
+				DEBUG(6, ("[%s:%d]: Session found and released\n", __FUNCTION__, __LINE__));
+			}
+		}
+	}
+
+	r->out.result = 1;
+
+	return MAPI_E_SUCCESS;
 }
 
 
 /**
    \details exchange_nsp NspiUpdateStat (0x2) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiUpdateStat request data
+
+   \return NT_STATUS_OK on success
 */
 static enum MAPISTATUS dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, 
 					     TALLOC_CTX *mem_ctx,
@@ -69,6 +192,12 @@ static enum MAPISTATUS dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_nsp NspiQueryRows (0x3) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiQueryRows request data
+
+   \return NT_STATUS_OK on success
  */
 static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 					    TALLOC_CTX *mem_ctx,
@@ -81,6 +210,12 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_nsp NspiSeekEntries (0x4) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiSeekEntries request data
+
+   \return NT_STATUS_OK on success
  */
 static enum MAPISTATUS dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 					      TALLOC_CTX *mem_ctx,
@@ -93,6 +228,12 @@ static enum MAPISTATUS dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call
 
 /**
    \details exchange_nsp NspiGetMatches (0x5) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiGetMatches request data
+
+   \return NT_STATUS_OK on success
  */
 static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 					     TALLOC_CTX *mem_ctx,
@@ -105,6 +246,12 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_nsp NspiResortRestriction (0x6) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiResortRestriction request data
+
+   \return NT_STATUS_OK on success
  */
 static enum MAPISTATUS dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call,
 						    TALLOC_CTX *mem_ctx,
@@ -117,6 +264,12 @@ static enum MAPISTATUS dcesrv_NspiResortRestriction(struct dcesrv_call_state *dc
 
 /**
    \details exchange_nsp NspiDNToMId (0x7) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiDNToMId request data
+
+   \return NT_STATUS_OK on success
  */
 static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
@@ -129,6 +282,12 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_nsp NspiGetPropList (0x8) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiGetPropList request data
+
+   \return NT_STATUS_OK on success
  */
 static enum MAPISTATUS dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call,
 					      TALLOC_CTX *mem_ctx,
@@ -141,6 +300,12 @@ static enum MAPISTATUS dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call
 
 /**
    \details exchange_nsp NspiGetProps (0x9) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiGetProps request data
+
+   \return NT_STATUS_OK on success
  */
 static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 					   TALLOC_CTX *mem_ctx,
@@ -153,6 +318,12 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_nsp NspiCompareMIds (0xA) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiCompareMIds request data
+
+   \return NT_STATUS_OK on success
 */
 static enum MAPISTATUS dcesrv_NspiCompareMIds(struct dcesrv_call_state *dce_call,
 					      TALLOC_CTX *mem_ctx,
@@ -165,6 +336,13 @@ static enum MAPISTATUS dcesrv_NspiCompareMIds(struct dcesrv_call_state *dce_call
 
 /**
    \details exchange_nsp NspiModProps (0xB) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiModProps request data
+
+   \return NT_STATUS_OK on success
+
  */
 static enum MAPISTATUS dcesrv_NspiModProps(struct dcesrv_call_state *dce_call,
 					   TALLOC_CTX *mem_ctx,
@@ -177,6 +355,13 @@ static enum MAPISTATUS dcesrv_NspiModProps(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_nsp NspiGetSpecialTable (0xC) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiGetSpecialTable request data
+
+   \return NT_STATUS_OK on success
+
  */
 static enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 						  TALLOC_CTX *mem_ctx,
@@ -189,6 +374,13 @@ static enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_
 
 /**
    \details exchange_nsp NspiGetTemplateInfo (0xD) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiGetTemplateInfo request data
+
+   \return NT_STATUS_OK on success
+
  */
 static enum MAPISTATUS dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call,
 						  TALLOC_CTX *mem_ctx,
@@ -201,6 +393,13 @@ static enum MAPISTATUS dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_
 
 /**
    \details exchange_nsp NspiModLinkAtt (0xE) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiModLinkAtt request data
+
+   \return NT_STATUS_OK on success
+
  */
 static enum MAPISTATUS dcesrv_NspiModLinkAtt(struct dcesrv_call_state *dce_call,
 					     TALLOC_CTX *mem_ctx,
@@ -213,6 +412,13 @@ static enum MAPISTATUS dcesrv_NspiModLinkAtt(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_nsp NspiDeleteEntries (0xF) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiDeleteEntries request data
+
+   \return NT_STATUS_OK on success
+
  */
 static enum MAPISTATUS dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call,
 						TALLOC_CTX *mem_ctx,
@@ -225,6 +431,13 @@ static enum MAPISTATUS dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_ca
 
 /**
    \details exchange_nsp NspiQueryColumns (0x10) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiQueryColumns request data
+
+   \return NT_STATUS_OK on success
+
  */
 static enum MAPISTATUS dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call,
 					       TALLOC_CTX *mem_ctx,
@@ -237,6 +450,13 @@ static enum MAPISTATUS dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_cal
 
 /**
    \details exchange_nsp NspiGetNamesFromIDs (0x11) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiGetNamesFromIDs request data
+
+   \return NT_STATUS_OK on success
+
  */
 static enum MAPISTATUS dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call,
 						  TALLOC_CTX *mem_ctx,
@@ -249,6 +469,13 @@ static enum MAPISTATUS dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_
 
 /**
    \details exchange_nsp NspiGetIDsFromNames (0x12) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiGetIDsFromNames request data
+
+   \return NT_STATUS_OK on success
+
  */
 static enum MAPISTATUS dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call,
 						  TALLOC_CTX *mem_ctx,
@@ -261,6 +488,13 @@ static enum MAPISTATUS dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_
 
 /**
    \details exchange_nsp NspiResolveNames (0x13) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiResolveNames request data
+
+   \return NT_STATUS_OK on success
+
  */
 static enum MAPISTATUS dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 					       TALLOC_CTX *mem_ctx,
@@ -273,6 +507,13 @@ static enum MAPISTATUS dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_cal
 
 /**
    \details exchange_nsp NspiResolveNamesW (0x14) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the NspiResolveNamesW request data
+
+   \return NT_STATUS_OK on success
+
  */
 static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 						TALLOC_CTX *mem_ctx,
@@ -283,6 +524,18 @@ static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_ca
 }
 
 
+/**
+   \details Dispatch incoming NSPI call to the correct OpenChange
+   server function.
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r generic pointer on NSPI data
+   \param mapiproxy pointer to the mapiproxy structure controlling 
+   mapiproxy behavior
+
+   \return NT_STATUS_OK
+ */
 static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 					     TALLOC_CTX *mem_ctx,
 					     void *r, struct mapiproxy *mapiproxy)
@@ -368,14 +621,47 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 }
 
 
+/**
+   \details Initialize the NSPI OpenChange server
+
+   \param dce_ctx pointer to the server context
+
+   \return NT_STATUS_OK on success, otherwise NT_STATUS_NO_MEMORY
+ */
 static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
 {
+	/* Initialize exchange_nsp session */
+	nsp_session = talloc_zero(dce_ctx, struct exchange_nsp_session);
+	if (!nsp_session) return NT_STATUS_NO_MEMORY;
+	nsp_session->session = NULL;
+
 	return NT_STATUS_OK;
 }
 
 
+/**
+   \details Terminates the NSPI connection and release the associated
+   session and context if still available. This case occurs when the
+   client doesn't call NspiUnbind but quit unexpectedly.
+
+   \param server_id reference to the server identifier structure
+   \param context_id the connection context identifier
+
+   \return NT_STATUS_OK on success
+ */
 static NTSTATUS dcesrv_exchange_nsp_unbind(struct server_id server_id, uint32_t context_id)
 {
+	struct exchange_nsp_session	*session;
+
+	for (session = nsp_session; session; session = session->next) {
+		if ((mpm_session_cmp_sub(session->session, server_id, context_id) == true)) {
+			mpm_session_release(session->session);
+			DLIST_REMOVE(nsp_session, session);
+			DEBUG(6, ("[%s:%d]: Session found and released\n", __FUNCTION__, __LINE__));
+			return NT_STATUS_OK;
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 

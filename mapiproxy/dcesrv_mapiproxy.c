@@ -218,6 +218,7 @@ static void mapiproxy_op_unbind(struct dcesrv_connection_context *context, const
 	DEBUG(5, ("mapiproxy::mapiproxy_op_unbind\n"));
 
 	mapiproxy_module_unbind(context->conn->server_id, context->context_id);
+	mapiproxy_server_unbind(context->conn->server_id, context->context_id);
 
 	if (private) {
 		talloc_free(private->c_pipe);

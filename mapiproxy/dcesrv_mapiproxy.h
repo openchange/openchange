@@ -52,6 +52,12 @@ struct dcesrv_mapiproxy_private {
 	bool			server_mode;
 };
 
+enum exchange_handle {
+	EXCHANGE_HANDLE_NSP,
+	EXCHANGE_HANDLE_EMSMDB,
+	EXCHANGE_HANDLE_DS_RFR
+};
+
 /* Forward declarations */
 struct composite_context;
 

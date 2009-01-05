@@ -63,6 +63,10 @@ struct mpm_session {
 	void				*private_data;
 };
 
+
+#define	NTLM_AUTH_IS_OK(dce_call) \
+(dce_call->conn->auth_state.session_info->server_info->authenticated == true)
+
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
 #define __BEGIN_DECLS		extern "C" {
@@ -90,6 +94,7 @@ const struct mapiproxy_module *mapiproxy_module_byname(const char *);
 /* definitions from dcesrv_mapiproxy_server.c */
 NTSTATUS mapiproxy_server_register(const void *);
 NTSTATUS mapiproxy_server_init(struct dcesrv_context *);
+NTSTATUS mapiproxy_server_unbind(struct server_id, uint32_t);
 NTSTATUS mapiproxy_server_dispatch(struct dcesrv_call_state *, TALLOC_CTX *, void *, struct mapiproxy *);
 bool mapiproxy_server_loaded(const char *);
 

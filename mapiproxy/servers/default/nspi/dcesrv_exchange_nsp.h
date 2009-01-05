@@ -51,44 +51,6 @@ struct exchange_nsp_session {
 };
 
 
-struct auth_serversupplied_info 
-{
-	struct dom_sid	*account_sid;
-	struct dom_sid	*primary_group_sid;
-
-	size_t		n_domain_groups;
-	struct dom_sid	**domain_groups;
-
-	DATA_BLOB	user_session_key;
-	DATA_BLOB	lm_session_key;
-
-	const char	*account_name;
-	const char	*domain_name;
-
-	const char	*full_name;
-	const char	*logon_script;
-	const char	*profile_path;
-	const char	*home_directory;
-	const char	*home_drive;
-	const char	*logon_server;
-	
-	NTTIME		last_logon;
-	NTTIME		last_logoff;
-	NTTIME		acct_expiry;
-	NTTIME		last_password_change;
-	NTTIME		allow_password_change;
-	NTTIME		force_password_change;
-
-	uint16_t	logon_count;
-	uint16_t	bad_password_count;
-
-	uint32_t	acct_flags;
-
-	bool		authenticated;
-};
-
-
-
 __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);

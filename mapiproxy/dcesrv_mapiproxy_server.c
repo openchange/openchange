@@ -149,6 +149,7 @@ static NTSTATUS mapiproxy_server_overwrite(TALLOC_CTX *mem_ctx, const char *name
 
 static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
 {
+	NTSTATUS				status;
 	struct mapiproxy_module_list		*server;
 	bool					server_mode;
 	int					i;
@@ -192,6 +193,10 @@ static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
 	for (server = server_list; server; server = server->next) {
 		DEBUG(3, ("mapiproxy_server_load '%s' (%s)\n", 
 			  server->module->name, server->module->description));
+		if (server->module->init) {
+			status = server->module->init(dce_ctx);
+			NT_STATUS_NOT_OK_RETURN(status);
+		}
 	}
 
 	return NT_STATUS_OK;

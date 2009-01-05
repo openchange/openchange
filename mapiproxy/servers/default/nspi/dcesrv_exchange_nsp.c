@@ -179,7 +179,7 @@ static enum MAPISTATUS dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiUpdateStat request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 */
 static enum MAPISTATUS dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, 
 					     TALLOC_CTX *mem_ctx,
@@ -197,7 +197,7 @@ static enum MAPISTATUS dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call,
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiQueryRows request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 					    TALLOC_CTX *mem_ctx,
@@ -215,7 +215,7 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiSeekEntries request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 					      TALLOC_CTX *mem_ctx,
@@ -233,7 +233,7 @@ static enum MAPISTATUS dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiGetMatches request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 					     TALLOC_CTX *mem_ctx,
@@ -251,7 +251,7 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiResortRestriction request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call,
 						    TALLOC_CTX *mem_ctx,
@@ -269,7 +269,7 @@ static enum MAPISTATUS dcesrv_NspiResortRestriction(struct dcesrv_call_state *dc
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiDNToMId request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
@@ -287,7 +287,7 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiGetPropList request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call,
 					      TALLOC_CTX *mem_ctx,
@@ -305,7 +305,7 @@ static enum MAPISTATUS dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiGetProps request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 					   TALLOC_CTX *mem_ctx,
@@ -323,7 +323,7 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiCompareMIds request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 */
 static enum MAPISTATUS dcesrv_NspiCompareMIds(struct dcesrv_call_state *dce_call,
 					      TALLOC_CTX *mem_ctx,
@@ -341,7 +341,7 @@ static enum MAPISTATUS dcesrv_NspiCompareMIds(struct dcesrv_call_state *dce_call
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiModProps request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 
  */
 static enum MAPISTATUS dcesrv_NspiModProps(struct dcesrv_call_state *dce_call,
@@ -360,7 +360,7 @@ static enum MAPISTATUS dcesrv_NspiModProps(struct dcesrv_call_state *dce_call,
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiGetSpecialTable request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 
  */
 static enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
@@ -379,7 +379,7 @@ static enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiGetTemplateInfo request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 
  */
 static enum MAPISTATUS dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call,
@@ -398,7 +398,7 @@ static enum MAPISTATUS dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiModLinkAtt request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 
  */
 static enum MAPISTATUS dcesrv_NspiModLinkAtt(struct dcesrv_call_state *dce_call,
@@ -417,7 +417,7 @@ static enum MAPISTATUS dcesrv_NspiModLinkAtt(struct dcesrv_call_state *dce_call,
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiDeleteEntries request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 
  */
 static enum MAPISTATUS dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call,
@@ -436,7 +436,7 @@ static enum MAPISTATUS dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_ca
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiQueryColumns request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 
  */
 static enum MAPISTATUS dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call,
@@ -455,7 +455,7 @@ static enum MAPISTATUS dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_cal
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiGetNamesFromIDs request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 
  */
 static enum MAPISTATUS dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call,
@@ -474,7 +474,7 @@ static enum MAPISTATUS dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiGetIDsFromNames request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 
  */
 static enum MAPISTATUS dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call,
@@ -493,7 +493,7 @@ static enum MAPISTATUS dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiResolveNames request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 
  */
 static enum MAPISTATUS dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
@@ -512,7 +512,7 @@ static enum MAPISTATUS dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_cal
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiResolveNamesW request data
 
-   \return NT_STATUS_OK on success
+   \return MAPI_E_SUCCESS on success
 
  */
 static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,

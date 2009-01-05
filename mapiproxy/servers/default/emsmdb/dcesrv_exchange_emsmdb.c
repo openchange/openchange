@@ -33,6 +33,12 @@
 
 /**
    \details exchange_emsmdb EcDoConnect (0x0) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcDoConnect request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
@@ -45,6 +51,12 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_emsmdb EcDoDisconnect (0x1) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcDoDisconnect request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 					     TALLOC_CTX *mem_ctx,
@@ -57,6 +69,12 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_emsmdb EcDoRpc (0x2) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcDoRpc request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 				      TALLOC_CTX *mem_ctx,
@@ -69,6 +87,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_emsmdb EcGetMoreRpc (0x3) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcGetMoreRpc request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static void dcesrv_EcGetMoreRpc(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
@@ -81,6 +105,12 @@ static void dcesrv_EcGetMoreRpc(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_emsmdb EcRRegisterPushNotification (0x4) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcRRegisterPushNotification request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_state *dce_call,
 							  TALLOC_CTX *mem_ctx,
@@ -93,6 +123,12 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 
 /**
    \details exchange_emsmdb EcRUnregisterPushNotification (0x5) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcRUnregisterPushNotification request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_state *dce_call,
 							    TALLOC_CTX *mem_ctx,
@@ -105,6 +141,12 @@ static enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_s
 
 /**
    \details exchange_emsmdb EcDummyRpc (0x6) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcDummyRpc request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call,
 			      TALLOC_CTX *mem_ctx,
@@ -117,6 +159,12 @@ static void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_emsmdb EcRGetDCName (0x7) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcRGetDCName request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static void dcesrv_EcRGetDCName(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
@@ -129,6 +177,12 @@ static void dcesrv_EcRGetDCName(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_emsmdb EcRNetGetDCName (0x8) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcRNetGetDCName request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *dce_call,
 				   TALLOC_CTX *mem_ctx,
@@ -141,6 +195,12 @@ static void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_emsmdb EcDoRpcExt (0x9) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcDoRpcExt request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static void dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call,
 			      TALLOC_CTX *mem_ctx,
@@ -153,6 +213,12 @@ static void dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_emsmdb EcDoConnectEx (0xA) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcDoConnectEx request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 					    TALLOC_CTX *mem_ctx,
@@ -163,6 +229,18 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 }
 
 
+/**
+   \details Dispatch incoming EMSMDB call to the correct OpenChange
+   server function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r generic pointer on EMSMDB data
+   \param mapiproxy pointer to the mapiproxy structure controlling
+   mapiproxy behavior
+
+   \return NT_STATUS_OK;
+ */
 static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_call,
 						TALLOC_CTX *mem_ctx,
 						void *r, struct mapiproxy *mapiproxy)
@@ -218,12 +296,27 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
 }
 
 
+/**
+   \details Initialize the EMSMDB OpenChange server
+
+   \param dce_ctx pointer to the server context
+
+   \return NT_STATUS_OK on success
+ */
 static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 {
 	return NT_STATUS_OK;
 }
 
 
+/**
+   \details Terminate the EMSMDB connection
+
+   \param server_id reference to the server identifier structure
+   \param context_id the connection context identifier
+
+   \return NT_STATUS_OK on success
+ */
 static NTSTATUS dcesrv_exchange_emsmdb_unbind(struct server_id server_id, uint32_t context_id)
 {
 	return NT_STATUS_OK;

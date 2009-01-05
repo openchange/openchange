@@ -33,6 +33,12 @@
 
 /**
    \details exchange_ds_rfr RfrGetNewDSA (0x0) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the RfrGetNewDSA request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call,
 					   TALLOC_CTX *mem_ctx,
@@ -45,6 +51,12 @@ static enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call,
 
 /**
    \details exchange_ds_rrf RfrGetFQDNFromLegacyDN (0x1) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the RfrGetFQDNFromLegacyDN request data
+
+   \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *dce_call,
 						     TALLOC_CTX *mem_ctx,
@@ -55,6 +67,17 @@ static enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *d
 }
 
 
+/**
+   \details Dispatch incoming RFR call to the correct OpenChange server function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r generic pointer on RFR data
+   \param mapiproxy pointer to the mapiproxy structure controlling
+   mapiproxy behavior
+
+   \return NT_STATUS_OK
+ */
 static NTSTATUS dcesrv_exchange_ds_rfr_dispatch(struct dcesrv_call_state *dce_call,
 						TALLOC_CTX *mem_ctx,
 						void *r, struct mapiproxy *mapiproxy)
@@ -84,12 +107,27 @@ static NTSTATUS dcesrv_exchange_ds_rfr_dispatch(struct dcesrv_call_state *dce_ca
 }
 
 
+/**
+   \details Initialize the RFR OpenChange server
+
+   \param dce_ctx pointer to the server context
+
+   \return NT_STATUS_OK on success
+ */
 static NTSTATUS dcesrv_exchange_ds_rfr_init(struct dcesrv_context *dce_ctx)
 {
 	return NT_STATUS_OK;
 }
 
 
+/**
+   \details Terminate the RFR connection
+
+   \param server_id reference to the server identifier structure
+   \param context_id the connection context identifier
+
+   \return NT_STATUS_OK on success
+ */
 static NTSTATUS dcesrv_exchange_ds_rfr_unbind(struct server_id server_id, 
 					      uint32_t context_id)
 {

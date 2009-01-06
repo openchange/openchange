@@ -49,7 +49,7 @@ static enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call,
 	const char		*realm = NULL;
 	char			*fqdn = NULL;
 
-	DEBUG(3, ("exchange_ds_rfr: RfrGetNewDSA (0x0)\n"));
+	DEBUG(5, ("exchange_ds_rfr: RfrGetNewDSA (0x0)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!NTLM_AUTH_IS_OK(dce_call)) {

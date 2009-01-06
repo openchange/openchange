@@ -103,6 +103,10 @@
 #define DT_ORGANIZATION		0x4
 #define DT_PRIVATE_DISTLIST	0x5
 #define DT_REMOTE_MAILUSER	0x6
+#define	DT_CONTAINER		0x100
+#define	DT_TEMPLATE		0x101
+#define	DT_ADDRESS_TEMPLATE	0x102
+#define	DT_SEARCH		0x200
 
 /* Attachment method */
 #define NO_ATTACHMENT		0

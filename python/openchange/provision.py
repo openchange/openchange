@@ -237,6 +237,7 @@ add: mailNickName
 add: homeMDB
 add: legacyExchangeDN
 add: proxyAddresses
+replace: msExchUserAccountControl
 displayName: %s
 auxiliaryClass: msExchBaseClass
 mailNickname: %s
@@ -246,7 +247,7 @@ proxyAddresses: smtp:postmaster@%s
 proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%s
 proxyAddresses: SMTP:%s@%s
 msExchUserAccountControl: 0
-    """ % (user_dn, username, username, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.firstorg, username, names.dnsdomain, username, username, names.dnsdomain)
+""" % (user_dn, username, username, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.firstorg, username, names.dnsdomain, username, username, names.dnsdomain)
 
         samdb.modify_ldif(extended_user)
     except:

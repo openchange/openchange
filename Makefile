@@ -858,13 +858,13 @@ mapiproxy-servers:	mapiproxy/servers/exchange_nsp.$(SHLIBEXT)		\
 			mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT)		\
 			mapiproxy/servers/exchange_ds_rfr.$(SHLIBEXT)
 
-mapiproxy-servers-install: mapiproxy-servers
+mapiproxy-servers-install: mapiproxy-servers python-install provision-install
 	$(INSTALL) -d $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy_server/
 	$(INSTALL) -m 0755 mapiproxy/servers/exchange_nsp.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy_server/
 	$(INSTALL) -m 0755 mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy_server/
 	$(INSTALL) -m 0755 mapiproxy/servers/exchange_ds_rfr.$(SHLIBEXT) $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy_server/
 
-mapiproxy-servers-uninstall:
+mapiproxy-servers-uninstall: python-uninstall provision-uninstall
 	rm -rf $(DESTDIR)$(modulesdir)/dcerpc_mapiproxy_server
 
 mapiproxy-servers-clean::

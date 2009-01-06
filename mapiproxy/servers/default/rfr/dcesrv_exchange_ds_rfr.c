@@ -28,8 +28,6 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy.h"
 #include "dcesrv_exchange_ds_rfr.h"
-#include <util/debug.h>
-
 
 /**
    \details exchange_ds_rfr RfrGetNewDSA (0x0) function
@@ -38,14 +36,49 @@
    \param mem_ctx pointer to the memory context
    \param r pointer to the RfrGetNewDSA request data
 
+   \note We incorrectly assume input pUserDN is correct and available,
+   but it is OK for now.
+
    \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call,
 					   TALLOC_CTX *mem_ctx,
 					   struct RfrGetNewDSA *r)
 {
-	DEBUG(3, ("exchange_ds_rfr: RfrGetNewDSA (0x0) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	const char		*netbiosname = NULL;
+	const char		*realm = NULL;
+	char			*fqdn = NULL;
+
+	DEBUG(3, ("exchange_ds_rfr: RfrGetNewDSA (0x0)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+
+		r->out.ppszUnused = NULL;
+		r->out.ppszServer = NULL;
+		r->out.result = MAPI_E_LOGON_FAILED;
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Step 1. We don't have load-balancing support yet, just return Samba FQDN name */
+	netbiosname = lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
+	realm = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+	if (!netbiosname || !realm) {
+		r->out.ppszUnused = NULL;
+		r->out.ppszServer = NULL;
+		r->out.result = MAPI_E_NO_SUPPORT;
+		return MAPI_E_NO_SUPPORT;			
+	}
+
+	fqdn = talloc_asprintf(mem_ctx, "%s.%s", netbiosname, realm);
+	r->out.ppszUnused = NULL;
+	r->out.ppszServer = talloc_array(mem_ctx, const char *, 2);
+	r->out.ppszServer[0] = strlower_talloc(mem_ctx, fqdn);
+	r->out.ppszServer[1] = NULL;
+	r->out.result = MAPI_E_SUCCESS;
+
+	return MAPI_E_SUCCESS;
 }
 
 

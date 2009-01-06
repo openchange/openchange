@@ -1,7 +1,22 @@
+2009-01-06  jkerihuel
+
+	* [r974] Add new Display Type values (used by EMSABP provider)
+	* [r973] Change DEBUGLEVEL for RfrGetNewDSA
+	* [r972] - preliminary implementation of RFR server (RfrGetNewDSA):
+	  makes Outlook happy
+	  - mapiproxy-servers-install now installs openchange python
+	  scripts and ldif file
+
 2009-01-05  jkerihuel
 
+	* [r971] Move auth_serversupplied_info structure from
+	  dcesrv_exchange_nsp.h to libmapiproxy.h
+	  This structure is required for NTLM_AUTH_IS_OK macro
 	* [r969] - Add doxygen comments for all OpenChange server modules
 	  - Fix doxygen return value for exchange_nsp
+
+2009-01-05  jkerihuel
+
 	* [r968] - Add mapiproxy server unbind function and hook in
 	  dcesrv_mapiproxy.c
 	  - Add exchange handle enum to dcesrv_mapiproxy.h

@@ -36,6 +36,8 @@ static struct server_module {
 int					num_server_modules;
 static struct mapiproxy_module_list	*server_list = NULL;
 
+static TDB_CONTEXT			*emsabp_tdb_ctx = NULL;
+
 
 NTSTATUS mapiproxy_server_dispatch(struct dcesrv_call_state *dce_call,
 				   TALLOC_CTX *mem_ctx, void *r,
@@ -265,4 +267,43 @@ const struct mapiproxy_module *mapiproxy_server_byname(const char *name)
 	}
 
 	return NULL;
+}
+
+
+/**
+   \details Initialize an EMSABP TDB context available to all
+   instances when Samba is not run in single mode.
+
+   \param mem_ctx pointer to the memory context
+   \param lp_ctx pointer to the loadparm context
+
+   \note TDB database can't be opened twice with O_RDWR flags. We
+   ensure here we have a general context initialized, which we'll
+   reopen within forked instances
+
+   return Allocated TDB context on success, otherwise NULL
+ */
+_PUBLIC_ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *lp_ctx)
+{
+	char			*tdb_path;
+	TALLOC_CTX		*mem_ctx;
+
+	if (emsabp_tdb_ctx) return emsabp_tdb_ctx;
+
+	mem_ctx = talloc_init("mapiproxy_server_emsabp_tdb_init");
+	if (!mem_ctx) return NULL;
+
+	/* Step 0. Retrieve a TDB context pointer on the emsabp_tdb database */
+	tdb_path = talloc_asprintf(mem_ctx, "%s/%s", lp_private_dir(lp_ctx), EMSABP_TDB_NAME);
+	emsabp_tdb_ctx = tdb_open(tdb_path, 0, 0, O_RDWR|O_CREAT, 0600);
+	talloc_free(tdb_path);
+	if (!emsabp_tdb_ctx) {
+		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+
+	return emsabp_tdb_ctx;
 }

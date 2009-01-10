@@ -30,6 +30,7 @@
 #include "dcesrv_exchange_nsp.h"
 
 struct exchange_nsp_session	*nsp_session = NULL;
+TDB_CONTEXT			*emsabp_tdb_ctx = NULL;
 
 /**
    \details exchange_nsp NspiBind (0x0) function, Initiates a NSPI
@@ -72,8 +73,11 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	}
 	
 	/* Step 1. Initialize the emsabp context */
-	emsabp_ctx = emsabp_init(dce_call->conn->dce_ctx->lp_ctx);
-	OPENCHANGE_RETVAL_IF(!emsabp_ctx, MAPI_E_FAILONEPROVIDER, NULL);
+	emsabp_ctx = emsabp_init(dce_call->conn->dce_ctx->lp_ctx, emsabp_tdb_ctx);
+	if (!emsabp_ctx) {
+		smb_panic("unable to initialize emsabp context");
+		OPENCHANGE_RETVAL_IF(!emsabp_ctx, MAPI_E_FAILONEPROVIDER, NULL);
+	}
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
 	if (emsabp_verify_user(dce_call, emsabp_ctx) == false) {
@@ -360,6 +364,10 @@ static enum MAPISTATUS dcesrv_NspiModProps(struct dcesrv_call_state *dce_call,
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiGetSpecialTable request data
 
+   \note MS-NSPI specifies lpVersion "holds the value of the version
+   number of the hierarchy table that the client has." We will ignore
+   this for the moment.
+
    \return MAPI_E_SUCCESS on success
 
  */
@@ -367,8 +375,48 @@ static enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_
 						  TALLOC_CTX *mem_ctx,
 						  struct NspiGetSpecialTable *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiGetSpecialTable (0xC) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle		*h;
+	struct emsabp_context		*emsabp_ctx;
+
+	DEBUG(3, ("exchange_nsp: NspiGetSpecialTable (0xC)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	emsabp_ctx = (struct emsabp_context *) h->data;
+
+	/* Step 1. (FIXME) We arbitrary set lpVersion to 0x1 */
+	r->out.lpVersion = talloc_zero(mem_ctx, uint32_t);
+	*r->out.lpVersion = 0x1;
+
+	/* Step 2. Allocate output SRowSet and call associated emsabp function */
+	r->out.ppRows = talloc_zero(mem_ctx, struct SRowSet *);
+	OPENCHANGE_RETVAL_IF(!r->out.ppRows, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+	r->out.ppRows[0] = talloc_zero(mem_ctx, struct SRowSet);
+	OPENCHANGE_RETVAL_IF(!r->out.ppRows[0], MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+
+	switch (r->in.dwFlags) {
+	case NspiAddressCreationTemplates:
+	case NspiAddressCreationTemplates|NspiUnicodeStrings:
+		DEBUG(0, ("CreationTemplates Table requested\n"));
+		r->out.result = emsabp_get_CreationTemplatesTable(mem_ctx, emsabp_ctx, r->in.dwFlags, r->out.ppRows);
+		break;
+	case NspiUnicodeStrings:
+	case 0x0:
+		DEBUG(0, ("Hierarchy Table requested\n"));
+		r->out.result = emsabp_get_HierarchyTable(mem_ctx, emsabp_ctx, r->in.dwFlags, r->out.ppRows);
+		break;
+	default:
+		talloc_free(r->out.ppRows);
+		talloc_free(r->out.ppRows[0]);
+		return MAPI_E_NO_SUPPORT;
+	}
+
+	return r->out.result;
 }
 
 
@@ -634,6 +682,12 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
 	nsp_session = talloc_zero(dce_ctx, struct exchange_nsp_session);
 	if (!nsp_session) return NT_STATUS_NO_MEMORY;
 	nsp_session->session = NULL;
+
+	/* Open a read-write pointer on the EMSABP TDB database */
+	emsabp_tdb_ctx = emsabp_tdb_init((TALLOC_CTX *)dce_ctx, dce_ctx->lp_ctx);
+	if (!emsabp_tdb_ctx) {
+		smb_panic("unable to initialize EMSABP context");
+	}
 
 	return NT_STATUS_OK;
 }

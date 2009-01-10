@@ -25,7 +25,10 @@
 #include <dcerpc_server.h>
 #include <talloc.h>
 #include <tevent.h>
+#include <tdb.h>
 #include <libmapi/dlinklist.h>
+#include <fcntl.h>
+#include <errno.h>
 
 struct mapiproxy {
 	bool			norelay;
@@ -105,6 +108,12 @@ struct auth_serversupplied_info
 };
 
 
+/**
+   EMSABP server defines
+ */
+#define	EMSABP_TDB_NAME		"emsabp_tdb.tdb"
+
+
 #define	NTLM_AUTH_IS_OK(dce_call) \
 (dce_call->conn->auth_state.session_info->server_info->authenticated == true)
 
@@ -142,6 +151,7 @@ bool mapiproxy_server_loaded(const char *);
 const struct mapiproxy_module *mapiproxy_server_bystatus(const char *, enum mapiproxy_status);
 const struct mapiproxy_module *mapiproxy_server_byname(const char *);
 
+TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *);
 
 /* definitions from dcesrv_mapiproxy_session. c */
 struct mpm_session *mpm_session_new(TALLOC_CTX *, struct server_id, uint32_t);

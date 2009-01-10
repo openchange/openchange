@@ -24,6 +24,10 @@
 
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
+#include <mapiproxy/libmapiproxy.h>
+#include <ldb.h>
+#include <ldb_errors.h>
+#include <fcntl.h>
 #include <util/debug.h>
 
 #ifndef	__BEGIN_DECLS
@@ -40,6 +44,7 @@ struct emsabp_context {
 	void		*conf_ctx;
 	void		*users_ctx;
 	void		*ldb_ctx;
+	TDB_CONTEXT    	*tdb_ctx;
 	TALLOC_CTX	*mem_ctx;
 };
 
@@ -51,17 +56,81 @@ struct exchange_nsp_session {
 };
 
 
+/**
+   Represents the NSPI Protocol in Permanent Entry IDs.
+ */
+static const uint8_t GUID_NSPI[] = {
+0xDC, 0xA7, 0x40, 0xC8, 0xC0, 0x42, 0x10, 0x1A, 0xB4, 0xB9,
+0x08, 0x00, 0x2B, 0x2F, 0xE1, 0x82
+};
+
+
+/**
+   PermanentEntryID structure 
+ */
+struct PermanentEntryID {
+	uint8_t			ID_type;	/* constant: 0x0	*/
+	uint8_t			R1;		/* reserved: 0x0	*/
+	uint8_t			R2;		/* reserved: 0x0	*/
+	uint8_t			R3;		/* reserved: 0x0	*/
+	struct FlatUID_r      	ProviderUID;	/* constant: GUID_NSPI	*/
+	uint32_t		R4;		/* constant: 0x1	*/
+	uint32_t		DisplayType;	/* must match one of the existing Display Type value */
+	char			*dn;		/* DN string representing the object GUID */
+};
+
+
+/**
+   EphemeralEntryID structure
+ */
+struct EphemeralEntryID {
+	uint8_t			ID_type;	/* constant: 0x87	*/
+	uint8_t			R1;		/* reserved: 0x0	*/
+	uint8_t			R2;		/* reserved: 0x0	*/
+	uint8_t			R3;		/* reserved: 0x0	*/
+	struct FlatUID_r	ProviderUID;	/* NSPI server GUID	*/
+	uint32_t		R4;		/* constant: 0x1	*/
+	uint32_t		DisplayType;	/* must match one of the existing Display Type value */
+	uint32_t		MId;		/* MId of this object	*/
+};
+
+#define	EMSABP_DN	"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X"
+
+/**
+   NSPI PR_CONTAINER_FLAGS values
+ */
+#define	AB_RECIPIENTS		0x1
+#define	AB_SUBCONTAINERS	0x2
+#define	AB_UNMODIFIABLE		0x8
+
+#define	EMSABP_TDB_MID_START	0x1b28
+#define	EMSABP_TDB_DATA_REC	"MId_index"
+
 __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);
 
 /* definitions from emsabp.c */
-struct emsabp_context	*emsabp_init(struct loadparm_context *);
+struct emsabp_context	*emsabp_init(struct loadparm_context *, TDB_CONTEXT *);
 bool			emsabp_destructor(void *);
 bool			emsabp_verify_user(struct dcesrv_call_state *, struct emsabp_context *);
 bool			emsabp_verify_codepage(struct loadparm_context *, struct emsabp_context *, uint32_t);
 bool			emsabp_verify_lcid(struct loadparm_context *, struct emsabp_context *, uint32_t);
 struct GUID		*emsabp_get_server_GUID(struct loadparm_context *, struct emsabp_context *);
+enum MAPISTATUS		emsabp_set_EphemeralEntryID(struct loadparm_context *, struct emsabp_context *, uint32_t, uint32_t, struct EphemeralEntryID *);
+enum MAPISTATUS		emsabp_set_PermanentEntryID(struct emsabp_context *, uint32_t, struct ldb_message *, struct PermanentEntryID *);
+enum MAPISTATUS		emsabp_PermanentEntryID_to_Binary_r(TALLOC_CTX *, struct PermanentEntryID *, struct Binary_r *);
+enum MAPISTATUS		emsabp_get_HierarchyTable(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct SRowSet **);
+enum MAPISTATUS		emsabp_get_CreationTemplatesTable(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct SRowSet **);
+enum MAPISTATUS		emsabp_table_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struct SRow *, uint32_t, struct PermanentEntryID *, 
+						 struct PermanentEntryID *, struct ldb_message *, bool);
+
+/* definitiosn from emsabp_tdb.c */
+TDB_CONTEXT		*emsabp_tdb_init(TALLOC_CTX *, struct loadparm_context *);
+enum MAPISTATUS		emsabp_tdb_close(TDB_CONTEXT *);
+enum MAPISTATUS		emsabp_tdb_fetch(TDB_CONTEXT *, const char *, TDB_DATA *);
+enum MAPISTATUS		emsabp_tdb_insert(TDB_CONTEXT *, const char *);
+enum MAPISTATUS		emsabp_tdb_fetch_MId(TDB_CONTEXT *, const char *, uint32_t *);
 
 __END_DECLS
 

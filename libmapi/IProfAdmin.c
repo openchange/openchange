@@ -1231,6 +1231,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	/* if there's no match */
 	MAPI_RETVAL_IF(!SRowSet, MAPI_E_NOT_FOUND, NULL);
 	MAPI_RETVAL_IF(!SRowSet->cRows, MAPI_E_NOT_FOUND, NULL);
+	MAPI_RETVAL_IF(!MIds, MAPI_E_NOT_FOUND, NULL);
 
 	/* if SRowSet count is superior than 1 an callback is specified, call it */
 	if (SRowSet->cRows > 1 && callback) {

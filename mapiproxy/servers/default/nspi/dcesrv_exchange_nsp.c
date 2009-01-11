@@ -387,14 +387,58 @@ static enum MAPISTATUS dcesrv_NspiResortRestriction(struct dcesrv_call_state *dc
    \param mem_ctx pointer to the memory context
    \param r pointer to the NspiDNToMId request data
 
+   \note Only searches within configuration.ldb are supported at the
+   moment.
+
    \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
 					  struct NspiDNToMId *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiDNToMId (0x7) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	enum MAPISTATUS		retval;
+	struct dcesrv_handle	*h;
+	struct emsabp_context	*emsabp_ctx;
+	struct ldb_message	*msg;
+	uint32_t		i;
+	uint32_t		MId;
+	const char		*dn;
+
+	DEBUG(3, ("exchange_nsp: NspiDNToMId (0x7)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	emsabp_ctx = (struct emsabp_context *) h->data;
+	
+	r->out.ppMIds = talloc_array(mem_ctx, struct SPropTagArray *, 2);
+	r->out.ppMIds[0] = talloc_zero(mem_ctx, struct SPropTagArray);
+	r->out.ppMIds[0]->cValues = r->in.pNames->Count;
+	r->out.ppMIds[0]->aulPropTag = talloc_array(mem_ctx, uint32_t, r->in.pNames->Count);
+
+	for (i = 0; i < r->in.pNames->Count; i++) {
+		/* Step 1. Check if the input legacyDN exists */
+		retval = emsabp_search_legacyExchangeDN(emsabp_ctx, r->in.pNames->Strings[i], &msg);
+		if (retval != MAPI_E_SUCCESS) {
+			r->out.ppMIds[0]->aulPropTag[i] = 0;
+		} else {
+			dn = ldb_msg_find_attr_as_string(msg, "distinguishedName", NULL);
+			retval = emsabp_tdb_fetch_MId(emsabp_ctx->tdb_ctx, dn, &MId);
+			if (retval) {
+				retval = emsabp_tdb_insert(emsabp_ctx->tdb_ctx, dn);
+				retval = emsabp_tdb_fetch_MId(emsabp_ctx->tdb_ctx, dn, &MId);
+			}
+			r->out.ppMIds[0]->aulPropTag[i] = MId;
+		}
+	}
+
+	r->out.result = MAPI_E_SUCCESS;
+
+	return MAPI_E_SUCCESS;
 }
 
 

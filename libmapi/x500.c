@@ -19,12 +19,16 @@
 
 #include <libmapi/libmapi.h>
 
-/*
- * x500_get_element
- * Fetch an element from a DN
- *
- */
 
+/**
+   \details Extract a DN element from a given DN
+
+   \param mem_ctx pointer to the memory context
+   \param dn pointer to a valid DN
+   \param element pointer to the substring where extraction should start
+
+   \return pointer to an allocated substring on success, otherwise NULL
+ */
 _PUBLIC_ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const char *element)
 {
 	char	*pdn, *p, *str;
@@ -34,17 +38,18 @@ _PUBLIC_ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const ch
 
 	tmp_dn = talloc_strdup(mem_ctx, dn);
 	pdn = strcasestr((const char *)tmp_dn, element);
-	if (pdn != NULL) {
-		pdn += strlen(element);
-		p = pdn;
-	}
+	talloc_free(tmp_dn);
+	if (pdn == NULL) return NULL;
+
+	pdn += strlen(element);
+	p = pdn;
+
 	if ((p = strchr(pdn, '/')) != NULL) {
 		p[0] = '\0';
 	}
 
 	str = talloc_strdup(mem_ctx, pdn);
 	
-	talloc_free(tmp_dn);
 	return str;
 }
 

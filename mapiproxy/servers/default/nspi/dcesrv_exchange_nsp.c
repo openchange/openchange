@@ -339,10 +339,6 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 
 	*r->out.ppOutMIds = ppOutMIds;
 
-	for (i = 0; i < r->out.ppOutMIds[0]->cValues; i++) {
-		DEBUG(0, ("[%s:%d]: 0x%x\n", __FUNCTION__, __LINE__, r->out.ppOutMIds[0]->aulPropTag[i]));
-	}
-
 	/* Step 2. Retrieve requested properties for these MIds */
 	r->out.ppRows = talloc_zero(mem_ctx, struct SRowSet *);
 	r->out.ppRows[0] = talloc_zero(mem_ctx, struct SRowSet);
@@ -473,8 +469,59 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 					   TALLOC_CTX *mem_ctx,
 					   struct NspiGetProps *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiGetProps (0x9) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	enum MAPISTATUS		retval;
+	struct dcesrv_handle	*h;
+	struct emsabp_context	*emsabp_ctx;
+	uint32_t		MId;
+	char			*dn;
+
+	DEBUG(3, ("exchange_nsp: NspiGetProps (0x9)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	emsabp_ctx = (struct emsabp_context *) h->data;
+
+	MId = r->in.pStat->CurrentRec;
+	
+	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
+	if (r->in.pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
+		retval = MAPI_E_INVALID_BOOKMARK;
+		goto failure;
+	}
+
+	retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->tdb_ctx, MId, &dn);
+	if (retval != MAPI_E_SUCCESS) {
+	failure:
+		r->out.ppRows = talloc_array(mem_ctx, struct SRow *, 2);
+		r->out.ppRows[0] = NULL;
+		r->out.result = MAPI_E_INVALID_BOOKMARK;
+		return r->out.result;
+	}
+
+	/* Step 2. Fetch properties */
+	r->out.ppRows = talloc_array(mem_ctx, struct SRow *, 2);
+	r->out.ppRows[0] = talloc_zero(mem_ctx, struct SRow);
+	r->out.ppRows[0]->ulAdrEntryPad = 0;
+	r->out.ppRows[0]->cValues = r->in.pPropTags->cValues;
+	r->out.ppRows[0]->lpProps = talloc_array(mem_ctx, struct SPropValue, r->in.pPropTags->cValues);
+
+	retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, r->out.ppRows[0], MId, r->in.pPropTags);
+	if (retval != MAPI_E_SUCCESS) {
+		talloc_free(r->out.ppRows[0]->lpProps);
+		talloc_free(r->out.ppRows[0]);
+		talloc_free(r->out.ppRows[0]);
+		r->out.result = MAPI_W_ERRORS_RETURNED;
+		goto failure;
+	}
+
+	r->out.result = MAPI_E_SUCCESS;
+
+	return MAPI_E_SUCCESS;
 }
 
 

@@ -602,6 +602,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 					    struct SPropTagArray *pPropTags)
 {
 	enum MAPISTATUS		retval;
+	void			*ldb_ctx;
 	char			*dn;
 	const char * const	recipient_attrs[] = { "*", NULL };
 	struct ldb_result	*res = NULL;
@@ -611,15 +612,21 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 	void			*data;
 	int			i;
 
-	/* Step 0. Retrieve the dn associated to the MId */
+	/* Step 0. Try to Retrieve the dn associated to the MId first from temp TDB (users) */
+	ldb_ctx = emsabp_ctx->users_ctx;
 	retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->ttdb_ctx, MId, &dn);
+	if (retval) {
+		/* If it fails try to retrieve it from the on-disk TDB database (conf) */
+		retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->tdb_ctx, MId, &dn);
+		ldb_ctx = emsabp_ctx->conf_ctx;
+	}
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
 
 	/* Step 1. Fetch the LDB record */
-	ldb_dn = ldb_dn_new(mem_ctx, emsabp_ctx->users_ctx, dn);
+	ldb_dn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, NULL);
 
-	ret = ldb_search(emsabp_ctx->users_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, LDB_SCOPE_BASE,
+	ret = ldb_search(ldb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, LDB_SCOPE_BASE,
 			 recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
 

@@ -210,10 +210,15 @@ static int emsabp_tdb_traverse_MId(TDB_CONTEXT *tdb_ctx,
 				   TDB_DATA key, TDB_DATA dbuf, 
 				   void *state)
 {
+	TALLOC_CTX	*mem_ctx;
 	uint32_t	value;
+	char		*value_str = NULL;
 	uint32_t	*MId = (uint32_t *)state;
 
-	value = strtol((const char *)dbuf.dptr, NULL, 16);
+	mem_ctx = talloc_init("emsabp_tdb_traverse_MId");
+	value_str = talloc_strndup(mem_ctx, (char *)dbuf.dptr, dbuf.dsize);
+	value = strtol((const char *)value_str, NULL, 16);
+	talloc_free(mem_ctx);
 	if (value == *MId) return 1;
 
 	return 0;
@@ -286,7 +291,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_tdb_fetch_dn_from_MId(TALLOC_CTX *mem_ctx,
 	emsabp_MId->MId = MId;
 	
 	ret = tdb_traverse(tdb_ctx, emsabp_tdb_traverse_MId_DN, (void *)emsabp_MId);
-	if (ret == 1) {
+	if (ret > -1 && emsabp_MId->dn) {
 		*dn = talloc_strdup(mem_ctx, emsabp_MId->dn);
 		talloc_free(emsabp_MId);
 		return MAPI_E_SUCCESS;

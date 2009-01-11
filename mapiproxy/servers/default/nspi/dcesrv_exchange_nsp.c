@@ -206,8 +206,70 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 					    TALLOC_CTX *mem_ctx,
 					    struct NspiQueryRows *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	struct dcesrv_handle		*h;
+	struct emsabp_context		*emsabp_ctx;
+	struct SPropTagArray		*pPropTags;
+	uint32_t			i;
+
+	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	emsabp_ctx = (struct emsabp_context *) h->data;
+
+	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
+	if (r->in.pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
+		retval = MAPI_E_INVALID_BOOKMARK;
+		goto failure;
+	}
+
+	if (r->in.pPropTags == NULL) {
+		pPropTags = set_SPropTagArray(mem_ctx, 0x7,
+					      PR_EMS_AB_CONTAINERID,
+					      PR_OBJECT_TYPE,
+					      PR_DISPLAY_TYPE,
+					      PR_DISPLAY_NAME,
+					      PR_OFFICE_TELEPHONE_NUMBER,
+					      PR_COMPANY_NAME,
+					      PR_OFFICE_LOCATION);
+	} else {
+		pPropTags = r->in.pPropTags;
+	}
+
+	if (r->in.lpETable == NULL) {
+		/* FIXME */
+		return MAPI_E_INVALID_BOOKMARK;
+	}
+
+	if (retval != MAPI_E_SUCCESS) {
+	failure:
+		r->out.pStat = r->in.pStat;
+		r->out.ppRows = talloc(mem_ctx, struct SRowSet *);
+		r->out.ppRows[0] = NULL;
+		r->out.result = retval;
+
+		return retval;
+	}
+
+	/* Step 2. Fill ppRows  */
+	r->out.ppRows = talloc(mem_ctx, struct SRowSet *);
+	r->out.ppRows[0] = talloc(mem_ctx, struct SRowSet);
+	r->out.ppRows[0]->cRows = r->in.Count;
+	r->out.ppRows[0]->aRow = talloc_array(mem_ctx, struct SRow, r->in.Count);
+	for (i = 0; i < r->in.Count; i++) {
+		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]), r->in.lpETable[i], pPropTags);
+		if (retval != MAPI_E_SUCCESS) {
+			goto failure;
+		}
+	}
+
+	return MAPI_E_SUCCESS;
 }
 
 

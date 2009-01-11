@@ -483,12 +483,19 @@ _PUBLIC_ enum MAPISTATUS emsabp_PermanentEntryID_to_Binary_r(TALLOC_CTX *mem_ctx
 _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
 			    struct ldb_message *msg, uint32_t ulPropTag, uint32_t MId)
 {
-	enum MAPISTATUS		retval;
-	void			*data = (void *) NULL;
-	const char		*attribute;
-	const char		*ldb_string = NULL;
-	struct Binary_r		*bin;
-	struct EphemeralEntryID	ephEntryID;
+	enum MAPISTATUS			retval;
+	void				*data = (void *) NULL;
+	const char			*attribute;
+	const char			*ref_attribute;
+	const char			*ldb_string = NULL;
+	struct Binary_r			*bin;
+	struct StringArray_r		*mvszA;
+	struct EphemeralEntryID		ephEntryID;
+	struct ldb_message		*msg2 = NULL;
+	struct ldb_message_element	*ldb_element;
+	int				ret;
+	const char			*dn = NULL;
+	uint32_t			i;
 
 	/* Step 1. Fill attributes not in AD but created using EMSABP databases */
 	switch (ulPropTag) {
@@ -522,17 +529,44 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		break;
 	}
 
-	/* Step 2. Retrieve the attribute name associated to ulPropTag */
+	/* Step 2. Retrieve the attribute name associated to ulPropTag and handle the ref case */
 	attribute = emsabp_property_get_attribute(ulPropTag);
 	if (!attribute) return NULL;
+
+	ret = emsabp_property_is_ref(ulPropTag);
+	if (ret == 1) {
+		ref_attribute = emsabp_property_get_ref_attr(ulPropTag);
+		if (ref_attribute) {
+			dn = ldb_msg_find_attr_as_string(msg, attribute, NULL);
+			retval = emsabp_search_dn(emsabp_ctx, dn, &msg2);
+			if (retval != MAPI_E_SUCCESS) {
+				return NULL;
+			}
+			attribute = ref_attribute;
+		}
+	} else {
+		msg2 = msg;
+	}
 
 	/* Step 3. Retrieve data associated to the attribute/tag */
 	switch (ulPropTag & 0xFFFF) {
 	case PT_STRING8:
 	case PT_UNICODE:
-		ldb_string = ldb_msg_find_attr_as_string(msg, attribute, NULL);
+		ldb_string = ldb_msg_find_attr_as_string(msg2, attribute, NULL);
 		if (!ldb_string) return NULL;
 		data = talloc_strdup(mem_ctx, ldb_string);
+		break;
+	case PT_MV_STRING8:
+		ldb_element = ldb_msg_find_element(msg2, attribute);
+		if (!ldb_element) return NULL;
+
+		mvszA = talloc(mem_ctx, struct StringArray_r);
+		mvszA->cValues = ldb_element[0].num_values & 0xFFFFFFFF;
+		mvszA->lppszA = talloc_array(mem_ctx, const char *, mvszA->cValues);
+		for (i = 0; i < mvszA->cValues; i++) {
+			mvszA->lppszA[i] = talloc_strdup(mem_ctx, (char *)ldb_element->values[i].data);
+		}
+		data = (void *) mvszA;
 		break;
 	default:
 		DEBUG(3, ("[%s:%d]: Unsupported property type: 0x%x\n", __FUNCTION__, __LINE__,
@@ -1009,6 +1043,42 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
 		}
 	}
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Search for a given DN within AD and return the associated
+   LDB message.
+
+   \param emsabp_ctx pointer to the EMSABP context
+   \param dn pointer to the DN string to search for
+   \param ldb_res pointer on pointer to the LDB message returned by
+   the function
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS emsabp_search_dn(struct emsabp_context *emsabp_ctx, const char *dn, 
+					  struct ldb_message **ldb_res)
+{
+	struct ldb_dn		*ldb_dn = NULL;
+	struct ldb_result	*res = NULL;
+	const char * const	recipient_attrs[] = { "*", NULL };
+	int			ret;
+
+	/* Sanity Checks */
+	OPENCHANGE_RETVAL_IF(!dn, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ldb_res, MAPI_E_INVALID_PARAMETER, NULL);
+
+	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->conf_ctx, dn);
+	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, NULL);
+
+	ret = ldb_search(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
+			 LDB_SCOPE_BASE, recipient_attrs, NULL);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
+
+	*ldb_res = res->msgs[0];
 
 	return MAPI_E_SUCCESS;
 }

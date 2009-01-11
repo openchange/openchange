@@ -30,15 +30,19 @@
 struct emsabp_property {
 	uint32_t	ulPropTag;
 	const char	*attribute;
+	bool		ref;
+	const char	*ref_attr;
 };
 
 static const struct emsabp_property emsabp_property[] = {
-	{ PR_ACCOUNT,				"sAMAccountName"	},
-	{ PR_COMPANY_NAME,			"company"		},
-	{ PR_DISPLAY_NAME,			"displayName"		},
-	{ PR_EMAIL_ADDRESS,			"legacyExchangeDN"	},
-	{ PR_TITLE,				"personalTitle"		},
-	{ 0,					NULL			}
+	{ PR_ACCOUNT,				"sAMAccountName",	false,	NULL			},
+	{ PR_COMPANY_NAME,			"company",		false,	NULL			},
+	{ PR_DISPLAY_NAME,			"displayName",		false,	NULL			},
+	{ PR_EMAIL_ADDRESS,			"legacyExchangeDN",	false,	NULL			},
+	{ PR_EMS_AB_HOME_MDB,			"homeMDB",		true,	"legacyExchangeDN"	},
+	{ PR_EMS_AB_PROXY_ADDRESSES,		"proxyAddresses",	false,	NULL			},
+	{ PR_TITLE,				"personalTitle",	false,	NULL			},
+	{ 0,					NULL,			false,	NULL			}
 };
 
 
@@ -90,4 +94,53 @@ _PUBLIC_ uint32_t emsabp_property_get_ulPropTag(const char *attribute)
 	}
 
 	return PT_ERROR;
+}
+
+
+/**
+   \details Returns whether the given attribute's value references
+   another AD record
+
+   \param ulPropTag the property tag to lookup
+
+   \return 1 if the attribute is a reference, 0 if not and -1 if an
+   error occurred.
+ */
+_PUBLIC_ int emsabp_property_is_ref(uint32_t ulPropTag)
+{
+	int		i;
+
+	if (!ulPropTag) return -1;
+
+	for (i = 0; emsabp_property[i].attribute; i++) {
+		if (ulPropTag == emsabp_property[i].ulPropTag) {
+			return (emsabp_property[i].ref == true) ? 1 : 0;
+		}
+	}
+
+	return -1;
+}
+
+
+/**
+   \details Returns the reference attr for a given attribute
+
+   \param ulPropTag property tag to lookup
+
+   \return pointer to a valid reference attribute on success,
+   otherwise NULL
+ */
+_PUBLIC_ const char *emsabp_property_get_ref_attr(uint32_t ulPropTag)
+{
+	int		i;
+
+	if (!ulPropTag) return NULL;
+
+	for (i = 0; emsabp_property[i].attribute; i++) {
+		if (ulPropTag == emsabp_property[i].ulPropTag) {
+			return emsabp_property[i].ref_attr;
+		}
+	}
+
+	return NULL;
 }

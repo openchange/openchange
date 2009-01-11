@@ -138,6 +138,7 @@ enum MAPISTATUS		emsabp_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struc
 enum MAPISTATUS		emsabp_table_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struct SRow *, uint32_t, struct PermanentEntryID *, 
 						 struct PermanentEntryID *, struct ldb_message *, bool);
 enum MAPISTATUS		emsabp_search(TALLOC_CTX *, struct emsabp_context *, struct SPropTagArray *, struct Restriction_r *, struct STAT *, uint32_t);
+enum MAPISTATUS		emsabp_search_dn(struct emsabp_context *, const char *, struct ldb_message **);
 
 /* definitions from emsabp_tdb.c */
 TDB_CONTEXT		*emsabp_tdb_init(TALLOC_CTX *, struct loadparm_context *);
@@ -153,6 +154,8 @@ TDB_CONTEXT		*emsabp_tdb_init_tmp(TALLOC_CTX *);
 /* definitions from emsabp_property.c */
 const char		*emsabp_property_get_attribute(uint32_t);
 uint32_t		emsabp_property_get_ulPropTag(const char *);
+int			emsabp_property_is_ref(uint32_t);
+const char		*emsabp_property_get_ref_attr(uint32_t);
 
 __END_DECLS
 

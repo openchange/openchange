@@ -30,10 +30,6 @@
 #include "dcesrv_exchange_nsp.h"
 #include <util/debug.h>
 
-/* This hack only works for single mode - need to move the context
- * somewhere else. Possible libmapiproxy and use tdb_reopen */
-/* static TDB_CONTEXT	*tdb_ctx = NULL; */
-
 /**
    \details Open EMSABP TDB database
 
@@ -79,6 +75,40 @@ _PUBLIC_ TDB_CONTEXT *emsabp_tdb_init(TALLOC_CTX *mem_ctx,
 		free (dbuf.dptr);
 	}
 
+	return tdb_ctx;
+}
+
+
+/**
+   \details Initialize a temporary (on-memory) TDB database. This
+   database is used to store temporary MId used within a session
+   lifetime.
+ */
+_PUBLIC_ TDB_CONTEXT *emsabp_tdb_init_tmp(TALLOC_CTX *mem_ctx)
+{
+	TDB_CONTEXT	*tdb_ctx;
+	TDB_DATA       	key;
+	TDB_DATA       	dbuf;
+	int	       	ret;
+
+	/* Step 0. Initialize the temporary TDB database */
+	tdb_ctx = tdb_open(NULL, 0, TDB_INTERNAL, O_RDWR|O_CREAT, 0600);
+	
+	/* Step 1. Create EMSABP_TMP_TDB_DATA_REC record */
+	key.dptr = (unsigned char *) EMSABP_TDB_DATA_REC;
+	key.dsize = strlen(EMSABP_TDB_DATA_REC);
+
+	dbuf.dptr = (unsigned char *) talloc_asprintf(mem_ctx, "0x%x", EMSABP_TDB_TMP_MID_START);
+	dbuf.dsize = strlen((const char *)dbuf.dptr);
+	
+	ret = tdb_store(tdb_ctx, key, dbuf, TDB_INSERT);
+	if (ret == -1) {
+		DEBUG(3, ("[%s:%d]: Unable to create %s record: %s\n", __FUNCTION__, __LINE__,
+			  EMSABP_TDB_DATA_REC, tdb_errorstr(tdb_ctx)));
+		tdb_close(tdb_ctx);
+		return NULL;
+	} 
+	
 	return tdb_ctx;
 }
 
@@ -176,6 +206,96 @@ _PUBLIC_ enum MAPISTATUS emsabp_tdb_fetch_MId(TDB_CONTEXT *tdb_ctx,
 }
 
 
+static int emsabp_tdb_traverse_MId(TDB_CONTEXT *tdb_ctx, 
+				   TDB_DATA key, TDB_DATA dbuf, 
+				   void *state)
+{
+	uint32_t	value;
+	uint32_t	*MId = (uint32_t *)state;
+
+	value = strtol((const char *)dbuf.dptr, NULL, 16);
+	if (value == *MId) return 1;
+
+	return 0;
+}
+
+
+/**
+   \details Traverse the EMSABP TDB database and look for the input
+   MId
+
+   \param tdb_ctx pointer to the EMSABP TDB context
+   \param MId MID to lookup
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool emsabp_tdb_lookup_MId(TDB_CONTEXT *tdb_ctx,
+				    uint32_t MId)
+{
+	int	ret;
+
+	ret = tdb_traverse(tdb_ctx, emsabp_tdb_traverse_MId, (void *)&MId);
+
+	return (ret == 1) ? true : false;
+}
+
+
+static int emsabp_tdb_traverse_MId_DN(TDB_CONTEXT *tdb_ctx,
+				      TDB_DATA key, TDB_DATA dbuf,
+				      void *state)
+{
+	uint32_t		value;
+	struct emsabp_MId	*emsabp_MId = (struct emsabp_MId *) state;
+
+	if (key.dptr && strcmp((const char *)key.dptr, EMSABP_TDB_DATA_REC)) {
+		value = strtol((const char *)dbuf.dptr, NULL, 16);
+		if (value == emsabp_MId->MId) {
+			emsabp_MId->dn = talloc_strndup(emsabp_MId, (char *)key.dptr, key.dsize);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+/**
+   \details Traverse the EMSABP TDB and fetch the DN associated with
+   the MId
+
+   \param mem_ctx pointer to the memory context
+   \param tdb_ctx pointer to the EMSABP TDB context
+   \param MId MID to search
+   \param dn pointer on pointer to the dn to return
+
+   \return MAPI_E_SUCCESS on success, otherwise false
+ */
+_PUBLIC_ enum MAPISTATUS emsabp_tdb_fetch_dn_from_MId(TALLOC_CTX *mem_ctx,
+						      TDB_CONTEXT *tdb_ctx,
+						      uint32_t MId,
+						      char **dn)
+{
+	int			ret;
+	struct emsabp_MId	*emsabp_MId;
+	
+	emsabp_MId = talloc_zero(mem_ctx, struct emsabp_MId);
+	emsabp_MId->dn = NULL;
+	emsabp_MId->MId = MId;
+	
+	ret = tdb_traverse(tdb_ctx, emsabp_tdb_traverse_MId_DN, (void *)emsabp_MId);
+	if (ret == 1) {
+		*dn = talloc_strdup(mem_ctx, emsabp_MId->dn);
+		talloc_free(emsabp_MId);
+		return MAPI_E_SUCCESS;
+	}
+
+	*dn = NULL;
+	talloc_free(emsabp_MId);
+
+	return MAPI_E_NOT_FOUND;
+}
+
+
 /**
    \details Insert an element into TDB database
 
@@ -225,7 +345,6 @@ _PUBLIC_ enum MAPISTATUS emsabp_tdb_insert(TDB_CONTEXT *tdb_ctx,
 	OPENCHANGE_RETVAL_IF(ret == -1, MAPI_E_CORRUPT_STORE, mem_ctx);
 
 	/* Step 4. Update Data record */
-	talloc_free(key.dptr);
 	key.dptr = (unsigned char *) EMSABP_TDB_DATA_REC;
 	key.dsize = strlen((const char *)key.dptr);
 

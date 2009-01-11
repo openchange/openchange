@@ -93,8 +93,7 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 3. Check if valid cpID has been supplied */
-	if (emsabp_verify_codepage(dce_call->conn->dce_ctx->lp_ctx, 
-				   emsabp_ctx, r->in.pStat->CodePage) == false) {
+	if (emsabp_verify_codepage(emsabp_ctx, r->in.pStat->CodePage) == false) {
 		talloc_free(emsabp_ctx);
 
 		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
@@ -107,7 +106,7 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 4. Retrieve OpenChange server GUID */
-	guid = emsabp_get_server_GUID(dce_call->conn->dce_ctx->lp_ctx, emsabp_ctx);
+	guid = emsabp_get_server_GUID(emsabp_ctx);
 	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_FAILONEPROVIDER, emsabp_ctx);
 
 	/* Step 5. Fill NspiBind reply */
@@ -243,8 +242,61 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 					     TALLOC_CTX *mem_ctx,
 					     struct NspiGetMatches *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiGetMatches (0x5) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	enum MAPISTATUS			retval;
+	struct dcesrv_handle		*h;
+	struct emsabp_context		*emsabp_ctx;
+	struct SPropTagArray		*ppOutMIds = NULL;
+	uint32_t			i;
+	
+
+	DEBUG(3, ("exchange_nsp: NspiGetMatches (0x5)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	emsabp_ctx = (struct emsabp_context *) h->data;
+
+	/* Step 1. Retrieve MIds array given search criterias */
+	ppOutMIds = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = emsabp_search(mem_ctx, emsabp_ctx, ppOutMIds, r->in.Filter, r->in.pStat, r->in.ulRequested);
+	if (retval != MAPI_E_SUCCESS) {
+	failure:
+		r->out.pStat = r->in.pStat;
+		ppOutMIds = NULL;
+		r->out.ppOutMIds = &ppOutMIds;		
+		r->out.ppRows = talloc(mem_ctx, struct SRowSet *);
+		r->out.ppRows[0] = NULL;
+		r->out.result = retval;
+		
+		return retval;
+	}
+
+	*r->out.ppOutMIds = ppOutMIds;
+
+	for (i = 0; i < r->out.ppOutMIds[0]->cValues; i++) {
+		DEBUG(0, ("[%s:%d]: 0x%x\n", __FUNCTION__, __LINE__, r->out.ppOutMIds[0]->aulPropTag[i]));
+	}
+
+	/* Step 2. Retrieve requested properties for these MIds */
+	r->out.ppRows = talloc_zero(mem_ctx, struct SRowSet *);
+	r->out.ppRows[0] = talloc_zero(mem_ctx, struct SRowSet);
+	r->out.ppRows[0]->cRows = ppOutMIds->cValues;
+	r->out.ppRows[0]->aRow = talloc_array(mem_ctx, struct SRow, ppOutMIds->cValues);
+	
+
+	for (i = 0; i < ppOutMIds->cValues; i++) {
+		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]), 
+					    ppOutMIds->aulPropTag[i], r->in.pPropTags);
+		if (retval) goto failure;
+	}
+
+	r->out.result = MAPI_E_SUCCESS;
+
+	return MAPI_E_SUCCESS;
 }
 
 

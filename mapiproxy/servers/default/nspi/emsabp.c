@@ -71,6 +71,9 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 		return NULL;
 	}
 
+	/* Save a pointer to the loadparm context */
+	emsabp_ctx->lp_ctx = lp_ctx;
+
 	/* Return an opaque context pointer on the configuration database */
 	configuration = private_path(mem_ctx, lp_ctx, "configuration.ldb");
 	emsabp_ctx->conf_ctx = ldb_init(mem_ctx, ev);
@@ -108,6 +111,13 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	/* Reference the global TDB context to the current emsabp context */
 	emsabp_ctx->tdb_ctx = tdb_ctx;
 
+	/* Initialize a temporary (on-memory) TDB database to store
+	 * temporary MId used within EMSABP */
+	emsabp_ctx->ttdb_ctx = emsabp_tdb_init_tmp(emsabp_ctx->mem_ctx);
+	if (!emsabp_ctx->ttdb_ctx) {
+		smb_panic("unable to create on-memory TDB database");
+	}
+
 	return emsabp_ctx;
 }
 
@@ -117,7 +127,10 @@ _PUBLIC_ bool emsabp_destructor(void *data)
 	struct emsabp_context	*emsabp_ctx = (struct emsabp_context *)data;
 
 	if (emsabp_ctx) {
-		DEBUG(6, ("emsabp_ctx is at addr %p\n", emsabp_ctx));
+		if (emsabp_ctx->ttdb_ctx) {
+			tdb_close(emsabp_ctx->ttdb_ctx);
+		}
+
 		talloc_free(emsabp_ctx->mem_ctx);
 		return true;
 	}
@@ -177,7 +190,6 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 /**
    \details Check if the provided codepage is correct
 
-   \param lp_ctx pointer to the loadparm context
    \param emsabp_ctx pointer to the EMSABP context
    \param CodePage the codepage identifier
 
@@ -187,8 +199,7 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 
    \return true on success, otherwise false
  */
-_PUBLIC_ bool emsabp_verify_codepage(struct loadparm_context *lp_ctx,
-				     struct emsabp_context *emsabp_ctx,
+_PUBLIC_ bool emsabp_verify_codepage(struct emsabp_context *emsabp_ctx,
 				     uint32_t CodePage)
 {
 	return valid_codepage(CodePage);
@@ -199,15 +210,14 @@ _PUBLIC_ bool emsabp_verify_codepage(struct loadparm_context *lp_ctx,
    \details Retrieve the NSPI server GUID from the server object in
    the configuration LDB database
 
-   \param lp_ctx pointer to the loadparm context
    \param emsabp_ctx pointer to the EMSABP context
 
    \return An allocated GUID structure on success, otherwise NULL
  */
-_PUBLIC_ struct GUID *emsabp_get_server_GUID(struct loadparm_context *lp_ctx,
-					     struct emsabp_context *emsabp_ctx)
+_PUBLIC_ struct GUID *emsabp_get_server_GUID(struct emsabp_context *emsabp_ctx)
 {
 	int			ret;
+	struct loadparm_context	*lp_ctx;
 	struct GUID		*guid = (struct GUID *) NULL;
 	const char		*netbiosname = NULL;
 	const char		*guid_str = NULL;
@@ -218,6 +228,8 @@ _PUBLIC_ struct GUID *emsabp_get_server_GUID(struct loadparm_context *lp_ctx,
 	struct ldb_dn		*ldb_dn = NULL;
 	const char * const	recipient_attrs[] = { "*", NULL };
 	const char		*firstorgdn = NULL;
+
+	lp_ctx = emsabp_ctx->lp_ctx;
 
 	netbiosname = lp_netbios_name(lp_ctx);
 	if (!netbiosname) return NULL;
@@ -267,7 +279,6 @@ _PUBLIC_ struct GUID *emsabp_get_server_GUID(struct loadparm_context *lp_ctx,
 /**
    \details Build an EphemeralEntryID structure
 
-   \param lp_ctx pointer to the loadparm context
    \param emsabp_ctx pointer to the EMSABP context
    \param DisplayType the AB object display type
    \param MId the MId value
@@ -277,8 +288,7 @@ _PUBLIC_ struct GUID *emsabp_get_server_GUID(struct loadparm_context *lp_ctx,
    \return MAPI_E_SUCCESS on success, otherwise
    MAPI_E_NOT_ENOUGH_RESOURCES or MAPI_E_CORRUPT_STORE
  */
-_PUBLIC_ enum MAPISTATUS emsabp_set_EphemeralEntryID(struct loadparm_context *lp_ctx, 
-						     struct emsabp_context *emsabp_ctx,
+_PUBLIC_ enum MAPISTATUS emsabp_set_EphemeralEntryID(struct emsabp_context *emsabp_ctx,
 						     uint32_t DisplayType, uint32_t MId,
 						     struct EphemeralEntryID *ephEntryID)
 {
@@ -287,7 +297,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_EphemeralEntryID(struct loadparm_context *lp
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!ephEntryID, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
-	guid = emsabp_get_server_GUID(lp_ctx, emsabp_ctx);
+	guid = emsabp_get_server_GUID(emsabp_ctx);
 	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_CORRUPT_STORE, NULL);
 
 	ephEntryID->ID_type = 0x87;
@@ -309,6 +319,50 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_EphemeralEntryID(struct loadparm_context *lp
 	ephEntryID->MId = MId;
 
 	talloc_free(guid);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Map an EphemeralEntryID structure into a Binary_r structure
+
+   \param mem_ctx pointer to the memory context
+   \param ephEntryID pointer to the Ephemeral EntryID structure
+   \param bin pointer to the Binary_r structure the server will return
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_INVALID_PARAMETER
+ */
+_PUBLIC_ enum MAPISTATUS emsabp_EphemeralEntryID_to_Binary_r(TALLOC_CTX *mem_ctx,
+							     struct EphemeralEntryID *ephEntryID,
+							     struct Binary_r *bin)
+{
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!ephEntryID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!bin, MAPI_E_INVALID_PARAMETER, NULL);
+
+	bin->cb = sizeof (*ephEntryID);
+	bin->lpb = talloc_array(mem_ctx, uint8_t, bin->cb);
+
+	/* Copy EphemeralEntryID into bin->lpb */
+	memset(bin->lpb, 0, bin->cb);
+	bin->lpb[0] = ephEntryID->ID_type;
+	bin->lpb[1] = ephEntryID->R1;
+	bin->lpb[2] = ephEntryID->R2;
+	bin->lpb[3] = ephEntryID->R3;
+	memcpy(bin->lpb + 4, ephEntryID->ProviderUID.ab, 16);
+	bin->lpb[20] = (ephEntryID->R4 & 0xFF);
+	bin->lpb[21] = ((ephEntryID->R4 >> 8)  & 0xFF);
+	bin->lpb[22] = ((ephEntryID->R4 >> 16) & 0xFF);
+	bin->lpb[23] = ((ephEntryID->R4 >> 24) & 0xFF);
+	bin->lpb[24] = (ephEntryID->DisplayType & 0xFF);
+	bin->lpb[25] = ((ephEntryID->DisplayType >> 8)  & 0xFF);
+	bin->lpb[26] = ((ephEntryID->DisplayType >> 16) & 0xFF);
+	bin->lpb[27] = ((ephEntryID->DisplayType >> 24) & 0xFF);
+	bin->lpb[28] = (ephEntryID->MId & 0xFF);
+	bin->lpb[29] = ((ephEntryID->MId >> 8)  & 0xFF);
+	bin->lpb[30] = ((ephEntryID->MId >> 16) & 0xFF);
+	bin->lpb[31] = ((ephEntryID->MId >> 24) & 0xFF);
 
 	return MAPI_E_SUCCESS;
 }
@@ -368,12 +422,12 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsa
 
 
 /**
-   \details Map a PermanentEntryID structure into a SBinary_r
+   \details Map a PermanentEntryID structure into a Binary_r
    structure (for PR_ENTRYID and PR_EMS_AB_PARENT_ENTRYID properties)
 
    \param mem_ctx pointer to the memory context
    \param permEntryID pointer to the Permanent EntryID structure
-   \param pointer to the Binary_r structure the server will return
+   \param bin pointer to the Binary_r structure the server will return
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_INVALID_PARAMETER
  */
@@ -405,6 +459,154 @@ _PUBLIC_ enum MAPISTATUS emsabp_PermanentEntryID_to_Binary_r(TALLOC_CTX *mem_ctx
 	bin->lpb[26] = ((permEntryID->DisplayType >> 16) & 0xFF);
 	bin->lpb[27] = ((permEntryID->DisplayType >> 24) & 0xFF);
 	memcpy(bin->lpb + 28, permEntryID->dn, strlen(permEntryID->dn) + 1);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Find the attribute matching the specified property tag and
+   return the associated data.
+
+   \param mem_ctx pointer to the memory context
+   \param emsabp_ctx pointer to the EMSABP context
+   \param msg pointer to the LDB message
+   \param ulPropTag the property tag to lookup
+   \param MId Minimal Entry ID associated to the current message
+
+   \note This implementation is at the moment limited to MAILUSER,
+   which means we arbitrary set PR_OBJECT_TYPE and PR_DISPLAY_TYPE
+   while we should have a generic method to fill these properties.
+
+   \return Valid generic pointer on success, otherwise NULL
+ */
+_PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
+			    struct ldb_message *msg, uint32_t ulPropTag, uint32_t MId)
+{
+	enum MAPISTATUS		retval;
+	void			*data = (void *) NULL;
+	const char		*attribute;
+	const char		*ldb_string = NULL;
+	struct Binary_r		*bin;
+	struct EphemeralEntryID	ephEntryID;
+
+	/* Step 1. Fill attributes not in AD but created using EMSABP databases */
+	switch (ulPropTag) {
+	case PR_ADDRTYPE:
+		data = (void *) talloc_strdup(mem_ctx, EMSABP_ADDRTYPE);
+		return data;
+	case PR_OBJECT_TYPE:
+		data = talloc_zero(mem_ctx, uint32_t);
+		*((uint32_t *)data) = MAPI_MAILUSER;
+		return data;
+	case PR_DISPLAY_TYPE:
+		data = talloc_zero(mem_ctx, uint32_t);
+		*((uint32_t *)data) = DT_MAILUSER;
+		return data;
+	case PR_ENTRYID:
+		bin = talloc(mem_ctx, struct Binary_r);
+		retval = emsabp_set_EphemeralEntryID(emsabp_ctx, DT_MAILUSER, MId, &ephEntryID);
+		retval = emsabp_EphemeralEntryID_to_Binary_r(mem_ctx, &ephEntryID, bin);
+		return bin;
+	case PR_INSTANCE_KEY:
+		bin = talloc_zero(mem_ctx, struct Binary_r);
+		bin->cb = 4;
+		bin->lpb = talloc_array(mem_ctx, uint8_t, bin->cb);
+		memset(bin->lpb, 0, bin->cb);
+		bin->lpb[0] = MId & 0xFF;
+		bin->lpb[1] = (MId >> 8)  & 0xFF;
+		bin->lpb[2] = (MId >> 16) & 0xFF;
+		bin->lpb[3] = (MId >> 24) & 0xFF;
+		return bin;
+	default:
+		break;
+	}
+
+	/* Step 2. Retrieve the attribute name associated to ulPropTag */
+	attribute = emsabp_property_get_attribute(ulPropTag);
+	if (!attribute) return NULL;
+
+	/* Step 3. Retrieve data associated to the attribute/tag */
+	switch (ulPropTag & 0xFFFF) {
+	case PT_STRING8:
+	case PT_UNICODE:
+		ldb_string = ldb_msg_find_attr_as_string(msg, attribute, NULL);
+		if (!ldb_string) return NULL;
+		data = talloc_strdup(mem_ctx, ldb_string);
+		break;
+	default:
+		DEBUG(3, ("[%s:%d]: Unsupported property type: 0x%x\n", __FUNCTION__, __LINE__,
+			  (ulPropTag & 0xFFFF)));
+		break;
+	}
+
+	return data;
+}
+
+
+/**
+   \details Builds the SRow array entry for the specified MId.
+
+   The function retrieves the DN associated to the specified MId
+   within its on-memory TDB database. It next fetches the LDB record
+   matching the DN and finally retrieve the requested properties for
+   this record.
+
+   \param mem_ctx pointer to the memory context
+   \param emsabp_ctx pointer to the EMSABP context
+   \param aRow pointer to the SRow structure where results will be
+   stored
+   \param MId MId to fetch properties for
+   \param pPropTags pointer to the property tags array
+
+   \note We currently assume records are users.ldb
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
+					    struct SRow *aRow, uint32_t MId, 
+					    struct SPropTagArray *pPropTags)
+{
+	enum MAPISTATUS		retval;
+	char			*dn;
+	const char * const	recipient_attrs[] = { "*", NULL };
+	struct ldb_result	*res = NULL;
+	struct ldb_dn		*ldb_dn = NULL;
+	int			ret;
+	uint32_t		ulPropTag;
+	void			*data;
+	int			i;
+
+	/* Step 0. Retrieve the dn associated to the MId */
+	retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->ttdb_ctx, MId, &dn);
+	OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
+
+	/* Step 1. Fetch the LDB record */
+	ldb_dn = ldb_dn_new(mem_ctx, emsabp_ctx->users_ctx, dn);
+	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, NULL);
+
+	ret = ldb_search(emsabp_ctx->users_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, LDB_SCOPE_BASE,
+			 recipient_attrs, NULL);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
+
+	/* Step 2. Retrieve property values and build aRow */
+	aRow->ulAdrEntryPad = 0x0;
+	aRow->cValues = pPropTags->cValues;
+	aRow->lpProps = talloc_array(mem_ctx, struct SPropValue, aRow->cValues);
+
+	for (i = 0; i < aRow->cValues; i++) {
+		ulPropTag = pPropTags->aulPropTag[i];
+		data = emsabp_query(mem_ctx, emsabp_ctx, res->msgs[0], ulPropTag, MId);
+		if (!data) {
+			ulPropTag &= 0xFFFF0000;
+			ulPropTag += PT_ERROR;
+		}
+
+		aRow->lpProps[i].ulPropTag = ulPropTag;
+		aRow->lpProps[i].dwAlignPad = 0x0;
+		set_SPropValue(&(aRow->lpProps[i]), data);
+	}
+
 
 	return MAPI_E_SUCCESS;
 }
@@ -709,5 +911,104 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 _PUBLIC_ enum MAPISTATUS emsabp_get_CreationTemplatesTable(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
 							   uint32_t dwFlags, struct SRowSet **SRowSet)
 {
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Search Active Directory given input search criterias. The
+   function associates for each records returned by the search a
+   unique session Minimal Entry ID and a LDB message.
+
+   \param mem_ctx pointer to the memory context
+   \param emsabp_ctx pointer to the EMSABP context
+   \param MIds pointer to the list of MIds the function returns
+   \param Restriction pointer to restriction rules to apply to the
+   search
+   \param pStat pointer the STAT structure associated to the search
+   param limit the limit number of results the function can return
+
+   \note SortTypePhoneticDisplayName sort type is currently not supported.
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
+				       struct SPropTagArray *MIds, struct Restriction_r *restriction,
+				       struct STAT *pStat, uint32_t limit)
+{
+	enum MAPISTATUS			retval;
+	struct ldb_result		*res = NULL;
+	struct PropertyRestriction_r	*res_prop = NULL;
+	const char			*recipient = NULL;
+	const char * const		recipient_attrs[] = { "*", NULL };
+	char				*ldb_filter;
+	int				ret;
+	uint32_t			i;
+	const char			*dn;
+
+	/* Step 0. Sanity Checks (MS-NSPI Server Processing Rules) */
+	if (pStat->SortType == SortTypePhoneticDisplayName) {
+		return MAPI_E_CALL_FAILED;
+	}
+
+	if (((pStat->SortType == SortTypeDisplayName) || (pStat->SortType == SortTypePhoneticDisplayName)) &&
+	    (pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, pStat->ContainerID) == false))) {
+		return MAPI_E_INVALID_BOOKMARK;
+	}
+
+	if (restriction && (pStat->SortType != SortTypeDisplayName) && 
+	    (pStat->SortType != SortTypePhoneticDisplayName)) {
+		return MAPI_E_CALL_FAILED;
+	}
+
+	/* Step 1. Apply restriction and retrieve results from AD */
+	if (restriction) {
+		/* FIXME: We only support RES_PROPERTY restriction */
+		if ((uint32_t)restriction->rt != RES_PROPERTY) {
+			return MAPI_E_TOO_COMPLEX;
+		}
+
+		/* FIXME: We only support PR_ANR */
+		res_prop = (struct PropertyRestriction_r *)&(restriction->res);
+		if ((res_prop->ulPropTag != PR_ANR) && (res_prop->ulPropTag != PR_ANR_UNICODE)) {
+			return MAPI_E_NO_SUPPORT;
+		}
+		
+		recipient = (res_prop->ulPropTag == PR_ANR) ?
+			res_prop->lpProp->value.lpszA :
+			res_prop->lpProp->value.lpszW;
+
+		ldb_filter = talloc_asprintf(emsabp_ctx->mem_ctx, "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))", recipient);
+		ret = ldb_search(emsabp_ctx->users_ctx, emsabp_ctx->mem_ctx, &res,
+				 ldb_get_default_basedn(emsabp_ctx->users_ctx),
+				 LDB_SCOPE_SUBTREE, recipient_attrs, ldb_filter);
+		talloc_free(ldb_filter);
+
+		if (ret != LDB_SUCCESS || !res->count) {
+			return MAPI_E_NOT_FOUND;
+		}
+	} else {
+		/* FIXME Check restriction == NULL */
+	}
+
+	if (limit && res->count > limit) {
+		return MAPI_E_TABLE_TOO_BIG;
+	}
+
+	MIds->aulPropTag = talloc_array(emsabp_ctx->mem_ctx, uint32_t, res->count);
+	MIds->cValues = res->count;
+
+	/* Step 2. Create session MId for all fetched records */
+	for (i = 0; i < res->count; i++) {
+		dn = ldb_msg_find_attr_as_string(res->msgs[i], "distinguishedName", NULL);
+		retval = emsabp_tdb_fetch_MId(emsabp_ctx->ttdb_ctx, dn, &MIds->aulPropTag[i]);
+		if (retval) {
+			retval = emsabp_tdb_insert(emsabp_ctx->ttdb_ctx, dn);
+			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
+			retval = emsabp_tdb_fetch_MId(emsabp_ctx->ttdb_ctx, dn, &(MIds->aulPropTag[i]));
+			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
+		}
+	}
+
 	return MAPI_E_SUCCESS;
 }

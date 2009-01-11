@@ -877,7 +877,8 @@ clean:: mapiproxy-servers-clean
 
 mapiproxy/servers/exchange_nsp.$(SHLIBEXT):	mapiproxy/servers/default/nspi/dcesrv_exchange_nsp.po	\
 						mapiproxy/servers/default/nspi/emsabp.po		\
-						mapiproxy/servers/default/nspi/emsabp_tdb.po		
+						mapiproxy/servers/default/nspi/emsabp_tdb.po		\
+						mapiproxy/servers/default/nspi/emsabp_property.po	
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)  libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 

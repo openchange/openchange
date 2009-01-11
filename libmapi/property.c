@@ -101,6 +101,9 @@ _PUBLIC_ struct SPropValue *get_SPropValue_SRowSet(struct SRowSet *RowSet,
 	uint32_t	i;
 	uint32_t	j;
 
+	/* Sanity Checks */
+	if (!RowSet) return NULL;
+
 	for (i = 0; i != RowSet->cRows; i++) {
 		for (j = 0; j < RowSet->aRow[i].cValues; j++) {
 			if (ulPropTag == RowSet->aRow[i].lpProps[j].ulPropTag) {

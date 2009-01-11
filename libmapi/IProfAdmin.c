@@ -262,6 +262,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(const char *profile,
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!global_mapi_ctx->ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!profile, MAPI_E_BAD_VALUE, NULL);
+	MAPI_RETVAL_IF(!value, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("mapi_profile_add_string_attr");
 	ldb_ctx = global_mapi_ctx->ldb_ctx;

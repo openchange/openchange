@@ -95,8 +95,35 @@ static enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *d
 						     TALLOC_CTX *mem_ctx,
 						     struct RfrGetFQDNFromLegacyDN *r)
 {
-	DEBUG(3, ("exchange_ds_rfr: RfrGetFQDNFromLegacyDN (0x1) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	char		*fqdn;
+	const char	*netbiosname;
+	const char	*realm;
+
+	DEBUG(3, ("exchange_ds_rfr: RfrGetFQDNFromLegacyDN (0x1)\n"));
+
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+
+	failure:
+		r->out.ppszServerFQDN = talloc_array(mem_ctx, const char *, 2);
+		r->out.ppszServerFQDN[0] = NULL;
+		r->out.result = MAPI_E_LOGON_FAILED;
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	netbiosname = lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
+	realm = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+	if (!netbiosname || !realm) {
+		goto failure;
+	}
+
+	fqdn = talloc_asprintf(mem_ctx, "%s.%s", netbiosname, realm);
+	r->out.ppszServerFQDN = talloc_array(mem_ctx, const char *, 2);
+	r->out.ppszServerFQDN[0] = strlower_talloc(mem_ctx, fqdn);
+	talloc_free(fqdn);
+	r->out.result = MAPI_E_SUCCESS;
+
+	return MAPI_E_SUCCESS;
 }
 
 

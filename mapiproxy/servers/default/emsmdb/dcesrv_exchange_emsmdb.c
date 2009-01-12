@@ -289,6 +289,7 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
 		break;
 	case NDR_ECDOCONNECTEX:
 		retval = dcesrv_EcDoConnectEx(dce_call, mem_ctx, (struct EcDoConnectEx *)r);
+		return NT_STATUS_NET_WRITE_FAULT;
 		break;
 	}
 

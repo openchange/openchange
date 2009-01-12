@@ -411,7 +411,10 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	if ((private->server_mode == true) || (mapiproxy_server_loaded(NDR_EXCHANGE_NSP_NAME) == true)) {
-		mapiproxy_server_dispatch(dce_call, mem_ctx, r, &mapiproxy);
+		status = mapiproxy_server_dispatch(dce_call, mem_ctx, r, &mapiproxy);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NT_STATUS_NET_WRITE_FAULT;
+		}
 	} else {
 		if (table->name && !strcmp(table->name, NDR_EXCHANGE_NSP_NAME)) {
 			if (opnum == NDR_NSPIDNTOMID) {

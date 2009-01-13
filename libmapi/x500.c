@@ -38,8 +38,10 @@ _PUBLIC_ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const ch
 
 	tmp_dn = talloc_strdup(mem_ctx, dn);
 	pdn = strcasestr((const char *)tmp_dn, element);
-	talloc_free(tmp_dn);
-	if (pdn == NULL) return NULL;
+	if (pdn == NULL) {
+		talloc_free(tmp_dn);
+		return NULL;
+	}
 
 	pdn += strlen(element);
 	p = pdn;
@@ -49,7 +51,8 @@ _PUBLIC_ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const ch
 	}
 
 	str = talloc_strdup(mem_ctx, pdn);
-	
+
+	talloc_free(tmp_dn);
 	return str;
 }
 

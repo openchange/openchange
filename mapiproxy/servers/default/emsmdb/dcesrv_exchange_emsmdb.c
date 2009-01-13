@@ -28,8 +28,8 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy.h"
 #include "dcesrv_exchange_emsmdb.h"
-#include <util/debug.h>
 
+struct exchange_emsmdb_session		*emsmdb_session = NULL;
 
 /**
    \details exchange_emsmdb EcDoConnect (0x0) function
@@ -38,14 +38,136 @@
    \param mem_ctx pointer to the memory context
    \param r pointer to the EcDoConnect request data
 
+   \note Session linking is not supported at the moment
+
    \return MAPI_E_SUCCESS on success
  */
 static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
 					  struct EcDoConnect *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcDoConnect (0x0) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct emsmdbp_context		*emsmdbp_ctx;
+	struct dcesrv_handle		*handle;
+	struct policy_handle		wire_handle;
+	struct exchange_emsmdb_session	*session;
+	struct ldb_message		*msg;
+	const char			*cn;
+	const char			*userDN;
+	char				*dnprefix;
+
+	DEBUG(3, ("exchange_emsmdb: EcDoConnect (0x0)\n"));
+
+	/* Step 0. Ensure incoming use is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+	failure:
+		wire_handle.handle_type = EXCHANGE_HANDLE_EMSMDB;
+		wire_handle.uuid = GUID_zero();
+		*r->out.handle = wire_handle;
+		
+		r->out.pcmsPollsMax = talloc_zero(mem_ctx, uint32_t);
+		r->out.pcRetry = talloc_zero(mem_ctx, uint32_t);
+		r->out.pcmsRetryDelay = talloc_zero(mem_ctx, uint32_t);
+		r->out.picxr = talloc_zero(mem_ctx, uint32_t);
+		r->out.pullTimeStamp = talloc_zero(mem_ctx, uint32_t);
+
+		*r->out.pcmsPollsMax = 0;
+		*r->out.pcRetry = 0;
+		*r->out.pcmsRetryDelay = 0;
+		r->out.szDisplayName = NULL;
+		r->out.szDNPrefix = NULL;
+		r->out.rgwServerVersion[0] = 0;
+		r->out.rgwServerVersion[1] = 0;
+		r->out.rgwServerVersion[2] = 0;
+		r->out.rgwClientVersion[0] = 0;
+		r->out.rgwClientVersion[1] = 0;
+		r->out.rgwClientVersion[2] = 0;
+		*r->out.pullTimeStamp = 0;
+
+		r->out.result = MAPI_E_LOGON_FAILED;
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Step 1. Initialize the emsmdbp context */
+	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx);
+	if (!emsmdbp_ctx) {
+		smb_panic("unable to initialize emsmdbp context");
+		OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_FAILONEPROVIDER, NULL);
+	}
+
+	/* Step 2. Check if incoming user belongs to the Exchange organization */
+	if (emsmdbp_verify_user(dce_call, emsmdbp_ctx) == false) {
+		talloc_free(emsmdbp_ctx);
+		goto failure;
+	}
+
+	/* Step 3. Check if input user DN belongs to the Exchange organization */
+	if (emsmdbp_verify_userdn(dce_call, emsmdbp_ctx, r->in.szUserDN, &msg) == false) {
+		talloc_free(emsmdbp_ctx);
+		goto failure;
+	}
+
+	/* Step 4. Retrieve the display name of the user */
+	r->out.szDisplayName = ldb_msg_find_attr_as_string(msg, "displayName", NULL);
+
+	/* Step 5. Retrieve the dinstinguished name of the server */
+	cn = ldb_msg_find_attr_as_string(msg, "cn", NULL);
+	userDN = ldb_msg_find_attr_as_string(msg, "legacyExchangeDN", NULL);
+	dnprefix = strstr(userDN, cn);
+	if (!dnprefix) {
+		talloc_free(emsmdbp_ctx);
+		goto failure;
+	}
+
+	*dnprefix = '\0';
+	r->out.szDNPrefix = strupper_talloc(mem_ctx, userDN);
+
+	/* Step 6. Fill EcDoConnect reply */
+	handle = dcesrv_handle_new(dce_call->context, EXCHANGE_HANDLE_EMSMDB);
+	OPENCHANGE_RETVAL_IF(!handle, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
+	
+	handle->data = (void *) emsmdbp_ctx;
+	*r->out.handle = handle->wire_handle;
+
+	r->out.pcmsPollsMax = talloc_zero(mem_ctx, uint32_t);
+	*r->out.pcmsPollsMax = EMSMDB_PCMSPOLLMAX;
+
+	r->out.pcRetry = talloc_zero(mem_ctx, uint32_t);
+	*r->out.pcRetry = EMSMDB_PCRETRY;
+
+	r->out.pcmsRetryDelay = talloc_zero(mem_ctx, uint32_t);
+	*r->out.pcmsRetryDelay = EMSMDB_PCRETRYDELAY;
+
+	r->out.picxr = talloc_zero(mem_ctx, uint32_t);
+	*r->out.picxr = 0;
+
+	r->out.rgwServerVersion[0] = 0x6;
+	r->out.rgwServerVersion[1] = 0x1141;
+	r->out.rgwServerVersion[2] = 0x5;
+
+	r->out.rgwClientVersion[0] = r->in.rgwClientVersion[0];
+	r->out.rgwClientVersion[1] = r->in.rgwClientVersion[1];
+	r->out.rgwClientVersion[2] = r->in.rgwClientVersion[2];
+
+	r->out.pullTimeStamp = talloc_zero(mem_ctx, uint32_t);
+	*r->out.pullTimeStamp = time(NULL);
+
+	r->out.result = MAPI_E_SUCCESS;
+
+	/* Step 7. Associate this emsmdbp context to the session */
+	session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
+
+	session->pullTimeStamp = *r->out.pullTimeStamp;
+	session->session = mpm_session_init((TALLOC_CTX *)emsmdb_session, dce_call);
+	OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
+
+	mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
+	mpm_session_set_destructor(session->session, emsmdbp_destructor);
+
+	DLIST_ADD_END(emsmdb_session, session, struct exchange_emsmdb_session *);
+
+	return MAPI_E_SUCCESS;
 }
 
 
@@ -62,8 +184,32 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 					     TALLOC_CTX *mem_ctx,
 					     struct EcDoDisconnect *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcDoDisconnect (0x1) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle		*h;
+	struct exchange_emsmdb_session	*session;
+
+	DEBUG(3, ("exchange_emsmdb: EcDoDisconnect (0x1)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Step 1. Retrieve handle and free if emsmdbp context and session are available */
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	if (h) {
+		for (session = emsmdb_session; session; session = session->next) {
+			if ((mpm_session_cmp(session->session, dce_call) == true)) {
+				mpm_session_release(session->session);
+				DLIST_REMOVE(emsmdb_session, session);
+				DEBUG(6, ("[%s:%d]: Session found and released\n", __FUNCTION__, __LINE__));
+			}
+		}
+	}
+
+	r->out.result = MAPI_E_SUCCESS;
+
+	return MAPI_E_SUCCESS;
 }
 
 
@@ -306,12 +452,19 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
  */
 static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 {
+	/* Initialize exchange_emsmdb session */
+	emsmdb_session = talloc_zero(dce_ctx, struct exchange_emsmdb_session);
+	if (!emsmdb_session) return NT_STATUS_NO_MEMORY;
+	emsmdb_session->session = NULL;
+
 	return NT_STATUS_OK;
 }
 
 
 /**
-   \details Terminate the EMSMDB connection
+   \details Terminate the EMSMDB connection and release the associated
+   session and context if still available. This case occurs when the
+   client doesn't call EcDoDisconnect but quit unexpectedly.
 
    \param server_id reference to the server identifier structure
    \param context_id the connection context identifier
@@ -320,6 +473,17 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
  */
 static NTSTATUS dcesrv_exchange_emsmdb_unbind(struct server_id server_id, uint32_t context_id)
 {
+	struct exchange_emsmdb_session	*session;
+
+	for (session = emsmdb_session; session; session = session->next) {
+		if ((mpm_session_cmp_sub(session->session, server_id, context_id) == true)) {
+			mpm_session_release(session->session);
+			DLIST_REMOVE(emsmdb_session, session);
+			DEBUG(6, ("[%s:%d]: Session found and released\n", __FUNCTION__, __LINE__));
+			return NT_STATUS_OK;
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 

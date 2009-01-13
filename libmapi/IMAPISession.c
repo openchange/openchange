@@ -163,7 +163,8 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(struct mapi_session *session,
 	retval = OpenUserMailbox(session, session->profile->username, obj_store);
 
 	/* Exchange clustered case */
-	if ((retval != MAPI_E_SUCCESS) && (GetLastError() == ecUnknownUser)) {
+	if ((retval != MAPI_E_SUCCESS) && 
+	    ((GetLastError() == ecUnknownUser) || (GetLastError() == MAPI_E_LOGON_FAILED))) {
 		errno = 0;
 		retval = OpenUserMailbox(session, NULL, obj_store);
 	}

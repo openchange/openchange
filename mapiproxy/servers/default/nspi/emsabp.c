@@ -65,7 +65,7 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 
 	emsabp_ctx->mem_ctx = mem_ctx;
 
-	ev = event_context_init(mem_ctx);
+	ev = tevent_context_init(mem_ctx);
 	if (!ev) {
 		talloc_free(mem_ctx);
 		return NULL;

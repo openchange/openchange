@@ -119,7 +119,7 @@ struct emsabp_ctx *emsabp_init(void)
 	if (!emsabp_ctx) return NULL;
 	emsabp_ctx->mem_ctx = mem_ctx;
 
-	ev = event_context_init(mem_ctx);
+	ev = tevent_context_init(mem_ctx);
 	if (!ev) return NULL;
 
 	/* return an opaque context pointer on the configuration database */

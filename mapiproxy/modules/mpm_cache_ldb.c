@@ -49,7 +49,7 @@ NTSTATUS mpm_cache_ldb_createdb(struct dcesrv_context *dce_ctx,
 	struct event_context	*ev;
 	int			ret;
 
-	ev = event_context_init(dce_ctx);
+	ev = tevent_context_init(dce_ctx);
 	if (!ev) return NT_STATUS_NO_MEMORY;
 
 	tmp_ctx = ldb_init(dce_ctx, ev);

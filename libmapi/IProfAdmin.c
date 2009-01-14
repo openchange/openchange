@@ -419,7 +419,7 @@ enum MAPISTATUS OpenProfileStore(TALLOC_CTX *mem_ctx, struct ldb_context **ldb_c
 	/* store path */
 	if (!profiledb) return MAPI_E_NOT_FOUND;
 
-	ev = event_context_init(mem_ctx);
+	ev = tevent_context_init(mem_ctx);
 	if (!ev) return MAPI_E_NOT_ENOUGH_RESOURCES;
 
 	/* connect to the store */
@@ -484,7 +484,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 
 	mem_ctx = talloc_init("CreateProfileStore");
 
-	ev = event_context_init(mem_ctx);
+	ev = tevent_context_init(mem_ctx);
 	MAPI_RETVAL_IF(!ev, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	ldb_ctx = ldb_init(mem_ctx, ev);

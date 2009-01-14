@@ -53,7 +53,7 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ev = event_context_init(talloc_autofree_context());
+	ev = tevent_context_init(talloc_autofree_context());
 
 	status = dcerpc_pipe_connect(parent_ctx, 
 				     p, binding, table,

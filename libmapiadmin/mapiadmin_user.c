@@ -77,7 +77,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 
 	DEBUG(3, ("Connecting to SAMR\n"));
 
-	ev = event_context_init(mem_ctx);
+	ev = tevent_context_init(mem_ctx);
 
 	status = dcerpc_pipe_connect(mapiadmin_ctx->user_ctx,
 				     &mapiadmin_ctx->user_ctx->p,
@@ -224,7 +224,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	mem_ctx = talloc_init("mapiadmin_user_extend");
 
 	/* open LDAP connection */
-	ev = event_context_init(talloc_autofree_context());
+	ev = tevent_context_init(talloc_autofree_context());
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);
 	MAPI_RETVAL_IF(!remote_ldb_url, MAPI_E_CORRUPT_DATA, mem_ctx);
 	remote_ldb = ldb_wrap_connect(mem_ctx, ev, global_mapi_ctx->lp_ctx, remote_ldb_url, 

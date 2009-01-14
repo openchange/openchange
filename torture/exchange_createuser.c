@@ -100,7 +100,7 @@ NTSTATUS torture_exchange_createuser(TALLOC_CTX *mem_ctx, const char *username,
 
 	profile = global_mapi_ctx->session->profile;
 
-	ev = event_context_init(talloc_autofree_context());
+	ev = tevent_context_init(talloc_autofree_context());
 
 	/* open LDAP connection */
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);

@@ -39,7 +39,7 @@ struct ocb_context *ocb_init(TALLOC_CTX *mem_ctx, const char *dbpath)
 
 	ocb_ctx = talloc_zero(mem_ctx, struct ocb_context);
 
-	ev = event_context_init(ocb_ctx);
+	ev = tevent_context_init(ocb_ctx);
 	if (!ev) goto failed;
 
 	/* init ldb store */

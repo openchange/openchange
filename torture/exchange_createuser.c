@@ -85,7 +85,7 @@ NTSTATUS torture_exchange_createuser(TALLOC_CTX *mem_ctx, const char *username,
 				     const struct dom_sid *dom_sid)
 {
 	enum MAPISTATUS		retval;
-	struct event_context	*ev = NULL;
+	struct tevent_context	*ev = NULL;
 	struct mapi_profile	*profile;
 	struct ldb_context	*remote_ldb;
 	struct ldb_request	*req;

@@ -46,7 +46,7 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 					struct loadparm_context *lp_ctx)
 {
 	NTSTATUS		status;
-	struct event_context	*ev;
+	struct tevent_context	*ev;
 
 	if (!binding) {
 		DEBUG(3, ("You must specify a ncacn binding string\n"));

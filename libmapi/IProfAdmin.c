@@ -412,7 +412,7 @@ enum MAPISTATUS OpenProfileStore(TALLOC_CTX *mem_ctx, struct ldb_context **ldb_c
 {
 	int			ret;
 	struct ldb_context	*tmp_ctx;
-	struct event_context *ev;
+	struct tevent_context	*ev;
 	
 	*ldb_ctx = 0;
 	
@@ -477,7 +477,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 	char			*url = NULL;
 	char			*filename = NULL;
 	FILE			*f;
-	struct event_context *ev;
+	struct tevent_context	*ev;
 
 	MAPI_RETVAL_IF(!profiledb, MAPI_E_CALL_FAILED, NULL);
 	MAPI_RETVAL_IF(!ldif_path, MAPI_E_CALL_FAILED, NULL);

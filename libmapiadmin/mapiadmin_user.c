@@ -54,7 +54,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 					      TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS			status;
-	struct event_context		*ev;
+	struct tevent_context		*ev;
 	struct mapi_profile		*profile;
 	struct samr_Connect		c;
 	struct samr_OpenDomain		o;
@@ -187,7 +187,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 {
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
-	struct event_context		*ev = NULL;
+	struct tevent_context		*ev = NULL;
 	struct mapi_profile		*profile;
 	struct ldb_context		*remote_ldb;
 	struct ldb_request		*req;

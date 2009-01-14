@@ -46,7 +46,7 @@ NTSTATUS mpm_cache_ldb_createdb(struct dcesrv_context *dce_ctx,
 				struct ldb_context **ldb_ctx)
 {
 	struct ldb_context	*tmp_ctx;
-	struct event_context	*ev;
+	struct tevent_context	*ev;
 	int			ret;
 
 	ev = tevent_context_init(dce_ctx);

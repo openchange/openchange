@@ -47,7 +47,7 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 {
 	TALLOC_CTX		*mem_ctx;
 	struct emsabp_context	*emsabp_ctx;
-	struct event_context	*ev;
+	struct tevent_context	*ev;
 	char			*configuration = NULL;
 	char			*users = NULL;
 	int			ret;

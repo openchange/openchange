@@ -43,7 +43,7 @@ static void make_global_ctx_valid(char* mem_ctx)
 /**
    \details De-initialize the global context
 */
-static void make_global_ctx_invalid()
+static void make_global_ctx_invalid(void)
 {
 	talloc_free(global_mapi_ctx);
 	global_mapi_ctx = 0;

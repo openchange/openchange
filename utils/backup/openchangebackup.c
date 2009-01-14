@@ -31,7 +31,7 @@ struct ocb_context *ocb_init(TALLOC_CTX *mem_ctx, const char *dbpath)
 	struct ocb_context	*ocb_ctx = NULL;
 	char			*url = NULL;
 	int			ret;
-	struct event_context *ev;
+	struct tevent_context	*ev;
 
 	/* sanity check */
 	OCB_RETVAL_IF_CODE(!mem_ctx, "invalid memory context", NULL, NULL);

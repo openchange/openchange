@@ -58,3 +58,7 @@ tags
 bin/exchange2ical
 libmapi/mapi_namedid.h
 libmapi/mapi_nameid.h
+bin/libmapixx-attach
+bin/libmapixx-test
+libmapi++/examples/foldertree
+libmapi++/examples/messages

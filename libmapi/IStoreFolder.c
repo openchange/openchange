@@ -48,9 +48,9 @@
    - 0x1: ReadWrite
    - 0x3: Create
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_store is undefined
@@ -80,10 +80,10 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	uint32_t			i = 0;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("OpenMessage");
 
@@ -113,9 +113,9 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	mapi_request->handles[1] = 0xffffffff;
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Set object session and handle */
 	mapi_object_set_session(obj_message, session);

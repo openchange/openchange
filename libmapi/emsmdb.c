@@ -161,7 +161,7 @@ int emsmdb_disconnect_dtor(void *data)
 
    \param emsmdb_ctx pointer to the EMSMDB context
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 enum MAPISTATUS emsmdb_disconnect(struct emsmdb_context *emsmdb_ctx)
 {
@@ -170,14 +170,14 @@ enum MAPISTATUS emsmdb_disconnect(struct emsmdb_context *emsmdb_ctx)
 	struct EcDoDisconnect	r;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!emsmdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
 
 	status = dcerpc_EcDoDisconnect(emsmdb_ctx->rpc_connection, emsmdb_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }

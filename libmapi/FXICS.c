@@ -28,8 +28,24 @@
    \brief Incremental Change Synchronization operations
  */
 
+
 /**
    \details Reserves a range of IDs to be used by a local replica
+
+   \param obj_store pointer on the store MAPI object
+   \param IdCounter ID range length to reserve
+   \param ReplGuid pointer to the GUID structure returned by the
+   server
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the function parameter is
+     invalid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
  */
 _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store, 
 					    uint32_t IdCount,
@@ -48,12 +64,12 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ReplGuid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ReplGuid, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("GetLocalReplicaIds");
 	size = 0;
@@ -79,9 +95,9 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	/* Retrieve output parameters */
 	reply = &mapi_response->mapi_repl->u.mapi_GetLocalReplicaIds;

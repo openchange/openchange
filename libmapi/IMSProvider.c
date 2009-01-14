@@ -138,8 +138,8 @@ _PUBLIC_ enum MAPISTATUS RfrGetFQDNFromLegacyDN(struct mapi_session *session,
 	const char     			*ppszServerFQDN;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mem_ctx = (TALLOC_CTX *)session;
 	profile = session->profile;
@@ -149,7 +149,7 @@ _PUBLIC_ enum MAPISTATUS RfrGetFQDNFromLegacyDN(struct mapi_session *session,
 	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, global_mapi_ctx->lp_ctx);
 	talloc_free(binding);
 
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);
 
 	r.in.ulFlags = 0x0;
 	r.in.cbMailboxServerDN = strlen(profile->homemdb) + 1;
@@ -157,7 +157,7 @@ _PUBLIC_ enum MAPISTATUS RfrGetFQDNFromLegacyDN(struct mapi_session *session,
 	r.out.ppszServerFQDN = &ppszServerFQDN;
 
 	status = dcerpc_RfrGetFQDNFromLegacyDN(pipe, mem_ctx, &r);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	
 	if (ppszServerFQDN) {
 		*serverFQDN = ppszServerFQDN;
@@ -178,8 +178,8 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 	struct mapi_profile	*profile;
 	char			*binding;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mem_ctx = (TALLOC_CTX *)provider;
 	profile = session->profile;
@@ -189,13 +189,13 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s%s", profile->server, ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_emsmdb, global_mapi_ctx->lp_ctx);
 		talloc_free(binding);
-		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
-		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
-		MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
 		provider->ctx = emsmdb_connect(mem_ctx, session, pipe, profile->credentials);
-		MAPI_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
+		OPENCHANGE_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
 		break;
 	case PROVIDER_ID_NSPI:
 		/* Call RfrGetNewDSA prior any NSPI call */
@@ -203,17 +203,17 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 					  ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_nsp, global_mapi_ctx->lp_ctx);
 		talloc_free(binding);
-		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
-		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-		MAPI_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
-		MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
 		provider->ctx = (void *)nspi_bind(provider, pipe, profile->credentials, 
 						  profile->codepage, profile->language, profile->method);
-		MAPI_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
+		OPENCHANGE_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
 		break;
 	default:
-		MAPI_RETVAL_IF("Logon", MAPI_E_NOT_FOUND, NULL);
+		OPENCHANGE_RETVAL_IF("Logon", MAPI_E_NOT_FOUND, NULL);
 		break;
 	}
 
@@ -239,8 +239,8 @@ _PUBLIC_ enum MAPISTATUS Logoff(mapi_object_t *obj_store)
 
 	/* Sanity checks */
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (el = global_mapi_ctx->session; el; el = el->next) {
 		if (session == el) {
@@ -264,9 +264,9 @@ _PUBLIC_ enum MAPISTATUS Logoff(mapi_object_t *obj_store)
 
    \param ulEventMask the mask of events to provide notifications for.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -284,14 +284,15 @@ _PUBLIC_ enum MAPISTATUS RegisterNotification(uint16_t ulEventMask)
 	static uint8_t		rand = 0;
 	static uint8_t		attempt = 0;
 	
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
 
 	session = (struct mapi_session *)global_mapi_ctx->session;
-	MAPI_RETVAL_IF(!session->emsmdb, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session->emsmdb, MAPI_E_SESSION_LIMIT, NULL);
 
 	emsmdb = (struct emsmdb_context *)global_mapi_ctx->session->emsmdb->ctx;
-	MAPI_RETVAL_IF(!emsmdb, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdb, MAPI_E_SESSION_LIMIT, NULL);
 
 	mem_ctx = emsmdb->mem_ctx;
 

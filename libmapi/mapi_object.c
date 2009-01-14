@@ -28,17 +28,20 @@
 */
 
 
-/* fixme: mapi_object functions should return error codes */
+/* FIXME: mapi_object functions should return error codes */
 
 
-/* keep intern to this file
- */
+/**
+   keep intern to this file
+*/
 #define INVALID_HANDLE_VALUE 0xffffffff
 
 
-/* mapi object interface implementation
- */
+/**
+   \details Reset a MAPI object structure
 
+   \param obj pointer on the MAPI object to reset
+ */
 static void mapi_object_reset(mapi_object_t *obj)
 {
 	obj->handle = INVALID_HANDLE_VALUE;
@@ -56,9 +59,9 @@ static void mapi_object_reset(mapi_object_t *obj)
 
    \param obj the object to initialize
    
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
 
@@ -68,7 +71,7 @@ _PUBLIC_ enum MAPISTATUS mapi_object_init(mapi_object_t *obj)
 {
 	mapi_object_reset(obj);
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -80,7 +83,7 @@ _PUBLIC_ enum MAPISTATUS mapi_object_init(mapi_object_t *obj)
    This function is required to be called when this MAPI object
    is no longer required.
 
-   \param obj the object to release
+   \param obj pointer on the MAPI object to release
 
    \sa mapi_object_initialize, Release
 */
@@ -101,6 +104,13 @@ _PUBLIC_ void mapi_object_release(mapi_object_t *obj)
 }
 
 
+/**
+   \details Check if the supplied object has a valid handle
+
+   \param obj pointer on the MAPI object to test
+
+   \return 0 on success, otherwise 1
+ */
 int mapi_object_is_invalid(mapi_object_t *obj)
 {
 	if (mapi_object_get_handle(obj) == INVALID_HANDLE_VALUE) {
@@ -110,13 +120,14 @@ int mapi_object_is_invalid(mapi_object_t *obj)
 	return MAPI_E_SUCCESS;
 }
 
+
 /**
    \details Copy MAPI object
 
    This function copies mapi_object data from source to destination.
 
-   \param dst pointer on the destination mapi object
-   \param src pointer on the source mapi object
+   \param dst pointer on the destination MAPI object
+   \param src pointer on the source MAPI object
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_INITIALIZED
 
@@ -125,7 +136,7 @@ _PUBLIC_ enum MAPISTATUS mapi_object_copy(mapi_object_t *dst, mapi_object_t *src
 {
 	mapi_object_reset(dst);
 
-	MAPI_RETVAL_IF(!dst || !src, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!dst || !src, MAPI_E_NOT_INITIALIZED, NULL);
 
 	dst->id = src->id;
 	dst->handle = src->handle;
@@ -154,8 +165,8 @@ _PUBLIC_ struct mapi_session *mapi_object_get_session(mapi_object_t *obj)
 /**
    \details Set the session for a given MAPI object
 
-   \param obj pointer to the object to set the session for
-   \param session pointer to the MAPI session to associate to the MAPI
+   \param obj pointer on the object to set the session for
+   \param session pointer on the MAPI session to associate to the MAPI
    object
  */
 _PUBLIC_ void mapi_object_set_session(mapi_object_t *obj, 
@@ -170,7 +181,7 @@ _PUBLIC_ void mapi_object_set_session(mapi_object_t *obj,
 /**
    \details Retrieve an object ID for a given MAPI object
  
-   \param obj the object to get the ID for
+   \param obj pointer on the MAPI object to get the ID for
 
    \return the object ID, or -1 if the object does not exist
 */
@@ -180,18 +191,37 @@ _PUBLIC_ mapi_id_t mapi_object_get_id(mapi_object_t *obj)
 }
 
 
+/**
+   \details Set the id for a given MAPI object
+
+   \param obj pointer on the MAPI object to set the session for
+   \param id Identifier to set to the object obj
+ */
 void mapi_object_set_id(mapi_object_t *obj, mapi_id_t id)
 {
 	obj->id = id;
 }
 
 
+/**
+   \details Retrieve the handle associated to a MAPI object
+
+   \param obj pointer on the MAPI object to retrieve the handle from
+
+   \return a valid MAPI object handle on success, otherwise -1.
+ */
 mapi_handle_t mapi_object_get_handle(mapi_object_t *obj)
 {
 	return (!obj) ? -1 : obj->handle;
 }
 
 
+/**
+   \details Associate a handle to a MAPI object
+
+   \param obj pointer on the MAPI object on which handle has to be set
+   \param handle the MAPI handle value
+ */
 void mapi_object_set_handle(mapi_object_t *obj, mapi_handle_t handle)
 {
 	obj->handle = handle;
@@ -201,7 +231,7 @@ void mapi_object_set_handle(mapi_object_t *obj, mapi_handle_t handle)
 /**
    \details Dump a MAPI object (for debugging)
 
-   \param obj the MAPI object to dump out
+   \param obj pointer on the MAPI object to dump out
 */
 _PUBLIC_ void mapi_object_debug(mapi_object_t *obj)
 {
@@ -212,6 +242,13 @@ _PUBLIC_ void mapi_object_debug(mapi_object_t *obj)
 }
 
 
+/**
+   \details Initialize MAPI object private data to store a MAPI object
+   table
+
+   \param mem_ctx pointer on the memory context
+   \param obj_table pointer on the MAPI object
+ */
 void mapi_object_table_init(TALLOC_CTX *mem_ctx, mapi_object_t *obj_table)
 {
 	mapi_object_table_t	*table = NULL;
@@ -234,6 +271,15 @@ void mapi_object_table_init(TALLOC_CTX *mem_ctx, mapi_object_t *obj_table)
 }
 
 
+/**
+   \details Fetch a bookmark within a MAPI object table
+
+   \param obj_table pointer on the MAPI object table
+   \param bkPosition the bookmark position to find
+   \param bin pointer on the Sbinary_short the function fills
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+ */
 enum MAPISTATUS mapi_object_bookmark_find(mapi_object_t *obj_table, uint32_t bkPosition,
 					  struct SBinary_short *bin)
 {
@@ -243,12 +289,12 @@ enum MAPISTATUS mapi_object_bookmark_find(mapi_object_t *obj_table, uint32_t bkP
 	table = (mapi_object_table_t *)obj_table->private_data;
 	bookmark = table->bookmark;
 
-	/* Sanity check */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!bookmark, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(bkPosition > table->bk_last, MAPI_E_INVALID_BOOKMARK, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!bookmark, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(bkPosition > table->bk_last, MAPI_E_INVALID_BOOKMARK, NULL);
 	
 	while (bookmark) {
 		if (bookmark->index == bkPosition) {
@@ -262,6 +308,14 @@ enum MAPISTATUS mapi_object_bookmark_find(mapi_object_t *obj_table, uint32_t bkP
 }
 
 
+/**
+   \details Retrieve the number of bookmarks stored in a MAPI object table
+
+   \param obj_table pointer to the MAPI object table
+   \param count pointer to the number of bookmarks to return
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+ */
 _PUBLIC_ enum MAPISTATUS mapi_object_bookmark_get_count(mapi_object_t *obj_table, 
 							uint32_t *count)
 {
@@ -269,10 +323,10 @@ _PUBLIC_ enum MAPISTATUS mapi_object_bookmark_get_count(mapi_object_t *obj_table
 
 	table = (mapi_object_table_t *)obj_table->private_data;
 
-	/* Sanity check */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
 
 	*count = table->bk_last - 3;
 
@@ -280,6 +334,13 @@ _PUBLIC_ enum MAPISTATUS mapi_object_bookmark_get_count(mapi_object_t *obj_table
 }
 
 
+/**
+   \details Dump bookmarks associated to a MAPI object table
+
+   \param obj_table pointer on the MAPI object table
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+ */
 _PUBLIC_ enum MAPISTATUS mapi_object_bookmark_debug(mapi_object_t *obj_table)
 {
 	mapi_object_table_t	*table;
@@ -288,11 +349,11 @@ _PUBLIC_ enum MAPISTATUS mapi_object_bookmark_debug(mapi_object_t *obj_table)
 	table = (mapi_object_table_t *)obj_table->private_data;
 	bookmark = table->bookmark;
 
-	/* Sanity check */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!bookmark, MAPI_E_NOT_INITIALIZED, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!bookmark, MAPI_E_NOT_INITIALIZED, NULL);
 	
 	while (bookmark) {
 		DEBUG(0, ("mapi_object_bookmark {\n"));

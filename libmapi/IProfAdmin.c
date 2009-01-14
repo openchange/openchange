@@ -259,23 +259,23 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(const char *profile,
 	int				ret;
 	const char * const		attrs[] = { "*", NULL };
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!global_mapi_ctx->ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!profile, MAPI_E_BAD_VALUE, NULL);
-	MAPI_RETVAL_IF(!value, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx->ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_BAD_VALUE, NULL);
+	OPENCHANGE_RETVAL_IF(!value, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("mapi_profile_add_string_attr");
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 
 	/* Retrieve the profile from the database */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profile);
-	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_BAD_VALUE, mem_ctx);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_BAD_VALUE, mem_ctx);
 
 	/* Preparing for the transaction */
 	dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Profiles", profile);
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, dn);
 	talloc_free(dn);
-	MAPI_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, mem_ctx);
 
 	msg.dn = ldb_dn_copy(mem_ctx, basedn);
 	msg.num_elements = 1;
@@ -289,7 +289,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(const char *profile,
 	vals[0][0].length = strlen(value);
 
 	ret = ldb_modify(ldb_ctx, &msg);
-	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
 	
 	talloc_free(mem_ctx);
 	return MAPI_E_SUCCESS;
@@ -314,21 +314,21 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_modify_string_attr(const char *profname,
 	int				ret;
 	const char * const		attrs[] = { "*", NULL };
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!profname, MAPI_E_BAD_VALUE, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!profname, MAPI_E_BAD_VALUE, NULL);
 
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 	mem_ctx = talloc_init("mapi_profile_modify_string_attr");
 
 	/* Retrieve the profile from the database */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profname);
-	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_BAD_VALUE, mem_ctx);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_BAD_VALUE, mem_ctx);
 
 	/* Preparing for the transaction */
 	dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Profiles", profname);
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, dn);
 	talloc_free(dn);
-	MAPI_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, mem_ctx);
 
 	msg.dn = ldb_dn_copy(mem_ctx, basedn);
 	msg.num_elements = 1;
@@ -342,7 +342,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_modify_string_attr(const char *profname,
 	vals[0][0].length = strlen(value);
 
 	ret = ldb_modify(ldb_ctx, &msg);
-	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
 
 	talloc_free(mem_ctx);
 	
@@ -368,21 +368,21 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_delete_string_attr(const char *profname,
 	int				ret;
 	const char * const		attrs[] = { "*", NULL };
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!profname, MAPI_E_BAD_VALUE, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!profname, MAPI_E_BAD_VALUE, NULL);
 
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 	mem_ctx = talloc_init("mapi_profile_delete_string_attr");
 
 	/* Retrieve the profile from the database */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profname);
-	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_BAD_VALUE, mem_ctx);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_BAD_VALUE, mem_ctx);
 
 	/* Preparing for the transaction */
 	dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Profiles", profname);
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, dn);
 	talloc_free(dn);
-	MAPI_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, mem_ctx);
 
 	msg.dn = ldb_dn_copy(mem_ctx, basedn);
 	msg.num_elements = 1;
@@ -396,7 +396,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_delete_string_attr(const char *profname,
 	vals[0][0].length = strlen(value);
 
 	ret = ldb_modify(ldb_ctx, &msg);
-	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
 
 	talloc_free(mem_ctx);
 	
@@ -458,9 +458,9 @@ _PUBLIC_ const char *mapi_profile_get_ldif_path(void)
    \param ldif_path the absolute path to the LDIF information to use
    for initial setup.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_CALL_FAILED: profiledb or ldif_path is not set
    - MAPI_E_NOT_ENOUGH_RESOURCES: ldb subsystem initialization failed
@@ -479,25 +479,25 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 	FILE			*f;
 	struct tevent_context	*ev;
 
-	MAPI_RETVAL_IF(!profiledb, MAPI_E_CALL_FAILED, NULL);
-	MAPI_RETVAL_IF(!ldif_path, MAPI_E_CALL_FAILED, NULL);
+	OPENCHANGE_RETVAL_IF(!profiledb, MAPI_E_CALL_FAILED, NULL);
+	OPENCHANGE_RETVAL_IF(!ldif_path, MAPI_E_CALL_FAILED, NULL);
 
 	mem_ctx = talloc_init("CreateProfileStore");
 
 	ev = tevent_context_init(mem_ctx);
-	MAPI_RETVAL_IF(!ev, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!ev, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	ldb_ctx = ldb_init(mem_ctx, ev);
-	MAPI_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	url = talloc_asprintf(mem_ctx, "tdb://%s", profiledb);
 	ret = ldb_connect(ldb_ctx, url, 0, 0);
 	talloc_free(url);
-	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_ACCESS, mem_ctx);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_ACCESS, mem_ctx);
 
 	filename = talloc_asprintf(mem_ctx, "%s/oc_profiles_init.ldif", ldif_path);
 	f = fopen(filename, "r");
-	MAPI_RETVAL_IF(!f, MAPI_E_NO_ACCESS, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!f, MAPI_E_NO_ACCESS, mem_ctx);
 	talloc_free(filename);
 
 	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
@@ -505,7 +505,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 		ret = ldb_add(ldb_ctx, ldif->msg);
 		if (ret != LDB_SUCCESS) {
 			fclose(f);
-			MAPI_RETVAL_IF("ldb_ldif_read_file", MAPI_E_NO_ACCESS, mem_ctx);
+			OPENCHANGE_RETVAL_IF("ldb_ldif_read_file", MAPI_E_NO_ACCESS, mem_ctx);
 		}
 		ldb_ldif_read_free(ldb_ctx, ldif);
 	}
@@ -513,7 +513,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 
 	filename = talloc_asprintf(mem_ctx, "%s/oc_profiles_schema.ldif", ldif_path);
 	f = fopen(filename, "r");
-	MAPI_RETVAL_IF(!f, MAPI_E_NO_ACCESS, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!f, MAPI_E_NO_ACCESS, mem_ctx);
 
 	talloc_free(filename);
 	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
@@ -521,7 +521,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 		ret = ldb_add(ldb_ctx, ldif->msg);
 		if (ret != LDB_SUCCESS) {
 			fclose(f);
-			MAPI_RETVAL_IF("ldb_ldif_read_file", MAPI_E_NO_ACCESS, mem_ctx);
+			OPENCHANGE_RETVAL_IF("ldb_ldif_read_file", MAPI_E_NO_ACCESS, mem_ctx);
 		}
 
 		ldb_ldif_read_free(ldb_ctx, ldif);
@@ -544,9 +544,9 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
    \param profname the name of the profile to open
    \param password the password to use with the profile
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_ENOUGH_RESOURCES: ldb subsystem initialization failed
    - MAPI_E_NOT_FOUND: the profile was not found in the profile
@@ -560,14 +560,14 @@ _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_profile *profile, const char *p
 	TALLOC_CTX	*mem_ctx;
 	enum MAPISTATUS	retval;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mem_ctx = (TALLOC_CTX *) global_mapi_ctx->session;
 	
 	/* find the profile in ldb store */
 	retval = ldb_load_profile(mem_ctx, global_mapi_ctx->ldb_ctx, profile, profname, password);
 
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;	
 }
@@ -578,9 +578,9 @@ _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_profile *profile, const char *p
    This function loads a named MAPI profile and sets the MAPI session
    credentials.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: The profile parameter is not
@@ -594,13 +594,13 @@ _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_profile *profile)
 {
 	TALLOC_CTX *mem_ctx;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = (TALLOC_CTX *) global_mapi_ctx->session;
 
 	profile->credentials = cli_credentials_init(mem_ctx);
-	MAPI_RETVAL_IF(!profile->credentials, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+	OPENCHANGE_RETVAL_IF(!profile->credentials, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	cli_credentials_set_username(profile->credentials, profile->username, CRED_SPECIFIED);
 	cli_credentials_set_password(profile->credentials, profile->password, CRED_SPECIFIED);
 	cli_credentials_set_workstation(profile->credentials, profile->workstation, CRED_SPECIFIED);
@@ -617,16 +617,16 @@ _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_profile *profile)
 
    \param profile the profile to release.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: The profile parameter was not set or
      not valid
  */
 _PUBLIC_ enum MAPISTATUS ShutDown(struct mapi_profile *profile)
 {
-	MAPI_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
 
 	if (profile->credentials) 
 		talloc_free(profile->credentials);
@@ -649,9 +649,9 @@ _PUBLIC_ enum MAPISTATUS ShutDown(struct mapi_profile *profile)
    \param password the password for the profile (if used)
    \param flag the union of the flags. 
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been
      initialized. The MAPI subsystem must be initialized (using
@@ -674,11 +674,11 @@ _PUBLIC_ enum MAPISTATUS CreateProfile(const char *profile, const char *username
 	enum MAPISTATUS retval;
 	TALLOC_CTX	*mem_ctx;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mem_ctx = talloc_init("CreateProfile");
 	retval = ldb_create_profile(mem_ctx, global_mapi_ctx->ldb_ctx, profile);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	retval = mapi_profile_add_string_attr(profile, "username", username);
 	if (flag != OC_PROFILE_NOPASSWORD) {
@@ -695,9 +695,9 @@ _PUBLIC_ enum MAPISTATUS CreateProfile(const char *profile, const char *username
 
    \param profile the name of the profile to delete
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been
      initialized. The MAPI subsystem must be initialized (using
@@ -712,11 +712,11 @@ _PUBLIC_ enum MAPISTATUS DeleteProfile(const char *profile)
 	TALLOC_CTX	*mem_ctx;
 	enum MAPISTATUS	retval;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mem_ctx = talloc_init("DeleteProfile");
 	retval = ldb_delete_profile(mem_ctx, global_mapi_ctx->ldb_ctx, profile);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	talloc_free(mem_ctx);
 
 	return retval;
@@ -730,9 +730,9 @@ _PUBLIC_ enum MAPISTATUS DeleteProfile(const char *profile)
    \param old_password the old password
    \param password the new password
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: One of the following argument was not
      set: profile, old_password, password
@@ -753,7 +753,7 @@ _PUBLIC_ enum MAPISTATUS ChangeProfilePassword(const char *profile,
 	mem_ctx = talloc_init("ChangeProfilePassword");
 
 	retval = ldb_test_password(mem_ctx, profile, password);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	retval = mapi_profile_modify_string_attr(profile, "password", password);
 	
@@ -797,9 +797,9 @@ _PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile,
 
    \param profname the name of the profile to make the default profile
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: The profile parameter was not set
@@ -814,14 +814,14 @@ _PUBLIC_ enum MAPISTATUS SetDefaultProfile(const char *profname)
 	struct mapi_profile	profile;
 	enum MAPISTATUS		retval;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!profname, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!profname, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SetDefaultProfile");
 
 	/* open profile */
 	retval = ldb_load_profile(mem_ctx, global_mapi_ctx->ldb_ctx, &profile, profname, NULL);
-	MAPI_RETVAL_IF(retval && retval != MAPI_E_INVALID_PARAMETER, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval && retval != MAPI_E_INVALID_PARAMETER, retval, mem_ctx);
 
 	/* search any previous default profile and unset it */
 	retval = ldb_clear_default_profile(mem_ctx);
@@ -841,9 +841,9 @@ _PUBLIC_ enum MAPISTATUS SetDefaultProfile(const char *profname)
    \param profname the result of the function (name of the default
    profile)
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_NOT_FOUND: The profile was not found in the database
@@ -858,7 +858,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
 	uint32_t		i;
 	
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	
 	retval = GetProfileTable(&proftable);
 
@@ -874,7 +874,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
 		}
 	}
 	
-	MAPI_RETVAL_IF("GetDefaultProfile", MAPI_E_NOT_FOUND, proftable.aRow);
+	OPENCHANGE_RETVAL_IF("GetDefaultProfile", MAPI_E_NOT_FOUND, proftable.aRow);
 }
 
 /**
@@ -883,7 +883,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
  */
 _PUBLIC_ enum MAPISTATUS GetProfilePtr(struct mapi_profile *profile)
 {
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	profile = global_mapi_ctx->session->profile;
 
@@ -901,9 +901,9 @@ _PUBLIC_ enum MAPISTATUS GetProfilePtr(struct mapi_profile *profile)
 
    \param proftable the result of the call
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_NOT_FOUND: The profile was not found in the database
@@ -922,14 +922,14 @@ _PUBLIC_ enum MAPISTATUS GetProfileTable(struct SRowSet *proftable)
 	int				ret;
 	uint32_t			count;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 	mem_ctx = (TALLOC_CTX *)ldb_ctx;
 
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, scope, attrs, "(cn=*)");
-	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
 
 	/* Allocate Arow */
 	proftable->cRows = res->count;
@@ -966,9 +966,9 @@ _PUBLIC_ enum MAPISTATUS GetProfileTable(struct SRowSet *proftable)
    \param count the number of results
    \param value the resulting values
    
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: Either profile or attribute was not set
@@ -993,9 +993,9 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 	int				ret;
 	uint32_t       			i;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!attribute, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!attribute, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = (TALLOC_CTX *)global_mapi_ctx->ldb_ctx;
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
@@ -1003,7 +1003,7 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, LDB_SCOPE_SUBTREE, attrs, "(cn=%s)", profile->profname);
-	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
 
 	msg = res->msgs[0];
 	ldb_element = ldb_msg_find_element(msg, attribute);
@@ -1042,10 +1042,10 @@ _PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile, const cha
 	const char			*attrs[] = {"*", NULL};
 	int				ret;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!attribute, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!value, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!attribute, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!value, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = (TALLOC_CTX *)global_mapi_ctx->ldb_ctx;
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
@@ -1053,16 +1053,16 @@ _PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile, const cha
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, LDB_SCOPE_SUBTREE, attrs, "(CN=%s)", profile->profname);
-	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
-	MAPI_RETVAL_IF(!res->count, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!res->count, MAPI_E_NOT_FOUND, NULL);
 
 	msg = res->msgs[0];
 	ldb_element = ldb_msg_find_element(msg, attribute);
-	MAPI_RETVAL_IF(!ldb_element, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!ldb_element, MAPI_E_NOT_FOUND, NULL);
 
 	val.data = (uint8_t *)talloc_strdup(mem_ctx, value);
 	val.length = strlen(value);
-	MAPI_RETVAL_IF(!ldb_msg_find_val(ldb_element, &val), MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!ldb_msg_find_val(ldb_element, &val), MAPI_E_NOT_FOUND, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -1140,9 +1140,9 @@ static bool set_profile_mvstr_attribute(const char *profname, struct SRowSet row
    \param callback function pointer callback function
    \param private_data context data that will be provided to the callback
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
 
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been
@@ -1174,8 +1174,8 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	uint32_t		instance_key = 0;
 	uint32_t		index = 0;
 
-	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
 	
 	nspi = (struct nspi_context *) session->nspi->ctx;
 	profname = session->profile->profname;
@@ -1204,7 +1204,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	/* Retrieve the username to match */
 	if (!username) {
 		username = cli_credentials_get_username(nspi->cred);
-		MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+		OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	}
 
 	/* Build the restriction we want for NspiGetMatches */
@@ -1230,14 +1230,14 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	}
 
 	/* if there's no match */
-	MAPI_RETVAL_IF(!SRowSet, MAPI_E_NOT_FOUND, NULL);
-	MAPI_RETVAL_IF(!SRowSet->cRows, MAPI_E_NOT_FOUND, NULL);
-	MAPI_RETVAL_IF(!MIds, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!SRowSet, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!SRowSet->cRows, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!MIds, MAPI_E_NOT_FOUND, NULL);
 
 	/* if SRowSet count is superior than 1 an callback is specified, call it */
 	if (SRowSet->cRows > 1 && callback) {
 		index = callback(SRowSet, private_data);
-		MAPI_RETVAL_IF((index >= SRowSet->cRows), MAPI_E_USER_CANCEL, NULL);
+		OPENCHANGE_RETVAL_IF((index >= SRowSet->cRows), MAPI_E_USER_CANCEL, NULL);
 		instance_key = MIds->aulPropTag[index];
 	} else {
 		instance_key = MIds->aulPropTag[0];
@@ -1274,13 +1274,13 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	if (retval != MAPI_E_SUCCESS) return retval;
 
 	lpProp = get_SPropValue_SRowSet(SRowSet, PR_EMS_AB_HOME_MDB);
-	MAPI_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, NULL);
 
 	nspi->org = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG);
 	nspi->org_unit = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG_UNIT);
 	
-	MAPI_RETVAL_IF(!nspi->org_unit, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!nspi->org, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi->org_unit, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi->org, MAPI_E_INVALID_PARAMETER, NULL);
 
 	retval = mapi_profile_add_string_attr(profname, "Organization", nspi->org);
 	retval = mapi_profile_add_string_attr(profname, "OrganizationUnit", nspi->org_unit);

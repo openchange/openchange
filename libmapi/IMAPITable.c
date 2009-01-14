@@ -36,7 +36,9 @@
   \param obj_table the table the function is setting columns for
   \param properties the properties intended to be set
 
-   \note Developers should call GetLastError() to retrieve the last
+  \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -62,11 +64,11 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 	mapi_object_table_t	*table;
 
 	/* sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SetColumns");
 	size = 0;
@@ -94,9 +96,9 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval && (retval != MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval && (retval != MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
 
 	/* recopy property tags into table */
 	/* fixme: obj_table->private_data should be initialized during opening, not here */
@@ -129,7 +131,9 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
    \param Denominator pointer to the denominator of the fraction
    identifying the table position
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -152,11 +156,11 @@ _PUBLIC_ enum MAPISTATUS QueryPosition(mapi_object_t *obj_table,
 	TALLOC_CTX		*mem_ctx;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("QueryPosition");
 	size = 0;
@@ -177,9 +181,9 @@ _PUBLIC_ enum MAPISTATUS QueryPosition(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	if (Numerator) {
 		*Numerator = mapi_response->mapi_repl->u.mapi_QueryPosition.Numerator;
@@ -210,7 +214,9 @@ _PUBLIC_ enum MAPISTATUS QueryPosition(mapi_object_t *obj_table,
    - TBL_NOADVANCE: should be used for a single QueryRows call
    - TBL_ENABLEPACKEDBUFFERS: (not yet implemented)
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -236,11 +242,11 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 	mapi_object_table_t	*table;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("QueryRows");
 	size = 0;
@@ -269,13 +275,13 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* table contains mapitags from previous SetColumns */
 	table = (mapi_object_table_t *)obj_table->private_data;
-	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
 
 	/* TODO: handle Origin */
 	reply = &mapi_response->mapi_repl->u.mapi_QueryRows;
@@ -297,7 +303,9 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
    \param obj_table the table we are retrieving columns from
    \param cols pointer to an array of property tags
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -321,11 +329,11 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 	mapi_object_table_t		*table;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("QueryColumns");
 
@@ -348,13 +356,13 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* get columns SPropTagArray */
 	table = (mapi_object_table_t *)obj_table->private_data;
-	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_QueryColumnsAll;
 	cols->cValues = reply->PropertyTagCount;
@@ -381,7 +389,9 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
    - BOOKMARK_CURRENT: Current position in the table
    - BOKMARK_END: End of the table
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -406,11 +416,11 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
 	TALLOC_CTX		*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SeekRow");
 	*row = 0;
@@ -441,9 +451,9 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_SeekRow;
 	*row = reply->RowsSought;
@@ -464,7 +474,9 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
    \param RowCount a relative number of rows to the bookmark
    \param row the position of the seeked row is returned in rows
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -493,14 +505,14 @@ _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
 	struct SBinary_short   		bin;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	retval = mapi_object_bookmark_find(obj_table, lpbkPosition, &bin);
-	MAPI_RETVAL_IF(retval, MAPI_E_INVALID_BOOKMARK, NULL);
+	OPENCHANGE_RETVAL_IF(retval, MAPI_E_INVALID_BOOKMARK, NULL);
 
 	mem_ctx = talloc_init("SeekRowBookmark");
 
@@ -532,9 +544,9 @@ _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_SeekRowBookmark;
 	*row = reply->RowsSought;
@@ -565,8 +577,10 @@ _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
      SeekRowApprox moves the cursor to the end of the table. In such
      situation, SeekRowApprox call is similar to SeekRow with
      BOOKMARK_END
-     
-   \note Developers should call GetLastError() to retrieve the last
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -590,12 +604,12 @@ _PUBLIC_ enum MAPISTATUS SeekRowApprox(mapi_object_t *obj_table,
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ulDenominator, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ulDenominator, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SeekRowApprox");
 	
@@ -623,9 +637,9 @@ _PUBLIC_ enum MAPISTATUS SeekRowApprox(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -641,7 +655,9 @@ _PUBLIC_ enum MAPISTATUS SeekRowApprox(mapi_object_t *obj_table,
    \param lpbkPosition pointer to the bookmark value. This bookmark
    can be passed in a call to the SeekRowBookmark method
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -666,11 +682,11 @@ _PUBLIC_ enum MAPISTATUS CreateBookmark(mapi_object_t *obj_table,
 	mapi_object_bookmark_t		*bookmark;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("CreateBookmark");	
 	size = 0;
@@ -691,14 +707,14 @@ _PUBLIC_ enum MAPISTATUS CreateBookmark(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_CreateBookmark;
 
 	mapi_table = (mapi_object_table_t *)obj_table->private_data;
-	MAPI_RETVAL_IF(!mapi_table, MAPI_E_INVALID_PARAMETER, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_table, MAPI_E_INVALID_PARAMETER, mem_ctx);
 
 	/* Store CreateBookmark data in mapi_object_table private_data */
 	bookmark = talloc_zero((TALLOC_CTX *)mapi_table->bookmark, mapi_object_bookmark_t);
@@ -727,7 +743,9 @@ _PUBLIC_ enum MAPISTATUS CreateBookmark(mapi_object_t *obj_table,
    \param obj_table the table the bookmark is associated to
    \param bkPosition the bookmark to be freed
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -754,18 +772,18 @@ _PUBLIC_ enum MAPISTATUS FreeBookmark(mapi_object_t *obj_table,
 	enum MAPISTATUS			retval;
 
 	/* Sanity check */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	table = (mapi_object_table_t *)obj_table->private_data;
-	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(bkPosition > table->bk_last, MAPI_E_INVALID_BOOKMARK, NULL);
+	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(bkPosition > table->bk_last, MAPI_E_INVALID_BOOKMARK, NULL);
 
 	bookmark = table->bookmark;
-	MAPI_RETVAL_IF(!bookmark, MAPI_E_INVALID_BOOKMARK, NULL);
+	OPENCHANGE_RETVAL_IF(!bookmark, MAPI_E_INVALID_BOOKMARK, NULL);
 
 	mem_ctx = talloc_init("FreeBookmark");
 
@@ -799,9 +817,9 @@ _PUBLIC_ enum MAPISTATUS FreeBookmark(mapi_object_t *obj_table,
 			mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 			status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-			MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+			OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 			retval = mapi_response->mapi_repl->error_code;
-			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+			OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 			MAPIFreeBuffer(bookmark->bin.lpb);
 			DLIST_REMOVE(table->bookmark, bookmark);
@@ -824,7 +842,9 @@ _PUBLIC_ enum MAPISTATUS FreeBookmark(mapi_object_t *obj_table,
    \param obj_table the table we are ordering rows on
    \param lpSortCriteria pointer on sort criterias to apply
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table or lpSortCriteria is NULL
@@ -845,12 +865,12 @@ _PUBLIC_ enum MAPISTATUS SortTable(mapi_object_t *obj_table,
 	TALLOC_CTX		*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!lpSortCriteria, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!lpSortCriteria, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SortTable");
 
@@ -884,9 +904,9 @@ _PUBLIC_ enum MAPISTATUS SortTable(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -895,8 +915,12 @@ _PUBLIC_ enum MAPISTATUS SortTable(mapi_object_t *obj_table,
 }
 
 
-/*
- * Restrict a table 
+/**
+   \details Get the size associated to a mapi SRestriction
+
+   \param res pointer on the mapi_SRestriction
+
+   \return mapi_SRestriction size
  */
 uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
 {
@@ -959,7 +983,9 @@ uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
 
    \param obj_table the table object to reset
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -980,11 +1006,11 @@ _PUBLIC_ enum MAPISTATUS Reset(mapi_object_t *obj_table)
 	enum MAPISTATUS		retval;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("Reset");
 	size = 0;
@@ -1005,9 +1031,9 @@ _PUBLIC_ enum MAPISTATUS Reset(mapi_object_t *obj_table)
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -1039,7 +1065,9 @@ _PUBLIC_ enum MAPISTATUS Reset(mapi_object_t *obj_table)
    TableStatus should be set to NULL if you don't want to retrieve the
    status of the table.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -1064,12 +1092,12 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table,
 	TALLOC_CTX		*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!res, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!res, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("Restrict");
 
@@ -1100,9 +1128,9 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (TableStatus) {
 		reply = &mapi_response->mapi_repl->u.mapi_Restrict;
@@ -1136,7 +1164,9 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table,
    ulFlags can be set either to DIR_FORWARD (0x0) or DIR_BACKWARD
    (0x1).
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -1166,16 +1196,16 @@ _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table,
 	struct SBinary_short	bin;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!res, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!res, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	if (bkOrigin >= 3) {
 		retval = mapi_object_bookmark_find(obj_table, bkOrigin, &bin);
-		MAPI_RETVAL_IF(retval, MAPI_E_INVALID_BOOKMARK, NULL);
+		OPENCHANGE_RETVAL_IF(retval, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 
 	mem_ctx = talloc_init("FindRow");
@@ -1218,13 +1248,13 @@ _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* table contains SPropTagArray from previous SetColumns call */
 	table = (mapi_object_table_t *)obj_table->private_data;
-	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_FindRow;
 	SRowSet->cRows = 1;
@@ -1253,9 +1283,9 @@ _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table,
 	- TBLSTAT_RESTRICTING (0xE)
 	- TBLSTAT_RESTRICT_ERROR (0xF)
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -1279,11 +1309,11 @@ _PUBLIC_ enum MAPISTATUS GetStatus(mapi_object_t *obj_table, uint8_t *TableStatu
 	TALLOC_CTX		*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("GetStatus");
 	size = 0;
@@ -1304,9 +1334,9 @@ _PUBLIC_ enum MAPISTATUS GetStatus(mapi_object_t *obj_table, uint8_t *TableStatu
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 	
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Retrieve TableStatus */
 	reply = &mapi_response->mapi_repl->u.mapi_GetStatus;
@@ -1328,9 +1358,9 @@ _PUBLIC_ enum MAPISTATUS GetStatus(mapi_object_t *obj_table, uint8_t *TableStatu
    \param TableStatus pointer on the table status returned by the
    operation
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table or TableStatus are null
@@ -1350,12 +1380,12 @@ _PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
 	TALLOC_CTX		*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!TableStatus, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!TableStatus, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("Abort");
 	size = 0;
@@ -1376,9 +1406,9 @@ _PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Retrieve TableStatus */
 	reply = &mapi_response->mapi_repl->u.mapi_Abort;
@@ -1415,9 +1445,9 @@ _PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
    rows. If you'd specified maxRows as 8 (or more), rowData would have
    contained all 8 rows and expandedRowCount still would have been 8.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table, rowData or rowCount are NULL
@@ -1443,13 +1473,13 @@ _PUBLIC_ enum MAPISTATUS ExpandRow(mapi_object_t *obj_table, uint64_t categoryId
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!rowData, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!expandedRowCount, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!rowData, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!expandedRowCount, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("ExpandRow");
 	size = 0;
@@ -1477,13 +1507,13 @@ _PUBLIC_ enum MAPISTATUS ExpandRow(mapi_object_t *obj_table, uint64_t categoryId
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* table contains mapitags from previous SetColumns */
 	table = (mapi_object_table_t *)obj_table->private_data;
-	MAPI_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
 
 	/* Retrieve the rowData and expandedRowCount */
 	reply = &mapi_response->mapi_repl->u.mapi_ExpandRow;
@@ -1516,9 +1546,9 @@ _PUBLIC_ enum MAPISTATUS ExpandRow(mapi_object_t *obj_table, uint64_t categoryId
 
    If you pass rowCount as null, the number of rows will not be returned.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table is NULL
@@ -1542,11 +1572,11 @@ _PUBLIC_ enum MAPISTATUS CollapseRow(mapi_object_t *obj_table, uint64_t category
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("CollapseRow");
 	size = 0;
@@ -1572,9 +1602,9 @@ _PUBLIC_ enum MAPISTATUS CollapseRow(mapi_object_t *obj_table, uint64_t category
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 	
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Retrieve the RowCount */
 	reply = &mapi_response->mapi_repl->u.mapi_CollapseRow;
@@ -1604,9 +1634,9 @@ _PUBLIC_ enum MAPISTATUS CollapseRow(mapi_object_t *obj_table, uint64_t category
    the PR_INST_ID and  PR_INST_NUM properties of the row you want to
    use as the cursor.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table or CollapseState are null
@@ -1631,11 +1661,11 @@ _PUBLIC_ enum MAPISTATUS GetCollapseState(mapi_object_t *obj_table, uint64_t row
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	mem_ctx = talloc_init("GetCollapseState");
 	size = 0;
@@ -1664,9 +1694,9 @@ _PUBLIC_ enum MAPISTATUS GetCollapseState(mapi_object_t *obj_table, uint64_t row
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 	
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Retrieve the CollapseState */
 	reply = &mapi_response->mapi_repl->u.mapi_GetCollapseState;
@@ -1698,9 +1728,9 @@ _PUBLIC_ enum MAPISTATUS GetCollapseState(mapi_object_t *obj_table, uint64_t row
    the PR_INST_ID and  PR_INST_NUM properties of the row you want to
    use as the cursor.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_table or CollapseState are null
@@ -1727,12 +1757,12 @@ _PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
 	mapi_object_bookmark_t		*bookmark;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!CollapseState, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!CollapseState, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session = mapi_object_get_session(obj_table);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	mem_ctx = talloc_init("SetCollapseState");
 	size = 0;
@@ -1761,14 +1791,14 @@ _PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_table);
 	
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_SetCollapseState;
 
 	mapi_table = (mapi_object_table_t *)obj_table->private_data;
-	MAPI_RETVAL_IF(!mapi_table, MAPI_E_INVALID_PARAMETER, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_table, MAPI_E_INVALID_PARAMETER, mem_ctx);
 
 	/* Store the bookmark in the mapi_object_table private_data */
 	bookmark = talloc_zero((TALLOC_CTX *)mapi_table->bookmark, mapi_object_bookmark_t);

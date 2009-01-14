@@ -47,9 +47,9 @@
    * 0x3: BestAccess
    \param obj_stream the resulting stream object.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1. 
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. 
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: A problem occured obtaining the session context
@@ -74,8 +74,8 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t Propert
 
 	/* Sanity checks */
 	session = mapi_object_get_session(obj_related);
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("OpenStream");
 
@@ -107,9 +107,9 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t Propert
 	mapi_request->handles[1] = 0xffffffff;
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Set object session and handle */
 	mapi_object_set_session(obj_stream, session);
@@ -136,9 +136,9 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t Propert
    stream
    \param ByteRead the number of bytes read from the stream
 
-   \return MAPI_E_SUCCESS on success, otherwise -1. 
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. 
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -166,8 +166,8 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 
 	/* Sanity checks */
 	session = mapi_object_get_session(obj_stream);
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("ReadStream");
 
@@ -195,9 +195,9 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* copy no more than sz_data into buffer */
 	*ByteRead = mapi_response->mapi_repl->u.mapi_ReadStream.data.length;
@@ -226,9 +226,9 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
    \param WrittenSize the actual number of bytes written to the
    stream
 
-   \return MAPI_E_SUCCESS on success, otherwise -1. 
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. 
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: A problem occured obtaining the session
@@ -258,10 +258,10 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 
 	/* Sanity Checks */
 	session = mapi_object_get_session(obj_stream);
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!blob, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(blob->length > 0x7000, MAPI_E_TOO_BIG, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!blob, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(blob->length > 0x7000, MAPI_E_TOO_BIG, NULL);
 
 	mem_ctx = talloc_init("WriteStream");
 
@@ -290,9 +290,9 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	*WrittenSize = mapi_response->mapi_repl->u.mapi_WriteStream.WrittenSize;
 
@@ -309,9 +309,9 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 
    \param obj_stream the stream object to commit
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: Either the network stream or session
@@ -334,9 +334,9 @@ _PUBLIC_ enum MAPISTATUS CommitStream(mapi_object_t *obj_stream)
 
 	/* Sanity checks */
 	session = mapi_object_get_session(obj_stream);
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("CommitStream");
 	size = 0;
@@ -357,9 +357,9 @@ _PUBLIC_ enum MAPISTATUS CommitStream(mapi_object_t *obj_stream)
 	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -374,9 +374,9 @@ _PUBLIC_ enum MAPISTATUS CommitStream(mapi_object_t *obj_stream)
    \param obj_stream the stream object we retrieve size from
    \param StreamSize pointer on the stream size
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
@@ -398,10 +398,10 @@ _PUBLIC_ enum MAPISTATUS GetStreamSize(mapi_object_t *obj_stream, uint32_t *Stre
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_stream);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("GetStreamSize");
 	size = 0;
@@ -422,9 +422,9 @@ _PUBLIC_ enum MAPISTATUS GetStreamSize(mapi_object_t *obj_stream, uint32_t *Stre
 	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	*StreamSize = mapi_response->mapi_repl->u.mapi_GetStreamSize.StreamSize;
 
@@ -452,9 +452,9 @@ _PUBLIC_ enum MAPISTATUS GetStreamSize(mapi_object_t *obj_stream, uint32_t *Stre
    * 0x2 The new seek pointer is an offset relative to the end of the
    stream.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
@@ -478,12 +478,12 @@ _PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, u
 	uint32_t		size;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_stream);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF((Origin > 2), MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!NewPosition, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF((Origin > 2), MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!NewPosition, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SeekStream");
 	size = 0;
@@ -512,9 +512,9 @@ _PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, u
 	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	*NewPosition = mapi_response->mapi_repl->u.mapi_SeekStream.NewPosition;
 
@@ -531,9 +531,9 @@ _PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, u
    \param obj_stream the stream object
    \param SizeStream the size of the stream
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
@@ -556,10 +556,10 @@ _PUBLIC_ enum MAPISTATUS SetStreamSize(mapi_object_t *obj_stream, uint64_t SizeS
 	uint32_t			size;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_stream);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SetStreamSize");
 	size = 0;
@@ -585,9 +585,9 @@ _PUBLIC_ enum MAPISTATUS SetStreamSize(mapi_object_t *obj_stream, uint64_t SizeS
 	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -608,11 +608,9 @@ _PUBLIC_ enum MAPISTATUS SetStreamSize(mapi_object_t *obj_stream, uint64_t SizeS
    \param WrittenByteCount pointer on the number of bytes written to
    the destination object
  
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
-
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
@@ -637,20 +635,20 @@ _PUBLIC_ enum MAPISTATUS CopyToStream(mapi_object_t *obj_src, mapi_object_t *obj
 	uint32_t		size;
 
 	/* Sanity Check */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_src, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_src, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session[0] = mapi_object_get_session(obj_src);
 	session[1] = mapi_object_get_session(obj_dst);
 
-	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
-	MAPI_RETVAL_IF(!ByteCount, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ReadByteCount, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!WrittenByteCount, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ByteCount, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ReadByteCount, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!WrittenByteCount, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("CopyToStream");
 	size = 0;
@@ -680,9 +678,9 @@ _PUBLIC_ enum MAPISTATUS CopyToStream(mapi_object_t *obj_src, mapi_object_t *obj
 	mapi_request->handles[1] = mapi_object_get_handle(obj_dst);
 
 	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	*ReadByteCount = mapi_response->mapi_repl->u.mapi_CopyToStream.ReadByteCount;
 	*WrittenByteCount = mapi_response->mapi_repl->u.mapi_CopyToStream.WrittenByteCount;

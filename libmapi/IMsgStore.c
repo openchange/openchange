@@ -36,9 +36,9 @@
    \param id_folder the folder identifier
    \param obj_folder the resulting open folder
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -60,10 +60,10 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store, mapi_id_t id_folde
 	TALLOC_CTX		*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("OpenFolder");
 
@@ -91,9 +91,9 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store, mapi_id_t id_folde
 	mapi_request->handles[1] = 0xffffffff;
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);	
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);	
 
 	/* Set object session, id and handle */
 	mapi_object_set_session(obj_folder, session);
@@ -117,9 +117,9 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store, mapi_id_t id_folde
    \param obj_folder the folder we are querying for ghost
    \param IsGhosted pointer on the boolean value returned
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -141,18 +141,18 @@ _PUBLIC_ enum MAPISTATUS PublicFolderIsGhosted(mapi_object_t *obj_store,
 	mapi_id_t				folderId;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session[0] = mapi_object_get_session(obj_store);
 	session[1] = mapi_object_get_session(obj_folder);
-	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
 	folderId = mapi_object_get_id(obj_folder);
-	MAPI_RETVAL_IF(!folderId, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!folderId, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("PublicFolderIsGhosted");
 	size = 0;
@@ -178,9 +178,9 @@ _PUBLIC_ enum MAPISTATUS PublicFolderIsGhosted(mapi_object_t *obj_store,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	*IsGhosted = mapi_response->mapi_repl->u.mapi_PublicFolderIsGhosted.IsGhosted;
 	
@@ -198,9 +198,9 @@ _PUBLIC_ enum MAPISTATUS PublicFolderIsGhosted(mapi_object_t *obj_store,
    \param obj_child the resulting open folder
    \param name the folder name
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -223,12 +223,12 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolderByName(mapi_object_t *obj_folder,
 	TALLOC_CTX				*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj_child, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!name, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_child, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!name, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_folder);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("OpenPublicFolderByName");
 	size = 0;
@@ -259,9 +259,9 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolderByName(mapi_object_t *obj_folder,
 	mapi_request->handles[1] = 0xffffffff;
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Set object session and handle */
 	mapi_object_set_session(obj_child, session);
@@ -282,7 +282,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolderByName(mapi_object_t *obj_folder,
    \param obj_folder the destination folder
    \param lpszMessageClass the message class the folder will receive
 
-      \note Developers should call GetLastError() to retrieve the last
+      \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -305,12 +305,12 @@ _PUBLIC_ enum MAPISTATUS SetReceiveFolder(mapi_object_t *obj_store,
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!lpszMessageClass, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!lpszMessageClass, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SetReceiveFolder");
 
@@ -338,9 +338,9 @@ _PUBLIC_ enum MAPISTATUS SetReceiveFolder(mapi_object_t *obj_store,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -362,9 +362,9 @@ _PUBLIC_ enum MAPISTATUS SetReceiveFolder(mapi_object_t *obj_store,
    \param MessageClass which message class to find the receivefolder
    for
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -388,10 +388,10 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store,
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	mem_ctx = talloc_init("GetReceiveFolder");
 
@@ -423,9 +423,9 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	*id_folder = mapi_response->mapi_repl->u.mapi_GetReceiveFolder.folder_id;
 
@@ -447,7 +447,7 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store,
    Developers are required to call MAPIFreeBuffer(SRowSet.aRow) when
    they don't need the folder table data anymore.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -470,10 +470,10 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolderTable(mapi_object_t *obj_store,
 	uint32_t				i;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("GetReceiveFolderTable");
 	size = 0;
@@ -494,9 +494,9 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolderTable(mapi_object_t *obj_store,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	reply = &mapi_response->mapi_repl->u.mapi_GetReceiveFolderTable;
 
@@ -537,9 +537,9 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolderTable(mapi_object_t *obj_store,
    \param obj_store the server object
    \param FolderId pointer on the returning Folder identifier
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -559,11 +559,11 @@ _PUBLIC_ enum MAPISTATUS GetTransportFolder(mapi_object_t *obj_store,
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("GetTransportFolder");
 	size = 0;
@@ -584,9 +584,9 @@ _PUBLIC_ enum MAPISTATUS GetTransportFolder(mapi_object_t *obj_store,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Retrieve the FolderId parameter */
 	reply = &mapi_response->mapi_repl->u.mapi_GetTransportFolder;
@@ -610,12 +610,12 @@ _PUBLIC_ enum MAPISTATUS GetTransportFolder(mapi_object_t *obj_store,
    \param OwningServers pointer on the list of NULL terminated ASCII
    string representing replica servers
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
    \note ecNoReplicaAvailable (0x469) can be returned if no replica is
    available for the folder.
 
-   Developers should call GetLastError() to retrieve the last
+   Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -641,18 +641,18 @@ _PUBLIC_ enum MAPISTATUS GetOwningServers(mapi_object_t *obj_store,
 	uint32_t			i;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!OwningServersCount, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!CheapServersCount, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!OwningServers, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OwningServersCount, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!CheapServersCount, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OwningServers, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	FolderId = mapi_object_get_id(obj_folder);
-	MAPI_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
 		
 	mem_ctx = talloc_init("GetOwningServers");
 	
@@ -679,9 +679,9 @@ _PUBLIC_ enum MAPISTATUS GetOwningServers(mapi_object_t *obj_store,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Retrieve GetOwningServers response */
 	response = mapi_response->mapi_repl->u.mapi_GetOwningServers;
@@ -711,9 +711,9 @@ _PUBLIC_ enum MAPISTATUS GetOwningServers(mapi_object_t *obj_store,
    \param obj_store the store object
    \param StoreState pointer on the store state returned by the server
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -732,12 +732,12 @@ _PUBLIC_ enum MAPISTATUS GetStoreState(mapi_object_t *obj_store,
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!StoreState, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!StoreState, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("GetStoreState");
 	size = 0;
@@ -758,9 +758,9 @@ _PUBLIC_ enum MAPISTATUS GetStoreState(mapi_object_t *obj_store,
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Retrieve the StoreState */
 	*StoreState = mapi_response->mapi_repl->u.mapi_GetStoreState.StoreState;
@@ -783,9 +783,9 @@ _PUBLIC_ enum MAPISTATUS GetStoreState(mapi_object_t *obj_store,
    \param obj_store the store to get the outbox folder for
    \param outbox_id the resulting folder identification
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -796,8 +796,10 @@ _PUBLIC_ enum MAPISTATUS GetStoreState(mapi_object_t *obj_store,
 _PUBLIC_ enum MAPISTATUS GetOutboxFolder(mapi_object_t *obj_store, 
 					 mapi_id_t *outbox_id)
 {
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+
 	*outbox_id = ((mapi_object_store_t *)obj_store->private_data)->fid_outbox;
+
 	return MAPI_E_SUCCESS;
 }

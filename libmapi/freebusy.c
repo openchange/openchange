@@ -86,20 +86,20 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	uint32_t			count;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!recipient, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!pSRow, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!pSRow, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
 
 	mem_ctx = (TALLOC_CTX *) session;
 
 	/* Step 0. Retrieve the user Email Address and build FreeBusy strings */
 	pRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	retval = GetABRecipientInfo(session, recipient, NULL, &pRowSet);
-	MAPI_RETVAL_IF(retval, retval, pRowSet);
+	OPENCHANGE_RETVAL_IF(retval, retval, pRowSet);
 
 	email = get_SPropValue_SRowSet_data(pRowSet, PR_EMAIL_ADDRESS_UNICODE);
 	o = x500_get_dn_element(mem_ctx, email, ORG);
@@ -121,16 +121,16 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 
 	/* Step 1. Open the FreeBusy root folder */
 	retval = GetDefaultPublicFolder(obj_store, &id_freebusy, olFolderPublicFreeBusyRoot);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	mapi_object_init(&obj_freebusy);
 	retval = OpenFolder(obj_store, id_freebusy, &obj_freebusy);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 2. Open the hierarchy table */
 	mapi_object_init(&obj_htable);
 	retval = GetHierarchyTable(&obj_freebusy, &obj_htable, 0, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 3. Customize Hierarchy Table view */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
@@ -138,7 +138,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 					  PR_DISPLAY_NAME);
 	retval = SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 4. Find FreeBusy folder row */
 	res.rt = RES_PROPERTY;
@@ -148,7 +148,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	res.res.resProperty.lpProp.value.lpszA = folder_name;
 	retval = FindRow(&obj_htable, &res, 0, 0, &SRowSet);
 	MAPIFreeBuffer(folder_name);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 5. Open the folder */
 	fid = (const uint64_t *) get_SPropValue_SRowSet_data(&SRowSet, PR_FID);
@@ -156,12 +156,12 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 
 	mapi_object_init(&obj_exfreebusy);
 	retval = OpenFolder(&obj_freebusy, *fid, &obj_exfreebusy);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 6. Open the contents table */
 	mapi_object_init(&obj_ctable);
 	retval = GetContentsTable(&obj_exfreebusy, &obj_ctable, 0, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 7. Customize Contents Table view */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
@@ -172,7 +172,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 					  PR_NORMALIZED_SUBJECT);
 	retval = SetColumns(&obj_ctable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 8. Sort the table */
 	memset(&criteria, 0x0, sizeof (struct SSortOrderSet));
@@ -182,7 +182,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	criteria.aSort[0].ulOrder = TABLE_SORT_ASCEND;
 	retval = SortTable(&obj_ctable, &criteria);
 	MAPIFreeBuffer(criteria.aSort);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 9. Find the user FreeBusy message row */
 	res.rt = RES_PROPERTY;
@@ -192,17 +192,17 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	res.res.resProperty.lpProp.value.lpszA = message_name;
 	retval = FindRow(&obj_ctable, &res, 0, 0, &SRowSet);
 	MAPIFreeBuffer(message_name);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 10. Open the message */
 	fid = (const uint64_t *)get_SPropValue_SRowSet_data(&SRowSet, PR_FID);	
 	mid = (const uint64_t *)get_SPropValue_SRowSet_data(&SRowSet, PR_MID);
-	MAPI_RETVAL_IF(!fid || *fid == MAPI_E_NOT_FOUND, MAPI_E_NOT_FOUND, NULL);
-	MAPI_RETVAL_IF(!mid || *mid == MAPI_E_NOT_FOUND, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!fid || *fid == MAPI_E_NOT_FOUND, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!mid || *mid == MAPI_E_NOT_FOUND, MAPI_E_NOT_FOUND, NULL);
 
 	mapi_object_init(&obj_message);
 	retval = OpenMessage(obj_store, *fid, *mid, &obj_message, 0x0);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 11. Get FreeBusy properties */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0xc, 
@@ -220,7 +220,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 					  PR_FREEBUSY_OOF_EVENTS);
 	retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	pSRow->cValues = count;
 	pSRow->lpProps = lpProps;
@@ -270,19 +270,19 @@ _PUBLIC_ enum MAPISTATUS IsFreeBusyConflict(mapi_object_t *obj_store,
 	uint32_t			end;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!date, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!conflict, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!date, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!conflict, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_store);
-	MAPI_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
 
 	*conflict = false;
 
 	/* Step 1. Retrieve the freebusy data for the user */
 	retval = GetUserFreeBusyData(obj_store, session->profile->username, &aRow);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_START_RANGE);
 	all_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_ALL_MONTHS);

@@ -21,6 +21,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/proto_private.h>
 
 /**
    \file lzfu.c
@@ -80,9 +81,9 @@ typedef struct _lzfuheader {
    \param obj_stream stream object with RTF stream content
    \param rtf the output blob with uncompressed content
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_stream is not a valid pointer
@@ -106,8 +107,8 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 	unsigned char	buf[0x1000];
 
 	/* sanity check and init */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	mem_ctx = global_mapi_ctx->mem_ctx;
 
 	/* Read the stream pointed by obj_stream */
@@ -116,7 +117,7 @@ _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream,
 	rtfcomp = talloc_zero(mem_ctx, uint8_t);
 	do {
 		retval = ReadStream(obj_stream, buf, 0x1000, &read_size);
-		MAPI_RETVAL_IF(retval, GetLastError(), rtf->data);
+		OPENCHANGE_RETVAL_IF(retval, GetLastError(), rtf->data);
 		if (read_size) {
 			rtfcomp = talloc_realloc(mem_ctx, rtfcomp, uint8_t, 
 						   in_size + read_size);
@@ -158,7 +159,7 @@ _PUBLIC_ enum MAPISTATUS uncompress_rtf(TALLOC_CTX *mem_ctx,
 
 	out_size = lzfuhdr.cbRawSize + LZFU_HEADERLENGTH + 4;
 	out_buf = (unsigned char *) talloc_size(mem_ctx, out_size);
-	MAPI_RETVAL_IF(!out_buf, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+	OPENCHANGE_RETVAL_IF(!out_buf, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
 	in_size = LZFU_HEADERLENGTH;
 
@@ -219,7 +220,7 @@ _PUBLIC_ enum MAPISTATUS uncompress_rtf(TALLOC_CTX *mem_ctx,
 /* 	if (out_ptr < out_size) out_buf[out_ptr++] = '\0'; */
 
 	/* check if out_ptr matches with expected size */
-	MAPI_RETVAL_IF(out_ptr != (lzfuhdr.cbRawSize-1), MAPI_E_CORRUPT_DATA, out_buf);
+	OPENCHANGE_RETVAL_IF(out_ptr != (lzfuhdr.cbRawSize-1), MAPI_E_CORRUPT_DATA, out_buf);
 
 	rtf->data = out_buf;
 	rtf->length = out_ptr;

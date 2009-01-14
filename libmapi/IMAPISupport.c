@@ -55,9 +55,9 @@
    - fnevReservedForMapi
    - fnevExtended
    
-   \return MAPI_E_SUCCESS on success, otherwise -1.  
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.  
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -84,12 +84,12 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	static uint32_t			ulConnection = 0;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!connection, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!connection, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("Subscribe");
 
@@ -127,9 +127,9 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	mapi_request->handles[1] = 0xffffffff;
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* add the notification to the list */
 	ulConnection++;
@@ -170,9 +170,9 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
    occurs and returns the ulConnection identifier we can use in
    further management.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.  
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.  
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -188,9 +188,9 @@ _PUBLIC_ enum MAPISTATUS Unsubscribe(struct mapi_session *session, uint32_t ulCo
 	struct notifications	*notification;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 
 	notify_ctx = session->notify_ctx;
 	notification = notify_ctx->notifications;
@@ -199,7 +199,7 @@ _PUBLIC_ enum MAPISTATUS Unsubscribe(struct mapi_session *session, uint32_t ulCo
 		if (notification->ulConnection == ulConnection) {
 			retval = Release(&notification->obj_notif);
 			mapi_errstr("Release", GetLastError());
-			MAPI_RETVAL_IF(retval, retval, NULL);
+			OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 			DLIST_REMOVE(notify_ctx->notifications, notification);
 			break;
 		}
@@ -320,9 +320,9 @@ static enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
    Note that the function will loop indefinitively until an error
    occurs.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.  
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.  
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -346,9 +346,9 @@ _PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session,
 	char			buf[512];
 	
 	/* sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 
 	notify_ctx = session->notify_ctx;
 
@@ -361,7 +361,7 @@ _PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session,
 				err = -1;
 			} else {
 				retval = ProcessNotification(notify_ctx, mapi_response, private_data);
-				MAPI_RETVAL_IF(retval, retval, NULL);
+				OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 			}
 		}
 		if (err <= 0) is_done = 1;

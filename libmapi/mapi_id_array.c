@@ -32,9 +32,9 @@
 
    \param id pointer to a mapi_id_array structure
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: The mapi_id_array_t is uninitialized
@@ -47,8 +47,9 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_init(mapi_id_array_t *id)
 {
 	TALLOC_CTX	*mem_ctx;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = global_mapi_ctx->mem_ctx;
 
@@ -64,9 +65,9 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_init(mapi_id_array_t *id)
 
    \param id pointer to a mapi_id_array structure
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: The mapi_id_array_t is uninitialized
@@ -77,9 +78,10 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_init(mapi_id_array_t *id)
  */
 _PUBLIC_ enum MAPISTATUS mapi_id_array_release(mapi_id_array_t *id)
 {
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!id->lpContainerList, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_INVALID_PARAMETER, NULL);
 
 	id->count = 0;
 	talloc_free(id->lpContainerList);
@@ -96,9 +98,9 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_release(mapi_id_array_t *id)
    \param id pointer to a mapi_id_array structure
    \param ContainerList pointer on a pointer of uint64_t values
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: The mapi_id_array_t is uninitialized
@@ -114,10 +116,11 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_get(TALLOC_CTX *mem_ctx,
 	mapi_container_list_t	*element;
 	uint32_t		i = 0;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!id->lpContainerList, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ContainerList, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ContainerList, MAPI_E_INVALID_PARAMETER, NULL);
 
 	*ContainerList = talloc_array(mem_ctx, uint64_t, id->count + 1);
 
@@ -139,9 +142,9 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_get(TALLOC_CTX *mem_ctx,
    \param obj pointer on the mapi object we retrieve the container ID
    from
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: The mapi_id_array_t is uninitialized
@@ -155,10 +158,11 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_add_obj(mapi_id_array_t *id,
 {
 	mapi_container_list_t	*element;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!id->lpContainerList, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	element = talloc_zero((TALLOC_CTX *)id->lpContainerList, mapi_container_list_t);
 	element->id = mapi_object_get_id(obj);
@@ -176,9 +180,9 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_add_obj(mapi_id_array_t *id,
    \param id pointer to a mapi_id_array structure
    \param fid the container ID
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: The mapi_id_array_t is uninitialized
@@ -191,10 +195,11 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_add_id(mapi_id_array_t *id, mapi_id_t fid
 {
 	mapi_container_list_t	*element;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!id->lpContainerList, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
 
 	element = talloc_zero((TALLOC_CTX *)id->lpContainerList, mapi_container_list_t);
 	element->id = fid;
@@ -212,9 +217,9 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_add_id(mapi_id_array_t *id, mapi_id_t fid
    \param id pointer to a mapi_id_array structure
    \param fid the container ID
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: The mapi_id_array_t is uninitialized
@@ -227,10 +232,11 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_del_id(mapi_id_array_t *id, mapi_id_t fid
 {
 	mapi_container_list_t	*element;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!id->count, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!id->lpContainerList, MAPI_E_NOT_INITIALIZED, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!id->count, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_NOT_INITIALIZED, NULL);
 
 	element = id->lpContainerList;
 
@@ -252,9 +258,9 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_del_id(mapi_id_array_t *id, mapi_id_t fid
    \param obj pointer on the mapi object we retrieve the container ID
    from
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: The mapi_id_array_t is uninitialized
@@ -268,14 +274,15 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_del_obj(mapi_id_array_t *id, mapi_object_
 	mapi_container_list_t	*element;
 	mapi_id_t		fid;
 	
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!id->count, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!id->lpContainerList, MAPI_E_NOT_INITIALIZED, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!id->count, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_NOT_INITIALIZED, NULL);
 
 	fid = mapi_object_get_id(obj);
-	MAPI_RETVAL_IF(!fid, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_NOT_INITIALIZED, NULL);
 
 	element = id->lpContainerList;
 

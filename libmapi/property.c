@@ -59,10 +59,9 @@ _PUBLIC_ struct SPropTagArray *set_SPropTagArray(TALLOC_CTX *mem_ctx,
    \param SPropTagArray existing properties array to add to
    \param aulPropTag the property tag to add
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
-   MAPI error code. Possible MAPI error codes are:
+   \note Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: SPropTagArray parameter is not correctly set
 */
@@ -70,9 +69,10 @@ _PUBLIC_ enum MAPISTATUS SPropTagArray_add(TALLOC_CTX *mem_ctx,
 					   struct SPropTagArray *SPropTagArray, 
 					   uint32_t aulPropTag)
 {
-	MAPI_RETVAL_IF(!mem_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray->cValues, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray->cValues, MAPI_E_INVALID_PARAMETER, NULL);
 
 	SPropTagArray->cValues += 1;
 	SPropTagArray->aulPropTag = talloc_realloc(mem_ctx, SPropTagArray->aulPropTag,
@@ -540,6 +540,17 @@ _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPr
 }
 
 
+/**
+   \details add a SPropValue structure to a SRow array
+
+   \param aRow pointer to the SRow array where SPropBalue should be
+   appended
+   \param SPropValue reference to the SPropValue structure to add to
+   aRow
+
+   \return MAPI_E_SUCCESS on success, otherwise
+   MAPI_E_INVALID_PARAMETER.
+ */
 _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SPropValue)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -547,7 +558,8 @@ _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SProp
 	struct SPropValue	lpProp;
 	uint32_t		i;
 	
-	MAPI_RETVAL_IF(!aRow, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!aRow, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = (TALLOC_CTX *) aRow;
 

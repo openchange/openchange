@@ -38,9 +38,9 @@
    \param obj_store the result of opening the store
    \param session pointer to the MAPI session context
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -64,9 +64,9 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	mapi_object_store_t	*store;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mem_ctx = talloc_init("OpenPublicFolder");
 	size = 0;
@@ -97,9 +97,9 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	mapi_request->handles[0] = 0xffffffff;
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* retrieve object session and handle */
 	mapi_object_set_session(obj_store, session);
@@ -108,7 +108,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	/* retrieve store content */
 	obj_store->private_data = talloc((TALLOC_CTX *)session, mapi_object_store_t);
 	store = (mapi_object_store_t*)obj_store->private_data;
-	MAPI_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	store->fid_pf_public_root = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[0];
 	store->fid_pf_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[1];
@@ -138,9 +138,9 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
    \param session pointer to the MAPI session context
    \param obj_store the result of opening the store
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -156,9 +156,9 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(struct mapi_session *session,
 	enum MAPISTATUS		retval;
 
 	/* sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
 	retval = OpenUserMailbox(session, session->profile->username, obj_store);
 
@@ -183,9 +183,9 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(struct mapi_session *session,
    \param username name of the user's mailbox to open
    \param obj_store the result of opening the store
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -211,9 +211,9 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	char			*mailbox;
 
 	/* sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mem_ctx = talloc_init("OpenMsgStore");
 	size = 0;
@@ -252,9 +252,9 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	mapi_request->handles[0] = 0xffffffff;
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* set object session and handle */
 	mapi_object_set_session(obj_store, session);
@@ -263,7 +263,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	/* retrieve store content */
 	obj_store->private_data = talloc((TALLOC_CTX *)session, mapi_object_store_t);
 	store = (mapi_object_store_t *)obj_store->private_data;
-	MAPI_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	store->fid_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[0];
 	store->fid_deferred_actions = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[1];

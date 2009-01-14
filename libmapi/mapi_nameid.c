@@ -20,6 +20,7 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/mapi_nameid.h>
 #include <libmapi/mapi_nameid_private.h>
+#include <libmapi/proto_private.h>
 
 
 /**
@@ -65,9 +66,9 @@ _PUBLIC_ struct mapi_nameid *mapi_nameid_new(TALLOC_CTX *mem_ctx)
    \param OOM the Outlook Object Model matching string
    \param OLEGUID the property set this entry belongs to
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -84,9 +85,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_add(struct mapi_nameid *mapi_nameid,
 	uint16_t		count;
 
 	/* Sanity check */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!OOM, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!OOM, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
 		if (mapi_nameid_tags[i].OOM &&
@@ -132,9 +133,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_add(struct mapi_nameid *mapi_nameid,
    props only)
    \param OLEGUID the property set this entry belongs to
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -150,9 +151,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
 	uint16_t		count;
 
 	/* Sanity check */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!lid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!lid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
 		if ((lid == mapi_nameid_tags[i].lid) &&
@@ -197,9 +198,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
    props only)
    \param OLEGUID the property set this entry belongs to
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -216,9 +217,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
 	uint16_t		count;
 
 	/* Sanity check */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
 		if (mapi_nameid_tags[i].Name && 
@@ -264,9 +265,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
   \param propType the named property type
   \param OLEGUID the property set this entry belongs to
  
-  \return MAPI_E_SUCCESS on success, otherwise -1.
+  \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  
-  \note Developers should call GetLastError() to retrieve the last
+  \note Developers may also call GetLastError() to retrieve the last
   MAPI error code. Possible MAPI error codes are:
   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
   - MAPI_E_INVALID_PARAMETER: one of the parameter was no set properly
@@ -280,10 +281,10 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_lid_add(struct mapi_nameid *mapi_nam
 	uint16_t	count;
 
 	/* Sanity check */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED,  NULL);
-	MAPI_RETVAL_IF(!lid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!propType, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED,  NULL);
+	OPENCHANGE_RETVAL_IF(!lid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!propType, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_nameid->nameid = talloc_realloc(mapi_nameid,
 					     mapi_nameid->nameid, struct MAPINAMEID,
@@ -316,9 +317,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_lid_add(struct mapi_nameid *mapi_nam
    \param propType the named property type
    \param OLEGUID the property set this entry belongs to
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
@@ -332,10 +333,10 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_string_add(struct mapi_nameid *mapi_
 	uint16_t	count;
 
 	/* Sanity check */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!propType, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!propType, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_nameid->nameid = talloc_realloc(mapi_nameid,
 					     mapi_nameid->nameid, struct MAPINAMEID,
@@ -365,9 +366,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_string_add(struct mapi_nameid *mapi_
    \param mapi_nameid the structure where results are stored
    \param proptag the canonical property tag we are searching
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZE: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -383,8 +384,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_canonical_add(struct mapi_nameid *mapi_name
 	uint16_t	count;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!proptag, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!proptag, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
 		if (mapi_nameid_tags[i].proptag == proptag) {
@@ -429,7 +430,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_canonical_add(struct mapi_nameid *mapi_name
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
    - MAPI_E_NOT_FOUND: no named property found
@@ -440,8 +441,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_lookup(const char *OOM, const char *OLE
 	uint32_t	i;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!OOM, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OOM, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
 		if (mapi_nameid_tags[i].OOM && 
@@ -467,7 +468,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_lookup(const char *OOM, const char *OLE
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
    - MAPI_E_NOT_FOUND: no named property found
@@ -478,8 +479,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup(uint16_t lid, const char *OLEGUI
 	uint32_t	i;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!lid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!lid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
 		if (mapi_nameid_tags[i].lid == lid &&
@@ -504,7 +505,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup(uint16_t lid, const char *OLEGUI
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
    - MAPI_E_NOT_FOUND: no named property found
@@ -516,8 +517,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *Name,
 	uint32_t	i;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
 		if (mapi_nameid_tags[i].Name &&
@@ -541,9 +542,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *Name,
    \param SPropTagArray the array of property tags returned by
    previous call to GetIDsFromNames()
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
@@ -556,8 +557,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_name
 	uint32_t	i;
 
 	/* sanity check */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < mapi_nameid->count; i++) {
 		if (mapi_nameid->entries[i].propType) {
@@ -580,9 +581,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_name
    \param SPropTagArray2 the array of named property tags resolved
    with GetIDsFromNames
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
@@ -597,9 +598,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_map_SPropTagArray(struct mapi_nameid *mapi_
 	uint32_t	j;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray2, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray2, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < SPropTagArray->cValues; i++) {
 		for (j = 0; j < mapi_nameid->count; j++) {
@@ -623,9 +624,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_map_SPropTagArray(struct mapi_nameid *mapi_
    \param SPropTagArray the array of property tags with original
    property tags
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
@@ -638,8 +639,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_unmap_SPropTagArray(struct mapi_nameid *map
 	uint32_t	i;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	for (i = 0; i < mapi_nameid->count; i++) {
 		if (mapi_nameid->entries[i].position <= SPropTagArray->cValues) {
@@ -662,9 +663,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_unmap_SPropTagArray(struct mapi_nameid *map
    \param SPropTagArray the array of named property tags resolved
    with GetIDsFromNames
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
@@ -680,10 +681,10 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_map_SPropValue(struct mapi_nameid *mapi_nam
 	uint32_t	j;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!lpProps, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!PropCount, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!lpProps, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!PropCount, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < PropCount; i++) {
 		for (j = 0; j < mapi_nameid->count; j++) {
@@ -708,9 +709,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_map_SPropValue(struct mapi_nameid *mapi_nam
    property tags
    \param PropCount count of lpProps elements
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
@@ -724,9 +725,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_unmap_SPropValue(struct mapi_nameid *mapi_n
 	uint32_t	i;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!lpProps, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!PropCount, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!lpProps, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!PropCount, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < mapi_nameid->count; i++) {
 		if (mapi_nameid->entries[i].position <= PropCount) {
@@ -746,9 +747,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_unmap_SPropValue(struct mapi_nameid *mapi_n
    \param SPropTagArray the array of property tags where to look for
    canonical named property tags.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
@@ -766,8 +767,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropTagArray(struct mapi_nameid *na
 	bool		status = false;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!nameid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < SPropTagArray->cValues; i++) {
 		proptype = (SPropTagArray->aulPropTag[i] & 0xFFFF0000) >> 16;
@@ -793,9 +794,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropTagArray(struct mapi_nameid *na
    tags where to look for canonical named property tags
    \param PropCount count of lpProps elemense
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
@@ -814,8 +815,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropValue(struct mapi_nameid *mapi_
 	bool		status = false;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!lpProps, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!lpProps, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < PropCount; i++) {
 		proptype = (lpProps[i].ulPropTag & 0xFFFF0000) >> 16;
@@ -839,9 +840,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropValue(struct mapi_nameid *mapi_
    This convenient function calls GetIDsFromNames() and returns
    property tags with their real property type.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
    properly
@@ -856,12 +857,12 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_GetIDsFromNames(struct mapi_nameid *mapi_na
 	uint32_t		i;
 
 	/* sanity check */
-	MAPI_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	retval = GetIDsFromNames(obj, mapi_nameid->count, mapi_nameid->nameid, 0,
 				 &SPropTagArray);
-	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+	OPENCHANGE_RETVAL_IF(retval, GetLastError(), NULL);
 
 	for (i = 0; i < SPropTagArray->cValues; i++) {
 		SPropTagArray->aulPropTag[i] = (SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 

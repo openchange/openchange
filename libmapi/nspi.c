@@ -136,7 +136,7 @@ _PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *mem_ctx,
    
    \param data generic pointer to data with mapi_provider information
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  */
 
 int nspi_disconnect_dtor(void *data)
@@ -163,14 +163,14 @@ _PUBLIC_ enum MAPISTATUS nspi_unbind(struct nspi_context *nspi_ctx)
 	enum MAPISTATUS		retval;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	r.in.handle = r.out.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0;
 
 	status = dcerpc_NspiUnbind(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF((retval != 1) && !MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
+	OPENCHANGE_RETVAL_IF((retval != 1) && !MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -185,7 +185,7 @@ _PUBLIC_ enum MAPISTATUS nspi_unbind(struct nspi_context *nspi_ctx)
    within the address book container specified by the input parameter
    pStat.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi_ctx, 
 					 uint32_t *plDelta)
@@ -195,8 +195,8 @@ _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS			retval;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!plDelta, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!plDelta, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0x0;
@@ -209,8 +209,8 @@ _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiUpdateStat(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -228,7 +228,7 @@ _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi_ctx,
    \param ppRows pointer on pointer to the the rows returned by the
    server
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx, 
 					struct SPropTagArray *pPropTags,
@@ -243,7 +243,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx,
 	struct STAT			*pStat;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	mem_ctx = talloc_init("nspi_QueryRows");
 
@@ -271,8 +271,8 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiQueryRows(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	nspi_ctx->pStat->CurrentRec = r.out.pStat->CurrentRec;
 	nspi_ctx->pStat->Delta = r.out.pStat->Delta;
@@ -314,7 +314,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx,
       tag set to PR_EMS_AB_PHONETIC_DISPLAY_NAME or
       PR_EMS_AB_PHONETIC_DISPLAY_NAME_UNICODE
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
 					  enum TableSortOrders SortType,
@@ -329,20 +329,20 @@ _PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
 	struct STAT			*pStat;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!pTarget, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!pRows, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(((SortType != SortTypeDisplayName) 
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!pTarget, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!pRows, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(((SortType != SortTypeDisplayName) 
 			&& (SortType != SortTypePhoneticDisplayName)), 
 		       MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Sanity Checks on SortType and pTarget combination */
-	MAPI_RETVAL_IF(((SortType == SortTypeDisplayName) && 
+	OPENCHANGE_RETVAL_IF(((SortType == SortTypeDisplayName) && 
 			(pTarget->ulPropTag != PR_DISPLAY_NAME) && 
 			(pTarget->ulPropTag != PR_DISPLAY_NAME_UNICODE)),
 		       MAPI_E_INVALID_PARAMETER, NULL);
 
-	MAPI_RETVAL_IF(((SortType == SortTypePhoneticDisplayName) && 
+	OPENCHANGE_RETVAL_IF(((SortType == SortTypePhoneticDisplayName) && 
 			(pTarget->ulPropTag != PR_EMS_AB_PHONETIC_DISPLAY_NAME) &&
 			(pTarget->ulPropTag != PR_EMS_AB_PHONETIC_DISPLAY_NAME_UNICODE)),
 		       MAPI_E_INVALID_PARAMETER, NULL);
@@ -369,8 +369,8 @@ _PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiSeekEntries(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, pStat);
-	MAPI_RETVAL_IF(retval, retval, pStat);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, pStat);
+	OPENCHANGE_RETVAL_IF(retval, retval, pStat);
 
 	return MAPI_E_SUCCESS;
 }
@@ -387,7 +387,7 @@ _PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
    \param ppOutMIds pointer to pointer to a list of MId that comprise
    a restricted address book container
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  */
 _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx, 
 					 struct SPropTagArray *pPropTags,
@@ -402,9 +402,9 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
 	struct STAT			*pStat;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!ppRows, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ppOutMIds, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!ppRows, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ppOutMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("nspi_GetMatches");
 
@@ -432,8 +432,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiGetMatches(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_NOT_FOUND, mem_ctx);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mem_ctx);
 
@@ -456,7 +456,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
    -# SortTypeDisplayName
    -# SortTypePhoneticDisplayName
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_ResortRestriction(struct nspi_context *nspi_ctx,
 						enum TableSortOrders SortType,
@@ -471,12 +471,12 @@ _PUBLIC_ enum MAPISTATUS nspi_ResortRestriction(struct nspi_context *nspi_ctx,
 	struct STAT			*pStat = NULL;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!pInMIds, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ppMIds, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!pInMIds, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ppMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Sanity check on SortType */
-	MAPI_RETVAL_IF(((SortType != SortTypeDisplayName) && (SortType != SortTypePhoneticDisplayName)),
+	OPENCHANGE_RETVAL_IF(((SortType != SortTypeDisplayName) && (SortType != SortTypePhoneticDisplayName)),
 		       MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("nspi_ResortRestriction");
@@ -494,8 +494,8 @@ _PUBLIC_ enum MAPISTATUS nspi_ResortRestriction(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiResortRestriction(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mem_ctx);
 
@@ -511,7 +511,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResortRestriction(struct nspi_context *nspi_ctx,
    map
    \param ppMIds pointer on pointer to the returned list of MIds
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_DNToMId(struct nspi_context *nspi_ctx, 
 				      struct StringsArray_r *pNames,
@@ -522,10 +522,10 @@ _PUBLIC_ enum MAPISTATUS nspi_DNToMId(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS		retval;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!pNames, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!pNames->Count, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ppMIds, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!pNames, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!pNames->Count, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ppMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0;
@@ -535,8 +535,8 @@ _PUBLIC_ enum MAPISTATUS nspi_DNToMId(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiDNToMId(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL)
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL)
 
 	return MAPI_E_SUCCESS;
 }
@@ -553,7 +553,7 @@ _PUBLIC_ enum MAPISTATUS nspi_DNToMId(struct nspi_context *nspi_ctx,
    \param ppPropTags pointer on pointer to the list of property tags
    associated to the object.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  */
 _PUBLIC_ enum MAPISTATUS nspi_GetPropList(struct nspi_context *nspi_ctx,
 					  bool WantObject,
@@ -565,8 +565,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetPropList(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS		retval;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!ppPropTags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!ppPropTags, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	r.in.handle = &nspi_ctx->handle;
 	r.in.dwFlags = (WantObject == true) ? 0x0 : fSkipObjects;
@@ -577,8 +577,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetPropList(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiGetPropList(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -595,7 +595,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetPropList(struct nspi_context *nspi_ctx,
    \param MId pointer to the MId of the record
    \param SRowSet pointer on pointer to the row returned by the server
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi_ctx, 
 				       struct SPropTagArray *pPropTags, 
@@ -609,9 +609,9 @@ _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi_ctx,
 	struct SRow		*ppRows;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!MId, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!MId->cValues, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!MId, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!MId->cValues, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.dwFlags = 0;
@@ -629,8 +629,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiGetProps(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL)
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL)
 
 	SRowSet[0]->cRows = 1;
 	SRowSet[0]->aRow = talloc(nspi_ctx->mem_ctx, struct SRow);
@@ -651,7 +651,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi_ctx,
    \param MId2 the second MId to compare
    \param plResult pointer to the value of the comparison
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  */
 _PUBLIC_ enum MAPISTATUS nspi_CompareMIds(struct nspi_context *nspi_ctx,
 					  uint32_t MId1, uint32_t MId2,
@@ -662,8 +662,8 @@ _PUBLIC_ enum MAPISTATUS nspi_CompareMIds(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS		retval;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!plResult, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!plResult, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0x0;
@@ -675,8 +675,8 @@ _PUBLIC_ enum MAPISTATUS nspi_CompareMIds(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiCompareMIds(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -691,7 +691,7 @@ _PUBLIC_ enum MAPISTATUS nspi_CompareMIds(struct nspi_context *nspi_ctx,
    on the object
    \param pRow Contains an address book row
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_ModProps(struct nspi_context *nspi_ctx,
 				       uint32_t MId,
@@ -703,9 +703,9 @@ _PUBLIC_ enum MAPISTATUS nspi_ModProps(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS		retval;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!pPropTags, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!pRow, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!pPropTags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!pRow, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0x0;
@@ -720,8 +720,8 @@ _PUBLIC_ enum MAPISTATUS nspi_ModProps(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiModProps(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -746,7 +746,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ModProps(struct nspi_context *nspi_ctx,
    If NspiAddressCreationTemplates is set, then NspiUnicodeStrings is
    ignored.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  */
 _PUBLIC_ enum MAPISTATUS nspi_GetSpecialTable(struct nspi_context *nspi_ctx, 
 					      uint32_t Type,
@@ -757,10 +757,10 @@ _PUBLIC_ enum MAPISTATUS nspi_GetSpecialTable(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS			retval;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(((Type != 0x0) && (Type != 0x2) && (Type != 0x4)),
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(((Type != 0x0) && (Type != 0x2) && (Type != 0x4)),
 		       MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ppRows, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ppRows, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.dwFlags = Type;
@@ -773,8 +773,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetSpecialTable(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiGetSpecialTable(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -798,7 +798,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetSpecialTable(struct nspi_context *nspi_ctx,
       template
    -# TI_HELPFILE_CONTENTS to return the contents of the help file
       associated to the template
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  */
 _PUBLIC_ enum MAPISTATUS nspi_GetTemplateInfo(struct nspi_context *nspi_ctx,
 					      uint32_t dwFlags,
@@ -811,8 +811,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetTemplateInfo(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS			retval;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!ppData, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!ppData, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.dwFlags = dwFlags;
@@ -825,8 +825,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetTemplateInfo(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiGetTemplateInfo(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 	
 
 	return MAPI_E_SUCCESS;
@@ -848,7 +848,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetTemplateInfo(struct nspi_context *nspi_ctx,
    \param lpEntryIds array of BinaryArray_r structures intended to be
    modified or deleted
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_ModLinkAtt(struct nspi_context *nspi_ctx,
 					 bool Delete,
@@ -861,10 +861,10 @@ _PUBLIC_ enum MAPISTATUS nspi_ModLinkAtt(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS		retval;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(((ulPropTag & 0xFFFF) != PT_OBJECT), MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!lpEntryIds, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!lpEntryIds->cValues, MAPI_E_INVALID_PARAMETER, NULL)
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(((ulPropTag & 0xFFFF) != PT_OBJECT), MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!lpEntryIds, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!lpEntryIds->cValues, MAPI_E_INVALID_PARAMETER, NULL)
 
 	r.in.handle = &nspi_ctx->handle;
 	/* FIXME: need to find fDelete value first */
@@ -875,8 +875,8 @@ _PUBLIC_ enum MAPISTATUS nspi_ModLinkAtt(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiModLinkAtt(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -890,7 +890,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ModLinkAtt(struct nspi_context *nspi_ctx,
    \param WantUnicode whether we want UNICODE properties or not
    \param ppColumns pointer on pointer to a property tag array
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  */
 _PUBLIC_ enum MAPISTATUS nspi_QueryColumns(struct nspi_context *nspi_ctx,
 					   bool WantUnicode,
@@ -901,8 +901,8 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryColumns(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS		retval;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!ppColumns, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!ppColumns, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0x0;
@@ -912,8 +912,8 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryColumns(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiQueryColumns(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -931,7 +931,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryColumns(struct nspi_context *nspi_ctx,
    \param ppNames pointer on pointer to the list of property names
    returned by the server
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_GetNamesFromIDs(struct nspi_context *nspi_ctx,
 					      struct FlatUID_r *lpGuid,
@@ -944,9 +944,9 @@ _PUBLIC_ enum MAPISTATUS nspi_GetNamesFromIDs(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS			retval;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!ppReturnedPropTags, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ppNames, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!ppReturnedPropTags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ppNames, MAPI_E_INVALID_PARAMETER, NULL);
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0x0;
@@ -958,8 +958,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetNamesFromIDs(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiGetNamesFromIDs(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -979,7 +979,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetNamesFromIDs(struct nspi_context *nspi_ctx,
    \param ppPropTags pointer on pointer to the list of proptags
    returned by the server
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
 					      bool VerifyNames,
@@ -994,9 +994,9 @@ _PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
 	uint32_t			i;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!ppNames, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ppPropTags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!ppNames, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ppPropTags, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("nspi_GetIDsFromNames");
 
@@ -1014,8 +1014,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
 	
 	status = dcerpc_NspiGetIDsFromNames(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mem_ctx);
 
@@ -1037,7 +1037,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
    \param pppMIds pointer on pointer on pointer to the MIds matching
    the array of strings
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx, 
 					   const char **usernames, 
@@ -1053,13 +1053,13 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 	uint32_t		count;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!pppRows, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!pppMIds, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!pppRows, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!pppMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (count = 0; usernames[count]; count++);
-	MAPI_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("nspi_ResolveNames");
 
@@ -1079,8 +1079,8 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiResolveNames(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mem_ctx);
 
@@ -1102,7 +1102,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
    \param pppMIds pointer on pointer on pointer to the MIds matching
    the array of strings
 
-   \return MAPI_E_SUCCESS on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx, 
 					    const char **usernames, 
@@ -1117,13 +1117,13 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 	enum MAPISTATUS			retval;
 	uint32_t			count;
 
-	MAPI_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!pppRows, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!pppMIds, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!pppRows, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!pppMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (count = 0; usernames[count]; count++);
-	MAPI_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("mapi_ResolveNamesW");
 
@@ -1143,8 +1143,8 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 
 	status = dcerpc_NspiResolveNamesW(nspi_ctx->rpc_connection, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mem_ctx);
 

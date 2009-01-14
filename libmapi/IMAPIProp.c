@@ -45,9 +45,9 @@
    \param lpProps the result of the query
    \param PropCount the count of property tags
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -74,12 +74,12 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	bool			named = false;
 	
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("GetProps");
 
@@ -90,7 +90,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 		named = true;
 		SPropTagArray2 = talloc_zero(mem_ctx, struct SPropTagArray);
 		retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray2);
-		MAPI_RETVAL_IF(retval, retval, mem_ctx);		
+		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);		
 		mapi_nameid_map_SPropTagArray(nameid, SPropTagArray, SPropTagArray2);
 		MAPIFreeBuffer(SPropTagArray2);
 
@@ -129,9 +129,9 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF((retval && retval != MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF((retval && retval != MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
 	
 	/* Read the SPropValue array from data blob.
 	   fixme: replace the memory context by the object one.
@@ -145,7 +145,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
 					   SPropTagArray, lpProps, PropCount, 
 					   mapi_response->mapi_repl->u.mapi_GetProps.layout);
-	MAPI_RETVAL_IF(!mapistatus && (retval == MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapistatus && (retval == MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
 	
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -163,9 +163,9 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
    \param lpProps the list of properties to set
    \param PropCount the number of properties
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -192,11 +192,11 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
 	bool			named = false;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SetProps");
 	size = 0;
@@ -208,7 +208,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
 		named = true;
 		SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
 		retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray);
-		MAPI_RETVAL_IF(retval, retval, mem_ctx);
+		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 		mapi_nameid_map_SPropValue(nameid, lpProps, PropCount, SPropTagArray);
 		MAPIFreeBuffer(SPropTagArray);
 	}
@@ -245,9 +245,9 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (named == true) {
 		mapi_nameid_unmap_SPropValue(nameid, lpProps, PropCount);
@@ -274,9 +274,9 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
    - KeepOpenReadWrite
    - ForceSave
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -299,17 +299,17 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 	TALLOC_CTX				*mem_ctx;
 
 	/* Sanity Checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_parent, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj_child, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF((flags != 0x9) && (flags != 0xA) && (flags != 0xC), 
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_parent, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_child, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF((flags != 0x9) && (flags != 0xA) && (flags != 0xC), 
 		       MAPI_E_INVALID_PARAMETER, NULL);
 
 	session[0] = mapi_object_get_session(obj_parent);
 	session[1] = mapi_object_get_session(obj_child);
-	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("SaveChangesAttachment");
 	size = 0;
@@ -337,9 +337,9 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 	mapi_request->handles[1] = mapi_object_get_handle(obj_parent);
 
 	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -355,9 +355,9 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
    \param proptags the resulting list of properties associated with
    the object
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:   
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -378,11 +378,11 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	TALLOC_CTX		*mem_ctx;
 
 	/* sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("GetPropList");
 
@@ -406,9 +406,9 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Get the repsonse */
 	proptags->cValues = mapi_response->mapi_repl->u.mapi_GetPropList.count;
@@ -437,9 +437,9 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
    \param obj the object to get the properties for
    \param properties the properties / values for the object
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -461,11 +461,11 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	uint32_t		size;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("GetPropsAll");
 	size = 0;
@@ -493,9 +493,9 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	*properties = mapi_response->mapi_repl->u.mapi_GetPropsAll.properties;
 
@@ -510,9 +510,9 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
    \param obj the object to remove properties from
    \param proptags the properties to remove from the given object
        
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -534,12 +534,12 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	uint32_t		size;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("DeleteProps");
 	size = 0;
@@ -567,9 +567,9 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -585,9 +585,9 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
    \param obj the object to remove properties from
    \param proptags the properties to remove from the given object
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -609,12 +609,12 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
 	uint32_t				size;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("DeletePropertiesNoReplicate");
 	size = 0;
@@ -642,9 +642,9 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -666,9 +666,9 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
 
    ulPropTag must be a property with type set to PT_NULL
  
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
   
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -692,11 +692,11 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	TALLOC_CTX			*mem_ctx;
 
 	/* sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Initialization */
 	mem_ctx = talloc_init("GetNamesFromIDs");
@@ -723,9 +723,9 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Fill in count */
 	*count = mapi_response->mapi_repl->u.mapi_GetNamesFromIDs.count;
@@ -761,9 +761,9 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
    \note count and nameid parameter can automatically be built
    using the mapi_nameid API.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -789,15 +789,15 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	uint32_t			i;
 
 	/* sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!nameid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!proptags[0], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nameid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!proptags[0], MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Initialization */
 	mem_ctx = talloc_init("GetIDsFromNames");
@@ -841,9 +841,9 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Fill the SPropTagArray */
 	proptags[0]->cValues = mapi_response->mapi_repl->u.mapi_GetIDsFromNames.count;
@@ -877,7 +877,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
    NoStrings will produce only ID properties, NoIds will produce only named
    properties, and both will result in no output.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
    \sa GetNamesFromIDs
 */
@@ -899,11 +899,11 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 	TALLOC_CTX			*mem_ctx;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Initialization */
 	mem_ctx = talloc_init("QueryNamesFromIDs");
@@ -940,9 +940,9 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx,mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Fill [out] parameters */
 	*count = mapi_response->mapi_repl->u.mapi_QueryNamedProperties.IdCount;
@@ -973,9 +973,9 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
    using MAPIFreeBuffer(). If the \b problemCount pointer is NULL,
    then the problems array will not be returned.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -1003,16 +1003,16 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	int				i;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_src, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!tags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_src, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!tags, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session[0] = mapi_object_get_session(obj_src);
 	session[1] = mapi_object_get_session(obj_dst);
-	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("CopyProps");
 	size = 0;
@@ -1047,9 +1047,9 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	mapi_request->handles[1] = mapi_object_get_handle(obj_dst);
 
 	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (problemCount) {
 		*problemCount = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblemCount;
@@ -1086,9 +1086,9 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
    using MAPIFreeBuffer(). If the \b problemCount pointer is NULL,
    then the problems array will not be returned.
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -1116,16 +1116,16 @@ _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
 	int			i;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj_src, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!excludeTags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_src, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!excludeTags, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session[0] = mapi_object_get_session(obj_src);
 	session[1] = mapi_object_get_session(obj_dst);
-	MAPI_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("CopyProps");
 	size = 0;
@@ -1162,9 +1162,9 @@ _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
 	mapi_request->handles[1] = mapi_object_get_handle(obj_dst);
 
 	status = emsmdb_transaction(session[0]->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (problemCount) {
 		*problemCount = mapi_response->mapi_repl->u.mapi_CopyTo.PropertyProblemCount;

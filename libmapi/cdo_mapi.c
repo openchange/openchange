@@ -48,7 +48,9 @@ struct mapi_ctx *global_mapi_ctx = NULL;
    password should be set to NULL if the password has been stored in
    the profile.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
@@ -91,7 +93,9 @@ _PUBLIC_ enum MAPISTATUS MapiLogonEx(struct mapi_session **session,
    - PROVIDER_ID_NSPI: Address Book provider
    - PROVIDER_ID_EMSMDB: MAPI Store provider
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
@@ -117,8 +121,8 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 
 	/* If no MAPI session has already been created */
 	if (!global_mapi_ctx->session) {
@@ -128,7 +132,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 	/* If the session doesn't exist, create a new one */
 	if (!*session) {
 		el = talloc_zero((TALLOC_CTX *)global_mapi_ctx->session, struct mapi_session);
-		MAPI_RETVAL_IF(!el, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+		OPENCHANGE_RETVAL_IF(!el, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	} else {
 		/* Lookup the session within the chained list */
 		for (el = global_mapi_ctx->session; el; el = el->next) {
@@ -137,7 +141,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 				break;
 			}
 		}
-		MAPI_RETVAL_IF(found == false, MAPI_E_NOT_FOUND, NULL);
+		OPENCHANGE_RETVAL_IF(found == false, MAPI_E_NOT_FOUND, NULL);
 		exist = true;
 	}
 
@@ -146,13 +150,13 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 	/* Open the profile */
 	if (!el->profile) {
 		profile = talloc_zero(mem_ctx, struct mapi_profile);
-		MAPI_RETVAL_IF(!profile, MAPI_E_NOT_ENOUGH_RESOURCES, el);
+		OPENCHANGE_RETVAL_IF(!profile, MAPI_E_NOT_ENOUGH_RESOURCES, el);
 
 		retval = OpenProfile(profile, profname, password);
-		MAPI_RETVAL_IF(retval, retval, el);
+		OPENCHANGE_RETVAL_IF(retval, retval, el);
 		
 		retval = LoadProfile(profile);
-		MAPI_RETVAL_IF(retval, retval, el);
+		OPENCHANGE_RETVAL_IF(retval, retval, el);
 
 		el->profile = profile;
 	}
@@ -160,7 +164,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 	switch (provider) {
 	case PROVIDER_ID_EMSMDB:
 		provider_emsmdb = talloc_zero(mem_ctx, struct mapi_provider);
-		MAPI_RETVAL_IF(!provider_emsmdb, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+		OPENCHANGE_RETVAL_IF(!provider_emsmdb, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 		talloc_set_destructor((void *)provider_emsmdb, (int (*)(void *))emsmdb_disconnect_dtor);
 		retval = Logon(el, provider_emsmdb, PROVIDER_ID_EMSMDB);
 		if (retval) return retval;
@@ -168,14 +172,14 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 		break;
 	case PROVIDER_ID_NSPI:
 		provider_nspi = talloc_zero(mem_ctx, struct mapi_provider);
-		MAPI_RETVAL_IF(!provider_nspi, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+		OPENCHANGE_RETVAL_IF(!provider_nspi, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 		talloc_set_destructor((void *)provider_nspi, (int (*)(void *))nspi_disconnect_dtor);
 		retval = Logon(el, provider_nspi, PROVIDER_ID_NSPI);
 		if (retval) return retval;
 		el->nspi = provider_nspi;
 		break;
 	default:
-		MAPI_RETVAL_IF(1, MAPI_E_NO_SUPPORT, el);
+		OPENCHANGE_RETVAL_IF(1, MAPI_E_NO_SUPPORT, el);
 		break;
 	}
 
@@ -197,7 +201,9 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 
    \param profiledb profile database path
 
-   \note Developers should call GetLastError() to retrieve the last
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
@@ -217,15 +223,15 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	/* Set the initial errno value for GetLastError */
 	errno = 0;
 
-	MAPI_RETVAL_IF(global_mapi_ctx, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!profiledb, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(global_mapi_ctx, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!profiledb, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("MAPIInitialize");
-	MAPI_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
 	/* global context */
 	global_mapi_ctx = talloc_zero(mem_ctx, struct mapi_ctx);
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 	global_mapi_ctx->mem_ctx = mem_ctx;
 	global_mapi_ctx->dumpdata = false;
 	global_mapi_ctx->session = NULL;
@@ -234,7 +240,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 
 	/* profile store */
 	retval = OpenProfileStore(mem_ctx, &global_mapi_ctx->ldb_ctx, profiledb);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	lp_load_default(global_mapi_ctx->lp_ctx);
 	dcerpc_init(global_mapi_ctx->lp_ctx);

@@ -18,6 +18,7 @@
  */
 
 #include <libmapi/libmapi.h>
+#include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 
 /*
@@ -130,9 +131,9 @@ _PUBLIC_ enum MAPISTATUS GetFIDFromEntryID(uint16_t cb,
 					   uint64_t *fid)
 {
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!lpb, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(cb < 8, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!lpb, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(cb < 8, MAPI_E_INVALID_PARAMETER, NULL);
 
 	*fid = 0;
 	*fid += ((uint64_t)lpb[cb - 3] << 56);

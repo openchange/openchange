@@ -41,21 +41,21 @@
    used, otherwise only UTF8 encoded fields may be returned.
 
    Possible flaglist values are:
-   - MAPI_UNRESOLVED: could not be resolved
-   - MAPI_AMBIGUOUS: resolution match more than one entry
-   - MAPI_RESOLVED: resolution matched a single entry
+   -# MAPI_UNRESOLVED: could not be resolved
+   -# MAPI_AMBIGUOUS: resolution match more than one entry
+   -# MAPI_RESOLVED: resolution matched a single entry
  
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
    
-   \note Developers should call GetLastError() to retrieve the last MAPI error
-   code. Possible MAPI error codes are:
-   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_SESSION_LIMIT: No session has been opened on the provider
-   - MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   -# MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   -# MAPI_E_SESSION_LIMIT: No session has been opened on the provider
+   -# MAPI_E_NOT_ENOUGH_RESOURCES: MAPI subsystem failed to allocate
      the necessary resources to operate properly
-   - MAPI_E_NOT_FOUND: No suitable profile database was found in the
+   -# MAPI_E_NOT_FOUND: No suitable profile database was found in the
      path pointed by profiledb
-   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   -# MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
    
    \sa MAPILogonProvider, GetLastError
@@ -70,11 +70,12 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
 	struct nspi_context	*nspi;
 	enum MAPISTATUS		retval;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!rowset, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity Checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!rowset, MAPI_E_INVALID_PARAMETER, NULL);
 
 	nspi = (struct nspi_context *)session->nspi->ctx;
 
@@ -107,10 +108,18 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
    \param ulFlags specify the table cursor location
 
    Possible value for ulFlags:
-   - TABLE_START: Fetch rows from the beginning of the table
-   - TABLE_CUR: Fetch rows from current table location
+   -# TABLE_START: Fetch rows from the beginning of the table
+   -# TABLE_CUR: Fetch rows from current table location
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   -# MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   -# MAPI_E_SESSION_LIMIT: No session has been opened on the provider
+   -# MAPI_E_INVALID_PARAMETER: if a function parameter is invalid
+   -# MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
 
    \sa MapiLogonEx, MapiLogonProvider
  */
@@ -124,12 +133,13 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct mapi_session *session,
 	struct SRowSet		*srowset;
 	enum MAPISTATUS		retval;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!SRowSet, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!SRowSet, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	nspi = (struct nspi_context *)session->nspi->ctx;
 
@@ -165,8 +175,10 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct mapi_session *session,
    -# PR_DISPLAY_NAME_UNICODE
    -# PR_OBJECT_TYPE
 
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error. Possible
-   MAPI errors are:
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. 
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
    -# MAPI_E_NOT_INITIALIZED if MAPI subsystem is not initialized
    -# MAPI_E_SESSION_LIMIT if the NSPI session is unavailable
    -# MAPI_E_INVALID_PARAMETER if a function parameter is invalid
@@ -193,13 +205,13 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 	bool			allocated = false;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!session->profile, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
-	MAPI_RETVAL_IF(!ppRowSet, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!ppRowSet, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
 	nspi_ctx = (struct nspi_context *)session->nspi->ctx;
 	mem_ctx = nspi_ctx->mem_ctx;
@@ -224,7 +236,7 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 					  PR_SMTP_ADDRESS_UNICODE);
 	retval = ResolveNames(session, usernames, SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, SRowSet);
+	OPENCHANGE_RETVAL_IF(retval, retval, SRowSet);
 
 	if (flaglist->aulPropTag[0] != MAPI_RESOLVED) {
 		MAPIFreeBuffer(SRowSet);
@@ -243,7 +255,7 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 	retval = nspi_DNToMId(nspi_ctx, &pNames, &pMId);
 	MAPIFreeBuffer((char *)pNames.Strings[0]);
 	MAPIFreeBuffer((char **)pNames.Strings);
-	MAPI_RETVAL_IF(retval, retval, pMId);
+	OPENCHANGE_RETVAL_IF(retval, retval, pMId);
 
 	/* Step 3. Get recipient's properties */
 	if (!pPropTags) {
@@ -263,7 +275,7 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 		MAPIFreeBuffer(SPropTagArray);
 	}
 	MAPIFreeBuffer(pMId);
-	MAPI_RETVAL_IF(retval, retval, SRowSet);
+	OPENCHANGE_RETVAL_IF(retval, retval, SRowSet);
 
 	*ppRowSet = SRowSet;
 

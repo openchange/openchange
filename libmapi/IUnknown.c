@@ -35,9 +35,9 @@
    \param size the number of bytes to allocate
    \param ptr pointer to the allocated byte region
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_SESSION_LIMIT: No session has been opened on the provider
@@ -51,13 +51,14 @@ _PUBLIC_ enum MAPISTATUS MAPIAllocateBuffer(uint32_t size, void **ptr)
 {
 	TALLOC_CTX	*mem_ctx;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = (TALLOC_CTX *) global_mapi_ctx->mem_ctx;
 
 	*ptr = talloc_size(mem_ctx, size);
-	MAPI_RETVAL_IF(!ptr, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+	OPENCHANGE_RETVAL_IF(!ptr, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -71,9 +72,9 @@ _PUBLIC_ enum MAPISTATUS MAPIAllocateBuffer(uint32_t size, void **ptr)
 
    \param ptr memory region to free
        
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMER: ptr is not set properly.
 
@@ -83,10 +84,10 @@ _PUBLIC_ enum MAPISTATUS MAPIFreeBuffer(void *ptr)
 {
 	int		ret;
 
-	MAPI_RETVAL_IF(!ptr, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ptr, MAPI_E_INVALID_PARAMETER, NULL);
 
 	ret = talloc_free(ptr);
-	MAPI_RETVAL_IF(ret == -1, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(ret == -1, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -99,9 +100,9 @@ _PUBLIC_ enum MAPISTATUS MAPIFreeBuffer(void *ptr)
 
    \param obj the object to release
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
@@ -120,9 +121,9 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	uint32_t		size = 0;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("Release");
 
@@ -142,7 +143,7 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -157,6 +158,9 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 
    This function returns the error code set by a previous function
    call.
+
+   \note Calls to the function won't work in multi-threaded or
+   multisession code.
 */
 _PUBLIC_ enum MAPISTATUS GetLastError(void)
 {
@@ -173,9 +177,9 @@ _PUBLIC_ enum MAPISTATUS GetLastError(void)
    \param id the id to look up
    \param long_term_id the long term ID returned from the server
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj is null
@@ -199,10 +203,10 @@ _PUBLIC_ enum MAPISTATUS GetLongTermIdFromId(mapi_object_t *obj, mapi_id_t id,
 	int				i;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("LongTermIdFromId");
 
@@ -227,9 +231,9 @@ _PUBLIC_ enum MAPISTATUS GetLongTermIdFromId(mapi_object_t *obj, mapi_id_t id,
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	long_term_id->DatabaseGuid = mapi_response->mapi_repl->u.mapi_LongTermIdFromId.LongTermId.DatabaseGuid;
 	for (i = 0; i < 6; ++i) {
@@ -254,9 +258,9 @@ _PUBLIC_ enum MAPISTATUS GetLongTermIdFromId(mapi_object_t *obj, mapi_id_t id,
    \param long_term_id the id to look up
    \param id the id returned by the server
 
-   \return MAPI_E_SUCCESS on success, otherwise -1.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers should call GetLastError() to retrieve the last
+   \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj is null
@@ -279,10 +283,10 @@ _PUBLIC_ enum MAPISTATUS GetIdFromLongTermId(mapi_object_t *obj, struct LongTerm
 	enum MAPISTATUS			retval;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj);
-	MAPI_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_init("IdFromLongTermId");
 	size = 0;
@@ -308,9 +312,9 @@ _PUBLIC_ enum MAPISTATUS GetIdFromLongTermId(mapi_object_t *obj, struct LongTerm
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 
 	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
-	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
 	*id = mapi_response->mapi_repl->u.mapi_IdFromLongTermId.Id;
 

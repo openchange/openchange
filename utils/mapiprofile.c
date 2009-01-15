@@ -119,12 +119,11 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 		exit (1);
 	}
 
-	if (opt_debuglevel) {
-		lp_set_cmdline(global_mapi_ctx->lp_ctx, "log level", opt_debuglevel);
-	}
+	/* debug options */
+	SetMAPIDumpData(opt_dumpdata);
 
-	if (opt_dumpdata == true) {
-		global_mapi_ctx->dumpdata = true;
+	if (opt_debuglevel) {
+		SetMAPIDebugLevel(atoi(opt_debuglevel));
 	}
 
 	/* Sanity check */
@@ -270,9 +269,7 @@ static void mapiprofile_get_fqdn(const char *profdb,
 		exit (1);
 	}
 
-	if (opt_dumpdata == true) {
-		global_mapi_ctx->dumpdata = true;
-	}
+	SetMAPIDumpData(opt_dumpdata);
 
 	if (!profname) {
 		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {

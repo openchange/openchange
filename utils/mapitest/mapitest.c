@@ -162,13 +162,12 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 		}
 	}
 
-	if (opt_debug) {
-		lp_set_cmdline(global_mapi_ctx->lp_ctx, "log level", opt_debug);
-	}
+	/* debug options */
+	SetMAPIDumpData(opt_dumpdata);
 
-	if (opt_dumpdata == true) {
-		global_mapi_ctx->dumpdata = true;
-	}	
+	if (opt_debug) {
+		SetMAPIDebugLevel(atoi(opt_debug));
+	}
 
 	retval = MapiLogonEx(&session, profname, password);
 	if (retval != MAPI_E_SUCCESS) {

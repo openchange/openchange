@@ -415,12 +415,10 @@ int main(int argc, const char *argv[])
 	}
 
 	/* debug options */
-	if (opt_debug) {
-		lp_set_cmdline(global_mapi_ctx->lp_ctx, "log level", opt_debug);
-	}
+	SetMAPIDumpData(opt_dumpdata);
 
-	if (opt_dumpdata == true) {
-		global_mapi_ctx->dumpdata = true;
+	if (opt_debug) {
+		SetMAPIDebugLevel(atoi(opt_debug));
 	}
 
 	/* If no profile is specified try to load the default one from

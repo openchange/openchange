@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2009.
    Copyright (C) Fabien Le Mentec 2007.
 
    This program is free software; you can redistribute it and/or modify
@@ -279,4 +279,54 @@ _PUBLIC_ void MAPIUninitialize(void)
 	mem_ctx = global_mapi_ctx->mem_ctx;
 	talloc_free(mem_ctx);
 	global_mapi_ctx = NULL;
+}
+
+
+/**
+   \details Enable MAPI network trace output
+
+   \param status the status
+
+   possible status values/behavior:
+   -# true:  Network traces are displayed on stdout
+   -# false: Network traces are not displayed on stdout
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_INITIALIZED
+ */
+_PUBLIC_ enum MAPISTATUS SetMAPIDumpData(bool status)
+{
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	
+	global_mapi_ctx->dumpdata = status;
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Set MAPI debug level
+
+   \param level the debug level to set
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: the function parameter is invalid
+ */
+_PUBLIC_ enum MAPISTATUS SetMAPIDebugLevel(uint32_t level)
+{
+	char	*debuglevel;
+	bool	ret;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	debuglevel = talloc_asprintf(talloc_autofree_context(), "%d", level);
+	ret = lp_set_cmdline(global_mapi_ctx->lp_ctx, "log level", debuglevel);
+	talloc_free(debuglevel);
+
+	return (ret == true) ? MAPI_E_SUCCESS : MAPI_E_INVALID_PARAMETER;
 }

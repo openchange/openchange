@@ -226,8 +226,23 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 				      TALLOC_CTX *mem_ctx,
 				      struct EcDoRpc *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcDoRpc (0x2) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle		*h;
+	struct emsmdbp_context		*emsmdbp_ctx;
+
+	DEBUG(3, ("exchange_emsmdb: EcDoRpc (0x2)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	emsmdbp_ctx = (struct emsmdbp_context *) h->data;
+
+	r->out.result = MAPI_E_SUCCESS;
+
+	return MAPI_E_SUCCESS;
 }
 
 

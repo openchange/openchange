@@ -39,6 +39,8 @@
    \param connection connection identifier for callabck function
    \param NotificationFlags mask for events to provide notifications for (see
    below)
+   \param WholeStore whether the scope for this notification is whole
+   database
    \param notify_callback notification callback function.
    
    The Notification Flags can take the following values:
@@ -67,7 +69,8 @@
    GetLastError
 */
 _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection, 
-				   uint16_t NotificationFlags, 
+				   uint16_t NotificationFlags,
+				   bool WholeStore,
 				   mapi_notify_callback_t notify_callback)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -100,15 +103,16 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	request.NotificationFlags = NotificationFlags;
 	size += sizeof (uint16_t);
 
-	request.WantWholeStore = 0x0;
+	request.WantWholeStore = WholeStore;
 	size += sizeof (uint8_t);
 
-	request.FolderId.ID = mapi_object_get_id(obj);
-	size += sizeof (uint64_t);
+	if (WholeStore == false) {
+		request.FolderId.ID = mapi_object_get_id(obj);
+		size += sizeof (uint64_t);
 
-	request.MessageId.ID = 0x0;
-	size += sizeof (uint64_t);
-
+		request.MessageId.ID = 0x0;
+		size += sizeof (uint64_t);
+	}
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_RegisterNotification;

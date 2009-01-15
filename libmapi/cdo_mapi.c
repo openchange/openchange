@@ -238,6 +238,9 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	global_mapi_ctx->lp_ctx = loadparm_init(global_mapi_ctx);
 	lp_load_default(global_mapi_ctx->lp_ctx);
 
+	/* Enable logging on stdout */
+	setup_logging(NULL, DEBUG_STDOUT);
+
 	/* profile store */
 	retval = OpenProfileStore(mem_ctx, &global_mapi_ctx->ldb_ctx, profiledb);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);

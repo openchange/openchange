@@ -20,7 +20,13 @@
 import optparse
 import os,sys
 
-sys.path.append("scripting/python")
+# To allow running from the source directory
+sys.path.append("python")
+
+from openchange import find_samba_python_path
+samba_path = find_samba_python_path()
+if samba_path is not None:
+	sys.path.append(samba_path)
 
 import samba
 import samba.getopt as options

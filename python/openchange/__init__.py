@@ -18,3 +18,25 @@
 #
 
 __docformat__ = 'restructuredText'
+
+import os, sys
+
+def find_samba_python_path():
+    """Find the python path for the Samba python modules
+
+    :return: Python path to Samba python modules, or None if 
+        it was already in the path
+    """
+    try:
+        import samba
+        return None # No extra path necessary
+    except ImportError:
+        SAMBA_PREFIXES = ["/usr/local/samba", "/opt/samba"]
+        PYTHON_NAMES = ["python2.3", "python2.4", "python2.5"]
+        for samba_prefix in SAMBA_PREFIXES:
+            for python_name in PYTHON_NAMES:
+                path = os.path.join(samba_prefix, "lib", python_name, 
+                                    "site-packages")
+                if os.path.isdir(os.path.join(path, "samba")):
+                    return path
+        raise ImportError("Unable to find the Samba python path")

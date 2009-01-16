@@ -33,13 +33,13 @@ mapiprofile \- administer OpenChange MAPI Profiles databases
 
 .SH SYNOPSIS
 .nf
-mapiprofile [-?] [-?|--help] [--usage] [-L|--ldif=PATH]
-        [-G|--getdefault] [-S|--default] [-n|--newdb] [-f|--database=PATH]
-        [-P|--profile=PROFILE] [-I|--address=xxx.xxx.xxx.xxx] [-M|--workstation=WORKSTATION_NAME]
-        [-D|--domain=DOMAIN] [-R|--realm=REALM]  [-u|--username=USERNAME] [-C|--language=LANGCODE]
-        [-s|--pattern=USERNAME] [-p|--password=PASSWORD] [--nopass] [-c|--create]
-        [-r|--delete] [-l|--list] [--listlangs] [--dump] [-a|--attr=VALUE]
-        [--dump-data] [-d|--debuglevel=LEVEL] [--getfqdn]
+mapiprofile [-?GSncrl] [-?|--help] [--usage] [-L|--ldif PATH] [-G|--getdefault] [-S|--default] 
+	[-n|--newdb] [-f|--database PATH] [-P|--profile PROFILE] [-I|--address xxx.xxx.xxx.xxx] 
+	[-M|--workstation WORKSTATION_NAME] [-D|--domain DOMAIN] [-R|--realm REALM] 
+	[-u|--username USERNAME] [-C|--langcode LANGCODE] [-s|--pattern USERNAME] 
+	[-p|--password PASSWORD] [--nopass] [-c|--create] [-r|--delete] [-R|--rename STRING] 
+	[-l|--list] [--listlangs] [--dump] [-a|--attr VALUE] [--dump-data] [-d|--debuglevel LEVEL] 
+	[--getfqdn]
 .fi
 
 .SH DESCRIPTION
@@ -75,6 +75,12 @@ Create a new profile in the database.
 .TP
 .B -r
 Delete a profile from the database.
+
+.TP
+.B --rename PROFILE
+.TP
+.B -R
+Rename a profile in the database
 
 .TP
 .B --default

@@ -216,6 +216,36 @@ static void mapiprofile_delete(const char *profdb, const char *profname)
 	MAPIUninitialize();
 }
 
+
+static void mapiprofile_rename(const char *profdb, const char *old_profname, const char *new_profname)
+{
+	enum MAPISTATUS	retval;
+	const char	*profname;
+
+	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
+		mapi_errstr("MAPIInitialize", retval);
+		exit (1);
+	}
+
+	if (!old_profname) {
+		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
+			mapi_errstr("GetDefaultProfile", retval);
+			exit (1);
+		}
+	} else {
+		profname = old_profname;
+	}
+
+	if ((retval = RenameProfile(profname, new_profname)) != MAPI_E_SUCCESS) {
+		mapi_errstr("RenameProfile", retval);
+		exit (1);
+	}
+
+
+	MAPIUninitialize();
+}
+
+
 static void mapiprofile_set_default(const char *profdb, const char *profname)
 {
 	enum MAPISTATUS retval;
@@ -443,6 +473,7 @@ int main(int argc, const char *argv[])
 	const char	*password = NULL;
 	const char	*profdb = NULL;
 	const char	*profname = NULL;
+	const char	*rename = NULL;
 	const char	*attribute = NULL;
 	uint32_t	nopass = 0;
 	char		hostname[256];
@@ -452,7 +483,7 @@ int main(int argc, const char *argv[])
 	      OPT_CREATE_PROFILE, OPT_DELETE_PROFILE, OPT_LIST_PROFILE, OPT_DUMP_PROFILE, 
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
-	      OPT_NOPASS, OPT_DUMPDATA, OPT_DEBUGLEVEL};
+	      OPT_NOPASS, OPT_RENAME_PROFILE, OPT_DUMPDATA, OPT_DEBUGLEVEL};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -473,6 +504,7 @@ int main(int argc, const char *argv[])
 		{"nopass", 0, POPT_ARG_NONE, NULL, OPT_NOPASS, "do not save password in the profile", NULL},
 		{"create", 'c', POPT_ARG_NONE, NULL, OPT_CREATE_PROFILE, "create a profile in the database", NULL},
 		{"delete", 'r', POPT_ARG_NONE, NULL, OPT_DELETE_PROFILE, "delete a profile in the database", NULL},
+		{"rename", 'R', POPT_ARG_STRING, NULL, OPT_RENAME_PROFILE, "rename a profile in the database", NULL},
 		{"list", 'l', POPT_ARG_NONE, NULL, OPT_LIST_PROFILE, "list existing profiles in the database", NULL},
 		{"listlangs", 0, POPT_ARG_NONE, NULL, OPT_LIST_LANGS, "list all recognised languages", NULL},
 		{"dump", 0, POPT_ARG_NONE, NULL, OPT_DUMP_PROFILE, "dump a profile entry", NULL},
@@ -546,6 +578,9 @@ int main(int argc, const char *argv[])
 		case OPT_DELETE_PROFILE:
 			delete = true;
 			break;
+		case OPT_RENAME_PROFILE:
+			rename = poptGetOptArg(pc);
+			break;
 		case OPT_LIST_PROFILE:
 			list = true;
 			break;
@@ -579,7 +614,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if ((list == false) && (getfqdn == false) && (newdb == false) && (listlangs == false)
-	    && (getdflt == false) && (dump == false) && 
+	    && (getdflt == false) && (dump == false) && (rename == NULL) && 
 	    (!attribute) && (!profname || !profdb)) {
 		poptPrintUsage(pc, stderr, 0);
 		exit (1);
@@ -614,6 +649,10 @@ int main(int argc, const char *argv[])
 		}
 		mapiprofile_create(profdb, profname, pattern, username, password, address,
 				   lcid, workstation, domain, realm, nopass, opt_dumpdata, opt_debuglevel);
+	}
+
+	if (rename) {
+		mapiprofile_rename(profdb, profname, rename);
 	}
 
 	if (getfqdn == true) {

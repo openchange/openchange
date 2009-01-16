@@ -236,6 +236,47 @@ static enum MAPISTATUS ldb_delete_profile(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details Rename a profile
+
+   \param mem_ctx pointer on the memory context
+   \param old_profname the old profile name string
+   \param new_profname the new profile name string
+
+   \return MAPI_E_SUCCESS on success otherwise MAPI error.
+ */
+static enum MAPISTATUS ldb_rename_profile(TALLOC_CTX *mem_ctx, 
+					  const char *old_profname,
+					  const char *new_profname)
+{
+	int			ret;
+	struct ldb_context	*ldb_ctx;
+	struct ldb_dn		*old_dn;
+	struct ldb_dn		*new_dn;
+	char			*dn;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!old_profname, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!new_profname, MAPI_E_INVALID_PARAMETER, NULL);
+
+	ldb_ctx = global_mapi_ctx->ldb_ctx;
+
+	dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Profiles", old_profname);
+	old_dn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
+	talloc_free(dn);
+
+	dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Profiles", new_profname);
+	new_dn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
+	talloc_free(dn);
+
+	ret = ldb_rename(ldb_ctx, old_dn, new_dn);
+	OPENCHANGE_RETVAL_IF(ret, MAPI_E_CORRUPT_STORE, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
 /*
  * Public interface
  */
@@ -761,34 +802,76 @@ _PUBLIC_ enum MAPISTATUS ChangeProfilePassword(const char *profile,
 	return retval;
 }
 
-/*
- * Copies a profile
- */
-_PUBLIC_ enum MAPISTATUS CopyProfile(const char *old_profile, 
-				     const char *password,
-				     const char *profile)
-{
-	old_profile = NULL;
-	password = NULL;
-	profile = NULL;
-	return MAPI_E_SUCCESS;
-	/* return MAPI_E_LOGON_FAILED => auth failure */
-	/* return MAPI_E_ACCESS_DENIED => the new profile already exists */
-	/* return MAPI_E_NOT_FOUND => old profile doesn't exist */
-}
 
-/*
- * Rename a profile
+/**
+   \details Rename a profile
+
+   \param old_profile old profile name
+   \param profile new profile name
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  */
 _PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile, 
-				       const char *password,
 				       const char *profile)
 {
-	old_profile = NULL;
-	password = NULL;
-	profile = NULL;
+	TALLOC_CTX		*mem_ctx;
+	enum MAPISTATUS		retval;
+	struct SRowSet		proftable;
+	struct SPropValue	*lpProp;
+	struct ldb_message	*msg = NULL;
+	bool			found = false;
+	char			*dn = NULL;
+	int			ret;
+	int			i;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!old_profile, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = global_mapi_ctx->mem_ctx;
+
+	retval = GetProfileTable(&proftable);
+
+	/* Step 1. Check if old profile exists */
+	for (found = false, i = 0; i < proftable.cRows; i++) {
+		lpProp = get_SPropValue_SRow(&(proftable.aRow[i]), PR_DISPLAY_NAME);
+		if (lpProp && !strcmp(lpProp->value.lpszA, old_profile)) {
+			found = true;
+		}
+	}
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_NOT_FOUND, NULL);
+
+	/* Step 2. Check if new profile already exists */
+	for (found = false, i = 0; i < proftable.cRows; i++) {
+		lpProp = get_SPropValue_SRow(&(proftable.aRow[i]), PR_DISPLAY_NAME);
+		if (lpProp && !strcmp(lpProp->value.lpszA, profile)) {
+			found = true;
+		}
+	}
+	OPENCHANGE_RETVAL_IF(found == true, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Step 3. Rename the profile */
+	retval = ldb_rename_profile(mem_ctx, old_profile, profile);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 4. Change name and cn */
+	msg = ldb_msg_new(mem_ctx);
+	dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Profiles", profile);
+	msg->dn = ldb_dn_new(mem_ctx, global_mapi_ctx->ldb_ctx, dn);
+	talloc_free(dn);
+
+	ret = ldb_msg_add_string(msg, "cn", profile);
+	ret = ldb_msg_add_string(msg, "name", profile);
+	for (i = 0; i < msg->num_elements; i++) {
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_CORRUPT_STORE, NULL);
+	ret = ldb_modify(global_mapi_ctx->ldb_ctx, msg);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_CORRUPT_STORE, NULL);
+
 	return MAPI_E_SUCCESS;
-	/* return MAPI_E_LOGON_FAILED => auth failure*/
 }
 
 

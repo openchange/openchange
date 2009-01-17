@@ -910,13 +910,13 @@ openchangeclient-uninstall:
 
 openchangeclient-clean::
 	rm -f bin/openchangeclient
-	rm -f utils/openchangeclient.po
-	rm -f utils/openchange-tools.po	
+	rm -f utils/openchangeclient.o
+	rm -f utils/openchange-tools.o	
 
 clean:: openchangeclient-clean
 
-bin/openchangeclient: 	utils/openchangeclient.po			\
-			utils/openchange-tools.po			\
+bin/openchangeclient: 	utils/openchangeclient.o			\
+			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
@@ -938,12 +938,12 @@ mapiprofile-uninstall:
 
 mapiprofile-clean::
 	rm -f bin/mapiprofile
-	rm -f utils/mapiprofile.po
+	rm -f utils/mapiprofile.o
 
 clean:: mapiprofile-clean
 
-bin/mapiprofile: 	utils/mapiprofile.po 			\
-			utils/openchange-tools.po 		\
+bin/mapiprofile: 	utils/mapiprofile.o 			\
+			utils/openchange-tools.o 		\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
@@ -968,8 +968,8 @@ openchangepfadmin-clean::
 
 clean:: openchangepfadmin-clean
 
-bin/openchangepfadmin:	utils/openchangepfadmin.po			\
-			utils/openchange-tools.po			\
+bin/openchangepfadmin:	utils/openchangepfadmin.o			\
+			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
 			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
@@ -991,13 +991,13 @@ exchange2mbox-uninstall:
 
 exchange2mbox-clean::
 	rm -f bin/exchange2mbox
-	rm -f utils/exchange2mbox.po
-	rm -f utils/openchange-tools.po	
+	rm -f utils/exchange2mbox.o
+	rm -f utils/openchange-tools.o	
 
 clean:: exchange2mbox-clean
 
-bin/exchange2mbox:	utils/exchange2mbox.po				\
-			utils/openchange-tools.po			\
+bin/exchange2mbox:	utils/exchange2mbox.o				\
+			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt  $(MAGIC_LIBS)
@@ -1018,18 +1018,18 @@ exchange2ical-uninstall:
 
 exchange2ical-clean::
 	rm -f bin/exchange2ical
-	rm -f utils/exchange2ical/exchange2ical.po
-	rm -f utils/exchange2ical/exchange2ical_utils.po
-	rm -f utils/exchange2ical/exchange2ical_component.po
-	rm -f utils/exchange2ical/exchange2ical_property.po
-	rm -f utils/openchange-tools.po	
+	rm -f utils/exchange2ical/exchange2ical.o
+	rm -f utils/exchange2ical/exchange2ical_utils.o
+	rm -f utils/exchange2ical/exchange2ical_component.o
+	rm -f utils/exchange2ical/exchange2ical_property.o
+	rm -f utils/openchange-tools.o	
 
 clean:: exchange2ical-clean
 
-bin/exchange2ical:	utils/exchange2ical/exchange2ical.po		\
-			utils/exchange2ical/exchange2ical_component.po	\
-			utils/exchange2ical/exchange2ical_property.po	\
-			utils/exchange2ical/exchange2ical_utils.po	\
+bin/exchange2ical:	utils/exchange2ical/exchange2ical.o		\
+			utils/exchange2ical/exchange2ical_component.o	\
+			utils/exchange2ical/exchange2ical_property.o	\
+			utils/exchange2ical/exchange2ical_utils.o	\
 			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
@@ -1053,31 +1053,31 @@ mapitest-uninstall:
 
 mapitest-clean:
 	rm -f bin/mapitest
-	rm -f utils/mapitest/*.po
-	rm -f utils/mapitest/modules/*.po
+	rm -f utils/mapitest/*.o
+	rm -f utils/mapitest/modules/*.o
 	rm -f utils/mapitest/proto.h
 	rm -f utils/mapitest/mapitest_proto.h
 
 clean:: mapitest-clean
 
-bin/mapitest:	utils/mapitest/mapitest.po			\
-		utils/openchange-tools.po			\
-		utils/mapitest/mapitest_suite.po		\
-		utils/mapitest/mapitest_print.po		\
-		utils/mapitest/mapitest_stat.po			\
-		utils/mapitest/mapitest_common.po		\
-		utils/mapitest/module.po			\
-		utils/mapitest/modules/module_oxcstor.po	\
-		utils/mapitest/modules/module_oxcfold.po	\
-		utils/mapitest/modules/module_oxomsg.po		\
-		utils/mapitest/modules/module_oxcmsg.po		\
-		utils/mapitest/modules/module_oxcprpt.po	\
-		utils/mapitest/modules/module_oxctable.po	\
-		utils/mapitest/modules/module_oxorule.po	\
-		utils/mapitest/modules/module_oxcfxics.po	\
-		utils/mapitest/modules/module_nspi.po		\
-		utils/mapitest/modules/module_noserver.po	\
-		utils/mapitest/modules/module_errorchecks.po	\
+bin/mapitest:	utils/mapitest/mapitest.o			\
+		utils/openchange-tools.o			\
+		utils/mapitest/mapitest_suite.o			\
+		utils/mapitest/mapitest_print.o			\
+		utils/mapitest/mapitest_stat.o			\
+		utils/mapitest/mapitest_common.o		\
+		utils/mapitest/module.o				\
+		utils/mapitest/modules/module_oxcstor.o		\
+		utils/mapitest/modules/module_oxcfold.o		\
+		utils/mapitest/modules/module_oxomsg.o		\
+		utils/mapitest/modules/module_oxcmsg.o		\
+		utils/mapitest/modules/module_oxcprpt.o		\
+		utils/mapitest/modules/module_oxctable.o	\
+		utils/mapitest/modules/module_oxorule.o		\
+		utils/mapitest/modules/module_oxcfxics.o	\
+		utils/mapitest/modules/module_nspi.o		\
+		utils/mapitest/modules/module_noserver.o	\
+		utils/mapitest/modules/module_errorchecks.o	\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
@@ -1118,14 +1118,14 @@ openchangemapidump-uninstall:
 
 openchangemapidump-clean::
 	rm -f bin/openchangemapidump
-	rm -f utils/backup/openchangemapidump.po
-	rm -f utils/backup/openchangebackup.po
+	rm -f utils/backup/openchangemapidump.o
+	rm -f utils/backup/openchangebackup.o
 
 clean:: openchangemapidump-clean
 
-bin/openchangemapidump:	utils/backup/openchangemapidump.po		\
-			utils/backup/openchangebackup.po		\
-			utils/openchange-tools.po			\
+bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
+			utils/backup/openchangebackup.o			\
+			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
@@ -1145,11 +1145,11 @@ schemaIDGUID-uninstall:
 
 schemaIDGUID-clean::
 	rm -f bin/schemaIDGUID
-	rm -f utils/schemaIDGUID.po
+	rm -f utils/schemaIDGUID.o
 
 clean:: schemaIDGUID-clean
 
-bin/schemaIDGUID: utils/schemaIDGUID.po
+bin/schemaIDGUID: utils/schemaIDGUID.o
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS)
 
@@ -1169,11 +1169,11 @@ locale_codepage-uninstall:
 
 locale_codepage-clean::
 	rm -f bin/locale_codepage
-	rm -f libmapi/tests/locale_codepage.po
+	rm -f libmapi/tests/locale_codepage.o
 
 clean:: locale_codepage-clean
 
-bin/locale_codepage: libmapi/tests/locale_codepage.po libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 

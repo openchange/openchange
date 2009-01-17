@@ -22,6 +22,7 @@
 #include <libmapi/libmapi.h>
 #include <samba/popt.h>
 #include <param.h>
+#include "openchange-tools.h"
 
 #include <stdlib.h>
 #include <signal.h>
@@ -512,6 +513,7 @@ int main(int argc, const char *argv[])
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data", NULL},
 		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUGLEVEL, "set the debug level", "LEVEL"},
 		{"getfqdn", 0, POPT_ARG_NONE, NULL, OPT_GETFQDN, "returns the DNS FQDN of the NSPI server matching the legacyDN", NULL},
+		POPT_OPENCHANGE_VERSION
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
 

@@ -22,6 +22,25 @@
 #include <libmapi/libmapi.h>
 #include "openchange-tools.h"
 
+static void popt_openchange_version_callback(poptContext con,
+					     enum poptCallbackReason reason,
+					     const struct poptOption *opt,
+					     const char *arg,
+					     const void *data)
+{
+	switch (opt->val) {
+	case 'V':
+		printf("Version %s\n", OPENCHANGE_VERSION_STRING);
+		exit (0);
+	}
+}
+
+struct poptOption popt_openchange_version[] = {
+	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_openchange_version_callback	},
+	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version "		},
+	{ NULL }
+};
+
 
 /*
  * Retrieve the property value for a given SRow and property tag.  

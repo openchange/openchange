@@ -25,6 +25,7 @@
 #include <param.h>
 
 #include "openchangebackup.h"
+#include <utils/openchange-tools.h>
 
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -369,6 +370,7 @@ int main(int argc, const char *argv[])
 		{"backup-db", 'b', POPT_ARG_STRING, NULL, OPT_BACKUPDB, "set the openchangebackup store path", NULL},
 		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "set the debug level", NULL},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data", NULL},
+		POPT_OPENCHANGE_VERSION
 		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
 

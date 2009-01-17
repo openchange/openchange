@@ -25,6 +25,7 @@
 #include <param.h>
 
 #include "openchangepfadmin.h"
+#include "openchange-tools.h"
 
 static int32_t get_aclrights(const char *permission)
 {
@@ -293,6 +294,7 @@ int main(int argc, const char *argv[])
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "Dump the hex data", NULL},
 		{"folder", 0, POPT_ARG_STRING, NULL, OPT_FOLDER, "specify the Public Folder directory", "FOLDER"},
 		{"username", 0, POPT_ARG_STRING, NULL, OPT_USERNAME, "specify the username to use", "USERNAME"},
+		POPT_OPENCHANGE_VERSION
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
 

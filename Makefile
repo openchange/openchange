@@ -942,7 +942,9 @@ mapiprofile-clean::
 
 clean:: mapiprofile-clean
 
-bin/mapiprofile: utils/mapiprofile.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+bin/mapiprofile: 	utils/mapiprofile.o 			\
+			utils/openchange-tools.o 		\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt
 
@@ -967,6 +969,7 @@ openchangepfadmin-clean::
 clean:: openchangepfadmin-clean
 
 bin/openchangepfadmin:	utils/openchangepfadmin.o			\
+			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
 			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
@@ -1058,6 +1061,7 @@ mapitest-clean:
 clean:: mapitest-clean
 
 bin/mapitest:	utils/mapitest/mapitest.o			\
+		utils/openchange-tools.o			\
 		utils/mapitest/mapitest_suite.o			\
 		utils/mapitest/mapitest_print.o			\
 		utils/mapitest/mapitest_stat.o			\
@@ -1121,6 +1125,7 @@ clean:: openchangemapidump-clean
 
 bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
 			utils/backup/openchangebackup.o			\
+			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) -lpopt

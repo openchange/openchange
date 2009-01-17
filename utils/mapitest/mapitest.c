@@ -225,6 +225,7 @@ int main(int argc, const char *argv[])
 		{ "no-server",     0,  POPT_ARG_NONE,   NULL, OPT_NO_SERVER,     "only run tests that do not require server connection", NULL },
 		{ "dump-data",     0,  POPT_ARG_NONE,   NULL, OPT_DUMP_DATA,     "dump the hex data", NULL },
 		{ "debuglevel",   'd', POPT_ARG_STRING, NULL, OPT_DEBUG,         "set debug level", NULL },
+		POPT_OPENCHANGE_VERSION
 		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
 

@@ -22,6 +22,8 @@
 #ifndef	__OPENCHANGETOOLS_H__
 #define	__OPENCHANGETOOLS_H__
 
+#include <popt.h>
+
 #define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
 #define	DEFAULT_TDB	"%s/.openchange/index.tdb"
 #define	DEFAULT_MBOX	"%s/.openchange/mbox"
@@ -38,6 +40,11 @@
 #define __END_DECLS
 #endif
 #endif
+
+/* Common popt structures for tool */
+extern struct poptOption popt_openchange_version[];
+
+#define	POPT_OPENCHANGE_VERSION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_openchange_version, 0, "Common openchange options:", NULL },
 
 #ifndef _PUBLIC_
 #define _PUBLIC_

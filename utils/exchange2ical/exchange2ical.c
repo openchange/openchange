@@ -189,6 +189,7 @@ int main(int argc, const char *argv[])
 		{ "password",	'P', POPT_ARG_STRING, NULL, OPT_PASSWORD,	"set the profile password",		NULL },
 		{ "debuglevel",	'd', POPT_ARG_STRING, NULL, OPT_DEBUG,		"set the debug level",			NULL },
 		{ "dump-data",	  0, POPT_ARG_NONE,   NULL, OPT_DUMPDATA,	"dump the hex data",			NULL },
+		POPT_OPENCHANGE_VERSION
 		{ NULL,		  0, 0,		      NULL, 0,			NULL,					NULL }
 	};
 

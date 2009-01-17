@@ -2842,6 +2842,7 @@ int main(int argc, const char *argv[])
 		{"ocpf-dump", 0, POPT_ARG_STRING, NULL, OPT_OCPF_DUMP, "dump message into OCPF file", NULL },
 		{"ocpf-syntax", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SYNTAX, "check OCPF files syntax", NULL },
 		{"ocpf-sender", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SENDER, "send message using OCPF files contents", NULL },
+		POPT_OPENCHANGE_VERSION
 		{NULL, 0, 0, NULL, 0, NULL, NULL}
 	};
 

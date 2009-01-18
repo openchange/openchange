@@ -689,63 +689,6 @@ torture/torture_proto.h: torture/mapi_restrictions.c	\
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h $^
 
-
-
-#################################################################
-# server and providers compilation rules
-#################################################################
-
-provision-install:
-	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
-	$(INSTALL) -m 0644 setup/oc_provision* $(DESTDIR)$(datadir)/setup/
-
-provision-uninstall:
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
-
-
-server:		providers/providers_proto.h server/dcesrv_proto.h	\
-		server/dcesrv_exchange.$(SHLIBEXT)			
-
-server-install: python-install
-	$(INSTALL) -m 0755 server/dcesrv_exchange.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
-	$(INSTALL) -m 0644 setup/oc_provision* $(DESTDIR)$(datadir)/setup/
-
-server-uninstall: python-uninstall
-	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_exchange.*
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
-
-server-clean::
-	rm -f providers/*.o providers/*.po
-	rm -f server/*.o server/*.po
-	rm -f server/dcesrv_proto.h
-	rm -f providers/providers_proto.h
-	rm -f server/*.$(SHLIBEXT)
-	rm -f server/dcesrv_exchange.$(SHLIBEXT)
-
-clean:: server-clean
-
-server/dcesrv_exchange.$(SHLIBEXT): 	providers/emsabp.po 		\
-					server/dcesrv_exchange.po	\
-					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
-
-server/dcesrv_exchange.c: providers/providers_proto.h gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
-
-providers/providers_proto.h: providers/emsabp.c
-	@echo "Generating $@"
-	@./script/mkproto.pl --private=providers/providers_proto.h --public=providers/providers_proto.h $^
-
-server/dcesrv_proto.h: server/dcesrv_exchange.c
-	@echo "Generating $@"
-	@./script/mkproto.pl --private=server/dcesrv_proto.h --public=server/dcesrv_proto.h $^
-
-
 #################################################################
 # mapiproxy compilation rules
 #################################################################
@@ -853,6 +796,14 @@ mapiproxy/modules/mpm_dummy.$(SHLIBEXT): mapiproxy/modules/mpm_dummy.po
 ####################
 # mapiproxy servers
 ####################
+provision-install:
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
+	$(INSTALL) -m 0644 setup/oc_provision* $(DESTDIR)$(datadir)/setup/
+
+provision-uninstall:
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
 
 mapiproxy-servers:	mapiproxy/servers/exchange_nsp.$(SHLIBEXT)		\
 			mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT)		\

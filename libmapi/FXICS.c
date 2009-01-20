@@ -33,7 +33,7 @@
    \details Reserves a range of IDs to be used by a local replica
 
    \param obj_store pointer on the store MAPI object
-   \param IdCounter ID range length to reserve
+   \param IdCount ID range length to reserve
    \param ReplGuid pointer to the GUID structure returned by the
    server
 

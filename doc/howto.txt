@@ -5,7 +5,7 @@ under the terms at http://creativecommons.org/licenses/by-sa/3.0/
 OpenChange developer howto
 --------------------------
 
-== Updated on April 2008 ==
+== Updated on January 2009 ==
 
 
 ###############
@@ -63,21 +63,13 @@ applications.
 [0x1c] Why do I have to do all this compilation?
 ================================================
 
-The OpenChange project is quite young and has not yet produced any
-binary distributions, although that is a short-term goal for libmapi
-now it is reached levels of stability and reliability we are happy
-with. For the moment though you need to compile both OpenChange and
-its dependency Samba version 4, and Samba4 itself has some
-dependencies. This is a temporary situation, and if you are
-experiementing with OpenChange at this stage then congratulations, and
-we'll help you as much as we can.
+Several distributions (Debian, Ubuntu, SuSE and Fedora) contain
+packages for OpenChange. These packages are not maintained by the
+OpenChange team but by the distributions, and may be out of date.
 
-You should not draw conclusions about libmapi maturity from Samba4
-maturity. Samba4 covers a very large scope of functionality, much of
-which is incomplete.  libmapi uses Samba4 libraries in specific areas
-where they are very well-tested and very reliable. That means that
-libmapi bugs belong to OpenChange. As far as libmapi is concerned,
-Samba4 had most bugs fixed years ago :-)
+Furthermore the OpenChange project is moving along quickly and you may
+want to evaluate or benefit from latest features, changes and bug
+fixes we may supply in the future.
 
 
 ####################
@@ -275,7 +267,7 @@ Profile: testuser-2000
         password       == openchange
         mailbox        == /o=First Organization/ou=First Administrative Group/cn=Recipients/cn=testuser
         workstation    == LOCALHOST
-        realm          == (null)
+	domain	       == OPENCHANGE
         server         == 192.168.194.22
 
 
@@ -325,6 +317,7 @@ openchangeclient is also useful in its own right as a scriptable client.
 
 For up to date material on how to use libmapi + discussions, you
 are strongly encouraged to visit the OpenChange wiki:
+    * http://apidocs.openchange.org
     * http://wiki.openchange.org
     * http://wiki.openchange.org/index.php/ClientSideProgramming
 
@@ -351,10 +344,7 @@ section 2 for further information.
 Under your root account, provision the server:
 
 # ./setup/provision --domain=OPENCHANGE --realm=OPENCHANGE.LOCAL \
-		    --adminpass=secret
-
-If you encounter problems similar to: "smbscript not found", adjust
-your PATH environment variable.
+		    --adminpass=secret --server-role='domain controller'
 
 If you need to add a user, run the following command from Samba4
 source directory and setup arguments so it fullfill your needs:
@@ -362,90 +352,40 @@ source directory and setup arguments so it fullfill your needs:
 # ./setup/newuser --username=test --unixname=test --password=test
 
 
-[0x5b] Extending users Samba AD schema
-======================================
+[0x5b] Extending Samba AD schema
+================================
 
 In the OpenChange source directory, run the following command to extend
-users AD. For example to make user test and Administrator openchange
-users run:
+Samba4 AD. This script will add necessary schema and attributes to run
+OpenChange Server
 
-# ./setup/oc_newuser --username=test
-# ./setup/oc_newuser --username=Administrator
+# ./setup/openchange_provision
+
+[0x5c] Extending Samba AD users
+===============================
+
+Finally running OpenChange server for a given user implies it belongs
+to the "Exchange Organization". The openchange_newuser script will
+extend existing user records and add attributes needed by OpenChange
+
+# ./setup/openchange_user --create test
+
+Users created with this script are enabled by default. You can
+enable/disable these users at any time by running:
+
+# ./setup/openchange_user --enable test
+# ./setup/openchange_user --disable test
 
 
 [0x5c] Setting smb.conf
 =======================
 
-In order to run OpenChange, you need so set up additional parameters
-in the [global] section of smb.conf. A sample smb.conf for OpenChange can be 
-found in doc/smb.conf.example.
+In order to run OpenChange server, you need to set up additional
+parameters in the [global] section of smb.conf. OpenChange server
+being part of mapiproxy, detailed and up to date information can be
+found at the following address:
 
-You need to activate the exchange dcerpc endpoints servers. The
-following options overwrite the default endpoints list, we need to add
-them anew:
-
-       dcerpc endpoint servers = exchange_nsp exchange_emsmdb epmapper srvsvc wkssvc rpcecho samr netlogon lsarpc spoolss drsuapi winreg dssetup
-
-You also need to fill information about your locale ID. 3 settings
-are required:
-
-- codepage
-- input locale language
-- input locale method
-
-You can easily find the locale language and method for your country
-using ./bin/locale_codepage we developed:
-
-1. Select your Region
-
-  $ ./bin/locale_codepage -l
-Language groups:
-                CP_WESTERN_EUROPE_AND_US
-                CP_CENTRAL_EUROPE
-                CP_BALTIC
-                CP_GREEK
-                CP_CYRILLIC
-                CP_TURKIC
-                CP_JAPANESE
-                CP_KOREAN
-                CP_TRADITIONAL_CHINESE
-                CP_SIMPLIFIED_CHINESE
-                CP_THAI
-                CP_HEBREW
-                CP_ARABIC
-                CP_VIETNAMESE
-                CP_INDIC
-                CP_GEORGIAN
-                CP_ARMENIAN
-
-
-
-2. List languages in your region
-
-  $ ./bin/locale_codepage -G CP_WESTERN_EUROPE_AND_US
-	        [...]
-		French_Standard
-		[...]
-
-
-3. Display language and method for your language
-
-  $ ./bin/locale_codepage -i French_Standard
-######### BEGIN: (copy and paste into smb.conf) #########
-locale:language = 0x40c
-locale:method = 0x409
-######### END:   (copy and paste into smb.conf) #########
-
-You can choose the codepage you want and check it using:
-
-  $ ./bin/locale_codepage -c 0x4e4
-        codepage                 : 0x4e4
-        codepage name            : cpWindows1252
-        codepage description     : ANSI - Latin I, Western European (Windows), Charset Label:Windows-1252, Aliases:ANSI_X3.4-1968, ANSI_X3.4-1986, ascii, cp367, cp819, csASCII, IBM367, ibm819, ISO_646.irv:1991, iso_8859-1, iso_8859-1:1987, ISO646-US, iso8859-1, iso-8859-1, iso-ir-100, i...
-
-  Your OpenChange server needs a unique GUID that identifies it:
-
-  exchange:GUID = 1b940e13-14d3-4e2a-9711-e06a2def5dfd
+http://mapiproxy.openchange.org
 
 
 [0x5d] Running the Address Book Provider (EMSABP)

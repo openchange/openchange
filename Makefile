@@ -156,23 +156,25 @@ libmapi-uninstall:	libmapi-uninstallpc	\
 
 libmapi-clean::
 	rm -f libmapi/*.o libmapi/*.po
-	rm -f libmapi/utf8_convert.yy.c
 	rm -f libmapi/tests/*.o, libmapi/tests/*.po
 	rm -f libmapi/socket/*.o libmapi/socket/*.po
 	rm -f libmapi/util/*.o, libmapi/util/*.po
 	rm -f libmapi/version.h
+ifneq ($(SNAPSHOT), no)
+	rm -f libmapi/utf8_convert.yy.c
 	rm -f libmapi/mapicode.c libmapi/mapicode.h
 	rm -f libmapi/mapitags.c libmapi/mapitags.h
 	rm -f libmapi/mapi_nameid.h libmapi/mapi_nameid_private.h
 	rm -f libmapi/proto.h
 	rm -f libmapi/proto_private.h
+	rm -f mapicodes_enum.h
+	rm -f mapitags_enum.h
+endif
 	rm -f gen_ndr/ndr_exchange*
 	rm -f gen_ndr/exchange.h
 	rm -f gen_ndr/ndr_property*
 	rm -f gen_ndr/property.h
 	rm -f ndr_mapi.o ndr_mapi.po
-	rm -f mapicodes_enum.h
-	rm -f mapitags_enum.h
 	rm -f *~
 	rm -f */*~
 	rm -f */*/*~
@@ -457,8 +459,10 @@ libmapiadmin-uninstall:	libmapiadmin-uninstallpc	\
 
 libmapiadmin-clean::
 	rm -f libmapiadmin/*.o libmapiadmin/*.po
+ifneq ($(SNAPSHOT), no)
 	rm -f libmapiadmin/proto.h
 	rm -f libmapiadmin/proto_private.h
+endif
 	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) \
 		  libmapiadmin.$(SHLIBEXT)
 
@@ -529,10 +533,12 @@ libocpf-uninstall:	libocpf-uninstallpc	\
 
 libocpf-clean::
 	rm -f libocpf/*.o libocpf/*.po
+ifneq ($(SNAPSHOT), no)
 	rm -f libocpf/lex.yy.c
 	rm -f libocpf/ocpf.tab.c libocpf/ocpf.tab.h
 	rm -f libocpf/proto.h
 	rm -f libocpf/proto_private.h
+endif
 	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) \
 		  libocpf.$(SHLIBEXT)
 
@@ -622,7 +628,9 @@ torture-uninstall:
 
 torture-clean::
 	rm -f torture/*.$(SHLIBEXT)
+ifneq ($(SNAPSHOT), no)
 	rm -f torture/torture_proto.h
+endif
 	rm -f torture/*.o torture/*.po
 
 clean:: torture-clean
@@ -1006,8 +1014,10 @@ mapitest-clean:
 	rm -f bin/mapitest
 	rm -f utils/mapitest/*.o
 	rm -f utils/mapitest/modules/*.o
+ifneq ($(SNAPSHOT), no)
 	rm -f utils/mapitest/proto.h
 	rm -f utils/mapitest/mapitest_proto.h
+endif
 
 clean:: mapitest-clean
 

@@ -22,6 +22,7 @@
 #ifndef	__LIBMAPIPROXY_H__
 #define	__LIBMAPIPROXY_H__
 
+#include <signal.h>
 #include <dcerpc_server.h>
 #include <talloc.h>
 #include <tevent.h>

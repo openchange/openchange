@@ -1,3 +1,5 @@
+# Mode (Release or snapshot?)
+SNAPSHOT=@OPENCHANGE_VERSION_IS_SVN_SNAPSHOT@
 
 # Binary
 CC=@CC@

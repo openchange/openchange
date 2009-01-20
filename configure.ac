@@ -125,11 +125,14 @@ AC_PROG_INSTALL
 dnl ---------------------------------------------------------------------------
 dnl Check for Perl
 dnl ---------------------------------------------------------------------------
+. `dirname $0`/VERSION
+AC_SUBST(OPENCHANGE_VERSION_IS_SVN_SNAPSHOT)
+
 AC_PATH_PROG(PERL, perl)
 
 if test x"$PERL" = x""; then
-   	AC_MSG_WARN([No version of perl was found!])
-	AC_MSG_ERROR([Please install perl http://www.perl.com])
+   AC_MSG_WARN([No version of perl was found!])
+   AC_MSG_ERROR([Please install perl http://www.perl.com])
 fi
 AC_SUBST(PERL)
 
@@ -160,14 +163,16 @@ AC_SUBST(pythondir)
 dnl ----------------------------------------------------------------------------
 dnl Check for Flex
 dnl ----------------------------------------------------------------------------
-AC_ARG_VAR([FLEX], [Location of the flex program.])
-AC_CHECK_PROG([FLEX], [flex], [flex])
+if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+   AC_ARG_VAR([FLEX], [Location of the flex program.])
+   AC_CHECK_PROG([FLEX], [flex], [flex])
 
-if test x"$FLEX" = x""; then
-   	AC_MSG_WARN([No version of flex was found!])
-	AC_MSG_ERROR([Please install flex])
+   if test x"$FLEX" = x""; then
+   	   AC_MSG_WARN([No version of flex was found!])
+	   AC_MSG_ERROR([Please install flex])
+   fi
+   AC_SUBST(FLEX)
 fi
-AC_SUBST(FLEX)
 
 dnl ---------------------------------------------------------------------------
 dnl Samba4 modules
@@ -251,12 +256,16 @@ dnl ###########################################################################
 dnl ---------------------------------------------------------------------------
 dnl Check for Bison
 dnl ---------------------------------------------------------------------------
-AC_ARG_VAR([BISON], [Location of the bison program.])
-AC_PATH_PROG([BISON], [bison], [bison])
+if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+   AC_ARG_VAR([BISON], [Location of the bison program.])
+   AC_PATH_PROG([BISON], [bison], [bison])
 
-if test x"$BISON" != x""; then
+   if test x"$BISON" != x""; then
+      OC_RULE_ADD(libocpf, LIBS)
+      AC_SUBST(BISON)
+   fi
+else
    OC_RULE_ADD(libocpf, LIBS)
-   AC_SUBST(BISON)
 fi
 
 

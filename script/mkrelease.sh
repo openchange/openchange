@@ -13,6 +13,10 @@ svn log -r$3:HEAD > $TMPDIR/CHANGELOG || exit 1
 ( cd $TMPDIR/
  ./autogen.sh || exit 1
  ./configure || exit 1
+ make || exit 1
+ sed -i "s/^OPENCHANGE_VERSION_IS_SVN_SNAPSHOT=yes/OPENCHANGE_VERSION_IS_SVN_SNAPSHOT=no/g" VERSION || exit 1
+ ./autogen.sh || exit 1
+ ./configure || exit 1
  make doxygen || exit 1
  make distclean  || exit 1
  rm .bzrignore

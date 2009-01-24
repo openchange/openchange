@@ -372,5 +372,6 @@ yyparse_utf8(char *mybuf, char *str)
 	yy_scan_string(str);
 	yylex();
 	newbuf[newbuf_idx] = 0;
+	libmapi_utf8_convert_lex_destroy();
 	return 0;
 }

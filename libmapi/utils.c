@@ -104,12 +104,16 @@ int yyparse_utf8(char *, const char *);
 
 _PUBLIC_ char *windows_to_utf8(TALLOC_CTX *mem_ctx, const char *input)
 {
+	char	*tmp = NULL;
 	char	*output;
 
 	if (!input) return NULL;
 
-	output = talloc_size(mem_ctx, strlen(input) + 1);
-	yyparse_utf8(output, input);
+	tmp = malloc(strlen(input) + 1);
+	yyparse_utf8(tmp, input);
+	output = talloc_strdup(mem_ctx, tmp);
+	free(tmp);
+	
 	return output;
 }
 

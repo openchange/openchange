@@ -92,7 +92,7 @@ _PUBLIC_ bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 	uint32_t		rowNum;
 	int		i;
 
-	retval = GetLoadparmContext(lp_ctx);
+	retval = GetLoadparmContext(&lp_ctx);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	rawData.data = talloc_array(mt->mem_ctx, uint8_t, 1024);
@@ -187,7 +187,7 @@ _PUBLIC_ bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 	uint32_t		rowNum;
 	int		i;
 
-	retval = GetLoadparmContext(lp_ctx);
+	retval = GetLoadparmContext(&lp_ctx);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	rawData.data = talloc_array(mt->mem_ctx, uint8_t, 1024);

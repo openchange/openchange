@@ -76,8 +76,9 @@ _PUBLIC_ enum MAPISTATUS SPropTagArray_add(TALLOC_CTX *mem_ctx,
 
 	SPropTagArray->cValues += 1;
 	SPropTagArray->aulPropTag = talloc_realloc(mem_ctx, SPropTagArray->aulPropTag,
-						   uint32_t, SPropTagArray->cValues);
+						   uint32_t, SPropTagArray->cValues + 1);
 	SPropTagArray->aulPropTag[SPropTagArray->cValues - 1] = aulPropTag;
+	SPropTagArray->aulPropTag[SPropTagArray->cValues] = 0;
 
 	return MAPI_E_SUCCESS;
 }

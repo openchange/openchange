@@ -355,6 +355,7 @@ _PUBLIC_ bool mapitest_oxcprpt_DeleteProps(struct mapitest *mt)
 				       lpProps[1].value.lpszA);
 		}
 	}
+	MAPIFreeBuffer(lpProps);
 
 	/* Step 5. Delete Properties */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_CONVERSATION_TOPIC);
@@ -371,6 +372,7 @@ _PUBLIC_ bool mapitest_oxcprpt_DeleteProps(struct mapitest *mt)
 	} else {
 		mapitest_print(mt, "* Step 5.1. - GetProps verifier [FAILURE]:\n");
 	}
+	MAPIFreeBuffer(lpProps);
 
 	/* Step 7: cleanup folders */
 	retval = DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_ref_folder),

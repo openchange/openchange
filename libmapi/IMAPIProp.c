@@ -143,6 +143,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	talloc_free(nameid);
 
 	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)session,
+					   global_mapi_ctx->lp_ctx,
 					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
 					   SPropTagArray, lpProps, PropCount, 
 					   mapi_response->mapi_repl->u.mapi_GetProps.layout);

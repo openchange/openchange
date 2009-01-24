@@ -457,13 +457,15 @@ _PUBLIC_ struct emsmdb_info *emsmdb_get_info(struct mapi_session *session)
    \details Retrieves a property value from a DATA blob
 
    \param mem_ctx pointer to the memory context
+   \param lp_ctx pointer to the loadparm context
    \param offset pointer on pointer to the current offset
    \param tag the property tag which value is to be retrieved
    \param data pointer to the data
 
    \return pointer on constant generic data on success, otherwise NULL
  */
-const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx, 
+const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
+				 struct loadparm_context *lp_ctx,
 				 uint32_t *offset, 
 				 enum MAPITAGS tag, 
 				 DATA_BLOB *data)
@@ -492,7 +494,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 	ndr->data = data->data;
 	ndr->data_size = data->length;
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-	ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
+	ndr->iconv_convenience = lp_iconv_convenience(lp_ctx);
 
 	switch(tag & 0xFFFF) {
 	case PT_I2:
@@ -598,6 +600,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
    \details Get a SPropValue array from a DATA blob
 
    \param mem_ctx pointer to the memory context
+   \param lp_ctx pointer to the loadparm context
    \param content pointer to the DATA blob content
    \param tags pointer to a list of property tags to lookup
    \param propvals pointer on pointer to the returned SPropValues
@@ -607,6 +610,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
    \return MAPI_E_SUCCESS on success
  */
 enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
+				      struct loadparm_context *lp_ctx,
 				      DATA_BLOB *content,
 				      struct SPropTagArray *tags,
 				      struct SPropValue **propvals, 
@@ -634,7 +638,7 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 			offset += sizeof (uint8_t);
 		}
 
-		data = pull_emsmdb_property(mem_ctx, &offset, tags->aulPropTag[i_tag], content);
+		data = pull_emsmdb_property(mem_ctx, lp_ctx, &offset, tags->aulPropTag[i_tag], content);
 		if (data) {
 			p_propval = &((*propvals)[i_propval]);
 			p_propval->ulPropTag = tags->aulPropTag[i_tag];
@@ -653,17 +657,19 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 /**
    \details Get a SRowSet from a DATA blob
 
-   \param mem_ctx pointer to the memory context
-   \param rowset pointer to the returned SRowSe
-   \param proptags pointer to a list of property tags to lookup
-   \param content pointer to the DATA blob content
+   \param mem_ctx pointer on the memory context
+   \param lp_ctx pointer on the loadparm context
+   \param rowset pointer on the returned SRowSe
+   \param proptags pointer on a list of property tags to lookup
+   \param content pointer on the DATA blob content
 
    \return MAPI_E_SUCCESS on success
 
    \note TODO: this doesn't yet handle the TypedPropertyValue and
    FlaggedPropertyValueWithTypeSpecified variants
  */
-_PUBLIC_ void emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ void emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx,
+				 struct loadparm_context *lp_ctx,
 				 struct SRowSet *rowset, 
 				 struct SPropTagArray *proptags, 
 				 DATA_BLOB *content)
@@ -719,7 +725,7 @@ _PUBLIC_ void emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx,
 			}
 			if (havePropertyValue) {
 				lpProps[prop].dwAlignPad = 0x0;
-				data = pull_emsmdb_property(mem_ctx, &offset, lpProps[prop].ulPropTag, content);
+				data = pull_emsmdb_property(mem_ctx, lp_ctx, &offset, lpProps[prop].ulPropTag, content);
 				set_SPropValue(&lpProps[prop], data);
 			}
 		}
@@ -734,11 +740,12 @@ _PUBLIC_ void emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx,
 /**
    \details Get a SRow from a DATA blob
 
-   \param mem_ctx pointer to the memory context
-   \param aRow pointer to the returned SRow
-   \param proptags pointer to a list of property tags to lookup
+   \param mem_ctx pointer on the memory context
+   \param lp_ctx pointer on the loadparm context
+   \param aRow pointer on the returned SRow
+   \param proptags pointer on a list of property tags to lookup
    \param propcount number of SPropValue entries in aRow
-   \param content pointer to the DATA blob content
+   \param content pointer on the DATA blob content
    \param flag the type data
    \param align alignment pad
 
@@ -746,7 +753,8 @@ _PUBLIC_ void emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx,
 
    \note TODO: We shouldn't have any alignment pad here
  */
-void emsmdb_get_SRow(TALLOC_CTX *mem_ctx, 
+void emsmdb_get_SRow(TALLOC_CTX *mem_ctx,
+		     struct loadparm_context *lp_ctx,
 		     struct SRow *aRow, 
 		     struct SPropTagArray *proptags, 
 		     uint16_t propcount, 
@@ -772,7 +780,7 @@ void emsmdb_get_SRow(TALLOC_CTX *mem_ctx,
 			offset += align;
 		} 
 
-		data = pull_emsmdb_property(mem_ctx, &offset, aulPropTag, content);
+		data = pull_emsmdb_property(mem_ctx, lp_ctx, &offset, aulPropTag, content);
 		aRow->lpProps[i].ulPropTag = aulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
 		set_SPropValue(&(aRow->lpProps[i]), data);

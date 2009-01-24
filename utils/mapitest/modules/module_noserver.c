@@ -82,6 +82,8 @@ _PUBLIC_ bool mapitest_noserver_lzfu(struct mapitest *mt)
 
 _PUBLIC_ bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 {
+	enum MAPISTATUS		retval;
+	struct loadparm_context	*lp_ctx = NULL;
 	DATA_BLOB		rawData;
 	uint8_t			rawDataHex[1024];
 	struct SRowSet		rowSet;
@@ -89,6 +91,9 @@ _PUBLIC_ bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 	struct SPropTagArray	*proptags;
 	uint32_t		rowNum;
 	int		i;
+
+	retval = GetLoadparmContext(lp_ctx);
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	rawData.data = talloc_array(mt->mem_ctx, uint8_t, 1024);
 	memcpy(rawDataHex, SROWSET_UNTAGGED, 2*SROWSET_UNTAGGED_LEN);
@@ -101,7 +106,7 @@ _PUBLIC_ bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 	proptags = set_SPropTagArray(mt->mem_ctx, 2, PR_SENDER_NAME,  PR_BODY);
 	rowSet.cRows = 10;
 	rowSet.aRow = talloc_array(mt->mem_ctx, struct SRow, 10);
-	emsmdb_get_SRowSet(mt->mem_ctx, &rowSet, proptags, &rawData);
+	emsmdb_get_SRowSet(mt->mem_ctx, lp_ctx, &rowSet, proptags, &rawData);
 
 	/* Check the resulting SRowSet */
 	if (rowSet.cRows != 10) {
@@ -172,6 +177,8 @@ _PUBLIC_ bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 
 _PUBLIC_ bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 {
+	enum MAPISTATUS		retval;
+	struct loadparm_context	*lp_ctx = NULL;
 	DATA_BLOB		rawData;
 	uint8_t			rawDataHex[1024];
 	struct SRowSet		rowSet;
@@ -179,6 +186,9 @@ _PUBLIC_ bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 	struct SPropTagArray	*proptags;
 	uint32_t		rowNum;
 	int		i;
+
+	retval = GetLoadparmContext(lp_ctx);
+	if (retval != MAPI_E_SUCCESS) return false;
 
 	rawData.data = talloc_array(mt->mem_ctx, uint8_t, 1024);
 	memcpy(rawDataHex, SROWSET_TAGGED, 2*SROWSET_TAGGED_LEN);
@@ -191,7 +201,7 @@ _PUBLIC_ bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 	proptags = set_SPropTagArray(mt->mem_ctx, 2, PR_SENDER_NAME,  PR_BODY);
 	rowSet.cRows = 16;
 	rowSet.aRow = talloc_array(mt->mem_ctx, struct SRow, 16);
-	emsmdb_get_SRowSet(mt->mem_ctx, &rowSet, proptags, &rawData);
+	emsmdb_get_SRowSet(mt->mem_ctx, lp_ctx, &rowSet, proptags, &rawData);
 
 	/* Check the resulting SRowSet */
 	if (rowSet.cRows != 16) {

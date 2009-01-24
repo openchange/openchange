@@ -235,7 +235,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	global_mapi_ctx->mem_ctx = mem_ctx;
 	global_mapi_ctx->dumpdata = false;
 	global_mapi_ctx->session = NULL;
-	global_mapi_ctx->lp_ctx = loadparm_init(global_mapi_ctx);
+	global_mapi_ctx->lp_ctx = loadparm_init(global_mapi_ctx->mem_ctx);
 	lp_load_default(global_mapi_ctx->lp_ctx);
 
 	/* Enable logging on stdout */
@@ -245,7 +245,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	retval = OpenProfileStore(mem_ctx, &global_mapi_ctx->ldb_ctx, profiledb);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	lp_load_default(global_mapi_ctx->lp_ctx);
+	/* Initialize dcerpc subsystem */
 	dcerpc_init(global_mapi_ctx->lp_ctx);
 
 	errno = 0;
@@ -329,4 +329,23 @@ _PUBLIC_ enum MAPISTATUS SetMAPIDebugLevel(uint32_t level)
 	talloc_free(debuglevel);
 
 	return (ret == true) ? MAPI_E_SUCCESS : MAPI_E_INVALID_PARAMETER;
+}
+
+
+/**
+   \details Retrieve the global MAPI loadparm context
+
+   \param lp_ctx pointer on the loadparm context the functionr returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_INITIALIZED
+   or MAPI_E_INVALID_PARAMETER
+ */
+_PUBLIC_ enum MAPISTATUS GetLoadparmContext(struct loadparm_context *lp_ctx)
+{
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	lp_ctx = global_mapi_ctx->lp_ctx;
+
+	return MAPI_E_SUCCESS;
 }

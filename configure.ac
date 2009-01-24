@@ -363,7 +363,9 @@ fi
 dnl ##########################################################################
 dnl mapiproxy server
 dnl ##########################################################################
-OC_RULE_ADD(mapiproxy, SERVER)
+if test x$PYTHON != x; then
+	OC_RULE_ADD(mapiproxy, SERVER)
+fi
 
 AC_ARG_WITH(modulesdir, 
 [AS_HELP_STRING([--with-modulesdir], [Modules path to use])],
@@ -459,6 +461,7 @@ OC_SETVAL(mapitest)
 OC_SETVAL(openchangemapidump)
 OC_SETVAL(schemaIDGUID)
 OC_SETVAL(locale_codepage)
+OC_SETVAL(mapiproxy)
 
 OC_SETVAL(torture)
 OC_SETVAL(doxygen)

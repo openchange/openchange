@@ -289,7 +289,7 @@ _PUBLIC_ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *
 
 	if (emsabp_tdb_ctx) return emsabp_tdb_ctx;
 
-	mem_ctx = talloc_init("mapiproxy_server_emsabp_tdb_init");
+	mem_ctx = talloc_named(NULL, 0, "mapiproxy_server_emsabp_tdb_init");
 	if (!mem_ctx) return NULL;
 
 	/* Step 0. Retrieve a TDB context pointer on the emsabp_tdb database */

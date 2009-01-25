@@ -44,7 +44,7 @@ bool torture_rpc_mapi_fetchappointment(struct torture_context *torture)
 	struct SPropTagArray	*SPropTagArray;
 
 	/* init torture */
-	mem_ctx = talloc_init("torture_rpc_mapi_fetchappointment");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_fetchappointment");
 	nt_status = torture_rpc_connection(torture, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);

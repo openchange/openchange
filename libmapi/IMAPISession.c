@@ -68,7 +68,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_init("OpenPublicFolder");
+	mem_ctx = talloc_named(NULL, 0, "OpenPublicFolder");
 	size = 0;
 
 	/* Fill the Logon operation */
@@ -216,7 +216,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_init("OpenMsgStore");
+	mem_ctx = talloc_named(NULL, 0, "OpenMsgStore");
 	size = 0;
 
 	if (!username) {

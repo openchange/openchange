@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 		usage();
 	}
 
-	mem_ctx = talloc_init("SchemaIDGUID");
+	mem_ctx = talloc_named(NULL, 0, "SchemaIDGUID");
 
 	blob = data_blob_talloc(mem_ctx, argv[1], strlen(argv[1])+1);
 	blob.length = ldb_base64_decode((char *)blob.data);

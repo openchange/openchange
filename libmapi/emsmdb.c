@@ -405,7 +405,7 @@ NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey,
 	session = (struct mapi_session *)global_mapi_ctx->session;
 	emsmdb_ctx = (struct emsmdb_context *)session->emsmdb->ctx;
 	notify_ctx = (struct mapi_notify_ctx *)session->notify_ctx;
-	mem_ctx = talloc_init("emsmdb_register_notification");
+	mem_ctx = talloc_named(NULL, 0, "emsmdb_register_notification");
 
 	request.in.handle = &emsmdb_ctx->handle;
 	request.in.ulEventMask = ulEventMask;

@@ -298,7 +298,7 @@ int main(int argc, const char *argv[])
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
 
-	mem_ctx = talloc_init("openchangepfadmin");
+	mem_ctx = talloc_named(NULL, 0, "openchangepfadmin");
 
 	pc = poptGetContext("openchangepfadmin", argc, argv, long_options, 0);
 

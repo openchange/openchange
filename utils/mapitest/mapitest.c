@@ -229,7 +229,7 @@ int main(int argc, const char *argv[])
 		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
 
-	mem_ctx = talloc_init("mapitest");
+	mem_ctx = talloc_named(NULL, 0, "mapitest");
 	mapitest_init(mem_ctx, &mt);
 	mapitest_register_modules(&mt);
 

@@ -81,7 +81,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetProps");
+	mem_ctx = talloc_named(NULL, 0, "GetProps");
 
 	/* Named property mapping */
 	nameid = mapi_nameid_new(mem_ctx);
@@ -200,7 +200,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SetProps");
+	mem_ctx = talloc_named(NULL, 0, "SetProps");
 	size = 0;
 
 	/* Named property mapping */
@@ -314,7 +314,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SaveChangesAttachment");
+	mem_ctx = talloc_named(NULL, 0, "SaveChangesAttachment");
 	size = 0;
 
 	/* Fill the SaveChangesAttachment operation */
@@ -388,7 +388,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetPropList");
+	mem_ctx = talloc_named(NULL, 0, "GetPropList");
 
 	/* Reset */
 	proptags->cValues = 0;
@@ -472,7 +472,7 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetPropsAll");
+	mem_ctx = talloc_named(NULL, 0, "GetPropsAll");
 	size = 0;
 
 	/* Fill the GetPropsAll operation */
@@ -547,7 +547,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("DeleteProps");
+	mem_ctx = talloc_named(NULL, 0, "DeleteProps");
 	size = 0;
 
 	/* Fill the DeleteProps operation */
@@ -623,7 +623,7 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("DeletePropertiesNoReplicate");
+	mem_ctx = talloc_named(NULL, 0, "DeletePropertiesNoReplicate");
 	size = 0;
 
 	/* Fill the DeletePropertiesNoReplicate operation */
@@ -707,7 +707,7 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Initialization */
-	mem_ctx = talloc_init("GetNamesFromIDs");
+	mem_ctx = talloc_named(NULL, 0, "GetNamesFromIDs");
 	size = 0;
 
 	/* Fill the GetNamesFromIDs operation */
@@ -809,7 +809,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Initialization */
-	mem_ctx = talloc_init("GetIDsFromNames");
+	mem_ctx = talloc_named(NULL, 0, "GetIDsFromNames");
 	size = 0;
 	
 	/* Fill the GetIDsFromNames operation */
@@ -916,7 +916,7 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Initialization */
-	mem_ctx = talloc_init("QueryNamesFromIDs");
+	mem_ctx = talloc_named(NULL, 0, "QueryNamesFromIDs");
 	size = 0;
 
 	/* Fill the QueryNamedProperties operation */
@@ -1025,7 +1025,7 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("CopyProps");
+	mem_ctx = talloc_named(NULL, 0, "CopyProps");
 	size = 0;
 
 	/* Fill the CopyProperties operation */
@@ -1139,7 +1139,7 @@ _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
 	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("CopyProps");
+	mem_ctx = talloc_named(NULL, 0, "CopyProps");
 	size = 0;
 
 	/* Fill the CopyProperties operation */

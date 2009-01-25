@@ -97,7 +97,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	const char		*username = NULL;
 	uint32_t		instance_key = 0;
 
-	mem_ctx = talloc_init("torture_rpc_nspi_profile");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_nspi_profile");
 	
 	status = torture_rpc_connection(torture, &p, &ndr_table_exchange_nsp);
 

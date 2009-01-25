@@ -50,7 +50,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx)
 	/* Sanity Checks */
 	if (!lp_ctx) return NULL;
 
-	mem_ctx = talloc_init("emsmdbp_init");
+	mem_ctx = talloc_named(NULL, 0, "emsmdbp_init");
 
 	emsmdbp_ctx = talloc_zero(mem_ctx, struct emsmdbp_context);
 	if (!emsmdbp_ctx) {

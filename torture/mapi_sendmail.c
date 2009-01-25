@@ -58,7 +58,7 @@ bool torture_rpc_mapi_sendmail(struct torture_context *torture)
 
 
 	/* init torture */
-	mem_ctx = talloc_init("torture_rpc_mapi_sendmail");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_sendmail");
 
 	/* init mapi */
 	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;

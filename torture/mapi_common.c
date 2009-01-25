@@ -290,7 +290,7 @@ enum MAPISTATUS torture_simplemail_fromme(struct loadparm_context *lp_ctx,
 	const char	       	**usernames;
 	uint32_t		index = 0;
 
-	mem_ctx = talloc_init("torture_simplemail");
+	mem_ctx = talloc_named(NULL, 0, "torture_simplemail");
 
 	session = mapi_object_get_session(obj_parent);
 	MAPI_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);

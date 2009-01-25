@@ -582,7 +582,7 @@ int main(int argc, const char *argv[])
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
 
-	mem_ctx = talloc_init("exchange2mbox");
+	mem_ctx = talloc_named(NULL, 0, "exchange2mbox");
 
 	pc = poptGetContext("exchange2mbox", argc, argv, long_options, 0);
 

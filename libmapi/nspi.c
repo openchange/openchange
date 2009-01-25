@@ -245,7 +245,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx,
 	/* Sanity Checks */
 	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_init("nspi_QueryRows");
+	mem_ctx = talloc_named(NULL, 0, "nspi_QueryRows");
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.dwFlags = 0x0;
@@ -406,7 +406,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
 	OPENCHANGE_RETVAL_IF(!ppRows, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!ppOutMIds, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("nspi_GetMatches");
+	mem_ctx = talloc_named(NULL, 0, "nspi_GetMatches");
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0;
@@ -479,7 +479,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResortRestriction(struct nspi_context *nspi_ctx,
 	OPENCHANGE_RETVAL_IF(((SortType != SortTypeDisplayName) && (SortType != SortTypePhoneticDisplayName)),
 		       MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("nspi_ResortRestriction");
+	mem_ctx = talloc_named(NULL, 0, "nspi_ResortRestriction");
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0;
@@ -998,7 +998,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
 	OPENCHANGE_RETVAL_IF(!ppNames, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!ppPropTags, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("nspi_GetIDsFromNames");
+	mem_ctx = talloc_named(NULL, 0, "nspi_GetIDsFromNames");
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0;
@@ -1061,7 +1061,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 	for (count = 0; usernames[count]; count++);
 	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("nspi_ResolveNames");
+	mem_ctx = talloc_named(NULL, 0, "nspi_ResolveNames");
 
 	r.in.handle = &nspi_ctx->handle;
 
@@ -1125,7 +1125,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 	for (count = 0; usernames[count]; count++);
 	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("mapi_ResolveNamesW");
+	mem_ctx = talloc_named(NULL, 0, "mapi_ResolveNamesW");
 
 	r.in.handle = &nspi_ctx->handle;
 

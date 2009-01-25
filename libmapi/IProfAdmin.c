@@ -305,7 +305,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(const char *profile,
 	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_BAD_VALUE, NULL);
 	OPENCHANGE_RETVAL_IF(!value, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("mapi_profile_add_string_attr");
+	mem_ctx = talloc_named(NULL, 0, "mapi_profile_add_string_attr");
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
 
 	/* Retrieve the profile from the database */
@@ -359,7 +359,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_modify_string_attr(const char *profname,
 	OPENCHANGE_RETVAL_IF(!profname, MAPI_E_BAD_VALUE, NULL);
 
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
-	mem_ctx = talloc_init("mapi_profile_modify_string_attr");
+	mem_ctx = talloc_named(NULL, 0, "mapi_profile_modify_string_attr");
 
 	/* Retrieve the profile from the database */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profname);
@@ -413,7 +413,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_delete_string_attr(const char *profname,
 	OPENCHANGE_RETVAL_IF(!profname, MAPI_E_BAD_VALUE, NULL);
 
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
-	mem_ctx = talloc_init("mapi_profile_delete_string_attr");
+	mem_ctx = talloc_named(NULL, 0, "mapi_profile_delete_string_attr");
 
 	/* Retrieve the profile from the database */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profname);
@@ -523,7 +523,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 	OPENCHANGE_RETVAL_IF(!profiledb, MAPI_E_CALL_FAILED, NULL);
 	OPENCHANGE_RETVAL_IF(!ldif_path, MAPI_E_CALL_FAILED, NULL);
 
-	mem_ctx = talloc_init("CreateProfileStore");
+	mem_ctx = talloc_named(NULL, 0, "CreateProfileStore");
 
 	ev = tevent_context_init(mem_ctx);
 	OPENCHANGE_RETVAL_IF(!ev, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
@@ -717,7 +717,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfile(const char *profile, const char *username
 
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_init("CreateProfile");
+	mem_ctx = talloc_named(NULL, 0, "CreateProfile");
 	retval = ldb_create_profile(mem_ctx, global_mapi_ctx->ldb_ctx, profile);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
@@ -755,7 +755,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProfile(const char *profile)
 
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_init("DeleteProfile");
+	mem_ctx = talloc_named(NULL, 0, "DeleteProfile");
 	retval = ldb_delete_profile(mem_ctx, global_mapi_ctx->ldb_ctx, profile);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	talloc_free(mem_ctx);
@@ -791,7 +791,7 @@ _PUBLIC_ enum MAPISTATUS ChangeProfilePassword(const char *profile,
 
 	if (!profile || !old_password | !password) return MAPI_E_INVALID_PARAMETER;
 
-	mem_ctx = talloc_init("ChangeProfilePassword");
+	mem_ctx = talloc_named(NULL, 0, "ChangeProfilePassword");
 
 	retval = ldb_test_password(mem_ctx, profile, password);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
@@ -900,7 +900,7 @@ _PUBLIC_ enum MAPISTATUS SetDefaultProfile(const char *profname)
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!profname, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SetDefaultProfile");
+	mem_ctx = talloc_named(NULL, 0, "SetDefaultProfile");
 
 	/* open profile */
 	retval = ldb_load_profile(mem_ctx, global_mapi_ctx->ldb_ctx, &profile, profname, NULL);

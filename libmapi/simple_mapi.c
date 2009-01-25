@@ -126,7 +126,7 @@ static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
 	store = (mapi_object_store_t *)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_init("GetDefaultFolder");
+	mem_ctx = talloc_named(NULL, 0, "GetDefaultFolder");
 
 	mapi_object_init(&obj_inbox);
 	retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
@@ -400,7 +400,7 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 	OPENCHANGE_RETVAL_IF(!unread, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!total, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetFolderItemsCount");
+	mem_ctx = talloc_named(NULL, 0, "GetFolderItemsCount");
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2, 
 					  PR_CONTENT_UNREAD,
@@ -473,7 +473,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("AddUserPermission");
+	mem_ctx = talloc_named(NULL, 0, "AddUserPermission");
 
 	/* query Address book */
 
@@ -547,7 +547,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("ModifyUserPermission");
+	mem_ctx = talloc_named(NULL, 0, "ModifyUserPermission");
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
 	names[0] = username;
@@ -658,7 +658,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("RemoveUserPermission");
+	mem_ctx = talloc_named(NULL, 0, "RemoveUserPermission");
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
 	names[0] = username;

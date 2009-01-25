@@ -108,7 +108,7 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_profile	profile;
 
-	mem_ctx = talloc_init("mapiprofile_create");
+	mem_ctx = talloc_named(NULL, 0, "mapiprofile_create");
 
 	/* catch CTRL-C */
 	g_profname = profname;
@@ -517,7 +517,7 @@ int main(int argc, const char *argv[])
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
 
-	mem_ctx = talloc_init("mapiprofile");
+	mem_ctx = talloc_named(NULL, 0, "mapiprofile");
 
 	pc = poptGetContext("mapiprofile", argc, argv, long_options, 0);
 

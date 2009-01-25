@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	uint32_t			Denominator;
         uint32_t                        i;
 
-	mem_ctx = talloc_init("fetchappointment");
+	mem_ctx = talloc_named(NULL, 0, "fetchappointment");
 
         /* Initialize MAPI */
 	profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, getenv("HOME"));
@@ -57,12 +57,10 @@ int main(int argc, char *argv[])
         MAPI_RETVAL_IF(retval, retval, NULL);
 
         /* Create the MAPI table view */
-        mem_ctx = talloc_init("MAPI Table");
         SPropTagArray = set_SPropTagArray(mem_ctx, 0x2, PR_FID, PR_MID);
         retval = SetColumns(&obj_table, SPropTagArray);
         MAPIFreeBuffer(SPropTagArray);
         MAPI_RETVAL_IF(retval, retval, mem_ctx);
-        talloc_free(mem_ctx);
 
         /* Get current cursor position */
         retval = QueryPosition(&obj_table, &Numerator, &Denominator);
@@ -92,5 +90,8 @@ int main(int argc, char *argv[])
 
         /* Uninitialize MAPI */
         MAPIUninitialize();
+
+	talloc_free(mem_ctx);
+
         return (0);
 }

@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
         char                    *profdb;
         const char              *profname;
 
-        mem_ctx = talloc_init("mapi_sample1");
+        mem_ctx = talloc_named(NULL, 0, "mapi_sample1");
 
         profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB_PATH, getenv("HOME"));
 

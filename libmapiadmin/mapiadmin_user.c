@@ -221,7 +221,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	dom_sid = mapiadmin_ctx->user_ctx->user_sid;
 
 	/* initialize memory context */
-	mem_ctx = talloc_init("mapiadmin_user_extend");
+	mem_ctx = talloc_named(NULL, 0, "mapiadmin_user_extend");
 
 	/* open LDAP connection */
 	ev = tevent_context_init(talloc_autofree_context());
@@ -378,7 +378,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_add(struct mapiadmin_ctx *mapiadmin_ctx)
 	struct lsa_String		name;
 	int				policy_min_pw_len = 0;
 
-	mem_ctx = talloc_init("mapiadmin_user_add");
+	mem_ctx = talloc_named(NULL, 0, "mapiadmin_user_add");
 
 	retval = mapiadmin_samr_connect(mapiadmin_ctx, mem_ctx);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -523,7 +523,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_del(struct mapiadmin_ctx *mapiadmin_ctx)
 	MAPI_RETVAL_IF(!mapiadmin_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->username, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_init("mapiadmin_user_del");
+	mem_ctx = talloc_named(NULL, 0, "mapiadmin_user_del");
 
  	/* Initiate SAMR connection if not already done */
 	if (!mapiadmin_ctx->user_ctx) {

@@ -215,7 +215,7 @@ static int emsabp_tdb_traverse_MId(TDB_CONTEXT *tdb_ctx,
 	char		*value_str = NULL;
 	uint32_t	*MId = (uint32_t *)state;
 
-	mem_ctx = talloc_init("emsabp_tdb_traverse_MId");
+	mem_ctx = talloc_named(NULL, 0, "emsabp_tdb_traverse_MId");
 	value_str = talloc_strndup(mem_ctx, (char *)dbuf.dptr, dbuf.dsize);
 	value = strtol((const char *)value_str, NULL, 16);
 	talloc_free(mem_ctx);
@@ -326,7 +326,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_tdb_insert(TDB_CONTEXT *tdb_ctx,
 	OPENCHANGE_RETVAL_IF(!tdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!keyname, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("emsabp_tdb_insert");
+	mem_ctx = talloc_named(NULL, 0, "emsabp_tdb_insert");
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
 	/* Step 1. Check if the record already exists */

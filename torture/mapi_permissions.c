@@ -48,7 +48,7 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 	const char		*username = lp_parm_string(torture->lp_ctx, NULL, "mapi", "username");
 
 	/* init torture */
-	mem_ctx = talloc_init("torture_rpc_mapi_permissions");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_permissions");
 	ntstatus = torture_rpc_connection(torture, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		talloc_free(mem_ctx);

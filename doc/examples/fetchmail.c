@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	uint32_t			Denominator;
         uint32_t                        i;
 
-	mem_ctx = talloc_init("fetchmail");
+	mem_ctx = talloc_named(NULL, 0, "fetchmail");
 
         /* Initialize MAPI */
 	profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, getenv("HOME"));

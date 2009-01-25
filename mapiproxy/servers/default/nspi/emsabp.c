@@ -55,7 +55,7 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	/* Sanity checks */
 	if (!lp_ctx) return NULL;
 
-	mem_ctx = talloc_init("emsabp_init");
+	mem_ctx = talloc_named(NULL, 0, "emsabp_init");
 	
 	emsabp_ctx = talloc_zero(mem_ctx, struct emsabp_context);
 	if (!emsabp_ctx) {

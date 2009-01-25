@@ -138,7 +138,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 
 
 	/* init torture */
-	mem_ctx = talloc_init("torture_rpc_mapi_restrictions");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_restrictions");
 	nt_status = torture_rpc_connection(torture, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);

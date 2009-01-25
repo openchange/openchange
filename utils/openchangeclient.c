@@ -336,7 +336,7 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 
 	if (!filename || !size) return false;
 
-	mem_ctx = talloc_init("store_attachment");
+	mem_ctx = talloc_named(NULL, 0, "store_attachment");
 	mapi_object_init(&obj_stream);
 
 	if ((fd = open(oclient->store_folder, O_DIRECTORY)) == -1) {
@@ -396,7 +396,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 	const char			*attach_filename;
 	const uint32_t			*attach_size;
 	
-	mem_ctx = talloc_init("openchangeclient_fetchmail");
+	mem_ctx = talloc_named(NULL, 0, "openchangeclient_fetchmail");
 
 	mapi_object_init(&obj_tis);
 	mapi_object_init(&obj_inbox);
@@ -2084,7 +2084,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 	uint32_t			i;
 	char				*id;
 
-	mem_ctx = talloc_init("openchangeclient_findmail");
+	mem_ctx = talloc_named(NULL, 0, "openchangeclient_findmail");
 
 	/* Get Inbox folder */
 	retval = GetDefaultFolder(obj_store, &fid, olFolderInbox);
@@ -2846,7 +2846,7 @@ int main(int argc, const char *argv[])
 		{NULL, 0, 0, NULL, 0, NULL, NULL}
 	};
 
-	mem_ctx = talloc_init("openchangeclient");
+	mem_ctx = talloc_named(NULL, 0, "openchangeclient");
 
 	init_oclient(&oclient);
 

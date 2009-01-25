@@ -193,7 +193,7 @@ int main(int argc, const char *argv[])
 		{ NULL,		  0, 0,		      NULL, 0,			NULL,					NULL }
 	};
 
-	mem_ctx = talloc_init("exchange2ical");
+	mem_ctx = talloc_named(NULL, 0, "exchange2ical");
 	exchange2ical_init(mem_ctx, &exchange2ical);
 
 	pc = poptGetContext("exchange2ical", argc, argv, long_options, 0);

@@ -71,7 +71,7 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetLocalReplicaIds");
+	mem_ctx = talloc_named(NULL, 0, "GetLocalReplicaIds");
 	size = 0;
 
 	/* Fill the GetLocalReplicaIds operation */

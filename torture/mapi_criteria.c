@@ -56,7 +56,7 @@ bool torture_rpc_mapi_criteria(struct torture_context *torture)
 	uint32_t			i;
 
 	/* init torture */
-	mem_ctx = talloc_init("torture_rpc_mapi_criteria");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_criteria");
 	ntstatus = torture_rpc_connection(torture, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		talloc_free(mem_ctx);

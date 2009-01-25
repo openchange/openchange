@@ -85,7 +85,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("OpenMessage");
+	mem_ctx = talloc_named(NULL, 0, "OpenMessage");
 
 	/* Fill the OpenMessage operation */
 	request.handle_idx = 0x1;

@@ -68,7 +68,7 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("CreateAttach");
+	mem_ctx = talloc_named(NULL, 0, "CreateAttach");
 	size = 0;
 
 	/* Fill the CreateAttach operation */
@@ -145,7 +145,7 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t Attac
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("DeleteAttach");
+	mem_ctx = talloc_named(NULL, 0, "DeleteAttach");
 	size = 0;
 
 	/* Fill the DeleteAttach operation */
@@ -216,7 +216,7 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetAttachmentTable");
+	mem_ctx = talloc_named(NULL, 0, "GetAttachmentTable");
 	size = 0;
 
 	/* Fill the GetAttachmentTable operation */
@@ -298,7 +298,7 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t Attachm
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("OpenAttach");
+	mem_ctx = talloc_named(NULL, 0, "OpenAttach");
 	size = 0;
 
 	/* Fill the OpenAttach operation */
@@ -502,7 +502,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("ModifyRecipients");
+	mem_ctx = talloc_named(NULL, 0, "ModifyRecipients");
 	size = 0;
 
 	/* Fill the ModifyRecipients operation */
@@ -715,7 +715,7 @@ _PUBLIC_ enum MAPISTATUS ReadRecipients(mapi_object_t *obj_message,
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("ReadRecipients");
+	mem_ctx = talloc_named(NULL, 0, "ReadRecipients");
 	size = 0;
 
 	/* Fill the ReadRecipients operation */
@@ -791,7 +791,7 @@ _PUBLIC_ enum MAPISTATUS RemoveAllRecipients(mapi_object_t *obj_message)
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("RemoveAllRecipients");
+	mem_ctx = talloc_named(NULL, 0, "RemoveAllRecipients");
 	size = 0;
 
 	/* Fill the RemoveAllRecipients operation */
@@ -866,7 +866,7 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SubmitMessage");
+	mem_ctx = talloc_named(NULL, 0, "SubmitMessage");
 	size = 0;
 
 	/* Fill the SubmitMessage operation */
@@ -950,7 +950,7 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(session[0] != session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("AbortSubmit");
+	mem_ctx = talloc_named(NULL, 0, "AbortSubmit");
 	size = 0;
 
 	/* Fill the AbortSubmit operation */
@@ -1038,7 +1038,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	OPENCHANGE_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SaveChangesMessage");
+	mem_ctx = talloc_named(NULL, 0, "SaveChangesMessage");
 	size = 0;
 
 	/* Fill the SaveChangesMessage operation */
@@ -1105,7 +1105,7 @@ _PUBLIC_ enum MAPISTATUS TransportSend(mapi_object_t *obj_message,
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("TransportSend");
+	mem_ctx = talloc_named(NULL, 0, "TransportSend");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -1221,7 +1221,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
 	OPENCHANGE_RETVAL_IF(!session[0], MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!session[1], MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SetMessageReadFlags");
+	mem_ctx = talloc_named(NULL, 0, "SetMessageReadFlags");
 	size = 0;
 
 	/* Fill the SetMessageReadFlags operation */

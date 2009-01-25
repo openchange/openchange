@@ -47,7 +47,7 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	int			i;
 
 	/* init torture */
-	mem_ctx = talloc_init("torture_rpc_mapi_copymail");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_copymail");
 	status = torture_rpc_connection(torture, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);

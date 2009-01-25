@@ -58,7 +58,7 @@ bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 	uint32_t		msgflag;
 
 	/* init torture */
-	mem_ctx = talloc_init("torture_rpc_mapi_sendmail");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_sendmail");
 
 	/* get the attachment filename */
 	if (!filename) {

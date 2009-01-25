@@ -77,7 +77,7 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t Propert
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("OpenStream");
+	mem_ctx = talloc_named(NULL, 0, "OpenStream");
 
 	size = 0;
 
@@ -170,7 +170,7 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("ReadStream");
+	mem_ctx = talloc_named(NULL, 0, "ReadStream");
 
 	*ByteRead = 0;
 	size = 0;
@@ -265,7 +265,7 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 	OPENCHANGE_RETVAL_IF(!blob, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(blob->length > 0x7000, MAPI_E_TOO_BIG, NULL);
 
-	mem_ctx = talloc_init("WriteStream");
+	mem_ctx = talloc_named(NULL, 0, "WriteStream");
 
 	size = 0;
 
@@ -341,7 +341,7 @@ _PUBLIC_ enum MAPISTATUS CommitStream(mapi_object_t *obj_stream)
 	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("CommitStream");
+	mem_ctx = talloc_named(NULL, 0, "CommitStream");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -407,7 +407,7 @@ _PUBLIC_ enum MAPISTATUS GetStreamSize(mapi_object_t *obj_stream, uint32_t *Stre
 	session = mapi_object_get_session(obj_stream);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetStreamSize");
+	mem_ctx = talloc_named(NULL, 0, "GetStreamSize");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -490,7 +490,7 @@ _PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, u
 	OPENCHANGE_RETVAL_IF((Origin > 2), MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!NewPosition, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SeekStream");
+	mem_ctx = talloc_named(NULL, 0, "SeekStream");
 	size = 0;
 
 	/* Fill the SeekStream operation */
@@ -567,7 +567,7 @@ _PUBLIC_ enum MAPISTATUS SetStreamSize(mapi_object_t *obj_stream, uint64_t SizeS
 	session = mapi_object_get_session(obj_stream);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SetStreamSize");
+	mem_ctx = talloc_named(NULL, 0, "SetStreamSize");
 	size = 0;
 
 	/* Fill the SetStreamSize operation */
@@ -657,7 +657,7 @@ _PUBLIC_ enum MAPISTATUS CopyToStream(mapi_object_t *obj_src, mapi_object_t *obj
 	OPENCHANGE_RETVAL_IF(!ReadByteCount, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!WrittenByteCount, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("CopyToStream");
+	mem_ctx = talloc_named(NULL, 0, "CopyToStream");
 	size = 0;
 
 	/* Fill the CopyToStream operation */

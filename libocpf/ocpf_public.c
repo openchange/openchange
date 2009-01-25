@@ -50,7 +50,7 @@ _PUBLIC_ int ocpf_init(void)
 	
 	if (ocpf) return OCPF_ERROR;
 
-	mem_ctx = talloc_init("ocpf");
+	mem_ctx = talloc_named(NULL, 0, "ocpf");
 	ocpf = talloc_zero(mem_ctx, struct ocpf);
 	ocpf->mem_ctx = mem_ctx;
 	ocpf->vars = talloc_zero(mem_ctx, struct ocpf_var);

@@ -69,7 +69,7 @@ _PUBLIC_ enum MAPISTATUS AddressTypes(mapi_object_t *obj_store,
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("AddressTypes");
+	mem_ctx = talloc_named(NULL, 0, "AddressTypes");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -138,7 +138,7 @@ _PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SetSpooler");
+	mem_ctx = talloc_named(NULL, 0, "SetSpooler");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -216,7 +216,7 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SpoolerLockMessage");
+	mem_ctx = talloc_named(NULL, 0, "SpoolerLockMessage");
 	size = 0;
 
 	/* Fill the SpoolerLockMessage operation */

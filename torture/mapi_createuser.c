@@ -47,7 +47,7 @@ bool torture_mapi_createuser(struct torture_context *torture)
 	}
 
 	/* init mapi */
-	mem_ctx = talloc_init("torture_mapi_createuser");
+	mem_ctx = talloc_named(NULL, 0, "torture_mapi_createuser");
 	retval = torture_load_profile(mem_ctx, torture->lp_ctx, &session);
 	if (retval != MAPI_E_SUCCESS) return false;
 

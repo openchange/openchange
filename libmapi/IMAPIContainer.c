@@ -98,7 +98,7 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	session = mapi_object_get_session(obj_container);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetContentsTable");
+	mem_ctx = talloc_named(NULL, 0, "GetContentsTable");
 	size = 0;
 
 	/* Fill the GetContentsTable operation */
@@ -218,7 +218,7 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	session = mapi_object_get_session(obj_container);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetHierarchyTable");
+	mem_ctx = talloc_named(NULL, 0, "GetHierarchyTable");
 	size = 0;
 
 	/* Fill the GetHierarchyTable operation */
@@ -307,7 +307,7 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 	session = mapi_object_get_session(obj_container);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetTable");
+	mem_ctx = talloc_named(NULL, 0, "GetTable");
 	size = 0;
 
 	/* Fill the GetTable operation */
@@ -396,7 +396,7 @@ _PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder,
 	session = mapi_object_get_session(obj_folder);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetRulesTable");
+	mem_ctx = talloc_named(NULL, 0, "GetRulesTable");
 	size = 0;
 
 	/* Fill the GetRulesTable operation */
@@ -487,7 +487,7 @@ _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowL
 	session = mapi_object_get_session(obj_table);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("ModifyTable");
+	mem_ctx = talloc_named(NULL, 0, "ModifyTable");
 	size = 0;
 
 	/* Fill the GetTable operation */
@@ -599,7 +599,7 @@ _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container,
 	session = mapi_object_get_session(obj_container);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("SetSearchCriteria");
+	mem_ctx = talloc_named(NULL, 0, "SetSearchCriteria");
 	size = 0;
 
 	/* Fill the SetSearchCriteria operation */
@@ -700,7 +700,7 @@ _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 	session = mapi_object_get_session(obj_container);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("GetSearchCriteria");
+	mem_ctx = talloc_named(NULL, 0, "GetSearchCriteria");
 	size = 0;
 
 	/* Fill the GetSearchCriteria operation */

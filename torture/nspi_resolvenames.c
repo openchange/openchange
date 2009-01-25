@@ -48,7 +48,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	char **usernames;
 	int j;
 
-	mem_ctx = talloc_init("torture_rpc_nspi_resolvenames");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_nspi_resolvenames");
 
 	if (!username) {
 		DEBUG(0,("Specify the usernames to resolve with exchange:resolvename\n"));

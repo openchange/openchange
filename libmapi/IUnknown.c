@@ -125,7 +125,7 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("Release");
+	mem_ctx = talloc_named(NULL, 0, "Release");
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -208,7 +208,7 @@ _PUBLIC_ enum MAPISTATUS GetLongTermIdFromId(mapi_object_t *obj, mapi_id_t id,
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("LongTermIdFromId");
+	mem_ctx = talloc_named(NULL, 0, "LongTermIdFromId");
 
 	/* Fill the LongTermIdFromId operation */
 	request.Id = id;
@@ -289,7 +289,7 @@ _PUBLIC_ enum MAPISTATUS GetIdFromLongTermId(mapi_object_t *obj, struct LongTerm
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_init("IdFromLongTermId");
+	mem_ctx = talloc_named(NULL, 0, "IdFromLongTermId");
 	size = 0;
 
 	/* Fill the IdFromLongTermId operation */

@@ -374,7 +374,7 @@ int main(int argc, const char *argv[])
 		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
 
-	mem_ctx = talloc_init("openchangemapidump");
+	mem_ctx = talloc_named(NULL, 0, "openchangemapidump");
 
 	pc = poptGetContext("openchangemapidump", argc, argv, long_options, 0);
 

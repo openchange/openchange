@@ -39,7 +39,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 
 	proptag = get_proptag_name(lpProp.ulPropTag);
 	if (!proptag) {
-		mem_ctx = talloc_init("mapidump_SPropValue");
+		mem_ctx = talloc_named(NULL, 0, "mapidump_SPropValue");
 		proptag = talloc_asprintf(mem_ctx, "0x%.8x", lpProp.ulPropTag);
 	}
 	
@@ -182,7 +182,7 @@ _PUBLIC_ void mapidump_date(struct mapi_SPropValue_array *properties, uint32_t m
 	const struct FILETIME	*filetime;
 	const char		*date;
 
-	mem_ctx = talloc_init("mapidump_date");
+	mem_ctx = talloc_named(NULL, 0, "mapidump_date");
 
 	filetime = (const struct FILETIME *) find_mapi_SPropValue_data(properties, mapitag);
 	if (filetime) {
@@ -205,7 +205,7 @@ _PUBLIC_ void mapidump_date_SPropValue(struct SPropValue lpProp, const char *lab
 	const struct FILETIME		*filetime;
 	const char		*date;
 
-	mem_ctx = talloc_init("mapidump_date_SPropValue");
+	mem_ctx = talloc_named(NULL, 0, "mapidump_date_SPropValue");
 
 	filetime = (const struct FILETIME *) get_SPropValue_data(&lpProp);
 	if (filetime) {
@@ -702,7 +702,7 @@ _PUBLIC_ void mapidump_freebusy_date(uint32_t t, const char *sep)
 	NTTIME		time;
 	const char	*date;
 
-	mem_ctx = talloc_init("mapidump_freebusy_date");
+	mem_ctx = talloc_named(NULL, 0, "mapidump_freebusy_date");
 
 	time = t;
 	time *= 60;

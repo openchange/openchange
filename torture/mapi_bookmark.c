@@ -50,7 +50,7 @@ bool torture_rpc_mapi_bookmark(struct torture_context *torture)
 	uint32_t		halfcount;
 
 	/* init torture test */
-	mem_ctx = talloc_init("torture_rpc_mapi_bookmark");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_bookmark");
 	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* Open Message Store */

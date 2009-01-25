@@ -68,7 +68,7 @@ bool torture_rpc_mapi_sendappointment(struct torture_context *torture)
 	if (!start || !end) return false;
 
 	/* init torture */
-	mem_ctx = talloc_init("torture_rpc_mapi_sendappointment");
+	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_sendappointment");
 	nt_status = torture_rpc_connection(torture, &p, &ndr_table_exchange_emsmdb);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);

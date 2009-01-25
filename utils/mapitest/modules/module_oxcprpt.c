@@ -554,6 +554,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	retval = CopyProps(&obj_ref_message, &obj_target_message, SPropTagArray, CopyFlagsNoOverwrite,
 			   &problem_count, &problems);
 	mapitest_print_retval_step_fmt(mt, "7.", "CopyProps", "(%s)", "no overwrite");
+	MAPIFreeBuffer(problems);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -620,6 +621,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	retval = CopyProps(&obj_ref_message, &obj_target_message, SPropTagArray, 0x0,
 			   &problem_count, &problems);
 	MAPIFreeBuffer(SPropTagArray);
+	MAPIFreeBuffer(problems);
 	mapitest_print_retval_step_fmt(mt, "9.", "CopyProps", "(%s)", "with overwrite");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -687,6 +689,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	retval = CopyProps(&obj_ref_message, &obj_target_message, SPropTagArray, CopyFlagsNoOverwrite|CopyFlagsMove,
 			   &problem_count, &problems);
 	MAPIFreeBuffer(SPropTagArray);
+	MAPIFreeBuffer(problems);
 	mapitest_print_retval_step_fmt(mt, "11.", "CopyProps", "(%s)", "move");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -1520,12 +1523,13 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	exclude = set_SPropTagArray(mt->mem_ctx, 0x0);
 	retval = CopyTo(&obj_ref_message, &obj_target_message, exclude, CopyFlagsNoOverwrite,
 			   &problem_count, &problems);
+	MAPIFreeBuffer(exclude);
+	MAPIFreeBuffer(problems);
 	mapitest_print_retval_fmt(mt, "CopyTo", "(no overwrite)");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
-	MAPIFreeBuffer(exclude);
 
 	/* Step 8: Double check with GetProps */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
@@ -1598,6 +1602,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	retval = CopyTo(&obj_ref_message, &obj_target_message, exclude, 0x0,
 			&problem_count, &problems);
 	MAPIFreeBuffer(exclude);
+	MAPIFreeBuffer(problems);
 	mapitest_print_retval_fmt(mt, "CopyTo", "(with overwrite)");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -1674,6 +1679,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	retval = CopyTo(&obj_ref_message, &obj_target_message, exclude, CopyFlagsNoOverwrite|CopyFlagsMove,
 			   &problem_count, &problems);
 	MAPIFreeBuffer(exclude);
+	MAPIFreeBuffer(problems);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "Step 11 - CopyTo (move)", GetLastError());
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -1778,6 +1784,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	exclude = set_SPropTagArray(mt->mem_ctx, 0x0);
 	CopyTo(&obj_ref_attach, &obj_targ_attach, exclude, 0x0, &problem_count, &problems);
 	MAPIFreeBuffer(exclude);
+	MAPIFreeBuffer(problems);
 	mapitest_print_retval_fmt(mt, "CopyTo", "(attachments)");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -1845,12 +1852,13 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	/* Copy properties from the test folder to the new folder */
 	exclude = set_SPropTagArray(mt->mem_ctx, 0x1, PR_DISPLAY_NAME);
 	CopyTo(&obj_ref_folder, &obj_targ_folder, exclude, 0x0, &problem_count, &problems);
+	MAPIFreeBuffer(exclude);
+	MAPIFreeBuffer(problems);
 	mapitest_print_retval_fmt(mt, "CopyTo", "(folder)");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}	
-	MAPIFreeBuffer(exclude);
 
 	/* Check that the properties on both folders are correct */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONTAINER_CLASS);

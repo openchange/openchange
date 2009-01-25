@@ -67,18 +67,19 @@ static unsigned int emsmdb_hash(const char *str)
    \details Establishes a new Session Context with the server on the
    exchange_emsmdb pipe
 
-   \param mem_ctx pointer to the memory context
+   \param parent_mem_ctx pointer to the memory context
    \param session pointer to the MAPI session context
    \param p pointer to the DCERPC pipe
    \param cred pointer to the user credentials
 
    \return an allocated emsmdb_context on success, otherwise NULL
  */
-struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx, 
+struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx, 
 				      struct mapi_session *session,
 				      struct dcerpc_pipe *p, 
 				      struct cli_credentials *cred)
 {
+	TALLOC_CTX		*mem_ctx;
 	struct EcDoConnect	r;
 	struct emsmdb_context	*ret;
 	NTSTATUS		status;
@@ -90,11 +91,15 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx,
 	if (!p) return NULL;
 	if (!cred) return NULL;
 
-	ret = talloc_zero(mem_ctx, struct emsmdb_context);
-	ret->rpc_connection = p;
-	ret->mem_ctx = mem_ctx;
+	mem_ctx = talloc_named(NULL, 0, "emsmdb_connect");
 
-	ret->cache_requests = talloc(mem_ctx, struct EcDoRpc_MAPI_REQ *);
+	ret = talloc_zero(parent_mem_ctx, struct emsmdb_context);
+	ret->rpc_connection = p;
+	ret->mem_ctx = parent_mem_ctx;
+
+	ret->cache_requests = talloc(parent_mem_ctx, struct EcDoRpc_MAPI_REQ *);
+	ret->info.szDisplayName = NULL;
+	ret->info.szDNPrefix = NULL;
 
 	r.in.szUserDN = session->profile->mailbox;
 	r.in.ulFlags = 0x00000000;
@@ -124,16 +129,19 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *mem_ctx,
 	retval = r.out.result;
 	if (!NT_STATUS_IS_OK(status) || retval) {
 		mapi_errstr("EcDoConnect", retval);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	ret->info.szDisplayName = talloc_strdup(mem_ctx, r.out.szDisplayName);
-	ret->info.szDNPrefix = talloc_strdup(mem_ctx, r.out.szDNPrefix);
-	
+	ret->info.szDisplayName = talloc_strdup(parent_mem_ctx, r.out.szDisplayName);
+	ret->info.szDNPrefix = talloc_strdup(parent_mem_ctx, r.out.szDNPrefix);
+
 	ret->cred = cred;
 	ret->max_data = 0xFFF0;
 	ret->setup = false;
-	
+
+	talloc_free(mem_ctx);
+
 	return ret;
 }
 
@@ -152,7 +160,21 @@ int emsmdb_disconnect_dtor(void *data)
 	struct emsmdb_context	*emsmdb_ctx;
 
 	emsmdb_ctx = (struct emsmdb_context *)provider->ctx;
-	return emsmdb_disconnect(provider->ctx);	
+	emsmdb_disconnect(provider->ctx);	
+
+	talloc_free(emsmdb_ctx->cache_requests);
+
+	if (emsmdb_ctx->info.szDisplayName) {
+		talloc_free(emsmdb_ctx->info.szDisplayName);
+	}
+
+	if (emsmdb_ctx->info.szDNPrefix) {
+		talloc_free(emsmdb_ctx->info.szDNPrefix);
+	}
+
+	DEBUG(0, ("Everything has been free'd\n"));
+
+	return 0;
 }
 
 

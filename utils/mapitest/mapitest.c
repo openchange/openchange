@@ -274,6 +274,8 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_LIST_ALL:
 			mapitest_list(&mt, NULL);
+			talloc_free(mem_ctx);
+			poptFreeContext(pc);
 			return 0;
 			break;
 		}

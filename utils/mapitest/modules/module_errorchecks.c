@@ -82,7 +82,7 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 1 - MAPI_E_NOT_INITIALIZED");
 	}
 
-	mem_ctx = talloc_named(NULL, 0, "MAPITEST_ERRORCHECKS_SIMPLEMAPI");
+	mem_ctx = talloc_autofree_context();
 	make_global_ctx_valid(mem_ctx);
 
 	status = GetDefaultPublicFolder(obj_store, folder, id);

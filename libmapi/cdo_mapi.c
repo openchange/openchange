@@ -335,8 +335,8 @@ _PUBLIC_ enum MAPISTATUS SetMAPIDebugLevel(uint32_t level)
 /**
    \details Retrieve the global MAPI loadparm context
 
-   \param lp_ctx pointer on pointer on the loadparm context the
-   functionr returns
+   \param lp_ctx pointer to a pointer to the loadparm context that the
+   function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_INITIALIZED
    or MAPI_E_INVALID_PARAMETER

@@ -274,7 +274,6 @@ const struct mapiproxy_module *mapiproxy_server_byname(const char *name)
    \details Initialize an EMSABP TDB context available to all
    instances when Samba is not run in single mode.
 
-   \param mem_ctx pointer to the memory context
    \param lp_ctx pointer to the loadparm context
 
    \note TDB database can't be opened twice with O_RDWR flags. We

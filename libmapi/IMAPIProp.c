@@ -289,7 +289,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
  */
 _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent, 
 					       mapi_object_t *obj_child,
-					       uint8_t flags)
+					       enum SaveFlags flags)
 {
 	struct mapi_request			*mapi_request;
 	struct mapi_response			*mapi_response;
@@ -685,7 +685,7 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
    \sa GetIDsFromNames, QueryNamesFromIDs
 */
 _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
-					 uint32_t ulPropTag,
+					 enum MAPITAGS ulPropTag,
 					 uint16_t *count,
 					 struct MAPINAMEID **nameid)
 {

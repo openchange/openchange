@@ -137,7 +137,7 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
 	mapi_request->mapi_len = size + sizeof (uint32_t);
-	mapi_request->length = size;
+	mapi_request->length = (uint16_t)size;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
@@ -225,7 +225,7 @@ _PUBLIC_ enum MAPISTATUS GetLongTermIdFromId(mapi_object_t *obj, mapi_id_t id,
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
 	mapi_request->mapi_len = size + sizeof (uint32_t);
-	mapi_request->length = size;
+	mapi_request->length = (uint16_t)size;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
@@ -307,7 +307,7 @@ _PUBLIC_ enum MAPISTATUS GetIdFromLongTermId(mapi_object_t *obj, struct LongTerm
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
 	mapi_request->mapi_len = size + sizeof (uint32_t);
-	mapi_request->length = size;
+	mapi_request->length = (uint16_t)size;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);

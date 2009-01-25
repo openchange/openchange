@@ -213,7 +213,7 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		OPENCHANGE_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
 		break;
 	default:
-		OPENCHANGE_RETVAL_IF("Logon", MAPI_E_NOT_FOUND, NULL);
+		OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, NULL);
 		break;
 	}
 

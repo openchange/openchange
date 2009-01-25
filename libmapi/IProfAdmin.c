@@ -546,7 +546,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 		ret = ldb_add(ldb_ctx, ldif->msg);
 		if (ret != LDB_SUCCESS) {
 			fclose(f);
-			OPENCHANGE_RETVAL_IF("ldb_ldif_read_file", MAPI_E_NO_ACCESS, mem_ctx);
+			OPENCHANGE_RETVAL_ERR(MAPI_E_NO_ACCESS, mem_ctx);
 		}
 		ldb_ldif_read_free(ldb_ctx, ldif);
 	}
@@ -562,7 +562,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 		ret = ldb_add(ldb_ctx, ldif->msg);
 		if (ret != LDB_SUCCESS) {
 			fclose(f);
-			OPENCHANGE_RETVAL_IF("ldb_ldif_read_file", MAPI_E_NO_ACCESS, mem_ctx);
+			OPENCHANGE_RETVAL_ERR(MAPI_E_NO_ACCESS, mem_ctx);
 		}
 
 		ldb_ldif_read_free(ldb_ctx, ldif);
@@ -944,6 +944,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	
 	retval = GetProfileTable(&proftable);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	for (i = 0; i < proftable.cRows; i++) {
 		lpProp = get_SPropValue_SRow(&(proftable.aRow[i]), PR_DEFAULT_PROFILE);
@@ -957,7 +958,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
 		}
 	}
 	
-	OPENCHANGE_RETVAL_IF("GetDefaultProfile", MAPI_E_NOT_FOUND, proftable.aRow);
+	OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, proftable.aRow);
 }
 
 /**
@@ -991,7 +992,7 @@ _PUBLIC_ enum MAPISTATUS GetProfilePtr(struct mapi_profile *profile)
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_NOT_FOUND: The profile was not found in the database
 
-   \sa SetDefaultProfile, GetProfileTable, GetLastError
+   \sa SetDefaultProfile, GetLastError
  */
 _PUBLIC_ enum MAPISTATUS GetProfileTable(struct SRowSet *proftable)
 {

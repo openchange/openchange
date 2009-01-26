@@ -13,8 +13,7 @@ config.status: configure
 	./configure
 
 configure: configure.ac
-	aclocal
-	autoconf -f
+	./autogen.sh
 
 samba:
 	./script/installsamba4.sh all

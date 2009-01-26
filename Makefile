@@ -13,6 +13,7 @@ config.status: configure
 	./configure
 
 configure: configure.ac
+	aclocal
 	autoconf -f
 
 samba:

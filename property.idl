@@ -72,6 +72,7 @@ interface property
 
 	typedef [nodiscriminant,flag(NDR_NOALIGN)] union {
 		[case(0x1)] WeekRecurrencePattern     		WeekRecurrencePattern;
+		[case(0x2)] uint32				Day;
 		[case(0x3)] MonthRecurrencePattern		MonthRecurrencePattern;
 		[case(0x4)] uint32				Day;
 		[case(0xA)] uint32				Day;

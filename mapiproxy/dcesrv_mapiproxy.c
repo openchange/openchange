@@ -510,6 +510,9 @@ static NTSTATUS mapiproxy_op_init_server(struct dcesrv_context *dce_ctx, const s
 	struct dcesrv_interface	iface;
 	char     		**ifaces;
 	uint32_t		i;
+	static bool		initialized = false;
+
+	if (initialized == true) return NT_STATUS_OK;
 
 	/* Register mapiproxy modules */
 	ret = mapiproxy_module_init(dce_ctx);
@@ -535,6 +538,7 @@ static NTSTATUS mapiproxy_op_init_server(struct dcesrv_context *dce_ctx, const s
 		}
 	}
 
+	initialized = true;
 	return NT_STATUS_OK;
 }
 

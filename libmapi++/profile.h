@@ -65,7 +65,7 @@ class profile
 		 */
 		std::string static get_default_profile() throw (mapi_exception)
 		{
-			const char* profname = NULL;
+			char* profname = NULL;
 			if (GetDefaultProfile(&profname) != MAPI_E_SUCCESS)
 				throw mapi_exception(GetLastError(), "profile::get_default_profile : GetDefaultProfile()");
 

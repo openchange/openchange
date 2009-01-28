@@ -194,7 +194,7 @@ enum MAPISTATUS torture_load_profile(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		retval;
 	const char		*profdb;
-	const char		*profname;
+	char			*profname;
 	struct mapi_session	*session = NULL;
 
 	profdb = lp_parm_string(lp_ctx, NULL, "mapi", "profile_store");
@@ -210,7 +210,7 @@ enum MAPISTATUS torture_load_profile(TALLOC_CTX *mem_ctx,
 	mapi_errstr("MAPIInitialize", GetLastError());
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
-	profname = lp_parm_string(lp_ctx, NULL, "mapi", "profile");
+	profname = talloc_strdup(mem_ctx, lp_parm_string(lp_ctx, NULL, "mapi", "profile"));
 	if (!profname) {
 		retval = GetDefaultProfile(&profname);
 		MAPI_RETVAL_IF(retval, retval, NULL);
@@ -218,6 +218,7 @@ enum MAPISTATUS torture_load_profile(TALLOC_CTX *mem_ctx,
 
 	/* MapiLogonProvider returns MAPI_E_NO_SUPPORT: reset errno */
 	retval = MapiLogonProvider(&session, profname, NULL, PROVIDER_ID_NSPI);
+	talloc_free(profname);
 	errno = 0;
 
 	retval = LoadProfile(session->profile);
@@ -239,7 +240,7 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session;
 	const char		*profdb;
-	const char		*profname;
+	char			*profname;
 	const char		*password;
 
 	profdb = lp_parm_string(lp_ctx, NULL, "mapi", "profile_store");
@@ -256,7 +257,7 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx,
 	if (retval != MAPI_E_SUCCESS) return NULL;
 
 
-	profname = lp_parm_string(lp_ctx, NULL, "mapi", "profile");
+	profname = talloc_strdup(mem_ctx, lp_parm_string(lp_ctx, NULL, "mapi", "profile"));
 	if (!profname) {
 		retval = GetDefaultProfile(&profname);
 		if (retval != MAPI_E_SUCCESS) {
@@ -267,6 +268,7 @@ struct mapi_session *torture_init_mapi(TALLOC_CTX *mem_ctx,
 
 	password = lp_parm_string(lp_ctx, NULL, "mapi", "password");
 	retval = MapiLogonEx(&session, profname, password);
+	talloc_free(profname);
 	mapi_errstr("MapiLogonEx", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return NULL;
 

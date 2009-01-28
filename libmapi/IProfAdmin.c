@@ -832,6 +832,7 @@ _PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile,
 	mem_ctx = global_mapi_ctx->mem_ctx;
 
 	retval = GetProfileTable(&proftable);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 1. Check if old profile exists */
 	for (found = false, i = 0; i < proftable.cRows; i++) {
@@ -840,7 +841,7 @@ _PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile,
 			found = true;
 		}
 	}
-	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_NOT_FOUND, proftable.aRow);
 
 	/* Step 2. Check if new profile already exists */
 	for (found = false, i = 0; i < proftable.cRows; i++) {
@@ -849,6 +850,7 @@ _PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile,
 			found = true;
 		}
 	}
+	talloc_free(proftable.aRow);
 	OPENCHANGE_RETVAL_IF(found == true, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Step 3. Rename the profile */
@@ -931,9 +933,12 @@ _PUBLIC_ enum MAPISTATUS SetDefaultProfile(const char *profname)
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_NOT_FOUND: The profile was not found in the database
 
+   \note On success GetDefaultProfile profname string is allocated. It
+   is up to the developer to free it when not needed anymore.
+
    \sa SetDefaultProfile, GetProfileTable, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
+_PUBLIC_ enum MAPISTATUS GetDefaultProfile(char **profname)
 {
 	enum MAPISTATUS		retval;
 	struct SRowSet		proftable;
@@ -951,7 +956,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(const char **profname)
 		if (lpProp && (lpProp->value.l == 1)) {
 			lpProp = get_SPropValue_SRow(&(proftable.aRow[i]), PR_DISPLAY_NAME);
 			if (lpProp) {
-				*profname = lpProp->value.lpszA;
+			  *profname = talloc_strdup(global_mapi_ctx->mem_ctx, lpProp->value.lpszA);
 				talloc_free(proftable.aRow);
 				return MAPI_E_SUCCESS;
 			}
@@ -1009,29 +1014,33 @@ _PUBLIC_ enum MAPISTATUS GetProfileTable(struct SRowSet *proftable)
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	ldb_ctx = global_mapi_ctx->ldb_ctx;
-	mem_ctx = (TALLOC_CTX *)ldb_ctx;
+	mem_ctx = talloc_autofree_context();
 
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, scope, attrs, "(cn=*)");
+	talloc_free(basedn);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
 
 	/* Allocate Arow */
 	proftable->cRows = res->count;
-	proftable->aRow = talloc_array(mem_ctx, struct SRow, res->count);
+	proftable->aRow = talloc_array(global_mapi_ctx->mem_ctx, struct SRow, res->count);
 
 	/* Build Arow array */
 	for (count = 0; count < res->count; count++) {
 		msg = res->msgs[count];
 		
-		proftable->aRow[count].lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+		proftable->aRow[count].lpProps = talloc_array((TALLOC_CTX *)proftable->aRow, struct SPropValue, 2);
 		proftable->aRow[count].cValues = 2;
 
 		proftable->aRow[count].lpProps[0].ulPropTag = PR_DISPLAY_NAME;
-		proftable->aRow[count].lpProps[0].value.lpszA = ldb_msg_find_attr_as_string(msg, "cn", NULL);
-
+		proftable->aRow[count].lpProps[0].value.lpszA = talloc_strdup((TALLOC_CTX *)proftable->aRow, 
+									      ldb_msg_find_attr_as_string(msg, "cn", NULL));
+									      
 		proftable->aRow[count].lpProps[1].ulPropTag = PR_DEFAULT_PROFILE;
 		proftable->aRow[count].lpProps[1].value.l = ldb_msg_find_attr_as_int(msg, "PR_DEFAULT_PROFILE", 0);
 	}
+
+	talloc_free(res);
 
 	return MAPI_E_SUCCESS;
 }

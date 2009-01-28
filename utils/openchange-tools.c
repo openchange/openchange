@@ -299,26 +299,35 @@ _PUBLIC_ struct mapi_session *octool_init_mapi(const char *opt_profname,
 					       uint32_t provider)
 {
 	enum MAPISTATUS		retval;
+	char			*profname = NULL;
 	struct mapi_session	*session = NULL;
+	TALLOC_CTX		*mem_ctx = NULL;
 
-	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname);
+	mem_ctx = talloc_named(NULL, 0, "octool_init_mapi");
+	if (opt_profname) {
+		profname = talloc_strdup(mem_ctx, (char *)opt_profname);
+	} else {
+		retval = GetDefaultProfile(&profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
+			talloc_free(mem_ctx);
 			return NULL;
 		}
 	}
 
 	if (!provider) {
-		retval = MapiLogonEx(&session, opt_profname, opt_password);
+		retval = MapiLogonEx(&session, profname, opt_password);
 	} else {
-		retval = MapiLogonProvider(&session, opt_profname, opt_password, provider);
+		retval = MapiLogonProvider(&session, profname, opt_password, provider);
 	}
+	MAPIFreeBuffer((char *)profname);
 
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
+	talloc_free(mem_ctx);
 	return session;
 }

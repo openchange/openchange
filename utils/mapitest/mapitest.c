@@ -133,33 +133,30 @@ static void mapitest_list(struct mapitest *mt, const char *name)
  * Retrieve server specific information
  */
 static bool mapitest_get_server_info(struct mapitest *mt,
-				     const char *profdb,
-				     const char *profname,
+				     char *opt_profname,
 				     const char *password,
 				     bool opt_dumpdata,
 				     const char *opt_debug)
 {
+	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	struct emsmdb_info	*info = NULL;
 	struct mapi_session	*session = NULL;
+	char			*profname = NULL;
 
 	if (mt->no_server == true) return 0;
 
-	if (!profdb) {
-		profdb = talloc_asprintf(mt->mem_ctx, DEFAULT_PROFDB, getenv("HOME"));
-	}
-	retval = MAPIInitialize(profdb);
-	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("MAPIInitialize", retval);
-		return false;
-	}
+	mem_ctx = talloc_named(NULL, 0, "mapitest_get_server_info");
 
 	if (!profname) {
-		retval = GetDefaultProfile(&profname);
+	  retval = GetDefaultProfile(&profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", retval);
+			talloc_free(mem_ctx);
 			return false;
 		}
+	} else {
+		profname = talloc_strdup(mem_ctx, opt_profname);
 	}
 
 	/* debug options */
@@ -170,6 +167,8 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 	}
 
 	retval = MapiLogonEx(&session, profname, password);
+	MAPIFreeBuffer(profname);
+	talloc_free(mem_ctx);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", retval);
 		return false;
@@ -193,6 +192,7 @@ static bool mapitest_get_server_info(struct mapitest *mt,
  */
 int main(int argc, const char *argv[])
 {
+	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	struct mapitest		mt;
 	poptContext		pc;
@@ -201,7 +201,7 @@ int main(int argc, const char *argv[])
 	bool			opt_dumpdata = false;
 	const char     		*opt_debug = NULL;
 	const char		*opt_profdb = NULL;
-	const char		*opt_profname = NULL;
+	char			*opt_profname = NULL;
 	const char		*opt_username = NULL;
 	const char		*opt_password = NULL;
 	const char		*opt_outfile = NULL;
@@ -247,7 +247,7 @@ int main(int argc, const char *argv[])
 			opt_profdb = poptGetOptArg(pc);
 			break;
 		case OPT_PROFILE:
-			opt_profname = poptGetOptArg(pc);
+		  opt_profname = talloc_strdup(mem_ctx, (char *)poptGetOptArg(pc));
 			break;
 		case OPT_USERNAME:
 			opt_username = poptGetOptArg(pc);
@@ -289,12 +289,21 @@ int main(int argc, const char *argv[])
 		return -1;
 	}
 
+	/* Initialize MAPI subsystem */
+	if (!opt_profdb) {
+		opt_profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, getenv("HOME"));
+	}
+
+	retval = MAPIInitialize(opt_profdb);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_errstr("MAPIInitialize", retval);
+		return false;
+	}
+
 	mapitest_init_stream(&mt, opt_outfile);
 	
-	if (mt.no_server == false) {
-	  mt.online = mapitest_get_server_info(&mt, opt_profdb, opt_profname, opt_password,
-					       opt_dumpdata, opt_debug);
-	}
+	mt.online = mapitest_get_server_info(&mt, opt_profname, opt_password,
+					     opt_dumpdata, opt_debug);
 
 	mapitest_print_headers(&mt);
 
@@ -316,10 +325,7 @@ int main(int argc, const char *argv[])
 	mapitest_cleanup_stream(&mt);
 
 	/* Uninitialize and free memory */
-	if (mt.no_server == false) {
-		MAPIUninitialize();
-	}
-
+	MAPIUninitialize();
 	talloc_free(mt.mem_ctx);
 
 	return 0;

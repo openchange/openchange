@@ -40,7 +40,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	struct SRowSet		*rowset = NULL;
 	struct SPropTagArray   	*flaglist = NULL;
 	const char		*profdb;
-	const char		*profname;
+	char			*profname;
 	const char		*username = lp_parm_string(torture->lp_ctx, NULL, "exchange", "resolvename");
 	const char		*password = lp_parm_string(torture->lp_ctx, NULL, "mapi", "password");
 	uint32_t		unicode = lp_parm_int(torture->lp_ctx, NULL, "mapi", "unicode", 0);
@@ -76,7 +76,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* profile name */
-	profname = lp_parm_string(torture->lp_ctx, NULL, "mapi", "profile");
+	profname = talloc_strdup(mem_ctx, lp_parm_string(torture->lp_ctx, NULL, "mapi", "profile"));
 	if (!profname) {
 		retval = GetDefaultProfile(&profname);
 		if (retval != MAPI_E_SUCCESS) {
@@ -86,6 +86,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	}
 	
 	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
+	talloc_free(profname);
 	mapi_errstr("MapiLogonProvider", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

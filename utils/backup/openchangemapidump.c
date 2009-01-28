@@ -350,7 +350,7 @@ int main(int argc, const char *argv[])
 	int				opt;
 	/* command line options */
 	const char			*opt_profdb = NULL;
-	const char			*opt_profname = NULL;
+	char				*opt_profname = NULL;
 	const char			*opt_password = NULL;
 	const char			*opt_config = NULL;
 	const char			*opt_backupdb = NULL;
@@ -390,7 +390,7 @@ int main(int argc, const char *argv[])
 			opt_profdb = poptGetOptArg(pc);
 			break;
 		case OPT_PROFILE:
-			opt_profname = poptGetOptArg(pc);
+			opt_profname = talloc_strdup(mem_ctx, (char *)poptGetOptArg(pc));
 			break;
 		case OPT_PASSWORD:
 			opt_password = poptGetOptArg(pc);
@@ -448,6 +448,7 @@ int main(int argc, const char *argv[])
 
 	/* We only need to log on EMSMDB to backup Mailbox store or Public Folders */
 	retval = MapiLogonProvider(&session, opt_profname, opt_password, PROVIDER_ID_EMSMDB);
+	talloc_free(opt_profname);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
 		exit (1);

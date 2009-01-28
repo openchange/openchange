@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2007
+   Copyright (C) Julien Kerihuel 2007-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -220,29 +220,36 @@ static void mapiprofile_delete(const char *profdb, const char *profname)
 
 static void mapiprofile_rename(const char *profdb, const char *old_profname, const char *new_profname)
 {
+	TALLOC_CTX	*mem_ctx;
 	enum MAPISTATUS	retval;
-	const char	*profname;
+	char		*profname;
 
 	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", retval);
 		exit (1);
 	}
 
+	mem_ctx = talloc_named(NULL, 0, "mapiprofile_rename");
+
 	if (!old_profname) {
 		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", retval);
+			talloc_free(mem_ctx);
 			exit (1);
 		}
 	} else {
-		profname = old_profname;
+		profname = talloc_strdup(mem_ctx, old_profname);
 	}
 
 	if ((retval = RenameProfile(profname, new_profname)) != MAPI_E_SUCCESS) {
 		mapi_errstr("RenameProfile", retval);
+		talloc_free(profname);
+		talloc_free(mem_ctx);
 		exit (1);
 	}
 
-
+	talloc_free(profname);
+	talloc_free(mem_ctx);
 	MAPIUninitialize();
 }
 
@@ -269,7 +276,7 @@ static void mapiprofile_set_default(const char *profdb, const char *profname)
 static void mapiprofile_get_default(const char *profdb)
 {
 	enum MAPISTATUS retval;
-	const char	*profname;
+	char		*profname;
 
 	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
@@ -283,17 +290,20 @@ static void mapiprofile_get_default(const char *profdb)
 
 	printf("Default profile is set to %s\n", profname);
 
+	talloc_free(profname);
 	MAPIUninitialize();
 }
 
 static void mapiprofile_get_fqdn(const char *profdb, 
-				 const char *profname, 
+				 const char *opt_profname, 
 				 const char *password,
 				 bool opt_dumpdata)
 {
+	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
-	struct mapi_session	*session;
+	struct mapi_session	*session = NULL;
 	const char		*serverFQDN;
+	char			*profname;
 
 	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
@@ -302,14 +312,21 @@ static void mapiprofile_get_fqdn(const char *profdb,
 
 	SetMAPIDumpData(opt_dumpdata);
 
-	if (!profname) {
+	mem_ctx = talloc_named(NULL, 0, "mapiprofile_get_fqdn");
+
+	if (!opt_profname) {
 		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
+			talloc_free(mem_ctx);
 			exit (1);
 		}
+	} else {
+		profname = talloc_strdup(mem_ctx, (char *)opt_profname);
 	}
 
 	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
+	talloc_free(profname);
+	talloc_free(mem_ctx);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonProvider", GetLastError());
 		exit (1);
@@ -363,24 +380,33 @@ static void mapiprofile_list(const char *profdb)
 	MAPIUninitialize();
 }
 
-static void mapiprofile_dump(const char *profdb, const char *profname)
+static void mapiprofile_dump(const char *profdb, const char *opt_profname)
 {
+	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	struct mapi_profile	profile;
+	char			*profname;
 
 	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
-	if (!profname) {
+	mem_ctx = talloc_named(NULL, 0, "mapiprofile_dump");
+
+	if (!opt_profname) {
 		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
+			talloc_free(mem_ctx);
 			exit (1);
 		}
+	} else {
+		profname = talloc_strdup(mem_ctx, (const char *)opt_profname);
 	}
 
 	retval = OpenProfile(&profile, profname, NULL);
+	talloc_free(profname);
+	talloc_free(mem_ctx);
 	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
 		mapi_errstr("OpenProfile", GetLastError());
 		exit (1);
@@ -397,11 +423,13 @@ static void mapiprofile_dump(const char *profdb, const char *profname)
 	MAPIUninitialize();
 }
 
-static void mapiprofile_attribute(const char *profdb, const char *profname, 
+static void mapiprofile_attribute(const char *profdb, const char *opt_profname, 
 				  const char *attribute)
 {
+	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	struct mapi_profile	profile;
+	char			*profname = NULL;
 	char			**value = NULL;
 	unsigned int		count = 0;
 	unsigned int		i;
@@ -411,21 +439,29 @@ static void mapiprofile_attribute(const char *profdb, const char *profname,
 		exit (1);
 	}
 
-	if (!profname) {
+	mem_ctx = talloc_named(NULL, 0, "mapiprofile_attribute");
+
+	if (!opt_profname) {
 		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			exit (1);
 		}
+	} else {
+		profname = talloc_strdup(mem_ctx, (const char *)opt_profname);
 	}
 
 	retval = OpenProfile(&profile, profname, NULL);
 	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
 		mapi_errstr("OpenProfile", GetLastError());
+		talloc_free(profname);
+		talloc_free(mem_ctx);
 		exit (1);
 	}
 
 	if ((retval = GetProfileAttr(&profile, attribute, &count, &value))) {
 		mapi_errstr("ProfileGetAttr", GetLastError());
+		talloc_free(profname);
+		talloc_free(mem_ctx);
 		exit (1);
 	}
 
@@ -434,6 +470,8 @@ static void mapiprofile_attribute(const char *profdb, const char *profname,
 		printf("\t%s = %s\n", attribute, value[i]);
 	}
 	MAPIFreeBuffer(value);
+	talloc_free(profname);
+	talloc_free(mem_ctx);
 
 	MAPIUninitialize();
 }

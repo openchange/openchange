@@ -116,7 +116,7 @@ static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid,
  * Fetch message ids from the existing mbox
  */
 static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp, 
-		       const char *profdb, const char *profname,
+		       const char *profdb, char *profname,
 		       const char *password)
 {
 	enum MAPISTATUS		retval;
@@ -142,7 +142,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	}
 
 	retval = OpenProfile(&profile, profname, password);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, profname);
 
 	mbox_msgids = talloc_zero(mem_ctx, char *);
 	/* Add Message-ID attribute to the profile if it is missing */
@@ -163,6 +163,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 				retval = mapi_profile_add_string_attr(profname, "Message-ID", id);
 				if (retval != MAPI_E_SUCCESS) {
 					mapi_errstr("mapi_profile_add_string_attr", GetLastError());
+					talloc_free(profname);
 					MAPIUninitialize();
 					return -1;
 				}
@@ -178,7 +179,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	 * Message-ID is missing in mbox 
 	 */
 	retval = GetProfileAttr(&profile, "Message-ID", &count, &prof_msgids);
-	MAPI_RETVAL_IF(retval, retval, NULL);
+	MAPI_RETVAL_IF(retval, retval, profname);
 
 	if (count != mbox_count) {
 		printf("{+] Synchonizing mbox with Exchange mailbox\n");
@@ -202,6 +203,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 
 	talloc_free(prof_msgids);
 	talloc_free(mbox_msgids);
+	talloc_free(profname);
 	MAPIUninitialize();
 
 	return MAPI_E_SUCCESS;
@@ -558,7 +560,7 @@ int main(int argc, const char *argv[])
 	FILE				*fp;
 	unsigned int			i;
 	const char			*opt_profdb = NULL;
-	const char			*opt_profname = NULL;
+	char				*opt_profname = NULL;
 	const char			*opt_password = NULL;
 	const char			*opt_mbox = NULL;
 	bool				opt_update = false;
@@ -592,7 +594,7 @@ int main(int argc, const char *argv[])
 			opt_profdb = poptGetOptArg(pc);
 			break;
 		case OPT_PROFILE:
-			opt_profname = poptGetOptArg(pc);
+			opt_profname = talloc_strdup(mem_ctx, (char *)poptGetOptArg(pc));
 			break;
 		case OPT_PASSWORD:
 			opt_password = poptGetOptArg(pc);
@@ -668,6 +670,7 @@ int main(int argc, const char *argv[])
 	}
 	
 	retval = MapiLogonEx(&session, opt_profname, opt_password);
+	talloc_free(opt_profname);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
 		exit (1);

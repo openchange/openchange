@@ -2766,7 +2766,7 @@ int main(int argc, const char *argv[])
 	bool			opt_ocpf_syntax = false;
 	bool			opt_ocpf_sender = false;
 	const char		*opt_profdb = NULL;
-	const char		*opt_profname = NULL;
+	char			*opt_profname = NULL;
 	const char		*opt_password = NULL;
 	const char		*opt_attachments = NULL;
 	const char		*opt_fetchitems = NULL;
@@ -2888,7 +2888,7 @@ int main(int argc, const char *argv[])
 			opt_profdb = poptGetOptArg(pc);
 			break;
 		case OPT_PROFILE:
-			opt_profname = poptGetOptArg(pc);
+			opt_profname = talloc_strdup(mem_ctx, poptGetOptArg(pc));
 			break;
 		case OPT_PASSWORD:
 			opt_password = poptGetOptArg(pc);
@@ -3125,6 +3125,7 @@ int main(int argc, const char *argv[])
 	}
 
 	retval = MapiLogonEx(&session, opt_profname, opt_password);
+	talloc_free(opt_profname);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
 		exit (1);

@@ -278,7 +278,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb_ctx,
 	uint8_t			i = 0;
 
 start:
-	mem_ctx = talloc_autofree_context();
+	mem_ctx = talloc_named(NULL, 0, "emsmdb_transaction");
 
 	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
 	r.in.size = emsmdb_ctx->max_data;
@@ -314,8 +314,10 @@ start:
 			errno = 0;
 			emsmdb_ctx->max_data = 0x7FFF;
 			emsmdb_ctx->setup = true;
+			talloc_free(mem_ctx);
 			goto start;
 		} else {
+			talloc_free(mem_ctx);
 			return status;
 		}
 	} else {
@@ -324,6 +326,8 @@ start:
 	emsmdb_ctx->cache_size = emsmdb_ctx->cache_count = 0;
 
 	*repl = r.out.mapi_response;
+
+	talloc_free(mem_ctx);
 
 	return status;
 }

@@ -21,7 +21,9 @@
 #ifndef __LIBMAPI_H__
 #define __LIBMAPI_H__
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1
+#endif
 
 #include <sys/types.h>
 #include <sys/socket.h>

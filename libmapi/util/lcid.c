@@ -118,7 +118,7 @@ static const struct locale_struct locales[] =
 	{ "English_United_States", 0x409, CP_WESTERN_EUROPE_AND_US, { {0x409, 0x409}, {0, 0} } },
 	{ "English_United_Kingdom", 0x809, CP_WESTERN_EUROPE_AND_US, { {0x809, 0x809}, {0, 0} } },
 	{ "English_Australian", 0xc09, CP_WESTERN_EUROPE_AND_US, { {0xc09, 0x409}, {0, 0} } },
-	{ "English_Canadian", 0xc09, CP_WESTERN_EUROPE_AND_US, { {0x1009, 0x409}, {0x1009, 0x11009}, {0x1009, 0x1009}, {0, 0} } },
+	{ "English_Canadian", 0x1009, CP_WESTERN_EUROPE_AND_US, { {0x1009, 0x409}, {0x1009, 0x11009}, {0x1009, 0x1009}, {0, 0} } },
 	{ "English_New_Zealand", 0x1409, CP_WESTERN_EUROPE_AND_US, { {0x1409, 0x409}, {0, 0} } },
 	{ "English_Irish", 0x1809, CP_WESTERN_EUROPE_AND_US, { {0x1809, 0x1809}, {0x1809, 0x11809}, {0, 0} } },
 	{ "English_South_Africa", 0x1c09, CP_WESTERN_EUROPE_AND_US, { {0x1c09, 0x409}, {0, 0} } },

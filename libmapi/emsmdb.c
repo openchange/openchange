@@ -269,6 +269,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb_ctx,
 				     struct mapi_request *req, 
 				     struct mapi_response **repl)
 {
+	TALLOC_CTX		*mem_ctx;
 	struct EcDoRpc		r;
 	struct mapi_response	*mapi_response;
 	uint16_t		*length;
@@ -277,6 +278,8 @@ _PUBLIC_ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb_ctx,
 	uint8_t			i = 0;
 
 start:
+	mem_ctx = talloc_autofree_context();
+
 	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
 	r.in.size = emsmdb_ctx->max_data;
 	r.in.offset = 0x0;
@@ -286,7 +289,7 @@ start:
 
 	/* process cached data */
 	if (emsmdb_ctx->cache_count) {
-		multi_req = talloc_array(emsmdb_ctx->mem_ctx, struct EcDoRpc_MAPI_REQ, emsmdb_ctx->cache_count + 2);
+		multi_req = talloc_array(mem_ctx, struct EcDoRpc_MAPI_REQ, emsmdb_ctx->cache_count + 2);
 		for (i = 0; i < emsmdb_ctx->cache_count; i++) {
 			multi_req[i] = *emsmdb_ctx->cache_requests[i];
 		}
@@ -294,13 +297,13 @@ start:
 		req->mapi_req = multi_req;
 	}
 
-	req->mapi_req = talloc_realloc(emsmdb_ctx->mem_ctx, req->mapi_req, struct EcDoRpc_MAPI_REQ, emsmdb_ctx->cache_count + 2);
+	req->mapi_req = talloc_realloc(mem_ctx, req->mapi_req, struct EcDoRpc_MAPI_REQ, emsmdb_ctx->cache_count + 2);
 	req->mapi_req[i+1].opnum = 0;
 
 	r.in.mapi_request = req;
 	r.in.mapi_request->mapi_len += emsmdb_ctx->cache_size;
 	r.in.mapi_request->length += emsmdb_ctx->cache_size;
-	length = talloc_zero(emsmdb_ctx->mem_ctx, uint16_t);
+	length = talloc_zero(mem_ctx, uint16_t);
 	*length = r.in.mapi_request->mapi_len;
 	r.in.length = r.out.length = length;
 	r.in.max_data = (*length >= 0x4000) ? 0x7FFF : emsmdb_ctx->max_data;

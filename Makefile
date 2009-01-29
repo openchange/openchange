@@ -705,29 +705,23 @@ LIBMAPIPROXY_SO_VERSION = 0
 .PHONY: mapiproxy
 
 mapiproxy: 	idl 							\
-		mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+		libmapiproxy						\
 		mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) 			\
 		mapiproxy-modules					\
 		mapiproxy-servers
 
-mapiproxy-install: mapiproxy mapiproxy-modules-install mapiproxy-servers-install
+mapiproxy-install: mapiproxy mapiproxy-modules-install mapiproxy-servers-install libmapiproxy-install
 	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
 	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
-	ln -sf libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiproxy.$(SHLIBEXT)
-	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.h $(DESTDIR)$(includedir)/
 
-
-mapiproxy-uninstall: mapiproxy-modules-uninstall mapiproxy-servers-uninstall
+mapiproxy-uninstall: mapiproxy-modules-uninstall mapiproxy-servers-uninstall libmapiproxy-uninstall
 	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_mapiproxy.*
 	rm -f $(DESTDIR)$(libdir)/libmapiproxy.*
 	rm -f $(DESTDIR)$(includedir)/libmapiproxy.h
 
-mapiproxy-clean:: mapiproxy-modules-clean mapiproxy-servers-clean
+mapiproxy-clean:: mapiproxy-modules-clean mapiproxy-servers-clean libmapiproxy-clean
 	rm -f mapiproxy/*.o mapiproxy/*.po
 	rm -f mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT)
-	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) \
-		  mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
 
 clean:: mapiproxy-clean
 
@@ -743,6 +737,28 @@ mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT): 	mapiproxy/dcesrv_mapiproxy.po		\
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 mapiproxy/dcesrv_mapiproxy.c: gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
+
+libmapiproxy: mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+libmapiproxy-install:
+	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiproxy.$(SHLIBEXT)
+	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.h $(DESTDIR)$(includedir)/
+	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.pc $(DESTDIR)$(libdir)/pkgconfig
+
+libmapiproxy-clean:
+	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
+
+libmapiproxy-uninstall:
+	rm -f $(DESTDIR)$(libdir)/libmapiproxy.*
+	rm -f $(DESTDIR)$(includedir)/libmapiproxy.h
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapiproxy.pc
+
+libmapiproxy-distclean:
+	rm -f mapiproxy/libmapiproxy.pc
+
+distclean::libmapiproxy-distclean
 
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/dcesrv_mapiproxy_module.po	\
 							mapiproxy/dcesrv_mapiproxy_server.po	\

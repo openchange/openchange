@@ -1,0 +1,15 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+datarootdir=@prefix@/share
+datadir=@datadir@
+
+Name: MAPIPROXY
+Description: MAPI Proxy and Server Module Library
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lmapiproxy
+Libs.private: @LIBS@
+Cflags: -I${includedir}
+Requires: talloc dcerpc ndr ldb
+Requires.private: samba-hostconfig

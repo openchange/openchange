@@ -109,6 +109,7 @@ _PUBLIC_ bool mapitest_oxcprpt_GetPropsAll(struct mapitest *mt)
 	/* Step 2. GetPropsAll operation */
 	retval = GetPropsAll(&obj_store, &properties_array);
 	mapitest_print_retval(mt, "GetPropsAll");
+	MAPIFreeBuffer(properties_array.lpProps);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -2100,6 +2101,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	nameid = mapi_nameid_new(mt->mem_ctx);
 	propIDs = talloc_zero(mt->mem_ctx, uint16_t);
 	QueryNamedProperties(&obj_ref_message, 0, NULL, &nameid->count, &propIDs, &nameid->nameid);
+	nameid->nameid = talloc_steal((TALLOC_CTX *)nameid, nameid->nameid);
 	mapitest_print_retval(mt, "QueryNamedProperties");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(nameid);

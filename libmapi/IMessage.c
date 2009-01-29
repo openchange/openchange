@@ -102,6 +102,7 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 	mapi_object_set_session(obj_attach, session);
 	mapi_object_set_handle(obj_attach, mapi_response->handles[1]);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -174,6 +175,7 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t Attac
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 	
 	return MAPI_E_SUCCESS;
@@ -253,6 +255,7 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	mapi_object_set_session(obj_table, session);
 	mapi_object_set_handle(obj_table, mapi_response->handles[mapi_response->mapi_repl->handle_idx]);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -336,6 +339,7 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t Attachm
 	mapi_object_set_session(obj_attach, session);
 	mapi_object_set_handle(obj_attach, mapi_response->handles[1]);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -668,6 +672,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
 	errno = 0;
@@ -702,6 +707,7 @@ _PUBLIC_ enum MAPISTATUS ReadRecipients(mapi_object_t *obj_message,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct ReadRecipients_req	request;
+	struct ReadRecipients_repl	*reply;
 	struct mapi_session		*session;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
@@ -748,9 +754,11 @@ _PUBLIC_ enum MAPISTATUS ReadRecipients(mapi_object_t *obj_message,
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Retrieve the recipients */
-	*RowCount = mapi_response->mapi_repl->u.mapi_ReadRecipients.RowCount;
-	*RecipientRows = mapi_response->mapi_repl->u.mapi_ReadRecipients.RecipientRows;
+	reply = &mapi_response->mapi_repl->u.mapi_ReadRecipients;
+	*RowCount = reply->RowCount;
+	*RecipientRows = talloc_steal((TALLOC_CTX *)session, reply->RecipientRows);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -895,6 +903,7 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -982,6 +991,7 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 	
 	return MAPI_E_SUCCESS;
@@ -1074,6 +1084,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	/* store the message_id */
 	mapi_object_set_id(obj_message, mapi_response->mapi_repl->u.mapi_SaveChangesMessage.MessageId);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -1132,11 +1143,13 @@ _PUBLIC_ enum MAPISTATUS TransportSend(mapi_object_t *obj_message,
 	/* Retrieve reply parameters */
 	reply = &mapi_response->mapi_repl->u.mapi_TransportSend;
 	if (!reply->NoPropertiesReturned) {
-		*lpProps = reply->properties.lpProps;
+		lpProps->cValues = reply->properties.lpProps.cValues;
+		lpProps->lpProps = talloc_steal((TALLOC_CTX *)session, reply->properties.lpProps.lpProps);
 	} else {
 		lpProps = NULL;
 	}
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;

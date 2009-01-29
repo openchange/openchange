@@ -79,9 +79,6 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
 
 	nspi = (struct nspi_context *)session->nspi->ctx;
 
-	*rowset = talloc_zero(session, struct SRowSet);
-	*flaglist = talloc_zero(session, struct SPropTagArray);
-
 	switch (flags) {
 	case MAPI_UNICODE:
 		retval = nspi_ResolveNamesW(nspi, usernames, props, &rowset, &flaglist);

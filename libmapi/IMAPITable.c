@@ -103,7 +103,7 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 
 	/* recopy property tags into table */
 	/* fixme: obj_table->private_data should be initialized during opening, not here */
-	if (obj_table->private_data == 0) {
+	if (obj_table->private_data == NULL) {
 		obj_table->private_data = talloc((TALLOC_CTX *)session, mapi_object_table_t);
 	}
 
@@ -1356,7 +1356,6 @@ _PUBLIC_ enum MAPISTATUS GetStatus(mapi_object_t *obj_table, uint8_t *TableStatu
 	reply = &mapi_response->mapi_repl->u.mapi_GetStatus;
 	*TableStatus = reply->TableStatus;
 
-
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
@@ -1428,6 +1427,9 @@ _PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
 	/* Retrieve TableStatus */
 	reply = &mapi_response->mapi_repl->u.mapi_Abort;
 	*TableStatus = reply->TableStatus;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }

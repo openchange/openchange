@@ -172,8 +172,6 @@ int emsmdb_disconnect_dtor(void *data)
 		talloc_free(emsmdb_ctx->info.szDNPrefix);
 	}
 
-	DEBUG(0, ("Everything has been free'd\n"));
-
 	return 0;
 }
 
@@ -255,6 +253,22 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_null(struct emsmdb_context *emsmdb_ctx,
 }
 
 
+static int mapi_response_destructor(void *data)
+{
+	struct mapi_response	*mapi_response = (struct mapi_response *)data;
+
+	if (mapi_response->handles) {
+		talloc_free(mapi_response->handles);
+	}
+
+	if (mapi_response->mapi_repl) {
+		talloc_free(mapi_response->mapi_repl);
+	}
+
+	return 0;
+}
+
+
 /**
    \details Make a EMSMDB transaction.
 
@@ -285,6 +299,7 @@ start:
 	r.in.offset = 0x0;
 
 	mapi_response = talloc_zero(emsmdb_ctx->mem_ctx, struct mapi_response);	
+	talloc_set_destructor((void *)mapi_response, (int (*)(void *))mapi_response_destructor);
 	r.out.mapi_response = mapi_response;
 
 	/* process cached data */

@@ -96,8 +96,9 @@ _PUBLIC_ enum MAPISTATUS AddressTypes(mapi_object_t *obj_store,
 	/* Retrieve Address Types */
 	response = &mapi_response->mapi_repl->u.mapi_AddressTypes;
 	*lpcAdrType = response->cValues;
-	*lpAdrTypeArray = response->transport;
+	*lpAdrTypeArray = talloc_steal((TALLOC_CTX *)session, response->transport);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 	return MAPI_E_SUCCESS;
 }

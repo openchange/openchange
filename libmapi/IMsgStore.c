@@ -102,7 +102,6 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store, mapi_id_t id_folde
 	mapi_object_set_handle(obj_folder, mapi_response->handles[1]);
 
 	talloc_free(mapi_response);
-
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -697,9 +696,9 @@ _PUBLIC_ enum MAPISTATUS GetOwningServers(mapi_object_t *obj_store,
 	*OwningServersCount = response.OwningServersCount;
 	*CheapServersCount = response.CheapServersCount;
 	if (*OwningServersCount) {
-	  OwningServers = talloc_array((TALLOC_CTX *)session, char *, *OwningServersCount + 1);
+		OwningServers = talloc_array((TALLOC_CTX *)session, char *, *OwningServersCount + 1);
 		for (i = 0; i != *OwningServersCount; i++) {
-		  OwningServers[i] = talloc_strdup((TALLOC_CTX *)session, response.OwningServers[i]);
+			OwningServers[i] = talloc_strdup((TALLOC_CTX *)OwningServers, response.OwningServers[i]);
 		}
 		OwningServers[i] = NULL;
 	} else {

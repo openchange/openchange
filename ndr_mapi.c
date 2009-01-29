@@ -243,24 +243,27 @@ enum ndr_err_code ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, st
 	
 	/* If length equals length field then skipping subcontext */
 	if (r->length > sizeof (uint16_t)) {
+		NDR_PULL_ALLOC(ndr, r->mapi_repl);
+		_mem_save_mapi_repl_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->mapi_repl, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_mapi_repl, 0, r->length - 2));
-		_mem_save_mapi_repl_0 = NDR_PULL_GET_MEM_CTX(_ndr_mapi_repl);
-		r->mapi_repl = talloc_zero(_mem_save_mapi_repl_0, struct EcDoRpc_MAPI_REPL);
 		for (cntr_mapi_repl_0 = 0; _ndr_mapi_repl->offset < _ndr_mapi_repl->data_size - 2; cntr_mapi_repl_0++) {
 			NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL(_ndr_mapi_repl, NDR_SCALARS, &r->mapi_repl[cntr_mapi_repl_0]));
 			r->mapi_repl = talloc_realloc(_mem_save_mapi_repl_0, r->mapi_repl, struct EcDoRpc_MAPI_REPL, cntr_mapi_repl_0 + 2);
 		}
-		r->mapi_repl = talloc_realloc(_mem_save_mapi_repl_0, r->mapi_repl, struct EcDoRpc_MAPI_REPL, cntr_mapi_repl_0 + 2);
 		r->mapi_repl[cntr_mapi_repl_0].opnum = 0;
 		NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_mapi_repl, 4, -1));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_mapi_repl_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 
 	_mem_save_handles_0 = NDR_PULL_GET_MEM_CTX(ndr);
 	count = (r->mapi_len - r->length) / sizeof(uint32_t);
-	r->handles = talloc_array(_mem_save_handles_0, uint32_t, count + 1);
+	NDR_PULL_ALLOC_N(ndr, r->handles, count + 1);
+
 	for (cntr_mapi_repl_0=0; cntr_mapi_repl_0 < count; cntr_mapi_repl_0++) {
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->handles[cntr_mapi_repl_0]));
 	}
+	NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handles_0, LIBNDR_FLAG_REF_ALLOC);
 
 	return NDR_ERR_SUCCESS;
 }

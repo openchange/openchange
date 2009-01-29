@@ -735,7 +735,7 @@ _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 
 	res = &reply->res;
 	*FolderIdCount = reply->FolderIdCount;
-	*FolderIds = reply->FolderIds;
+	*FolderIds = talloc_steal((TALLOC_CTX *)session, reply->FolderIds);
 	*SearchFlags = reply->SearchFlags;
 
 	talloc_free(mapi_response);

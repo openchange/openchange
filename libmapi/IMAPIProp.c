@@ -460,6 +460,7 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
 	struct GetPropsAll_req	request;
+	struct GetPropsAll_repl	*reply;
 	struct mapi_session	*session;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
@@ -503,8 +504,11 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	*properties = mapi_response->mapi_repl->u.mapi_GetPropsAll.properties;
+	reply = &mapi_response->mapi_repl->u.mapi_GetPropsAll;
+	properties->cValues = reply->properties.cValues;
+	properties->lpProps = talloc_steal((TALLOC_CTX *)session, reply->properties.lpProps);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 	return MAPI_E_SUCCESS;
 }
@@ -693,6 +697,7 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct GetNamesFromIDs_req	request;
+	struct GetNamesFromIDs_repl	*reply;
 	struct mapi_session		*session;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
@@ -737,11 +742,13 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Fill in count */
-	*count = mapi_response->mapi_repl->u.mapi_GetNamesFromIDs.count;
+	reply = &mapi_response->mapi_repl->u.mapi_GetNamesFromIDs;
+	*count = reply->count;
 
 	/* Fill MAPINAMEID struct */
-	*nameid = mapi_response->mapi_repl->u.mapi_GetNamesFromIDs.nameid;
+	*nameid = talloc_steal((TALLOC_CTX *)session, reply->nameid);
 
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -898,15 +905,16 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 					      uint16_t **propID,
 					      struct MAPINAMEID **nameid)
 {
-	struct mapi_request		*mapi_request;
-	struct mapi_response		*mapi_response;
-	struct EcDoRpc_MAPI_REQ		*mapi_req;
-	struct QueryNamedProperties_req	request;
-	struct mapi_session		*session;
-	NTSTATUS			status;
-	enum MAPISTATUS			retval;
-	uint32_t			size;
-	TALLOC_CTX			*mem_ctx;
+	struct mapi_request			*mapi_request;
+	struct mapi_response			*mapi_response;
+	struct EcDoRpc_MAPI_REQ			*mapi_req;
+	struct QueryNamedProperties_req		request;
+	struct QueryNamedProperties_repl	*reply;
+	struct mapi_session			*session;
+	NTSTATUS				status;
+	enum MAPISTATUS				retval;
+	uint32_t				size;
+	TALLOC_CTX				*mem_ctx;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -956,10 +964,13 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Fill [out] parameters */
-	*count = mapi_response->mapi_repl->u.mapi_QueryNamedProperties.IdCount;
-	*propID = mapi_response->mapi_repl->u.mapi_QueryNamedProperties.PropertyIds;
-	*nameid = mapi_response->mapi_repl->u.mapi_QueryNamedProperties.PropertyNames;
+	reply = &mapi_response->mapi_repl->u.mapi_QueryNamedProperties;
 
+	*count = reply->IdCount;
+	*propID = talloc_steal((TALLOC_CTX *)session, reply->PropertyIds);
+	*nameid = talloc_steal((TALLOC_CTX *)session, reply->PropertyNames);
+
+	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 	
 	return MAPI_E_SUCCESS;

@@ -135,6 +135,7 @@ bool mapiproxy_NspiQueryRows(struct dcesrv_call_state *dce_call, struct NspiQuer
 	/* Sanity checks */
 	if (!r->out.ppRows) return false;
 	if (!(*r->out.ppRows)->cRows) return false;
+	if (!r->in.pPropTags) return false;
 
 	/* Step 1. Find PR_EMS_AB_HOME_MDB index */
 	propID = -1;

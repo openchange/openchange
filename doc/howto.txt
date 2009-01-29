@@ -368,13 +368,13 @@ Finally running OpenChange server for a given user implies it belongs
 to the "Exchange Organization". The openchange_newuser script will
 extend existing user records and add attributes needed by OpenChange
 
-# ./setup/openchange_user --create <username>
+# ./setup/openchange_newuser --create <username>
 
 Users created with this script are enabled by default. You can
 enable/disable these users at any time by running:
 
-# ./setup/openchange_user --enable <username>
-# ./setup/openchange_user --disable <username>
+# ./setup/openchange_newuser --enable <username>
+# ./setup/openchange_newuser --disable <username>
 
 
 [0x5c] Setting smb.conf

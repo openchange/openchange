@@ -1,5 +1,17 @@
 2009-01-29
     jkerihuel
+	[r1052]
+		- Add pkg-config pc file for libmapiproxy
+		- Improve mapiproxy rules so libmapiproxy gets installed and cleaned properly
+	[r1051]
+		Free memory allocated by the fake subcontext in
+		ndr_pull_mapi_response.
+		
+		This fix saves 300kb of memory and removes 700 loss records while
+		valgrinding mapitest.
+	[r1050]
+		Fix segfault - Add sanity check - when SPropTagArray is NULL in
+		NspiQueryRows request
 	[r1048]
 		Fix openchange_newuser name typo
 	[r1047]

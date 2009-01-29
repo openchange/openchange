@@ -349,7 +349,7 @@ Under your root account, provision the server:
 If you need to add a user, run the following command from Samba4
 source directory and setup arguments so it fullfill your needs:
 
-# ./setup/newuser --username=test --unixname=test --password=test
+# ./setup/newuser <username> <password>
 
 
 [0x5b] Extending Samba AD schema
@@ -368,13 +368,13 @@ Finally running OpenChange server for a given user implies it belongs
 to the "Exchange Organization". The openchange_newuser script will
 extend existing user records and add attributes needed by OpenChange
 
-# ./setup/openchange_user --create test
+# ./setup/openchange_user --create <username>
 
 Users created with this script are enabled by default. You can
 enable/disable these users at any time by running:
 
-# ./setup/openchange_user --enable test
-# ./setup/openchange_user --disable test
+# ./setup/openchange_user --enable <username>
+# ./setup/openchange_user --disable <username>
 
 
 [0x5c] Setting smb.conf

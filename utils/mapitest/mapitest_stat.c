@@ -98,20 +98,29 @@ _PUBLIC_ int32_t mapitest_stat_dump(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite;
 	struct mapitest_unit	*el;
-	int32_t num_failed = 0;
+	int32_t 		num_passed_tests = 0;
+	int32_t 		num_failed_tests = 0;
 
 	mapitest_print_title(mt, MT_STAT_TITLE, MODULE_TITLE_DELIM);
 
 	for (suite = mt->mapi_suite; suite; suite = suite->next) {
 		if (suite->stat->enabled == true) {
+			num_passed_tests += suite->stat->success;
+			num_failed_tests += suite->stat->failure;
 			if (suite->stat->failure) {
 				for (el = suite->stat->failure_info; el; el = el->next) {
 					mapitest_print(mt, MT_STAT_FAILURE, suite->name, el->name);
-					++num_failed;
 				}
 			}
 		}
 	}
 
-	return num_failed;
+	mapitest_print_test_title_end(mt);
+
+	mapitest_print_title(mt, MT_SUMMARY_TITLE, MODULE_TITLE_DELIM);
+	mapitest_print(mt, "Number of passing tests: %i\n", num_passed_tests);
+	mapitest_print(mt, "Number of failing tests: %i\n", num_failed_tests);
+	mapitest_print_test_title_end(mt);
+
+	return num_failed_tests;
 }

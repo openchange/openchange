@@ -195,6 +195,8 @@ struct mt_common_tf_ctx
 #define	MT_STAT_TITLE	"[STAT] FAILURE REPORT\n"
 #define	MT_STAT_FAILURE	"* %-35s: %s\n"
 
+#define MT_SUMMARY_TITLE "[STAT] TEST SUMMARY\n"
+
 #define	MT_WHITE	   "\033[0;29m"
 #define MT_RED             "\033[1;31m"
 #define MT_GREEN           "\033[1;32m"

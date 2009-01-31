@@ -193,6 +193,7 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 int main(int argc, const char *argv[])
 {
 	enum MAPISTATUS		retval;
+	int32_t			num_tests_failed;
 	TALLOC_CTX		*mem_ctx;
 	struct mapitest		mt;
 	poptContext		pc;
@@ -297,7 +298,7 @@ int main(int argc, const char *argv[])
 	retval = MAPIInitialize(opt_profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", retval);
-		return false;
+		return -2;
 	}
 
 	mapitest_init_stream(&mt, opt_outfile);
@@ -320,7 +321,7 @@ int main(int argc, const char *argv[])
 		mapitest_run_all(&mt);
 	}
 
-	mapitest_stat_dump(&mt);
+	num_tests_failed = mapitest_stat_dump(&mt);
 
 	mapitest_cleanup_stream(&mt);
 
@@ -328,5 +329,5 @@ int main(int argc, const char *argv[])
 	MAPIUninitialize();
 	talloc_free(mt.mem_ctx);
 
-	return 0;
+	return num_tests_failed;
 }

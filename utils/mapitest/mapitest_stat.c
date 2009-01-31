@@ -91,11 +91,14 @@ _PUBLIC_ uint32_t mapitest_stat_add_result(struct mapitest_suite *suite,
    \details Dump mapitest statistics about test failures
 
    \param mt the global mapitest structure
+
+   \return the number of test steps that failed (i.e. 0 for all success)
  */
-_PUBLIC_ void mapitest_stat_dump(struct mapitest *mt)
+_PUBLIC_ int32_t mapitest_stat_dump(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite;
 	struct mapitest_unit	*el;
+	int32_t num_failed = 0;
 
 	mapitest_print_title(mt, MT_STAT_TITLE, MODULE_TITLE_DELIM);
 
@@ -104,8 +107,11 @@ _PUBLIC_ void mapitest_stat_dump(struct mapitest *mt)
 			if (suite->stat->failure) {
 				for (el = suite->stat->failure_info; el; el = el->next) {
 					mapitest_print(mt, MT_STAT_FAILURE, suite->name, el->name);
+					++num_failed;
 				}
 			}
 		}
 	}
+
+	return num_failed;
 }

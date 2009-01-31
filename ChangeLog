@@ -1,3 +1,13 @@
+2009-01-31
+    jkerihuel
+	[r1057]
+		Delete deprecated libmapi setup Perl script
+    bradh
+	[r1056]
+		Add summary report for tests.
+	[r1055]
+		Make mapitest return the number of failed tests.
+
 2009-01-29
     jkerihuel
 	[r1052]

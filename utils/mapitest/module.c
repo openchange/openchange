@@ -28,16 +28,17 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	uint32_t	ret;
 
 	ret = module_oxcstor_init(mt);
-	ret = module_oxcfold_init(mt);
-	ret = module_oxctable_init(mt);
-	ret = module_oxomsg_init(mt);
-	ret = module_oxcmsg_init(mt);
-	ret = module_oxcprpt_init(mt);
-	ret = module_oxorule_init(mt);
-	ret = module_oxcfxics_init(mt);
-	ret = module_nspi_init(mt);
-	ret = module_noserver_init(mt);
-	ret = module_errorchecks_init(mt);
+	ret += module_oxcfold_init(mt);
+	ret += module_oxctable_init(mt);
+	ret += module_oxomsg_init(mt);
+	ret += module_oxcmsg_init(mt);
+	ret += module_oxcprpt_init(mt);
+	ret += module_oxorule_init(mt);
+	ret += module_oxcfxics_init(mt);
+	ret += module_nspi_init(mt);
+	ret += module_noserver_init(mt);
+	ret += module_errorchecks_init(mt);
+	ret += module_lcid_init(mt);
 
 	return ret;
 }
@@ -332,6 +333,26 @@ _PUBLIC_ uint32_t module_errorchecks_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "ERRORCHECKS", "Error / sanity-check operations", false);
 
 	mapitest_suite_add_test(suite, "SIMPLEMAPI", "Test failure paths for simplemapi.c", mapitest_errorchecks_simplemapi_c);
+
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
+
+/**
+   \details Initialise the language code / ID test suite
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_lcid_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "LCID", "Language code / ID operations", false);
+
+	mapitest_suite_add_test(suite, "CODE2TAG", "Tests for lcid_langcode2langtag", mapitest_lcid_langcode2langtag);
 
 	mapitest_suite_register(mt, suite);
 

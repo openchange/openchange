@@ -26,7 +26,6 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
-#include "mapiproxy/libmapiproxy.h"
 #include "dcesrv_exchange_emsmdb.h"
 
 struct exchange_emsmdb_session		*emsmdb_session = NULL;

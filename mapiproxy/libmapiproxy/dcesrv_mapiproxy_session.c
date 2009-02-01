@@ -19,8 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mapiproxy/dcesrv_mapiproxy.h"
-#include "mapiproxy/libmapiproxy.h"
+#include <mapiproxy/dcesrv_mapiproxy.h>
+#include "libmapiproxy.h"
 
 /**
    \file dcesrv_mapiproxy_session.c

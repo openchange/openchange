@@ -26,7 +26,6 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
-#include "mapiproxy/libmapiproxy.h"
 #include "dcesrv_exchange_ds_rfr.h"
 
 /**

@@ -27,11 +27,7 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
-#include "mapiproxy/libmapiproxy.h"
 #include "dcesrv_exchange_nsp.h"
-#include <ldb.h>
-#include <ldb_errors.h>
-#include <util/debug.h>
 
 /**
    \details Initialize the EMSABP context and open connections to

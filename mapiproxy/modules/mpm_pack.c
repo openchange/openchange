@@ -26,7 +26,7 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
-#include "mapiproxy/libmapiproxy.h"
+#include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include <util/debug.h>
 
 #define	MPM_NAME	"mpm_pack"

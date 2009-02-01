@@ -240,7 +240,7 @@ libmapi-uninstallheader:
 
 libmapi-uninstallscript:
 	rm -f $(DESTDIR)$(datadir)/setup/profiles/oc_profiles*
-	rm -f $(DESTDIR)$(datadir)/setup/profiles
+	rm -rf $(DESTDIR)$(datadir)/setup/profiles
 
 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/IABContainer.po				\
@@ -746,7 +746,7 @@ libmapiproxy: mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 libmapiproxy-install:
 	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiproxy.$(SHLIBEXT)
-	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.h $(DESTDIR)$(includedir)/
+	$(INSTALL) -m 0644 mapiproxy/libmapiproxy/libmapiproxy.h $(DESTDIR)$(includedir)/
 	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.pc $(DESTDIR)$(libdir)/pkgconfig
 
 libmapiproxy-clean:
@@ -763,9 +763,9 @@ libmapiproxy-distclean:
 
 distclean::libmapiproxy-distclean
 
-mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/dcesrv_mapiproxy_module.po	\
-							mapiproxy/dcesrv_mapiproxy_server.po	\
-							mapiproxy/dcesrv_mapiproxy_session.po	
+mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dcesrv_mapiproxy_module.po	\
+							mapiproxy/libmapiproxy/dcesrv_mapiproxy_server.po	\
+							mapiproxy/libmapiproxy/dcesrv_mapiproxy_session.po	
 	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS)
 
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION): libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -836,7 +836,7 @@ provision-uninstall: python-uninstall
 	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema_modify.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema_ADSC.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/AD/prefixMap.txt
-	rm -f $(DESTDIR)$(datadir)/setup/AD
+	rm -rf $(DESTDIR)$(datadir)/setup/AD
 	rm -rf $(DESTDIR)$(datadir)/setup/openchangedb
 
 mapiproxy-servers:	mapiproxy/servers/exchange_nsp.$(SHLIBEXT)		\

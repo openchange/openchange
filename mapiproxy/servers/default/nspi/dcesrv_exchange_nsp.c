@@ -26,7 +26,6 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
-#include "mapiproxy/libmapiproxy.h"
 #include "dcesrv_exchange_nsp.h"
 
 struct exchange_nsp_session	*nsp_session = NULL;

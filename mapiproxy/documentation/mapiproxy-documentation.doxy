@@ -53,7 +53,8 @@
  </li>
  <li><a href="#server_mode"> 7. Server Mode </a>
    <ul>
-    <li><a href="#server_overview"> 7.1. General Overview </a></li>
+    <li><a href="#server_conf">     7.1. 5-Minute Configuration</a></li>
+    <li><a href="#server_overview"> 7.2. General Overview </a></li>
    </ul>
  </li>
  <li><a href="#faq">8. Frequently Asked Questions</a>
@@ -78,6 +79,12 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">01/02/09</td>
+	   <td style="text-align:center"><strong>0.6.1</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">Add configuration info for server mode.</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">04/01/09</td>
@@ -1149,7 +1156,77 @@ become parametric smb.conf options in the future.</li>
 
 <a name="server_mode"></a><h2>7. Server Mode</h2>
 
-<a name="server_overview"></a><h3>7.1. General Overview</h3>
+<a name="server_conf"></a><h3>7.1. 5-Minute Configuration</h3>
+
+This 5-Minute configuration will help you set up a preliminary
+OpenChange server. This configuration will be performed in three
+steps. Before running these commands, make sure you have followed
+<strong>step 1 (Provision Samba)</strong> and <strong>step 2 (Add a
+user account)</strong> in <a href="#minute">MAPIProxy 5-Minute
+configuration section</a>.
+
+<ul>
+
+<li><strong>[1] Provision OpenChange</strong>:<br/>From openchange
+root directory, run under the root account:
+\code
+# ./setup/openchange_provision
+\endcode
+
+This script will extends Samba4 Active Directory with Exchange classes
+and attributes needed to run OpenChange server. Note that this
+operation may require several minutes to complete.
+</li>
+
+<li><strong>[2] Create the Exchange user account</strong>:<br/>
+OpenChange <strong>does not create</strong> the user account the way
+Samba does. It only extends existing users from the SAM database and
+add attributes required to access OpenChange server. The underlying
+concept is that system administrators may want to give access to Samba
+shares to a specific user but do not want him to access OpenChange
+server.<strong>The user must have been created using <i>samba4 newuser
+script</i></strong> prior you run this command. Run under the root
+account:
+\code
+# ./setup/openchange_newuser --create <username>
+\endcode
+where username is the user account you want to give access to
+OpenChange server
+</li>
+
+<li><strong>[3] Configure OpenChange server options</strong>:<br/>
+OpenChange server only requires a very limited set of options to be
+added to <i>smb.conf</i> in order to run. Note that the following
+configuration also works with existing MAPIProxy configuration. This
+configuration will turn MAPIProxy into OpenChange server only and no
+remote connection to Exchange server will be made:
+
+\code
+[globals]
+        netbios name    = MAPIPROXY
+        workgroup       = OPENCHANGE
+        realm           = OPENCHANGE.LOCAL
+        server role     = domain controller
+
+	### Configuration required by OpenChange server ###
+	dcerpc endpoint servers = epmapper, mapiproxy
+	dcerpc_mapiproxy:server = true
+	dcerpc_mapiproxy:interfaces = exchange_emsmdb, exchange_nsp, exchange_ds_rfr
+	### Configuration required by OpenChange server ###
+
+[netlogon]
+        path = /usr/local/samba/var/locks/sysvol/openchange.local/scripts
+        read only = no
+
+[sysvol]
+        path = /usr/local/samba/var/locks/sysvol
+        read only = no
+\endcode
+</li>
+</ul>
+
+<br/><br/>
+<a name="server_overview"></a><h3>7.2. General Overview</h3>
 
 Although <a href="#purpose">section 1.1</a> only describes MAPIProxy
 as a proxy, recent work makes it possible to turn MAPIProxy either into a

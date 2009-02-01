@@ -35,7 +35,6 @@
 
    \param mem_ctx pointer to the memory context
    \param lp_ctx pointer to the loadparm context
-   \param ev pointer to the event context
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
@@ -83,6 +82,10 @@ _PUBLIC_ TDB_CONTEXT *emsabp_tdb_init(TALLOC_CTX *mem_ctx,
    \details Initialize a temporary (on-memory) TDB database. This
    database is used to store temporary MId used within a session
    lifetime.
+
+   \param mem_ctx pointer to the memory context
+
+   \return Allocated TDB context on success, otherwise NULL
  */
 _PUBLIC_ TDB_CONTEXT *emsabp_tdb_init_tmp(TALLOC_CTX *mem_ctx)
 {

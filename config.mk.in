@@ -30,7 +30,7 @@ sambaprefix=@sambaprefix@
 
 DSOOPT=-shared -fPIC
 CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 \
-	   -DDEFAULT_LDIF=\"$(datadir)/setup\" 
+	   -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\" 
 
 # This value should be determined by configure at some point
 SHLIBEXT=so

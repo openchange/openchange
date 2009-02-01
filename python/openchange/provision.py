@@ -110,14 +110,14 @@ def install_schemas(setup_path, names, lp, creds):
     samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
                   credentials=creds, lp=lp)
 
-    prefixmap = open(setup_path("prefixMap.txt"), 'r').read()
+    prefixmap = open(setup_path("AD/prefixMap.txt"), 'r').read()
 
     samdb.transaction_start()
 
     try:
         print "[+] Step 1: Register Exchange OIDs"
         setup_modify_ldif(samdb,
-                          setup_path("provision_schema_basedn_modify.ldif"), {
+                          setup_path("AD/provision_schema_basedn_modify.ldif"), {
                 "SCHEMADN": names.schemadn,
                 "NETBIOSNAME": names.netbiosname,
                 "DEFAULTSITE": names.sitename,
@@ -140,7 +140,7 @@ def install_schemas(setup_path, names, lp, creds):
 
     try:
         print "[+] Step 2: Add new Exchange classes and attributes to Samba schema"
-        setup_add_ldif(samdb, setup_path("oc_provision_schema.ldif"), { 
+        setup_add_ldif(samdb, setup_path("AD/oc_provision_schema.ldif"), { 
                 "SCHEMADN": names.schemadn
                 })
     except:
@@ -157,7 +157,7 @@ def install_schemas(setup_path, names, lp, creds):
 
     try:
         print "[+] Step 3: Add missing ADSC classes to Samba schema"
-        setup_add_ldif(samdb, setup_path("oc_provision_schema_ADSC.ldif"), {
+        setup_add_ldif(samdb, setup_path("AD/oc_provision_schema_ADSC.ldif"), {
                 "SCHEMADN": names.schemadn
                 })
     except:
@@ -175,7 +175,7 @@ def install_schemas(setup_path, names, lp, creds):
 
     try:
         print "[+] Step 4: Extend existing Samba classes and attributes"
-        setup_modify_ldif(samdb, setup_path("oc_provision_schema_modify.ldif"), {
+        setup_modify_ldif(samdb, setup_path("AD/oc_provision_schema_modify.ldif"), {
                 "SCHEMADN": names.schemadn
                 })
     except:
@@ -193,7 +193,7 @@ def install_schemas(setup_path, names, lp, creds):
 
     try:
         print "[+] Step 5: Exchange Samba with Exchange configuration objects"
-        setup_add_ldif(samdb, setup_path("oc_provision_configuration.ldif"), {
+        setup_add_ldif(samdb, setup_path("AD/oc_provision_configuration.ldif"), {
                 "FIRSTORG": names.firstorg,
                 "FIRSTORGDN": names.firstorgdn,
                 "CONFIGDN": names.configdn,

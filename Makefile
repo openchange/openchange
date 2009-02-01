@@ -224,8 +224,8 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 gen_ndr/property.h $(DESTDIR)$(includedir)/gen_ndr/
 
 libmapi-installscript:
-	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
-	$(INSTALL) -m 0644 setup/oc_profiles* $(DESTDIR)$(datadir)/setup/
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/profiles
+	$(INSTALL) -m 0644 setup/profiles/oc_profiles* $(DESTDIR)$(datadir)/setup/profiles/
 
 libmapi-uninstallpc:
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapi.pc
@@ -239,7 +239,8 @@ libmapi-uninstallheader:
 	rm -f $(DESTDIR)$(includedir)/gen_ndr/property.h
 
 libmapi-uninstallscript:
-	rm -f $(DESTDIR)$(datadir)/setup/oc_profiles*
+	rm -f $(DESTDIR)$(datadir)/setup/profiles/oc_profiles*
+	rm -f $(DESTDIR)$(datadir)/setup/profiles
 
 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/IABContainer.po				\
@@ -823,13 +824,17 @@ mapiproxy/modules/mpm_dummy.$(SHLIBEXT): mapiproxy/modules/mpm_dummy.po
 # mapiproxy servers
 ####################
 provision-install: python-install
-	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
-	$(INSTALL) -m 0644 setup/oc_provision* $(DESTDIR)$(datadir)/setup/
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/AD
+	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(datadir)/setup/AD/
+	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(datadir)/setup/AD/
 
 provision-uninstall: python-uninstall
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_configuration.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/oc_provision_schema_modify.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_configuration.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema_modify.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema_ADSC.ldif
+	rm -f $(DESTDIR)$(datadir)/setup/AD/prefixMap.txt
+	rm -f $(DESTDIR)$(datadir)/setup/AD
 
 mapiproxy-servers:	mapiproxy/servers/exchange_nsp.$(SHLIBEXT)		\
 			mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT)		\

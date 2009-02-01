@@ -827,6 +827,8 @@ provision-install: python-install
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/AD
 	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(datadir)/setup/AD/
 	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(datadir)/setup/AD/
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/openchangedb
+	$(INSTALL) -m 0644 setup/openchangedb/oc_provision* $(DESTDIR)$(datadir)/setup/openchangedb/
 
 provision-uninstall: python-uninstall
 	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_configuration.ldif
@@ -835,6 +837,7 @@ provision-uninstall: python-uninstall
 	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema_ADSC.ldif
 	rm -f $(DESTDIR)$(datadir)/setup/AD/prefixMap.txt
 	rm -f $(DESTDIR)$(datadir)/setup/AD
+	rm -rf $(DESTDIR)$(datadir)/setup/openchangedb
 
 mapiproxy-servers:	mapiproxy/servers/exchange_nsp.$(SHLIBEXT)		\
 			mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT)		\

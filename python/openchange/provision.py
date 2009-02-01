@@ -1,12 +1,9 @@
 #!/usr/bin/python
 
 # OpenChange provisioning
-# Copyright (C) Jelmer Vernooij <jelmer@openchange.org> 2008
+# Copyright (C) Jelmer Vernooij <jelmer@openchange.org> 2008-2009
+# Copyright (C) Julien Kerihuel <j.kerihuel@openchange.org> 2009
 #
-# Based on the original in JavaScript:
-# 
-# Copyright (C) Julien Kerihuel <jkerihuel@openchange.org> 2005 
-#   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
@@ -24,6 +21,7 @@
 from base64 import b64encode
 import os
 import samba
+import openchange.mailbox as mailbox
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.provision import setup_add_ldif, setup_modify_ldif
@@ -32,6 +30,9 @@ import ldb
 __docformat__ = 'restructuredText'
 
 DEFAULTSITE = "Default-First-Site-Name"
+FIRST_ORGANIZATION = "First Organization"
+FIRST_ORGANIZATION_UNIT = "First Organization Unit"
+
 
 class ProvisionNames:
     def __init__(self):
@@ -44,7 +45,12 @@ class ProvisionNames:
         self.domain = None
         self.hostname = None
         self.firstorg = None
+        self.firstou = None
         self.firstorgdn = None
+        # OpenChange dispatcher database specific
+        self.ocfirstorgdn = None
+        self.ocserverdn = None
+        self.ocuserdn = None
 
 def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     """Guess configuration settings to use from smb.conf.
@@ -85,14 +91,19 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     names.sitename = sitename
 
     if firstorg is None:
-        firstorg = "First Organization"
+        firstorg = FIRST_ORGANIZATION;
 
     if firstou is None:
-        firstou = "First Organization Unit"
+        firstou = FIRST_ORGANIZATION_UNIT;
 
     names.firstorg = firstorg
+    names.firstou = firstou
     names.firstorgdn = "CN=%s,CN=Microsoft Exchange,CN=Services,%s" % (firstorg, configdn)
     names.serverdn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (netbiosname, sitename, configdn)
+
+    # OpenChange dispatcher DB names
+    names.ocserverdn = "CN=%s,%s" % (names.netbiosname, names.domaindn)
+    names.ocfirstorgdn = "CN=%s,CN=%s,%s" % (firstou, firstorg, names.ocserverdn)
 
     return names
 
@@ -211,6 +222,62 @@ def install_schemas(setup_path, names, lp, creds):
     samdb.transaction_commit()
 
 
+def newmailbox(setup_path, creds, lp, username=None, firstorg=None, firstou=None):
+ 
+    names = guess_names_from_smbconf(lp, firstorg, firstou)
+
+    # Step 1. Retrieve current FID index
+    GlobalCount = mailbox.get_message_GlobalCount(setup_path, creds, lp, 
+                                                  names, names.netbiosname)
+    ReplicaID = mailbox.get_message_ReplicaID(setup_path, creds, lp,
+                                              names, names.netbiosname)
+    print "username is %s" % (username)
+    print "GlobalCount: 0x%x" % GlobalCount
+    print "ReplicaID: 0x%x" % ReplicaID
+
+    # Step 2. Check if the user already exists
+    ret = mailbox.lookup_mailbox_user(setup_path, creds, lp, names, 
+                                      names.netbiosname, username)
+    assert(ret == True)
+
+    # Step 3. Create the user object
+    mailbox.add_mailbox_user(setup_path, creds, lp, names, username=username)
+
+    # Step 4. Create system mailbox folders for this user
+    system_folders = [
+        "Non IPM Subtree",
+        "Deferred Actions",
+        "Spooler Queue",
+        "Top Information Store",
+        "Inbox",
+        "Outbox",
+        "Sent Items",
+        "Deleted Items",
+        "Common Views",
+        "Schedule",
+        "Search",
+        "Views",
+        "Shortcuts"
+        ];
+
+    SystemIdx = 1
+    for i in system_folders:
+        mailbox.add_mailbox_root_folder(setup_path, creds, lp, names, 
+                                        username=username, foldername=i, 
+                                        GlobalCount=GlobalCount, ReplicaID=ReplicaID,
+                                        SystemIdx=SystemIdx)
+        GlobalCount += 1
+        SystemIdx += 1
+
+    # Step 5. Update FolderIndex
+    mailbox.set_message_GlobalCount(setup_path, creds, lp, names, 
+                                    names.netbiosname, GlobalCount=GlobalCount)
+        
+    GlobalCount = mailbox.get_message_GlobalCount(setup_path, creds, lp, 
+                                                  names, names.netbiosname)
+    print "GlobalCount: 0x%x" % GlobalCount
+
+
 def newuser(lp, creds, username=None):
     """extend user record with OpenChange settings.
     
@@ -308,3 +375,60 @@ def provision(setup_path, lp, creds, firstorg=None, firstou=None):
 
     # Install OpenChange-specific schemas
     install_schemas(setup_path, names, lp, creds)
+
+
+def setup_openchangedb(path, setup_path, credentials, names, lp):
+    """Setup the OpenChange database.
+
+    :param path: Path to the database.
+    :param setup_path: Function that returns the path to a setup.
+    :param session_info: Session info
+    :param credentials: Credentials
+    :param lp: Loadparm context
+
+    :note: This will wipe the OpenChange Database!
+    """
+
+    session_info = system_session()
+
+    openchange_ldb = SamDB(path, session_info=session_info,
+                           credentials=credentials, lp=lp)
+
+    # Wipes the database
+    try:
+        openchange_ldb.erase()
+    except:
+        os.unlink(path)
+
+    openchange_ldb.load_ldif_file_add(setup_path("openchangedb/oc_provision_openchange_init.ldif"))
+
+    openchange_ldb = SamDB(path, session_info=session_info,
+                           credentials=credentials, lp=lp)
+
+    setup_add_ldif(openchange_ldb, setup_path("openchangedb/oc_provision_openchange.ldif"), {
+            "OCSERVERDN": names.ocserverdn,
+            "OCFIRSTORGDN": names.ocfirstorgdn,
+            "FIRSTORG": names.firstorg,
+            "FIRSTOU": names.firstou,
+            "NETBIOSNAME": names.netbiosname
+            })
+
+
+def openchangedb_provision(setup_path, lp, creds, firstorg=None, firstou=None):
+    """Create the OpenChange database.
+
+    :param setup_path: Path to the setup directory
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param firstorg: First Organization
+    :param firstou: First Organization Unit
+    """
+
+    private_dir = lp.get("private dir")
+    path = os.path.join(private_dir, "openchange.ldb")
+
+    names = guess_names_from_smbconf(lp, firstorg, firstou)
+    
+    print "Setting up openchange db"
+    setup_openchangedb(path, setup_path, creds, names, lp)
+

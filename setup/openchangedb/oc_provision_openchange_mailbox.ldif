@@ -1,0 +1,4 @@
+dn: CN=${FOLDER_IDX},${USERDN}
+cn: ${FOLDER_IDX}
+fid: ${FOLDER_IDX}
+name: ${NAME}

@@ -46,6 +46,8 @@ parser.add_option("--disable", action="store_true", metavar="DISABLE",
 		  help="Disable access to OpenChange server")
 parser.add_option("--create", action="store_true", metavar="CREATE",
 		  help="Create the OpenChange user account")
+parser.add_option("--mailbox", action="store_true", metavar="MAILBOX",
+		  help="Create the OpenChange user mailbox")
 
 opts, args = parser.parse_args()
 
@@ -56,6 +58,9 @@ if len(args) == 0:
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
+def setup_path(*args):
+	return os.path.join(os.path.dirname(__file__), *args)
+
 if opts.enable == True:
 	openchange.accountcontrol(lp, creds, username=args[0], value=0)
 
@@ -64,3 +69,6 @@ if opts.disable == True:
 
 if opts.create == True:
 	openchange.newuser(lp, creds, username=args[0])
+
+if opts.mailbox == True:
+	openchange.newmailbox(setup_path, creds, lp, username=args[0], firstorg=None, firstou=None)

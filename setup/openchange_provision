@@ -44,6 +44,7 @@ parser.add_option("--firstorg", type="string", metavar="FIRSTORG",
                   help="set OpenChange First Organization (otherwise First Organization)")
 parser.add_option("--firstou", type="string", metavar="FIRSTOU", 
                   help="set OpenChange First Organization Unit (otherwise First Organization Unit)")
+parser.add_option("--openchangedb", action="store_true", help="Initialize OpenChange dispatcher database")
 
 opts,args = parser.parse_args()
 if len(args) != 0:
@@ -56,4 +57,7 @@ creds = credopts.get_credentials(lp)
 def setup_path(*args):
     return os.path.join(os.path.dirname(__file__), *args)
 
-openchange.provision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
+if not opts.openchangedb:
+	openchange.provision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
+else:
+	openchange.openchangedb_provision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)

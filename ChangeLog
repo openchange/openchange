@@ -1,5 +1,19 @@
+2009-02-02
+    jkerihuel
+	[r1068]
+		- Add preliminary EMSMDB provider implementation for RopLogon (0xFE)
+		- Add common routines for OpenChange LDB context init and search
+		  within libmapiproxy
+		- Add libmapiserver skeleton with size calculation routine for RopLogon
+		- Change DSO linking dependencies for mapiproxy shared libraries
+		- Propagate _GNU_SOURCE change from libmapi.h to mapiproxy
 2009-02-01
     jkerihuel
+	[r1067]
+		Remove .po and .o objects within libmapiproxy subdirectory
+	[r1066]
+		Move libmapiproxy into its own directory and rebase mapiproxy headers accordingly
+		Fix make uninstall for AD and profiles directories
 	[r1064]
 		doxygen typo fix
 	[r1063]

@@ -37,7 +37,7 @@ int					num_server_modules;
 static struct mapiproxy_module_list	*server_list = NULL;
 
 static TDB_CONTEXT			*emsabp_tdb_ctx = NULL;
-
+static void				*openchange_ldb_ctx = NULL;
 
 NTSTATUS mapiproxy_server_dispatch(struct dcesrv_call_state *dce_call,
 				   TALLOC_CTX *mem_ctx, void *r,
@@ -305,4 +305,51 @@ _PUBLIC_ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *
 	talloc_free(mem_ctx);
 
 	return emsabp_tdb_ctx;
+}
+
+
+/**
+   \details Initialize an openchange LDB context available to all
+   mapiproxy instances. This LDB context points on the OpenChange
+   dispatcher database used within emsmdb default provider.
+
+   \param lp_ctx pointer to the loadparm context
+
+   \note The memory context is not free'd leading and causes a loss
+   record.
+
+   \return Allocated LDB context on success, otherwise NULL
+ */
+_PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_ctx)
+{
+	char			*ldb_path;
+	TALLOC_CTX		*mem_ctx;
+	struct tevent_context	*ev;
+	int			ret;
+
+	/* Sanity checks */
+	if (openchange_ldb_ctx) return openchange_ldb_ctx;
+
+	ev = tevent_context_init(talloc_autofree_context());
+	if (!ev) return NULL;
+
+	mem_ctx = talloc_named(NULL, 0, "openchange_ldb_init");
+	if (!mem_ctx) return NULL;
+
+	/* Step 0. Retrieve a LDB context pointer on openchange.ldb database */
+	ldb_path = talloc_asprintf(mem_ctx, "%s/%s", lp_private_dir(lp_ctx), OPENCHANGE_LDB_NAME);
+	openchange_ldb_ctx = ldb_init(mem_ctx, ev);
+	if (!openchange_ldb_ctx) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	ret = ldb_connect(openchange_ldb_ctx, ldb_path, 0, NULL);
+	talloc_free(ldb_path);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	return openchange_ldb_ctx;
 }

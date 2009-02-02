@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+datarootdir=@prefix@/share
+datadir=@datadir@
+
+Name: MAPISERVER 
+Description: Server side MAPI library
+Libs: -L${libdir} -lmapiproxy
+Libs.private: @LIBS@
+Cflags: -I${includedir}
+Requires: talloc

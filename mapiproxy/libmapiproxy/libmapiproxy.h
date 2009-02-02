@@ -27,6 +27,8 @@
 #include <talloc.h>
 #include <tevent.h>
 #include <tdb.h>
+#include <ldb.h>
+#include <ldb_errors.h>
 #include <libmapi/dlinklist.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -114,6 +116,7 @@ struct auth_serversupplied_info
  */
 #define	EMSABP_TDB_NAME		"emsabp_tdb.tdb"
 
+#define	OPENCHANGE_LDB_NAME	"openchange.ldb"
 
 #define	NTLM_AUTH_IS_OK(dce_call) \
 (dce_call->conn->auth_state.session_info->server_info->authenticated == true)
@@ -153,6 +156,7 @@ const struct mapiproxy_module *mapiproxy_server_bystatus(const char *, enum mapi
 const struct mapiproxy_module *mapiproxy_server_byname(const char *);
 
 TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *);
+void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *);
 
 /* definitions from dcesrv_mapiproxy_session. c */
 struct mpm_session *mpm_session_new(TALLOC_CTX *, struct server_id, uint32_t);
@@ -162,6 +166,11 @@ bool mpm_session_set_private_data(struct mpm_session *, void *);
 bool mpm_session_release(struct mpm_session *);
 bool mpm_session_cmp_sub(struct mpm_session *, struct server_id, uint32_t);
 bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
+
+/* definitions from openchangedb.c */
+enum MAPISTATUS openchangedb_get_SystemFolderID(void *, char *, uint32_t, uint64_t *);
+enum MAPISTATUS	openchangedb_get_MailboxGuid(void *, char *, struct GUID *);
+enum MAPISTATUS	openchangedb_get_MailboxReplica(void *, char *, uint16_t *, struct GUID *);
 
 __END_DECLS
 

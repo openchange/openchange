@@ -33,11 +33,13 @@
    Samba databases.
 
    \param lp_ctx pointer to the loadparm_context
+   \param ldb_ctx pointer to the openchange dispatcher ldb database
    
    \return Allocated emsmdbp_context pointer on success, otherwise
    NULL
  */
-_PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx)
+_PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
+					      void *ldb_ctx)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct emsmdbp_context	*emsmdbp_ctx;
@@ -59,7 +61,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx)
 
 	emsmdbp_ctx->mem_ctx = mem_ctx;
 
-	ev = tevent_context_init(mem_ctx);
+	ev = tevent_context_init(talloc_autofree_context());
 	if (!ev) {
 		talloc_free(mem_ctx);
 		return NULL;
@@ -102,7 +104,29 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx)
 		return NULL;
 	}
 
+	/* Reference global OpenChange dispatcher database pointer within current context */
+	emsmdbp_ctx->oc_ctx = ldb_ctx;
+
 	return emsmdbp_ctx;
+}
+
+
+/**
+   \details Open openchange.ldb database
+
+   \param lp_ctx pointer on the loadparm_context
+
+   \note This function is just a wrapper over
+   mapiproxy_server_openchange_ldb_init
+
+   \return Allocated LDB context on success, otherwise NULL
+ */
+_PUBLIC_ void *emsmdbp_openchange_ldb_init(struct loadparm_context *lp_ctx)
+{
+	/* Sanity checks */
+	if (!lp_ctx) return NULL;
+
+	return mapiproxy_server_openchange_ldb_init(lp_ctx);
 }
 
 

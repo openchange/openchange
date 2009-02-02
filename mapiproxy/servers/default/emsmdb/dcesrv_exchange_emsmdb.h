@@ -41,7 +41,9 @@
 #endif
 
 struct emsmdbp_context {
+	char		       	*szUserDN;
 	struct loadparm_context	*lp_ctx;
+	void			*oc_ctx;
 	void			*conf_ctx;
 	void			*users_ctx;
 	TALLOC_CTX		*mem_ctx;
@@ -56,19 +58,39 @@ struct exchange_emsmdb_session {
 };
 
 
-#define	EMSMDB_PCMSPOLLMAX	60000
-#define	EMSMDB_PCRETRY		6
-#define	EMSMDB_PCRETRYDELAY	10000
+#define	EMSMDB_PCMSPOLLMAX		60000
+#define	EMSMDB_PCRETRY			6
+#define	EMSMDB_PCRETRYDELAY		10000
+
+#define	EMSMDBP_NON_IPM_SUBTREE		0x1
+#define	EMSMDBP_DEFERRED_ACTIONS	0x2
+#define	EMSMDBP_SPOOLER_QUEUE		0x3
+#define	EMSMDBP_TOP_INFORMATION_STORE	0x4
+#define	EMSMDBP_INBOX			0x5
+#define	EMSMDBP_OUTBOX			0x6
+#define	EMSMDBP_SENT_ITEMS		0x7
+#define	EMSMDBP_DELETED_ITEMS		0x8
+#define	EMSMDBP_COMMON_VIEWS		0x9
+#define	EMSMDBP_SCHEDULE		0xA
+#define	EMSMDBP_SEARCH			0xB
+#define	EMSMDBP_VIEWS			0xC
+#define	EMSMDBP_SHORTCUTS		0xD
 
 __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);
 
 /* definitions from emsmdbp.c */
-struct emsmdbp_context	*emsmdbp_init(struct loadparm_context *);
+struct emsmdbp_context	*emsmdbp_init(struct loadparm_context *, void *);
+void			*emsmdbp_openchange_ldb_init(struct loadparm_context *);
 bool			emsmdbp_destructor(void *);
 bool			emsmdbp_verify_user(struct dcesrv_call_state *, struct emsmdbp_context *);
 bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context *, const char *, struct ldb_message **);
+
+/* definitions from oxcstor.c */
+enum MAPISTATUS		EcDoRpc_RopLogon(TALLOC_CTX *, struct emsmdbp_context *, 
+					 struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, 
+					 uint32_t *, uint16_t *);
 
 __END_DECLS
 

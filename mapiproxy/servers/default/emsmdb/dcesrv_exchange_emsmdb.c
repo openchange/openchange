@@ -29,6 +29,7 @@
 #include "dcesrv_exchange_emsmdb.h"
 
 struct exchange_emsmdb_session		*emsmdb_session = NULL;
+void					*openchange_ldb_ctx = NULL;
 
 /**
    \details exchange_emsmdb EcDoConnect (0x0) function
@@ -88,7 +89,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 1. Initialize the emsmdbp context */
-	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx);
+	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx, openchange_ldb_ctx);
 	if (!emsmdbp_ctx) {
 		smb_panic("unable to initialize emsmdbp context");
 		OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_FAILONEPROVIDER, NULL);
@@ -105,6 +106,8 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		talloc_free(emsmdbp_ctx);
 		goto failure;
 	}
+
+	emsmdbp_ctx->szUserDN = talloc_strdup(emsmdbp_ctx->mem_ctx, r->in.szUserDN);
 
 	/* Step 4. Retrieve the display name of the user */
 	r->out.szDisplayName = ldb_msg_find_attr_as_string(msg, "displayName", NULL);
@@ -227,6 +230,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle		*h;
 	struct emsmdbp_context		*emsmdbp_ctx;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	enum MAPISTATUS			retval;
+	uint32_t			handles_length;
+	uint16_t			size = 0;
+	uint32_t			i;
 
 	DEBUG(3, ("exchange_emsmdb: EcDoRpc (0x2)\n"));
 
@@ -238,6 +247,50 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
 	emsmdbp_ctx = (struct emsmdbp_context *) h->data;
+
+	mapi_request = r->in.mapi_request;
+	mapi_response = talloc_zero(mem_ctx, struct mapi_response);
+	mapi_response->handles = mapi_request->handles;
+
+	/* Step 1. FIXME: Idle requests */
+	if (mapi_request->mapi_len <= 2) {
+		return MAPI_E_SUCCESS;
+	}
+
+	/* Step 2. Process serialized MAPI requests */
+	mapi_response->mapi_repl = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REPL);
+	for (i = 0; mapi_request->mapi_req[i].opnum != 0; i++) {
+		DEBUG(0, ("MAPI Rop: 0x%.2x\n", mapi_request->mapi_req[i].opnum));
+		mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl,
+							  struct EcDoRpc_MAPI_REPL, i + 2);
+		switch (mapi_request->mapi_req[i].opnum) {
+		case op_MAPI_Logon:
+			retval = EcDoRpc_RopLogon(mem_ctx, emsmdbp_ctx,
+						  &(mapi_request->mapi_req[i]),
+						  &(mapi_response->mapi_repl[i]),
+						  mapi_response->handles, &size);
+			break;
+		default:
+			DEBUG(1, ("MAPI Rop: 0x%.2x not implemented!\n",
+				  mapi_request->mapi_req[i].opnum));
+		}
+	}
+
+	/* Step 3. Notifications/Pending calls should be processed here */
+	mapi_response->mapi_repl[i].opnum = 0;
+
+	/* Step 4. Fill mapi_response structure */
+	handles_length = mapi_request->mapi_len - mapi_request->length;
+	mapi_response->length = size + sizeof (mapi_response->length);
+	mapi_response->mapi_len = mapi_response->length + handles_length;
+
+	/* Step 5. Fill EcDoRpc reply */
+	r->out.handle = r->in.handle;
+	r->out.size = r->in.size;
+	r->out.offset = r->in.offset;
+	r->out.mapi_response = mapi_response;
+	r->out.length = talloc_zero(mem_ctx, uint16_t);
+	*r->out.length = mapi_response->mapi_len;
 
 	r->out.result = MAPI_E_SUCCESS;
 
@@ -470,6 +523,12 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 	emsmdb_session = talloc_zero(dce_ctx, struct exchange_emsmdb_session);
 	if (!emsmdb_session) return NT_STATUS_NO_MEMORY;
 	emsmdb_session->session = NULL;
+
+	/* Open read/write context on OpenChange dispatcher database */
+	openchange_ldb_ctx = emsmdbp_openchange_ldb_init(dce_ctx->lp_ctx);
+	if (!openchange_ldb_ctx) {
+		smb_panic("unable to initialize 'openchange.ldb' context");
+	}
 
 	return NT_STATUS_OK;
 }

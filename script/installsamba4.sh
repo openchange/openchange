@@ -5,6 +5,12 @@
 #
 . `dirname $0`/samba4_ver.sh
 
+if which gmake 2>/dev/null; then
+	MAKE=gmake
+else
+	MAKE=make
+fi
+
 #
 # Error check
 #
@@ -260,10 +266,10 @@ compile() {
     error_check $? "Step1"
 
     echo "Step2: Compile Samba4 (IDL)"
-    gmake idl_full
+    $MAKE idl_full
 
     echo "Step3: Compile Samba4 (Source)"
-    gmake
+   	$MAKE 
     error_check $? "Step3"
 
     cd $OLD_PWD
@@ -282,7 +288,7 @@ install() {
     cd samba4/source4
     error_check $? "Step1"
 
-    sudo gmake install
+    sudo $MAKE install
     error_check $? "Step1"
 
     cd $OLD_PWD

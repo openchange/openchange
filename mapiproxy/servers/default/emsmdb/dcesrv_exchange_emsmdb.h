@@ -41,12 +41,13 @@
 #endif
 
 struct emsmdbp_context {
-	char		       	*szUserDN;
-	struct loadparm_context	*lp_ctx;
-	void			*oc_ctx;
-	void			*conf_ctx;
-	void			*users_ctx;
-	TALLOC_CTX		*mem_ctx;
+	char				*szUserDN;
+	struct loadparm_context		*lp_ctx;
+	void				*oc_ctx;
+	void				*conf_ctx;
+	void				*users_ctx;
+	TALLOC_CTX			*mem_ctx;
+	struct mapi_handles_context	*handles_ctx;
 };
 
 
@@ -91,6 +92,8 @@ bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context 
 enum MAPISTATUS		EcDoRpc_RopLogon(TALLOC_CTX *, struct emsmdbp_context *, 
 					 struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, 
 					 uint32_t *, uint16_t *);
+enum MAPISTATUS		EcDoRpc_RopRelease(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *,
+					   uint32_t *, uint16_t *);
 
 __END_DECLS
 

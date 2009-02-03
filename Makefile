@@ -775,6 +775,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_server.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_session.po	\
 							mapiproxy/libmapiproxy/openchangedb.po			\
+							mapiproxy/libmapiproxy/mapi_handles.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS)
 

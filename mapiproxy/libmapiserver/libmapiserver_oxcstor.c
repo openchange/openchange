@@ -54,3 +54,9 @@ _PUBLIC_ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *request,
 
 	return size;
 }
+
+
+_PUBLIC_ uint16_t libmapiserver_RopRelease_size(void)
+{
+	return SIZE_NULL_TRANSACTION;
+}

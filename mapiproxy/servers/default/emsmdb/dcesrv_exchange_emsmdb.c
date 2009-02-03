@@ -95,6 +95,13 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_FAILONEPROVIDER, NULL);
 	}
 
+	/* Initialize MAPI handles context */
+	emsmdbp_ctx->handles_ctx = mapi_handles_init((TALLOC_CTX *)emsmdbp_ctx);
+	if (!emsmdbp_ctx->handles_ctx) {
+		smb_panic("unable to initialize MAPI handles context");
+		OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->handles_ctx, MAPI_E_FAILONEPROVIDER, emsmdbp_ctx);
+	}
+
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
 	if (emsmdbp_verify_user(dce_call, emsmdbp_ctx) == false) {
 		talloc_free(emsmdbp_ctx);
@@ -264,6 +271,11 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl,
 							  struct EcDoRpc_MAPI_REPL, i + 2);
 		switch (mapi_request->mapi_req[i].opnum) {
+		case op_MAPI_Release:
+			retval = EcDoRpc_RopRelease(mem_ctx, emsmdbp_ctx, 
+						    &(mapi_request->mapi_req[i]),
+						    mapi_request->handles, &size);
+			break;
 		case op_MAPI_Logon:
 			retval = EcDoRpc_RopLogon(mem_ctx, emsmdbp_ctx,
 						  &(mapi_request->mapi_req[i]),

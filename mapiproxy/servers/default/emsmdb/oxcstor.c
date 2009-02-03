@@ -145,6 +145,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 					  uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	struct mapi_handles	*rec = NULL;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] Logon (0xFE)\n"));
 
@@ -175,8 +176,28 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 
 	/* FIXME: Implement handles management API and make a call here */
 	if (!response->error_code) {
-		handles[response->handle_idx] = 0x42;
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
+		handles[response->handle_idx] = rec->handle;
 	}
 
 	return retval;
+}
+
+
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
+					    struct emsmdbp_context *emsmdbp_ctx,
+					    struct EcDoRpc_MAPI_REQ *request,
+					    uint32_t *handles,
+					    uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+
+	*size = libmapiserver_RopRelease_size();
+
+	handle = handles[request->handle_idx];
+	retval = mapi_handles_delete(emsmdbp_ctx->handles_ctx, handle);
+	OPENCHANGE_RETVAL_IF(retval && retval != MAPI_E_NOT_FOUND, retval, NULL);
+
+	return MAPI_E_SUCCESS;
 }

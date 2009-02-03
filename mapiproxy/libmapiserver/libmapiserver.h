@@ -63,10 +63,13 @@
  */
 #define	SIZE_DFLT_ROPLOGON_MAILBOX	160
 
+#define	SIZE_NULL_TRANSACTION		2
+
 __BEGIN_DECLS
 
 /* definitions from libmapiserver_oxcstor.c */
 uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopRelease_size(void);
 
 
 __END_DECLS

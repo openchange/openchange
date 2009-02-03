@@ -111,6 +111,27 @@ struct auth_serversupplied_info
 };
 
 
+struct mapi_handles {
+	uint32_t	       	handle;
+	uint32_t		parent_handle;
+	void		       	*private_data;
+	struct mapi_handles	*prev;
+	struct mapi_handles	*next;
+};
+
+
+struct mapi_handles_context {
+	TDB_CONTEXT	       	*tdb_ctx;
+	uint32_t		last_handle;
+	struct mapi_handles    	*handles;
+};
+
+
+#define	MAPI_HANDLES_RESERVED	0xFFFFFFFF
+#define	MAPI_HANDLES_ROOT	"root"
+#define	MAPI_HANDLES_NULL	"null"
+
+
 /**
    EMSABP server defines
  */
@@ -171,6 +192,13 @@ bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
 enum MAPISTATUS openchangedb_get_SystemFolderID(void *, char *, uint32_t, uint64_t *);
 enum MAPISTATUS	openchangedb_get_MailboxGuid(void *, char *, struct GUID *);
 enum MAPISTATUS	openchangedb_get_MailboxReplica(void *, char *, uint16_t *, struct GUID *);
+
+/* definitions from mapi_handles.c */
+struct mapi_handles_context *mapi_handles_init(TALLOC_CTX *);
+enum MAPISTATUS	mapi_handles_release(struct mapi_handles_context *);
+enum MAPISTATUS mapi_handles_search(struct mapi_handles_context *, uint32_t, struct mapi_handles **);
+enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *, uint32_t, struct mapi_handles **);
+enum MAPISTATUS mapi_handles_delete(struct mapi_handles_context *, uint32_t);
 
 __END_DECLS
 

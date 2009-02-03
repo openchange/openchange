@@ -27,7 +27,7 @@
 /**
    \file nspi.c
 
-   \brief NSPI stack functions
+   \brief Name Service Provider (NSPI) stack functions
  */
 
 

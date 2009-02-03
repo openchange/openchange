@@ -1,3 +1,36 @@
+2009-02-03
+    jkerihuel
+	[r1070]
+		- Add an implementation of the MAPI handles management API. The API
+		  internally uses an in-memory TDB database to keep object hierarchy
+		  and a doubled chained list to associate private data to handles.
+		
+		The API currently provides add, search and delete facilities. Note
+		that while untested, the delete operation is designed to recursively
+		delete children of the 'meant to be deleted' handle.
+		
+		Finally the API doesn't remove TDB records but mark them as free so
+		they can be reused across MAPI session and prevent from handle counter
+		growing indefinitely.
+		
+		- Add a preliminary implementation of the Release call
+		- Add Release size calculation to libmapiserver
+		- Update EMSMDB provider to use MAPI handles API
+    bradh
+	[r1075]
+		Minor api documentation fix.
+	[r1074]
+		Minor API docs fix.
+	[r1073]
+		Minor API docs fix.
+	[r1072]
+		Minor API docs tweak.
+	[r1071]
+		Token commit of tiny API docs fix.
+    jelmer
+	[r1076]
+		Look for GNU make harder (gmake on BSDs).
+
 2009-02-02
     jkerihuel
 	[r1068]

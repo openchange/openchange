@@ -243,8 +243,8 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
      transaction
    - MAPI_E_TOO_BIG: the data blob was too large to process
 
-   \note The data size intended to be written to the stream shouldn't
-   extend a maximum size each time you call WriteStream. This size
+   \note The data size intended to be written to the stream should not
+   exceed a maximum size each time you call WriteStream. This size
    depends on Exchange server version. However 0x1000 is known to be a
    reliable write size value.
 

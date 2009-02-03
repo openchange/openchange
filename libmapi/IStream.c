@@ -47,14 +47,16 @@
    * 0x3: BestAccess
    \param obj_stream the resulting stream object.
 
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error. 
-
-   \note Developers may also call GetLastError() to retrieve the last
-   MAPI error code. Possible MAPI error codes are:
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. Possible MAPI
+   error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: A problem occured obtaining the session context
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
+
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. 
 
    \sa ReadStream, WriteStream, GetLastError
  */
@@ -137,13 +139,15 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t Propert
    stream
    \param ByteRead the number of bytes read from the stream
 
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error. 
-
-   \note Developers may also call GetLastError() to retrieve the last
-   MAPI error code. Possible MAPI error codes are:
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. Possible MAPI
+   error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: A problem occured obtaining the session context
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. 
 
    \note The data size intended to be read from the stream shouldn't
    extend a maximum size each time you call ReadStream. This size

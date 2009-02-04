@@ -7,7 +7,7 @@ datadir=@datadir@
 
 Name: MAPISERVER 
 Description: Server side MAPI library
-Libs: -L${libdir} -lmapiproxy
+Libs: -L${libdir} -lmapiserver
 Libs.private: @LIBS@
 Cflags: -I${includedir}
 Requires: talloc

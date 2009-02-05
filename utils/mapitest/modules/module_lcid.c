@@ -44,7 +44,8 @@
 */ 
 _PUBLIC_ bool mapitest_lcid_langcode2langtag(struct mapitest *mt)
 {
-	char *tag;
+	const char	*tag;
+
 	tag = lcid_langcode2langtag( 0x0409 );
 	if (strcmp(tag, "en-US") != 0) {
 		mapitest_print(mt, "* %-35s: [FAILURE] - %s\n", "Step 1 - mismatch", tag);

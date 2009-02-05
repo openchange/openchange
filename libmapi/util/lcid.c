@@ -329,7 +329,7 @@ _PUBLIC_ bool lcid_valid_locale(uint32_t locale)
   Find the short language code for a given language code
 */
 
-_PUBLIC_ char* const lcid_langcode2langtag(uint32_t langcode)
+_PUBLIC_ const char *lcid_langcode2langtag(uint32_t langcode)
 {
 	int idx = 0;
 

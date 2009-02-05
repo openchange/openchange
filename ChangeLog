@@ -1,3 +1,10 @@
+2009-02-05
+    jkerihuel
+	[r1081]
+		Add Version field - avoid breaking pkg-config --list-all
+	[r1080]
+		Fix warnings (gcc 4.2.4)
+
 2009-02-04
     jkerihuel
 	[r1078]

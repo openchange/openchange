@@ -1,6 +1,30 @@
 This is the README file for OpenChange
 
-[TODO: add detail about what OpenChange is]
+ABOUT OPENCHANGE
+
+The OpenChange Project aims to provide a portable Open Source
+implementation of Microsoft Exchange Server and Exchange
+protocols. Exchange is a groupware server designed to work with
+Microsoft Outlook, and providing features such as a messaging server,
+shared calendars, contact databases, public folders, notes and tasks. 
+
+
+The OpenChange project has three goals:
+* To provide a library for interoperability with Exchange protocols, and
+to assist implementors to use this to create groupware that
+interoperates with both Exchange and other OpenChange-based software. 
+
+* To provide an alternative to Microsoft Exchange Server which uses
+native Exchange protocols and provides exactly equivalent
+functionality when viewed from Microsoft Outlook clients. 
+
+* To develop a body of knowledge about the most popular groupware
+protocols in use commercially today in order to promote development of
+a documented and unencumbered standard, with all the benefits that
+standards bring. 
+
+
+DOCUMENTATION
 
 There are two sources of documentation - text files in the doc/
 directory, and API documentation generated from the source files using

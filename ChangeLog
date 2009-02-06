@@ -1,9 +1,18 @@
+2009-02-06
+    bradh
+	[r1084]
+		Outline of README file.
+		
+		(also using this to test buildbot without changing real code)
 2009-02-05
     jkerihuel
 	[r1081]
 		Add Version field - avoid breaking pkg-config --list-all
 	[r1080]
 		Fix warnings (gcc 4.2.4)
+    jelmer
+	[r1083]
+		Use variable for package version rather than hardcoding it.
 
 2009-02-04
     jkerihuel

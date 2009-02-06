@@ -2,6 +2,14 @@ This is the README file for OpenChange
 
 [TODO: add detail about what OpenChange is]
 
-[TODO: add pointer to doc directory, and key files within it]
+There are two sources of documentation - text files in the doc/
+directory, and API documentation generated from the source files using
+doxygen. You can create the API documentation yourself (using "make
+doxygen" at the top level) or you can refer to the copy on the
+OpenChange web site at
+http://apidocs.openchange.org/overview/index.html
+
+
+[TODO: add pointers to key files within doc/ directory]
 
 [TODO: add description of each directory]

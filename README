@@ -8,7 +8,6 @@ protocols. Exchange is a groupware server designed to work with
 Microsoft Outlook, and providing features such as a messaging server,
 shared calendars, contact databases, public folders, notes and tasks. 
 
-
 The OpenChange project has three goals:
 * To provide a library for interoperability with Exchange protocols, and
 to assist implementors to use this to create groupware that
@@ -55,7 +54,11 @@ directory, described below.
 - doc/  This directory contains documentation - see description above
 (in DOCUMENTATION) for the various contents of this directory.
 
-- gen_ndr/
+- gen_ndr/  This directory contains routines for handling the Network
+Data Representation (NDR) for various Exhange RPC calls. The contents
+of this directory are generated (using Samba's pidl IDL compiler) at
+build time. The main input file is exchange.idl (see top level
+directory).
 
 - libmapi/  This directory contains the main client-side library,
 called libmapi. libmapi closely reflects the underlying protocol
@@ -78,26 +81,53 @@ you are looking for a program you can run, instead of library
 functions to write your own program, "openchangeclient" might be of
 interest.
 
-- libocpf/
+- libocpf/  This directory contains library functions for the
+OpenChange Property Files (OCPF). This allows building of mail
+messages, address book entries, appointments and similar objects from
+text files. For more information, consult the API documentation
+(either build yourself, or online at
+http://apidocs.openchange.org/libocpf/index.html) 
 
 - mapiproxy/
 
-- pymapi/
+- pymapi/  This directory contains hand-written python bindings for
+libmapi functions. There are also SWIG generated bindings - see the
+swig/ directory below.
 
-- python/
+- python/  This directory contains python scripts used to set up
+("provision") the server side. They are not required for the client
+side.
 
 - samba4/  This directory will be created during the build process if
 you call "make samba" or execute the ./script/installsamba4.sh
 script. It is used to build samba4, if required.
 
-- script/
+- script/  This directory contains a range of scripts useful for
+development or use of OpenChange. [TODO: document the scripts -
+perhaps write script/README?] 
 
-- setup/
+- setup/  This directory contains data for setting up ("provisioning")
+the server.
 
-- swig/
+- swig/  This directory contains support for SWIG
+(http://www.swig.org/) bindings generation.
 
-- testprogs/
+- testprogs/  This directory contains developer test tools
 
-- torture/
+- torture/  This directory contains modules to test openchange
+functionality using the Samba "smbtorture" framework. This is partly
+obsoleted by the standalone "mapitest" suite - see utils/mapitest/ below.
 
-- utils/
+- utils/  This directory contains the source code for a range of
+applications / utilities that can be used to interact with an exchange
+server. They include:
+ - utils/backup/  	backup and restore tools
+ - utils/exchange2ical/ converts Exchange calendar into an ICal file
+ - utils/exchange2mbox	two way conversion between Exchange mail and mbox
+ - utils/mapiprofile	set up client side profiles (login information)
+ - utils/mapitest/	test tools for libmapi functionality
+ - utils/mapitrace/
+ - utils/openchangeclient	command line client for Exchange RPC
+ - utils/openchangepfadmin	Public Folders admin tools
+ - utils/schemaIDGUID
+For more information on these tools, refer to the man(1) pages in doc/man/man1

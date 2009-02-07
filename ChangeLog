@@ -1,5 +1,35 @@
+2009-02-07
+    jkerihuel
+	[r1097]
+		Update openchangepfadmin description
+		Fix tool relying on libmapiadmin
+    bradh
+	[r1096]
+		Minor code tweak.
+		
+		Fix ticket #132.
+	[r1095]
+		Add more explanation for README
+	[r1094]
+		Reimplement RTF decompression.
+		
+		Add unit tests from MS-OXRTFCP.
+	[r1093]
+		Fix warnings in example code
+	[r1092]
+		Add description for libmapiadmin
+	[r1091]
+		Add description for libmapi / libmapi++
+	[r1090]
+		Start on the directory descriptions.
+	[r1089]
+		doc/ pointers
 2009-02-06
     bradh
+	[r1088]
+		Add overview. Extracted from API docs.
+	[r1087]
+		Additional docs.
 	[r1084]
 		Outline of README file.
 		

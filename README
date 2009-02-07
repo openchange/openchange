@@ -57,9 +57,18 @@ directory, described below.
 
 - gen_ndr/
 
-- libmapi/
+- libmapi/  This directory contains the main client-side library,
+called libmapi. libmapi closely reflects the underlying protocol
+operations (Exchange RPC) being performed between the client and the
+server. For more information, consult the API documentation (either
+build yourself, or online at
+http://apidocs.openchange.org/libmapi/index.html)
 
-- libmapi++/
+- libmapi++/  This directory contains C++ bindings for libmapi. It is
+not a replacement for libmapi, but is intended to provide easier
+access to many libmapi functions for C++ programmers. For more
+information, consult the API documentation (either build yourself, or
+online at http://apidocs.openchange.org/libmapi++/index.html)
 
 - libmapiadmin/
 

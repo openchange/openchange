@@ -78,7 +78,7 @@ for administering OpenChange or Exchange servers. For more
 information, consult the API documentation (either build yourself, or
 online at http://apidocs.openchange.org/libmapiadmin/index.html). If
 you are looking for a program you can run, instead of library
-functions to write your own program, "openchangeclient" might be of
+functions to write your own program, "openchangepfadmin" might be of
 interest.
 
 - libocpf/  This directory contains library functions for the
@@ -128,6 +128,7 @@ server. They include:
  - utils/mapitest/	test tools for libmapi functionality
  - utils/mapitrace/
  - utils/openchangeclient	command line client for Exchange RPC
- - utils/openchangepfadmin	Public Folders admin tools
+ - utils/openchangepfadmin	Public Folders admin tools and 
+				administration of Exchange users (add/del) 
  - utils/schemaIDGUID
 For more information on these tools, refer to the man(1) pages in doc/man/man1

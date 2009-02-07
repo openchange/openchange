@@ -45,4 +45,44 @@ documentation generation process.
 doc/examples/ provides programming examples for libmapi.
 
 
+STRUCTURE
 [TODO: add description of each directory]
+- bin/	This directory is created during the build process. It
+contains the binaries (executable programs) that are compiled during
+the "make" step. The source for most of these is in the utils/
+directory, described below.
+
+- doc/  This directory contains documentation - see description above
+(in DOCUMENTATION) for the various contents of this directory.
+
+- gen_ndr/
+
+- libmapi/
+
+- libmapi++/
+
+- libmapiadmin/
+
+- libocpf/
+
+- mapiproxy/
+
+- pymapi/
+
+- python/
+
+- samba4/  This directory will be created during the build process if
+you call "make samba" or execute the ./script/installsamba4.sh
+script. It is used to build samba4, if required.
+
+- script/
+
+- setup/
+
+- swig/
+
+- testprogs/
+
+- torture/
+
+- utils/

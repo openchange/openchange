@@ -29,9 +29,14 @@
    \brief Non connection oriented tests
 */
 
-#define RTF_COMPRESSED1_HEX "d60000000b0100004c5a467556c587aa03000a0072637067313235163200f80b606e0e103033334f01f702a403e3020063680ac073b065743020071302807d0a809d00002a09b009f00490617405b11a520de068098001d020352e4035302e39392e01d031923402805c760890776b0b807464340c606300500b030bb520284a757305407303706520d7129014d003702005a06d07800230390ac0792e0aa20a840a80416eac6f74132005c06c0b806517dbc24f05c074776f2e0ae31a13fa6119132003f018d0086005401b405b026000706b191a11e1001da0"
+/* From MS-OXRTFCP, Section 4.1.1 */
+#define RTF_COMPRESSED1_HEX "2d0000002b0000004c5a4675f1c5c7a703000a007263706731323542320af32068656c090020627705b06c647d0a800fa0"
+#define RTF_UNCOMPRESSED1 "{\\rtf1\\ansi\\ansicpg1252\\pard hello world}\r\n"
 
-#define RTF_UNCOMPRESSED1 "{\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033{\\fonttbl{\\f0\\fswiss\\fcharset0 Arial;}}\r\n{\\*\\generator Riched20 5.50.99.2014;}\\viewkind4\\uc1\\pard\\f0\\fs20 Just some random commentary.\\par\r\n\\par\r\nAnother line.\\par\r\n\\par\r\nOr two. \\par\r\nOr a line without a blank line.\\par\r\n}}"
+/* From MS-OXRTFCP, Section 4.1.2 */
+#define RTF_COMPRESSED2_HEX "1a0000001c0000004c5a4675e2d44b51410004205758595a0d6e7d010eb0"
+#define RTF_UNCOMPRESSED2 "{\\rtf1 WXYZWXYZWXYZWXYZWXYZ}"
+
 
 /**
      \details Test the Compressed RTF decompression routine.
@@ -48,32 +53,56 @@
 _PUBLIC_ bool mapitest_noserver_lzfu(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
-	DATA_BLOB		uncompressed;
+	DATA_BLOB		uncompressed1;
+	DATA_BLOB		uncompressed2;
 	uint8_t			compressed_hex[1024];
 	uint8_t			*compressed;
 	uint32_t		compressed_length;
 
 	compressed = talloc_array(mt->mem_ctx, uint8_t, 1024);
-	memcpy(compressed_hex, RTF_COMPRESSED1_HEX, 434);
-	compressed_length = strhex_to_str((char*)compressed, 1024, (char*)compressed_hex, 434);
-	if (compressed_length != 217) {
+
+	memcpy(compressed_hex, RTF_COMPRESSED1_HEX, 98);
+	compressed_length = strhex_to_str((char*)compressed, 1024, (char*)compressed_hex, 98);
+	if (compressed_length != 49) {
 		mapitest_print(mt, "* %-35s: uncompress RTF - Bad length\n", "LZFU");
 		return false;
 	}
 
-	retval = uncompress_rtf(mt->mem_ctx, compressed, compressed_length, &uncompressed);
-	mapitest_print_retval(mt, "uncompress_rtf");
+	retval = uncompress_rtf(mt->mem_ctx, compressed, compressed_length, &uncompressed1);
 	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print_retval(mt, "uncompress_rtf - step 1");
 		return false;
 	}	   
 
-	if (!strncmp((char*)uncompressed.data, RTF_UNCOMPRESSED1, uncompressed.length)) {
-		mapitest_print(mt, "* %-35s: PASSED\n", "uncompress_rtf");
+	if (!strncmp((char*)uncompressed1.data, RTF_UNCOMPRESSED1, uncompressed1.length)) {
+		mapitest_print(mt, "* %-35s: PASSED\n", "uncompress_rtf - step 1");
 	} else {
-		mapitest_print(mt, "* %-35s: FAILED\n", "uncompress_rtf");
+		mapitest_print(mt, "* %-35s: FAILED - %s\n", "uncompress_rtf - step 1", (char*)uncompressed1.data);
+		return false;
+	}
+
+	memcpy(compressed_hex, RTF_COMPRESSED2_HEX, 60);
+	compressed_length = strhex_to_str((char*)compressed, 1024, (char*)compressed_hex, 60);
+	if (compressed_length != 30) {
+		mapitest_print(mt, "* %-35s: uncompress RTF - Bad length\n", "LZFU");
+		return false;
+	}
+
+	retval = uncompress_rtf(mt->mem_ctx, compressed, compressed_length, &uncompressed2);
+	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print_retval(mt, "uncompress_rtf - step 2");
+		return false;
+	}	   
+
+	if (!strncmp((char*)uncompressed2.data, RTF_UNCOMPRESSED2, uncompressed2.length)) {
+		mapitest_print(mt, "* %-35s: PASSED\n", "uncompress_rtf - step 2");
+	} else {
+		mapitest_print(mt, "* %-35s: FAILED - %s\n", "uncompress_rtf - step 2", (char*)uncompressed2.data);
 		return false;
 	}
 	
+	/* TODO: add an uncompressed test here */
+
 	return true;
 }
 

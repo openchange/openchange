@@ -81,10 +81,8 @@ typedef struct _lzfuheader {
    \param obj_stream stream object with RTF stream content
    \param rtf the output blob with uncompressed content
 
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-
-   \note Developers may also call GetLastError() to retrieve the last
-   MAPI error code. Possible MAPI error codes are:
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. Possible
+   MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: obj_stream is not a valid pointer
    - MAPI_E_CORRUPT_DATA: a problem was encountered while
@@ -92,6 +90,9 @@ typedef struct _lzfuheader {
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
 
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code.
+ 
    \note rtf->data needs to be freed with MAPIFreeBuffer
 
    \sa OpenStream
@@ -134,17 +135,18 @@ _PUBLIC_ enum MAPISTATUS uncompress_rtf(TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *rtf)
 {
 	lzfuheader	lzfuhdr;
-	uint8_t		i;
-	uint8_t		*out_buf;
-	uint32_t	out_ptr = 0;
-	uint32_t	out_size = 0;
-	uint8_t		flags;
-	uint8_t		flag_mask;
 	uint8_t		dict[4096];
-	uint32_t	dict_length = 0;
+	uint32_t	out_size = 0;
+	uint32_t	in_pos = 16;
+	uint32_t	out_pos = 0;
+	uint32_t	dict_writeoffset = LZFU_INITLENGTH;
+	uint8_t		bitmask_pos;
+
+	if (in_size < sizeof(lzfuhdr)+1) {
+		OPENCHANGE_RETVAL_ERR(MAPI_E_CORRUPT_DATA, NULL);
+	}
 
 	memcpy(dict, LZFU_INITDICT, LZFU_INITLENGTH);
-	dict_length = LZFU_INITLENGTH;
 
 	memcpy(&lzfuhdr, rtfcomp, sizeof(lzfuhdr));
 	LE32_CPU(lzfuhdr.cbSize);   
@@ -152,79 +154,84 @@ _PUBLIC_ enum MAPISTATUS uncompress_rtf(TALLOC_CTX *mem_ctx,
 	LE32_CPU(lzfuhdr.dwMagic);  
 	LE32_CPU(lzfuhdr.dwCRC);
 
-	DEBUG(3, ("lzfuhdr.cbSize = %u\n", lzfuhdr.cbSize));
-	DEBUG(3, ("lzfuhdr.cbRawSize = %u\n", lzfuhdr.cbRawSize));
-	DEBUG(3, ("lzfuhdr.dwMagic = 0x%x\n", lzfuhdr.dwMagic));
-	DEBUG(3, ("lzfuhdr.dwCRC = 0x%x\n", lzfuhdr.dwCRC));
+#if 0
+	printf("lzfuhdr.cbSize = %u\n", lzfuhdr.cbSize);
+	printf("lzfuhdr.cbRawSize = %u\n", lzfuhdr.cbRawSize);
+	printf("lzfuhdr.dwMagic = 0x%x\n", lzfuhdr.dwMagic);
+	printf("lzfuhdr.dwCRC = 0x%x\n", lzfuhdr.dwCRC);
+#endif
+
+	if (lzfuhdr.cbSize != in_size - 4) {
+		printf("in_size mismatch:%u\n", in_size);
+		OPENCHANGE_RETVAL_ERR(MAPI_E_CORRUPT_DATA, NULL);
+	}
+
+	if ((lzfuhdr.dwMagic != LZFU_COMPRESSED) && (lzfuhdr.dwMagic != LZFU_UNCOMPRESSED)) {
+		printf("bad magic: 0x%x\n", lzfuhdr.dwMagic);
+		OPENCHANGE_RETVAL_ERR(MAPI_E_CORRUPT_DATA, NULL);
+	}
+
+	if (lzfuhdr.dwMagic == LZFU_UNCOMPRESSED) {
+		// TODO: handle uncompressed case
+	}
 
 	out_size = lzfuhdr.cbRawSize + LZFU_HEADERLENGTH + 4;
-	out_buf = (unsigned char *) talloc_size(mem_ctx, out_size);
-	OPENCHANGE_RETVAL_IF(!out_buf, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+	rtf->data = talloc_size(mem_ctx, out_size);
 
-	in_size = LZFU_HEADERLENGTH;
+	while ((in_pos + 1) < in_size) {
+		uint8_t control;
+		control = rtfcomp[in_pos];
+		++ in_pos;
+		// printf("control: 0x%x\n", control);
 
-	while ((in_size < (lzfuhdr.cbSize - 1)) && (out_ptr < out_size)) {
-		memcpy(&flags, &(rtfcomp[in_size]), 1);
-		in_size += 1;
-
-		flag_mask = 1;
-		while (flag_mask != 0 && (in_size < (lzfuhdr.cbSize - 1)) &&
-		       (out_ptr < (lzfuhdr.cbRawSize + LZFU_HEADERLENGTH + 4))) {
-			if (flag_mask & flags) {
-				/* read 2 bytes from input */
-				unsigned short int blkhdr;
-				unsigned short int offset;
-				unsigned short int length;
-
-				memcpy(&blkhdr, &(rtfcomp[in_size]), 2);
-				LE16_CPU(blkhdr);	
-				in_size += 2;
-
-				/* swap the upper and lower bytes of blkhdr */
-				blkhdr = (((blkhdr & 0xFF00) >> 8) +
-					  ((blkhdr & 0x00FF) << 8));
-
-				/* the offset is the first 24 bits of the 32 bit value */
-				offset = (blkhdr & 0xFFF0) >> 4;
-
-				/* the length of the dict entry are the last 8 bits */
-				length = (blkhdr & 0x000F) + 2;
-
-				/* add the value we are about to print to the dictionary */
-				for (i = 0; i < length; i++) {
-					unsigned char c1;
-					c1 = dict[(offset + i) % 4096];
-					dict[dict_length] = c1;
-					dict_length = (dict_length + 1) % 4096;
-					if (out_ptr < out_size) out_buf[out_ptr++] = c1;
+		for(bitmask_pos = 0; bitmask_pos < 8; ++bitmask_pos) {
+			if (in_pos > in_size) {
+				break;
+			}
+			if (control & ( 1 << bitmask_pos)) {
+				// it is a dictionary reference
+				uint8_t dictreflength;
+				uint16_t dictrefoffset;
+				int i;
+				dictrefoffset= (rtfcomp[in_pos] << 8) + rtfcomp[in_pos + 1];
+				in_pos += 2; /* for the two bytes we just consumed */
+				dictreflength = dictrefoffset & 0x000F; /* low 4 bits */
+				dictreflength += 2; /* stored as two less than actual length */
+				dictrefoffset &= 0xFFF0; /* high twelve bits */
+				dictrefoffset >>= 4;
+				if (dictrefoffset == dict_writeoffset) {
+					rtf->length = out_pos;
+					OPENCHANGE_RETVAL_ERR(MAPI_E_SUCCESS, NULL);
+				}
+				for (i = 0; i < dictreflength; ++i) {
+					if (out_pos > out_size ) {
+						printf(" overrun on out_pos: %u > %u\n", out_pos, out_size);
+						printf(" overrun data: %s\n", rtf->data);
+						OPENCHANGE_RETVAL_ERR(MAPI_E_CORRUPT_DATA, rtf->data);
+					}
+					char c = dict[(dictrefoffset + i) % LZFU_DICTLENGTH];
+					rtf->data[out_pos] = c;
+					dict[dict_writeoffset] = c;
+					dict_writeoffset = (dict_writeoffset + 1) % LZFU_DICTLENGTH;
+					++ out_pos;
 				}
 			} else {
-				/* uncompressed chunk (single byte) */
-				char c1 = rtfcomp[in_size];
-				in_size++;
-				dict[dict_length] = c1;
-				dict_length = (dict_length + 1) % 4096;
-				if (out_ptr < out_size) out_buf[out_ptr++] = c1;
+				// its a literal
+				if ( (out_pos > out_size) || (in_pos > in_size) ) {
+					OPENCHANGE_RETVAL_ERR(MAPI_E_CORRUPT_DATA, rtf->data);
+				}
+				char c = rtfcomp[in_pos];
+				++ in_pos;
+				rtf->data[out_pos] = c;
+				dict[dict_writeoffset] = c;
+				dict_writeoffset = (dict_writeoffset + 1) % LZFU_DICTLENGTH;
+				++ out_pos;
 			}
-			flag_mask <<= 1;
 		}
 	}
 
-	talloc_free(rtfcomp);
-	
-	/* the compressed version doesn't appear to drop the closing braces onto the doc.
-	 * we should do that
-	 */
-/* 	if (out_ptr < out_size) out_buf[out_ptr++] = '}'; */
-/* 	if (out_ptr < out_size) out_buf[out_ptr++] = '}'; */
-/* 	if (out_ptr < out_size) out_buf[out_ptr++] = '\0'; */
+	rtf->length = lzfuhdr.cbRawSize;
 
-	/* check if out_ptr matches with expected size */
-	OPENCHANGE_RETVAL_IF(out_ptr != (lzfuhdr.cbRawSize-1), MAPI_E_CORRUPT_DATA, out_buf);
+	OPENCHANGE_RETVAL_ERR(MAPI_E_SUCCESS, NULL);
 
-	rtf->data = out_buf;
-	rtf->length = out_ptr;
-
-	return MAPI_E_SUCCESS;
 }
-

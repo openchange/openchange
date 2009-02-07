@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
         struct SPropTagArray            *SPropTagArray;
         mapi_id_t                       id_inbox;
         mapi_id_t                       *fid, *mid;
-        const char                      *profname;
+        char 				*profname;
 	char				*profdb;
 	uint32_t			Numerator;
 	uint32_t			Denominator;

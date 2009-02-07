@@ -8,7 +8,7 @@ int main(int argc, char *argv[])
         enum MAPISTATUS         retval;
         struct mapi_session     *session = NULL;
         char                    *profdb;
-        const char              *profname;
+        char                    *profname;
 
         mem_ctx = talloc_named(NULL, 0, "mapi_sample1");
 

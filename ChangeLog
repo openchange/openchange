@@ -1,3 +1,34 @@
+2009-02-08
+    bradh
+	[r1106]
+		Implement support the SUMMARY language tag.
+	[r1105]
+		Initial checking of libical based exchange2ical code.
+		
+		This has a long way to go, so think of this as more of a checkpoint
+		than a release.
+		
+		See http://sourceforge.net/projects/freeassociation/ for the library, or
+		see if your distro has a package.
+	[r1104]
+		Reduce warnings.
+	[r1103]
+		Add missing parameter to API documentation.
+		
+		Resolves ticket #130.
+	[r1102]
+		API documentation fixes for OpenEmbeddedMessage()
+	[r1101]
+		Implement OpenEmbeddedMessage ROP (0x46).
+		
+		Resolves Ticket #93
+	[r1100]
+		Factor out message creation and message fill actions.
+		
+		Also remove GetLastError() where appropriate.
+	[r1099]
+		Add some API documentation.
+
 2009-02-07
     jkerihuel
 	[r1097]

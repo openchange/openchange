@@ -1375,13 +1375,10 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	struct OpenEmbeddedMessage_req	request;
 	struct OpenEmbeddedMessage_repl	*reply;
 	struct mapi_session		*session;
-	mapi_object_message_t		*message;
-	struct SPropValue		lpProp;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
-	uint32_t			i = 0;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);

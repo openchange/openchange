@@ -39,6 +39,31 @@
    \param obj_message the message to attach to
    \param obj_attach the attachment
 
+   Both objects need to exist before you call this message. obj_message
+   should be a valid message on the server. obj_attach needs to be 
+   initialised.
+
+   \code
+   enum MAPISTATUS         retval;
+   mapi_object_t           obj_message;
+   mapi_object_t           obj_attach;
+
+   ... open or create the obj_message ...
+
+   mapi_object_init(&obj_attach);
+   retval = CreateAttach(&obj_message, &obj_attach);
+   ... check the return value ...
+
+   ... use SetProps() to set the attachment up ...
+   ... perhaps OpenStream() / WriteStream() / CommitStream() on obj_attach ...
+
+   // Save the changes to the attachment and then the message
+   retval = SaveChangesAttachment(&obj_message, &obj_attach, KeepOpenReadOnly);
+   ... check the return value ...
+   retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
+   ... check the return value ...
+   \endcode
+
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
    \note Developers may also call GetLastError() to retrieve the last

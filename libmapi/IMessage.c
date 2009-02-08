@@ -1307,12 +1307,51 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
    This function essentially takes an attachment and gives you back
    a message.
 
+   \param obj_attach the attachment object
+   \param obj_embeddedmsg the embedded message
    \param ulFlags access rights on the embedded message
 
    Possible ulFlags values:
    - 0x0: read only access
    - 0x1: Read / Write access
    - 0x2: Create 
+
+   \code
+	... assume we have a message - obj_message ...
+	// Initialise the attachment object
+	mapi_object_init(&obj_attach);
+
+	// Create an attachment to the message
+	retval = CreateAttach(&obj_message, &obj_attach);
+	... check the return value ...
+
+	// use SetProps() to set the attachment up, noting the special PR_ATTACHM_METHOD property
+	attach[0].ulPropTag = PR_ATTACH_METHOD;
+	attach[0].value.l = ATTACH_EMBEDDED_MSG;
+	attach[1].ulPropTag = PR_RENDERING_POSITION;
+	attach[1].value.l = 0;
+	retval = SetProps(&obj_attach, attach, 2);
+	... check the return value ...
+
+        // Initialise the embedded message object
+	mapi_object_init(&obj_embeddedmsg);
+	retval = OpenEmbeddedMessage(&obj_attach, &obj_embeddedmsg, MAPI_CREATE);
+	... check the return value ...
+
+	// Fill in the embedded message properties, just like any other message (e.g. resulting from CreateMessage())
+
+	// Save the changes to the embedded message
+	retval = SaveChangesMessage(&obj_message, &obj_embeddedmsg, KeepOpenReadOnly);
+	... check the return value ...
+
+	// Save the changes to the attachment
+	retval = SaveChangesAttachment(&obj_message, &obj_attach, KeepOpenReadOnly);
+	... check the return value ...
+
+	// Save the changes to the original message
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
+	... check the return value ...
+   \endcode
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error. Possible
    MAPI error codes are:
@@ -1324,7 +1363,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. 
 
-   \sa MAPIInitialize, GetLastError
+   \sa CreateAttach, OpenMessage, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 					     mapi_object_t *obj_embeddedmsg,

@@ -131,7 +131,7 @@ _PUBLIC_ uint32_t module_oxomsg_init(struct mapitest *mt)
 /**
    \details Register the Message and Attachment Object Protocol test suite
 
-   \param mt pointer on the top-lvel mapitest structure
+   \param mt pointer on the top-level mapitest structure
 
    \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
  */
@@ -150,6 +150,7 @@ _PUBLIC_ uint32_t module_oxcmsg_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "SAVE-CHANGES-MESSAGE", "Save changes on message", mapitest_oxcmsg_SaveChangesMessage);
 	mapitest_suite_add_test(suite, "GET-MESSAGE-STATUS", "Get message status", mapitest_oxcmsg_GetMessageStatus);
 	mapitest_suite_add_test(suite, "SET-MESSAGE-STATUS", "Set message status", mapitest_oxcmsg_SetMessageStatus);
+	mapitest_suite_add_test(suite, "OPEN-EMBEDDED-MESSAGE", "Open a message embedded in another message", mapitest_oxcmsg_OpenEmbeddedMessage);
 
 	mapitest_suite_register(mt, suite);
 

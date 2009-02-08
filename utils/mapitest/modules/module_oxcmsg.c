@@ -4,6 +4,7 @@
    OpenChange Project - E-MAIL OBJECT PROTOCOL operations
 
    Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Brad Hards <bradh@openchange.org> 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1077,3 +1078,158 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 	return ret;
 }
 
+/**
+   \details Test the OpenEmbeddedMessage (0x46) and CreateAttach operations
+
+   This function:
+        -# Logs on the user private mailbox
+        -# Open the Inbox folder         
+        -# Create a test message          
+        -# Embed a message in the test message
+        -# Delete the test message                  
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */                                        
+_PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
+{                                                                     
+	enum MAPISTATUS		retval;                               
+	bool			ret;                                  
+	mapi_object_t		obj_store;                            
+	mapi_object_t		obj_folder;                           
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_attach;
+	mapi_object_t		obj_embeddedmsg;
+	mapi_id_t		id_msgs[1];                           
+	struct SPropValue	attach[2];
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_store);
+		return false;                          
+	}
+
+	/* Step 2. Open Outbox folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, olFolderInbox);
+	if (ret == false) {
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;
+	}
+
+	/* Step 3. Create the tmp message and save it */
+	mapi_object_init(&obj_message);
+	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, OXCMSG_SETREADFLAGS);
+	if (ret == false) return ret;
+
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadWrite);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesMessage", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;
+	}
+
+	/* Step 4. Embed another message in the message */
+	mapi_object_init(&obj_attach);
+	retval = CreateAttach(&obj_message, &obj_attach);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateAttach", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_attach);
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;
+	}
+
+	/* use SetProps() to set the attachment up */
+	attach[0].ulPropTag = PR_ATTACH_METHOD;
+	attach[0].value.l = ATTACH_EMBEDDED_MSG;
+	attach[1].ulPropTag = PR_RENDERING_POSITION;
+	attach[1].value.l = 0;
+	retval = SetProps(&obj_attach, attach, 2);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetProps", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_attach);
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;;
+	}
+
+	mapi_object_init(&obj_embeddedmsg);
+	retval = OpenEmbeddedMessage(&obj_attach, &obj_embeddedmsg, MAPI_CREATE);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenEmbeddedMessage", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_attach);
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;;
+	}
+
+	ret = mapitest_common_message_fill(mt, &obj_embeddedmsg, "[MT] EmbeddedMessage");
+	if (ret == false) {
+		mapi_object_release(&obj_attach);
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;
+	}
+
+	// Save the changes to the embedded message
+	retval = SaveChangesMessage(&obj_message, &obj_embeddedmsg, KeepOpenReadOnly);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesMessage", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_attach);
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;;
+	}
+	// Save the changes to the attachment and then the message
+	retval = SaveChangesAttachment(&obj_message, &obj_attach, KeepOpenReadOnly);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesAttachment", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_attach);
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;;
+	}
+
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesMessage", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_attach);
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;;
+	}
+
+	/* Step 5. Delete the message */
+	id_msgs[0] = mapi_object_get_id(&obj_message);
+	retval = DeleteMessage(&obj_folder, id_msgs, 1);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError());
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_attach);
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;
+	}
+
+	/* Release */
+	mapi_object_release(&obj_attach);
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return true;
+}

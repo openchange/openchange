@@ -1299,3 +1299,101 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
 
 	return MAPI_E_SUCCESS;
 }
+
+/**
+   \details Opens an embedded message object and retrieves a MAPI object that
+   can be used to get or set properties on the embedded message.
+
+   This function essentially takes an attachment and gives you back
+   a message.
+
+   \param ulFlags access rights on the embedded message
+
+   Possible ulFlags values:
+   - 0x0: read only access
+   - 0x1: Read / Write access
+   - 0x2: Create 
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. Possible
+   MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_store is undefined
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. 
+
+   \sa MAPIInitialize, GetLastError
+*/
+_PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
+					     mapi_object_t *obj_embeddedmsg,
+					     enum OpenEmbeddedMessage_OpenModeFlags ulFlags)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct OpenEmbeddedMessage_req	request;
+	struct OpenEmbeddedMessage_repl	*reply;
+	struct mapi_session		*session;
+	mapi_object_message_t		*message;
+	struct SPropValue		lpProp;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	uint32_t			i = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_attach, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj_attach);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_embeddedmsg, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "OpenEmbeddedMessage");
+
+	/* Fill the OpenEmbeddedMessage request */
+	request.handle_idx = 0x1;
+	size += sizeof(uint8_t);
+	request.CodePageId = 0xfff;
+	size += sizeof(uint16_t);
+	request.OpenModeFlags = ulFlags;
+	size += sizeof(uint8_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_OpenEmbeddedMessage;
+	mapi_req->logon_id = 0;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_OpenEmbeddedMessage = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_attach);
+	mapi_request->handles[1] = mapi_object_get_handle(obj_embeddedmsg);
+
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Set object session and handle */
+	mapi_object_set_session(obj_embeddedmsg, session);
+	mapi_object_set_handle(obj_embeddedmsg, mapi_response->handles[1]);
+
+	/* Store OpenEmbeddedMessage reply data */
+	reply = &mapi_response->mapi_repl->u.mapi_OpenEmbeddedMessage;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+

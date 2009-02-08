@@ -2595,10 +2595,16 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x46 */
+	typedef [enum8bit, flag(NDR_PAHEX)] enum {
+		MAPI_READONLY   = 0x0,
+		MAPI_READWRITE	= 0x1,
+		MAPI_CREATE	= 0x2
+	} OpenEmbeddedMessage_OpenModeFlags;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8				handle_idx;
-		uint16				CodePageId;
-		OpenMessage_OpenModeFlags	OpenModeFlags;
+		uint8					handle_idx;
+		uint16					CodePageId;
+		OpenEmbeddedMessage_OpenModeFlags	OpenModeFlags;
 	} OpenEmbeddedMessage_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {

@@ -36,6 +36,8 @@
    \param IdCount ID range length to reserve
    \param ReplGuid pointer to the GUID structure returned by the
    server
+   \param GlobalCount byte array that specifies the first allocated
+   field
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 

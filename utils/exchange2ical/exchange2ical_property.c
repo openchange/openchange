@@ -885,10 +885,11 @@ void ical_property_SUMMARY(struct exchange2ical *exchange2ical)
 		prop = icalproperty_new_summary("");
 	}
 
-	// TODO: convert exchange2ical->MessageLocaleId to an RFC1766 language tag
-
-	language = icalparameter_new_language("en-au");
-	icalproperty_add_parameter(prop, language);
+	if (exchange2ical->MessageLocaleId) {
+		const char *langtag = lcid_langcode2langtag( *(exchange2ical->MessageLocaleId) ); 
+		language = icalparameter_new_language( langtag );
+		icalproperty_add_parameter(prop, language);
+	}
 
 	icalcomponent_add_property(exchange2ical->vevent, prop);
 }

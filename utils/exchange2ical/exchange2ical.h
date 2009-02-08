@@ -25,6 +25,8 @@
 #include <libmapi/libmapi.h>
 #include <gen_ndr/ndr_property.h>
 
+#include <libical/ical.h>
+
 #include <time.h>
 
 #ifndef __BEGIN_DECLS
@@ -45,8 +47,8 @@ struct message_recipients {
 struct exchange2ical {
 	TALLOC_CTX			*mem_ctx;
 	struct message_recipients	Recipients;
-	const char			*method;
-	const char			*partstat;
+	enum icalproperty_method	method;
+	enum icalparameter_partstat	partstat;
 	uint8_t				*Recurring;
 	struct RecurrencePattern	*RecurrencePattern;
 	struct TimeZoneStruct		*TimeZoneStruct;
@@ -69,6 +71,7 @@ struct exchange2ical {
 	const char			*NonSendableBcc;
 	uint32_t			*Sequence;
 	const char			*Subject;
+	uint32_t			*MessageLocaleId;
 	uint32_t			*BusyStatus;
 	uint32_t			*IntendedBusyStatus;
 	struct Binary_r  		*GlobalObjectId;
@@ -93,12 +96,16 @@ struct exchange2ical {
 	const char			*SenderEmailAddress;
 	uint8_t				*ReminderSet;
 	uint32_t			*ReminderDelta;
+	icalcomponent			*vcalendar;
+	icalcomponent			*vevent;
+	icalcomponent			*vtimezone;
+	icalcomponent			*valarm;
 };
 
 struct	ical_method {
-	const char	*method;
-	const char	*partstat;
-	const char	*PidTagMessageClass;
+	enum icalproperty_method	method;
+	enum icalparameter_partstat	partstat;
+	const char			*PidTagMessageClass;
 };
 
 struct ical_calendartype {
@@ -107,25 +114,29 @@ struct ical_calendartype {
 };
 
 struct ical_class {
-	uint32_t	sensivity;
-	const char	*classname;
+	uint32_t		sensivity;
+	enum icalproperty_class	classtype;
 };
 
-#define	ICAL_PRODID	"-//OpenChange Project/exchange2ical MIMEDIR//EN"
-#define	ICAL_VERSION	"2.0"
+#define	OPENCHANGE_ICAL_PRODID	"-//OpenChange Project/exchange2ical MIMEDIR//EN"
+#define	OPENCHANGE_ICAL_VERSION	"2.0"
 
 __BEGIN_DECLS
 
 /* definitions from exchange2ical_utils.c */
+struct icaltimetype get_icaltime_from_FILETIME(const struct FILETIME *);
+struct icaltimetype get_icaldate_from_FILETIME(const struct FILETIME *);
 struct tm *get_tm_from_FILETIME(const struct FILETIME *);
+struct icaltimetype get_icaltimetype_from_tm(struct tm *tm);
+struct icaldatetimeperiodtype get_icaldatetimeperiodtype_from_tm(struct tm *tm);
 
 bool has_component_DAYLIGHT(struct exchange2ical *);
 
 char *get_ical_date(TALLOC_CTX *, struct SYSTEMTIME *);
-const char *get_ical_method(const char *);
-const char *get_ical_partstat(const char *);
+enum icalproperty_method get_ical_method(const char *);
+enum icalparameter_partstat get_ical_partstat(const char *);
 const char *get_ical_calendartype(uint16_t);
-const char *get_ical_class(uint32_t);
+enum icalproperty_class get_ical_class(uint32_t);
 
 /* definitions from exchange2ical_component.c */
 void ical_component_VCALENDAR(struct exchange2ical *);
@@ -151,7 +162,13 @@ void ical_property_LOCATION(struct exchange2ical *);
 void ical_property_ORGANIZER(struct exchange2ical *);
 void ical_property_PRIORITY(struct exchange2ical *);
 void ical_property_RDATE(struct exchange2ical *);
-void ical_property_RRULE(struct exchange2ical *, struct SYSTEMTIME);
+void ical_property_RRULE_Daily(struct exchange2ical *);
+void ical_property_RRULE_Weekly(struct exchange2ical *);
+void ical_property_RRULE_Monthly(struct exchange2ical *);
+void ical_property_RRULE_NthMonthly(struct exchange2ical *);
+void ical_property_RRULE_Yearly(struct exchange2ical *);
+void ical_property_RRULE_NthYearly(struct exchange2ical *);
+void ical_property_RRULE(struct exchange2ical *);
 void ical_property_RECURRENCE_ID(struct exchange2ical *);
 void ical_property_RESOURCES(struct exchange2ical *);
 void ical_property_SEQUENCE(struct exchange2ical *);

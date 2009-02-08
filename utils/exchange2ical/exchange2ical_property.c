@@ -22,6 +22,7 @@
 #include <utils/exchange2ical/exchange2ical.h>
 #include <utils/openchange-tools.h>
 
+
 struct RRULE_byday {
 	uint16_t	DayOfWeek;
 	const char	*DayName;
@@ -38,7 +39,7 @@ static const struct RRULE_byday RRULE_byday[] = {
 	{ 0x0007,	NULL }
 };
 
-
+// TODO: check this - need an example
 void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 {
 	uint32_t	i;
@@ -63,38 +64,57 @@ void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 
 		if (RecipientFlags && !(*RecipientFlags & 0x20) && !(*RecipientFlags & 0x2) &&
 		    (RecipientType && *RecipientType)) {
-			DEBUG(0, ("ATTENDEE;"));
+			icalproperty *prop;
+			icalparameter *cn;
+			icalparameter *participantType;
+
+			if (smtp) {
+				char *mailtoURL;
+				mailtoURL = talloc_strdup(exchange2ical->mem_ctx, "mailto:");
+				mailtoURL = talloc_strdup_append(mailtoURL, smtp);
+				prop = icalproperty_new_attendee(mailtoURL);
+				icalcomponent_add_property(exchange2ical->vevent, prop);
+			} else {
+				prop = icalproperty_new_attendee("invalid:nomail");
+				icalcomponent_add_property(exchange2ical->vevent, prop);
+			}
+
+			cn = icalparameter_new_cn(display_name);
+			icalproperty_add_parameter(prop, cn);
 
 			if (*RecipientType == 0x3) {
-				DEBUG(0, ("CUTYPE=RESOURCE;"));
+				icalparameter *cutype = icalparameter_new_cutype(ICAL_CUTYPE_RESOURCE);
+				icalproperty_add_parameter(prop, cutype);
 			}
 
 			switch (*RecipientType) {
 			case 0x00000002:
-				DEBUG(0, ("ROLE=OPT-PARTICIPANT;"));
+				participantType = icalparameter_new_role(ICAL_ROLE_OPTPARTICIPANT);
+				icalproperty_add_parameter(prop, participantType);
 				break;
 			case 0x00000003:
-				DEBUG(0, ("ROLE=NON-PARTICIPANT;"));
+				participantType = icalparameter_new_role(ICAL_ROLE_NONPARTICIPANT);
+				icalproperty_add_parameter(prop, participantType);
 				break;
 			}
 
+#if 0
+			// TODO: fix this
 			if (exchange2ical->partstat) {
-				DEBUG(0, ("PARTSTAT=%s:", exchange2ical->partstat));
+				icalparameter *partstat;
+				partstat = icalparameter_new_partstat(exchange2ical->partstat);
+				icalproperty_add_parameter(prop, partstat);
 			}
-
-			DEBUG(0, ("CN=%s;", display_name));
-			
+#endif
 			if (exchange2ical->ResponseRequested) {
-				DEBUG(0, ("RSVP=%s:", (*exchange2ical->ResponseRequested == true) ? "TRUE" : "FALSE"));
+				icalparameter *rsvp;
+				if (*(exchange2ical->ResponseRequested)) {
+					rsvp = icalparameter_new_rsvp(ICAL_RSVP_TRUE);
+				} else {
+					rsvp = icalparameter_new_rsvp(ICAL_RSVP_FALSE);
+				}
+				icalproperty_add_parameter(prop, rsvp);
 			}
-
-			if (smtp) {
-				DEBUG(0, ("mailto:%s", smtp));
-			} else {
-				DEBUG(0, ("invalid:nomail"));
-			}
-
-			DEBUG(0, ("\n"));
 		}
 	}
 }
@@ -103,30 +123,38 @@ void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 void ical_property_CATEGORIES(struct exchange2ical *exchange2ical)
 {
 	uint32_t	i;
+	char*		categoryList;
+	icalproperty	*prop;
 
 	/* Sanity check */
 	if (!exchange2ical->Keywords) return;
 	if (!exchange2ical->Keywords->cValues) return;
 
-	DEBUG(0, ("CATEGORIES:"));
-	for (i = 0; i < exchange2ical->Keywords->cValues - 1; i++) {
-		DEBUG(0, ("%s,", exchange2ical->Keywords->lppszA[i]));
+	categoryList = talloc_strdup(exchange2ical->mem_ctx, exchange2ical->Keywords->lppszA[0]);
+	for (i = 1; i < exchange2ical->Keywords->cValues; ++i) {
+		categoryList = talloc_strdup_append(categoryList, ",");
+		categoryList = talloc_strdup_append(categoryList, exchange2ical->Keywords->lppszA[i]);
 	}
-	DEBUG(0, ("%s\n", exchange2ical->Keywords->lppszA[i]));
+	prop = icalproperty_new_categories(categoryList); 
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
 
 void ical_property_CLASS(struct exchange2ical *exchange2ical)
 {
+	icalproperty	*prop;
+
 	/* Sanity check */
 	if (!exchange2ical->sensitivity) return;
 
-	DEBUG(0, ("CLASS: %s\n", get_ical_class(*exchange2ical->sensitivity)));
+	prop = icalproperty_new_class(get_ical_class(*exchange2ical->sensitivity));
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
 
 void ical_property_CONTACT(struct exchange2ical *exchange2ical)
 {
+	icalproperty	*prop;
 	uint32_t	i;
 
 	/* Sanity check */
@@ -134,78 +162,99 @@ void ical_property_CONTACT(struct exchange2ical *exchange2ical)
 	if (!exchange2ical->Contacts->cValues) return;
 
 	for (i = 0; i < exchange2ical->Contacts->cValues; i++) {
-		DEBUG(0, ("CONTACT:%s\n", exchange2ical->Contacts->lppszA[i]));
+		prop = icalproperty_new_contact(exchange2ical->Contacts->lppszA[i]);
+		icalcomponent_add_property(exchange2ical->vevent, prop);
 	}
 }
 
 
 void ical_property_CREATED(struct exchange2ical *exchange2ical)
 {
-	struct tm	*tm;
-	char		outstr[200];
+	icalproperty		*prop;
+	struct icaltimetype	icaltime;
 
 	/* Sanity check */
 	if (!exchange2ical->created) return;
 
-	tm = get_tm_from_FILETIME(exchange2ical->created);
-	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	DEBUG(0, ("CREATED:%s\n", outstr));
+	icaltime = get_icaltime_from_FILETIME(exchange2ical->created);
+
+	prop = icalproperty_new_created(icaltime);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
 void ical_property_DTSTART(struct exchange2ical *exchange2ical)
 {
-	struct tm	*tm;
-	char		outstr[200];
+	icalproperty		*prop;
+	icalparameter		*tzid;
+	struct icaltimetype	icaltime;
 
 	/* Sanity check */
 	if (!exchange2ical->apptStartWhole) return;
 
-	tm = get_tm_from_FILETIME(exchange2ical->apptStartWhole);
-
 	/* If this is an all-day appointment */
 	if (exchange2ical->apptSubType && (*exchange2ical->apptSubType == 0x1)) {
-		strftime(outstr, sizeof (outstr), "%Y%m%d", tm);
-		DEBUG(0, ("DTSTART;VALUE=DATE:%s\n", outstr));
+		icaltime = get_icaldate_from_FILETIME(exchange2ical->apptStartWhole);
+		prop = icalproperty_new_dtstart(icaltime);
+		icalcomponent_add_property(exchange2ical->vevent, prop);
 	} else {
 		/* If this is a recurring non all-day event */
 		if (exchange2ical->Recurring && (*exchange2ical->Recurring == 0)) {
-			strftime(outstr, sizeof (outstr), "%Y%m%dT%H%M%S", tm);
-			DEBUG(0, ("DTSTART;TZID=\"%s\":%s\n",
-				  exchange2ical->TimeZoneDesc, outstr));
+			// TODO: we should handle recurrence here...
+			icaltime = get_icaltime_from_FILETIME(exchange2ical->apptStartWhole);
+			prop = icalproperty_new_dtstart(icaltime);
+			icalcomponent_add_property(exchange2ical->vevent, prop);
+			if (exchange2ical->TimeZoneDesc) {
+				tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+				icalproperty_add_parameter(prop, tzid);
+			}
 		} else {
 			/* If this is a non recurring non all-day event */
-			strftime(outstr, sizeof (outstr), "%Y%m%dT%H%M%S", tm);
-			DEBUG(0, ("DTSTART;TZID=\"%s\":%s\n",
-				  exchange2ical->TimeZoneDesc, outstr));
+			icaltime = get_icaltime_from_FILETIME(exchange2ical->apptStartWhole);
+			prop = icalproperty_new_dtstart(icaltime);
+			icalcomponent_add_property(exchange2ical->vevent, prop);
+			if (exchange2ical->TimeZoneDesc) {
+				tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+				icalproperty_add_parameter(prop, tzid);
+			}
 		}
 	}
 }
 
+
 void ical_property_DTEND(struct exchange2ical *exchange2ical)
 {
-	struct tm	*tm;
-	char		outstr[200];
+	icalproperty		*prop;
+	icalparameter		*tzid;
+	struct icaltimetype	icaltime;
 
 	/* Sanity check */
 	if (!exchange2ical->apptEndWhole) return;
 
-	tm = get_tm_from_FILETIME(exchange2ical->apptEndWhole);
-
 	/* If this is an all-day appointment */
 	if (exchange2ical->apptSubType && (*exchange2ical->apptSubType == 0x1)) {
-		strftime(outstr, sizeof (outstr), "%Y%m%d", tm);
-		DEBUG(0, ("DTEND;VALUE=DATE:%s\n", outstr));
+		icaltime = get_icaldate_from_FILETIME(exchange2ical->apptEndWhole);
+		prop = icalproperty_new_dtend(icaltime);
+		icalcomponent_add_property(exchange2ical->vevent, prop);
 	} else {
 		/* If this is a recurring non all-day event */
-		if (exchange2ical->Recurring && (*exchange2ical->Recurring == 0x1)) {
-			strftime(outstr, sizeof (outstr), "%Y%m%dT%H%M%S", tm);
-			DEBUG(0, ("DTEND;TZID=\"%s\":%s\n",
-				  exchange2ical->TimeZoneDesc, outstr));
+		if (exchange2ical->Recurring && (*exchange2ical->Recurring == 0)) {
+			// TODO: we should handle recurrence here...
+			icaltime = get_icaltime_from_FILETIME(exchange2ical->apptEndWhole);
+			prop = icalproperty_new_dtend(icaltime);
+			icalcomponent_add_property(exchange2ical->vevent, prop);
+			if (exchange2ical->TimeZoneDesc) {
+				tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+				icalproperty_add_parameter(prop, tzid);
+			}
 		} else {
 			/* If this is a non recurring non all-day event */
-			strftime(outstr, sizeof (outstr), "%Y%m%dT%H%M%S", tm);
-			DEBUG(0, ("DTEND;TZID=\"%s\":%s\n",
-				  exchange2ical->TimeZoneDesc, outstr));
+			icaltime = get_icaltime_from_FILETIME(exchange2ical->apptEndWhole);
+			prop = icalproperty_new_dtend(icaltime);
+			icalcomponent_add_property(exchange2ical->vevent, prop);
+			if (exchange2ical->TimeZoneDesc) {
+				tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+				icalproperty_add_parameter(prop, tzid);
+			}
 		}
 	}
 }
@@ -213,28 +262,32 @@ void ical_property_DTEND(struct exchange2ical *exchange2ical)
 
 void ical_property_DTSTAMP(struct exchange2ical *exchange2ical)
 {
-	struct tm	*tm;
-	char		outstr[200];
+	icalproperty		*prop;
+	struct icaltimetype	icaltime;
 
 	/* Sanity check */
 	if (!exchange2ical->OwnerCriticalChange) return;
 
-	/* FIXME: if the property doesn't exist, we should use system
+	/* TODO: if the property doesn't exist, we should use system
 	 * time instead 
 	 */
 
-	tm = get_tm_from_FILETIME(exchange2ical->OwnerCriticalChange);
-	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	DEBUG(0, ("DTSTAMP:%s\n", outstr));
+	icaltime = get_icaltime_from_FILETIME(exchange2ical->OwnerCriticalChange);
+
+	prop = icalproperty_new_dtstamp(icaltime);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
 
 void ical_property_DESCRIPTION(struct exchange2ical *exchange2ical)
 {
-	if (exchange2ical->method && !strcmp(exchange2ical->method, "REPLY")) return;
+	icalproperty	*prop;
+
+	if (exchange2ical->method == ICAL_METHOD_REPLY) return;
 	if (!exchange2ical->body) return;
 
-	DEBUG(0, ("DESCRIPTION: %s\n", exchange2ical->body));
+	prop = icalproperty_new_description(exchange2ical->body);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
 
@@ -244,7 +297,7 @@ void ical_property_EXDATE(struct exchange2ical *exchange2ical)
 	NTTIME		time;
 	struct timeval	t;
 	struct tm	*tm;
-	char		outstr[200];
+	icalproperty	*prop;
 
 	/* Sanity check */
 	if (exchange2ical->Recurring && (*exchange2ical->Recurring == 0x0)) return;
@@ -268,8 +321,12 @@ void ical_property_EXDATE(struct exchange2ical *exchange2ical)
 			nttime_to_timeval(&t, time);
 			tm = localtime(&t.tv_sec);
 
-			strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%S", tm);
-			DEBUG(0, ("EXDATE;TZID=\"%s\":%s\n", exchange2ical->TimeZoneDesc, outstr));
+			prop = icalproperty_new_exdate(get_icaltimetype_from_tm(tm));
+			icalcomponent_add_property(exchange2ical->vevent, prop);
+			if (exchange2ical->TimeZoneDesc) {
+				icalparameter *tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+				icalproperty_add_parameter(prop, tzid);
+			}
 		}
 	}
 }
@@ -277,28 +334,31 @@ void ical_property_EXDATE(struct exchange2ical *exchange2ical)
 
 void ical_property_LAST_MODIFIED(struct exchange2ical *exchange2ical)
 {
-	struct tm	*tm;
-	char		outstr[200];
+	icalproperty		*prop;
+	struct icaltimetype	icaltime;
 
 	/* Sanity check */
 	if (!exchange2ical->LastModified) return;
 
-	/* FIXME: if the property doesn't exist, we should use system
+	/* TODO: if the property doesn't exist, we should use system
 	 * time instead 
 	 */
 
-	tm = get_tm_from_FILETIME(exchange2ical->LastModified);
-	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	DEBUG(0, ("LAST-MODIFIED:%s\n", outstr));	
+	icaltime = get_icaltime_from_FILETIME(exchange2ical->LastModified);
+
+	prop = icalproperty_new_lastmodified(icaltime);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
 
 void ical_property_LOCATION(struct exchange2ical *exchange2ical)
 {
+	icalproperty *prop;
 	/* Sanity check */
 	if (!exchange2ical->Location) return;
 
-	DEBUG(0, ("LOCATION:%s\n", exchange2ical->Location));
+	prop = icalproperty_new_location(exchange2ical->Location);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
 
@@ -326,13 +386,21 @@ void ical_property_ORGANIZER(struct exchange2ical *exchange2ical)
 
 		if (RecipientFlags && !(*RecipientFlags & 0x20) &&
 		    ((*RecipientFlags & 0x2) || (RecipientType && !*RecipientType))) {
+			icalproperty *prop;
+			icalparameter *cn;
 			if (smtp) {
-				DEBUG(0, ("ORGANIZER;CN=\"%s\":mailto:%s\n", display_name, smtp));
-				break;
+				char *mailtoURL;
+				mailtoURL = talloc_strdup(exchange2ical->mem_ctx, "mailto:");
+				mailtoURL = talloc_strdup_append(mailtoURL, smtp);
+				prop = icalproperty_new_organizer(mailtoURL);
+				icalcomponent_add_property(exchange2ical->vevent, prop);
+				talloc_free(mailtoURL);
 			} else {
-				DEBUG(0, ("ORGANIZER;CN=\"%s\":invalid:nomail\n", display_name));
-				break;
+				prop = icalproperty_new_organizer("invalid:nomail");
+				icalcomponent_add_property(exchange2ical->vevent, prop);
 			}
+			cn = icalparameter_new_cn(display_name);
+			icalproperty_add_parameter(prop, cn);
 		}
 	}
 }
@@ -340,20 +408,24 @@ void ical_property_ORGANIZER(struct exchange2ical *exchange2ical)
 
 void ical_property_PRIORITY(struct exchange2ical *exchange2ical)
 {
+	icalproperty *prop;
 	/* Sanity check */
 	if (!exchange2ical->Importance) return;
 
 	switch (*exchange2ical->Importance) {
 	case 0x00000000:
-		DEBUG(0, ("PRIORITY:9\n"));
+		prop = icalproperty_new_priority(9);
 		break;
 	case 0x00000001:
-		DEBUG(0, ("PRIORITY:5\n"));
+		prop = icalproperty_new_priority(5);
 		break;
 	case 0x00000002:
-		DEBUG(0, ("PRIORITY:1\n"));
+		prop = icalproperty_new_priority(1);
 		break;
+	default:
+		prop = icalproperty_new_priority(5);
 	}
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
 
@@ -363,7 +435,7 @@ void ical_property_RDATE(struct exchange2ical *exchange2ical)
 	NTTIME		time;
 	struct timeval	t;
 	struct tm	*tm;
-	char		outstr[200];
+	icalproperty	*prop;
 
 	/* Sanity check */
 	if (exchange2ical->Recurring && (*exchange2ical->Recurring == 0x0)) return;
@@ -387,13 +459,18 @@ void ical_property_RDATE(struct exchange2ical *exchange2ical)
 			nttime_to_timeval(&t, time);
 			tm = localtime(&t.tv_sec);
 
-			strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%S", tm);
-			DEBUG(0, ("RDATE;TZID=\"%s\":%s\n", exchange2ical->TimeZoneDesc, outstr));
+			prop = icalproperty_new_rdate(get_icaldatetimeperiodtype_from_tm(tm));
+			icalcomponent_add_property(exchange2ical->vevent, prop);
+			if (exchange2ical->TimeZoneDesc) {
+				icalparameter *tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+				icalproperty_add_parameter(prop, tzid);
+			}
 		}
 	}	
 }
 
 
+#if 0
 static const char *get_RRULE_byday(uint16_t DayOfWeek)
 {
 	uint16_t	i;
@@ -406,21 +483,358 @@ static const char *get_RRULE_byday(uint16_t DayOfWeek)
 	
 	return NULL;
 }
+#endif
 
-void ical_property_RRULE(struct exchange2ical *exchange2ical, struct SYSTEMTIME date)
+
+void ical_property_RRULE_Daily(struct exchange2ical *exchange2ical)
 {
-	/* Sanity check */
-	if (has_component_DAYLIGHT(exchange2ical) == false) return;
+	struct icalrecurrencetype recurrence;
+	icalproperty *prop;
+	struct RecurrencePattern *pat = exchange2ical->RecurrencePattern;
 
-	if (exchange2ical->TimeZoneStruct->stStandardDate.wDayOfWeek) {
-		DEBUG(0, ("RRULE:FREQ=YEARLY;BYDAY=%d%s;BYMONTH=%d\n",
-			  date.wDay, get_RRULE_byday(date.wDayOfWeek), date.wMonth));
-	} else {
-		DEBUG(0, ("RRULE:FREQ=YEARLY;BYMONTHDAY=%d;BYMONTH=%d\n",
-			  date.wDay, date.wMonth));
+	icalrecurrencetype_clear(&recurrence);
+	recurrence.freq = ICAL_DAILY_RECURRENCE;
+	recurrence.interval = (pat->Period / 1440);
+
+	// TODO: need answers from Microsoft on what is happening here
+	printf("endType:0x%x\n", pat->EndType);
+	printf("seeing %i occurences\n", pat->OccurrenceCount);
+	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
+		printf("seeing %i occurences\n", pat->OccurrenceCount);
+		recurrence.count = pat->OccurrenceCount;
+	} else if (pat->EndType == END_AFTER_DATE) {
+	      // TODO: set recurrence.until = pat->EndDate;
 	}
+
+	prop = icalproperty_new_rrule(recurrence);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
+
+void ical_property_RRULE_Weekly(struct exchange2ical *exchange2ical)
+{
+	struct icalrecurrencetype recurrence;
+	icalproperty *prop;
+	struct RecurrencePattern *pat = exchange2ical->RecurrencePattern;
+	uint32_t rdfDaysBitmask = pat->PatternTypeSpecific.WeekRecurrencePattern;
+	short idx = 0;
+
+	icalrecurrencetype_clear(&recurrence);
+	recurrence.freq = ICAL_WEEKLY_RECURRENCE;
+
+	if (rdfDaysBitmask & Su) {
+		recurrence.by_day[idx] = ICAL_SUNDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & M) {
+		recurrence.by_day[idx] = ICAL_MONDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & Tu) {
+		recurrence.by_day[idx] = ICAL_TUESDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & W) {
+		recurrence.by_day[idx] = ICAL_WEDNESDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & Th) {
+		recurrence.by_day[idx] = ICAL_THURSDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & F) {
+		recurrence.by_day[idx] = ICAL_FRIDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & Sa) {
+		recurrence.by_day[idx] = ICAL_FRIDAY_WEEKDAY;
+		++idx;
+	}
+	recurrence.by_day[idx] = ICAL_RECURRENCE_ARRAY_MAX;
+
+	recurrence.count = pat->OccurrenceCount;
+
+	// TODO: need answers from Microsoft on what is happening here
+	printf("endType:0x%x\n", pat->EndType);
+	printf("seeing %i occurences\n", pat->OccurrenceCount);
+	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
+		printf("seeing %i occurences\n", pat->OccurrenceCount);
+		recurrence.count = pat->OccurrenceCount;
+	} else if (pat->EndType == END_AFTER_DATE) {
+	      // TODO: set recurrence.until = pat->EndDate;
+	}
+
+	prop = icalproperty_new_rrule(recurrence);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
+}
+
+
+void ical_property_RRULE_Monthly(struct exchange2ical *exchange2ical)
+{
+	struct icalrecurrencetype recurrence;
+	icalproperty *prop;
+	struct RecurrencePattern *pat = exchange2ical->RecurrencePattern;
+	uint32_t day = pat->PatternTypeSpecific.Day;
+
+	icalrecurrencetype_clear(&recurrence);
+	recurrence.freq = ICAL_MONTHLY_RECURRENCE;
+	recurrence.interval = pat->Period;
+
+	if (day == 0x0000001F) {
+		recurrence.by_month_day[0] = -1;
+	} else {
+		recurrence.by_month_day[0] = day;
+	}
+	recurrence.by_month_day[1] = ICAL_RECURRENCE_ARRAY_MAX;
+
+	recurrence.count = pat->OccurrenceCount;
+
+	// TODO: need answers from Microsoft on what is happening here
+	printf("endType:0x%x\n", pat->EndType);
+	printf("seeing %i occurences\n", pat->OccurrenceCount);
+	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
+		printf("seeing %i occurences\n", pat->OccurrenceCount);
+		recurrence.count = pat->OccurrenceCount;
+	} else if (pat->EndType == END_AFTER_DATE) {
+	      // TODO: set recurrence.until = pat->EndDate;
+	}
+
+	prop = icalproperty_new_rrule(recurrence);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
+}
+
+
+void ical_property_RRULE_NthMonthly(struct exchange2ical *exchange2ical)
+{
+	struct icalrecurrencetype recurrence;
+	icalproperty *prop;
+	struct RecurrencePattern *pat = exchange2ical->RecurrencePattern;
+	uint32_t rdfDaysBitmask = pat->PatternTypeSpecific.MonthRecurrencePattern.WeekRecurrencePattern;
+	short idx = 0;
+	enum RecurrenceN setpos = pat->PatternTypeSpecific.MonthRecurrencePattern.N;
+
+	icalrecurrencetype_clear(&recurrence);
+	recurrence.freq = ICAL_MONTHLY_RECURRENCE;
+	recurrence.interval = pat->Period;
+
+	if (rdfDaysBitmask & Su) {
+		recurrence.by_day[idx] = ICAL_SUNDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & M) {
+		recurrence.by_day[idx] = ICAL_MONDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & Tu) {
+		recurrence.by_day[idx] = ICAL_TUESDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & W) {
+		recurrence.by_day[idx] = ICAL_WEDNESDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & Th) {
+		recurrence.by_day[idx] = ICAL_THURSDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & F) {
+		recurrence.by_day[idx] = ICAL_FRIDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & Sa) {
+		recurrence.by_day[idx] = ICAL_FRIDAY_WEEKDAY;
+		++idx;
+	}
+	recurrence.by_day[idx] = ICAL_RECURRENCE_ARRAY_MAX;
+
+	if (setpos == RecurrenceN_First) {
+		recurrence.by_set_pos[0] = 1;
+		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
+	} else if (setpos == RecurrenceN_Second) {
+		recurrence.by_set_pos[0] = 2;
+		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
+	} else if (setpos == RecurrenceN_Third) {
+		recurrence.by_set_pos[0] = 3;
+		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
+	} else if (setpos == RecurrenceN_Fourth) {
+		recurrence.by_set_pos[0] = 4;
+		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
+	} else if (setpos == RecurrenceN_Last) {
+		recurrence.by_set_pos[0] = -1;
+		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
+	}
+
+	recurrence.count = pat->OccurrenceCount;
+
+	// TODO: need answers from Microsoft on what is happening here
+	printf("endType:0x%x\n", pat->EndType);
+	printf("seeing %i occurences\n", pat->OccurrenceCount);
+	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
+		printf("seeing %i occurences\n", pat->OccurrenceCount);
+		recurrence.count = pat->OccurrenceCount;
+	} else if (pat->EndType == END_AFTER_DATE) {
+	      // TODO: set recurrence.until = pat->EndDate;
+	}
+
+	prop = icalproperty_new_rrule(recurrence);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
+}
+
+
+void ical_property_RRULE_Yearly(struct exchange2ical *exchange2ical)
+{
+	struct icalrecurrencetype recurrence;
+	icalproperty *prop;
+	struct RecurrencePattern *pat = exchange2ical->RecurrencePattern;
+	uint32_t day = pat->PatternTypeSpecific.Day;
+	struct icaltimetype icaltime;
+
+	icalrecurrencetype_clear(&recurrence);
+	recurrence.freq = ICAL_YEARLY_RECURRENCE;
+	recurrence.interval = (pat->Period / 12);
+
+	if (day == 0x0000001F) {
+		recurrence.by_month_day[0] = -1;
+	} else {
+		recurrence.by_month_day[0] = day;
+	}
+	recurrence.by_month_day[1] = ICAL_RECURRENCE_ARRAY_MAX;
+
+	icaltime = get_icaltime_from_FILETIME(exchange2ical->apptStartWhole);
+	recurrence.by_month[0] = icaltime.month;
+	recurrence.by_month[1] = ICAL_RECURRENCE_ARRAY_MAX;
+
+	recurrence.count = pat->OccurrenceCount;
+
+	// TODO: need answers from Microsoft on what is happening here
+	printf("endType:0x%x\n", pat->EndType);
+	printf("seeing %i occurences\n", pat->OccurrenceCount);
+	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
+		printf("seeing %i occurences\n", pat->OccurrenceCount);
+		recurrence.count = pat->OccurrenceCount;
+	} else if (pat->EndType == END_AFTER_DATE) {
+	      // TODO: set recurrence.until = pat->EndDate;
+	}
+
+	prop = icalproperty_new_rrule(recurrence);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
+}
+
+void ical_property_RRULE_NthYearly(struct exchange2ical *exchange2ical)
+{
+	struct icalrecurrencetype recurrence;
+	icalproperty *prop;
+	struct RecurrencePattern *pat = exchange2ical->RecurrencePattern;
+	uint32_t rdfDaysBitmask = pat->PatternTypeSpecific.MonthRecurrencePattern.WeekRecurrencePattern;
+	short idx = 0;
+	enum RecurrenceN setpos = pat->PatternTypeSpecific.MonthRecurrencePattern.N;
+
+	struct icaltimetype icaltime;
+
+	icalrecurrencetype_clear(&recurrence);
+	recurrence.freq = ICAL_YEARLY_RECURRENCE;
+	recurrence.interval = (pat->Period / 12);
+
+	if (rdfDaysBitmask & Su) {
+		recurrence.by_day[idx] = ICAL_SUNDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & M) {
+		recurrence.by_day[idx] = ICAL_MONDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & Tu) {
+		recurrence.by_day[idx] = ICAL_TUESDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & W) {
+		recurrence.by_day[idx] = ICAL_WEDNESDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & Th) {
+		recurrence.by_day[idx] = ICAL_THURSDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & F) {
+		recurrence.by_day[idx] = ICAL_FRIDAY_WEEKDAY;
+		++idx;
+	}
+	if (rdfDaysBitmask & Sa) {
+		recurrence.by_day[idx] = ICAL_FRIDAY_WEEKDAY;
+		++idx;
+	}
+	recurrence.by_day[idx] = ICAL_RECURRENCE_ARRAY_MAX;
+
+	if (setpos == RecurrenceN_First) {
+		recurrence.by_set_pos[0] = 1;
+		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
+	} else if (setpos == RecurrenceN_Second) {
+		recurrence.by_set_pos[0] = 2;
+		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
+	} else if (setpos == RecurrenceN_Third) {
+		recurrence.by_set_pos[0] = 3;
+		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
+	} else if (setpos == RecurrenceN_Fourth) {
+		recurrence.by_set_pos[0] = 4;
+		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
+	} else if (setpos == RecurrenceN_Last) {
+		recurrence.by_set_pos[0] = -1;
+		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
+	}
+
+	icaltime = get_icaltime_from_FILETIME(exchange2ical->apptStartWhole);
+	recurrence.by_month[0] = icaltime.month;
+	recurrence.by_month[1] = ICAL_RECURRENCE_ARRAY_MAX;
+
+	// TODO: need answers from Microsoft on what is happening here
+	printf("endType:0x%x\n", pat->EndType);
+	printf("seeing %i occurences\n", pat->OccurrenceCount);
+	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
+		printf("seeing %i occurences\n", pat->OccurrenceCount);
+		recurrence.count = pat->OccurrenceCount;
+	} else if (pat->EndType == END_AFTER_DATE) {
+	      // TODO: set recurrence.until = pat->EndDate;
+	}
+
+	prop = icalproperty_new_rrule(recurrence);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
+}
+
+
+void ical_property_RRULE(struct exchange2ical *exchange2ical)
+{
+	struct RecurrencePattern *pat;
+
+	/* Sanity check */
+	if (!(exchange2ical->RecurrencePattern)) return;
+
+	pat = exchange2ical->RecurrencePattern;
+
+	switch(pat->PatternType) {
+	case PatternType_Day:
+		ical_property_RRULE_Daily(exchange2ical);
+		break;
+	case PatternType_Week:
+		ical_property_RRULE_Weekly(exchange2ical);
+		break;
+	case PatternType_Month:
+		if ((pat->Period % 12 ) == 0) {
+			ical_property_RRULE_Yearly(exchange2ical);
+		} else {
+			ical_property_RRULE_Monthly(exchange2ical);
+		}
+		break;
+	case PatternType_MonthNth:
+		if ((pat->Period % 12 ) == 0) {
+			ical_property_RRULE_NthYearly(exchange2ical);
+		} else {
+			ical_property_RRULE_NthMonthly(exchange2ical);
+		}
+		break;
+	default:
+		printf("RRULE pattern type not implemented yet!:0x%x\n", pat->PatternType);
+	}
+}
 
 
 void ical_property_RECURRENCE_ID(struct exchange2ical *exchange2ical)
@@ -428,67 +842,95 @@ void ical_property_RECURRENCE_ID(struct exchange2ical *exchange2ical)
 	/* Sanity check */
 	if (!exchange2ical->ExceptionReplaceTime) return;
 
-	/* FIXME: I'm too lazy to implement this today */
+	/* TODO: I'm too lazy to implement this today */
 	DEBUG(0, ("RECURRENCE-ID:\n"));
 }
 
 
 void ical_property_RESOURCES(struct exchange2ical *exchange2ical)
 {
-	char	*NonSendableBcc = NULL;
+	char		*NonSendableBcc = NULL;
+	icalproperty 	*prop;
 
 	/* Sanity check */
 	if (!exchange2ical->NonSendableBcc) return;
 
 	NonSendableBcc = talloc_strdup(exchange2ical->mem_ctx, exchange2ical->NonSendableBcc);
 	all_string_sub(NonSendableBcc, ";", ",", 0);
-	DEBUG(0, ("RESOURCES:%s\n", NonSendableBcc));
+	prop = icalproperty_new_resources(NonSendableBcc);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 	talloc_free(NonSendableBcc);
 }
 
 
 void ical_property_SEQUENCE(struct exchange2ical *exchange2ical)
 {
+	icalproperty *prop;
 	if (!exchange2ical->Sequence) {
-		DEBUG(0, ("SEQUENCE:0\n"));
+		prop = icalproperty_new_sequence(0);
 	} else {
-		DEBUG(0, ("SEQUENCE:%d\n", *exchange2ical->Sequence));
+		prop = icalproperty_new_sequence(*(exchange2ical->Sequence));
 	}
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
-
 
 void ical_property_SUMMARY(struct exchange2ical *exchange2ical)
 {
-	DEBUG(0, ("SUMMARY:%s\n", exchange2ical->Subject ? exchange2ical->Subject : ""));
+	icalproperty *prop;
+	icalparameter *language;
+
+	if (exchange2ical->Subject) {
+		prop = icalproperty_new_summary(exchange2ical->Subject);
+	} else {
+		prop = icalproperty_new_summary("");
+	}
+
+	// TODO: convert exchange2ical->MessageLocaleId to an RFC1766 language tag
+
+	language = icalparameter_new_language("en-au");
+	icalproperty_add_parameter(prop, language);
+
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
 
 void ical_property_TRANSP(struct exchange2ical *exchange2ical)
 {
+	icalproperty *prop;
+
 	/* Sanity check */
 	if (!exchange2ical->BusyStatus) return;
 
 	switch (*exchange2ical->BusyStatus) {
 	case 0x00000000:
-		DEBUG(0, ("TRANSP:TRANSPARENT\n"));
+		prop = icalproperty_new_transp(ICAL_TRANSP_TRANSPARENT);
 		break;
 	case 0x00000001:
 	case 0x00000002:
 	case 0x00000003:
-		DEBUG(0, ("TRANSP:OPAQUE\n"));
+		prop = icalproperty_new_transp(ICAL_TRANSP_OPAQUE);
 		break;
+	default:
+		prop = icalproperty_new_transp(ICAL_TRANSP_NONE);
 	}
+	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
 
 void ical_property_TRIGGER(struct exchange2ical *exchange2ical)
 {
+	struct icaltriggertype duration;
+	icalproperty *prop;
 	if (!exchange2ical->ReminderDelta) return;
 
 	if (*exchange2ical->ReminderDelta == 0x5AE980E1) {
-		DEBUG(0, ("TRIGGER:-PT15M\n"));
+		duration = icaltriggertype_from_int(-15 * 60);
+		prop = icalproperty_new_trigger(duration);
+		icalcomponent_add_property(exchange2ical->valarm, prop);
 	} else {
-		DEBUG(0, ("TRIGGER:-PT%dM\n", *exchange2ical->ReminderDelta));
+		duration = icaltriggertype_from_int(*(exchange2ical->ReminderDelta) * -1 * 60);
+		prop = icalproperty_new_trigger(duration);
+		icalcomponent_add_property(exchange2ical->valarm, prop);
 	}
 }
 
@@ -499,38 +941,69 @@ void ical_property_UID(struct exchange2ical *exchange2ical)
 {
 	uint32_t		i;
 	const char		*uid;
+	char*			outstr;
 	struct GlobalObjectId	*GlbObjId;
+	icalproperty		*prop;
 
 	/* Sanity check */
-	if (!exchange2ical->GlobalObjectId) return;
+	if (!exchange2ical->GlobalObjectId) {
+		// printf("GlobalObjectId not found\n");
+		return;
+	}
 	
 	GlbObjId = get_GlobalObjectId(exchange2ical->mem_ctx, exchange2ical->GlobalObjectId);
-	if (!GlbObjId) return;
+	if (!GlbObjId) {
+		// printf("could not get GlbObjId\n");
+		return;
+	}
 
-	DEBUG(0, ("UID:"));
-
-	if (GlbObjId->Size >= 12 && !memcmp(GlbObjId->Data, GLOBAL_OBJECT_ID_DATA_START, 12)) {
+	outstr=talloc_init("uid");
+	if (GlbObjId->Size >= 12 && (0 == memcmp(GlbObjId->Data, GLOBAL_OBJECT_ID_DATA_START, 12))) {
+		// TODO: could this code overrun GlobalObjectId->lpb?
+		// TODO: I think we should start at 12, not at zero...
 		for (i = 0; i < 52; i++) {
-			DEBUG(0, ("%.2X", exchange2ical->GlobalObjectId->lpb[i]));
+			char objID[6];
+			snprintf(objID, 6, "%.2X", exchange2ical->GlobalObjectId->lpb[i]);
+			outstr = talloc_strdup_append(outstr, objID);
 		}
 
 		uid = (const char *)&(GlbObjId->Data[13]);
-		DEBUG(0, ("%s", uid));
+		outstr = talloc_strdup_append(outstr, uid);
 
 	} else {
 		for (i = 0; i < 16; i++) {
-			DEBUG(0, ("%.2X", exchange2ical->GlobalObjectId->lpb[i]));
+			char objID[6];
+			snprintf(objID, 6, "%.2X", exchange2ical->GlobalObjectId->lpb[i]);
+			outstr = talloc_strdup_append(outstr, objID);
 		}
 		/* YH, YL, Month and D must be set to 0 */
-		DEBUG(0, ("00000000"));
+		outstr = talloc_strdup_append(outstr, "00000000");
 
 		for (i = 20; i < exchange2ical->GlobalObjectId->cb; i++) {
-			DEBUG(0, ("%.2X", exchange2ical->GlobalObjectId->lpb[i]));
+			char objID[6];
+			snprintf(objID, 6, "%.2X", exchange2ical->GlobalObjectId->lpb[i]);
+			outstr = talloc_strdup_append(outstr, objID);
 		}
 	}
-
-	DEBUG(0, ("\n"));
+	prop = icalproperty_new_uid(outstr);
+	icalcomponent_add_property(exchange2ical->vevent, prop);
+	talloc_free(outstr);
 	talloc_free(GlbObjId);
+}
+
+
+static void ical_property_add_x_property_value(icalcomponent *parent, const char* propname, const char* value)
+{
+	icalproperty *prop;
+
+	/* Sanity checks */
+	if (!parent) return;
+	if (!propname) return;
+	if (!value) return;
+
+	prop = icalproperty_new_x(value);
+	icalproperty_set_x_name(prop, propname);
+	icalcomponent_add_property(parent, prop);
 }
 
 
@@ -544,27 +1017,24 @@ void ical_property_X_MICROSOFT_CDO_ATTENDEE_CRITICAL_CHANGE(struct exchange2ical
 
 	tm = get_tm_from_FILETIME(exchange2ical->AttendeeCriticalChange);
 	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	DEBUG(0, ("X-MICROSOFT-CDO-ATTENDEE-CRITICAL-CHANGE:%s\n", outstr));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-ATTENDEE-CRITICAL-CHANGE", outstr);
 }
 
 
 void ical_property_X_MICROSOFT_CDO_BUSYSTATUS(struct exchange2ical *exchange2ical)
 {
-	/* Sanity Check */
-	if (!exchange2ical->BusyStatus) return;
-
 	switch (*exchange2ical->BusyStatus) {
 	case 0x00000000:
-		DEBUG(0, ("X-MICROSOFT-CDO-BUSYSTATUS:FREE\n"));
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-BUSYSTATUS", "FREE");
 		break;
 	case 0x00000001:
-		DEBUG(0, ("X-MICROSOFT-CDO-BUSYSTATUS:TENTATIVE\n"));
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-BUSYSTATUS", "TENTATIVE");
 		break;
 	case 0x00000002:
-		DEBUG(0, ("X-MICROSOFT-CDO-BUSYSTATUS:BUSY\n"));
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-BUSYSTATUS", "BUSY");
 		break;
 	case 0x00000003:
-		DEBUG(0, ("X-MICROSOFT-CDO-BUSYSTATUS:OOF\n"));
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-BUSYSTATUS", "OOF");
 		break;
 	}
 }
@@ -572,21 +1042,20 @@ void ical_property_X_MICROSOFT_CDO_BUSYSTATUS(struct exchange2ical *exchange2ica
 
 void ical_property_X_MICROSOFT_CDO_INTENDEDSTATUS(struct exchange2ical *exchange2ical)
 {
-	/* Sanity check */
 	if (!exchange2ical->IntendedBusyStatus) return;
 
 	switch (*exchange2ical->IntendedBusyStatus) {
 	case 0x00000000:
-		DEBUG(0, ("X-MICROSOFT-CDO-INTENDEDSTATUS:FREE\n"));
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-INTENDEDSTATUS", "FREE");
 		break;
 	case 0x00000001:
-		DEBUG(0, ("X-MICROSOFT-CDO-INTENDEDSTATUS:TENTATIVE\n"));
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-INTENDEDSTATUS", "TENTATIVE");
 		break;
 	case 0x00000002:
-		DEBUG(0, ("X-MICROSOFT-CDO-INTENDEDSTATUS:BUSY\n"));
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-INTENDEDSTATUS", "BUSY");
 		break;
 	case 0x00000003:
-		DEBUG(0, ("X-MICROSOFT-CDO-INTENDEDSTATUS:OOF\n"));
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-INTENDEDSTATUS", "OOF");
 		break;
 	}
 }
@@ -594,10 +1063,11 @@ void ical_property_X_MICROSOFT_CDO_INTENDEDSTATUS(struct exchange2ical *exchange
 
 void ical_property_X_MICROSOFT_CDO_OWNERAPPTID(struct exchange2ical *exchange2ical)
 {
+	char outstr[200];
 	/* Sanity check */
 	if (!exchange2ical->OwnerApptId) return;
-
-	DEBUG(0, ("X-MICROSOFT-CDO-OWNERAPPTID:%d\n", *exchange2ical->OwnerApptId));
+	snprintf(outstr, 200, "%d", *(exchange2ical->OwnerApptId));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-OWNERAPPTID", outstr);
 }
 
 
@@ -615,7 +1085,7 @@ void ical_property_X_MICROSOFT_CDO_OWNER_CRITICAL_CHANGE(struct exchange2ical *e
 
 	tm = get_tm_from_FILETIME(exchange2ical->OwnerCriticalChange);
 	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	DEBUG(0, ("X-MICROSOFT-CDO-OWNER-CRITICAL-CHANGE:%s\n", outstr));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-OWNER-CRITICAL-CHANGE", outstr);
 }
 
 
@@ -629,7 +1099,7 @@ void ical_property_X_MICROSOFT_CDO_REPLYTIME(struct exchange2ical *exchange2ical
 
 	tm = get_tm_from_FILETIME(exchange2ical->apptReplyTime);
 	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	DEBUG(0, ("X-MICROSOFT-CDO-REPLYTIME:%s\n", outstr));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-REPLYTIME", outstr);
 }
 
 
@@ -638,7 +1108,11 @@ void ical_property_X_MICROSOFT_DISALLOW_COUNTER(struct exchange2ical *exchange2i
 	/* Sanity check */
 	if (!exchange2ical->NotAllowPropose) return;
 
-	DEBUG(0, ("X-MICROSOFT-DISALLOW-COUNTER:%s\n", (*exchange2ical->NotAllowPropose == true) ? "TRUE" : "FALSE"));
+	if (*(exchange2ical->NotAllowPropose) == true) {
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-DISALLOW-COUNTER", "TRUE");
+	} else {
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-DISALLOW-COUNTER", "FALSE");
+	}
 }
 
 
@@ -647,16 +1121,22 @@ void ical_property_X_MS_OLK_ALLOWEXTERNCHECK(struct exchange2ical *exchange2ical
 	/* Sanity check */
 	if (!exchange2ical->AllowExternCheck) return;
 
-	DEBUG(0, ("X-MS-OLK-ALLOWEXTERNCHECK:%s\n", (*exchange2ical->AllowExternCheck == true) ? "TRUE" : "FALSE"));
+	if (*(exchange2ical->AllowExternCheck) == true) {
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-ALLOWEXTERNCHECK", "TRUE");
+	} else {
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-ALLOWEXTERNCHECK", "FALSE");
+	}
 }
 
 
 void ical_property_X_MS_OLK_APPTLASTSEQUENCE(struct exchange2ical *exchange2ical)
 {
+	char outstr[20];
 	/* Sanity check */
 	if (!exchange2ical->apptLastSequence) return;
 
-	DEBUG(0, ("X-MS-OLK-APPTLASTSEQUENCE:%d\n", *exchange2ical->apptLastSequence));
+	snprintf(outstr, 20, "%d", *exchange2ical->apptLastSequence);
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-APPTLASTSEQUENCE", outstr);
 }
 
 
@@ -670,8 +1150,7 @@ void ical_property_X_MS_OLK_APPTSEQTIME(struct exchange2ical *exchange2ical)
 
 	tm = get_tm_from_FILETIME(exchange2ical->apptSeqTime);
 	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	DEBUG(0, ("X-MS-OLK-APPTSEQTIME:%s\n", outstr));
-
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-APPTSEQTIME", outstr);
 }
 
 
@@ -680,7 +1159,11 @@ void ical_property_X_MS_OLK_AUTOFILLLOCATION(struct exchange2ical *exchange2ical
 	/* Sanity check */
 	if (!exchange2ical->AutoFillLocation) return;
 
-	DEBUG(0, ("X-MS-OLK-AUTOFILLLOCATION:%s\n", (*exchange2ical->AutoFillLocation == true) ? "TRUE" : "FALSE"));
+	if (*(exchange2ical->AutoFillLocation) == true) {
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-AUTOFILLLOCATION", "TRUE");
+	} else {
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-AUTOFILLLOCATION", "FALSE");
+	}
 }
 
 
@@ -688,8 +1171,11 @@ void ical_property_X_MS_OLK_AUTOSTARTCHECK(struct exchange2ical *exchange2ical)
 {
 	/* Sanity check */
 	if (!exchange2ical->AutoStartCheck) return;
-
-	DEBUG(0, ("X-MS-OLK-AUTOSTARTCHECK:%s\n", (*exchange2ical->AutoStartCheck == true) ? "TRUE" : "FALSE"));
+	if (*(exchange2ical->AutoStartCheck) == true) {
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-AUTOSTARTCHECK", "TRUE");
+	} else {
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-AUTOSTARTCHECK", "FALSE");
+	}
 }
 
 
@@ -698,83 +1184,80 @@ void ical_property_X_MS_OLK_COLLABORATEDOC(struct exchange2ical *exchange2ical)
 	/* Sanity check */
 	if (!exchange2ical->CollaborateDoc) return;
 
-	DEBUG(0, ("X-MS-OLK-COLLABORATEDOC:%s\n", exchange2ical->CollaborateDoc));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-COLLABORATEDOC", exchange2ical->CollaborateDoc);
 }
+
 
 void ical_property_X_MS_OLK_CONFCHECK(struct exchange2ical *exchange2ical)
 {
 	/* Sanity check */
 	if (!exchange2ical->ConfCheck) return;
 
-	DEBUG(0, ("X-MS-OLK-CONFCHECK:%s\n", (*exchange2ical->ConfCheck == true) ? "TRUE" : "FALSE"));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-CONFCHECK", (*exchange2ical->ConfCheck == true) ? "TRUE" : "FALSE");
 }
 
 
 void ical_property_X_MS_OLK_CONFTYPE(struct exchange2ical *exchange2ical)
 {
+	char outstr[20];
 	/* Sanity check */
 	if (!exchange2ical->ConfType) return;
 
-	DEBUG(0, ("X-MS-OLK-CONFTYPE:%d\n", *exchange2ical->ConfType));
+	snprintf(outstr, 20, "%d", *exchange2ical->ConfType);
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-CONFTYPE", outstr);
 }
 
 
 void ical_property_X_MS_OLK_DIRECTORY(struct exchange2ical *exchange2ical)
 {
-	/* Sanity check */
-	if (!exchange2ical->Directory) return;
-
-	DEBUG(0, ("X-MS-OLK-DIRECTORY:%s\n", exchange2ical->Directory));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-DIRECTORY", exchange2ical->Directory);
 }
 
 
 void ical_property_X_MS_OLK_MWSURL(struct exchange2ical *exchange2ical)
 {
-	/* Sanity check */
-	if (!exchange2ical->MWSURL) return;
-
-	DEBUG(0, ("X-MS-OLK-MWSURL:%s\n", exchange2ical->MWSURL));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-MWSURL", exchange2ical->MWSURL);
 }
 
 
 void ical_property_X_MS_OLK_NETSHOWURL(struct exchange2ical *exchange2ical)
 {
-	/* Sanity check */
-	if (!exchange2ical->NetShowURL) return;
-
-	DEBUG(0, ("X-MS-OLK-NETSHOWURL:%s\n", exchange2ical->NetShowURL));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-NETSHOWURL", exchange2ical->NetShowURL);
 }
-
 
 void ical_property_X_MS_OLK_ONLINEPASSWORD(struct exchange2ical *exchange2ical)
 {
-	/* Sanity check */
-	if (!exchange2ical->OnlinePassword) return;
-
-	DEBUG(0, ("X-MS-OLK-ONLINEPASSWORD:%s\n", exchange2ical->OnlinePassword));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-ONLINEPASSWORD", exchange2ical->OnlinePassword);
 }
-
 
 void ical_property_X_MS_OLK_ORGALIAS(struct exchange2ical *exchange2ical)
 {
-	/* Sanity check */
-	if (!exchange2ical->OrgAlias) return;
-
-	DEBUG(0, ("X-MS-OLK-ORGALIAS:%s\n", exchange2ical->OrgAlias));
+	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-ORGALIAS", exchange2ical->OrgAlias);
 }
 
 
+// TODO: double check this - need an example.
 void ical_property_X_MS_OLK_SENDER(struct exchange2ical *exchange2ical)
 {
+	icalproperty *prop;
+	icalparameter *param;
+	char outstr[200];
+
 	/* Sanity check */
 	if (!exchange2ical->apptStateFlags) return;
 	if (!(*exchange2ical->apptStateFlags & 0x1)) return;
 	if (!exchange2ical->SenderName) return;
 
 	if (exchange2ical->SenderEmailAddress) {
-		DEBUG(0, ("X-MS-OLK-SENDER;CN=\"%s\":mailto:%s\n", 
-			  exchange2ical->SenderName, exchange2ical->SenderEmailAddress));
+		snprintf(outstr, 200, "mailto:%s",exchange2ical->SenderEmailAddress);
+		prop = icalproperty_new_x(outstr);
 	} else {
-		DEBUG(0, ("X-MS-OLK-SENDER;CN=\"%s\":invalid:nomail\n", exchange2ical->SenderName));
+		prop = icalproperty_new_x("invalid:nomail");
 	}
+
+	icalproperty_set_x_name(prop, "X-MS-OLK-SENDER");
+	icalcomponent_add_property(exchange2ical->vevent, prop);
+
+	param = icalparameter_new_cn(exchange2ical->SenderName);
+	icalproperty_add_parameter(prop, param);
 }

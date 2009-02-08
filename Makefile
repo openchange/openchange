@@ -1064,7 +1064,7 @@ bin/exchange2ical:	utils/exchange2ical/exchange2ical.o		\
 			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
+	@$(CC) -o $@ $^ $(LIBS) $(ICAL_LIBS) -lpopt
 
 
 ###################

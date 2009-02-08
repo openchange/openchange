@@ -28,8 +28,8 @@ static void exchange2ical_init(TALLOC_CTX *mem_ctx, struct exchange2ical *exchan
 {
 	exchange2ical->mem_ctx = mem_ctx;
 
-	exchange2ical->method = NULL;
-	exchange2ical->partstat = NULL;
+	exchange2ical->method = ICAL_METHOD_NONE;
+	exchange2ical->partstat = ICAL_PARTSTAT_NONE;
 	exchange2ical->Recurring = NULL;
 	exchange2ical->RecurrencePattern = NULL;
 	exchange2ical->TimeZoneStruct = NULL;
@@ -51,6 +51,7 @@ static void exchange2ical_init(TALLOC_CTX *mem_ctx, struct exchange2ical *exchan
 	exchange2ical->NonSendableBcc = NULL;
 	exchange2ical->Sequence = NULL;
 	exchange2ical->Subject = NULL;
+	exchange2ical->MessageLocaleId = NULL;
 	exchange2ical->BusyStatus = NULL;
 	exchange2ical->IntendedBusyStatus = NULL;
 	exchange2ical->GlobalObjectId = NULL;
@@ -75,6 +76,10 @@ static void exchange2ical_init(TALLOC_CTX *mem_ctx, struct exchange2ical *exchan
 	exchange2ical->SenderEmailAddress = NULL;
 	exchange2ical->ReminderSet = NULL;
 	exchange2ical->ReminderDelta = NULL;
+	exchange2ical->vcalendar = NULL;
+	exchange2ical->vevent = NULL;
+	exchange2ical->vtimezone = NULL;
+	exchange2ical->valarm = NULL;
 }
 
 static void exchange2ical_reset(struct exchange2ical *exchange2ical)
@@ -87,6 +92,9 @@ static void exchange2ical_reset(struct exchange2ical *exchange2ical)
 		talloc_free(exchange2ical->TimeZoneStruct);
 	}
 
+	if (exchange2ical->vcalendar) {
+		icalcomponent_free(exchange2ical->vcalendar);
+	}
 	exchange2ical_init(exchange2ical->mem_ctx, exchange2ical);
 }
 
@@ -107,6 +115,7 @@ static int exchange2ical_get_properties(TALLOC_CTX *mem_ctx, struct SRow *aRow, 
 	TimeZoneStruct = (struct Binary_r *) octool_get_propval(aRow, PidLidTimeZoneStruct);
 	exchange2ical->TimeZoneStruct = get_TimeZoneStruct(mem_ctx, TimeZoneStruct);
 
+	// TODO: should we use PidLidGlobalObjectId here instead of PidLidCleanGlobalObjectId?
 	exchange2ical->GlobalObjectId = (struct Binary_r *) octool_get_propval(aRow, PidLidCleanGlobalObjectId);
 	exchange2ical->apptStateFlags = (uint32_t *) octool_get_propval(aRow, PidLidAppointmentStateFlags);
 	exchange2ical->Contacts = (const struct StringArray_r *)octool_get_propval(aRow, PidLidContacts);
@@ -147,6 +156,7 @@ static int exchange2ical_get_properties(TALLOC_CTX *mem_ctx, struct SRow *aRow, 
 	exchange2ical->Importance = (uint32_t *) octool_get_propval(aRow, PR_IMPORTANCE);
 	exchange2ical->ResponseRequested = (uint8_t *) octool_get_propval(aRow, PR_RESPONSE_REQUESTED);
 	exchange2ical->Subject = (const char *) octool_get_propval(aRow, PR_SUBJECT_UNICODE);
+	exchange2ical->MessageLocaleId = (uint32_t *) octool_get_propval(aRow, PR_MESSAGE_LOCALE_ID);
 	exchange2ical->OwnerApptId = (uint32_t *) octool_get_propval(aRow, PR_OWNER_APPT_ID);
 	exchange2ical->SenderName = (const char *) octool_get_propval(aRow, PR_SENDER_NAME);
 	exchange2ical->SenderEmailAddress = (const char *) octool_get_propval(aRow, PR_SENDER_EMAIL_ADDRESS);
@@ -288,7 +298,6 @@ int main(int argc, const char *argv[])
 					     SRowSet.aRow[i].lpProps[1].value.d,
 					     &obj_message, 0);
 			if (retval != MAPI_E_NOT_FOUND) {
-
 				retval = GetRecipientTable(&obj_message, 
 							   &exchange2ical.Recipients.SRowSet,
 							   &exchange2ical.Recipients.SPropTagArray);
@@ -352,12 +361,17 @@ int main(int argc, const char *argv[])
 
 					ret = exchange2ical_get_properties(mem_ctx, &aRow, &exchange2ical);
 					if (!ret) {
+						char filename[10];
+						snprintf(filename, 10, "test%i.vcf", i);
 						ical_component_VCALENDAR(&exchange2ical);
-						DEBUG(0, ("\n\n"));
+						// Just for temporary debugging...
+						// writeVObjectToFile(filename, exchange2ical.vcalendar);
+						DEBUG(0, ("%u\n\n", i));
+						printf("ICAL file:\n%s\n", icalcomponent_as_ical_string(exchange2ical.vcalendar));
 					}
 					exchange2ical_reset(&exchange2ical);
+					MAPIFreeBuffer(lpProps);
 				}
-				MAPIFreeBuffer(lpProps);
 
 				mapi_object_release(&obj_message);
 			}
@@ -370,6 +384,7 @@ int main(int argc, const char *argv[])
 	mapi_object_release(&obj_store);
 
 	MAPIUninitialize();
+	poptFreeContext(pc);
 	talloc_free(mem_ctx);
 
 	return 0;

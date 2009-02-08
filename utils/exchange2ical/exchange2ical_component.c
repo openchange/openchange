@@ -21,34 +21,51 @@
 
 #include <utils/exchange2ical/exchange2ical.h>
 
+#include <libical/icalderivedproperty.h>
+
 void ical_component_VCALENDAR(struct exchange2ical *exchange2ical)
 {
-	DEBUG(0, ("BEGIN:VCALENDAR\n"));
+	icalproperty* prop;
 
-	DEBUG(0, ("VERSION: %s\n", ICAL_VERSION));
-	DEBUG(0, ("PRODID: %s\n", ICAL_PRODID));
-	DEBUG(0, ("METHOD: %s\n", exchange2ical->method));
-
-	if (exchange2ical->partstat) {
-		DEBUG(0, ("PARTSTAT: %s\n", exchange2ical->partstat));
+	exchange2ical->vcalendar = icalcomponent_new_vcalendar();
+	if (!(exchange2ical->vcalendar)) {
+		return;
 	}
 
-	/* X-MICROSOFT-CALSCALE */
+	prop = icalproperty_new_version(OPENCHANGE_ICAL_VERSION);
+	icalcomponent_add_property(exchange2ical->vcalendar, prop);
+
+	prop = icalproperty_new_prodid(OPENCHANGE_ICAL_PRODID);
+	icalcomponent_add_property(exchange2ical->vcalendar, prop);
+
+	prop = icalproperty_new_method(exchange2ical->method);
+	icalcomponent_add_property(exchange2ical->vcalendar, prop);
+
+	/* TODO: This appears wrong - should be a parameter of the VEVENT component, ATTENDEE property */
+	if (exchange2ical->partstat != ICAL_PARTSTAT_NONE) {
+		icalparameter *param = icalparameter_new_partstat(exchange2ical->partstat);
+		icalproperty_add_parameter(prop, param);
+	}
+
 	if (exchange2ical->RecurrencePattern && exchange2ical->RecurrencePattern->CalendarType) {
-		DEBUG(0, ("X-MICROSOFT-CALSCALE: %s\n", get_ical_calendartype(exchange2ical->RecurrencePattern->CalendarType)));
+		prop = icalproperty_new_x(get_ical_calendartype(exchange2ical->RecurrencePattern->CalendarType));
+		icalproperty_set_x_name(prop, "X-MICROSOFT-CALSCALE");
+		icalcomponent_add_property(exchange2ical->vcalendar, prop);
 	}
-	
+
 	ical_component_VTIMEZONE(exchange2ical);
+
 	ical_component_VEVENT(exchange2ical);
 
-	DEBUG(0, ("END:VCALENDAR\n"));
 }
-
 
 void ical_component_VEVENT(struct exchange2ical *exchange2ical)
 {
-	DEBUG(0, ("BEGIN:VEVENT\n"));
-
+	exchange2ical->vevent = icalcomponent_new_vevent();
+	if ( ! (exchange2ical->vevent) ) {
+		return;
+	}
+	icalcomponent_add_component(exchange2ical->vcalendar, exchange2ical->vevent);
 	/* ATTACH property FIXME */
 	ical_property_ATTENDEE(exchange2ical);
 	ical_property_CATEGORIES(exchange2ical);
@@ -65,6 +82,7 @@ void ical_component_VEVENT(struct exchange2ical *exchange2ical)
 	ical_property_ORGANIZER(exchange2ical);
 	ical_property_PRIORITY(exchange2ical);
 	ical_property_RDATE(exchange2ical);
+	ical_property_RRULE(exchange2ical);
 	/* RECURRENCE-ID property:FIXME */
 	ical_property_RECURRENCE_ID(exchange2ical);
 	ical_property_RESOURCES(exchange2ical);
@@ -95,11 +113,7 @@ void ical_component_VEVENT(struct exchange2ical *exchange2ical)
 	ical_property_X_MS_OLK_ONLINEPASSWORD(exchange2ical);
 	ical_property_X_MS_OLK_ORGALIAS(exchange2ical);
 	ical_property_X_MS_OLK_SENDER(exchange2ical);
-
 	ical_component_VALARM(exchange2ical);
-
-
-	DEBUG(0, ("END:VEVENT\n"));
 }
 
 
@@ -108,18 +122,20 @@ void ical_component_VEVENT(struct exchange2ical *exchange2ical)
  */
 void ical_component_VTIMEZONE(struct exchange2ical *exchange2ical)
 {
-	DEBUG(0, ("BEGIN:VTIMEZONE\n"));
+	exchange2ical->vtimezone = icalcomponent_new_vtimezone();
+	icalcomponent_add_component(exchange2ical->vcalendar, exchange2ical->vtimezone);
 
 	/* TZID property */
-	DEBUG(0, ("TZID: %s\n", exchange2ical->TimeZoneDesc));
+	if (exchange2ical->TimeZoneDesc) {
+		icalproperty *tzid = icalproperty_new_tzid(exchange2ical->TimeZoneDesc);
+		icalcomponent_add_property(exchange2ical->vtimezone, tzid);
+	}
 
 	/* STANDARD sub-component */
 	ical_component_STANDARD(exchange2ical);
 	
-	/* DAYLIGH component */
+	/* DAYLIGHT component */
 	ical_component_DAYLIGHT(exchange2ical);
-
-	DEBUG(0, ("END:VTIMEZONE\n"));
 }
 
 
@@ -131,31 +147,35 @@ void ical_component_STANDARD(struct exchange2ical *exchange2ical)
 	char		*dtstart = NULL;
 	int32_t		tzoffsetfrom;
 	int32_t		tzoffsetto;
+	icalcomponent	*standard;
+	icalproperty	*prop;
 
 	/* Sanity Check */
 	if (!exchange2ical->TimeZoneStruct) return;
 
-	DEBUG(0, ("BEGIN:STANDARD\n"));
+	standard = icalcomponent_new_xstandard();
+	icalcomponent_add_component(exchange2ical->vtimezone, standard);
 
 	/* DTSTART property */
 	dtstart = get_ical_date(exchange2ical->mem_ctx, &(exchange2ical->TimeZoneStruct->stStandardDate));
 	if (dtstart) {
-		DEBUG(0, ("DTSTART: %s\n", dtstart));
+		prop = icalproperty_new_dtstart(icaltime_from_string(dtstart));
+		icalcomponent_add_property(standard, prop);
 		talloc_free(dtstart);
 	}
 
-	/* RRULE property */
-	ical_property_RRULE(exchange2ical, exchange2ical->TimeZoneStruct->stStandardDate);
+	/* TODO: RRULE property */
+	// ical_property_RRULE(exchange2ical, exchange2ical->TimeZoneStruct->stStandardDate);
 
 	/* TZOFFSETFROM property */
 	tzoffsetfrom = -1 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lDaylightBias);
-	DEBUG(0, ("TZOFFSETFROM: %s%.4d\n", (tzoffsetfrom > 0) ? "+" : "", tzoffsetfrom));
+	prop = icalproperty_new_tzoffsetfrom(tzoffsetfrom);
+	icalcomponent_add_property(standard, prop);
 
 	/* TZOFFSETTO property */
 	tzoffsetto = -1 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lStandardBias);
-	DEBUG(0, ("TZOFFSETTO: %s%.4d\n", (tzoffsetto > 0) ? "+" : "", tzoffsetto));
-
-	DEBUG(0, ("END:STANDARD\n"));
+	prop = icalproperty_new_tzoffsetto(tzoffsetto);
+	icalcomponent_add_property(standard, prop);
 }
 
 
@@ -167,46 +187,61 @@ void ical_component_DAYLIGHT(struct exchange2ical *exchange2ical)
 	char		*dtstart = NULL;
 	int32_t		tzoffsetfrom;
 	int32_t		tzoffsetto;
+	icalcomponent	*daylight;
+	icalproperty	*prop;
 
 	/* Sanity check */
 	if (has_component_DAYLIGHT(exchange2ical) == false) return;
 
-	DEBUG(0, ("BEGIN:DAYLIGHT\n"));
+	daylight = icalcomponent_new_xdaylight();
+	icalcomponent_add_component(exchange2ical->vtimezone, daylight);
 
 	/* DTSTART property */
 	dtstart = get_ical_date(exchange2ical->mem_ctx, &exchange2ical->TimeZoneStruct->stDaylightDate);
-	DEBUG(0, ("DTSTART: %s\n", dtstart));
-	talloc_free(dtstart);
-
-	/* RRULE property */
-	ical_property_RRULE(exchange2ical, exchange2ical->TimeZoneStruct->stDaylightDate);
+	if (dtstart) {
+		prop = icalproperty_new_dtstart(icaltime_from_string(dtstart));
+		icalcomponent_add_property(daylight, prop);
+		talloc_free(dtstart);
+	}
+	/* TODO: RRULE property */
+	// ical_property_RRULE(exchange2ical, exchange2ical->TimeZoneStruct->stDaylightDate);
 	
 	/* TZOFFSETFROM property */
 	tzoffsetfrom = -1 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lStandardBias);
-	DEBUG(0, ("TZOFFSETFROM: %s%.4d\n", (tzoffsetfrom > 0) ? "+" : "", tzoffsetfrom));
+	prop = icalproperty_new_tzoffsetfrom(tzoffsetfrom);
+	icalcomponent_add_property(daylight, prop);
 
 	/* TZOFFSETTO property */
 	tzoffsetto = -1 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lDaylightBias);
-	DEBUG(0, ("TZOFFSETTO: %s%.4d\n", (tzoffsetto > 0) ? "+" : "", tzoffsetto));
-
-	DEBUG(0, ("END:DAYLIGHT\n"));
+	prop = icalproperty_new_tzoffsetto(tzoffsetto);
+	icalcomponent_add_property(daylight, prop);
 }
 
 
 /**
    VALARM component
+
+   [MS-OXCICAL], Section 2.2.1.20.61 
  */
 void ical_component_VALARM(struct exchange2ical *exchange2ical)
 {
+	icalproperty *action;
+	icalproperty *description;
+
 	/* Sanity check */
+	if (!exchange2ical->vevent) return;
 	if (!exchange2ical->ReminderSet) return;
 	if (*exchange2ical->ReminderSet == false) return;
 
-	DEBUG(0, ("BEGIN:VALARM\n"));
-
+	exchange2ical->valarm = icalcomponent_new_valarm();
+	if (!(exchange2ical->valarm)) {
+		printf("could not create new valarm\n");
+		return;
+	}
+	icalcomponent_add_component(exchange2ical->vevent, exchange2ical->valarm);
 	ical_property_TRIGGER(exchange2ical);
-	DEBUG(0, ("ACTION:DISPLAY\n"));
-	DEBUG(0, ("DESCRIPTION:Reminder\n"));
-
-	DEBUG(0, ("END:VALARM\n"));
+	action = icalproperty_new_action(ICAL_ACTION_DISPLAY);
+	icalcomponent_add_property(exchange2ical->valarm, action);
+	description = icalproperty_new_description("Reminder");
+	icalcomponent_add_property(exchange2ical->valarm, description);
 }

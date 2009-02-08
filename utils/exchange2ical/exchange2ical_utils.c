@@ -47,29 +47,29 @@ char *get_ical_date(TALLOC_CTX *mem_ctx, struct SYSTEMTIME *time)
 
 
 static struct ical_method	ical_method[] = {
-	{ "PUBLISH",	NULL,		"IPM.Appointment"		},
-	{ "REQUEST",	NULL,		"IPM.Schedule.Meeting.Request"	},
-	{ "REPLY",	"ACCEPTED",	"IPM.Schedule.Meeting.Resp.Pos" },
-	{ "REPLY",	"TENTATIVE",	"IPM.Schedule.Meeting.Resp.Tent"},
-	{ "REPLY",	"DECLINE",	"IPM.Schedule.Meeting.Resp.Neg"	},
-	{ "CANCEL",	NULL,		"IPM.Schedule.Meeting.Canceled" },
-	{ NULL,	NULL,	NULL }
+	{ ICAL_METHOD_PUBLISH,	ICAL_PARTSTAT_NONE,	"IPM.Appointment"		},
+	{ ICAL_METHOD_REQUEST,	ICAL_PARTSTAT_NONE,	"IPM.Schedule.Meeting.Request"	},
+	{ ICAL_METHOD_REPLY,	ICAL_PARTSTAT_ACCEPTED,	"IPM.Schedule.Meeting.Resp.Pos" },
+	{ ICAL_METHOD_REPLY,	ICAL_PARTSTAT_TENTATIVE,"IPM.Schedule.Meeting.Resp.Tent"},
+	{ ICAL_METHOD_REPLY,	ICAL_PARTSTAT_DECLINED,	"IPM.Schedule.Meeting.Resp.Neg"	},
+	{ ICAL_METHOD_CANCEL,	ICAL_PARTSTAT_NONE,	"IPM.Schedule.Meeting.Canceled" },
+	{ ICAL_METHOD_NONE,	ICAL_PARTSTAT_NONE,	NULL }
 };
 
-const char *get_ical_method(const char *msgclass)
+enum icalproperty_method get_ical_method(const char *msgclass)
 {
 	uint32_t	i;
 
 	/* Sanity check */
-	if (!msgclass) return NULL;
+	if (!msgclass) return ICAL_METHOD_NONE;
 
-	for (i = 0; ical_method[i].method; i++) {
+	for (i = 0; ical_method[i].PidTagMessageClass; i++) {
 		if (!strcmp(msgclass, ical_method[i].PidTagMessageClass)) {
 			return ical_method[i].method;
 		}
 	}
 
-	return NULL;
+	return ICAL_METHOD_NONE;
 }
 
 
@@ -113,51 +113,78 @@ const char *get_ical_calendartype(uint16_t CalendarType)
 	return NULL;
 }
 
-const char *get_ical_partstat(const char *msgclass)
+enum icalparameter_partstat get_ical_partstat(const char *msgclass)
 {
 	uint32_t	i;
 
 	/* Sanity check */
-	if (!msgclass) return NULL;
+	if (!msgclass) return ICAL_PARTSTAT_NONE;
 
-	for (i = 0; ical_method[i].method; i++) {
+	for (i = 0; ical_method[i].PidTagMessageClass; i++) {
 		if (!strcmp(msgclass, ical_method[i].PidTagMessageClass)) {
 			return ical_method[i].partstat;
 		}
 	}
 
-	return NULL;
+	return ICAL_PARTSTAT_NONE;
 }
 
 
 static struct ical_class	ical_class[] = {
-	{ 0x00000000,	"PUBLIC"	},
-	{ 0x00000001,	"X-PERSONAL"	},
-	{ 0x00000002,	"PRIVATE"	},
-	{ 0x00000003,	"CONFIDENTIAL"	},
-	{ 0x00000000,	NULL		}
+	{ 0x00000000,	ICAL_CLASS_PUBLIC	},
+	{ 0x00000001,	ICAL_CLASS_X		},
+	{ 0x00000002,	ICAL_CLASS_PRIVATE	},
+	{ 0x00000003,	ICAL_CLASS_CONFIDENTIAL	},
+	{ 0x00000000,	ICAL_CLASS_NONE		}
 };
 
-const char *get_ical_class(uint32_t sensivity)
+enum icalproperty_class get_ical_class(uint32_t sensivity)
 {
 	uint32_t	i;
 	
-	for (i = 0; ical_class[i].classname; i++) {
+	for (i = 0; ical_class[i].classtype != ICAL_CLASS_NONE; ++i) {
 		if (sensivity == ical_class[i].sensivity) {
-			return ical_class[i].classname;
+			return ical_class[i].classtype;
 		}
 	}
 
-	return NULL;
+	return ICAL_CLASS_NONE;
 }
 
+struct icaltimetype get_icaltimetype_from_tm(struct tm *tm)
+{
+	icaltimetype tt;
+
+	tt.year   = tm->tm_year;
+	tt.month  = tm->tm_mon;
+	tt.day    = tm->tm_mday;
+	tt.hour   = tm->tm_hour;
+	tt.minute = tm->tm_min;
+	tt.second = tm->tm_sec;
+
+	tt.is_utc      = 0;
+	tt.is_date     = 0;
+	tt.is_daylight = 0;
+	tt.zone        = 0;
+
+	return tt;
+}
+
+struct icaldatetimeperiodtype get_icaldatetimeperiodtype_from_tm(struct tm *tm)
+{
+	struct icaldatetimeperiodtype tt;
+
+	// TODO: build tt here!
+
+	return tt;
+}
 
 struct tm *get_tm_from_FILETIME(const struct FILETIME *ft)
 {
 	NTTIME		time;
 	struct timeval	t;
 	struct tm	*tm;
-	
+
 	time = ft->dwHighDateTime;
 	time = time << 32;
 	time |= ft->dwLowDateTime;
@@ -165,4 +192,58 @@ struct tm *get_tm_from_FILETIME(const struct FILETIME *ft)
 	tm = localtime(&t.tv_sec);
 
 	return tm;
+}
+
+struct icaltimetype get_icaltime_from_FILETIME(const struct FILETIME *ft)
+{
+	struct icaltimetype	tt;
+	NTTIME			nttime;
+	struct timeval		temp_timeval;
+	struct tm		*tm;
+
+	nttime = ft->dwHighDateTime;
+	nttime = nttime << 32;
+	nttime |= ft->dwLowDateTime;
+	nttime_to_timeval(&temp_timeval, nttime);
+	tm = gmtime(&temp_timeval.tv_sec);
+                                                                 
+	tt.year   = tm->tm_year + 1900;                                        
+	tt.month  = tm->tm_mon + 1;                                            
+	tt.day    = tm->tm_mday;                                               
+	tt.hour   = tm->tm_hour;                                               
+	tt.minute = tm->tm_min;                                                
+	tt.second = tm->tm_sec;
+	tt.is_date = 0;
+	tt.is_utc = 1;
+	tt.is_daylight = 0;
+	tt.zone = NULL;
+
+	return tt;
+}
+
+struct icaltimetype get_icaldate_from_FILETIME(const struct FILETIME *ft)
+{
+	struct icaltimetype	tt;
+	NTTIME			nttime;
+	struct timeval		temp_timeval;
+	struct tm		*tm;
+
+	nttime = ft->dwHighDateTime;
+	nttime = nttime << 32;
+	nttime |= ft->dwLowDateTime;
+	nttime_to_timeval(&temp_timeval, nttime);
+	tm = gmtime(&temp_timeval.tv_sec);
+                                                                 
+	tt.year   = tm->tm_year + 1900;                                        
+	tt.month  = tm->tm_mon + 1;                                            
+	tt.day    = tm->tm_mday;                                               
+	tt.hour   = 0;                                               
+	tt.minute = 0;                                                
+	tt.second = 0;
+	tt.is_date = 1;
+	tt.is_utc = 1;
+	tt.is_daylight = 0;
+	tt.zone = NULL;
+
+	return tt;
 }

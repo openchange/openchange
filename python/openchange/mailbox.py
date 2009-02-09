@@ -19,10 +19,9 @@
 
 import os
 import samba
-import provision as openchange
-from samba.samdb import SamDB
+from samba import Ldb
 from samba.auth import system_session
-from samba.provision import setup_add_ldif, setup_modify_ldif
+from samba.provision import setup_add_ldif
 import ldb
 import uuid
 
@@ -38,12 +37,12 @@ def get_message_attribute(setup_path, creds, lp, names, server=None, attribute=N
     :param server: Server object name
     """
     # Step 1. Open openchange.ldb
-    samdb = SamDB(url="openchange.ldb", session_info=system_session(),
+    db = Ldb(url="openchange.ldb", session_info=system_session(),
                   credentials=creds, lp=lp)
     
     # Step 2. Search Attribute from 'server' object
     filter = "(&(objectClass=server)(cn=%s))" % (server)
-    res = samdb.search("", scope=ldb.SCOPE_SUBTREE,
+    res = db.search("", scope=ldb.SCOPE_SUBTREE,
                        expression=filter, attrs=[attribute])
     assert(len(res) == 1)
 
@@ -95,12 +94,12 @@ def set_message_GlobalCount(setup_path, creds, lp, names, server=None, GlobalCou
     """
 
     # Step 1. Open openchange.ldb
-    samdb = SamDB(url="openchange.ldb", session_info=system_session(),
+    db = Ldb(url="openchange.ldb", session_info=system_session(),
                   credentials=creds, lp=lp)
 
     # Step 2. Search Server object
     filter = "(&(objectClass=server)(cn=%s))" % (server)
-    res = samdb.search("", scope=ldb.SCOPE_SUBTREE,
+    res = db.search("", scope=ldb.SCOPE_SUBTREE,
                        expression=filter, attrs=[])
     assert(len(res) == 1)
 
@@ -114,9 +113,9 @@ replace: GlobalCount
 GlobalCount: 0x%x
 """ % (server_dn, GlobalCount)
 
-    samdb.transaction_start()
-    samdb.modify_ldif(newGlobalCount)
-    samdb.transaction_commit()
+    db.transaction_start()
+    db.modify_ldif(newGlobalCount)
+    db.transaction_commit()
 
 
 def lookup_mailbox_user(setup_path, creds, lp, names,
@@ -132,19 +131,19 @@ def lookup_mailbox_user(setup_path, creds, lp, names,
     """
 
     # Step 1. Open openchange.ldb
-    samdb = SamDB(url="openchange.ldb", session_info=system_session(),
+    db = Ldb(url="openchange.ldb", session_info=system_session(),
                   credentials=creds, lp=lp)
 
     # Step 2. Search Server object
     filter = "(&(objectClass=server)(cn=%s))" % (server)
-    res = samdb.search("", scope=ldb.SCOPE_SUBTREE,
+    res = db.search("", scope=ldb.SCOPE_SUBTREE,
                        expression=filter, attrs=[])
     assert(len(res) == 1)
     server_dn = res[0].dn
 
     # Step 3. Search User object
     filter = "(&(objectClass=user)(cn=%s))" % (username)
-    res = samdb.search(server_dn, scope=ldb.SCOPE_SUBTREE,
+    res = db.search(server_dn, scope=ldb.SCOPE_SUBTREE,
                        expression=filter, attrs=[])
     if (len(res) == 1):
         return False
@@ -164,7 +163,7 @@ def add_mailbox_user(setup_path, creds, lp, names, username=None):
     """
 
     # Step 1. Open openchange.ldb
-    samdb = SamDB(url="openchange.ldb", session_info=system_session(),
+    db = Ldb(url="openchange.ldb", session_info=system_session(),
                   credentials=creds, lp=lp)
 
     # Step 2. Add user object
@@ -173,7 +172,7 @@ def add_mailbox_user(setup_path, creds, lp, names, username=None):
     replicaGUID = str(uuid.uuid4())
 
     print "[+] Adding '%s' record" % (username)
-    setup_add_ldif(samdb, setup_path("openchangedb/oc_provision_openchange_mailbox_user.ldif"), {
+    setup_add_ldif(ldb, setup_path("openchangedb/oc_provision_openchange_mailbox_user.ldif"), {
             "USERNAME": username,
             "FIRSTORGDN": names.ocfirstorgdn,
             "MAILBOXGUID": mailboxGUID,
@@ -214,13 +213,13 @@ def add_mailbox_root_folder(setup_path, creds, lp, names, username=None,
     names.ocuserdn = "CN=%s,%s" % (username, names.ocfirstorgdn)
 
     # Step 1. Open openchange.ldb
-    samdb = SamDB(url="openchange.ldb", session_info=system_session(),
+    db = Ldb(url="openchange.ldb", session_info=system_session(),
                   credentials=creds, lp=lp)
 
     # Step 2. Add root folder to user subtree
     FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
     print "[+] Adding SystemRoot folder '%s' (%s) to %s" % (FID, foldername, username)
-    setup_add_ldif(samdb, setup_path("openchangedb/oc_provision_openchange_mailbox_folder.ldif"), {
+    setup_add_ldif(ldb, setup_path("openchangedb/oc_provision_openchange_mailbox_folder.ldif"), {
             "USERDN": names.ocuserdn,
             "FOLDER_IDX": FID,
             "NAME": foldername,

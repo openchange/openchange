@@ -115,6 +115,7 @@ struct mapi_handles {
 	uint32_t	       	handle;
 	uint32_t		parent_handle;
 	void		       	*private_data;
+	int			systemfolder;
 	struct mapi_handles	*prev;
 	struct mapi_handles	*next;
 };
@@ -199,6 +200,10 @@ enum MAPISTATUS	mapi_handles_release(struct mapi_handles_context *);
 enum MAPISTATUS mapi_handles_search(struct mapi_handles_context *, uint32_t, struct mapi_handles **);
 enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *, uint32_t, struct mapi_handles **);
 enum MAPISTATUS mapi_handles_delete(struct mapi_handles_context *, uint32_t);
+enum MAPISTATUS mapi_handles_get_private_data(struct mapi_handles *, void **);
+enum MAPISTATUS mapi_handles_set_private_data(struct mapi_handles *, void *);
+enum MAPISTATUS mapi_handles_get_systemfolder(struct mapi_handles *, int *);
+enum MAPISTATUS mapi_handles_set_systemfolder(struct mapi_handles *, int);
 
 __END_DECLS
 

@@ -42,6 +42,9 @@
    If the stream is attached to an attachment:	FolderID/MessageID/AttachmentID.stream
    If the stream is attached to a message:	FolderID/MessageID.stream
 
+   \param mpm pointer to the cache module general structure
+   \param stream pointer to the mpm_stream entry
+
    \return Return a FILE pointer otherwise NULL
  */
 NTSTATUS mpm_cache_stream_open(struct mpm_cache *mpm, struct mpm_stream *stream)

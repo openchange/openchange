@@ -221,6 +221,13 @@ static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
 }
 
 
+/**
+   \details Initialize mapiproxy servers modules
+
+   \param dce_ctx pointer to the connection context
+
+   \return NT_STATUS_OK on success otherwise NT error
+ */
 _PUBLIC_ NTSTATUS mapiproxy_server_init(struct dcesrv_context *dce_ctx)
 {
 	init_module_fn		*servers;

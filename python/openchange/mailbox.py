@@ -27,6 +27,16 @@ import uuid
 
 __docformat__ = 'restructuredText'
 
+class OpenChangeDB(creds, lp):
+    """Open the OpenChange database.
+
+    :param creds: Credentials for the user to connect as
+    :param lp: Loadparm context
+    """
+    return Ldb(url="openchange.ldb", session_info=system_session(),
+               credentials=creds, lp=lp)
+
+
 def get_message_attribute(setup_path, creds, lp, names, server=None, attribute=None):
     """Retrieve attribute value from given message database (server).
 
@@ -37,9 +47,8 @@ def get_message_attribute(setup_path, creds, lp, names, server=None, attribute=N
     :param server: Server object name
     """
     # Step 1. Open openchange.ldb
-    db = Ldb(url="openchange.ldb", session_info=system_session(),
-                  credentials=creds, lp=lp)
-    
+    db = OpenChangeDB(creds, lp)
+
     # Step 2. Search Attribute from 'server' object
     filter = "(&(objectClass=server)(cn=%s))" % (server)
     res = db.search("", scope=ldb.SCOPE_SUBTREE,
@@ -94,8 +103,7 @@ def set_message_GlobalCount(setup_path, creds, lp, names, server=None, GlobalCou
     """
 
     # Step 1. Open openchange.ldb
-    db = Ldb(url="openchange.ldb", session_info=system_session(),
-                  credentials=creds, lp=lp)
+    db = OpenChangeDB(creds, lp=lp)
 
     # Step 2. Search Server object
     filter = "(&(objectClass=server)(cn=%s))" % (server)
@@ -131,8 +139,7 @@ def lookup_mailbox_user(setup_path, creds, lp, names,
     """
 
     # Step 1. Open openchange.ldb
-    db = Ldb(url="openchange.ldb", session_info=system_session(),
-                  credentials=creds, lp=lp)
+    db = OpenChangeDB(creds, lp=lp)
 
     # Step 2. Search Server object
     filter = "(&(objectClass=server)(cn=%s))" % (server)
@@ -163,8 +170,7 @@ def add_mailbox_user(setup_path, creds, lp, names, username=None):
     """
 
     # Step 1. Open openchange.ldb
-    db = Ldb(url="openchange.ldb", session_info=system_session(),
-                  credentials=creds, lp=lp)
+    db = OpenChangeDB(creds, lp=lp)
 
     # Step 2. Add user object
     mailboxGUID = str(uuid.uuid4())
@@ -213,8 +219,7 @@ def add_mailbox_root_folder(setup_path, creds, lp, names, username=None,
     names.ocuserdn = "CN=%s,%s" % (username, names.ocfirstorgdn)
 
     # Step 1. Open openchange.ldb
-    db = Ldb(url="openchange.ldb", session_info=system_session(),
-                  credentials=creds, lp=lp)
+    db = OpenChangeDB(creds, lp=lp)
 
     # Step 2. Add root folder to user subtree
     FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)

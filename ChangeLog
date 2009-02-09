@@ -1,3 +1,27 @@
+2009-02-09
+    jkerihuel
+	[r1113]
+		- Add a systemfolder member to the MAPI handle structure to make a difference
+		  between objects managed by mapistore and those stored within openchange.ldb 
+		  (root mailbox folders).
+		
+		- Add opaque functions to set/get private_data and systemfolder to the MAPI 
+		  handles API.
+	[r1112]
+		Minor doxygen fix/improvement
+	[r1109]
+		Add libmapistore object files to the ignore list
+	[r1108]
+		- Add a very preliminary and light libmapistore implementation.
+		mapistore only supplies init/release and add/del backend contexts.
+		This commit also includes a sqlite3 backend skeleton (open/close sqlite db)
+		- A temporary mapistore testing tool has been added locally for implementation checks.
+    jelmer
+	[r1111]
+		Use convenience function for connecting to openchange.ldb.
+	[r1110]
+		Use standard LDB functions - openchange.ldb is not a SAM database.
+
 2009-02-08
     bradh
 	[r1106]

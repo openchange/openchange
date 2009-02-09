@@ -708,23 +708,37 @@ LIBMAPISERVER_SO_VERSION = 0
 
 .PHONY: mapiproxy
 
-mapiproxy: 	idl 							\
-		libmapiproxy						\
-		libmapiserver						\
-		mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) 			\
-		mapiproxy-modules					\
-		mapiproxy-servers
+mapiproxy: 		idl 					\
+			libmapiproxy				\
+			libmapiserver				\
+			libmapistore				\
+			mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) 	\
+			mapiproxy-modules			\
+			mapiproxy-servers
 
-mapiproxy-install: mapiproxy mapiproxy-modules-install mapiproxy-servers-install libmapiproxy-install libmapiserver-install
+mapiproxy-install: 	mapiproxy				\
+			mapiproxy-modules-install		\
+			mapiproxy-servers-install		\
+			libmapiproxy-install			\
+			libmapiserver-install			\
+			libmapistore-install
 	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
 	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
 
-mapiproxy-uninstall: mapiproxy-modules-uninstall mapiproxy-servers-uninstall libmapiproxy-uninstall libmapiserver-uninstall
+mapiproxy-uninstall: 	mapiproxy-modules-uninstall		\
+			mapiproxy-servers-uninstall		\
+			libmapiproxy-uninstall			\
+			libmapiserver-uninstall			\
+			libmapistore-uninstall
 	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_mapiproxy.*
 	rm -f $(DESTDIR)$(libdir)/libmapiproxy.*
 	rm -f $(DESTDIR)$(includedir)/libmapiproxy.h
 
-mapiproxy-clean:: mapiproxy-modules-clean mapiproxy-servers-clean libmapiproxy-clean libmapiserver-clean
+mapiproxy-clean:: 	mapiproxy-modules-clean			\
+			mapiproxy-servers-clean			\
+			libmapiproxy-clean			\
+			libmapiserver-clean			\
+			libmapistore-clean
 	rm -f mapiproxy/*.o mapiproxy/*.po
 	rm -f mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT)
 
@@ -816,6 +830,89 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiserver/
 mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
 
+
+################
+# libmapistore
+################
+
+libmapistore: 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+		$(OC_MAPISTORE)						\
+		mapistore_test
+
+libmapistore-install:	$(OC_MAPISTORE_INSTALL)
+	$(INSTALL) -m 0755 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapistore.$(SHLIBEXT)
+	$(INSTALL) -d $(DESTDIR)$(includedir)/mapistore
+	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore.h $(DESTDIR)$(includedir)/mapistore/
+	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore_errors.h $(DESTDIR)$(includedir)/mapistore/
+	$(INSTALL) -m 0644 mapiproxy/libmapiserver.pc $(DESTDIR)$(libdir)/pkgconfig
+
+libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
+	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o
+	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
+
+libmapistore-uninstall:	$(OC_MAPISTORE_UNINSTALL)
+	rm -f $(DESTDIR)$(libdir)/libmapistore.*
+	rm -rf $(DESTDIR)$(includedir)/mapistore
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapistore.pc
+
+libmapistore-distclean: libmapistore-clean
+	rm -f mapiproxy/libmapistore.pc
+
+distclean:: libmapistore-distclean
+
+mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mapistore_interface.po	\
+							mapiproxy/libmapistore/mapistore_processing.po	\
+							mapiproxy/libmapistore/mapistore_backend.po
+	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) $^ -L. $(LIBS)
+
+mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+#####################
+# mapistore backends
+#####################
+
+mapistore_sqlite3: mapiproxy/libmapistore/backends/mapistore_sqlite3.$(SHLIBEXT)
+
+mapistore_sqlite3-install:
+	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
+	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_sqlite3.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
+
+mapistore_sqlite3-uninstall:
+	rm -rf $(DESTDIR)$(libdir)/mapistore_backends
+
+mapistore_sqlite3-clean:
+	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.o
+	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.po
+
+clean:: mapistore_sqlite3-clean
+
+mapistore_sqlite3-distclean: mapistore_sqlite3-clean
+	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.so
+
+distclean:: mapistore_sqlite3-distclean
+
+mapiproxy/libmapistore/backends/mapistore_sqlite3.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_sqlite3.po
+	@echo "Linking mapistore module $@"
+	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $^ -L. $(LIBS) $(SQLITE_LIBS)
+
+#######################
+# mapistore test tools
+#######################
+
+mapistore_test: bin/mapistore_test
+
+bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.o		\
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) -lpopt
+
+mapistore_clean:
+	rm -f mapiproxy/libmapistore/tests/*.o
+	rm -f bin/mapistore_test
+
+clean:: mapistore_clean
 
 ####################
 # mapiproxy modules

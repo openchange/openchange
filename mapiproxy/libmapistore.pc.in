@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+datarootdir=@prefix@/share
+datadir=@datadir@
+
+Name: MAPISTORE
+Description: MAPI Storage Abstraction Layer library
+Version: @PACKAGE_VERSION@ 
+Libs: -L${libdir} -lmapistore
+Libs.private: @LIBS@
+Cflags: -I${includedir}
+Requires: talloc tdb

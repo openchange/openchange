@@ -92,14 +92,16 @@ if test "x$1_set" != "xset"; then
 		OC_$2_INSTALL+=" $1-install"
    		OC_$2_UNINSTALL+=" $1-uninstall"
 	;;
-	SERVER)
+	SERVER|MAPISTORE)
 		OC_$2+=" $1"
+		OC_$2_CLEAN+="$1-clean"
 		OC_$2_INSTALL+=" $1-install"
    		OC_$2_UNINSTALL+=" $1-uninstall"
 	;;
    esac
 
    AC_SUBST(OC_$2)
+   AC_SUBST(OC_$2_CLEAN)
    AC_SUBST(OC_$2_INSTALL)
    AC_SUBST(OC_$2_UNINSTALL)
 
@@ -357,6 +359,21 @@ if test x"$enable_libmagic" = x"yes"; then
 fi
 
 
+dnl ##########################################################################
+dnl libmapistore backends dependencies
+dnl ##########################################################################
+
+dnl --------------------------------------------------------------------------
+dnl Check for sqlite3
+dnl --------------------------------------------------------------------------
+PKG_CHECK_MODULES(SQLITE, sqlite3, SQLITEFOUND=yes, [SQLITEFOUND=no])
+AC_SUBST(SQLITE_CFLAGS)
+AC_SUBST(SQLITE_LIBS)
+
+if test x"$SQLITEFOUND" = x"yes"; then
+   OC_RULE_ADD(mapistore_sqlite3, MAPISTORE)
+fi
+
 
 dnl ##########################################################################
 dnl torture dependencies
@@ -448,8 +465,9 @@ dnl ***********************
 dnl Makefiles 
 dnl ***********************
 AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc libocpf.pc mapiproxy/libmapiproxy.pc
-		 mapiproxy/libmapiserver.pc Doxyfile libmapi++/Doxyfile libocpf/Doxyfile 
-		 libmapiadmin/Doxyfile libmapi/Doxyfile mapiproxy/Doxyfile utils/mapitest/Doxyfile])
+		 mapiproxy/libmapiserver.pc mapiproxy/libmapistore.pc Doxyfile libmapi++/Doxyfile 
+		 libocpf/Doxyfile libmapiadmin/Doxyfile libmapi/Doxyfile mapiproxy/Doxyfile 
+		 utils/mapitest/Doxyfile])
 AC_OUTPUT
 
 
@@ -494,6 +512,9 @@ OpenChange Configuration (Please review)
 
 	   * OpenChange Server:
 	     - mapiproxy:		$enable_mapiproxy
+
+	   * OpenChange mapistore backends:
+	     - sqlite3:			$enable_mapistore_sqlite3
 
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient

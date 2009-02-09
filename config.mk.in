@@ -29,8 +29,10 @@ pythondir=@pythondir@
 sambaprefix=@sambaprefix@
 
 DSOOPT=-shared -fPIC
-CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 \
-	   -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\" 
+CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3		\
+	   -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"				\
+	   -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"	\
+	   -DMAPISTORE_MAPPING_PATH=\"$(prefix)/private/mapistore\"	
 
 # This value should be determined by configure at some point
 SHLIBEXT=so
@@ -78,6 +80,14 @@ OC_SERVER=@OC_SERVER@
 OC_SERVER_INSTALL=@OC_SERVER_INSTALL@
 OC_SERVER_UNINSTALL=@OC_SERVER_UNINSTALL@
 
+# MAPISTORE BACKENDS
+OC_MAPISTORE=@OC_MAPISTORE@
+OC_MAPISTORE_CLEAN=@OC_MAPISTORE_CLEAN@
+OC_MAPISTORE_INSTALL=@OC_MAPISTORE_INSTALL@
+OC_MAPISTORE_UNINSTALL=@OC_MAPISTORE_UNINSTALL@
+
+SQLITE_CFLAGS=@SQLITE_CFLAGS@
+SQLITE_LIBS=@SQLITE_LIBS@
 
 # SWIG
 SWIGDIRS-ALL=@SWIGDIRSALL@

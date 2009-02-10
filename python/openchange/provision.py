@@ -236,9 +236,7 @@ def newmailbox(setup_path, username=None, firstorg=None, firstou=None):
     print "ReplicaID: 0x%x" % ReplicaID
 
     # Step 2. Check if the user already exists
-    ret = db.lookup_mailbox_user(setup_path, names, 
-                                      names.netbiosname, username)
-    assert(ret == True)
+    assert db.user_exists(names.netbiosname, username)
 
     # Step 3. Create the user object
     db.add_mailbox_user(setup_path, names, username=username)

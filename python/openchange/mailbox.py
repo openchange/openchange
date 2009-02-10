@@ -2,6 +2,7 @@
 
 # OpenChange provisioning
 # Copyright (C) Julien Kerihuel <j.kerihuel@openchange.org> 2009
+# Copyright (C) Jelmer Vernooij <jelmer@openchange.org> 2009
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,14 +35,12 @@ class OpenChangeDB(Ldb):
     def __init__(self):
         Ldb.__init__(self, url="openchange.ldb")
 
-    def lookup_mailbox_user(self, setup_path, names,
-                            server=None, username=None):
+    def lookup_mailbox_user(self, server, username):
         """Check if a user already exists in openchange database.
 
-        :param setup_path: Function that returns the path to a setup.
-        :param names: Provision names context
         :param server: Server object name
         :param username: Username object
+        :return: LDB Object of the user
         """
 
         # Step 1. Search Server object
@@ -53,12 +52,16 @@ class OpenChangeDB(Ldb):
 
         # Step 2. Search User object
         filter = "(&(objectClass=user)(cn=%s))" % (username)
-        res = self.search(server_dn, scope=ldb.SCOPE_SUBTREE,
+        return self.search(server_dn, scope=ldb.SCOPE_SUBTREE,
                            expression=filter, attrs=[])
-        if (len(res) == 1):
-            return False
-        else:
-            return True
+
+    def user_exists(self, username, server):
+        """Check whether a user exists.
+
+        :param username: Username of the user
+        :param server: Server object name
+        """
+        return len(self.lookup_mailbox_user(username, server)) == 1
 
     def get_message_attribute(self, setup_path, names, server=None, attribute=None):
         """Retrieve attribute value from given message database (server).

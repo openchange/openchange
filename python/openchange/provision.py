@@ -223,7 +223,7 @@ def install_schemas(setup_path, names, lp, creds):
     samdb.transaction_commit()
 
 
-def newmailbox(setup_path, username=None, firstorg=None, firstou=None):
+def newmailbox(setup_path, lp, username=None, firstorg=None, firstou=None):
  
     names = guess_names_from_smbconf(lp, firstorg, firstou)
 

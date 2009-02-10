@@ -71,4 +71,4 @@ if opts.create == True:
 	openchange.newuser(lp, creds, username=args[0])
 
 if opts.mailbox == True:
-	openchange.newmailbox(setup_path, username=args[0], firstorg=None, firstou=None)
+	openchange.newmailbox(setup_path, lp, username=args[0], firstorg=None, firstou=None)

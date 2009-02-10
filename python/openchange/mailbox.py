@@ -85,16 +85,14 @@ class OpenChangeDB(Ldb):
         :param server: Server object name
         """
 
-        return self.get_message_attribute(server=server, 
-                                          attribute="ReplicaID")
+        return self.get_message_attribute(server, "ReplicaID")
 
     def get_message_GlobalCount(self, server):
         """Retrieve current mailbox Global Count for given message database (server).
 
         :param server: Server object name
         """
-        return self.get_message_attribute(server=server,
-                                            attribute="GlobalCount")
+        return self.get_message_attribute(server, "GlobalCount")
 
 
     def set_message_GlobalCount(self, setup_path, server, GlobalCount):

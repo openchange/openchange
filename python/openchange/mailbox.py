@@ -27,14 +27,14 @@ import uuid
 
 __docformat__ = 'restructuredText'
 
-class OpenChangeDB(creds, lp):
-    """Open the OpenChange database.
-
-    :param creds: Credentials for the user to connect as
-    :param lp: Loadparm context
+class OpenChangeDB(Ldb):
+    """The OpenChange database.
     """
-    return Ldb(url="openchange.ldb", session_info=system_session(),
-               credentials=creds, lp=lp)
+
+    def __init__(self, creds, lp):
+        Ldb.__init__(self, url="openchange.ldb", 
+            session_info=system_session(),
+            credentials=creds, lp=lp)
 
 
 def get_message_attribute(setup_path, creds, lp, names, server=None, attribute=None):

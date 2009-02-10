@@ -21,7 +21,7 @@
 from base64 import b64encode
 import os
 import samba
-import openchange.mailbox as mailbox
+from openchange import mailbox
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.provision import setup_add_ldif, setup_modify_ldif
@@ -222,26 +222,26 @@ def install_schemas(setup_path, names, lp, creds):
     samdb.transaction_commit()
 
 
-def newmailbox(setup_path, creds, lp, username=None, firstorg=None, firstou=None):
+def newmailbox(setup_path, username=None, firstorg=None, firstou=None):
  
     names = guess_names_from_smbconf(lp, firstorg, firstou)
 
+    db = mailbox.OpenChangeDB()
+
     # Step 1. Retrieve current FID index
-    GlobalCount = mailbox.get_message_GlobalCount(setup_path, creds, lp, 
-                                                  names, names.netbiosname)
-    ReplicaID = mailbox.get_message_ReplicaID(setup_path, creds, lp,
-                                              names, names.netbiosname)
+    GlobalCount = db.get_message_GlobalCount(setup_path, names, names.netbiosname)
+    ReplicaID = db.get_message_ReplicaID(setup_path, names, names.netbiosname)
     print "username is %s" % (username)
     print "GlobalCount: 0x%x" % GlobalCount
     print "ReplicaID: 0x%x" % ReplicaID
 
     # Step 2. Check if the user already exists
-    ret = mailbox.lookup_mailbox_user(setup_path, creds, lp, names, 
+    ret = db.lookup_mailbox_user(setup_path, names, 
                                       names.netbiosname, username)
     assert(ret == True)
 
     # Step 3. Create the user object
-    mailbox.add_mailbox_user(setup_path, creds, lp, names, username=username)
+    db.add_mailbox_user(setup_path, names, username=username)
 
     # Step 4. Create system mailbox folders for this user
     system_folders = [
@@ -262,19 +262,18 @@ def newmailbox(setup_path, creds, lp, username=None, firstorg=None, firstou=None
 
     SystemIdx = 1
     for i in system_folders:
-        mailbox.add_mailbox_root_folder(setup_path, creds, lp, names, 
-                                        username=username, foldername=i, 
-                                        GlobalCount=GlobalCount, ReplicaID=ReplicaID,
-                                        SystemIdx=SystemIdx)
+        db.add_mailbox_root_folder(setup_path, names, 
+            username=username, foldername=i, 
+            GlobalCount=GlobalCount, ReplicaID=ReplicaID,
+            SystemIdx=SystemIdx)
         GlobalCount += 1
         SystemIdx += 1
 
     # Step 5. Update FolderIndex
-    mailbox.set_message_GlobalCount(setup_path, creds, lp, names, 
+    db.set_message_GlobalCount(setup_path, names, 
                                     names.netbiosname, GlobalCount=GlobalCount)
         
-    GlobalCount = mailbox.get_message_GlobalCount(setup_path, creds, lp, 
-                                                  names, names.netbiosname)
+    GlobalCount = db.get_message_GlobalCount(setup_path, names, names.netbiosname)
     print "GlobalCount: 0x%x" % GlobalCount
 
 

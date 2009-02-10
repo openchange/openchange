@@ -229,8 +229,8 @@ def newmailbox(setup_path, username=None, firstorg=None, firstou=None):
     db = mailbox.OpenChangeDB()
 
     # Step 1. Retrieve current FID index
-    GlobalCount = db.get_message_GlobalCount(setup_path, names, names.netbiosname)
-    ReplicaID = db.get_message_ReplicaID(setup_path, names, names.netbiosname)
+    GlobalCount = db.get_message_GlobalCount(names.netbiosname)
+    ReplicaID = db.get_message_ReplicaID(names.netbiosname)
     print "username is %s" % (username)
     print "GlobalCount: 0x%x" % GlobalCount
     print "ReplicaID: 0x%x" % ReplicaID
@@ -268,10 +268,9 @@ def newmailbox(setup_path, username=None, firstorg=None, firstou=None):
         SystemIdx += 1
 
     # Step 5. Update FolderIndex
-    db.set_message_GlobalCount(setup_path, names, 
-                                    names.netbiosname, GlobalCount=GlobalCount)
+    db.set_message_GlobalCount(setup_path, names.netbiosname, GlobalCount=GlobalCount)
         
-    GlobalCount = db.get_message_GlobalCount(setup_path, names, names.netbiosname)
+    GlobalCount = db.get_message_GlobalCount(names.netbiosname)
     print "GlobalCount: 0x%x" % GlobalCount
 
 

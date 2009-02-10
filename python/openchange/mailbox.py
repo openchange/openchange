@@ -63,11 +63,9 @@ class OpenChangeDB(Ldb):
         """
         return len(self.lookup_mailbox_user(username, server)) == 1
 
-    def get_message_attribute(self, setup_path, names, server=None, attribute=None):
+    def get_message_attribute(self, server, attribute):
         """Retrieve attribute value from given message database (server).
 
-        :param setup_path: Function that returns the path to a setup.
-        :param names: Provision names context
         :param server: Server object name
         """
         # Step 1. Search Attribute from 'server' object
@@ -81,33 +79,28 @@ class OpenChangeDB(Ldb):
 
         return attribute
 
-    def get_message_ReplicaID(self, setup_path, names, server=None):
+    def get_message_ReplicaID(self, server):
         """Retrieve current mailbox Replica ID for given message database (server).
 
-        :param setup_path: Function that returns the path to a setup.
-        :param names: Provision names context
         :param server: Server object name
         """
 
-        return self.get_message_attribute(setup_path, names, server=server, 
+        return self.get_message_attribute(server=server, 
                                           attribute="ReplicaID")
 
-    def get_message_GlobalCount(self, setup_path, names, server=None):
+    def get_message_GlobalCount(self, server):
         """Retrieve current mailbox Global Count for given message database (server).
 
-        :param setup_path: Function that returns the path to a setup.
-        :param names: Provision names context
         :param server: Server object name
         """
-        return self.get_message_attribute(setup_path, names, server=server,
+        return self.get_message_attribute(server=server,
                                             attribute="GlobalCount")
 
 
-    def set_message_GlobalCount(self, setup_path, names, server=None, GlobalCount=None):
+    def set_message_GlobalCount(self, setup_path, server, GlobalCount):
         """Update current mailbox GlobalCount for given message database (server).
 
         :param setup_path: Function that returns the path to a setup.
-        :param names: Provision names context
         :param server: Server object name
         :param index: Mailbox new GlobalCount value
         """
@@ -134,7 +127,7 @@ GlobalCount: 0x%x
         finally:
             self.transaction_commit()
 
-    def add_mailbox_user(self, setup_path, names, username=None):
+    def add_mailbox_user(self, setup_path, names, username):
         """Add a user record in openchange database.
 
         :param setup_path: Function that returns the path to a setup.
@@ -157,9 +150,9 @@ GlobalCount: 0x%x
                 "REPLICAGUID": replicaGUID
                 })
 
-    def add_mailbox_root_folder(self, setup_path, names, username=None, 
-                                foldername=None, GlobalCount=None, ReplicaID=None,
-                                SystemIdx=None):
+    def add_mailbox_root_folder(self, setup_path, names, username, 
+                                foldername, GlobalCount, ReplicaID,
+                                SystemIdx):
         """Add a root folder to the user mailbox
 
         :param setup_path: Function that returns the path to a setup.

@@ -22,6 +22,7 @@ from base64 import b64encode
 import os
 import samba
 from openchange import mailbox
+from samba import Ldb
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.provision import setup_add_ldif, setup_modify_ldif
@@ -284,7 +285,7 @@ def newuser(lp, creds, username=None):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    samdb = SamDB(url="users.ldb", session_info=system_session(),
+    samdb = Ldb(url="users.ldb", session_info=system_session(),
                   credentials=creds, lp=lp)
 
     samdb.transaction_start()
@@ -332,7 +333,7 @@ def accountcontrol(lp, creds, username=None, value=0):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    samdb = SamDB(url="users.ldb", session_info=system_session(),
+    samdb = Ldb(url="users.ldb", session_info=system_session(),
                   credentials=creds, lp=lp)
 
     samdb.transaction_start()
@@ -387,7 +388,7 @@ def setup_openchangedb(path, setup_path, credentials, names, lp):
 
     session_info = system_session()
 
-    openchange_ldb = SamDB(path, session_info=session_info,
+    openchange_ldb = Ldb(path, session_info=session_info,
                            credentials=credentials, lp=lp)
 
     # Wipes the database
@@ -398,7 +399,7 @@ def setup_openchangedb(path, setup_path, credentials, names, lp):
 
     openchange_ldb.load_ldif_file_add(setup_path("openchangedb/oc_provision_openchange_init.ldif"))
 
-    openchange_ldb = SamDB(path, session_info=session_info,
+    openchange_ldb = Ldb(path, session_info=session_info,
                            credentials=credentials, lp=lp)
 
     setup_add_ldif(openchange_ldb, setup_path("openchangedb/oc_provision_openchange.ldif"), {

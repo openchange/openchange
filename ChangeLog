@@ -1,3 +1,18 @@
+2009-02-10
+    jelmer
+	[r1120]
+		fix openchange_newuser.
+	[r1119]
+		Use SamDB for actual SAM databases, Ldb otherwise.
+	[r1118]
+		Remove unused parameters, don't make parameters optional if they are mandatory.
+	[r1117]
+		remove unused parameters.
+	[r1116]
+		make mailbox object-oriented, remove creds/lp parameters.
+	[r1115]
+		Fix OpenChangeDB syntax.
+
 2009-02-09
     jkerihuel
 	[r1113]

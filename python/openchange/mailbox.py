@@ -28,12 +28,53 @@ import uuid
 
 __docformat__ = 'restructuredText'
 
+
+class NoSuchServer(Exception):
+    """Raised when a server could not be found."""
+
+
 class OpenChangeDB(Ldb):
     """The OpenChange database.
     """
 
     def __init__(self):
         Ldb.__init__(self, url="openchange.ldb")
+
+    def setup(self):
+        self.add_ldif("""
+dn: @OPTIONS
+checkBaseOnSearch: TRUE
+
+dn: @INDEXLIST
+@IDXATTR: cn
+
+dn: @ATTRIBUTES
+cn: CASE_INSENSITIVE
+dn: CASE_INSENSITIVE
+
+""")
+
+    def add_server(self, ocserverdn, netbiosname, firstorg, firstou):
+        self.add({"dn": ocserverdn,
+                  "objectClass": ["top", "server"],
+                  "cn": netbiosname,
+                  "GlobalCount": "0x1",
+                  "ReplicaID": "0x1"})
+        self.add({"dn": "CN=%s,%s" % (firstorg, ocserverdn),
+                  "objectClass": ["top", "org"],
+                  "cn": firstorg})
+        self.add({"dn": "CN=%s,CN=%s,%s" % (firstou, firstorg, ocserverdn),
+                  "objectClass": ["top", "ou"],
+                  "cn": firstou})
+
+    def lookup_server(self, cn, attributes=[]):
+        # Step 1. Search Server object
+        filter = "(&(objectClass=server)(cn=%s))" % cn
+        res = self.search("", scope=ldb.SCOPE_SUBTREE,
+                           expression=filter, attrs=attributes)
+        if len(res) != 1:
+            raise NoSuchServer(cn)
+        return res[0]
 
     def lookup_mailbox_user(self, server, username):
         """Check if a user already exists in openchange database.
@@ -42,13 +83,7 @@ class OpenChangeDB(Ldb):
         :param username: Username object
         :return: LDB Object of the user
         """
-
-        # Step 1. Search Server object
-        filter = "(&(objectClass=server)(cn=%s))" % (server)
-        res = self.search("", scope=ldb.SCOPE_SUBTREE,
-                           expression=filter, attrs=[])
-        assert(len(res) == 1)
-        server_dn = res[0].dn
+        server_dn = self.lookup_server(server, []).dn
 
         # Step 2. Search User object
         filter = "(&(objectClass=user)(cn=%s))" % (username)
@@ -68,22 +103,13 @@ class OpenChangeDB(Ldb):
 
         :param server: Server object name
         """
-        # Step 1. Search Attribute from 'server' object
-        filter = "(&(objectClass=server)(cn=%s))" % (server)
-        res = self.search("", scope=ldb.SCOPE_SUBTREE,
-                           expression=filter, attrs=[attribute])
-        assert(len(res) == 1)
-
-        # Step 2. Convert result to hexadecimal
-        attribute = int(res[0][attribute][0], 16)
-        return attribute
+        return int(self.lookup_server(server, [attribute])[attribute][0], 16)
 
     def get_message_ReplicaID(self, server):
         """Retrieve current mailbox Replica ID for given message database (server).
 
         :param server: Server object name
         """
-
         return self.get_message_attribute(server, "ReplicaID")
 
     def get_message_GlobalCount(self, server):
@@ -100,15 +126,7 @@ class OpenChangeDB(Ldb):
         :param server: Server object name
         :param index: Mailbox new GlobalCount value
         """
-
-        # Step 2. Search Server object
-        filter = "(&(objectClass=server)(cn=%s))" % (server)
-        res = self.search("", scope=ldb.SCOPE_SUBTREE,
-                           expression=filter, attrs=[])
-        assert(len(res) == 1)
-
-        # Step 3. Update Server object
-        server_dn = res[0].dn
+        server_dn = self.lookup_server(server, [])
 
         newGlobalCount = """
 dn: %s
@@ -126,7 +144,7 @@ GlobalCount: 0x%x
     def add_mailbox_user(self, ocfirstorgdn, username):
         """Add a user record in openchange database.
 
-        :param username: Username object
+        :param username: Username
         """
 
         # Step 1. Add user object
@@ -142,12 +160,11 @@ GlobalCount: 0x%x
                   "ReplicaID": replicaID,
                   "ReplicaGUID": replicaGUID})
 
-    def add_mailbox_root_folder(self, names, username, 
+    def add_mailbox_root_folder(self, ocfirstorg, username, 
                                 foldername, GlobalCount, ReplicaID,
                                 SystemIdx):
         """Add a root folder to the user mailbox
 
-        :param names: Provision names context
         :param username: Username object
         :param foldername: Folder name
         :param GlobalCount: current global counter for message database
@@ -155,12 +172,12 @@ GlobalCount: 0x%x
         :param SystemIdx: System Index for root folders
         """
 
-        names.ocuserdn = "CN=%s,%s" % (username, names.ocfirstorgdn)
+        ocuserdn = "CN=%s,%s" % (username, ocfirstorgdn)
 
         # Step 1. Add root folder to user subtree
         FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
         print "[+] Adding SystemRoot folder '%s' (%s) to %s" % (FID, foldername, username)
-        self.add({"dn": "CN=%s,%s" % (FID, names.ocuserdn),
+        self.add({"dn": "CN=%s,%s" % (FID, ocuserdn),
                   "objectClass": ["systemfolder"],
                   "cn": FID,
                   "fid": FID,

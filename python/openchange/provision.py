@@ -51,7 +51,6 @@ class ProvisionNames:
         # OpenChange dispatcher database specific
         self.ocfirstorgdn = None
         self.ocserverdn = None
-        self.ocuserdn = None
 
 def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     """Guess configuration settings to use from smb.conf.
@@ -223,7 +222,7 @@ def install_schemas(setup_path, names, lp, creds):
     samdb.transaction_commit()
 
 
-def newmailbox(lp, username=None, firstorg=None, firstou=None):
+def newmailbox(lp, username, firstorg=None, firstou=None):
  
     names = guess_names_from_smbconf(lp, firstorg, firstou)
 
@@ -261,7 +260,7 @@ def newmailbox(lp, username=None, firstorg=None, firstou=None):
 
     SystemIdx = 1
     for i in system_folders:
-        db.add_mailbox_root_folder(names, 
+        db.add_mailbox_root_folder(names.ocfirstorg, 
             username=username, foldername=i, 
             GlobalCount=GlobalCount, ReplicaID=ReplicaID,
             SystemIdx=SystemIdx)
@@ -387,16 +386,7 @@ def setup_openchangedb(path, setup_path, credentials, names, lp):
     """
 
     openchange_ldb = Ldb(path)
-
-    # Wipes the database
-    try:
-        openchange_ldb.erase()
-    except:
-        os.unlink(path)
-
-    openchange_ldb.load_ldif_file_add(setup_path("openchangedb/oc_provision_openchange_init.ldif"))
-
-    openchange_ldb = Ldb(path)
+    openchange_ldb.setup()
 
     # Add a server object
     # It is responsible for holding the GlobalCount identifier (48 bytes)

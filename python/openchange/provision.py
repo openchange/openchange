@@ -35,7 +35,8 @@ FIRST_ORGANIZATION = "First Organization"
 FIRST_ORGANIZATION_UNIT = "First Organization Unit"
 
 
-class ProvisionNames:
+class ProvisionNames(object):
+
     def __init__(self):
         self.rootdn = None
         self.domaindn = None
@@ -116,18 +117,19 @@ def install_schemas(setup_path, names, lp, creds):
     :param lp: Loadparm context
     :param creds: Credentials Context
     """
+    session_info = system_session()
 
     # Step 1. Extending the prefixmap attribute of the schema DN record
-    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
+    db = SamDB(url=lp.get("sam database"), session_info=session_info,
                   credentials=creds, lp=lp)
 
     prefixmap = open(setup_path("AD/prefixMap.txt"), 'r').read()
 
-    samdb.transaction_start()
+    db.transaction_start()
 
     try:
         print "[+] Step 1: Register Exchange OIDs"
-        setup_modify_ldif(samdb,
+        setup_modify_ldif(db,
                           setup_path("AD/provision_schema_basedn_modify.ldif"), {
                 "SCHEMADN": names.schemadn,
                 "NETBIOSNAME": names.netbiosname,
@@ -137,74 +139,74 @@ def install_schemas(setup_path, names, lp, creds):
                 "PREFIXMAP_B64": b64encode(prefixmap)
                 })
     except:
-        samdb.transaction_cancel()
+        db.transaction_cancel()
         raise
 
-    samdb.transaction_commit()
+    db.transaction_commit()
 
 
     # Step 2. Add new Exchange classes to the schema
-    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(), 
+    db = SamDB(url=lp.get("sam database"), session_info=session_info, 
                   credentials=creds, lp=lp)
 
-    samdb.transaction_start()
+    db.transaction_start()
 
     try:
         print "[+] Step 2: Add new Exchange classes and attributes to Samba schema"
-        setup_add_ldif(samdb, setup_path("AD/oc_provision_schema.ldif"), { 
+        setup_add_ldif(db, setup_path("AD/oc_provision_schema.ldif"), { 
                 "SCHEMADN": names.schemadn
                 })
     except:
-        samdb.transaction_cancel()
+        db.transaction_cancel()
         raise
 
-    samdb.transaction_commit()
+    db.transaction_commit()
 
     # Step 3. Add ADSC classes to the schema
-    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
+    db = SamDB(url=lp.get("sam database"), session_info=session_info,
                   credentials=creds, lp=lp)
 
-    samdb.transaction_start()
+    db.transaction_start()
 
     try:
         print "[+] Step 3: Add missing ADSC classes to Samba schema"
-        setup_add_ldif(samdb, setup_path("AD/oc_provision_schema_ADSC.ldif"), {
+        setup_add_ldif(db, setup_path("AD/oc_provision_schema_ADSC.ldif"), {
                 "SCHEMADN": names.schemadn
                 })
     except:
-        samdb.transaction_cancel()
+        db.transaction_cancel()
         raise
 
-    samdb.transaction_commit()
+    db.transaction_commit()
 
 
     # Step 4. Extend existing classes and attributes
-    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
+    db = SamDB(url=lp.get("sam database"), session_info=session_info,
                   credentials=creds, lp=lp)
 
-    samdb.transaction_start()
+    db.transaction_start()
 
     try:
         print "[+] Step 4: Extend existing Samba classes and attributes"
-        setup_modify_ldif(samdb, setup_path("AD/oc_provision_schema_modify.ldif"), {
+        setup_modify_ldif(db, setup_path("AD/oc_provision_schema_modify.ldif"), {
                 "SCHEMADN": names.schemadn
                 })
     except:
-        samdb.transaction_cancel()
+        db.transaction_cancel()
         raise
 
-    samdb.transaction_commit()
+    db.transaction_commit()
 
 
     # Step 4. Add configuration objects
-    samdb = SamDB(url=lp.get("sam database"), session_info=system_session(),
+    db = SamDB(url=lp.get("sam database"), session_info=system_session(),
                   credentials=creds, lp=lp)
 
-    samdb.transaction_start()
+    db.transaction_start()
 
     try:
         print "[+] Step 5: Exchange Samba with Exchange configuration objects"
-        setup_add_ldif(samdb, setup_path("AD/oc_provision_configuration.ldif"), {
+        setup_add_ldif(db, setup_path("AD/oc_provision_configuration.ldif"), {
                 "FIRSTORG": names.firstorg,
                 "FIRSTORGDN": names.firstorgdn,
                 "CONFIGDN": names.configdn,
@@ -216,16 +218,14 @@ def install_schemas(setup_path, names, lp, creds):
                 "HOSTNAME": names.hostname
                 })
     except:
-        samdb.transaction_cancel()
+        db.transaction_cancel()
         raise
 
-    samdb.transaction_commit()
+    db.transaction_commit()
 
 
-def newmailbox(lp, username, firstorg=None, firstou=None):
- 
+def newmailbox(lp, username, firstorg, firstou):
     names = guess_names_from_smbconf(lp, firstorg, firstou)
-
     db = mailbox.OpenChangeDB()
 
     # Step 1. Retrieve current FID index
@@ -256,7 +256,7 @@ def newmailbox(lp, username, firstorg=None, firstou=None):
         "Search",
         "Views",
         "Shortcuts"
-        ];
+        ]
 
     SystemIdx = 1
     for i in system_folders:
@@ -284,14 +284,12 @@ def newuser(lp, creds, username=None):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    samdb = Ldb(url="users.ldb", session_info=system_session(),
+    db = Ldb(url="users.ldb", session_info=system_session(),
                   credentials=creds, lp=lp)
 
-    samdb.transaction_start()
-    try:
-        user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
+    user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
 
-        extended_user = """
+    extended_user = """
 dn: %s
 changetype: modify
 add: displayName
@@ -311,12 +309,7 @@ proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%s
 proxyAddresses: SMTP:%s@%s
 msExchUserAccountControl: 0
 """ % (user_dn, username, username, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.firstorg, username, names.dnsdomain, username, username, names.dnsdomain)
-
-        samdb.modify_ldif(extended_user)
-    except:
-        samdb.transaction_cancel()
-        raise
-    samdb.transaction_commit()
+    db.modify_ldif(extended_user)
 
     print "[+] User %s extended and enabled" % username
 
@@ -332,23 +325,17 @@ def accountcontrol(lp, creds, username=None, value=0):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    samdb = Ldb(url="users.ldb", session_info=system_session(),
+    db = Ldb(url="users.ldb", session_info=system_session(),
                   credentials=creds, lp=lp)
 
-    samdb.transaction_start()
-    try:
-        user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
-        extended_user = """
+    user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
+    extended_user = """
 dn: %s
 changetype: modify
 replace: msExchUserAccountControl
 msExchUserAccountControl: %d
 """ % (user_dn, value)
-        samdb.modify_ldif(extended_user)
-    except:
-        samdb.transaction_cancel()
-        raise
-    samdb.transaction_commit()
+    db.modify_ldif(extended_user)
     if value == 2:
         print "[+] Account %s disabled" % username
     else:
@@ -364,7 +351,6 @@ def provision(setup_path, lp, creds, firstorg=None, firstou=None):
     :param firstorg: First Organization
     :param firstou: First Organization Unit
     """
-
     names = guess_names_from_smbconf(lp, firstorg, firstou)
 
     print "NOTE: This operation can take several minutes"
@@ -373,42 +359,42 @@ def provision(setup_path, lp, creds, firstorg=None, firstou=None):
     install_schemas(setup_path, names, lp, creds)
 
 
-def setup_openchangedb(path, setup_path, credentials, names, lp):
-    """Setup the OpenChange database.
-
-    :param path: Path to the database.
-    :param setup_path: Function that returns the path to a setup.
-    :param session_info: Session info
-    :param credentials: Credentials
-    :param lp: Loadparm context
-
-    :note: This will wipe the OpenChange Database!
-    """
-
-    openchange_ldb = Ldb(path)
-    openchange_ldb.setup()
-
-    # Add a server object
-    # It is responsible for holding the GlobalCount identifier (48 bytes)
-    # and the Replica identifier
-    openchange_ldb.add_server(names.ocserverdn, names.netbiosname, names.firstorg, names.firstou)
-
-
-def openchangedb_provision(setup_path, lp, creds, firstorg=None, firstou=None):
+def openchangedb_provision(lp, firstorg=None, firstou=None):
     """Create the OpenChange database.
 
-    :param setup_path: Path to the setup directory
     :param lp: Loadparm context
-    :param creds: Credentials context
     :param firstorg: First Organization
     :param firstou: First Organization Unit
     """
-
     private_dir = lp.get("private dir")
     path = os.path.join(private_dir, "openchange.ldb")
 
     names = guess_names_from_smbconf(lp, firstorg, firstou)
     
     print "Setting up openchange db"
-    setup_openchangedb(path, setup_path, creds, names, lp)
+    openchange_ldb = mailbox.OpenChangeDB(path)
+    openchange_ldb.setup()
+
+    # Add a server object
+    # It is responsible for holding the GlobalCount identifier (48 bytes)
+    # and the Replica identifier
+    openchange_ldb.add_server(names.ocserverdn, names.netbiosname, 
+        names.firstorg, names.firstou)
+
+
+def find_setup_dir():
+    """Find the setup directory used by provision."""
+    dirname = os.path.dirname(__file__)
+    if "/site-packages/" in dirname:
+        prefix = dirname[:dirname.index("/site-packages/")]
+        for suffix in ["share/openchange/setup", "share/setup", "share/samba/setup", "setup"]:
+            ret = os.path.join(prefix, suffix)
+            if os.path.isdir(ret):
+                return ret
+    # In source tree
+    ret = os.path.join(dirname, "../../setup")
+    if os.path.isdir(ret):
+        return ret
+    raise Exception("Unable to find setup directory.")
+
 

@@ -35,8 +35,11 @@ class OpenChangeDB(object):
     """The OpenChange database.
     """
 
-    def __init__(self):
-        self.url = "openchange.ldb"
+    def __init__(self, url=None):
+        if url is None:
+            self.url = "openchange.ldb"
+        else:
+            self.url = url
         self.ldb = Ldb(self.url)
 
     def reopen(self):

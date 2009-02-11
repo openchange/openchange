@@ -163,12 +163,12 @@ GlobalCount: 0x%x
         # Step 1. Add root folder to user subtree
         FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
         print "[+] Adding SystemRoot folder '%s' (%s) to %s" % (FID, foldername, username)
-        setup_add_ldif(self, setup_path("openchangedb/oc_provision_openchange_mailbox_folder.ldif"), {
-                "USERDN": names.ocuserdn,
-                "FOLDER_IDX": FID,
-                "NAME": foldername,
-                "SYSTEMIDX": "%s" % (SystemIdx)
-                })
+        self.add({"dn": "CN=%s,%s" % (FID, names.ocuserdn),
+                  "objectClass": ["systemfolder"],
+                  "cn": FID,
+                  "fid": FID,
+                  "name": foldername,
+                  "SystemIdx": SystemIdx})
 
 
 def gen_mailbox_folder_fid(GlobalCount, ReplicaID):

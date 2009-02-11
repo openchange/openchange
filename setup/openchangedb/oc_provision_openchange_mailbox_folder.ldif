@@ -1,9 +1,0 @@
-#
-# Mailbox Folder object
-#
-dn: CN=${FOLDER_IDX},${USERDN}
-objectClass: systemfolder
-cn: ${FOLDER_IDX}
-fid: ${FOLDER_IDX}
-name: ${NAME}
-SystemIdx: ${SYSTEMIDX}

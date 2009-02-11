@@ -76,7 +76,6 @@ class OpenChangeDB(Ldb):
 
         # Step 2. Convert result to hexadecimal
         attribute = int(res[0][attribute][0], 16)
-
         return attribute
 
     def get_message_ReplicaID(self, server):
@@ -125,12 +124,10 @@ GlobalCount: 0x%x
         finally:
             self.transaction_commit()
 
-    def add_mailbox_user(self, setup_path, names, username):
+    def add_mailbox_user(self, setup_path, ocfirstorgdn, username):
         """Add a user record in openchange database.
 
         :param setup_path: Function that returns the path to a setup.
-        :param names: Provision names context
-        :param server: Server object name
         :param username: Username object
         """
 
@@ -142,7 +139,7 @@ GlobalCount: 0x%x
         print "[+] Adding '%s' record" % (username)
         setup_add_ldif(self, setup_path("openchangedb/oc_provision_openchange_mailbox_user.ldif"), {
                 "USERNAME": username,
-                "FIRSTORGDN": names.ocfirstorgdn,
+                "FIRSTORGDN": ocfirstorgdn,
                 "MAILBOXGUID": mailboxGUID,
                 "REPLICAID": replicaID,
                 "REPLICAGUID": replicaGUID

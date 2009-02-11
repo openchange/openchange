@@ -240,7 +240,7 @@ def newmailbox(setup_path, lp, username=None, firstorg=None, firstou=None):
     assert db.user_exists(names.netbiosname, username)
 
     # Step 3. Create the user object
-    db.add_mailbox_user(setup_path, names, username=username)
+    db.add_mailbox_user(setup_path, names.ocfirstorgdn, username=username)
 
     # Step 4. Create system mailbox folders for this user
     system_folders = [

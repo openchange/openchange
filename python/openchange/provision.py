@@ -402,13 +402,22 @@ def setup_openchangedb(path, setup_path, credentials, names, lp):
     openchange_ldb = Ldb(path, session_info=session_info,
                            credentials=credentials, lp=lp)
 
-    setup_add_ldif(openchange_ldb, setup_path("openchangedb/oc_provision_openchange.ldif"), {
-            "OCSERVERDN": names.ocserverdn,
-            "OCFIRSTORGDN": names.ocfirstorgdn,
-            "FIRSTORG": names.firstorg,
-            "FIRSTOU": names.firstou,
-            "NETBIOSNAME": names.netbiosname
-            })
+    # Add a server object
+    # It is responsible for holding the GlobalCount identifier (48 bytes)
+    # and the Replica identifier
+    openchange_ldb.add({"dn": names.ocserverdn,
+                        "objectClass": ["top", "server"],
+                        "cn": names.netbiosname,
+                        "GlobalCount": "0x1",
+                        "ReplicaID": "0x1"})
+
+    openchange_ldb.add({"dn": "CN=%s,%s" % (names.firstorg, names.ocserverdn),
+                        "objectClass": ["top", "org"],
+                        "cn": names.firstorg})
+
+    openchange_ldb.add({"dn": "CN=%s,CN=%s,%s" (names.firstou, names.firstorg, names.ocserverdn),
+                        "objectClass": ["top", "ou"],
+                        "cn": "${FIRSTOU}"})
 
 
 def openchangedb_provision(setup_path, lp, creds, firstorg=None, firstou=None):

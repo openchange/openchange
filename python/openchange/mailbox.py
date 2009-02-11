@@ -21,8 +21,6 @@
 import os
 import samba
 from samba import Ldb
-from samba.auth import system_session
-from samba.provision import setup_add_ldif
 import ldb
 import uuid
 
@@ -95,13 +93,13 @@ dn: CASE_INSENSITIVE
         return self.ldb.search(server_dn, scope=ldb.SCOPE_SUBTREE,
                            expression=filter, attrs=[])
 
-    def user_exists(self, username, server):
+    def user_exists(self, server, username):
         """Check whether a user exists.
 
         :param username: Username of the user
         :param server: Server object name
         """
-        return len(self.lookup_mailbox_user(username, server)) == 1
+        return len(self.lookup_mailbox_user(server, username)) == 1
 
     def get_message_attribute(self, server, attribute):
         """Retrieve attribute value from given message database (server).
@@ -152,7 +150,6 @@ GlobalCount: 0x%x
         :param username: Username
         """
 
-        # Step 1. Add user object
         mailboxGUID = str(uuid.uuid4())
         replicaID = str(1)
         replicaGUID = str(uuid.uuid4())

@@ -32,10 +32,17 @@ class OpenChangeDBTests(unittest.TestCase):
         self.db.setup()
 
     def test_user_exists_no_server(self):
-        self.assertRaises(NoSuchServer, self.db.user_exists, "foo", "someserver")
+        self.assertRaises(NoSuchServer, self.db.user_exists, "someserver", "foo")
+
+    def test_server_lookup_doesnt_exist(self):
+        self.assertRaises(NoSuchServer, self.db.lookup_server, 
+            "nonexistantserver")
+
+    def test_server_lookup(self):
+        self.db.add_server("dc=blaserver", "blaserver", "firstorg", "firstou")
+        self.assertEquals("dc=blaserver", str(self.db.lookup_server("blaserver")['dn']))
 
     def test_add_mailbox_user(self):
         self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
-        self.db.add_mailbox_user("dc=myserver", "someuser")
-        import pdb; pdb.set_trace()
+        self.db.add_mailbox_user("cn=firstou,cn=firstorg,dc=myserver", "someuser")
         self.assertTrue(self.db.user_exists("myserver", "someuser"))

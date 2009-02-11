@@ -17,9 +17,24 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from openchange.mailbox import NoSuchServer, OpenChangeDB
+
+import os
 import unittest
 
-class MailboxTests(unittest.TestCase):
-    """Tests for Mailbox."""
+class OpenChangeDBTests(unittest.TestCase):
+    """Tests for OpenChangeDB."""
 
-    
+    def setUp(self):
+        if os.path.exists("openchange.ldb"):
+            os.unlink("openchange.ldb")
+        self.db = OpenChangeDB() 
+        self.db.setup()
+
+    def test_user_exists_no_server(self):
+        self.assertRaises(NoSuchServer, self.db.user_exists, "foo", "someserver")
+
+    def test_add_mailbox_user(self):
+        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
+        self.db.add_mailbox_user("dc=myserver", "someuser")
+        self.assertTrue(self.db.user_exists("myserver", "someuser"))

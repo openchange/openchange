@@ -386,10 +386,7 @@ def setup_openchangedb(path, setup_path, credentials, names, lp):
     :note: This will wipe the OpenChange Database!
     """
 
-    session_info = system_session()
-
-    openchange_ldb = Ldb(path, session_info=session_info,
-                           credentials=credentials, lp=lp)
+    openchange_ldb = Ldb(path)
 
     # Wipes the database
     try:
@@ -399,25 +396,12 @@ def setup_openchangedb(path, setup_path, credentials, names, lp):
 
     openchange_ldb.load_ldif_file_add(setup_path("openchangedb/oc_provision_openchange_init.ldif"))
 
-    openchange_ldb = Ldb(path, session_info=session_info,
-                           credentials=credentials, lp=lp)
+    openchange_ldb = Ldb(path)
 
     # Add a server object
     # It is responsible for holding the GlobalCount identifier (48 bytes)
     # and the Replica identifier
-    openchange_ldb.add({"dn": names.ocserverdn,
-                        "objectClass": ["top", "server"],
-                        "cn": names.netbiosname,
-                        "GlobalCount": "0x1",
-                        "ReplicaID": "0x1"})
-
-    openchange_ldb.add({"dn": "CN=%s,%s" % (names.firstorg, names.ocserverdn),
-                        "objectClass": ["top", "org"],
-                        "cn": names.firstorg})
-
-    openchange_ldb.add({"dn": "CN=%s,CN=%s,%s" (names.firstou, names.firstorg, names.ocserverdn),
-                        "objectClass": ["top", "ou"],
-                        "cn": "${FIRSTOU}"})
+    openchange_ldb.add_server(names.ocserverdn, names.netbiosname, names.firstorg, names.firstou)
 
 
 def openchangedb_provision(setup_path, lp, creds, firstorg=None, firstou=None):

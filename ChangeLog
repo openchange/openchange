@@ -1,3 +1,49 @@
+2009-02-11
+    jkerihuel
+	[r1143]
+		Remove debug strings for GetPropertiesSpecific Rop
+	[r1142]
+		Enable verbose output in server mode - useful during development
+	[r1141]
+		Implement preliminary server-side RopGetPropertiesSpecific call for mailbox object.
+	[r1140]
+		- Fix GetProps blob for PT_BINARY: use SBinary_short instead of Binary_r
+		- Fix GetProps size: subcontext is not added to the fixed size calculation
+	[r1133]
+		- GetPropsSpecific size calculation function added to libmapiserver
+		- Function to create a GetProps reply property blob added to libmapiserver
+    jelmer
+	[r1139]
+		Add tests for provisioning.
+	[r1138]
+		Several cleanups in python code, add tests for schema use.
+	[r1137]
+		Don't clear PYTHONPATH override.
+	[r1136]
+		Remove unused imports, add extra tests.
+	[r1135]
+		Use member variable for Ldb, rather than subclassing.
+	[r1134]
+		Remove print statements to avoid cluttering test output.
+	[r1130]
+		Add simple and incomplete testcase for OpenChangeDB.
+	[r1129]
+		Move wipe of data to mailbox.py, simplify arguments to add_root_mailbox.
+	[r1128]
+		Move adding a server to mailbox.py.
+	[r1127]
+		Move ldif from oc_provision_openchange.ldif into Python.
+	[r1126]
+		Stop providing setup_path to OpenChangeDB, as it's no longer used.
+	[r1125]
+		Avoid using separate LDIF file when creating folder mailboxes.
+	[r1124]
+		Avoid using separate LDIF file when creating mailboxes.
+	[r1123]
+		Avoid passing full names object.
+	[r1122]
+		Add check-python target.
+
 2009-02-10
     jelmer
 	[r1120]

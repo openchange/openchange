@@ -55,9 +55,8 @@
 /**
    \details GetPropertiesSpecificRop has fixed response size for:
    -# layout: uint8_t
-   -# prop_data.length: uint16_t
  */
-#define	SIZE_DFLT_ROPGETPROPERTIESSPECIFIC	3
+#define	SIZE_DFLT_ROPGETPROPERTIESSPECIFIC	1
 
 /**
    \details LogonRop has a fixed size for mailbox:

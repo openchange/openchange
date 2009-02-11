@@ -129,7 +129,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		ndr_push_string(ndr, NDR_SCALARS, (char *) value);
 		break;
 	case PT_BINARY:
-		ndr_push_Binary_r(ndr, NDR_BUFFERS, (struct Binary_r *) value);
+		ndr_push_SBinary_short(ndr, NDR_SCALARS, (struct SBinary_short *) value);
 		break;
 	case PT_CLSID:
 		ndr_push_GUID(ndr, NDR_SCALARS, (struct GUID *) value);

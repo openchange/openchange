@@ -59,6 +59,13 @@ struct exchange_emsmdb_session {
 };
 
 
+struct emsmdbp_object_mailbox {
+	char				*owner_Name;
+	char				*owner_EssDN;
+	char				*szUserDN;
+};
+
+
 #define	EMSMDB_PCMSPOLLMAX		60000
 #define	EMSMDB_PCRETRY			6
 #define	EMSMDB_PCRETRYDELAY		10000
@@ -87,6 +94,14 @@ void			*emsmdbp_openchange_ldb_init(struct loadparm_context *);
 bool			emsmdbp_destructor(void *);
 bool			emsmdbp_verify_user(struct dcesrv_call_state *, struct emsmdbp_context *);
 bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context *, const char *, struct ldb_message **);
+
+/* definitions from emsmdbp_object.c */
+struct emsmdbp_object_mailbox *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *);
+
+/* definitions from oxcprpt.c */
+enum MAPISTATUS		EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *, struct emsmdbp_context *,
+							 struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *,
+							 uint32_t *, uint16_t *);
 
 /* definitions from oxcstor.c */
 enum MAPISTATUS		EcDoRpc_RopLogon(TALLOC_CTX *, struct emsmdbp_context *, 

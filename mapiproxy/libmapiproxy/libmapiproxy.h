@@ -138,6 +138,15 @@ struct mapi_handles_context {
  */
 #define	EMSABP_TDB_NAME		"emsabp_tdb.tdb"
 
+/**
+   Represents the NSPI Protocol in Permanent Entry IDs.
+ */
+static const uint8_t GUID_NSPI[] = {
+0xDC, 0xA7, 0x40, 0xC8, 0xC0, 0x42, 0x10, 0x1A, 0xB4, 0xB9,
+0x08, 0x00, 0x2B, 0x2F, 0xE1, 0x82
+};
+
+
 #define	OPENCHANGE_LDB_NAME	"openchange.ldb"
 
 #define	NTLM_AUTH_IS_OK(dce_call) \
@@ -204,6 +213,9 @@ enum MAPISTATUS mapi_handles_get_private_data(struct mapi_handles *, void **);
 enum MAPISTATUS mapi_handles_set_private_data(struct mapi_handles *, void *);
 enum MAPISTATUS mapi_handles_get_systemfolder(struct mapi_handles *, int *);
 enum MAPISTATUS mapi_handles_set_systemfolder(struct mapi_handles *, int);
+
+/* definitions from entryid.c */
+enum MAPISTATUS entryid_set_AB_EntryID(TALLOC_CTX *, const char *, struct SBinary_short *);
 
 __END_DECLS
 

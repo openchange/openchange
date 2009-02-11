@@ -790,6 +790,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_session.po	\
 							mapiproxy/libmapiproxy/openchangedb.po			\
 							mapiproxy/libmapiproxy/mapi_handles.po			\
+							mapiproxy/libmapiproxy/entryid.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS)
 
@@ -824,7 +825,8 @@ libmapiserver-distclean:
 
 distclean:: libmapiserver-distclean
 
-mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiserver/libmapiserver_oxcstor.po	
+mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiserver/libmapiserver_oxcstor.po	\
+							mapiproxy/libmapiserver/libmapiserver_oxcprpt.po
 	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapiserver.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^
 
 mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -1011,7 +1013,9 @@ mapiproxy/servers/exchange_nsp.$(SHLIBEXT):	mapiproxy/servers/default/nspi/dcesr
 
 mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/dcesrv_exchange_emsmdb.po	\
 						mapiproxy/servers/default/emsmdb/emsmdbp.po			\
-						mapiproxy/servers/default/emsmdb/oxcstor.po			
+						mapiproxy/servers/default/emsmdb/emsmdbp_object.po		\
+						mapiproxy/servers/default/emsmdb/oxcstor.po			\
+						mapiproxy/servers/default/emsmdb/oxcprpt.po
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)
 

@@ -121,7 +121,7 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 
 
 /**
-   \details EcDoRpc Logon (0xFE) Rop. This operations logs on to a
+   \details EcDoRpc Logon (0xFE) Rop. This operation logs on to a
    private mailbox or public folder.
 
    \param mem_ctx pointer to the memory context
@@ -144,8 +144,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 					  struct EcDoRpc_MAPI_REPL *response,
 					  uint32_t *handles, uint16_t *size)
 {
-	enum MAPISTATUS		retval;
-	struct mapi_handles	*rec = NULL;
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*rec = NULL;
+	struct emsmdbp_object_mailbox	*obj;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] Logon (0xFE)\n"));
 
@@ -174,9 +175,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	/* FIXME: Implement handles management API and make a call here */
 	if (!response->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
+		retval = mapi_handles_set_systemfolder(rec, 0);
+
+		obj = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, request);
+		retval = mapi_handles_set_private_data(rec, obj);
+
 		handles[response->handle_idx] = rec->handle;
 	}
 

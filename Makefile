@@ -1344,10 +1344,10 @@ python-uninstall::
 EPYDOC_OPTIONS = --no-private --url http://www.openchange.org/ --no-sourcecode
 
 epydoc::
-	PYTHONPATH=$(pythonscriptdir) epydoc $(EPYDOC_OPTIONS) openchange
+	PYTHONPATH=$(pythonscriptdir):$(PYTHONPATH) epydoc $(EPYDOC_OPTIONS) openchange
 
 check-python:
-	PYTHONPATH=$(pythonscriptdir) trial openchange
+	PYTHONPATH=$(pythonscriptdir):$(PYTHONPATH) trial openchange
 
 check:: check-python
 

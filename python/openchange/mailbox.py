@@ -152,7 +152,6 @@ GlobalCount: 0x%x
         replicaID = str(1)
         replicaGUID = str(uuid.uuid4())
 
-        print "[+] Adding '%s' record" % (username)
         self.add({"dn": "CN=%s,%s" % (username, ocfirstorgdn),
                   "objectClass": ["mailbox", "container"],
                   "cn": username,
@@ -176,7 +175,6 @@ GlobalCount: 0x%x
 
         # Step 1. Add root folder to user subtree
         FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
-        print "[+] Adding SystemRoot folder '%s' (%s) to %s" % (FID, foldername, username)
         self.add({"dn": "CN=%s,%s" % (FID, ocuserdn),
                   "objectClass": ["systemfolder"],
                   "cn": FID,

@@ -62,10 +62,6 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 
 	object = (struct emsmdbp_object_mailbox *) private_data;
 
-	DEBUG(0, ("# object->owner_Name = %s\n", object->owner_Name));
-	DEBUG(0, ("# object->owner_EssDN = %s\n", object->owner_EssDN));
-	DEBUG(0, ("# object->szUserDN = %s\n", object->szUserDN));
-
 	/* Step 1. Check if we need a layout */
 	response->layout = 0;
 	for (i = 0; i < request.prop_count; i++) {
@@ -122,8 +118,6 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 			break;
 		}
 	}
-
-	DEBUG(0, ("### RopGetPropertiesSpecic_Mailbox blob length = %d\n", response->prop_data.length));
 
 	return MAPI_E_SUCCESS;
 }
@@ -192,8 +186,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	dump_data(0, response.prop_data.data, response.prop_data.length);
-
 	/* Fill EcDoRpc_MAPI_REPL reply */
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
@@ -201,7 +193,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_GetProps = response;
 
 	*size = libmapiserver_RopGetPropertiesSpecific_size(mapi_req, mapi_repl);
-	DEBUG(0, ("size = %d\n", *size));
 
 	return MAPI_E_SUCCESS;
 }

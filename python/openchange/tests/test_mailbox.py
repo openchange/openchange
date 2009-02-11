@@ -37,4 +37,5 @@ class OpenChangeDBTests(unittest.TestCase):
     def test_add_mailbox_user(self):
         self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
         self.db.add_mailbox_user("dc=myserver", "someuser")
+        import pdb; pdb.set_trace()
         self.assertTrue(self.db.user_exists("myserver", "someuser"))

@@ -33,15 +33,19 @@ class NoSuchServer(Exception):
     """Raised when a server could not be found."""
 
 
-class OpenChangeDB(Ldb):
+class OpenChangeDB(object):
     """The OpenChange database.
     """
 
     def __init__(self):
-        Ldb.__init__(self, url="openchange.ldb")
+        self.url = "openchange.ldb"
+        self.ldb = Ldb(self.url)
+
+    def reopen(self):
+        self.ldb = Ldb(self.url)
 
     def setup(self):
-        self.add_ldif("""
+        self.ldb.add_ldif("""
 dn: @OPTIONS
 checkBaseOnSearch: TRUE
 
@@ -53,24 +57,25 @@ cn: CASE_INSENSITIVE
 dn: CASE_INSENSITIVE
 
 """)
+        self.reopen()
 
     def add_server(self, ocserverdn, netbiosname, firstorg, firstou):
-        self.add({"dn": ocserverdn,
+        self.ldb.add({"dn": ocserverdn,
                   "objectClass": ["top", "server"],
                   "cn": netbiosname,
                   "GlobalCount": "0x1",
                   "ReplicaID": "0x1"})
-        self.add({"dn": "CN=%s,%s" % (firstorg, ocserverdn),
+        self.ldb.add({"dn": "CN=%s,%s" % (firstorg, ocserverdn),
                   "objectClass": ["top", "org"],
                   "cn": firstorg})
-        self.add({"dn": "CN=%s,CN=%s,%s" % (firstou, firstorg, ocserverdn),
+        self.ldb.add({"dn": "CN=%s,CN=%s,%s" % (firstou, firstorg, ocserverdn),
                   "objectClass": ["top", "ou"],
                   "cn": firstou})
 
     def lookup_server(self, cn, attributes=[]):
         # Step 1. Search Server object
         filter = "(&(objectClass=server)(cn=%s))" % cn
-        res = self.search("", scope=ldb.SCOPE_SUBTREE,
+        res = self.ldb.search("", scope=ldb.SCOPE_SUBTREE,
                            expression=filter, attrs=attributes)
         if len(res) != 1:
             raise NoSuchServer(cn)
@@ -87,7 +92,7 @@ dn: CASE_INSENSITIVE
 
         # Step 2. Search User object
         filter = "(&(objectClass=user)(cn=%s))" % (username)
-        return self.search(server_dn, scope=ldb.SCOPE_SUBTREE,
+        return self.ldb.search(server_dn, scope=ldb.SCOPE_SUBTREE,
                            expression=filter, attrs=[])
 
     def user_exists(self, username, server):
@@ -135,11 +140,11 @@ replace: GlobalCount
 GlobalCount: 0x%x
 """ % (server_dn, GlobalCount)
 
-        self.transaction_start()
+        self.ldb.transaction_start()
         try:
-            self.modify_ldif(newGlobalCount)
+            self.ldb.modify_ldif(newGlobalCount)
         finally:
-            self.transaction_commit()
+            self.ldb.transaction_commit()
 
     def add_mailbox_user(self, ocfirstorgdn, username):
         """Add a user record in openchange database.
@@ -152,7 +157,7 @@ GlobalCount: 0x%x
         replicaID = str(1)
         replicaGUID = str(uuid.uuid4())
 
-        self.add({"dn": "CN=%s,%s" % (username, ocfirstorgdn),
+        self.ldb.add({"dn": "CN=%s,%s" % (username, ocfirstorgdn),
                   "objectClass": ["mailbox", "container"],
                   "cn": username,
                   "MailboxGUID": mailboxGUID,
@@ -175,7 +180,7 @@ GlobalCount: 0x%x
 
         # Step 1. Add root folder to user subtree
         FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
-        self.add({"dn": "CN=%s,%s" % (FID, ocuserdn),
+        self.ldb.add({"dn": "CN=%s,%s" % (FID, ocuserdn),
                   "objectClass": ["systemfolder"],
                   "cn": FID,
                   "fid": FID,

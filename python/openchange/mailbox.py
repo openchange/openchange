@@ -94,10 +94,9 @@ class OpenChangeDB(Ldb):
         return self.get_message_attribute(server, "GlobalCount")
 
 
-    def set_message_GlobalCount(self, setup_path, server, GlobalCount):
+    def set_message_GlobalCount(self, server, GlobalCount):
         """Update current mailbox GlobalCount for given message database (server).
 
-        :param setup_path: Function that returns the path to a setup.
         :param server: Server object name
         :param index: Mailbox new GlobalCount value
         """
@@ -124,10 +123,9 @@ GlobalCount: 0x%x
         finally:
             self.transaction_commit()
 
-    def add_mailbox_user(self, setup_path, ocfirstorgdn, username):
+    def add_mailbox_user(self, ocfirstorgdn, username):
         """Add a user record in openchange database.
 
-        :param setup_path: Function that returns the path to a setup.
         :param username: Username object
         """
 
@@ -144,12 +142,11 @@ GlobalCount: 0x%x
                   "ReplicaID": replicaID,
                   "ReplicaGUID": replicaGUID})
 
-    def add_mailbox_root_folder(self, setup_path, names, username, 
+    def add_mailbox_root_folder(self, names, username, 
                                 foldername, GlobalCount, ReplicaID,
                                 SystemIdx):
         """Add a root folder to the user mailbox
 
-        :param setup_path: Function that returns the path to a setup.
         :param names: Provision names context
         :param username: Username object
         :param foldername: Folder name

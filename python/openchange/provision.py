@@ -223,7 +223,7 @@ def install_schemas(setup_path, names, lp, creds):
     samdb.transaction_commit()
 
 
-def newmailbox(setup_path, lp, username=None, firstorg=None, firstou=None):
+def newmailbox(lp, username=None, firstorg=None, firstou=None):
  
     names = guess_names_from_smbconf(lp, firstorg, firstou)
 
@@ -240,7 +240,7 @@ def newmailbox(setup_path, lp, username=None, firstorg=None, firstou=None):
     assert db.user_exists(names.netbiosname, username)
 
     # Step 3. Create the user object
-    db.add_mailbox_user(setup_path, names.ocfirstorgdn, username=username)
+    db.add_mailbox_user(names.ocfirstorgdn, username=username)
 
     # Step 4. Create system mailbox folders for this user
     system_folders = [
@@ -261,7 +261,7 @@ def newmailbox(setup_path, lp, username=None, firstorg=None, firstou=None):
 
     SystemIdx = 1
     for i in system_folders:
-        db.add_mailbox_root_folder(setup_path, names, 
+        db.add_mailbox_root_folder(names, 
             username=username, foldername=i, 
             GlobalCount=GlobalCount, ReplicaID=ReplicaID,
             SystemIdx=SystemIdx)
@@ -269,7 +269,7 @@ def newmailbox(setup_path, lp, username=None, firstorg=None, firstou=None):
         SystemIdx += 1
 
     # Step 5. Update FolderIndex
-    db.set_message_GlobalCount(setup_path, names.netbiosname, GlobalCount=GlobalCount)
+    db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
         
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
     print "GlobalCount: 0x%x" % GlobalCount

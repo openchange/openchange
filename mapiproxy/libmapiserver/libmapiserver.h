@@ -33,6 +33,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <dcerpc.h>
+#include <param.h>
+
 #include <gen_ndr/exchange.h>
 
 #ifndef	__BEGIN_DECLS
@@ -48,6 +51,13 @@
 #define	SIZE_DFLT_MAPI_RESPONSE	6
 
 /* Rops default and static size */
+
+/**
+   \details GetPropertiesSpecificRop has fixed response size for:
+   -# layout: uint8_t
+   -# prop_data.length: uint16_t
+ */
+#define	SIZE_DFLT_ROPGETPROPERTIESSPECIFIC	3
 
 /**
    \details LogonRop has a fixed size for mailbox:
@@ -66,6 +76,10 @@
 #define	SIZE_NULL_TRANSACTION		2
 
 __BEGIN_DECLS
+
+/* definitions from libmapiserver_oxcprpt.c */
+uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);
+int libmapiserver_push_property(TALLOC_CTX *, struct smb_iconv_convenience *, uint32_t, const void *, DATA_BLOB *, uint8_t);
 
 /* definitions from libmapiserver_oxcstor.c */
 uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);

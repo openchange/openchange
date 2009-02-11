@@ -411,7 +411,9 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	if ((private->server_mode == true) || (mapiproxy_server_loaded(NDR_EXCHANGE_NSP_NAME) == true)) {
+		ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);
 		status = mapiproxy_server_dispatch(dce_call, mem_ctx, r, &mapiproxy);
+		ndr_print_function_debug(call->ndr_print, name, NDR_OUT | NDR_SET_VALUES, r);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NT_STATUS_NET_WRITE_FAULT;
 		}

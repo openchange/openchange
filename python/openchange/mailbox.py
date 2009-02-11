@@ -137,13 +137,12 @@ GlobalCount: 0x%x
         replicaGUID = str(uuid.uuid4())
 
         print "[+] Adding '%s' record" % (username)
-        setup_add_ldif(self, setup_path("openchangedb/oc_provision_openchange_mailbox_user.ldif"), {
-                "USERNAME": username,
-                "FIRSTORGDN": ocfirstorgdn,
-                "MAILBOXGUID": mailboxGUID,
-                "REPLICAID": replicaID,
-                "REPLICAGUID": replicaGUID
-                })
+        self.add({"dn": "CN=%s,%s" % (username, ocfirstorgdn),
+                  "objectClass": ["mailbox", "container"],
+                  "cn": username,
+                  "MailboxGUID": mailboxGUID,
+                  "ReplicaID": replicaID,
+                  "ReplicaGUID": replicaGUID})
 
     def add_mailbox_root_folder(self, setup_path, names, username, 
                                 foldername, GlobalCount, ReplicaID,

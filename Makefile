@@ -1346,6 +1346,11 @@ EPYDOC_OPTIONS = --no-private --url http://www.openchange.org/ --no-sourcecode
 epydoc::
 	PYTHONPATH=$(pythonscriptdir) epydoc $(EPYDOC_OPTIONS) openchange
 
+check-python:
+	PYTHONPATH=$(pythonscriptdir) trial openchange
+
+check:: check-python
+
 ###################
 # nagios plugin
 ###################

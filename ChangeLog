@@ -1,3 +1,15 @@
+2009-02-12
+    jkerihuel
+	[r1146]
+		Add doxygen definition for RopRelease
+	[r1145]
+		- Add server-side skeleton implementation for RopOpenFolder and RopRegisterNotification
+		- Add preliminary size calculation functions in libmapiserver for the 2 calls above
+		- Fix size bug for serialized requests
+		- Add skeleton case for RopGetPropertiesSpecific on SystemFolders
+		- Make sure the GetProps reply blob is initialized whatever happen
+		- Add a skeleton emsmdbp folder object init function
+
 2009-02-11
     jkerihuel
 	[r1143]

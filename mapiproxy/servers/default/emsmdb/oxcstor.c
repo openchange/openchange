@@ -189,6 +189,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 }
 
 
+/**
+   \details EcDoRpc Release (0x01) Rop. This operation releases an
+   existing MAPI handle.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param request pointer to the Release EcDoRpc_MAPI_REQ
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
 _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 					    struct emsmdbp_context *emsmdbp_ctx,
 					    struct EcDoRpc_MAPI_REQ *request,

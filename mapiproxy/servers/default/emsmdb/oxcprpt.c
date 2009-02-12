@@ -34,10 +34,10 @@
 /**
    \details Retrieve properties on a mailbox object.
 
-   \param mem_ctx pointer to the memory object
+   \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
    \param request GetProps request
-   \param response GetProps reply
+   \param response pointer to the GetProps reply
    \param private_data pointer to the private data stored for this
    object
 
@@ -76,9 +76,6 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Step 2. Fill the GetProps blob */
-	response->prop_data.length = 0;
-	response->prop_data.data = NULL;
-
 	for (i = 0; i < request.prop_count; i++) {
 		switch (request.properties[i]) {
 		case PR_MAPPING_SIGNATURE:
@@ -118,6 +115,30 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 			break;
 		}
 	}
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Retrieve properties on a systemfolder object.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param request GetProps request
+   \param response pointer to the private data stored for this
+   object
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+static enum MAPISTATUS RopGetPropertiesSpecific_SystemFolder(TALLOC_CTX *mem_ctx,
+							     struct emsmdbp_context *emsmdbp_ctx,
+							     struct GetProps_req request,
+							     struct GetProps_repl *response,
+							     void *private_data)
+{
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!private_data, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -164,6 +185,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	request = mapi_req->u.mapi_GetProps;
 	response = mapi_repl->u.mapi_GetProps;
 
+	/* Initialize GetProps response blob */
+	response.prop_data.length = 0;
+	response.prop_data.data = NULL;
+
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
@@ -183,6 +208,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		/* system folder */
+		retval = RopGetPropertiesSpecific_SystemFolder(mem_ctx, emsmdbp_ctx, request, &response, private_data);
 		break;
 	}
 
@@ -192,7 +218,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->u.mapi_GetProps = response;
 
-	*size = libmapiserver_RopGetPropertiesSpecific_size(mapi_req, mapi_repl);
+	*size += libmapiserver_RopGetPropertiesSpecific_size(mapi_req, mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

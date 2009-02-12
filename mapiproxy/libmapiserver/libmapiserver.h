@@ -53,6 +53,13 @@
 /* Rops default and static size */
 
 /**
+   \details OpenFolderRop has fixed response size for
+   -# HasRules: uint8_t
+   -# IsGhosted: uint8_t   
+ */
+#define	SIZE_DFLT_ROPOPENFOLDER			2
+
+/**
    \details GetPropertiesSpecificRop has fixed response size for:
    -# layout: uint8_t
  */
@@ -75,6 +82,12 @@
 #define	SIZE_NULL_TRANSACTION		2
 
 __BEGIN_DECLS
+
+/* definitions from libmapiserver_oxcfold.c */
+uint16_t libmapiserver_RopOpenFolder_size(struct EcDoRpc_MAPI_REPL *);
+
+/* definitions from libmapiserver_oxcnotif.c */
+uint16_t libmapiserver_RopRegisterNotification_size(void);
 
 /* definitions from libmapiserver_oxcprpt.c */
 uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);

@@ -66,6 +66,14 @@ struct emsmdbp_object_mailbox {
 };
 
 
+struct emsmdbp_object_folder {
+	uint64_t			folderID;
+	bool				IsSystemFolder;
+	int				systemfolder;
+	/* pointer to the mapistore context goes here */
+};
+
+
 #define	EMSMDB_PCMSPOLLMAX		60000
 #define	EMSMDB_PCRETRY			6
 #define	EMSMDB_PCRETRYDELAY		10000
@@ -97,18 +105,20 @@ bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context 
 
 /* definitions from emsmdbp_object.c */
 struct emsmdbp_object_mailbox *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *);
+struct emsmdbp_object_folder *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct mapi_handles *);
+
+/* definitions from oxcfold.c */
+enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+
+/* definitions from oxcnotif.c */
+enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 
 /* definitions from oxcprpt.c */
-enum MAPISTATUS		EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *, struct emsmdbp_context *,
-							 struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *,
-							 uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 
 /* definitions from oxcstor.c */
-enum MAPISTATUS		EcDoRpc_RopLogon(TALLOC_CTX *, struct emsmdbp_context *, 
-					 struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, 
-					 uint32_t *, uint16_t *);
-enum MAPISTATUS		EcDoRpc_RopRelease(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *,
-					   uint32_t *, uint16_t *);
+enum MAPISTATUS	EcDoRpc_RopLogon(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS	EcDoRpc_RopRelease(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, uint32_t *, uint16_t *);
 
 __END_DECLS
 

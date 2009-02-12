@@ -79,3 +79,47 @@ _PUBLIC_ struct emsmdbp_object_mailbox *emsmdbp_object_mailbox_init(TALLOC_CTX *
 
 	return object;
 }
+
+
+/**
+   \details Initialize a folder object
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param request pointer to the OpenFolder MAPI request
+   \param parent pointer to the parent MAPI handle
+
+   \return Allocated emsmdbp folder object on success, otherwise NULL
+ */
+_PUBLIC_ struct emsmdbp_object_folder *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
+								  struct emsmdbp_context *emsmdbp_ctx,
+								  struct EcDoRpc_MAPI_REQ *request,
+								  struct mapi_handles *parent)
+{
+	enum MAPISTATUS			retval;
+	struct emsmdbp_object_folder	*object;
+	int				mailboxfolder;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+	if (!request) return NULL;
+
+	object = talloc_zero(mem_ctx, struct emsmdbp_object_folder);
+	if (!object) return NULL;
+
+	object->folderID = request->u.mapi_OpenFolder.folder_id;
+	
+	retval = mapi_handles_get_systemfolder(parent, &mailboxfolder);
+	object->IsSystemFolder = (!mailboxfolder) ? true : false;
+
+	if (object->IsSystemFolder == false) {
+		/* Retrieve the systemfolder value */
+		object->systemfolder = 1;
+		/* mapistore backend initialization goes here */
+	} else {
+		/* assign mapistore context from parent */
+		object->systemfolder = -1;
+	}
+
+	return object;
+}

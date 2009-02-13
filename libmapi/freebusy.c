@@ -288,8 +288,8 @@ _PUBLIC_ enum MAPISTATUS IsFreeBusyConflict(mapi_object_t *obj_store,
 	all_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_ALL_MONTHS);
 	all_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_ALL_EVENTS);
 
-	if (!all_months || (uint32_t)all_months == MAPI_E_NOT_FOUND ||
-	    !all_events || (uint32_t)all_events == MAPI_E_NOT_FOUND) {
+	if (!all_months || (*(const uint32_t *)all_months) == MAPI_E_NOT_FOUND ||
+	    !all_events || (*(const uint32_t *)all_events) == MAPI_E_NOT_FOUND) {
 		return MAPI_E_SUCCESS;
 	}
 

@@ -56,7 +56,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	case PT_STRING8:
 	case PT_UNICODE:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: %s\n", sep?sep:"", proptag, (data && (uint32_t)data != MAPI_E_NOT_FOUND) ? (const char *)data : "NULL");
+		printf("%s%s: %s\n", sep?sep:"", proptag, (data && (*(const uint32_t *)data) != MAPI_E_NOT_FOUND) ? (const char *)data : "NULL");
 		break;
 	case PT_SYSTIME:
 		mapidump_date_SPropValue(lpProp, proptag);

@@ -29,6 +29,7 @@
 #include "mapistore_errors.h"
 #include "mapistore_private.h"
 #include <libmapi/dlinklist.h>
+#include <libmapi/defs_private.h>
 
 #include <tdb.h>
 
@@ -162,7 +163,7 @@ int mapistore_init_mapping_context(struct processing_context *pctx)
 
 	/* If the record doesn't exist, insert it */
 	if (!dbuf.dptr || !dbuf.dsize) {
-		dbuf.dptr = (unsigned char *) talloc_asprintf(mem_ctx, "0x%llx", (uint64_t) MAPISTORE_DB_LAST_ID_VAL);
+		dbuf.dptr = (unsigned char *) talloc_asprintf(mem_ctx, "0x%"PRIx64, (uint64_t) MAPISTORE_DB_LAST_ID_VAL);
 		dbuf.dsize = strlen((const char *) dbuf.dptr);
 		last_id = MAPISTORE_DB_LAST_ID_VAL;
 

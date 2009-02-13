@@ -1,3 +1,11 @@
+2009-02-13
+    jkerihuel
+	[r1149]
+		Fix libmapi 64-bit machine cast warnings mentioned in Brad's devel email
+    bradh
+	[r1148]
+		Warning fix for 64-bit arch.
+
 2009-02-12
     jkerihuel
 	[r1146]

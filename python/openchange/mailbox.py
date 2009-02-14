@@ -89,7 +89,7 @@ dn: CASE_INSENSITIVE
         server_dn = self.lookup_server(server, []).dn
 
         # Step 2. Search User object
-        filter = "(&(objectClass=user)(cn=%s))" % (username)
+        filter = "(&(objectClass=mailbox)(cn=%s))" % (username)
         return self.ldb.search(server_dn, scope=ldb.SCOPE_SUBTREE,
                            expression=filter, attrs=[])
 
@@ -144,22 +144,25 @@ GlobalCount: 0x%x
         finally:
             self.ldb.transaction_commit()
 
-    def add_mailbox_user(self, ocfirstorgdn, username):
+    def add_mailbox_user(self, basedn, username):
         """Add a user record in openchange database.
 
         :param username: Username
+        :return: DN of the created object
         """
 
         mailboxGUID = str(uuid.uuid4())
         replicaID = str(1)
         replicaGUID = str(uuid.uuid4())
-
-        self.ldb.add({"dn": "CN=%s,%s" % (username, ocfirstorgdn),
+        
+        retdn = "CN=%s,%s" % (username, basedn)
+        self.ldb.add({"dn": retdn,
                   "objectClass": ["mailbox", "container"],
                   "cn": username,
                   "MailboxGUID": mailboxGUID,
                   "ReplicaID": replicaID,
                   "ReplicaGUID": replicaGUID})
+        return retdn
 
     def add_mailbox_root_folder(self, ocfirstorgdn, username, 
                                 foldername, GlobalCount, ReplicaID,

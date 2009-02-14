@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from openchange.mailbox import NoSuchServer, OpenChangeDB
+from openchange.mailbox import NoSuchServer, OpenChangeDB, gen_mailbox_folder_fid
 
 import os
 import unittest
@@ -28,7 +28,7 @@ class OpenChangeDBTests(unittest.TestCase):
     def setUp(self):
         if os.path.exists("openchange.ldb"):
             os.unlink("openchange.ldb")
-        self.db = OpenChangeDB() 
+        self.db = OpenChangeDB("openchange.ldb") 
         self.db.setup()
 
     def test_user_exists_no_server(self):
@@ -43,6 +43,26 @@ class OpenChangeDBTests(unittest.TestCase):
         self.assertEquals("dc=blaserver", str(self.db.lookup_server("blaserver")['dn']))
 
     def test_add_mailbox_user(self):
-        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
-        self.db.add_mailbox_user("cn=firstou,cn=firstorg,dc=myserver", "someuser")
+        self.db.add_server("cn=myserver", "myserver", "firstorg", "firstou")
+        self.db.add_mailbox_user("cn=firstorg,cn=firstou,cn=myserver", "someuser")
         self.assertTrue(self.db.user_exists("myserver", "someuser"))
+
+    def test_msg_globalcount_initial(self):
+        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
+        self.assertEquals(1, self.db.get_message_GlobalCount("myserver"))
+
+    def test_set_msg_globalcount(self):
+        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
+        self.db.set_message_GlobalCount("myserver", 42)
+        self.assertEquals(42, self.db.get_message_GlobalCount("myserver"))
+
+    def test_msg_replicaid_initial(self):
+        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
+        self.assertEquals(1, self.db.get_message_ReplicaID("myserver"))
+
+
+class MailboxFIDTests(unittest.TestCase):
+    
+    def test_simple(self):
+        self.assertEquals("0x00000000109282806", gen_mailbox_folder_fid(4242, 534534))
+

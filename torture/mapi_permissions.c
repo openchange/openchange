@@ -112,11 +112,13 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 		
 		for (i = 0; i < SRowSet.cRows; i++) {
 			struct SPropValue *lpProp;
-			
+			uint32_t *rights;
+
 			lpProp = get_SPropValue_SRow(&(SRowSet.aRow[i]), PR_MEMBER_NAME);
 			printf("    %-25s: %s\n", "Username", lpProp->value.lpszA ? lpProp->value.lpszA : "Default");
 			lpProp = get_SPropValue_SRow(&(SRowSet.aRow[i]), PR_MEMBER_RIGHTS);
-			ndr_print_debug((ndr_print_fn_t)ndr_print_ACLRIGHTS, "Rights", (void *)lpProp->value.l);
+			rights = &(lpProp->value.l);
+			ndr_print_debug((ndr_print_fn_t)ndr_print_ACLRIGHTS, "Rights", (void *)rights);
 			printf("\n");
 		}
 		

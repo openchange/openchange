@@ -106,7 +106,8 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
 
     # OpenChange dispatcher DB names
     names.ocserverdn = "CN=%s,%s" % (names.netbiosname, names.domaindn)
-    names.ocfirstorgdn = "CN=%s,CN=%s,%s" % (firstou, firstorg, names.ocserverdn)
+    names.ocfirstorg = firstorg
+    names.ocfirstorgdn = "CN=%s,CN=%s,%s" % (firstou, names.ocfirstorg, names.ocserverdn)
 
     return names
 
@@ -239,7 +240,7 @@ def newmailbox(lp, username, firstorg, firstou):
     print "ReplicaID: 0x%x" % ReplicaID
 
     # Step 2. Check if the user already exists
-    assert db.user_exists(names.netbiosname, username)
+    assert not db.user_exists(names.netbiosname, username)
 
     # Step 3. Create the user object
     db.add_mailbox_user(names.ocfirstorgdn, username=username)
@@ -263,7 +264,7 @@ def newmailbox(lp, username, firstorg, firstou):
 
     SystemIdx = 1
     for i in system_folders:
-        db.add_mailbox_root_folder(names.ocfirstorg, 
+        db.add_mailbox_root_folder(names.ocfirstorgdn, 
             username=username, foldername=i, 
             GlobalCount=GlobalCount, ReplicaID=ReplicaID,
             SystemIdx=SystemIdx)

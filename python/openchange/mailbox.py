@@ -76,7 +76,6 @@ dn: CASE_INSENSITIVE
         res = self.ldb.search("", scope=ldb.SCOPE_SUBTREE,
                            expression=filter, attrs=attributes)
         if len(res) != 1:
-            import pdb; pdb.set_trace()
             raise NoSuchServer(cn)
         return res[0]
 
@@ -130,7 +129,7 @@ dn: CASE_INSENSITIVE
         :param server: Server object name
         :param index: Mailbox new GlobalCount value
         """
-        server_dn = self.lookup_server(server, [])
+        server_dn = self.lookup_server(server, []).dn
 
         newGlobalCount = """
 dn: %s
@@ -162,7 +161,7 @@ GlobalCount: 0x%x
                   "ReplicaID": replicaID,
                   "ReplicaGUID": replicaGUID})
 
-    def add_mailbox_root_folder(self, ocfirstorg, username, 
+    def add_mailbox_root_folder(self, ocfirstorgdn, username, 
                                 foldername, GlobalCount, ReplicaID,
                                 SystemIdx):
         """Add a root folder to the user mailbox
@@ -183,7 +182,7 @@ GlobalCount: 0x%x
                   "cn": FID,
                   "fid": FID,
                   "name": foldername,
-                  "SystemIdx": SystemIdx})
+                  "SystemIdx": str(SystemIdx)})
 
 
 def gen_mailbox_folder_fid(GlobalCount, ReplicaID):

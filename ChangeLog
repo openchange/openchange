@@ -1,3 +1,21 @@
+2009-02-14
+    bradh
+	[r1153]
+		Fix warnings from lexer output.
+	[r1152]
+		Fixes for warnings on 64-bit architectures.
+	[r1151]
+		Fix warning on 64-bit architecture.
+    jelmer
+	[r1157]
+		Add some more tests for openchange.mailbox.
+	[r1156]
+		Fix creation of new mailbox after provision.
+	[r1155]
+		Always use the same URL when connecting to openchangedb.
+	[r1154]
+		Fix arguments to openchangedb_provision.
+
 2009-02-13
     jkerihuel
 	[r1149]

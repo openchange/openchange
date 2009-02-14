@@ -1,4 +1,3 @@
-%{
 /*
    OpenChange MAPI implementation.
 
@@ -17,7 +16,10 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+%option nounput
+%option noinput
 
+%{
 #include <stdlib.h>
 #include <string.h>
 

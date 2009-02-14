@@ -60,4 +60,4 @@ def setup_path(*args):
 if not opts.openchangedb:
 	openchange.provision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
 else:
-	openchange.openchangedb_provision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
+	openchange.openchangedb_provision(lp, firstorg=opts.firstorg, firstou=opts.firstou)

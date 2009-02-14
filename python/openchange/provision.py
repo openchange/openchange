@@ -396,5 +396,3 @@ def find_setup_dir():
     if os.path.isdir(ret):
         return ret
     raise Exception("Unable to find setup directory.")
-
-

@@ -34,6 +34,8 @@ DEFAULTSITE = "Default-First-Site-Name"
 FIRST_ORGANIZATION = "First Organization"
 FIRST_ORGANIZATION_UNIT = "First Organization Unit"
 
+def openchangedb_url(lp):
+    return os.path.join(lp.get("private dir"), "openchange.ldb")
 
 class ProvisionNames(object):
 
@@ -92,10 +94,10 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     names.sitename = sitename
 
     if firstorg is None:
-        firstorg = FIRST_ORGANIZATION;
+        firstorg = FIRST_ORGANIZATION
 
     if firstou is None:
-        firstou = FIRST_ORGANIZATION_UNIT;
+        firstou = FIRST_ORGANIZATION_UNIT
 
     names.firstorg = firstorg
     names.firstou = firstou
@@ -226,7 +228,8 @@ def install_schemas(setup_path, names, lp, creds):
 
 def newmailbox(lp, username, firstorg, firstou):
     names = guess_names_from_smbconf(lp, firstorg, firstou)
-    db = mailbox.OpenChangeDB()
+
+    db = mailbox.OpenChangeDB(openchangedb_url(lp))
 
     # Step 1. Retrieve current FID index
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
@@ -366,13 +369,10 @@ def openchangedb_provision(lp, firstorg=None, firstou=None):
     :param firstorg: First Organization
     :param firstou: First Organization Unit
     """
-    private_dir = lp.get("private dir")
-    path = os.path.join(private_dir, "openchange.ldb")
-
     names = guess_names_from_smbconf(lp, firstorg, firstou)
     
     print "Setting up openchange db"
-    openchange_ldb = mailbox.OpenChangeDB(path)
+    openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
     openchange_ldb.setup()
 
     # Add a server object

@@ -35,11 +35,8 @@ class OpenChangeDB(object):
     """The OpenChange database.
     """
 
-    def __init__(self, url=None):
-        if url is None:
-            self.url = "openchange.ldb"
-        else:
-            self.url = url
+    def __init__(self, url):
+        self.url = url
         self.ldb = Ldb(self.url)
 
     def reopen(self):
@@ -79,6 +76,7 @@ dn: CASE_INSENSITIVE
         res = self.ldb.search("", scope=ldb.SCOPE_SUBTREE,
                            expression=filter, attrs=attributes)
         if len(res) != 1:
+            import pdb; pdb.set_trace()
             raise NoSuchServer(cn)
         return res[0]
 

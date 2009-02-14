@@ -2680,8 +2680,8 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 	mapidump_freebusy_date(*publish_start, "\t* FreeBusy Publishing Start:");
 	mapidump_freebusy_date(*publish_end, "\t *FreeBusy Publishing End:  ");
 
-	if (busy_months && ((uint32_t) busy_months != MAPI_E_NOT_FOUND) &&
-	    busy_events && ((uint32_t) busy_events != MAPI_E_NOT_FOUND)) {
+	if (busy_months && ((*(const uint32_t *) busy_months) != MAPI_E_NOT_FOUND) &&
+	    busy_events && ((*(const uint32_t *) busy_events) != MAPI_E_NOT_FOUND)) {
 		DEBUG(0, ("\t* Busy Events:\n"));
 		for (i = 0; i < busy_months->cValues; i++) {
 			event_year = mapidump_freebusy_year(busy_months->lpl[i], year);
@@ -2690,8 +2690,8 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 		}
 	}
 
-	if (tentative_months && ((uint32_t) tentative_months != MAPI_E_NOT_FOUND) &&
-	    tentative_events && ((uint32_t) tentative_events != MAPI_E_NOT_FOUND)) {
+	if (tentative_months && ((*(const uint32_t *) tentative_months) != MAPI_E_NOT_FOUND) &&
+	    tentative_events && ((*(const uint32_t *) tentative_events) != MAPI_E_NOT_FOUND)) {
 		DEBUG(0, ("\t* Tentative Events:\n"));
 		for (i = 0; i < tentative_months->cValues; i++) {
 			event_year = mapidump_freebusy_year(tentative_months->lpl[i], year);
@@ -2700,8 +2700,8 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 		}
 	}
 
-	if (oof_months && ((uint32_t) oof_months != MAPI_E_NOT_FOUND) &&
-	    oof_events && ((uint32_t) oof_events != MAPI_E_NOT_FOUND)) {
+	if (oof_months && ((*(const uint32_t *) oof_months) != MAPI_E_NOT_FOUND) &&
+	    oof_events && ((*(const uint32_t *) oof_events) != MAPI_E_NOT_FOUND)) {
 		DEBUG(0, ("\t* Out Of Office Events:\n"));
 		for (i = 0; i < oof_months->cValues; i++) {
 			event_year = mapidump_freebusy_year(oof_months->lpl[i], year);

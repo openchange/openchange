@@ -1,3 +1,12 @@
+2009-02-16
+    jkerihuel
+	[r1160]
+		Check for Flex version < 2.5.35
+		Make sure users can define the FLEX environment variable
+	[r1159]
+		Add automake scripts for AC_CANONICAL_HOST support
+		Needed for FreeBSD OS detection in configure.ac
+
 2009-02-14
     bradh
 	[r1153]

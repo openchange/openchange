@@ -164,15 +164,25 @@ AC_SUBST(pythondir)
 
 dnl ----------------------------------------------------------------------------
 dnl Check for Flex
+dnl Flex version < 2.5.35 is fine but 2.5.4 beta is not. This is the
+dnl default version provided under FreeBSD or RHL5
 dnl ----------------------------------------------------------------------------
 if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
    AC_ARG_VAR([FLEX], [Location of the flex program.])
    AC_CHECK_PROG([FLEX], [flex], [flex])
 
    if test x"$FLEX" = x""; then
-   	   AC_MSG_WARN([No version of flex was found!])
-	   AC_MSG_ERROR([Please install flex])
+      	AC_MSG_WARN([No version of flex was found!])
+	AC_MSG_ERROR([Please install flex])
+   else
+	V=`$FLEX --version | awk '{print $NF}'`
+   	W=`echo $V | awk -F. '{if (((($1*100 + $2)*100 + $3) > 20535) || $3 == 4) print "no"}'`
+   	if test "x$W" != x ; then
+	   AC_MSG_WARN([Adjust your FLEX environment variable])
+      	   AC_MSG_ERROR([Flex version 2.5.35 or below is needed. You have $V])
+      	fi
    fi
+
    AC_SUBST(FLEX)
 fi
 

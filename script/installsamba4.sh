@@ -11,6 +11,8 @@ else
 	MAKE=make
 fi
 
+/usr/bin/env PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/samba/lib/pkgconfig
+
 #
 # Error check
 #

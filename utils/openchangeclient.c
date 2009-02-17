@@ -30,6 +30,7 @@
 
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <dirent.h>
 #include <fcntl.h>
 #include <time.h>
 #include <ctype.h>
@@ -332,6 +333,7 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	mapi_object_t	obj_stream;
 	uint16_t	read_size;
 	int		fd;
+	DIR		*dir;
 	unsigned char  	buf[MAX_READ_SIZE];
 
 	if (!filename || !size) return false;
@@ -339,10 +341,10 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	mem_ctx = talloc_named(NULL, 0, "store_attachment");
 	mapi_object_init(&obj_stream);
 
-	if ((fd = open(oclient->store_folder, O_DIRECTORY)) == -1) {
+	if (!(dir = opendir(oclient->store_folder))) {
 		if (mkdir(oclient->store_folder, 0700) == -1) return false;
 	} else {
-		close (fd);
+		closedir(dir);
 	}
 
 	path = talloc_asprintf(mem_ctx, "%s/%s", oclient->store_folder, filename);

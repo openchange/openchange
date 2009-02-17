@@ -910,7 +910,7 @@ mapistore_test: bin/mapistore_test
 bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.o		\
 			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
 mapistore_clean:
 	rm -f mapiproxy/libmapistore/tests/*.o
@@ -1056,7 +1056,7 @@ bin/openchangeclient: 	utils/openchangeclient.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
 
 ##############
@@ -1082,7 +1082,7 @@ bin/mapiprofile: 	utils/mapiprofile.o 			\
 			utils/openchange-tools.o 		\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
 
 ###################
@@ -1109,7 +1109,7 @@ bin/openchangepfadmin:	utils/openchangepfadmin.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
 			libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) -lpopt			
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) $(LIBMAPIADMIN_LIBS) -lpopt			
 
 
 ###################
@@ -1136,7 +1136,7 @@ bin/exchange2mbox:	utils/exchange2mbox.o				\
 			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt  $(MAGIC_LIBS)
+	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt  $(MAGIC_LIBS)
 
 
 ###################
@@ -1219,7 +1219,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_lcid.o		\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
 utils/mapitest/proto.h:					\
 	utils/mapitest/mapitest_suite.c			\
@@ -1268,7 +1268,7 @@ bin/openchangemapidump:	utils/backup/openchangemapidump.o		\
 			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
 
 ###############
@@ -1315,7 +1315,7 @@ clean:: locale_codepage-clean
 
 bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) -lpopt
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
 ###################
 # python code

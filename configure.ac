@@ -4,9 +4,19 @@
 AC_PREREQ(2.57)
 AC_INIT(openchange, 0.8, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
+AM_INIT_AUTOMAKE
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 PKG_PROG_PKG_CONFIG([0.20])
+
+dnl #################################################################
+dnl Check for OS dependent options
+dnl #################################################################
+AC_CANONICAL_HOST
+
+case "${host}" in
+     *freebsd*) BUILD_FOR_FREEBSD=yes ;;
+esac
 
 #
 # OC_CHECK_SAMBA_PATH([PATH],[action-if-found],[action-if-not-found])
@@ -109,6 +119,18 @@ if test "x$1_set" != "xset"; then
 
 fi[]
 ])
+
+dnl ###########################################################################
+dnl FreeBSD installs some libraries such as libpopt in the non default
+dnl search path /usr/local/{include,lib}. This nasty hack ensures
+dnl configure.ac will find the library if available and additional
+dnl flags be correctly added while compiling.
+dnl ###########################################################################
+if test x"$BUILD_FOR_FREEBSD" = x"yes"; then
+   CFLAGS+=" -I/usr/local/include"
+   LDFLAGS+=" -L/usr/local/lib"
+fi
+
 
 dnl ###########################################################################
 dnl libmapi and required dependencies
@@ -303,16 +325,17 @@ dnl ##########################################################################
 dnl tools dependencies
 dnl ##########################################################################
 
-dnl --------------------------------------------------------------------------                                              
-dnl Check for libical                                                                                                       
-dnl --------------------------------------------------------------------------                                              
-PKG_CHECK_MODULES([ICAL], [libical], [have_libical="yes"], [have_libical="no"])                                             
-AC_SUBST(ICAL_CFLAGS)                                                                                                       
-AC_SUBST(ICAL_LIBS)                                                                                                         
+dnl --------------------------------------------------------------------------
+dnl Check for libical                                                        
+dnl --------------------------------------------------------------------------
+PKG_CHECK_MODULES([ICAL], [libical], [have_libical="yes"], [have_libical="no"])
+AC_SUBST(ICAL_CFLAGS)
+AC_SUBST(ICAL_LIBS)
 
 dnl --------------------------------------------------------------------------
 dnl Check for popt
 dnl --------------------------------------------------------------------------
+
 AC_CHECK_LIB([popt], [poptFreeContext], 
              [
 	       AC_DEFINE(HAVE_LIBPOPT, 1, [Define if you want to use libpopt])
@@ -364,7 +387,7 @@ if test x"$enable_libmagic" = x"yes"; then
 		       AC_MSG_ERROR([Z library not found, please install zlib-devel.], [1])
 		     ])
    	if test x"$enable_libpopt" = x"yes"; then
-	   OC_RULE_ADD(exchange2mbox, TOOLS)
+		OC_RULE_ADD(exchange2mbox, TOOLS)
 	fi
 fi
 

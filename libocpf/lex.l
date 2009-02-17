@@ -20,15 +20,10 @@
 
 %{
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdarg.h>
-#include <string.h>
-#include <stdint.h>
 #include <ctype.h>
 
-typedef __compar_fn_t comparison_fn_t;
-
+#include "libocpf/ocpf_private.h"
 #include <libocpf/ocpf_api.h>
 #include <libocpf/ocpf.tab.h>
 #include <libocpf/lex.h>

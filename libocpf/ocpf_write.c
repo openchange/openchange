@@ -23,6 +23,7 @@
    \brief public OCPF write API
  */
 
+#include "libocpf/ocpf_private.h"
 #include <libocpf/ocpf.h>
 #include <libocpf/ocpf_api.h>
 #include <libmapi/defs_private.h>

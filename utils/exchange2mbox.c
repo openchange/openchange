@@ -146,7 +146,11 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 
 	mbox_msgids = talloc_zero(mem_ctx, char *);
 	/* Add Message-ID attribute to the profile if it is missing */
+#if defined(__FreeBSD__)
+	while ((line = fgetln(fp, &read_size)) != NULL) {
+#else
 	while ((size = getline(&line, &read_size, fp)) != -1) {
+#endif
 		if (line && !strncmp(line, MESSAGEID, strlen(MESSAGEID))) {
 			msgid = strstr(line, MESSAGEID);
 			id = talloc_strdup(mem_ctx, msgid + strlen(MESSAGEID));

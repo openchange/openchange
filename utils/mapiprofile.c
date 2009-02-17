@@ -24,10 +24,10 @@
 #include <param.h>
 #include "openchange-tools.h"
 
-#include <stdlib.h>
-#include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <stdlib.h>
+#include <signal.h>
 
 #define	DEFAULT_DIR	"%s/.openchange"
 #define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
@@ -112,7 +112,12 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 
 	/* catch CTRL-C */
 	g_profname = profname;
+
+#if defined (__FreeBSD__)
+	(void) signal(SIGINT, (sig_t) signal_delete_profile);
+#else
 	(void) signal(SIGINT, (sighandler_t) signal_delete_profile);
+#endif
 
 	retval = MAPIInitialize(profdb);
 	if (retval != MAPI_E_SUCCESS) {

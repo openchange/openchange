@@ -11,7 +11,10 @@ else
 	MAKE=make
 fi
 
-/usr/bin/env PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/samba/lib/pkgconfig
+/usr/bin/env -i PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/samba/lib/pkgconfig
+
+RUNDIR=`dirname $0`
+HOST_OS=`$RUNDIR/../config.guess`
 
 #
 # Error check
@@ -167,6 +170,33 @@ download() {
 # Apply patches to samba4
 #
 patch() {
+    case "$HOST_OS" in
+	*freebsd*)
+
+	    echo "[+] Patching tevent for FreeBSD"
+	    OLD_PWD=$PWD
+	    cd samba4/lib/tevent
+	    sed 's/\$(PYTHON_CONFIG) --libs/\$(PYTHON_CONFIG) --ldflags/g' tevent.mk > tevent.mk2
+	    mv tevent.mk2 tevent.mk
+	    cd $OLD_PWD
+
+	    echo "[+] Patching heimdal for FreeBSD"
+	    OLD_PWD=$PWD
+	    cd samba4/source4/heimdal/lib/roken
+	    sed "s/#if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__)/#if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__) || defined(__FreeBSD__)/g" rkpty.c > rkpty2.c
+	    mv rkpty2.c rkpty.c
+	    sed -e "54i\\
+#if defined(__FreeBSD__)\\
+#include <sys/ioctl.h>\\
+#include <termios.h>\\
+#include <libutil.h>\\
+#endif" rkpty.c > rkpty2.c
+	    mv rkpty2.c rkpty.c
+	    cd $OLD_PWD
+
+	    ;;
+    esac
+
     return $?
 }
 
@@ -252,12 +282,9 @@ compile() {
 
     OLD_PWD=$PWD
 
-    PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/samba/lib/pkgconfig
-
-	cleanup_talloc
-	cleanup_tdb
-
-	# Cleanup tdb and talloc directories
+    # Cleanup tdb and talloc directories
+    cleanup_talloc
+    cleanup_tdb
 
     echo "Step1: Preparing Samba4 system"
     cd samba4/source4

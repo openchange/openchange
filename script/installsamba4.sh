@@ -337,8 +337,6 @@ install() {
     error_check $? "Step1"
 
     cd $OLD_PWD
-
-    post_install
 }
 
 

@@ -244,9 +244,9 @@ _PUBLIC_ const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 	switch(lpProp->ulPropTag & 0xFFFF) {
 	case PT_BOOLEAN:
 		return (const void *)(uint8_t *)&lpProp->value.b;
-	case PT_I2:
+	case PT_I2: /* Equivalent to PT_SHORT */
 		return (const void *)(uint16_t *)&lpProp->value.i;
-	case PT_LONG:
+	case PT_LONG: /* Equivalent to PT_I4 */
 		return (const void *)&lpProp->value.l;
 	case PT_DOUBLE:
 		return (const void *)&lpProp->value.dbl;
@@ -280,6 +280,8 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	}
 
 	switch(lpProps->ulPropTag & 0xFFFF) {
+	case PT_SHORT:
+		return (const void *)&lpProps->value.i;
 	case PT_BOOLEAN:
 		return (const void *)&lpProps->value.b;
 	case PT_I8:
@@ -300,12 +302,20 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 		return (const void *)(struct GUID *)&lpProps->value.lpguid;
 	case PT_BINARY:
 		return (const void *)&lpProps->value.bin;
+	case PT_MV_SHORT:
+		return (const void *)(struct ShortArray_r *)&lpProps->value.MVi;
 	case PT_MV_LONG:
 		return (const void *)(struct LongArray_r *)&lpProps->value.MVl;
 	case PT_MV_STRING8:
 		return (const void *)(struct StringArray_r *)&lpProps->value.MVszA;
+	case PT_MV_UNICODE:
+		return (const void *)(struct WStringArray_r *)&lpProps->value.MVszW;
 	case PT_MV_BINARY:
 		return (const void *)(struct BinaryArray_r *)&lpProps->value.MVbin;
+	case PT_MV_SYSTIME:
+		return (const void *)(struct DateTimeArray_r *)&lpProps->value.MVft;
+	case PT_NULL:
+		return (const void *)&lpProps->value.null;
 	default:
 		return NULL;
 	}
@@ -328,7 +338,9 @@ _PUBLIC_ struct SPropValue *add_SPropValue(TALLOC_CTX *mem_ctx, struct SPropValu
 
 	return lpProps;
 }
-
+/*
+  TODO: should this be public?
+*/
 _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 {
 	if (data == NULL) {
@@ -367,7 +379,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.err = *((const uint32_t *)data);
 		break;
 	case PT_MV_SHORT:
-		lpProps->value.err = *((const uint32_t *)data);
+		lpProps->value.MVi = *((const struct ShortArray_r *)data);
 		break;
 	case PT_MV_LONG:
 		lpProps->value.MVl = *((const struct LongArray_r *)data);
@@ -391,7 +403,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.null = *((const uint32_t *)data);
 		break;
 	case PT_OBJECT:
-		lpProps->value.null = *((const uint32_t *)data);
+		lpProps->value.object = *((const uint32_t *)data);
 		break;
 	default:
 		lpProps->value.err = MAPI_E_NOT_FOUND;

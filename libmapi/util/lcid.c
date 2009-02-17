@@ -151,8 +151,6 @@ Missing entries from this table (compared to MS-LCID v20081024:
  - 0x4409 =-> en-MY
  - 0x4809 =-> en-SG
  - everything from 0x540a to 0x7c68 (and after)
-
-TODO: Confirm that 0x2801 is really ar-SY (and not tk-TM as shown in MS-LCID v20090114).
 */
 static const struct locale_struct locales[] =
 {

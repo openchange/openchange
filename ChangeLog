@@ -1,3 +1,45 @@
+2009-02-17
+    jkerihuel
+	[r1173]
+		Remove duplicated post_install call
+	[r1172]
+		Add a post_install operation on FreeBSD
+		Make sure pidl is installed properly.
+	[r1171]
+		Patch samba4 tarball so it compiles properly on FreeBSD 7.0
+		Note: this is a dirty hack which needs to be removed in the future
+	[r1170]
+		Install Samba4 correctly although user's PKG_CONFIG_PATH env variable
+		may not be adjusted properly.
+	[r1169]
+		Avoid download samba4 release tarball if already available
+		in current directory.
+	[r1168]
+		- Add test for comparison_fn_t in configure.ac
+		- libocpf auto-generated files include stdlib.h and prevent from
+		having the proper comparison_fn_t typedef. This commit works around this
+		problem and define comparison_fn_t within a private header.
+	[r1165]
+		getline is a stdio GNU_SOURCE extension not available under FreeBSD.
+		Use fgetln instead when it is compiled on this OS.
+	[r1164]
+		FreeBSD doesn't define sighandler_t but sig_t
+	[r1163]
+		Replace open() call with O_DIRECTORY flag (Linux specific) with opendir
+	[r1162]
+		- Add non-default search path /usr/local/{include,lib} to
+		CFLAGS and LDFLAGS when compiling OpenChange under FreeBSD
+		- Make use of LDFLAGS while compiling openchange tools
+    bradh
+	[r1167]
+		A few improvements for property handling.
+		
+		Also add unit tests to verify behaviour is correct.
+		
+		The implementation for the FlatUID (GUID) structure appears broken. Perhaps I'm not using it correctly.
+	[r1166]
+		Microsoft confirmed the LCID is wrong in the spec, and will be updated in the next rev.
+
 2009-02-16
     jkerihuel
 	[r1160]

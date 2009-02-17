@@ -306,6 +306,20 @@ compile() {
     cd $OLD_PWD
 }
 
+#
+# Post install operations
+#
+post_install() {
+    case "$HOST_OS" in
+	*freebsd*)
+	    OLD_PWD=$PWD
+	    cd samba4/pidl
+	    sudo $MAKE install
+	    error_check $? "Step 1"
+	    cd $OLD_PWD
+	    ;;
+    esac
+}
 
 #
 # Install Samba4
@@ -323,6 +337,8 @@ install() {
     error_check $? "Step1"
 
     cd $OLD_PWD
+
+    post_install
 }
 
 
@@ -348,12 +364,16 @@ case $1 in
     install)
 	install
 	;;
+    post_install)
+	post_install
+	;;
     git-all)
 	checkout
 	patch
 	packages
 	compile
 	install
+	post_install
 	;;
     all)
 	download
@@ -361,10 +381,11 @@ case $1 in
 	packages
 	compile
 	install
+	post_install
 	;;
     *)
-	echo $"Usage: $0 {checkout|patch|packages|compile|install|git-all}"
-	echo $"Usage: $0 {download|patch|packages|compile|install|all}"
+	echo $"Usage: $0 {checkout|patch|packages|compile|install|post_install|git-all}"
+	echo $"Usage: $0 {download|patch|packages|compile|install|post_install|all}"
 	;;
 esac
 

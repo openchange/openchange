@@ -1,3 +1,11 @@
+2009-02-18
+    jkerihuel
+	[r1175]
+		Add comparison_fn_t support to ndr.h
+		This was the latest change require to make openchange compiles under FreeBSD
+		
+		= samba4/openchange FreeBSD support completed =
+
 2009-02-17
     jkerihuel
 	[r1173]

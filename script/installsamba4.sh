@@ -193,7 +193,6 @@ patch() {
 #endif" rkpty.c > rkpty2.c
 	    mv rkpty2.c rkpty.c
 	    cd $OLD_PWD
-
 	    ;;
     esac
 
@@ -317,6 +316,15 @@ post_install() {
 	    sudo $MAKE install
 	    error_check $? "Step 1"
 	    cd $OLD_PWD
+            echo "[+] Add comparison_fn_t support to ndr.h header file"
+            OLD_PWD=$PWD
+            cd /usr/local/samba/include
+            sudo sed -e "34i\\
+#if defined(__FreeBSD__)\\
+typedef int (*comparison_fn_t)(const void *, const void *);\\
+#endif" ndr.h > /tmp/ndr.h
+            sudo mv /tmp/ndr.h ndr.h
+            cd $OLD_PWD
 	    ;;
     esac
 }

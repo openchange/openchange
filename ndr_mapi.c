@@ -149,14 +149,6 @@ enum ndr_err_code ndr_push_mapi_response(struct ndr_push *ndr, int ndr_flags, co
 		for (count = 0; ndr->offset < r->length - 2; count++) {
 			NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL(ndr, NDR_SCALARS, &r->mapi_repl[count]));
 		}
-
-		/* hack adding padding bytes */
-		count = r->length - ndr->offset;
-		if (count > 0) {
-			for (cntr_mapi_repl_0 =0; cntr_mapi_repl_0 < count; cntr_mapi_repl_0++) {
-				NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, 0));
-			}
-		}
 	}
 
 	count = (r->mapi_len - r->length) / sizeof (uint32_t);

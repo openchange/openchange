@@ -95,6 +95,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	request = mapi_req->u.mapi_OpenFolder;
 	response = mapi_repl->u.mapi_OpenFolder;
 
+	mapi_repl->u.mapi_OpenFolder.HasRules = 0;
+	mapi_repl->u.mapi_OpenFolder.IsGhosted = 0;
+
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);

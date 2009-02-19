@@ -70,6 +70,7 @@ distclean:: clean
 	rm -f libmapi++/Doxyfile
 	rm -f mapiproxy/Doxyfile
 	rm -f config.status config.log
+	rm -f stamp-h1
 	rm -f utils/mapitest/Doxyfile
 	rm -f intltool-extract intltool-merge intltool-update
 	rm -rf apidocs

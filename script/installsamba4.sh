@@ -321,7 +321,9 @@ post_install() {
             cd /usr/local/samba/include
             sudo sed -e "34i\\
 #if defined(__FreeBSD__)\\
+# ifndef HAVE_COMPARISON_FN_T\\
 typedef int (*comparison_fn_t)(const void *, const void *);\\
+# endif\\
 #endif" ndr.h > /tmp/ndr.h
             sudo mv /tmp/ndr.h ndr.h
             cd $OLD_PWD

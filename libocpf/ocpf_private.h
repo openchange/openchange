@@ -24,6 +24,7 @@
 #include <stdlib.h>
 
 #ifndef HAVE_COMPARISON_FN_T
+#define HAVE_COMPARISON_FN_T
 typedef int (*comparison_fn_t)(const void *, const void *);
 #else
 # ifndef comparison_fn_t

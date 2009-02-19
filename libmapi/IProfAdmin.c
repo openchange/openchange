@@ -966,19 +966,6 @@ _PUBLIC_ enum MAPISTATUS GetDefaultProfile(char **profname)
 	OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, proftable.aRow);
 }
 
-/**
-   \details Retrieve a pointer on the mapi_profile structure used in
-   the given session
- */
-_PUBLIC_ enum MAPISTATUS GetProfilePtr(struct mapi_profile *profile)
-{
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-
-	profile = global_mapi_ctx->session->profile;
-
-	return MAPI_E_SUCCESS;
-}
-
 
 /**
    \details Retrieve the profile table

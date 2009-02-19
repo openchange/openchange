@@ -869,7 +869,8 @@ distclean:: libmapistore-distclean
 
 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mapistore_interface.po	\
 							mapiproxy/libmapistore/mapistore_processing.po	\
-							mapiproxy/libmapistore/mapistore_backend.po
+							mapiproxy/libmapistore/mapistore_backend.po	\
+							mapiproxy/libmapistore/mapistore_tdb_wrap.po	
 	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) $^ -L. $(LIBS)
 
 mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -900,7 +901,8 @@ distclean:: mapistore_sqlite3-distclean
 
 mapiproxy/libmapistore/backends/mapistore_sqlite3.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_sqlite3.po
 	@echo "Linking mapistore module $@"
-	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $^ -L. $(LIBS) $(SQLITE_LIBS)
+	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $^ -L. $(LIBS) $(SQLITE_LIBS) 	\
+	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 #######################
 # mapistore test tools
@@ -1022,7 +1024,9 @@ mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/
 						mapiproxy/servers/default/emsmdb/oxcfold.po			\
 						mapiproxy/servers/default/emsmdb/oxcnotif.po			
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) \
+						mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+						mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 mapiproxy/servers/exchange_ds_rfr.$(SHLIBEXT):	mapiproxy/servers/default/rfr/dcesrv_exchange_ds_rfr.po
 	@echo "Linking $@"

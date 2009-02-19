@@ -38,6 +38,13 @@
 #endif
 
 
+struct tdb_wrap {
+	struct tdb_context	*tdb;
+	const char		*name;
+	struct tdb_wrap		*prev;
+	struct tdb_wrap		*next;
+};
+
 /**
    Identifier mapping context.
 
@@ -51,8 +58,8 @@
    higher than last_id.
  */
 struct id_mapping_context {
-	TDB_CONTEXT		*used_ctx;
-	TDB_CONTEXT		*free_ctx;
+	struct tdb_wrap		*used_ctx;
+	struct tdb_wrap		*free_ctx;
 	uint64_t		last_id;
 };
 
@@ -100,6 +107,9 @@ int mapistore_free_context_id(struct processing_context *, uint32_t);
 int mapistore_backend_init(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *);
 int mapistore_backend_delete_context(struct backend_context *);
+
+/* definitions from mapistore_tdb_wrap.c */
+struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
 
 __END_DECLS
 

@@ -33,9 +33,7 @@
 
 #include <tdb.h>
 
-static struct id_mapping_context *mapping_ctx = NULL;
 char *mapping_path = NULL;
-
 
 /**
    \details Set the mapping path
@@ -53,11 +51,6 @@ _PUBLIC_ int mapistore_set_mapping_path(const char *path)
 {
 	TALLOC_CTX	*mem_ctx;
 	DIR		*dir;
-
-	/* Sanity checks */
-	if (mapping_ctx) {
-		return MAPISTORE_ERR_ALREADY_INITIALIZED;
-	}
 
 	/* Case 1. Path is set to NULL */
 	if (!path) {
@@ -117,40 +110,35 @@ int mapistore_init_mapping_context(struct processing_context *pctx)
 	int		ret;
 
 	if (!pctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	if (pctx->mapping_ctx) return MAPISTORE_ERR_ALREADY_INITIALIZED;
 
-	/* Step 0. return existing mapping context if already initialized */
-	if (mapping_ctx) {
-		pctx->mapping_ctx = mapping_ctx;
-		return MAPISTORE_SUCCESS;
-	} else {
-		mapping_ctx = talloc_named(NULL, 0, "mapping_context");
-		if (!mapping_ctx) return MAPISTORE_ERR_NO_MEMORY;
-	}
+	pctx->mapping_ctx = talloc_zero(pctx, struct id_mapping_context);
+	if (!pctx->mapping_ctx) return MAPISTORE_ERR_NO_MEMORY;
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_init_mapping_context");
 
 	/* Step 1. Open/Create the used ID database */
-	if (!mapping_ctx->used_ctx) {
+	if (!pctx->mapping_ctx->used_ctx) {
 		dbpath = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), MAPISTORE_DB_NAME_USED_ID);
-		mapping_ctx->used_ctx = tdb_open(dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
+		pctx->mapping_ctx->used_ctx = tdb_wrap_open(pctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
 		talloc_free(dbpath);
-		if (!mapping_ctx->used_ctx) {
+		if (!pctx->mapping_ctx->used_ctx) {
 			DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
 			talloc_free(mem_ctx);
-			talloc_free(mapping_ctx);
+			talloc_free(pctx->mapping_ctx);
 			return MAPISTORE_ERR_DATABASE_INIT;
 		}
 	}
 
 	/* Step 2. Open/Create the free ID database */
-	if (!mapping_ctx->free_ctx) {
+	if (!pctx->mapping_ctx->free_ctx) {
 		dbpath = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), MAPISTORE_DB_NAME_FREE_ID);
-		mapping_ctx->free_ctx = tdb_open(dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
+		pctx->mapping_ctx->free_ctx = tdb_wrap_open(pctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
 		talloc_free(dbpath);
-		if (!mapping_ctx->free_ctx) {
+		if (!pctx->mapping_ctx->free_ctx) {
 			DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
 			talloc_free(mem_ctx);
-			talloc_free(mapping_ctx);
+			talloc_free(pctx->mapping_ctx);
 			return MAPISTORE_ERR_DATABASE_INIT;
 		}
 	}
@@ -159,7 +147,7 @@ int mapistore_init_mapping_context(struct processing_context *pctx)
 	key.dptr = (unsigned char *) MAPISTORE_DB_LAST_ID_KEY;
 	key.dsize = strlen(MAPISTORE_DB_LAST_ID_KEY);
 
-	dbuf = tdb_fetch(mapping_ctx->used_ctx, key);
+	dbuf = tdb_fetch(pctx->mapping_ctx->used_ctx->tdb, key);
 
 	/* If the record doesn't exist, insert it */
 	if (!dbuf.dptr || !dbuf.dsize) {
@@ -167,13 +155,13 @@ int mapistore_init_mapping_context(struct processing_context *pctx)
 		dbuf.dsize = strlen((const char *) dbuf.dptr);
 		last_id = MAPISTORE_DB_LAST_ID_VAL;
 
-		ret = tdb_store(mapping_ctx->used_ctx, key, dbuf, TDB_INSERT);
+		ret = tdb_store(pctx->mapping_ctx->used_ctx->tdb, key, dbuf, TDB_INSERT);
 		talloc_free(dbuf.dptr);
 		if (ret == -1) {
 			DEBUG(3, ("[%s:%d]: Unable to create %s record: %s\n", __FUNCTION__, __LINE__,
-				  MAPISTORE_DB_LAST_ID_KEY, tdb_errorstr(mapping_ctx->used_ctx)));
+				  MAPISTORE_DB_LAST_ID_KEY, tdb_errorstr(pctx->mapping_ctx->used_ctx->tdb)));
 			talloc_free(mem_ctx);
-			talloc_free(mapping_ctx);
+			talloc_free(pctx->mapping_ctx);
 
 			return MAPISTORE_ERR_DATABASE_OPS;
 		}
@@ -185,9 +173,8 @@ int mapistore_init_mapping_context(struct processing_context *pctx)
 		talloc_free(tmp_buf);
 	}
 
-	mapping_ctx->last_id = last_id;
+	pctx->mapping_ctx->last_id = last_id;
 
-	pctx->mapping_ctx = mapping_ctx;
 	talloc_free(mem_ctx);
 
 	return MAPISTORE_SUCCESS;

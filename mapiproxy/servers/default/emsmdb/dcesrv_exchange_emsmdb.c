@@ -288,6 +288,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 								  &(mapi_response->mapi_repl[i]),
 								  mapi_response->handles, &size);
 			break;
+		case op_MAPI_GetReceiveFolder:
+			retval = EcDoRpc_RopGetReceiveFolder(mem_ctx, emsmdbp_ctx,
+							     &(mapi_request->mapi_req[i]),
+							     &(mapi_response->mapi_repl[i]),
+							     mapi_response->handles, &size);
+			break;
 		case op_MAPI_RegisterNotification:
 			retval = EcDoRpc_RopRegisterNotification(mem_ctx, emsmdbp_ctx,
 								 &(mapi_request->mapi_req[i]),

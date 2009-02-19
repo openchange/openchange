@@ -218,3 +218,37 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details EcDoRpc GetReceiveFolder (0x27) Rop. This operation gets
+   the receive folder for incoming messages of a particular message
+   class
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetReceiveFolder EcDoRpc_MAPI_REQ
+   \param mapi_repl pointer to the GetReceiveFolder EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
+						     struct emsmdbp_context *emsmdbp_ctx,
+						     struct EcDoRpc_MAPI_REQ *mapi_req,
+						     struct EcDoRpc_MAPI_REPL *mapi_repl,
+						     uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetReciveFolder (0x27)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+	
+
+	return MAPI_E_SUCCESS;
+}

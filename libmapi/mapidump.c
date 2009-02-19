@@ -743,7 +743,11 @@ _PUBLIC_ void mapidump_freebusy_event(struct Binary_r *bin, uint32_t month, uint
 			if (!((event_start - (60 * hour)) % 1440)) {
 				day = ((event_start - (60 * hour)) / 1440) + 1;
 				last = event_end - event_start;
+#if defined (__FreeBSD__)
+				DEBUG(0, ("%s %u %s %u at %u hours and lasts ", sep ? sep : "", day, month_name, year, hour));
+#else
 				DEBUG(0, ("%s %u %s %u at %u hours and lasts ", sep ? sep : "", day, month_name, year, hour + daylight));
+#endif
 				if (last < 60) {
 					DEBUG(0, ("%u minutes\n", last));
 				} else {

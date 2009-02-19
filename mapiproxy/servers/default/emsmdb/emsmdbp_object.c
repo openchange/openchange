@@ -114,11 +114,11 @@ _PUBLIC_ struct emsmdbp_object_folder *emsmdbp_object_folder_init(TALLOC_CTX *me
 
 	if (object->IsSystemFolder == false) {
 		/* Retrieve the systemfolder value */
-		object->systemfolder = 1;
+		object->systemfolder = -1;
 		/* mapistore backend initialization goes here */
 	} else {
 		/* assign mapistore context from parent */
-		object->systemfolder = -1;
+		object->systemfolder = 0;
 	}
 
 	return object;

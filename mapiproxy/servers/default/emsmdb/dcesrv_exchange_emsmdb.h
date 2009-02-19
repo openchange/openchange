@@ -25,6 +25,7 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
 #include <mapiproxy/libmapiproxy/libmapiproxy.h>
+#include <mapiproxy/libmapistore/mapistore.h>
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <util/debug.h>
@@ -46,7 +47,7 @@ struct emsmdbp_context {
 	void				*oc_ctx;
 	void				*conf_ctx;
 	void				*users_ctx;
-	TALLOC_CTX			*mem_ctx;
+	struct mapistore_context	*mstore_ctx;
 	struct mapi_handles_context	*handles_ctx;
 };
 

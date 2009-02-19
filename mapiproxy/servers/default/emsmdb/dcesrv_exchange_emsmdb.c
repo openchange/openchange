@@ -95,13 +95,6 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_FAILONEPROVIDER, NULL);
 	}
 
-	/* Initialize MAPI handles context */
-	emsmdbp_ctx->handles_ctx = mapi_handles_init((TALLOC_CTX *)emsmdbp_ctx);
-	if (!emsmdbp_ctx->handles_ctx) {
-		smb_panic("unable to initialize MAPI handles context");
-		OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->handles_ctx, MAPI_E_FAILONEPROVIDER, emsmdbp_ctx);
-	}
-
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
 	if (emsmdbp_verify_user(dce_call, emsmdbp_ctx) == false) {
 		talloc_free(emsmdbp_ctx);
@@ -114,7 +107,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		goto failure;
 	}
 
-	emsmdbp_ctx->szUserDN = talloc_strdup(emsmdbp_ctx->mem_ctx, r->in.szUserDN);
+	emsmdbp_ctx->szUserDN = talloc_strdup(emsmdbp_ctx, r->in.szUserDN);
 
 	/* Step 4. Retrieve the display name of the user */
 	r->out.szDisplayName = ldb_msg_find_attr_as_string(msg, "displayName", NULL);
@@ -209,9 +202,10 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 	if (h) {
 		for (session = emsmdb_session; session; session = session->next) {
 			if ((mpm_session_cmp(session->session, dce_call) == true)) {
-				mpm_session_release(session->session);
 				DLIST_REMOVE(emsmdb_session, session);
+				mpm_session_release(session->session);
 				DEBUG(6, ("[%s:%d]: Session found and released\n", __FUNCTION__, __LINE__));
+				break;
 			}
 		}
 	}

@@ -914,3 +914,66 @@ _PUBLIC_ bool mapitest_noserver_properties(struct mapitest *mt)
 
 	return true;
 }
+
+/**
+     \details Test the mapi_SPropValue_array handling
+
+   This function:
+   -# Builds a mapi_SPropValue_array
+   -# Checks that appropriate values can be retrieved
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+*/
+_PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt) 
+{
+	struct mapi_SPropValue_array valarray;
+	const uint16_t *i2get;
+	const uint32_t *i4get;
+
+	valarray.cValues = 2;
+	valarray.lpProps = talloc_array(mt->mem_ctx, struct mapi_SPropValue, valarray.cValues);
+
+	valarray.lpProps[0].ulPropTag = PR_GENDER;
+	valarray.lpProps[0].value.i = 0x0001;  /* Female */
+	valarray.lpProps[1].ulPropTag = PR_ORIGINAL_SENSITIVITY;
+	valarray.lpProps[1].value.i = 0x00000002; /* Private */
+
+	i2get = find_mapi_SPropValue_data(&valarray, PR_GENDER);
+	if (!i2get || (*i2get != 0x0001)) {
+		/* failure */
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "mapi_SPropValue find with PT_SHORT");
+		return false;
+	}
+	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_SHORT");
+
+	i4get = find_mapi_SPropValue_data(&valarray, PR_ORIGINAL_SENSITIVITY);
+	if (!i4get || (*i4get != 0x00000002)) {
+		/* failure */
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "mapi_SPropValue find with PT_LONG");
+		return false;
+	}
+	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_LONG");
+
+#if 0
+	// Types to still to test:
+        int64_t dbl;/* [case(0x0005)] */
+        uint32_t err;/* [case(0x000a)] */
+        uint8_t b;/* [case(0x000b)] */
+        int64_t d;/* [case(0x0014)] */
+        const char * lpszA;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM),case(0x001e)] */
+        const char * lpszW;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(0x001f)] */
+        struct FILETIME ft;/* [case(0x0040)] */
+        struct GUID lpguid;/* [case(0x0048)] */
+        struct mapi_SRestriction_wrap Restrictions;/* [case(0x00fd)] */
+        struct RuleAction RuleAction;/* [case(0x00fe)] */
+        struct SBinary_short bin;/* [case(0x0102)] */
+        struct mapi_MV_LONG_STRUCT MVl;/* [case(0x1003)] */
+        struct mapi_SLPSTRArray MVszA;/* [case(0x101e)] */
+        struct mapi_SPLSTRArrayW MVszW;/* [case(0x101f)] */
+        struct mapi_SGuidArray MVguid;/* [case(0x1048)] */
+        struct mapi_SBinaryArray MVbin;/* [case(0x1102)] */
+#endif
+	return true;
+}

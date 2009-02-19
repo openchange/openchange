@@ -1,3 +1,45 @@
+2009-02-19
+    jkerihuel
+	[r1189]
+		- Initialize mapistore within emsmdb provider context
+		- Add destructors for MAPI handles and mapistore contexts
+		- Remove emsmdbp_ctx memory context structure member and
+		allocate directly with emsmdbp_ctx
+	[r1188]
+		I don't see any good reason why we would pad MAPI replies with some bytes. 
+		I guess it comes from some prehistoric openchange code.
+	[r1187]
+		Fix systemfolder assignment depending on IsSystemFolder value
+	[r1186]
+		- Initialize OpenFolder server reply
+	[r1185]
+		- Wrap TDB connections to mapistore (code from samba4) so
+		multiple instances can open read/write to the same TDB database
+		- Remove static id_mapping_context (replaced with tdb_wrap calls)
+		- Update mapistore linkage rules so mapistore can be used with exchange_emsmdb server
+		- Link mapistore with exchange_emsmdb
+	[r1183]
+		Fix aclocal warning for AC_DEFINE comparison_fn_t
+	[r1182]
+		Remove useless GetProfilePtr from IProfAdmin interface
+		Closes trac ticket #131
+	[r1181]
+		Add missing script - prevent configure from generating warning vs missing file.
+	[r1180]
+		Remove stamp-h1 file during distclean and add it
+		to the ignore list.
+	[r1179]
+		- Add server-side GetReceiveFolder (0x27) skeleton
+	[r1178]
+		Work around the comparison_fn_t redefinition problem
+		between libocpf and ndr.h
+	[r1177]
+		FreeBSD doesn't have time.h daylight global variable
+    bradh
+	[r1184]
+		start testing mapi_SPropValue_array.
+		This also tests some underlying functions.
+
 2009-02-18
     jkerihuel
 	[r1175]

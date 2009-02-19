@@ -134,8 +134,8 @@ fi
 dnl ----------------------------------------------------------------------------
 dnl Check for comparison_fn_t
 dnl ----------------------------------------------------------------------------
-AC_CHECK_TYPE(comparison_fn_t, [AC_DEFINE(HAVE_COMPARISON_FN_T, 1,
-                               [Whether or not we have comparison_fn_t])])
+AC_CHECK_TYPE(comparison_fn_t, 
+[AC_DEFINE(HAVE_COMPARISON_FN_T, 1,[Whether or not we have comparison_fn_t])])
 
 
 dnl ###########################################################################

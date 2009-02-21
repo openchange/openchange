@@ -931,10 +931,12 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	struct mapi_SPropValue_array valarray;
 	const uint16_t *i2get;
 	const uint32_t *i4get;
+	const uint32_t *i8get;
 	const uint8_t *boolget;
 	const char *stringget;
+	const struct SBinary_short *binget;
 
-	valarray.cValues = 4;
+	valarray.cValues = 6;
 	valarray.lpProps = talloc_array(mt->mem_ctx, struct mapi_SPropValue, valarray.cValues);
 
 	valarray.lpProps[0].ulPropTag = PR_GENDER;
@@ -945,6 +947,15 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	valarray.lpProps[2].value.b = false; 
 	valarray.lpProps[3].ulPropTag = PR_CONVERSATION_TOPIC;
 	valarray.lpProps[3].value.lpszA = "Elizabeth's Birthday"; 
+	valarray.lpProps[4].ulPropTag = PR_MESSAGE_SIZE_EXTENDED;
+	valarray.lpProps[4].value.d = 43857;
+	valarray.lpProps[5].ulPropTag = PR_RECORD_KEY;
+	valarray.lpProps[5].value.bin.cb = 4;
+	valarray.lpProps[5].value.bin.lpb = talloc_array(mt->mem_ctx, uint8_t, 4);
+	valarray.lpProps[5].value.bin.lpb[0] = 0x44;
+	valarray.lpProps[5].value.bin.lpb[1] = 0x00;
+	valarray.lpProps[5].value.bin.lpb[2] = 0x20;
+	valarray.lpProps[5].value.bin.lpb[3] = 0x00;
 
 	i2get = find_mapi_SPropValue_data(&valarray, PR_GENDER);
 	if (!i2get || (*i2get != 0x0001)) {
@@ -954,6 +965,7 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	}
 	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_SHORT");
 
+
 	i4get = find_mapi_SPropValue_data(&valarray, PR_ORIGINAL_SENSITIVITY);
 	if (!i4get || (*i4get != 0x00000002)) {
 		/* failure */
@@ -962,6 +974,16 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	}
 	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_LONG");
 
+
+	i8get = find_mapi_SPropValue_data(&valarray, PR_MESSAGE_SIZE_EXTENDED);
+	if (!i8get || (*i8get != 43857)) {
+		/* failure */
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "mapi_SPropValue find with PT_I8");
+		return false;
+	}
+	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_I8");
+
+
 	boolget = find_mapi_SPropValue_data(&valarray, PR_ALTERNATE_RECIPIENT_ALLOWED);
 	if (!boolget || (*boolget != false)) {
 		/* failure */
@@ -969,6 +991,7 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 		return false;
 	}
 	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_BOOLEAN");
+
 
 	stringget = find_mapi_SPropValue_data(&valarray, PR_CONVERSATION_TOPIC);
 	if (!stringget || (strcmp(stringget, "Elizabeth's Birthday") !=0 )) {
@@ -979,17 +1002,25 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_STRING");
 
 
+	binget = find_mapi_SPropValue_data(&valarray, PR_RECORD_KEY);
+	if (!binget || (binget->cb != 4 ) || (binget->lpb[0] != 0x44) || (binget->lpb[1] != 0x00)
+	    || (binget->lpb[2] != 0x20) || (binget->lpb[3] != 0x00)) {
+		/* failure */
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "mapi_SPropValue find with PT_BINARY");
+		return false;
+	}
+	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_BINARY");
+
+
 #if 0
 	// Types to still to test:
         int64_t dbl;/* [case(0x0005)] */
         uint32_t err;/* [case(0x000a)] */
-        int64_t d;/* [case(0x0014)] */
         const char * lpszW;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(0x001f)] */
         struct FILETIME ft;/* [case(0x0040)] */
         struct GUID lpguid;/* [case(0x0048)] */
         struct mapi_SRestriction_wrap Restrictions;/* [case(0x00fd)] */
         struct RuleAction RuleAction;/* [case(0x00fe)] */
-        struct SBinary_short bin;/* [case(0x0102)] */
         struct mapi_MV_LONG_STRUCT MVl;/* [case(0x1003)] */
         struct mapi_SLPSTRArray MVszA;/* [case(0x101e)] */
         struct mapi_SPLSTRArrayW MVszW;/* [case(0x101f)] */

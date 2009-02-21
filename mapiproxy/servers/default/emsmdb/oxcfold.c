@@ -79,7 +79,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	struct OpenFolder_repl		response;
 	struct mapi_handles		*parent = NULL;
 	struct mapi_handles		*rec = NULL;
-	struct emsmdbp_object_folder	*obj;
+	struct emsmdbp_object		*object;
 	uint32_t			handle;
 	int				parentfolder = -1;
 
@@ -122,9 +122,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 
-		obj = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx, mapi_req, parent);
-		retval = mapi_handles_set_systemfolder(rec, obj->systemfolder);
-		retval = mapi_handles_set_private_data(rec, obj);
+		object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx, mapi_req, parent);
+		retval = mapi_handles_set_systemfolder(rec, object->object.folder->systemfolder);
+		retval = mapi_handles_set_private_data(rec, object);
 
 		mapi_repl->opnum = mapi_req->opnum;
 		mapi_repl->handle_idx = mapi_req->u.mapi_OpenFolder.handle_idx;

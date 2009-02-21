@@ -52,7 +52,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 							void *private_data)
 {
 	enum MAPISTATUS			retval;
-	struct emsmdbp_object_mailbox	*object;
+	struct emsmdbp_object		*object;
 	struct SBinary_short		bin;
 	uint32_t			i;
 	uint32_t			error = 0;
@@ -60,7 +60,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!private_data, MAPI_E_INVALID_PARAMETER, NULL);
 
-	object = (struct emsmdbp_object_mailbox *) private_data;
+	object = (struct emsmdbp_object *) private_data;
 
 	/* Step 1. Check if we need a layout */
 	response->layout = 0;
@@ -87,14 +87,14 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 						    &response->prop_data, response->layout);
 			break;
 		case PR_USER_ENTRYID:
-			retval = entryid_set_AB_EntryID(mem_ctx, object->szUserDN, &bin);
+			retval = entryid_set_AB_EntryID(mem_ctx, object->object.mailbox->szUserDN, &bin);
 			libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
 						    request.properties[i], (const void *)&bin,
 						    &response->prop_data, response->layout);
 			talloc_free(bin.lpb);
 			break;
 		case PR_MAILBOX_OWNER_ENTRYID:
-			retval = entryid_set_AB_EntryID(mem_ctx, object->owner_EssDN, &bin);
+			retval = entryid_set_AB_EntryID(mem_ctx, object->object.mailbox->owner_EssDN, &bin);
 			libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
 						    request.properties[i], (const void *)&bin,
 						    &response->prop_data, response->layout);
@@ -103,7 +103,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 		case PR_MAILBOX_OWNER_NAME:
 		case PR_MAILBOX_OWNER_NAME_UNICODE:
 			libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
-						    request.properties[i], (const void *)object->owner_Name,
+						    request.properties[i], (const void *)object->object.mailbox->owner_Name,
 						    &response->prop_data, response->layout);
 			break;
 		default:

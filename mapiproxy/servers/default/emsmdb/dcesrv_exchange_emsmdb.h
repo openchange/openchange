@@ -59,6 +59,13 @@ struct exchange_emsmdb_session {
 	struct exchange_emsmdb_session	*next;
 };
 
+enum emsmdbp_object_type {
+	EMSMDBP_OBJECT_UNDEF		= 0x0,
+	EMSMDBP_OBJECT_MAILBOX		= 0x1,
+	EMSMDBP_OBJECT_FOLDER		= 0x2,
+	EMSMDBP_OBJECT_MESSAGE		= 0x3,
+	EMSMDBP_OBJECT_TABLE		= 0x4
+};
 
 struct emsmdbp_object_mailbox {
 	char				*owner_Name;
@@ -72,6 +79,17 @@ struct emsmdbp_object_folder {
 	bool				IsSystemFolder;
 	int				systemfolder;
 	/* pointer to the mapistore context goes here */
+};
+
+union emsmdbp_objects {
+	struct emsmdbp_object_mailbox	*mailbox;
+	struct emsmdbp_object_folder	*folder;
+};
+
+struct emsmdbp_object {
+	enum emsmdbp_object_type	type;
+	union emsmdbp_objects		object;
+	void				*private_data;
 };
 
 
@@ -105,8 +123,9 @@ bool			emsmdbp_verify_user(struct dcesrv_call_state *, struct emsmdbp_context *)
 bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context *, const char *, struct ldb_message **);
 
 /* definitions from emsmdbp_object.c */
-struct emsmdbp_object_mailbox *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *);
-struct emsmdbp_object_folder *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct mapi_handles *);
+struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *);
+struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *);
+struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct mapi_handles *);
 
 /* definitions from oxcfold.c */
 enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);

@@ -935,8 +935,9 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	const uint8_t *boolget;
 	const char *stringget;
 	const struct SBinary_short *binget;
+	const struct mapi_MV_LONG_STRUCT *mvi4get;
 
-	valarray.cValues = 6;
+	valarray.cValues = 7;
 	valarray.lpProps = talloc_array(mt->mem_ctx, struct mapi_SPropValue, valarray.cValues);
 
 	valarray.lpProps[0].ulPropTag = PR_GENDER;
@@ -956,7 +957,13 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	valarray.lpProps[5].value.bin.lpb[1] = 0x00;
 	valarray.lpProps[5].value.bin.lpb[2] = 0x20;
 	valarray.lpProps[5].value.bin.lpb[3] = 0x00;
+	valarray.lpProps[6].ulPropTag = PR_FREEBUSY_BUSY_MONTHS;
+	valarray.lpProps[6].value.MVl.cValues = 2;
+	valarray.lpProps[6].value.MVl.lpl = talloc_array(mt->mem_ctx, uint32_t, 2);
+	valarray.lpProps[6].value.MVl.lpl[0] = 32130;
+	valarray.lpProps[6].value.MVl.lpl[1] = 32131;
 
+	/* now start pulling the values back out */
 	i2get = find_mapi_SPropValue_data(&valarray, PR_GENDER);
 	if (!i2get || (*i2get != 0x0001)) {
 		/* failure */
@@ -1012,6 +1019,14 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_BINARY");
 
 
+	mvi4get = find_mapi_SPropValue_data(&valarray, PR_FREEBUSY_BUSY_MONTHS);
+	if (!mvi4get || (mvi4get->cValues != 2 ) || (mvi4get->lpl[0] != 32130) || (mvi4get->lpl[1] != 32131)) {
+		/* failure */
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "mapi_SPropValue find with PT_MV_LONG");
+		return false;
+	}
+	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_MV_LONG");
+
 #if 0
 	// Types to still to test:
         int64_t dbl;/* [case(0x0005)] */
@@ -1021,7 +1036,6 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
         struct GUID lpguid;/* [case(0x0048)] */
         struct mapi_SRestriction_wrap Restrictions;/* [case(0x00fd)] */
         struct RuleAction RuleAction;/* [case(0x00fe)] */
-        struct mapi_MV_LONG_STRUCT MVl;/* [case(0x1003)] */
         struct mapi_SLPSTRArray MVszA;/* [case(0x101e)] */
         struct mapi_SPLSTRArrayW MVszW;/* [case(0x101f)] */
         struct mapi_SGuidArray MVguid;/* [case(0x1048)] */

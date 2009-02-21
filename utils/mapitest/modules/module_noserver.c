@@ -983,9 +983,7 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	// Types to still to test:
         int64_t dbl;/* [case(0x0005)] */
         uint32_t err;/* [case(0x000a)] */
-        uint8_t b;/* [case(0x000b)] */
         int64_t d;/* [case(0x0014)] */
-        const char * lpszA;/* [flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM),case(0x001e)] */
         const char * lpszW;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(0x001f)] */
         struct FILETIME ft;/* [case(0x0040)] */
         struct GUID lpguid;/* [case(0x0048)] */

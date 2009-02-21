@@ -202,6 +202,7 @@ bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
 enum MAPISTATUS openchangedb_get_SystemFolderID(void *, char *, uint32_t, uint64_t *);
 enum MAPISTATUS	openchangedb_get_MailboxGuid(void *, char *, struct GUID *);
 enum MAPISTATUS	openchangedb_get_MailboxReplica(void *, char *, uint16_t *, struct GUID *);
+enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, void *, uint64_t, char **);
 
 /* definitions from mapi_handles.c */
 struct mapi_handles_context *mapi_handles_init(TALLOC_CTX *);

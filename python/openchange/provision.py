@@ -37,6 +37,9 @@ FIRST_ORGANIZATION_UNIT = "First Organization Unit"
 def openchangedb_url(lp):
     return os.path.join(lp.get("private dir"), "openchange.ldb")
 
+def openchangedb_mapistore_url(lp):
+    return os.path.join(lp.get("private dir"), "mapistore");
+
 class ProvisionNames(object):
 
     def __init__(self):
@@ -242,10 +245,13 @@ def newmailbox(lp, username, firstorg, firstou):
     # Step 2. Check if the user already exists
     assert not db.user_exists(names.netbiosname, username)
 
-    # Step 3. Create the user object
+    # Step 3. Create a default mapistore content repository for this user
+    db.add_storage_dir(mapistoreURL=openchangedb_mapistore_url(lp), username=username)
+
+    # Step 4. Create the user object
     db.add_mailbox_user(names.ocfirstorgdn, username=username)
 
-    # Step 4. Create system mailbox folders for this user
+    # Step 5. Create system mailbox folders for this user
     system_folders = [
         "Non IPM Subtree",
         "Deferred Actions",
@@ -267,11 +273,11 @@ def newmailbox(lp, username, firstorg, firstou):
         db.add_mailbox_root_folder(names.ocfirstorgdn, 
             username=username, foldername=i, 
             GlobalCount=GlobalCount, ReplicaID=ReplicaID,
-            SystemIdx=SystemIdx)
+            SystemIdx=SystemIdx, mapistoreURL=openchangedb_mapistore_url(lp))
         GlobalCount += 1
         SystemIdx += 1
 
-    # Step 5. Update FolderIndex
+    # Step 6. Update FolderIndex
     db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
         
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)

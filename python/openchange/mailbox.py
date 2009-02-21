@@ -150,7 +150,7 @@ GlobalCount: 0x%x
         :param username: Username
         :return: DN of the created object
         """
-
+        
         mailboxGUID = str(uuid.uuid4())
         replicaID = str(1)
         replicaGUID = str(uuid.uuid4())
@@ -164,9 +164,19 @@ GlobalCount: 0x%x
                   "ReplicaGUID": replicaGUID})
         return retdn
 
+    def add_storage_dir(self, mapistoreURL, username):
+        """Add mapistore storage space for the user
+
+        :param username: Username object
+        :param mapistore: mapistore object
+        """
+
+        mapistore_dir = os.path.join(mapistoreURL, username)
+        os.makedirs(mapistore_dir, mode=0700)
+        
     def add_mailbox_root_folder(self, ocfirstorgdn, username, 
                                 foldername, GlobalCount, ReplicaID,
-                                SystemIdx):
+                                SystemIdx, mapistoreURL):
         """Add a root folder to the user mailbox
 
         :param username: Username object
@@ -185,6 +195,7 @@ GlobalCount: 0x%x
                   "cn": FID,
                   "fid": FID,
                   "name": foldername,
+                  "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID),
                   "SystemIdx": str(SystemIdx)})
 
 
@@ -196,7 +207,6 @@ def gen_mailbox_folder_fid(GlobalCount, ReplicaID):
     """
 
     folder = "0x%.12x%.4x" % (GlobalCount, ReplicaID)
-#    folder = "0x%s" % tmp[::-1]
 
     return folder
 

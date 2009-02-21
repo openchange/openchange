@@ -186,5 +186,36 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
 
 	GUID_from_string(guid, ReplGUID);
 
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+_PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
+						       void *ldb_ctx,
+						       uint64_t fid,
+						       char **mapistoreURL)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	char			*ldb_filter;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
+
+	ldb_filter = talloc_asprintf(mem_ctx, "CN=0x%.16llx", fid);
+	DEBUG(0, ("ldb_filter = '%s'\n", ldb_filter));
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
+	talloc_free(ldb_filter);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	*mapistoreURL = talloc_strdup(parent_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "mapistore_uri", NULL));
+
+	talloc_free(mem_ctx);
+
 	return MAPI_E_SUCCESS;
 }

@@ -30,6 +30,9 @@
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
+#include <string.h>
+
+
 /**
    \details Logs on a private mailbox
 
@@ -221,6 +224,68 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 
 
 /**
+   \details EcDoRpc GetReceiveFolder (0x27) Rop Internals. This
+   routine performs the GetReceiveFolder internals.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetReceiveFolder EcDoRpc_MAPI_REQ
+   \param mapi_repl pointer to the GetReceiveFolder EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
+					   struct emsmdbp_context *emsmdbp_ctx,
+					   struct EcDoRpc_MAPI_REQ *mapi_req,
+					   struct EcDoRpc_MAPI_REPL *mapi_repl,
+					   uint32_t *handles)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_handles	*rec = NULL;
+	struct emsmdbp_object	*object = NULL;
+	const char		*MessageClass = NULL;
+	uint32_t		handle;
+	int			i;
+
+	/* Step 1. Ensure the referring MAPI handle is mailbox one */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	retval = mapi_handles_get_private_data(rec, (void **)&object);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(object->type != EMSMDBP_OBJECT_MAILBOX, MAPI_E_NO_SUPPORT, NULL);
+	
+	/* Step 2. Test Message class string according to [MS-OXCSTOR] section 2.2.1.2.1.1 */
+	MessageClass = mapi_req->u.mapi_GetReceiveFolder.MessageClass;
+	if (!MessageClass || !strcmp(MessageClass, "")) {
+		MessageClass="All";
+	}
+
+	OPENCHANGE_RETVAL_IF(strlen(MessageClass) + 1 > 255, MAPI_E_INVALID_PARAMETER, NULL);
+	for (i = 0; MessageClass[i]; i++) {
+		OPENCHANGE_RETVAL_IF((MessageClass[i] < 32) || (MessageClass[i] > 126), 
+				     MAPI_E_INVALID_PARAMETER, NULL);
+
+		OPENCHANGE_RETVAL_IF(MessageClass[i] == '.' && MessageClass[i + 1] && MessageClass[i + 1] == '.',
+				     MAPI_E_INVALID_PARAMETER, NULL);
+	}
+	OPENCHANGE_RETVAL_IF(MessageClass[0] && MessageClass[0] == '.', MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(MessageClass[0] && MessageClass[strlen(MessageClass)] == '.', MAPI_E_INVALID_PARAMETER, NULL);
+
+	
+	/* Step 3. Search for the specified MessageClass substring within user mailbox */
+	retval = openchangedb_get_ReceiveFolder(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_Name,
+						MessageClass, &mapi_repl->u.mapi_GetReceiveFolder.folder_id,
+						&mapi_repl->u.mapi_GetReceiveFolder.MessageClass);
+	OPENCHANGE_RETVAL_IF(retval, ecNoReceiveFolder, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details EcDoRpc GetReceiveFolder (0x27) Rop. This operation gets
    the receive folder for incoming messages of a particular message
    class
@@ -240,7 +305,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 						     struct EcDoRpc_MAPI_REPL *mapi_repl,
 						     uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetReciveFolder (0x27)\n"));
+	enum MAPISTATUS		retval;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetReceiveFolder (0x27)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -249,6 +316,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 	
+	/* Call effective code */
+	retval = RopGetReceiveFolder(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl, handles);
 
-	return MAPI_E_SUCCESS;
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = retval;
+
+	*size = libmapiserver_RopGetReceiveFolder_size(mapi_repl);
+	
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return retval;
 }

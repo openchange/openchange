@@ -26,6 +26,7 @@
  */
 
 #include "libmapiserver.h"
+#include <string.h>
 
 /**
    \details Calculate Logon Rop size
@@ -59,4 +60,19 @@ _PUBLIC_ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *request,
 _PUBLIC_ uint16_t libmapiserver_RopRelease_size(void)
 {
 	return SIZE_NULL_TRANSACTION;
+}
+
+
+_PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code != MAPI_E_SUCCESS) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETRECEIVEFOLDER;
+	size += strlen(response->u.mapi_GetReceiveFolder.MessageClass);
+
+	return size;
 }

@@ -203,6 +203,7 @@ enum MAPISTATUS openchangedb_get_SystemFolderID(void *, char *, uint32_t, uint64
 enum MAPISTATUS	openchangedb_get_MailboxGuid(void *, char *, struct GUID *);
 enum MAPISTATUS	openchangedb_get_MailboxReplica(void *, char *, uint16_t *, struct GUID *);
 enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, void *, uint64_t, char **);
+enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *, void *, const char *, const char *, uint64_t *, const char **);
 
 /* definitions from mapi_handles.c */
 struct mapi_handles_context *mapi_handles_init(TALLOC_CTX *);

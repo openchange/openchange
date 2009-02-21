@@ -192,6 +192,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
 }
 
 
+/**
+   \details Retrieve the mapistore URI associated to a mailbox system
+   folder.
+
+   \param parent_ctx pointer to the memory context
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid the Folder identifier to search for
+   \param mapistoreURL pointer on pointer to the mapistore URI the
+   function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 						       void *ldb_ctx,
 						       uint64_t fid,
@@ -214,6 +226,90 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	*mapistoreURL = talloc_strdup(parent_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "mapistore_uri", NULL));
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Retrieve the Explicit message class and Folder identifier
+   associated to the MessageClass search pattern.
+
+   \param parent_ctx pointer to the memory context
+   \param ldb_ctx pointer to the openchange LDB context
+   \param recipient pointer to the mailbox's username
+   \param MessageClass substring to search for
+   \param fid pointer to the folder identifier the function returns
+   \param ExplicitMessageClass pointer on pointer to the complete
+   message class the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
+							void *ldb_ctx,
+							const char *recipient,
+							const char *MessageClass,
+							uint64_t *fid,
+							const char **ExplicitMessageClass)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct ldb_result		*res = NULL;
+	struct ldb_dn			*dn;
+	struct ldb_message_element	*ldb_element;
+	char				*dnstr;
+	char				*ldb_filter;
+	const char * const		attrs[] = { "*", NULL };
+	int				ret;
+	int				i;
+	int				length;
+
+	mem_ctx = talloc_named(NULL, 0, "get_ReceiveFolder");
+
+	/* Step 1. Search Mailbox DN */
+	ldb_filter = talloc_asprintf(mem_ctx, "CN=%s", recipient);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
+	talloc_free(ldb_filter);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	dnstr = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
+	OPENCHANGE_RETVAL_IF(!dnstr, MAPI_E_NOT_FOUND, mem_ctx);
+
+	talloc_free(res);
+
+	/* Step 2. Search for MessageClass substring within user's mailbox */
+	dn = ldb_dn_new(mem_ctx, ldb_ctx, dnstr);
+	talloc_free(dnstr);
+
+	ldb_filter = talloc_asprintf(mem_ctx, "(ExplicitMessageClass=%s*)", MessageClass);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, ldb_filter);
+	talloc_free(ldb_filter);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+	
+	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "fid", 0x0);
+
+	/* Step 3. Find the longest ExplicitMessageClass matching MessageClass */
+	ldb_element = ldb_msg_find_element(res->msgs[0], "ExplicitMessageClass");
+	for (i = 0, length = 0; i < ldb_element[0].num_values; i++) {
+		if (!strncasecmp(MessageClass, (char *)ldb_element->values[i].data, 
+				 strlen((char *)ldb_element->values[i].data)) &&
+		    strlen((char *)ldb_element->values[i].data) > length) {
+
+			if (*ExplicitMessageClass && strcmp(*ExplicitMessageClass, "")) {
+				talloc_free((char *)*ExplicitMessageClass);
+			}
+
+			if (MessageClass && !strcmp(MessageClass, "All")) {
+				*ExplicitMessageClass = "";
+			} else {
+				*ExplicitMessageClass = talloc_strdup(parent_ctx, (char *)ldb_element->values[i].data);
+			}
+			length = strlen((char *)ldb_element->values[i].data);
+		}
+	}
+	OPENCHANGE_RETVAL_IF(!*ExplicitMessageClass, MAPI_E_NOT_FOUND, mem_ctx);
 
 	talloc_free(mem_ctx);
 

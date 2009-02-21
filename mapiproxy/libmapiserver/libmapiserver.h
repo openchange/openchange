@@ -66,6 +66,12 @@
 #define	SIZE_DFLT_ROPGETPROPERTIESSPECIFIC	1
 
 /**
+   \details GetReceiveFolder has fixed response size for:
+   -# folder_id: uint64_t
+ */
+#define	SIZE_DFLT_ROPGETRECEIVEFOLDER		8
+
+/**
    \details LogonRop has a fixed size for mailbox:
    -# LogonFlags: uint8_t
    -# FolderIDs: uint64_t * 13
@@ -96,7 +102,7 @@ int libmapiserver_push_property(TALLOC_CTX *, struct smb_iconv_convenience *, ui
 /* definitions from libmapiserver_oxcstor.c */
 uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopRelease_size(void);
-
+uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *);
 
 __END_DECLS
 

@@ -49,14 +49,16 @@
 ****************************************************************************/
 static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 {  
-	struct ifconf ifc;
-	char buff[8192];
-	int fd, i, n;
-	struct ifreq *ifr=NULL;
-	int total = 0;
-	struct in_addr ipaddr;
-	struct in_addr nmask;
-	char *iname;
+	struct ifconf		ifc;
+	struct ifreq		*ifr=NULL;
+	struct in_addr		ipaddr;
+	struct in_addr		nmask;
+	struct sockaddr		*sockaddr;
+	struct sockaddr_in	*sockaddr_in;
+	char			*iname;
+	char			buff[8192];
+	int			fd, i, n;
+	int			total = 0;
 
 	if ((fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
 		return -1;
@@ -81,7 +83,9 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 		}
 
 		iname = ifr[i].ifr_name;
-		ipaddr = (*(struct sockaddr_in *)&ifr[i].ifr_addr).sin_addr;
+		sockaddr = (struct sockaddr *) &ifr[i].ifr_addr;
+		sockaddr_in = (struct sockaddr_in *) sockaddr;
+		ipaddr = sockaddr_in->sin_addr;
 
 		if (ioctl(fd, SIOCGIFFLAGS, &ifr[i]) != 0) {
 			continue;
@@ -95,7 +99,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}  
 
-		nmask = ((struct sockaddr_in *)&ifr[i].ifr_addr)->sin_addr;
+		nmask = sockaddr_in->sin_addr;
 
 		strncpy(ifaces[total].name, iname, sizeof(ifaces[total].name)-1);
 		ifaces[total].name[sizeof(ifaces[total].name)-1] = 0;

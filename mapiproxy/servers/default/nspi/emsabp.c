@@ -1006,7 +1006,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		}
 
 		/* FIXME: We only support PR_ANR */
-		res_prop = (struct PropertyRestriction_r *)&(restriction->res);
+		res_prop = (struct PropertyRestriction_r *)&(restriction->res.resProperty);
 		if ((res_prop->ulPropTag != PR_ANR) && (res_prop->ulPropTag != PR_ANR_UNICODE)) {
 			return MAPI_E_NO_SUPPORT;
 		}

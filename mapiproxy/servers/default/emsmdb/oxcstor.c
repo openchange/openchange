@@ -245,6 +245,7 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL;
 	const char		*MessageClass = NULL;
+	void			*private_data = NULL;
 	uint32_t		handle;
 	int			i;
 
@@ -253,7 +254,8 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
-	retval = mapi_handles_get_private_data(rec, (void **)&object);
+	retval = mapi_handles_get_private_data(rec, (void **)&private_data);
+	object = (struct emsmdbp_object *) private_data;
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 	OPENCHANGE_RETVAL_IF(object->type != EMSMDBP_OBJECT_MAILBOX, MAPI_E_NO_SUPPORT, NULL);
 	

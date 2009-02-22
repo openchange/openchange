@@ -299,7 +299,7 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	case PT_DOUBLE:
 		return (const void *)&lpProps->value.dbl;
 	case PT_CLSID:
-		return (const void *)(struct GUID *)&lpProps->value.lpguid;
+		return (const void *)lpProps->value.lpguid;
 	case PT_BINARY:
 		return (const void *)&lpProps->value.bin;
 	case PT_MV_SHORT:

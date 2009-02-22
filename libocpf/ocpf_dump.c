@@ -33,9 +33,10 @@ static void ocpf_do_dump(const char *format, ...)
 {
 	va_list	ap;
 	char	*s = NULL;
+	int	ret;
 
 	va_start(ap, format);
-	vasprintf(&s, format, ap);
+	ret = vasprintf(&s, format, ap);
 	va_end(ap);
 
 	printf("%s\n", s);

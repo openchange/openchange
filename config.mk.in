@@ -29,9 +29,9 @@ pythondir=@pythondir@
 sambaprefix=@sambaprefix@
 
 DSOOPT=-shared -fPIC
-CFLAGS=@CFLAGS@ -I. -Wall -Wmissing-prototypes -Wstrict-prototypes -g3		\
-	   -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"				\
-	   -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"	\
+CFLAGS=@CFLAGS@ -I. -O3 -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 -Wp,-D_FORTIFY_SOURCE=2	\
+	   -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"							\
+	   -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
 	   -DMAPISTORE_MAPPING_PATH=\"$(prefix)/private/mapistore\"	
 
 # This value should be determined by configure at some point

@@ -50,9 +50,11 @@ void ndr_print_mapi_request(struct ndr_print *ndr, const char *name, const struc
 		ndr_print_uint16(ndr, "length", r->length);
 		ndr->depth++;
 		for (cntr_mapi_req_0=0; r->mapi_req[cntr_mapi_req_0].opnum; cntr_mapi_req_0++) {
-			char *idx_0=NULL;
-			asprintf(&idx_0, "[%u]", cntr_mapi_req_0);
-			if (idx_0) {
+			char	*idx_0 = NULL;
+			int	ret;
+
+			ret = asprintf(&idx_0, "[%u]", cntr_mapi_req_0);
+			if (ret != -1 && idx_0) {
 				ndr_print_EcDoRpc_MAPI_REQ(ndr, "mapi_request", &r->mapi_req[cntr_mapi_req_0]);
 				free(idx_0);
 			} 

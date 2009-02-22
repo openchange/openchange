@@ -329,6 +329,7 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 {
 	TALLOC_CTX	*mem_ctx;
 	enum MAPISTATUS	retval;
+	ssize_t		len;
 	char		*path;
 	mapi_object_t	obj_stream;
 	uint16_t	read_size;
@@ -358,7 +359,7 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	do {
 		retval = ReadStream(&obj_stream, buf, MAX_READ_SIZE, &read_size);
 		if (retval != MAPI_E_SUCCESS) goto error;
-		write(fd, buf, read_size);
+		len = write(fd, buf, read_size);
 	} while (read_size);
 	
 	close(fd);

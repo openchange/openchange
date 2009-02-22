@@ -354,6 +354,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	uint32_t			count;
 	uint8_t				format;
 	unsigned int			i;
+	ssize_t				len;
 
 	has_attach = (const uint32_t *) octool_get_propval(aRow, PR_HASATTACH);
 	from = (const char *) octool_get_propval(aRow, PR_SENT_REPRESENTING_NAME);
@@ -379,55 +380,73 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 
 	/* First line From */
 	line = talloc_asprintf(mem_ctx, "From \"%s\" %s\n", from, date);
-	if (line) fwrite(line, strlen(line), 1, fp);
+	if (line) {
+		len = fwrite(line, strlen(line), 1, fp);
+	}
 	talloc_free(line);
 
 	/* Second line: Date */
 	line = talloc_asprintf(mem_ctx, "Date: %s\n", date);
-	if (line) fwrite(line, strlen(line), 1, fp);
+	if (line) {
+		len = fwrite(line, strlen(line), 1, fp);
+	}
 	talloc_free(line);
 
 	/* Third line From */
 	line = talloc_asprintf(mem_ctx, "From: %s\n", from);
-	if (line) fwrite(line, strlen(line), 1, fp);
+	if (line) {
+		len = fwrite(line, strlen(line), 1, fp);
+	}
 	talloc_free(line);
 
 	/* To, Cc, Bcc */
 	if (to) {
 		line = talloc_asprintf(mem_ctx, "To: %s\n", to);
-		if (line) fwrite(line, strlen(line), 1, fp);
+		if (line) {
+			len = fwrite(line, strlen(line), 1, fp);
+		}
 		talloc_free(line);
 	}
 
 	if (cc) {
 		line = talloc_asprintf(mem_ctx, "Cc: %s\n", cc);
-		if (line) fwrite(line, strlen(line), 1, fp);
+		if (line) {
+			len = fwrite(line, strlen(line), 1, fp);
+		}
 		talloc_free(line);
 	}
 
 	if (bcc) {
 		line = talloc_asprintf(mem_ctx, "Bcc: %s\n", bcc);
-		if (line) fwrite(line, strlen(line), 1, fp);
+		if (line) {
+			len = fwrite(line, strlen(line), 1, fp);
+		}
 		talloc_free(line);
 	}
 
 	/* Subject */
 	if (subject) {
 		line = talloc_asprintf(mem_ctx, "Subject: %s\n", subject);
-		if (line) fwrite(line, strlen(line), 1, fp);
+		if (line) {
+			len = fwrite(line, strlen(line), 1, fp);
+		}
 		talloc_free(line);
 	}
 
 	if (msgid) {
 		line = talloc_asprintf(mem_ctx, "Message-ID: %s\n", msgid);
-		if (line) fwrite(line, strlen(line), 1, fp);
+		if (line) {
+			len = fwrite(line, strlen(line), 1, fp);
+		}
 		talloc_free(line);
 	}
 
 	/* Set multi-type if we have attachment */
 	if (has_attach && *has_attach) {
 		line = talloc_asprintf(mem_ctx, "Content-Type: multipart/mixed; boundary=\"%s\"\n", BOUNDARY);
-		if (line) fwrite(line, strlen(line), 1, fp);
+		if (line) {
+			len = fwrite(line, strlen(line), 1, fp);
+		}
 		talloc_free(line);
 	}
 
@@ -435,38 +454,50 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	if (body.length) {
 		if (has_attach && *has_attach) {
 			line = talloc_asprintf(mem_ctx, "--%s\n", BOUNDARY);
-			if (line) fwrite(line, strlen(line), 1, fp);
+			if (line) {
+				len = fwrite(line, strlen(line), 1, fp);
+			}
 			talloc_free(line);
 		}
 		retval = GetBestBody(obj_message, &format);
 		switch (format) {
 		case olEditorText:
 			line = talloc_asprintf(mem_ctx, "Content-Type: text/plain; charset=us-ascii\n");
-			if (line) fwrite(line, strlen(line), 1, fp);
+			if (line) {
+				len = fwrite(line, strlen(line), 1, fp);
+			}
 			talloc_free(line);
 			
 			/* Just display UTF8 content inline */
 			line = talloc_asprintf(mem_ctx, "Content-Disposition: inline\n");
-			if (line) fwrite(line, strlen(line), 1, fp);
+			if (line) {
+				len = fwrite(line, strlen(line), 1, fp);
+			}
 			talloc_free(line);
 			break;
 		case olEditorHTML:
 			line = talloc_asprintf(mem_ctx, "Content-Type: text/html\n");
-			if (line) fwrite(line, strlen(line), 1, fp);
+			if (line) {
+				len = fwrite(line, strlen(line), 1, fp);
+			}
 			talloc_free(line);		
 			break;
 		case olEditorRTF:
 			line = talloc_asprintf(mem_ctx, "Content-Type: text/rtf\n");
-			if (line) fwrite(line, strlen(line), 1, fp);
+			if (line) {
+				len = fwrite(line, strlen(line), 1, fp);
+			}
 			talloc_free(line);					
 
 			line = talloc_asprintf(mem_ctx, "--%s\n", BOUNDARY);
-			if (line) fwrite(line, strlen(line), 1, fp);
+			if (line) {
+				len = fwrite(line, strlen(line), 1, fp);
+			}
 			talloc_free(line);
 			break;
 		}
 
-		fwrite(body.data, body.length, 1, fp);
+		len = fwrite(body.data, body.length, 1, fp);
 		talloc_free(body.data);
 	} 
 
@@ -507,22 +538,30 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 						attachment_data = get_base64_attachment(mem_ctx, obj_attach, *attach_size, &magic);
 						if (attachment_data) {
 							line = talloc_asprintf(mem_ctx, "\n\n--%s\n", BOUNDARY);
-							if (line) fwrite(line, strlen(line), 1, fp);
+							if (line) {
+								len = fwrite(line, strlen(line), 1, fp);
+							}
 							talloc_free(line);
 
 							line = talloc_asprintf(mem_ctx, "Content-Disposition: attachment; filename=\"%s\"\n", attach_filename);
-							if (line) fwrite(line, strlen(line), 1, fp);
+							if (line) {
+								len = fwrite(line, strlen(line), 1, fp);
+							}
 							talloc_free(line);
 							
 							line = talloc_asprintf(mem_ctx, "Content-Type: \"%s\"\n", magic);
-							if (line) fwrite(line, strlen(line), 1, fp);
+							if (line) {
+								len = fwrite(line, strlen(line), 1, fp);
+							}
 							talloc_free(line);
 							
 							line = talloc_asprintf(mem_ctx, "Content-Transfer-Encoding: base64\n\n");
-							if (line) fwrite(line, strlen(line), 1, fp);
+							if (line) {
+								len = fwrite(line, strlen(line), 1, fp);
+							}
 							talloc_free(line);
 							
-							fwrite(attachment_data, strlen(attachment_data), 1, fp);
+							len = fwrite(attachment_data, strlen(attachment_data), 1, fp);
 							talloc_free(attachment_data);
 						}
 					}
@@ -531,14 +570,16 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 			}
 			if (has_attach && *has_attach) {
 				line = talloc_asprintf(mem_ctx, "\n\n--%s--\n\n\n", BOUNDARY);
-				if (line) fwrite(line, strlen(line), 1, fp);
+				if (line) {
+					len = fwrite(line, strlen(line), 1, fp);
+				}
 				talloc_free(line);
 			}
 		}
 		
 	}
 	
-	fwrite("\n\n\n", 3, 1, fp);
+	len = fwrite("\n\n\n", 3, 1, fp);
 
 	return true;
 }

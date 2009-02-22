@@ -244,6 +244,7 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	const struct SBinary_short	*html = NULL;
 	const uint8_t			*has_attach;
 	const uint32_t       		*cp;
+	ssize_t				len;
 
 	msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
 	subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
@@ -302,8 +303,8 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	if (body) {
 		printf("%s\n", body ? body : "");
 	} else if (html) {
-		write(1, html->lpb, html->cb);
-		write(1, "\n", 1);
+		len = write(1, html->lpb, html->cb);
+		len = write(1, "\n", 1);
 		fflush(0);
 	}
 }

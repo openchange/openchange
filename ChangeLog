@@ -1,5 +1,22 @@
 2009-02-22
+    jkerihuel
+	[r1204]
+		Fix 'dereferencing type-punned pointer' warnings
+	[r1203]
+		- Add strict-aliasing compiler flags
+		- Fix format string warnings on ubuntu buildbot
+	[r1202]
+		- Add _FORTIFY_SOURCE=2 to the compiler CFLAGS
+		- Fix warnings introduced by -D_FORTIFY_SOURCE
     bradh
+	[r1201]
+		I might have been a bit hasty with that last commit...
+		
+		Need sqlite3.
+	[r1200]
+		Try harder to find sqlite3.
+		
+		Seems to be in sqlite.pc on Ubuntu.
 	[r1198]
 		Fix warning on 64-bit arch.
 2009-02-21

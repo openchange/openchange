@@ -1,3 +1,39 @@
+2009-02-22
+    bradh
+	[r1198]
+		Fix warning on 64-bit arch.
+2009-02-21
+    jkerihuel
+	[r1197]
+		- Add RopGetReceiveFolder (0x27) implementation
+		The function respects should respect the semantics and behavior
+		as described in MS-OXCSTOR specifications. However the python's
+		code modification required: add ExplicitMessageClass attributes
+		to folder records is not yet effective.
+		
+		- Add GetReceiveFolder size calculation function to libmapiserver
+		- Add a function to openchangedb API to retrieve the FID/ExplicitMessageClass
+		couple for a given SystemFolder within user's mailbox.
+	[r1196]
+		- Provision scripts: create a mapistore default storage space within ${private}/mapistore/${username}
+		- Provision scripts: add default sqlite:// mapistore URI for system folders
+		- Add mapistore context initialization when calling OpenFolder on SystemFolder
+		- Add mapistore context release for folders in emsmdbp object destructor
+	[r1195]
+		Factorize emsmdbp objects
+		Add emsmdbp_object generic talloc destructor
+    bradh
+	[r1194]
+		Add test for PT_MV_LONG.
+	[r1193]
+		Add tests for PT_I8 and PT_BINARY
+	[r1192]
+		Fix warning about no newline at end of file.
+		
+		Remove most recently added tests from "to be done" list.
+	[r1191]
+		Add a couple more mapi_SPropValue tests.
+
 2009-02-19
     jkerihuel
 	[r1189]

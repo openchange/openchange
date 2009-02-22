@@ -29,6 +29,7 @@
 #include "libmapiproxy.h"
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
+#include <libmapi/defs_private.h>
 
 /**
    \details Retrieve the mailbox FolderID for given recipient from
@@ -217,7 +218,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 
 	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
 
-	ldb_filter = talloc_asprintf(mem_ctx, "CN=0x%.16llx", fid);
+	ldb_filter = talloc_asprintf(mem_ctx, "CN=0x%.16"PRIx64, fid);
 	DEBUG(0, ("ldb_filter = '%s'\n", ldb_filter));
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);

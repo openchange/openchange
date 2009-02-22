@@ -406,9 +406,6 @@ dnl --------------------------------------------------------------------------
 dnl Check for sqlite3
 dnl --------------------------------------------------------------------------
 PKG_CHECK_MODULES(SQLITE, sqlite3, SQLITEFOUND=yes, [SQLITEFOUND=no])
-if test x"$SQLITEFOUND" = x"no"; then
-  PKG_CHECK_MODULES(SQLITE, sqlite, SQLITEFOUND=yes, [SQLITEFOUND=no])
-fi
 AC_SUBST(SQLITE_CFLAGS)
 AC_SUBST(SQLITE_LIBS)
 

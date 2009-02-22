@@ -30,6 +30,7 @@ sambaprefix=@sambaprefix@
 
 DSOOPT=-shared -fPIC
 CFLAGS=@CFLAGS@ -I. -O3 -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 -Wp,-D_FORTIFY_SOURCE=2	\
+	-fstrict-aliasing -Wstrict-aliasing=3	   		       	   				\
 	   -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"							\
 	   -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
 	   -DMAPISTORE_MAPPING_PATH=\"$(prefix)/private/mapistore\"	

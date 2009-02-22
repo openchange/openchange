@@ -133,7 +133,7 @@ _PUBLIC_ void mapitest_underline(struct mapitest *mt, const char *str, char deli
 
 	/* print str */
 	mapitest_print_tab(mt);
-	fprintf(mt->stream, str);
+	fprintf(mt->stream, "%s", str);
 
 	/* underline str using delim */
 	mapitest_print_tab(mt);

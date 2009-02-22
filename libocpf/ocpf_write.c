@@ -240,7 +240,7 @@ char *ocpf_write_unescape_string(const char *value)
 		}
 			
 		stmp = talloc_strndup(ocpf->mem_ctx, value + len, tmp + 1);
-		str = talloc_asprintf_append(str, stmp);
+		str = talloc_asprintf_append(str, "%s", stmp);
 		if (value[len + tmp + 1] && 
 		    (value[len + tmp + 1] == '\\' || value[len + tmp + 1] == '"')) {
 			len += tmp + 2;

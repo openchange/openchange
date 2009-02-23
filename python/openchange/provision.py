@@ -229,6 +229,7 @@ def install_schemas(setup_path, names, lp, creds):
 
     db.transaction_commit()
 
+
 def newmailbox(lp, username, firstorg, firstou):
     names = guess_names_from_smbconf(lp, firstorg, firstou)
 
@@ -260,56 +261,55 @@ def newmailbox(lp, username, firstorg, firstou):
     # 1: refers to child of Mailbox Root
     # 2: refers to child of IPM subtree
     system_folders = [
-        ["Mailbox Root",        0],
-        ["Deferred Actions",    1],
-        ["Spooler Queue",       1],
-        ["IPM Subtree",         1],
-        ["Inbox",               2],
-        ["Outbox",              2],
-        ["Sent Items",          2],
-        ["Deleted Items",       2],
-        ["Common Views",        1],
-        ["Schedule",            1],
-        ["Search",              1],
-        ["Views",               1],
-        ["Shortcuts",           1]
+        ("Mailbox Root",        0),
+        ("Deferred Actions",    1),
+        ("Spooler Queue",       1),
+        ("IPM Subtree",         1),
+        ("Inbox",               2),
+        ("Outbox",              2),
+        ("Sent Items",          2),
+        ("Deleted Items",       2),
+        ("Common Views",        1),
+        ("Schedule",            1),
+        ("Search",              1),
+        ("Views",               1),
+        ("Shortcuts",           1)
         ]
 
     SystemIdx = 1
-    for i in range(len(system_folders)):
+    for foldername, parent_fid in system_folders:
         parentfolder = 0
-        if (system_folders[i][1] == 1):
+        if parent_fid == 1:
             parentfolder = fid_mailbox_root
-        if (system_folders[i][1] == 2):
+        if parent_fid == 2:
             parentfolder = fid_ipm_subtree
-
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
-                                         username=username, foldername=system_folders[i][0],
-                                         parentfolder=parentfolder,
-                                         GlobalCount=GlobalCount, ReplicaID=ReplicaID,
-                                         SystemIdx=SystemIdx, mapistoreURL=openchangedb_mapistore_url(lp))
+            username=username, foldername=foldername,
+            parentfolder=parentfolder, GlobalCount=GlobalCount, 
+            ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
+            mapistoreURL=openchangedb_mapistore_url(lp))
         GlobalCount += 1
         SystemIdx += 1
-        print "\t* %-40s: %s" % (system_folders[i][0], fid)
-        if system_folders[i][0] == "Inbox":
+        print "\t* %-40s: %s" % (foldername, fid)
+        if name == "Inbox":
              fid_inbox = fid
-        if system_folders[i][0] == "IPM Subtree":
+        if name == "IPM Subtree":
             fid_ipm_subtree = fid
-        if system_folders[i][0] == "Mailbox Root":
+        if name == "Mailbox Root":
             fid_mailbox_root = fid
 
     # Step 6. Set default receive folders
     print "* Adding default Receive Folders:"
     receive_folders = [
-        [fid_inbox, "All"],
-        [fid_inbox, "IPM"],
-        [fid_inbox, "Report.IPM"],
-        [fid_ipm_subtree, "IPC"]
+        (fid_inbox, "All"),
+        (fid_inbox, "IPM"),
+        (fid_inbox, "Report.IPM"),
+        (fid_ipm_subtree, "IPC")
         ]
     
-    for i in range(len(receive_folders)):
-        print "\t* %-40s Message Class added to %s" % (receive_folders[i][1], receive_folders[i][0])
-        db.set_receive_folder(username, names.ocfirstorgdn, receive_folders[i][0], receive_folders[i][1])
+    for fid, foldername in receive_folders:
+        print "\t* %-40s Message Class added to %s" % (foldername, fid)
+        db.set_receive_folder(username, names.ocfirstorgdn, fid, foldername)
 
     # Step 7. Update FolderIndex
     db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)

@@ -192,7 +192,7 @@ GlobalCount: 0x%x
         FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
 
         # Step 1. If we are handling Mailbox Root
-        if (parentfolder == 0):
+        if parentfolder == 0:
             m = ldb.Message()
             m.dn = ldb.Dn(self.ldb, ocuserdn)
             m["fid"] = ldb.MessageElement([FID], ldb.CHANGETYPE_ADD, "fid")
@@ -203,7 +203,7 @@ GlobalCount: 0x%x
         # Step 2. Lookup parent DN
         res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(fid=%s)" % parentfolder, ["*"])
         if len(res) != 1:
-            raise "Invalid search (fid=%s)" % parentfolder
+            raise Exception("Invalid search (fid=%s)" % parentfolder)
 
         # Step 1. Add root folder to correct container
         self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
@@ -235,6 +235,7 @@ GlobalCount: 0x%x
         m["ExplicitMessageClass"] = ldb.MessageElement([messageclass], ldb.CHANGETYPE_ADD, "ExplicitMessageClass")
         self.ldb.modify(m)
 
+
 def gen_mailbox_folder_fid(GlobalCount, ReplicaID):
     """Generates a Folder ID from index.
 
@@ -245,6 +246,3 @@ def gen_mailbox_folder_fid(GlobalCount, ReplicaID):
     folder = "0x%.12x%.4x" % (GlobalCount, ReplicaID)
 
     return folder
-
-
-

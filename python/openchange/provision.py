@@ -277,7 +277,7 @@ def newmailbox(lp, username, firstorg, firstou):
     def add_folder(parent_fid, name, children):
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
             username=username, foldername=name,
-            parentfolder=parentfolder, GlobalCount=GlobalCount, 
+            parentfolder=parent_fid, GlobalCount=GlobalCount, 
             ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
             mapistoreURL=openchangedb_mapistore_url(lp))
         GlobalCount += 1

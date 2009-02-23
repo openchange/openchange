@@ -176,7 +176,8 @@ GlobalCount: 0x%x
             os.makedirs(mapistore_dir, mode=0700)
         
     def add_mailbox_root_folder(self, ocfirstorgdn, username, 
-                                foldername, GlobalCount, ReplicaID,
+                                foldername, parentfolder, 
+                                GlobalCount, ReplicaID,
                                 SystemIdx, mapistoreURL):
         """Add a root folder to the user mailbox
 
@@ -188,10 +189,24 @@ GlobalCount: 0x%x
         """
 
         ocuserdn = "CN=%s,%s" % (username, ocfirstorgdn)
-
-        # Step 1. Add root folder to user subtree
         FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
-        self.ldb.add({"dn": "CN=%s,%s" % (FID, ocuserdn),
+
+        # Step 1. If we are handling Mailbox Root
+        if (parentfolder == 0):
+            m = ldb.Message()
+            m.dn = ldb.Dn(self.ldb, ocuserdn)
+            m["fid"] = ldb.MessageElement([FID], ldb.CHANGETYPE_ADD, "fid")
+            m["SystemIdx"] = ldb.MessageElement([str(SystemIdx)], ldb.CHANGETYPE_ADD, "SystemIdx")
+            self.ldb.modify(m)
+            return FID
+
+        # Step 2. Lookup parent DN
+        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(fid=%s)" % parentfolder, ["*"])
+        if len(res) != 1:
+            raise "Invalid search (fid=%s)" % parentfolder
+
+        # Step 1. Add root folder to correct container
+        self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
                   "objectClass": ["systemfolder"],
                   "cn": FID,
                   "fid": FID,
@@ -209,9 +224,14 @@ GlobalCount: 0x%x
         :param fid: Folder identifier
         :param messageclass: Explicit Message Class
         """
-        ocuserdn = "CN=%s,%s" % (username, ocfirstorgdn)
+        
+        # Step 1. Search fid DN
+        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(fid=%s)" % fid, ["*"])
+        if len(res) != 1:
+            raise "Invalid search (fid=%s)" % fid
+
         m = ldb.Message()
-        m.dn = ldb.Dn(self.ldb, "CN=%s,%s" % (fid, ocuserdn))
+        m.dn = res[0].dn
         m["ExplicitMessageClass"] = ldb.MessageElement([messageclass], ldb.CHANGETYPE_ADD, "ExplicitMessageClass")
         self.ldb.modify(m)
 

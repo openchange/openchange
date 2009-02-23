@@ -61,7 +61,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 	
 	mem_ctx = talloc_named(NULL, 0, "get_SystemFolderID");
 
-	/* Step 1. Search Mailbox DN */
+	/* Step 1. Search Mailbox Root DN */
 	ldb_filter = talloc_asprintf(mem_ctx, "CN=%s", recipient);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
@@ -69,10 +69,19 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
+	/* Step 2. If Mailbox root folder, check for FolderID within current record */
+	if (SystemIdx == 0x1) {
+		*FolderId = ldb_msg_find_attr_as_int64(res->msgs[0], "fid", 0);
+		OPENCHANGE_RETVAL_IF(!*FolderId, MAPI_E_CORRUPT_STORE, mem_ctx);
+
+		talloc_free(mem_ctx);
+		return MAPI_E_SUCCESS;
+	}
+
 	dn = ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL);
 	OPENCHANGE_RETVAL_IF(!dn, MAPI_E_CORRUPT_STORE, mem_ctx);
 
-	/* Step 2. Search FolderID */
+	/* Step 3. Search FolderID */
 	ldb_dn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn, MAPI_E_CORRUPT_STORE, mem_ctx);
 	talloc_free(res);
@@ -84,7 +93,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	*FolderId = ldb_msg_find_attr_as_int64(res->msgs[0], "fid", 0);
-	OPENCHANGE_RETVAL_IF(!*FolderId, MAPI_E_CORRUPT_STORE, NULL);
+	OPENCHANGE_RETVAL_IF(!*FolderId, MAPI_E_CORRUPT_STORE, mem_ctx);
 
 	talloc_free(mem_ctx);
 

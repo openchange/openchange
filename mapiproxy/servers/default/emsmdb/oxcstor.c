@@ -74,7 +74,7 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	response.LogonFlags = request.LogonFlags & LogonPrivate;
 
 	/* Step 3. Build FolderIds list */
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_NON_IPM_SUBTREE, &response.LogonType.store_mailbox.FolderIds[0]);
+	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_MAILBOX_ROOT, &response.LogonType.store_mailbox.FolderIds[0]);
 	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_DEFERRED_ACTIONS, &response.LogonType.store_mailbox.FolderIds[1]);
 	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SPOOLER_QUEUE, &response.LogonType.store_mailbox.FolderIds[2]);
 	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_TOP_INFORMATION_STORE, &response.LogonType.store_mailbox.FolderIds[3]);

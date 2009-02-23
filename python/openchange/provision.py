@@ -229,7 +229,6 @@ def install_schemas(setup_path, names, lp, creds):
 
     db.transaction_commit()
 
-
 def newmailbox(lp, username, firstorg, firstou):
     names = guess_names_from_smbconf(lp, firstorg, firstou)
 
@@ -257,35 +256,47 @@ def newmailbox(lp, username, firstorg, firstou):
     # Step 5. Create system mailbox folders for this user
     print "* Adding System Folders"
 
+    # 0: refers to Mailbox Root
+    # 1: refers to child of Mailbox Root
+    # 2: refers to child of IPM subtree
     system_folders = [
-        "Non IPM Subtree",
-        "Deferred Actions",
-        "Spooler Queue",
-        "Top Information Store",
-        "Inbox",
-        "Outbox",
-        "Sent Items",
-        "Deleted Items",
-        "Common Views",
-        "Schedule",
-        "Search",
-        "Views",
-        "Shortcuts"
+        ["Mailbox Root",        0],
+        ["Deferred Actions",    1],
+        ["Spooler Queue",       1],
+        ["IPM Subtree",         1],
+        ["Inbox",               2],
+        ["Outbox",              2],
+        ["Sent Items",          2],
+        ["Deleted Items",       2],
+        ["Common Views",        1],
+        ["Schedule",            1],
+        ["Search",              1],
+        ["Views",               1],
+        ["Shortcuts",           1]
         ]
 
     SystemIdx = 1
-    for i in system_folders:
+    for i in range(len(system_folders)):
+        parentfolder = 0
+        if (system_folders[i][1] == 1):
+            parentfolder = fid_mailbox_root
+        if (system_folders[i][1] == 2):
+            parentfolder = fid_ipm_subtree
+
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
-                                         username=username, foldername=i, 
+                                         username=username, foldername=system_folders[i][0],
+                                         parentfolder=parentfolder,
                                          GlobalCount=GlobalCount, ReplicaID=ReplicaID,
                                          SystemIdx=SystemIdx, mapistoreURL=openchangedb_mapistore_url(lp))
         GlobalCount += 1
         SystemIdx += 1
-        print "\t* %-40s: %s" % (i, fid)
-        if i == "Inbox":
-            fid_inbox = fid
-        if i == "Top Information Store":
-            fid_tis = fid
+        print "\t* %-40s: %s" % (system_folders[i][0], fid)
+        if system_folders[i][0] == "Inbox":
+             fid_inbox = fid
+        if system_folders[i][0] == "IPM Subtree":
+            fid_ipm_subtree = fid
+        if system_folders[i][0] == "Mailbox Root":
+            fid_mailbox_root = fid
 
     # Step 6. Set default receive folders
     print "* Adding default Receive Folders:"
@@ -293,7 +304,7 @@ def newmailbox(lp, username, firstorg, firstou):
         [fid_inbox, "All"],
         [fid_inbox, "IPM"],
         [fid_inbox, "Report.IPM"],
-        [fid_tis, "IPC"]
+        [fid_ipm_subtree, "IPC"]
         ]
     
     for i in range(len(receive_folders)):

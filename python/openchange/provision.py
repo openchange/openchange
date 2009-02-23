@@ -257,46 +257,36 @@ def newmailbox(lp, username, firstorg, firstou):
     # Step 5. Create system mailbox folders for this user
     print "* Adding System Folders"
 
-    # 0: refers to Mailbox Root
-    # 1: refers to child of Mailbox Root
-    # 2: refers to child of IPM subtree
-    system_folders = [
-        ("Mailbox Root",        0),
-        ("Deferred Actions",    1),
-        ("Spooler Queue",       1),
-        ("IPM Subtree",         1),
-        ("Inbox",               2),
-        ("Outbox",              2),
-        ("Sent Items",          2),
-        ("Deleted Items",       2),
-        ("Common Views",        1),
-        ("Schedule",            1),
-        ("Search",              1),
-        ("Views",               1),
-        ("Shortcuts",           1)
-        ]
+    system_folders = {
+        "Deferred Actions": {},
+        "Spooler Queue": {},
+        "IPM Subtree": {
+            "Inbox": {},
+            "Outbox": {},
+            "Sent Items": {}
+            "Deleted Items": {}
+        },
+        "Common Views": {},
+        "Schedule": {},
+        "Search": {},
+        "Views": {},
+        "Shortcuts": {},
+    }
 
     SystemIdx = 1
-    for foldername, parent_fid in system_folders:
-        parentfolder = 0
-        if parent_fid == 1:
-            parentfolder = fid_mailbox_root
-        if parent_fid == 2:
-            parentfolder = fid_ipm_subtree
+    def add_folder(parent_fid, name, children):
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
-            username=username, foldername=foldername,
+            username=username, foldername=name,
             parentfolder=parentfolder, GlobalCount=GlobalCount, 
             ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
             mapistoreURL=openchangedb_mapistore_url(lp))
         GlobalCount += 1
         SystemIdx += 1
-        print "\t* %-40s: %s" % (foldername, fid)
-        if name == "Inbox":
-             fid_inbox = fid
-        if name == "IPM Subtree":
-            fid_ipm_subtree = fid
-        if name == "Mailbox Root":
-            fid_mailbox_root = fid
+        print "\t* %-40s: %s" % (name, fid)
+        for name, grandchildren in children.iteritems():
+            add_folder(fid, name, grandchildren)
+
+    add_folder(0, "Mailbox Root", system_folders)
 
     # Step 6. Set default receive folders
     print "* Adding default Receive Folders:"

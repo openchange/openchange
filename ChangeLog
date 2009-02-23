@@ -1,3 +1,17 @@
+2009-02-23
+    jkerihuel
+	[r1208]
+		- Fix openchangedb mailbox hierarchy and introduces subfolders
+		as described in [MS-OXOFOLDS] specifications.
+		- Update openchangedb API to reflect this change.
+	[r1207]
+		Rename private mailbox folder "non_ipm_subtree" to "mailbox_root"
+		to fit with MS-OXOFOLDS specifications.
+	[r1206]
+		- Add provisioning code for GetReceiveFolder defaults
+		- Check if mapistore content repository already exists for the user
+		- Make mailbox creation verbose
+
 2009-02-22
     jkerihuel
 	[r1204]

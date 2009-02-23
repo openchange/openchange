@@ -238,20 +238,25 @@ def newmailbox(lp, username, firstorg, firstou):
     # Step 1. Retrieve current FID index
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
     ReplicaID = db.get_message_ReplicaID(names.netbiosname)
-    print "username is %s" % (username)
-    print "GlobalCount: 0x%x" % GlobalCount
-    print "ReplicaID: 0x%x" % ReplicaID
+
+    print "[+] Mailbox for '%s'" % (username)
+    print "==================" + "=" * len(username)
+    print "* GlobalCount (0x%x) and ReplicaID (0x%x)" % (GlobalCount, ReplicaID)
 
     # Step 2. Check if the user already exists
     assert not db.user_exists(names.netbiosname, username)
 
     # Step 3. Create a default mapistore content repository for this user
     db.add_storage_dir(mapistoreURL=openchangedb_mapistore_url(lp), username=username)
+    print "* Mapistore content repository created: %s" % os.path.join(openchangedb_mapistore_url(lp), username)
 
     # Step 4. Create the user object
-    db.add_mailbox_user(names.ocfirstorgdn, username=username)
+    retdn = db.add_mailbox_user(names.ocfirstorgdn, username=username)
+    print "* User object created: %s" % (retdn)
 
     # Step 5. Create system mailbox folders for this user
+    print "* Adding System Folders"
+
     system_folders = [
         "Non IPM Subtree",
         "Deferred Actions",
@@ -270,18 +275,37 @@ def newmailbox(lp, username, firstorg, firstou):
 
     SystemIdx = 1
     for i in system_folders:
-        db.add_mailbox_root_folder(names.ocfirstorgdn, 
-            username=username, foldername=i, 
-            GlobalCount=GlobalCount, ReplicaID=ReplicaID,
-            SystemIdx=SystemIdx, mapistoreURL=openchangedb_mapistore_url(lp))
+        fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
+                                         username=username, foldername=i, 
+                                         GlobalCount=GlobalCount, ReplicaID=ReplicaID,
+                                         SystemIdx=SystemIdx, mapistoreURL=openchangedb_mapistore_url(lp))
         GlobalCount += 1
         SystemIdx += 1
+        print "\t* %-40s: %s" % (i, fid)
+        if i == "Inbox":
+            fid_inbox = fid
+        if i == "Top Information Store":
+            fid_tis = fid
 
-    # Step 6. Update FolderIndex
+    # Step 6. Set default receive folders
+    print "* Adding default Receive Folders:"
+    receive_folders = [
+        [fid_inbox, "All"],
+        [fid_inbox, "IPM"],
+        [fid_inbox, "Report.IPM"],
+        [fid_tis, "IPC"]
+        ]
+    
+    for i in range(len(receive_folders)):
+        print "\t* %-40s Message Class added to %s" % (receive_folders[i][1], receive_folders[i][0])
+        db.set_receive_folder(username, names.ocfirstorgdn, receive_folders[i][0], receive_folders[i][1])
+
+    # Step 7. Update FolderIndex
     db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
-        
+    print "* GlobalCount updated"
+    
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
-    print "GlobalCount: 0x%x" % GlobalCount
+    print "* GlobalCount: 0x%x" % GlobalCount
 
 
 def newuser(lp, creds, username=None):

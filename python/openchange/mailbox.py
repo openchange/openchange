@@ -172,7 +172,8 @@ GlobalCount: 0x%x
         """
 
         mapistore_dir = os.path.join(mapistoreURL, username)
-        os.makedirs(mapistore_dir, mode=0700)
+        if not os.path.isdir(mapistore_dir):
+            os.makedirs(mapistore_dir, mode=0700)
         
     def add_mailbox_root_folder(self, ocfirstorgdn, username, 
                                 foldername, GlobalCount, ReplicaID,
@@ -198,6 +199,21 @@ GlobalCount: 0x%x
                   "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID),
                   "SystemIdx": str(SystemIdx)})
 
+        return FID
+
+    def set_receive_folder(self, username, ocfirstorgdn, fid, messageclass):
+        """Set MessageClass for given folder
+
+        :param username: Username object
+        :param ocfirstorgdn: Base DN
+        :param fid: Folder identifier
+        :param messageclass: Explicit Message Class
+        """
+        ocuserdn = "CN=%s,%s" % (username, ocfirstorgdn)
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb, "CN=%s,%s" % (fid, ocuserdn))
+        m["ExplicitMessageClass"] = ldb.MessageElement([messageclass], ldb.CHANGETYPE_ADD, "ExplicitMessageClass")
+        self.ldb.modify(m)
 
 def gen_mailbox_folder_fid(GlobalCount, ReplicaID):
     """Generates a Folder ID from index.

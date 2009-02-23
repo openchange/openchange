@@ -267,7 +267,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	store = (mapi_object_store_t *)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
-	store->fid_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[0];
+	store->fid_mailbox_root = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[0];
 	store->fid_deferred_actions = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[1];
 	store->fid_spooler_queue = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[2];
 	store->fid_top_information_store = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[3];

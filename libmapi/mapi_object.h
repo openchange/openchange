@@ -54,7 +54,7 @@ typedef struct mapi_object {
 typedef struct mapi_obj_store
 {
 	/* Mailbox */
-	uint64_t	fid_non_ipm_subtree;
+	uint64_t	fid_mailbox_root;
 	uint64_t	fid_deferred_actions;
 	uint64_t	fid_spooler_queue;
 	uint64_t	fid_top_information_store;

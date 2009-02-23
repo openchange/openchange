@@ -36,7 +36,7 @@ struct folders {
 };
 
 static struct folders top_folders[] = {
-	{ 0x0, 0x0, "NON_IPM_SUBTREE" },
+	{ 0x0, 0x0, "Mailbox Root Folder" },
 	{ 0x1, 0x0, "Deferred Actions" },
 	{ 0x2, 0x0, "Spooler Queue" },
 	{ 0x3, 0x0, "Top of Information Store" },
@@ -111,7 +111,7 @@ _PUBLIC_ bool mapitest_oxcfold_OpenFolder(struct mapitest *mt)
 
 	/* Prepare the top folder check */
 	store = (mapi_object_store_t *) obj_store.private_data;
-	top_folders[0].fid = store->fid_non_ipm_subtree;
+	top_folders[0].fid = store->fid_mailbox_root;
 	top_folders[1].fid = store->fid_deferred_actions;
 	top_folders[2].fid = store->fid_spooler_queue;
 	top_folders[3].fid = store->fid_top_information_store;

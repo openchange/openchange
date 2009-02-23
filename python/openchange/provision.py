@@ -263,8 +263,8 @@ def newmailbox(lp, username, firstorg, firstou):
         "IPM Subtree": {
             "Inbox": {},
             "Outbox": {},
-            "Sent Items": {}
-            "Deleted Items": {}
+            "Sent Items": {},
+            "Deleted Items": {},
         },
         "Common Views": {},
         "Schedule": {},

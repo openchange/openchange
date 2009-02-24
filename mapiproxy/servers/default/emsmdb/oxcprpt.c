@@ -131,14 +131,46 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-static enum MAPISTATUS RopGetPropertiesSpecific_SystemFolder(TALLOC_CTX *mem_ctx,
-							     struct emsmdbp_context *emsmdbp_ctx,
-							     struct GetProps_req request,
-							     struct GetProps_repl *response,
-							     void *private_data)
+static enum MAPISTATUS RopGetPropertiesSpecific_SystemSpecialFolder(TALLOC_CTX *mem_ctx,
+								    struct emsmdbp_context *emsmdbp_ctx,
+								    struct GetProps_req request,
+								    struct GetProps_repl *response,
+								    void *private_data)
 {
+	enum MAPISTATUS			retval;
+	struct emsmdbp_object		*object;
+	struct emsmdbp_object_folder	*folder;
+	void				*data;
+	int				i;
+
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!private_data, MAPI_E_INVALID_PARAMETER, NULL);
+
+	object = (struct emsmdbp_object *) private_data;
+	folder = (struct emsmdbp_object_folder *) object->object.folder;
+
+	/* Step 1. Lookup properties and set layout */
+	response->layout = 0x0;
+	for (i = 0; i < request.prop_count; i++) {
+		if (openchangedb_lookup_folder_property(emsmdbp_ctx->oc_ctx, request.properties[i], 
+							folder->folderID)) {
+			response->layout = 0x1;
+			break;
+		}
+	}
+
+	/* Step 2. Fetch properties values */
+	for (i = 0; i < request.prop_count; i++) {
+		retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, request.properties[i],
+							  folder->folderID, (void **)&data);
+		if (retval) {
+			request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
+			data = (void *)&retval;
+		}
+		libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+					    request.properties[i], (const void *)data,
+					    &response->prop_data, response->layout);
+	}
 
 	return MAPI_E_SUCCESS;
 }
@@ -206,9 +238,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 		/* private mailbox */
 		retval = RopGetPropertiesSpecific_Mailbox(mem_ctx, emsmdbp_ctx, request, &response, private_data);
 		break;
-	default:
-		/* system folder */
-		retval = RopGetPropertiesSpecific_SystemFolder(mem_ctx, emsmdbp_ctx, request, &response, private_data);
+	case 0x1:
+		/* system or special folder */
+		retval = RopGetPropertiesSpecific_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response, private_data);
 		break;
 	}
 

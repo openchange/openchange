@@ -32,7 +32,7 @@
 
 
 /**
-   \details Open a SystemFolder folder object.
+   \details Open a System or Special folder object.
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
@@ -41,10 +41,10 @@
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-static enum MAPISTATUS RopOpenFolder_SystemFolder(TALLOC_CTX *mem_ctx, 
-						  struct emsmdbp_context *emsmdbp_ctx,
-						  struct OpenFolder_req request,
-						  struct OpenFolder_repl *response)
+static enum MAPISTATUS RopOpenFolder_SystemSpecialFolder(TALLOC_CTX *mem_ctx, 
+							 struct emsmdbp_context *emsmdbp_ctx,
+							 struct OpenFolder_req request,
+							 struct OpenFolder_repl *response)
 {
 	/* Find parent record */
 	/* Set parent record as basedn */
@@ -107,8 +107,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 
 	switch (parentfolder) {
 	case 0x0:
-		/* system folder with mailbox as parent */
-		retval = RopOpenFolder_SystemFolder(mem_ctx, emsmdbp_ctx, request, &response);
+		/* system/special folder */
+		retval = RopOpenFolder_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response);
 		mapi_repl->error_code = retval;
 		break;
 	default:

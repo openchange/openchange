@@ -215,7 +215,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 		object->object.folder->systemfolder = -1;
 		/* assign mapistore context from parent */
 	} else {
-		object->object.folder->systemfolder = 0;
+		object->object.folder->systemfolder = 1;
 		/* mapistore backend initialization goes here */
 		retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx,
 						       object->object.folder->folderID, &mapistore_uri);

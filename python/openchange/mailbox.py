@@ -195,24 +195,68 @@ GlobalCount: 0x%x
         if parentfolder == 0:
             m = ldb.Message()
             m.dn = ldb.Dn(self.ldb, ocuserdn)
-            m["fid"] = ldb.MessageElement([FID], ldb.CHANGETYPE_ADD, "fid")
+            m["PidTagFolderId"] = ldb.MessageElement([FID], ldb.CHANGETYPE_ADD, "PidTagFolderId")
             m["SystemIdx"] = ldb.MessageElement([str(SystemIdx)], ldb.CHANGETYPE_ADD, "SystemIdx")
             self.ldb.modify(m)
             return FID
 
         # Step 2. Lookup parent DN
-        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(fid=%s)" % parentfolder, ["*"])
+        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" % parentfolder, ["*"])
         if len(res) != 1:
-            raise Exception("Invalid search (fid=%s)" % parentfolder)
+            raise Exception("Invalid search (PidTagFolderId=%s)" % parentfolder)
 
-        # Step 1. Add root folder to correct container
+        # Step 3. Add root folder to correct container
         self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
                   "objectClass": ["systemfolder"],
                   "cn": FID,
-                  "fid": FID,
-                  "name": foldername,
+                  "PidTagFolderId": FID,
+                  "PidTagDisplayName": foldername,
                   "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID),
                   "SystemIdx": str(SystemIdx)})
+
+        return FID
+
+    def add_mailbox_special_folder(self, username, parentfolder, ref_fid, 
+                                   foldername, containerclass, GlobalCount, ReplicaID, 
+                                   mapistoreURL):
+        """Add a special folder to the user mailbox
+
+        :param username: Username object
+        :param parent_folder: Folder identifier where record should be added
+        :param ref_fid: Folder Identifier referring special folder
+        :param foldername: Folder name
+        :param containerclass: Folder container class
+        :param GlobalCount: current global counter for message database
+        :param ReplicaID: replica identifier for message database
+        :param mapistoreURL: mapistore default content repository URI
+        """
+
+        FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
+
+        # Step 1. Lookup parent DN
+        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" % parentfolder, ["*"])
+        if len(res) != 1:
+            raise Exception("Invalid search (PidTagFolderId=%s)" % parentfolder)
+
+        # Step 2. Add special folder to user subtree
+        self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
+                      "objectClass": ["specialfolder"],
+                      "cn": FID,
+                      "PidTagFolderId": FID,
+                      "PidTagDisplayName": foldername,
+                      "PidTagContainerClass": containerclass,
+                      "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID)})
+
+        # Step 3. Reference special folder within Inbox record
+        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" %ref_fid, ["*"])
+        if len(res) != 1:
+            raise Exception("Invalid search (PidTagFolderId=%s)" % ref_fid)
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb, "%s" % res[0].dn)
+        fid_name = "PidTagFolderId_" + foldername
+        m[fid_name] = ldb.MessageElement([FID], ldb.CHANGETYPE_ADD, fid_name);
+        self.ldb.modify(m)
 
         return FID
 
@@ -226,13 +270,13 @@ GlobalCount: 0x%x
         """
         
         # Step 1. Search fid DN
-        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(fid=%s)" % fid, ["*"])
+        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" % fid, ["*"])
         if len(res) != 1:
-            raise "Invalid search (fid=%s)" % fid
+            raise "Invalid search (PidTagFolderId=%s)" % fid
 
         m = ldb.Message()
         m.dn = res[0].dn
-        m["ExplicitMessageClass"] = ldb.MessageElement([messageclass], ldb.CHANGETYPE_ADD, "ExplicitMessageClass")
+        m["PidTagMessageClass"] = ldb.MessageElement([messageclass], ldb.CHANGETYPE_ADD, "PidTagMessageClass")
         self.ldb.modify(m)
 
 

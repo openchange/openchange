@@ -71,7 +71,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 
 	/* Step 2. If Mailbox root folder, check for FolderID within current record */
 	if (SystemIdx == 0x1) {
-		*FolderId = ldb_msg_find_attr_as_int64(res->msgs[0], "fid", 0);
+		*FolderId = ldb_msg_find_attr_as_int64(res->msgs[0], "PidTagFolderId", 0);
 		OPENCHANGE_RETVAL_IF(!*FolderId, MAPI_E_CORRUPT_STORE, mem_ctx);
 
 		talloc_free(mem_ctx);
@@ -92,7 +92,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
-	*FolderId = ldb_msg_find_attr_as_int64(res->msgs[0], "fid", 0);
+	*FolderId = ldb_msg_find_attr_as_int64(res->msgs[0], "PidTagFolderId", 0);
 	OPENCHANGE_RETVAL_IF(!*FolderId, MAPI_E_CORRUPT_STORE, mem_ctx);
 
 	talloc_free(mem_ctx);
@@ -293,15 +293,15 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	dn = ldb_dn_new(mem_ctx, ldb_ctx, dnstr);
 	talloc_free(dnstr);
 
-	ldb_filter = talloc_asprintf(mem_ctx, "(ExplicitMessageClass=%s*)", MessageClass);
+	ldb_filter = talloc_asprintf(mem_ctx, "(PidTagMessageClass=%s*)", MessageClass);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, ldb_filter);
 	talloc_free(ldb_filter);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 	
-	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "fid", 0x0);
+	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
 
 	/* Step 3. Find the longest ExplicitMessageClass matching MessageClass */
-	ldb_element = ldb_msg_find_element(res->msgs[0], "ExplicitMessageClass");
+	ldb_element = ldb_msg_find_element(res->msgs[0], "PidTagMessageClass");
 	for (i = 0, length = 0; i < ldb_element[0].num_values; i++) {
 		if (!strncasecmp(MessageClass, (char *)ldb_element->values[i].data, 
 				 strlen((char *)ldb_element->values[i].data)) &&

@@ -278,7 +278,8 @@ def newmailbox(lp, username, firstorg, firstou):
         name = path[-1]
 
         GlobalCount = db.get_message_GlobalCount(names.netbiosname)
-        
+        ReplicaID = db.get_message_ReplicaID(names.netbiosname)
+
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
             username=username, foldername=name,
             parentfolder=parent_fid, GlobalCount=GlobalCount, 
@@ -298,7 +299,30 @@ def newmailbox(lp, username, firstorg, firstou):
     SystemIdx = 1
     add_folder(0, ("Mailbox Root",), system_folders, SystemIdx)
 
-    # Step 6. Set default receive folders
+    # Step 6. Add special folders
+    print "* Adding Special Folders:"
+    special_folders = [
+        (("Mailbox Root", "IPM Subtree"), "Calendar",   "IPF.Appointment"),
+        (("Mailbox Root", "IPM Subtree"), "Contacts",   "IPF.Contact"),
+        (("Mailbox Root", "IPM Subtree"), "Journal",    "IPF.Journal"),
+        (("Mailbox Root", "IPM Subtree"), "Notes",      "IPF.StickyNote"),
+        (("Mailbox Root", "IPM Subtree"), "Tasks",      "IPF.Task"),
+        (("Mailbox Root", "IPM Subtree"), "Reminders",  "Outlook.Reminder"),
+        (("Mailbox Root", "IPM Subtree"), "Drafts",     "IPF.Notes")
+        ]
+
+    fid_inbox = fids[("Mailbox Root", "IPM Subtree", "Inbox")]
+    for path, foldername, containerclass in special_folders:
+        GlobalCount = db.get_message_GlobalCount(names.netbiosname)
+        ReplicaID = db.get_message_ReplicaID(names.netbiosname)
+        fid = db.add_mailbox_special_folder(username, fids[path], fid_inbox, foldername, 
+                                            containerclass, GlobalCount, ReplicaID, 
+                                            openchangedb_mapistore_url(lp))
+        GlobalCount += 1
+        db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
+        print "\t* %-40s: %s (%s)" % (foldername, fid, containerclass)
+
+    # Step 7. Set default receive folders
     print "* Adding default Receive Folders:"
     receive_folders = [
         (("Mailbox Root", "IPM Subtree", "Inbox"), "All"),
@@ -307,10 +331,10 @@ def newmailbox(lp, username, firstorg, firstou):
         (("Mailbox Root", "IPM Subtree",), "IPC")
         ]
     
-    for path, foldername in receive_folders:
-        print "\t* %-40s Message Class added to %s" % (foldername, fids[path])
+    for path, messageclass in receive_folders:
+        print "\t* %-40s Message Class added to %s" % (messageclass, fids[path])
         db.set_receive_folder(username, names.ocfirstorgdn, fids[path], 
-                              foldername)
+                              messageclass)
 
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
     print "* GlobalCount (0x%x)" % GlobalCount

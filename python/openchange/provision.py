@@ -274,22 +274,28 @@ def newmailbox(lp, username, firstorg, firstou):
     }
 
     fids = {}
-    SystemIdx = 1
-    def add_folder(parent_fid, path, children):
+    def add_folder(parent_fid, path, children, SystemIdx):
         name = path[-1]
+
+        GlobalCount = db.get_message_GlobalCount(names.netbiosname)
+        GlobalCount += 1
+        db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
+        
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
             username=username, foldername=name,
             parentfolder=parent_fid, GlobalCount=GlobalCount, 
             ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
             mapistoreURL=openchangedb_mapistore_url(lp))
+
         fids[path] = fid
-        GlobalCount += 1
-        SystemIdx += 1
+
         print "\t* %-40s: %s" % (name, fid)
         for name, grandchildren in children.iteritems():
-            add_folder(fid, path + (name,), grandchildren)
+            SystemIdx += 1
+            add_folder(fid, path + (name,), grandchildren, SystemIdx)
 
-    add_folder(0, ("Mailbox Root",), system_folders)
+    SystemIdx = 1
+    add_folder(0, ("Mailbox Root",), system_folders, SystemIdx)
 
     # Step 6. Set default receive folders
     print "* Adding default Receive Folders:"
@@ -301,16 +307,12 @@ def newmailbox(lp, username, firstorg, firstou):
         ]
     
     for path, foldername in receive_folders:
-        print "\t* %-40s Message Class added to %s" % (foldername, fid)
+        print "\t* %-40s Message Class added to %s" % (foldername, fids[path])
         db.set_receive_folder(username, names.ocfirstorgdn, fids[path], 
                               foldername)
 
-    # Step 7. Update FolderIndex
-    db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
-    print "* GlobalCount updated"
-    
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
-    print "* GlobalCount: 0x%x" % GlobalCount
+    print "* GlobalCount (0x%x)" % GlobalCount
 
 
 def newuser(lp, creds, username=None):

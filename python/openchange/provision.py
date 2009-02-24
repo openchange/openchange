@@ -273,33 +273,37 @@ def newmailbox(lp, username, firstorg, firstou):
         "Shortcuts": {},
     }
 
+    fids = {}
     SystemIdx = 1
-    def add_folder(parent_fid, name, children):
+    def add_folder(parent_fid, path, children):
+        name = path[-1]
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
             username=username, foldername=name,
             parentfolder=parent_fid, GlobalCount=GlobalCount, 
             ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
             mapistoreURL=openchangedb_mapistore_url(lp))
+        fids[path] = fid
         GlobalCount += 1
         SystemIdx += 1
         print "\t* %-40s: %s" % (name, fid)
         for name, grandchildren in children.iteritems():
-            add_folder(fid, name, grandchildren)
+            add_folder(fid, path + (name,), grandchildren)
 
-    add_folder(0, "Mailbox Root", system_folders)
+    add_folder(0, ("Mailbox Root",), system_folders)
 
     # Step 6. Set default receive folders
     print "* Adding default Receive Folders:"
     receive_folders = [
-        (fid_inbox, "All"),
-        (fid_inbox, "IPM"),
-        (fid_inbox, "Report.IPM"),
-        (fid_ipm_subtree, "IPC")
+        (("Mailbox Root", "IPM Subtree", "Inbox"), "All"),
+        (("Mailbox Root", "IPM Subtree", "Inbox"), "IPM"),
+        (("Mailbox Root", "IPM Subtree", "Inbox"), "Report.IPM"),
+        (("Mailbox Root", "IPM Subtree",), "IPC")
         ]
     
-    for fid, foldername in receive_folders:
+    for path, foldername in receive_folders:
         print "\t* %-40s Message Class added to %s" % (foldername, fid)
-        db.set_receive_folder(username, names.ocfirstorgdn, fid, foldername)
+        db.set_receive_folder(username, names.ocfirstorgdn, fids[path], 
+                              foldername)
 
     # Step 7. Update FolderIndex
     db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)

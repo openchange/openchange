@@ -204,6 +204,11 @@ enum MAPISTATUS	openchangedb_get_MailboxGuid(void *, char *, struct GUID *);
 enum MAPISTATUS	openchangedb_get_MailboxReplica(void *, char *, uint16_t *, struct GUID *);
 enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, void *, uint64_t, char **);
 enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *, void *, const char *, const char *, uint64_t *, const char **);
+enum MAPISTATUS openchangedb_lookup_folder_property(void *, uint32_t, uint64_t);
+enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *, void *, uint32_t, uint64_t, void **);
+
+/* definitions from auto-generated openchangedb_property.c */
+const char *openchangedb_property_get_attribute(uint32_t);
 
 /* definitions from mapi_handles.c */
 struct mapi_handles_context *mapi_handles_init(TALLOC_CTX *);

@@ -325,3 +325,108 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Check if a property exists within an openchange dispatcher
+   database record
+
+   \param ldb_ctx pointer to the openchange LDB context
+   \param proptag the MAPI property tag to lookup
+   \param fid the record folder identifier
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *ldb_ctx, 
+							     uint32_t proptag, 
+							     uint64_t fid)
+{
+	TALLOC_CTX	       	*mem_ctx;
+	struct ldb_result      	*res = NULL;
+	char		       	*ldb_filter;
+	const char * const     	attrs[] = { "*", NULL };
+	const char	       	*PidTagAttr = NULL;
+	int		       	ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_folder_property");
+
+	/* Step 1. Find PidTagFolderId record */
+	ldb_filter = talloc_asprintf(mem_ctx, "(PidTagFolderId=0x%llx)", fid);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
+	talloc_free(ldb_filter);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* Step 2. Convert proptag into PidTag attribute */
+	PidTagAttr = openchangedb_property_get_attribute(proptag);
+
+	/* Step 3. Search for attribute */
+	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details 
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx, 
+							  void *ldb_ctx,
+							  uint32_t proptag,
+							  uint64_t fid,
+							  void **data)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	char			*ldb_filter;
+	const char * const	attrs[] = { "*", NULL };
+	const char		*PidTagAttr = NULL;
+	int			ret;
+	const char     		*str;
+	uint64_t		*d;
+	uint32_t		l;
+
+	mem_ctx = talloc_named(NULL, 0, "get_folder_property");
+
+	/* Step 1. Find PidTagFolderId record */
+	ldb_filter = talloc_asprintf(mem_ctx, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
+	talloc_free(ldb_filter);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* Step 2. Convert proptag into PidTag attribute */
+	PidTagAttr = openchangedb_property_get_attribute(proptag);
+	OPENCHANGE_RETVAL_IF(!PidTagAttr, MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* Step 3. Ensure the element exists */
+	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
+
+	switch (proptag & 0xFFFF) {
+	case PT_LONG:
+		l = ldb_msg_find_attr_as_int(res->msgs[0], PidTagAttr, 0x0);
+		*data = (void *)&l;
+		break;
+	case PT_I8:
+		str = ldb_msg_find_attr_as_string(res->msgs[0], PidTagAttr, 0x0);
+		d = talloc_zero(parent_ctx, uint64_t);
+		*d = strtoull(str, NULL, 16);
+		*data = (void *)d;
+		break;
+	case PT_STRING8:
+	case PT_UNICODE:
+		str = ldb_msg_find_attr_as_string(res->msgs[0], PidTagAttr, NULL);
+		*data = (char *) talloc_strdup(parent_ctx, str);
+		break;
+	default:
+		talloc_free(mem_ctx);
+		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (proptag & 0xFFFF)));
+		return MAPI_E_NOT_FOUND;
+	}
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}

@@ -773,6 +773,9 @@ libmapiproxy-install:
 
 libmapiproxy-clean:
 	rm -f mapiproxy/libmapiproxy/*.po mapiproxy/libmapiproxy/*.o
+ifneq ($(SNAPSHOT), no)
+	rm -f mapiproxy/libmapiproxy/openchangedb_property.c
+endif
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
 
@@ -786,10 +789,15 @@ libmapiproxy-distclean:
 
 distclean::libmapiproxy-distclean
 
+mapiproxy/libmapiproxy/openchangedb_property.c: libmapi/conf/mapi-properties libmapi/conf/mparse.pl
+	@./libmapi/conf/mparse.pl --parser=openchangedb_property --outputdir=mapiproxy/libmapiproxy/ \
+				  libmapi/conf/mapi-properties
+
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dcesrv_mapiproxy_module.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_server.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_session.po	\
 							mapiproxy/libmapiproxy/openchangedb.po			\
+							mapiproxy/libmapiproxy/openchangedb_property.po		\
 							mapiproxy/libmapiproxy/mapi_handles.po			\
 							mapiproxy/libmapiproxy/entryid.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)

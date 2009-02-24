@@ -88,7 +88,11 @@ text files. For more information, consult the API documentation
 (either build yourself, or online at
 http://apidocs.openchange.org/libocpf/index.html) 
 
-- mapiproxy/
+- mapiproxy/ This directory provides an Exchange RPC proxy. You can
+use this to provide transparent proxying, or to change / monitor 
+connections between the client and server. For more information,
+consult the API documentation (either build yourself, or online at
+http://apidocs.openchange.org/mapiproxy/index.html) 
 
 - pymapi/  This directory contains hand-written python bindings for
 libmapi functions. There are also SWIG generated bindings - see the

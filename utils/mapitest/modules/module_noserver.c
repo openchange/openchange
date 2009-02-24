@@ -934,10 +934,11 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	const uint32_t *i8get;
 	const uint8_t *boolget;
 	const char *stringget;
+	const struct FILETIME *ftget;
 	const struct SBinary_short *binget;
 	const struct mapi_MV_LONG_STRUCT *mvi4get;
 
-	valarray.cValues = 7;
+	valarray.cValues = 8;
 	valarray.lpProps = talloc_array(mt->mem_ctx, struct mapi_SPropValue, valarray.cValues);
 
 	valarray.lpProps[0].ulPropTag = PR_GENDER;
@@ -962,6 +963,9 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	valarray.lpProps[6].value.MVl.lpl = talloc_array(mt->mem_ctx, uint32_t, 2);
 	valarray.lpProps[6].value.MVl.lpl[0] = 32130;
 	valarray.lpProps[6].value.MVl.lpl[1] = 32131;
+	valarray.lpProps[7].ulPropTag = PidLidAppointmentEndWhole;
+	valarray.lpProps[7].value.ft.dwLowDateTime  = 0x12975909;
+	valarray.lpProps[7].value.ft.dwHighDateTime  = 0x98989204;
 
 	/* now start pulling the values back out */
 	i2get = find_mapi_SPropValue_data(&valarray, PR_GENDER);
@@ -1008,6 +1012,13 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	}
 	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_STRING");
 
+	ftget = find_mapi_SPropValue_data(&valarray, PidLidAppointmentEndWhole);
+	if (!ftget || (ftget->dwLowDateTime != 0x12975909) || (ftget->dwHighDateTime != 0x98989204)) {
+		/* failure */
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "mapi_SPropValue find with PT_FILETIME");
+		return false;
+	}
+	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_FILETIME");
 
 	binget = find_mapi_SPropValue_data(&valarray, PR_RECORD_KEY);
 	if (!binget || (binget->cb != 4 ) || (binget->lpb[0] != 0x44) || (binget->lpb[1] != 0x00)
@@ -1032,7 +1043,6 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
         int64_t dbl;/* [case(0x0005)] */
         uint32_t err;/* [case(0x000a)] */
         const char * lpszW;/* [flag(LIBNDR_FLAG_STR_NULLTERM),case(0x001f)] */
-        struct FILETIME ft;/* [case(0x0040)] */
         struct GUID lpguid;/* [case(0x0048)] */
         struct mapi_SRestriction_wrap Restrictions;/* [case(0x00fd)] */
         struct RuleAction RuleAction;/* [case(0x00fe)] */

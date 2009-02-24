@@ -278,14 +278,15 @@ def newmailbox(lp, username, firstorg, firstou):
         name = path[-1]
 
         GlobalCount = db.get_message_GlobalCount(names.netbiosname)
-        GlobalCount += 1
-        db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
         
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
             username=username, foldername=name,
             parentfolder=parent_fid, GlobalCount=GlobalCount, 
             ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
             mapistoreURL=openchangedb_mapistore_url(lp))
+
+        GlobalCount += 1
+        db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
 
         fids[path] = fid
 

@@ -257,21 +257,21 @@ def newmailbox(lp, username, firstorg, firstou):
     # Step 5. Create system mailbox folders for this user
     print "* Adding System Folders"
 
-    system_folders = {
-        "Deferred Actions": {},
-        "Spooler Queue": {},
-        "IPM Subtree": {
-            "Inbox": {},
-            "Outbox": {},
-            "Sent Items": {},
-            "Deleted Items": {},
-        },
-        "Common Views": {},
-        "Schedule": {},
-        "Search": {},
-        "Views": {},
-        "Shortcuts": {},
-    }
+    system_folders = ({
+        "Deferred Actions": ({}, 2),
+        "Spooler Queue": ({}, 3),
+        "IPM Subtree": ({
+            "Inbox": ({}, 5),
+            "Outbox": ({}, 6),
+            "Sent Items": ({}, 7),
+            "Deleted Items": ({}, 8),
+        }, 4),
+        "Common Views": ({}, 9),
+        "Schedule": ({}, 10),
+        "Search": ({}, 11),
+        "Views": ({}, 12),
+        "Shortcuts": ({}, 13),
+    }, 1)
 
     fids = {}
     def add_folder(parent_fid, path, children, SystemIdx):
@@ -293,11 +293,9 @@ def newmailbox(lp, username, firstorg, firstou):
 
         print "\t* %-40s: %s" % (name, fid)
         for name, grandchildren in children.iteritems():
-            SystemIdx += 1
-            add_folder(fid, path + (name,), grandchildren, SystemIdx)
+            add_folder(fid, path + (name,), grandchildren[0], grandchildren[1])
 
-    SystemIdx = 1
-    add_folder(0, ("Mailbox Root",), system_folders, SystemIdx)
+    add_folder(0, ("Mailbox Root",), system_folders[0], system_folders[1])
 
     # Step 6. Add special folders
     print "* Adding Special Folders:"

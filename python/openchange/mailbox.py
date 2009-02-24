@@ -209,6 +209,7 @@ GlobalCount: 0x%x
         self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
                   "objectClass": ["systemfolder"],
                   "cn": FID,
+                  "PidTagParentFolderId": parentfolder,
                   "PidTagFolderId": FID,
                   "PidTagDisplayName": foldername,
                   "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID),

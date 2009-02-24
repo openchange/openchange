@@ -1,3 +1,34 @@
+2009-02-24
+    jkerihuel
+	[r1223]
+		- Fix systemfolder value for System/Special folders
+		- Add GetProps support to System/Special folders
+	[r1222]
+		Add auto-generated parser to the ignore list
+	[r1221]
+		- Add auto-generated parser for MAPI property to PidTag mapping
+		- Add some PidTag values
+		- Add a lookup and get property functions on system folders
+	[r1220]
+		- tuple SystemIdx in the dictionnary to workaround the ordering problem
+		- Add ParentFolderId attribute to System Folders
+	[r1217]
+		- Add creation of "Special folders" to mailbox provisioning
+		- Rename fid attribute to PidTagFolderId
+		- Rename name attribute to PidTagDisplayName
+		- Rename ExplicitContainerClass to PidTagContainerClass
+	[r1216]
+		Fix GlobalCount increment
+	[r1215]
+		Fix mailbox provisioning
+    bradh
+	[r1219]
+		Add test for FILETIME structure.
+	[r1218]
+		Update docs for mapiproxy entry.
+    jelmer
+	[r1214]
+		Fix handling of fids.
 2009-02-23
     jkerihuel
 	[r1208]
@@ -11,6 +42,15 @@
 		- Add provisioning code for GetReceiveFolder defaults
 		- Check if mapistore content repository already exists for the user
 		- Make mailbox creation verbose
+    jelmer
+	[r1213]
+		Fix parentfolder reference.
+	[r1212]
+		Fix syntax error.
+	[r1211]
+		Use recursive call to create folders.
+	[r1210]
+		Simplify list iteration, PEP8, avoid using string exceptions.
 
 2009-02-22
     jkerihuel

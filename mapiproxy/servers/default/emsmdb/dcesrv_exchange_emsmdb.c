@@ -111,6 +111,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 
 	/* Step 4. Retrieve the display name of the user */
 	r->out.szDisplayName = ldb_msg_find_attr_as_string(msg, "displayName", NULL);
+	emsmdbp_ctx->szDisplayName = talloc_strdup(emsmdbp_ctx, r->out.szDisplayName);
 
 	/* Step 5. Retrieve the dinstinguished name of the server */
 	cn = ldb_msg_find_attr_as_string(msg, "cn", NULL);

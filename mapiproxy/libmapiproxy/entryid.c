@@ -55,3 +55,79 @@ _PUBLIC_ enum MAPISTATUS entryid_set_AB_EntryID(TALLOC_CTX *mem_ctx,
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Build a folder EntryID
+
+   \param mem_ctx pointer to the memory context
+   \param MailboxGuid pointer to the Mailbox Guid
+   \param ReplGuid pointer to the Replica Guid
+   \param FolderType the type of folder
+   \param fid the folder identifier
+   \param rbin the Binary_r structure where the function stores results
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_INVALID_PARAMETER
+ */
+_PUBLIC_ enum MAPISTATUS entryid_set_folder_EntryID(TALLOC_CTX *mem_ctx,
+						    struct GUID *MailboxGuid,
+						    struct GUID *ReplGuid,
+						    uint16_t FolderType,
+						    uint64_t fid,
+						    struct Binary_r **rbin)
+{
+	struct Binary_r	*bin;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!MailboxGuid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ReplGuid, MAPI_E_INVALID_PARAMETER, NULL);
+
+	bin = talloc_zero(mem_ctx, struct Binary_r);
+
+	bin->cb = 46;
+	bin->lpb = talloc_array(mem_ctx, uint8_t, bin->cb);
+
+	/* 4 bytes:  EntryID flags set to 0 */
+	memset(bin->lpb, 0, bin->cb);
+
+	/* 16 bytes: MailboxGuid */
+	bin->lpb[4] = (MailboxGuid->time_low & 0xFF);
+	bin->lpb[5] = ((MailboxGuid->time_low >> 8)  & 0xFF);
+	bin->lpb[6] = ((MailboxGuid->time_low >> 16) & 0xFF);
+	bin->lpb[7] = ((MailboxGuid->time_low >> 24) & 0xFF);
+	bin->lpb[8] = (MailboxGuid->time_mid & 0xFF);
+	bin->lpb[9] = ((MailboxGuid->time_mid >> 8)  & 0xFF);
+	bin->lpb[10] = (MailboxGuid->time_hi_and_version & 0xFF);
+	bin->lpb[11] = ((MailboxGuid->time_hi_and_version >> 8) & 0xFF);
+	memcpy(&bin->lpb[12],  MailboxGuid->clock_seq, sizeof (uint8_t) * 2);
+	memcpy(&bin->lpb[14], MailboxGuid->node, sizeof (uint8_t) * 6);
+
+	/* 2 bytes: FolderType */
+	bin->lpb[20] = (FolderType & 0xFF);
+	bin->lpb[21] = ((FolderType >> 8) & 0xFF);
+
+	/* 16 bytes: ReplGuid */
+	bin->lpb[22] = (ReplGuid->time_low & 0xFF);
+	bin->lpb[23] = ((ReplGuid->time_low >> 8)  & 0xFF);
+	bin->lpb[24] = ((ReplGuid->time_low >> 16) & 0xFF);
+	bin->lpb[25] = ((ReplGuid->time_low >> 24) & 0xFF);
+	bin->lpb[26] = (ReplGuid->time_mid & 0xFF);
+	bin->lpb[27] = ((ReplGuid->time_mid >> 8)  & 0xFF);
+	bin->lpb[28] = (ReplGuid->time_hi_and_version & 0xFF);
+	bin->lpb[29] = ((ReplGuid->time_hi_and_version >> 8) & 0xFF);
+	memcpy(&bin->lpb[30],  ReplGuid->clock_seq, sizeof (uint8_t) * 2);
+	memcpy(&bin->lpb[32], ReplGuid->node, sizeof (uint8_t) * 6);
+
+	/* 8 bytes: FolderID, first byte unset */
+	bin->lpb[39] = ((fid >> 8) & 0xFF);
+	bin->lpb[40] = ((fid >> 16) & 0xFF);
+	bin->lpb[41] = ((fid >> 24) & 0xFF);
+	bin->lpb[42] = ((fid >> 32) & 0xFF);
+	bin->lpb[43] = ((fid >> 40) & 0xFF);
+	bin->lpb[44] = ((fid >> 48) & 0xFF);
+	bin->lpb[45] = ((fid >> 56) & 0xFF);
+
+	*rbin = bin;
+
+	return MAPI_E_SUCCESS;
+}

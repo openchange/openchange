@@ -174,7 +174,26 @@ GlobalCount: 0x%x
         mapistore_dir = os.path.join(mapistoreURL, username)
         if not os.path.isdir(mapistore_dir):
             os.makedirs(mapistore_dir, mode=0700)
-        
+    
+    def add_folder_property(self, folderID, attribute, value):
+        """Add a attribute/value to the record folderID refers to
+
+        :param folderID: the folder identifier where to add attribute/value
+        :param attribute: the ldb attribute
+        :param value: the attribute value
+        """
+
+        # Step 1. Find the folder record
+        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" % folderID, ["*"])
+        if len(res) != 1:
+            raise Exception("Invalid search (PidTagFolderId=%s)" % folderID)
+
+        # Step 2. Add attribute/value pair
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb, "%s" % res[0].dn)
+        m[attribute] = ldb.MessageElement([value], ldb.CHANGETYPE_ADD, attribute);
+        self.ldb.modify(m)
+
     def add_mailbox_root_folder(self, ocfirstorgdn, username, 
                                 foldername, parentfolder, 
                                 GlobalCount, ReplicaID,
@@ -197,6 +216,7 @@ GlobalCount: 0x%x
             m.dn = ldb.Dn(self.ldb, ocuserdn)
             m["PidTagFolderId"] = ldb.MessageElement([FID], ldb.CHANGETYPE_ADD, "PidTagFolderId")
             m["SystemIdx"] = ldb.MessageElement([str(SystemIdx)], ldb.CHANGETYPE_ADD, "SystemIdx")
+            m["mapistore_uri"] = ldb.MessageElement(["sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID)], ldb.CHANGETYPE_ADD, "mapistore_uri")
             self.ldb.modify(m)
             return FID
 
@@ -213,6 +233,7 @@ GlobalCount: 0x%x
                   "PidTagFolderId": FID,
                   "PidTagDisplayName": foldername,
                   "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID),
+                  "FolderType": str(1),
                   "SystemIdx": str(SystemIdx)})
 
         return FID
@@ -246,18 +267,11 @@ GlobalCount: 0x%x
                       "PidTagFolderId": FID,
                       "PidTagDisplayName": foldername,
                       "PidTagContainerClass": containerclass,
-                      "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID)})
-
-        # Step 3. Reference special folder within Inbox record
-        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" %ref_fid, ["*"])
-        if len(res) != 1:
-            raise Exception("Invalid search (PidTagFolderId=%s)" % ref_fid)
-
-        m = ldb.Message()
-        m.dn = ldb.Dn(self.ldb, "%s" % res[0].dn)
-        fid_name = "PidTagFolderId_" + foldername
-        m[fid_name] = ldb.MessageElement([FID], ldb.CHANGETYPE_ADD, fid_name);
-        self.ldb.modify(m)
+                      "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID),
+                      "PidTagContentCount": str(0),
+                      "PidTagContentUnreadCount": str(0),
+                      "PidTagSubFolders": str(0),
+                      "FolderType": str(1)})
 
         return FID
 

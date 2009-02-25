@@ -227,8 +227,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 
 	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
 
-	ldb_filter = talloc_asprintf(mem_ctx, "CN=0x%.16"PRIx64, fid);
-	DEBUG(0, ("ldb_filter = '%s'\n", ldb_filter));
+	ldb_filter = talloc_asprintf(mem_ctx, "(PidTagFolderId=0x%.16"PRIx64")", fid);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
 	talloc_free(ldb_filter);
@@ -351,7 +350,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *ldb_ctx,
 	mem_ctx = talloc_named(NULL, 0, "get_folder_property");
 
 	/* Step 1. Find PidTagFolderId record */
-	ldb_filter = talloc_asprintf(mem_ctx, "(PidTagFolderId=0x%llx)", fid);
+	ldb_filter = talloc_asprintf(mem_ctx, "(PidTagFolderId=0x%.16"PRIx64")", fid);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
 	talloc_free(ldb_filter);
@@ -370,10 +369,71 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *ldb_ctx,
 
 
 /**
-   \details 
+   \details Retrieve a special MAPI property from a folder record
+
+   \param mem_ctx pointer to the memory context
+   \param ldb_ctx pointer to the OpenChange LDB context
+   \param recipient the mailbox username
+   \param res pointer to the LDB result
+   \param proptag the MAPI property tag to lookup
+   \param PidTagAttr the mapped MAPI property name
+
+   \return pointer to valid data on success, otherwise NULL
+ */
+static void *openchangedb_get_folder_special_property(TALLOC_CTX *mem_ctx,
+						      void *ldb_ctx,
+						      char *recipient,
+						      struct ldb_result *res,
+						      uint32_t proptag,
+						      const char *PidTagAttr)
+{
+	enum MAPISTATUS		retval;
+	struct GUID		MailboxGUID;
+	struct GUID		ReplGUID;
+	uint16_t		ReplID;
+	struct Binary_r		*bin;
+	uint16_t		FolderType;
+	uint64_t		FolderId;
+	const char		*tmp;
+
+	switch (proptag) {
+	case PR_IPM_APPOINTMENT_ENTRYID:
+	case PR_IPM_CONTACT_ENTRYID:
+	case PR_IPM_JOURNAL_ENTRYID:
+	case PR_IPM_NOTE_ENTRYID:
+	case PR_IPM_TASK_ENTRYID:
+	case PR_REMINDERS_ONLINE_ENTRYID:
+	case PR_IPM_DRAFTS_ENTRYID:
+		retval = openchangedb_get_MailboxGuid(ldb_ctx, recipient, &MailboxGUID);
+		retval = openchangedb_get_MailboxReplica(ldb_ctx, recipient, &ReplID, &ReplGUID);
+		FolderType = (uint16_t) ldb_msg_find_attr_as_int(res->msgs[0], "FolderType", 0x1);
+
+		tmp = ldb_msg_find_attr_as_string(res->msgs[0], PidTagAttr, NULL);
+		FolderId = strtoul(tmp, NULL, 16);
+		retval = entryid_set_folder_EntryID(mem_ctx, &MailboxGUID, &ReplGUID, FolderType, FolderId, &bin);
+		return (void *)bin;
+		break;
+	}
+
+	return NULL;
+}
+
+
+/**
+   \details Retrieve a MAPI property value from a folder record
+
+   \param parent_ctx pointer to the memory context
+   \param ldb_ctx pointer to the openchange LDB context
+   \param recipient the mailbox username
+   \param proptag the MAPI property tag to retrieve value for
+   \param fid the record folder identifier
+   \param data pointer on pointer to the data the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx, 
 							  void *ldb_ctx,
+							  char *recipient,
 							  uint32_t proptag,
 							  uint64_t fid,
 							  void **data)
@@ -387,6 +447,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	const char     		*str;
 	uint64_t		*d;
 	uint32_t		l;
+	int			*b;
 
 	mem_ctx = talloc_named(NULL, 0, "get_folder_property");
 
@@ -404,7 +465,17 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	/* Step 3. Ensure the element exists */
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
 
+	/* Step 4. Check if this is a "special property" */
+	*data = openchangedb_get_folder_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
+	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
+
+	/* Step 5. If this is not a "special property" */
 	switch (proptag & 0xFFFF) {
+	case PT_BOOLEAN:
+		b = talloc_zero(parent_ctx, int);
+		*b = ldb_msg_find_attr_as_bool(res->msgs[0], PidTagAttr, 0x0);
+		*data = (void *)b;
+		break;
 	case PT_LONG:
 		l = ldb_msg_find_attr_as_int(res->msgs[0], PidTagAttr, 0x0);
 		*data = (void *)&l;

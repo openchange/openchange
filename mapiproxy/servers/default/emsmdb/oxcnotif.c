@@ -53,6 +53,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 							 struct EcDoRpc_MAPI_REPL *mapi_repl,
 							 uint32_t *handles, uint16_t *size)
 {
+	enum MAPISTATUS		retval;
+	struct mapi_handles	*rec = NULL;
+	uint32_t		handle;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCNOTIF] RegisterNotification (0x29)\n"));
 
 	/* Sanity checks */
@@ -64,8 +68,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 
 	/* FIXME: Handle this call properly */
 	mapi_repl->opnum = mapi_req->opnum;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
-	mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+	mapi_repl->handle_idx = mapi_req->u.mapi_RegisterNotification.handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	handles[mapi_repl->handle_idx] = rec->handle;
 
 	*size += libmapiserver_RopRegisterNotification_size();
 

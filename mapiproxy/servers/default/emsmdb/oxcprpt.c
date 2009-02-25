@@ -161,7 +161,8 @@ static enum MAPISTATUS RopGetPropertiesSpecific_SystemSpecialFolder(TALLOC_CTX *
 
 	/* Step 2. Fetch properties values */
 	for (i = 0; i < request.prop_count; i++) {
-		retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, request.properties[i],
+		retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
+							  emsmdbp_ctx->szDisplayName, request.properties[i],
 							  folder->folderID, (void **)&data);
 		if (retval) {
 			request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;

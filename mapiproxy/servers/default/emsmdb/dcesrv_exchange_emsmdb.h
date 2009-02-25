@@ -43,6 +43,7 @@
 
 struct emsmdbp_context {
 	char				*szUserDN;
+	char				*szDisplayName;
 	struct loadparm_context		*lp_ctx;
 	void				*oc_ctx;
 	void				*conf_ctx;

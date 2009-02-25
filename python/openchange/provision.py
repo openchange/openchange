@@ -300,22 +300,25 @@ def newmailbox(lp, username, firstorg, firstou):
     # Step 6. Add special folders
     print "* Adding Special Folders:"
     special_folders = [
-        (("Mailbox Root", "IPM Subtree"), "Calendar",   "IPF.Appointment"),
-        (("Mailbox Root", "IPM Subtree"), "Contacts",   "IPF.Contact"),
-        (("Mailbox Root", "IPM Subtree"), "Journal",    "IPF.Journal"),
-        (("Mailbox Root", "IPM Subtree"), "Notes",      "IPF.StickyNote"),
-        (("Mailbox Root", "IPM Subtree"), "Tasks",      "IPF.Task"),
-        (("Mailbox Root", "IPM Subtree"), "Reminders",  "Outlook.Reminder"),
-        (("Mailbox Root", "IPM Subtree"), "Drafts",     "IPF.Notes")
+        (("Mailbox Root", "IPM Subtree"), "Calendar",   "IPF.Appointment",  "PidTagIpmAppointmentEntryId"),
+        (("Mailbox Root", "IPM Subtree"), "Contacts",   "IPF.Contact",      "PidTagIpmContactEntryId"),
+        (("Mailbox Root", "IPM Subtree"), "Journal",    "IPF.Journal",      "PidTagIpmJournalEntryId"),
+        (("Mailbox Root", "IPM Subtree"), "Notes",      "IPF.StickyNote",   "PidTagIpmNoteEntryId"),
+        (("Mailbox Root", "IPM Subtree"), "Tasks",      "IPF.Task",         "PidTagIpmTaskEntryId"),
+        (("Mailbox Root", "IPM Subtree"), "Reminders",  "Outlook.Reminder", "PidTagRemindersOnlineEntryId"),
+        (("Mailbox Root", "IPM Subtree"), "Drafts",     "IPF.Notes",        "PidTagIpmDraftsEntryId")
         ]
 
     fid_inbox = fids[("Mailbox Root", "IPM Subtree", "Inbox")]
-    for path, foldername, containerclass in special_folders:
+    fid_mailbox = fids[("Mailbox Root",)]
+    for path, foldername, containerclass, pidtag in special_folders:
         GlobalCount = db.get_message_GlobalCount(names.netbiosname)
         ReplicaID = db.get_message_ReplicaID(names.netbiosname)
         fid = db.add_mailbox_special_folder(username, fids[path], fid_inbox, foldername, 
                                             containerclass, GlobalCount, ReplicaID, 
                                             openchangedb_mapistore_url(lp))
+        db.add_folder_property(fid_inbox, pidtag, fid)
+        db.add_folder_property(fid_mailbox, pidtag, fid)
         GlobalCount += 1
         db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
         print "\t* %-40s: %s (%s)" % (foldername, fid, containerclass)
@@ -333,6 +336,13 @@ def newmailbox(lp, username, firstorg, firstou):
         print "\t* %-40s Message Class added to %s" % (messageclass, fids[path])
         db.set_receive_folder(username, names.ocfirstorgdn, fids[path], 
                               messageclass)
+
+    # Step 8. Set additional properties on Inbox
+    print "* Adding additional default properties to Inbox"
+    db.add_folder_property(fid_inbox, "PidTagContentCount", "0")
+    db.add_folder_property(fid_inbox, "PidTagContentUnreadCount", "0")
+    db.add_folder_property(fid_inbox, "PidTagSubFolders", "FALSE")
+    db.add_folder_property(fid_inbox, "PidTagAccess", "63")
 
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
     print "* GlobalCount (0x%x)" % GlobalCount

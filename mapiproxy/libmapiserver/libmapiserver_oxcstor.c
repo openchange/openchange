@@ -72,7 +72,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REP
 	}
 
 	size += SIZE_DFLT_ROPGETRECEIVEFOLDER;
-	size += strlen(response->u.mapi_GetReceiveFolder.MessageClass);
+	size += strlen(response->u.mapi_GetReceiveFolder.MessageClass) + 1;
 
 	return size;
 }

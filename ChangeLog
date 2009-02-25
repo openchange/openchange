@@ -1,3 +1,27 @@
+2009-02-25
+    jkerihuel
+	[r1227]
+		- Add several PidTag to openchange.ldb folders
+		- Add provisioning convenient function which adds attribute/value pair
+		to a given folder record
+		- Replace existing special folders reference within Inbox with PidTagIpm* tags
+		- Add new PidTag values to mapi-properties
+		- Add a function to libmapiproxy to build a folder EntryID as described in MS-OXODATA
+		- Add a function which builds special properties for openchangedb folders
+		- Add PT_BOOLEAN case to openchangedb folder get property function
+		- Keep a reference to the mailbox username within emsmdb provider context
+		- Create and return a handle in RegisterNotification
+		 
+	[r1226]
+		Improve PT_I8 dump
+	[r1225]
+		Wrong MessageClass size calculation fixed 
+    jelmer
+	[r1229]
+		Remove duplicate _GNU_SOURCE definition (already specified by Makefile)
+	[r1228]
+		Ignore new binary and trial output.
+
 2009-02-24
     jkerihuel
 	[r1223]

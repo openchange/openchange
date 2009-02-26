@@ -1,3 +1,14 @@
+2009-02-26
+    jkerihuel
+	[r1238]
+		- Add skeleton for GetContentsTable Rop
+		- Add skeleton for some [MS-OXCTABL] Rops: SetColumns, SortTable, QueryRows, SeekRows
+		- Add libmapiserver size calculation functions for all the above
+		- Ensure we only set objects parameter if it exists
+		- Return when dcesrv handle is not available
+	[r1236]
+		Merge s4-alpha7 branch back into trunk
+
 2009-02-25
     jkerihuel
 	[r1227]

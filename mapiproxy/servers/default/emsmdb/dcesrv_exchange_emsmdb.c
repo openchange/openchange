@@ -248,6 +248,8 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 	}
 
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	OPENCHANGE_RETVAL_IF(!h, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+
 	emsmdbp_ctx = (struct emsmdbp_context *) h->data;
 
 	mapi_request = r->in.mapi_request;
@@ -277,11 +279,41 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 						       &(mapi_response->mapi_repl[i]),
 						       mapi_response->handles, &size);
 			break;
+		case op_MAPI_GetContentsTable:
+			retval = EcDoRpc_RopGetContentsTable(mem_ctx, emsmdbp_ctx,
+							     &(mapi_request->mapi_req[i]),
+							     &(mapi_response->mapi_repl[i]),
+							     mapi_response->handles, &size);
+			break;
 		case op_MAPI_GetProps:
 			retval = EcDoRpc_RopGetPropertiesSpecific(mem_ctx, emsmdbp_ctx,
 								  &(mapi_request->mapi_req[i]),
 								  &(mapi_response->mapi_repl[i]),
 								  mapi_response->handles, &size);
+			break;
+		case op_MAPI_SetColumns:
+			retval = EcDoRpc_RopSetColumns(mem_ctx, emsmdbp_ctx,
+						       &(mapi_request->mapi_req[i]),
+						       &(mapi_response->mapi_repl[i]),
+						       mapi_response->handles, &size);
+			break;
+		case op_MAPI_SortTable:
+			retval = EcDoRpc_RopSortTable(mem_ctx, emsmdbp_ctx,
+						      &(mapi_request->mapi_req[i]),
+						      &(mapi_response->mapi_repl[i]),
+						      mapi_response->handles, &size);
+			break;
+		case op_MAPI_QueryRows:
+			retval = EcDoRpc_RopQueryRows(mem_ctx, emsmdbp_ctx,
+						      &(mapi_request->mapi_req[i]),
+						      &(mapi_response->mapi_repl[i]),
+						      mapi_response->handles, &size);
+			break;
+		case op_MAPI_SeekRow:
+			retval = EcDoRpc_RopSeekRow(mem_ctx, emsmdbp_ctx,
+						    &(mapi_request->mapi_req[i]),
+						    &(mapi_response->mapi_repl[i]),
+						    mapi_response->handles, &size);
 			break;
 		case op_MAPI_GetReceiveFolder:
 			retval = EcDoRpc_RopGetReceiveFolder(mem_ctx, emsmdbp_ctx,

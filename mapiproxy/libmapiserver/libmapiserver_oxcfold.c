@@ -48,3 +48,25 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenFolder_size(struct EcDoRpc_MAPI_REPL *res
 	/* No ghosted folder for the moment */
 	return size;
 }
+
+
+/**
+   \details Calculate GetContentsTable Rop size
+
+   \param response pointer to the GetContentsTable EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of GetContentsTable response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetContentsTable_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETCONTENTSTABLE;
+	
+	return size;
+}

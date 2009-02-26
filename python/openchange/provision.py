@@ -358,8 +358,8 @@ def newuser(lp, creds, username=None):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    db = Ldb(url="users.ldb", session_info=system_session(),
-                  credentials=creds, lp=lp)
+    db = Ldb(url=os.path.join(lp.get("private dir"), "users.ldb"), 
+             session_info=system_session(), credentials=creds, lp=lp)
 
     user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
 
@@ -399,7 +399,7 @@ def accountcontrol(lp, creds, username=None, value=0):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    db = Ldb(url="users.ldb", session_info=system_session(),
+    db = Ldb(url=os.path.join(lp.get("private dir"), "users.ldb"), session_info=system_session(),
                   credentials=creds, lp=lp)
 
     user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)

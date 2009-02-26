@@ -796,7 +796,7 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
 
-	table = (const struct ndr_interface_table *) dce_call->context->iface->private;
+	table = (const struct ndr_interface_table *) dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
 
 	/* Sanity checks */

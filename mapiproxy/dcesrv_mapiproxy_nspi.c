@@ -130,7 +130,7 @@ bool mapiproxy_NspiQueryRows(struct dcesrv_call_state *dce_call, struct NspiQuer
 	char			*lpszA;
 	char			*exchname;
 
-	private = dce_call->context->private;
+	private = dce_call->context->private_data;
 
 	/* Sanity checks */
 	if (!r->out.ppRows) return false;
@@ -192,7 +192,7 @@ bool mapiproxy_NspiDNToMId(struct dcesrv_call_state *dce_call, struct NspiDNToMI
 	const char			*proxyname;
 	uint32_t			i;
 
-	private = dce_call->context->private;
+	private = dce_call->context->private_data;
 	proxyname = lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
 
 	if (!private->exchname) return false;

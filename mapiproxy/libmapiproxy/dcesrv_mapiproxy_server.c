@@ -47,7 +47,7 @@ NTSTATUS mapiproxy_server_dispatch(struct dcesrv_call_state *dce_call,
 	const struct ndr_interface_table	*table;
 	NTSTATUS				status;
 
-	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
+	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 
 	for (server = server_list; server; server = server->next) {
 		if (server->module->endpoint && table->name &&

@@ -44,7 +44,7 @@ NTSTATUS mapiproxy_module_push(struct dcesrv_call_state *dce_call,
 	const struct ndr_interface_table	*table;
 	NTSTATUS				status;
 
-	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
+	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 
 	for (mpm = mpm_list; mpm; mpm = mpm->next) {
 		if (mpm->module->endpoint && 
@@ -68,7 +68,7 @@ NTSTATUS mapiproxy_module_ndr_pull(struct dcesrv_call_state *dce_call,
 	const struct ndr_interface_table	*table;
 	NTSTATUS				status;
 
-	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
+	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 
 	for (mpm = mpm_list; mpm; mpm = mpm->next) {
 		if (mpm->module->endpoint && 
@@ -92,7 +92,7 @@ NTSTATUS mapiproxy_module_pull(struct dcesrv_call_state *dce_call,
 	const struct ndr_interface_table	*table;
 	NTSTATUS				status;
 
-	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
+	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 
 	for (mpm = mpm_list; mpm; mpm = mpm->next) {
 		if (mpm->module->endpoint && 
@@ -117,7 +117,7 @@ NTSTATUS mapiproxy_module_dispatch(struct dcesrv_call_state *dce_call,
 	const struct ndr_interface_table	*table;
 	NTSTATUS				status;
 
-	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
+	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 
 	for (mpm = mpm_list; mpm; mpm = mpm->next) {
 		if (mpm->module->endpoint && 

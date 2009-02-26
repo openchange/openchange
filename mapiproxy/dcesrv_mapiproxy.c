@@ -57,7 +57,7 @@ static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, cons
 	binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "binding");
 	machine_account = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "use_machine_account", false);
 
-	private = dce_call->context->private;
+	private = dce_call->context->private_data;
 
 	if (!binding) {
 		DEBUG(0, ("You must specify a DCE/RPC binding string\n"));
@@ -193,7 +193,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	private->c_pipe = NULL;
 	private->exchname = NULL;
 	private->server_mode = server_mode;
-	dce_call->context->private = private;
+	dce_call->context->private_data = private;
 
 	if (server_mode == false) {
 		return mapiproxy_op_bind_proxy(dce_call, iface);
@@ -213,7 +213,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
  */
 static void mapiproxy_op_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)
 {
-	struct dcesrv_mapiproxy_private	*private = (struct dcesrv_mapiproxy_private *) context->private;
+	struct dcesrv_mapiproxy_private	*private = (struct dcesrv_mapiproxy_private *) context->private_data;
 
 	DEBUG(5, ("mapiproxy::mapiproxy_op_unbind\n"));
 
@@ -251,7 +251,7 @@ static NTSTATUS mapiproxy_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC
 
 	DEBUG(5, ("mapiproxy::mapiproxy_op_ndr_pull\n"));
 
-	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
+	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
 
 	dce_call->fault_code = 0;
@@ -308,8 +308,8 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 
 	DEBUG(5, ("mapiproxy::mapiproxy_op_ndr_push\n"));
 
-	private = dce_call->context->private;
-	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
+	private = dce_call->context->private_data;
+	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
 
 	name = table->calls[opnum].name;
@@ -384,8 +384,8 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	const char				*name;
 	NTSTATUS				status;
 
-	private = dce_call->context->private;
-	table = dce_call->context->iface->private;
+	private = dce_call->context->private_data;
+	table = dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
 
 	name = table->calls[opnum].name;
@@ -479,7 +479,7 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
  */
 static NTSTATUS mapiproxy_register_one_iface(struct dcesrv_context *dce_ctx, const struct dcesrv_interface *iface)
 {
-	const struct ndr_interface_table	*table = iface->private;
+	const struct ndr_interface_table	*table = iface->private_data;
 	int					i;
 
 	for (i = 0; i < table->endpoints->count; i++) {
@@ -558,7 +558,7 @@ static bool mapiproxy_fill_interface(struct dcesrv_interface *iface, const struc
 	iface->reply = mapiproxy_op_reply;
 	iface->ndr_push = mapiproxy_op_ndr_push;
 
-	iface->private = tbl;
+	iface->private_data = tbl;
 
 	return true;
 }

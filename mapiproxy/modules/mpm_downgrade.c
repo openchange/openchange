@@ -58,7 +58,7 @@ static NTSTATUS downgrade_push(struct dcesrv_call_state *dce_call,
 	uint16_t				opnum;
 	const char				*name;
 
-	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
+	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
 	name = table->calls[opnum].name;
 
@@ -103,7 +103,7 @@ static NTSTATUS downgrade_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CT
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
 
-	table = (const struct ndr_interface_table *)dce_call->context->iface->private;
+	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
 	
 	if ((opnum == 0xA) && (table->name && !strcmp(table->name, "exchange_emsmdb"))) {

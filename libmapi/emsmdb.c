@@ -329,9 +329,11 @@ start:
 			errno = 0;
 			emsmdb_ctx->max_data = 0x7FFF;
 			emsmdb_ctx->setup = true;
+			talloc_free(mapi_response);
 			talloc_free(mem_ctx);
 			goto start;
 		} else {
+			talloc_free(mapi_response);
 			talloc_free(mem_ctx);
 			return status;
 		}

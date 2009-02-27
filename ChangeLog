@@ -1,3 +1,13 @@
+2009-02-27
+    jkerihuel
+	[r1241]
+		Set mapi_response to NULL upon init ... just to get sure
+	[r1240]
+		Fix MAPIUninitialize segfault
+    bradh
+	[r1242]
+		Warning fix.
+
 2009-02-26
     jkerihuel
 	[r1238]

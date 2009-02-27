@@ -298,7 +298,9 @@ start:
 	r.in.size = emsmdb_ctx->max_data;
 	r.in.offset = 0x0;
 
-	mapi_response = talloc_zero(emsmdb_ctx->mem_ctx, struct mapi_response);	
+	mapi_response = talloc_zero(emsmdb_ctx->mem_ctx, struct mapi_response);
+	mapi_response->mapi_repl = NULL;
+	mapi_response->handles = NULL;
 	talloc_set_destructor((void *)mapi_response, (int (*)(void *))mapi_response_destructor);
 	r.out.mapi_response = mapi_response;
 

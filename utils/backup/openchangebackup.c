@@ -92,7 +92,7 @@ int ocb_record_init(struct ocb_context *ocb_ctx, const char *objclass, const cha
 	ldb_ctx = ocb_ctx->ldb_ctx;
 
 	/* Check if the record already exists */
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, dn);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "%s", dn);
 	OCB_RETVAL_IF(res->msgs, "Record already exists", NULL);
 
 	/* Retrieve the record basedn */

@@ -238,6 +238,7 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 	uint32_t			handles_length;
 	uint16_t			size = 0;
 	uint32_t			i;
+	uint32_t			idx;
 
 	DEBUG(3, ("exchange_emsmdb: EcDoRpc (0x2)\n"));
 
@@ -263,10 +264,14 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 
 	/* Step 2. Process serialized MAPI requests */
 	mapi_response->mapi_repl = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REPL);
-	for (i = 0; mapi_request->mapi_req[i].opnum != 0; i++) {
-		DEBUG(0, ("MAPI Rop: 0x%.2x\n", mapi_request->mapi_req[i].opnum));
-		mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl,
-							  struct EcDoRpc_MAPI_REPL, i + 2);
+	for (i = 0, idx = 0, size = 0; mapi_request->mapi_req[i].opnum != 0; i++) {
+		DEBUG(0, ("MAPI Rop: 0x%.2x (%d)\n", mapi_request->mapi_req[i].opnum, size));
+
+		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {
+			mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl,
+								  struct EcDoRpc_MAPI_REPL, idx + 2);
+		}
+
 		switch (mapi_request->mapi_req[i].opnum) {
 		case op_MAPI_Release:
 			retval = EcDoRpc_RopRelease(mem_ctx, emsmdbp_ctx, 
@@ -276,71 +281,100 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		case op_MAPI_OpenFolder:
 			retval = EcDoRpc_RopOpenFolder(mem_ctx, emsmdbp_ctx,
 						       &(mapi_request->mapi_req[i]),
-						       &(mapi_response->mapi_repl[i]),
+						       &(mapi_response->mapi_repl[idx]),
 						       mapi_response->handles, &size);
+			break;
+		case op_MAPI_GetHierarchyTable:
+			retval = EcDoRpc_RopGetHierarchyTable(mem_ctx, emsmdbp_ctx,
+							      &(mapi_request->mapi_req[i]),
+							      &(mapi_response->mapi_repl[idx]),
+							      mapi_response->handles, &size);
 			break;
 		case op_MAPI_GetContentsTable:
 			retval = EcDoRpc_RopGetContentsTable(mem_ctx, emsmdbp_ctx,
 							     &(mapi_request->mapi_req[i]),
-							     &(mapi_response->mapi_repl[i]),
+							     &(mapi_response->mapi_repl[idx]),
 							     mapi_response->handles, &size);
+			break;
+		case op_MAPI_CreateMessage:
+			retval = EcDoRpc_RopCreateMessage(mem_ctx, emsmdbp_ctx,
+							  &(mapi_request->mapi_req[i]),
+							  &(mapi_response->mapi_repl[idx]),
+							  mapi_response->handles, &size);
 			break;
 		case op_MAPI_GetProps:
 			retval = EcDoRpc_RopGetPropertiesSpecific(mem_ctx, emsmdbp_ctx,
 								  &(mapi_request->mapi_req[i]),
-								  &(mapi_response->mapi_repl[i]),
+								  &(mapi_response->mapi_repl[idx]),
 								  mapi_response->handles, &size);
+			break;
+		case op_MAPI_SetProps:
+			retval = EcDoRpc_RopSetProperties(mem_ctx, emsmdbp_ctx,
+							  &(mapi_request->mapi_req[i]),
+							  &(mapi_response->mapi_repl[idx]),
+							  mapi_response->handles, &size);
+			break;
+		case op_MAPI_SaveChangesMessage:
+			retval = EcDoRpc_RopSaveChangesMessage(mem_ctx, emsmdbp_ctx,
+							  &(mapi_request->mapi_req[i]),
+							  &(mapi_response->mapi_repl[idx]),
+							  mapi_response->handles, &size);
 			break;
 		case op_MAPI_SetColumns:
 			retval = EcDoRpc_RopSetColumns(mem_ctx, emsmdbp_ctx,
 						       &(mapi_request->mapi_req[i]),
-						       &(mapi_response->mapi_repl[i]),
+						       &(mapi_response->mapi_repl[idx]),
 						       mapi_response->handles, &size);
 			break;
 		case op_MAPI_SortTable:
 			retval = EcDoRpc_RopSortTable(mem_ctx, emsmdbp_ctx,
 						      &(mapi_request->mapi_req[i]),
-						      &(mapi_response->mapi_repl[i]),
+						      &(mapi_response->mapi_repl[idx]),
 						      mapi_response->handles, &size);
 			break;
 		case op_MAPI_QueryRows:
 			retval = EcDoRpc_RopQueryRows(mem_ctx, emsmdbp_ctx,
 						      &(mapi_request->mapi_req[i]),
-						      &(mapi_response->mapi_repl[i]),
+						      &(mapi_response->mapi_repl[idx]),
 						      mapi_response->handles, &size);
 			break;
 		case op_MAPI_SeekRow:
 			retval = EcDoRpc_RopSeekRow(mem_ctx, emsmdbp_ctx,
 						    &(mapi_request->mapi_req[i]),
-						    &(mapi_response->mapi_repl[i]),
+						    &(mapi_response->mapi_repl[idx]),
 						    mapi_response->handles, &size);
 			break;
 		case op_MAPI_GetReceiveFolder:
 			retval = EcDoRpc_RopGetReceiveFolder(mem_ctx, emsmdbp_ctx,
 							     &(mapi_request->mapi_req[i]),
-							     &(mapi_response->mapi_repl[i]),
+							     &(mapi_response->mapi_repl[idx]),
 							     mapi_response->handles, &size);
 			break;
 		case op_MAPI_RegisterNotification:
 			retval = EcDoRpc_RopRegisterNotification(mem_ctx, emsmdbp_ctx,
 								 &(mapi_request->mapi_req[i]),
-								 &(mapi_response->mapi_repl[i]),
+								 &(mapi_response->mapi_repl[idx]),
 								 mapi_response->handles, &size);
 			break;
 		case op_MAPI_Logon:
 			retval = EcDoRpc_RopLogon(mem_ctx, emsmdbp_ctx,
 						  &(mapi_request->mapi_req[i]),
-						  &(mapi_response->mapi_repl[i]),
+						  &(mapi_response->mapi_repl[idx]),
 						  mapi_response->handles, &size);
 			break;
 		default:
 			DEBUG(1, ("MAPI Rop: 0x%.2x not implemented!\n",
 				  mapi_request->mapi_req[i].opnum));
 		}
+
+		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {
+			idx++;
+		}
+
 	}
 
 	/* Step 3. Notifications/Pending calls should be processed here */
-	mapi_response->mapi_repl[i].opnum = 0;
+	mapi_response->mapi_repl[idx].opnum = 0;
 
 	/* Step 4. Fill mapi_response structure */
 	handles_length = mapi_request->mapi_len - mapi_request->length;

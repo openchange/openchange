@@ -30,6 +30,43 @@
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
+/**
+   \details Retrieve properties on a mapistore object
+   
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param request GetProps request
+   \param response pointer to the GetProps reply
+   \param private_data pointer tot eh private data stored for this
+   object
+
+   \note We do not handle anything yet. This is just a skeleton.
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
+							  struct emsmdbp_context *emsmdbp_ctx,
+							  struct GetProps_req request,
+							  struct GetProps_repl *response,
+							  void *private_data)
+{
+	enum MAPISTATUS	retval;
+	void		*data;
+	int		i;
+
+	response->layout = 0x1;
+	for (i = 0; i < request.prop_count; i++) {
+		request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
+		retval = MAPI_E_NOT_FOUND;
+		data = (void *)&retval;
+		libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+					    request.properties[i], (const void *)data,
+					    &response->prop_data, response->layout);
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
 
 /**
    \details Retrieve properties on a mailbox object.
@@ -233,7 +270,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 
 	switch (systemfolder) {
 	case -1:
-		/* handled by mapistore */
+		/* folder and messages handled by mapistore */
+		retval = RopGetPropertiesSpecific_mapistore(mem_ctx, emsmdbp_ctx, request, &response, private_data);
 		break;
 	case 0x0:
 		/* private mailbox */
@@ -252,6 +290,49 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_GetProps = response;
 
 	*size += libmapiserver_RopGetPropertiesSpecific_size(mapi_req, mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details EcDoRpc SetProperties (0x0a) Rop. This operation sets
+   property values for an object.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the SetProperties EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the SetProperties EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
+						  struct emsmdbp_context *emsmdbp_ctx,
+						  struct EcDoRpc_MAPI_REQ *mapi_req,
+						  struct EcDoRpc_MAPI_REPL *mapi_repl,
+						  uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] SetProperties (0x0a)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	
+	mapi_repl->u.mapi_SetProps.PropertyProblemCount = 0;
+	mapi_repl->u.mapi_SetProps.PropertyProblem = NULL;
+
+	*size += libmapiserver_RopSetProperties_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

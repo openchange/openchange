@@ -20,24 +20,23 @@
  */
 
 /**
-   \file libmapiserver_oxcstor.c
+   \file libmapiserver_oxcmsg.c
 
-   \brief OXCSTOR Rops
+   \brief OXCMSG Rops
  */
 
 #include "libmapiserver.h"
-#include <string.h>
+#include <util/debug.h>
 
 /**
-   \details Calculate Logon Rop size
+   \details Calculate CreateMessage Rop size
 
-   \param request pointer to the Logon EcDoRpc_MAPI_REQ structure
-   \param response pointer to the Logon EcDoRpc_MAPI_REPL structure
+   \param response pointer to the CreateMessage EcDoRpc_MAPI_REPL
+   structure
 
-   \return Size of Logon response
+   \return Size of CreateMessage response
  */
-_PUBLIC_ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *request,
-					      struct EcDoRpc_MAPI_REPL *response)
+_PUBLIC_ uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *response)
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
@@ -45,35 +44,37 @@ _PUBLIC_ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *request,
 		return size;
 	}
 
-	switch (request->u.mapi_Logon.LogonFlags) {
-	case LogonPrivate:
-		size += SIZE_DFLT_ROPLOGON_MAILBOX;
-		break;
-	default:
-		break;
+	size += SIZE_DFLT_ROPCREATEMESSAGE;
+
+	if (response->u.mapi_CreateMessage.HasMessageId == 1) {
+		size += sizeof (uint64_t);
 	}
+
+	DEBUG(0, ("CreateMessage: %d\n", size));
 
 	return size;
 }
 
 
 /**
-   \details Calculate GetReceiveFolder Rop size
+   \details Calculate SaveChangesMessage Rop size
 
-   \param response pointer to the GetReceiveFolder EcDoRpc_MAPI_REPL structure
+   \param response pointer to the SaveChangesMessage EcDoRpc_MAPI_REPL
+   structure
 
-   \return Size of GetReceiveFolder response
+   \return Size of SaveChangesMessage response
  */
-_PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *response)
+_PUBLIC_ uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_REPL *response)
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response || response->error_code != MAPI_E_SUCCESS) {
+	if (!response) {
 		return size;
 	}
 
-	size += SIZE_DFLT_ROPGETRECEIVEFOLDER;
-	size += strlen(response->u.mapi_GetReceiveFolder.MessageClass) + 1;
+	size += SIZE_DFLT_ROPSAVECHANGESMESSAGE;
+
+	DEBUG(0, ("SaveChangesMessage: %d\n", size));
 
 	return size;
 }

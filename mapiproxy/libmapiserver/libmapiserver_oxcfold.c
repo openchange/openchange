@@ -51,6 +51,28 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenFolder_size(struct EcDoRpc_MAPI_REPL *res
 
 
 /**
+   \details Calculate GetHierarchyTable Rop size
+
+   \param response pointer to the GetHierarchyTable EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of GetHierarchyTable response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetHierarchyTable_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETHIERARCHYTABLE;
+
+	return size;
+}
+
+
+/**
    \details Calculate GetContentsTable Rop size
 
    \param response pointer to the GetContentsTable EcDoRpc_MAPI_REPL

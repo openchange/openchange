@@ -60,16 +60,41 @@
 #define	SIZE_DFLT_ROPOPENFOLDER			2
 
 /**
+   \details GetHierarchyTableTop has fixed response size for:
+   -# RowCount: uint32_t
+ */
+#define	SIZE_DFLT_ROPGETHIERARCHYTABLE		4
+
+/**
    \details GetContentsTableRop has fixed response size for:
    -# RowCount: uint32_t
  */
 #define	SIZE_DFLT_ROPGETCONTENTSTABLE		4
 
 /**
+   \details CreateMessageRop has fixed response size for:
+   -# HasMessageId: uint8_t
+ */
+#define	SIZE_DFLT_ROPCREATEMESSAGE		1
+
+/**
    \details GetPropertiesSpecificRop has fixed response size for:
    -# layout: uint8_t
  */
 #define	SIZE_DFLT_ROPGETPROPERTIESSPECIFIC	1
+
+/**
+   \details: SetPropertiesRop has fixed response size for:
+   -# PropertyProblemCount: uint16_t
+ */
+#define	SIZE_DFLT_ROPSETPROPERTIES		2
+
+/**
+   \details: SaveChangesMessageRop has fixed response size for:
+   -# handle_idx: uint8_t
+   -# MessageId: uint64_t
+ */
+#define	SIZE_DFLT_ROPSAVECHANGESMESSAGE		9
 
 /**
    \details SetColumnsRop has fixed response size for:
@@ -87,9 +112,8 @@
    \details QueryRowsRop has fixed size for:
    -# Origin: uint8_t
    -# RowCount: uint16_t
-   -# RowData length: uint16_t
  */
-#define	SIZE_DFLT_ROPQUERYROWS			5
+#define	SIZE_DFLT_ROPQUERYROWS			3
 
 /**
    \details SeekRowRop has fixed response size for:
@@ -124,12 +148,18 @@ __BEGIN_DECLS
 
 /* definitions from libmapiserver_oxcfold.c */
 uint16_t libmapiserver_RopOpenFolder_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetHierarchyTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetContentsTable_size(struct EcDoRpc_MAPI_REPL *);
+
+/* definitions from libmapiserver_oxcmsg.c */
+uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcnotif.c */
 uint16_t libmapiserver_RopRegisterNotification_size(void);
 
 /* definitions from libmapiserver_oxcprpt.c */
+uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);
 int libmapiserver_push_property(TALLOC_CTX *, struct smb_iconv_convenience *, uint32_t, const void *, DATA_BLOB *, uint8_t);
 

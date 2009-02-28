@@ -213,8 +213,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS		retval;
 	uint32_t		handle;
 
-	*size = libmapiserver_RopRelease_size();
-
 	handle = handles[request->handle_idx];
 	retval = mapi_handles_delete(emsmdbp_ctx->handles_ctx, handle);
 	OPENCHANGE_RETVAL_IF(retval && retval != MAPI_E_NOT_FOUND, retval, NULL);

@@ -138,6 +138,55 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 
 
 /**
+   \details EcDoRpc GetHierarchyTable (0x04) Rop. This operation gets
+   the subfolder hierarchy table for a folder.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetHierarchyTable EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the GetHierarchyTable EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
+						      struct emsmdbp_context *emsmdbp_ctx,
+						      struct EcDoRpc_MAPI_REQ *mapi_req,
+						      struct EcDoRpc_MAPI_REPL *mapi_repl,
+						      uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_handles	*rec = NULL;
+	uint32_t		handle;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] GetHierarchyTable (0x04)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->u.mapi_GetHierarchyTable.handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->u.mapi_GetHierarchyTable.RowCount = 0;
+	
+	*size += libmapiserver_RopGetHierarchyTable_size(mapi_repl);
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	handles[mapi_repl->handle_idx] = rec->handle;
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details EcDoRpc GetContentsTable (0x05) Rop. This operation get
    the content table of a container.
 

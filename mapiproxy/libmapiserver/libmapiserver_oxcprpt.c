@@ -34,8 +34,10 @@
 /**
    \details Calculate GetPropertiesSpecific Rop size
 
-   \param request pointer to the GetPropertiesSpecific EcDoRpc_MAPI_REQ structure
-   \param response pointer to the GetPropertiesSpecific EcDoRpc_MAPI_REPL structure
+   \param request pointer to the GetPropertiesSpecific
+   EcDoRpc_MAPI_REQ structure
+   \param response pointer to the GetPropertiesSpecific
+   EcDoRpc_MAPI_REPL structure
 
    \return Size of GetPropsSpecific response
  */
@@ -50,6 +52,34 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAP
 
 	size += SIZE_DFLT_ROPGETPROPERTIESSPECIFIC;
 	size += response->u.mapi_GetProps.prop_data.length;
+
+	return size;
+}
+
+
+/**
+   \details Calculate SetProperties Rop size
+
+   \param request pointer to the SetProperties EcDoRpc_MAPI_REQ
+   structure
+   \param response pointer to the SetProperties EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SetProperties response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPSETPROPERTIES;
+
+	if (response->u.mapi_SetProps.PropertyProblemCount) {
+		size += response->u.mapi_SetProps.PropertyProblemCount * sizeof(struct PropertyProblem);
+	}
 
 	return size;
 }

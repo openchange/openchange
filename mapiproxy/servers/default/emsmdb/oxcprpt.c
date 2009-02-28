@@ -336,3 +336,46 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details EcDoRpc GetPropertyIdsFromNames (0x56) Rop. This operation
+   gets property IDs for specified property names.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetPropertyIdsFromNames
+   EcDoRpc_MAPI_REQ structure
+   \param mapi_repl pointer to the GetPropertyIdsFromNames
+   EcDoRpc_MAPI_REPL structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+*/
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
+							    struct emsmdbp_context *emsmdbp_ctx,
+							    struct EcDoRpc_MAPI_REQ *mapi_req,
+							    struct EcDoRpc_MAPI_REPL *mapi_repl,
+							    uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertyIdsFromNames (0x56)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	mapi_repl->u.mapi_GetIDsFromNames.count = 0;
+	mapi_repl->u.mapi_GetIDsFromNames.propID = NULL;
+
+	*size += libmapiserver_RopGetPropertyIdsFromNames_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}

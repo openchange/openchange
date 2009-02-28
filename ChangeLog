@@ -1,3 +1,18 @@
+2009-02-28
+    jkerihuel
+	[r1245]
+		- GetPropertyIdsFromNames skeleton added
+	[r1244]
+		- Fix how Release replies are handled in mapi_repl[] array
+		- Remove Release size calculation
+		- Fix QueryRows size in libmapiserver
+		- Add a dummy/skeleton GetPropertiesSpecific function for mapistore objects.
+		- GetHierarchyTable skeleton added
+		- SetProperties skeleton added
+		- CreateMessage skeleton added
+		- SaveChangesMessage skeleton added
+		 
+
 2009-02-27
     jkerihuel
 	[r1241]

@@ -261,7 +261,7 @@ static int mapi_response_destructor(void *data)
 		talloc_free(mapi_response->handles);
 	}
 
-	if (mapi_response->mapi_repl) {
+	if (mapi_response->mapi_repl && !mapi_response->mapi_repl->error_code) {
 		talloc_free(mapi_response->mapi_repl);
 	}
 
@@ -343,6 +343,10 @@ start:
 		emsmdb_ctx->setup = true;
 	}
 	emsmdb_ctx->cache_size = emsmdb_ctx->cache_count = 0;
+
+	if (r.out.mapi_response->mapi_repl && r.out.mapi_response->mapi_repl->error_code) {
+		r.out.mapi_response->handles = NULL;
+	}
 
 	*repl = r.out.mapi_response;
 

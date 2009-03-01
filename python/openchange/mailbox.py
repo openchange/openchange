@@ -158,6 +158,7 @@ GlobalCount: 0x%x
         retdn = "CN=%s,%s" % (username, basedn)
         self.ldb.add({"dn": retdn,
                   "objectClass": ["mailbox", "container"],
+                  "PidTagDisplayName": "OpenChange Mailbox: %s" % (username),
                   "cn": username,
                   "MailboxGUID": mailboxGUID,
                   "ReplicaID": replicaID,
@@ -264,6 +265,7 @@ GlobalCount: 0x%x
         self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
                       "objectClass": ["specialfolder"],
                       "cn": FID,
+                      "PidTagParentFolderId": parentfolder,
                       "PidTagFolderId": FID,
                       "PidTagDisplayName": foldername,
                       "PidTagContainerClass": containerclass,

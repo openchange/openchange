@@ -48,7 +48,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 {
 	TALLOC_CTX			*mem_ctx;
 	struct ldb_result		*res = NULL;
-	char				*ldb_filter;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
 	const char			*dn;
@@ -62,10 +61,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 	mem_ctx = talloc_named(NULL, 0, "get_SystemFolderID");
 
 	/* Step 1. Search Mailbox Root DN */
-	ldb_filter = talloc_asprintf(mem_ctx, "CN=%s", recipient);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 LDB_SCOPE_SUBTREE, attrs, "CN=%s", recipient);
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
@@ -86,9 +83,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 	OPENCHANGE_RETVAL_IF(!ldb_dn, MAPI_E_CORRUPT_STORE, mem_ctx);
 	talloc_free(res);
 
-	ldb_filter = talloc_asprintf(mem_ctx, "(&(objectClass=systemfolder)(SystemIdx=%d))", SystemIdx);
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_dn, LDB_SCOPE_SUBTREE, attrs, ldb_filter);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_dn, LDB_SCOPE_SUBTREE, attrs, 
+			 "(&(objectClass=systemfolder)(SystemIdx=%d))", SystemIdx);
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
@@ -117,7 +113,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxGuid(void *ldb_ctx,
 {
 	TALLOC_CTX			*mem_ctx;
 	struct ldb_result		*res = NULL;
-	char				*ldb_filter;
 	const char			*guid;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
@@ -130,11 +125,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxGuid(void *ldb_ctx,
 	mem_ctx = talloc_named(NULL, 0, "get_MailboxGuid");
 
 	/* Step 1. Search Mailbox DN */
-	ldb_filter = talloc_asprintf(mem_ctx, "CN=%s", recipient);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
-	talloc_free(ldb_filter);
-
+			 LDB_SCOPE_SUBTREE, attrs, "CN=%s", recipient);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 	
 	/* Step 2. Retrieve MailboxGUID attribute's value */
@@ -166,7 +158,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
 {
 	TALLOC_CTX			*mem_ctx;
 	struct ldb_result		*res = NULL;
-	char				*ldb_filter;
 	const char			*guid;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
@@ -180,10 +171,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
 	mem_ctx = talloc_named(NULL, 0, "get_MailboxReplica");
 
 	/* Step 1. Search Mailbox DN */
-	ldb_filter = talloc_asprintf(mem_ctx, "CN=%s", recipient);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 LDB_SCOPE_SUBTREE, attrs, "CN=%s", recipient);
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
@@ -221,16 +210,13 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
-	char			*ldb_filter;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
 
 	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
 
-	ldb_filter = talloc_asprintf(mem_ctx, "(PidTagFolderId=0x%.16"PRIx64")", fid);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
@@ -268,7 +254,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	struct ldb_dn			*dn;
 	struct ldb_message_element	*ldb_element;
 	char				*dnstr;
-	char				*ldb_filter;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
 	int				i;
@@ -277,10 +262,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	mem_ctx = talloc_named(NULL, 0, "get_ReceiveFolder");
 
 	/* Step 1. Search Mailbox DN */
-	ldb_filter = talloc_asprintf(mem_ctx, "CN=%s", recipient);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 LDB_SCOPE_SUBTREE, attrs, "CN=%s", recipient);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	dnstr = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
@@ -292,9 +275,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	dn = ldb_dn_new(mem_ctx, ldb_ctx, dnstr);
 	talloc_free(dnstr);
 
-	ldb_filter = talloc_asprintf(mem_ctx, "(PidTagMessageClass=%s*)", MessageClass);
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, ldb_filter);
-	talloc_free(ldb_filter);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, 
+			 "(PidTagMessageClass=%s*)", MessageClass);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 	
 	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
@@ -342,7 +324,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *ldb_ctx,
 {
 	TALLOC_CTX	       	*mem_ctx;
 	struct ldb_result      	*res = NULL;
-	char		       	*ldb_filter;
 	const char * const     	attrs[] = { "*", NULL };
 	const char	       	*PidTagAttr = NULL;
 	int		       	ret;
@@ -350,10 +331,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *ldb_ctx,
 	mem_ctx = talloc_named(NULL, 0, "get_folder_property");
 
 	/* Step 1. Find PidTagFolderId record */
-	ldb_filter = talloc_asprintf(mem_ctx, "(PidTagFolderId=0x%.16"PRIx64")", fid);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 2. Convert proptag into PidTag attribute */
@@ -440,7 +419,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
-	char			*ldb_filter;
 	const char * const	attrs[] = { "*", NULL };
 	const char		*PidTagAttr = NULL;
 	int			ret;
@@ -452,10 +430,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	mem_ctx = talloc_named(NULL, 0, "get_folder_property");
 
 	/* Step 1. Find PidTagFolderId record */
-	ldb_filter = talloc_asprintf(mem_ctx, "(PidTagFolderId=0x%.16"PRIx64")", fid);
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 2. Convert proptag into PidTag attribute */

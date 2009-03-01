@@ -408,6 +408,8 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 	}
 
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	OPENCHANGE_RETVAL_IF(!h, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+
 	emsabp_ctx = (struct emsabp_context *) h->data;
 	
 	r->out.ppMIds = talloc_array(mem_ctx, struct SPropTagArray *, 2);

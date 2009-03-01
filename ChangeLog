@@ -1,3 +1,22 @@
+2009-03-01
+    jkerihuel
+	[r1251]
+		- Add PidTagDisplayName property to Mailbox object
+		- Add PidTagParentFolderId to all system/special folders
+	[r1250]
+		- handles array depends if a valid mapi_repl exists. This commit
+		  fixes the destructor semantics.
+		- Fix a mapitest segfault encountered while run vs openchange server
+		- Return 1 in SRowSet_propcpy if an error was encountered.
+	[r1249]
+		Fix libmapi stack segfault when MAPI calls returns 
+		with error_code different from MAPI_E_SUCCESS.
+	[r1248]
+		Do not process NSPI request if we can't find the handle
+	[r1247]
+		Remove unnecessary ldb_filter parameter and replace it
+		with ldb_search format string.
+
 2009-02-28
     jkerihuel
 	[r1245]

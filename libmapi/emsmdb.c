@@ -257,12 +257,14 @@ static int mapi_response_destructor(void *data)
 {
 	struct mapi_response	*mapi_response = (struct mapi_response *)data;
 
-	if (mapi_response->handles) {
-		talloc_free(mapi_response->handles);
-	}
+	if (mapi_response->mapi_repl) {
+		if (mapi_response->handles) {
+			talloc_free(mapi_response->handles);
+		}
 
-	if (mapi_response->mapi_repl && !mapi_response->mapi_repl->error_code) {
-		talloc_free(mapi_response->mapi_repl);
+		if (!mapi_response->mapi_repl->error_code) {
+			talloc_free(mapi_response->mapi_repl);
+		}
 	}
 
 	return 0;

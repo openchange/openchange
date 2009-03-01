@@ -596,11 +596,25 @@ _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SProp
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details Append a SPropValue structure to given SRowSet
+
+   \param mem_ctx pointer to the memory context
+   \param SRowSet pointer to the SRowSet array to update
+   \param SPropValue the SPropValue to append within SRowSet
+
+   \return 0 on success, otherwise 1
+ */
 _PUBLIC_ uint32_t SRowSet_propcpy(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, struct SPropValue SPropValue)
 {
 	uint32_t	rows;
 	uint32_t	cValues;
 	struct SPropValue lpProp;
+
+	/* Sanity checks */
+
+	if (!SRowSet) return 1;
 
 	for (rows = 0; rows < SRowSet->cRows; rows++) {
 		cValues = SRowSet->aRow[rows].cValues + 1;

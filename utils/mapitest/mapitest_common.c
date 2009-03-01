@@ -235,6 +235,7 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 	const char		*body;
 	uint32_t		msgflag;
 	uint32_t		format;
+	uint32_t		ret;
 
 	/* Sanity checks */
 	if (subject == NULL) return false;
@@ -267,7 +268,8 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 
 	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
 	SPropValue.value.l = 0;
-	SRowSet_propcpy(mt->mem_ctx, SRowSet, SPropValue);
+	ret = SRowSet_propcpy(mt->mem_ctx, SRowSet, SPropValue);
+	if (ret) return false;
 
 	/* Set Recipients */
 	SetRecipientType(&(SRowSet->aRow[0]), MAPI_TO);

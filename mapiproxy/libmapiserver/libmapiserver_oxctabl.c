@@ -115,6 +115,28 @@ _PUBLIC_ uint16_t libmapiserver_RopQueryRows_size(struct EcDoRpc_MAPI_REPL *resp
 
 
 /**
+   \details Calculate QueryPosition Rop size
+
+   \param response pointer to the QueryPosition EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of QueryPosition response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopQueryPosition_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPQUERYPOSITION;
+
+	return size;
+}
+
+
+/**
    \details Calculate SeekRow Rop size
 
    \param response pointer to the SeekRow EcDoRpc_MAPI_REPL

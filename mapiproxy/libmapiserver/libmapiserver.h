@@ -122,6 +122,13 @@
 #define	SIZE_DFLT_ROPQUERYROWS			3
 
 /**
+   \details QueryPositionRop has fixed response size for:
+   -# Numerator: uint32_t
+   -# Denominator: uint32_t
+ */
+#define	SIZE_DFLT_ROPQUERYPOSITION		8
+
+/**
    \details SeekRowRop has fixed response size for:
    -# HasSought: uint8_t
    -# RowsSought: uint32_t
@@ -193,6 +200,7 @@ uint16_t libmapiserver_RopSetColumns_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSortTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopRestrict_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopQueryRows_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopQueryPosition_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSeekRow_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopFindRow_size(struct EcDoRpc_MAPI_REPL *);
 

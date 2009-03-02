@@ -250,6 +250,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	table_filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=0x%.16llx)(PidTagFolderId=*))", table->folderID);
 	DEBUG(0, ("table_filter: %s\n", table_filter));
 
+	if ((request.RowCount + table->numerator) > table->denominator) {
+		request.RowCount = table->denominator - table->numerator;
+	}
+
 	/* Lookup the properties and check if we need to flag the PropertyRow blob */
 	for (i = 0, count = 0; i < request.RowCount; i++, count++) {
 		flagged = 0;
@@ -259,7 +263,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			retval = openchangedb_get_table_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
 								 emsmdbp_ctx->szDisplayName,
 								 table_filter, table->properties[j], 
-								 table->offset, &data);	
+								 table->numerator, &data);	
 			if (retval == MAPI_E_INVALID_OBJECT) {
 				goto finish;
 			}
@@ -278,7 +282,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			retval = openchangedb_get_table_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
 								 emsmdbp_ctx->szDisplayName,
 								 table_filter, table->properties[j], 
-								 table->offset, &data);
+								 table->numerator, &data);
 			if (retval == MAPI_E_INVALID_OBJECT) {
 				goto finish;
 			}
@@ -293,7 +297,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 
 		}
 
-		table->offset++;
+		table->numerator++;
 	}
 finish:
 	talloc_free(table_filter);
@@ -319,6 +323,69 @@ finish:
 
 end:
 	*size += libmapiserver_RopQueryRows_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details EcDoRpc QueryPosition (0x17) Rop. This operation returns
+   the location of cursor in the table.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the QueryPosition EcDoRpc_MAPI_REQ structure
+   \param mapi_repl pointer to the QueryPosition EcDoRpc_MAPI_REPL structure
+   \handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryPosition(TALLOC_CTX *mem_ctx,
+						  struct emsmdbp_context *emsmdbp_ctx,
+						  struct EcDoRpc_MAPI_REQ *mapi_req,
+						  struct EcDoRpc_MAPI_REPL *mapi_repl,
+						  uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*parent;
+	struct emsmdbp_object		*object;
+	struct emsmdbp_object_table	*table;
+	void				*data;
+	uint32_t			handle;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCTABL] QueryPosition (0x17)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_NOT_FOUND;
+	
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) goto end;
+
+	retval = mapi_handles_get_private_data(parent, &data);
+	object = (struct emsmdbp_object *) data;
+
+	/* Ensure object exists and is table type */
+	if (!object || (object->type != EMSMDBP_OBJECT_TABLE)) goto end;
+
+	table = object->object.table;
+	if (!table->folderID) goto end;
+
+	mapi_repl->u.mapi_QueryPosition.Numerator = table->numerator;
+	mapi_repl->u.mapi_QueryPosition.Denominator = table->denominator;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+end:
+	*size += libmapiserver_RopQueryPosition_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

@@ -230,6 +230,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent);
 	if (object) {
 		retval = mapi_handles_set_private_data(rec, object);
+		object->object.table->denominator = mapi_repl->u.mapi_GetHierarchyTable.RowCount;
 	}
 
 	*size += libmapiserver_RopGetHierarchyTable_size(mapi_repl);

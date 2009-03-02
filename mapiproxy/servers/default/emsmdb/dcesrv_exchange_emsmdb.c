@@ -344,6 +344,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 						      &(mapi_response->mapi_repl[idx]),
 						      mapi_response->handles, &size);
 			break;
+		case op_MAPI_QueryPosition:
+			retval = EcDoRpc_RopQueryPosition(mem_ctx, emsmdbp_ctx,
+							  &(mapi_request->mapi_req[i]),
+							  &(mapi_response->mapi_repl[idx]),
+							  mapi_response->handles, &size);
+			break;
 		case op_MAPI_SeekRow:
 			retval = EcDoRpc_RopSeekRow(mem_ctx, emsmdbp_ctx,
 						    &(mapi_request->mapi_req[i]),

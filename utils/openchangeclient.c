@@ -1598,10 +1598,11 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 				printf("|   ");
 			}
 			newname = utf8tolinux(mem_ctx, name);
-			printf("|---+ %-15s : %-20s (Total: %u / Unread: %u - Container class: %s) [FID: 0x%"PRIx64"]\n", newname, comment, *total, *unread,
+			printf("|---+ %-15s : %-20s (Total: %u / Unread: %u - Container class: %s) [FID: 0x%.16"PRIx64"]\n", 
+			       newname, comment?comment:"", total?*total:0, unread?*unread:0,
 			       get_container_class(mem_ctx, parent, *fid), *fid);
 			MAPIFreeBuffer(newname);
-			if (*child) {
+			if (child && *child) {
 				ret = get_child_folders(mem_ctx, &obj_folder, *fid, count + 1);
 				if (ret == false) return ret;
 			}
@@ -1652,7 +1653,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 				printf("|   ");
 			}
 			newname = utf8tolinux(mem_ctx, name);
-			printf("|---+ %-15s [FID: 0x%"PRIx64"]\n", newname, *fid);
+			printf("|---+ %-15s [FID: 0x.16%"PRIx64"]\n", newname, *fid);
 			MAPIFreeBuffer(newname);
 			if (*child) {
 				ret = get_child_folders_pf(mem_ctx, &obj_folder, *fid, count + 1);

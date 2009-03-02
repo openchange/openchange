@@ -39,7 +39,7 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenFolder_size(struct EcDoRpc_MAPI_REPL *res
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
@@ -62,7 +62,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetHierarchyTable_size(struct EcDoRpc_MAPI_RE
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
@@ -84,7 +84,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetContentsTable_size(struct EcDoRpc_MAPI_REP
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 

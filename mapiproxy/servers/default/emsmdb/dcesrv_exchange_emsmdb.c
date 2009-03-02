@@ -332,6 +332,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 						      &(mapi_response->mapi_repl[idx]),
 						      mapi_response->handles, &size);
 			break;
+		case op_MAPI_Restrict:
+			retval = EcDoRpc_RopRestrict(mem_ctx, emsmdbp_ctx,
+						     &(mapi_request->mapi_req[i]),
+						     &(mapi_response->mapi_repl[idx]),
+						     mapi_response->handles, &size);
+			break;
 		case op_MAPI_QueryRows:
 			retval = EcDoRpc_RopQueryRows(mem_ctx, emsmdbp_ctx,
 						      &(mapi_request->mapi_req[i]),
@@ -355,6 +361,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 								 &(mapi_request->mapi_req[i]),
 								 &(mapi_response->mapi_repl[idx]),
 								 mapi_response->handles, &size);
+			break;
+		case op_MAPI_FindRow:
+			retval = EcDoRpc_RopFindRow(mem_ctx, emsmdbp_ctx, 
+						    &(mapi_request->mapi_req[i]),
+						    &(mapi_response->mapi_repl[idx]),
+						    mapi_response->handles, &size);
 			break;
 		case op_MAPI_GetIDsFromNames:
 			retval = EcDoRpc_RopGetPropertyIdsFromNames(mem_ctx, emsmdbp_ctx,

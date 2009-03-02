@@ -109,6 +109,12 @@
 #define	SIZE_DFLT_ROPSORTTABLE			1
 
 /**
+   \details RestrictRop has fixed response size for:
+   -# TableStatus: uint8_t
+ */
+#define	SIZE_DFLT_ROPRESTRICT			1
+
+/**
    \details QueryRowsRop has fixed size for:
    -# Origin: uint8_t
    -# RowCount: uint16_t
@@ -127,6 +133,13 @@
    -# folder_id: uint64_t
  */
 #define	SIZE_DFLT_ROPGETRECEIVEFOLDER		8
+
+/**
+   \details FindRow has fixed response size for:
+   -# RowNoLongerVisible: uint8_t
+   -# HasRowData: uint8_t
+ */
+#define	SIZE_DFLT_ROPFINDROW			2
 
 /**
    \details GetPropertyIdsFromNames has fixed response size for:
@@ -168,7 +181,7 @@ uint16_t libmapiserver_RopRegisterNotification_size(void);
 uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_MAPI_REPL *);
-int libmapiserver_push_property(TALLOC_CTX *, struct smb_iconv_convenience *, uint32_t, const void *, DATA_BLOB *, uint8_t);
+int libmapiserver_push_property(TALLOC_CTX *, struct smb_iconv_convenience *, uint32_t, const void *, DATA_BLOB *, uint8_t, uint8_t);
 
 /* definitions from libmapiserver_oxcstor.c */
 uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);
@@ -178,8 +191,10 @@ uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *);
 /* definitions from libmapiserver_oxctabl.c */
 uint16_t libmapiserver_RopSetColumns_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSortTable_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopRestrict_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopQueryRows_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSeekRow_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopFindRow_size(struct EcDoRpc_MAPI_REPL *);
 
 __END_DECLS
 

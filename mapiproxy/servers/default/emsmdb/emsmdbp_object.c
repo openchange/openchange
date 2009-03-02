@@ -122,7 +122,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 {
 	struct emsmdbp_object		*object;
 	const char			*displayName;
-	char				*ldb_filter;
 	const char * const		recipient_attrs[] = { "*", NULL };
 	int				ret;
 	struct ldb_result		*res = NULL;
@@ -145,20 +144,24 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 	object->object.mailbox->owner_Name = NULL;
 	object->object.mailbox->owner_EssDN = NULL;
 	object->object.mailbox->szUserDN = NULL;
+	object->object.mailbox->folderID = 0x0;
 
 	object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, request->u.mapi_Logon.EssDN);
 	object->object.mailbox->szUserDN = talloc_strdup(object->object.mailbox, emsmdbp_ctx->szUserDN);
 
-	ldb_filter = talloc_asprintf(mem_ctx, "(legacyExchangeDN=%s)", object->object.mailbox->owner_EssDN);
 	ret = ldb_search(emsmdbp_ctx->users_ctx, mem_ctx, &res,
 			 ldb_get_default_basedn(emsmdbp_ctx->users_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s", 
+			 object->object.mailbox->owner_EssDN);
 
 	if (res->count == 1) {
 		displayName = ldb_msg_find_attr_as_string(res->msgs[0], "displayName", NULL);
 		if (displayName) {
 			object->object.mailbox->owner_Name = talloc_strdup(object->object.mailbox, displayName);
+
+			/* Retrieve Mailbox folder identifier */
+			openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_Name,
+							0x1, &object->object.mailbox->folderID);
 		}
 	}
 
@@ -231,6 +234,58 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
+
+	return object;
+}
+
+
+/**
+   \details Initialize a table object
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param parent pointer to the parent MAPI handle
+
+   \return Allocated emsmdbp object on success, otherwise NULL
+ */
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
+							  struct emsmdbp_context *emsmdbp_ctx,
+							  struct mapi_handles *parent)
+{
+	enum MAPISTATUS		retval;
+	struct emsmdbp_object	*object;
+	struct emsmdbp_object	*folder;
+	void			*data = NULL;
+	int			mailboxfolder;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+
+	/* Retrieve parent object */
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) return NULL;
+	folder = (struct emsmdbp_object *) data;
+
+	/* Initialize table object */
+	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
+	if (!object) return NULL;
+	
+	object->object.table = talloc_zero(object, struct emsmdbp_object_table);
+	if (!object->object.table) {
+		talloc_free(object);
+		return NULL;
+	}
+
+	object->type = EMSMDBP_OBJECT_TABLE;
+	object->object.table->folderID = folder->object.folder->folderID;
+	object->object.table->prop_count = 0;
+	object->object.table->properties = NULL;
+	object->object.table->offset = 0;
+
+	retval = mapi_handles_get_systemfolder(parent, &mailboxfolder);
+	object->object.table->IsSystemTable = (!mailboxfolder) ? true : false;
+
+	/* FIXME: missing mapistore folders support */
 
 	return object;
 }

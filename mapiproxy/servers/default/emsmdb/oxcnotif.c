@@ -73,8 +73,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		goto end;
+	}
 	handles[mapi_repl->handle_idx] = rec->handle;
 
+end:
 	*size += libmapiserver_RopRegisterNotification_size();
 
 	return MAPI_E_SUCCESS;

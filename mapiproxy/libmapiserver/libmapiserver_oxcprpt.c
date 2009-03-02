@@ -46,7 +46,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAP
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
@@ -69,7 +69,7 @@ _PUBLIC_ uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
@@ -95,7 +95,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_M
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
@@ -121,6 +121,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_M
    \param value generic pointer on the property value
    \param blob the data blob the function uses to return the blob
    \param layout whether values should be prefixed by a layout
+   \param flagged define if the properties are flagged or not
 
    \note blob.length must be set to 0 before this function is called
    the first time. Also the function only supports a limited set of
@@ -133,7 +134,8 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 					 uint32_t property, 
 					 const void *value, 
 					 DATA_BLOB *blob,
-					 uint8_t layout)
+					 uint8_t layout, 
+					 uint8_t flagged)
 {
 	struct ndr_push		*ndr;
 	
@@ -146,14 +148,33 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		ndr->offset = blob->length;
 	}
 
-	/* Step 1. Set the layout */
-	if (layout) {
+	/* Step 1. Is the property flagged */
+	if (flagged) {
 		switch (property & 0xFFFF) {
 		case PT_ERROR:
-			ndr_push_uint8(ndr, NDR_SCALARS, PT_ERROR);
+			switch (layout) {
+			case 0x1:
+				ndr_push_uint8(ndr, NDR_SCALARS, layout);
+				goto end;
+			case PT_ERROR:
+				ndr_push_uint8(ndr, NDR_SCALARS, PT_ERROR);
+				break;
+			}
 			break;
 		default:
 			ndr_push_uint8(ndr, NDR_SCALARS, 0x0);
+			break;
+		}
+	} else {
+		/* Step 2. Set the layout */
+		if (layout) {
+			switch (property & 0xFFFF) {
+			case PT_ERROR:
+				ndr_push_uint8(ndr, NDR_SCALARS, PT_ERROR);
+				break;
+			default:
+				ndr_push_uint8(ndr, NDR_SCALARS, 0x0);
+			}
 		}
 	}
 
@@ -194,7 +215,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 	default:
 		break;
 	}
-
+end:
 	/* Step 3. Steal ndr context */
 	blob->data = ndr->data;
 	talloc_steal(mem_ctx, blob->data);

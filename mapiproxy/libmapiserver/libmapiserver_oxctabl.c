@@ -39,7 +39,7 @@ _PUBLIC_ uint16_t libmapiserver_RopSetColumns_size(struct EcDoRpc_MAPI_REPL *res
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
@@ -61,7 +61,7 @@ _PUBLIC_ uint16_t libmapiserver_RopSortTable_size(struct EcDoRpc_MAPI_REPL *resp
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
@@ -69,6 +69,27 @@ _PUBLIC_ uint16_t libmapiserver_RopSortTable_size(struct EcDoRpc_MAPI_REPL *resp
 
 	return size;
 }
+
+/**
+   \details Calculate Restrict Rop size
+
+   \param response pointer to the Restrict EcDoRpc_MAPI_REPL structure
+
+   \return Size of Restrict response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopRestrict_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPRESTRICT;
+
+	return size;
+}
+
 
 /**
    \details Calculate QueryRows Rop size
@@ -82,7 +103,7 @@ _PUBLIC_ uint16_t libmapiserver_RopQueryRows_size(struct EcDoRpc_MAPI_REPL *resp
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
@@ -105,11 +126,36 @@ _PUBLIC_ uint16_t libmapiserver_RopSeekRow_size(struct EcDoRpc_MAPI_REPL *respon
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
 	size += SIZE_DFLT_ROPSEEKROW;
+
+	return size;
+}
+
+
+/**
+   \details Calculate FindRow Rop size
+
+   \param response pointer to the FindRow EcDoRpc_MAPI_REPL structure
+
+   \return Size of FindRow response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopFindRow_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPFINDROW;
+
+	if (response->u.mapi_FindRow.HasRowData) {
+		size += response->u.mapi_FindRow.row.length;
+	}
 
 	return size;
 }

@@ -41,7 +41,7 @@ _PUBLIC_ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *request,
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
@@ -68,7 +68,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REP
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response || response->error_code != MAPI_E_SUCCESS) {
+	if (!response || response->error_code) {
 		return size;
 	}
 

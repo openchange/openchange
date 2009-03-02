@@ -69,6 +69,7 @@ enum emsmdbp_object_type {
 };
 
 struct emsmdbp_object_mailbox {
+	uint64_t			folderID;
 	char				*owner_Name;
 	char				*owner_EssDN;
 	char				*szUserDN;
@@ -82,9 +83,19 @@ struct emsmdbp_object_folder {
 	uint32_t			contextID;
 };
 
+
+struct emsmdbp_object_table {
+	uint64_t			folderID;
+	bool				IsSystemTable;
+	uint16_t			prop_count;
+	uint32_t			*properties;
+	uint32_t			offset;
+};
+
 union emsmdbp_objects {
 	struct emsmdbp_object_mailbox	*mailbox;
 	struct emsmdbp_object_folder	*folder;
+	struct emsmdbp_object_table	*table;
 };
 
 struct emsmdbp_object {
@@ -128,6 +139,7 @@ bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context 
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *);
 struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *);
 struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct mapi_handles *);
+struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct mapi_handles *);
 
 /* definitions from oxcfold.c */
 enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
@@ -154,8 +166,10 @@ enum MAPISTATUS	EcDoRpc_RopGetReceiveFolder(TALLOC_CTX *, struct emsmdbp_context
 /* definition from oxctabl.c */
 enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopSeekRow(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 
 __END_DECLS
 

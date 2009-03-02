@@ -159,8 +159,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 						      uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
+	struct emsmdbp_object	*object = NULL;
+	void			*data;
+	uint32_t		folderID;
 	uint32_t		handle;
+	int			parentfolder = -1;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] GetHierarchyTable (0x04)\n"));
 
@@ -171,16 +176,63 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	retval = mapi_handles_get_systemfolder(parent, &parentfolder);
+
+	/* Initialize default empty GetHierarchyTable reply */
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->u.mapi_GetHierarchyTable.handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->u.mapi_GetHierarchyTable.RowCount = 0;
-	
-	*size += libmapiserver_RopGetHierarchyTable_size(mapi_repl);
 
+	/* GetHierarchyTable can only be called for mailbox/folder objects */
+	mapi_handles_get_private_data(parent, &data);
+	object = (struct emsmdbp_object *)data;
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		return MAPI_E_SUCCESS;
+	}
+
+	switch (object->type) {
+	case EMSMDBP_OBJECT_MAILBOX:
+		folderID = object->object.mailbox->folderID;
+		break;
+	case EMSMDBP_OBJECT_FOLDER:
+		folderID = object->object.folder->folderID;
+		break;
+	default:
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		return MAPI_E_SUCCESS;
+	}
+
+	DEBUG(0, ("#### GetHierarchyTable: parentfolder = 0x%x\n", parentfolder));
+
+	switch (parentfolder) {
+	case 0x0:
+	case 0x1:
+		/* system/special folder */
+		retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folderID, 
+						       &mapi_repl->u.mapi_GetHierarchyTable.RowCount);
+		break;
+	default:
+		/* handled by mapistore */
+		mapi_repl->u.mapi_GetHierarchyTable.RowCount = 0;
+		break;
+	}
+
+	/* Initialize Table object */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
+
+	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent);
+	if (object) {
+		retval = mapi_handles_set_private_data(rec, object);
+	}
+
+	*size += libmapiserver_RopGetHierarchyTable_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

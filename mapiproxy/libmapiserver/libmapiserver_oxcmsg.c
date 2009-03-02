@@ -40,7 +40,7 @@ _PUBLIC_ uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 
@@ -68,7 +68,7 @@ _PUBLIC_ uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_R
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response) {
+	if (!response || response->error_code) {
 		return size;
 	}
 

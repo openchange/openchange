@@ -233,6 +233,8 @@ GlobalCount: 0x%x
                   "PidTagParentFolderId": parentfolder,
                   "PidTagFolderId": FID,
                   "PidTagDisplayName": foldername,
+                  "PidTagAttrHidden": str(0),
+                      "PidTagContainerClass": "IPF.Note",
                   "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID),
                   "FolderType": str(1),
                   "SystemIdx": str(SystemIdx)})
@@ -271,6 +273,7 @@ GlobalCount: 0x%x
                       "PidTagContainerClass": containerclass,
                       "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID),
                       "PidTagContentCount": str(0),
+                      "PidTagAttrHidden": str(0),
                       "PidTagContentUnreadCount": str(0),
                       "PidTagSubFolders": str(0),
                       "FolderType": str(1)})

@@ -839,7 +839,8 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiserver/
 							mapiproxy/libmapiserver/libmapiserver_oxcfold.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxctabl.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcmsg.po		\
-							mapiproxy/libmapiserver/libmapiserver_oxcnotif.po	
+							mapiproxy/libmapiserver/libmapiserver_oxcnotif.po	\
+							mapiproxy/libmapiserver/libmapiserver_oxorule.po	
 	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapiserver.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^
 
 mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -1034,7 +1035,8 @@ mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/
 						mapiproxy/servers/default/emsmdb/oxcfold.po			\
 						mapiproxy/servers/default/emsmdb/oxctabl.po			\
 						mapiproxy/servers/default/emsmdb/oxcmsg.po			\
-						mapiproxy/servers/default/emsmdb/oxcnotif.po			
+						mapiproxy/servers/default/emsmdb/oxcnotif.po			\
+						mapiproxy/servers/default/emsmdb/oxorule.po			
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) \
 						mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)		\

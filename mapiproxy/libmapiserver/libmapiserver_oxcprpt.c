@@ -29,8 +29,6 @@
 #include <libmapi/mapidefs.h>
 #include <gen_ndr/ndr_exchange.h>
 
-#include <util/debug.h>
-
 /**
    \details Calculate GetPropertiesSpecific Rop size
 

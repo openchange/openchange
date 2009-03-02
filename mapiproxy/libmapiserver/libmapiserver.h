@@ -204,6 +204,9 @@ uint16_t libmapiserver_RopQueryPosition_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSeekRow_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopFindRow_size(struct EcDoRpc_MAPI_REPL *);
 
+/* definitions from libmapiserver_oxorule.c */
+uint16_t libmapiserver_RopGetRulesTable_size(void);
+
 __END_DECLS
 
 #endif /* ! __LIBMAPISERVER_H__ */

@@ -29,6 +29,7 @@
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
+#include "libmapi/defs_private.h"
 
 /**
    \details EcDoRpc SetColumns (0x12) Rop. This operation sets the
@@ -247,7 +248,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	if (!table->folderID) {
 		goto end;
 	}
-	table_filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=0x%.16llx)(PidTagFolderId=*))", table->folderID);
+	table_filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=0x%.16"PRIx64")(PidTagFolderId=*))", table->folderID);
 	DEBUG(0, ("table_filter: %s\n", table_filter));
 
 	if ((request.RowCount + table->numerator) > table->denominator) {

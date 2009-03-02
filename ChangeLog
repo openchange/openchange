@@ -1,3 +1,52 @@
+2009-03-02
+    jkerihuel
+	[r1261]
+		Add skeleton for GetRulesTable 
+	[r1258]
+		- return MAPI_E_SUCCESS when QueryRows reply count is 0
+		- Move Reminders from IPM Subtree to Mailbox root
+	[r1257]
+		- Add QueryPosition implementation
+		- Move from offset to numerator/denominator couple for table objects
+		
+		Outlook now opens properly using openchange server and display the
+		mailbox folder list with icons ;-)
+	[r1256]
+		- Add skeletons for Restrict, SortTable, FindRow calls
+		- Introduce emsmdb provider table object
+		- Add preliminary table implementation for system/special folders
+		- Add preliminary implementation of GetHierarchyTable, SetColumns and QueryRows
+		- Improve creation of GetProps reply blob for Mailbox folder
+		- Fix bug in EcRRegisterPushNotification when associated handle is invalid
+		- Remove some usage of ldb_filter and use format string instead 
+		- Update libmapiserver sanity checks and look for error_code != MAPI_E_SUCCESS
+		  so openchange server is able to return failed replies to MAPI clients
+		- Introduce flaggedPropertyRows in libmapiserver_push_property (needed by QueryRows)
+		
+		This commit makes openchange server work with "openchangeclient --mailbox" ;-)
+		
+		Still preliminary but anyway worthwhile enough to be mentioned ...
+	[r1255]
+		- Add a function to count subfolders of a container
+		- Add a function to wrap MAPI tables over openchangedb
+		- Factorize code used to fetch property values from LDB records
+	[r1254]
+		- Add default properties to folder records while provisioning mailbox
+		- Add few more mapping for PR_* to PidTag
+		- Add a new MAPI property to the list
+	[r1253]
+		Avoid openchangeclient --mailbox to segfault when run vs openchange server
+    bradh
+	[r1263]
+		Remove some ldb_filters, and just use varargs into ldb_search
+	[r1262]
+		warning fix for 64-bit arch.
+	[r1260]
+		Revert previous commit.
+	[r1259]
+		Experimental commit to fix build problems resulting
+		from property changes.
+
 2009-03-01
     jkerihuel
 	[r1251]

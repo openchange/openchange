@@ -309,6 +309,41 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 
 
 /**
+   \details Retrieve the number of sub folders for a given fid
+
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid the folder identifier to use for the search
+   \param RowCount pointer to the returned number of results
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(void *ldb_ctx,
+						       uint64_t fid,
+						       uint32_t *RowCount)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_folder_count");
+	*RowCount = 0;
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, 
+			 "(PidTagParentFolderId=0x%.16"PRIx64")(PidTagFolderId=*)", fid);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
+
+	*RowCount = res->count;
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details Check if a property exists within an openchange dispatcher
    database record
 
@@ -374,6 +409,7 @@ static void *openchangedb_get_folder_special_property(TALLOC_CTX *mem_ctx,
 	uint16_t		FolderType;
 	uint64_t		FolderId;
 	const char		*tmp;
+	uint32_t		*l;
 
 	switch (proptag) {
 	case PR_IPM_APPOINTMENT_ENTRYID:
@@ -392,11 +428,69 @@ static void *openchangedb_get_folder_special_property(TALLOC_CTX *mem_ctx,
 		retval = entryid_set_folder_EntryID(mem_ctx, &MailboxGUID, &ReplGUID, FolderType, FolderId, &bin);
 		return (void *)bin;
 		break;
+	case PR_DEPTH:
+		l = talloc_zero(mem_ctx, uint32_t);
+		*l = 0;
+		return (void *)l;
 	}
 
 	return NULL;
 }
 
+
+/**
+   \details Retrieve a MAPI property from a OpenChange LDB message
+
+   \param mem_ctx pointer to the memory context
+   \param res pointer to the LDB results
+   \param pos the LDB result index
+   \param proptag the MAPI property tag to lookup
+   \param PidTagAttr the mapped MAPI property name
+
+   \return valid data pointer on success, otherwise NULL
+ */
+static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
+						   struct ldb_result *res,
+						   uint32_t pos,
+						   uint32_t proptag,
+						   const char *PidTagAttr)
+{
+	void			*data;
+	const char     		*str;
+	uint64_t		*d;
+	uint32_t		*l;
+	int			*b;
+
+	switch (proptag & 0xFFFF) {
+	case PT_BOOLEAN:
+		b = talloc_zero(mem_ctx, int);
+		*b = ldb_msg_find_attr_as_bool(res->msgs[pos], PidTagAttr, 0x0);
+		data = (void *)b;
+		break;
+	case PT_LONG:
+		l = talloc_zero(mem_ctx, uint32_t);
+		*l = ldb_msg_find_attr_as_int(res->msgs[pos], PidTagAttr, 0x0);
+		data = (void *)l;
+		break;
+	case PT_I8:
+		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, 0x0);
+		d = talloc_zero(mem_ctx, uint64_t);
+		*d = strtoull(str, NULL, 16);
+		data = (void *)d;
+		break;
+	case PT_STRING8:
+	case PT_UNICODE:
+		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, NULL);
+		data = (char *) talloc_strdup(mem_ctx, str);
+		break;
+	default:
+		talloc_free(mem_ctx);
+		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (proptag & 0xFFFF)));
+		return NULL;
+	}
+
+	return data;
+}
 
 /**
    \details Retrieve a MAPI property value from a folder record
@@ -422,10 +516,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	const char * const	attrs[] = { "*", NULL };
 	const char		*PidTagAttr = NULL;
 	int			ret;
-	const char     		*str;
-	uint64_t		*d;
-	uint32_t		l;
-	int			*b;
 
 	mem_ctx = talloc_named(NULL, 0, "get_folder_property");
 
@@ -446,34 +536,67 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
 
 	/* Step 5. If this is not a "special property" */
-	switch (proptag & 0xFFFF) {
-	case PT_BOOLEAN:
-		b = talloc_zero(parent_ctx, int);
-		*b = ldb_msg_find_attr_as_bool(res->msgs[0], PidTagAttr, 0x0);
-		*data = (void *)b;
-		break;
-	case PT_LONG:
-		l = ldb_msg_find_attr_as_int(res->msgs[0], PidTagAttr, 0x0);
-		*data = (void *)&l;
-		break;
-	case PT_I8:
-		str = ldb_msg_find_attr_as_string(res->msgs[0], PidTagAttr, 0x0);
-		d = talloc_zero(parent_ctx, uint64_t);
-		*d = strtoull(str, NULL, 16);
-		*data = (void *)d;
-		break;
-	case PT_STRING8:
-	case PT_UNICODE:
-		str = ldb_msg_find_attr_as_string(res->msgs[0], PidTagAttr, NULL);
-		*data = (char *) talloc_strdup(parent_ctx, str);
-		break;
-	default:
-		talloc_free(mem_ctx);
-		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (proptag & 0xFFFF)));
-		return MAPI_E_NOT_FOUND;
-	}
+	*data = openchangedb_get_folder_property_data(parent_ctx, res, 0, proptag, PidTagAttr);
+	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
 
 	talloc_free(mem_ctx);
 
-	return MAPI_E_SUCCESS;
+	return MAPI_E_NOT_FOUND;
+}
+
+
+/**
+   \details Retrieve a MAPI property from a table (ldb search results)
+
+   \param parent_ctx pointer to the memory context
+   \param ldb_ctx pointer to the openchange LDB context
+   \param ldb_filter the ldb search string
+   \param proptag the MAPI property tag to retrieve value for
+   \param pos the record position in search results
+   \param data pointer on pointer to the data the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
+							 void *ldb_ctx,
+							 char *recipient,
+							 char *ldb_filter,
+							 uint32_t proptag,
+							 uint32_t pos,
+							 void **data)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "*", NULL };
+	const char		*PidTagAttr = NULL;
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_table_property");
+
+	/* Step 1. Fetch table results */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_INVALID_OBJECT, mem_ctx);
+
+	/* Step 2. Ensure position is within search results range */
+	OPENCHANGE_RETVAL_IF(pos >= res->count, MAPI_E_INVALID_OBJECT, NULL);
+
+	/* Step 3. Convert proptag into PidTag attribute */
+	PidTagAttr = openchangedb_property_get_attribute(proptag);
+	OPENCHANGE_RETVAL_IF(!PidTagAttr, MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* Step 4. Ensure the element exists */
+	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[pos], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* Step 5. Check if this is a "special property" */
+	*data = openchangedb_get_folder_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
+	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
+
+	/* Step 6. Check if this is not a "special property" */
+	*data = openchangedb_get_folder_property_data(parent_ctx, res, pos, proptag, PidTagAttr);
+	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_NOT_FOUND;
 }

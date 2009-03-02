@@ -209,16 +209,13 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 	const char		*username = NULL;
 	int			msExchUserAccountControl;
 	struct ldb_result	*res = NULL;
-	char			*ldb_filter;
 	const char * const	recipient_attrs[] = { "msExchUserAccountControl", NULL };
 
 	username = dce_call->context->conn->auth_state.session_info->server_info->account_name;
 
-	ldb_filter = talloc_asprintf(emsmdbp_ctx, "CN=%s", username);
 	ret = ldb_search(emsmdbp_ctx->users_ctx, emsmdbp_ctx, &res,
 			 ldb_get_default_basedn(emsmdbp_ctx->users_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 LDB_SCOPE_SUBTREE, recipient_attrs, "CN=%s", username);
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS || !res->count) {
@@ -262,17 +259,15 @@ _PUBLIC_ bool emsmdbp_verify_userdn(struct dcesrv_call_state *dce_call,
 	int			ret;
 	int			msExchUserAccountControl;
 	struct ldb_result	*res = NULL;
-	char			*ldb_filter;
 	const char * const	recipient_attrs[] = { "*", NULL };
 
 	/* Sanity Checks */
 	if (!legacyExchangeDN) return false;
 
-	ldb_filter = talloc_asprintf(emsmdbp_ctx, "(legacyExchangeDN=%s)", legacyExchangeDN);
 	ret = ldb_search(emsmdbp_ctx->users_ctx, emsmdbp_ctx, &res,
 			 ldb_get_default_basedn(emsmdbp_ctx->users_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
+			 legacyExchangeDN);
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS || !res->count) {

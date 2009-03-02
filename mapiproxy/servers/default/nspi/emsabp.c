@@ -152,16 +152,13 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 	int			msExchUserAccountControl;
 	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
 	struct ldb_result	*res = NULL;
-	char			*ldb_filter;
 	const char * const	recipient_attrs[] = { "msExchUserAccountControl", NULL };
 
 	username = dce_call->context->conn->auth_state.session_info->server_info->account_name;
 
-	ldb_filter = talloc_asprintf(emsabp_ctx->mem_ctx, "CN=%s", username);
 	ret = ldb_search(emsabp_ctx->users_ctx, emsabp_ctx->mem_ctx, &res, 
 			 ldb_get_default_basedn(emsabp_ctx->users_ctx),
-			 scope, recipient_attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 scope, recipient_attrs, "CN=%s", username);
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS || !res->count) {
@@ -219,7 +216,6 @@ _PUBLIC_ struct GUID *emsabp_get_server_GUID(struct emsabp_context *emsabp_ctx)
 	const char		*guid_str = NULL;
 	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
 	struct ldb_result	*res = NULL;
-	char			*ldb_filter;
 	char			*dn = NULL;
 	struct ldb_dn		*ldb_dn = NULL;
 	const char * const	recipient_attrs[] = { "*", NULL };
@@ -231,11 +227,9 @@ _PUBLIC_ struct GUID *emsabp_get_server_GUID(struct emsabp_context *emsabp_ctx)
 	if (!netbiosname) return NULL;
 
 	/* Step 1. Find the Exchange Organization */
-	ldb_filter = talloc_strdup(emsabp_ctx->mem_ctx, "(objectClass=msExchOrganizationContainer)");
 	ret = ldb_search(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, &res,
 			 ldb_get_default_basedn(emsabp_ctx->conf_ctx),
-			 scope, recipient_attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 scope, recipient_attrs, "(objectClass=msExchOrganizationContainer)");
 
 	if (ret != LDB_SUCCESS || !res->count) {
 		return NULL;
@@ -841,7 +835,6 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	enum ldb_scope			scope = LDB_SCOPE_SUBTREE;
 	struct ldb_request		*req;
 	struct ldb_result		*res = NULL;
-	char				*ldb_filter;
 	struct ldb_dn			*ldb_dn = NULL;
 	struct ldb_control		**controls;
 	const char * const		recipient_attrs[] = { "*", NULL };
@@ -863,11 +856,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	aRow_idx++;
 
 	/* Step 2. Retrieve the object pointed by addressBookRoots attribute: 'All Address Lists' */
-	ldb_filter = talloc_strdup(emsabp_ctx->mem_ctx, "(addressBookRoots=*)");
 	ret = ldb_search(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, &res,
 			 ldb_get_default_basedn(emsabp_ctx->conf_ctx),
-			 scope, recipient_attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 scope, recipient_attrs, "(addressBookRoots=*)");
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_CORRUPT_STORE, aRow);
 
 	addressBookRoots = ldb_msg_find_attr_as_string(res->msgs[0], "addressBookRoots", NULL);
@@ -978,7 +969,6 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 	struct PropertyRestriction_r	*res_prop = NULL;
 	const char			*recipient = NULL;
 	const char * const		recipient_attrs[] = { "*", NULL };
-	char				*ldb_filter;
 	int				ret;
 	uint32_t			i;
 	const char			*dn;
@@ -1015,11 +1005,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 			res_prop->lpProp->value.lpszA :
 			res_prop->lpProp->value.lpszW;
 
-		ldb_filter = talloc_asprintf(emsabp_ctx->mem_ctx, "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))", recipient);
 		ret = ldb_search(emsabp_ctx->users_ctx, emsabp_ctx->mem_ctx, &res,
 				 ldb_get_default_basedn(emsabp_ctx->users_ctx),
-				 LDB_SCOPE_SUBTREE, recipient_attrs, ldb_filter);
-		talloc_free(ldb_filter);
+				 LDB_SCOPE_SUBTREE, recipient_attrs,
+				 "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
+				 recipient);
 
 		if (ret != LDB_SUCCESS || !res->count) {
 			return MAPI_E_NOT_FOUND;
@@ -1101,7 +1091,6 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_dn(struct emsabp_context *emsabp_ctx, con
 _PUBLIC_ enum MAPISTATUS emsabp_search_legacyExchangeDN(struct emsabp_context *emsabp_ctx, const char *legacyDN,
 							struct ldb_message **ldb_res)
 {
-	char			*ldb_filter;
 	const char * const	recipient_attrs[] = { "*", NULL };
 	int			ret;
 	struct ldb_result	*res = NULL;
@@ -1110,11 +1099,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_legacyExchangeDN(struct emsabp_context *e
 	OPENCHANGE_RETVAL_IF(!legacyDN, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!ldb_res, MAPI_E_INVALID_PARAMETER, NULL);
 
-	ldb_filter = talloc_asprintf(emsabp_ctx->mem_ctx, "(legacyExchangeDN=%s)", legacyDN);
 	ret = ldb_search(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, &res,
 			 ldb_get_default_basedn(emsabp_ctx->conf_ctx), 
-			 LDB_SCOPE_SUBTREE, recipient_attrs, ldb_filter);
-	talloc_free(ldb_filter);
+			 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
+			 legacyDN);
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, NULL);
 

@@ -276,10 +276,8 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 		talloc_free(basedn);
 		if (!dn) return NT_STATUS_UNSUCCESSFUL;
 		
-		attribute = talloc_asprintf(mem_ctx, "(0x%x=*)", stream->PropertyTag);
 		ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_BASE, attrs, 
-						 attribute);
-		talloc_free(attribute);
+				 "(0x%x=*)", stream->PropertyTag);
 
 		if (ret == LDB_SUCCESS && res->count == 1) {
 			attribute = talloc_asprintf(mem_ctx, "0x%x", stream->PropertyTag);
@@ -310,9 +308,7 @@ NTSTATUS mpm_cache_ldb_add_stream(struct mpm_cache *mpm,
 		talloc_free(basedn);
 		if (!dn) return NT_STATUS_UNSUCCESSFUL;
 
-		attribute = talloc_asprintf(mem_ctx, "(0x%x=*)", stream->PropertyTag);
-		ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_BASE, attrs, attribute);
-		talloc_free(attribute);
+		ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_BASE, attrs, "(0x%x=*)", stream->PropertyTag);
 
 		if (ret == LDB_SUCCESS && res->count == 1) {
 			attribute = talloc_asprintf(mem_ctx, "0x%x", stream->PropertyTag);

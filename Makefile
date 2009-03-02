@@ -342,7 +342,7 @@ libmapi/proto.h libmapi/proto_private.h:		\
 
 libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
-libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: \
+libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h gen_ndr/exchange.h: \
 	libmapi/conf/mapi-properties 					\
 	libmapi/conf/mapi-codes 					\
 	libmapi/conf/mapi-named-properties 				\

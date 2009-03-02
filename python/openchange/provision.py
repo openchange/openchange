@@ -271,6 +271,7 @@ def newmailbox(lp, username, firstorg, firstou):
         "Search": ({}, 11),
         "Views": ({}, 12),
         "Shortcuts": ({}, 13),
+        "Reminders": ({}, 14),
     }, 1)
 
     fids = {}
@@ -305,11 +306,11 @@ def newmailbox(lp, username, firstorg, firstou):
         (("Mailbox Root", "IPM Subtree"), "Journal",    "IPF.Journal",      "PidTagIpmJournalEntryId"),
         (("Mailbox Root", "IPM Subtree"), "Notes",      "IPF.StickyNote",   "PidTagIpmNoteEntryId"),
         (("Mailbox Root", "IPM Subtree"), "Tasks",      "IPF.Task",         "PidTagIpmTaskEntryId"),
-        (("Mailbox Root", "IPM Subtree"), "Reminders",  "Outlook.Reminder", "PidTagRemindersOnlineEntryId"),
         (("Mailbox Root", "IPM Subtree"), "Drafts",     "IPF.Notes",        "PidTagIpmDraftsEntryId")
         ]
 
     fid_inbox = fids[("Mailbox Root", "IPM Subtree", "Inbox")]
+    fid_reminders = fids[("Mailbox Root", "Reminders")]
     fid_mailbox = fids[("Mailbox Root",)]
     for path, foldername, containerclass, pidtag in special_folders:
         GlobalCount = db.get_message_GlobalCount(names.netbiosname)
@@ -343,6 +344,11 @@ def newmailbox(lp, username, firstorg, firstou):
     db.add_folder_property(fid_inbox, "PidTagContentUnreadCount", "0")
     db.add_folder_property(fid_inbox, "PidTagSubFolders", "FALSE")
     db.add_folder_property(fid_inbox, "PidTagAccess", "63")
+
+    print "* Adding additional default properties to Reminders"
+    db.add_folder_property(fid_reminders, "PidTagContainerClass", "Outlook.Reminder");
+    db.add_folder_property(fid_inbox, "PidTagRemindersOnlineEntryId", fid_reminders);
+    db.add_folder_property(fid_mailbox, "PidTagRemindersOnlineEntryId", fid_reminders);
 
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
     print "* GlobalCount (0x%x)" % GlobalCount

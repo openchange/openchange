@@ -315,6 +315,7 @@ finish:
 		mapi_repl->u.mapi_QueryRows.RowData.data = response.RowData.data;
 	} else {
 		/* useless code for the moment */
+		mapi_repl->error_code = MAPI_E_SUCCESS;
 		mapi_repl->u.mapi_QueryRows.Origin = 2;
 		mapi_repl->u.mapi_QueryRows.RowCount = 0;
 		mapi_repl->u.mapi_QueryRows.RowData.length = 0;

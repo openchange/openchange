@@ -220,6 +220,7 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	}
 
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	if (!h) return MAPI_E_LOGON_FAILED;
 	emsabp_ctx = (struct emsabp_context *) h->data;
 
 	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
@@ -319,6 +320,7 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	}
 
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	if (!h) return MAPI_E_LOGON_FAILED;
 	emsabp_ctx = (struct emsabp_context *) h->data;
 
 	/* Step 1. Retrieve MIds array given search criterias */
@@ -410,6 +412,7 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 	}
 
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	if (!h) return MAPI_E_LOGON_FAILED;
 	OPENCHANGE_RETVAL_IF(!h, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
 	emsabp_ctx = (struct emsabp_context *) h->data;
@@ -487,6 +490,7 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	}
 
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	if (!h) return MAPI_E_LOGON_FAILED;
 	emsabp_ctx = (struct emsabp_context *) h->data;
 
 	MId = r->in.pStat->CurrentRec;
@@ -593,6 +597,7 @@ static enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_
 	}
 
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	if (!h) return MAPI_E_LOGON_FAILED;
 	emsabp_ctx = (struct emsabp_context *) h->data;
 
 	/* Step 1. (FIXME) We arbitrary set lpVersion to 0x1 */

@@ -1,3 +1,23 @@
+2009-03-03
+    jkerihuel
+	[r1270]
+		Ensure NSPI server functions have a valid dcesrv_handle
+	[r1269]
+		Add quick/additional configuration information on how to setup openchange server
+	[r1268]
+		This commit adds a retval check on private data retrieval function and prevents QueryPosition from causing a 
+		segfault when parent object is meant to come from GetContentsTable.
+	[r1267]
+		- Fix NspiGetMatches server reply when specified username is invalid and
+		search fails.
+		- Make use of talloc hierarchy for NspiGetProps properties fetch + fix
+		a talloc_free bug leading to segfault on failure.
+	[r1265]
+		Prevent from registering same mapistore backend multiple times
+    bradh
+	[r1266]
+		Howto updates.
+
 2009-03-02
     jkerihuel
 	[r1261]

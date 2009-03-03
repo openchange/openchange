@@ -81,6 +81,12 @@
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
 	</tr>
 	<tr>
+	   <td style="text-align:center">03/03/09</td>
+	   <td style="text-align:center"><strong>0.6.2</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">Add configuration info for server mode.</td>
+	</tr>	
+	<tr>
 	   <td style="text-align:center">01/02/09</td>
 	   <td style="text-align:center"><strong>0.6.1</strong></td>
 	   <td style="text-align:center">Julien Kerihuel</td>
@@ -1194,7 +1200,24 @@ where username is the user account you want to give access to
 OpenChange server
 </li>
 
-<li><strong>[3] Configure OpenChange server options</strong>:<br/>
+<li><strong>[3] Create the OpenChange Dispatcher database</strong>:<br/>
+OpenChange uses a dispatcher database designed to store generic and
+top-level information about user mailbox. The following command will
+create a blank openchangedb ldb database:
+\code
+# ./setup/openchange_provision --openchangedb
+\endcode
+</li>
+
+<li><strong>[4] Create a mailbox for the user in the OpenChange
+Dispatcher database</strong>:<br/>
+Run under the root account:
+\code
+# ./setup/openchange_newuser --mailbox <username>
+\endcode
+</li>
+
+<li><strong>[5] Configure OpenChange server options</strong>:<br/>
 OpenChange server only requires a very limited set of options to be
 added to <i>smb.conf</i> in order to run. Note that the following
 configuration also works with existing MAPIProxy configuration. This

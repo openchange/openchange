@@ -341,8 +341,10 @@ In order to run the openchange server, you need to setup Samba4
 correctly. If you have not already installed Samba4, please refer to
 section 2 for further information.
 
-Under your root account, provision the server:
+Under your root account, provision the server from the Samba4 source
+directory:
 
+# cd samba4/source
 # ./setup/provision --domain=OPENCHANGE --realm=OPENCHANGE.LOCAL \
 		    --adminpass=secret --server-role='domain controller'
 
@@ -391,13 +393,13 @@ http://mapiproxy.openchange.org
 [0x5d] Running the Address Book Provider (EMSABP)
 =================================================
 
-The simplest is to just run "smbd", but as a developer you may find
+The simplest is to just run "samba", but as a developer you may find
 the following more useful:
 
-   # smbd -d3 -i -M single
+   # samba -d3 -i -M single
 
-that means "start smbd without messages in stdout, and running a
-single process". That mode of operation makes debugging smbd with gdb
+that means "start samba server without messages in stdout, and running a
+single process". That mode of operation makes debugging samba with gdb
 particularly easy.
 
 

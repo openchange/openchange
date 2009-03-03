@@ -60,6 +60,16 @@ int					num_backends;
 _PUBLIC_ extern int mapistore_backend_register(const void *_backend)
 {
 	const struct mapistore_backend	*backend = _backend;
+	uint32_t			i;
+
+	for (i = 0; i < num_backends; i++) {
+		if (backends[i].backend && backend && 
+		    backend->name && backends[i].backend->name &&
+		    !strcmp(backends[i].backend->name, backend->name)) {
+			DEBUG(3, ("MAPISTORE backend '%s' already registered\n", backend->name));
+			return MAPISTORE_SUCCESS;
+		}
+	}
 
 	backends = realloc_p(backends, struct mstore_backend, num_backends + 1);
 	if (!backends) {

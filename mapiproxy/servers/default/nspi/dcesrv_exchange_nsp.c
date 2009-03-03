@@ -323,12 +323,14 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 
 	/* Step 1. Retrieve MIds array given search criterias */
 	ppOutMIds = talloc_zero(mem_ctx, struct SPropTagArray);
+	ppOutMIds->cValues = 0;
+	ppOutMIds->aulPropTag = NULL;
+
 	retval = emsabp_search(mem_ctx, emsabp_ctx, ppOutMIds, r->in.Filter, r->in.pStat, r->in.ulRequested);
 	if (retval != MAPI_E_SUCCESS) {
 	failure:
 		r->out.pStat = r->in.pStat;
-		ppOutMIds = NULL;
-		r->out.ppOutMIds = &ppOutMIds;		
+		*r->out.ppOutMIds = ppOutMIds;	
 		r->out.ppRows = talloc(mem_ctx, struct SRowSet *);
 		r->out.ppRows[0] = NULL;
 		r->out.result = retval;
@@ -506,16 +508,14 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 
 	/* Step 2. Fetch properties */
 	r->out.ppRows = talloc_array(mem_ctx, struct SRow *, 2);
-	r->out.ppRows[0] = talloc_zero(mem_ctx, struct SRow);
+	r->out.ppRows[0] = talloc_zero(r->out.ppRows, struct SRow);
 	r->out.ppRows[0]->ulAdrEntryPad = 0;
 	r->out.ppRows[0]->cValues = r->in.pPropTags->cValues;
-	r->out.ppRows[0]->lpProps = talloc_array(mem_ctx, struct SPropValue, r->in.pPropTags->cValues);
+	r->out.ppRows[0]->lpProps = talloc_array(r->out.ppRows[0], struct SPropValue, r->in.pPropTags->cValues);
 
 	retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, r->out.ppRows[0], MId, r->in.pPropTags);
 	if (retval != MAPI_E_SUCCESS) {
-		talloc_free(r->out.ppRows[0]->lpProps);
-		talloc_free(r->out.ppRows[0]);
-		talloc_free(r->out.ppRows[0]);
+		talloc_free(r->out.ppRows);
 		r->out.result = MAPI_W_ERRORS_RETURNED;
 		goto failure;
 	}

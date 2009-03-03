@@ -374,6 +374,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryPosition(TALLOC_CTX *mem_ctx,
 	if (retval) goto end;
 
 	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) goto end;
 	object = (struct emsmdbp_object *) data;
 
 	/* Ensure object exists and is table type */

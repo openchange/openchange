@@ -1,3 +1,10 @@
+2009-03-04
+    jkerihuel
+	[r1272]
+		Patch from Paolo Abeni: Add sanity check to Subscribe
+		and prevent applications from crashing if notify context 
+		is uninitialized.
+
 2009-03-03
     jkerihuel
 	[r1270]

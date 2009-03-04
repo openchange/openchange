@@ -93,6 +93,7 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "Subscribe");
 

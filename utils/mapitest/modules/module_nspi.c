@@ -765,7 +765,7 @@ _PUBLIC_ bool mapitest_nspi_GetIDsFromNames(struct mapitest *mt)
 	mapitest_print_retval(mt, "NspiGetNamesFromIDs");
 	MAPIFreeBuffer(ppReturnedPropTags);
 
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(ppNames);
 		return false;
 	}
@@ -776,10 +776,11 @@ _PUBLIC_ bool mapitest_nspi_GetIDsFromNames(struct mapitest *mt)
 	MAPIFreeBuffer(ppReturnedPropTags);
 	MAPIFreeBuffer(ppNames);
 	
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
 
+	errno = retval;
 	return true;
 }
 

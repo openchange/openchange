@@ -1019,6 +1019,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetIDsFromNames(struct nspi_context *nspi_ctx,
 
 	talloc_free(mem_ctx);
 
+	errno = retval;
 	return MAPI_E_SUCCESS;
 }
 

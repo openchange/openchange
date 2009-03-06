@@ -2043,7 +2043,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 
 	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mt->mem_ctx, struct SPropTagArray);
-	retval = GetIDsFromNames(&obj_ref_folder, nameid->count, 
+	retval = GetIDsFromNames(&obj_ref_message, nameid->count, 
 				 nameid->nameid, MAPI_CREATE, &SPropTagArray);
 	mapitest_print_retval(mt, "GetIDsFromNames");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -2055,7 +2055,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
 	MAPIFreeBuffer(nameid);
 	
-	propID = (SPropTagArray->aulPropTag[0] & 0xFFFF0000) | PT_NULL;
+	propID = SPropTagArray->aulPropTag[0];
 	MAPIFreeBuffer(SPropTagArray);
 
 	nameid = mapi_nameid_new(mt->mem_ctx);
@@ -2162,7 +2162,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	/* Iterates over IDs, and call GetNamesFromIDs() on each ID */
         for (i = 0; i < nameid->count; i++) {
 		nameid2 = mapi_nameid_new(mt->mem_ctx);
-		GetNamesFromIDs(&obj_ref_folder, ((propIDs[i] << 16) & 0xFFFF0000) | PT_NULL, &nameid2->count, &nameid2->nameid);
+		GetNamesFromIDs(&obj_ref_folder, propIDs[i], &nameid2->count, &nameid2->nameid);
 		if (GetLastError() != MAPI_E_SUCCESS) {
 			mapitest_print_retval(mt, "GetNamesFromIDs");
 			MAPIFreeBuffer(nameid2);
@@ -2229,6 +2229,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	MAPIFreeBuffer(propIDs);
 
  cleanup:
+	errno = 0;
 	/* Clean up */
 	DeleteFolder(&obj_top_folder, mapi_object_get_id(&obj_ref_folder),
 		     DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);

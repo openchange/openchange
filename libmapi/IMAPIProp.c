@@ -718,8 +718,11 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	size = 0;
 
 	/* Fill the GetNamesFromIDs operation */
-	request.ulPropTag = ulPropTag;
-	size += sizeof (uint32_t);
+	request.PropertyIdCount = 0x1;
+	size += sizeof (uint16_t);
+	request.PropertyIds = talloc_array(mem_ctx, uint16_t, request.PropertyIdCount);
+	request.PropertyIds[0] = ((ulPropTag & 0xFFFF0000) >> 16);
+	size += request.PropertyIdCount * sizeof (uint16_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);

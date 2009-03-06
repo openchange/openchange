@@ -2747,7 +2747,8 @@ System Attendant Private Interface
 	} MAPINAMEID;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		MAPITAGS	ulPropTag;
+		uint16		PropertyIdCount;
+		uint16		PropertyIds[PropertyIdCount];
 	} GetNamesFromIDs_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {

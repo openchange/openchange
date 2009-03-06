@@ -2099,8 +2099,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 
 	/* Builds an array of Name,ID pairs using QueryNamesFromIDs() */
 	nameid = mapi_nameid_new(mt->mem_ctx);
-	propIDs = talloc_zero(mt->mem_ctx, uint16_t);
-	QueryNamedProperties(&obj_ref_message, 0, NULL, &nameid->count, &propIDs, &nameid->nameid);
+	QueryNamedProperties(&obj_ref_message, 0x1, NULL, &nameid->count, &propIDs, &nameid->nameid);
 	nameid->nameid = talloc_steal((TALLOC_CTX *)nameid, nameid->nameid);
 	mapitest_print_retval(mt, "QueryNamedProperties");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -2162,7 +2161,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	/* Iterates over IDs, and call GetNamesFromIDs() on each ID */
         for (i = 0; i < nameid->count; i++) {
 		nameid2 = mapi_nameid_new(mt->mem_ctx);
-		GetNamesFromIDs(&obj_ref_folder, propIDs[i], &nameid2->count, &nameid2->nameid);
+		GetNamesFromIDs(&obj_ref_folder, (propIDs[i] << 16), &nameid2->count, &nameid2->nameid);
 		if (GetLastError() != MAPI_E_SUCCESS) {
 			mapitest_print_retval(mt, "GetNamesFromIDs");
 			MAPIFreeBuffer(nameid2);

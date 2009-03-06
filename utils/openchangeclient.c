@@ -2452,6 +2452,9 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 	do {
 		count += 0x2;
 		retval = GetGALTable(session, SPropTagArray, &SRowSet, count, ulFlags);
+		if ((!SRowSet) || (!(SRowSet->aRow))) {
+			return false;
+		}
 		if (SRowSet->cRows) {
 			for (i = 0; i < SRowSet->cRows; i++) {
 				mapidump_PAB_entry(&SRowSet->aRow[i]);
@@ -3136,8 +3139,11 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_userlist) {
-		openchangeclient_userlist(mem_ctx, session);
-		exit (0);
+		if (false == openchangeclient_userlist(mem_ctx, session)) {
+			exit(1);
+		} else {
+			exit(0);
+		}
 	}
 
 	/**

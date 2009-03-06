@@ -1,3 +1,28 @@
+2009-03-06
+    jkerihuel
+	[r1277]
+		Fix retval problem in libmapi/nspi.c for GetIDsFromNames.
+		Function returns MAPI_E_SUCCESS, but errno is set to 0x0000000b.
+		Set errno to retval to work around this problem.
+		
+		
+		NSPI-GETIDSFROMNAMES
+	[r1276]
+		OXCPRPT-NAME-ID mapitest now passes: The QueryNamedProperties ecMemory retval
+		has been worked-around by setting QueryFlags to NoStrings to limite the results
+		scope. This means the MNID_STRING case is not fully checked anymore. We should maybe
+		add additional tests to do full coverage.
+	[r1275]
+		Fix GetNamesFromIDs IDL and implementation.
+		
+		Note: We should probably update the function prototype
+		so it takes a mapi_SPropTagArray rather than a single property.
+    bradh
+	[r1274]
+		Protect against bad results from GetGALTable().
+		
+		Resolves ticket #142
+
 2009-03-04
     jkerihuel
 	[r1272]

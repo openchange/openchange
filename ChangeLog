@@ -1,3 +1,15 @@
+2009-03-08
+    jkerihuel
+	[r1282]
+		Be more tolerant with Logon request flags
+	[r1281]
+		Set retval to MAPI_E_INVALID_BOOKMARK rather than returning.
+		This case still needs to be fixed though.
+	[r1280]
+		Delete debug message
+	[r1279]
+		Create a default GetProps reply on error
+
 2009-03-06
     jkerihuel
 	[r1277]

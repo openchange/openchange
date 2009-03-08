@@ -244,7 +244,7 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 
 	if (r->in.lpETable == NULL) {
 		/* FIXME */
-		return MAPI_E_INVALID_BOOKMARK;
+		retval = MAPI_E_INVALID_BOOKMARK;
 	}
 
 	if (retval != MAPI_E_SUCCESS) {

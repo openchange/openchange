@@ -71,7 +71,7 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	/* Step 1. Check if mailbox pointed by recipient belongs to the Exchange organisation */
 
 	/* Step 2. Set LogonFlags */
-	response.LogonFlags = request.LogonFlags & LogonPrivate;
+	response.LogonFlags = request.LogonFlags;
 
 	/* Step 3. Build FolderIds list */
 	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_MAILBOX_ROOT, &response.LogonType.store_mailbox.FolderIds[0]);
@@ -143,11 +143,12 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 					  struct emsmdbp_context *emsmdbp_ctx,
-					  struct EcDoRpc_MAPI_REQ *request,
-					  struct EcDoRpc_MAPI_REPL *response,
+					  struct EcDoRpc_MAPI_REQ *mapi_req,
+					  struct EcDoRpc_MAPI_REPL *mapi_repl,
 					  uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
+	struct Logon_req		request;
 	struct mapi_handles		*rec = NULL;
 	struct emsmdbp_object		*object;
 
@@ -155,37 +156,36 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!request, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!response, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	/* Fill EcDoRpc_MAPI_REPL reply */
-	response->opnum = request->opnum;
-	response->handle_idx = request->handle_idx;
+	request = mapi_req->u.mapi_Logon;
 
-	switch (request->u.mapi_Logon.LogonFlags) {
-	case LogonPrivate:
-		retval = RopLogon_Mailbox(mem_ctx, emsmdbp_ctx, request, response);
-		response->error_code = retval;
-		*size = libmapiserver_RopLogon_size(request, response);
-		break;
-	default:
+	/* Fill EcDoRpc_MAPI_REPL reply */
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	if (request.LogonFlags & LogonPrivate) {
+		retval = RopLogon_Mailbox(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl);
+		mapi_repl->error_code = retval;
+		*size = libmapiserver_RopLogon_size(mapi_req, mapi_repl);
+	} else {
 		DEBUG(4, ("exchange_emsmdb: [OXCSTOR] Logon on Public Folders not implemented\n"));
 		retval = MAPI_E_NO_SUPPORT;
-		response->error_code = retval;
-		*size = libmapiserver_RopLogon_size(request, NULL);
-		break;
+		mapi_repl->error_code = retval;
+		*size = libmapiserver_RopLogon_size(mapi_req, NULL);
 	}
 
-	if (!response->error_code) {
+	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
 		retval = mapi_handles_set_systemfolder(rec, 0);
 
-		object = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, request);
+		object = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, mapi_req);
 		retval = mapi_handles_set_private_data(rec, object);
 
-		handles[response->handle_idx] = rec->handle;
+		handles[mapi_repl->handle_idx] = rec->handle;
 	}
 
 	return retval;

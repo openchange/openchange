@@ -207,8 +207,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		return MAPI_E_SUCCESS;
 	}
 
-	DEBUG(0, ("#### GetHierarchyTable: parentfolder = 0x%x\n", parentfolder));
-
 	switch (parentfolder) {
 	case 0x0:
 	case 0x1:

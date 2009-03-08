@@ -265,9 +265,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	response.prop_data.length = 0;
 	response.prop_data.data = NULL;
 
+	/* Fill EcDoRpc_MAPI_REPL reply */
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_NOT_FOUND;
+
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	if (retval) goto end;
 
 	retval = mapi_handles_get_systemfolder(rec, &systemfolder);
 	retval = mapi_handles_get_private_data(rec, &private_data);
@@ -289,12 +294,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	/* Fill EcDoRpc_MAPI_REPL reply */
-	mapi_repl->opnum = mapi_req->opnum;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->u.mapi_GetProps = response;
 
+ end:
 	*size += libmapiserver_RopGetPropertiesSpecific_size(mapi_req, mapi_repl);
 
 	return MAPI_E_SUCCESS;

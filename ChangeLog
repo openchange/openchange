@@ -1,3 +1,18 @@
+2009-03-11
+    jkerihuel
+	[r1285]
+		Make it possible to open and control up to 255 mailboxes within a 
+		single MAPI session.
+		
+		It implements an internal management of a logon_id array at session
+		level + enable transparent transport/copy of current logon_id value
+		among MAPI calls + finally transparently free the logon_id value when
+		the store object (PF or mailbox) is being released.
+	[r1284]
+		- Retrieve recipients from OpenEmbeddedMessage reply
+		- Test the implementation in mapitest
+		- Avoid potential memory leak: steal context for returned ulPropTags.
+
 2009-03-08
     jkerihuel
 	[r1282]

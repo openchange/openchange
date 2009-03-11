@@ -1375,10 +1375,13 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	struct OpenEmbeddedMessage_req	request;
 	struct OpenEmbeddedMessage_repl	*reply;
 	struct mapi_session		*session;
+	mapi_object_message_t		*message;
+	struct SPropValue		lpProp;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
+	uint32_t			i = 0;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1426,6 +1429,36 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 
 	/* Store OpenEmbeddedMessage reply data */
 	reply = &mapi_response->mapi_repl->u.mapi_OpenEmbeddedMessage;
+
+	message = talloc_zero((TALLOC_CTX *)session, mapi_object_message_t);
+	message->cValues = reply->RecipientCount;
+	message->SRowSet.cRows = reply->RowCount;
+	message->SRowSet.aRow = talloc_array((TALLOC_CTX *)message, struct SRow, reply->RowCount + 1);
+
+	message->SPropTagArray.cValues = reply->RecipientCount;
+	message->SPropTagArray.aulPropTag = talloc_steal(message, reply->RecipientColumns);
+
+	for (i = 0; i < reply->RowCount; i++) {
+		emsmdb_get_SRow((TALLOC_CTX *)message, global_mapi_ctx->lp_ctx,
+				&(message->SRowSet.aRow[i]), &message->SPropTagArray,
+				reply->RecipientRows[i].RecipientRow.prop_count,
+				&reply->RecipientRows[i].RecipientRow.prop_values,
+				reply->RecipientRows[i].RecipientRow.layout, 1);
+
+		lpProp.ulPropTag = PR_RECIPIENT_TYPE;
+		lpProp.value.l = reply->RecipientRows[i].RecipientType;
+		SRow_addprop(&(message->SRowSet.aRow[i]), lpProp);
+
+		lpProp.ulPropTag = PR_INTERNET_CPID;
+		lpProp.value.l = reply->RecipientRows[i].CodePageId;
+		SRow_addprop(&(message->SRowSet.aRow[i]), lpProp);
+	}
+
+	/* add SPropTagArray elements we automatically append to SRow */
+	SPropTagArray_add((TALLOC_CTX *)message, &message->SPropTagArray, PR_RECIPIENT_TYPE);
+	SPropTagArray_add((TALLOC_CTX *)message, &message->SPropTagArray, PR_INTERNET_CPID);
+	
+	obj_embeddedmsg->private_data = (void *) message;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

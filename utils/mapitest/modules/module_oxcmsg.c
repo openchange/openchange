@@ -1103,6 +1103,8 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 	mapi_object_t		obj_embeddedmsg;
 	mapi_id_t		id_msgs[1];                           
 	struct SPropValue	attach[2];
+	struct SRowSet		SRowSet;
+	struct SPropTagArray	SPropTagArray;
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
@@ -1159,7 +1161,7 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 		mapi_object_release(&obj_message);
 		mapi_object_release(&obj_folder);
 		mapi_object_release(&obj_store);
-		return false;;
+		return false;
 	}
 
 	mapi_object_init(&obj_embeddedmsg);
@@ -1170,7 +1172,7 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 		mapi_object_release(&obj_message);
 		mapi_object_release(&obj_folder);
 		mapi_object_release(&obj_store);
-		return false;;
+		return false;
 	}
 
 	ret = mapitest_common_message_fill(mt, &obj_embeddedmsg, "[MT] EmbeddedMessage");
@@ -1190,7 +1192,7 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 		mapi_object_release(&obj_message);
 		mapi_object_release(&obj_folder);
 		mapi_object_release(&obj_store);
-		return false;;
+		return false;
 	}
 	// Save the changes to the attachment and then the message
 	retval = SaveChangesAttachment(&obj_message, &obj_attach, KeepOpenReadOnly);
@@ -1200,7 +1202,7 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 		mapi_object_release(&obj_message);
 		mapi_object_release(&obj_folder);
 		mapi_object_release(&obj_store);
-		return false;;
+		return false;
 	}
 
 	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
@@ -1210,10 +1212,38 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 		mapi_object_release(&obj_message);
 		mapi_object_release(&obj_folder);
 		mapi_object_release(&obj_store);
-		return false;;
+		return false;
 	}
 
-	/* Step 5. Delete the message */
+	/* Step 5. Open the embedded message */
+	mapi_object_init(&obj_attach);
+	retval = OpenAttach(&obj_message, 0, &obj_attach);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenAttach", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_attach);
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;
+	}
+	retval = OpenEmbeddedMessage(&obj_attach, &obj_embeddedmsg, 0);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenEmbeddedMessage", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_attach);
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;
+	}
+
+	/* Step 6. Get the recipient table */
+	retval = GetRecipientTable(&obj_embeddedmsg, &SRowSet, &SPropTagArray);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRecipientTable", retval);
+
+	mapidump_SRowSet(&SRowSet, "\t * ");
+	mapi_object_release(&obj_embeddedmsg);
+
+	/* Step 7. Delete the message */
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", GetLastError());

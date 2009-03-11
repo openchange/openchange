@@ -75,7 +75,7 @@ _PUBLIC_ enum MAPISTATUS AddressTypes(mapi_object_t *obj_store,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_AddressTypes;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_store);
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -145,7 +145,7 @@ _PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetSpooler;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_store);
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -230,7 +230,7 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SpoolerLockMessage;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_store);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SpoolerLockMessage = request;
 	size += 5;

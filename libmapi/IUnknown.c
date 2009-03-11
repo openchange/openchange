@@ -130,7 +130,7 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_Release;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj);
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -217,7 +217,7 @@ _PUBLIC_ enum MAPISTATUS GetLongTermIdFromId(mapi_object_t *obj, mapi_id_t id,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_LongTermIdFromId;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_LongTermIdFromId = request;
 	size += 5;
@@ -299,7 +299,7 @@ _PUBLIC_ enum MAPISTATUS GetIdFromLongTermId(mapi_object_t *obj, struct LongTerm
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_IdFromLongTermId;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_IdFromLongTermId = request;
 	size += 5;

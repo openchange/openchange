@@ -90,6 +90,7 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
+	uint8_t				logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -97,6 +98,8 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 
 	session = mapi_object_get_session(obj_container);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_container);
 
 	mem_ctx = talloc_named(NULL, 0, "GetContentsTable");
 	size = 0;
@@ -109,7 +112,7 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetContentsTable;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetContentsTable = request;
 	size += 5;
@@ -129,9 +132,10 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* set object session and handle */
+	/* set object session, handle and logon_id */
 	mapi_object_set_session(obj_table, session);
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_table, logon_id);
 
 	/* Retrieve RowCount if a valid pointer was set */
 	if (RowCount) {
@@ -210,6 +214,7 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
+	uint8_t				logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -217,6 +222,8 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	
 	session = mapi_object_get_session(obj_container);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_container);
 
 	mem_ctx = talloc_named(NULL, 0, "GetHierarchyTable");
 	size = 0;
@@ -229,7 +236,7 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetHierarchyTable;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetHierarchyTable = request;
 	size += 5;
@@ -249,10 +256,11 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* set object session and handle */
+	/* set object session, handle and logon_id */
 	mapi_object_set_session(obj_table, session);
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
-	
+	mapi_object_set_logon_id(obj_table, logon_id);
+
 	/* Retrieve RowCount if a valid pointer was set */
 	if (RowCount) {
 		*RowCount = mapi_response->mapi_repl->u.mapi_GetHierarchyTable.RowCount;
@@ -299,6 +307,7 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
+	uint8_t			logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -306,6 +315,8 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 
 	session = mapi_object_get_session(obj_container);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_container);
 
 	mem_ctx = talloc_named(NULL, 0, "GetTable");
 	size = 0;
@@ -318,7 +329,7 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetTable;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx= 0;
 	mapi_req->u.mapi_GetTable = request;
 	size += 5;
@@ -338,9 +349,10 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* set object session and handle */
+	/* set object session, handle and logon_id */
 	mapi_object_set_session(obj_table, session);
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_table, logon_id);
 
 	/* new table */
 	mapi_object_table_init((TALLOC_CTX *)session, obj_table);
@@ -387,6 +399,7 @@ _PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder,
 	enum MAPISTATUS			retval;
 	uint32_t			size;
 	TALLOC_CTX			*mem_ctx;
+	uint8_t				logon_id;
 
 	/* Sanity check */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -395,6 +408,8 @@ _PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder,
 
 	session = mapi_object_get_session(obj_folder);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_folder);
 
 	mem_ctx = talloc_named(NULL, 0, "GetRulesTable");
 	size = 0;
@@ -409,7 +424,7 @@ _PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetRulesTable;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetRulesTable = request;
 	size += 5;
@@ -429,9 +444,10 @@ _PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* set object session and handle */
+	/* set object session, handle and logon_id */
 	mapi_object_set_session(obj_table, session);
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_table, logon_id);
 
 	/* new table */
 	mapi_object_table_init((TALLOC_CTX *)session, obj_table);
@@ -507,7 +523,7 @@ _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowL
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_ModifyTable;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx= 0;
 	mapi_req->u.mapi_ModifyTable = request;
 	size += 5;
@@ -590,7 +606,7 @@ _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container,
 	enum MAPISTATUS			retval;
 	uint32_t			size;
 	TALLOC_CTX			*mem_ctx;
-	
+
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_container, MAPI_E_INVALID_PARAMETER, NULL);
@@ -625,7 +641,7 @@ _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetSearchCriteria;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_container);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SetSearchCriteria = request;
 	size += 5;
@@ -712,7 +728,7 @@ _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetSearchCriteria;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_container);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetSearchCriteria = request;
 	size += 5;

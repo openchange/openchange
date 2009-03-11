@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007.
+   Copyright (C) Julien Kerihuel 2007-2009.
    Copyright (C) Fabien Le Mentec 2007.
 
    This program is free software; you can redistribute it and/or modify
@@ -36,9 +36,11 @@ typedef uint64_t mapi_id_t;
 typedef uint32_t mapi_handle_t;
 
 typedef struct mapi_object {
+	bool			store;
 	uint64_t		id;
 	mapi_handle_t		handle;
-  struct mapi_session		*session;
+	uint8_t			logon_id;
+	struct mapi_session	*session;
 	void			*private_data;
 } mapi_object_t;
 

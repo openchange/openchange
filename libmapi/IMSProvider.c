@@ -256,6 +256,35 @@ _PUBLIC_ enum MAPISTATUS Logoff(mapi_object_t *obj_store)
 
 
 /**
+   \details Retrieve a free logon identifier within the session
+
+   \param session pointer to the MAPI session context
+   \param logon_id pointer to the logon identifier the function
+   returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI eorr
+ */
+enum MAPISTATUS GetNewLogonId(struct mapi_session *session, uint8_t *logon_id)
+{
+	int	i = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!logon_id, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < 255; i++) {
+		if (!session->logon_ids[i]) {
+			session->logon_ids[i] = 1;
+			*logon_id = i;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	return MAPI_E_NOT_FOUND;
+}
+
+
+/**
    \details Initialize the notification subsystem
 
    This function initializes the notification subsystem, binds a local

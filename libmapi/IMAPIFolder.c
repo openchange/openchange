@@ -57,12 +57,15 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
 	enum MAPISTATUS			retval;
 	uint32_t			size;
 	TALLOC_CTX			*mem_ctx;
+	uint8_t				logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_folder);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_folder);
 
 	mem_ctx = talloc_named(NULL, 0, "CreateMessage");
 	size = 0;
@@ -80,7 +83,7 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CreateMessage;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_CreateMessage = request;
 	size += 5;
@@ -103,6 +106,7 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
 	/* set object session and handle */
 	mapi_object_set_session(obj_message, session);
 	mapi_object_set_handle(obj_message, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_message, logon_id);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -166,7 +170,7 @@ _PUBLIC_ enum MAPISTATUS DeleteMessage(mapi_object_t *obj_folder, mapi_id_t *id_
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_DeleteMessages;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_folder);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_DeleteMessages = request;
 	size += 5;
@@ -241,7 +245,7 @@ _PUBLIC_ enum MAPISTATUS GetMessageStatus(mapi_object_t *obj_folder,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetMessageStatus;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_folder);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetMessageStatus = request;
 	size += 5;
@@ -341,7 +345,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageStatus(mapi_object_t *obj_folder,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetMessageStatus;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_folder);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SetMessageStatus = request;
 	size += 5;
@@ -440,7 +444,7 @@ _PUBLIC_ enum MAPISTATUS MoveCopyMessages(mapi_object_t *obj_src,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_MoveCopyMessages;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_src);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_MoveCopyMessages = request;
 	size += 5;
@@ -514,6 +518,7 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent,
 	enum MAPISTATUS		retval;
 	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
+	uint8_t			logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -521,6 +526,8 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent,
 	OPENCHANGE_RETVAL_IF(!name, MAPI_E_NOT_INITIALIZED, NULL);
 	session = mapi_object_get_session(obj_parent);
 	OPENCHANGE_RETVAL_IF(!obj_parent, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_parent);
 
 	/* Sanitify check on the folder type */
 	OPENCHANGE_RETVAL_IF((ulFolderType != FOLDER_GENERIC && 
@@ -584,7 +591,7 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CreateFolder;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_CreateFolder = request;
 	size += 5;
@@ -609,6 +616,7 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent,
 	mapi_object_set_session(obj_child, session);
 	mapi_object_set_handle(obj_child, mapi_response->handles[1]);
 	mapi_object_set_id(obj_child, mapi_response->mapi_repl->u.mapi_CreateFolder.folder_id);
+	mapi_object_set_logon_id(obj_child, logon_id);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -665,7 +673,7 @@ _PUBLIC_ enum MAPISTATUS EmptyFolder(mapi_object_t *obj_folder)
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_EmptyFolder;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_folder);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_EmptyFolder = request;
 	size += 5;
@@ -754,7 +762,7 @@ _PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_DeleteFolder;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_parent);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_DeleteFolder = request;
 	size += 5;
@@ -861,7 +869,7 @@ _PUBLIC_ enum MAPISTATUS MoveFolder(mapi_object_t *obj_folder,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_MoveFolder;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_folder);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_MoveFolder = request;
 	size += 5;
@@ -971,7 +979,7 @@ _PUBLIC_ enum MAPISTATUS CopyFolder(mapi_object_t *obj_folder,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CopyFolder;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_folder);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_CopyFolder = request;
 	size += 5;
@@ -1062,7 +1070,7 @@ _PUBLIC_ enum MAPISTATUS SetReadFlags(mapi_object_t *obj_folder,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetReadFlags;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_folder);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SetReadFlags = request;
 	size += 5;

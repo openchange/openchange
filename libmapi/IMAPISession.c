@@ -62,11 +62,16 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
 	mapi_object_store_t	*store;
+	uint8_t			logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
+
+	/* Find the first available logon id */
+	retval = GetNewLogonId(session, &logon_id);
+	OPENCHANGE_RETVAL_IF(retval, MAPI_E_FAILONEPROVIDER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "OpenPublicFolder");
 	size = 0;
@@ -83,7 +88,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_Logon;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_Logon = request;
 	size += 5;
@@ -102,9 +107,11 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* retrieve object session and handle */
+	/* retrieve object session, handle and logon_id */
 	mapi_object_set_session(obj_store, session);
 	mapi_object_set_handle(obj_store, mapi_response->handles[0]);
+	mapi_object_set_logon_id(obj_store, logon_id);
+	mapi_object_set_logon_store(obj_store);
 
 	/* retrieve store content */
 	obj_store->private_data = talloc((TALLOC_CTX *)session, mapi_object_store_t);
@@ -210,11 +217,16 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	TALLOC_CTX		*mem_ctx;
 	mapi_object_store_t	*store;
 	char			*mailbox;
+	uint8_t			logon_id;
 
 	/* sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
+
+	/* Find the first available logon id */
+	retval = GetNewLogonId(session, &logon_id);
+	OPENCHANGE_RETVAL_IF(retval, MAPI_E_FAILONEPROVIDER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "OpenMsgStore");
 	size = 0;
@@ -239,7 +251,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_Logon;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_Logon = request;
 	size += 5;
@@ -258,9 +270,11 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* set object session and handle */
+	/* set object session, handle and logon_id */
 	mapi_object_set_session(obj_store, session);
 	mapi_object_set_handle(obj_store, mapi_response->handles[0]);
+	mapi_object_set_logon_id(obj_store, logon_id);
+	mapi_object_set_logon_store(obj_store);
 
 	/* retrieve store content */
 	obj_store->private_data = talloc((TALLOC_CTX *)session, mapi_object_store_t);

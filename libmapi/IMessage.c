@@ -86,12 +86,15 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
+	uint8_t			logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_message);
 
 	mem_ctx = talloc_named(NULL, 0, "CreateAttach");
 	size = 0;
@@ -103,7 +106,7 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CreateAttach;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_CreateAttach = request;
 	size += 5;
@@ -126,6 +129,7 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 	/* Set object session and handle */
 	mapi_object_set_session(obj_attach, session);
 	mapi_object_set_handle(obj_attach, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_attach, logon_id);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -181,7 +185,7 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t Attac
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_DeleteAttach;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_message);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_DeleteAttach = request;
 	size += 5;
@@ -235,6 +239,7 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	enum MAPISTATUS			retval;
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			size = 0;
+	uint8_t				logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -242,6 +247,8 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_message);
 
 	mem_ctx = talloc_named(NULL, 0, "GetAttachmentTable");
 	size = 0;
@@ -256,7 +263,7 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetAttachmentTable;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetAttachmentTable = request;
 	size += 5;
@@ -279,6 +286,7 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	/* Set object session and handle */
 	mapi_object_set_session(obj_table, session);
 	mapi_object_set_handle(obj_table, mapi_response->handles[mapi_response->mapi_repl->handle_idx]);
+	mapi_object_set_logon_id(obj_table, logon_id);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -319,12 +327,15 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t Attachm
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
+	uint8_t			logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_message);
 
 	mem_ctx = talloc_named(NULL, 0, "OpenAttach");
 	size = 0;
@@ -340,7 +351,7 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t Attachm
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_OpenAttach;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_OpenAttach = request;
 	size += 5;
@@ -363,6 +374,7 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t Attachm
 	/* Set object session and handle */
 	mapi_object_set_session(obj_attach, session);
 	mapi_object_set_handle(obj_attach, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_attach, logon_id);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -678,7 +690,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_ModifyRecipients;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_message);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_ModifyRecipients = request;
 	size += 5;
@@ -759,7 +771,7 @@ _PUBLIC_ enum MAPISTATUS ReadRecipients(mapi_object_t *obj_message,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_ReadRecipients;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_message);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_ReadRecipients = request;
 	size += 5;
@@ -834,7 +846,7 @@ _PUBLIC_ enum MAPISTATUS RemoveAllRecipients(mapi_object_t *obj_message)
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_RemoveAllRecipients;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_message);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_RemoveAllRecipients = request;
 	size += 5;
@@ -909,7 +921,7 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SubmitMessage;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_message);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SubmitMessage = request;
 	size += 5;
@@ -997,7 +1009,7 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_AbortSubmit;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_store);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_AbortSubmit = request;
 	size += 5;
@@ -1086,7 +1098,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SaveChangesMessage;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(parent);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SaveChangesMessage = request;
 	size += 5;
@@ -1147,7 +1159,7 @@ _PUBLIC_ enum MAPISTATUS TransportSend(mapi_object_t *obj_message,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_TransportSend;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_message);
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -1274,7 +1286,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetMessageReadFlag;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_folder);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SetMessageReadFlag = request;
 	size += 5;
@@ -1382,6 +1394,7 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			i = 0;
+	uint8_t				logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1389,6 +1402,8 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	session = mapi_object_get_session(obj_attach);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_embeddedmsg, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_attach);
 
 	mem_ctx = talloc_named(NULL, 0, "OpenEmbeddedMessage");
 
@@ -1403,7 +1418,7 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_OpenEmbeddedMessage;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_OpenEmbeddedMessage = request;
 	size += 5;
@@ -1426,6 +1441,7 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	/* Set object session and handle */
 	mapi_object_set_session(obj_embeddedmsg, session);
 	mapi_object_set_handle(obj_embeddedmsg, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_embeddedmsg, logon_id);
 
 	/* Store OpenEmbeddedMessage reply data */
 	reply = &mapi_response->mapi_repl->u.mapi_OpenEmbeddedMessage;

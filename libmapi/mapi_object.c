@@ -45,6 +45,8 @@
 static void mapi_object_reset(mapi_object_t *obj)
 {
 	obj->handle = INVALID_HANDLE_VALUE;
+	obj->logon_id = 0;
+	obj->store = false;
 	obj->id = 0;
 	obj->session = NULL;
 	obj->private_data = NULL;
@@ -99,6 +101,11 @@ _PUBLIC_ void mapi_object_release(mapi_object_t *obj)
 		if (obj->private_data) {
 			talloc_free(obj->private_data);
 		}
+
+		if (obj->store == true && obj->session) {
+			obj->session->logon_ids[obj->logon_id] = 0;
+		}
+
 		mapi_object_reset(obj);
 	}
 }
@@ -200,6 +207,48 @@ _PUBLIC_ mapi_id_t mapi_object_get_id(mapi_object_t *obj)
 void mapi_object_set_id(mapi_object_t *obj, mapi_id_t id)
 {
 	obj->id = id;
+}
+
+
+/**
+   \details Set the logon id for a given MAPI object
+
+   \param obj pointer to the object to set the logon id for
+   \param logon_id the logon identifier to associate to the MAPI
+   object
+ */
+_PUBLIC_ void mapi_object_set_logon_id(mapi_object_t *obj, 
+				       uint8_t logon_id)
+{
+	if (obj) {
+		obj->logon_id = logon_id;
+	}
+}
+
+
+/**
+   \details Retrieve the logon id for a given MAPI object
+
+   \param obj pointer to the object to retrieve the logon id from
+
+   \return the object logon ID on success, otherwise -1
+ */
+_PUBLIC_ uint8_t mapi_object_get_logon_id(mapi_object_t *obj)
+{
+	return (!obj) ? -1 : obj->logon_id;
+}
+
+
+/**
+   \details Mark a MAPI object as a store object
+   
+   \param obj pointer to the object to set the store boolean for
+ */
+_PUBLIC_ void mapi_object_set_logon_store(mapi_object_t *obj)
+{
+	if (obj) {
+		obj->store = true;
+	}
 }
 
 

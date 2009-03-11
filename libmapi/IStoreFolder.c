@@ -78,12 +78,15 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			i = 0;
+	uint8_t				logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	logon_id = mapi_object_get_logon_id(obj_store);
 
 	mem_ctx = talloc_named(NULL, 0, "OpenMessage");
 
@@ -98,7 +101,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_OpenMessage;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_OpenMessage = request;
 	size += 5;
@@ -121,6 +124,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	/* Set object session and handle */
 	mapi_object_set_session(obj_message, session);
 	mapi_object_set_handle(obj_message, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_message, logon_id);
 
 	/* Store OpenMessage reply data */
 	reply = &mapi_response->mapi_repl->u.mapi_OpenMessage;

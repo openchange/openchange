@@ -82,7 +82,7 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetColumns;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SetColumns = request;
 	size += 5;
@@ -169,7 +169,7 @@ _PUBLIC_ enum MAPISTATUS QueryPosition(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_QueryPosition;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -263,7 +263,7 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_QueryRows;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_QueryRows = request;
 	size += 5;
@@ -346,7 +346,7 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_QueryColumnsAll;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -441,7 +441,7 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SeekRow;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SeekRow = request;
 	size += 5;
@@ -535,7 +535,7 @@ _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SeekRowBookmark;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SeekRowBookmark = request;
 	size += 5;
@@ -629,7 +629,7 @@ _PUBLIC_ enum MAPISTATUS SeekRowApprox(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SeekRowApprox;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SeekRowApprox = request;
 	size += 5;
@@ -701,7 +701,7 @@ _PUBLIC_ enum MAPISTATUS CreateBookmark(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CreateBookmark;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -811,7 +811,7 @@ _PUBLIC_ enum MAPISTATUS FreeBookmark(mapi_object_t *obj_table,
 			/* Fill the MAPI_REQ request */
 			mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 			mapi_req->opnum = op_MAPI_FreeBookmark;
-			mapi_req->logon_id = 0;
+			mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 			mapi_req->handle_idx = 0;
 			mapi_req->u.mapi_FreeBookmark = request;
 			size += 5;
@@ -899,7 +899,7 @@ _PUBLIC_ enum MAPISTATUS SortTable(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SortTable;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SortTable = request;
 	size += 5;
@@ -1028,7 +1028,7 @@ _PUBLIC_ enum MAPISTATUS Reset(mapi_object_t *obj_table)
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_ResetTable;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -1125,7 +1125,7 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_Restrict;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_Restrict = request;
 	size += 5;
@@ -1246,7 +1246,7 @@ _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_FindRow;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_FindRow = request;
 	size += 5;
@@ -1334,7 +1334,7 @@ _PUBLIC_ enum MAPISTATUS GetStatus(mapi_object_t *obj_table, uint8_t *TableStatu
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetStatus;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -1406,7 +1406,7 @@ _PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_Abort;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -1510,7 +1510,7 @@ _PUBLIC_ enum MAPISTATUS ExpandRow(mapi_object_t *obj_table, uint64_t categoryId
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_ExpandRow;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_ExpandRow = request;
 	size += 5;
@@ -1606,7 +1606,7 @@ _PUBLIC_ enum MAPISTATUS CollapseRow(mapi_object_t *obj_table, uint64_t category
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CollapseRow;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_CollapseRow = request;
 	size += 5;
@@ -1699,7 +1699,7 @@ _PUBLIC_ enum MAPISTATUS GetCollapseState(mapi_object_t *obj_table, uint64_t row
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetCollapseState;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetCollapseState = request;
 	size += 5;
@@ -1797,7 +1797,7 @@ _PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetCollapseState;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_table);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SetCollapseState = request;
 	size += 5;

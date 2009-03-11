@@ -83,7 +83,7 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 	/* Fill the MAPI_REQ structure */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetLocalReplicaIds;
-	mapi_req->logon_id = 0;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_store);
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetLocalReplicaIds = request;
 	size += 5;

@@ -186,8 +186,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_tdb_fetch_MId(TDB_CONTEXT *tdb_ctx,
 					      const char *keyname,
 					      uint32_t *MId)
 {
+	TALLOC_CTX	*mem_ctx;
 	TDB_DATA	key;
 	TDB_DATA	dbuf;
+	char		*str;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!tdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -201,7 +203,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_tdb_fetch_MId(TDB_CONTEXT *tdb_ctx,
 	OPENCHANGE_RETVAL_IF(!dbuf.dptr, MAPI_E_NOT_FOUND, NULL);
 	OPENCHANGE_RETVAL_IF(!dbuf.dsize, MAPI_E_NOT_FOUND, NULL);
 
-	*MId = strtol((const char *)dbuf.dptr, NULL, 16);
+	mem_ctx = talloc_named(NULL, 0, "emsabp_tdb_fetch_MId");
+	str = talloc_strndup(mem_ctx, (char *)dbuf.dptr, dbuf.dsize);
+	*MId = strtol((const char *)str, NULL, 16);
+	talloc_free(mem_ctx);
 	free(dbuf.dptr);
 
 	return MAPI_E_SUCCESS;
@@ -321,6 +326,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_tdb_insert(TDB_CONTEXT *tdb_ctx,
 	TALLOC_CTX	*mem_ctx;
 	TDB_DATA	key;
 	TDB_DATA	dbuf;
+	char		*str;
 	int		index;
 	int		ret;
 
@@ -339,9 +345,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_tdb_insert(TDB_CONTEXT *tdb_ctx,
 	retval = emsabp_tdb_fetch(tdb_ctx, EMSABP_TDB_DATA_REC, &dbuf);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	index = strtol((const char *)dbuf.dptr, NULL, 16);
+	str = talloc_strndup(mem_ctx, (char *)dbuf.dptr, dbuf.dsize);
+	index = strtol(str, NULL, 16);
 	index += 1;
-
+	talloc_free(str);
 	free(dbuf.dptr);
 
 	dbuf.dptr = (unsigned char *)talloc_asprintf(mem_ctx, "0x%x", index);

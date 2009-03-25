@@ -527,10 +527,16 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolderTable(mapi_object_t *obj_store,
 		SRowSet->aRow[i].lpProps[0].dwAlignPad = 0x0;
 		SRowSet->aRow[i].lpProps[0].value.d = reply->entries[i].fid;
 
-		SRowSet->aRow[i].lpProps[1].ulPropTag = PR_MESSAGE_CLASS;
-		SRowSet->aRow[i].lpProps[1].dwAlignPad = 0x0;
-		SRowSet->aRow[i].lpProps[1].value.lpszA = talloc_strdup((TALLOC_CTX *)SRowSet->aRow, reply->entries[i].lpszMessageClass);
-	
+		if (reply->entries[i].lpszMessageClass && strlen(reply->entries[i].lpszMessageClass)) {
+			SRowSet->aRow[i].lpProps[1].ulPropTag = PR_MESSAGE_CLASS;
+			SRowSet->aRow[i].lpProps[1].dwAlignPad = 0x0;
+			SRowSet->aRow[i].lpProps[1].value.lpszA = talloc_strdup((TALLOC_CTX *)SRowSet->aRow[i].lpProps, reply->entries[i].lpszMessageClass);
+		} else {
+			SRowSet->aRow[i].lpProps[1].ulPropTag = PR_MESSAGE_CLASS;
+			SRowSet->aRow[i].lpProps[1].dwAlignPad = 0x0;
+			SRowSet->aRow[i].lpProps[1].value.lpszA = "";
+		}
+
 		SRowSet->aRow[i].lpProps[2].ulPropTag = PR_LAST_MODIFICATION_TIME;
 		SRowSet->aRow[i].lpProps[2].dwAlignPad = 0x0;
 		SRowSet->aRow[i].lpProps[2].value.ft.dwLowDateTime = reply->entries[i].modiftime.dwLowDateTime;

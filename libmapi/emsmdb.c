@@ -694,6 +694,7 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 
 		data = pull_emsmdb_property(mem_ctx, lp_ctx, &offset, tags->aulPropTag[i_tag], content);
 		if (data) {
+			talloc_steal(*propvals, data);
 			p_propval = &((*propvals)[i_propval]);
 			p_propval->ulPropTag = tags->aulPropTag[i_tag];
 			p_propval->dwAlignPad = 0x0;
@@ -780,6 +781,7 @@ _PUBLIC_ void emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx,
 			if (havePropertyValue) {
 				lpProps[prop].dwAlignPad = 0x0;
 				data = pull_emsmdb_property(mem_ctx, lp_ctx, &offset, lpProps[prop].ulPropTag, content);
+				talloc_steal(lpProps, data);
 				set_SPropValue(&lpProps[prop], data);
 			}
 		}
@@ -835,6 +837,7 @@ void emsmdb_get_SRow(TALLOC_CTX *mem_ctx,
 		} 
 
 		data = pull_emsmdb_property(mem_ctx, lp_ctx, &offset, aulPropTag, content);
+		talloc_steal(aRow->lpProps, data);
 		aRow->lpProps[i].ulPropTag = aulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
 		set_SPropValue(&(aRow->lpProps[i]), data);

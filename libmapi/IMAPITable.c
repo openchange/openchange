@@ -290,7 +290,7 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 	reply = &mapi_response->mapi_repl->u.mapi_QueryRows;
 	rowSet->cRows = reply->RowCount;
 	rowSet->aRow = talloc_array((TALLOC_CTX *)table, struct SRow, rowSet->cRows);
-	emsmdb_get_SRowSet((TALLOC_CTX *)table, global_mapi_ctx->lp_ctx, rowSet, &table->proptags, &reply->RowData);
+	emsmdb_get_SRowSet((TALLOC_CTX *)rowSet->aRow, global_mapi_ctx->lp_ctx, rowSet, &table->proptags, &reply->RowData);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

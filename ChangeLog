@@ -1,3 +1,8 @@
+2009-03-25
+    jkerihuel
+	[r1291]
+		Fix memory leaks for functions relying on pull_emsmdb_property
+
 2009-03-16
     jkerihuel
 	[r1289]

@@ -1741,12 +1741,6 @@ _PUBLIC_ enum MAPISTATUS GetCollapseState(mapi_object_t *obj_table, uint64_t row
 
    \param obj_table the table we are restoring the state for
    \param CollapseState the Collapse State to restore
-   \param lpbkPosition pointer to the bookmark value. This bookmark
-   can be passed in a call to the SeekRowBookmark method
-
-   You obtain the row number and row instance number arguments from
-   the PR_INST_ID and  PR_INST_NUM properties of the row you want to
-   use as the cursor.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
@@ -1760,8 +1754,7 @@ _PUBLIC_ enum MAPISTATUS GetCollapseState(mapi_object_t *obj_table, uint64_t row
    \sa GetCollapseState
  */
 _PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
-					  struct SBinary_short *CollapseState,
-					  uint32_t *lpbkPosition)
+					  struct SBinary_short *CollapseState)
 {
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
@@ -1774,7 +1767,6 @@ _PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
 	uint32_t			size;
 	TALLOC_CTX			*mem_ctx;
 	mapi_object_table_t	       	*mapi_table;
-	mapi_object_bookmark_t		*bookmark;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1820,18 +1812,6 @@ _PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
 
 	mapi_table = (mapi_object_table_t *)obj_table->private_data;
 	OPENCHANGE_RETVAL_IF(!mapi_table, MAPI_E_INVALID_PARAMETER, mem_ctx);
-
-	/* Store the bookmark in the mapi_object_table private_data */
-	bookmark = talloc_zero((TALLOC_CTX *)mapi_table->bookmark, mapi_object_bookmark_t);
-	mapi_table->bk_last++;
-	bookmark->index = mapi_table->bk_last;
-	bookmark->bin.cb = reply->bookmark.cb;
-	bookmark->bin.lpb = talloc_array((TALLOC_CTX *)bookmark, uint8_t, reply->bookmark.cb);
-	memcpy(bookmark->bin.lpb, reply->bookmark.lpb, reply->bookmark.cb);
-
-	DLIST_ADD(mapi_table->bookmark, bookmark);
-
-	*lpbkPosition = mapi_table->bk_last;
 
 	obj_table->private_data = mapi_table;
 

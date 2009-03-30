@@ -733,8 +733,6 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	uint32_t		Numerator = 0;
 	uint32_t		Denominator = 0;
 	struct SBinary_short	collapseState;
-	uint32_t		bookmark;
-
 
 	/* Step 1. Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, &count)) {
@@ -870,7 +868,7 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	}
 
 	/* Restore the collapse state  */
-	SetCollapseState(&(obj_test_folder), &collapseState, &bookmark);
+	SetCollapseState(&(obj_test_folder), &collapseState);
 	mapitest_print_retval(mt, "SetCollapseState");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -892,14 +890,6 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	}
 
  cleanup:
-	if (bookmark) {
-		FreeBookmark(&(obj_test_folder), bookmark);
-		mapitest_print_retval(mt, "FreeBookmark");
-		if (GetLastError() != MAPI_E_SUCCESS) {
-			ret = false;
-		}
-	}
-
 	/* Release */
 	mapi_object_release(&obj_htable);
 	mapi_object_release(&(obj_test_folder));

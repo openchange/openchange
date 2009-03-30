@@ -1,3 +1,16 @@
+2009-03-30
+    jkerihuel
+	[r1293]
+		Add session and logon_id to the list of parameters to copy between objects.
+		This patch fixes a problem in openchangeclient when using the --folder parameter.
+    bradh
+	[r1294]
+		Remove code relating to free'ing the bookmark returned
+		by SetCollapseState. Initial investigations with MS
+		lead me to believe that you can't free that resource.
+		
+		May be more work in this area as investigation continues.
+
 2009-03-25
     jkerihuel
 	[r1291]

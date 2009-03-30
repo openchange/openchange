@@ -148,6 +148,8 @@ _PUBLIC_ enum MAPISTATUS mapi_object_copy(mapi_object_t *dst, mapi_object_t *src
 	dst->id = src->id;
 	dst->handle = src->handle;
 	dst->private_data = src->private_data;
+	dst->logon_id = src->logon_id;
+	dst->session = src->session;
 
 	return MAPI_E_SUCCESS;
 }

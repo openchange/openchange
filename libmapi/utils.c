@@ -150,7 +150,7 @@ _PUBLIC_ enum MAPISTATUS GetFIDFromEntryID(uint16_t cb,
 	   ID may change (0x1 or 0x4 values identified so far).
 	   However this byte sounds the same than the parent folder
 	   one */
-	*fid += (parent_fid & 0xFF);
+	*fid += (parent_fid & 0xFFFF);
 
 	return MAPI_E_SUCCESS;
 }

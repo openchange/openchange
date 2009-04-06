@@ -1,3 +1,9 @@
+2009-04-06
+    jkerihuel
+	[r1297]
+		- Add Implementation for Logon redirect response buffer in OpenChange IDL
+		- Update libmapiserver size calculation routine for Logon call to handle this case
+
 2009-03-30
     jkerihuel
 	[r1293]

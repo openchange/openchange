@@ -168,6 +168,13 @@
  */
 #define	SIZE_DFLT_ROPLOGON_MAILBOX	160
 
+/**
+   \details LogonRop has a fixed size for redirect response:
+   -# LogonFlags: uint8_t
+   -# ServerNameSize: uint8_t
+ */
+#define	SIZE_DFLT_ROPLOGON_REDIRECT	2
+
 #define	SIZE_NULL_TRANSACTION		2
 
 __BEGIN_DECLS

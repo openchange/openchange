@@ -41,7 +41,13 @@ _PUBLIC_ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *request,
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response || response->error_code) {
+	if (!response || (response->error_code && response->error_code != ecWrongServer)) {
+		return size;
+	}
+
+	if (response->error_code == ecWrongServer) {
+		size += SIZE_DFLT_ROPLOGON_REDIRECT;
+		size += strlen (response->us.mapi_Logon.ServerName) + 1;
 		return size;
 	}
 

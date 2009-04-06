@@ -3321,6 +3321,13 @@ System Attendant Private Interface
 		[switch_is(LogonFlags)] LogonType	LogonType;
 	} Logon_repl;
 
+	/* Logon redirect response buffer (error_code == ecWrongServer) */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		LogonFlags	LogonFlags;
+		uint8		ServerNameSize;
+		astring		ServerName;
+	} Logon_redirect;
+
 	/*************************/
 	/* EcDoRpc Function 0xA5 */
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -3561,6 +3568,11 @@ System Attendant Private Interface
 
 	} EcDoRpc_MAPI_REPL_UNION;
 
+	typedef [public, nodiscriminant] union {
+		[case(op_MAPI_Logon)] Logon_redirect mapi_Logon;
+		[default];
+	} EcDoRpc_MAPI_REPL_UNION_SPECIAL;
+
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint8		opnum;
 		uint8		logon_id;
@@ -3573,6 +3585,7 @@ System Attendant Private Interface
 		uint8		handle_idx;
 		MAPISTATUS	error_code;
 		[switch_is(opnum)] EcDoRpc_MAPI_REPL_UNION u;
+		[switch_is(opnum)] EcDoRpc_MAPI_REPL_UNION_SPECIAL us;
 	} EcDoRpc_MAPI_REPL;
 
 

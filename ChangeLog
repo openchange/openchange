@@ -1,5 +1,7 @@
 2009-04-06
     jkerihuel
+	[r1299]
+		Use parent folder full replica ID: 2 bytes instead of 1 byte
 	[r1297]
 		- Add Implementation for Logon redirect response buffer in OpenChange IDL
 		- Update libmapiserver size calculation routine for Logon call to handle this case

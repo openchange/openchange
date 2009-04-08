@@ -1,3 +1,17 @@
+2009-04-08
+    bradh
+	[r1302]
+		Mapitest cleanups - remove GetLastError(), and other minor edits.
+	[r1301]
+		Implement LockRegionStream and UnlockRegionStream ROPs.
+		
+		These appear to be a relatively recent addition to the 
+		documentation, possibly only used in Exchange 2007 / Outlook
+		2007.
+		
+		This is complete except for testing of whether the locking
+		actually works.
+
 2009-04-06
     jkerihuel
 	[r1299]

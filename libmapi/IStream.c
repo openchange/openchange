@@ -470,8 +470,8 @@ _PUBLIC_ enum MAPISTATUS GetStreamSize(mapi_object_t *obj_stream, uint32_t *Stre
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
-     beyond the last row requested.
+   - MAPI_E_INVALID_PARAMETER: obj_stream is not valid, Origin is out
+   of limits, or NewPosition is null.
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
    
@@ -550,8 +550,7 @@ _PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, u
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_BOOKMARK: the bookmark specified is invalid or
-     beyond the last row requested.
+   - MAPI_E_INVALID_PARAMETER: obj_stream is not valid
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
    
@@ -700,6 +699,167 @@ _PUBLIC_ enum MAPISTATUS CopyToStream(mapi_object_t *obj_src, mapi_object_t *obj
 
 	*ReadByteCount = mapi_response->mapi_repl->u.mapi_CopyToStream.ReadByteCount;
 	*WrittenByteCount = mapi_response->mapi_repl->u.mapi_CopyToStream.WrittenByteCount;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Lock a range of bytes within the stream
+
+   \param obj_stream the stream object
+   \param RegionOffset starting point for the range
+   \param RegionSize length of the range
+   \param LockFlags type of locking to apply
+
+   Setting LockFlags to 0x00000001 will provide a write lock (i.e. one
+   writer, any number of readers). Setting LockFlags to any other value
+   will provide a read-write lock (one reader/writer, no other readers
+   or writers).
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_stream is not valid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   
+   \sa UnlockRegionStream 
+ */
+_PUBLIC_ enum MAPISTATUS LockRegionStream(mapi_object_t *obj_stream, uint64_t RegionOffset, 
+					  uint64_t RegionSize, uint32_t LockFlags)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct LockRegionStream_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	TALLOC_CTX			*mem_ctx;
+	uint32_t			size;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj_stream);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "LockRegionStream");
+	size = 0;
+
+	/* Fill the LockRegionStream operation */
+	request.RegionOffset = RegionOffset;
+	size += sizeof (uint64_t);
+	request.RegionSize = RegionSize;
+	size += sizeof (uint64_t);
+	request.LockFlags = LockFlags;
+	size += sizeof (uint32_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_LockRegionStream;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_LockRegionStream = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
+
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Unlock a range of bytes within the stream
+
+   \param obj_stream the stream object
+   \param RegionOffset starting point for the range
+   \param RegionSize length of the range
+   \param LockFlags type of locking
+
+   LockFlags used in unlocking must match the LockFlags used in locking.
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_stream is not valid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   
+   \sa UnlockRegionStream 
+ */
+_PUBLIC_ enum MAPISTATUS UnlockRegionStream(mapi_object_t *obj_stream, uint64_t RegionOffset, 
+					    uint64_t RegionSize, uint32_t LockFlags)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct UnlockRegionStream_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	TALLOC_CTX			*mem_ctx;
+	uint32_t			size;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj_stream);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "UnlockRegionStream");
+	size = 0;
+
+	/* Fill the LockRegionStream operation */
+	request.RegionOffset = RegionOffset;
+	size += sizeof (uint64_t);
+	request.RegionSize = RegionSize;
+	size += sizeof (uint64_t);
+	request.LockFlags = LockFlags;
+	size += sizeof (uint32_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_UnlockRegionStream;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_UnlockRegionStream = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
+
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

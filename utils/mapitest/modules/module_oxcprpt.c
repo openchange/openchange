@@ -763,7 +763,8 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 /**
    \details Test Stream operations. This test uses all related stream
    operations: OpenStream (0x2b), SetStreamSize (0x2f), WriteStream
-   (0x2d), CommitStream (0x5d), ReadStream (0x2c), SeekStream (0x2e)
+   (0x2d), CommitStream (0x5d), ReadStream (0x2c), SeekStream (0x2e),
+   LockRegionStream (0x5b) and UnlockRegionStream (0x5c)
    
    This function:
    -# Logon 
@@ -780,6 +781,9 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
    -# Read the stream and compare buffers
    -# SeekStream at 0x1000 from the end of the stream
    -# Read the 0x1000 last bytes and check if it matches
+   -# Lock a range of the stream
+   -# TODO: test if the locking works
+   -# Unlock a range of the stream
    -# Delete the message;
 
    \param mt pointer to the top-level mapitest structure
@@ -989,19 +993,36 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
-	
+
 	if (read_size && !strcmp(out_stream, stream + StreamSize - read_size)) {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Comparison");
 	} else {
 		mapitest_print(mt, "* %-35s: [FAILURE]\n", "Comparison");
 	}
 
-	/* Step 14. Delete the message */
+	/* Step 13. Lock a region */
+	retval = LockRegionStream(&obj_stream, 0x2000, 0x1000, 0x0);
+	mapitest_print_retval(mt, "LockRegionStream");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* TODO: Step 14. Test the locking */
+
+
+	/* Step 15. Unlock the region */
+	retval = UnlockRegionStream(&obj_stream, 0x2000, 0x1000, 0x0);
+	mapitest_print_retval(mt, "UnlockRegionStream");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 16. Delete the message */
 	errno = 0;
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
 	mapitest_print_retval(mt, "DeleteMessage");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 

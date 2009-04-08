@@ -858,6 +858,8 @@ System Attendant Private Interface
 			op_MAPI_EmptyFolder			= 0x58,
 			op_MAPI_ExpandRow			= 0x59,
 			op_MAPI_CollapseRow			= 0x5a,
+			op_MAPI_LockRegionStream		= 0x5b,
+			op_MAPI_UnlockRegionStream		= 0x5c,
 			op_MAPI_CommitStream			= 0x5d,
 			op_MAPI_GetStreamSize			= 0x5e,
 			op_MAPI_QueryNamedProperties		= 0x5f,
@@ -2804,6 +2806,28 @@ System Attendant Private Interface
 	} CollapseRow_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x5b */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		RegionOffset;
+		hyper		RegionSize;
+		uint32		LockFlags;
+	} LockRegionStream_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} LockRegionStream_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x5c */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		RegionOffset;
+		hyper		RegionSize;
+		uint32		LockFlags;
+	} UnlockRegionStream_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} UnlockRegionStream_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x5d */
 	typedef [flag(NDR_NOALIGN)] struct {
 	} CommitStream_req;
@@ -3416,6 +3440,8 @@ System Attendant Private Interface
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
 		[case(op_MAPI_ExpandRow)] ExpandRow_req mapi_ExpandRow;
 		[case(op_MAPI_CollapseRow)] CollapseRow_req mapi_CollapseRow;
+		[case(op_MAPI_LockRegionStream)] LockRegionStream_req mapi_LockRegionStream;
+		[case(op_MAPI_UnlockRegionStream)] UnlockRegionStream_req mapi_UnlockRegionStream;
 		[case(op_MAPI_CommitStream)] CommitStream_req mapi_CommitStream;
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_req mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamedProperties)] QueryNamedProperties_req mapi_QueryNamedProperties;
@@ -3530,6 +3556,8 @@ System Attendant Private Interface
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;
 		[case(op_MAPI_ExpandRow)] ExpandRow_repl mapi_ExpandRow;
 		[case(op_MAPI_CollapseRow)] CollapseRow_repl mapi_CollapseRow;
+		[case(op_MAPI_LockRegionStream)] LockRegionStream_repl mapi_LockRegionStream;
+		[case(op_MAPI_UnlockRegionStream)] UnlockRegionStream_repl mapi_UnlockRegionStream;
 		[case(op_MAPI_CommitStream)] CommitStream_repl mapi_CommitStream;
 		[case(op_MAPI_GetStreamSize)] GetStreamSize_repl mapi_GetStreamSize;
 		[case(op_MAPI_QueryNamedProperties)] QueryNamedProperties_repl mapi_QueryNamedProperties;

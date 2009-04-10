@@ -1,3 +1,12 @@
+2009-04-10
+    bradh
+	[r1304]
+		Update IDL for ModifyRules (0x41) and add IDL for 
+		UpdateDeferredActionMessages (0x57).
+		
+		This is a checkpoint commit, pending further investigation
+		into how we handle PtypRestriction and PtypRuleAction.
+
 2009-04-08
     bradh
 	[r1302]

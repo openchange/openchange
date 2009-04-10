@@ -855,6 +855,7 @@ System Attendant Private Interface
 			op_MAPI_Progress			= 0x50,
 			op_MAPI_GetNamesFromIDs			= 0x55,
 			op_MAPI_GetIDsFromNames			= 0x56,
+			op_MAPI_UpdateDeferredActionMessages	= 0x57,
 			op_MAPI_EmptyFolder			= 0x58,
 			op_MAPI_ExpandRow			= 0x59,
 			op_MAPI_CollapseRow			= 0x5a,
@@ -2533,14 +2534,18 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x41 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		ulRowFlags     		RulesDataFlags;
+		ulRowFlags     		RuleDataFlags;
 		mapi_SPropValue_array	PropertyValues;
-	} RulesData;
+	} RuleData;
+
+	typedef [bitmap8bit] bitmap {
+		ModifyRulesFlag_Replace	= 0x01
+	} ModifyRulesFlag;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		ModifyRulesFlags;
+		ModifyRulesFlag	ModifyRulesFlags;
 		uint16		RulesCount;
- 		RulesData	RulesData[RulesCount];
+ 		RuleData	RulesData[RulesCount];
 	} ModifyRules_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2770,6 +2775,16 @@ System Attendant Private Interface
 		uint16		count;
 		uint16		propID[count];
 	} GetIDsFromNames_repl;
+
+	/*************************/
+	/* EcDoRpc Function 0x57 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		SBinary_short	ServerEntryId;
+		SBinary_short	ClientEntryId;
+	} UpdateDeferredActionMessages_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} UpdateDeferredActionMessages_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x58 */
@@ -3437,6 +3452,7 @@ System Attendant Private Interface
 		[case(op_MAPI_Progress)] Progress_req mapi_Progress;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
+		[case(op_MAPI_UpdateDeferredActionMessages)] UpdateDeferredActionMessages_req mapi_UpdateDeferredActionMessages;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_req mapi_EmptyFolder;
 		[case(op_MAPI_ExpandRow)] ExpandRow_req mapi_ExpandRow;
 		[case(op_MAPI_CollapseRow)] CollapseRow_req mapi_CollapseRow;
@@ -3553,6 +3569,7 @@ System Attendant Private Interface
 		[case(op_MAPI_Progress)] Progress_repl mapi_Progress;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
+		[case(op_MAPI_UpdateDeferredActionMessages)] UpdateDeferredActionMessages_repl mapi_UpdateDeferredActionMessages;
 		[case(op_MAPI_EmptyFolder)] EmptyFolder_repl mapi_EmptyFolder;
 		[case(op_MAPI_ExpandRow)] ExpandRow_repl mapi_ExpandRow;
 		[case(op_MAPI_CollapseRow)] CollapseRow_repl mapi_CollapseRow;

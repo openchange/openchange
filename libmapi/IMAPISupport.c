@@ -149,6 +149,7 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	/* set notification handle */
 	mapi_object_init(&notification->obj_notif);
 	mapi_object_set_handle(&notification->obj_notif, mapi_response->handles[1]);
+	mapi_object_set_session(&notification->obj_notif, session);
 
 	notification->NotificationFlags = NotificationFlags;
 	notification->callback = notify_callback;
@@ -204,7 +205,6 @@ _PUBLIC_ enum MAPISTATUS Unsubscribe(struct mapi_session *session, uint32_t ulCo
 	while (notification) {
 		if (notification->ulConnection == ulConnection) {
 			retval = Release(&notification->obj_notif);
-			mapi_errstr("Release", GetLastError());
 			OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 			DLIST_REMOVE(notify_ctx->notifications, notification);
 			break;

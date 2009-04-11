@@ -1,3 +1,15 @@
+2009-04-11
+    bradh
+	[r1307]
+		Add session state to the notification.
+		Patch by Paolo Abeni - thanks for the investigation and fix.
+		
+		Also remove a stray debug message.
+	[r1306]
+		Add a new mapitest suite for OXCNOTIF (Core Notifications).
+		
+		Add a test to the OXCNOTIF suite based on test case provided by Paolo Abeni.
+
 2009-04-10
     bradh
 	[r1304]

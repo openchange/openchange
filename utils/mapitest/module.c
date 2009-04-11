@@ -34,6 +34,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	ret += module_oxcmsg_init(mt);
 	ret += module_oxcprpt_init(mt);
 	ret += module_oxorule_init(mt);
+	ret += module_oxcnotif_init(mt);
 	ret += module_oxcfxics_init(mt);
 	ret += module_nspi_init(mt);
 	ret += module_noserver_init(mt);
@@ -234,6 +235,27 @@ _PUBLIC_ uint32_t module_oxorule_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "OXORULE", "E-Mail Rules Protocol", true);
 
 	mapitest_suite_add_test(suite, "GET-RULES-TABLE", "Retrieve the rules table associated to a folder", mapitest_oxorule_GetRulesTable);
+
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
+
+
+/**
+   \details Register the Core Notification Protocol test suite
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_oxcnotif_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "OXCNOTIF", "Core Notification Protocol", true);
+
+	mapitest_suite_add_test(suite, "REGISTER-NOTIFICATION", "Subscribe to notifications", mapitest_oxcnotif_RegisterNotification);
 
 	mapitest_suite_register(mt, suite);
 

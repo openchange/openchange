@@ -40,39 +40,38 @@ static NTSTATUS mapiproxy_op_reply(struct dcesrv_call_state *dce_call, TALLOC_CT
 	return NT_STATUS_OK;
 }
 
-
-static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call, 
+				     const struct ndr_interface_table *table,
+				     const char *binding)
 {
 	NTSTATUS				status;
-	const struct ndr_interface_table	*table;
 	struct dcesrv_mapiproxy_private		*private;
-	const char				*binding;
 	const char				*user;
 	const char				*pass;
 	const char				*domain;
 	struct cli_credentials			*credentials;
+	bool					acquired_creds = false;
 	bool					machine_account;
 
-	/* Retrieve parametric options */
-	binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "binding");
-	machine_account = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "use_machine_account", false);
+	DEBUG(5, ("mapiproxy::mapiproxy_op_connect\n"));
 
-	private = dce_call->context->private_data;
-
+	/* Retrieve the binding string from parametric options if undefined */
 	if (!binding) {
-		DEBUG(0, ("You must specify a DCE/RPC binding string\n"));
-		return NT_STATUS_INVALID_PARAMETER;
+		binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "binding");
+		if (!binding) {
+			DEBUG(0, ("You must specify a DCE/RPC binding string\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 
+	/* Retrieve parametric options */
+	machine_account = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "use_machine_account", false);
 	user = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "username");
 	pass = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "password");
 	domain = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "domain");
 
-	table = ndr_table_by_uuid(&iface->syntax_id.uuid);
-	if (!table) {
-		dce_call->fault_code = DCERPC_FAULT_UNK_IF;
-		return NT_STATUS_NET_WRITE_FAULT;
-	}
+	/* Retrieve private mapiproxy data */
+	private = dce_call->context->private_data;
 
 	if (user && pass) {
 		DEBUG(5, ("dcerpc_mapiproxy: RPC proxy: Using specified account\n"));
@@ -104,6 +103,11 @@ static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, cons
 	} else if (dce_call->conn->auth_state.session_info->credentials) {
 		DEBUG(5, ("dcerpc_mapiproxy: RPC proxy: Using delegated credentials\n"));
 		credentials = dce_call->conn->auth_state.session_info->credentials;
+		acquired_creds = true;
+	} else if (private->credentials) {
+		DEBUG(5, ("dcerpc_mapiproxy: RPC proxy: Using acquired deletegated credentials\n"));
+		credentials = private->credentials;
+		acquired_creds = true;
 	} else {
 		DEBUG(1, ("dcerpc_mapiproxy: RPC proxy: You must supply binding, user and password or have delegated credentials\n"));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -133,33 +137,70 @@ static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, cons
 		default:
 			break;
 		}
-
+		
 		pipe_conn_req = dcerpc_pipe_connect_b_send(dce_call->context, b, table,
 							   credentials, dce_call->event_ctx, dce_call->conn->dce_ctx->lp_ctx);
 		status = dcerpc_pipe_connect_b_recv(pipe_conn_req, dce_call->context, &(private->c_pipe));
-		
-		talloc_free(credentials);
+
+		if (acquired_creds == false) {
+			talloc_free(credentials);
+		}
+
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 		dce_call->context->assoc_group_id = private->c_pipe->assoc_group_id;
- 		
+		
 	} else {
 		status = dcerpc_pipe_connect(dce_call->context,
 					     &(private->c_pipe), binding, table,
 					     credentials, dce_call->event_ctx,
 					     dce_call->conn->dce_ctx->lp_ctx);
+		
+		if (acquired_creds == false) {
+			talloc_free(credentials);
+		}
 
-		talloc_free(credentials);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 		dce_call->context->assoc_group_id = private->c_pipe->assoc_group_id;
 	}
 
+	private->connected = true;
+
 	DEBUG(5, ("dcerpc_mapiproxy: RPC proxy: CONNECTED\n"));
 
 	return NT_STATUS_OK;
+}
+
+static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+{
+	NTSTATUS				status;
+	const struct ndr_interface_table	*table;
+	struct dcesrv_mapiproxy_private		*private;
+	bool					delegated;
+
+	/* Retrieve private mapiproxy data */
+	private = dce_call->context->private_data;
+
+	table = ndr_table_by_uuid(&iface->syntax_id.uuid);
+	if (!table) {
+		dce_call->fault_code = DCERPC_FAULT_UNK_IF;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	if (dce_call->conn->auth_state.session_info->credentials) {
+		private->credentials = dce_call->conn->auth_state.session_info->credentials;
+		DEBUG(5, ("dcerpc_mapiproxy: Delegated credentials acquired\n"));
+	}
+
+	delegated = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "delegated_auth", false);
+	if (delegated == false) {
+		status = mapiproxy_op_connect(dce_call, table, NULL);
+	}
+
+	return status;
 }
 
 
@@ -193,6 +234,8 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	private->c_pipe = NULL;
 	private->exchname = NULL;
 	private->server_mode = server_mode;
+	private->connected = false;
+
 	dce_call->context->private_data = private;
 
 	if (server_mode == false) {
@@ -245,16 +288,36 @@ static void mapiproxy_op_unbind(struct dcesrv_connection_context *context, const
  */
 static NTSTATUS mapiproxy_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)
 {
+	NTSTATUS				status;
 	enum ndr_err_code			ndr_err;
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
+	struct dcesrv_mapiproxy_private		*private;
+
 
 	DEBUG(5, ("mapiproxy::mapiproxy_op_ndr_pull\n"));
 
+	private = dce_call->context->private_data;
 	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
 
 	dce_call->fault_code = 0;
+
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(0, ("User is not authenticated, cannot process\n"));
+		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
+		return NT_STATUS_NET_WRITE_FAULT;
+	}
+
+	/* If remote connection bind/auth has been delayed */
+	if (private->connected == false) {
+		status = mapiproxy_op_connect(dce_call, table, NULL);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
+			return NT_STATUS_NET_WRITE_FAULT;
+		}
+	}
 
 	if (opnum >= table->num_calls) {
 		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;

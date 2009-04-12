@@ -49,9 +49,11 @@
 #include <mapiproxy/libmapiproxy/libmapiproxy.h>
 
 struct dcesrv_mapiproxy_private {
-	struct dcerpc_pipe	*c_pipe;
-	char			*exchname;
-	bool			server_mode;
+	struct dcerpc_pipe			*c_pipe;
+	char					*exchname;
+	bool					server_mode;
+	bool					connected;
+	struct cli_credentials			*credentials;
 };
 
 enum exchange_handle {

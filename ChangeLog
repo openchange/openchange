@@ -1,3 +1,13 @@
+2009-04-12
+    jkerihuel
+	[r1309]
+		- Add dcerpc_mapiproxy:delegated_auth option 
+		This option delays mapiproxy-remote server authentication when
+		the client sends the first request on a given pipe. This is
+		mandatory in order to have delegated credentials to work.
+		
+		- Factor remote connection into mapiproxy_op_connect
+
 2009-04-11
     bradh
 	[r1307]

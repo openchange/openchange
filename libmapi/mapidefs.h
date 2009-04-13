@@ -47,6 +47,7 @@
 #define	PT_CLSID		0x48
 #define	PT_SVREID		0xFB
 #define	PT_SRESTRICT		0xFD
+#define	PT_ACTIONS		0xFE
 #define	PT_BINARY		0x102
 
 /* Multi valued property types */

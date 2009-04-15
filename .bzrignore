@@ -64,3 +64,4 @@ libmapi++/examples/foldertree
 libmapi++/examples/messages
 bin/mapistore_test
 _trial_temp
+mapiproxy/libmapiproxy/openchangedb_property.c

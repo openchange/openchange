@@ -1,3 +1,13 @@
+2009-04-15
+    bradh
+	[r1314]
+		Implement RopHardDeleteMessages (0x91). 
+		
+		Includes IDL, implementation and mapitest.
+    jelmer
+	[r1313]
+		Ignore generated property file.
+
 2009-04-13
     bradh
 	[r1311]

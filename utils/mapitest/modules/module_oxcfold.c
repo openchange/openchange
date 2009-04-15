@@ -596,7 +596,7 @@ error:
 
 
 /**
-   \details Test the MoveCopyMessages (0x33) opetation.
+   \details Test the MoveCopyMessages (0x33) operation.
 
    This function:
 	-# Log on the user private mailbox
@@ -943,6 +943,151 @@ _PUBLIC_ bool mapitest_oxcfold_CopyFolder(struct mapitest *mt)
 	mapi_object_release(&obj_dst);
 	mapi_object_release(&obj_store);
 
+
+	return ret;
+}
+
+/**
+   \details Test the HardDeleteMessages (0x91) operation.
+
+   This function:
+	-# Log on the user private mailbox
+	-# Open the Inbox folder (source)
+	-# Creates 3 sample messages
+	-# Hard delete the sample messages
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = true;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_message;
+	mapi_object_t		contents;
+	struct mapi_SRestriction res;
+	struct SPropTagArray    *SPropTagArray;
+	struct SRowSet		SRowSet;
+	mapi_id_array_t		msg_id_array;
+	mapi_id_t		msgid[50];
+	mapi_id_t		id_folder;
+	uint32_t		i;
+	uint32_t		count = 0;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 2. Open Source Inbox folder */
+	mapi_object_init(&obj_folder);
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
+	mapitest_print_retval(mt, "GetDefaultFolder");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	mapitest_print_retval(mt, "OpenFolder");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	mapi_object_init(&(contents));
+	GetContentsTable(&(obj_folder), &(contents), 0, &count);
+	mapitest_print_retval(mt, "GetContentsTable");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3. Create sample messages */
+	mapi_id_array_init(&msg_id_array);
+	for (i = 0; i < 3; i++) {
+		mapi_object_init(&obj_message);
+		ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+		if (!ret) {
+			mapitest_print(mt, "failed to create message %i\n", i);
+			ret = false;
+			goto cleanup;
+		}
+		
+		retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
+		mapitest_print_retval(mt, "SaveChangesMessage");
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+			goto cleanup;
+		}
+		mapi_id_array_add_obj(&msg_id_array, &obj_message);
+		mapi_object_release(&obj_message);
+	}
+
+
+	/* Step 4. Apply a filter */
+	res.rt = RES_PROPERTY;
+	res.res.resProperty.relop = RES_PROPERTY;
+	res.res.resProperty.ulPropTag = PR_SUBJECT;
+	res.res.resProperty.lpProp.ulPropTag = PR_SUBJECT;
+	res.res.resProperty.lpProp.value.lpszA = MT_MAIL_SUBJECT;
+
+	retval = Restrict(&(contents), &res, NULL);
+	mapitest_print_retval(mt, "Restrict");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 5. Get the filtered rows */
+        SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_MID);
+        SetColumns(&(contents), SPropTagArray);
+	mapitest_print_retval(mt, "SetColumns");
+	MAPIFreeBuffer(SPropTagArray);
+
+	retval = QueryRows(&(contents), 50, TBL_NOADVANCE, &SRowSet);
+	mapitest_print_retval(mt, "QueryRows");
+	if ( (retval == MAPI_E_SUCCESS) && (SRowSet.cRows >= 0) ) {
+		for (i = 0; i < SRowSet.cRows; ++i) {
+			msgid[i] = SRowSet.aRow[i].lpProps[0].value.d;
+		}
+		mapitest_print(mt, "%i Messages created successfully\n", SRowSet.cRows);
+	}
+
+	/* Step 6. Delete Messages */
+	retval = HardDeleteMessage(&obj_folder, msgid, i); 
+	mapitest_print_retval(mt, "HardDeleteMessage");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 7. Check the restriction again */
+	retval = QueryRows(&(contents), 50, TBL_NOADVANCE, &SRowSet);
+	mapitest_print_retval(mt, "QueryRows");
+	if ( retval != MAPI_E_SUCCESS ) {
+		ret = false;
+		goto cleanup;
+	}
+
+	if (SRowSet.cRows == 0) {
+		mapitest_print(mt, "successfully deleted messages\n");
+	} else {
+		mapitest_print(mt, "failed to delete messages\n");
+		ret = false;
+	}
+
+cleanup:
+	/* Release */
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
 
 	return ret;
 }

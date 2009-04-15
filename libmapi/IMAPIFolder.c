@@ -197,6 +197,89 @@ _PUBLIC_ enum MAPISTATUS DeleteMessage(mapi_object_t *obj_folder, mapi_id_t *id_
 
 
 /**
+   \details Hard delete one or more messages
+
+   This function hard deletes one or more messages based on their
+   ids from a specified folder.
+
+   \param obj_folder the folder to hard delete messages from
+   \param id_messages the list of ids
+   \param cn_messages the number of messages in the id list.
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: the parent folder was not valid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenFolder, CreateMessage, GetLastError
+*/
+_PUBLIC_ enum MAPISTATUS HardDeleteMessage(mapi_object_t *obj_folder,
+					   mapi_id_t *id_messages,
+					   uint16_t cn_messages)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct HardDeleteMessages_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size;
+	TALLOC_CTX			*mem_ctx;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj_folder);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "HardDeleteMessages");
+	size = 0;
+
+	/* Fill the HardDeleteMessages operation */
+	request.WantAsynchronous = 0x0;
+	size += sizeof (uint8_t);
+	request.NotifyNonRead = 0x1;
+	size += sizeof(uint8_t);
+	request.MessageIdCount = cn_messages;
+	size += sizeof(uint16_t);
+	request.MessageIds = id_messages;
+	size += request.MessageIdCount * sizeof(mapi_id_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_HardDeleteMessages;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_folder);
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_HardDeleteMessages = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_folder);
+
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details Obtain the status associated with a message
 
    This function obtains the status associated with a message in the

@@ -1,3 +1,10 @@
+2009-04-16
+    bradh
+	[r1316]
+		Implement (IDL, libmapi, mapitest) RopHardDeleteMessagesAndSubfolders (0x92)
+		
+		Also fix some bugs in mapitest common code, and an incorrect sanity check in CreateFolder().
+
 2009-04-15
     bradh
 	[r1314]

@@ -369,6 +369,7 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 	struct SPropValue	lpProp[3];
 	int 			i;
 	uint32_t		format;
+	bool			ret;
 
 	context = mt->priv;
 
@@ -377,19 +378,18 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
         retval = CreateFolder(&(context->obj_top_folder), FOLDER_GENERIC,
 			      MT_DIRNAME_TEST, NULL,
                               OPEN_IF_EXISTS, &(context->obj_test_folder));
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		mapitest_print(mt, "* %-35s: 0x%.8x\n", "Create the test folder", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print_retval(mt, "Create the test folder");
 		return false;
 	}
 
 	/* Create 5 test messages in the test folder with the same subject */
 	for (i = 0; i < 5; ++i) {
 		mapi_object_init(&(context->obj_test_msg[i]));
-		retval = mapitest_common_message_create(mt, &(context->obj_test_folder),
+		ret = mapitest_common_message_create(mt, &(context->obj_test_folder),
 							&(context->obj_test_msg[i]), MT_MAIL_SUBJECT);
-		if (GetLastError() != MAPI_E_SUCCESS) {
-			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Create test message", GetLastError());
-			mapi_object_release(&(context->obj_test_folder));
+		if (! ret) {
+			mapitest_print(mt, "* %-35s\n", "Failed to create test message");
 			return false;
 		}
 
@@ -404,13 +404,11 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 		MAPIFreeBuffer((void *)body);
 		if (retval != MAPI_E_SUCCESS) {
 			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Set props on message", GetLastError());
-			mapi_object_release(&(context->obj_test_folder));
 			return false;
 		}
 		retval = SaveChangesMessage(&(context->obj_test_folder), &(context->obj_test_msg[i]), KeepOpenReadWrite);
 		if (retval != MAPI_E_SUCCESS) {
 			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Save changes to  message", GetLastError());
-			mapi_object_release(&(context->obj_test_folder));
 			return false;
 		}
 	}
@@ -419,10 +417,10 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 	for (i = 5; i < 10; ++i) {
 		mapi_object_init(&(context->obj_test_msg[i]));
 		subject = talloc_asprintf(mt->mem_ctx, "[MT] Subject%i", i);
-		retval = mapitest_common_message_create(mt, &(context->obj_test_folder),
+		ret = mapitest_common_message_create(mt, &(context->obj_test_folder),
 							&(context->obj_test_msg[i]), subject);
-		if (GetLastError() != MAPI_E_SUCCESS) {
-			mapitest_print(mt, "* %-35s: 0x%.8x\n", "Create test message", GetLastError());
+		if (! ret){
+			mapitest_print(mt, "* %-35s\n", "Failed to create test message");
 			return false;
 		}
 
@@ -465,13 +463,15 @@ _PUBLIC_ bool mapitest_common_setup(struct mapitest *mt, mapi_object_t *obj_htab
 {
 	bool			ret = false;
 	struct mt_common_tf_ctx	*context;
+	enum MAPISTATUS		retval;
 
 	context = talloc(mt->mem_ctx, struct mt_common_tf_ctx);
 	mt->priv = context;
 
 	mapi_object_init(&(context->obj_store));
-	OpenMsgStore(mt->session, &(context->obj_store));
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	retval = OpenMsgStore(mt->session, &(context->obj_store));
+	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print_retval(mt, "Failed OpenMsgStore");
 		return false;
 	}
 
@@ -490,8 +490,9 @@ _PUBLIC_ bool mapitest_common_setup(struct mapitest *mt, mapi_object_t *obj_htab
 	}
 
 	mapi_object_init(obj_htable);
-	GetHierarchyTable(&(context->obj_top_folder), obj_htable, 0, count);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	retval = GetHierarchyTable(&(context->obj_top_folder), obj_htable, 0, count);
+	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print_retval(mt, "Failed GetHierachyTable");
 		return false;
 	}
 

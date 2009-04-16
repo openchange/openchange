@@ -4,6 +4,7 @@
    OpenChange Project - FOLDER OBJECT PROTOCOL operations
 
    Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Brad Hards 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1090,4 +1091,94 @@ cleanup:
 	mapi_object_release(&obj_store);
 
 	return ret;
+}
+
+/**
+   \details Test the HardDeleteMessagesAndSubfolder (0x92) operation.
+
+   This function:
+	-# Creates a filled test folder
+	-# Creates 2 subdirectories in the test folder
+	-# Hard deletes the sample messages and subdirectories
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcfold_HardDeleteMessagesAndSubfolders(struct mapitest *mt)
+{
+	struct mt_common_tf_ctx	*context;
+	enum MAPISTATUS		retval;
+	bool			ret = true;
+	mapi_object_t		obj_htable;
+	mapi_object_t		subfolder1;
+	mapi_object_t		subfolder2;
+	uint32_t		unread = 0;
+	uint32_t		total = 0;
+
+        /* Step 1. Logon and create a filled test folder */
+        if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
+                return false;
+        }
+
+	context = mt->priv;
+
+	/* Step 2. Create two subfolders */
+	mapi_object_init(&subfolder1);
+	retval = CreateFolder(&(context->obj_test_folder), FOLDER_GENERIC,
+			      "SubFolder1", NULL /*folder comment*/,
+			      OPEN_IF_EXISTS, &subfolder1);
+	mapi_object_release(&subfolder1);
+	mapitest_print_retval(mt, "Create Subfolder1");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	mapi_object_init(&subfolder2);
+	retval = CreateFolder(&(context->obj_test_folder), FOLDER_GENERIC,
+			      "SubFolder2", NULL /*folder comment*/,
+			      OPEN_IF_EXISTS, &subfolder2);
+	mapi_object_release(&subfolder2);
+	mapitest_print_retval(mt, "Create Subfolder2");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = GetFolderItemsCount(&(context->obj_test_folder), &unread, &total);
+	mapitest_print_retval(mt, "GetFolderItemsCount");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	mapitest_print(mt, "* Folder count: %i (%i unread)\n", total, unread);
+
+	/* Step 3. Hard delete contents */
+	retval = HardDeleteMessagesAndSubfolders(&(context->obj_test_folder));
+	mapitest_print_retval(mt, "HardDeleteMessagesAndSubfolders");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 4. Check successful deletion */
+	retval = GetFolderItemsCount(&(context->obj_test_folder), &unread, &total);
+	mapitest_print_retval(mt, "GetFolderItemsCount");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	mapitest_print(mt, "* Folder count: %i (%i unread)\n", total, unread);
+
+	if (total != 0 || unread != 0) {
+		ret = false;
+	}
+
+ cleanup:
+        /* Cleanup and release */
+        mapi_object_release(&obj_htable);
+        mapitest_common_cleanup(mt);
+
+        return ret;
 }

@@ -895,6 +895,7 @@ System Attendant Private Interface
 			op_MAPI_SetSyncNotificationGuid		= 0x88,
 			op_MAPI_FreeBookmark			= 0x89,
 			op_MAPI_HardDeleteMessages		= 0x91,
+			op_MAPI_HardDeleteMessagesAndSubfolders	= 0x92,
 			op_MAPI_Logon				= 0xfe,
 			/****** custom MAPI opnum for mapiproxy ******/
 			op_MAPI_proxypack			= 0xa5
@@ -3294,6 +3295,17 @@ System Attendant Private Interface
 	} HardDeleteMessages_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x92 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8	WantAsynchronous;
+		boolean8	WantDeleteAssociated;
+	} HardDeleteMessagesAndSubfolders_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		boolean8	PartialCompletion;
+	} HardDeleteMessagesAndSubfolders_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0xFE */
 	typedef [public,bitmap8bit] bitmap {
 		LogonPrivate	= 0x1,
@@ -3505,6 +3517,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_req mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_req mapi_FreeBookmark;
 		[case(op_MAPI_HardDeleteMessages)] HardDeleteMessages_req mapi_HardDeleteMessages;
+		[case(op_MAPI_HardDeleteMessagesAndSubfolders)] HardDeleteMessagesAndSubfolders_req mapi_HardDeleteMessagesAndSubfolders;
 		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
 		[case(op_MAPI_proxypack)] proxypack_req mapi_proxypack;
 	} EcDoRpc_MAPI_REQ_UNION;
@@ -3624,6 +3637,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_repl mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_repl mapi_FreeBookmark;
 		[case(op_MAPI_HardDeleteMessages)] HardDeleteMessages_repl mapi_HardDeleteMessages;
+		[case(op_MAPI_HardDeleteMessagesAndSubfolders)] HardDeleteMessagesAndSubfolders_repl mapi_HardDeleteMessagesAndSubfolders;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;
 		[case(op_MAPI_proxypack)] proxypack_repl mapi_proxypack;
 

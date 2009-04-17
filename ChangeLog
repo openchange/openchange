@@ -1,3 +1,20 @@
+2009-04-17
+    bradh
+	[r1320]
+		Fix Search notifications.
+		
+		MS concurred that the docs are wrong.
+		
+		Patch by Paolo Abeni - thanks very much for the
+		investigation and the patch.
+	[r1319]
+		Update GetStoreState documentation.
+	[r1318]
+		Implement RopSetPropertiesNoReplicate (0x79).
+		
+		IDL was already done. mapitest for DeletePropertiesNoReplicate was
+		reused / updated.
+
 2009-04-16
     bradh
 	[r1316]

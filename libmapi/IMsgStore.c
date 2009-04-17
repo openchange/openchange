@@ -727,16 +727,22 @@ _PUBLIC_ enum MAPISTATUS GetOwningServers(mapi_object_t *obj_store,
 
 
 /**
-   \details Gets the current store state for the loggued user
+   \details Gets the current store state for the logged in user
+
+   This operation must be performed against a user store (not against
+   a Public Folder store). The StoreState will have the 
+   STORE_HAS_SEARCHES flag set if there are any active search folders.
+   There are (currently) no other flags in the StoreState.
 
    \param obj_store the store object
-   \param StoreState pointer on the store state returned by the server
+   \param StoreState pointer to the store state returned by the server
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj_store or StoreState are not valid
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
  */

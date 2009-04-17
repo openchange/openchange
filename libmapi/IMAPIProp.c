@@ -590,6 +590,118 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	return MAPI_E_SUCCESS;
 }
 
+/**
+   \details Set one or more properties on a given object without 
+    invoking replication.
+
+   This function sets one or more properties on a specified object. It
+   is the same as SetProps, except if the object is a folder, where
+   this function does not result in folder properties being replicated.
+
+   \param obj the object to set properties on
+   \param lpProps the list of properties to set
+   \param PropCount the number of properties
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: obj is not valid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa SetProps, DeletePropertiesNoReplicate
+*/
+_PUBLIC_ enum MAPISTATUS SetPropertiesNoReplicate(mapi_object_t *obj,
+						  struct SPropValue *lpProps, 
+						  unsigned long PropCount)
+{
+	TALLOC_CTX				*mem_ctx;
+	struct mapi_request			*mapi_request;
+	struct mapi_response			*mapi_response;
+	struct EcDoRpc_MAPI_REQ			*mapi_req;
+	struct SetPropertiesNoReplicate_req	request;
+	struct mapi_session			*session;
+	struct mapi_nameid			*nameid;
+	struct SPropTagArray			*SPropTagArray = NULL;
+	NTSTATUS				status;
+	enum MAPISTATUS				retval;
+	uint32_t				size = 0;
+	unsigned long				i;
+	struct mapi_SPropValue			*mapi_props;
+	bool					named = false;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "SetPropertiesNoReplicate");
+	size = 0;
+
+	/* Named property mapping */
+	nameid = mapi_nameid_new(mem_ctx);
+	retval = mapi_nameid_lookup_SPropValue(nameid, lpProps, PropCount);
+	if (retval == MAPI_E_SUCCESS) {
+		named = true;
+		SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+		retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray);
+		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+		mapi_nameid_map_SPropValue(nameid, lpProps, PropCount, SPropTagArray);
+		MAPIFreeBuffer(SPropTagArray);
+	}
+	errno = 0;
+
+	/* build the array */
+	request.values.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, PropCount);
+	mapi_props = request.values.lpProps;
+	for (i = 0; i < PropCount; i++) {
+		size += cast_mapi_SPropValue(&mapi_props[i], &lpProps[i]);
+		size += sizeof(uint32_t);
+	}
+
+	request.values.cValues = PropCount;
+	size += sizeof(uint16_t);
+
+	/* add the size of the subcontext that will be added on ndr layer */
+	size += sizeof(uint16_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetPropertiesNoReplicate;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj);
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SetPropertiesNoReplicate = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj);
+
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	if (named == true) {
+		mapi_nameid_unmap_SPropValue(nameid, lpProps, PropCount);
+	}
+	talloc_free(nameid);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
 
 /**
    \details Deletes property values from an object without invoking

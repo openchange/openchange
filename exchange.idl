@@ -2221,6 +2221,15 @@ System Attendant Private Interface
 		[switch_is(TableEvent)] ContentsTableChangeUnion	ContentsTableChangeUnion;
 	} ContentsTableChange;
 
+	/* SearchMessageCreatedNotification: case 0xc004 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper					FID;
+		hyper					MID;
+		hyper					SearchFID;
+		uint16					TagCount;
+		MAPITAGS				Tags[TagCount];
+	} SearchMessageCreatedNotification;
+
 	/* SearchMessageRemovedNotification: case 0xc008 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper					FID;
@@ -2232,7 +2241,6 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper					FID;
 		hyper					MID;
-		hyper					SearchFID;
 		uint16					TagCount;
 		MAPITAGS				Tags[TagCount];
 	} SearchMessageModifiedNotification;
@@ -2257,6 +2265,7 @@ System Attendant Private Interface
 		[case(0x8020)] MessageMoveCopyNotification		MessageMoveNotification;
 		[case(0x8040)] MessageMoveCopyNotification		MessageCopyNotification;
 		[case(0x8100)] ContentsTableChange			ContentsTableChange;
+		[case(0xc004)] SearchMessageCreatedNotification		SearchMessageCreatedNotification;
 		[case(0xc008)] SearchMessageRemovedNotification		SearchMessageRemovedNotification;
 		[case(0xc010)] SearchMessageModifiedNotification	SearchMessageModifiedNotification;
 		[case(0xc100)] ContentsTableChange			SearchTableChange;

@@ -837,6 +837,7 @@ System Attendant Private Interface
 			op_MAPI_Abort				= 0x38,
 			op_MAPI_CopyTo				= 0x39,
 			op_MAPI_CopyToStream			= 0x3a,
+			op_MAPI_CloneStream			= 0x3b,
 			op_MAPI_GetTable			= 0x3e,
 			op_MAPI_GetRulesTable			= 0x3f,
 			op_MAPI_ModifyTable			= 0x40,
@@ -894,6 +895,7 @@ System Attendant Private Interface
 			op_MAPI_OpenPublicFolderByName		= 0x87,
 			op_MAPI_SetSyncNotificationGuid		= 0x88,
 			op_MAPI_FreeBookmark			= 0x89,
+			op_MAPI_WriteAndCommitStream		= 0x90,
 			op_MAPI_HardDeleteMessages		= 0x91,
 			op_MAPI_HardDeleteMessagesAndSubfolders	= 0x92,
 			op_MAPI_Logon				= 0xfe,
@@ -2509,6 +2511,15 @@ System Attendant Private Interface
 	} CopyToStream_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x3b */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		handle_idx;
+	} CloneStream_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} CloneStream_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x3e */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
@@ -3290,6 +3301,17 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 	} FreeBookmark_repl;
 
+	/*************************/
+	/* EcDoRpc Function 0x90 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		[subcontext(2), flag(NDR_REMAINING)] DATA_BLOB	data;
+	} WriteAndCommitStream_req;
+
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		WrittenSize;
+	} WriteAndCommitStream_repl;
+
 	/**************************/
 	/* EcDoRpc Function 0x91  */
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -3469,6 +3491,7 @@ System Attendant Private Interface
 		[case(op_MAPI_Abort)] Abort_req mapi_Abort;
 		[case(op_MAPI_CopyTo)] CopyTo_req mapi_CopyTo;
 		[case(op_MAPI_CopyToStream)] CopyToStream_req mapi_CopyToStream;
+		[case(op_MAPI_CloneStream)] CloneStream_req mapi_CloneStream;
 		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_req mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
@@ -3525,6 +3548,7 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_req mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_req mapi_FreeBookmark;
+		[case(op_MAPI_WriteAndCommitStream)] WriteAndCommitStream_req mapi_WriteAndCommitStream;
 		[case(op_MAPI_HardDeleteMessages)] HardDeleteMessages_req mapi_HardDeleteMessages;
 		[case(op_MAPI_HardDeleteMessagesAndSubfolders)] HardDeleteMessagesAndSubfolders_req mapi_HardDeleteMessagesAndSubfolders;
 		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
@@ -3588,6 +3612,7 @@ System Attendant Private Interface
 		[case(op_MAPI_Abort)] Abort_repl mapi_Abort;
 		[case(op_MAPI_CopyTo)] CopyTo_repl mapi_CopyTo;
 		[case(op_MAPI_CopyToStream)] CopyToStream_repl mapi_CopyToStream;
+		[case(op_MAPI_CloneStream)] CloneStream_repl mapi_CloneStream;
 		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_repl mapi_GetRulesTable;
 		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
@@ -3645,6 +3670,7 @@ System Attendant Private Interface
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_repl mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_repl mapi_FreeBookmark;
+		[case(op_MAPI_WriteAndCommitStream)] WriteAndCommitStream_repl mapi_WriteAndCommitStream;
 		[case(op_MAPI_HardDeleteMessages)] HardDeleteMessages_repl mapi_HardDeleteMessages;
 		[case(op_MAPI_HardDeleteMessagesAndSubfolders)] HardDeleteMessagesAndSubfolders_repl mapi_HardDeleteMessagesAndSubfolders;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;

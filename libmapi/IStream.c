@@ -866,3 +866,171 @@ _PUBLIC_ enum MAPISTATUS UnlockRegionStream(mapi_object_t *obj_stream, uint64_t 
 
 	return MAPI_E_SUCCESS;
 }
+
+/**
+   \details Clone a source stream to another stream
+
+   \param obj_src the source stream object
+   \param obj_dst the destination stream object
+ 
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: source or destination streams are not valid.
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+   
+   \sa OpenStream
+*/
+_PUBLIC_ enum MAPISTATUS CloneStream(mapi_object_t *obj_src, mapi_object_t *obj_dst)
+{
+	struct mapi_request	*mapi_request;
+	struct mapi_response	*mapi_response;
+	struct EcDoRpc_MAPI_REQ	*mapi_req;
+	struct CloneStream_req	request;
+	struct mapi_session	*session;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	TALLOC_CTX		*mem_ctx;
+	uint32_t		size;
+
+	/* Sanity Check */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_src, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj_src);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "CloneStream");
+	size = 0;
+
+	/* Fill the CloneStream operation */
+	request.handle_idx = 0x1; /* destionation */
+	size += sizeof (uint8_t);
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_CloneStream;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_src);
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_CloneStream = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_src);
+	mapi_request->handles[1] = 0xFFFFFFFF;
+
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	mapi_object_set_handle(obj_dst, mapi_response->handles[1]);
+	mapi_object_set_session(obj_dst, session);
+	mapi_object_set_logon_id(obj_dst, mapi_object_get_logon_id(obj_src));
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Write and commit a buffer to the stream
+
+   This function writes and commits the contents of a DATA_BLOB to
+   the stream obj_stream.
+
+   \param obj_stream the opened stream object
+   \param blob the DATA_BLOB to write to the stream
+   \param WrittenSize the actual number of bytes written to the
+   stream
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. 
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: A problem occured obtaining the session
+     context, or the stream or blob were null.
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+   - MAPI_E_TOO_BIG: the data blob was too large to process
+
+   \note The data size intended to be written to the stream should not
+   exceed a maximum size each time you call WriteStream. This size
+   depends on Exchange server version. However 0x1000 is known to be a
+   reliable write size value.
+
+   \sa WriteStream, CommitStream
+  */
+_PUBLIC_ enum MAPISTATUS WriteAndCommitStream(mapi_object_t *obj_stream, DATA_BLOB *blob, uint16_t *WrittenSize)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct WriteAndCommitStream_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	TALLOC_CTX			*mem_ctx;
+	uint32_t			size;
+
+	/* Sanity Checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj_stream);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!blob, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(blob->length > 0x7000, MAPI_E_TOO_BIG, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "WriteAndCommitStream");
+
+	size = 0;
+
+	/* Fill the WriteStream operation */
+	request.data = *blob;
+	size +=  blob->length;
+	/* size for subcontext(2) */
+	size += 2;
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_WriteAndCommitStream;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_WriteAndCommitStream = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_stream);
+
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	*WrittenSize = mapi_response->mapi_repl->u.mapi_WriteAndCommitStream.WrittenSize;
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+	
+	errno = 0;
+	return MAPI_E_SUCCESS;
+}
+

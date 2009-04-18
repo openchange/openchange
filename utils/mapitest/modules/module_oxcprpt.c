@@ -4,7 +4,7 @@
    OpenChange Project - PROPERTY AND STREAM OBJECT PROTOCOL operations
 
    Copyright (C) Julien Kerihuel 2008
-   Copyright (C) Brad Hards 2008
+   Copyright (C) Brad Hards 2008-2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -763,10 +763,10 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 
 
 /**
-   \details Test Stream operations. This test uses all related stream
+   \details Test Stream operations. This test uses related stream
    operations: OpenStream (0x2b), SetStreamSize (0x2f), WriteStream
    (0x2d), CommitStream (0x5d), ReadStream (0x2c), SeekStream (0x2e),
-   LockRegionStream (0x5b) and UnlockRegionStream (0x5c)
+   LockRegionStream (0x5b), UnlockRegionStream (0x5c), CloneStream (0x3b)
    
    This function:
    -# Logon 
@@ -786,6 +786,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
    -# Lock a range of the stream
    -# TODO: test if the locking works
    -# Unlock a range of the stream
+   -# Clone the stream
    -# Delete the message;
 
    \param mt pointer to the top-level mapitest structure
@@ -801,6 +802,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	mapi_object_t		obj_message;
 	mapi_object_t		obj_attach;
 	mapi_object_t		obj_stream;
+	mapi_object_t		obj_stream_clone;
 	mapi_id_t		id_folder;
 	DATA_BLOB		data;
 	struct SPropValue	attach[3];
@@ -1019,7 +1021,27 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 		ret = false;
 	}
 
-	/* Step 16. Delete the message */
+	/* Step 16. Clone the stream */
+	mapi_object_init(&obj_stream_clone);
+	retval = CloneStream(&obj_stream, &obj_stream_clone);
+	mapitest_print_retval(mt, "CloneStream");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 17. Test the clone */
+	retval = SeekStream(&obj_stream_clone, 0x0, 0, &NewPosition);
+	mapitest_print_retval(mt, "SeekStream");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	retval = ReadStream(&obj_stream_clone, buf, MT_STREAM_MAX_SIZE, &read_size);
+	mapitest_print_retval_fmt(mt, "ReadStream", "(0x%x bytes read)", read_size);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Delete the message */
 	errno = 0;
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
@@ -1029,6 +1051,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	}
 
 	/* Release */
+	mapi_object_release(&obj_stream_clone);
 	mapi_object_release(&obj_stream);
 	mapi_object_release(&obj_attach);
 	mapi_object_release(&obj_message);
@@ -2397,3 +2420,192 @@ cleanup:
 
 	return ret;
 }
+
+/**
+   \details Test WriteAndCommitStream (0x90) operation.
+
+   This function:
+   -# Logs in 
+   -# Opens the Outbox folder
+   -# Creates a test message
+   -# Creates an attachment on the test messages and set properties on the attachment
+   -# Opens a stream on the attachment
+   -# Sets the stream size
+   -# Write and commits into the stream
+   -# Saves the message
+   -# Gets stream size and compare values
+   -# Opens the stream again with different permissions
+   -# Reads the stream and compares buffers
+   -# Deletes the test message
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise -1
+ */
+_PUBLIC_ bool mapitest_oxcprpt_WriteAndCommitStream(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = true;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_attach;
+	mapi_object_t		obj_stream;
+	mapi_id_t		id_folder;
+	DATA_BLOB		data;
+	struct SPropValue	attach[3];
+	char			*stream = NULL;
+	char			*out_stream = NULL;
+	const uint32_t		stream_len = 0x1000;
+	unsigned char		buf[0x1000];
+	uint32_t		StreamSize = 0;
+	uint16_t		read_size = 0;
+	uint16_t		write_len = 0;
+	uint32_t		offset = 0;
+
+
+	stream = mapitest_common_genblob(mt->mem_ctx, stream_len);
+	if (stream == NULL) {
+		return false;
+	}
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Open Inbox folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
+	mapitest_print_retval(mt, "GetDefaultFolder");
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	mapitest_print_retval(mt, "OpenFolder");
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3. Create the message */
+	mapi_object_init(&obj_message);
+	mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+
+	/* Step 4. Create the attachment */
+	mapi_object_init(&obj_attach);
+	retval = CreateAttach(&obj_message, &obj_attach);
+	mapitest_print_retval(mt, "CreateAttach");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	attach[0].ulPropTag = PR_ATTACH_METHOD;
+	attach[0].value.l = ATTACH_BY_VALUE;
+	attach[1].ulPropTag = PR_RENDERING_POSITION;
+	attach[1].value.l = 0;
+	attach[2].ulPropTag = PR_ATTACH_FILENAME;
+	attach[2].value.lpszA = MT_MAIL_ATTACH;
+
+	retval = SetProps(&obj_attach, attach, 3);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 5. Open the stream */
+	mapi_object_init(&obj_stream);
+	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 2, &obj_stream);
+	mapitest_print_retval(mt, "OpenStream");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 6. Set the stream size */
+	retval = SetStreamSize(&obj_stream, (uint64_t) stream_len);
+	mapitest_print_retval(mt, "SetStreamSize");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 7. Write the stream */
+	write_len = 0;
+
+	data.length = stream_len;
+	data.data = (uint8_t *) stream;
+	retval = WriteAndCommitStream(&obj_stream, &data, &write_len);
+	mapitest_print_retval_fmt(mt, "WriteStream", "(0x%x bytes written)", write_len);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 8. Save the attachment */
+	retval = SaveChangesAttachment(&obj_message, &obj_attach, KeepOpenReadOnly);
+	mapitest_print_retval(mt, "SaveChangesAttachment");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
+	mapitest_print_retval(mt, "SaveChangesMessage");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	/* Step 9. Get stream size */
+	retval = GetStreamSize(&obj_stream, &StreamSize);
+	mapitest_print_retval(mt, "GetStreamSize");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+	mapitest_print(mt, "* %-35s: %s\n", "StreamSize comparison", 
+		       (StreamSize == stream_len) ? "[PASSED]" : "[FAILURE]");
+
+	/* Step 10. Read the stream */
+	mapi_object_release(&obj_stream);
+	mapi_object_init(&obj_stream);
+
+	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
+	mapitest_print_retval(mt, "OpenStream");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	offset = 0;
+	out_stream = talloc_size(mt->mem_ctx, StreamSize + 1);
+	do {
+		retval = ReadStream(&obj_stream, buf, MT_STREAM_MAX_SIZE, &read_size);
+		mapitest_print_retval_fmt(mt, "ReadStream", "(0x%x bytes read)", read_size);
+		memcpy(out_stream + offset, buf, read_size);
+		offset += read_size;
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+			break;
+		}
+	} while (read_size && (offset != StreamSize));
+	out_stream[offset] = '\0';
+
+	if (offset) {
+		if (!strcmp(stream, out_stream)) {
+			mapitest_print(mt, "* %-35s: [IN,OUT] stream [PASSED]\n", "Comparison");
+		} else {
+			mapitest_print(mt, "* %-35s: [IN,OUT] stream [FAILURE]\n", "Comparison");
+
+		}
+	}
+
+	/* Release */
+	mapi_object_release(&obj_stream);
+	mapi_object_release(&obj_attach);
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	talloc_free(stream);
+	talloc_free(out_stream);
+
+	return ret;
+}
+

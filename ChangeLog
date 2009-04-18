@@ -1,3 +1,10 @@
+2009-04-18
+    bradh
+	[r1322]
+		Implement RopCloneStream (0x3b) and RopWriteAndCommitStream (0x90).
+		
+		Includes IDL, implementation and mapitest tests.
+
 2009-04-17
     bradh
 	[r1320]

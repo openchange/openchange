@@ -1,3 +1,11 @@
+2009-04-19
+    jkerihuel
+	[r1324]
+		- Add Redirect buffer support for OpenMsgStore and OpenPublicFolder.
+		This commit fixes the ecWrongServer (0x478) error users encounter
+		while running openchange based software in a clustered Exchange 
+		environment.
+
 2009-04-18
     bradh
 	[r1322]

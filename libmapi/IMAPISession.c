@@ -29,6 +29,96 @@
  */
 
 
+static enum MAPISTATUS FindGoodServer(struct mapi_session *session, const char *legacyDN, bool server)
+{
+	enum MAPISTATUS		retval;
+	struct nspi_context	*nspi;
+	struct StringsArray_r	pNames;
+	struct SRowSet		*SRowSet;
+	struct SPropTagArray	*SPropTagArray = NULL;
+	struct SPropTagArray	*MId_array;
+	struct StringArray_r	*MVszA = NULL;
+	const char		*binding = NULL;
+	char			*HomeMDB = NULL;
+	char			*server_dn;
+	int			i;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
+	OPENCHANGE_RETVAL_IF(!legacyDN, MAPI_E_INVALID_PARAMETER, NULL);
+
+	nspi = (struct nspi_context *) session->nspi->ctx;
+
+	if (server == false) {
+		/* Step 1. Retrieve a MID for our legacyDN */
+		pNames.Count = 0x1;
+		pNames.Strings = (const char **) talloc_array(nspi->mem_ctx, char **, 1);
+		pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, legacyDN);
+
+		MId_array = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
+		retval = nspi_DNToMId(nspi, &pNames, &MId_array);
+		MAPIFreeBuffer(pNames.Strings);
+		OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+		/* Step 2. Retrieve the Server DN associated to this MId */
+		SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
+		SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x1, PR_EMS_AB_HOME_MDB);
+		retval = nspi_GetProps(nspi, SPropTagArray, MId_array, &SRowSet);
+		MAPIFreeBuffer(SPropTagArray);
+		MAPIFreeBuffer(MId_array);
+		OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+		HomeMDB = (char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_EMS_AB_HOME_MDB);
+		OPENCHANGE_RETVAL_IF(!HomeMDB, MAPI_E_NOT_FOUND, SRowSet);
+		server_dn = x500_truncate_dn_last_elements(nspi->mem_ctx, HomeMDB, 1);
+		MAPIFreeBuffer(SRowSet);
+	} else {
+		server_dn = talloc_strdup(nspi->mem_ctx, legacyDN);
+	}
+
+	/* Step 3. Retrieve the MId for this server DN */
+	pNames.Count = 0x1;
+	pNames.Strings = (const char **) talloc_array(nspi->mem_ctx, char **, 1);
+	pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, server_dn);
+	MId_array = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
+	retval = nspi_DNToMId(nspi, &pNames, &MId_array);
+	MAPIFreeBuffer(pNames.Strings);
+	OPENCHANGE_RETVAL_IF(retval, retval, server_dn);
+
+	/* Step 4. Retrieve the binding strings associated to this DN */
+	SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
+	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x1, PR_EMS_AB_NETWORK_ADDRESS);
+	retval = nspi_GetProps(nspi, SPropTagArray, MId_array, &SRowSet);
+	MAPIFreeBuffer(SPropTagArray);
+	MAPIFreeBuffer(MId_array);
+	MAPIFreeBuffer(server_dn);
+	OPENCHANGE_RETVAL_IF(retval, retval, SRowSet);
+
+	/* Step 5. Extract host from ncacn_ip_tcp binding string */
+	MVszA = (struct StringArray_r *) find_SPropValue_data(&(SRowSet->aRow[0]), PR_EMS_AB_NETWORK_ADDRESS);
+	OPENCHANGE_RETVAL_IF(!MVszA, MAPI_E_NOT_FOUND, SRowSet);
+	for (i = 0; i != MVszA->cValues; i++) {
+		if (!strncasecmp(MVszA->lppszA[i], "ncacn_ip_tcp:", 13)) {
+			binding = MVszA->lppszA[i] + 13;
+			break;
+		}
+	}
+	MAPIFreeBuffer(SRowSet);
+	OPENCHANGE_RETVAL_IF(!binding, MAPI_E_NOT_FOUND, NULL);
+
+	/* Step 6. Close the existing session and initiates it again */
+	talloc_free(session->emsmdb);
+	session->emsmdb = talloc_zero(session, struct mapi_provider);
+	talloc_set_destructor((void *)session->emsmdb, (int (*)(void *))emsmdb_disconnect_dtor);
+	session->profile->server = talloc_strdup(session->profile, binding);
+	retval = Logon(session, session->emsmdb, PROVIDER_ID_EMSMDB);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
 /**
    \details Open the Public Folder store
 
@@ -63,6 +153,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	TALLOC_CTX		*mem_ctx;
 	mapi_object_store_t	*store;
 	uint8_t			logon_id;
+	bool			retry = false;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -73,6 +164,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	retval = GetNewLogonId(session, &logon_id);
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_FAILONEPROVIDER, NULL);
 
+retry:
 	mem_ctx = talloc_named(NULL, 0, "OpenPublicFolder");
 	size = 0;
 
@@ -105,6 +197,13 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
+	if (retval == ecWrongServer && retry == false && mapi_response->mapi_repl->us.mapi_Logon.ServerName) {
+		retval = FindGoodServer(session, mapi_response->mapi_repl->us.mapi_Logon.ServerName, true);
+		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+		talloc_free(mem_ctx);
+		retry = true;
+		goto retry;
+	}
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* retrieve object session, handle and logon_id */
@@ -218,6 +317,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	mapi_object_store_t	*store;
 	char			*mailbox;
 	uint8_t			logon_id;
+	bool			retry = false;
 
 	/* sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -228,6 +328,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	retval = GetNewLogonId(session, &logon_id);
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_FAILONEPROVIDER, NULL);
 
+retry:
 	mem_ctx = talloc_named(NULL, 0, "OpenMsgStore");
 	size = 0;
 
@@ -268,6 +369,13 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
+	if (retval == ecWrongServer && retry == false) {
+		retval = FindGoodServer(session, mailbox, false);
+		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+		talloc_free(mem_ctx);
+		retry = true;
+		goto retry;
+	}
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* set object session, handle and logon_id */

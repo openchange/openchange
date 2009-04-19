@@ -56,6 +56,40 @@ _PUBLIC_ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const ch
 	return str;
 }
 
+
+/**
+   \details Truncate a DN element
+
+   \param mem_ctx pointer to the memory context
+   \param dn pointer to a valid DN
+   \param elcount the number of elements to remove from the end of the
+   DN
+
+   \return pointer to an allocated substring on success, otherwise
+   NULL
+ */
+_PUBLIC_ char *x500_truncate_dn_last_elements(TALLOC_CTX *mem_ctx, const char *dn, uint32_t elcount)
+{
+	char *tmp_dn;
+	int	i;
+
+	if ((dn == NULL) || (dn[0] == '\0') || !elcount) return NULL;
+
+	tmp_dn = talloc_strdup(mem_ctx, dn);
+	for (i = strlen(tmp_dn); i > 0; i--) {
+		if (tmp_dn[i] == '/') {
+			elcount -= 1;
+			if (elcount == 0) {
+				tmp_dn[i] = '\0';
+				return tmp_dn;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+
 /**
  * Retrieve the servername from a string
  * We should definitively find a better way to handle this

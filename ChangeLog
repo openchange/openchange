@@ -1,3 +1,12 @@
+2009-04-21
+    bradh
+	[r1326]
+		Implement RopTransportNewMail (0x51).
+		
+		Includes IDL, libmapi implementation, and basic mapitest coverage.
+		
+		Also fix a few doxygen / formatting things.
+
 2009-04-19
     jkerihuel
 	[r1324]

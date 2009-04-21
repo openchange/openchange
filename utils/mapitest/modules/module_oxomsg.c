@@ -470,6 +470,52 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 	return ret;
 }
 
+/**
+   \details Test the TransportNewMail (0x51) operation
+
+   This function:
+   -# Logs on to the user private mailbox
+   -# Create a filled test folder, and open it.
+   -# Perform the TransportNewMail operation
+   -# Clean up test environment
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxomsg_TransportNewMail(struct mapitest *mt)
+{
+	enum MAPISTATUS         retval;
+	mapi_object_t           obj_htable;
+	bool 			ret = true;
+	struct mt_common_tf_ctx	*context;
+	int			i;
+
+
+
+	/* Logon and create filled test folder*/
+	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
+		return false;
+	}
+
+	context = mt->priv;
+
+	/* Perform the TransportNewMail operation */
+	for (i = 0; i<10; ++i) {
+		retval = TransportNewMail(&(context->obj_test_folder), &(context->obj_test_msg[i]), "IPM.Note", MSGFLAG_SUBMIT);
+		mapitest_print_retval(mt, "TransportNewMail");
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+		}
+	}
+
+	/* Clean up */
+	mapi_object_release(&obj_htable);
+	mapitest_common_cleanup(mt);
+
+	return ret;
+}
+
 
 /**
    \details Test the GetTransportFolder (0x6d) operation

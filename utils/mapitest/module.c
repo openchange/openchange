@@ -123,6 +123,7 @@ _PUBLIC_ uint32_t module_oxomsg_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "SET-SPOOLER", "Client intends to act as a mail spooler", mapitest_oxomsg_SetSpooler);
 	mapitest_suite_add_test(suite, "SPOOLER-LOCK-MESSAGE", "Lock the specified message for spooling", mapitest_oxomsg_SpoolerLockMessage);
 	mapitest_suite_add_test(suite, "TRANSPORT-SEND", "Sends the specified message object out for message delivery", mapitest_oxomsg_TransportSend);
+	mapitest_suite_add_test(suite, "TRANSPORT-NEW-MAIL", "Submit a new message for processing", mapitest_oxomsg_TransportNewMail);
 	mapitest_suite_add_test(suite, "GET-TRANSPORT-FOLDER", "Retrieve the temporary transport folder ID", mapitest_oxomsg_GetTransportFolder);
 
 	mapitest_suite_register(mt, suite);

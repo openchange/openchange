@@ -854,6 +854,7 @@ System Attendant Private Interface
 			op_MAPI_FastTransferSourceGetBuffer	= 0x4e,
 			op_MAPI_FindRow				= 0x4f,
 			op_MAPI_Progress			= 0x50,
+			op_MAPI_TransportNewMail		= 0x51,
 			op_MAPI_GetNamesFromIDs			= 0x55,
 			op_MAPI_GetIDsFromNames			= 0x56,
 			op_MAPI_UpdateDeferredActionMessages	= 0x57,
@@ -2752,6 +2753,18 @@ System Attendant Private Interface
 		uint32		TotalTaskCount;
 	} Progress_repl;
 
+	/**************************/
+	/* EcDoRpc Function 0x51  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		MessageId;
+		hyper		FolderId;
+		astring		MessageClass;
+		uint32		MessageFlags;
+	} TransportNewMail_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} TransportNewMail_repl;
+
 	/*************************/
 	/* EcDoRpc Function 0x55 */
 	typedef [enum8bit] enum {
@@ -3508,6 +3521,7 @@ System Attendant Private Interface
 		[case(op_MAPI_FastTransferSourceGetBuffer)] FastTransferSourceGetBuffer_req mapi_FastTransferSourceGetBuffer;
 		[case(op_MAPI_FindRow)] FindRow_req mapi_FindRow;
 		[case(op_MAPI_Progress)] Progress_req mapi_Progress;
+		[case(op_MAPI_TransportNewMail)] TransportNewMail_req mapi_TransportNewMail;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
 		[case(op_MAPI_UpdateDeferredActionMessages)] UpdateDeferredActionMessages_req mapi_UpdateDeferredActionMessages;
@@ -3629,6 +3643,7 @@ System Attendant Private Interface
 		[case(op_MAPI_FastTransferSourceGetBuffer)] FastTransferSourceGetBuffer_repl mapi_FastTransferSourceGetBuffer;
 		[case(op_MAPI_FindRow)] FindRow_repl mapi_FindRow;
 		[case(op_MAPI_Progress)] Progress_repl mapi_Progress;
+		[case(op_MAPI_TransportNewMail)] TransportNewMail_repl mapi_TransportNewMail;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
 		[case(op_MAPI_UpdateDeferredActionMessages)] UpdateDeferredActionMessages_repl mapi_UpdateDeferredActionMessages;

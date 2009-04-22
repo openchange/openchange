@@ -176,7 +176,7 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 
 static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
 {
-	NTSTATUS				status;
+	NTSTATUS				status = NT_STATUS_OK;
 	const struct ndr_interface_table	*table;
 	struct dcesrv_mapiproxy_private		*private;
 	bool					delegated;

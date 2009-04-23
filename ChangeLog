@@ -1,3 +1,19 @@
+2009-04-23
+    jkerihuel
+	[r1331]
+		Make sure delayed authenication is not called when server mode is enabled
+    bradh
+	[r1333]
+		Update property list to reflect current OAB props.
+		
+		This deletes a few incompatible properties. Cannot determine the history of the PR_MAILBEAT_ props.
+	[r1332]
+		Fix display of Folder ID values (one is filled with ., the other is prefixed with .16 instead of being filled.
+		
+		Also remove duplicate close() of file descriptor.
+	[r1330]
+		Typo fix.
+
 2009-04-22
     bradh
 	[r1328]

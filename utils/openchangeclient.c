@@ -363,9 +363,7 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	} while (read_size);
 	
 	close(fd);
-
 	mapi_object_release(&obj_stream);
-	close(fd);
 	talloc_free(mem_ctx);
 	return true;
 
@@ -1598,7 +1596,7 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 				printf("|   ");
 			}
 			newname = utf8tolinux(mem_ctx, name);
-			printf("|---+ %-15s : %-20s (Total: %u / Unread: %u - Container class: %s) [FID: 0x%.16"PRIx64"]\n", 
+			printf("|---+ %-15s : %-20s (Total: %u / Unread: %u - Container class: %s) [FID: 0x%016"PRIx64"]\n", 
 			       newname, comment?comment:"", total?*total:0, unread?*unread:0,
 			       get_container_class(mem_ctx, parent, *fid), *fid);
 			MAPIFreeBuffer(newname);
@@ -1653,7 +1651,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 				printf("|   ");
 			}
 			newname = utf8tolinux(mem_ctx, name);
-			printf("|---+ %-15s [FID: 0x.16%"PRIx64"]\n", newname, *fid);
+			printf("|---+ %-15s [FID: 0x%016"PRIx64"]\n", newname, *fid);
 			MAPIFreeBuffer(newname);
 			if (*child) {
 				ret = get_child_folders_pf(mem_ctx, &obj_folder, *fid, count + 1);

@@ -492,7 +492,7 @@ _PUBLIC_ bool mapitest_common_setup(struct mapitest *mt, mapi_object_t *obj_htab
 	mapi_object_init(obj_htable);
 	retval = GetHierarchyTable(&(context->obj_top_folder), obj_htable, 0, count);
 	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print_retval(mt, "Failed GetHierachyTable");
+		mapitest_print_retval(mt, "Failed GetHierarchyTable");
 		return false;
 	}
 

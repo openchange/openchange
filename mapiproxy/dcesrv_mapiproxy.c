@@ -310,7 +310,7 @@ static NTSTATUS mapiproxy_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	/* If remote connection bind/auth has been delayed */
-	if (private->connected == false) {
+	if (private->connected == false && private->server_mode == false) {
 		status = mapiproxy_op_connect(dce_call, table, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {

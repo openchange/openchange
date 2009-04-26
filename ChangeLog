@@ -1,3 +1,18 @@
+2009-04-26
+    jkerihuel
+	[r1336]
+		Patch from Paolo Abeni <paolo.abeni@gmail.com>:
+		
+		ProcessNotification() is ignoring the handle value contained into the
+		processed notifications. This means that if many Subscribe() calls are
+		performed on different folders but with the same flags, all the
+		registered callback are [incorrectly] signaled with each received
+		notification.
+		
+		The attached patch match the handler contained into the notification
+		message against the notification object handle to avoid such
+		replication.
+
 2009-04-23
     jkerihuel
 	[r1331]

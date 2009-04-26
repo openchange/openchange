@@ -228,6 +228,8 @@ static enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
 
 	for (i = 0; mapi_response->mapi_repl[i].opnum; i++) {
 		if (mapi_response->mapi_repl[i].opnum == op_MAPI_Notify) {
+			mapi_handle_t	handle = mapi_response->mapi_repl[i].u.mapi_Notify.NotificationHandle;
+
 			switch(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationType) {
 			case fnevNewMail:
 			case fnevMbit|fnevNewMail:
@@ -298,8 +300,10 @@ static enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
 				break;
 			}
 			notification = notify_ctx->notifications;
+
 			while (notification->ulConnection) {
-				if (notification->NotificationFlags & mapi_response->mapi_repl[i].u.mapi_Notify.NotificationType) {
+				if ((notification->NotificationFlags & mapi_response->mapi_repl[i].u.mapi_Notify.NotificationType) && 
+				    (handle == mapi_object_get_handle(&(notification->obj_notif)))) {
 					if (notification->callback) {
 						notification->callback(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationType,
 								       (void *)NotificationData,

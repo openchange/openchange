@@ -1,3 +1,27 @@
+2009-04-27
+    jkerihuel
+	[r1339]
+		Patch from Paolo Abeni <paolo.abeni@gmail.com>:
+		
+		call ProcessNotification() after each successful 
+		emsmdb_transaction() in all the libmapi calls.
+	[r1338]
+		Patch from Paolo Abeni <paolo.abeni@gmail.com>:
+		
+		Mapi notifications can occurs inside any emsmdb_transaction; currently
+		only the notification send by the server inside the
+		emsmdb_transaction_null() in MonitorNotification() are
+		parsed/processed/delivered to the appropriate callback.
+		
+		To be able to process all the received notifications, the notification
+		structure must comprise the private data to be passed to the
+		notification callback, since in the average mapi call this data is not
+		available. This patch modifies the Subscribe() call and the 
+		mapi_notification structure, adding the private_data parameter (also the 
+		related Subscribe() calls are update)  and add a libmapi call 
+		(DispatchNotifications) to force the notification dispatching in
+		a [quite] non blocking way
+
 2009-04-26
     jkerihuel
 	[r1336]

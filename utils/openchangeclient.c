@@ -2314,8 +2314,10 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 	ulEventMask = fnevNewMail|fnevObjectCreated|fnevObjectDeleted|
 		fnevObjectModified|fnevObjectMoved|fnevObjectCopied|
 		fnevSearchComplete|fnevTableModified|fnevStatusObjectModified;
-	retval = Subscribe(obj_store, &ulConnection, ulEventMask, true, (mapi_notify_callback_t)callback);
-	retval = Subscribe(&obj_inbox, &ulConnection, ulEventMask, false, (mapi_notify_callback_t)callback);
+	retval = Subscribe(obj_store, &ulConnection, ulEventMask, true, (mapi_notify_callback_t)callback,
+		(void*) obj_store);
+	retval = Subscribe(&obj_inbox, &ulConnection, ulEventMask, false, (mapi_notify_callback_t)callback,
+		(void*) obj_store);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* wait for notifications: infinite loop */

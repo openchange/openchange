@@ -37,11 +37,13 @@
 
    \param obj the object to get notifications for
    \param connection connection identifier for callabck function
-   \param NotificationFlags mask for events to provide notifications for (see
-   below)
+   \param NotificationFlags mask for events to provide notifications
+   for (see below)
    \param WholeStore whether the scope for this notification is whole
    database
    \param notify_callback notification callback function.
+   \param private_data the data to be passed at the callback function
+   when invoked
    
    The Notification Flags can take the following values:
    - fnevCriticalError
@@ -71,7 +73,8 @@
 _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection, 
 				   uint16_t NotificationFlags,
 				   bool WholeStore,
-				   mapi_notify_callback_t notify_callback)
+				   mapi_notify_callback_t notify_callback,
+				   void	*private_data)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct mapi_request		*mapi_request;
@@ -153,6 +156,7 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 
 	notification->NotificationFlags = NotificationFlags;
 	notification->callback = notify_callback;
+	notification->private_data = private_data;
 
 	DLIST_ADD(notify_ctx->notifications, notification);
 
@@ -215,10 +219,8 @@ _PUBLIC_ enum MAPISTATUS Unsubscribe(struct mapi_session *session, uint32_t ulCo
 	return MAPI_E_SUCCESS;
 }
 
-
-static enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx, 
-					   struct mapi_response *mapi_response,
-					   void *private_data)
+enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx, 
+					   struct mapi_response *mapi_response)
 {
 	struct notifications	*notification;
 	void			*NotificationData;
@@ -307,7 +309,7 @@ static enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
 					if (notification->callback) {
 						notification->callback(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationType,
 								       (void *)NotificationData,
-								       (void *)private_data);
+								       notification->private_data);
 					}
 				}
 				notification = notification->next;
@@ -315,6 +317,44 @@ static enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
 		}
 	}
 	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Force notification of pending events
+
+   This function force the server to send any pending notificaion and
+   process them. These MAPI notifications are next compared to the
+   registered ones and the callback specified in Subscribe() called if
+   it matches.
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.  
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa RegisterNotification, Subscribe, Unsubscribe, GetLastError
+*/
+_PUBLIC_ enum MAPISTATUS DispatchNotifications(struct mapi_session *session)
+{
+	struct mapi_response	*mapi_response;
+	enum MAPISTATUS		retval;
+	NTSTATUS		status;
+
+	/* sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+
+	status = emsmdb_transaction_null((struct emsmdb_context *)session->emsmdb->ctx, &mapi_response);
+	if (!NT_STATUS_IS_OK(status))
+		return MAPI_E_CALL_FAILED;
+
+	retval = ProcessNotification(session->notify_ctx, mapi_response);
+	talloc_free(mapi_response);
+	return retval;
 }
 
 
@@ -370,7 +410,7 @@ _PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session,
 			if (!NT_STATUS_IS_OK(status)) {
 				err = -1;
 			} else {
-				retval = ProcessNotification(notify_ctx, mapi_response, private_data);
+				retval = ProcessNotification(notify_ctx, mapi_response);
 				OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 			}
 		}

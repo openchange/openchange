@@ -98,11 +98,11 @@ bool torture_rpc_mapi_newmail(struct torture_context *torture)
 
 	/* newmail and created|modified object notifications in inbox */
 	ulEventMask = fnevObjectCreated;
-	retval = Subscribe(&obj_inbox, &ulConnection, ulEventMask, false, (mapi_notify_callback_t)callback);
+	retval = Subscribe(&obj_inbox, &ulConnection, ulEventMask, false, (mapi_notify_callback_t)callback, (void*) &obj_store);
 	mapi_errstr("Subscribe", GetLastError());
 
 	ulEventMask = fnevNewMail;
-	retval = Subscribe(&obj_inbox, &ulConnection, ulEventMask, false, (mapi_notify_callback_t)callback);
+	retval = Subscribe(&obj_inbox, &ulConnection, ulEventMask, false, (mapi_notify_callback_t)callback, (void*) &obj_store);
 	mapi_errstr("Subscribe", GetLastError());
 
 

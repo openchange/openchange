@@ -32,6 +32,7 @@ struct notifications {
 	uint32_t		NotificationFlags;	/* events mask associated */
 	mapi_id_t		parentID;		/* parent EntryID == FID here */
 	mapi_notify_callback_t	callback;		/* callback to run when */
+	void			*private_data;		/* private data for the callback */
 	struct mapi_object     	obj_notif;		/* notification object */
 	struct notifications	*prev;
 	struct notifications	*next;

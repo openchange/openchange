@@ -78,7 +78,7 @@ _PUBLIC_ bool mapitest_oxcnotif_RegisterNotification(struct mapitest *mt)
 	}
 
 	/* Step 4. Subscribe for notifications */
-	retval = Subscribe(&obj_store, &tcon, fnevObjectCopied, true, cb);
+	retval = Subscribe(&obj_store, &tcon, fnevObjectCopied, true, cb, NULL);
 	mapitest_print_retval(mt, "Subscribe");
 	if (retval != MAPI_E_SUCCESS) {
 		return false;

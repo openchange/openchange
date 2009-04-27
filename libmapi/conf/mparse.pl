@@ -532,6 +532,12 @@ sub mapicodes_header($)
     mparse "	return (e);			\\";
     mparse "} while (0);";
     mparse "";
+    mparse "#define OPENCHANGE_CHECK_NOTIFICATION(s,r)		\\";
+    mparse "do {						\\";
+    mparse "	if (s->notify_ctx)				\\";
+    mparse "		ProcessNotification(s->notify_ctx, r);	\\";
+    mparse "} while (0);";
+    mparse "";
     mparse "/* Status macros for MAPI */";
     mparse "typedef unsigned long	SCODE;";
     mparse "";

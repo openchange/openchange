@@ -121,6 +121,8 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* Set object session and handle */
 	mapi_object_set_session(obj_message, session);
 	mapi_object_set_handle(obj_message, mapi_response->handles[1]);

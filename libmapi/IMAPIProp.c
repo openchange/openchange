@@ -135,6 +135,8 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF((retval && retval != MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 	
 	/* Read the SPropValue array from data blob.
 	   fixme: replace the memory context by the object one.
@@ -254,6 +256,8 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	if (named == true) {
 		mapi_nameid_unmap_SPropValue(nameid, lpProps, PropCount);
 	}
@@ -347,6 +351,8 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session[0], mapi_response);
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
@@ -416,6 +422,8 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* Get the repsonse */
 	proptags->cValues = mapi_response->mapi_repl->u.mapi_GetPropList.count;
@@ -506,6 +514,8 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	reply = &mapi_response->mapi_repl->u.mapi_GetPropsAll;
 	properties->cValues = reply->properties.cValues;
 	properties->lpProps = talloc_steal((TALLOC_CTX *)session, reply->properties.lpProps);
@@ -583,6 +593,8 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -772,6 +784,8 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
@@ -857,6 +871,8 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* Fill in count */
 	reply = &mapi_response->mapi_repl->u.mapi_GetNamesFromIDs;
@@ -979,6 +995,8 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* Fill the SPropTagArray */
 	proptags[0]->cValues = mapi_response->mapi_repl->u.mapi_GetIDsFromNames.count;
 	proptags[0]->aulPropTag = talloc_array((TALLOC_CTX *)proptags[0], uint32_t, proptags[0]->cValues);
@@ -1079,6 +1097,8 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* Fill [out] parameters */
 	reply = &mapi_response->mapi_repl->u.mapi_QueryNamedProperties;
@@ -1190,6 +1210,8 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session[0], mapi_response);
 
 	if (problemCount) {
 		*problemCount = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblemCount;
@@ -1306,6 +1328,8 @@ _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session[0], mapi_response);
 
 	if (problemCount) {
 		*problemCount = mapi_response->mapi_repl->u.mapi_CopyTo.PropertyProblemCount;

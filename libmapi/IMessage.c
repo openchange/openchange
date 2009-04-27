@@ -126,6 +126,8 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* Set object session and handle */
 	mapi_object_set_session(obj_attach, session);
 	mapi_object_set_handle(obj_attach, mapi_response->handles[1]);
@@ -203,6 +205,8 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t Attac
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -282,6 +286,8 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* Set object session and handle */
 	mapi_object_set_session(obj_table, session);
@@ -370,6 +376,8 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t Attachm
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* Set object session and handle */
 	mapi_object_set_session(obj_attach, session);
@@ -709,6 +717,8 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
@@ -790,6 +800,8 @@ _PUBLIC_ enum MAPISTATUS ReadRecipients(mapi_object_t *obj_message,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* Retrieve the recipients */
 	reply = &mapi_response->mapi_repl->u.mapi_ReadRecipients;
 	*RowCount = reply->RowCount;
@@ -865,6 +877,8 @@ _PUBLIC_ enum MAPISTATUS RemoveAllRecipients(mapi_object_t *obj_message)
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 	
@@ -939,6 +953,8 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -1027,6 +1043,8 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session[0], mapi_response);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -1118,6 +1136,8 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session[0], mapi_response);
+
 	/* store the message_id */
 	mapi_object_set_id(obj_message, mapi_response->mapi_repl->u.mapi_SaveChangesMessage.MessageId);
 
@@ -1176,6 +1196,8 @@ _PUBLIC_ enum MAPISTATUS TransportSend(mapi_object_t *obj_message,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* Retrieve reply parameters */
 	reply = &mapi_response->mapi_repl->u.mapi_TransportSend;
@@ -1305,6 +1327,8 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session[0], mapi_response);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -1437,6 +1461,8 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* Set object session and handle */
 	mapi_object_set_session(obj_embeddedmsg, session);

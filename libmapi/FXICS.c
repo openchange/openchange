@@ -101,6 +101,8 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 	
 	/* Retrieve output parameters */
 	reply = &mapi_response->mapi_repl->u.mapi_GetLocalReplicaIds;

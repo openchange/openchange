@@ -93,6 +93,8 @@ _PUBLIC_ enum MAPISTATUS AddressTypes(mapi_object_t *obj_store,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* Retrieve Address Types */
 	response = &mapi_response->mapi_repl->u.mapi_AddressTypes;
 	*lpcAdrType = response->cValues;
@@ -163,9 +165,10 @@ _PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
-
 	return MAPI_E_SUCCESS;
 }
 
@@ -248,6 +251,8 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

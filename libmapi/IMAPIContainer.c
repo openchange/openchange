@@ -132,6 +132,8 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* set object session, handle and logon_id */
 	mapi_object_set_session(obj_table, session);
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
@@ -256,6 +258,8 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* set object session, handle and logon_id */
 	mapi_object_set_session(obj_table, session);
 	mapi_object_set_handle(obj_table, mapi_response->handles[1]);
@@ -348,6 +352,8 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* set object session, handle and logon_id */
 	mapi_object_set_session(obj_table, session);
@@ -443,6 +449,8 @@ _PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* set object session, handle and logon_id */
 	mapi_object_set_session(obj_table, session);
@@ -541,6 +549,8 @@ _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowL
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -660,6 +670,8 @@ _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
@@ -746,6 +758,8 @@ _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	reply = &mapi_response->mapi_repl->u.mapi_GetSearchCriteria;
 

@@ -206,6 +206,8 @@ retry:
 	}
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* retrieve object session, handle and logon_id */
 	mapi_object_set_session(obj_store, session);
 	mapi_object_set_handle(obj_store, mapi_response->handles[0]);
@@ -377,6 +379,8 @@ retry:
 		goto retry;
 	}
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* set object session, handle and logon_id */
 	mapi_object_set_session(obj_store, session);

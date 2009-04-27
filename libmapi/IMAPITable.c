@@ -101,6 +101,8 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval && (retval != MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* recopy property tags into table */
 	/* fixme: obj_table->private_data should be initialized during opening, not here */
 	if (obj_table->private_data == NULL) {
@@ -186,6 +188,8 @@ _PUBLIC_ enum MAPISTATUS QueryPosition(mapi_object_t *obj_table,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 	
 	if (Numerator) {
 		*Numerator = mapi_response->mapi_repl->u.mapi_QueryPosition.Numerator;
@@ -282,6 +286,8 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, uint16_t row_count,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* table contains mapitags from previous SetColumns */
 	table = (mapi_object_table_t *)obj_table->private_data;
 	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
@@ -363,6 +369,8 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* get columns SPropTagArray */
 	table = (mapi_object_table_t *)obj_table->private_data;
@@ -460,6 +468,8 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	reply = &mapi_response->mapi_repl->u.mapi_SeekRow;
 	*row = reply->RowsSought;
 
@@ -553,6 +563,8 @@ _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	reply = &mapi_response->mapi_repl->u.mapi_SeekRowBookmark;
 	*row = reply->RowsSought;
@@ -648,6 +660,8 @@ _PUBLIC_ enum MAPISTATUS SeekRowApprox(mapi_object_t *obj_table,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
@@ -718,6 +732,8 @@ _PUBLIC_ enum MAPISTATUS CreateBookmark(mapi_object_t *obj_table,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	reply = &mapi_response->mapi_repl->u.mapi_CreateBookmark;
 
@@ -830,6 +846,8 @@ _PUBLIC_ enum MAPISTATUS FreeBookmark(mapi_object_t *obj_table,
 			retval = mapi_response->mapi_repl->error_code;
 			OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+			OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 			MAPIFreeBuffer(bookmark->bin.lpb);
 			DLIST_REMOVE(table->bookmark, bookmark);
 
@@ -917,6 +935,8 @@ _PUBLIC_ enum MAPISTATUS SortTable(mapi_object_t *obj_table,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -1046,6 +1066,8 @@ _PUBLIC_ enum MAPISTATUS Reset(mapi_object_t *obj_table)
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
@@ -1143,6 +1165,8 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	if (TableStatus) {
 		reply = &mapi_response->mapi_repl->u.mapi_Restrict;
@@ -1265,6 +1289,8 @@ _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table,
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* table contains SPropTagArray from previous SetColumns call */
 	table = (mapi_object_table_t *)obj_table->private_data;
 	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
@@ -1352,6 +1378,8 @@ _PUBLIC_ enum MAPISTATUS GetStatus(mapi_object_t *obj_table, uint8_t *TableStatu
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* Retrieve TableStatus */
 	reply = &mapi_response->mapi_repl->u.mapi_GetStatus;
 	*TableStatus = reply->TableStatus;
@@ -1423,6 +1451,8 @@ _PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* Retrieve TableStatus */
 	reply = &mapi_response->mapi_repl->u.mapi_Abort;
@@ -1529,6 +1559,8 @@ _PUBLIC_ enum MAPISTATUS ExpandRow(mapi_object_t *obj_table, uint64_t categoryId
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* table contains mapitags from previous SetColumns */
 	table = (mapi_object_table_t *)obj_table->private_data;
 	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_OBJECT, mem_ctx);
@@ -1625,6 +1657,8 @@ _PUBLIC_ enum MAPISTATUS CollapseRow(mapi_object_t *obj_table, uint64_t category
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* Retrieve the RowCount */
 	reply = &mapi_response->mapi_repl->u.mapi_CollapseRow;
 	*rowCount = reply->CollapsedRowCount;
@@ -1718,6 +1752,8 @@ _PUBLIC_ enum MAPISTATUS GetCollapseState(mapi_object_t *obj_table, uint64_t row
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
 	/* Retrieve the CollapseState */
 	reply = &mapi_response->mapi_repl->u.mapi_GetCollapseState;
 	CollapseState->cb = reply->CollapseState.cb;
@@ -1807,6 +1843,8 @@ _PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	reply = &mapi_response->mapi_repl->u.mapi_SetCollapseState;
 

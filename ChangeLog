@@ -1,3 +1,18 @@
+2009-05-07
+    jkerihuel
+	[r1341]
+		- Add preliminary IDL support for Exchange 2003/2007 EMSMDB RPC calls:
+		  * EcDoConnectEx
+		  * EcDoRpcExt2
+		
+		- Add LZxpress and XorMagic support to EcDoRpcExt2 request/reply
+		  blob. However it doesn't yet support Chained calls.
+		
+		- Add AuxInfo/AUX_HEADER structures and IDL
+		
+		- Refactor mapi_request and mapi_response: move obfuscate_data calls
+		  up to the EcDoRpc layer
+
 2009-04-27
     jkerihuel
 	[r1339]

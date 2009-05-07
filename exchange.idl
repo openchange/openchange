@@ -3733,7 +3733,7 @@ System Attendant Private Interface
 	} mapi_response;
 	
 
-	[public] MAPISTATUS EcDoRpc(
+	[public,nopull,nopush] MAPISTATUS EcDoRpc(
 		[in,out]						policy_handle	*handle,
 		[in,out]						uint32		size,
 		[in,out]						uint32		offset,
@@ -3800,30 +3800,408 @@ System Attendant Private Interface
 
 	/*****************/
 	/* Function 0xa  */
+	typedef [public,bitmap16bit] bitmap {
+		RHEF_Compressed		= 0x0001,
+		RHEF_XorMagic		= 0x0002,
+		RHEF_Last		= 0x0004
+	} RPC_HEADER_EXT_Flags;
+
+	typedef [public] struct {
+		uint16			Version;
+		RPC_HEADER_EXT_Flags	Flags;
+		uint16			Size;
+		uint16			SizeActual;
+	} RPC_HEADER_EXT;
+
+	typedef [enum8bit,flag(NDR_PAHEX)] enum {
+		AUX_TYPE_PERF_REQUESTID		= 0x01,
+		AUX_TYPE_PERF_CLIENTDINFO	= 0x02,
+		AUX_TYPE_PERF_SERVERINFO	= 0x03,
+		AUX_TYPE_PERF_SESSIONINFO	= 0x04,
+		AUX_TYPE_PERF_DEFMDB_SUCCESS	= 0x05,
+		AUX_TYPE_PERF_DEFGC_SUCCESS	= 0x06,
+		AUX_TYPE_PERF_MDB_SUCCESS	= 0x07,
+		AUX_TYPE_PERF_GC_SUCCESS	= 0x08,
+		AUX_TYPE_PERF_FAILURE		= 0x09,
+		AUX_TYPE_CLIENT_CONTROL		= 0x0A,
+		AUX_TYPE_PERF_PROCESSINFO	= 0x0B,
+		AUX_TYPE_PERF_BG_DEFMDB_SUCCESS	= 0x0C,
+		AUX_TYPE_PERF_BG_DEFGC_SUCCESS	= 0x0D,
+		AUX_TYPE_PERF_BG_MDB_SUCCESS	= 0x0E,
+		AUX_TYPE_PERF_BG_GC_SUCCESS	= 0x0F,
+		AUX_TYPE_PERF_BG_FAILURE	= 0x10,
+		AUX_TYPE_PERF_FG_DEFMDB_SUCCESS = 0x11,
+		AUX_TYPE_PERF_FG_DEFGC_SUCCESS	= 0x12,
+		AUX_TYPE_PERF_FG_MDB_SUCCESS	= 0x13,
+		AUX_TYPE_PERF_FG_GC_SUCCESS	= 0x14,
+		AUX_TYPE_PERF_FG_FAILURE	= 0x15,
+		AUX_TYPE_OSVERSIONINFO		= 0x16,
+		AUX_TYPE_EXORGINFO		= 0x17
+	} AUX_HEADER_TYPE_1;
+	
+	typedef [enum8bit,flag(NDR_PAHEX)] enum {
+		AUX_TYPE_PERF_SESSIONINFO_2	= 0x04,
+		AUX_TYPE_PERF_MDB_SUCCESS_2	= 0x07,
+		AUX_TYPE_PERF_GC_SUCCESS_2	= 0x08,
+		AUX_TYPE_PERF_FAILURE_2		= 0x09
+	} AUX_HEADER_TYPE_2;
+
+	typedef [public,enum8bit,flag(NDR_PAHEX)] enum {
+		AUX_VERSION_1	= 0x1,
+		AUX_VERSION_2	= 0x2
+	} AUX_VERSION;
+
+	typedef [public,switch_type(uint8)] union {
+		[case(AUX_VERSION_1)] AUX_HEADER_TYPE_1	Type;
+		[case(AUX_VERSION_2)] AUX_HEADER_TYPE_2	Type_2;
+		[default];
+	} AUX_HEADER_TYPE_ENUM;
+
+	/*************************/
+	/* AUX_HEADER case (0x1) */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		SessionID;
+		uint16		RequestID;
+	} AUX_PERF_REQUESTID;
+	
+	/*************************/
+	/* AUX_HEADER case (0x2) */
+	typedef [public,enum16bit, flag(NDR_PAHEX)] enum {
+		CLIENTMODE_UNKNOWN	=	0x0,
+		CLIENTMODE_CLASSIC	=	0x1,
+		CLIENTMODE_CACHED	=	0x2
+	} ClientMode;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32		AdapterSpeed;
+		uint16		ClientID;
+		uint16		MachineNameOffset;
+		uint16		UserNameOffset;
+		uint16		ClientIPSize;
+		uint16		ClientIPOffset;
+		uint16		ClientIPMaskSize;
+		uint16		ClientIPMaskOffset;
+		uint16		AdapterNameOffset;
+		uint16		MacAddressSize;
+		uint16		MacAddressOffset;
+		ClientMode	ClientMode;
+		uint16		Reserved;
+		uint8		MacAddress[MacAddressSize];
+		uint8		ClientIP[ClientIPSize];
+		uint8		ClientIPMask[ClientIPMaskSize];
+		nstring		MachineName;
+		nstring		UserName;
+		nstring		AdapterName;
+	} AUX_PERF_CLIENTINFO;
+
+	/*************************/
+	/* AUX_HEADER case (0x3) */
+	typedef [enum16bit,flag(NDR_PAHEX)] enum {
+		SERVERTYPE_UNKNOWN		= 0x0,
+		SERVERTYPE_PRIVATE		= 0x1,
+		SERVERTYPE_PUBLIC		= 0x2,
+		SERVERTYPE_DIRECTORY		= 0x3,
+		SERVERTYPE_REFERRAL		= 0x4
+	} SERVERINFO_ServerType;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16			ServerID;
+		SERVERINFO_ServerType	ServerType;
+		uint16			ServerDNOffset;
+		uint16			ServerNameOffset;
+		nstring			ServerDN;
+		nstring			ServerName;
+	} AUX_PERF_SERVERINFO;
+
+	/*************************/
+	/* AUX_HEADER case (0x4) */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		SessionID;
+		uint16		Reserved;
+		GUID		SessionGuid;
+	} AUX_PERF_SESSIONINFO;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		SessionID;
+		uint16		Reserved;
+		GUID		SessionGuid;
+		uint32		ConnectionID;
+	} AUX_PERF_SESSIONINFO_V2;
+
+	/**************************/
+	/* AUX_HEADER case (0x5)  */
+	/* AUX_HEADER case (0xC)  */
+	/* AUX_HEADER case (0x11) */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		TimeSinceRequest;
+		uint32		TimeToCompleteRequest;
+		uint16		RequestID;
+		uint16		Reserved;
+	} AUX_PERF_DEFMDB_SUCCESS;
+
+	/**************************/
+	/* AUX_HEADER case (0x6)  */
+	/* AUX_HEADER case (0xD)  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		ServerID;
+		uint16		SessionID;
+		uint32		TimeSinceRequest;
+		uint32		TimeToCompleteRequest;
+		uint8		RequestOperation;
+		uint8		Reserved[3];
+	} AUX_PERF_DEFGC_SUCCESS;
+	
+	/**************************/
+	/* AUX_HEADER case (0x7)  */
+	/* AUX_HEADER case (0xE)  */
+	/* AUX_HEADER case (0x13) */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		ClientID;
+		uint16		ServerID;
+		uint16		SessionID;
+		uint16		RequestID;
+		uint32		TimeSinceRequest;
+		uint32		TimeToCompleteRequest;
+	} AUX_PERF_MDB_SUCCESS;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		ProcessID;
+		uint16		ClientID;
+		uint16		ServerID;
+		uint16		SessionID;
+		uint16		RequestID;
+		uint16		Reserved;
+		uint32		TimeSinceRequest;
+		uint32		TimeToCompleteRequest;
+	} AUX_PERF_MDB_SUCCESS_V2;
+
+	/**************************/
+	/* AUX_HEADER case (0x8)  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		ClientID;
+		uint16		ServerID;
+		uint16		SessionID;
+		uint16		Reserved_1;
+		uint32		TimeSinceRequest;
+		uint32		TimeToCompleteRequest;
+		uint8		RequestOperation;
+		uint8		Reserved_2[3];
+	} AUX_PERF_GC_SUCCESS;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		ProcessID;
+		uint16		ClientID;
+		uint16		ServerID;
+		uint16		SessionID;
+		uint32		TimeSinceRequest;
+		uint32		TimeToCompleteRequest;
+		uint8		RequestOperation;
+		uint8		Reserved[3];
+	} AUX_PERF_GC_SUCCESS_V2;
+
+	/**************************/
+	/* AUX_HEADER case (0x9)  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		ClientID;
+		uint16		ServerID;
+		uint16		SessionID;
+		uint16		RequestID;
+		uint32		TimeSinceRequest;
+		uint32		TimeToFailRequest;
+		MAPISTATUS	ResultCode;
+		uint8		RequestOperation;
+		uint8		Reserved[3];
+	} AUX_PERF_FAILURE;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		ProcessID;
+		uint16		ClientID;
+		uint16		ServerID;
+		uint16		SessionID;
+		uint16		RequestID;
+		uint16		Reserved_1;
+		uint32		TimeSinceRequest;
+		uint32		TimeToFailRequest;
+		MAPISTATUS	ResultCode;
+		uint8		RequestOperation;
+		uint8		Reserved_2[3];
+	} AUX_PERF_FAILURE_V2;
+
+	/**************************/
+	/* AUX_HEADER case (0xA)  */
+	typedef [bitmap32bit] bitmap {
+		ENABLE_PERF_SENDTOSERVER	= 0x00000001,
+		ENABLE_PERF_SENDTOMAILBOX	= 0x00000002,
+		ENABLE_COMPRESSION		= 0x00000004,
+		ENABLE_HTTP_TUNNELING		= 0x00000008,
+		ENABLE_PERF_SENDGCDATA		= 0x00000010
+	} CLIENT_CONTROL_EnableFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		CLIENT_CONTROL_EnableFlags	EnableFlags;
+		uint32				ExpiryTime;
+	} AUX_CLIENT_CONTROL;
+
+	/*************************/
+	/* AUX_HEADER case (0xB) */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		ProcessID;
+		uint16		Reserved1;
+		GUID		ProcessGuid;
+		uint16		ProcessNameOffset;
+		uint16		Reserved2;
+		nstring		ProcessName;
+	} AUX_PERF_PROCESSINFO;
+
+	/**************************/
+	/* AUX_HEADER case (0x16) */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint32		OSVersionInfoSize;
+		uint32		MajorVersion;
+		uint32		MinorVersion;
+		uint32		BuildNumber;
+		[subcontext(0), subcontext_size(132), flag(NDR_NOALIGN|NDR_REMAINING)] DATA_BLOB Reserved_1;
+		uint16		ServicePackMajor;
+		uint16		ServicePackMinor;
+		uint32		Reserved_2;
+	} AUX_OSVERSIONINFO;
+
+	/**************************/
+	/* AUX_HEADER case (0x17) */
+	typedef [bitmap32bit] bitmap {
+		PUBLIC_FOLDERS_ENABLED	= 0x00000001
+	} EXORGINFO_OrgFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		EXORGINFO_OrgFlags	OrgFlags;
+	} AUX_EXORGINFO;
+
+	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(AUX_TYPE_PERF_REQUESTID)]		AUX_PERF_REQUESTID		AUX_PERF_REQUESTID;
+		[case(AUX_TYPE_PERF_CLIENTDINFO)]	AUX_PERF_CLIENTINFO		AUX_PERF_CLIENTINFO;
+		[case(AUX_TYPE_PERF_SERVERINFO)]	AUX_PERF_SERVERINFO		AUX_PERF_SERVERINFO;
+		[case(AUX_TYPE_PERF_SESSIONINFO)]	AUX_PERF_SESSIONINFO		AUX_PERF_SESSIONINFO;
+		[case(AUX_TYPE_PERF_DEFMDB_SUCCESS)]	AUX_PERF_DEFMDB_SUCCESS		AUX_PERF_DEFMDB_SUCCESS;
+		[case(AUX_TYPE_PERF_DEFGC_SUCCESS)]	AUX_PERF_DEFGC_SUCCESS		AUX_PERF_DEFGC_SUCCESS;
+		[case(AUX_TYPE_PERF_MDB_SUCCESS)]	AUX_PERF_MDB_SUCCESS		AUX_PERF_MDB_SUCCESS;
+		[case(AUX_TYPE_PERF_GC_SUCCESS)]	AUX_PERF_GC_SUCCESS		AUX_PERF_GC_SUCCESS;
+		[case(AUX_TYPE_PERF_FAILURE)]		AUX_PERF_FAILURE		AUX_PERF_FAILURE;
+		[case(AUX_TYPE_CLIENT_CONTROL)]		AUX_CLIENT_CONTROL		AUX_CLIENT_CONTROL;
+		[case(AUX_TYPE_PERF_PROCESSINFO)]	AUX_PERF_PROCESSINFO		AUX_PERF_PROCESSINFO;
+		[case(AUX_TYPE_PERF_BG_DEFMDB_SUCCESS)]	AUX_PERF_DEFMDB_SUCCESS		AUX_PERF_DEFMDB_SUCCESS;
+		[case(AUX_TYPE_PERF_BG_DEFGC_SUCCESS)]	AUX_PERF_DEFGC_SUCCESS		AUX_PERF_DEFGC_SUCCESS;
+		[case(AUX_TYPE_PERF_BG_MDB_SUCCESS)]	AUX_PERF_MDB_SUCCESS		AUX_PERF_MDB_SUCCESS;
+		[case(AUX_TYPE_PERF_BG_GC_SUCCESS)]	AUX_PERF_GC_SUCCESS		AUX_PERF_GC_SUCCESS;
+		[case(AUX_TYPE_PERF_BG_FAILURE)]	AUX_PERF_FAILURE		AUX_PERF_FAILURE;
+		[case(AUX_TYPE_PERF_FG_DEFMDB_SUCCESS)]	AUX_PERF_DEFMDB_SUCCESS		AUX_PERF_DEFMDB_SUCCESS;
+		[case(AUX_TYPE_PERF_FG_DEFGC_SUCCESS)]	AUX_PERF_DEFGC_SUCCESS		AUX_PERF_DEFGC_SUCCESS;
+		[case(AUX_TYPE_PERF_FG_MDB_SUCCESS)]	AUX_PERF_MDB_SUCCESS		AUX_PERF_MDB_SUCCESS;
+		[case(AUX_TYPE_PERF_FG_GC_SUCCESS)]	AUX_PERF_GC_SUCCESS		AUX_PERG_GC_SUCCESS;
+		[case(AUX_TYPE_PERF_FG_FAILURE)]	AUX_PERF_FAILURE		AUX_PERF_FAILURE;
+		[case(AUX_TYPE_OSVERSIONINFO)]		AUX_OSVERSIONINFO		AUX_OSVERSIONINFO;
+		[case(AUX_TYPE_EXORGINFO)]		AUX_EXORGINFO			AUX_EXORGINFO;
+		[default][flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Payload;
+	} AUX_HEADER_TYPE_UNION_1;
+
+	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(AUX_TYPE_PERF_REQUESTID)]		AUX_PERF_REQUESTID		AUX_PERF_REQUESTID;
+		[case(AUX_TYPE_PERF_CLIENTDINFO)]	AUX_PERF_CLIENTINFO		AUX_PERF_CLIENTINFO;
+		[case(AUX_TYPE_PERF_SERVERINFO)]	AUX_PERF_SERVERINFO		AUX_PERF_SERVERINFO;
+		[case(AUX_TYPE_PERF_SESSIONINFO_2)]	AUX_PERF_SESSIONINFO_V2		AUX_PERF_SESSIONINFO_V2;	/* V2 specific */
+		[case(AUX_TYPE_PERF_DEFMDB_SUCCESS)]	AUX_PERF_DEFMDB_SUCCESS		AUX_PERF_DEFMDB_SUCCESS;
+		[case(AUX_TYPE_PERF_DEFGC_SUCCESS)]	AUX_PERF_DEFGC_SUCCESS		AUX_PERF_DEFGC_SUCCESS;
+		[case(AUX_TYPE_PERF_MDB_SUCCESS_2)]	AUX_PERF_MDB_SUCCESS_V2		AUX_PERF_MDB_SUCCESS_V2;	/* V2 specific */
+		[case(AUX_TYPE_PERF_GC_SUCCESS_2)]	AUX_PERF_GC_SUCCESS_V2		AUX_PERF_GC_SUCCESS_V2;		/* V2 specific */
+		[case(AUX_TYPE_PERF_FAILURE_2)]		AUX_PERF_FAILURE_V2		AUX_PERF_FAILURE_V2;		/* V2 specific*/
+		[case(AUX_TYPE_CLIENT_CONTROL)]		AUX_CLIENT_CONTROL		AUX_CLIENT_CONTROL;
+		[case(AUX_TYPE_PERF_PROCESSINFO)]	AUX_PERF_PROCESSINFO		AUX_PERF_PROCESSINFO;
+		[case(AUX_TYPE_PERF_BG_DEFMDB_SUCCESS)]	AUX_PERF_DEFMDB_SUCCESS		AUX_PERF_DEFMDB_SUCCESS;
+		[case(AUX_TYPE_PERF_BG_DEFGC_SUCCESS)]	AUX_PERF_DEFGC_SUCCESS		AUX_PERF_DEFGC_SUCCESS;
+		[case(AUX_TYPE_PERF_BG_MDB_SUCCESS)]	AUX_PERF_MDB_SUCCESS		AUX_PERF_MDB_SUCCESS;
+		[case(AUX_TYPE_PERF_BG_GC_SUCCESS)]	AUX_PERF_GC_SUCCESS		AUX_PERF_GC_SUCCESS;
+		[case(AUX_TYPE_PERF_BG_FAILURE)]	AUX_PERF_FAILURE		AUX_PERF_FAILURE;
+		[case(AUX_TYPE_PERF_FG_DEFMDB_SUCCESS)]	AUX_PERF_DEFMDB_SUCCESS		AUX_PERF_DEFMDB_SUCCESS;
+		[case(AUX_TYPE_PERF_FG_DEFGC_SUCCESS)]	AUX_PERF_DEFGC_SUCCESS		AUX_PERF_DEFGC_SUCCESS;
+		[case(AUX_TYPE_PERF_FG_MDB_SUCCESS)]	AUX_PERF_MDB_SUCCESS		AUX_PERF_MDB_SUCCESS;
+		[case(AUX_TYPE_PERF_FG_GC_SUCCESS)]	AUX_PERF_GC_SUCCESS		AUX_PERG_GC_SUCCESS;
+		[case(AUX_TYPE_PERF_FG_FAILURE)]	AUX_PERF_FAILURE		AUX_PERF_FAILURE;
+		[case(AUX_TYPE_OSVERSIONINFO)]		AUX_OSVERSIONINFO		AUX_OSVERSIONINFO;
+		[case(AUX_TYPE_EXORGINFO)]		AUX_EXORGINFO			AUX_EXORGINFO;
+		[default][flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Payload;
+	} AUX_HEADER_TYPE_UNION_2;
+
+	typedef [public,nopull,noprint,flag(NDR_NOALIGN)] struct {
+		uint16							Size;
+		AUX_VERSION						Version;
+		uint8							Type;
+		[switch_is(Type)] AUX_HEADER_TYPE_UNION_1		Payload_1;
+		[switch_is(Type)] AUX_HEADER_TYPE_UNION_2		Payload_2;
+	} AUX_HEADER;
+
+	typedef [public,nopull,noprint] struct {
+		RPC_HEADER_EXT								RPC_HEADER_EXT;
+		[subcontext(0), subcontext_size(RPC_HEADER_EXT.Size)] AUX_HEADER	*AUX_HEADER;
+	} mapi2k7_AuxInfo;
+
+
 	MAPISTATUS EcDoConnectEx(
-		[out]				policy_handle	*handle,
-		[in,string,charset(DOS)]	uint8		szUserDN[],
-		[in]				uint32		ulFlags,
-		[in]				uint32		ulConMod,
-		[in]				uint32		cbLimit,
-		[in]				uint32		ulCpid,
-		[in]				uint32		ulLcidString,
-		[in]				uint32		ulLcidSort,
-		[in]				uint32		ulIcxrLink,
-		[in]				uint16		usFCanConvertCodePages,
-		[out]				uint32		*pcmsPollsMax,
-		[out]				uint32		*pcRetry,
-		[out]				uint32		*pcmsRetryDelay,
-		[out]				uint32		*picxr,
-		[out,unique,string,charset(DOS)]uint8		*szDNPrefix,
-		[out,unique,string,charset(DOS)]uint8		*szDisplayName,
-		[in]				uint16		rgwClientVersion[3],
-		[out]				uint16		rgwServerVersion[3],
-		[out]				uint16		rgwBestVersion[3],
-		[in,out]			uint32		*pulTimeStamp,
-		[in][subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB rgbAuxIn,
-		[in,out][range(0x0,0x1008)]	uint32		*pcbAuxOut,
+		[out]				policy_handle				*handle,
+		[in,string,charset(DOS)]	uint8					szUserDN[],
+		[in]				uint32					ulFlags,
+		[in]				uint32					ulConMod,
+		[in]				uint32					cbLimit,
+		[in]				uint32					ulCpid,
+		[in]				uint32					ulLcidString,
+		[in]				uint32					ulLcidSort,
+		[in]				uint32					ulIcxrLink,
+		[in]				uint16					usFCanConvertCodePages,
+		[out]				uint32					*pcmsPollsMax,
+		[out]				uint32					*pcRetry,
+		[out]				uint32					*pcmsRetryDelay,
+		[out]				uint32					*picxr,
+		[out,unique,string,charset(DOS)]uint8					*szDNPrefix,
+		[out,unique,string,charset(DOS)]uint8					*szDisplayName,
+		[in]				uint16					rgwClientVersion[3],
+		[out]				uint16					rgwServerVersion[3],
+		[out]				uint16					rgwBestVersion[3],
+		[in,out]			uint32					*pulTimeStamp,
+		[in,subcontext(4),flag(NDR_NOALIGN|NDR_REMAINING)] mapi2k7_AuxInfo	*rgbAuxIn,
+		[in,out][range(0,0x1008)]	uint32					*pcbAuxOut,
 		[in][flag(NDR_REMAINING)] DATA_BLOB data
+		);
+
+	/*****************/
+	/* Function 0xb  */
+	typedef [public,bitmap32bit] bitmap {
+		pulFlags_NoCompression	= 0x00000001,
+		pulFlags_NoXorMagic	= 0x00000002,
+		pulFlags_Chain		= 0x00000004
+	} pulFlags;
+
+	typedef [public,nopull] struct {
+		RPC_HEADER_EXT							header;
+		[subcontext(0),flag(NDR_REMAINING|NDR_NOALIGN)] mapi_request	*mapi_request;
+	} mapi2k7_request;
+
+	typedef [public,nopull] struct {
+		RPC_HEADER_EXT							header;
+		[subcontext(0),flag(NDR_NOALIGN|NDR_REMAINING)] mapi_response	*mapi_response;
+	} mapi2k7_response;
+
+	MAPISTATUS EcDoRpcExt2(
+		[in,out]					   policy_handle	*handle,
+		[in,out]					   pulFlags		*pulFlags,
+		[in,subcontext(4),flag(NDR_NOALIGN|NDR_REMAINING)] mapi2k7_request	*rgbIn,
+		[in]						   uint32		cbIn,
+		[out]						   uint32		size,
+		[out]						   uint32		offset,
+		[out,subcontext(4),flag(NDR_NOALIGN|NDR_REMAINING)]mapi2k7_response	*rgbOut,
+		[in,out][range(0,262144)]			   uint32		*pcbOut,
+		[in,subcontext(4),flag(NDR_NOALIGN|NDR_REMAINING)] mapi2k7_AuxInfo	*rgbAuxIn,
+		[in]						   uint32		cbAuxIn,
+ 		[out,subcontext(4),flag(NDR_NOALIGN|NDR_REMAINING)]mapi2k7_AuxInfo	*rgbAuxOut,
+		[in,out][range(0,4104)]				   uint32		*pcbAuxOut,
+		[out]						   uint32		*pullTransTime
 		);
 }
 

@@ -133,11 +133,11 @@ enum MAPISTATUS dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *, TALLOC_CT
 enum MAPISTATUS dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *, TALLOC_CTX *,struct NspiGetIDsFromNames *);
 enum MAPISTATUS dcesrv_NspiResolveNames(struct dcesrv_call_state *, TALLOC_CTX *,struct NspiResolveNames *);
 enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *, TALLOC_CTX *,struct NspiResolveNamesW *);
+
+/* EMSMDB protocol functions */
 enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDoConnect *);
 enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDoDisconnect *);
 enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDoRpc *);
-
-
 void dcesrv_EcGetMoreRpc(struct dcesrv_call_state *, TALLOC_CTX *,struct EcGetMoreRpc *);
 enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRRegisterPushNotification *);
 enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRUnregisterPushNotification *);
@@ -146,6 +146,7 @@ void dcesrv_EcRGetDCName(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRGetD
 void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRNetGetDCName *);
 void dcesrv_EcDoRpcExt(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDoRpcExt *);
 enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *, TALLOC_CTX *, struct EcDoConnectEx *);
+enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *, TALLOC_CTX *, struct EcDoRpcExt2 *);
 void dcesrv_unknown_dummy(struct dcesrv_call_state *, TALLOC_CTX *,struct unknown_dummy *);
 
 __END_DECLS

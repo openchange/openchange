@@ -1,3 +1,8 @@
+2009-05-25
+    jkerihuel
+	[r1343]
+		Fix pull structure for QueryRows reply when no RowData is available
+
 2009-05-07
     jkerihuel
 	[r1341]

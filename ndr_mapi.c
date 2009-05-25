@@ -849,6 +849,9 @@ enum ndr_err_code ndr_pull_QueryRows_repl(struct ndr_pull *ndr, int ndr_flags, s
 				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 				NDR_CHECK(ndr_pull_DATA_BLOB(ndr, NDR_SCALARS, &r->RowData));
 				ndr->flags = _flags_save_DATA_BLOB;
+			} else {
+				r->RowData.length = 0;
+				r->RowData.data = NULL;
 			}
 		}
 		if (ndr_flags & NDR_BUFFERS) {

@@ -245,6 +245,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!folder, MAPI_E_INVALID_PARAMETER, NULL);
 
 	store = (mapi_object_store_t *)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);

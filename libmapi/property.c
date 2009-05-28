@@ -88,6 +88,9 @@ _PUBLIC_ const void *get_SPropValue(struct SPropValue *lpProps,
 {
 	uint32_t	i;
 
+	/* Sanity checks */
+	if (!lpProps) return NULL;
+
 	for (i = 0; lpProps[i].ulPropTag; i++) {
 		if (ulPropTag == lpProps[i].ulPropTag) {
 			return get_SPropValue_data(&lpProps[i]);

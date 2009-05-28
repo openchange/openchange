@@ -115,7 +115,7 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 			uint32_t *rights;
 
 			lpProp = get_SPropValue_SRow(&(SRowSet.aRow[i]), PR_MEMBER_NAME);
-			printf("    %-25s: %s\n", "Username", lpProp->value.lpszA ? lpProp->value.lpszA : "Default");
+			printf("    %-25s: %s\n", "Username", lpProp && lpProp->value.lpszA ? lpProp->value.lpszA : "Default");
 			lpProp = get_SPropValue_SRow(&(SRowSet.aRow[i]), PR_MEMBER_RIGHTS);
 			rights = &(lpProp->value.l);
 			ndr_print_debug((ndr_print_fn_t)ndr_print_ACLRIGHTS, "Rights", (void *)rights);

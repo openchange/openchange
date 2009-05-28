@@ -608,10 +608,12 @@ _PUBLIC_ int ocpf_write_commit(void)
 							     ocpf_write_get_guid_name(nelement->oleguid));
 			}
 			
-			len = fwrite(definition, strlen(definition), 1, fp);
-			len = fwrite(line, strlen(line), 1, fp);
+			if (definition) {
+				len = fwrite(definition, strlen(definition), 1, fp);
+				talloc_free(definition);
+			}
 
-			talloc_free(definition);
+			len = fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
 			found = false;
 		}

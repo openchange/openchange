@@ -284,8 +284,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	/* Step 3. Find the longest ExplicitMessageClass matching MessageClass */
 	ldb_element = ldb_msg_find_element(res->msgs[0], "PidTagMessageClass");
 	for (i = 0, length = 0; i < ldb_element[0].num_values; i++) {
-		if (!strncasecmp(MessageClass, (char *)ldb_element->values[i].data, 
-				 strlen((char *)ldb_element->values[i].data)) &&
+		if (MessageClass && !strncasecmp(MessageClass, (char *)ldb_element->values[i].data, 
+						 strlen((char *)ldb_element->values[i].data)) &&
 		    strlen((char *)ldb_element->values[i].data) > length) {
 
 			if (*ExplicitMessageClass && strcmp(*ExplicitMessageClass, "")) {

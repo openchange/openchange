@@ -261,7 +261,7 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 		 */
 		for (el = ocpf->nprops; el->next; el = el->next) {
 			OCPF_RETVAL_IF((el->OOM && !strcmp(el->OOM, nprop->OOM)) &&
-				       (el->oleguid && !strcmp(el->oleguid, nprop->guid)),
+				       (el->oleguid && nprop->guid && !strcmp(el->oleguid, nprop->guid)),
 				       OCPF_WARN_OOM_REGISTERED, element);
 		}
 
@@ -277,7 +277,7 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 		 */
 		for (el = ocpf->nprops; el->next; el = el->next) {
 			OCPF_RETVAL_IF((el->mnid_string && !strcmp(el->mnid_string, nprop->mnid_string)) &&
-				       (el->oleguid && !strcmp(el->oleguid, nprop->guid)),
+				       (el->oleguid && nprop->guid && !strcmp(el->oleguid, nprop->guid)),
 				       OCPF_WARN_STRING_REGISTERED, element);
 		}
 
@@ -298,7 +298,7 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 		 */
 		for (el = ocpf->nprops; el->next; el = el->next) {
 			OCPF_RETVAL_IF((el->mnid_id == nprop->mnid_id) && 
-				       (el->oleguid && !strcmp(el->oleguid, nprop->guid)),
+				       (el->oleguid && nprop->guid && !strcmp(el->oleguid, nprop->guid)),
 				       OCPF_WARN_LID_REGISTERED, element);
 		}
 		element->kind = OCPF_MNID_ID;

@@ -1,3 +1,54 @@
+2009-05-28
+    jkerihuel
+	[r1350]
+		Patch from Erik Hovland <erik@hovland.org>:
+		
+		Initializes variables to make sure they aren't used uninitialized.
+		
+		Ref ticket #153
+	[r1349]
+		- Add sanity check on mapitest_common creation routines within
+		  mapitest modules
+		
+		- Apply patch from Erik Hovland <erik@hovland.org>: check return
+		  types.
+	[r1348]
+		Patch From Erik Hovland <erik@hovland.org>
+		
+		In torture_rpc_mapi_sendattach a call is made to the system function
+		read at line 199. The return value of read is assigned to read_size,
+		which happens to be of unsigned type. So if read returns -1 (which it
+		can) it will not be noticed. The patch changes the type to ssize_t
+		(signed) and checks for -1 as well as zero to break out of the loop.
+		
+		Ref ticket #156
+	[r1347]
+		Patch from Erik Hovland <erik@hovland.org>
+		
+		1. In mapiproxy, the directory handle dir will be leaked after it is
+		done being used.
+		2. exchange2mbox main() should use exit at line 785 just like all of
+		the other error paths so that we don't leak anything
+		
+		ref. ticket #157
+	[r1346]
+		Patch from Erik Hovland <erik@hovland.org>
+		
+		Adds a #include config.h to suppress compiler warnings for vasprintf
+	[r1345]
+		Patch from Erik Hovland <erik@hovland.org>:
+		
+		Make sure pointers are valid before dereferencing
+		1. lpProps 'might' be null
+		2. Add folder to variables checked before moving on.
+		4. Check nprop->guid before giving to strcmp, two times
+		6. Check definition before handing to strlen (which will dereference
+		it) Reworked this one to include talloc_free
+		7. Check MessageClass? before handing to strncasecmp
+		8. Check backend, return if null.
+		10. Don't print out anything if lpProp is null
+		11. Check attach_size before dereferencing
+
 2009-05-25
     jkerihuel
 	[r1343]

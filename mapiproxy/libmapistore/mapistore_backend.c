@@ -276,7 +276,7 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, co
 {
 	struct backend_context		*context;
 	int				retval;
-	bool				found;
+	bool				found = false;
 	void				*private_data = NULL;
 	int				i;
 

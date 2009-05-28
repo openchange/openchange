@@ -980,6 +980,8 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_folder);
+
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (retval != MAPI_E_SUCCESS) {
@@ -988,7 +990,6 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
 	}
 
 	/* Step 2. Open Source Inbox folder */
-	mapi_object_init(&obj_folder);
 	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
 	mapitest_print_retval(mt, "GetDefaultFolder");
 	if (retval != MAPI_E_SUCCESS) {

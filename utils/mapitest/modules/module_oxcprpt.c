@@ -1418,12 +1418,17 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 
 	/* Step 1. Logon Private Mailbox */
 	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_top_folder);
+	mapi_object_init(&obj_ref_folder);
+	mapi_object_init(&obj_ref_message);
+	mapi_object_init(&obj_target_message);
+	mapi_object_init(&obj_targ_attach);
+
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
-	mapi_object_init(&obj_top_folder);
 	retval = GetDefaultFolder(&obj_store, &id_top_folder, olFolderTopInformationStore);
 	mapitest_print_retval(mt, "GetDefaultFolder");
 
@@ -1435,7 +1440,6 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 
 	/* Step 2: Create reference folder */
-	mapi_object_init(&obj_ref_folder);
         retval = CreateFolder(&obj_top_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
                               OPEN_IF_EXISTS, &obj_ref_folder);
 	mapitest_print_retval_fmt(mt, "CreateFolder", "(Create test folder)");
@@ -1453,7 +1457,6 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 
 	/* Step 3: Create reference message */
-	mapi_object_init(&obj_ref_message);
 	result = mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
 	mapitest_print_retval(mt, "mapitest_common_message_create");
 	if (result != true) {
@@ -1520,7 +1523,6 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 
 	/* Step 5: Create target message */
-	mapi_object_init(&obj_target_message);
 	result = mapitest_common_message_create(mt, &obj_ref_folder, &obj_target_message, MT_MAIL_SUBJECT);
 	mapitest_print_retval(mt, "mapitest_common_message_create");
 	if (result != true) {
@@ -1814,7 +1816,6 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	mapitest_print_retval(mt, "SaveChangesAttachment");
 
 	/* Step 14: Create attachment on target email */
-	mapi_object_init(&obj_targ_attach);
 	retval = CreateAttach(&obj_target_message, &obj_targ_attach);
 	mapitest_print_retval(mt, "CreateAttach");
 	if (retval != MAPI_E_SUCCESS) {
@@ -2047,12 +2048,16 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 
 	/* Log into the server */
 	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_top_folder);
+	mapi_object_init(&obj_ref_folder);
+	mapi_object_init(&obj_ref_message);
+
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
-	mapi_object_init(&obj_top_folder);
+
 	retval = GetDefaultFolder(&obj_store, &id_top_folder, olFolderTopInformationStore);
 	mapitest_print_retval(mt, "GetDefaultFolder");
 	if (retval != MAPI_E_SUCCESS) {
@@ -2068,7 +2073,6 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	}
 
 	/* Step 2: Create test folder */
-	mapi_object_init(&obj_ref_folder);
         CreateFolder(&obj_top_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
 		     OPEN_IF_EXISTS, &obj_ref_folder);
 	mapitest_print_retval(mt, "CreateFolder");
@@ -2077,7 +2081,6 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	mapi_object_init(&obj_ref_message);
 	result = mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
 	mapitest_print_retval(mt, "mapitest_common_message_create");
 	if (result != true) {

@@ -456,6 +456,7 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 		uint32_t		i;
 		struct SPropValue	lpProp;
 
+		lpProp.dwAlignPad = 0;
 		for (i = 0; i < lpProps.cValues; i++) {
 			cast_SPropValue(&lpProps.lpProps[i], &lpProp);
 			mapidump_SPropValue(lpProp, "\t* ");

@@ -474,6 +474,8 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
+	rowList.padding = 0;
+
 	mem_ctx = talloc_named(NULL, 0, "AddUserPermission");
 
 	/* query Address book */
@@ -547,6 +549,8 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+
+	rowList.padding = 0;
 
 	mem_ctx = talloc_named(NULL, 0, "ModifyUserPermission");
 

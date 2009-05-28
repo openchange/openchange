@@ -34,7 +34,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe      *p;
 	TALLOC_CTX              *mem_ctx;
-	struct mapi_session	*session;
+	struct mapi_session	*session = NULL;
 	bool                    ret = true;
 	struct SPropTagArray    *SPropTagArray;
 	struct SRowSet		*rowset = NULL;

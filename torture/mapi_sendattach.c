@@ -185,7 +185,7 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 	{
 		int		fd;
 		struct stat	sb;
-		uint32_t	read_size;
+		ssize_t		read_size;
 		uint16_t	buf_readsize;
 		uint8_t		buf[0x7000];
 
@@ -196,11 +196,13 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 			return false;
 		}
 	
-		while ((read_size = read(fd, buf, 0x4000))) {
+		while (((read_size = read(fd, buf, 0x4000)) != -1) && read_size) {
 			/* We reset errno due to read */
 			blob.length = read_size;
 			blob.data = talloc_size(mem_ctx, read_size);
-			memcpy(blob.data, buf, read_size);
+			if (read_size > 0) {
+				memcpy(blob.data, buf, read_size);
+			}
 			
 			errno = 0;
 			retval = WriteStream(&obj_stream, &blob, &buf_readsize);

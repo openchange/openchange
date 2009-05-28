@@ -782,7 +782,9 @@ int main(int argc, const char *argv[])
 								  PR_HASATTACH);
 				retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
-				if (retval != MAPI_E_SUCCESS) return false;
+				if (retval != MAPI_E_SUCCESS) {
+					exit (1);
+				}
 
 				/* Build a SRow structure */
 				aRow.ulAdrEntryPad = 0;

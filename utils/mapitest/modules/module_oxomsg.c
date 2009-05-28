@@ -143,6 +143,9 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
 	GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
 	OpenFolder(&obj_store, id_folder, &obj_folder);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
 	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
 
 	/* Release */
@@ -244,7 +247,11 @@ cleanup:
 	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
 	GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
 	OpenFolder(&obj_store, id_folder, &obj_folder);
-	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	} else {
+		mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
+	}
 
 	/* Release */
 	mapi_object_release(&obj_message);
@@ -460,7 +467,11 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
 	GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
 	OpenFolder(&obj_store, id_folder, &obj_folder);
-	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+	} else {
+		mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
+	}
 
 	/* Release */
 	mapi_object_release(&obj_message);

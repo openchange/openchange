@@ -181,7 +181,12 @@ static NTSTATUS cache_exec_sync_cmd(struct mpm_stream *stream)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	stat(stream->filename, &sb);
+	ret = stat(stream->filename, &sb);
+	if (ret == -1) {
+		perror("stat: ");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	if (sb.st_size != stream->StreamSize) {
 		DEBUG(0, ("Sync'd file size is 0x%x and 0x%x was expected\n",
 			  (uint32_t)sb.st_size, stream->StreamSize));

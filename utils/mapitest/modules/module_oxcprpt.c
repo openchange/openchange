@@ -317,7 +317,7 @@ _PUBLIC_ bool mapitest_oxcprpt_DeleteProps(struct mapitest *mt)
 	mapi_object_init(&obj_ref_message);
 	result = mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
 	mapitest_print_retval_step_fmt(mt, "3.1.", "mapitest_common_message_create", "(%s)", "Create a reference email");
-	if (!result != MAPI_E_SUCCESS) {
+	if (result != true) {
 		return false;
 	}
 	retval = SaveChangesMessage(&obj_ref_folder, &obj_ref_message, KeepOpenReadWrite);
@@ -464,7 +464,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	mapi_object_init(&obj_ref_message);
 	result = mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
 	mapitest_print_retval_step_fmt(mt, "3.1.", "mapitest_common_message_create", "(%s)", "Create a reference email");
-	if (!result) {
+	if (result != true) {
 		return false;
 	}
 	retval = SaveChangesMessage(&obj_ref_folder, &obj_ref_message, KeepOpenReadWrite);
@@ -509,7 +509,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	mapi_object_init(&obj_target_message);
 	result = mapitest_common_message_create(mt, &obj_ref_folder, &obj_target_message, MT_MAIL_SUBJECT);
 	mapitest_print_retval_step_fmt(mt, "5.1.", "mapitest_common_message_create", "(%s)", "Create target email");
-	if (!result) {
+	if (result != true) {
 		return false;
 	}
 	retval = SaveChangesMessage(&obj_ref_folder, &obj_target_message, KeepOpenReadWrite);
@@ -848,7 +848,11 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 
 	/* Step 3. Create the message */
 	mapi_object_init(&obj_message);
-	mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+	mapitest_print_retval(mt, "Message Creation");
+	if (ret != true) {
+		return false;
+	}
 
 	/* Step 4. Create the attachment */
 	mapi_object_init(&obj_attach);
@@ -1141,7 +1145,11 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 
 	/* Step 3. Create the message */
 	mapi_object_init(&obj_message);
-	mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+	mapitest_print_retval(mt, "Message Creation");
+	if (ret != true) {
+		return false;
+	}
 
 	/* Step 4. Create the first attachment */
 	mapi_object_init(&obj_attach);
@@ -1448,7 +1456,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	mapi_object_init(&obj_ref_message);
 	result = mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
 	mapitest_print_retval(mt, "mapitest_common_message_create");
-	if (!result) {
+	if (result != true) {
 		ret = false;
 		goto cleanup;
 	}
@@ -1515,7 +1523,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	mapi_object_init(&obj_target_message);
 	result = mapitest_common_message_create(mt, &obj_ref_folder, &obj_target_message, MT_MAIL_SUBJECT);
 	mapitest_print_retval(mt, "mapitest_common_message_create");
-	if (!result) {
+	if (result != true) {
 		ret = false;
 		goto cleanup;
 	}
@@ -2072,7 +2080,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	mapi_object_init(&obj_ref_message);
 	result = mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
 	mapitest_print_retval(mt, "mapitest_common_message_create");
-	if (!result) {
+	if (result != true) {
 		ret = false;
 		goto cleanup;
 	}
@@ -2493,7 +2501,11 @@ _PUBLIC_ bool mapitest_oxcprpt_WriteAndCommitStream(struct mapitest *mt)
 
 	/* Step 3. Create the message */
 	mapi_object_init(&obj_message);
-	mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
+	mapitest_print_retval(mt, "Message Creation");
+	if (ret != true) {
+		return false;
+	}
 
 	/* Step 4. Create the attachment */
 	mapi_object_init(&obj_attach);

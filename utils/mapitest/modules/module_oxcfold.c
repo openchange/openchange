@@ -658,7 +658,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 		return false;
 	}
 	mapi_object_init(&(dst_contents));
-	GetContentsTable(&(obj_folder_dst), &(dst_contents), 0, &dst_count);
+	retval = GetContentsTable(&(obj_folder_dst), &(dst_contents), 0, &dst_count);
 	mapitest_print_retval(mt, "GetContentsTable");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;

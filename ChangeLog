@@ -1,3 +1,12 @@
+2009-06-21
+    jelmer
+	[r1365]
+		Fix typo in Python variable name.
+	[r1364]
+		Keep separate flags for libraries around in config.mk.
+	[r1362]
+		Link libmapiserver against all libraries.
+
 2009-06-18
     jkerihuel
 	[r1357]

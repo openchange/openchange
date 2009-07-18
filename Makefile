@@ -840,7 +840,9 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiserver/
 							mapiproxy/libmapiserver/libmapiserver_oxctabl.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcmsg.po		\
 							mapiproxy/libmapiserver/libmapiserver_oxcnotif.po	\
-							mapiproxy/libmapiserver/libmapiserver_oxorule.po	
+							mapiproxy/libmapiserver/libmapiserver_oxorule.po	 \
+							ndr_mapi.po				\
+							gen_ndr/ndr_exchange.po
 	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapiserver.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ $(LIBS)
 
 mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)

@@ -852,6 +852,7 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$
 ################
 # libmapistore
 ################
+LIBMAPISTORE_SO_VERSION = 0
 
 libmapistore: 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 		$(OC_MAPISTORE)						\

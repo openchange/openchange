@@ -219,6 +219,7 @@ dnl Samba4 modules
 dnl ---------------------------------------------------------------------------
 PKG_CHECK_MODULES(TALLOC, talloc)
 PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig tevent)
+PKG_CHECK_MODULES(TDB, tdb)
 PKG_CHECK_MODULES(LDB, ldb)
 
 dnl ---------------------------------------------------------------------------

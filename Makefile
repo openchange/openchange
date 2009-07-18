@@ -884,8 +884,8 @@ distclean:: libmapistore-distclean
 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mapistore_interface.po	\
 							mapiproxy/libmapistore/mapistore_processing.po	\
 							mapiproxy/libmapistore/mapistore_backend.po	\
-							mapiproxy/libmapistore/mapistore_tdb_wrap.po	
-	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) $^ -L. $(LIBS)
+							mapiproxy/libmapistore/mapistore_tdb_wrap.po
+	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS)
 
 mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@

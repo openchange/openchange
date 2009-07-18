@@ -1,3 +1,22 @@
+2009-07-18
+    jelmer
+	[r1423]
+		Link libmapistore against tdb.
+	[r1422]
+		Update copies of config.guess and config.sub.
+	[r1421]
+		Link libmapiproxy against tdb.
+	[r1420]
+		Declare a SOVERSION for libmapistore.
+	[r1419]
+		Use LDFLAGS when linking exchange2ical.
+	[r1418]
+		Create symlink for libmapistore.
+	[r1417]
+		Link libmapi against tevent since it uses tevent_context_init, link ndr_exchange.po into libmapiserver since it uses some ndr_push_* symbols.
+	[r1416]
+		Fix typo in variable name.
+
 2009-06-21
     jelmer
 	[r1365]

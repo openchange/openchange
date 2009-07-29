@@ -126,11 +126,11 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	obj_store = &tmp;
 	obj_store->private_data = 0;
 	status = GetDefaultFolder(obj_store, folder, id);
-	if ( ( status != MAPI_E_NOT_INITIALIZED ) || (GetLastError() != MAPI_E_NOT_INITIALIZED) ) {
-		mapitest_print(mt, "* %-35s: [FAILURE] - 0x%x\n", "Step 6 - MAPI_E_NOT_INITIALIZED", status);
+	if ( (status != MAPI_E_INVALID_PARAMETER) || (GetLastError() != MAPI_E_INVALID_PARAMETER) ) {
+		mapitest_print(mt, "* %-35s: [FAILURE] - 0x%x\n", "Step 6 - MAPI_E_INVALID_PARAMETER", status);
 		return false;
 	} else {
-		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 6 - MAPI_E_NOT_INITIALIZED");
+		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 6 - MAPI_E_INVALID_PARAMETER");
 	}
 
 	make_global_ctx_invalid();

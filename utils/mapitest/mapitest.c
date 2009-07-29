@@ -148,15 +148,11 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_get_server_info");
 
-	if (!profname) {
-	  retval = GetDefaultProfile(&profname);
-		if (retval != MAPI_E_SUCCESS) {
-			mapi_errstr("GetDefaultProfile", retval);
-			talloc_free(mem_ctx);
-			return false;
-		}
-	} else {
-		profname = talloc_strdup(mem_ctx, opt_profname);
+	retval = GetDefaultProfile(&profname);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_errstr("GetDefaultProfile", retval);
+		talloc_free(mem_ctx);
+		return false;
 	}
 
 	/* debug options */

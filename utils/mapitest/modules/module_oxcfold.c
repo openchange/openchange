@@ -1005,7 +1005,7 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
 	}
 
 	mapi_object_init(&(contents));
-	GetContentsTable(&(obj_folder), &(contents), 0, &count);
+	retval = GetContentsTable(&(obj_folder), &(contents), 0, &count);
 	mapitest_print_retval(mt, "GetContentsTable");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -1056,7 +1056,7 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
 
 	retval = QueryRows(&(contents), 50, TBL_NOADVANCE, &SRowSet);
 	mapitest_print_retval(mt, "QueryRows");
-	if ( (retval == MAPI_E_SUCCESS) && (SRowSet.cRows >= 0) ) {
+	if (retval == MAPI_E_SUCCESS) {
 		for (i = 0; i < SRowSet.cRows; ++i) {
 			msgid[i] = SRowSet.aRow[i].lpProps[0].value.d;
 		}

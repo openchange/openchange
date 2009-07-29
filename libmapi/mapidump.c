@@ -301,7 +301,7 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	printf("Body:\n");
 	fflush(0);
 	if (body) {
-		printf("%s\n", body ? body : "");
+		printf("%s\n", body);
 	} else if (html) {
 		len = write(1, html->lpb, html->cb);
 		len = write(1, "\n", 1);

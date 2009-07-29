@@ -687,7 +687,6 @@ int main(int argc, const char *argv[])
 		if (!password) show_help(pc, "password");
 		if (!username) show_help(pc, "username");
 		if (!address) show_help(pc, "address");
-		if (!workstation) show_help(pc, "workstation");
 		if (!domain) show_help(pc, "domain");
 
 		if (!lcid) {

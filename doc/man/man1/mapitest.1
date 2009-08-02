@@ -33,7 +33,7 @@ mapitest \- OpenChange torture test utility
 .SH SYNOPSIS
 .nf
 mapitest [-?|--help] [--usage] [-f|--database=STRING] [-p|--profile=STRING]
-  [-u|--username=STRING] [-p|--password=STRING] [--confidential] [--color]
+  [-p|--password=STRING] [--confidential] [--color]
   [-o|--outfile=STRING] [--mapi-calls=STRING] [--list-all] [--no-server]
   [--dump-data] [-d|--debuglevel=STRING]
 .fi
@@ -66,12 +66,6 @@ Set the profile to use. If no profile is specified, mapitest tries
 to retrieve the default profile in the database. If no default profile
 has been set, mapitest returns 
 .B MAPI_E_NOT_FOUND .
-
-.TP
-.B --username
-.TP
-.B -u
-Set the username of the account to use.
 
 .TP
 .B --password

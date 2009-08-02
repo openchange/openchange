@@ -199,11 +199,10 @@ int main(int argc, const char *argv[])
 	const char     		*opt_debug = NULL;
 	const char		*opt_profdb = NULL;
 	char			*opt_profname = NULL;
-	const char		*opt_username = NULL;
 	const char		*opt_password = NULL;
 	const char		*opt_outfile = NULL;
 
-	enum { OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_USERNAME, OPT_PASSWORD,
+	enum { OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD,
 	       OPT_CONFIDENTIAL, OPT_OUTFILE, OPT_MAPI_ALL, OPT_MAPI_CALLS,
 	       OPT_MAPIADMIN_ALL, OPT_NO_SERVER, OPT_LIST_ALL, OPT_DUMP_DATA,
 	       OPT_DEBUG, OPT_COLOR };
@@ -212,7 +211,6 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		{ "database",     'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB,    "set the profile database", NULL },
 		{ "profile",      'p', POPT_ARG_STRING, NULL, OPT_PROFILE,       "set the profile name", NULL },
-		{ "username",     'u', POPT_ARG_STRING, NULL, OPT_USERNAME,      "set the account username", NULL },
 		{ "password",     'p', POPT_ARG_STRING, NULL, OPT_PASSWORD,      "set the profile or account password", NULL },
 		{ "confidential",  0,  POPT_ARG_NONE,   NULL, OPT_CONFIDENTIAL,  "remove any sensitive data from the report", NULL },
 		{ "color",         0,  POPT_ARG_NONE,   NULL, OPT_COLOR,         "color MAPI retval", NULL },
@@ -244,10 +242,7 @@ int main(int argc, const char *argv[])
 			opt_profdb = poptGetOptArg(pc);
 			break;
 		case OPT_PROFILE:
-		  opt_profname = talloc_strdup(mem_ctx, (char *)poptGetOptArg(pc));
-			break;
-		case OPT_USERNAME:
-			opt_username = poptGetOptArg(pc);
+			opt_profname = talloc_strdup(mem_ctx, (char *)poptGetOptArg(pc));
 			break;
 		case OPT_PASSWORD:
 			opt_password = poptGetOptArg(pc);

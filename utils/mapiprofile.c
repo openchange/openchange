@@ -57,7 +57,6 @@ static uint32_t callback(struct SRowSet *rowset, void *private)
 	uint32_t		index;
 	char     		entry[10];
 	const char		*label = (const char *)private;
-	char			*s;
 
 	printf("%s:\n", label);
 	for (i = 0; i < rowset->cRows; i++) {
@@ -70,7 +69,11 @@ static uint32_t callback(struct SRowSet *rowset, void *private)
 	fd = fdopen(0, "r");
 getentry:
 	printf("Enter username id [0]: ");
-	s = fgets(entry, 10, fd);
+	if (fgets(entry, 10, fd) == NULL) {
+		printf("Failed to read string\n");
+		exit(1);
+	}
+
 	index = atoi(entry);
 	if (index > i) {
 		printf("Invalid id - Must be a value between 0 and %u\n", i);

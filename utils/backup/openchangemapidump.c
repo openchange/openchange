@@ -352,7 +352,6 @@ int main(int argc, const char *argv[])
 	const char			*opt_profdb = NULL;
 	char				*opt_profname = NULL;
 	const char			*opt_password = NULL;
-	const char			*opt_config = NULL;
 	const char			*opt_backupdb = NULL;
 	const char			*opt_debug = NULL;
 	bool				opt_dumpdata = false;
@@ -366,7 +365,6 @@ int main(int argc, const char *argv[])
 		{"database", 'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB, "set the profile database path", NULL},
 		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name", NULL},
 		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password", NULL},
-		{"config", 'c', POPT_ARG_STRING, NULL, OPT_CONFIG, "set openchangebackup configuration file path", NULL},
 		{"backup-db", 'b', POPT_ARG_STRING, NULL, OPT_BACKUPDB, "set the openchangebackup store path", NULL},
 		{"debuglevel", 0, POPT_ARG_STRING, NULL, OPT_DEBUG, "set the debug level", NULL},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data", NULL},
@@ -394,9 +392,6 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_PASSWORD:
 			opt_password = poptGetOptArg(pc);
-			break;
-		case OPT_CONFIG:
-			opt_config = poptGetOptArg(pc);
 			break;
 		case OPT_BACKUPDB:
 			opt_backupdb = poptGetOptArg(pc);

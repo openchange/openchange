@@ -115,7 +115,6 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 	char     		**folder  = NULL;
 	const char		*name;
 	const uint64_t		*fid;
-	const uint32_t		*child;
 	bool			found = false;
 	uint32_t		index;
 	uint32_t		i;
@@ -131,10 +130,9 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 		retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
 		MAPI_RETVAL_IF(retval, GetLastError(), folder);
 
-		SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
+		SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
 						  PR_DISPLAY_NAME,
-						  PR_FID,
-						  PR_FOLDER_CHILD_COUNT);
+						  PR_FID);
 		retval = SetColumns(&obj_htable, SPropTagArray);
 		MAPIFreeBuffer(SPropTagArray);
 		MAPI_RETVAL_IF(retval, retval, folder);
@@ -143,7 +141,6 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 			for (index = 0; (index < SRowSet.cRows) && (found == false); index++) {
 				fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[index], PR_FID);
 				name = (const char *)find_SPropValue_data(&SRowSet.aRow[index], PR_DISPLAY_NAME);
-				child = (const uint32_t *)find_SPropValue_data(&SRowSet.aRow[index], PR_FOLDER_CHILD_COUNT);
 
 				newname = utf8tolinux(mem_ctx, name);
 				if (newname && fid && !strcmp(newname, folder[i])) {

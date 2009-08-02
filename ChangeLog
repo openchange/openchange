@@ -1,3 +1,40 @@
+2009-08-02
+    bradh
+	[r1444]
+		Avoid duplicate call to mapi_object_get_logon_id
+		
+		Based on a patch proposed by Erik Hovland, but adapted to follow the
+		pattern used in OpenStream().
+		
+		Resolves issue #163.
+	[r1443]
+		Applied modified version of patch from Erik Hovland to address unused variables.
+		
+		See http://trac.openchange.org/attachment/ticket/160/unused-values for
+		the rationale.
+		
+		This resolves #160.
+		
+		My version removes variables (rather than commenting them out) since we don't need
+		them now. I also updated the documentation for options that are no longer available
+		
+		The origin of the unused PR_FOLDER_CHILD_COUNT is a bit strange. It was introduced
+		in r808 (to resolve #103), and looks like it might have been used for debugging - no
+		impact on the code. I pulled out the whole lot.
+		
+		Tested with openchangeclient --fetchmail --folder="Sent Mail" and mapitest.
+	[r1442]
+		Use array form of delete (error identified with libmapixx-attach test, using valgrind).
+	[r1441]
+		Fix potentially unused variable.
+		
+		Tested with mapitest (even though nothing should have been affected) and
+		with libmapixx-test and libmapixx-attach under valgrind.
+		
+		Patch is remaining part of http://trac.openchange.org/ticket/153
+		
+		Thanks to Erik Hovland for the patch.
+
 2009-07-29
     bradh
 	[r1433]

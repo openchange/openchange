@@ -142,7 +142,7 @@ class attachment : public object {
 		 */
 		virtual ~attachment() throw()
 		{
-			if (m_bin_data) delete m_bin_data;
+			if (m_bin_data) delete[] m_bin_data;
 		}
 
 	private:

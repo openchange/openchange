@@ -164,8 +164,10 @@ class property_container {
 
 		/// Constructor
 		property_container(TALLOC_CTX* memory_ctx, mapi_object_t& mapi_object) : 
-		m_memory_ctx(memory_ctx), m_mapi_object(mapi_object), m_fetched(false), m_property_tag_array(NULL), m_cn_vals(0), m_property_values()
+		m_memory_ctx(memory_ctx), m_mapi_object(mapi_object), m_fetched(false), m_property_tag_array(NULL), m_cn_vals(0), m_property_values(0)
 		{
+			m_property_value_array.cValues = 0;
+			m_property_value_array.lpProps = NULL;
 		}
 
 		/**

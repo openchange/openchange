@@ -189,12 +189,11 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 		uint16_t	buf_readsize;
 		uint8_t		buf[0x7000];
 
-		if (stat(filename, &sb) != 0) return false;
-
 		if ((fd = open(filename, O_RDONLY)) == -1) {
 			DEBUG(0, ("Error while opening %s\n", filename));
 			return false;
 		}
+		if (fstat(fd, &sb) != 0) return false;
 	
 		while (((read_size = read(fd, buf, 0x4000)) != -1) && read_size) {
 			/* We reset errno due to read */

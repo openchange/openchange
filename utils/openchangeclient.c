@@ -196,12 +196,12 @@ static bool oclient_read_file(TALLOC_CTX *mem_ctx, const char *filename,
 	struct stat	sb;
 	int		fd;
 
-	/* stat the file */
-	if (stat(filename, &sb) != 0) return false;
 	if ((fd = open(filename, O_RDONLY)) == -1) {
 		printf("Error while opening %s\n", filename);
 		return false;
 	}
+	/* stat the file */
+	if (fstat(fd, &sb) != 0) return false;
 
 	switch (mapitag) {
 	case PR_HTML:

@@ -549,9 +549,9 @@ int ocpf_binary_add(const char *filename, struct Binary_r *bin)
 	int		fd;
 	struct stat	sb;
 
-	OCPF_RETVAL_IF(stat(filename, &sb), OCPF_WARN_FILENAME_STAT, NULL);
 	fd = open(filename, O_RDONLY);
 	OCPF_RETVAL_IF(fd == -1, OCPF_WARN_FILENAME_INVALID, NULL);
+	OCPF_RETVAL_IF(fstat(fd, &sb), OCPF_WARN_FILENAME_STAT, NULL);
 	
 	bin->lpb = talloc_size(ocpf->mem_ctx, sb.st_size);
 	bin->cb = read(fd, bin->lpb, sb.st_size);

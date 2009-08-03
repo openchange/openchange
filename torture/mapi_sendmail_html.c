@@ -146,11 +146,11 @@ bool torture_rpc_mapi_sendmail_html(struct torture_context *torture)
 		struct stat	sb;
 		int		fd;
 
-		if (stat(filename, &sb) != 0) return false;
 		if ((fd = open(filename, O_RDONLY)) == -1) {
 			DEBUG(0, ("Error while opening %s\n", filename));
 			return false;
 		}
+		if (fstat(fd, &sb) != 0) return false;
 		html.lpb = talloc_size(mem_ctx, sb.st_size);
 		html.cb = read(fd, html.lpb, sb.st_size);
 		close(fd);

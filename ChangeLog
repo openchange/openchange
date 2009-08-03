@@ -1,3 +1,22 @@
+2009-08-03
+    bradh
+	[r1448]
+		Remove unused headers.
+		
+		Patch by Erik Hovland - thanks very much,
+		
+		Resolves ticket #164.
+	[r1447]
+		Apply patch from Erik Hovland, from ticket #162.
+		
+		From the original patch:
+		"The problem is that when you do stat first w/ a file string anyone can
+		exploit the time in between to do whatever they want with the file that
+		the string is a name for. Instead, try to open straight away. Then fstat
+		w/ the file descriptor."
+		
+		I think the patch is fine, although I didn't run the torture test.
+
 2009-08-02
     bradh
 	[r1444]

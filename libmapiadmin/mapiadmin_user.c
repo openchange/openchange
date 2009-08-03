@@ -25,14 +25,12 @@
  */
 
 #include <libmapiadmin/libmapiadmin.h>
-#include <libmapiadmin/proto_private.h>
 
 #include <param.h>
 #include <credentials.h>
 #include <samba/popt.h>
 #include <ldb_errors.h>
 #include <ldb_wrap.h>
-#include <util_ldb.h>
 #include <ldap_ndr.h>
 
 #include <core/error.h>

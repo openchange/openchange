@@ -19,7 +19,6 @@
 
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
-#include <gen_ndr/ndr_exchange.h>
 
 
 /**

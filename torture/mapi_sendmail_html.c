@@ -20,7 +20,6 @@
  */
 
 #include <libmapi/libmapi.h>
-#include <gen_ndr/ndr_exchange.h>
 #include <param.h>
 #include <credentials.h>
 #include <torture/mapi_torture.h>

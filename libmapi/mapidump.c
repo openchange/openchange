@@ -19,7 +19,6 @@
 
 #include <libmapi/libmapi.h>
 #include <libmapi/mapidump.h>
-#include <libmapi/proto_private.h>
 #include <libmapi/defs_private.h>
 #include <time.h>
 

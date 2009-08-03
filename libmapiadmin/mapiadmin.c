@@ -18,7 +18,6 @@
  */
 
 #include <libmapiadmin/libmapiadmin.h>
-#include <libmapiadmin/proto_private.h>
 
 /**
 	\file

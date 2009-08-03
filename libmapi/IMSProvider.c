@@ -24,7 +24,6 @@
 #include <gen_ndr/ndr_exchange_c.h>
 #include <core/error.h>
 #include <param.h>
-#include <credentials.h>
 
 
 /**

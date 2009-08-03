@@ -24,7 +24,6 @@
 #include <string.h>
 
 #include "mapistore.h"
-#include "mapistore_errors.h"
 #include "mapistore_private.h"
 #include <libmapi/dlinklist.h>
 

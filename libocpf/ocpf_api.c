@@ -20,11 +20,9 @@
 #include "libocpf/ocpf_private.h"
 #include <libocpf/ocpf.h>
 #include <libocpf/ocpf_api.h>
-#include <libocpf/ocpf.tab.h>
 
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <libgen.h>
 #include <time.h>
 
 /**

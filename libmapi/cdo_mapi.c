@@ -22,7 +22,6 @@
 #include <libmapi/proto_private.h>
 #include <libmapi/dlinklist.h>
 #include <param.h>
-#include <ldb_errors.h>
 #include <ldb.h>
 
 struct mapi_ctx *global_mapi_ctx = NULL;

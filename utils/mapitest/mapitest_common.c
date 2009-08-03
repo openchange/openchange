@@ -21,7 +21,6 @@
 
 #include <libmapi/libmapi.h>
 
-#include <utils/openchange-tools.h>
 #include <utils/mapitest/mapitest.h>
 
 #include <fcntl.h>

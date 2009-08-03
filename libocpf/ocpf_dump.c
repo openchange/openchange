@@ -20,7 +20,6 @@
 #include "libocpf/ocpf_private.h"
 #include <libocpf/ocpf.h>
 #include <libocpf/ocpf_api.h>
-#include <libocpf/ocpf.tab.h>
 #include <libocpf/ocpf_dump.h>
 
 /**

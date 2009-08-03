@@ -26,8 +26,6 @@
  */
 
 #include "libmapiserver.h"
-#include <libmapi/mapidefs.h>
-#include <gen_ndr/ndr_exchange.h>
 
 /**
    \details Calculate GetRulesTable Rop size

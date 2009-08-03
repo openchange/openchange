@@ -25,7 +25,6 @@
 #include <gen_ndr/ndr_misc.h>
 
 #include <param.h>
-#include <credentials.h>
 
 /**
    \file emsmdb.c

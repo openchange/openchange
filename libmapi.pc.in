@@ -11,5 +11,5 @@ Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lmapi
 Libs.private: @LIBS@
 Cflags: -I${includedir}
-Requires: talloc dcerpc ndr ldb
-Requires.private: samba-hostconfig
+Requires: talloc dcerpc ndr tevent
+Requires.private: samba-hostconfig ldb

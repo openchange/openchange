@@ -1,3 +1,10 @@
+2009-08-13
+    bradh
+	[r1461]
+		Remove unused enum values.
+	[r1460]
+		Remove unused code - no simple tests.
+
 2009-08-09
     bradh
 	[r1454]

@@ -100,44 +100,6 @@ _PUBLIC_ uint32_t mapitest_suite_register(struct mapitest *mt,
 
 
 /**
-   \details add a simple test to the mapitest suite
-
-   \param suite pointer on the parent suite
-   \param name the test name
-   \param run the test function
-
-   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
-
-   \sa mapitest_suite_init, mapitest_suite_register
- */
-_PUBLIC_ uint32_t mapitest_suite_add_simple_test(struct mapitest_suite *suite,
-						 const char *name,
-						 bool (*run) (struct mapitest *test))
-{
-	struct mapitest_test	*el = NULL;
-
-	/* Sanity check */
-	if (!suite || !name || !run) return MAPITEST_ERROR;
-
-	/* Ensure the test is not yet registered */
-	for (el = suite->tests; el; el = el->next) {
-		if (el->name && !strcmp(el->name, name)) {
-			return MAPITEST_ERROR;
-		}
-	}
-
-	el = talloc_zero((TALLOC_CTX *) suite, struct mapitest_test);
-	el->name = talloc_asprintf((TALLOC_CTX *)suite, "%s-%s", suite->name, name);
-	el->description = NULL;
-	el->fn = run;
-
-	DLIST_ADD_END(suite->tests, el, struct mapitest_test *);
-
-	return MAPITEST_SUCCESS;
-}
-
-
-/**
    \details add a test to the mapitest suite with description
 
    \param suite pointer on the parent suite

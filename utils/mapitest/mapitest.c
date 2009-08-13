@@ -203,8 +203,8 @@ int main(int argc, const char *argv[])
 	const char		*opt_outfile = NULL;
 
 	enum { OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD,
-	       OPT_CONFIDENTIAL, OPT_OUTFILE, OPT_MAPI_ALL, OPT_MAPI_CALLS,
-	       OPT_MAPIADMIN_ALL, OPT_NO_SERVER, OPT_LIST_ALL, OPT_DUMP_DATA,
+	       OPT_CONFIDENTIAL, OPT_OUTFILE, OPT_MAPI_CALLS,
+	       OPT_NO_SERVER, OPT_LIST_ALL, OPT_DUMP_DATA,
 	       OPT_DEBUG, OPT_COLOR };
 
 	struct poptOption long_options[] = {

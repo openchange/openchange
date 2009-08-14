@@ -142,18 +142,23 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 	enum MAPISTATUS		retval;
 	struct emsmdb_info	*info = NULL;
 	struct mapi_session	*session = NULL;
-	char			*profname = NULL;
 
+	/* if the user explicitly asked for just the no-server tests 
+	to be run, then we're done here */
 	if (mt->no_server == true) return 0;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_get_server_info");
 
-	retval = GetDefaultProfile(&profname);
-	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("GetDefaultProfile", retval);
-		talloc_free(mem_ctx);
-		return false;
+	/* if no profile was specified, get the default */
+	if (!opt_profname) {
+		retval = GetDefaultProfile(&opt_profname);
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_errstr("GetDefaultProfile", retval);
+			talloc_free(mem_ctx);
+			return false;
+		}
 	}
+		
 
 	/* debug options */
 	SetMAPIDumpData(opt_dumpdata);
@@ -162,8 +167,8 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 		SetMAPIDebugLevel(atoi(opt_debug));
 	}
 
-	retval = MapiLogonEx(&session, profname, password);
-	MAPIFreeBuffer(profname);
+	retval = MapiLogonEx(&session, opt_profname, password);
+	MAPIFreeBuffer(opt_profname);
 	talloc_free(mem_ctx);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", retval);
@@ -201,6 +206,7 @@ int main(int argc, const char *argv[])
 	char			*opt_profname = NULL;
 	const char		*opt_password = NULL;
 	const char		*opt_outfile = NULL;
+	char			*prof_tmp = NULL;
 
 	enum { OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD,
 	       OPT_CONFIDENTIAL, OPT_OUTFILE, OPT_MAPI_CALLS,
@@ -242,7 +248,10 @@ int main(int argc, const char *argv[])
 			opt_profdb = poptGetOptArg(pc);
 			break;
 		case OPT_PROFILE:
-			opt_profname = talloc_strdup(mem_ctx, (char *)poptGetOptArg(pc));
+			prof_tmp = poptGetOptArg(pc);
+			opt_profname = talloc_strdup(mem_ctx, prof_tmp);
+			free(prof_tmp);
+			prof_tmp = NULL;
 			break;
 		case OPT_PASSWORD:
 			opt_password = poptGetOptArg(pc);

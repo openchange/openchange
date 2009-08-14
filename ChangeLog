@@ -1,3 +1,18 @@
+2009-08-14
+    bradh
+	[r1465]
+		Ensure that when we pass --profile to mapitest, that profile
+		gets used instead of the default.
+		
+		Also fix a small memory leak when using --profile, and add some
+		extra comments.
+	[r1464]
+		Fix error handling case.
+		
+		Patch from Erik Hovland - thanks very much.
+		
+		Resolves ticket #175.
+
 2009-08-13
     bradh
 	[r1461]

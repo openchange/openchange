@@ -75,7 +75,7 @@ _PUBLIC_ int mapistore_set_mapping_path(const char *path)
 
 	/* Step 2. TODO: Check for write permissions */
 
-	if (!closedir(dir) == -1) {
+	if (closedir(dir) == -1) {
 		/* FIXME: Should have a better error name here */
 		return MAPISTORE_ERR_NO_DIRECTORY;
 	}

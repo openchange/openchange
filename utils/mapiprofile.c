@@ -33,20 +33,21 @@
 #define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
 #define	DEFAULT_LCID	"0x409" /* language code ID: en-US */
 
-static void mapiprofile_createdb(const char *profdb, const char *ldif_path)
+static bool mapiprofile_createdb(const char *profdb, const char *ldif_path)
 {
 	enum MAPISTATUS retval;
 	
 	if (access(profdb, F_OK) == 0) {
 		fprintf(stderr, "[ERROR] mapiprofile: %s already exists\n", profdb);
-		exit (1);
+		return false;
 	}
 
 	retval = CreateProfileStore(profdb, ldif_path);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("CreateProfileStore", GetLastError());
-		exit (1);
+		return false;
 	}
+	return true;
 }
 
 static uint32_t callback(struct SRowSet *rowset, void *private)
@@ -526,6 +527,7 @@ int main(int argc, const char *argv[])
 	const char	*opt_tmp = NULL;
 	uint32_t	nopass = 0;
 	char		hostname[256];
+	int		retcode = EXIT_SUCCESS;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_ADDRESS, OPT_WORKSTATION,
 	      OPT_DOMAIN, OPT_REALM, OPT_USERNAME, OPT_LCID, OPT_PASSWORD, 
@@ -578,7 +580,10 @@ int main(int argc, const char *argv[])
 			opt_debuglevel = poptGetOptArg(pc);
 			break;
 		case OPT_PROFILE_LDIF:
-			ldif = poptGetOptArg(pc);
+			opt_tmp = poptGetOptArg(pc);
+			ldif = talloc_strdup(mem_ctx, opt_tmp);
+			free((void*)opt_tmp);
+			opt_tmp = NULL;
 			break;
 		case OPT_PROFILE_NEWDB:
 			newdb = true;
@@ -662,8 +667,8 @@ int main(int argc, const char *argv[])
 		talloc_free(default_path);
 		if ((error == -1) && (errno != EEXIST)) {
 			perror("mkdir");
-			talloc_free(mem_ctx);
-			exit (1);
+			retcode = EXIT_FAILURE;
+			goto cleanup;
 		}
 		profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, 
 					 getenv("HOME"));
@@ -673,7 +678,8 @@ int main(int argc, const char *argv[])
 	    && (getdflt == false) && (dump == false) && (rename == NULL) && 
 	    (!attribute) && (!profname || !profdb)) {
 		poptPrintUsage(pc, stderr, 0);
-		exit (1);
+		retcode = EXIT_FAILURE;
+		goto cleanup;
 	}
 
 	if (newdb == true) {
@@ -681,7 +687,10 @@ int main(int argc, const char *argv[])
 			ldif = talloc_strdup(mem_ctx, mapi_profile_get_ldif_path());
 		}
 		if (!ldif) show_help(pc, "ldif");
-		mapiprofile_createdb(profdb, ldif);
+		if (!mapiprofile_createdb(profdb, ldif)) {
+			retcode = EXIT_FAILURE;
+			goto cleanup;
+		}
 	}
 
 	/* Process the code here */
@@ -742,8 +751,8 @@ int main(int argc, const char *argv[])
 		mapiprofile_attribute(profdb, profname, attribute);
 	}
 
+cleanup:
 	free((void*)opt_debuglevel);
-	free((void*)ldif);
 	free((void*)profname);
 	free((void*)address);
 	free((void*)domain);
@@ -758,5 +767,5 @@ int main(int argc, const char *argv[])
 	poptFreeContext(pc);
 	talloc_free(mem_ctx);
 
-	return (0);
+	return retcode;
 }

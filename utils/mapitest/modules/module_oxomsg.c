@@ -240,19 +240,24 @@ cleanup:
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
 	mapitest_print_retval(mt, "DeleteMessage");
-	if ((retval != MAPI_E_SUCCESS) && (GetLastError() != ecNoDelSubmitMsg)) {
+	if ((retval != MAPI_E_SUCCESS) && (retval != ecNoDelSubmitMsg)) {
 		ret = false;
 	}
 	/* Step 6. Clean up anything else */
 	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
-	GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
-	OpenFolder(&obj_store, id_folder, &obj_folder);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto mapitest_oxomsg_AbortSubmit_bailout;
+	}
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	} else {
 		mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
 	}
 
+mapitest_oxomsg_AbortSubmit_bailout:
 	/* Release */
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_folder);
@@ -466,14 +471,20 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 
 	/* Step 6. Clean up anything else */
 	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
-	GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
-	OpenFolder(&obj_store, id_folder, &obj_folder);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderInbox);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto mapitest_oxomsg_TransportSend_bailout;
+	}
+
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	} else {
 		mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
 	}
 
+mapitest_oxomsg_TransportSend_bailout:
 	/* Release */
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_folder);

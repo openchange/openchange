@@ -145,7 +145,11 @@ _PUBLIC_ bool mapitest_oxcfold_OpenFolder(struct mapitest *mt)
 	mapitest_indent();
 	for (i = 0; inbox_folders[i].name; i++) {
 		mapi_object_init(&obj_folder);
-		GetDefaultFolder(&obj_store, &id_folder, inbox_folders[i].id);
+		retval = GetDefaultFolder(&obj_store, &id_folder, inbox_folders[i].id);
+		mapitest_print_retval_fmt(mt, "GetDefaultFolder", "(%s)", inbox_folders[i].name);
+		if (retval != MAPI_E_SUCCESS) {
+			return false;
+		}
 		retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 		mapitest_print_retval_fmt(mt, "OpenFolder", "(%s)", inbox_folders[i].name);
 		if (retval != MAPI_E_SUCCESS) {
@@ -700,15 +704,18 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 
 	retval = Restrict(&(dst_contents), &res, NULL);
 	mapitest_print_retval(mt, "Restrict");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
 	/* Step 7. Get the filtered row */
         SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_MID);
-        SetColumns(&(dst_contents), SPropTagArray);
+        retval = SetColumns(&(dst_contents), SPropTagArray);
 	mapitest_print_retval(mt, "SetColumns");
 	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
 
 	QueryRows(&(dst_contents), 20, TBL_NOADVANCE, &SRowSet);
 	mapitest_print_retval(mt, "QueryRows");

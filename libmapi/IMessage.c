@@ -680,8 +680,12 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		for (i_prop = 0; i_prop < request.prop_count; i_prop++) {
 			for (j = 0; j < aRow->cValues; j++) {
 				if (aRow->lpProps[j].ulPropTag == request.properties[i_prop]) {
-					ndr_push_set_switch_value(ndr, &mapi_sprop.value, 
-								  (aRow->lpProps[j].ulPropTag & 0xFFFF));
+					enum ndr_err_code ndr_retval;
+					ndr_retval = ndr_push_set_switch_value(ndr, &mapi_sprop.value, 
+									       (aRow->lpProps[j].ulPropTag & 0xFFFF));
+					if (!NDR_ERR_CODE_IS_SUCCESS(ndr_retval))
+						return MAPI_E_CALL_FAILED;
+
 					cast_mapi_SPropValue(&mapi_sprop, &aRow->lpProps[j]);
 					ndr_push_mapi_SPropValue_CTR(ndr, NDR_SCALARS, &mapi_sprop.value);
 				}

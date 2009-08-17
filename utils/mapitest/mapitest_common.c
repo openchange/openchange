@@ -131,7 +131,12 @@ _PUBLIC_ bool mapitest_common_message_delete_by_subject(struct mapitest *mt,
 				msgids[0] = SRowSet.aRow[i].lpProps[0].value.d;
 				msubject = (const char *)find_SPropValue_data(&SRowSet.aRow[i], PR_SUBJECT);
 				if (msubject && !strncmp(subject, msubject, strlen(subject))) {
-					DeleteMessage(obj_folder, msgids, 1);
+					retval = DeleteMessage(obj_folder, msgids, 1);
+					if (retval != MAPI_E_SUCCESS) {
+						mapitest_print_retval(mt, "DeleteMessage");
+						mapi_object_release(&obj_ctable);
+						return false;
+					}
 				}
 			}
 		}

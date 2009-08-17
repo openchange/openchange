@@ -523,6 +523,7 @@ int main(int argc, const char *argv[])
 	const char	*profname = NULL;
 	const char	*rename = NULL;
 	const char	*attribute = NULL;
+	const char	*opt_tmp = NULL;
 	uint32_t	nopass = 0;
 	char		hostname[256];
 
@@ -589,7 +590,10 @@ int main(int argc, const char *argv[])
 			getdflt = true;
 			break;
 		case OPT_PROFILE_DB:
-			profdb = poptGetOptArg(pc);
+			opt_tmp = poptGetOptArg(pc);
+			profdb = talloc_strdup(mem_ctx, opt_tmp); 
+			free((void*)opt_tmp);
+			opt_tmp = NULL;
 			break;
 		case OPT_PROFILE:
 			profname = poptGetOptArg(pc);
@@ -598,7 +602,10 @@ int main(int argc, const char *argv[])
 			address = poptGetOptArg(pc);
 			break;
 		case OPT_WORKSTATION:
-			workstation = poptGetOptArg(pc);
+			opt_tmp = poptGetOptArg(pc);
+			workstation = talloc_strdup(mem_ctx, opt_tmp);
+			free((void*)opt_tmp);
+			opt_tmp = NULL;
 			break;
 		case OPT_DOMAIN:
 			domain = poptGetOptArg(pc);
@@ -735,6 +742,20 @@ int main(int argc, const char *argv[])
 		mapiprofile_attribute(profdb, profname, attribute);
 	}
 
+	free((void*)opt_debuglevel);
+	free((void*)ldif);
+	free((void*)profname);
+	free((void*)address);
+	free((void*)domain);
+	free((void*)realm);
+	free((void*)username);
+	free((void*)lcid);
+	free((void*)pattern);
+	free((void*)password);
+	free((void*)rename);
+	free((void*)attribute);
+
+	poptFreeContext(pc);
 	talloc_free(mem_ctx);
 
 	return (0);

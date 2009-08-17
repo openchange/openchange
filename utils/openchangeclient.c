@@ -3360,6 +3360,9 @@ int main(int argc, const char *argv[])
 
 	/* Uninitialize MAPI subsystem */
 end:
+
+	poptFreeContext(pc);
+
 	mapi_object_release(&obj_store);
 
 	MAPIUninitialize();

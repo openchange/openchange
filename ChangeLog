@@ -1,3 +1,26 @@
+2009-08-17
+    bradh
+	[r1473]
+		Ensure that we check the result of the operation we just performed.
+		
+		Patch by Erik Hovland. Thanks very much for continuing to provide these.
+		
+		This is the third part of the patch in ticket #177. The first two parts are yet to be addressed.
+	[r1472]
+		Make sure that return values are checked and report that given status if there is an error. 
+		
+		Patch from Erik Hovland, with minor additional changes. Thanks again for the patch.
+		
+		Resolves #176.
+	[r1471]
+		More cleanups of memory leaks for setting up database and an associated failure case.
+	[r1468]
+		fix leak in openchangeclient
+		
+		(as seen with valgrind of "openchangeclient -m")
+	[r1467]
+		Fix memory leak in mapiprofile utility
+
 2009-08-14
     bradh
 	[r1465]

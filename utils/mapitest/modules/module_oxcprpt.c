@@ -1402,6 +1402,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	mapi_object_init(&obj_ref_folder);
 	mapi_object_init(&obj_ref_message);
 	mapi_object_init(&obj_target_message);
+	mapi_object_init(&obj_ref_attach);
 	mapi_object_init(&obj_targ_attach);
 
 	retval = OpenMsgStore(mt->session, &obj_store);
@@ -1773,7 +1774,6 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 
 	/* Step 13: Create attachment on reference email, and set properties */
-	mapi_object_init(&obj_ref_attach);
 	retval = CreateAttach(&obj_ref_message, &obj_ref_attach);
 	mapitest_print_retval(mt, "CreateAttach");
 	if (retval != MAPI_E_SUCCESS) {

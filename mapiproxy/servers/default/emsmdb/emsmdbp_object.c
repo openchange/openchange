@@ -45,8 +45,6 @@ static const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 	default:
 		return "unknown";
 	}
-
-	return "unknown";
 }
 
 

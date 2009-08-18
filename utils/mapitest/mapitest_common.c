@@ -107,7 +107,7 @@ _PUBLIC_ bool mapitest_common_message_delete_by_subject(struct mapitest *mt,
 	/* Retrieve the contents table */
 	mapi_object_init(&obj_ctable);
 	retval = GetContentsTable(obj_folder, &obj_ctable, 0, &count);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetContentsTable", GetLastError());
 		mapi_object_release(&obj_ctable);
 		return false;

@@ -892,34 +892,24 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	/* Step 7. Write the stream */
 	write_len = 0;
 
-	if (stream_len < MT_STREAM_MAX_SIZE) {
-		data.length = stream_len;
-		data.data = (uint8_t *) stream;
+	StreamSize = stream_len;
+
+	for (offset = 0, len = MT_STREAM_MAX_SIZE, i = 0; StreamSize; i++) {
+		data.length = len;
+		data.data = (uint8_t *)stream + offset;
 		retval = WriteStream(&obj_stream, &data, &write_len);
-		mapitest_print_retval_fmt(mt, "WriteStream", "(0x%x bytes written)", write_len);
+		mapitest_print_retval_fmt(mt, "WriteStream", "[%d] (0x%x bytes written)", i, write_len);
 		if (retval != MAPI_E_SUCCESS) {
 			ret = false;
+			break;
 		}
-	} else {
-		uint32_t	StreamSize = stream_len;
 
-		for (offset = 0, len = MT_STREAM_MAX_SIZE, i = 0; StreamSize; i++) {
-			data.length = len;
-			data.data = (uint8_t *)stream + offset;
-			retval = WriteStream(&obj_stream, &data, &write_len);
-			mapitest_print_retval_fmt(mt, "WriteStream", "[%d] (0x%x bytes written)", i, write_len);
-			if (retval != MAPI_E_SUCCESS) {
-				ret = false;
-				break;
-			}
-
-			StreamSize -= write_len;
-			if (StreamSize > MT_STREAM_MAX_SIZE) {
-				offset += MT_STREAM_MAX_SIZE;
-			} else {
-				offset += write_len;
-				len = StreamSize;
-			}
+		StreamSize -= write_len;
+		if (StreamSize > MT_STREAM_MAX_SIZE) {
+			offset += MT_STREAM_MAX_SIZE;
+		} else {
+			offset += write_len;
+			len = StreamSize;
 		}
 	}
 
@@ -1189,30 +1179,20 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyToStream(struct mapitest *mt)
 	/* Step 7. Write the stream */
 	write_len = 0;
 
-	if (stream_len < MT_STREAM_MAX_SIZE) {
-		data.length = stream_len;
-		data.data = (uint8_t *) stream;
+	StreamSize = stream_len;
+
+	for (offset = 0, len = MT_STREAM_MAX_SIZE, i = 0; StreamSize; i++) {
+		data.length = len;
+		data.data = (uint8_t *)stream + offset;
 		retval = WriteStream(&obj_stream, &data, &write_len);
-		mapitest_print_retval_fmt(mt, "WriteStream", "(0x%x bytes written)", write_len);
-		if (retval != MAPI_E_SUCCESS) {
-			ret = false;
-		}
-	} else {
-		uint32_t	StreamSize = stream_len;
+		mapitest_print_retval_fmt(mt, "WriteStream", "[%d] (0x%x bytes written)", i, write_len);
 
-		for (offset = 0, len = MT_STREAM_MAX_SIZE, i = 0; StreamSize; i++) {
-			data.length = len;
-			data.data = (uint8_t *)stream + offset;
-			retval = WriteStream(&obj_stream, &data, &write_len);
-			mapitest_print_retval_fmt(mt, "WriteStream", "[%d] (0x%x bytes written)", i, write_len);
-
-			StreamSize -= write_len;
-			if (StreamSize > MT_STREAM_MAX_SIZE) {
-				offset += MT_STREAM_MAX_SIZE;
-			} else {
-				offset += write_len;
-				len = StreamSize;
-			}
+		StreamSize -= write_len;
+		if (StreamSize > MT_STREAM_MAX_SIZE) {
+			offset += MT_STREAM_MAX_SIZE;
+		} else {
+			offset += write_len;
+			len = StreamSize;
 		}
 	}
 

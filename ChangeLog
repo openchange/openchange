@@ -1,3 +1,24 @@
+2009-08-18
+    bradh
+	[r1477]
+		Move initialisation up, to make sure everything is valid in the failure paths
+		
+		Patch by Erik Hovland. Thanks once again.
+		
+		This closes out ticket #178.
+	[r1476]
+		Remove unreachable code.
+		
+		Patch by Erik Hovland. Thanks again.
+		
+		This is the second part of ticket #177. This completes the checkin of that ticket.
+	[r1475]
+		Remove unreachable code.
+		
+		Patch by Erik Hovland. Thanks very much.
+		
+		This is the first part of ticket #177.
+
 2009-08-17
     bradh
 	[r1473]

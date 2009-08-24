@@ -10,7 +10,7 @@ shared calendars, contact databases, public folders, notes and tasks.
 
 The OpenChange project has three goals:
 * To provide a library for interoperability with Exchange protocols, and
-to assist implementors to use this to create groupware that
+to assist implementers to use this to create groupware that
 interoperates with both Exchange and other OpenChange-based software. 
 
 * To provide an alternative to Microsoft Exchange Server which uses
@@ -45,7 +45,6 @@ doc/examples/ provides programming examples for libmapi.
 
 
 STRUCTURE
-[TODO: add description of each directory]
 - bin/	This directory is created during the build process. It
 contains the binaries (executable programs) that are compiled during
 the "make" step. The source for most of these is in the utils/
@@ -130,7 +129,7 @@ server. They include:
  - utils/exchange2mbox	two way conversion between Exchange mail and mbox
  - utils/mapiprofile	set up client side profiles (login information)
  - utils/mapitest/	test tools for libmapi functionality
- - utils/mapitrace/
+ - utils/mapitrace/	test tool for tracing MAPI calls
  - utils/openchangeclient	command line client for Exchange RPC
  - utils/openchangepfadmin	Public Folders admin tools and 
 				administration of Exchange users (add/del) 

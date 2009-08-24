@@ -5,8 +5,8 @@ includedir=@includedir@
 datarootdir=@prefix@/share
 datadir=@datadir@
 
-Name: MAPI Administration
-Description: MAPI Administration Implementation
+Name: MAPI admin library
+Description: Library supporting MAPI administration actions
 Version: @PACKAGE_VERSION@
 Libs: @LIBS@
 Cflags: @CFLAGS@

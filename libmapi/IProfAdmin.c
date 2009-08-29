@@ -1369,7 +1369,6 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	mapi_profile_add_string_attr(profname, "ServerName", nspi->servername);
 	set_profile_attribute(profname, *SRowSet, 0, PR_EMS_AB_HOME_MDB, "HomeMDB");
 	set_profile_mvstr_attribute(profname, *SRowSet, 0, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
-	MAPIFreeBuffer(SRowSet);
 
 	pNames.Count = 0x1;
 	pNames.Strings = (const char **) talloc_array(nspi->mem_ctx, char **, 1);
@@ -1382,6 +1381,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	MAPIFreeBuffer((char **)pNames.Strings);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
+	MAPIFreeBuffer(SRowSet);
 	SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
 	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x1, PR_EMS_AB_NETWORK_ADDRESS);
 	retval = nspi_GetProps(nspi, SPropTagArray, MId_server, &SRowSet);

@@ -100,7 +100,7 @@ static void signal_delete_profile(void)
 	exit (1);
 }
 
-static void mapiprofile_create(const char *profdb, const char *profname,
+static bool mapiprofile_create(const char *profdb, const char *profname,
 			       const char *pattern, const char *username, 
 			       const char *password, const char *address, 
 			       const char *lcid, const char *workstation,
@@ -127,7 +127,8 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	retval = MAPIInitialize(profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
-		exit (1);
+		talloc_free(mem_ctx);
+		return false;
 	}
 
 	/* debug options */
@@ -141,13 +142,16 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	retval = OpenProfile(&profile, profname, NULL);
 	if (retval == MAPI_E_SUCCESS) {
 		fprintf(stderr, "[ERROR] mapiprofile: profile \"%s\" already exists\n", profname);
-		exit (1);
+		MAPIUninitialize();
+		talloc_free(mem_ctx);
+		return false;
 	}
 
 	retval = CreateProfile(profname, username, password, flags);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("CreateProfile", GetLastError());
-		exit (1);
+		talloc_free(mem_ctx);
+		return false;
 	}
 
 	mapi_profile_add_string_attr(profname, "binding", address);
@@ -183,7 +187,7 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 			mapi_errstr("DeleteProfile", GetLastError());
 		}
 		talloc_free(mem_ctx);
-		exit (1);
+		return false;
 	}
 
 	if (pattern) {
@@ -198,7 +202,7 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 			mapi_errstr("DeleteProfile", GetLastError());
 		}
 		talloc_free(mem_ctx);
-		exit (1);
+		return false;
 	}
 
 	printf("Profile %s completed and added to database %s\n", profname, profdb);
@@ -206,6 +210,8 @@ static void mapiprofile_create(const char *profdb, const char *profname,
 	talloc_free(mem_ctx);
 
 	MAPIUninitialize();
+
+	return true;
 }
 
 static void mapiprofile_delete(const char *profdb, const char *profname)
@@ -622,7 +628,10 @@ int main(int argc, const char *argv[])
 			username = poptGetOptArg(pc);
 			break;
 		case OPT_LCID:
-			lcid = poptGetOptArg(pc);
+			opt_tmp = poptGetOptArg(pc);
+			lcid = talloc_strdup(mem_ctx, opt_tmp);
+			free((void*)opt_tmp);
+			opt_tmp = NULL;
 			break;
 		case OPT_PATTERN:
 			pattern = poptGetOptArg(pc);
@@ -709,10 +718,14 @@ int main(int argc, const char *argv[])
 		if (!domain) show_help(pc, "domain");
 
 		if (!lcid) {
-		  lcid = talloc_asprintf(mem_ctx, DEFAULT_LCID);
+		  lcid = talloc_strdup(mem_ctx, DEFAULT_LCID);
 		}
-		mapiprofile_create(profdb, profname, pattern, username, password, address,
-				   lcid, workstation, domain, realm, nopass, opt_dumpdata, opt_debuglevel);
+		if (! mapiprofile_create(profdb, profname, pattern, username, password, address,
+					 lcid, workstation, domain, realm, nopass, opt_dumpdata,
+					 opt_debuglevel) ) {
+			retcode = EXIT_FAILURE;
+			goto cleanup;
+		}
 	}
 
 	if (rename) {
@@ -758,7 +771,6 @@ cleanup:
 	free((void*)domain);
 	free((void*)realm);
 	free((void*)username);
-	free((void*)lcid);
 	free((void*)pattern);
 	free((void*)password);
 	free((void*)rename);

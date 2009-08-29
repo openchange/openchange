@@ -1,3 +1,15 @@
+2009-08-29
+    bradh
+	[r1487]
+		Remove explicit -Wstrict-aliasing=3 from command line.
+		
+		This is implied by gcc -Wall option, and icc produces nuisance warnings
+		with it enabled (related to the -W option, not the code being compiled).
+	[r1486]
+		Fix some memory leaks and a bug in mapiprofile.
+		
+		I introduced the bug in r1467, there could be others that are similar.
+
 2009-08-24
     bradh
 	[r1484]

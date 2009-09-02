@@ -55,7 +55,7 @@ done
 ## do we have it?
 ##
 if test "$AUTOCONFFOUND" = "0" -o "$AUTOHEADERFOUND" = "0"; then
-        echo "$0: need autoconf 2.53 or later to build samba from SVN" >&2
+        echo "$0: need autoconf 2.53 or later to build openchange from SVN" >&2
         exit 1
 fi
 
@@ -80,5 +80,5 @@ $AUTOCONF || exit 1
 
 rm -rf autom4te*.cache
 
-echo "Now run ./configure and make"
+echo "Now run ./configure and gmake"
 exit 0

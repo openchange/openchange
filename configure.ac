@@ -9,6 +9,8 @@ AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 PKG_PROG_PKG_CONFIG([0.20])
 
+CFLAGS="-I. -O3 -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 -fstrict-aliasing $CFLAGS"
+
 dnl #################################################################
 dnl Check for OS dependent options
 dnl #################################################################
@@ -121,6 +123,22 @@ fi[]
 ])
 
 dnl ###########################################################################
+dnl _AC_LANG_COMPILER_ICC
+dnl Check whether the compiler for the current language is really ICC.
+dnl ###########################################################################
+m4_define([AC_LANG_COMPILER_ICC],
+[AC_CACHE_CHECK([whether we are really using the Intel _AC_LANG compiler],
+		[ac_cv_[]_AC_LANG_ABBREV[]_compiler_icc],
+[_AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[#ifndef __INTEL_COMPILER
+       choke me
+#endif
+]])],
+		   [ac_compiler_icc=yes],
+		   [ac_compiler_icc=no])
+ac_cv_[]_AC_LANG_ABBREV[]_compiler_icc=$ac_compiler_icc
+])])
+
+dnl ###########################################################################
 dnl FreeBSD installs some libraries such as libpopt in the non default
 dnl search path /usr/local/{include,lib}. This nasty hack ensures
 dnl configure.ac will find the library if available and additional
@@ -146,6 +164,19 @@ dnl ---------------------------------------------------------------------------
 dnl Check for CC
 dnl ---------------------------------------------------------------------------
 AC_PROG_CC
+
+dnl ---------------------------------------------------------------------------
+dnl Check for ICC
+dnl ---------------------------------------------------------------------------
+AC_LANG_COMPILER_ICC
+
+dnl if it isn't icc, then use the gcc options
+dnl otherwise suppress some noise from icc
+if test x"$ac_cv_c_compiler_icc" != x"yes"; then
+    CFLAGS="$CFLAGS -Wp,-D_FORTIFY_SOURCE=2"
+else
+    CFLAGS="$CFLAGS -wd2259,188,593,869,981,181,1419,2218"
+fi
 
 dnl ---------------------------------------------------------------------------
 dnl Check for install

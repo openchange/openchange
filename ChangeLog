@@ -1,3 +1,19 @@
+2009-09-10
+    bradh
+	[r1491]
+		Portability fixes for Intel C Compiler.
+		
+		Set CFLAGS early, otherwise AC_PROG_CC will set
+		CFLAGS to "-O2 -g", which later has -O3 appended, which
+		icc complains about.
+		
+		Check if we're really icc, and if so, turn off some warnings.
+		Also turn off the "FORTIFY_SOURCE" define which causes problems
+		with missing builtins.
+		
+		The warnings can (and should) be turned back on later, after we
+		fix the current issues.
+
 2009-09-02
     bradh
 	[r1489]

@@ -73,7 +73,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->u.mapi_SetColumns.TableStatus = 0;
+	mapi_repl->u.mapi_SetColumns.TableStatus = TBLSTAT_COMPLETE;
 
 	*size += libmapiserver_RopSetColumns_size(mapi_repl);
 
@@ -134,7 +134,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->u.mapi_SortTable.TableStatus = 0;
+	mapi_repl->u.mapi_SortTable.TableStatus = TBLSTAT_COMPLETE;
 
 	*size += libmapiserver_RopSortTable_size(mapi_repl);
 
@@ -174,7 +174,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->u.mapi_Restrict.TableStatus = 0;
+	mapi_repl->u.mapi_Restrict.TableStatus = TBLSTAT_COMPLETE;
 
 	*size += libmapiserver_RopRestrict_size(mapi_repl);
 

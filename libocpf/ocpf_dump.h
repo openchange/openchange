@@ -34,7 +34,7 @@ do {					\
 
 #define	OCPF_DUMP_TITLE(indent, txt, type)		\
 do {							\
-	int	i;					\
+	int	odt_i;					\
 	int	txt_len;				\
 							\
 	printf("\n");					\
@@ -43,7 +43,7 @@ do {							\
 							\
 	INDENT();					\
 	txt_len = strlen(txt) + 1;     			\
-	for (i = 0; i < txt_len; i++) {			\
+	for (odt_i = 0; odt_i < txt_len; odt_i++) {	\
 		printf("%c", type ? '-' : '=');		\
 	}						\
 	printf("\n");					\

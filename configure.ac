@@ -9,7 +9,7 @@ AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 PKG_PROG_PKG_CONFIG([0.20])
 
-CFLAGS="-I. -O3 -Wall -Wmissing-prototypes -Wstrict-prototypes -g3 -fstrict-aliasing $CFLAGS"
+CFLAGS="-I. -O3 -Wall -g3 -fstrict-aliasing $CFLAGS"
 
 dnl #################################################################
 dnl Check for OS dependent options

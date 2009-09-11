@@ -29,7 +29,7 @@ pythondir=@pythondir@
 sambaprefix=@sambaprefix@
 
 DSOOPT=-shared -fPIC
-CFLAGS=@CFLAGS@        \
+CFLAGS=@CFLAGS@ -Wmissing-prototypes -Wstrict-prototypes     \
        -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"						\
        -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
        -DMAPISTORE_MAPPING_PATH=\"$(prefix)/private/mapistore\"

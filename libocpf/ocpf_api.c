@@ -165,7 +165,6 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 		OCPF_WARN(("%s (0x%.4x)", OCPF_WARN_PROP_TYPE, proptype));
 		return OCPF_ERROR;
 	}
-	return OCPF_ERROR;
 }
 
 int ocpf_propvalue_free(union SPropValue_CTR lpProp, uint16_t proptype)

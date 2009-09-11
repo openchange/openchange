@@ -1,3 +1,29 @@
+2009-09-11
+    bradh
+	[r1500]
+		Only pass "-Wmissing-prototypes -Wstrict-prototypes" to CFLAGS,
+		not to CXXFLAGS as well.
+		
+		Avoids g++ warnings.
+	[r1499]
+		Use enumerated type instead of integer.
+	[r1498]
+		Remove unreachable code.
+	[r1497]
+		Add "static" to avoid the need for additional declarations.
+		
+		Avoids noise from the intel c compiler.
+	[r1496]
+		Namespace variable in macro, so we don't get noise about shadowing a
+		declaration of "i"
+	[r1495]
+		Help icc find comparison_fn_t.
+	[r1494]
+		Match up data types in argument and format string.
+	[r1493]
+		Remove unused variable, and change a name to avoid a "shadowed declaration" 
+		warning.
+
 2009-09-10
     bradh
 	[r1491]

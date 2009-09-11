@@ -30,13 +30,13 @@ using std::string;
 
 // The best way to get a folder message count is to get property PR_FOLDER_CHILD_COUNT.
 // This is only used to test opening all messages.
-unsigned int get_message_count(folder& the_folder, session& mapi_session)
+static unsigned int get_message_count(folder& the_folder, session& mapi_session)
 {
 	folder::message_container_type messages = the_folder.fetch_messages();
 	return messages.size();
 }
 
-void print_folder_tree(folder& up_folder, session& mapi_session, unsigned int deep = 0)
+static void print_folder_tree(folder& up_folder, session& mapi_session, unsigned int deep = 0)
 {
 	property_container up_folder_property_container = up_folder.get_property_container();
 	up_folder_property_container << PR_DISPLAY_NAME << PR_CONTAINER_CLASS;

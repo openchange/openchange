@@ -26,13 +26,13 @@
 using namespace std;
 using namespace libmapipp;
 
-uint32_t get_attachment_count(message& mapi_message)
+static uint32_t get_attachment_count(message& mapi_message)
 {
 	message::attachment_container_type attachment_container = mapi_message.fetch_attachments();
 	return attachment_container.size();
 }
 
-void print_messages_with_attachments(folder& up_folder)
+static void print_messages_with_attachments(folder& up_folder)
 {
 	folder::message_container_type messages = up_folder.fetch_messages();
 	for (folder::message_container_type::iterator Iter = messages.begin(); Iter != messages.end(); ++Iter) {
@@ -44,7 +44,7 @@ void print_messages_with_attachments(folder& up_folder)
 	}
 }
 
-void print_folder_tree(folder& up_folder, session& mapi_session, unsigned int deep = 0)
+static void print_folder_tree(folder& up_folder, session& mapi_session, unsigned int deep = 0)
 {
 	property_container up_folder_property_container = up_folder.get_property_container();
 	up_folder_property_container << PR_DISPLAY_NAME << PR_CONTENT_COUNT;

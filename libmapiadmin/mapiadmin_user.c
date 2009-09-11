@@ -440,7 +440,7 @@ again:
 
 	status = dcerpc_fetch_session_key(mapiadmin_ctx->user_ctx->p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("SetUserInfo level %u - no session key - %s\n",
+		DEBUG(3, ("SetUserInfo level %d - no session key - %s\n",
 			  s.in.level, nt_errstr(status)));
 		mapiadmin_user_del(mapiadmin_ctx);
 	        MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);

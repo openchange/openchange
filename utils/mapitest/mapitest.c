@@ -86,20 +86,20 @@ static bool mapitest_get_testnames(TALLOC_CTX *mem_ctx, struct mapitest *mt,
 				   const char *parameter)
 {
 	struct mapitest_unit	*el = NULL;
-	char			*tmp = NULL;
+	char			*temptok = NULL;
 
-	if ((tmp = strtok((char *)parameter, ";")) == NULL) {
+	if ((temptok = strtok((char *)parameter, ";")) == NULL) {
 		fprintf(stderr, "Invalid testname list [;]\n");
 		return false;
 	}
 
 	el = talloc_zero(mem_ctx, struct mapitest_unit);
-	el->name = talloc_strdup(mem_ctx, tmp);
+	el->name = talloc_strdup(mem_ctx, temptok);
 	DLIST_ADD(mt->cmdline_calls, el);
 
-	while ((tmp = strtok(NULL, ";")) != NULL) {
+	while ((temptok = strtok(NULL, ";")) != NULL) {
 		el = talloc_zero(mem_ctx, struct mapitest_unit);
-		el->name = talloc_strdup(mem_ctx, tmp);
+		el->name = talloc_strdup(mem_ctx, temptok);
 		DLIST_ADD_END(mt->cmdline_calls, el, struct mapitest_unit *);
 	}
 
@@ -311,11 +311,10 @@ int main(int argc, const char *argv[])
 	/* Run custom tests */
 	if (mt.cmdline_calls) {
 		struct mapitest_unit	*el;
-		bool			ret;
 		
 		for (el = mt.cmdline_calls; el; el = el->next) {
 			printf("[*] %s\n", el->name);
-			ret = mapitest_run_test(&mt, el->name);
+			mapitest_run_test(&mt, el->name);
 		}
 	} else {
 		mapitest_run_all(&mt);

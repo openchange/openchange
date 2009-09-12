@@ -1,3 +1,33 @@
+2009-09-12
+    bradh
+	[r1512]
+		Update API to use MAPITAGS enum.
+	[r1511]
+		Update to match API change.
+	[r1510]
+		Use appropriate enum here.
+	[r1509]
+		Use enum for OpenEmbeddedMessage call.
+	[r1508]
+		Use enums where appropriate.
+	[r1507]
+		Update users of FindRow to use enums.
+	[r1506]
+		We are supposed to be returning a MAPISTATUS, so switch to using 
+		the OPENCHANGE_RETVAL_ERR macro here.
+	[r1505]
+		Use appropriate enums instead of int types.
+	[r1504]
+		Use enums instead of ints / hardcoded values.
+	[r1503]
+		Use enum types where appropriate.
+		
+		Fixes warnings from Intel C compiler.
+	[r1502]
+		Return a suitable MAPISTATUS if we can't talloc sufficient memory here.
+		
+		Fixes warning from Intel compiler.
+
 2009-09-11
     bradh
 	[r1500]

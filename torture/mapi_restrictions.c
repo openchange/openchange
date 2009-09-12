@@ -134,7 +134,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	uint32_t			Numerator;
 	uint32_t			Denominator;
 	uint32_t			row_idx;
-	uint32_t			bookmark;
+	enum BOOKMARK			bookmark;
 
 
 	/* init torture */
@@ -325,7 +325,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	res.res.resContent.ulPropTag = PR_BODY;
 	res.res.resContent.lpProp.ulPropTag = PR_BODY;
 	res.res.resContent.lpProp.value.lpszA = "openchange";
-	retval = FindRow(&obj_table, &res, 0, 0, &SRowSet);
+	retval = FindRow(&obj_table, &res, BOOKMARK_BEGINNING, DIR_FORWARD, &SRowSet);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	DEBUG(0, ("\no FindRow: RES_CONTENT\n"));
@@ -336,7 +336,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	DEBUG(0, ("\n"));
 	mapi_object_bookmark_debug(&obj_table);
 
-	retval = FindRow(&obj_table, &res, bookmark, 0, &SRowSet);
+	retval = FindRow(&obj_table, &res, bookmark, DIR_FORWARD, &SRowSet);
 	if (retval != MAPI_E_SUCCESS) return false;
 	DEBUG(0, ("\no FindRow: RES_CONTENT BOOKMARK_USER (%.2d)\n", bookmark));
 	DEBUG(0, ("--------------------------------------------\n"));

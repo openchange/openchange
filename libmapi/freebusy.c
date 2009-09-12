@@ -145,7 +145,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	res.res.resProperty.ulPropTag = PR_DISPLAY_NAME;
 	res.res.resProperty.lpProp.ulPropTag = PR_DISPLAY_NAME;
 	res.res.resProperty.lpProp.value.lpszA = folder_name;
-	retval = FindRow(&obj_htable, &res, 0, 0, &SRowSet);
+	retval = FindRow(&obj_htable, &res, BOOKMARK_BEGINNING, DIR_FORWARD, &SRowSet);
 	MAPIFreeBuffer(folder_name);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
@@ -189,7 +189,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	res.res.resProperty.ulPropTag = PR_NORMALIZED_SUBJECT;
 	res.res.resProperty.lpProp.ulPropTag = PR_NORMALIZED_SUBJECT;
 	res.res.resProperty.lpProp.value.lpszA = message_name;
-	retval = FindRow(&obj_ctable, &res, 0, 0, &SRowSet);
+	retval = FindRow(&obj_ctable, &res, BOOKMARK_BEGINNING, DIR_FORWARD, &SRowSet);
 	MAPIFreeBuffer(message_name);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 

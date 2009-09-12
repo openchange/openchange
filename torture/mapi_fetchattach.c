@@ -61,7 +61,7 @@ static enum MAPISTATUS read_attach_stream(TALLOC_CTX *ctx_mem,
   *sz_data = (uint32_t)vals[0].value.b;
   *buf_data = talloc_size(ctx_mem, *sz_data);
   if (*buf_data == 0)
-    return -1;
+    return MAPI_E_NOT_ENOUGH_MEMORY;
 
   /* Read attachment
    */

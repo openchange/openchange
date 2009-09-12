@@ -198,7 +198,7 @@ _PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
  */
 _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 					    mapi_object_t *obj_message, 
-					    uint8_t LockState)
+					    enum LockState LockState)
 {
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;

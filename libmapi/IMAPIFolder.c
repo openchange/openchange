@@ -595,7 +595,7 @@ _PUBLIC_ enum MAPISTATUS MoveCopyMessages(mapi_object_t *obj_src,
    \sa OpenFolder, DeleteFolder, EmptyFolder, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent, 
-				      uint8_t ulFolderType,
+				      enum FOLDER_TYPE ulFolderType,
 				      const char *name,
 				      const char *comment, 
 				      uint32_t ulFlags,

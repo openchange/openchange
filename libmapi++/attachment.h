@@ -86,7 +86,7 @@ class attachment : public object {
 			} else {
 				mapi_object_t obj_stream;
 				mapi_object_init(&obj_stream);
-				if (OpenStream(&m_object, PR_ATTACH_DATA_BIN, 0, &obj_stream) != MAPI_E_SUCCESS)
+				if (OpenStream(&m_object, PR_ATTACH_DATA_BIN, OpenStream_ReadOnly, &obj_stream) != MAPI_E_SUCCESS)
 					throw mapi_exception(GetLastError(), "attachment::attachment : OpenStream");
 
 				if (GetStreamSize(&obj_stream, &m_data_size) != MAPI_E_SUCCESS)

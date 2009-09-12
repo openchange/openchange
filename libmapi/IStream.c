@@ -60,8 +60,9 @@
    \sa ReadStream, WriteStream, GetLastError
  */
 
-_PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, uint32_t PropertyTag,
-				    uint8_t OpenModeFlags, mapi_object_t *obj_stream)
+_PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, enum MAPITAGS PropertyTag,
+				    enum OpenStream_OpenModeFlags OpenModeFlags,
+				    mapi_object_t *obj_stream)
 {
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;

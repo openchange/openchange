@@ -1214,7 +1214,8 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table,
  */
 _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table, 
 				 struct mapi_SRestriction *res,
-				 uint32_t bkOrigin, uint8_t ulFlags,
+				 enum BOOKMARK bkOrigin,
+				 enum FindRow_ulFlags ulFlags,
 				 struct SRowSet *SRowSet)
 {
 	struct mapi_request    	*mapi_request;
@@ -1251,7 +1252,7 @@ _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table,
 	size += sizeof (uint8_t);
 	request.res = *res;
 	size += get_mapi_SRestriction_size(res);
-	request.origin = (bkOrigin > 3) ? 3 : bkOrigin;
+	request.origin = (bkOrigin > BOOKMARK_USER) ? BOOKMARK_USER : bkOrigin;
 	size += sizeof (uint8_t);
 	if (bkOrigin >= 3) {
 		request.bookmark.cb = bin.cb;

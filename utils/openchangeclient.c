@@ -1915,7 +1915,7 @@ static enum MAPISTATUS message_lookup(TALLOC_CTX *mem_ctx,
 			fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
 			mid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_MID);
 			if (mid && *mid == smid) {
-				retval = OpenMessage(obj_folder, *fid, *mid, obj_message, MAPI_MODIFY);
+				retval = OpenMessage(obj_folder, *fid, *mid, obj_message, ReadWrite);
 				mapi_object_release(&obj_htable);
 				return retval;
 			}

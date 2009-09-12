@@ -1226,7 +1226,7 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 		mapi_object_release(&obj_store);
 		return false;
 	}
-	retval = OpenEmbeddedMessage(&obj_attach, &obj_embeddedmsg, 0);
+	retval = OpenEmbeddedMessage(&obj_attach, &obj_embeddedmsg, MAPI_READONLY);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenEmbeddedMessage", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_object_release(&obj_attach);

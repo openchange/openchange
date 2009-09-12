@@ -596,7 +596,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 
 		RecipClass = (const uint32_t *) find_SPropValue_data(aRow, PR_RECIPIENT_TYPE);
 		OPENCHANGE_RETVAL_IF(!RecipClass, MAPI_E_INVALID_PARAMETER, mem_ctx);
-		request.RecipientRow[i_recip].RecipClass = (uint8_t) *RecipClass;
+		request.RecipientRow[i_recip].RecipClass = (enum ulRecipClass) *RecipClass;
 		size += sizeof(uint8_t);
 		
 		RecipientRow->RecipientFlags = mapi_recipients_bitmask(aRow);
@@ -605,7 +605,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		switch (RecipientRow->RecipientFlags & 0xB) {
 		case 0x1: 
 			RecipientRow->type.EXCHANGE.organization_length = mapi_recipients_get_org_length(session->profile);
-			RecipientRow->type.EXCHANGE.addr_type = 0;
+			RecipientRow->type.EXCHANGE.addr_type = SINGLE_RECIPIENT;
 			RecipientRow->type.EXCHANGE.username = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
 			size += sizeof(uint32_t) + strlen(RecipientRow->type.EXCHANGE.username) + 1;
 			break;
@@ -933,7 +933,7 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 	size = 0;
 
 	/* Fill the SubmitMessage operation */
-	request.SubmitFlags = 0x0;
+	request.SubmitFlags = None;
 	size += sizeof(uint8_t);
 
 	/* Fill the MAPI_REQ request */

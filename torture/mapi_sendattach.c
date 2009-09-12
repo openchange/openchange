@@ -176,7 +176,7 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* OpenStream on CreateAttach handle */
-	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 2, &obj_stream);
+	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, OpenStream_Create, &obj_stream);
 	mapi_errstr("OpenStream", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

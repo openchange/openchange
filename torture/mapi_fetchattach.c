@@ -199,7 +199,7 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 					retval = OpenAttach(&obj_message, num_attach, &obj_attach);
 					mapi_errstr("OpenAttach", GetLastError());
 					if (retval == MAPI_E_SUCCESS) {
-						retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
+						retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, OpenStream_ReadOnly, &obj_stream);
 						mapi_errstr("OpenStream", GetLastError());
 
 						/* read stream content */

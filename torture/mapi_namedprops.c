@@ -112,7 +112,7 @@ bool torture_rpc_mapi_namedprops(struct torture_context *torture)
 	retval = OpenMessage(&obj_folder,
 			     SRowSet.aRow[0].lpProps[0].value.d,
 			     SRowSet.aRow[0].lpProps[1].value.d,
-			     &obj_message, MAPI_MODIFY|MAPI_CREATE);
+			     &obj_message, Create);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = GetPropsAll(&obj_message, &props_array);

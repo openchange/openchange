@@ -453,8 +453,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_lookup(const char *OOM, const char *OLE
 		}
 	}
 
-	errno = MAPI_E_NOT_FOUND;
-	return -1;
+	OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, NULL);
 }
 
 
@@ -490,8 +489,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup(uint16_t lid, const char *OLEGUI
 		}
 	}
 
-	errno = MAPI_E_NOT_FOUND;
-	return -1;
+	OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, NULL);
 }
 
 
@@ -528,9 +526,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *Name,
 			return MAPI_E_SUCCESS;
 		}
 	}
-	
-	errno = MAPI_E_NOT_FOUND;
-	return -1;
+
+	OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, NULL);
 }
 
 

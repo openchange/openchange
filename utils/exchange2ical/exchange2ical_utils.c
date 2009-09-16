@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -109,7 +109,7 @@ const char *get_ical_calendartype(uint16_t CalendarType)
 			return ical_calendartype[i].calendar;
 		}
 	}
-	
+
 	return NULL;
 }
 
@@ -141,7 +141,7 @@ static struct ical_class	ical_class[] = {
 enum icalproperty_class get_ical_class(uint32_t sensivity)
 {
 	uint32_t	i;
-	
+
 	for (i = 0; ical_class[i].classtype != ICAL_CLASS_NONE; ++i) {
 		if (sensivity == ical_class[i].sensivity) {
 			return ical_class[i].classtype;
@@ -206,12 +206,12 @@ struct icaltimetype get_icaltime_from_FILETIME(const struct FILETIME *ft)
 	nttime |= ft->dwLowDateTime;
 	nttime_to_timeval(&temp_timeval, nttime);
 	tm = gmtime(&temp_timeval.tv_sec);
-                                                                 
-	tt.year   = tm->tm_year + 1900;                                        
-	tt.month  = tm->tm_mon + 1;                                            
-	tt.day    = tm->tm_mday;                                               
-	tt.hour   = tm->tm_hour;                                               
-	tt.minute = tm->tm_min;                                                
+
+	tt.year   = tm->tm_year + 1900;
+	tt.month  = tm->tm_mon + 1;
+	tt.day    = tm->tm_mday;
+	tt.hour   = tm->tm_hour;
+	tt.minute = tm->tm_min;
 	tt.second = tm->tm_sec;
 	tt.is_date = 0;
 	tt.is_utc = 1;
@@ -233,12 +233,12 @@ struct icaltimetype get_icaldate_from_FILETIME(const struct FILETIME *ft)
 	nttime |= ft->dwLowDateTime;
 	nttime_to_timeval(&temp_timeval, nttime);
 	tm = gmtime(&temp_timeval.tv_sec);
-                                                                 
-	tt.year   = tm->tm_year + 1900;                                        
-	tt.month  = tm->tm_mon + 1;                                            
-	tt.day    = tm->tm_mday;                                               
-	tt.hour   = 0;                                               
-	tt.minute = 0;                                                
+
+	tt.year   = tm->tm_year + 1900;
+	tt.month  = tm->tm_mon + 1;
+	tt.day    = tm->tm_mday;
+	tt.hour   = 0;
+	tt.minute = 0;
 	tt.second = 0;
 	tt.is_date = 1;
 	tt.is_utc = 1;

@@ -1465,8 +1465,7 @@ System Attendant Private Interface
 		TypedString		SubjectPrefix;
 		TypedString		NormalizedSubject;
 		uint16			RecipientCount;
-		uint16			ColumnCount;
-		MAPITAGS		RecipientColumns[ColumnCount];
+		mapi_SPropTagArray	RecipientColumns;
 		uint8			RowCount;
 		OpenRecipientRow	RecipientRows[RowCount];
 	} ReloadCachedInformation_repl;

@@ -446,14 +446,14 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 
 	ret = true;
 
-	/* Step 5. Remove all recipients */
+	/* Step 4. Remove all recipients */
 	retval = RemoveAllRecipients(&obj_message);
 	mapitest_print_retval(mt, "RemoveAllRecipients");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
-	/* Step 4. Save the message */
+	/* Step 5. Save the message */
 	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -1467,6 +1467,101 @@ cleanup:
 	/* Release */
 	mapi_object_release(&obj_attach0);
 	mapi_object_release(&obj_attach1);
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return ret;
+}
+
+/**
+   \details Test the ReloadCachedInformation (0x10) operation
+
+   This function:
+   -# Logs on to the user private mailbox
+   -# Open the outbox folder
+   -# Create the message
+   -# Save the message
+   -# Reloads the cached message information
+   -# Delete the message
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcmsg_ReloadCachedInformation(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_message;
+	mapi_id_t		id_folder;
+	mapi_id_t		id_msgs[1];
+	bool			ret;
+
+	ret = true;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 2. Open Outbox folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderOutbox);
+	mapitest_print_retval(mt, "GetDefaultFolder");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	mapitest_print_retval(mt, "OpenFolder");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3. Create the message */
+	mapi_object_init(&obj_message);
+	retval = CreateMessage(&obj_folder, &obj_message);
+	mapitest_print_retval(mt, "CreateMessage");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 4. Save the message */
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
+	mapitest_print_retval(mt, "SaveChangesMessage");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 5. Reload cached information */
+	retval = ReloadCachedInformation(&obj_message);
+	mapitest_print_retval(mt, "ReloadCachedInformation");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 6. Delete the saved message */
+	id_msgs[0] = mapi_object_get_id(&obj_message);
+	retval = DeleteMessage(&obj_folder, id_msgs, 1);
+	mapitest_print_retval(mt, "DeleteMessage");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+cleanup:
+	/* Release */
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);

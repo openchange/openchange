@@ -1,3 +1,24 @@
+2009-09-19
+    bradh
+	[r1519]
+		Implement RopReloadCachedInformation (0x10).
+		
+		Minor change to IDL (previously implemented), and adds
+		implementaiton and mapitest code.
+		
+		Also editorial comment fix in some related mapitest stuff.
+		
+		Resolves ticket #186
+	[r1518]
+		Implement GetValidAttachments ROP (0x52).
+		
+		Includes IDL, implementation and mapitest.
+		
+		mapitest also checks DeleteAttach behaviour, which I don't think we previously
+		covered anywhere. 
+		
+		Also includes a comment fix in the mapitest code.
+
 2009-09-16
     bradh
 	[r1516]

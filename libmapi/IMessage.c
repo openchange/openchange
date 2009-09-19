@@ -302,6 +302,86 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 
 
 /**
+   \details Get the valid attachment IDs for a message
+
+   This function returns the list of valid attachment IDs for a message.
+   You can then use these IDs with the OpenAttach and DeleteAttach functions.
+
+   \param obj_message the message to operate on
+   \param NumAttachments the number of attachments for the message
+   \param AttachmentIds array of attachment Ids
+
+   The AttachmentIds array has NumAttachments elements.
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: a parameter is incorrect (e.g. null pointer)
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa OpenAttach, DeleteAttach
+ */
+_PUBLIC_ enum MAPISTATUS GetValidAttach(mapi_object_t *obj_message, uint16_t *NumAttachments, uint32_t **AttachmentIds)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetValidAttachments_repl	*reply;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!NumAttachments, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!AttachmentIds, MAPI_E_INVALID_PARAMETER, NULL);
+	session = mapi_object_get_session(obj_message);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "GetValidAttach");
+	size = 0;
+
+	/* Fill the MAPI_REQ request */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_GetValidAttachments;
+	mapi_req->logon_id = mapi_object_get_logon_id(obj_message);
+	mapi_req->handle_idx = 0;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_message);
+
+	status = emsmdb_transaction(session->emsmdb->ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
+	/* Retrieve the result */
+	reply = &(mapi_response->mapi_repl->u.mapi_GetValidAttachments);
+	*NumAttachments = reply->AttachmentIdCount;
+	*AttachmentIds = talloc_steal((TALLOC_CTX *)session, reply->AttachmentIdArray);	
+	
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+	
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details Open an attachment to a message
 
    This function opens one attachment from a message. The attachment

@@ -155,6 +155,7 @@ _PUBLIC_ uint32_t module_oxcmsg_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "GET-MESSAGE-STATUS", "Get message status", mapitest_oxcmsg_GetMessageStatus);
 	mapitest_suite_add_test(suite, "SET-MESSAGE-STATUS", "Set message status", mapitest_oxcmsg_SetMessageStatus);
 	mapitest_suite_add_test(suite, "OPEN-EMBEDDED-MESSAGE", "Open a message embedded in another message", mapitest_oxcmsg_OpenEmbeddedMessage);
+	mapitest_suite_add_test(suite, "GET-VALID-ATTACHMENTS", "Get valid attachment IDs for a message", mapitest_oxcmsg_GetValidAttachments);
 
 	mapitest_suite_register(mt, suite);
 

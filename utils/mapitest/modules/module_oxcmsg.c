@@ -1114,7 +1114,7 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 		return false;                          
 	}
 
-	/* Step 2. Open Outbox folder */
+	/* Step 2. Open Inbox folder */
 	mapi_object_init(&obj_folder);
 	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, olFolderInbox);
 	if (ret == false) {
@@ -1262,4 +1262,214 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 	mapi_object_release(&obj_store);
 
 	return true;
+}
+
+
+/**
+   \details Test the GetValidAttachments (0x52) and CreateAttach (0x23) operations
+
+   This function:
+	-# Logs on the user private mailbox
+	-# Open the Inbox folder         
+	-# Create a test message          
+	-# Check the number of valid attachments is zero
+	-# Create two attachments
+	-# Check the number of valid attachments is two (numbered 0 and 1)
+	-# Delete the first attachment
+	-# Check the number of valid attachments is one (numbered 1)
+	-# Delete the test message                  
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */                                        
+_PUBLIC_ bool mapitest_oxcmsg_GetValidAttachments(struct mapitest *mt)
+{                                                                     
+	enum MAPISTATUS		retval;                               
+	bool			ret;                                  
+	mapi_object_t		obj_store;                            
+	mapi_object_t		obj_folder;                           
+	mapi_object_t		obj_message;
+	mapi_object_t		obj_attach0;
+	mapi_object_t		obj_attach1;
+	mapi_id_t		id_msgs[1];                           
+	struct SPropValue	attach[3];
+	uint16_t		numAttach;
+	uint32_t		*attachmentIds;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_store);
+		return false;                          
+	}
+
+	/* Step 2. Open Inbox folder */
+	mapi_object_init(&obj_folder);
+	ret = mapitest_common_folder_open(mt, &obj_store, &obj_folder, olFolderInbox);
+	if (ret == false) {
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;
+	}
+
+	/* Step 3. Create the test message and save it */
+	mapi_object_init(&obj_message);
+	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, OXCMSG_SETREADFLAGS);
+	if (ret == false) return ret;
+
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadWrite);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesMessage", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_message);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_store);
+		return false;
+	}
+
+	ret = true;
+
+	/* Step 4. Check the number of valid attachments */
+	numAttach = 99;
+	retval = GetValidAttach(&obj_message, &numAttach, &attachmentIds);
+	mapitest_print(mt, "* %-35s: 0x%.8x (%d)\n", "GetValidAttach", retval, numAttach);
+	if (numAttach != 0) {
+		ret = false;
+		goto cleanup;
+	}
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 5. Create two attachments to the message */
+	mapi_object_init(&obj_attach0);
+	retval = CreateAttach(&obj_message, &obj_attach0);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateAttach", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* use SetProps() to set the attachment up */
+	attach[0].ulPropTag = PR_ATTACH_METHOD;
+	attach[0].value.l = ATTACH_BY_VALUE;
+	attach[1].ulPropTag = PR_RENDERING_POSITION;
+	attach[1].value.l = 0;
+	attach[2].ulPropTag = PR_ATTACH_FILENAME;
+	attach[2].value.lpszA = "Attachment 0";
+	retval = SetProps(&obj_attach0, attach, 3);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetProps", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Save the changes to the attachment and then the message */
+	retval = SaveChangesAttachment(&obj_message, &obj_attach0, KeepOpenReadOnly);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesAttachment", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	mapi_object_init(&obj_attach1);
+	retval = CreateAttach(&obj_message, &obj_attach1);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateAttach", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* use SetProps() to set the attachment up */
+	attach[0].ulPropTag = PR_ATTACH_METHOD;
+	attach[0].value.l = ATTACH_BY_VALUE;
+	attach[1].ulPropTag = PR_RENDERING_POSITION;
+	attach[1].value.l = 0;
+	attach[2].ulPropTag = PR_ATTACH_FILENAME;
+	attach[2].value.lpszA = "Attachment 1";
+	retval = SetProps(&obj_attach1, attach, 3);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetProps", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Save the changes to the attachment and then the message */
+	retval = SaveChangesAttachment(&obj_message, &obj_attach1, KeepOpenReadOnly);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesAttachment", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadWrite);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SaveChangesMessage", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 6. Check the number of valid attachments */
+	numAttach = 99;
+	retval = GetValidAttach(&obj_message, &numAttach, &attachmentIds);
+	mapitest_print(mt, "* %-35s: 0x%.8x (%d)\n", "GetValidAttach", retval, numAttach);
+	if (numAttach != 2) {
+		ret = false;
+		goto cleanup;
+	}
+	mapitest_print(mt, "IDs: %d, %d\n", attachmentIds[0], attachmentIds[1]);
+	if ( (attachmentIds[0] != 0) || (attachmentIds[1] != 1) ) {
+		ret = false;
+		goto cleanup;
+	}
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 7. Delete the first attachment */
+	retval = DeleteAttach(&obj_message, attachmentIds[0]);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteAttach", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 8. Check the number of valid attachments */
+	numAttach = 99;
+	retval = GetValidAttach(&obj_message, &numAttach, &attachmentIds);
+	mapitest_print(mt, "* %-35s: 0x%.8x (%d)\n", "GetValidAttach", retval, numAttach);
+	if (numAttach != 1) {
+		ret = false;
+		goto cleanup;
+	}
+	mapitest_print(mt, "IDs: %d\n", attachmentIds[0]);
+	if ( (attachmentIds[0] != 1) ) {
+		ret = false;
+		goto cleanup;
+	}
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 9. Delete the message */
+	id_msgs[0] = mapi_object_get_id(&obj_message);
+	retval = DeleteMessage(&obj_folder, id_msgs, 1);
+	mapitest_print(mt, "* %-35s: 0x%.8x\n", "DeleteMessage", retval);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+cleanup:
+	/* Release */
+	mapi_object_release(&obj_attach0);
+	mapi_object_release(&obj_attach1);
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return ret;
 }

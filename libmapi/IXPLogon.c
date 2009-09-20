@@ -60,6 +60,7 @@ _PUBLIC_ enum MAPISTATUS AddressTypes(mapi_object_t *obj_store,
 	enum MAPISTATUS			retval;
 	uint32_t			size;
 	TALLOC_CTX			*mem_ctx;
+	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -68,13 +69,16 @@ _PUBLIC_ enum MAPISTATUS AddressTypes(mapi_object_t *obj_store,
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
+	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
 	mem_ctx = talloc_named(NULL, 0, "AddressTypes");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_AddressTypes;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_store);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -132,7 +136,8 @@ _PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
-
+	uint8_t 		logon_id = 0;
+	
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
@@ -140,13 +145,16 @@ _PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
+	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
 	mem_ctx = talloc_named(NULL, 0, "SetSpooler");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetSpooler;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_store);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -209,7 +217,8 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
 	TALLOC_CTX			*mem_ctx;
-	
+	uint8_t 			logon_id = 0;
+
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
@@ -218,6 +227,9 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "SpoolerLockMessage");
 	size = 0;
@@ -232,7 +244,7 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SpoolerLockMessage;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_store);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SpoolerLockMessage = request;
 	size += 5;

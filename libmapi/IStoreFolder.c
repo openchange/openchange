@@ -85,7 +85,8 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	logon_id = mapi_object_get_logon_id(obj_store);
+	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "OpenMessage");
 
@@ -217,7 +218,8 @@ _PUBLIC_ enum MAPISTATUS ReloadCachedInformation(mapi_object_t *obj_message)
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	logon_id = mapi_object_get_logon_id(obj_message);
+	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "ReloadCachedInformation");
 

@@ -80,7 +80,8 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, enum MAPITAGS Pr
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	logon_id = mapi_object_get_logon_id(obj_related);
+	if ((retval = mapi_object_get_logon_id(obj_related, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "OpenStream");
 
@@ -174,11 +175,15 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 	enum MAPISTATUS		retval;
 	uint32_t		size = 0;
 	TALLOC_CTX		*mem_ctx;
+	uint8_t 		logon_id = 0;
 
 	/* Sanity checks */
 	session = mapi_object_get_session(obj_stream);
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "ReadStream");
 
@@ -192,7 +197,7 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_ReadStream;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_ReadStream = request;
 	size += 5;
@@ -269,6 +274,7 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		size;
+	uint8_t 		logon_id = 0;
 
 	/* Sanity Checks */
 	session = mapi_object_get_session(obj_stream);
@@ -276,6 +282,9 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!blob, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(blob->length > 0x7000, MAPI_E_TOO_BIG, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "WriteStream");
 
@@ -290,7 +299,7 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_WriteStream;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_WriteStream = request;
 	size += 5;
@@ -348,6 +357,7 @@ _PUBLIC_ enum MAPISTATUS CommitStream(mapi_object_t *obj_stream)
 	enum MAPISTATUS		retval;
 	uint32_t		size;
 	TALLOC_CTX		*mem_ctx;
+	uint8_t 		logon_id = 0;
 
 	/* Sanity checks */
 	session = mapi_object_get_session(obj_stream);
@@ -355,13 +365,16 @@ _PUBLIC_ enum MAPISTATUS CommitStream(mapi_object_t *obj_stream)
 	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
+	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
 	mem_ctx = talloc_named(NULL, 0, "CommitStream");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CommitStream;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -416,6 +429,7 @@ _PUBLIC_ enum MAPISTATUS GetStreamSize(mapi_object_t *obj_stream, uint32_t *Stre
 	enum MAPISTATUS			retval;
 	uint32_t			size;
 	TALLOC_CTX			*mem_ctx;
+	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -423,13 +437,16 @@ _PUBLIC_ enum MAPISTATUS GetStreamSize(mapi_object_t *obj_stream, uint32_t *Stre
 	session = mapi_object_get_session(obj_stream);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
+	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
 	mem_ctx = talloc_named(NULL, 0, "GetStreamSize");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_GetStreamSize;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	size += 5;
 
@@ -499,6 +516,7 @@ _PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, u
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		size;
+	uint8_t 		logon_id = 0;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -507,6 +525,9 @@ _PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, u
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF((Origin > 2), MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!NewPosition, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "SeekStream");
 	size = 0;
@@ -521,7 +542,7 @@ _PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, u
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SeekStream;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SeekStream = request;
 	size += 5;
@@ -579,12 +600,16 @@ _PUBLIC_ enum MAPISTATUS SetStreamSize(mapi_object_t *obj_stream, uint64_t SizeS
 	enum MAPISTATUS			retval;
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			size;
+	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_stream);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "SetStreamSize");
 	size = 0;
@@ -596,7 +621,7 @@ _PUBLIC_ enum MAPISTATUS SetStreamSize(mapi_object_t *obj_stream, uint64_t SizeS
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_SetStreamSize;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_SetStreamSize = request;
 	size += 5;
@@ -661,6 +686,7 @@ _PUBLIC_ enum MAPISTATUS CopyToStream(mapi_object_t *obj_src, mapi_object_t *obj
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		size;
+	uint8_t 		logon_id = 0;
 
 	/* Sanity Check */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -678,6 +704,9 @@ _PUBLIC_ enum MAPISTATUS CopyToStream(mapi_object_t *obj_src, mapi_object_t *obj
 	OPENCHANGE_RETVAL_IF(!ReadByteCount, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!WrittenByteCount, MAPI_E_INVALID_PARAMETER, NULL);
 
+	if ((retval = mapi_object_get_logon_id(obj_src, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
 	mem_ctx = talloc_named(NULL, 0, "CopyToStream");
 	size = 0;
 
@@ -691,7 +720,7 @@ _PUBLIC_ enum MAPISTATUS CopyToStream(mapi_object_t *obj_src, mapi_object_t *obj
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_CopyToStream;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_src);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_CopyToStream = request;
 	size += 5;
@@ -758,12 +787,16 @@ _PUBLIC_ enum MAPISTATUS LockRegionStream(mapi_object_t *obj_stream, uint64_t Re
 	enum MAPISTATUS			retval;
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			size;
+	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_stream);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "LockRegionStream");
 	size = 0;
@@ -779,7 +812,7 @@ _PUBLIC_ enum MAPISTATUS LockRegionStream(mapi_object_t *obj_stream, uint64_t Re
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_LockRegionStream;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_LockRegionStream = request;
 	size += 5;
@@ -837,12 +870,16 @@ _PUBLIC_ enum MAPISTATUS UnlockRegionStream(mapi_object_t *obj_stream, uint64_t 
 	enum MAPISTATUS			retval;
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			size;
+	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_stream);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "UnlockRegionStream");
 	size = 0;
@@ -858,7 +895,7 @@ _PUBLIC_ enum MAPISTATUS UnlockRegionStream(mapi_object_t *obj_stream, uint64_t 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_UnlockRegionStream;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_UnlockRegionStream = request;
 	size += 5;
@@ -921,7 +958,8 @@ _PUBLIC_ enum MAPISTATUS CloneStream(mapi_object_t *obj_src, mapi_object_t *obj_
 	session = mapi_object_get_session(obj_src);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
-	logon_id = mapi_object_get_logon_id(obj_src);
+	if ((retval = mapi_object_get_logon_id(obj_src, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "CloneStream");
 	size = 0;
@@ -1003,6 +1041,7 @@ _PUBLIC_ enum MAPISTATUS WriteAndCommitStream(mapi_object_t *obj_stream, DATA_BL
 	enum MAPISTATUS			retval;
 	TALLOC_CTX			*mem_ctx;
 	uint32_t			size;
+	uint8_t 			logon_id = 0;
 
 	/* Sanity Checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1011,6 +1050,9 @@ _PUBLIC_ enum MAPISTATUS WriteAndCommitStream(mapi_object_t *obj_stream, DATA_BL
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!blob, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(blob->length > 0x7000, MAPI_E_TOO_BIG, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
 
 	mem_ctx = talloc_named(NULL, 0, "WriteAndCommitStream");
 
@@ -1025,7 +1067,7 @@ _PUBLIC_ enum MAPISTATUS WriteAndCommitStream(mapi_object_t *obj_stream, DATA_BL
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
 	mapi_req->opnum = op_MAPI_WriteAndCommitStream;
-	mapi_req->logon_id = mapi_object_get_logon_id(obj_stream);
+	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_WriteAndCommitStream = request;
 	size += 5;

@@ -232,12 +232,18 @@ _PUBLIC_ void mapi_object_set_logon_id(mapi_object_t *obj,
    \details Retrieve the logon id for a given MAPI object
 
    \param obj pointer to the object to retrieve the logon id from
+   \param logon_id pointer to a variable to store the logon id
 
-   \return the object logon ID on success, otherwise -1
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
  */
-_PUBLIC_ uint8_t mapi_object_get_logon_id(mapi_object_t *obj)
+_PUBLIC_ enum MAPISTATUS mapi_object_get_logon_id(mapi_object_t *obj, uint8_t *logon_id)
 {
-	return (!obj) ? -1 : obj->logon_id;
+	if (!obj || !logon_id)
+		return MAPI_E_INVALID_PARAMETER;
+
+	*logon_id = obj->logon_id; 
+
+	return MAPI_E_SUCCESS;
 }
 
 

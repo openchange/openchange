@@ -1,3 +1,18 @@
+2009-09-26
+    bradh
+	[r1524]
+		Make sure that the string given by what() can be used. 
+		
+		Patch by Erik Hovland - thanks very much.
+		
+		Resolves ticket #179.
+	[r1523]
+		Ensure that the libmapi++ messages example works even if there is no
+		PR_CONVERSATION_TOPIC (subject).
+    jelmer
+	[r1525]
+		Add 'make dist'.
+
 2009-09-20
     bradh
 	[r1521]

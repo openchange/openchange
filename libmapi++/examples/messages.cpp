@@ -52,9 +52,13 @@ int main ()
 			msg_props << PR_DISPLAY_TO << PR_CONVERSATION_TOPIC;
 			msg_props.fetch();
 			// Display those properties
-			std::cout << "|-----> " << (const char*)msg_props[PR_DISPLAY_TO]
-				  << "\t\t| " << (const char*)msg_props[PR_CONVERSATION_TOPIC]
-				  << std::endl;
+			if (msg_props[PR_DISPLAY_TO] != 0) {
+				std::cout << "|-----> " << (const char*)msg_props[PR_DISPLAY_TO];
+				if(msg_props[PR_CONVERSATION_TOPIC] != 0) {
+					std::cout << "\t\t| " << (const char*)msg_props[PR_CONVERSATION_TOPIC];
+				}
+				std::cout << std::endl;
+			}
         	}
         }
         catch (libmapipp::mapi_exception e) // Catch any MAPI exceptions

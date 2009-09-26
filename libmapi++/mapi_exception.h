@@ -26,6 +26,8 @@
 #include <iostream>
 #include <string>
 
+#include <cstring>
+
 #include <libmapi++/clibmapi.h>
 
 #define STATUS_TABLE_INSERT(status) sm_status_map.insert(status_map::value_type(status, #status));
@@ -48,7 +50,7 @@ class mapi_exception : public std::exception
 			ret_string += ": ";
 			ret_string += (iter != sm_status_map.end()) ? iter->second : "Unknown MAPISTATUS value";
 
-			return ret_string.c_str();
+			return const_cast<const char*>(::strdup(ret_string.c_str()));
 		}
 		enum MAPISTATUS get_status() const { return m_status; }
 

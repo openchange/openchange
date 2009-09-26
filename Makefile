@@ -61,6 +61,9 @@ uninstall:: 	$(OC_LIBS_UNINSTALL) 	\
 		$(SWIGDIRS-UNINSTALL) \
 		$(PYMAPIUNINSTALL)
 
+dist:: distclean
+	./autogen.sh
+
 distclean:: clean
 	rm -rf autom4te.cache
 	rm -f Doxyfile

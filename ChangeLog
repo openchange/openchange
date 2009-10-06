@@ -1,3 +1,15 @@
+2009-10-06
+    bradh
+	[r1527]
+		Alternative solution to ticket #179, provided by Alan Alvarez.
+		
+		This alternative avoids the need for the user to clean up the string returned by what().
+		
+		Also includes a test case, which I've used to validate that the original (prior to r1524) code 
+		is faulty, and that both fixes (From Erik Hovland and from Alan Alvarez) deal with it.
+		
+		Resolves Ticket #179 (again).
+
 2009-09-26
     bradh
 	[r1524]

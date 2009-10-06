@@ -37,21 +37,16 @@ namespace libmapipp {
 class mapi_exception : public std::exception
 {
 	public:
-	
-		mapi_exception(enum MAPISTATUS status, const std::string& origin = "") : std::exception(), m_status(status), m_origin(origin)
-		{
-		}
-
-		virtual const char* what() const throw()
+		mapi_exception(enum MAPISTATUS status, const std::string& origin = "") : std::exception(), m_status(status), m_origin(origin), m_what_string(origin)
 		{
 			status_map::iterator iter = sm_status_map.find(m_status);
 
-			std::string ret_string = m_origin; 
-			ret_string += ": ";
-			ret_string += (iter != sm_status_map.end()) ? iter->second : "Unknown MAPISTATUS value";
-
-			return const_cast<const char*>(::strdup(ret_string.c_str()));
+			m_what_string += ": ";
+			m_what_string += (iter != sm_status_map.end()) ? iter->second : "Unknown MAPISTATUS value";
 		}
+
+		virtual const char* what() const throw() { return m_what_string.c_str(); }
+
 		enum MAPISTATUS get_status() const { return m_status; }
 
 		virtual ~mapi_exception() throw() {}
@@ -59,6 +54,7 @@ class mapi_exception : public std::exception
 	private:
 		enum MAPISTATUS	m_status;
 		std::string	m_origin;
+		std::string	m_what_string;
 		friend class session;
 
 		typedef std::map<enum MAPISTATUS, const char*> status_map;

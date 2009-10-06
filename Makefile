@@ -388,10 +388,12 @@ libmapixx-uninstallheader:
 
 
 libmapixx-tests:	libmapixx-test		\
-			libmapixx-attach
+			libmapixx-attach 	\
+			libmapixx-exception
 
 libmapixx-tests-clean:	libmapixx-test-clean	\
-			libmapixx-attach-clean	
+			libmapixx-attach-clean	\
+			libmapixx-exception-clean 
 
 libmapixx-test: bin/libmapixx-test
 
@@ -421,6 +423,18 @@ bin/libmapixx-attach: libmapi++/tests/attach_test.cpp	\
 
 clean:: libmapixx-attach-clean
 
+libmapixx-exception: bin/libmapixx-exception
+ 
+bin/libmapixx-exception: libmapi++/tests/exception_test.cpp \
+		  libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking exception test application $@"
+	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+libmapixx-exception-clean:
+	rm -f bin/libmapixx-exception
+	rm -f libmapi++/tests/*.o
+
+clean:: libmapixx-exception-clean
 
 libmapixx-examples: libmapi++/examples/foldertree \
 		  libmapi++/examples/messages

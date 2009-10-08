@@ -88,27 +88,27 @@ AC_ARG_VAR([TYPE], [rule type])
 if test "x$1_set" != "xset"; then
    case "$2" in
    	LIBS)
-		OC_$2+=" $1"
-   		OC_$2_INSTALL+=" $1-install"
-   		OC_$2_UNINSTALL+=" $1-uninstall"
-   		OC_$2_INSTALLPC+=" $1-installpc"
-   		OC_$2_INSTALLHEADER+=" $1-installheader"
-   		OC_$2_INSTALLLIB+=" $1-installlib"
+		OC_$2="$OC_$2 $1"
+   		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
+   		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
+   		OC_$2_INSTALLPC="$OC_$2_INSTALLPC $1-installpc"
+   		OC_$2_INSTALLHEADER="$OC_$2_INSTALLHEADER $1-installheader"
+   		OC_$2_INSTALLLIB="$OC_$2_INSTALLLIB $1-installlib"
 
 		AC_SUBST(OC_$2_INSTALLPC)
 		AC_SUBST(OC_$2_INSTALLHEADER)
 		AC_SUBST(OC_$2_INSTALLLIB)
 	;;
 	TOOLS|TORTURE)
-		OC_$2+=" $1"
-		OC_$2_INSTALL+=" $1-install"
-   		OC_$2_UNINSTALL+=" $1-uninstall"
+		OC_$2="$OC_$2 $1"
+		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
+   		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
 	;;
 	SERVER|MAPISTORE)
-		OC_$2+=" $1"
-		OC_$2_CLEAN+="$1-clean"
-		OC_$2_INSTALL+=" $1-install"
-   		OC_$2_UNINSTALL+=" $1-uninstall"
+		OC_$2="$OC_$2 $1"
+		OC_$2_CLEAN="$OC_$2_CLEAN $1-clean"
+		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
+   		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
 	;;
    esac
 
@@ -145,8 +145,9 @@ dnl configure.ac will find the library if available and additional
 dnl flags be correctly added while compiling.
 dnl ###########################################################################
 if test x"$BUILD_FOR_FREEBSD" = x"yes"; then
-   CFLAGS+=" -I/usr/local/include"
-   LDFLAGS+=" -L/usr/local/lib"
+   CFLAGS="$CFLAGS -I/usr/local/include"
+   LDFLAGS="$LDFLAGS  -L/usr/local/lib"
+   CXXFLAGS="$CXXFLAGS -I/usr/local/include"
 fi
 
 dnl ----------------------------------------------------------------------------
@@ -487,9 +488,9 @@ if test "x${enable_perlswig}" = xyes; then
 	AC_MSG_ERROR(Please install swig)
    fi
 
-   SWIGDIRSALL+="swigperl-all"
-   SWIGDIRSINSTALL+="swigperl-install"
-   SWIGDIRSUNINSTALL+="swigperl-uninstall"
+   SWIGDIRSALL="swigperl-all"
+   SWIGDIRSINSTALL="swigperl-install"
+   SWIGDIRSUNINSTALL="swigperl-uninstall"
 fi
 
 PERL5DIR=`$PERL -e 'use Config; my $dir = $Config{sitelib}; print $dir'`
@@ -507,9 +508,9 @@ AC_ARG_ENABLE(pymapi, AC_HELP_STRING([--enable-pymapi],
 			   enable_pymapi="$enableval",
 			   enable_pymapi=no)
 if test "x${enable_pymapi}" = xyes; then
-   PYMAPIALL+="pymapi"
-   PYMAPIINSTALL+="pymapi-install"
-   PYMAPIUNINSTALL+="pymapi-uninstall"
+   PYMAPIALL="pymapi"
+   PYMAPIINSTALL="pymapi-install"
+   PYMAPIUNINSTALL="pymapi-uninstall"
 fi
 
 PYCDIR=`$PYTHON -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='\\$(prefix)')"`

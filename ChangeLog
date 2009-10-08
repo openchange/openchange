@@ -1,3 +1,11 @@
+2009-10-08
+    bradh
+	[r1529]
+		Update buildsystem to avoid using bash-specific (well, not sh-supported) +=
+		mechanism.
+		
+		Should allow FreeBSD to be supported.
+
 2009-10-06
     bradh
 	[r1527]

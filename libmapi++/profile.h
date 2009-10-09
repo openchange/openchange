@@ -38,6 +38,29 @@ class profile
 {
 	public:
 
+		/* Create an new profile database
+		 *
+		 * \param profiledb the absolute path to the profile database intended to be created
+		 * \param ldif_path the absolute path to the LDIF information to use for initial setup
+		 *
+		 */
+		bool static create_profile_store(const char* profiledb, const char* ldif_path)
+		{
+			return (CreateProfileStore(profiledb, ldif_path) == MAPI_E_SUCCESS);
+		}
+ 
+ 		/**
+		 * Create an new profile database
+		 *
+		 * \param profiledb the absolute path to the profile database intended to be created
+		 * \param ldif_path the absolute path to the LDIF information to use for initial setup
+		 *
+		 */
+		bool static create_profile_store(const std::string& profiledb, const std::string& ldif_path)
+		{
+			return create_profile_store(profiledb.c_str(), ldif_path.c_str());
+		}
+
 		/**
 		 * Make the specified profile the default profile
 		 *

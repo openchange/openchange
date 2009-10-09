@@ -1,3 +1,8 @@
+2009-10-09
+    clsk
+	[r1531]
+		Added libmapi++ wrapper function for CreateProfileStore
+
 2009-10-08
     bradh
 	[r1529]

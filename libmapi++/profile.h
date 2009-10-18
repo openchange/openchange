@@ -44,8 +44,10 @@ class profile
 		 * \param ldif_path the absolute path to the LDIF information to use for initial setup
 		 *
 		 */
-		bool static create_profile_store(const char* profiledb, const char* ldif_path)
+		bool static create_profile_store(const char* profiledb, const char* ldif_path = NULL)
 		{
+                        if (ldif_path == NULL)
+                            ldif_path = ::mapi_profile_get_ldif_path();
 			return (CreateProfileStore(profiledb, ldif_path) == MAPI_E_SUCCESS);
 		}
  

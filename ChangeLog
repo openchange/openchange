@@ -1,3 +1,8 @@
+2009-10-18
+    clsk
+	[r1534]
+		Use mapi_profile_get_ldif_path to find ldif path when one is not given
+
 2009-10-09
     clsk
 	[r1531]

@@ -454,11 +454,11 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
    Convenience function to login to the server
 
    This functions logs into the server, gets the top level store, and
-   gets the hierachy table for the top level store (which is returned as
+   gets the hierarchy table for the top level store (which is returned as
    obj_htable). It also creates a test folder with 10 test messages.
 
    \param mt pointer to the top-level mapitest structure
-   \param obj_htable the hierachy table for the top level store
+   \param obj_htable the hierarchy table for the top level store
    \param count the number of rows in the top level hierarchy table
 
    \return true on success, otherwise false
@@ -486,7 +486,7 @@ _PUBLIC_ bool mapitest_common_setup(struct mapitest *mt, mapi_object_t *obj_htab
 		return false;
 	}
 
-	/* We do this before getting the hierachy table, because otherwise the new
+	/* We do this before getting the hierarchy table, because otherwise the new
 	   test folder will be omitted, and the count will be wrong */
 	ret = mapitest_common_create_filled_test_folder(mt);
 	if (ret == false) {

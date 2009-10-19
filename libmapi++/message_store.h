@@ -64,7 +64,7 @@ class message_store : public object {
 		 * - olFolderDrafts
 		 *
 		 * If you are trying to enumerate all folders, you should open the 
-		 * olFolderTopInformationStore, and then get the hierachy container for
+		 * olFolderTopInformationStore, and then get the hierarchy container for
 		 * that top level folder.
 		 *
 		 * \return The resulting folder id.

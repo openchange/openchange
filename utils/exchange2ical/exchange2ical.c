@@ -278,7 +278,7 @@ int main(int argc, const char *argv[])
 	retval = GetContentsTable(&obj_folder, &obj_table, 0, &count);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	DEBUG(0, ("MAILBOX (%d appointments)\n", count));
+	DEBUG(1, ("MAILBOX (%d appointments)\n", count));
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
 					  PR_FID,
@@ -366,8 +366,9 @@ int main(int argc, const char *argv[])
 						ical_component_VCALENDAR(&exchange2ical);
 						// Just for temporary debugging...
 						// writeVObjectToFile(filename, exchange2ical.vcalendar);
-						DEBUG(0, ("%u\n\n", i));
-						printf("ICAL file:\n%s\n", icalcomponent_as_ical_string(exchange2ical.vcalendar));
+						DEBUG(1, ("%u\n\n", i));
+						DEBUG(1, ("ICAL file:\n"));
+						DEBUG(0, ("%s\n", icalcomponent_as_ical_string(exchange2ical.vcalendar)));
 					}
 					exchange2ical_reset(&exchange2ical);
 					MAPIFreeBuffer(lpProps);

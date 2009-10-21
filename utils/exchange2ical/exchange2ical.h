@@ -23,8 +23,6 @@
 #define	__EXCHANGE2ICAL_H_
 
 #include <libmapi/libmapi.h>
-#include <gen_ndr/ndr_property.h>
-
 #include <libical/ical.h>
 
 #include <time.h>

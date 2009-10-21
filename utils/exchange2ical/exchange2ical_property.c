@@ -1024,6 +1024,9 @@ void ical_property_X_MICROSOFT_CDO_ATTENDEE_CRITICAL_CHANGE(struct exchange2ical
 
 void ical_property_X_MICROSOFT_CDO_BUSYSTATUS(struct exchange2ical *exchange2ical)
 {
+	/* Sanity check */
+	if (!exchange2ical->BusyStatus) return;
+
 	switch (*exchange2ical->BusyStatus) {
 	case 0x00000000:
 		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-BUSYSTATUS", "FREE");

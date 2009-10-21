@@ -1,3 +1,11 @@
+2009-10-21
+    jkerihuel
+	[r1538]
+		Patches provided by raboof:
+		- Ticket #213 deprecated include directive removal
+		- Ticket #214 missing sanity check
+		- Ticket #215 fix some DEBUG macro level for sain ouput
+
 2009-10-19
     bradh
 	[r1536]

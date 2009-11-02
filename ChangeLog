@@ -1,3 +1,12 @@
+2009-11-02
+    bradh
+	[r1540]
+		Fix build problem using Sun Studio compiler.
+		
+		Reported by Brian Lu (Sun), including a patch (Ticket #219)
+		
+		I slightly modified the patch, but nothing substantial.
+
 2009-10-21
     jkerihuel
 	[r1538]

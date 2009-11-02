@@ -962,7 +962,7 @@ enum ndr_err_code ndr_pull_mapi_SPropValue_wrap(struct ndr_pull *ndr, int ndr_fl
 
 void ndr_print_mapi_SPropValue_wrap(struct ndr_print *ndr, const char *name, const struct mapi_SPropValue_wrap *r)
 {
-	return ndr_print_mapi_SPropValue(ndr, name, (const struct mapi_SPropValue *)r);
+	ndr_print_mapi_SPropValue(ndr, name, (const struct mapi_SPropValue *)r);
 }
 
 
@@ -983,7 +983,7 @@ enum ndr_err_code ndr_pull_mapi_SPropValue_array_wrap(struct ndr_pull *ndr, int 
 
 void ndr_print_mapi_SPropValue_array_wrap(struct ndr_print *ndr, const char *name, const struct mapi_SPropValue_array_wrap *r)
 {
-	return ndr_print_mapi_SPropValue_array(ndr, name, (const struct mapi_SPropValue_array *)r);
+	ndr_print_mapi_SPropValue_array(ndr, name, (const struct mapi_SPropValue_array *)r);
 }
 
 enum ndr_err_code ndr_push_RestrictionVariable(struct ndr_push *ndr, int ndr_flags, const union RestrictionVariable *r)

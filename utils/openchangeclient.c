@@ -213,7 +213,7 @@ static bool oclient_read_file(TALLOC_CTX *mem_ctx, const char *filename,
 		oclient->attach[oclient->attach_num].filename = talloc_strdup(mem_ctx, filename);
 		oclient->attach[oclient->attach_num].bin.lpb = talloc_size(mem_ctx, sb.st_size);
 		oclient->attach[oclient->attach_num].bin.cb = sb.st_size;
-		if ((oclient->attach[oclient->attach_num].bin.lpb = mmap(NULL, sb.st_size, PROT_READ, MAP_FILE|MAP_SHARED, fd, 0)) == (void *) -1) {
+		if ((oclient->attach[oclient->attach_num].bin.lpb = mmap(NULL, sb.st_size, PROT_READ, MAP_SHARED, fd, 0)) == (void *) -1) {
 			perror("mmap");
 			close(fd);
 			return false;

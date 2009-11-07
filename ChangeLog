@@ -1,3 +1,21 @@
+2009-11-07
+    bradh
+	[r1543]
+		Additional portability fixes for SunOS.
+		
+		Based on a patch (ticket #220) by Brian Lu (Sun). Thanks very much.
+		
+		I modified the patch to try to use autoconf where possible.
+		
+		Resolves ticket #220.
+	[r1542]
+		Remove MAP_FILE flag from mmap(). Looks like this is only required on really
+		old unix systems (e.g. NetBSD prior to 1.0), which we probably won't ever support.
+		
+		Patch by Brian Lu (Sun) - thanks very much.
+		
+		Partly resolves ticket #220 - still need to handle the first patch.
+
 2009-11-02
     bradh
 	[r1540]

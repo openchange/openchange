@@ -120,6 +120,8 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 
 #if defined (__FreeBSD__)
 	(void) signal(SIGINT, (sig_t) signal_delete_profile);
+#elif defined (__SunOS)
+        (void) signal(SIGINT, signal_delete_profile);
 #else
 	(void) signal(SIGINT, (sighandler_t) signal_delete_profile);
 #endif

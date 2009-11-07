@@ -21,6 +21,8 @@
 
 #define	_GNU_SOURCE 1
 
+#include "config.h"
+
 #include <sys/types.h>
 
 #include <stdio.h>
@@ -44,7 +46,10 @@
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
 
 #include <sys/types.h>
+
+#ifdef HAVE_SYS_CDEFS_H
 #include <sys/cdefs.h>
+#endif
 
 /*
    endpoint server for the exchange_store_admin3 pipe

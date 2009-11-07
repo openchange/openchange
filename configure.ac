@@ -122,6 +122,14 @@ if test "x$1_set" != "xset"; then
 fi[]
 ])
 
+dnl ##################################################################
+dnl Some general portability stuff
+dnl ##################################################################
+AC_CHECK_HEADERS( sys/cdefs.h string.h sys/sockio.h)
+AC_CHECK_FUNCS( strcasestr )
+
+
+
 dnl ###########################################################################
 dnl _AC_LANG_COMPILER_ICC
 dnl Check whether the compiler for the current language is really ICC.

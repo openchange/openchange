@@ -29,7 +29,7 @@ pythondir=@pythondir@
 sambaprefix=@sambaprefix@
 
 DSOOPT=-shared -fPIC
-CFLAGS=@CFLAGS@ -Wmissing-prototypes -Wstrict-prototypes     \
+CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ \
        -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"						\
        -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
        -DMAPISTORE_MAPPING_PATH=\"$(prefix)/private/mapistore\"
@@ -37,9 +37,6 @@ CFLAGS=@CFLAGS@ -Wmissing-prototypes -Wstrict-prototypes     \
 # This value should be determined by configure at some point
 SHLIBEXT=so
 PACKAGE_VERSION=@PACKAGE_VERSION@
-
-# Portability hack...
-CFLAGS+=-Duint_t="unsigned int" 
 
 SAMBA_CFLAGS=@SAMBA_CFLAGS@
 SAMBA_LIBS=@SAMBA_LIBS@
@@ -58,7 +55,7 @@ LIBS+=$(SAMBA_LIBS) $(LDB_LIBS) $(TALLOC_LIBS)
 LDFLAGS+=@LDFLAGS@
 
 # Assign CFLAGS to CXXFLAGS
-CXXFLAGS=@CFLAGS@ -I. $(SAMBA_CFLAGS) $(LDB_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS)
+CXXFLAGS=@CFLAGS@ @COMPILER_OPTIONS_CXX@ $(SAMBA_CFLAGS) $(LDB_CFLAGS) $(TALLOC_CFLAGS) $(TDB_CFLAGS)
 
 # OPENCHANGE LIBRARIES
 OC_IDL=@OC_IDL@

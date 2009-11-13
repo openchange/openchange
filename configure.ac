@@ -9,7 +9,7 @@ AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 PKG_PROG_PKG_CONFIG([0.20])
 
-CFLAGS="-I. -O3 -Wall -g3 -fstrict-aliasing $CFLAGS"
+CFLAGS="-I. $CFLAGS"
 
 dnl #################################################################
 dnl Check for OS dependent options
@@ -18,6 +18,7 @@ AC_CANONICAL_HOST
 
 case "${host}" in
      *freebsd*) BUILD_FOR_FREEBSD=yes ;;
+     *solaris*) BUILD_FOR_SOLARIS=yes ;;
 esac
 
 #
@@ -147,6 +148,22 @@ ac_cv_[]_AC_LANG_ABBREV[]_compiler_icc=$ac_compiler_icc
 ])])
 
 dnl ###########################################################################
+dnl _AC_LANG_COMPILER_SUNCC
+dnl Check whether the compiler for the current language is really Sun compiler.
+dnl ###########################################################################
+m4_define([AC_LANG_COMPILER_SUNCC],
+[AC_CACHE_CHECK([whether we are really using the Sun _AC_LANG compiler],
+		[ac_cv_[]_AC_LANG_ABBREV[]_compiler_suncc],
+[_AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [[#ifndef __SUNPRO_C
+       choke me
+#endif
+]])],
+		   [ac_compiler_suncc=yes],
+		   [ac_compiler_suncc=no])
+ac_cv_[]_AC_LANG_ABBREV[]_compiler_suncc=$ac_compiler_suncc
+])])
+
+dnl ###########################################################################
 dnl FreeBSD installs some libraries such as libpopt in the non default
 dnl search path /usr/local/{include,lib}. This nasty hack ensures
 dnl configure.ac will find the library if available and additional
@@ -176,17 +193,29 @@ dnl ---------------------------------------------------------------------------
 AC_PROG_CC
 
 dnl ---------------------------------------------------------------------------
-dnl Check for ICC
+dnl Set up the right compiler options
 dnl ---------------------------------------------------------------------------
+AC_LANG_COMPILER_SUNCC 
 AC_LANG_COMPILER_ICC
 
-dnl if it isn't icc, then use the gcc options
-dnl otherwise suppress some noise from icc
-if test x"$ac_cv_c_compiler_icc" != x"yes"; then
-    CFLAGS="$CFLAGS -Wp,-D_FORTIFY_SOURCE=2"
+if test x"$ac_cv_c_compiler_suncc" = x"yes"; then
+dnl Sun Studio Compiler
+    COMPILER_OPTIONS_SHARED=""
+    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED"
+    COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
+elif test x"$ac_cv_c_compiler_icc" = x"yes"; then
+dnl Intel Compiler
+    COMPILER_OPTIONS_SHARED="-O3 -Wall -g3 -fstrict-aliasing -Wmissing-prototypes -Wstrict-prototypes -wd2259,188,593,869,981,181,1419,2218"
+    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED"
+    COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
 else
-    CFLAGS="$CFLAGS -wd2259,188,593,869,981,181,1419,2218"
+dnl GNU Compiler
+    COMPILER_OPTIONS_SHARED="-O3 -Wall -g3 -fstrict-aliasing -Wp,-D_FORTIFY_SOURCE=2"
+    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes"
+    COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
 fi
+AC_SUBST(COMPILER_OPTIONS_C)
+AC_SUBST(COMPILER_OPTIONS_CXX)
 
 dnl ---------------------------------------------------------------------------
 dnl Check for install

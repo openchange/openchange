@@ -1,3 +1,16 @@
+2009-11-13
+    bradh
+	[r1547]
+		Add support for the SunStudio compiler.
+		
+		I previously special-cased the Intel C compiler, and relied on some ugly ordering requirements to
+		ensure it all worked.
+		
+		This approach is cleaner, allowing options to be build up separately for each compiler, and for
+		the C and C++ versions.
+		
+		Tested on Linux with all three compilers.
+
 2009-11-09
     bradh
 	[r1545]

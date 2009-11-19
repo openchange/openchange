@@ -1,3 +1,29 @@
+2009-11-19
+    bradh
+	[r1551]
+		Improved Sun Studio compiler support.
+		
+		Patch by Brian Lu (Sun) - thanks again.
+	[r1550]
+		Revert inadvertent part from previous commit (r1549)
+	[r1549]
+		Add coverage testing support.
+		
+		./configure now supports --enable-coverage, which builds with the right options
+		to support gcov. Also adds a new makefile target ("coverage") that runs the
+		required post-processing steps.
+		
+		Also added a test script that does a range of openchange related (client side)
+		operations. This is useful for generating the test load for coverage checks.
+		
+		So the basic recipe here is
+		1. Add the --enable-coverage option at configure time.
+		2. Do a clean build
+		3. Install it, or otherwise ensure that coverage-enabled libs are used
+		4. generate the test load (e.g. run ./script/smoketest.sh)
+		5. "make coverage"
+		6. Inspect the results in ./covresults
+
 2009-11-13
     bradh
 	[r1547]

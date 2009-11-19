@@ -294,7 +294,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/socket/netif.po				\
 	libmapi/utf8_convert.yy.po
 	@echo "Linking $@"
-	$(CC) $(DSOOPT) $(CFLAGS) $(LDFLAGS) -Wl,-soname,libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) -o $@ $^ $(LIBS)
+	@$(CC) $(DSOOPT) $(CFLAGS) $(LDFLAGS) -Wl,-soname,libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) -o $@ $^ $(LIBS)
 
 
 libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION): libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -1121,7 +1121,7 @@ bin/openchangeclient: 	utils/openchangeclient.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
 
 ##############

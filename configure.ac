@@ -213,7 +213,7 @@ AC_LANG_COMPILER_ICC
 
 if test x"$ac_cv_c_compiler_suncc" = x"yes"; then
 dnl Sun Studio Compiler
-    COMPILER_OPTIONS_SHARED=""
+    COMPILER_OPTIONS_SHARED="-D__FUNCTION__=__func__"
     COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED"
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
 elif test x"$ac_cv_c_compiler_icc" = x"yes"; then

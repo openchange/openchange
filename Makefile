@@ -37,7 +37,8 @@ all: 		$(OC_IDL)		\
 		$(OC_TORTURE)		\
 		$(OC_SERVER)		\
 		$(SWIGDIRS-ALL)		\
-		$(PYMAPIALL)
+		$(PYMAPIALL)		\
+		$(COVERAGE_INIT)
 
 install: 	all 			\
 		installlib 		\
@@ -160,9 +161,13 @@ libmapi-uninstall:	libmapi-uninstallpc	\
 
 libmapi-clean::
 	rm -f libmapi/*.o libmapi/*.po
-	rm -f libmapi/tests/*.o, libmapi/tests/*.po
+	rm -f libmapi/*.gcno libmapi/*.gcda libmapi/*.gcov
+	rm -f libmapi/tests/*.o libmapi/tests/*.po
+	rm -f libmapi/tests/*.gcno libmapi/tests/*.gcda
 	rm -f libmapi/socket/*.o libmapi/socket/*.po
-	rm -f libmapi/util/*.o, libmapi/util/*.po
+	rm -f libmapi/socket/*.gcno libmapi/socket/*.gcda
+	rm -f libmapi/util/*.o libmapi/util/*.po
+	rm -f libmapi/util/*.gcno libmapi/util/*.gcda
 	rm -f libmapi/version.h
 ifneq ($(SNAPSHOT), no)
 	rm -f libmapi/utf8_convert.yy.c
@@ -179,6 +184,7 @@ endif
 	rm -f gen_ndr/ndr_property*
 	rm -f gen_ndr/property.h
 	rm -f ndr_mapi.o ndr_mapi.po
+	rm -f ndr_mapi.gcno ndr_mapi.gcda
 	rm -f *~
 	rm -f */*~
 	rm -f */*/*~
@@ -288,7 +294,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/socket/netif.po				\
 	libmapi/utf8_convert.yy.po
 	@echo "Linking $@"
-	@$(CC) $(DSOOPT) -Wl,-soname,libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) -o $@ $^ $(LIBS)
+	$(CC) $(DSOOPT) $(CFLAGS) $(LDFLAGS) -Wl,-soname,libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) -o $@ $^ $(LIBS)
 
 
 libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION): libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -303,6 +309,7 @@ libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
 
 # Avoid warnings:
 libmapi/utf8_convert.yy.o: CFLAGS=
+libmapi/utf8_convert.yy.po: CFLAGS=
 
 libmapi/proto.h libmapi/proto_private.h:		\
 	libmapi/nspi.c					\
@@ -406,7 +413,7 @@ clean:: libmapixx-tests-clean
 bin/libmapixx-test:	libmapi++/tests/test.cpp	\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking sample application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-test-clean
 
@@ -480,6 +487,7 @@ libmapiadmin-uninstall:	libmapiadmin-uninstallpc	\
 
 libmapiadmin-clean::
 	rm -f libmapiadmin/*.o libmapiadmin/*.po
+	rm -f libmapiadmin/*.gcno libmapiadmin/*.gcda
 ifneq ($(SNAPSHOT), no)
 	rm -f libmapiadmin/proto.h
 	rm -f libmapiadmin/proto_private.h
@@ -525,7 +533,7 @@ libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	\
 	libmapiadmin/mapiadmin.po 		\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(DSOOPT) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
+	@$(CC) $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
 
 libmapiadmin/proto.h libmapiadmin/proto_private.h: 	\
 	libmapiadmin/mapiadmin.c 			\
@@ -554,6 +562,7 @@ libocpf-uninstall:	libocpf-uninstallpc	\
 
 libocpf-clean::
 	rm -f libocpf/*.o libocpf/*.po
+	rm -f libocpf/*.gcno libocpf/*.gcda
 ifneq ($(SNAPSHOT), no)
 	rm -f libocpf/lex.yy.c
 	rm -f libocpf/ocpf.tab.c libocpf/ocpf.tab.h
@@ -605,7 +614,7 @@ libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		\
 	libocpf/ocpf_write.po			\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(DSOOPT) -Wl,-soname,libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) -o $@ $^ $(LIBS)
+	@$(CC) $(DSOOPT) $(LDFLAGS) -Wl,-soname,libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) -o $@ $^ $(LIBS)
 
 libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION): libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
@@ -652,7 +661,7 @@ torture-clean::
 ifneq ($(SNAPSHOT), no)
 	rm -f torture/torture_proto.h
 endif
-	rm -f torture/*.o torture/*.po
+	rm -f torture/*.o torture/*.po torture/*.gcno torture/*.gcda
 
 clean:: torture-clean
 
@@ -758,6 +767,7 @@ mapiproxy-clean:: 	mapiproxy-modules-clean			\
 			libmapiserver-clean			\
 			libmapistore-clean
 	rm -f mapiproxy/*.o mapiproxy/*.po
+	rm -f mapiproxy/*.gcno mapiproxy/*.gcda
 	rm -f mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT)
 
 clean:: mapiproxy-clean
@@ -790,6 +800,7 @@ libmapiproxy-install:
 
 libmapiproxy-clean:
 	rm -f mapiproxy/libmapiproxy/*.po mapiproxy/libmapiproxy/*.o
+	rm -f mapiproxy/libmapiproxy/*.gcno mapiproxy/libmapiproxy/*.gcda
 ifneq ($(SNAPSHOT), no)
 	rm -f mapiproxy/libmapiproxy/openchangedb_property.c
 endif
@@ -838,6 +849,7 @@ libmapiserver-install:
 
 libmapiserver-clean:
 	rm -f mapiproxy/libmapiserver/*.po mapiproxy/libmapiserver/*.o
+	rm -f mapiproxy/libmapiserver/*.gcno mapiproxy/libmapiserver/*.gcda
 	rm -f mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION)
 
@@ -885,6 +897,7 @@ libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o
+	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 
@@ -902,7 +915,7 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mapistore_processing.po	\
 							mapiproxy/libmapistore/mapistore_backend.po	\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po
-	@$(CC) -o $@ $(DSOOPT) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS)
+	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS)
 
 mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
@@ -923,6 +936,8 @@ mapistore_sqlite3-uninstall:
 mapistore_sqlite3-clean:
 	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.o
 	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.po
+	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.gcno
+	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.gcda
 
 clean:: mapistore_sqlite3-clean
 
@@ -933,7 +948,7 @@ distclean:: mapistore_sqlite3-distclean
 
 mapiproxy/libmapistore/backends/mapistore_sqlite3.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_sqlite3.po
 	@echo "Linking mapistore module $@"
-	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $^ -L. $(LIBS) $(SQLITE_LIBS) 	\
+	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(SQLITE_LIBS) 	\
 	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 #######################
@@ -949,6 +964,8 @@ bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.o		\
 
 mapistore_clean:
 	rm -f mapiproxy/libmapistore/tests/*.o
+	rm -f mapiproxy/libmapistore/tests/*.gcno
+	rm -f mapiproxy/libmapistore/tests/*.gcda
 	rm -f bin/mapistore_test
 
 clean:: mapistore_clean
@@ -974,6 +991,7 @@ mapiproxy-modules-uninstall:
 
 mapiproxy-modules-clean::
 	rm -f mapiproxy/modules/*.o mapiproxy/modules/*.po
+	rm -f mapiproxy/modules/*.gcno mapiproxy/modules/*.gcda
 	rm -f mapiproxy/modules/*.so
 
 clean:: mapiproxy-modules-clean
@@ -1035,8 +1053,11 @@ mapiproxy-servers-uninstall: provision-uninstall
 
 mapiproxy-servers-clean::
 	rm -f mapiproxy/servers/default/nspi/*.o mapiproxy/servers/default/nspi/*.po
+	rm -f mapiproxy/servers/default/nspi/*.gcno mapiproxy/servers/default/nspi/*.gcda
 	rm -f mapiproxy/servers/default/emsmdb/*.o mapiproxy/servers/default/emsmdb/*.po
+	rm -f mapiproxy/servers/default/emsmdb/*.gcno mapiproxy/servers/default/emsmdb/*.gcda
 	rm -f mapiproxy/servers/default/rfr/*.o mapiproxy/servers/default/rfr/*.po
+	rm -f mapiproxy/servers/default/rfr/*.gcno mapiproxy/servers/default/rfr/*.gcda
 	rm -f mapiproxy/servers/*.so
 
 clean:: mapiproxy-servers-clean
@@ -1087,7 +1108,11 @@ openchangeclient-uninstall:
 openchangeclient-clean::
 	rm -f bin/openchangeclient
 	rm -f utils/openchangeclient.o
-	rm -f utils/openchange-tools.o	
+	rm -f utils/openchangeclient.gcno
+	rm -f utils/openchangeclient.gcda
+	rm -f utils/openchange-tools.o
+	rm -f utils/openchange-tools.gcno
+	rm -f utils/openchange-tools.gcda
 
 clean:: openchangeclient-clean
 
@@ -1096,7 +1121,7 @@ bin/openchangeclient: 	utils/openchangeclient.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
 
 ##############
@@ -1115,6 +1140,8 @@ mapiprofile-uninstall:
 mapiprofile-clean::
 	rm -f bin/mapiprofile
 	rm -f utils/mapiprofile.o
+	rm -f utils/mapiprofile.gcno
+	rm -f utils/mapiprofile.gcda
 
 clean:: mapiprofile-clean
 
@@ -1122,7 +1149,7 @@ bin/mapiprofile: 	utils/mapiprofile.o 			\
 			utils/openchange-tools.o 		\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
 
 ###################
@@ -1141,6 +1168,8 @@ openchangepfadmin-uninstall:
 openchangepfadmin-clean::
 	rm -f bin/openchangepfadmin
 	rm -f utils/openchangepfadmin.o
+	rm -f utils/openchangepfadmin.gcno
+	rm -f utils/openchangepfadmin.gcda
 
 clean:: openchangepfadmin-clean
 
@@ -1168,7 +1197,11 @@ exchange2mbox-uninstall:
 exchange2mbox-clean::
 	rm -f bin/exchange2mbox
 	rm -f utils/exchange2mbox.o
-	rm -f utils/openchange-tools.o	
+	rm -f utils/exchange2mbox.gcno
+	rm -f utils/exchange2mbox.gcda
+	rm -f utils/openchange-tools.o
+	rm -f utils/openchange-tools.gcno
+	rm -f utils/openchange-tools.gcda
 
 clean:: exchange2mbox-clean
 
@@ -1195,10 +1228,20 @@ exchange2ical-uninstall:
 exchange2ical-clean::
 	rm -f bin/exchange2ical
 	rm -f utils/exchange2ical/exchange2ical.o
+	rm -f utils/exchange2ical/exchange2ical.gcno
+	rm -f utils/exchange2ical/exchange2ical.gcda
 	rm -f utils/exchange2ical/exchange2ical_utils.o
+	rm -f utils/exchange2ical/exchange2ical_utils.gcno
+	rm -f utils/exchange2ical/exchange2ical_utils.gcda
 	rm -f utils/exchange2ical/exchange2ical_component.o
+	rm -f utils/exchange2ical/exchange2ical_component.gcno
+	rm -f utils/exchange2ical/exchange2ical_component.gcda
 	rm -f utils/exchange2ical/exchange2ical_property.o
-	rm -f utils/openchange-tools.o	
+	rm -f utils/exchange2ical/exchange2ical_property.gcno
+	rm -f utils/exchange2ical/exchange2ical_property.gcda
+	rm -f utils/openchange-tools.o
+	rm -f utils/openchange-tools.gcno
+	rm -f utils/openchange-tools.gcda
 
 clean:: exchange2ical-clean
 
@@ -1230,7 +1273,11 @@ mapitest-uninstall:
 mapitest-clean:
 	rm -f bin/mapitest
 	rm -f utils/mapitest/*.o
+	rm -f utils/mapitest/*.gcno
+	rm -f utils/mapitest/*.gcda
 	rm -f utils/mapitest/modules/*.o
+	rm -f utils/mapitest/modules/*.gcno
+	rm -f utils/mapitest/modules/*.gcda
 ifneq ($(SNAPSHOT), no)
 	rm -f utils/mapitest/proto.h
 	rm -f utils/mapitest/mapitest_proto.h
@@ -1301,7 +1348,11 @@ openchangemapidump-uninstall:
 openchangemapidump-clean::
 	rm -f bin/openchangemapidump
 	rm -f utils/backup/openchangemapidump.o
+	rm -f utils/backup/openchangemapidump.gcno
+	rm -f utils/backup/openchangemapidump.gcda
 	rm -f utils/backup/openchangebackup.o
+	rm -f utils/backup/openchangebackup.gcno
+	rm -f utils/backup/openchangebackup.gcda
 
 clean:: openchangemapidump-clean
 
@@ -1328,12 +1379,14 @@ schemaIDGUID-uninstall:
 schemaIDGUID-clean::
 	rm -f bin/schemaIDGUID
 	rm -f utils/schemaIDGUID.o
+	rm -f utils/schemaIDGUID.gcno
+	rm -f utils/schemaIDGUID.gcda
 
 clean:: schemaIDGUID-clean
 
 bin/schemaIDGUID: utils/schemaIDGUID.o
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 
 ##################
@@ -1499,6 +1552,29 @@ check:: torture/openchange.$(SHLIBEXT) libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
 	# FIXME: Set up server
 	LD_LIBRARY_PATH=`pwd` $(SMBTORTURE) --load-module torture/openchange.$(SHLIBEXT) ncalrpc: OPENCHANGE
 	./bin/mapitest --mapi-calls 
+
+####################################
+# coverage tests
+#
+# this could be better integrated...
+####################################
+coverage-init:
+	lcov --base-directory . --directory . --capture --initial --output-file oc_cov.info
+
+coverage::
+	rm -f libmapi/\<stdout\>.gcov
+	rm -f ./libocpf/lex.yy.gcda
+	rm -f libocpf/\<stdout\>.gcov
+	rm -f ./\<stdout\>.gcov
+	lcov --base-directory .  --directory . --output-file oc_cov.info --capture
+	genhtml -o covresults oc_cov.info
+
+coverage-clean::
+	rm -rf oc_cov.info
+	rm -rf covresults
+	rm -f test.gcno
+
+clean:: coverage-clean
 
 # This should be the last line in the makefile since other distclean rules may 
 # need config.mk

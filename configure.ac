@@ -193,6 +193,19 @@ dnl ---------------------------------------------------------------------------
 AC_PROG_CC
 
 dnl ---------------------------------------------------------------------------
+dnl coverage testing
+dnl ---------------------------------------------------------------------------
+AC_ARG_ENABLE([coverage], AS_HELP_STRING([--enable-coverage],
+                                        [Compile the library with code coverage support (default is NO)]),
+                                        [use_cov=$enableval], [use_cov=no])
+
+
+if test "x$use_cov" = x"yes"; then
+   COVERAGE_INIT="coverage-init"
+fi
+AC_SUBST(COVERAGE_INIT)
+
+dnl ---------------------------------------------------------------------------
 dnl Set up the right compiler options
 dnl ---------------------------------------------------------------------------
 AC_LANG_COMPILER_SUNCC 
@@ -210,8 +223,17 @@ dnl Intel Compiler
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
 else
 dnl GNU Compiler
-    COMPILER_OPTIONS_SHARED="-O3 -Wall -g3 -fstrict-aliasing -Wp,-D_FORTIFY_SOURCE=2"
-    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes"
+    COMPILER_OPTIONS_SHARED="-Wall -g3 -fstrict-aliasing -Wp,-D_FORTIFY_SOURCE=2"
+    if test "x$use_cov" = "xyes"; then
+        COMPILER_OPTIONS_SHARED="-O0 $COMPILER_OPTIONS_SHARED"
+    else
+        COMPILER_OPTIONS_SHARED="-O3 $COMPILER_OPTIONS_SHARED"
+    fi
+    COMPIILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes"
+    if test "x$use_cov" = "xyes"; then
+        COMPILER_OPTIONS_C="$COMPIILER_OPTIONS_C -fprofile-arcs -ftest-coverage"
+        LDFLAGS="$LDFLAGS -lgcov --coverage"
+    fi
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
 fi
 AC_SUBST(COMPILER_OPTIONS_C)
@@ -641,9 +663,12 @@ OpenChange Configuration (Please review)
 
 	   * OpenChange Documentation:	$enable_doxygen
 
+	   * Coverage Tests:		$use_cov
+
 	   * OpenChange Bindings:
 	     - Perl:			$enable_perlswig
 	     - Python:			$enable_pymapi
+
 
 ===============================================================
 

@@ -1,3 +1,24 @@
+2009-11-22
+    bradh
+	[r1555]
+		Add test for get_proptag_value().
+	[r1554]
+		Minor cleanups for mapidump functions.
+		
+		- Add support for dumping property tags using PT_SHORT.
+		- Modify the tag for PR_whatever_ERROR results to include the _ERROR bit
+		- Minor format change for PT_BINARY (training colon)
+		- Ensure PT_SYSTIME respects the seperator value (API change)
+		- Add a conditional assert() using infrastructure introduced in r1553.
+		
+		Implement mapitest support for all of libmapi/mapidump.c
+		
+		Update openchangeclient for the API change.
+	[r1553]
+		Introduce a compile time definition that is set for SVN snapshot releases.
+		
+		The intent is to use this to protect assert() calls that indicate incomplete code.
+
 2009-11-19
     bradh
 	[r1551]

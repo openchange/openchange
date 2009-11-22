@@ -240,6 +240,17 @@ AC_SUBST(COMPILER_OPTIONS_C)
 AC_SUBST(COMPILER_OPTIONS_CXX)
 
 dnl ---------------------------------------------------------------------------
+dnl Define an assert macro if this is a development release
+dnl ---------------------------------------------------------------------------
+. `dirname $0`/VERSION
+AC_SUBST(OPENCHANGE_VERSION_IS_SVN_SNAPSHOT)
+
+if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+   ASSERT_DEFINITION="-DENABLE_ASSERTS"
+fi
+AC_SUBST(ASSERT_DEFINITION)
+
+dnl ---------------------------------------------------------------------------
 dnl Check for install
 dnl ---------------------------------------------------------------------------
 AC_PROG_INSTALL
@@ -247,9 +258,6 @@ AC_PROG_INSTALL
 dnl ---------------------------------------------------------------------------
 dnl Check for Perl
 dnl ---------------------------------------------------------------------------
-. `dirname $0`/VERSION
-AC_SUBST(OPENCHANGE_VERSION_IS_SVN_SNAPSHOT)
-
 AC_PATH_PROG(PERL, perl)
 
 if test x"$PERL" = x""; then

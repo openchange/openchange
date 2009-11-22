@@ -29,7 +29,7 @@ pythondir=@pythondir@
 sambaprefix=@sambaprefix@
 
 DSOOPT=-shared -fPIC
-CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ \
+CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ \
        -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"						\
        -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
        -DMAPISTORE_MAPPING_PATH=\"$(prefix)/private/mapistore\"

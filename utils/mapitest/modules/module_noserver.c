@@ -1053,3 +1053,47 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 #endif
 	return true;
 }
+
+/**
+     \details Test the get_proptag_value() function
+
+   This function:
+   -# Checks the first value in the list
+   -# Checks a random value from the list
+   -# Checks the last value in the list
+   -# Checks a value that doesn't exist
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+*/
+_PUBLIC_ bool mapitest_noserver_proptagvalue(struct mapitest *mt) 
+{
+	uint32_t proptag;
+	
+	proptag = get_proptag_value("PR_ACKNOWLEDGEMENT_MODE");
+	if (proptag != PR_ACKNOWLEDGEMENT_MODE) {
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with PR_ACKNOWLEDGEMENT_MODE");
+		return false;
+	}
+
+	proptag = get_proptag_value("PR_PROFILE_OPEN_FLAGS");
+	if (proptag != PR_PROFILE_OPEN_FLAGS) {
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with PR_PROFILE_OPEN_FLAGS");
+		return false;
+	}
+
+	proptag = get_proptag_value("PR_EMS_AB_SERVER");
+	if (proptag != PR_EMS_AB_SERVER) {
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with PR_EMS_AB_SERVER_ERROR");
+		return false;
+	}
+
+	proptag = get_proptag_value("No such tag, ok?");
+	if (proptag != 0) {
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with non-existant tag");
+		return false;
+	}
+
+	return true;
+}

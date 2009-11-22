@@ -345,6 +345,7 @@ _PUBLIC_ uint32_t module_noserver_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "SROWSET", "Test SRowSet parsing", mapitest_noserver_srowset);
 	mapitest_suite_add_test(suite, "GETSETPROPS", "Test Property handling", mapitest_noserver_properties);
 	mapitest_suite_add_test(suite, "MAPIPROPS", "Test MAPI Property handling", mapitest_noserver_mapi_properties);
+	mapitest_suite_add_test(suite, "PROPTAGVALUE", "Test MAPI PropTag value handling", mapitest_noserver_proptagvalue);
 
 	mapitest_suite_register(mt, suite);
 

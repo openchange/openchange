@@ -1305,6 +1305,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_noserver.o	\
 		utils/mapitest/modules/module_errorchecks.o	\
 		utils/mapitest/modules/module_lcid.o		\
+		utils/mapitest/modules/module_mapidump.o	\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
@@ -1327,7 +1328,8 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_nspi.c		\
 	utils/mapitest/modules/module_noserver.c	\
 	utils/mapitest/modules/module_errorchecks.c	\
-	utils/mapitest/modules/module_lcid.c
+	utils/mapitest/modules/module_lcid.c		\
+	utils/mapitest/modules/module_mapidump.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
 

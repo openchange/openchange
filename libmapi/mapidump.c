@@ -22,6 +22,13 @@
 #include <libmapi/defs_private.h>
 #include <time.h>
 
+#ifdef ENABLE_ASSERTS
+#include <assert.h>
+#define OC_ASSERT(x) assert(x)
+#else
+#define OC_ASSERT(x)
+#endif
+
 /**
    \file mapidump.c
 
@@ -44,6 +51,10 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	
 
 	switch(lpProp.ulPropTag & 0xFFFF) {
+	case PT_SHORT:
+		data = get_SPropValue_data(&lpProp);
+		printf("%s%s: 0x%x\n", sep?sep:"", proptag, (*(const uint16_t *)data));
+		break;
 	case PT_BOOLEAN:
 		data = get_SPropValue_data(&lpProp);
 		printf("%s%s: 0x%x\n", sep?sep:"", proptag, (*(const uint8_t *)data));
@@ -58,11 +69,11 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		printf("%s%s: %s\n", sep?sep:"", proptag, (data && (*(const uint32_t *)data) != MAPI_E_NOT_FOUND) ? (const char *)data : "NULL");
 		break;
 	case PT_SYSTIME:
-		mapidump_date_SPropValue(lpProp, proptag);
+		mapidump_date_SPropValue(lpProp, proptag, sep);
 		break;
 	case PT_ERROR:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: 0x%.8x\n", sep?sep:"", proptag, (*(const uint32_t *)data));
+		printf("%s%s_ERROR: 0x%.8x\n", sep?sep:"", proptag, (*(const uint32_t *)data));
 		break;
 	case PT_LONG:
 		data = get_SPropValue_data(&lpProp);
@@ -70,7 +81,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		break;
 	case PT_BINARY:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s\n", sep?sep:"", proptag);
+		printf("%s%s:\n", sep?sep:"", proptag);
 		dump_data(0, ((const struct Binary_r *)data)->lpb, ((const struct Binary_r *)data)->cb);
 		break;
 	case PT_MV_STRING8:
@@ -82,6 +93,8 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		printf("%s\n", StringArray_r->lppszA[i]);
 		break;
 	default:
+		/* If you hit this assert, you'll need to implement whatever type is missing */
+		OC_ASSERT(0);
 		break;
 	}
 
@@ -196,8 +209,19 @@ _PUBLIC_ void mapidump_date(struct mapi_SPropValue_array *properties, uint32_t m
 	talloc_free(mem_ctx);
 }
 
-
-_PUBLIC_ void mapidump_date_SPropValue(struct SPropValue lpProp, const char *label)
+/**
+  \details This function dumps a property containing a date / time to standard output
+  
+  If the property does not contain a PT_SYSTIME type value, then no output will occur.
+  
+  \param lpProp the property to dump
+  \param label the label to display prior to the time (e.g. the property tag)
+  \param sep a separator / spacer to insert in front of the label
+  
+  \note Prior to OpenChange 0.9, this function took 2 arguments, assuming a default separator of
+  a tab. You can get the old behaviour by using "\t" for sep.
+*/
+_PUBLIC_ void mapidump_date_SPropValue(struct SPropValue lpProp, const char *label, const char *sep)
 {
 	TALLOC_CTX		*mem_ctx;
 	NTTIME			time;
@@ -212,7 +236,7 @@ _PUBLIC_ void mapidump_date_SPropValue(struct SPropValue lpProp, const char *lab
 		time = time << 32;
 		time |= filetime->dwLowDateTime;
 		date = nt_time_string(mem_ctx, time);
-		printf("\t%s:   %s\n", label, date);
+		printf("%s%s:   %s\n", sep, label, date);
 		fflush(0);
 	}
 
@@ -220,7 +244,7 @@ _PUBLIC_ void mapidump_date_SPropValue(struct SPropValue lpProp, const char *lab
 }
 
 /**
-   \details This function dumps the properties relating to a message to standard output
+   \details This function dumps the properties relating to an email message to standard output
 
    The expected way to obtain the properties array is to use OpenMessage() to obtain the
    message object, then to use GetPropsAll() to obtain all the properties.

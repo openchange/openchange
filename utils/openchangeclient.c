@@ -2680,7 +2680,7 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 	year = GetFreeBusyYear(publish_start);
 
 	DEBUG(0, ("FreeBusy (%s):\n", message_name));
-	mapidump_date_SPropValue(aRow.lpProps[1], "* FreeBusy Last Modification Time");
+	mapidump_date_SPropValue(aRow.lpProps[1], "* FreeBusy Last Modification Time", "\t");
 	mapidump_freebusy_date(*publish_start, "\t* FreeBusy Publishing Start:");
 	mapidump_freebusy_date(*publish_end, "\t *FreeBusy Publishing End:  ");
 

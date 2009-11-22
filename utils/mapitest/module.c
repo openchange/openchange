@@ -40,6 +40,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	ret += module_noserver_init(mt);
 	ret += module_errorchecks_init(mt);
 	ret += module_lcid_init(mt);
+	ret += module_mapidump_init(mt);
 
 	return ret;
 }
@@ -384,6 +385,37 @@ _PUBLIC_ uint32_t module_lcid_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "LCID", "Language code / ID operations", false);
 
 	mapitest_suite_add_test(suite, "CODE2TAG", "Tests for lcid_langcode2langtag", mapitest_lcid_langcode2langtag);
+
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
+
+/**
+   \details Initialise the mapidump test suite
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_mapidump_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "MAPIDUMP", "mapidump test suite", false);
+
+	mapitest_suite_add_test(suite, "SPROPVALUE", "Test dump of SPropValue", mapitest_mapidump_spropvalue);
+	mapitest_suite_add_test(suite, "SPROPTAGARRAY", "Test dump of SPropTagArray", mapitest_mapidump_sproptagarray);
+	mapitest_suite_add_test(suite, "SROWSET", "Test dump of SRowSet", mapitest_mapidump_srowset);
+	mapitest_suite_add_test(suite, "PABENTRY", "Test dump of PAB Entry", mapitest_mapidump_pabentry);
+	mapitest_suite_add_test(suite, "NOTE", "Test dump of a note message", mapitest_mapidump_note);
+	mapitest_suite_add_test(suite, "TASK", "Test dump of a task message", mapitest_mapidump_task);
+	mapitest_suite_add_test(suite, "CONTACT", "Test dump of a contact message", mapitest_mapidump_contact);
+	mapitest_suite_add_test(suite, "APPOINTMENT", "Test dump of an appointment message", mapitest_mapidump_appointment);
+	mapitest_suite_add_test(suite, "MESSAGE", "Test dump of an email message", mapitest_mapidump_message);
+	mapitest_suite_add_test(suite, "NEWMAIL", "Test dump of a new mail notification", mapitest_mapidump_newmail);
+	mapitest_suite_add_test(suite, "FREEBUSY", "Test dump of a free/busy event", mapitest_mapidump_freebusy);
+	mapitest_suite_add_test(suite, "RECIPIENTS", "Test dump of a free/busy event", mapitest_mapidump_recipients);
 
 	mapitest_suite_register(mt, suite);
 

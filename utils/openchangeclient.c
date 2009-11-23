@@ -2429,6 +2429,7 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 	uint32_t		i;
 	uint32_t		count;
 	uint8_t			ulFlags;
+	uint32_t		rowsFetched = 0;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0xc,
 					  PR_INSTANCE_KEY,
@@ -2452,14 +2453,15 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 		if ((!SRowSet) || (!(SRowSet->aRow))) {
 			return false;
 		}
-		if (SRowSet->cRows) {
-			for (i = 0; i < SRowSet->cRows; i++) {
+		rowsFetched = SRowSet->cRows;
+		if (rowsFetched) {
+			for (i = 0; i < rowsFetched; i++) {
 				mapidump_PAB_entry(&SRowSet->aRow[i]);
 			}
 		}
 		ulFlags = TABLE_CUR;
 		MAPIFreeBuffer(SRowSet);
-	} while (SRowSet->cRows == count);
+	} while (rowsFetched == count);
 	mapi_errstr("GetPABTable", GetLastError());
 
 	MAPIFreeBuffer(SPropTagArray);

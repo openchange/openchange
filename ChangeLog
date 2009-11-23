@@ -1,3 +1,10 @@
+2009-11-23
+    bradh
+	[r1557]
+		Avoid use-after-free for the number of rows in the SRowSet.
+		
+		Resolves issue #212, which has the valgrind error.
+
 2009-11-22
     bradh
 	[r1555]

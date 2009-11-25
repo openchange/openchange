@@ -21,9 +21,12 @@
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
 
-/*
-  Constructs a PR_ENTRYID value for recipients.
+/**
+   \file utils.c
+
+   \brief General utility functions
  */
+
 
 /* 
    FIXME: 
@@ -64,6 +67,9 @@ _PUBLIC_ char *guid_delete_dash(TALLOC_CTX *mem_ctx, const char *recipient_id)
 	return guid;
 }
 
+/*
+  Constructs a PR_ENTRYID value for recipients.
+ */
 _PUBLIC_ struct Binary_r *generate_recipient_entryid(TALLOC_CTX *mem_ctx, const char *recipient_id)
 {
 	struct Binary_r	*entryid;

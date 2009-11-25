@@ -417,7 +417,15 @@ _PUBLIC_ uint32_t module_mapidump_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "NEWMAIL", "Test dump of a new mail notification", mapitest_mapidump_newmail);
 	mapitest_suite_add_test(suite, "FREEBUSY", "Test dump of a free/busy event", mapitest_mapidump_freebusy);
 	mapitest_suite_add_test(suite, "RECIPIENTS", "Test dump of a free/busy event", mapitest_mapidump_recipients);
-
+	mapitest_suite_add_test(suite, "FOLDERCREATEDNOTIF", "Test dump of a folder created notification", mapitest_mapidump_foldercreated);
+	mapitest_suite_add_test(suite, "FOLDERDELETEDNOTIF", "Test dump of a folder deleted notification", mapitest_mapidump_folderdeleted);
+	mapitest_suite_add_test(suite, "FOLDERMOVEDNOTIF", "Test dump of a folder move notification", mapitest_mapidump_foldermoved);
+	mapitest_suite_add_test(suite, "FOLDERCOPYNOTIF", "Test dump of a folder copy notification", mapitest_mapidump_foldercopied);
+	mapitest_suite_add_test(suite, "MESSAGECREATEDNOTIF", "Test dump of a message created notification", mapitest_mapidump_messagecreated);
+	mapitest_suite_add_test(suite, "MESSAGEDELETEDNOTIF", "Test dump of a message deleted notification", mapitest_mapidump_messagedeleted);
+	mapitest_suite_add_test(suite, "MESSAGEMOVEDNOTIF", "Test dump of a message move notification", mapitest_mapidump_messagemoved);
+	mapitest_suite_add_test(suite, "MESSAGECOPYNOTIF", "Test dump of a message copy notification", mapitest_mapidump_messagecopied);
+	mapitest_suite_add_test(suite, "MESSAGEMODIFIEDNOTIF", "Test dump of a message modification notification", mapitest_mapidump_messagemodified);
 	mapitest_suite_register(mt, suite);
 
 	return MAPITEST_SUCCESS;

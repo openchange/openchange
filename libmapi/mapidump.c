@@ -669,6 +669,106 @@ _PUBLIC_ void mapidump_newmail(struct NewMailNotification *newmail, const char *
 	fflush(0);
 }
 
+_PUBLIC_ void mapidump_tags(enum MAPITAGS *Tags, uint16_t TagCount, const char *sep)
+{
+	uint32_t	i;
+	const char      *proptag;
+	for (i = 0; i < TagCount; i++) {
+		proptag = get_proptag_name(Tags[i]);
+		printf("%s Tag: %s\n", sep?sep:"", proptag);
+		fflush(0);
+	}
+}
+
+_PUBLIC_ void mapidump_foldercreated(struct FolderCreatedNotification *data, const char *sep)
+{
+	if (!data) {
+		return;
+	}
+	printf("%sParent Folder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->ParentFID);
+	fflush(0);
+	printf("%sFolder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->FID);
+	fflush(0);
+	mapidump_tags (data->Tags, data->TagCount, sep);
+}
+
+_PUBLIC_ void mapidump_folderdeleted(struct FolderDeletedNotification *data, const char *sep)
+{
+	if (!data) {
+		return;
+	}
+	printf("%sParent Folder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->ParentFID);
+	fflush(0);
+	printf("%sFolder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->FID);
+	fflush(0);
+}
+
+_PUBLIC_ void mapidump_foldermoved(struct FolderMoveCopyNotification *data, const char *sep)
+{
+	if (!data) {
+		return;
+	}
+	printf("%sParent Folder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->ParentFID);
+	fflush(0);
+	printf("%sFolder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->FID);
+	fflush(0);
+	printf("%sOld Parent Folder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->OldParentFID);
+	fflush(0);
+	printf("%sOld Folder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->OldFID);
+	fflush(0);
+}
+
+_PUBLIC_ void mapidump_foldercopied(struct FolderMoveCopyNotification *data, const char *sep)
+{
+	mapidump_foldermoved(data, sep);
+}
+
+_PUBLIC_ void mapidump_messagedeleted(struct MessageDeletedNotification *data, const char *sep)
+{
+	if (!data) {
+		return;
+	}
+	printf("%sFolder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->FID);
+	fflush(0);
+	printf("%sMessage Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->MID);
+	fflush(0);
+}
+
+_PUBLIC_ void mapidump_messagecreated(struct MessageCreatedNotification *data, const char *sep)
+{
+	if (!data) {
+		return;
+	}
+	printf("%sFolder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->FID);
+	fflush(0);
+	printf("%sMessage Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->MID);
+	fflush(0);
+	mapidump_tags (data->Tags, data->TagCount, sep);
+}
+
+_PUBLIC_ void mapidump_messagemodified(struct MessageModifiedNotification *data, const char *sep)
+{
+	mapidump_messagecreated((struct MessageCreatedNotification *)data, sep);
+}
+
+_PUBLIC_ void mapidump_messagemoved(struct MessageMoveCopyNotification *data, const char *sep)
+{
+	if (!data) {
+		return;
+	}
+	printf("%sFolder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->FID);
+	fflush(0);
+	printf("%sMessage Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->MID);
+	fflush(0);
+	printf("%sOld Parent Folder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->OldFID);
+	fflush(0);
+	printf("%sOld Message Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->OldMID);
+}
+
+_PUBLIC_ void mapidump_messagecopied(struct MessageMoveCopyNotification *data, const char *sep)
+{
+	mapidump_messagemoved(data, sep);
+}
 
 _PUBLIC_ const char *mapidump_freebusy_month(uint32_t month, uint32_t year)
 {

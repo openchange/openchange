@@ -786,3 +786,290 @@ _PUBLIC_ bool mapitest_mapidump_recipients(struct mapitest *mt)
 
 	return true;
 }
+
+/**
+   \details Test dump of a Folder deletion notification
+
+   This function:
+   -# Creates a FolderDeletedNotification structure
+   -# Dumps that structure out using mapidump_folderdeleted()
+   -# Tests mapidump_folderdeleted() with a null argument
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+   
+   \note This currently doesn't check the results are sane, so manual inspection is required
+*/ 
+_PUBLIC_ bool mapitest_mapidump_folderdeleted(struct mapitest *mt)
+{
+	struct FolderDeletedNotification folderdeletednotification;
+
+	folderdeletednotification.ParentFID = 0x9876CAFE432LL;
+	folderdeletednotification.FID = 0x1234ABCDLL;
+	mapidump_folderdeleted(&folderdeletednotification, "[sep]");
+	
+	mapidump_folderdeleted(0, "[sep]");
+
+	return true;
+}
+
+/**
+   \details Test dump of a folder move notification
+
+   This function:
+   -# Creates a FolderMoveCopyNotification structure
+   -# Dumps that structure out using mapidump_foldermoved()
+   -# Tests mapidump_foldermoved() with a null argument
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+   
+   \note This currently doesn't check the results are sane, so manual inspection is required
+*/ 
+_PUBLIC_ bool mapitest_mapidump_foldermoved(struct mapitest *mt)
+{
+	struct FolderMoveCopyNotification foldermovecopynotification;
+
+	foldermovecopynotification.ParentFID = 0x9876CAFE432LL;
+	foldermovecopynotification.FID = 0x1234ABCDLL;
+	foldermovecopynotification.OldParentFID = 0x9876CAFE43201DLL;
+	foldermovecopynotification.OldFID = 0x1234ABCD01DLL;
+	mapidump_foldermoved(&foldermovecopynotification, "[sep]");
+	
+	mapidump_foldermoved(0, "[sep]");
+
+	return true;
+}
+
+/**
+   \details Test dump of a folder copy notification
+
+   This function:
+   -# Creates a FolderMoveCopyNotification structure
+   -# Dumps that structure out using mapidump_foldercopy()
+   -# Tests mapidump_foldercopy() with a null argument
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+   
+   \note This currently doesn't check the results are sane, so manual inspection is required
+*/ 
+_PUBLIC_ bool mapitest_mapidump_foldercopied(struct mapitest *mt)
+{
+	struct FolderMoveCopyNotification foldermovecopynotification;
+
+	foldermovecopynotification.ParentFID = 0x9876CAFE432LL;
+	foldermovecopynotification.FID = 0x1234ABCDLL;
+	foldermovecopynotification.OldParentFID = 0x9876CAFE43201DLL;
+	foldermovecopynotification.OldFID = 0x1234ABCD01DLL;
+	mapidump_foldercopied(&foldermovecopynotification, "[sep]");
+	
+	mapidump_foldercopied(0, "[sep]");
+
+	return true;
+}
+
+/**
+   \details Test dump of a Folder creation notification
+
+   This function:
+   -# Creates a FolderCreatedNotification structure with a null tag set
+   -# Dumps that structure out using mapidump_foldercreated()
+   -# Adds a set of tags to the FolderCreatedNotification
+   -# Dumps the modified FolderCreatedNotification structure using mapidump_foldercreated()
+   -# Tests mapidump_foldercreated() with a null argument
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+   
+   \note This currently doesn't check the results are sane, so manual inspection is required
+*/ 
+_PUBLIC_ bool mapitest_mapidump_foldercreated(struct mapitest *mt)
+{
+	struct FolderCreatedNotification foldercreatednotification;
+
+	foldercreatednotification.ParentFID = 0x9876CAFE432LL;
+	foldercreatednotification.FID = 0x1234ABCDLL;
+	foldercreatednotification.Tags = 0;
+	foldercreatednotification.TagCount = 0;
+	mapidump_foldercreated(&foldercreatednotification, "[sep]");
+
+	foldercreatednotification.TagCount = 3;
+	foldercreatednotification.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
+						      foldercreatednotification.TagCount);
+	foldercreatednotification.Tags[0] = PR_RECIPIENT_CERTIFICATE;
+	foldercreatednotification.Tags[1] = PR_URL_COMP_NAME;
+	foldercreatednotification.Tags[2] = PR_END_ATTACH;
+
+	mapidump_foldercreated(&foldercreatednotification, "[sep]");
+
+	mapidump_foldercreated(0, "[sep]");
+
+	return true;
+}
+
+/**
+   \details Test dump of a Message deletion notification
+
+   This function:
+   -# Creates a MessageDeletedNotification structure
+   -# Dumps that structure out using mapidump_messagedeleted()
+   -# Tests mapidump_messagedeleted() with a null argument
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+   
+   \note This currently doesn't check the results are sane, so manual inspection is required
+*/ 
+_PUBLIC_ bool mapitest_mapidump_messagedeleted(struct mapitest *mt)
+{
+	struct MessageDeletedNotification messagedeletednotification;
+
+	messagedeletednotification.FID = 0x1234ABCDLL;
+	messagedeletednotification.MID = 0x9876FEALL;
+	mapidump_messagedeleted(&messagedeletednotification, "[sep]");
+	
+	mapidump_messagedeleted(0, "[sep]");
+
+	return true;
+}
+
+/**
+   \details Test dump of a Message creation notification
+
+   This function:
+   -# Creates a MessageCreatedNotification structure
+   -# Dumps that structure out using mapidump_messagecreated()
+   -# Adds tags to the MessageCreatedNotification structure
+   -# Dumps the structure again.
+   -# Tests mapidump_messagecreated() with a null argument
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+   
+   \note This currently doesn't check the results are sane, so manual inspection is required
+*/ 
+_PUBLIC_ bool mapitest_mapidump_messagecreated(struct mapitest *mt)
+{
+	struct MessageCreatedNotification messagecreatednotification;
+
+	messagecreatednotification.FID = 0x1234ABCDLL;
+	messagecreatednotification.MID = 0x9876FEALL;
+	messagecreatednotification.Tags = 0;
+	messagecreatednotification.TagCount = 0;
+	mapidump_messagecreated(&messagecreatednotification, "[sep]");
+
+	messagecreatednotification.TagCount = 3;
+	messagecreatednotification.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
+						       messagecreatednotification.TagCount);
+	messagecreatednotification.Tags[0] = PR_DISPLAY_NAME;
+	messagecreatednotification.Tags[1] = PR_DISPLAY_NAME_UNICODE;
+	messagecreatednotification.Tags[2] = PR_COMPANY_NAME;
+
+	mapidump_messagecreated(0, "[sep]");
+
+	return true;
+}
+
+/**
+   \details Test dump of a Message moved notification
+
+   This function:
+   -# Creates a MessageMovedNotification structure
+   -# Dumps that structure out using mapidump_messagemoved()
+   -# Tests mapidump_messagemoved() with a null argument
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+   
+   \note This currently doesn't check the results are sane, so manual inspection is required
+*/ 
+_PUBLIC_ bool mapitest_mapidump_messagemoved(struct mapitest *mt)
+{
+	struct MessageMoveCopyNotification messagemovednotification;
+
+	messagemovednotification.FID = 0x1234ABCDLL;
+	messagemovednotification.MID = 0x9876FEALL;
+	messagemovednotification.OldFID = 0x1234ABCD01dLL;
+	messagemovednotification.OldMID = 0x9876FEA01dLL;
+	mapidump_messagemoved(&messagemovednotification, "[sep]");
+	
+	mapidump_messagemoved(0, "[sep]");
+
+	return true;
+}
+
+
+/**
+   \details Test dump of a Message copied notification
+
+   This function:
+   -# Creates a MessageCopiedNotification structure
+   -# Dumps that structure out using mapidump_messagecopied()
+   -# Tests mapidump_messagecopied() with a null argument
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+   
+   \note This currently doesn't check the results are sane, so manual inspection is required
+*/ 
+_PUBLIC_ bool mapitest_mapidump_messagecopied(struct mapitest *mt)
+{
+	struct MessageMoveCopyNotification messagecopiednotification;
+
+	messagecopiednotification.FID = 0x1234ABCDLL;
+	messagecopiednotification.MID = 0x9876FEALL;
+	messagecopiednotification.OldFID = 0x1234ABCD01dLL;
+	messagecopiednotification.OldMID = 0x9876FEA01dLL;
+	mapidump_messagecopied(&messagecopiednotification, "[sep]");
+	
+	mapidump_messagecopied(0, "[sep]");
+
+	return true;
+}
+
+/**
+   \details Test dump of a Message modification notification
+
+   This function:
+   -# Creates a MessageModifiedNotification structure
+   -# Dumps that structure out using mapidump_messagemodified()
+   -# Adds tags to the MessageModifiedNotification structure
+   -# Dumps the structure again.
+   -# Tests mapidump_messagemodified() with a null argument
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+   
+   \note This currently doesn't check the results are sane, so manual inspection is required
+*/ 
+_PUBLIC_ bool mapitest_mapidump_messagemodified(struct mapitest *mt)
+{
+	struct MessageModifiedNotification messagemodifiednotification;
+
+	messagemodifiednotification.FID = 0x1234ABCDLL;
+	messagemodifiednotification.MID = 0x9876FEALL;
+	messagemodifiednotification.Tags = 0;
+	messagemodifiednotification.TagCount = 0;
+	mapidump_messagemodified(&messagemodifiednotification, "[sep]");
+
+	messagemodifiednotification.TagCount = 3;
+	messagemodifiednotification.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
+						        messagemodifiednotification.TagCount);
+	messagemodifiednotification.Tags[0] = PR_DISPLAY_NAME;
+	messagemodifiednotification.Tags[1] = PR_DISPLAY_NAME_UNICODE;
+	messagemodifiednotification.Tags[2] = PR_COMPANY_NAME;
+
+	mapidump_messagemodified(0, "[sep]");
+
+	return true;
+}

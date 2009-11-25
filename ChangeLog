@@ -1,3 +1,16 @@
+2009-11-25
+    bradh
+	[r1560]
+		Ensure API documentation gets generated for utilities functions.
+		
+		Some undocumented stuff in here to look at later.
+	[r1559]
+		Add additional mapidump functions for notifications
+		
+		This is a patch from Johnny Jacob (Novell), with unit tests and some extra checks by me.
+		
+		Maintains good test coverage for this file.
+
 2009-11-23
     bradh
 	[r1557]

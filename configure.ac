@@ -512,6 +512,8 @@ AC_SUBST(SQLITE_LIBS)
 
 if test x"$SQLITEFOUND" = x"yes"; then
    OC_RULE_ADD(mapistore_sqlite3, MAPISTORE)
+else
+   enable_mapistore_sqlite3="no"
 fi
 
 

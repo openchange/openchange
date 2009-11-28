@@ -1,3 +1,10 @@
+2009-11-27
+    bradh
+	[r1564]
+		Ensure we get output if sqlite3 isn't found at configure time.
+		
+		Now outputs "no" instead of a blank.
+
 2009-11-26
     bradh
 	[r1562]

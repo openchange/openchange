@@ -105,7 +105,7 @@ NTSTATUS torture_exchange_createuser(TALLOC_CTX *mem_ctx, const char *username,
 	/* open LDAP connection */
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);
 	remote_ldb = ldb_wrap_connect(mem_ctx, ev, global_mapi_ctx->lp_ctx, remote_ldb_url, 
-								  NULL, cmdline_credentials, 0, NULL);
+								  NULL, cmdline_credentials, 0);
 	if (!remote_ldb) return NT_STATUS_UNSUCCESSFUL;
 
 	/* search the user's record using the user dom_sid */

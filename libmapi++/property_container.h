@@ -296,7 +296,7 @@ class property_container {
 		{
 			for (uint32_t i = 0; i < m_cn_vals; ++i)
 			{
-				if (m_property_values[i].ulPropTag == property_tag)
+			  if ((uint32_t)m_property_values[i].ulPropTag == property_tag)
 					return get_SPropValue_data(&m_property_values[i]);
 			}
 

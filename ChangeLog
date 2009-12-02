@@ -1,3 +1,16 @@
+2009-12-02
+    jkerihuel
+	[r1568]
+		Fix a cast warning at compilation time for libmapi++
+	[r1567]
+		- Update openchange libraries to 0.9: close trac ticket #165
+		- Propagate pkgconfig solution in trac ticket #94 to other libs
+	[r1566]
+		- Update openchange code to work with samba4-alpha9 release
+		- Apply minor fix to ldb_wrap_connect (number of parameters)
+		- Update mapiproxy code to handle new Samba4 assoc_group implementation properly
+		- Update samba4 version script to match alpha9 and related git commit
+
 2009-11-27
     bradh
 	[r1564]

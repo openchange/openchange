@@ -35,4 +35,4 @@ OPENCHANGE_VERSION_RELEASE_NICKNAME=Cochrane
 # e.g. OPENCHANGE_VERSION_RELEASE_VERSION=0.8.2             #
 #  ->  "0.8.2 (Nicky Nickname)"                             #
 #############################################################
-OPENCHANGE_VERSION_RELEASE_NUMBER=
+OPENCHANGE_VERSION_RELEASE_NUMBER=0.9

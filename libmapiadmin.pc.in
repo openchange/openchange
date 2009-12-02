@@ -8,6 +8,8 @@ datadir=@datadir@
 Name: MAPI admin library
 Description: Library supporting MAPI administration actions
 Version: @PACKAGE_VERSION@
-Libs: @LIBS@
-Cflags: @CFLAGS@
-Requires: talloc dcerpc ndr samba-hostconfig ldb
+Libs: -L${libdir} -lmapiadmin
+Libs.private: @LIBS@
+Cflags: -I${includedir}
+Requires: libmapi dcerpc_samr
+

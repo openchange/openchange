@@ -15,7 +15,6 @@ cn: Microsoft Exchange
 distinguishedName: CN=Microsoft Exchange,CN=Services,${CONFIGDN}
 showInAdvancedViewOnly: TRUE
 adminDisplayName: Microsoft Exchange
-heuristics: 6
 name: Microsoft Exchange
 objectCategory: CN=ms-Exch-Configuration-Container,${SCHEMADN}
 addressBookRoots: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
@@ -39,11 +38,6 @@ adminDisplayName: {335A1087-5131-4D45-BE3E-3C6C7F76F5EC}
 name: ${FIRSTORG}
 legacyExchangeDN: /o=${FIRSTORG}
 objectCategory: CN=ms-Exch-Organization-Container,${SCHEMADN}
-msExchRoutingEnabled: FALSE
-msExchMixedMode: TRUE
-msExchAdminGroupsEnabled: FALSE
-msExchAdmins: S-1-5-21-1226241484-1028146065-4277480997-500,10
-
 
 
 #
@@ -108,7 +102,6 @@ serialNumber: Version 6.5 (Build 6944.4)
 distinguishedName: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
 showInAdvancedViewOnly: TRUE
 adminDisplayName: ${NETBIOSNAME}
-heuristics: 1576964
 messageTrackingEnabled: FALSE
 networkAddress: ncacn_vns_spp:${NETBIOSNAME}
 networkAddress: netbios:${NETBIOSNAME}
@@ -226,7 +219,7 @@ msExchDatabaseCreated: TRUE
 
 
 #
-# All Address Lists Containers
+# Address Lists Containers
 # description: Address book root container
 #
 dn: CN=Address Lists Container,${FIRSTORGDN}
@@ -235,6 +228,7 @@ objectClass: container
 objectClass: msExchContainer
 cn: Address Lists Container
 distinguishedName: CN=Address Lists Container,${FIRSTORGDN}
+instanceType: 4
 displayName: Address Lists Container
 showInAdvancedViewOnly: TRUE
 name: Address Lists Container

@@ -168,32 +168,14 @@ def install_schemas(setup_path, names, lp, creds):
 
     db.transaction_commit()
 
-    # Step 3. Add ADSC classes to the schema
-    db = SamDB(url=lp.get("sam database"), session_info=session_info,
+    # Step 3. Extend existing classes and attributes
+    db = SamDB(url=lp.get("sam database"), session_info=session_info, 
                   credentials=creds, lp=lp)
 
     db.transaction_start()
 
     try:
-        print "[+] Step 3: Add missing ADSC classes to Samba schema"
-        setup_add_ldif(db, setup_path("AD/oc_provision_schema_ADSC.ldif"), {
-                "SCHEMADN": names.schemadn
-                })
-    except:
-        db.transaction_cancel()
-        raise
-
-    db.transaction_commit()
-
-
-    # Step 4. Extend existing classes and attributes
-    db = SamDB(url=lp.get("sam database"), session_info=session_info,
-                  credentials=creds, lp=lp)
-
-    db.transaction_start()
-
-    try:
-        print "[+] Step 4: Extend existing Samba classes and attributes"
+        print "[+] Step 3: Extend existing Samba classes and attributes"
         setup_modify_ldif(db, setup_path("AD/oc_provision_schema_modify.ldif"), {
                 "SCHEMADN": names.schemadn
                 })
@@ -205,13 +187,13 @@ def install_schemas(setup_path, names, lp, creds):
 
 
     # Step 4. Add configuration objects
-    db = SamDB(url=lp.get("sam database"), session_info=system_session(),
+    db = SamDB(url=lp.get("sam database"), session_info=session_info, 
                   credentials=creds, lp=lp)
 
     db.transaction_start()
 
     try:
-        print "[+] Step 5: Exchange Samba with Exchange configuration objects"
+        print "[+] Step 4: Exchange Samba with Exchange configuration objects"
         setup_add_ldif(db, setup_path("AD/oc_provision_configuration.ldif"), {
                 "FIRSTORG": names.firstorg,
                 "FIRSTORGDN": names.firstorgdn,

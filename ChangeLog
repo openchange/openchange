@@ -1,3 +1,11 @@
+2009-12-08
+    jkerihuel
+	[r1570]
+		- Fix OpenChange server provisioning (exchange classes and attribute only)
+		- Remove deprecated provisioning steps
+		- OpenChange user provisioning is still broken at this point, but will be
+		fixed in further revisions.
+
 2009-12-02
     jkerihuel
 	[r1568]

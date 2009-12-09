@@ -1,16 +1,19 @@
-# Some of the classes Exchange needs to extend do not exist in
-# Samba4. These classes are added in oc_provision_schema_ADSC.ldif
 #
-#	Classes Added:
-#  	  	* Address-Book-Container
-#		* Contact
-#		* Display-Template
-#		* DSA
-#		* Group-Of-Names
-#
-# ms-Exch-Configuraion-Container class: see oc_provision_schema.ldif
+# ms-Exch-Configuration-Container class: see oc_provision_schema.ldif
 #
 
+dn: CN=Address-Book-Container,${SCHEMADN}
+changetype: modify
+add: mayContain
+mayContain: msExchMinAdminVersion
+mayContain: msExchAddressListOU
+mayContain: msExchSearchScope
+mayContain: msExchSearchBase
+mayContain: msExchEnableInternalEvaluator
+mayContain: msExchPurportedSearchUI
+add: possSuperiors
+possSuperiors: msExchConfigurationContainer
+possSuperiors: container
 
 #
 # Computer class
@@ -46,10 +49,10 @@ mayContain: type
 dn: CN=Container,${SCHEMADN}
 changetype: modify
 add: auxiliaryClass
-add: possSuperiors
-add: mayContain
 auxiliaryClass: msExchBaseClass
+add: possSuperiors
 possSuperiors: protocolCfgSharedServer
+add: mayContain
 mayContain: containerInfo
 mayContain: msExchPolicyList
 mayContain: msExchTemplateRDNs
@@ -77,10 +80,10 @@ mayContain: msExchPolicyList
 dn: CN=Group,${SCHEMADN}
 changetype: modify
 add: auxiliaryClass
-add: mayContain
 auxiliaryClass: msExchCustomAttributes
 auxiliaryClass: msExchBaseClass
 auxiliaryClass: msExchIMRecipient
+add: mayContain
 mayContain: hideDLMembership
 mayContain: oOFReplyToOriginator
 mayContain: reportToOriginator
@@ -193,8 +196,8 @@ mayContain: employeeNumber
 dn: CN=Organizational-Unit,${SCHEMADN}
 changetype: modify
 add: auxiliaryClass
-add: mayContain
 auxiliaryClass: msExchBaseClass
+add: mayContain
 mayContain: msExchPolicyList
 
 
@@ -243,8 +246,6 @@ mayContain: msExchMCUHostsSitesBL
 dn: CN=User,${SCHEMADN}
 changetype: modify
 add: auxiliaryClass
-add: possSuperiors
-add: mayContain
 auxiliaryClass: msExchCustomAttributes
 auxiliaryClass: msExchMailStorage
 auxiliaryClass: msExchBaseClass
@@ -252,7 +253,9 @@ auxiliaryClass: msExchMultiMediaUser
 auxiliaryClass: msExchCertificateInformation
 auxiliaryClass: msExchIMRecipient
 auxiliaryClass: msExchOmaUser
+add: possSuperiors
 possSuperiors: msExchSystemObjectsContainer
+add: mayContain
 mayContain: msExchQueryBaseDN
 mayContain: msExchControllingZone
 mayContain: msExchResourceGUID
@@ -377,8 +380,8 @@ isMemberOfPartialAttributeSet: TRUE
 dn: CN=Garbage-Coll-Period,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
-replace: searchFlags
 isMemberOfPartialAttributeSet: TRUE
+replace: searchFlags
 searchFlags: 16
 
 
@@ -573,8 +576,8 @@ isMemberOfPartialAttributeSet: TRUE
 dn: CN=Proxy-Addresses,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
-replace: searchFlags
 isMemberOfPartialAttributeSet: TRUE
+replace: searchFlags
 searchFlags: 13
 
 
@@ -617,10 +620,10 @@ isMemberOfPartialAttributeSet: TRUE
 dn: CN=Text-Encoded-Or-Address,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
-replace: searchFlags
-replace: attributeSecurityGuid
 isMemberOfPartialAttributeSet: TRUE
+replace: searchFlags
 searchFlags: 1
+replace: attributeSecurityGuid
 attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
 
 
@@ -635,8 +638,8 @@ attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
 dn: CN=Title,${SCHEMADN}
 changetype: modify
 add: isMemberOfPartialAttributeSet
-replace: searchFlags
 isMemberOfPartialAttributeSet: TRUE
+replace: searchFlags
 searchFlags: 16
 
 

@@ -1,3 +1,10 @@
+2009-12-09
+    jkerihuel
+	[r1573]
+		Fix openchange user provisioning scripts
+	[r1572]
+		Forgot to commit this LDIF modifications for openchange provisioning
+
 2009-12-08
     jkerihuel
 	[r1570]

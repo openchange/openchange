@@ -346,7 +346,7 @@ def newuser(lp, creds, username=None):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    db = Ldb(url=os.path.join(lp.get("private dir"), "users.ldb"), 
+    db = Ldb(url=os.path.join(lp.get("private dir"), lp.get("sam database")), 
              session_info=system_session(), credentials=creds, lp=lp)
 
     user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
@@ -355,20 +355,20 @@ def newuser(lp, creds, username=None):
 dn: %s
 changetype: modify
 add: displayName
-add: auxiliaryClass
-add: mailNickName
-add: homeMDB
-add: legacyExchangeDN
-add: proxyAddresses
-replace: msExchUserAccountControl
 displayName: %s
+add: auxiliaryClass
 auxiliaryClass: msExchBaseClass
+add: mailNickName
 mailNickname: %s
+add: homeMDB
 homeMDB: CN=Mailbox Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=%s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%s
+add: legacyExchangeDN
 legacyExchangeDN: /o=%s/ou=First Administrative Group/cn=Recipients/cn=%s
+add: proxyAddresses
 proxyAddresses: smtp:postmaster@%s
 proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%s
 proxyAddresses: SMTP:%s@%s
+replace: msExchUserAccountControl
 msExchUserAccountControl: 0
 """ % (user_dn, username, username, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.firstorg, username, names.dnsdomain, username, username, names.dnsdomain)
     db.modify_ldif(extended_user)
@@ -387,8 +387,8 @@ def accountcontrol(lp, creds, username=None, value=0):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    db = Ldb(url=os.path.join(lp.get("private dir"), "users.ldb"), session_info=system_session(),
-                  credentials=creds, lp=lp)
+    db = Ldb(url=os.path.join(lp.get("private dir"), lp.get("sam database")), 
+             session_info=system_session(), credentials=creds, lp=lp)
 
     user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
     extended_user = """

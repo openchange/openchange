@@ -78,60 +78,38 @@ static int emsmdbp_mapi_handles_destructor(void *data)
 _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 					      void *ldb_ctx)
 {
+	TALLOC_CTX		*mem_ctx;
 	struct emsmdbp_context	*emsmdbp_ctx;
 	struct tevent_context	*ev;
-	char			*configuration = NULL;
-	char			*users = NULL;
 	int			ret;
 
 	/* Sanity Checks */
 	if (!lp_ctx) return NULL;
 
-	emsmdbp_ctx = talloc_zero(lp_ctx, struct emsmdbp_context);
+	mem_ctx  = talloc_named(NULL, 0, "emsmdbp_init");
+
+	emsmdbp_ctx = talloc_zero(mem_ctx, struct emsmdbp_context);
 	if (!emsmdbp_ctx) {
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	ev = tevent_context_init(talloc_autofree_context());
+	emsmdbp_ctx->mem_ctx = mem_ctx;
+
+	ev = tevent_context_init(mem_ctx);
 	if (!ev) {
-		talloc_free(emsmdbp_ctx);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
 	/* Save a pointer to the loadparm context */
 	emsmdbp_ctx->lp_ctx = lp_ctx;
 
-	/* Return an opaque context pointer on the configuration database */
-	configuration = private_path(emsmdbp_ctx, lp_ctx, "configuration.ldb");
-	emsmdbp_ctx->conf_ctx = ldb_init(emsmdbp_ctx, ev);
-	if (!emsmdbp_ctx->conf_ctx) {
-		talloc_free(configuration);
-		talloc_free(emsmdbp_ctx);
-		return NULL;
-	}
-
-	ret = ldb_connect(emsmdbp_ctx->conf_ctx, configuration, LDB_FLG_RDONLY, NULL);
-	talloc_free(configuration);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: Connection to \"configuration.ldb\" failed\n", __FUNCTION__, __LINE__));
-		talloc_free(emsmdbp_ctx);
-		return NULL;
-	}
-
-	/* Return an opaque pointer on the users database */
-	users = private_path(emsmdbp_ctx, lp_ctx, "users.ldb");
-	emsmdbp_ctx->users_ctx = ldb_init(emsmdbp_ctx, ev);
-	if (!emsmdbp_ctx->users_ctx) {
-		talloc_free(users);
-		talloc_free(emsmdbp_ctx);
-		return NULL;
-	}
-
-	ret = ldb_connect(emsmdbp_ctx->users_ctx, users, LDB_FLG_RDONLY, NULL);
-	talloc_free(users);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: Connection to \"users.ldb\" failed\n", __FUNCTION__, __LINE__));
-		talloc_free(emsmdbp_ctx);
+	/* return an opaque context pointer on samDB database */
+	emsmdbp_ctx->samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx));
+	if (!emsmdbp_ctx->samdb_ctx) {
+		talloc_free(mem_ctx);
+		DEBUG(0, ("[%s:%d]: Connection to \"sam.ldb\" failed\n", __FUNCTION__, __LINE__));
 		return NULL;
 	}
 
@@ -139,20 +117,20 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	emsmdbp_ctx->oc_ctx = ldb_ctx;
 
 	/* Initialize the mapistore context */		
-	emsmdbp_ctx->mstore_ctx = mapistore_init(emsmdbp_ctx, NULL);
+	emsmdbp_ctx->mstore_ctx = mapistore_init(mem_ctx, NULL);
 	if (!emsmdbp_ctx->mstore_ctx) {
 		DEBUG(0, ("[%s:%d]: MAPISTORE initialization failed\n", __FUNCTION__, __LINE__));
 
-		talloc_free(emsmdbp_ctx);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	talloc_set_destructor((void *)emsmdbp_ctx->mstore_ctx, (int (*)(void *))emsmdbp_mapi_store_destructor);
 
 	/* Initialize MAPI handles context */
-	emsmdbp_ctx->handles_ctx = mapi_handles_init(emsmdbp_ctx);
+	emsmdbp_ctx->handles_ctx = mapi_handles_init(mem_ctx);
 	if (!emsmdbp_ctx->handles_ctx) {
 		DEBUG(0, ("[%s:%d]: MAPI handles context initialization failed\n", __FUNCTION__, __LINE__));
-		talloc_free(emsmdbp_ctx);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	talloc_set_destructor((void *)emsmdbp_ctx->handles_ctx, (int (*)(void *))emsmdbp_mapi_handles_destructor);
@@ -213,8 +191,8 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 
 	username = dce_call->context->conn->auth_state.session_info->server_info->account_name;
 
-	ret = ldb_search(emsmdbp_ctx->users_ctx, emsmdbp_ctx, &res,
-			 ldb_get_default_basedn(emsmdbp_ctx->users_ctx),
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			 LDB_SCOPE_SUBTREE, recipient_attrs, "CN=%s", username);
 
 	/* If the search failed */
@@ -264,8 +242,8 @@ _PUBLIC_ bool emsmdbp_verify_userdn(struct dcesrv_call_state *dce_call,
 	/* Sanity Checks */
 	if (!legacyExchangeDN) return false;
 
-	ret = ldb_search(emsmdbp_ctx->users_ctx, emsmdbp_ctx, &res,
-			 ldb_get_default_basedn(emsmdbp_ctx->users_ctx),
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
 			 legacyExchangeDN);
 

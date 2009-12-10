@@ -42,8 +42,7 @@
 
 struct emsabp_context {
 	struct loadparm_context	*lp_ctx;
-	void			*conf_ctx;
-	void			*users_ctx;
+	void			*samdb_ctx;
 	void			*ldb_ctx;
 	TDB_CONTEXT		*tdb_ctx;
 	TDB_CONTEXT		*ttdb_ctx;

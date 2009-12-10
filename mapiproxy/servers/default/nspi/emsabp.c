@@ -44,8 +44,6 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	TALLOC_CTX		*mem_ctx;
 	struct emsabp_context	*emsabp_ctx;
 	struct tevent_context	*ev;
-	char			*configuration = NULL;
-	char			*users = NULL;
 	int			ret;
 
 	/* Sanity checks */
@@ -70,37 +68,11 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	/* Save a pointer to the loadparm context */
 	emsabp_ctx->lp_ctx = lp_ctx;
 
-	/* Return an opaque context pointer on the configuration database */
-	configuration = private_path(mem_ctx, lp_ctx, "configuration.ldb");
-	emsabp_ctx->conf_ctx = ldb_init(mem_ctx, ev);
-	if (!emsabp_ctx->conf_ctx) {
-		talloc_free(configuration);
+	/* Return an opaque context pointer on samDB database */
+	emsabp_ctx->samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx));
+	if (!emsabp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	ret = ldb_connect(emsabp_ctx->conf_ctx, configuration, LDB_FLG_RDONLY, NULL);
-	talloc_free(configuration);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: Connection to \"configuration.ldb\" failed\n", __FUNCTION__, __LINE__));
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	/* Return an opaque context pointer to the users database */
-	users = private_path(mem_ctx, lp_ctx, "users.ldb");
-	emsabp_ctx->users_ctx = ldb_init(mem_ctx, ev);
-	if (!emsabp_ctx->users_ctx) {
-		talloc_free(users);
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	ret = ldb_connect(emsabp_ctx->users_ctx, users, LDB_FLG_RDONLY, NULL);
-	talloc_free(users);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: Connection to \"users.ldb\" failed\n", __FUNCTION__, __LINE__));
-		talloc_free(mem_ctx);
+		DEBUG(0, ("[%s:%d]: Connection to \"sam.ldb\" failed\n", __FUNCTION__, __LINE__));
 		return NULL;
 	}
 
@@ -156,8 +128,8 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 
 	username = dce_call->context->conn->auth_state.session_info->server_info->account_name;
 
-	ret = ldb_search(emsabp_ctx->users_ctx, emsabp_ctx->mem_ctx, &res, 
-			 ldb_get_default_basedn(emsabp_ctx->users_ctx),
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+			 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
 			 scope, recipient_attrs, "CN=%s", username);
 
 	/* If the search failed */
@@ -227,8 +199,8 @@ _PUBLIC_ struct GUID *emsabp_get_server_GUID(struct emsabp_context *emsabp_ctx)
 	if (!netbiosname) return NULL;
 
 	/* Step 1. Find the Exchange Organization */
-	ret = ldb_search(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, &res,
-			 ldb_get_default_basedn(emsabp_ctx->conf_ctx),
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+			 ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
 			 scope, recipient_attrs, "(objectClass=msExchOrganizationContainer)");
 
 	if (ret != LDB_SUCCESS || !res->count) {
@@ -243,13 +215,13 @@ _PUBLIC_ struct GUID *emsabp_get_server_GUID(struct emsabp_context *emsabp_ctx)
 	/* Step 2. Find the OpenChange Server object */
 	dn = talloc_asprintf(emsabp_ctx->mem_ctx, "CN=Servers,CN=First Administrative Group,CN=Administrative Groups,%s",
 			     firstorgdn);
-	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->conf_ctx, dn);
+	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->samdb_ctx, dn);
 	talloc_free(dn);
 	if (!ldb_dn_validate(ldb_dn)) {
 		return NULL;
 	}
 
-	ret = ldb_search(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, 
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, 
 			 scope, recipient_attrs, "(cn=%s)", netbiosname);
 	if (ret != LDB_SUCCESS || !res->count) {
 		return NULL;
@@ -603,12 +575,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 	int			i;
 
 	/* Step 0. Try to Retrieve the dn associated to the MId first from temp TDB (users) */
-	ldb_ctx = emsabp_ctx->users_ctx;
+	ldb_ctx = emsabp_ctx->samdb_ctx;
 	retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->ttdb_ctx, MId, &dn);
 	if (retval) {
 		/* If it fails try to retrieve it from the on-disk TDB database (conf) */
 		retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->tdb_ctx, MId, &dn);
-		ldb_ctx = emsabp_ctx->conf_ctx;
 	}
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
 
@@ -856,20 +827,20 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	aRow_idx++;
 
 	/* Step 2. Retrieve the object pointed by addressBookRoots attribute: 'All Address Lists' */
-	ret = ldb_search(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, &res,
-			 ldb_get_default_basedn(emsabp_ctx->conf_ctx),
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+			 ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
 			 scope, recipient_attrs, "(addressBookRoots=*)");
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_CORRUPT_STORE, aRow);
 
 	addressBookRoots = ldb_msg_find_attr_as_string(res->msgs[0], "addressBookRoots", NULL);
 	OPENCHANGE_RETVAL_IF(!addressBookRoots, MAPI_E_CORRUPT_STORE, aRow);
 
-	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->conf_ctx, addressBookRoots);
+	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->samdb_ctx, addressBookRoots);
 	talloc_free(res);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, aRow);
 
 	scope = LDB_SCOPE_BASE;
-	ret = ldb_search(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, 
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, 
 			 scope, recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, aRow);
 
@@ -883,8 +854,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	res = talloc_zero(mem_ctx, struct ldb_result);
 	OPENCHANGE_RETVAL_IF(!res, MAPI_E_NOT_ENOUGH_RESOURCES, aRow);
 
-	controls = ldb_parse_control_strings(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, control_strings);
-	ret = ldb_build_search_req(&req, emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx,
+	controls = ldb_parse_control_strings(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, control_strings);
+	ret = ldb_build_search_req(&req, emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx,
 				   ldb_dn, LDB_SCOPE_SUBTREE, "(purportedSearch=*)",
 				   recipient_attrs, controls, res, ldb_search_default_callback, NULL);
 
@@ -893,7 +864,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_CORRUPT_STORE, aRow);
 	}
 
-	ret = ldb_request(emsabp_ctx->conf_ctx, req);
+	ret = ldb_request(emsabp_ctx->samdb_ctx, req);
 	if (ret == LDB_SUCCESS) {
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
@@ -1005,8 +976,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 			res_prop->lpProp->value.lpszA :
 			res_prop->lpProp->value.lpszW;
 
-		ret = ldb_search(emsabp_ctx->users_ctx, emsabp_ctx->mem_ctx, &res,
-				 ldb_get_default_basedn(emsabp_ctx->users_ctx),
+		ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
 				 LDB_SCOPE_SUBTREE, recipient_attrs,
 				 "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
 				 recipient);
@@ -1064,10 +1035,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_dn(struct emsabp_context *emsabp_ctx, con
 	OPENCHANGE_RETVAL_IF(!dn, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!ldb_res, MAPI_E_INVALID_PARAMETER, NULL);
 
-	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->conf_ctx, dn);
+	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->samdb_ctx, dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, NULL);
 
-	ret = ldb_search(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
 			 LDB_SCOPE_BASE, recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
 
@@ -1099,8 +1070,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_legacyExchangeDN(struct emsabp_context *e
 	OPENCHANGE_RETVAL_IF(!legacyDN, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!ldb_res, MAPI_E_INVALID_PARAMETER, NULL);
 
-	ret = ldb_search(emsabp_ctx->conf_ctx, emsabp_ctx->mem_ctx, &res,
-			 ldb_get_default_basedn(emsabp_ctx->conf_ctx), 
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+			 ldb_get_config_basedn(emsabp_ctx->samdb_ctx), 
 			 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
 			 legacyDN);
 

@@ -147,8 +147,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 	object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, request->u.mapi_Logon.EssDN);
 	object->object.mailbox->szUserDN = talloc_strdup(object->object.mailbox, emsmdbp_ctx->szUserDN);
 
-	ret = ldb_search(emsmdbp_ctx->users_ctx, mem_ctx, &res,
-			 ldb_get_default_basedn(emsmdbp_ctx->users_ctx),
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
+			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s", 
 			 object->object.mailbox->owner_EssDN);
 

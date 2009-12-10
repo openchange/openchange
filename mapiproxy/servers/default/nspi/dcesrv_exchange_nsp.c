@@ -70,7 +70,7 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 		r->out.result = MAPI_E_LOGON_FAILED;
 		return MAPI_E_LOGON_FAILED;		
 	}
-	
+
 	/* Step 1. Initialize the emsabp context */
 	emsabp_ctx = emsabp_init(dce_call->conn->dce_ctx->lp_ctx, emsabp_tdb_ctx);
 	if (!emsabp_ctx) {

@@ -46,10 +46,10 @@ struct emsmdbp_context {
 	char				*szDisplayName;
 	struct loadparm_context		*lp_ctx;
 	void				*oc_ctx;
-	void				*conf_ctx;
-	void				*users_ctx;
+	void				*samdb_ctx;
 	struct mapistore_context	*mstore_ctx;
 	struct mapi_handles_context	*handles_ctx;
+	TALLOC_CTX			*mem_ctx;
 };
 
 

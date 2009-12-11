@@ -272,6 +272,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_EphemeralEntryID_to_Binary_r(TALLOC_CTX *mem_ctx
    \param permEntryID pointer to the PermanentEntryID returned by the
    function
 
+   \note This function only covers DT_CONTAINER AddressBook
+   objects. It should be extended in the future to support more
+   containers.
+
    \return MAPI_E_SUCCESS on success, otherwise
    MAPI_E_NOT_ENOUGH_RESOURCES or MAPI_E_CORRUPT_STORE
  */
@@ -279,8 +283,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsa
 						     uint32_t DisplayType, struct ldb_message *msg, 
 						     struct PermanentEntryID *permEntryID)
 {
-	struct GUID	*guid = (struct GUID *) NULL;
-	const char	*guid_str;
+	struct GUID		*guid = (struct GUID *) NULL;
+	const struct ldb_val	*ldb_value = NULL;
+	const char		*dn_str;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!permEntryID, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
@@ -296,11 +301,12 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsa
 
 	if (!msg) {
 		permEntryID->dn = talloc_strdup(emsabp_ctx->mem_ctx, "/");
-	} else {
-		guid_str = ldb_msg_find_attr_as_string(msg, "objectGUID", NULL);
-		OPENCHANGE_RETVAL_IF(!guid_str, MAPI_E_CORRUPT_STORE, NULL);
+	} else if (DisplayType == DT_CONTAINER) {
+		ldb_value = ldb_msg_find_ldb_val(msg, "objectGUID");
+		OPENCHANGE_RETVAL_IF(!ldb_value, MAPI_E_CORRUPT_STORE, NULL);
+
 		guid = talloc_zero(emsabp_ctx->mem_ctx, struct GUID);
-		GUID_from_string(guid_str, guid);
+		GUID_from_data_blob(ldb_value, guid);
 		permEntryID->dn = talloc_asprintf(emsabp_ctx->mem_ctx, EMSABP_DN, 
 						  guid->time_low, guid->time_mid,
 						  guid->time_hi_and_version,
@@ -310,6 +316,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsa
 						  guid->node[2], guid->node[3],
 						  guid->node[4], guid->node[5]);
 		talloc_free(guid);
+
+	}  else {
+		dn_str = ldb_msg_find_attr_as_string(msg, "legacyExchangeDN", NULL);
+		OPENCHANGE_RETVAL_IF(!dn_str, MAPI_E_CORRUPT_STORE, NULL);
+		permEntryID->dn = talloc_strdup(emsabp_ctx->mem_ctx, dn_str);
 	}
 
 	return MAPI_E_SUCCESS;

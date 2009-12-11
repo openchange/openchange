@@ -394,6 +394,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	const char			*attribute;
 	const char			*ref_attribute;
 	const char			*ldb_string = NULL;
+	char				*tmp_str;
 	struct Binary_r			*bin;
 	struct StringArray_r		*mvszA;
 	struct EphemeralEntryID		ephEntryID;
@@ -421,6 +422,18 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		bin = talloc(mem_ctx, struct Binary_r);
 		retval = emsabp_set_EphemeralEntryID(emsabp_ctx, DT_MAILUSER, MId, &ephEntryID);
 		retval = emsabp_EphemeralEntryID_to_Binary_r(mem_ctx, &ephEntryID, bin);
+		return bin;
+	case PR_SEARCH_KEY:
+		/* retrieve email address attribute, i.e. legacyExchangeDN */
+		ldb_string = ldb_msg_find_attr_as_string(msg, emsabp_property_get_attribute(PR_EMAIL_ADDRESS), NULL);
+		if (!ldb_string) return NULL;
+		tmp_str = talloc_strdup_upper(mem_ctx, ldb_string);
+		if (!tmp_str) return NULL;
+		/* make binary for PR_SEARCH_KEY */
+		bin = talloc(mem_ctx, struct Binary_r);
+		bin->lpb = (uint8_t *)talloc_asprintf(mem_ctx, "EX:%s", tmp_str);
+		bin->cb = strlen((const char *)bin->lpb) + 1;
+		talloc_free(tmp_str);
 		return bin;
 	case PR_INSTANCE_KEY:
 		bin = talloc_zero(mem_ctx, struct Binary_r);

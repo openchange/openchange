@@ -344,7 +344,7 @@ section 2 for further information.
 Under your root account, provision the server from the Samba4 source
 directory:
 
-# cd samba4/source
+# cd samba4/source4
 # ./setup/provision --domain=OPENCHANGE --realm=OPENCHANGE.LOCAL \
 		    --adminpass=secret --server-role='domain controller'
 
@@ -379,6 +379,15 @@ enable/disable these users at any time by running:
 # ./setup/openchange_newuser --disable <username>
 
 
+You now need to add the dispatcher database for user mailboxes.
+
+# ./setup/openchange_provision --openchangedb
+
+You can now create the mailbox for the user in the dispatcher database
+
+# ./setup/openchange_newuser --mailbox <username>
+
+
 [0x5c] Setting smb.conf
 =======================
 
@@ -388,6 +397,14 @@ being part of mapiproxy, detailed and up to date information can be
 found at the following address:
 
 http://mapiproxy.openchange.org
+
+Roughly, you need to add the following entries to the [globals] section:
+
+### Configuration required by OpenChange server ###
+dcerpc endpoint servers = epmapper, mapiproxy
+dcerpc_mapiproxy:server = true
+dcerpc_mapiproxy:interfaces = exchange_emsmdb, exchange_nsp, exchange_ds_rfr
+### Configuration required by OpenChange server ###
 
 
 [0x5d] Running the Address Book Provider (EMSABP)

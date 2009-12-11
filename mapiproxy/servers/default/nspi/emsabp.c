@@ -379,6 +379,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_PermanentEntryID_to_Binary_r(TALLOC_CTX *mem_ctx
    \param msg pointer to the LDB message
    \param ulPropTag the property tag to lookup
    \param MId Minimal Entry ID associated to the current message
+   \param dwFlags bit flags specifying whether or not the server must
+   return the values of the property PidTagEntryId in the Ephemeral
+   or Permanent Entry ID format
+
 
    \note This implementation is at the moment limited to MAILUSER,
    which means we arbitrary set PR_OBJECT_TYPE and PR_DISPLAY_TYPE
@@ -387,7 +391,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_PermanentEntryID_to_Binary_r(TALLOC_CTX *mem_ctx
    \return Valid generic pointer on success, otherwise NULL
  */
 _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-			    struct ldb_message *msg, uint32_t ulPropTag, uint32_t MId)
+			    struct ldb_message *msg, uint32_t ulPropTag, uint32_t MId,
+			    uint32_t dwFlags)
 {
 	enum MAPISTATUS			retval;
 	void				*data = (void *) NULL;
@@ -398,6 +403,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	struct Binary_r			*bin;
 	struct StringArray_r		*mvszA;
 	struct EphemeralEntryID		ephEntryID;
+	struct PermanentEntryID         permEntryID;
 	struct ldb_message		*msg2 = NULL;
 	struct ldb_message_element	*ldb_element;
 	int				ret;
@@ -420,8 +426,13 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		return data;
 	case PR_ENTRYID:
 		bin = talloc(mem_ctx, struct Binary_r);
-		retval = emsabp_set_EphemeralEntryID(emsabp_ctx, DT_MAILUSER, MId, &ephEntryID);
-		retval = emsabp_EphemeralEntryID_to_Binary_r(mem_ctx, &ephEntryID, bin);
+		if (dwFlags & fEphID) {
+			retval = emsabp_set_EphemeralEntryID(emsabp_ctx, DT_MAILUSER, MId, &ephEntryID);
+			retval = emsabp_EphemeralEntryID_to_Binary_r(mem_ctx, &ephEntryID, bin);
+		} else {
+			retval = emsabp_set_PermanentEntryID(emsabp_ctx, DT_MAILUSER, msg, &permEntryID);
+			retval = emsabp_PermanentEntryID_to_Binary_r(mem_ctx, &permEntryID, bin);
+		}
 		return bin;
 	case PR_SEARCH_KEY:
 		/* retrieve email address attribute, i.e. legacyExchangeDN */
@@ -512,6 +523,9 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
    \param aRow pointer to the SRow structure where results will be
    stored
    \param MId MId to fetch properties for
+   \param dwFlags bit flags specifying whether or not the server must
+   return the values of the property PidTagEntryId in the Ephemeral
+   or Permanent Entry ID format
    \param pPropTags pointer to the property tags array
 
    \note We currently assume records are users.ldb
@@ -519,7 +533,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-					    struct SRow *aRow, uint32_t MId, 
+					    struct SRow *aRow, uint32_t MId, uint32_t dwFlags,
 					    struct SPropTagArray *pPropTags)
 {
 	enum MAPISTATUS		retval;
@@ -557,7 +571,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 
 	for (i = 0; i < aRow->cValues; i++) {
 		ulPropTag = pPropTags->aulPropTag[i];
-		data = emsabp_query(mem_ctx, emsabp_ctx, res->msgs[0], ulPropTag, MId);
+		data = emsabp_query(mem_ctx, emsabp_ctx, res->msgs[0], ulPropTag, MId, dwFlags);
 		if (!data) {
 			ulPropTag &= 0xFFFF0000;
 			ulPropTag += PT_ERROR;

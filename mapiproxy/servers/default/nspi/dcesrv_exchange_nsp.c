@@ -263,7 +263,7 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	r->out.ppRows[0]->cRows = r->in.Count;
 	r->out.ppRows[0]->aRow = talloc_array(mem_ctx, struct SRow, r->in.Count);
 	for (i = 0; i < r->in.Count; i++) {
-		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]), r->in.lpETable[i], pPropTags);
+		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]), r->in.lpETable[i], r->in.dwFlags, pPropTags);
 		if (retval != MAPI_E_SUCCESS) {
 			goto failure;
 		}
@@ -351,7 +351,7 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 
 	for (i = 0; i < ppOutMIds->cValues; i++) {
 		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]), 
-					    ppOutMIds->aulPropTag[i], r->in.pPropTags);
+					    ppOutMIds->aulPropTag[i], fEphID, r->in.pPropTags);
 		if (retval) goto failure;
 	}
 
@@ -519,7 +519,7 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	r->out.ppRows[0]->cValues = r->in.pPropTags->cValues;
 	r->out.ppRows[0]->lpProps = talloc_array(r->out.ppRows[0], struct SPropValue, r->in.pPropTags->cValues);
 
-	retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, r->out.ppRows[0], MId, r->in.pPropTags);
+	retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, r->out.ppRows[0], MId, r->in.dwFlags, r->in.pPropTags);
 	if (retval != MAPI_E_SUCCESS) {
 		talloc_free(r->out.ppRows);
 		r->out.result = MAPI_W_ERRORS_RETURNED;

@@ -109,7 +109,7 @@ __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);
 struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *);
-
+const struct GUID *samdb_ntds_objectGUID(struct ldb_context *);
 
 /* definitions from emsabp.c */
 struct emsabp_context	*emsabp_init(struct loadparm_context *, TDB_CONTEXT *);
@@ -117,7 +117,6 @@ bool			emsabp_destructor(void *);
 bool			emsabp_verify_user(struct dcesrv_call_state *, struct emsabp_context *);
 bool			emsabp_verify_codepage(struct emsabp_context *, uint32_t);
 bool			emsabp_verify_lcid(struct emsabp_context *, uint32_t);
-struct GUID		*emsabp_get_server_GUID(struct emsabp_context *);
 enum MAPISTATUS		emsabp_set_EphemeralEntryID(struct emsabp_context *, uint32_t, uint32_t, struct EphemeralEntryID *);
 enum MAPISTATUS		emsabp_set_PermanentEntryID(struct emsabp_context *, uint32_t, struct ldb_message *, struct PermanentEntryID *);
 enum MAPISTATUS		emsabp_EphemeralEntryID_to_Binary_r(TALLOC_CTX *, struct EphemeralEntryID *, struct Binary_r *);

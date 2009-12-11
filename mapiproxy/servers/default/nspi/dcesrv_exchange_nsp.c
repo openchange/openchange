@@ -105,7 +105,7 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 4. Retrieve OpenChange server GUID */
-	guid = emsabp_get_server_GUID(emsabp_ctx);
+	guid = (struct GUID *) samdb_ntds_objectGUID(emsabp_ctx->samdb_ctx);
 	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_FAILONEPROVIDER, emsabp_ctx);
 
 	/* Step 5. Fill NspiBind reply */

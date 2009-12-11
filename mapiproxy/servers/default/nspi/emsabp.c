@@ -172,73 +172,6 @@ _PUBLIC_ bool emsabp_verify_codepage(struct emsabp_context *emsabp_ctx,
 
 
 /**
-   \details Retrieve the NSPI server GUID from the server object in
-   the configuration LDB database
-
-   \param emsabp_ctx pointer to the EMSABP context
-
-   \return An allocated GUID structure on success, otherwise NULL
- */
-_PUBLIC_ struct GUID *emsabp_get_server_GUID(struct emsabp_context *emsabp_ctx)
-{
-	int			ret;
-	struct loadparm_context	*lp_ctx;
-	struct GUID		*guid = (struct GUID *) NULL;
-	const char		*netbiosname = NULL;
-	const char		*guid_str = NULL;
-	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
-	struct ldb_result	*res = NULL;
-	char			*dn = NULL;
-	struct ldb_dn		*ldb_dn = NULL;
-	const char * const	recipient_attrs[] = { "*", NULL };
-	const char		*firstorgdn = NULL;
-
-	lp_ctx = emsabp_ctx->lp_ctx;
-
-	netbiosname = lp_netbios_name(lp_ctx);
-	if (!netbiosname) return NULL;
-
-	/* Step 1. Find the Exchange Organization */
-	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
-			 ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
-			 scope, recipient_attrs, "(objectClass=msExchOrganizationContainer)");
-
-	if (ret != LDB_SUCCESS || !res->count) {
-		return NULL;
-	}
-
-	firstorgdn = ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL);
-	if (!firstorgdn) {
-		return NULL;
-	}
-
-	/* Step 2. Find the OpenChange Server object */
-	dn = talloc_asprintf(emsabp_ctx->mem_ctx, "CN=Servers,CN=First Administrative Group,CN=Administrative Groups,%s",
-			     firstorgdn);
-	ldb_dn = ldb_dn_new(emsabp_ctx->mem_ctx, emsabp_ctx->samdb_ctx, dn);
-	talloc_free(dn);
-	if (!ldb_dn_validate(ldb_dn)) {
-		return NULL;
-	}
-
-	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, 
-			 scope, recipient_attrs, "(cn=%s)", netbiosname);
-	if (ret != LDB_SUCCESS || !res->count) {
-		return NULL;
-	}
-
-	/* Step 3. Retrieve the objectGUID GUID */
-	guid_str = ldb_msg_find_attr_as_string(res->msgs[0], "objectGUID", NULL);
-	if (!guid_str) return NULL;
-
-	guid = talloc_zero(emsabp_ctx->mem_ctx, struct GUID);
-	GUID_from_string(guid_str, guid);
-	
-	return guid;
-}
-
-
-/**
    \details Build an EphemeralEntryID structure
 
    \param emsabp_ctx pointer to the EMSABP context
@@ -259,7 +192,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_EphemeralEntryID(struct emsabp_context *emsa
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!ephEntryID, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
-	guid = emsabp_get_server_GUID(emsabp_ctx);
+	guid = (struct GUID *) samdb_ntds_objectGUID(emsabp_ctx->samdb_ctx);
 	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_CORRUPT_STORE, NULL);
 
 	ephEntryID->ID_type = 0x87;

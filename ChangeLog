@@ -1,3 +1,73 @@
+2009-12-11
+    jkerihuel
+	[r1584]
+		Path from Kamen Mazdrashki <kamen.mazdrashki@postpath.com>:
+		
+		Propagate dwFlags for incoming call to get EntryIDs correctly.
+		
+		Actually we need to propagate dwFlags so that emsabp_query()
+		function to be able to determine whether EphemeralEntryID
+		or PermanentEntryID is requested to be built.
+	[r1583]
+		Patch from Kamen Mazdrashki <kamen.mazdrashki@postpath.com>:
+		
+		Implement PR_SEARCH_KEY attribute getter
+	[r1582]
+		Patch from Kamen Mazdrashki <kamen.mazdrashki@postpath.com>
+		
+		Add PR_ADDRTYPE_UNICODE and PR_EMS_AB_PROXY_ADDRESSES_UNICODE getters.
+	[r1581]
+		Patch from Kamen Mazdrashki <kamen.mazdrashki@postpath.com>:
+		
+		- Extend NspiDNToMId() to search in Configuration and Domain
+		  partitions.
+		
+		- NspiDNToMId() has been extended to cache returned data properly,
+		  i.e. DNs from Configuration partition are cached in ttb_ctx db, DNs
+		  from Domain partition are cached in in-memory db ttdb_ctx.
+	[r1580]
+		Patch from Kamen Mazdrashki <kamen.mazdrashki@postpath.com>:
+		
+		emsabp_set_PermanentEntryID() implements MS specification more
+		closely.  For reference: [MS-NSPI] and [MS-OXOABK]
+	[r1579]
+		- Replace emsabp_get_server_GUID with samdb_ntds_objectGUID Samba4
+		  function.
+		- Change the way we initially fetched server GUID
+		
+		Credits to Kamen Mazdrashki <kamen.mazdrashki@postpath.com> for
+		initial patch and associated research:
+		
+		It turns out MS implementation for NSPI reads the guid from: "CN=NTDS
+		Settings,CN=<NETBIOS_NAME>,CN=Servers,CN=Default-First-Site-Name,CN=Sites,<CONFIG_DN>" entry.
+	[r1578]
+		Fix samdb_connect warning.
+		Add function prototype to nsp,emsmdb header files.
+		Change samdb_ctx from void * to ldb_context *
+    bradh
+	[r1577]
+		Update docs to match those in mapiproxy doxygen docs.
+	[r1576]
+		Roll to the latest Samba4 version.
+		
+		This should have no noticeable difference over the
+		Samba4 alpha9 release, but its nice to use the latest
+		version, and it might make a difference on the server
+		side.
+2009-12-10
+    jkerihuel
+	[r1575]
+		Fix OpenChange server code and access to Samba4 databases.
+		Starting with samba4-alpha9, there is no more configuration.ldb or users.ldb.
+		All information can be accessed through a single access to SamDB and configuration records
+		accessed through ldb_get_config_basedn.
+		
+		The following implementation has been tested and is working with:
+		- mapiprofile profile creation
+		- openchangeclient --mailbox
+		- Outlook 2003 account creation
+		- Outlook 2003 mailbox opening
+
 2009-12-09
     jkerihuel
 	[r1573]

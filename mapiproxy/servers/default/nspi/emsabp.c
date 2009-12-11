@@ -406,6 +406,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	/* Step 1. Fill attributes not in AD but created using EMSABP databases */
 	switch (ulPropTag) {
 	case PR_ADDRTYPE:
+	case PR_ADDRTYPE_UNICODE:
 		data = (void *) talloc_strdup(mem_ctx, EMSABP_ADDRTYPE);
 		return data;
 	case PR_OBJECT_TYPE:
@@ -463,6 +464,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		data = talloc_strdup(mem_ctx, ldb_string);
 		break;
 	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
 		ldb_element = ldb_msg_find_element(msg2, attribute);
 		if (!ldb_element) return NULL;
 

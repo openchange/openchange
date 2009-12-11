@@ -42,7 +42,7 @@
 
 struct emsabp_context {
 	struct loadparm_context	*lp_ctx;
-	void			*samdb_ctx;
+	struct ldb_context	*samdb_ctx;
 	void			*ldb_ctx;
 	TDB_CONTEXT		*tdb_ctx;
 	TDB_CONTEXT		*ttdb_ctx;
@@ -108,6 +108,8 @@ struct EphemeralEntryID {
 __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);
+struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *);
+
 
 /* definitions from emsabp.c */
 struct emsabp_context	*emsabp_init(struct loadparm_context *, TDB_CONTEXT *);

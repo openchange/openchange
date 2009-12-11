@@ -46,7 +46,7 @@ struct emsmdbp_context {
 	char				*szDisplayName;
 	struct loadparm_context		*lp_ctx;
 	void				*oc_ctx;
-	void				*samdb_ctx;
+	struct ldb_context		*samdb_ctx;
 	struct mapistore_context	*mstore_ctx;
 	struct mapi_handles_context	*handles_ctx;
 	TALLOC_CTX			*mem_ctx;
@@ -128,6 +128,7 @@ struct emsmdbp_object {
 __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);
+struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *);
 
 /* definitions from emsmdbp.c */
 struct emsmdbp_context	*emsmdbp_init(struct loadparm_context *, void *);

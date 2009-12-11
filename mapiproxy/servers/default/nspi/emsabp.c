@@ -1000,11 +1000,14 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_dn(struct emsabp_context *emsabp_ctx, con
    \param legacyDN pointer to the legacyDN attribute value to lookup
    \param ldb_res pointer on pointer to the LDB message returned by 
    the function
+   \param pbUseConfPartition pointer on boolean specifying whether the
+   legacyExchangeDN was retrieved from the Configuration parition or
+   not
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS emsabp_search_legacyExchangeDN(struct emsabp_context *emsabp_ctx, const char *legacyDN,
-							struct ldb_message **ldb_res)
+							struct ldb_message **ldb_res, bool *pbUseConfPartition)
 {
 	const char * const	recipient_attrs[] = { "*", NULL };
 	int			ret;
@@ -1013,12 +1016,21 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_legacyExchangeDN(struct emsabp_context *e
 	/* Sanity Checks */
 	OPENCHANGE_RETVAL_IF(!legacyDN, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!ldb_res, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!pbUseConfPartition, MAPI_E_INVALID_PARAMETER, NULL);
 
+	*pbUseConfPartition = true;
 	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
 			 ldb_get_config_basedn(emsabp_ctx->samdb_ctx), 
 			 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
 			 legacyDN);
 
+	if (ret != LDB_SUCCESS || res->count == 0) {
+		*pbUseConfPartition = false;
+		ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
+				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+				 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
+				 legacyDN);
+	}
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, NULL);
 
 	*ldb_res = res->msgs[0];

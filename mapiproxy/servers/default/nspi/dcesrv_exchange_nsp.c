@@ -402,6 +402,7 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 	uint32_t		i;
 	uint32_t		MId;
 	const char		*dn;
+	bool			pbUseConfPartition;
 
 	DEBUG(3, ("exchange_nsp: NspiDNToMId (0x7)\n"));
 
@@ -424,15 +425,16 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 
 	for (i = 0; i < r->in.pNames->Count; i++) {
 		/* Step 1. Check if the input legacyDN exists */
-		retval = emsabp_search_legacyExchangeDN(emsabp_ctx, r->in.pNames->Strings[i], &msg);
+	  retval = emsabp_search_legacyExchangeDN(emsabp_ctx, r->in.pNames->Strings[i], &msg, &pbUseConfPartition);
 		if (retval != MAPI_E_SUCCESS) {
 			r->out.ppMIds[0]->aulPropTag[i] = 0;
 		} else {
+			TDB_CONTEXT *tdb_ctx = (pbUseConfPartition ? emsabp_ctx->tdb_ctx : emsabp_ctx->ttdb_ctx);
 			dn = ldb_msg_find_attr_as_string(msg, "distinguishedName", NULL);
-			retval = emsabp_tdb_fetch_MId(emsabp_ctx->tdb_ctx, dn, &MId);
+			retval = emsabp_tdb_fetch_MId(tdb_ctx, dn, &MId);
 			if (retval) {
-				retval = emsabp_tdb_insert(emsabp_ctx->tdb_ctx, dn);
-				retval = emsabp_tdb_fetch_MId(emsabp_ctx->tdb_ctx, dn, &MId);
+				retval = emsabp_tdb_insert(tdb_ctx, dn);
+				retval = emsabp_tdb_fetch_MId(tdb_ctx, dn, &MId);
 			}
 			r->out.ppMIds[0]->aulPropTag[i] = MId;
 		}

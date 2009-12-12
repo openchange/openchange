@@ -1870,7 +1870,7 @@ static enum MAPISTATUS folder_lookup(TALLOC_CTX *mem_ctx,
 				mapi_object_release(&obj_htable);
 				mapi_object_release(&obj_folder);
 				return MAPI_E_SUCCESS;
-			} else {
+			} else if (fid) {
 				retval = folder_lookup(mem_ctx, sfid, &obj_folder, *fid, obj_ret);
 				if (retval == MAPI_E_SUCCESS) {
 					mapi_object_release(&obj_htable);

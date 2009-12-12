@@ -1,3 +1,75 @@
+2009-12-12
+    jkerihuel
+	[r1594]
+		Patch from Bryan Lu <brian.lu@sun.com>:
+		
+		Create symbol link only on Solaris
+		
+		This closes ticket #221 and makes it possible to compile openchange
+		on Solaris.
+	[r1593]
+		Temporary bug fix in emsabp.c - If restrictions are NULL in
+		emsabp_search, return MAPI_E_INVALID_OBJECT. This prevents from using
+		invalid res pointer leading in segmentation fault.
+		
+		Initial fix proposed by Erik Hovland <erik@hovland.org>
+	[r1592]
+		Patch from Erik Hovland <erik@hovland.org>:
+		
+		fid might be null. Check it before dereferencing in the
+		ocpf_folder_lookup() call. Similar behavior fixed in openchangeclient
+		folder_lookup() function.
+	[r1591]
+		Patch from Erik Hovland <erik@hovland.org>:
+		
+		NotificationData 'could' be null. Check it before handing it to
+		notification-callback(). This is important because eventually
+		NotificationData will be dereferenced in the code path.
+	[r1590]
+		Patch from Kamen Mazdrashki <kamen.mazdrashki@postpath.com>:
+		
+		Fix MAPI Warning error codes
+	[r1589]
+		Patch from Kamen Mazdrashki <kamen.mazdrashki@postpath.com>:
+		
+		bugfix: Bugs in abp_tdb layer fixed.
+		
+		emsabp_tdb_traverse_MId() returns 'false' (i.e. not found) in most of
+		the cases.
+	[r1588]
+		Patch from Kamen Mazdrashki <kamen.mazdrashki@postpath.com>:
+		
+		Implement NspiQueryRows() address list enumeration
+		
+		We can now run openchangeclient --userlist on OpenChange NSPI server
+		and Outlook 2003 is able to query GAL.
+		
+		Note: the initial patch was proposing:
+		"(&%s(showInAddressBook=*))", purportedSearch
+		
+		I replaced it with "%s", purportedSearch only since we don't have yet
+		any showInAddressBook attribute in AD.
+	[r1587]
+		Patch from Kamen Mazdrashki <kamen.mazdrashki@postpath.com>:
+		
+		- Add server side implementation for NspiResolveNamesW
+		- Refactor and split emsabp_verify_user in two functions
+		
+		A new function emsabp_get_account_info() implemented to fetch info
+		about given user name.  emsabp_verify_user() uses the above function
+		check if authenticated account_name is valid mail account and if so,
+		account_name is cached in emsabp context for future use
+	[r1586]
+		Patch from Kamen Mazdrashki <kamen.mazdrashki@postpath.com>:
+		
+		NspiGetProps() reimplemented to match [MS-NSPI] specification more
+		closely.
+		
+		As a side-effect, emsabp_fetch_attrs() was altered to return
+		MAPI_E_INVALID_BOOKMARK in case requested MId is not found.  This way
+		the function returns more meaningful error codes - if requested MId is
+		not found this surely means InvalidBookmark rather than CorruptStore
+
 2009-12-11
     jkerihuel
 	[r1584]

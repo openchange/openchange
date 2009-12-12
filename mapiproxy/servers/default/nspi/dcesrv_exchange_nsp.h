@@ -41,6 +41,7 @@
 #endif
 
 struct emsabp_context {
+	const char		*account_name;
 	struct loadparm_context	*lp_ctx;
 	struct ldb_context	*samdb_ctx;
 	void			*ldb_ctx;
@@ -114,6 +115,7 @@ const struct GUID *samdb_ntds_objectGUID(struct ldb_context *);
 /* definitions from emsabp.c */
 struct emsabp_context	*emsabp_init(struct loadparm_context *, TDB_CONTEXT *);
 bool			emsabp_destructor(void *);
+enum MAPISTATUS		emsabp_get_account_info(TALLOC_CTX *, struct emsabp_context *, const char *, struct ldb_message **);
 bool			emsabp_verify_user(struct dcesrv_call_state *, struct emsabp_context *);
 bool			emsabp_verify_codepage(struct emsabp_context *, uint32_t);
 bool			emsabp_verify_lcid(struct emsabp_context *, uint32_t);
@@ -124,12 +126,16 @@ enum MAPISTATUS		emsabp_PermanentEntryID_to_Binary_r(TALLOC_CTX *, struct Perman
 enum MAPISTATUS		emsabp_get_HierarchyTable(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct SRowSet **);
 enum MAPISTATUS		emsabp_get_CreationTemplatesTable(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct SRowSet **);
 void			*emsabp_query(TALLOC_CTX *, struct emsabp_context *, struct ldb_message *, uint32_t, uint32_t, uint32_t);
+enum MAPISTATUS		emsabp_fetch_attrs_from_msg(TALLOC_CTX *, struct emsabp_context *, struct SRow *, struct ldb_message *, uint32_t, uint32_t, struct SPropTagArray *);
 enum MAPISTATUS		emsabp_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struct SRow *, uint32_t, uint32_t, struct SPropTagArray *);
 enum MAPISTATUS		emsabp_table_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struct SRow *, uint32_t, struct PermanentEntryID *, 
 						 struct PermanentEntryID *, struct ldb_message *, bool);
 enum MAPISTATUS		emsabp_search(TALLOC_CTX *, struct emsabp_context *, struct SPropTagArray *, struct Restriction_r *, struct STAT *, uint32_t);
 enum MAPISTATUS		emsabp_search_dn(struct emsabp_context *, const char *, struct ldb_message **);
 enum MAPISTATUS		emsabp_search_legacyExchangeDN(struct emsabp_context *, const char *, struct ldb_message **, bool *);
+enum MAPISTATUS		emsabp_ab_container_by_id(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct ldb_message **);
+enum MAPISTATUS		emsabp_ab_container_enum(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct ldb_result **);
+
 
 /* definitions from emsabp_tdb.c */
 TDB_CONTEXT		*emsabp_tdb_init(TALLOC_CTX *, struct loadparm_context *);

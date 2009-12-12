@@ -106,6 +106,54 @@ _PUBLIC_ bool emsabp_destructor(void *data)
 	return false;
 }
 
+/**
+   \details Get AD record for Mail-enabled account
+
+   \param dce_call pointer to the session context
+   \param emsabp_ctx pointer to the EMSABP context
+   \param username User common name
+   \param ldb_msg Pointer on pointer to ldb_message to return result to
+
+   \return MAPI_E_SUCCESS on success, otherwise
+   MAPI_E_NOT_ENOUGH_RESOURCES, MAPI_E_NOT_FOUND or
+   MAPI_E_CORRUPT_STORE
+ */
+_PUBLIC_ enum MAPISTATUS emsabp_get_account_info(TALLOC_CTX *mem_ctx,
+						 struct emsabp_context *emsabp_ctx,
+						 const char *username,
+						 struct ldb_message **ldb_msg)
+{
+	int			ret;
+	int			msExchUserAccountControl;
+	struct ldb_result	*res = NULL;
+	const char * const	recipient_attrs[] = { "*", NULL };
+
+	ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &res,
+			 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+			 LDB_SCOPE_SUBTREE, recipient_attrs, "CN=%s",
+			 username);
+	OPENCHANGE_RETVAL_IF((ret != LDB_SUCCESS || !res->count), MAPI_E_NOT_FOUND, NULL);
+
+	/* Check if more than one record was found */
+	OPENCHANGE_RETVAL_IF(res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
+
+	msExchUserAccountControl = ldb_msg_find_attr_as_int(res->msgs[0], "msExchUserAccountControl", -1);
+	switch (msExchUserAccountControl) {
+	case -1: /* msExchUserAccountControl attribute is not found */
+		return MAPI_E_NOT_FOUND;
+	case 0:
+		*ldb_msg = res->msgs[0];
+		return MAPI_E_SUCCESS;
+	case 2: /* Account is disabled */
+		*ldb_msg = res->msgs[0];
+		return MAPI_E_ACCOUNT_DISABLED;
+	default: /* Unknown value for msExchUserAccountControl attribute */
+		return MAPI_E_CORRUPT_STORE;
+	}
+	
+	/* We should never get here anyway */
+	return MAPI_E_CORRUPT_STORE;
+}
 
 /**
    \details Check if the authenticated user belongs to the Exchange
@@ -120,35 +168,23 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 				 struct emsabp_context *emsabp_ctx)
 {
 	int			ret;
+	TALLOC_CTX		*mem_ctx;
 	const char		*username = NULL;
-	int			msExchUserAccountControl;
-	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
-	struct ldb_result	*res = NULL;
-	const char * const	recipient_attrs[] = { "msExchUserAccountControl", NULL };
+	struct ldb_message	*ldb_msg = NULL;
 
 	username = dce_call->context->conn->auth_state.session_info->server_info->account_name;
 
-	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
-			 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-			 scope, recipient_attrs, "CN=%s", username);
+	mem_ctx = talloc_named(emsabp_ctx->mem_ctx, 0, __FUNCTION__);
 
-	/* If the search failed */
-	if (ret != LDB_SUCCESS || !res->count) {
-		return false;
+	ret = emsabp_get_account_info(mem_ctx, emsabp_ctx, username, &ldb_msg);
+	
+	/* cache account_name upon success */
+	if (MAPI_STATUS_IS_OK(ret)) {
+		emsabp_ctx->account_name = talloc_strdup(emsabp_ctx->mem_ctx, username);
 	}
 
-	/* If msExchUserAccountControl attribute is not found */
-	if (!res->msgs[0]->num_elements) {
-		return false;
-	}
-
-	/* If the attribute exists check its value */
-	msExchUserAccountControl = ldb_msg_find_attr_as_int(res->msgs[0], "msExchUserAccountControl", 2);
-	if (msExchUserAccountControl == 2) {
-		return false;
-	}
-
-	return true;
+	talloc_free(mem_ctx);
+	return MAPI_STATUS_IS_OK(ret);
 }
 
 
@@ -511,6 +547,66 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 
 
 /**
+   \details Build the SRow array entry for the specified ldb_message.
+
+   \param mem_ctx pointer to the memory context
+   \param emsabp_ctx pointer to the EMSABP context
+   \param aRow pointer to the SRow structure where results will be stored
+   \param ldb_msg ldb_message record to fetch results from
+   \param MId MId of the entry to fetch (may be 0)
+   \param dwFlags input call flags (default to 0)
+   \param pPropTags pointer to the property tags array
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
+						     struct emsabp_context *emsabp_ctx,
+						     struct SRow *aRow,
+						     struct ldb_message *ldb_msg,
+						     uint32_t MId, uint32_t dwFlags,
+						     struct SPropTagArray *pPropTags)
+{
+	enum MAPISTATUS	retval;
+	const char	*dn;
+	void		*data;
+	uint32_t	ulPropTag;
+	int		i;
+
+	/* Step 0. Create MId if necessary */
+	if (MId == 0) {
+		dn = ldb_msg_find_attr_as_string(ldb_msg, "distinguishedName", NULL);
+		OPENCHANGE_RETVAL_IF(!dn, MAPI_E_CORRUPT_DATA, NULL);
+		retval = emsabp_tdb_fetch_MId(emsabp_ctx->ttdb_ctx, dn, &MId);
+		if (retval) {
+			retval = emsabp_tdb_insert(emsabp_ctx->ttdb_ctx, dn);
+			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
+
+			retval = emsabp_tdb_fetch_MId(emsabp_ctx->ttdb_ctx, dn, &MId);
+			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
+		}
+	}
+
+	/* Step 1. Retrieve property values and build aRow */
+	aRow->ulAdrEntryPad = 0x0;
+	aRow->cValues = pPropTags->cValues;
+	aRow->lpProps = talloc_array(mem_ctx, struct SPropValue, aRow->cValues);
+
+	for (i = 0; i < aRow->cValues; i++) {
+		ulPropTag = pPropTags->aulPropTag[i];
+		data = emsabp_query(mem_ctx, emsabp_ctx, ldb_msg, ulPropTag, MId, dwFlags);
+		if (!data) {
+			ulPropTag = (ulPropTag & 0xFFFF0000) | PT_ERROR;
+		}
+		
+		aRow->lpProps[i].ulPropTag = ulPropTag;
+		aRow->lpProps[i].dwAlignPad = 0x0;
+		set_SPropValue(&(aRow->lpProps[i]), data);
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details Builds the SRow array entry for the specified MId.
 
    The function retrieves the DN associated to the specified MId
@@ -537,7 +633,6 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 					    struct SPropTagArray *pPropTags)
 {
 	enum MAPISTATUS		retval;
-	void			*ldb_ctx;
 	char			*dn;
 	const char * const	recipient_attrs[] = { "*", NULL };
 	struct ldb_result	*res = NULL;
@@ -548,19 +643,18 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 	int			i;
 
 	/* Step 0. Try to Retrieve the dn associated to the MId first from temp TDB (users) */
-	ldb_ctx = emsabp_ctx->samdb_ctx;
 	retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->ttdb_ctx, MId, &dn);
-	if (retval) {
+	if (!MAPI_STATUS_IS_OK(retval)) {
 		/* If it fails try to retrieve it from the on-disk TDB database (conf) */
 		retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->tdb_ctx, MId, &dn);
 	}
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_INVALID_BOOKMARK, NULL);
 
 	/* Step 1. Fetch the LDB record */
-	ldb_dn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
+	ldb_dn = ldb_dn_new(mem_ctx, emsabp_ctx->samdb_ctx, dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, NULL);
 
-	ret = ldb_search(ldb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, LDB_SCOPE_BASE,
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, LDB_SCOPE_BASE,
 			 recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
 
@@ -1065,4 +1159,91 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_legacyExchangeDN(struct emsabp_context *e
 	*ldb_res = res->msgs[0];
 
 	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Fetch Address Book container record for given ContainerID
+
+   \param mem_ctx memory context for allocation
+   \param emsabp_ctx pointer to the EMSABP context
+   \param ContainerID id of the container to fetch
+   \param ldb_msg pointer on pointer to the LDB message returned by
+   the function
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_ERROR
+ */
+_PUBLIC_ enum MAPISTATUS emsabp_ab_container_by_id(TALLOC_CTX *mem_ctx,
+						   struct emsabp_context *emsabp_ctx,
+						   uint32_t ContainerID,
+						   struct ldb_message **ldb_msg)
+{
+	int			ret;
+	char			*dn;
+	const char * const	recipient_attrs[] = { "globalAddressList", NULL };
+	struct ldb_result	*res = NULL;
+
+	if (!ContainerID) {
+		/* if GAL is requested */
+		ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &res,
+				 ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
+				 LDB_SCOPE_SUBTREE, recipient_attrs, "(globalAddressList=*)");
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_CORRUPT_STORE, NULL);
+
+		/* TODO: If more than one GAL, determine the most appropriate */
+
+		dn = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "globalAddressList", NULL);
+		OPENCHANGE_RETVAL_IF(!dn, MAPI_E_CORRUPT_STORE, NULL);
+	} else {
+		/* fetch a container we have already recorded */
+		ret = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->tdb_ctx, ContainerID, &dn);
+		OPENCHANGE_RETVAL_IF(!MAPI_STATUS_IS_OK(ret), MAPI_E_INVALID_BOOKMARK, NULL);
+	}
+
+	ret = emsabp_search_dn(emsabp_ctx, dn, ldb_msg);
+	OPENCHANGE_RETVAL_IF(!MAPI_STATUS_IS_OK(ret), MAPI_E_CORRUPT_STORE, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Enumerate AB container entries
+
+   \param mem_ctx pointer to the memory context
+   \param emsabp_ctx pointer to the EMSABP context
+   \param ContainerID id of the container to fetch
+   \param ldb_res pointer on pointer to the LDB result returned by the
+   function
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS emsabp_ab_container_enum(TALLOC_CTX *mem_ctx,
+						  struct emsabp_context *emsabp_ctx,
+						  uint32_t ContainerID,
+						  struct ldb_result **ldb_res)
+{
+	enum MAPISTATUS		retval;
+	int			ldb_ret;
+	struct ldb_message	*ldb_msg_ab;
+	const char		*purportedSearch;
+	const char * const	recipient_attrs[] = { "*", NULL };
+
+	/* Fetch AB container record */
+	retval = emsabp_ab_container_by_id(mem_ctx, emsabp_ctx, ContainerID, &ldb_msg_ab);
+	OPENCHANGE_RETVAL_IF(!MAPI_STATUS_IS_OK(retval), MAPI_E_INVALID_BOOKMARK, NULL);
+
+	purportedSearch = ldb_msg_find_attr_as_string(ldb_msg_ab, "purportedSearch", NULL);
+	if (!purportedSearch) {
+		*ldb_res = talloc_zero(mem_ctx, struct ldb_result);
+		return MAPI_E_SUCCESS;
+	}
+	OPENCHANGE_RETVAL_IF(!purportedSearch, MAPI_E_INVALID_BOOKMARK, NULL);
+
+	/* Search AD with purportedSearch filter */
+	ldb_ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, ldb_res,
+			     ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+			     LDB_SCOPE_SUBTREE, recipient_attrs, "%s",
+			     purportedSearch);
+	return ldb_ret;
 }

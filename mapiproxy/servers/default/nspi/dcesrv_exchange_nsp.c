@@ -800,8 +800,102 @@ static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_ca
 						TALLOC_CTX *mem_ctx,
 						struct NspiResolveNamesW *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiResolveNamesW (0x14) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
+	struct dcesrv_handle	*h;
+	struct emsabp_context	*emsabp_ctx;
+	struct ldb_message	*ldb_msg_ab;
+	struct SPropTagArray	*pPropTags;
+	const char		*purportedSearch;
+	struct SPropTagArray	*pMIds = NULL;
+	struct SRowSet		*pRows = NULL;
+	struct WStringsArray_r	*paWStr;
+	uint32_t		i;
+	int			ret;
+	const char * const	recipient_attrs[] = { "*", NULL };
+	const char * const	search_attr[] = { "mailNickName", "mail", "name", 
+						  "displayName", "givenName", "sAMAccountName" };
+
+	DEBUG(3, ("exchange_nsp: NspiResolveNamesW (0x14)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
+	OPENCHANGE_RETVAL_IF(!h, MAPI_E_LOGON_FAILED, NULL);
+	emsabp_ctx = (struct emsabp_context *) h->data;
+
+	/* Step 1. Prepare in/out data */
+	retval = emsabp_ab_container_by_id(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &ldb_msg_ab);
+	OPENCHANGE_RETVAL_IF(!MAPI_STATUS_IS_OK(retval), MAPI_E_INVALID_BOOKMARK, NULL);
+
+	purportedSearch = ldb_msg_find_attr_as_string(ldb_msg_ab, "purportedSearch", NULL);
+	OPENCHANGE_RETVAL_IF(!purportedSearch, MAPI_E_INVALID_BOOKMARK, NULL);
+
+	/* Set default list of property tags if none were provided in input */
+	if (!r->in.pPropTags) {
+		pPropTags = set_SPropTagArray(mem_ctx, 0x7,
+					      PR_EMS_AB_CONTAINERID,
+					      PR_OBJECT_TYPE,
+					      PR_DISPLAY_TYPE,
+					      PR_DISPLAY_NAME,
+					      PR_OFFICE_TELEPHONE_NUMBER,
+					      PR_COMPANY_NAME,
+					      PR_OFFICE_LOCATION);
+	} else {
+		pPropTags = r->in.pPropTags;
+	}
+
+	/* Allocate output MIds */
+	paWStr = r->in.paWStr;
+	pMIds = talloc(mem_ctx, struct SPropTagArray);
+	pMIds->cValues = paWStr->Count;
+	pMIds->aulPropTag = talloc_array(mem_ctx, uint32_t, pMIds->cValues);
+	pRows = talloc(mem_ctx, struct SRowSet);
+	pRows->cRows = 0;
+	pRows->aRow = talloc_array(mem_ctx, struct SRow, pMIds->cValues);
+
+	/* Step 2. Fetch AB container records */
+	for (i = 0; i < paWStr->Count; i++) {
+		struct ldb_result	*ldb_res;
+		char			*filter = talloc_strdup(mem_ctx, "");
+		int			j;
+
+		/* Build search filter */
+		for (j = 0; j < ARRAY_SIZE(search_attr); j++) {
+			char	*attr_filter = talloc_asprintf(mem_ctx, "(%s=%s)", search_attr[j], paWStr->Strings[i]);
+			filter = talloc_strdup_append(filter, attr_filter);
+			talloc_free(attr_filter);
+		}
+
+		/* Search AD */
+		filter = talloc_asprintf(mem_ctx, "(&%s(|%s))", purportedSearch, filter);
+		ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &ldb_res,
+				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+				 LDB_SCOPE_SUBTREE, recipient_attrs, "%s", filter);
+
+		/* Determine name resolutation status and fetch object upon success */
+		if (ret != LDB_SUCCESS || ldb_res->count == 0) {
+			pMIds->aulPropTag[i] = MAPI_UNRESOLVED;
+		} else if (ldb_res->count > 1) {
+			pMIds->aulPropTag[i] = MAPI_AMBIGUOUS;
+		} else {
+			pMIds->aulPropTag[i] = MAPI_RESOLVED;
+			emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &pRows->aRow[pRows->cRows],
+						    ldb_res->msgs[0], 0, 0, pPropTags);
+			pRows->cRows++;
+		}
+	}
+
+	*r->out.ppMIds = pMIds;
+	if (pRows->cRows) {
+		*r->out.ppRows = pRows;
+	}
+
+	r->out.result = retval;
+	return retval;
 }
 
 

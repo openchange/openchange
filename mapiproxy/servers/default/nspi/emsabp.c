@@ -1054,6 +1054,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		}
 	} else {
 		/* FIXME Check restriction == NULL */
+		return MAPI_E_INVALID_OBJECT;
 	}
 
 	if (limit && res->count > limit) {

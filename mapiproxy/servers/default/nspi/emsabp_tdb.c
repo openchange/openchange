@@ -30,6 +30,14 @@
 #include <util/debug.h>
 
 /**
+   \details Structure to be used for MId traversal within TDB
+ */
+struct traverse_MId {
+	uint32_t	MId;
+	bool		found;
+};
+
+/**
    \details Open EMSABP TDB database
 
    \param mem_ctx pointer to the memory context
@@ -217,16 +225,20 @@ static int emsabp_tdb_traverse_MId(TDB_CONTEXT *tdb_ctx,
 				   TDB_DATA key, TDB_DATA dbuf, 
 				   void *state)
 {
-	TALLOC_CTX	*mem_ctx;
-	uint32_t	value;
-	char		*value_str = NULL;
-	uint32_t	*MId = (uint32_t *)state;
+	TALLOC_CTX		*mem_ctx;
+	uint32_t		value;
+	char			*value_str = NULL;
+	struct traverse_MId	*mid_trav = (struct traverse_MId *) state;
 
 	mem_ctx = talloc_named(NULL, 0, "emsabp_tdb_traverse_MId");
 	value_str = talloc_strndup(mem_ctx, (char *)dbuf.dptr, dbuf.dsize);
 	value = strtol((const char *)value_str, NULL, 16);
 	talloc_free(mem_ctx);
-	if (value == *MId) return 1;
+
+	if (value == mid_trav->MId) {
+		mid_trav->found = true;
+		return 1;
+	}
 
 	return 0;
 }
@@ -244,11 +256,12 @@ static int emsabp_tdb_traverse_MId(TDB_CONTEXT *tdb_ctx,
 _PUBLIC_ bool emsabp_tdb_lookup_MId(TDB_CONTEXT *tdb_ctx,
 				    uint32_t MId)
 {
-	int	ret;
+	int			ret;
+	struct traverse_MId	mid_trav = { MId, false };
 
-	ret = tdb_traverse(tdb_ctx, emsabp_tdb_traverse_MId, (void *)&MId);
+	ret = tdb_traverse(tdb_ctx, emsabp_tdb_traverse_MId, (void *)&mid_trav);
 
-	return (ret == 1) ? true : false;
+	return (ret > 0) && mid_trav.found;
 }
 
 

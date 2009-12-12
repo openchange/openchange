@@ -310,7 +310,7 @@ enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
 			while (notification->ulConnection) {
 				if ((notification->NotificationFlags & mapi_response->mapi_repl[i].u.mapi_Notify.NotificationType) && 
 				    (handle == mapi_object_get_handle(&(notification->obj_notif)))) {
-					if (notification->callback) {
+					if (notification->callback && NotificationData) {
 						notification->callback(mapi_response->mapi_repl[i].u.mapi_Notify.NotificationType,
 								       (void *)NotificationData,
 								       notification->private_data);

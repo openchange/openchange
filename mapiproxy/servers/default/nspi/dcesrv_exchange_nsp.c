@@ -481,7 +481,7 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle	*h;
 	struct emsabp_context	*emsabp_ctx;
 	uint32_t		MId;
-	char			*dn;
+	int			i;
 
 	DEBUG(3, ("exchange_nsp: NspiGetProps (0x9)\n"));
 
@@ -500,35 +500,55 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (r->in.pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
 		retval = MAPI_E_INVALID_BOOKMARK;
-		goto failure;
-	}
-
-	retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->tdb_ctx, MId, &dn);
-	if (retval != MAPI_E_SUCCESS) {
-	failure:
-		r->out.ppRows = talloc_array(mem_ctx, struct SRow *, 2);
-		r->out.ppRows[0] = NULL;
-		r->out.result = MAPI_E_INVALID_BOOKMARK;
-		return r->out.result;
+		r->out.result = retval;
+		return retval;
 	}
 
 	/* Step 2. Fetch properties */
 	r->out.ppRows = talloc_array(mem_ctx, struct SRow *, 2);
 	r->out.ppRows[0] = talloc_zero(r->out.ppRows, struct SRow);
 	r->out.ppRows[0]->ulAdrEntryPad = 0;
-	r->out.ppRows[0]->cValues = r->in.pPropTags->cValues;
-	r->out.ppRows[0]->lpProps = talloc_array(r->out.ppRows[0], struct SPropValue, r->in.pPropTags->cValues);
 
 	retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, r->out.ppRows[0], MId, r->in.dwFlags, r->in.pPropTags);
 	if (retval != MAPI_E_SUCCESS) {
-		talloc_free(r->out.ppRows);
-		r->out.result = MAPI_W_ERRORS_RETURNED;
-		goto failure;
+		/* Is MId is not found, proceed as if no attributes were found */
+		if (retval == MAPI_E_INVALID_BOOKMARK) {
+			uint32_t	ulPropTag;
+			struct SRow	*aRow;
+			
+			aRow = r->out.ppRows[0];
+			aRow->ulAdrEntryPad = 0x0;
+			aRow->cValues = r->in.pPropTags->cValues;
+			aRow->lpProps = talloc_array(mem_ctx, struct SPropValue, aRow->cValues);
+			for (i = 0; i < aRow->cValues; i++) {
+				ulPropTag = r->in.pPropTags->aulPropTag[i];
+				ulPropTag = (ulPropTag & 0xFFFF0000) | PT_ERROR;
+
+				aRow->lpProps[i].ulPropTag = ulPropTag;
+				aRow->lpProps[i].dwAlignPad = 0x0;
+				set_SPropValue(&(aRow->lpProps[i]), NULL);
+			}
+			retval = MAPI_W_ERRORS_RETURNED;
+		} else {
+			talloc_free(r->out.ppRows);
+			r->out.ppRows = NULL;
+		}
+		r->out.result = retval;
+		return r->out.result;
 	}
 
-	r->out.result = MAPI_E_SUCCESS;
+	/* Step 3. Properties are fetched. Provide proper return
+	 value.  ErrorsReturned should be returned when at least one
+	 property is not found */
+	for (i = 0; i < r->out.ppRows[0]->cValues; i++) {
+		if ((r->out.ppRows[0]->lpProps[i].ulPropTag & 0xFFFF) == PT_ERROR) {
+			retval = MAPI_W_ERRORS_RETURNED;
+			break;
+		}
+	}
 
-	return MAPI_E_SUCCESS;
+	r->out.result = retval;
+	return retval;
 }
 
 

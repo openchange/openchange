@@ -554,7 +554,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 		/* If it fails try to retrieve it from the on-disk TDB database (conf) */
 		retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->tdb_ctx, MId, &dn);
 	}
-	OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
+	OPENCHANGE_RETVAL_IF(retval, MAPI_E_INVALID_BOOKMARK, NULL);
 
 	/* Step 1. Fetch the LDB record */
 	ldb_dn = ldb_dn_new(mem_ctx, ldb_ctx, dn);

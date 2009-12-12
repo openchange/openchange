@@ -209,6 +209,7 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle		*h;
 	struct emsabp_context		*emsabp_ctx;
 	struct SPropTagArray		*pPropTags;
+	struct SRowSet			*pRows;
 	uint32_t			i;
 
 	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
@@ -242,34 +243,60 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		pPropTags = r->in.pPropTags;
 	}
 
-	if (r->in.lpETable == NULL) {
-		/* FIXME */
-		retval = MAPI_E_INVALID_BOOKMARK;
-	}
-
-	if (retval != MAPI_E_SUCCESS) {
-	failure:
-		r->out.pStat = r->in.pStat;
-		r->out.ppRows = talloc(mem_ctx, struct SRowSet *);
-		r->out.ppRows[0] = NULL;
-		r->out.result = retval;
-
-		return retval;
-	}
+	/* Allocate RowSet to be filled in */
+	pRows = talloc_zero(mem_ctx, struct SRowSet);
 
 	/* Step 2. Fill ppRows  */
-	r->out.ppRows = talloc(mem_ctx, struct SRowSet *);
-	r->out.ppRows[0] = talloc(mem_ctx, struct SRowSet);
-	r->out.ppRows[0]->cRows = r->in.Count;
-	r->out.ppRows[0]->aRow = talloc_array(mem_ctx, struct SRow, r->in.Count);
-	for (i = 0; i < r->in.Count; i++) {
-		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]), r->in.lpETable[i], r->in.dwFlags, pPropTags);
-		if (retval != MAPI_E_SUCCESS) {
+	if (r->in.lpETable == NULL) {
+		/* Step 2.1 Fill ppRows for supplied Container ID */
+		struct ldb_result	*ldb_res;
+		
+		retval = emsabp_ab_container_enum(mem_ctx, emsabp_ctx,
+						  r->in.pStat->ContainerID, &ldb_res);
+		if (!MAPI_STATUS_IS_OK(retval))  {
 			goto failure;
+		}
+		if (ldb_res->count) {
+			pRows->cRows = ldb_res->count;
+			pRows->aRow = talloc_array(mem_ctx, struct SRow, ldb_res->count);
+		}
+
+		/* fetch required attributes for every entry found */
+		for (i = 0; i < ldb_res->count; i++) {
+			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &(pRows->aRow[i]),
+							     ldb_res->msgs[i], 0, r->in.dwFlags, pPropTags);
+			if (!MAPI_STATUS_IS_OK(retval)) {
+				goto failure;
+			}
+		}
+	} else {
+		/* Step 2.2 Fill ppRows for supplied table of MIds */
+		pRows->cRows = r->in.dwETableCount;
+		pRows->aRow = talloc_array(mem_ctx, struct SRow, r->in.dwETableCount);
+		for (i = 0; i < r->in.dwETableCount; i++) {
+			retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(pRows->aRow[i]), r->in.lpETable[i], r->in.dwFlags, pPropTags);
+			if (retval != MAPI_E_SUCCESS) {
+				goto failure;
+			}
 		}
 	}
 
+	/* Step 3. Fill output params */
+	*r->out.ppRows = pRows;
+
+	memcpy(r->out.pStat, r->in.pStat, sizeof (struct STAT));
+	r->out.pStat->TotalRecs = pRows->cRows;
+	r->out.pStat->NumPos = r->out.pStat->Delta + pRows->cRows;
+	r->out.pStat->CurrentRec = MID_END_OF_TABLE;
+
 	return MAPI_E_SUCCESS;
+
+failure:
+	r->out.pStat = r->in.pStat;
+	*r->out.ppRows = NULL;
+	r->out.result = retval;
+
+	return retval;
 }
 
 

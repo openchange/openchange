@@ -1243,7 +1243,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_container_enum(TALLOC_CTX *mem_ctx,
 	/* Search AD with purportedSearch filter */
 	ldb_ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, ldb_res,
 			     ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-			     LDB_SCOPE_SUBTREE, recipient_attrs, "%s",
-			     purportedSearch);
-	return ldb_ret;
+			     LDB_SCOPE_SUBTREE, recipient_attrs, 
+			     "%s", purportedSearch);
+
+	return (ldb_ret != LDB_SUCCESS) ? MAPI_E_NOT_FOUND : MAPI_E_SUCCESS;
 }

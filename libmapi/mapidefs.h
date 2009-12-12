@@ -82,6 +82,11 @@
 #define MAPI_AMBIGUOUS		0x1
 #define MAPI_RESOLVED		0x2
 
+/* Positioning Minimal Entry IDs */
+#define	MID_BEGINNING_OF_TABLE	0x0
+#define	MID_CURRENT		0x1
+#define	MID_END_OF_TABLE	0x2
+
 /* Object Type */
 #define MAPI_STORE		0x1    	/* Message Store */
 #define MAPI_ADDRBOOK		0x2    	/* Address Book */

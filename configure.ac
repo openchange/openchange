@@ -17,8 +17,13 @@ dnl #################################################################
 AC_CANONICAL_HOST
 
 case "${host}" in
-     *freebsd*) BUILD_FOR_FREEBSD=yes ;;
-     *solaris*) BUILD_FOR_SOLARIS=yes ;;
+     *freebsd*) 
+     		BUILD_FOR_FREEBSD=yes ;;
+		AC_SUBST(BUILD_FOR_FREEBSD)
+     *solaris*) 
+     		BUILD_FOR_SOLARIS=yes
+		AC_SUBST(BUILD_FOR_SOLARIS)
+		;;
 esac
 
 #
@@ -216,6 +221,7 @@ dnl Sun Studio Compiler
     COMPILER_OPTIONS_SHARED="-D__FUNCTION__=__func__"
     COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED"
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
+    LDFLAGS="$LDFLAGS -z ignore -R '\$\$ORIGIN/../lib'"
 elif test x"$ac_cv_c_compiler_icc" = x"yes"; then
 dnl Intel Compiler
     COMPILER_OPTIONS_SHARED="-O3 -Wall -g3 -fstrict-aliasing -Wmissing-prototypes -Wstrict-prototypes -wd2259,188,593,869,981,181,1419,2218"

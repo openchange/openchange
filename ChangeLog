@@ -1,3 +1,19 @@
+2009-12-13
+    jkerihuel
+	[r1598]
+		This doesn't really fix ticket #149, but this should
+		at least prevent from triggering segmentation fault when
+		PR_EMAIL_ADDRESS_UNICODE doesn't have any cn=Recipients,cn= substring 
+    bradh
+	[r1597]
+		Trivial fix (newline) for warning on FreeBSD compiler.
+	[r1596]
+		Add support for manually creating the library symlinks for FreeBSD
+		
+		This is a somewhat speculative commit. 
+		
+		Also fixes a couple of cosmetic whitespace issues.
+
 2009-12-12
     jkerihuel
 	[r1594]

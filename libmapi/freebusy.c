@@ -104,7 +104,15 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	o = x500_get_dn_element(mem_ctx, email, ORG);
 	ou = x500_get_dn_element(mem_ctx, email, ORG_UNIT);
 	username = x500_get_dn_element(mem_ctx, email, "/cn=Recipients/cn=");
-	
+
+	if (!username) {
+		MAPIFreeBuffer(o);
+		MAPIFreeBuffer(ou);
+		MAPIFreeBuffer(pRowSet);
+		
+		return MAPI_E_NOT_FOUND;
+	}
+
 	/* toupper username */
 	for (i = 0; username[i]; i++) {
 		username[i] = toupper((unsigned char)username[i]);

@@ -18,20 +18,24 @@ AC_CANONICAL_HOST
 
 case "${host}" in
      *freebsd*) 
-     		BUILD_FOR_FREEBSD=yes ;;
+		BUILD_FOR_FREEBSD=yes
 		AC_SUBST(BUILD_FOR_FREEBSD)
+		MANUALLY_CREATE_SYMLINKS=yes
+		;;
      *solaris*) 
-     		BUILD_FOR_SOLARIS=yes
+		BUILD_FOR_SOLARIS=yes
 		AC_SUBST(BUILD_FOR_SOLARIS)
+		MANUALLY_CREATE_SYMLINKS=yes
 		;;
 esac
+AC_SUBST(MANUALLY_CREATE_SYMLINKS)
 
 #
 # OC_CHECK_SAMBA_PATH([PATH],[action-if-found],[action-if-not-found])
 # -------------------------------------------------------------------
 AC_DEFUN([OC_CHECK_SAMBA_PATH],
 [
- 	old_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+	old_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
 	PKG_CONFIG_PATH="$1/lib/pkgconfig"
 	export PKG_CONFIG_PATH
 	PKG_CHECK_EXISTS([samba-hostconfig], [found=1], [found=0])
@@ -606,8 +610,6 @@ else
 	enable_doxygen="yes"
 	AC_SUBST(DOXYGEN)
 fi
-
-
 
 dnl ***********************
 dnl Makefiles 

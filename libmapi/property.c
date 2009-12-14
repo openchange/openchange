@@ -29,6 +29,20 @@
    \brief Functions for manipulating MAPI properties
  */
 
+/**
+  \details Create a property tag array
+  
+  \param mem_ctx talloc memory context to use for allocation
+  \param PropCount the number of properties in the array
+  
+  The varargs (the third and subsequent arguments) are the property
+  tags to make up the array. So the normal way to use this to create
+  an array of two tags is like:
+  \code
+  struct SPropTagArray *array
+  array = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
+  \endcode
+*/
 _PUBLIC_ struct SPropTagArray *set_SPropTagArray(TALLOC_CTX *mem_ctx, 
 						 uint32_t PropCount, ...)
 {

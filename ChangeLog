@@ -1,3 +1,10 @@
+2009-12-14
+    bradh
+	[r1600]
+		Add documentation for set_SPropTagArray().
+		
+		Thanks to Brian Lu (Sun) for reporting.
+
 2009-12-13
     jkerihuel
 	[r1598]

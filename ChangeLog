@@ -1,3 +1,16 @@
+2009-12-15
+    jkerihuel
+	[r1603]
+		Automatically switch from connect to seal on the emsmdb pipe if
+		ecNotEncrypted is returned by EcDoConnect.
+	[r1602]
+		- Make OpenChange natively working with Exchange 2010
+		- Factorize binding string construction code within a single function
+		- the seal flag is mandatory to connect to Exchange 2010
+		- add seal boolean value to MAPI profile creation and mapi_profile
+		  structure
+		- add --encrypt option to mapiprofile to set the seal value
+
 2009-12-14
     bradh
 	[r1600]

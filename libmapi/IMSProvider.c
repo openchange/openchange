@@ -211,6 +211,7 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 	struct dcerpc_pipe	*pipe;
 	struct mapi_profile	*profile;
 	char			*binding;
+	int			retval = 0;
 
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
@@ -220,6 +221,7 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 	
 	switch(provider_id) {
 	case PROVIDER_ID_EMSMDB:
+	emsmdb_retry:
 		binding = build_binding_string(mem_ctx, profile->server, profile);
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_emsmdb, global_mapi_ctx->lp_ctx);
 		talloc_free(binding);
@@ -228,7 +230,12 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
 		OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
-		provider->ctx = emsmdb_connect(mem_ctx, session, pipe, profile->credentials);
+		provider->ctx = emsmdb_connect(mem_ctx, session, pipe, profile->credentials, &retval);
+		if (retval == ecNotEncrypted) {
+			profile->seal = true;
+			retval = 0;
+			goto emsmdb_retry;
+		}
 		OPENCHANGE_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
 		break;
 	case PROVIDER_ID_NSPI:

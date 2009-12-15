@@ -70,13 +70,15 @@ static unsigned int emsmdb_hash(const char *str)
    \param session pointer to the MAPI session context
    \param p pointer to the DCERPC pipe
    \param cred pointer to the user credentials
+   \param return_value pointer on EcDoConnect MAPI return value
 
    \return an allocated emsmdb_context on success, otherwise NULL
  */
 struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx, 
 				      struct mapi_session *session,
 				      struct dcerpc_pipe *p, 
-				      struct cli_credentials *cred)
+				      struct cli_credentials *cred,
+				      int *return_value)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct EcDoConnect	r;
@@ -89,6 +91,7 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 	if (!session) return NULL;
 	if (!p) return NULL;
 	if (!cred) return NULL;
+	if (!return_value) return NULL;
 
 	mem_ctx = talloc_named(NULL, 0, "emsmdb_connect");
 
@@ -127,6 +130,7 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 	status = dcerpc_EcDoConnect(p, mem_ctx, &r);
 	retval = r.out.result;
 	if (!NT_STATUS_IS_OK(status) || retval) {
+		*return_value = retval;
 		mapi_errstr("EcDoConnect", retval);
 		talloc_free(mem_ctx);
 		return NULL;

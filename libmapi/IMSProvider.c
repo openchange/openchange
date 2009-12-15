@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2009.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,7 +31,6 @@
 
    \brief Provider operations
 */
-
 
 /*
  * Log MAPI to one instance of a message store provider
@@ -70,6 +69,42 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 
 
 /**
+   \details Build the binding string and flags given profile and
+   global options.
+
+   \param mem_ctx pointer to the memory allocation context
+   \param server string representing the server FQDN or IP address
+   \param profile pointer to the MAPI profile structure
+
+   \return valid allocated string on success, otherwise NULL
+ */
+static char *build_binding_string(TALLOC_CTX *mem_ctx, 
+				  const char *server, 
+				  struct mapi_profile *profile)
+{
+	char	*binding;
+
+	/* Sanity Checks */
+	if (!profile) return NULL;
+	if (!server) return NULL;
+	if (!global_mapi_ctx) return NULL;
+
+	binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s[", server);
+	/* If dump-data option is enabled */
+	if (global_mapi_ctx->dumpdata == true) {
+		binding = talloc_strdup_append(binding, "print,");
+	}
+	/* If seal option is enabled in the profile */
+	if (profile->seal == true) {
+		binding = talloc_strdup_append(binding, "seal");
+	}
+
+	binding = talloc_strdup_append(binding, "]");
+
+	return binding;
+}
+
+/**
    \details Returns the name of an NSPI server
 
    \param session pointer to the MAPI session context
@@ -97,7 +132,7 @@ _PUBLIC_ const char *RfrGetNewDSA(struct mapi_session *session,
 	mem_ctx = (TALLOC_CTX *)session;
 	profile = session->profile;
 
-	binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s%s", server, ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
+	binding = build_binding_string(mem_ctx, server, profile);
 	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, global_mapi_ctx->lp_ctx);
 	talloc_free(binding);
 
@@ -144,7 +179,7 @@ _PUBLIC_ enum MAPISTATUS RfrGetFQDNFromLegacyDN(struct mapi_session *session,
 	profile = session->profile;
 	*serverFQDN = NULL;
 
-	binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s%s", profile->server, ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
+	binding = build_binding_string(mem_ctx, profile->server, profile);
 	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, global_mapi_ctx->lp_ctx);
 	talloc_free(binding);
 
@@ -185,7 +220,7 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 	
 	switch(provider_id) {
 	case PROVIDER_ID_EMSMDB:
-		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s%s", profile->server, ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
+		binding = build_binding_string(mem_ctx, profile->server, profile);
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_emsmdb, global_mapi_ctx->lp_ctx);
 		talloc_free(binding);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
@@ -198,8 +233,8 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		break;
 	case PROVIDER_ID_NSPI:
 		/* Call RfrGetNewDSA prior any NSPI call */
-		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s%s", RfrGetNewDSA(session, profile->server, profile->mailbox), 
-					  ((global_mapi_ctx->dumpdata == true) ? "[print]" : "[]"));
+		binding = build_binding_string(mem_ctx, RfrGetNewDSA(session, profile->server, profile->mailbox),
+					       profile);
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_nsp, global_mapi_ctx->lp_ctx);
 		talloc_free(binding);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);

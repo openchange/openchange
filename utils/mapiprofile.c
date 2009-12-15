@@ -105,7 +105,7 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 			       const char *password, const char *address, 
 			       const char *lcid, const char *workstation,
 			       const char *domain, const char *realm,
-			       uint32_t flags,
+			       uint32_t flags, bool seal,
 			       bool opt_dumpdata, const char *opt_debuglevel)
 {
 	enum MAPISTATUS		retval;
@@ -159,6 +159,7 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	mapi_profile_add_string_attr(profname, "binding", address);
 	mapi_profile_add_string_attr(profname, "workstation", workstation);
 	mapi_profile_add_string_attr(profname, "domain", domain);
+	mapi_profile_add_string_attr(profname, "seal", (seal == true) ? "true" : "false");
 
 	if (realm) {
 		mapi_profile_add_string_attr(profname, "realm", realm);
@@ -518,6 +519,7 @@ int main(int argc, const char *argv[])
 	bool		getdflt = false;
 	bool		getfqdn = false;
 	bool		opt_dumpdata = false;
+	bool		opt_seal = false;
 	const char	*opt_debuglevel = NULL;
 	const char	*ldif = NULL;
 	const char	*address = NULL;
@@ -542,7 +544,8 @@ int main(int argc, const char *argv[])
 	      OPT_CREATE_PROFILE, OPT_DELETE_PROFILE, OPT_LIST_PROFILE, OPT_DUMP_PROFILE, 
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
-	      OPT_NOPASS, OPT_RENAME_PROFILE, OPT_DUMPDATA, OPT_DEBUGLEVEL};
+	      OPT_NOPASS, OPT_RENAME_PROFILE, OPT_DUMPDATA, OPT_DEBUGLEVEL,
+	      OPT_ENCRYPT_CONN};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -556,6 +559,7 @@ int main(int argc, const char *argv[])
 		{"workstation", 'M', POPT_ARG_STRING, NULL, OPT_WORKSTATION, "set the workstation", "WORKSTATION_NAME"},
 		{"domain", 'D', POPT_ARG_STRING, NULL, OPT_DOMAIN, "set the domain/workgroup", "DOMAIN"},
 		{"realm", 'R', POPT_ARG_STRING, NULL, OPT_REALM, "set the realm", "REALM"},
+		{"encrypt", 'E', POPT_ARG_NONE, NULL, OPT_ENCRYPT_CONN, "enable encryption with Exchange server", NULL },
 		{"username", 'u', POPT_ARG_STRING, NULL, OPT_USERNAME, "set the profile username", "USERNAME"},
 		{"langcode", 'C', POPT_ARG_STRING, NULL, OPT_LCID, "set the language code ID", "LANGCODE"},
 		{"pattern", 's', POPT_ARG_STRING, NULL, OPT_PATTERN, "username to search for", "USERNAME"},
@@ -625,6 +629,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_REALM:
 			realm = poptGetOptArg(pc);
+			break;
+		case OPT_ENCRYPT_CONN:
+			opt_seal = true;
 			break;
 		case OPT_USERNAME:
 			username = poptGetOptArg(pc);
@@ -723,8 +730,8 @@ int main(int argc, const char *argv[])
 		  lcid = talloc_strdup(mem_ctx, DEFAULT_LCID);
 		}
 		if (! mapiprofile_create(profdb, profname, pattern, username, password, address,
-					 lcid, workstation, domain, realm, nopass, opt_dumpdata,
-					 opt_debuglevel) ) {
+					 lcid, workstation, domain, realm, nopass, opt_seal, 
+					 opt_dumpdata, opt_debuglevel) ) {
 			retcode = EXIT_FAILURE;
 			goto cleanup;
 		}

@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007.
+   Copyright (C) Julien Kerihuel 2007-2009.
    Copyright (C) Fabien Le Mentec 2007.
 
    This program is free software; you can redistribute it and/or modify
@@ -46,6 +46,7 @@ struct mapi_profile
 	const char     		*domain;
 	const char     		*realm;
 	const char     		*server;
+	bool			seal;
 	uint32_t		codepage;
 	uint32_t		language;
 	uint32_t		method;

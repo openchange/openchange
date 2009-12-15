@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2009.
    Copyright (C) Fabien Le Mentec 2007.
 
    This program is free software; you can redistribute it and/or modify
@@ -74,6 +74,7 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	profile->mailbox = ldb_msg_find_attr_as_string(msg, "EmailAddress", NULL);
 	profile->homemdb = ldb_msg_find_attr_as_string(msg, "HomeMDB", NULL);
 	profile->server = ldb_msg_find_attr_as_string(msg, "binding", NULL);
+	profile->seal = ldb_msg_find_attr_as_bool(msg, "seal", false);
 	profile->org = ldb_msg_find_attr_as_string(msg, "Organization", NULL);
 	profile->ou = ldb_msg_find_attr_as_string(msg, "OrganizationUnit", NULL);
 	profile->codepage = ldb_msg_find_attr_as_int(msg, "codepage", 0);

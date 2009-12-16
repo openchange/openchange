@@ -1,7 +1,7 @@
 .\" OpenChange Project Tools Man Pages
 .\"
 .\" This manpage is Copyright (C) 2007-2008 Julien Kerihuel;
-.\" This manpage is Copyright (C)      2008 Brad Hards;
+.\" This manpage is Copyright (C) 2008-2009 Brad Hards;
 .\"
 .\" Permission is granted to make and distribute verbatim copies of this
 .\" manual provided the copyright notice and this permission notice are
@@ -33,13 +33,13 @@ mapiprofile \- administer OpenChange MAPI Profiles databases
 
 .SH SYNOPSIS
 .nf
-mapiprofile [-?GSncrl] [-?|--help] [--usage] [-L|--ldif PATH] [-G|--getdefault] [-S|--default] 
-	[-n|--newdb] [-f|--database PATH] [-P|--profile PROFILE] [-I|--address xxx.xxx.xxx.xxx] 
-	[-M|--workstation WORKSTATION_NAME] [-D|--domain DOMAIN] [-R|--realm REALM] 
-	[-u|--username USERNAME] [-C|--langcode LANGCODE] [-s|--pattern USERNAME] 
-	[-p|--password PASSWORD] [--nopass] [-c|--create] [-r|--delete] [-R|--rename STRING] 
-	[-l|--list] [--listlangs] [--dump] [-a|--attr VALUE] [--dump-data] [-d|--debuglevel LEVEL] 
-	[--getfqdn]
+mapiprofile [-?GSnEcrlV] [-?|--help] [--usage] [-L|--ldif PATH] [-G|--getdefault] [-S|--default]
+	[-n|--newdb] [-f|--database PATH] [-P|--profile PROFILE] [-I|--address xxx.xxx.xxx.xxx]
+	[-M|--workstation WORKSTATION_NAME] [-D|--domain DOMAIN] [-R|--realm REALM] [-E|--encrypt]
+	[-u|--username USERNAME] [-C|--langcode LANGCODE] [-s|--pattern USERNAME]
+	[-p|--password PASSWORD] [--nopass] [-c|--create] [-r|--delete] [-R|--rename STRING]
+	[-l|--list] [--listlangs] [--dump] [-a|--attr VALUE] [--dump-data] [-d|--debuglevel LEVEL]
+	[--getfqdn] [-V|--version]
 .fi
 
 .SH DESCRIPTION
@@ -151,6 +151,14 @@ Sets the local computer name.
 .TP
 .B -D
 Set the Windows domain name.
+
+.TP
+.B --encrypt
+.TP
+.B -E
+Require the connection to be encrypted. This is normally required only on Exchange 2010
+(and will presumably also be required on future versions), but may be used on Exchange 2003
+and Exchange 2007.
 
 .TP
 .B --realm REALM

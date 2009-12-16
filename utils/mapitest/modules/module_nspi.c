@@ -209,7 +209,6 @@ _PUBLIC_ bool mapitest_nspi_GetMatches(struct mapitest *mt)
 	MAPIFreeBuffer(MIds);
 	mapitest_print_retval(mt, "NspiGetMatches");
 	if (GetLastError() != MAPI_E_SUCCESS) {
-		MAPIFreeBuffer(MIds);
 		return false;
 	}
 

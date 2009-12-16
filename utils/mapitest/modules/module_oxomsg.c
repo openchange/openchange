@@ -242,6 +242,7 @@ cleanup:
 	mapitest_print_retval(mt, "DeleteMessage");
 	if ((retval != MAPI_E_SUCCESS) && (retval != ecNoDelSubmitMsg)) {
 		ret = false;
+		goto mapitest_oxomsg_AbortSubmit_bailout;
 	}
 	/* Step 6. Clean up anything else */
 	mapitest_common_message_delete_by_subject(mt, &obj_folder, MT_MAIL_SUBJECT);
@@ -447,6 +448,7 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 	mapitest_print_retval(mt, "SaveChangesMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
+		goto mapitest_oxomsg_TransportSend_bailout;
 	}
 
 	/* Step 5. TransportSend */
@@ -454,6 +456,7 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 	mapitest_print_retval(mt, "TransportSend");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
+		goto mapitest_oxomsg_TransportSend_bailout;
 	}
 
 	/* Step 6. Dump the properties */

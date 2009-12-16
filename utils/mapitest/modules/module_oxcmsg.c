@@ -1336,11 +1336,11 @@ _PUBLIC_ bool mapitest_oxcmsg_GetValidAttachments(struct mapitest *mt)
 	mapitest_print(mt, "* %-35s: 0x%.8x (%d)\n", "GetValidAttach", retval, numAttach);
 	if (numAttach != 0) {
 		ret = false;
-		goto cleanup;
+		goto cleanup_wo_attach;
 	}
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
-		goto cleanup;
+		goto cleanup_wo_attach;
 	}
 
 	/* Step 5. Create two attachments to the message */
@@ -1467,6 +1467,7 @@ cleanup:
 	/* Release */
 	mapi_object_release(&obj_attach0);
 	mapi_object_release(&obj_attach1);
+ cleanup_wo_attach:
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);

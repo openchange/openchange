@@ -692,7 +692,9 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 	retval = CopyProps(&obj_ref_message, &obj_target_message, SPropTagArray, CopyFlagsNoOverwrite|CopyFlagsMove,
 			   &problem_count, &problems);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPIFreeBuffer(problems);
+	if (problem_count) {
+		MAPIFreeBuffer(problems);
+	}
 	mapitest_print_retval_step_fmt(mt, "11.", "CopyProps", "(%s)", "move");
 	if (retval != MAPI_E_SUCCESS) {
 		return false;

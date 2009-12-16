@@ -119,13 +119,13 @@ _PUBLIC_ bool mapitest_common_message_delete_by_subject(struct mapitest *mt,
 					  PR_SUBJECT);
 	retval = SetColumns(&obj_ctable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetColumns", GetLastError());
 		mapi_object_release(&obj_ctable);
 		return false;
 	}
 
-	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
+	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && !retval && SRowSet.cRows) {
 		for (i = 0; i < SRowSet.cRows; i++) {
 			if (retval == MAPI_E_SUCCESS) {
 				msgids[0] = SRowSet.aRow[i].lpProps[0].value.d;

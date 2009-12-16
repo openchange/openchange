@@ -1326,7 +1326,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	MAPIFreeBuffer(MIds);
 	
 	MIds2.cValues = 0x1;
-	MIds2.aulPropTag = &instance_key;
+	MIds2.aulPropTag = (enum MAPITAGS *) &instance_key;
 
 	set_profile_attribute(profname, *SRowSet, index, PR_EMAIL_ADDRESS, "EmailAddress");
 	set_profile_attribute(profname, *SRowSet, index, PR_DISPLAY_NAME, "DisplayName");

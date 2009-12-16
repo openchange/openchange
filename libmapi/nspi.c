@@ -252,7 +252,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx,
 
 	if (MIds && MIds->cValues) {
 		r.in.dwETableCount = MIds->cValues;
-		r.in.lpETable = MIds->aulPropTag;
+		r.in.lpETable = (uint32_t *) MIds->aulPropTag;
 		/* We set CurrentRec to the first entry */
 		r.in.pStat->CurrentRec = MIds->aulPropTag[0];
 	} else {

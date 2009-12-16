@@ -175,6 +175,7 @@ struct icaldatetimeperiodtype get_icaldatetimeperiodtype_from_tm(struct tm *tm)
 	struct icaldatetimeperiodtype tt;
 
 	// TODO: build tt here!
+	memset(&tt, 0, sizeof (struct icaldatetimeperiodtype));
 
 	return tt;
 }

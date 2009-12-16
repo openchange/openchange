@@ -224,7 +224,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 
 	instance_key = MIds->aulPropTag[0];
 	MIds2.cValues = 0x1;
-	MIds2.aulPropTag = &instance_key;
+	MIds2.aulPropTag = (enum MAPITAGS *) &instance_key;
 
 	retval = nspi_QueryRows(nspi, SPropTagArray, &MIds2, 1, &rowset);
 	mapi_errstr("NspiQueryRows", GetLastError());

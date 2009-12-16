@@ -448,7 +448,7 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 	r->out.ppMIds = talloc_array(mem_ctx, struct SPropTagArray *, 2);
 	r->out.ppMIds[0] = talloc_zero(mem_ctx, struct SPropTagArray);
 	r->out.ppMIds[0]->cValues = r->in.pNames->Count;
-	r->out.ppMIds[0]->aulPropTag = talloc_array(mem_ctx, uint32_t, r->in.pNames->Count);
+	r->out.ppMIds[0]->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, r->in.pNames->Count);
 
 	for (i = 0; i < r->in.pNames->Count; i++) {
 		/* Step 1. Check if the input legacyDN exists */
@@ -879,7 +879,7 @@ static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_ca
 	paWStr = r->in.paWStr;
 	pMIds = talloc(mem_ctx, struct SPropTagArray);
 	pMIds->cValues = paWStr->Count;
-	pMIds->aulPropTag = talloc_array(mem_ctx, uint32_t, pMIds->cValues);
+	pMIds->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, pMIds->cValues);
 	pRows = talloc(mem_ctx, struct SRowSet);
 	pRows->cRows = 0;
 	pRows->aRow = talloc_array(mem_ctx, struct SRow, pMIds->cValues);

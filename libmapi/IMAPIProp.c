@@ -1038,7 +1038,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 
 	/* Fill the SPropTagArray */
 	proptags[0]->cValues = mapi_response->mapi_repl->u.mapi_GetIDsFromNames.count;
-	proptags[0]->aulPropTag = talloc_array((TALLOC_CTX *)proptags[0], uint32_t, proptags[0]->cValues);
+	proptags[0]->aulPropTag = (enum MAPITAGS *) talloc_array((TALLOC_CTX *)proptags[0], uint32_t, proptags[0]->cValues);
 	for (i = 0; i < proptags[0]->cValues; i++) {
 		proptags[0]->aulPropTag[i] = (mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i] << 16) | PT_UNSPECIFIED;
 	}

@@ -44,7 +44,6 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	TALLOC_CTX		*mem_ctx;
 	struct emsabp_context	*emsabp_ctx;
 	struct tevent_context	*ev;
-	int			ret;
 
 	/* Sanity checks */
 	if (!lp_ctx) return NULL;
@@ -1061,17 +1060,17 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		return MAPI_E_TABLE_TOO_BIG;
 	}
 
-	MIds->aulPropTag = talloc_array(emsabp_ctx->mem_ctx, uint32_t, res->count);
+	MIds->aulPropTag = (enum MAPITAGS *) talloc_array(emsabp_ctx->mem_ctx, uint32_t, res->count);
 	MIds->cValues = res->count;
 
 	/* Step 2. Create session MId for all fetched records */
 	for (i = 0; i < res->count; i++) {
 		dn = ldb_msg_find_attr_as_string(res->msgs[i], "distinguishedName", NULL);
-		retval = emsabp_tdb_fetch_MId(emsabp_ctx->ttdb_ctx, dn, &MIds->aulPropTag[i]);
+		retval = emsabp_tdb_fetch_MId(emsabp_ctx->ttdb_ctx, dn, (uint32_t *)&(MIds->aulPropTag[i]));
 		if (retval) {
 			retval = emsabp_tdb_insert(emsabp_ctx->ttdb_ctx, dn);
 			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
-			retval = emsabp_tdb_fetch_MId(emsabp_ctx->ttdb_ctx, dn, &(MIds->aulPropTag[i]));
+			retval = emsabp_tdb_fetch_MId(emsabp_ctx->ttdb_ctx, dn, (uint32_t *) &(MIds->aulPropTag[i]));
 			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
 		}
 	}

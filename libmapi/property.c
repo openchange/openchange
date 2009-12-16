@@ -60,7 +60,7 @@ _PUBLIC_ struct SPropTagArray *set_SPropTagArray(TALLOC_CTX *mem_ctx,
 	va_end(ap);
 
 	SPropTagArray = talloc(mem_ctx, struct SPropTagArray);
-	SPropTagArray->aulPropTag = aulPropTag;
+	SPropTagArray->aulPropTag = (enum MAPITAGS *) aulPropTag;
 	SPropTagArray->cValues = PropCount;
 	return SPropTagArray;
 }
@@ -88,8 +88,8 @@ _PUBLIC_ enum MAPISTATUS SPropTagArray_add(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!SPropTagArray->cValues, MAPI_E_INVALID_PARAMETER, NULL);
 
 	SPropTagArray->cValues += 1;
-	SPropTagArray->aulPropTag = talloc_realloc(mem_ctx, SPropTagArray->aulPropTag,
-						   uint32_t, SPropTagArray->cValues + 1);
+	SPropTagArray->aulPropTag = (enum MAPITAGS *) talloc_realloc(mem_ctx, SPropTagArray->aulPropTag,
+								     uint32_t, SPropTagArray->cValues + 1);
 	SPropTagArray->aulPropTag[SPropTagArray->cValues - 1] = aulPropTag;
 	SPropTagArray->aulPropTag[SPropTagArray->cValues] = 0;
 

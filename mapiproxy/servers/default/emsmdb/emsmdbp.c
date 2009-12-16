@@ -81,7 +81,6 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	TALLOC_CTX		*mem_ctx;
 	struct emsmdbp_context	*emsmdbp_ctx;
 	struct tevent_context	*ev;
-	int			ret;
 
 	/* Sanity Checks */
 	if (!lp_ctx) return NULL;

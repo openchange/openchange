@@ -1095,7 +1095,7 @@ mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/
 
 mapiproxy/servers/exchange_ds_rfr.$(SHLIBEXT):	mapiproxy/servers/default/rfr/dcesrv_exchange_ds_rfr.po
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 #################################################################
 # Tools compilation rules

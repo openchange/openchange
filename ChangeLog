@@ -1,3 +1,21 @@
+2009-12-16
+    jkerihuel
+	[r1607]
+		Fix segfaults in mapitest launched with exchange2010
+	[r1606]
+		Fix compilation warnings
+    bradh
+	[r1609]
+		Add missing -L directory specifier.
+		
+		Looks like this was tolerated by gnu ld, but not by opensolaris ld.
+		
+		Patch by Brian Lu (Sun). Thanks again.
+	[r1608]
+		Add documentation for new mapiprofile --encrypt option, introduced in r1602.
+	[r1605]
+		Fix a couple of typos that trash CFLAGS during build.
+
 2009-12-15
     jkerihuel
 	[r1603]

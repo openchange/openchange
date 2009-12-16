@@ -239,9 +239,9 @@ dnl GNU Compiler
     else
         COMPILER_OPTIONS_SHARED="-O3 $COMPILER_OPTIONS_SHARED"
     fi
-    COMPIILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes"
+    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes"
     if test "x$use_cov" = "xyes"; then
-        COMPILER_OPTIONS_C="$COMPIILER_OPTIONS_C -fprofile-arcs -ftest-coverage"
+        COMPILER_OPTIONS_C="$COMPILER_OPTIONS_C -fprofile-arcs -ftest-coverage"
         LDFLAGS="$LDFLAGS -lgcov --coverage"
     fi
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"

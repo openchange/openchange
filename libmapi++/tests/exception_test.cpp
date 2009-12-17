@@ -2,7 +2,7 @@
 
 #include <libmapi++/libmapi++.h>
 
-void dotest() throw(libmapipp::mapi_exception)
+static void dotest() throw(libmapipp::mapi_exception)
 {
 	throw libmapipp::mapi_exception(MAPI_E_SUCCESS, "mapi_exception test");
 }

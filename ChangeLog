@@ -1,3 +1,13 @@
+2009-12-17
+    jkerihuel
+	[r1611]
+		Fix 'unused variable' warning on FreeBSD for exchange2mbox
+    bradh
+	[r1613]
+		Add documentation for the --freebusy option.
+	[r1612]
+		Warning fix.
+
 2009-12-16
     jkerihuel
 	[r1607]

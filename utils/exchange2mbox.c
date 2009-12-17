@@ -123,7 +123,9 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	struct mapi_profile	profile;
 	size_t			read_size;
 	char			*line = NULL;
+#if !defined(__FreeBSD__)
 	ssize_t			size;
+#endif
 	const char		*msgid;
 	char     		*id;
 	char			**mbox_msgids;

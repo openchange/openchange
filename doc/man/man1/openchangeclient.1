@@ -26,28 +26,26 @@
 .\" Process this file with
 .\" groff -man -Tascii openchangeclient.1
 .\"
-.TH OPENCHANGECLIENT 1 2008-11-24 "OpenChange libmapi 0.8" "OpenChange Users' Manual"
+.TH OPENCHANGECLIENT 1 2009-12-17 "OpenChange libmapi 0.9" "OpenChange Users' Manual"
 
 .SH NAME
 openchangeclient \- MAPI command line messaging tool
 
 .SH SYNOPSIS
 .nf
-openchangeclient [-?|--help] [--usage] [-f|--database=STRING] [--pf]
-  [-p|--profile=STRING] [-P|--password=STRING] [-S|--sendmail] 
-  [--sendappointment] [--sendcontact] [--sendtask] [--sendnote]
-  [-F|--fetchmail] [-G|--storemail=STRING] [-i|--fetch-items=STRING]
-  [--freebusy=STRING] [--force] [--delete=STRING] [-u|--update=STRING]
-  [-m|--mailbox] [-D|--deletemail] [-A|--attachments=STRING]
-  [-I|--html-inline=STRING] [-W|--html-file=STRING] [-t|--to=STRING]
-  [-c|--cc=STRING] [-b|--bcc=STRING] [-s|--subject=STRING] [-B|--body=STRING]
-  [--location=STRING] [--label=STRING] [--dtstart=STRING] [--dtend=STRING]
-  [--busystatus=STRING] [--taskstatus=STRING]
-  [--importance=STRING] [--email=STRING] [--fullname=STRING] [--cardname=STRING]
-  [--color=STRING] [--notifications] [--folder=STRING] [--mkdir] [--rmdir]
-  [--userlist] [--folder-name=STRING] [--folder-comment=STRING]
-  [-d|--debuglevel=STRING] [--dump-data] [--private]
-  [--ocpf-file=STRING] [--ocpf-dump=STRING] [--ocpf-syntax] [--ocpf-sender]
+openchangeclient [-?SFmDV] [-?|--help] [--usage] [-f|--database STRING] [--pf]
+  [-p|--profile STRING] [-P|--password STRING] [-S|--sendmail] [--sendappointment]
+  [--sendcontact] [--sendtask] [--sendnote] [-F|--fetchmail] [-G|--storemail STRING]
+  [-i|--fetch-items STRING] [--freebusy=STRING] [--force] [--delete=STRING]
+  [-u|--update STRING] [-m|--mailbox] [-D|--deletemail] [-A|--attachments STRING]
+  [-I|--html-inline STRING] [-W|--html-file STRING] [-t|--to STRING] [-c|--cc STRING]
+  [-b|--bcc STRING] [-s|--subject STRING] [-B|--body STRING] [--location=STRING]
+  [--label=STRING] [--dtstart=STRING] [--dtend=STRING] [--busystatus=STRING]
+  [--taskstatus=STRING] [--importance=STRING] [--email=STRING] [--fullname=STRING]
+  [--cardname=STRING] [--color=STRING] [--notifications] [--folder=STRING] [--mkdir]
+  [--rmdir] [--userlist] [--folder-name=STRING] [--folder-comment=STRING]
+  [-d|--debuglevel STRING] [--dump-data] [--private] [--ocpf-file=STRING]
+  [--ocpf-dump=STRING] [--ocpf-syntax] [--ocpf-sender] [-V|--version]
 .fi
 
 
@@ -175,6 +173,14 @@ the file to load from.
 
 See the separate (HTML) documentation for libocpf for more information
 on the OCPF format.
+
+.TP
+.B --freebusy=STRING
+Fetch the free / busy status for the user specified by the string. You will
+usually need to use the 
+.B --pf
+option (see below) since free / busy status is normally obtained from the 
+public folder store.
 
 .SH OPTIONS
 
@@ -556,6 +562,11 @@ Inbox folder.
 .B List Mailbox hierarchy:
 .nf
 openchangeclient --mailbox
+.fi
+
+.B Obtain free / busy status
+.nf
+openchangeclient --pf --freebusy="test user3"
 .fi
 
 .SH AUTHOR

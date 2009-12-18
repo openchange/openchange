@@ -1,11 +1,11 @@
-Copyright 2005-2008 OpenChange Project
+Copyright 2005-2009 OpenChange Project
 under the terms at http://creativecommons.org/licenses/by-sa/3.0/
 
 
 OpenChange developer howto
 --------------------------
 
-== Updated on January 2009 ==
+== Updated in December 2009 ==
 
 
 ###############
@@ -32,7 +32,8 @@ OpenChange developer howto
      [0x5a] Provision
      [0x5b] Extending users Samba AD schema
      [0x5c] Setting smb.conf
-     [0x5d] Running the Address Book Provider (EMSABP)     
+     [0x5d] Running the Server (EMSABP / EMSMDB / RFR)
+     [0x5e] Solving problems     
 [0x6] SWIG BINDINGS
      [0x6a] Installation
      [0x6b] Sample applications
@@ -407,7 +408,7 @@ dcerpc_mapiproxy:interfaces = exchange_emsmdb, exchange_nsp, exchange_ds_rfr
 ### Configuration required by OpenChange server ###
 
 
-[0x5d] Running the Address Book Provider (EMSABP)
+[0x5d] Running the Server (EMSABP / EMSMDB / RFR)
 =================================================
 
 The simplest is to just run "samba", but as a developer you may find
@@ -420,8 +421,24 @@ single process". That mode of operation makes debugging samba with gdb
 particularly easy.
 
 
+[0x5e] Solving problems
+=================================================
+
+The most common problem is not having sufficient rights - make sure
+you are doing the configuration and process startup as root.
+
+Also, make sure that you don't have any older versions (e.g. partial or
+full provisioning). As a last resort, considering deleting the whole
+samba installation directory and reinstalling both samba4 and 
+OpenChange.
+
+If you still have problems, please post a detailed message to the
+development mailing list (devel@lists.openchange.org) showing what
+commands you followed and what the results of each command were.
+
+
 ########################
-[0x5] SWIG BINDINGS
+[0x6] SWIG BINDINGS
 ########################
 
 OpenChange has introduced SWIG bindings support for its MAPI

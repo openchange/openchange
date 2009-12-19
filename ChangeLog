@@ -1,3 +1,26 @@
+2009-12-19
+    jkerihuel
+	[r1620]
+		- Add a macro to mparse.pl to free both mapi_response 
+		  and mem_ctx within OpenChange calls implementation.
+		  For the moment it is only implemented in OpenUserMailbox call.
+		
+		- Fix a memory leak in OpenUserMailbox: When the call failed 
+		  (ecUnknownUser or ecUseEnryption) mapi_response was not free'd
+		  properly.
+	[r1619]
+		Minor indentation fix
+    bradh
+	[r1618]
+		Add some missing newlines to reduce compilation noise.
+	[r1617]
+		Merge in Ryan Lepinski's Google Summer of Code work on exchange2ical.
+		
+		See the gsoc_exchange2ical branch history for commits.
+		
+		I also made a change to address ticket #216, and
+		fixed a couple of typos.
+
 2009-12-18
     bradh
 	[r1615]

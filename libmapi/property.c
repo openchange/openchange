@@ -624,12 +624,11 @@ _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SProp
  */
 _PUBLIC_ uint32_t SRowSet_propcpy(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, struct SPropValue SPropValue)
 {
-	uint32_t	rows;
-	uint32_t	cValues;
-	struct SPropValue lpProp;
+	uint32_t		rows;
+	uint32_t		cValues;
+	struct SPropValue	lpProp;
 
 	/* Sanity checks */
-
 	if (!SRowSet) return 1;
 
 	for (rows = 0; rows < SRowSet->cRows; rows++) {

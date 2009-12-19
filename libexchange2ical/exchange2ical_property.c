@@ -19,8 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <utils/exchange2ical/exchange2ical.h>
-#include <utils/openchange-tools.h>
+#include <libexchange2ical/libexchange2ical.h>
 
 
 struct RRULE_byday {
@@ -39,6 +38,172 @@ static const struct RRULE_byday RRULE_byday[] = {
 	{ 0x0007,	NULL }
 };
 
+static const char *get_filename(const char *filename)
+{
+	const char *substr;
+
+	if (!filename) return NULL;
+
+	substr = rindex(filename, '/');
+	if (substr) return substr;
+
+	return filename;
+}
+
+/*
+  encode as base64
+  Samba4 code
+  caller frees
+*/
+static char *ldb_base64_encode(void *mem_ctx, const char *buf, int len)
+{
+	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	int bit_offset, byte_offset, idx, i;
+	const uint8_t *d = (const uint8_t *)buf;
+	int bytes = (len*8 + 5)/6, pad_bytes = (bytes % 4) ? 4 - (bytes % 4) : 0;
+	char *out;
+
+	out = talloc_array(mem_ctx, char, bytes+pad_bytes+1);
+	if (!out) return NULL;
+
+	for (i=0;i<bytes;i++) {
+		byte_offset = (i*6)/8;
+		bit_offset = (i*6)%8;
+		if (bit_offset < 3) {
+			idx = (d[byte_offset] >> (2-bit_offset)) & 0x3F;
+		} else {
+			idx = (d[byte_offset] << (bit_offset-2)) & 0x3F;
+			if (byte_offset+1 < len) {
+				idx |= (d[byte_offset+1] >> (8-(bit_offset-2)));
+			}
+		}
+		out[i] = b64[idx];
+	}
+
+	for (;i<bytes+pad_bytes;i++)
+		out[i] = '=';
+	out[i] = 0;
+
+	return out;
+}
+
+
+
+void ical_property_ATTACH(struct exchange2ical *exchange2ical)
+{
+	mapi_object_t			obj_tb_attach;
+	mapi_object_t			obj_attach;
+	mapi_object_t			obj_stream;
+	struct SRowSet			rowset_attach;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	const uint32_t			*attach_num = NULL;
+	struct SPropValue		*lpProps;
+	enum MAPISTATUS			retval;
+	unsigned int			i;
+	uint32_t			count;
+	struct SRow			aRow2;
+
+	
+	mapi_object_init(&obj_tb_attach);
+	retval = GetAttachmentTable(&exchange2ical->obj_message, &obj_tb_attach);
+	if (retval == MAPI_E_SUCCESS) {
+		SPropTagArray = set_SPropTagArray(exchange2ical->mem_ctx, 0x1, PR_ATTACH_NUM);
+		retval = SetColumns(&obj_tb_attach, SPropTagArray);
+		MAPIFreeBuffer(SPropTagArray);
+		retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
+		
+		for (i = 0; i < rowset_attach.cRows; i++) {
+			attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[i]), PR_ATTACH_NUM);
+			retval = OpenAttach(&exchange2ical->obj_message, *attach_num, &obj_attach);
+
+			if (retval == MAPI_E_SUCCESS) {
+
+				SPropTagArray = set_SPropTagArray(exchange2ical->mem_ctx, 0x7,
+									  PR_ATTACH_FILENAME,
+									  PR_ATTACH_LONG_FILENAME,
+									  PR_ATTACH_METHOD,
+									  PR_ATTACHMENT_FLAGS,
+									  PR_ATTACHMENT_HIDDEN,
+									  PR_ATTACH_MIME_TAG,
+									  PR_ATTACH_DATA_BIN
+									  );
+									  
+				lpProps = talloc_zero(exchange2ical->mem_ctx, struct SPropValue);
+				retval = GetProps(&obj_attach, SPropTagArray, &lpProps, &count);
+				MAPIFreeBuffer(SPropTagArray);
+				if (retval == MAPI_E_SUCCESS) {
+
+					uint32_t		*attachmentFlags = NULL;
+					uint32_t		*attachMethod = NULL;
+					uint8_t			*attachmentHidden = NULL;
+					const char 		*data = NULL;
+					const char		*fmttype = NULL;
+					const char		*attach_filename = NULL;
+					DATA_BLOB		body;
+					icalattach		*icalattach = NULL;
+					icalproperty 		*prop = NULL;
+					icalparameter 		*param = NULL;
+						
+					
+					aRow2.ulAdrEntryPad = 0;
+					aRow2.cValues = count;
+					aRow2.lpProps = lpProps;
+					
+					attachmentFlags	 = octool_get_propval(&aRow2, PR_ATTACHMENT_FLAGS);
+					attachMethod	 = octool_get_propval(&aRow2, PR_ATTACH_METHOD);
+					attachmentHidden = octool_get_propval(&aRow2, PR_ATTACHMENT_HIDDEN);
+
+					if(!(*attachmentFlags & 0x00000007) 
+						&& (*attachMethod == 0x00000001) 
+						&& (!attachmentHidden || !(*attachmentHidden))) {
+
+						/* Get data of attachment */
+						retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
+						retval = octool_get_stream(exchange2ical->mem_ctx, &obj_stream, &body);
+						data=ldb_base64_encode(exchange2ical->mem_ctx, (const char *)body.data, body.length);
+						
+						/*Create a new icalattach from above data*/
+						icalattach = icalattach_new_from_data((unsigned char *)data,0,0);
+						
+						/*Add attach property to vevent component*/
+						prop = icalproperty_new_attach(icalattach);
+						icalcomponent_add_property(exchange2ical->vevent, prop);
+
+						/* Attachment filename for X-FILENAME parameter*/
+						attach_filename = get_filename(octool_get_propval(&aRow2, PR_ATTACH_LONG_FILENAME));
+						if (!attach_filename || (attach_filename && !strcmp(attach_filename, ""))) {
+							attach_filename = get_filename(octool_get_propval(&aRow2, PR_ATTACH_FILENAME));
+						}
+						
+						/* fmttype parameter */
+						fmttype = (const char *) octool_get_propval(&aRow2, PR_ATTACH_MIME_TAG);
+						if(fmttype) {
+							param = icalparameter_new_fmttype(fmttype);
+							icalproperty_add_parameter(prop, param);
+						}
+						
+						/* ENCODING parameter */
+						param =icalparameter_new_encoding(ICAL_ENCODING_BASE64);
+						icalproperty_add_parameter(prop,param);
+						
+						/* VALUE parameter */
+						param=icalparameter_new_value(ICAL_VALUE_BINARY);
+						icalproperty_add_parameter(prop,param);
+						
+						/* X-FILENAME parameter */
+						param = icalparameter_new_x(attach_filename);
+						icalparameter_set_xname(param,"X-FILENAME");
+						icalproperty_add_parameter(prop,param);
+					}
+					MAPIFreeBuffer(lpProps);
+				}
+			}
+		}
+	}
+	mapi_object_release(&obj_tb_attach);
+}
+
+
 // TODO: check this - need an example
 void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 {
@@ -47,12 +212,12 @@ void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 	const char	*display_name;
 	uint32_t	*RecipientFlags;
 	uint32_t	*RecipientType;
+	uint32_t	*TrackStatus;
 	struct SRowSet	*SRowSet;
 
 	/* Sanity check */
 	if (!exchange2ical->apptStateFlags) return;
 	if (!(*exchange2ical->apptStateFlags & 0x1)) return;
-
 	SRowSet = &(exchange2ical->Recipients.SRowSet);
 
 	/* Loop over the recipient table */
@@ -61,12 +226,16 @@ void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 		display_name = (const char *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENT_DISPLAY_NAME);
 		RecipientFlags = (uint32_t *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENTS_FLAGS);
 		RecipientType = (uint32_t *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENT_TYPE);
+		TrackStatus  = (uint32_t *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENT_TRACKSTATUS);
+
 
 		if (RecipientFlags && !(*RecipientFlags & 0x20) && !(*RecipientFlags & 0x2) &&
 		    (RecipientType && *RecipientType)) {
 			icalproperty *prop;
 			icalparameter *cn;
 			icalparameter *participantType;
+			enum icalparameter_partstat	partstat = ICAL_PARTSTAT_NONE;
+
 
 			if (smtp) {
 				char *mailtoURL;
@@ -98,14 +267,24 @@ void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 				break;
 			}
 
-#if 0
-			// TODO: fix this
-			if (exchange2ical->partstat) {
-				icalparameter *partstat;
-				partstat = icalparameter_new_partstat(exchange2ical->partstat);
-				icalproperty_add_parameter(prop, partstat);
+		
+			
+			if((exchange2ical->method==ICAL_METHOD_REPLY) || (exchange2ical->method==ICAL_METHOD_COUNTER)){
+				partstat = exchange2ical->partstat;	
+			}else if(exchange2ical->method==ICAL_METHOD_PUBLISH){
+				if(TrackStatus){
+					partstat = get_ical_partstat_from_status(*TrackStatus);
+				}else if(exchange2ical->ResponseStatus){
+					partstat = get_ical_partstat_from_status(*exchange2ical->ResponseStatus);
+				}
 			}
-#endif
+			
+			if (partstat != ICAL_PARTSTAT_NONE) {
+				icalparameter *param;
+				param = icalparameter_new_partstat(partstat);
+				icalproperty_add_parameter(prop, param);
+			}
+
 			if (exchange2ical->ResponseRequested) {
 				icalparameter *rsvp;
 				if (*(exchange2ical->ResponseRequested)) {
@@ -123,20 +302,17 @@ void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 void ical_property_CATEGORIES(struct exchange2ical *exchange2ical)
 {
 	uint32_t	i;
-	char*		categoryList;
 	icalproperty	*prop;
 
 	/* Sanity check */
 	if (!exchange2ical->Keywords) return;
 	if (!exchange2ical->Keywords->cValues) return;
 
-	categoryList = talloc_strdup(exchange2ical->mem_ctx, exchange2ical->Keywords->lppszA[0]);
-	for (i = 1; i < exchange2ical->Keywords->cValues; ++i) {
-		categoryList = talloc_strdup_append(categoryList, ",");
-		categoryList = talloc_strdup_append(categoryList, exchange2ical->Keywords->lppszA[i]);
+	for (i = 0; i < exchange2ical->Keywords->cValues; i++) {
+		prop = icalproperty_new_categories(exchange2ical->Keywords->lppszA[i]); 
+		icalcomponent_add_property(exchange2ical->vevent, prop);
 	}
-	prop = icalproperty_new_categories(categoryList); 
-	icalcomponent_add_property(exchange2ical->vevent, prop);
+
 }
 
 
@@ -176,7 +352,7 @@ void ical_property_CREATED(struct exchange2ical *exchange2ical)
 	/* Sanity check */
 	if (!exchange2ical->created) return;
 
-	icaltime = get_icaltime_from_FILETIME(exchange2ical->created);
+	icaltime = get_icaltime_from_FILETIME_UTC(exchange2ical->created);
 
 	prop = icalproperty_new_created(icaltime);
 	icalcomponent_add_property(exchange2ical->vevent, prop);
@@ -197,26 +373,19 @@ void ical_property_DTSTART(struct exchange2ical *exchange2ical)
 		prop = icalproperty_new_dtstart(icaltime);
 		icalcomponent_add_property(exchange2ical->vevent, prop);
 	} else {
-		/* If this is a recurring non all-day event */
-		if (exchange2ical->Recurring && (*exchange2ical->Recurring == 0)) {
-			// TODO: we should handle recurrence here...
+		if (exchange2ical->TimeZoneDesc) {
 			icaltime = get_icaltime_from_FILETIME(exchange2ical->apptStartWhole);
 			prop = icalproperty_new_dtstart(icaltime);
 			icalcomponent_add_property(exchange2ical->vevent, prop);
-			if (exchange2ical->TimeZoneDesc) {
-				tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
-				icalproperty_add_parameter(prop, tzid);
-			}
+			tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+			icalproperty_add_parameter(prop, tzid);
 		} else {
-			/* If this is a non recurring non all-day event */
-			icaltime = get_icaltime_from_FILETIME(exchange2ical->apptStartWhole);
+			icaltime = get_icaltime_from_FILETIME_UTC(exchange2ical->apptStartWhole);
 			prop = icalproperty_new_dtstart(icaltime);
 			icalcomponent_add_property(exchange2ical->vevent, prop);
-			if (exchange2ical->TimeZoneDesc) {
-				tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
-				icalproperty_add_parameter(prop, tzid);
-			}
 		}
+	
+		
 	}
 }
 
@@ -236,26 +405,18 @@ void ical_property_DTEND(struct exchange2ical *exchange2ical)
 		prop = icalproperty_new_dtend(icaltime);
 		icalcomponent_add_property(exchange2ical->vevent, prop);
 	} else {
-		/* If this is a recurring non all-day event */
-		if (exchange2ical->Recurring && (*exchange2ical->Recurring == 0)) {
-			// TODO: we should handle recurrence here...
+		if (exchange2ical->TimeZoneDesc) {
 			icaltime = get_icaltime_from_FILETIME(exchange2ical->apptEndWhole);
 			prop = icalproperty_new_dtend(icaltime);
 			icalcomponent_add_property(exchange2ical->vevent, prop);
-			if (exchange2ical->TimeZoneDesc) {
-				tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
-				icalproperty_add_parameter(prop, tzid);
-			}
+			tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+			icalproperty_add_parameter(prop, tzid);
 		} else {
-			/* If this is a non recurring non all-day event */
-			icaltime = get_icaltime_from_FILETIME(exchange2ical->apptEndWhole);
+			icaltime = get_icaltime_from_FILETIME_UTC(exchange2ical->apptEndWhole);
 			prop = icalproperty_new_dtend(icaltime);
 			icalcomponent_add_property(exchange2ical->vevent, prop);
-			if (exchange2ical->TimeZoneDesc) {
-				tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
-				icalproperty_add_parameter(prop, tzid);
-			}
 		}
+		
 	}
 }
 
@@ -264,18 +425,28 @@ void ical_property_DTSTAMP(struct exchange2ical *exchange2ical)
 {
 	icalproperty		*prop;
 	struct icaltimetype	icaltime;
+	struct tm		*tm;
+	icalparameter		*tzid;
+	time_t			t;
 
 	/* Sanity check */
-	if (!exchange2ical->OwnerCriticalChange) return;
-
-	/* TODO: if the property doesn't exist, we should use system
-	 * time instead 
-	 */
-
-	icaltime = get_icaltime_from_FILETIME(exchange2ical->OwnerCriticalChange);
-
-	prop = icalproperty_new_dtstamp(icaltime);
-	icalcomponent_add_property(exchange2ical->vevent, prop);
+	/*If OwnerCriticalChange field is null, get time system time*/
+	if (!exchange2ical->OwnerCriticalChange) {
+		t=time(NULL);
+		tm = gmtime(&t);
+		icaltime = get_icaltimetype_from_tm_UTC(tm);
+		prop = icalproperty_new_dtstamp(icaltime);
+		icalcomponent_add_property(exchange2ical->vevent, prop);
+		return;
+	} else {
+	      icaltime = get_icaltime_from_FILETIME_UTC(exchange2ical->OwnerCriticalChange);
+	      prop = icalproperty_new_dtstamp(icaltime);
+	      icalcomponent_add_property(exchange2ical->vevent, prop);
+	      if (exchange2ical->TimeZoneDesc) {
+			tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+			icalproperty_add_parameter(prop, tzid);
+		}
+	}
 }
 
 
@@ -294,40 +465,68 @@ void ical_property_DESCRIPTION(struct exchange2ical *exchange2ical)
 void ical_property_EXDATE(struct exchange2ical *exchange2ical)
 {
 	uint32_t	i;
-	NTTIME		time;
-	struct timeval	t;
-	struct tm	*tm;
+	uint32_t	j;
+	uint8_t		modified;
+	struct icaltimetype	icaltime;
+	struct icaltimetype	dttime;
+
 	icalproperty	*prop;
+	struct RecurrencePattern *pat = exchange2ical->RecurrencePattern;
 
 	/* Sanity check */
 	if (exchange2ical->Recurring && (*exchange2ical->Recurring == 0x0)) return;
-	if (!exchange2ical->RecurrencePattern) return;
-	if (!exchange2ical->RecurrencePattern->DeletedInstanceCount) return;
+	if (!pat) return;
+	if (!pat->DeletedInstanceCount) return;
 
-	for (i = 0; i < exchange2ical->RecurrencePattern->DeletedInstanceCount; i++) {
-		/* If this is an all-day appointment */
-		if (exchange2ical->apptSubType && (*exchange2ical->apptSubType == 0x1)) {
-			/* There is a bug in MS-OXOCAL
-			 * documentation. For all-day appointment,
-			 * DeletedInstanceDates is set to a value
-			 * which can't be the number of minutes since
-			 * blabla */
-		} else {
-			/* number of minutes between midnight of the specified
-			 * day and midnight, January 1, 1601 */
-			time = exchange2ical->RecurrencePattern->DeletedInstanceDates[i];
-			time *= 60;
-			time *= 10000000;
-			nttime_to_timeval(&t, time);
-			tm = localtime(&t.tv_sec);
-
-			prop = icalproperty_new_exdate(get_icaltimetype_from_tm(tm));
-			icalcomponent_add_property(exchange2ical->vevent, prop);
-			if (exchange2ical->TimeZoneDesc) {
-				icalparameter *tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
-				icalproperty_add_parameter(prop, tzid);
+	for (i = 0; i < pat->DeletedInstanceCount; i++) {
+		modified=0;
+		if(pat->ModifiedInstanceDates && pat->ModifiedInstanceCount){
+			for(j=0; j < pat->ModifiedInstanceCount; j++){
+				if(pat->ModifiedInstanceDates[j]==pat->DeletedInstanceDates[i]){
+					modified=1;
+					break;
+				}
 			}
 		}
+		/* If this is an all-day appointment */
+		if (!modified && exchange2ical->apptSubType && (*exchange2ical->apptSubType == 0x1)) {
+			struct tm	tm;
+			tm = get_tm_from_minutes_UTC(pat->DeletedInstanceDates[i]);
+			icaltime= get_icaldate_from_tm(&tm);
+			prop = icalproperty_new_exdate(icaltime);
+			icalcomponent_add_property(exchange2ical->vevent, prop);
+		} else if (!modified){
+			/* number of minutes between midnight of the specified
+			* day and midnight, January 1, 1601 */
+			struct tm	tm;
+			tm = get_tm_from_minutes_UTC(pat->DeletedInstanceDates[i]);
+			icaltime= get_icaltimetype_from_tm(&tm);
+
+			if (exchange2ical->TimeZoneDesc) {
+				/*Get time from dtstart*/
+				if (exchange2ical->apptEndWhole){
+					dttime = get_icaltime_from_FILETIME(exchange2ical->apptStartWhole);
+					icaltime.hour   = dttime.hour;
+					icaltime.minute = dttime.minute;
+				}
+
+				prop = icalproperty_new_exdate(icaltime);
+				icalcomponent_add_property(exchange2ical->vevent, prop);
+				icalparameter *tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+				icalproperty_add_parameter(prop, tzid);
+			} else {
+				/*Get time from dtstart*/
+				icaltime.is_utc = 1;
+				if (exchange2ical->apptEndWhole){
+					dttime = get_icaltime_from_FILETIME_UTC(exchange2ical->apptStartWhole);
+					icaltime.hour   = dttime.hour;
+					icaltime.minute = dttime.minute;
+				}
+				prop = icalproperty_new_exdate(icaltime);
+				icalcomponent_add_property(exchange2ical->vevent, prop);
+			}
+		}		
+		
 	}
 }
 
@@ -336,17 +535,20 @@ void ical_property_LAST_MODIFIED(struct exchange2ical *exchange2ical)
 {
 	icalproperty		*prop;
 	struct icaltimetype	icaltime;
+	icalparameter		*tzid;
+
 
 	/* Sanity check */
 	if (!exchange2ical->LastModified) return;
-
-	/* TODO: if the property doesn't exist, we should use system
-	 * time instead 
-	 */
-
-	icaltime = get_icaltime_from_FILETIME(exchange2ical->LastModified);
-
-	prop = icalproperty_new_lastmodified(icaltime);
+	if (exchange2ical->TimeZoneDesc) {
+		icaltime=get_icaltime_from_FILETIME(exchange2ical->LastModified);
+		prop = icalproperty_new_lastmodified(icaltime);
+		tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+		icalproperty_add_parameter(prop, tzid);
+	} else {
+		icaltime=get_icaltime_from_FILETIME_UTC(exchange2ical->LastModified);
+		prop = icalproperty_new_lastmodified(icaltime);
+	}
 	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
 
@@ -429,83 +631,20 @@ void ical_property_PRIORITY(struct exchange2ical *exchange2ical)
 }
 
 
-void ical_property_RDATE(struct exchange2ical *exchange2ical)
-{
-	uint32_t	i;
-	NTTIME		time;
-	struct timeval	t;
-	struct tm	*tm;
-	icalproperty	*prop;
-
-	/* Sanity check */
-	if (exchange2ical->Recurring && (*exchange2ical->Recurring == 0x0)) return;
-	if (!exchange2ical->RecurrencePattern) return;
-	if (!exchange2ical->RecurrencePattern->ModifiedInstanceCount) return;
-
-	for (i = 0; i < exchange2ical->RecurrencePattern->ModifiedInstanceCount; i++) {
-		/* If this is an all-day appointment */
-		if (exchange2ical->apptSubType && (*exchange2ical->apptSubType == 0x1)) {
-			/* There is a bug in MS-OXOCAL
-			 * documentation. For all-day appointment,
-			 * DeletedInstanceDates is set to a value
-			 * which can't be the number of minutes since
-			 * January 1st, 1601 */
-		} else {
-			/* number of minutes between midnight of the specified
-			 * day and midnight, January 1st, 1601 */
-			time = exchange2ical->RecurrencePattern->ModifiedInstanceDates[i];
-			time *= 60;
-			time *= 10000000;
-			nttime_to_timeval(&t, time);
-			tm = localtime(&t.tv_sec);
-
-			prop = icalproperty_new_rdate(get_icaldatetimeperiodtype_from_tm(tm));
-			icalcomponent_add_property(exchange2ical->vevent, prop);
-			if (exchange2ical->TimeZoneDesc) {
-				icalparameter *tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
-				icalproperty_add_parameter(prop, tzid);
-			}
-		}
-	}	
-}
-
-
-#if 0
-static const char *get_RRULE_byday(uint16_t DayOfWeek)
-{
-	uint16_t	i;
-
-	for (i = 0; RRULE_byday[i].DayName; i++) {
-		if (DayOfWeek == RRULE_byday[i].DayOfWeek) {
-			return RRULE_byday[i].DayName;
-		}
-	}
-	
-	return NULL;
-}
-#endif
-
-
 void ical_property_RRULE_Daily(struct exchange2ical *exchange2ical)
 {
 	struct icalrecurrencetype recurrence;
 	icalproperty *prop;
 	struct RecurrencePattern *pat = exchange2ical->RecurrencePattern;
 
+
 	icalrecurrencetype_clear(&recurrence);
 	recurrence.freq = ICAL_DAILY_RECURRENCE;
 	recurrence.interval = (pat->Period / 1440);
 
-	// TODO: need answers from Microsoft on what is happening here
-	printf("endType:0x%x\n", pat->EndType);
-	printf("seeing %i occurences\n", pat->OccurrenceCount);
-	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
-		printf("seeing %i occurences\n", pat->OccurrenceCount);
+	if (pat->EndType == END_AFTER_N_OCCURRENCES || pat->EndType == END_AFTER_DATE) {
 		recurrence.count = pat->OccurrenceCount;
-	} else if (pat->EndType == END_AFTER_DATE) {
-	      // TODO: set recurrence.until = pat->EndDate;
 	}
-
 	prop = icalproperty_new_rrule(recurrence);
 	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
@@ -521,7 +660,34 @@ void ical_property_RRULE_Weekly(struct exchange2ical *exchange2ical)
 
 	icalrecurrencetype_clear(&recurrence);
 	recurrence.freq = ICAL_WEEKLY_RECURRENCE;
-
+	recurrence.interval = pat->Period;
+	
+	if(pat->Period > 1){
+		switch(pat->FirstDOW){
+			case FirstDOW_Sunday:
+				recurrence.week_start=ICAL_SUNDAY_WEEKDAY;
+				break;
+			case FirstDOW_Monday:
+				recurrence.week_start=ICAL_MONDAY_WEEKDAY;
+				break;
+			case FirstDOW_Tuesday:
+				recurrence.week_start=ICAL_TUESDAY_WEEKDAY;
+				break;
+			case FirstDOW_Wednesday:
+				recurrence.week_start=ICAL_WEDNESDAY_WEEKDAY;
+				break;
+			case FirstDOW_Thursday:
+				recurrence.week_start=ICAL_THURSDAY_WEEKDAY;
+				break;
+			case FirstDOW_Friday:
+				recurrence.week_start=ICAL_FRIDAY_WEEKDAY;
+				break;
+			case FirstDOW_Saturday:
+				recurrence.week_start=ICAL_SATURDAY_WEEKDAY;
+				break;
+		}
+	}
+	
 	if (rdfDaysBitmask & Su) {
 		recurrence.by_day[idx] = ICAL_SUNDAY_WEEKDAY;
 		++idx;
@@ -552,16 +718,8 @@ void ical_property_RRULE_Weekly(struct exchange2ical *exchange2ical)
 	}
 	recurrence.by_day[idx] = ICAL_RECURRENCE_ARRAY_MAX;
 
-	recurrence.count = pat->OccurrenceCount;
-
-	// TODO: need answers from Microsoft on what is happening here
-	printf("endType:0x%x\n", pat->EndType);
-	printf("seeing %i occurences\n", pat->OccurrenceCount);
-	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
-		printf("seeing %i occurences\n", pat->OccurrenceCount);
+	if (pat->EndType == END_AFTER_N_OCCURRENCES || pat->EndType == END_AFTER_DATE) {
 		recurrence.count = pat->OccurrenceCount;
-	} else if (pat->EndType == END_AFTER_DATE) {
-	      // TODO: set recurrence.until = pat->EndDate;
 	}
 
 	prop = icalproperty_new_rrule(recurrence);
@@ -587,16 +745,8 @@ void ical_property_RRULE_Monthly(struct exchange2ical *exchange2ical)
 	}
 	recurrence.by_month_day[1] = ICAL_RECURRENCE_ARRAY_MAX;
 
-	recurrence.count = pat->OccurrenceCount;
-
-	// TODO: need answers from Microsoft on what is happening here
-	printf("endType:0x%x\n", pat->EndType);
-	printf("seeing %i occurences\n", pat->OccurrenceCount);
-	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
-		printf("seeing %i occurences\n", pat->OccurrenceCount);
+	if (pat->EndType == END_AFTER_N_OCCURRENCES || pat->EndType == END_AFTER_DATE) {
 		recurrence.count = pat->OccurrenceCount;
-	} else if (pat->EndType == END_AFTER_DATE) {
-	      // TODO: set recurrence.until = pat->EndDate;
 	}
 
 	prop = icalproperty_new_rrule(recurrence);
@@ -664,16 +814,8 @@ void ical_property_RRULE_NthMonthly(struct exchange2ical *exchange2ical)
 		recurrence.by_set_pos[1] = ICAL_RECURRENCE_ARRAY_MAX;
 	}
 
-	recurrence.count = pat->OccurrenceCount;
-
-	// TODO: need answers from Microsoft on what is happening here
-	printf("endType:0x%x\n", pat->EndType);
-	printf("seeing %i occurences\n", pat->OccurrenceCount);
-	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
-		printf("seeing %i occurences\n", pat->OccurrenceCount);
+	if (pat->EndType == END_AFTER_N_OCCURRENCES || pat->EndType == END_AFTER_DATE) {
 		recurrence.count = pat->OccurrenceCount;
-	} else if (pat->EndType == END_AFTER_DATE) {
-	      // TODO: set recurrence.until = pat->EndDate;
 	}
 
 	prop = icalproperty_new_rrule(recurrence);
@@ -700,22 +842,16 @@ void ical_property_RRULE_Yearly(struct exchange2ical *exchange2ical)
 	}
 	recurrence.by_month_day[1] = ICAL_RECURRENCE_ARRAY_MAX;
 
-	icaltime = get_icaltime_from_FILETIME(exchange2ical->apptStartWhole);
+	icaltime = get_icaltime_from_FILETIME_UTC(exchange2ical->apptStartWhole);
 	recurrence.by_month[0] = icaltime.month;
 	recurrence.by_month[1] = ICAL_RECURRENCE_ARRAY_MAX;
 
-	recurrence.count = pat->OccurrenceCount;
 
-	// TODO: need answers from Microsoft on what is happening here
-	printf("endType:0x%x\n", pat->EndType);
-	printf("seeing %i occurences\n", pat->OccurrenceCount);
-	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
-		printf("seeing %i occurences\n", pat->OccurrenceCount);
+	
+	if (pat->EndType == END_AFTER_N_OCCURRENCES || pat->EndType == END_AFTER_DATE) {
 		recurrence.count = pat->OccurrenceCount;
-	} else if (pat->EndType == END_AFTER_DATE) {
-	      // TODO: set recurrence.until = pat->EndDate;
-	}
-
+	} 
+	
 	prop = icalproperty_new_rrule(recurrence);
 	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
@@ -785,15 +921,9 @@ void ical_property_RRULE_NthYearly(struct exchange2ical *exchange2ical)
 	icaltime = get_icaltime_from_FILETIME(exchange2ical->apptStartWhole);
 	recurrence.by_month[0] = icaltime.month;
 	recurrence.by_month[1] = ICAL_RECURRENCE_ARRAY_MAX;
-
-	// TODO: need answers from Microsoft on what is happening here
-	printf("endType:0x%x\n", pat->EndType);
-	printf("seeing %i occurences\n", pat->OccurrenceCount);
-	if (pat->EndType == END_AFTER_N_OCCURRENCES) {
-		printf("seeing %i occurences\n", pat->OccurrenceCount);
+	
+	if (pat->EndType == END_AFTER_N_OCCURRENCES || pat->EndType == END_AFTER_DATE) {
 		recurrence.count = pat->OccurrenceCount;
-	} else if (pat->EndType == END_AFTER_DATE) {
-	      // TODO: set recurrence.until = pat->EndDate;
 	}
 
 	prop = icalproperty_new_rrule(recurrence);
@@ -836,14 +966,75 @@ void ical_property_RRULE(struct exchange2ical *exchange2ical)
 	}
 }
 
+void ical_property_RRULE_daylight_standard(icalcomponent* component , struct SYSTEMTIME st)
+{
+	struct icalrecurrencetype recurrence;
+	icalproperty *prop;
+	
+	icalrecurrencetype_clear(&recurrence);
+	recurrence.freq = ICAL_YEARLY_RECURRENCE;
+
+	if(st.wYear ==0x0000){
+		recurrence.by_month[0]=st.wMonth;
+		/* Microsoft day of week = libIcal day of week +1; */
+		/* Day encode = day + occurence*8 */
+		if (st.wDay==5){
+			/* Last occurence of day in the month*/
+			recurrence.by_day[0] = -1 * (st.wDayOfWeek + 9);
+		}else{
+			/* st.wDay occurence of day in the month */
+			recurrence.by_day[0] = (st.wDayOfWeek + 1 + st.wDay*8);
+		}
+		
+	}else{
+		recurrence.by_month_day[0]=st.wDay;
+		recurrence.by_month[0]=st.wMonth;
+	}
+
+	
+	prop = icalproperty_new_rrule(recurrence);
+	icalcomponent_add_property(component, prop);
+}
+
 
 void ical_property_RECURRENCE_ID(struct exchange2ical *exchange2ical)
-{
-	/* Sanity check */
-	if (!exchange2ical->ExceptionReplaceTime) return;
+{	
+	struct icaltimetype	icaltime;
+	icalproperty 		*prop;
+	icalparameter		*tzid;
+	struct GlobalObjectId	*GlbObjId;
 
-	/* TODO: I'm too lazy to implement this today */
-	DEBUG(0, ("RECURRENCE-ID:\n"));
+	
+	if (exchange2ical->ExceptionReplaceTime){
+		/*if parent has an all day event*/
+ 		if (exchange2ical->apptSubType && (*exchange2ical->apptSubType == 0x1)) {
+			icaltime = get_icaldate_from_FILETIME(exchange2ical->ExceptionReplaceTime);
+			prop = icalproperty_new_recurrenceid(icaltime);
+			icalcomponent_add_property(exchange2ical->vevent, prop);
+		} else {
+			if (exchange2ical->TimeZoneDesc) {
+				icaltime=get_icaltime_from_FILETIME(exchange2ical->ExceptionReplaceTime);
+				prop = icalproperty_new_recurrenceid(icaltime);
+				icalcomponent_add_property(exchange2ical->vevent, prop);
+				tzid = icalparameter_new_tzid(exchange2ical->TimeZoneDesc);
+				icalproperty_add_parameter(prop, tzid);
+			} else {
+				icaltime = get_icaltime_from_FILETIME_UTC(exchange2ical->ExceptionReplaceTime);
+				prop = icalproperty_new_recurrenceid(icaltime);
+				icalcomponent_add_property(exchange2ical->vevent, prop);
+			}
+		}
+	} else if (exchange2ical->GlobalObjectId){
+		GlbObjId = get_GlobalObjectId(exchange2ical->mem_ctx, exchange2ical->GlobalObjectId);
+		if(GlbObjId){
+			icaltime=get_icaldate_from_GlobalObjectId(GlbObjId);
+			prop = icalproperty_new_recurrenceid(icaltime);
+			icalcomponent_add_property(exchange2ical->vevent, prop);
+			talloc_free(GlbObjId);
+
+		}
+	}
+	
 }
 
 
@@ -854,7 +1045,7 @@ void ical_property_RESOURCES(struct exchange2ical *exchange2ical)
 
 	/* Sanity check */
 	if (!exchange2ical->NonSendableBcc) return;
-
+	
 	NonSendableBcc = talloc_strdup(exchange2ical->mem_ctx, exchange2ical->NonSendableBcc);
 	all_string_sub(NonSendableBcc, ";", ",", 0);
 	prop = icalproperty_new_resources(NonSendableBcc);
@@ -873,6 +1064,7 @@ void ical_property_SEQUENCE(struct exchange2ical *exchange2ical)
 	}
 	icalcomponent_add_property(exchange2ical->vevent, prop);
 }
+
 
 void ical_property_SUMMARY(struct exchange2ical *exchange2ical)
 {
@@ -923,7 +1115,6 @@ void ical_property_TRIGGER(struct exchange2ical *exchange2ical)
 	struct icaltriggertype duration;
 	icalproperty *prop;
 	if (!exchange2ical->ReminderDelta) return;
-
 	if (*exchange2ical->ReminderDelta == 0x5AE980E1) {
 		duration = icaltriggertype_from_int(-15 * 60);
 		prop = icalproperty_new_trigger(duration);
@@ -945,68 +1136,83 @@ void ical_property_UID(struct exchange2ical *exchange2ical)
 	char*			outstr;
 	struct GlobalObjectId	*GlbObjId;
 	icalproperty		*prop;
-
-	/* Sanity check */
-	if (!exchange2ical->GlobalObjectId) {
-		// printf("GlobalObjectId not found\n");
-		return;
+	outstr=talloc_init("uid");
+	
+	if(exchange2ical->GlobalObjectId){
+		GlbObjId = get_GlobalObjectId(exchange2ical->mem_ctx, exchange2ical->GlobalObjectId);
 	}
 	
-	GlbObjId = get_GlobalObjectId(exchange2ical->mem_ctx, exchange2ical->GlobalObjectId);
-	if (!GlbObjId) {
-		// printf("could not get GlbObjId\n");
-		return;
-	}
+      
+	if (exchange2ical->GlobalObjectId && GlbObjId) {
+		if (GlbObjId->Size >= 12 && (0 == memcmp(GlbObjId->Data, GLOBAL_OBJECT_ID_DATA_START, 12))) {
+			fflush(0);
+			// TODO: could this code overrun GlobalObjectId->lpb?
+			// TODO: I think we should start at 12, not at zero...
+			for (i = 12; i < 52; i++) {
+				char objID[6];
+				snprintf(objID, 6, "%.2X", exchange2ical->GlobalObjectId->lpb[i]);
+				outstr = talloc_strdup_append(outstr, objID);
+			}
 
-	outstr=talloc_init("uid");
-	if (GlbObjId->Size >= 12 && (0 == memcmp(GlbObjId->Data, GLOBAL_OBJECT_ID_DATA_START, 12))) {
-		// TODO: could this code overrun GlobalObjectId->lpb?
-		// TODO: I think we should start at 12, not at zero...
-		for (i = 0; i < 52; i++) {
-			char objID[6];
-			snprintf(objID, 6, "%.2X", exchange2ical->GlobalObjectId->lpb[i]);
-			outstr = talloc_strdup_append(outstr, objID);
+			uid = (const char *)&(GlbObjId->Data[13]);
+			outstr = talloc_strdup_append(outstr, uid);
+		} else {
+			fflush(0);
+			for (i = 0; i < 16; i++) {
+				char objID[6];
+				snprintf(objID, 6, "%.2X", exchange2ical->GlobalObjectId->lpb[i]);
+				outstr = talloc_strdup_append(outstr, objID);
+			}
+			/* YH, YL, Month and D must be set to 0 */
+			outstr = talloc_strdup_append(outstr, "00000000");
+
+			for (i = 20; i < exchange2ical->GlobalObjectId->cb; i++) {
+				char objID[6];
+				snprintf(objID, 6, "%.2X", exchange2ical->GlobalObjectId->lpb[i]);
+				outstr = talloc_strdup_append(outstr, objID);
+			}
 		}
-
-		uid = (const char *)&(GlbObjId->Data[13]);
-		outstr = talloc_strdup_append(outstr, uid);
-
+		talloc_free(GlbObjId);
 	} else {
-		for (i = 0; i < 16; i++) {
-			char objID[6];
-			snprintf(objID, 6, "%.2X", exchange2ical->GlobalObjectId->lpb[i]);
-			outstr = talloc_strdup_append(outstr, objID);
-		}
-		/* YH, YL, Month and D must be set to 0 */
-		outstr = talloc_strdup_append(outstr, "00000000");
-
-		for (i = 20; i < exchange2ical->GlobalObjectId->cb; i++) {
-			char objID[6];
-			snprintf(objID, 6, "%.2X", exchange2ical->GlobalObjectId->lpb[i]);
-			outstr = talloc_strdup_append(outstr, objID);
-		}
+		char objID[32];
+		snprintf(objID, 32, "%i", exchange2ical->idx);
+		outstr = talloc_strdup(outstr, objID);
 	}
+	
 	prop = icalproperty_new_uid(outstr);
 	icalcomponent_add_property(exchange2ical->vevent, prop);
 	talloc_free(outstr);
-	talloc_free(GlbObjId);
 }
 
 
-static void ical_property_add_x_property_value(icalcomponent *parent, const char* propname, const char* value)
+static icalproperty * ical_property_add_x_property_value(icalcomponent *parent, const char* propname, const char* value)
 {
 	icalproperty *prop;
+	icalvalue *icalText;
 
 	/* Sanity checks */
-	if (!parent) return;
-	if (!propname) return;
-	if (!value) return;
+	if (!parent) return NULL;
+	if (!propname) return NULL;
+	if (!value) return NULL;
 
-	prop = icalproperty_new_x(value);
+	icalText = icalvalue_new_text(value);
+	prop = icalproperty_new_x(icalvalue_as_ical_string(icalText));
 	icalproperty_set_x_name(prop, propname);
 	icalcomponent_add_property(parent, prop);
+	return prop;
 }
 
+void ical_property_X_ALT_DESC(struct exchange2ical *exchange2ical)
+{
+	icalproperty *prop;
+	icalparameter *param;
+	
+	/*sanity check */
+	if(!exchange2ical->bodyHTML) return;
+	prop = ical_property_add_x_property_value(exchange2ical->vevent, "X-ALT-DESC",exchange2ical->bodyHTML);
+	param = icalparameter_new_fmttype("text/html");
+	icalproperty_add_parameter(prop, param);	
+}
 
 void ical_property_X_MICROSOFT_CDO_ATTENDEE_CRITICAL_CHANGE(struct exchange2ical *exchange2ical)
 {
@@ -1024,9 +1230,9 @@ void ical_property_X_MICROSOFT_CDO_ATTENDEE_CRITICAL_CHANGE(struct exchange2ical
 
 void ical_property_X_MICROSOFT_CDO_BUSYSTATUS(struct exchange2ical *exchange2ical)
 {
-	/* Sanity check */
-	if (!exchange2ical->BusyStatus) return;
-
+	/*sanity check*/
+	if(!exchange2ical->BusyStatus) return;
+	
 	switch (*exchange2ical->BusyStatus) {
 	case 0x00000000:
 		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-BUSYSTATUS", "FREE");
@@ -1042,7 +1248,23 @@ void ical_property_X_MICROSOFT_CDO_BUSYSTATUS(struct exchange2ical *exchange2ica
 		break;
 	}
 }
+void ical_property_X_MICROSOFT_MSNCALENDAR_IMPORTANCE(struct exchange2ical *exchange2ical)
+{
+	/* Sanity check */
+	if (!exchange2ical->Importance) return;
 
+	switch (*exchange2ical->Importance) {
+	case 0x00000000:
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-MSNCALENDAR-IMPORTANCE", "0");
+		break;
+	case 0x00000001:
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-MSNCALENDAR-IMPORTANCE", "1");
+		break;
+	case 0x00000002:
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-MSNCALENDAR-IMPORTANCE", "2");
+		break;
+	}
+}
 
 void ical_property_X_MICROSOFT_CDO_INTENDEDSTATUS(struct exchange2ical *exchange2ical)
 {
@@ -1079,15 +1301,14 @@ void ical_property_X_MICROSOFT_CDO_OWNER_CRITICAL_CHANGE(struct exchange2ical *e
 {
 	struct tm	*tm;
 	char		outstr[200];
-
+	
 	/* Sanity check */
 	if (!exchange2ical->OwnerCriticalChange) return;
 
-	/* FIXME: if the property doesn't exist, we should use system
-	 * time instead 
-	 */
 
 	tm = get_tm_from_FILETIME(exchange2ical->OwnerCriticalChange);
+	
+
 	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
 	ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-OWNER-CRITICAL-CHANGE", outstr);
 }
@@ -1187,6 +1408,7 @@ void ical_property_X_MS_OLK_COLLABORATEDOC(struct exchange2ical *exchange2ical)
 {
 	/* Sanity check */
 	if (!exchange2ical->CollaborateDoc) return;
+	if(!(*exchange2ical->CollaborateDoc)) return;
 
 	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-COLLABORATEDOC", exchange2ical->CollaborateDoc);
 }
@@ -1196,7 +1418,7 @@ void ical_property_X_MS_OLK_CONFCHECK(struct exchange2ical *exchange2ical)
 {
 	/* Sanity check */
 	if (!exchange2ical->ConfCheck) return;
-
+	
 	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-CONFCHECK", (*exchange2ical->ConfCheck == true) ? "TRUE" : "FALSE");
 }
 
@@ -1214,28 +1436,47 @@ void ical_property_X_MS_OLK_CONFTYPE(struct exchange2ical *exchange2ical)
 
 void ical_property_X_MS_OLK_DIRECTORY(struct exchange2ical *exchange2ical)
 {
+	/*Sanity Check*/
+	if(!exchange2ical->Directory) return;
+	if(!(*exchange2ical->Directory)) return;
+
 	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-DIRECTORY", exchange2ical->Directory);
 }
 
 
 void ical_property_X_MS_OLK_MWSURL(struct exchange2ical *exchange2ical)
 {
+	/*Sanity Check*/
+	if(!exchange2ical->MWSURL) return;
+
 	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-MWSURL", exchange2ical->MWSURL);
 }
 
 
 void ical_property_X_MS_OLK_NETSHOWURL(struct exchange2ical *exchange2ical)
 {
+	/*Sanity Check*/
+	if(!exchange2ical->NetShowURL) return;
+	if(!(*exchange2ical->NetShowURL)) return;
+
 	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-NETSHOWURL", exchange2ical->NetShowURL);
 }
 
 void ical_property_X_MS_OLK_ONLINEPASSWORD(struct exchange2ical *exchange2ical)
 {
+	/*Sanity Check*/
+	if(!exchange2ical->OnlinePassword) return;
+	if(!(*exchange2ical->OnlinePassword)) return;
+
 	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-ONLINEPASSWORD", exchange2ical->OnlinePassword);
 }
 
 void ical_property_X_MS_OLK_ORGALIAS(struct exchange2ical *exchange2ical)
 {
+	/* Sanity check */
+	if(!exchange2ical->OrgAlias) return;
+	if(!(*exchange2ical->OrgAlias)) return;
+
 	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-ORGALIAS", exchange2ical->OrgAlias);
 }
 

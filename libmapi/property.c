@@ -780,8 +780,68 @@ _PUBLIC_ struct RecurrencePattern *get_RecurrencePattern(TALLOC_CTX *mem_ctx,
                 talloc_free(RecurrencePattern);
                 return NULL;
         }
+	
+	/*Copy DeletedInstanceDates and ModifiedInstanceDates into memory*/ 
+	RecurrencePattern->DeletedInstanceDates=talloc_memdup(mem_ctx, RecurrencePattern->DeletedInstanceDates, 
+							      sizeof(uint32_t) * RecurrencePattern->DeletedInstanceCount);
+							      
+	RecurrencePattern->ModifiedInstanceDates=talloc_memdup(mem_ctx, RecurrencePattern->ModifiedInstanceDates, 
+							      sizeof(uint32_t) * RecurrencePattern->ModifiedInstanceCount);
+	
+	/*Set reference to parent so arrays get free with RecurrencePattern struct*/
+	RecurrencePattern->DeletedInstanceDates=talloc_reference(RecurrencePattern, RecurrencePattern->DeletedInstanceDates);
+	RecurrencePattern->ModifiedInstanceDates=talloc_reference(RecurrencePattern, RecurrencePattern->ModifiedInstanceDates);
 
         return RecurrencePattern;
+}
+_PUBLIC_ struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, 
+							 struct Binary_r *bin)
+{
+        struct AppointmentRecurrencePattern		*arp = NULL;
+        struct ndr_pull					*ndr;
+        enum ndr_err_code				ndr_err_code;
+
+        /* Sanity checks */
+        if (!bin) return NULL;
+        if (!bin->cb) return NULL;
+        if (!bin->lpb) return NULL;
+
+        ndr = talloc_zero(mem_ctx, struct ndr_pull);
+        ndr->offset = 0;
+        ndr->data = bin->lpb;
+        ndr->data_size = bin->cb;
+
+        ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+        ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
+        arp = talloc_zero(mem_ctx, struct AppointmentRecurrencePattern);
+        ndr_err_code = ndr_pull_AppointmentRecurrencePattern(ndr, NDR_SCALARS, arp);
+
+        talloc_free(ndr);
+
+        if (ndr_err_code != NDR_ERR_SUCCESS) {
+                talloc_free(arp);
+                return NULL;
+        }
+
+	/*Copy ExceptionInfo array into memory*/ 
+	arp->ExceptionInfo=talloc_memdup(mem_ctx,arp->ExceptionInfo, sizeof(struct ExceptionInfo) * arp->ExceptionCount);
+	
+	/*Copy DeletedInstanceDates and ModifiedInstanceDates into memory*/ 
+	arp->RecurrencePattern.DeletedInstanceDates=talloc_memdup(mem_ctx, arp->RecurrencePattern.DeletedInstanceDates, 
+							      sizeof(uint32_t) * arp->RecurrencePattern.DeletedInstanceCount);
+							      
+	arp->RecurrencePattern.ModifiedInstanceDates=talloc_memdup(mem_ctx, arp->RecurrencePattern.ModifiedInstanceDates, 
+							      sizeof(uint32_t) * arp->RecurrencePattern.ModifiedInstanceCount);
+	
+	/*Set reference to parent so arrays get free with rest*/
+	arp->ExceptionInfo = talloc_reference(arp, arp->ExceptionInfo);
+	arp->RecurrencePattern.DeletedInstanceDates = talloc_reference(arp,arp->RecurrencePattern.DeletedInstanceDates);
+	arp->RecurrencePattern.ModifiedInstanceDates = talloc_reference(arp, arp->RecurrencePattern.ModifiedInstanceDates);
+	
+
+	
+
+        return arp;
 }
 
 

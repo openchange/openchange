@@ -32,17 +32,18 @@ exchange2ical \- Convert Exchange calendar to ical file
 
 .SH SYNOPSIS
 .nf
-exchange2ical [-?|--help] [--usage] [-f|--database=STRING] [-p|--profile=STRING]
-  [-P|--password=STRING] [-d|--debuglevel=STRING] [--dump-data]
+exchange2ical [-?V] [-?|--help] [--usage] [-f|--database=STRING] [-p|--profile=STRING] 
+	[-P|--password=STRING] [-i|--icalsync=STRING] [-o|--filename=STRING] [-R|--range=STRING]
+        [-d|--debuglevel=STRING] [--dump-data] [-V|--version]
+
 .fi
 
 .SH DESCRIPTION
 exchange2ical provides a way to extract appointments from an Exchange calendar
-into the ical format. The ical is provided on stdout.
+into the ical format. The ical is provided on stdout by default if the filename is not specified.
 
 .SH OPTIONS
 
-.TP
 .B --database
 .TP
 .B -f
@@ -65,6 +66,29 @@ Specify the password for the profile to use. This can be omitted if the
 password is stored in the profile.
 
 .TP
+.B --icalsync
+.TP
+.B -i
+Specify an icalendar file to be used to sync back to exchange.
+
+.TP
+.B --filename
+.TP
+.B -o
+Specify the filename for the icalendar output.  The specified file will be 
+overwritten with the new icalendar. If this is omitted, stdout will be used 
+by default.
+
+.TP
+.B --range
+.TP
+.B -r
+Specify the range of exchange appointments to be converted into an icalendar.  
+If there are no events, whos start date is within the specified range, 
+an icalendar with no vevents will be returned.
+.B Format: MM/DD/YYYY-MM/DD/YYYY
+
+.TP
 .B --dump-data
 Dump the hex data. This is only required for debugging or educational purposes.
 
@@ -79,6 +103,14 @@ Set the debug level.
 .B Extract appointments from the Exchange calendar:
 .nf
 exchange2ical > appointments.ical
+.fi
+.B Extract appointments from the Exchange calendar to a specified path
+.nf
+exchange2ical --filename=/path/to/file.ics
+.fi
+.B Extract only appointments which begin from June 25 2008 to July 26 2009
+.nf
+exchange2ical --range=06/25/2008-07/26/2009
 .fi
 
 .SH REMARKS

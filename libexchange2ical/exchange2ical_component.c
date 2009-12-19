@@ -19,14 +19,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <utils/exchange2ical/exchange2ical.h>
 
+#include <libexchange2ical/libexchange2ical.h>
 #include <libical/icalderivedproperty.h>
 
+/*
+   VCALENDAR component
+ */
 void ical_component_VCALENDAR(struct exchange2ical *exchange2ical)
 {
 	icalproperty* prop;
-
+	
 	exchange2ical->vcalendar = icalcomponent_new_vcalendar();
 	if (!(exchange2ical->vcalendar)) {
 		return;
@@ -41,11 +44,6 @@ void ical_component_VCALENDAR(struct exchange2ical *exchange2ical)
 	prop = icalproperty_new_method(exchange2ical->method);
 	icalcomponent_add_property(exchange2ical->vcalendar, prop);
 
-	/* TODO: This appears wrong - should be a parameter of the VEVENT component, ATTENDEE property */
-	if (exchange2ical->partstat != ICAL_PARTSTAT_NONE) {
-		icalparameter *param = icalparameter_new_partstat(exchange2ical->partstat);
-		icalproperty_add_parameter(prop, param);
-	}
 
 	if (exchange2ical->RecurrencePattern && exchange2ical->RecurrencePattern->CalendarType) {
 		prop = icalproperty_new_x(get_ical_calendartype(exchange2ical->RecurrencePattern->CalendarType));
@@ -54,46 +52,49 @@ void ical_component_VCALENDAR(struct exchange2ical *exchange2ical)
 	}
 
 	ical_component_VTIMEZONE(exchange2ical);
-
-	ical_component_VEVENT(exchange2ical);
-
 }
 
+/*
+   VEVENT component
+ */
 void ical_component_VEVENT(struct exchange2ical *exchange2ical)
 {
 	exchange2ical->vevent = icalcomponent_new_vevent();
 	if ( ! (exchange2ical->vevent) ) {
 		return;
 	}
+	
 	icalcomponent_add_component(exchange2ical->vcalendar, exchange2ical->vevent);
-	/* ATTACH property FIXME */
+	ical_property_ATTACH(exchange2ical);
 	ical_property_ATTENDEE(exchange2ical);
 	ical_property_CATEGORIES(exchange2ical);
 	ical_property_CLASS(exchange2ical);
 	ical_property_CONTACT(exchange2ical);
 	ical_property_CREATED(exchange2ical);
-	ical_property_DTSTART(exchange2ical);
+	ical_property_DESCRIPTION(exchange2ical);
 	ical_property_DTEND(exchange2ical);
 	ical_property_DTSTAMP(exchange2ical);
-	ical_property_DESCRIPTION(exchange2ical);
+	ical_property_DTSTART(exchange2ical);
+	ical_property_RECURRENCE_ID(exchange2ical);
 	ical_property_EXDATE(exchange2ical);
 	ical_property_LAST_MODIFIED(exchange2ical);
 	ical_property_LOCATION(exchange2ical);
 	ical_property_ORGANIZER(exchange2ical);
 	ical_property_PRIORITY(exchange2ical);
-	ical_property_RDATE(exchange2ical);
+	/*All posible RDATE properties are now exported as seperate vevents.
+	No longer a need for it*/
+	//ical_property_RDATE(exchange2ical);
 	ical_property_RRULE(exchange2ical);
-	/* RECURRENCE-ID property:FIXME */
-	ical_property_RECURRENCE_ID(exchange2ical);
 	ical_property_RESOURCES(exchange2ical);
 	ical_property_SEQUENCE(exchange2ical);
 	ical_property_SUMMARY(exchange2ical);
 	ical_property_TRANSP(exchange2ical);
 	ical_property_UID(exchange2ical);
-
-	/* X-ALT-DESC FIXME */
+	ical_property_X_ALT_DESC(exchange2ical);
 	ical_property_X_MICROSOFT_CDO_ATTENDEE_CRITICAL_CHANGE(exchange2ical);
 	ical_property_X_MICROSOFT_CDO_BUSYSTATUS(exchange2ical);
+	/* Looks like this is no longer supposed to be used, and is ignored by most Outlook versions */
+	/* ical_property_X_MICROSOFT_MSNCALENDAR_IMPORTANCE(exchange2ical); */
 	ical_property_X_MICROSOFT_CDO_INTENDEDSTATUS(exchange2ical);
 	ical_property_X_MICROSOFT_CDO_OWNERAPPTID(exchange2ical);
 	ical_property_X_MICROSOFT_CDO_OWNER_CRITICAL_CHANGE(exchange2ical);
@@ -116,30 +117,30 @@ void ical_component_VEVENT(struct exchange2ical *exchange2ical)
 	ical_component_VALARM(exchange2ical);
 }
 
-
-/**
+/*
    VTIMEZONE component
  */
 void ical_component_VTIMEZONE(struct exchange2ical *exchange2ical)
 {
 	exchange2ical->vtimezone = icalcomponent_new_vtimezone();
-	icalcomponent_add_component(exchange2ical->vcalendar, exchange2ical->vtimezone);
 
 	/* TZID property */
 	if (exchange2ical->TimeZoneDesc) {
 		icalproperty *tzid = icalproperty_new_tzid(exchange2ical->TimeZoneDesc);
 		icalcomponent_add_property(exchange2ical->vtimezone, tzid);
 	}
-
 	/* STANDARD sub-component */
-	ical_component_STANDARD(exchange2ical);
-	
-	/* DAYLIGHT component */
-	ical_component_DAYLIGHT(exchange2ical);
+	if (exchange2ical->TimeZoneStruct) {
+		icalcomponent_add_component(exchange2ical->vcalendar, exchange2ical->vtimezone);
+		ical_component_STANDARD(exchange2ical);
+
+		if (has_component_DAYLIGHT(exchange2ical)) {
+			ical_component_DAYLIGHT(exchange2ical);
+		}
+	}
 }
 
-
-/**
+/*
    STANDARD sub-component
  */
 void ical_component_STANDARD(struct exchange2ical *exchange2ical)
@@ -149,9 +150,6 @@ void ical_component_STANDARD(struct exchange2ical *exchange2ical)
 	int32_t		tzoffsetto;
 	icalcomponent	*standard;
 	icalproperty	*prop;
-
-	/* Sanity Check */
-	if (!exchange2ical->TimeZoneStruct) return;
 
 	standard = icalcomponent_new_xstandard();
 	icalcomponent_add_component(exchange2ical->vtimezone, standard);
@@ -164,22 +162,24 @@ void ical_component_STANDARD(struct exchange2ical *exchange2ical)
 		talloc_free(dtstart);
 	}
 
-	/* TODO: RRULE property */
-	// ical_property_RRULE(exchange2ical, exchange2ical->TimeZoneStruct->stStandardDate);
-
+	/* RRULE Property */
+	if (has_component_DAYLIGHT(exchange2ical)){
+		ical_property_RRULE_daylight_standard(standard,exchange2ical->TimeZoneStruct->stStandardDate);
+	}
+	
 	/* TZOFFSETFROM property */
-	tzoffsetfrom = -1 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lDaylightBias);
+	tzoffsetfrom = (-60 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lDaylightBias));
 	prop = icalproperty_new_tzoffsetfrom(tzoffsetfrom);
 	icalcomponent_add_property(standard, prop);
 
 	/* TZOFFSETTO property */
-	tzoffsetto = -1 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lStandardBias);
+	tzoffsetto = (-60 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lStandardBias));
 	prop = icalproperty_new_tzoffsetto(tzoffsetto);
 	icalcomponent_add_property(standard, prop);
 }
 
 
-/**
+/*
    DAYLIGHT sub-component
  */
 void ical_component_DAYLIGHT(struct exchange2ical *exchange2ical)
@@ -189,9 +189,6 @@ void ical_component_DAYLIGHT(struct exchange2ical *exchange2ical)
 	int32_t		tzoffsetto;
 	icalcomponent	*daylight;
 	icalproperty	*prop;
-
-	/* Sanity check */
-	if (has_component_DAYLIGHT(exchange2ical) == false) return;
 
 	daylight = icalcomponent_new_xdaylight();
 	icalcomponent_add_component(exchange2ical->vtimezone, daylight);
@@ -203,22 +200,23 @@ void ical_component_DAYLIGHT(struct exchange2ical *exchange2ical)
 		icalcomponent_add_property(daylight, prop);
 		talloc_free(dtstart);
 	}
-	/* TODO: RRULE property */
-	// ical_property_RRULE(exchange2ical, exchange2ical->TimeZoneStruct->stDaylightDate);
+	
+	/* RRULE property */
+	ical_property_RRULE_daylight_standard(daylight,exchange2ical->TimeZoneStruct->stDaylightDate);
 	
 	/* TZOFFSETFROM property */
-	tzoffsetfrom = -1 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lStandardBias);
+	tzoffsetfrom = (-60 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lStandardBias));
 	prop = icalproperty_new_tzoffsetfrom(tzoffsetfrom);
 	icalcomponent_add_property(daylight, prop);
 
 	/* TZOFFSETTO property */
-	tzoffsetto = -1 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lDaylightBias);
+	tzoffsetto = (-60 * (exchange2ical->TimeZoneStruct->lBias + exchange2ical->TimeZoneStruct->lDaylightBias));
 	prop = icalproperty_new_tzoffsetto(tzoffsetto);
 	icalcomponent_add_property(daylight, prop);
 }
 
 
-/**
+/*
    VALARM component
 
    [MS-OXCICAL], Section 2.2.1.20.61 

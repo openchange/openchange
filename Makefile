@@ -1236,28 +1236,49 @@ exchange2ical-uninstall:
 
 exchange2ical-clean::
 	rm -f bin/exchange2ical
-	rm -f utils/exchange2ical/exchange2ical.o
-	rm -f utils/exchange2ical/exchange2ical.gcno
-	rm -f utils/exchange2ical/exchange2ical.gcda
-	rm -f utils/exchange2ical/exchange2ical_utils.o
-	rm -f utils/exchange2ical/exchange2ical_utils.gcno
-	rm -f utils/exchange2ical/exchange2ical_utils.gcda
-	rm -f utils/exchange2ical/exchange2ical_component.o
-	rm -f utils/exchange2ical/exchange2ical_component.gcno
-	rm -f utils/exchange2ical/exchange2ical_component.gcda
-	rm -f utils/exchange2ical/exchange2ical_property.o
-	rm -f utils/exchange2ical/exchange2ical_property.gcno
-	rm -f utils/exchange2ical/exchange2ical_property.gcda
-	rm -f utils/openchange-tools.o
-	rm -f utils/openchange-tools.gcno
-	rm -f utils/openchange-tools.gcda
+	rm -f utils/exchange2ical_tool.o
+	rm -f utils/exchange2ical_tool.gcno
+	rm -f utils/exchange2ical_tool.gcda
+	rm -f libexchange2ical/libexchange2ical.o
+	rm -f libexchange2ical/libexchange2ical.gcno
+	rm -f libexchange2ical/libexchange2ical.gcda
+	rm -f libexchange2ical/exchange2ical.o
+	rm -f libexchange2ical/exchange2ical.gcno
+	rm -f libexchange2ical/exchange2ical.gcda
+	rm -f libexchange2ical/exchange2ical_utils.o
+	rm -f libexchange2ical/exchange2ical_utils.gcno
+	rm -f libexchange2ical/exchange2ical_utils.gcda
+	rm -f libexchange2ical/exchange2ical_component.o
+	rm -f libexchange2ical/exchange2ical_component.gcno
+	rm -f libexchange2ical/exchange2ical_component.gcda
+	rm -f libexchange2ical/exchange2ical_property.o
+	rm -f libexchange2ical/exchange2ical_property.gcno
+	rm -f libexchange2ical/exchange2ical_property.gcda
+	rm -f libexchange2ical/libical2exchange.o
+	rm -f libexchange2ical/libical2exchange.gcno
+	rm -f libexchange2ical/libical2exchange.gcda
+	rm -f libexchange2ical/ical2exchange.o
+	rm -f libexchange2ical/ical2exchange.gcno
+	rm -f libexchange2ical/ical2exchange.gcda
+	rm -f libexchange2ical/ical2exchange_property.o
+	rm -f libexchange2ical/ical2exchange_property.gcno
+	rm -f libexchange2ical/ical2exchange_property.gcda
+	rm -f libexchange2ical/openchange-tools.o
+	rm -f libexchange2ical/openchange-tools.gcno
+	rm -f libexchange2ical/openchange-tools.gcda
+
 
 clean:: exchange2ical-clean
 
-bin/exchange2ical:	utils/exchange2ical/exchange2ical.o		\
-			utils/exchange2ical/exchange2ical_component.o	\
-			utils/exchange2ical/exchange2ical_property.o	\
-			utils/exchange2ical/exchange2ical_utils.o	\
+bin/exchange2ical:	utils/exchange2ical_tool.o	\
+			libexchange2ical/libexchange2ical.o		\
+			libexchange2ical/exchange2ical.o		\
+			libexchange2ical/exchange2ical_component.o	\
+			libexchange2ical/exchange2ical_property.o	\
+			libexchange2ical/exchange2ical_utils.o		\
+			libexchange2ical/libical2exchange.o	\
+			libexchange2ical/ical2exchange.o	\
+			libexchange2ical/ical2exchange_property.o	\
 			utils/openchange-tools.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"

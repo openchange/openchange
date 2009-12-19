@@ -1,0 +1,6 @@
+Todo:
+Fix globalobjectid bug
+Clean up workaround in exchange2ical for globalobjectid
+create ical2exchange api
+finish any untouched conversions
+merge branch into trunk

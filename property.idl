@@ -99,6 +99,19 @@ interface property
 		FirstDOW_Saturday	= 0x6
 	} FirstDOW;
 
+	typedef [v1_enum] enum {
+		ARO_SUBJECT		= 0x0001,
+		ARO_MEETINGTYPE		= 0x0002,
+		ARO_REMINDERDELTA	= 0x0004,
+		ARO_REMINDER		= 0x0008,
+		ARO_LOCATION		= 0x0010,
+		ARO_BUSYSTATUS		= 0x0020,
+		ARO_ATTACHMENT		= 0x0040,
+		ARO_SUBTYPE		= 0x0080,
+		ARO_APPTCOLOR		= 0x0100,
+		ARO_EXCEPTIONAL_BODY	= 0x0200
+	} OverrideFlags;
+
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint16						ReaderVersion;
 		uint16						WriterVersion;
@@ -119,7 +132,91 @@ interface property
 		uint32						StartDate;
 		uint32						EndDate;
 	} RecurrencePattern;
+	
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32						ChangeHighlightSize;
+		uint32						ChangeHighlightValue;
+		uint32						Reserved;
+	} ChangeHighlight;
 
+	typedef [public,flag(NDR_NOALIGN)] struct {	
+		ChangeHighlight		ChangeHighlight;
+		uint32			ReservedBlockEE1Size;
+		uint32			ReservedBlockEE1;
+		uint32			StartDateTime;			
+		uint32			EndDateTime;
+		uint32			OriginalStartDate;
+		uint16			WidCharSubjectLength;
+		uint16			WideCharSubject;
+		uint16			WideCharLocationLength;
+		uint16			WideCharLocation;
+		uint32			ReservedBlockEE2Size;
+		uint32			ReservedBlockEE2;
+	} ExtendedException;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0000)]			;	
+		[case(0x0001)] 	uint16		sLength;
+		[case(0x0002)]	uint32		mType;
+		[case(0x0004)]	uint32		rDelta;
+		[case(0x0008)]	uint32		rSet;
+		[case(0x0010)]	uint16		lLength;
+		[case(0x0020)]	uint32		bStatus;
+		[case(0x0040)]	uint32		attachment;
+		[case(0x0080)]	uint32		sType;
+		[case(0x0100)]	uint32		aColor;
+		[default];
+	} Exception_Value;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[default];
+		[case(0x0001)] 	uint16		subject;
+		[case(0x0010)]	uint32		location;
+
+	} Exception_Msg;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+			uint32									StartDateTime;
+			uint32									EndDateTime;
+			uint32									OriginalStartDate;
+			OverrideFlags								OverrideFlags;
+			[switch_is(OverrideFlags & 0x0001)]	Exception_Value			SubjectLength;
+			[switch_is(OverrideFlags & 0x0001)]	Exception_Value			SubjectLength2;
+			[switch_is(OverrideFlags & 0x0001)]	Exception_Msg			Subject;
+			[switch_is(OverrideFlags & 0x0002)]	Exception_Value			MeetingType;
+			[switch_is(OverrideFlags & 0x0004)]	Exception_Value			ReminderDelta;
+			[switch_is(OverrideFlags & 0x0008)]	Exception_Value			ReminderSet;
+			[switch_is(OverrideFlags & 0x0010)]	Exception_Value			LocationLength;
+			[switch_is(OverrideFlags & 0x0010)]	Exception_Value			LocationLength2;
+			[switch_is(OverrideFlags & 0x0010)]	Exception_Msg			Location;
+			[switch_is(OverrideFlags & 0x0020)]	Exception_Value			BusyStatus;
+			[switch_is(OverrideFlags & 0x0040)]	Exception_Value			Attachment;
+			[switch_is(OverrideFlags & 0x0080)]	Exception_Value			SubType;
+			[switch_is(OverrideFlags & 0x0100)]	Exception_Value			AppointmentColor;
+	} ExceptionInfo;
+
+
+
+
+	
+	
+	typedef [public,flag(NDR_NOALIGN)] struct {
+
+		RecurrencePattern				RecurrencePattern;
+		uint32						ReaderVersion2;
+		uint32						WriterVersion2;
+		uint32						StartTimeOffset;
+		uint32						EndTimeOffset;
+		uint16						ExceptionCount;
+		ExceptionInfo					ExceptionInfo[ExceptionCount];
+ 		uint32						ReservedBlock1Size;
+		uint32						ReservedBlock1;
+		[flag(NDR_REMAINING)] DATA_BLOB data;
+//  		ExtendedException				ExtendedException[ExceptionCount];
+//  		uint32						ReservedBlock2Size;
+//  		uint32						ReservedBlock2;
+	} AppointmentRecurrencePattern;
+	
 	/* [MS-DIF].pdf Section 2.3.6 */
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint16	wYear;

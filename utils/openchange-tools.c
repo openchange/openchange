@@ -72,7 +72,7 @@ _PUBLIC_ void *octool_get_propval(struct SRow *aRow, uint32_t proptag)
 /*
  * Read a stream and store it in a DATA_BLOB
  */
-static enum MAPISTATUS octool_get_stream(TALLOC_CTX *mem_ctx,
+_PUBLIC_ enum MAPISTATUS octool_get_stream(TALLOC_CTX *mem_ctx,
 					 mapi_object_t *obj_stream, 
 					 DATA_BLOB *body)
 {

@@ -373,12 +373,13 @@ retry:
 	if (retval == ecWrongServer && retry == false) {
 		retval = FindGoodServer(session, mailbox, false);
 		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+		talloc_free(mapi_response);
 		talloc_free(mem_ctx);
 		retry = true;
 		goto retry;
 	}
-	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	OPENCHANGE_RETVAL_CALL_IF(retval, retval, mapi_response, mem_ctx);
 	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* set object session, handle and logon_id */

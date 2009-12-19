@@ -1,6 +1,6 @@
 /*
    Convert Exchange appointments to ICAL
-s
+
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2008

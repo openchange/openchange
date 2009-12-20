@@ -111,11 +111,18 @@ static char *build_binding_string(TALLOC_CTX *mem_ctx,
    \param server the Exchange server address (IP or FQDN)
    \param userDN optional user mailbox DN
 
-   \return a valid string on success, otherwise NULL
+   \return a valid allocated string on success, otherwise NULL.
+
+   \note The string returned can either be RfrGetNewDSA one on
+   success, or a copy of the server's argument one on failure. If no
+   server string is provided, NULL is returned.
+
+   It is up to the developer to free the returned string when
+   not needed anymore.
  */
-_PUBLIC_ const char *RfrGetNewDSA(struct mapi_session *session,
-				  const char *server, 
-				  const char *userDN)
+_PUBLIC_ char *RfrGetNewDSA(struct mapi_session *session,
+			    const char *server, 
+			    const char *userDN)
 {
 	NTSTATUS		status;
 	TALLOC_CTX		*mem_ctx;
@@ -123,31 +130,40 @@ _PUBLIC_ const char *RfrGetNewDSA(struct mapi_session *session,
 	struct RfrGetNewDSA	r;
 	struct dcerpc_pipe	*pipe;
 	char			*binding;
-	const char		*ppszServer = NULL;
+	char			*ppszServer = NULL;
 
 	/* Sanity Checks */
-	if (!global_mapi_ctx) return server;
-	if (!global_mapi_ctx->session) return server;
+	if (!global_mapi_ctx) return NULL;
+	if (!global_mapi_ctx->session) return NULL;
 
-	mem_ctx = (TALLOC_CTX *)session;
+	mem_ctx = talloc_named(NULL, 0, "RfrGetNewDSA");
 	profile = session->profile;
 
 	binding = build_binding_string(mem_ctx, server, profile);
 	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, global_mapi_ctx->lp_ctx);
 	talloc_free(binding);
 
-	if (!NT_STATUS_IS_OK(status)) return server;
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 
 	r.in.ulFlags = 0x0;
 	r.in.pUserDN = userDN ? userDN : "";
 	r.in.ppszUnused = NULL;
-	r.in.ppszServer = &ppszServer;
+	r.in.ppszServer = (const char **) &ppszServer;
 
 	status = dcerpc_RfrGetNewDSA(pipe, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) return server;
+	if ((!NT_STATUS_IS_OK(status) || !ppszServer) && server) {
+		ppszServer = talloc_strdup((TALLOC_CTX *)session, server);
+	} else {
+		ppszServer = talloc_steal((TALLOC_CTX *)session, ppszServer);
+	}
 
-	return (ppszServer ? ppszServer : server);
+	talloc_free(mem_ctx);
+
+	return ppszServer;
 }
 
 
@@ -211,6 +227,7 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 	struct dcerpc_pipe	*pipe;
 	struct mapi_profile	*profile;
 	char			*binding;
+	char			*server;
 	int			retval = 0;
 
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -240,8 +257,9 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		break;
 	case PROVIDER_ID_NSPI:
 		/* Call RfrGetNewDSA prior any NSPI call */
-		binding = build_binding_string(mem_ctx, RfrGetNewDSA(session, profile->server, profile->mailbox),
-					       profile);
+		server = RfrGetNewDSA(session, profile->server, profile->mailbox);
+		binding = build_binding_string(mem_ctx, server, profile);
+		talloc_free(server);
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_nsp, global_mapi_ctx->lp_ctx);
 		talloc_free(binding);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);

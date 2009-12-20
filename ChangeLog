@@ -1,3 +1,85 @@
+2009-12-20
+    jkerihuel
+	[r1627]
+		Fix store version info assignment - Exchange version now works again
+		in mapitest.
+	[r1626]
+		Clarify the developer's task when using GetPropList.
+		
+		We were allocating the SPropTag proptag array with the session context
+		pointer, which was not released with a MAPIFreeBuffer(SPropTagArray).
+		
+		We are now using SPropTagArray pointer as parent context and clarify
+		that the developer must pass an allocated SPropTagArray pointer to the
+		function.
+	[r1625]
+		Missing mapi_object_release leading in small leaks.
+	[r1624]
+		Sanitize RfrGetNewDSA function and memory usage.
+		
+		The function was returning either a const char * passed in parameter
+		or the string returned by RfrGetNewDSA call. Furthermore we were using
+		the session pointer for the memory context. Finally the function description
+		was not matching its behavior.
+		
+		What this patch does:
+		- use a named memory context for RfrGetNewDSA call
+		- return an allocated string on success otherwise NULL
+		- release RFR memory context properly
+		
+		valgrind before patch (mapitest):
+		==28876== LEAK SUMMARY:
+		==28876==    definitely lost: 0 bytes in 0 blocks
+		==28876==    indirectly lost: 0 bytes in 0 blocks
+		==28876==      possibly lost: 3,193,529 bytes in 23,296 blocks
+		==28876==    still reachable: 345 bytes in 2 blocks
+		==28876==         suppressed: 0 bytes in 0 blocks
+		==28876==
+		==28876== For counts of detected and suppressed errors, rerun with: -v
+		==28876== ERROR SUMMARY: 2351 errors from 2351 contexts (suppressed: 45 from 10)
+		
+		valgrind after patch (mapitest):
+		==29083== LEAK SUMMARY:
+		==29083==    definitely lost: 0 bytes in 0 blocks
+		==29083==    indirectly lost: 0 bytes in 0 blocks
+		==29083==      possibly lost: 3,190,285 bytes in 23,256 blocks
+		==29083==    still reachable: 345 bytes in 2 blocks
+		==29083==         suppressed: 0 bytes in 0 blocks
+		==29083==
+		==29083== For counts of detected and suppressed errors, rerun with: -v
+		==29083== ERROR SUMMARY: 2338 errors from 2338 contexts (suppressed: 45 from 10)
+	[r1623]
+		This patch fixes most of the leaks coming from pull_emsmdb_property() function.
+		pull_emsmdb_property is using pointers and allocate memory to prevent from
+		returning a local variable address. Such pointers include PT_I2, PT_I8, PT_LONG, 
+		PT_ERROR or PT_BOOLEAN. Pointer's values are assigned in set_SPropValue but were
+		never released/free'd. This patch implements free_emsmdb_property to fix this problem.
+		
+		valgrind before patch (mapitest):
+		==26674== LEAK SUMMARY:
+		==26674==    definitely lost: 0 bytes in 0 blocks
+		==26674==    indirectly lost: 0 bytes in 0 blocks
+		==26674==      possibly lost: 3,264,485 bytes in 23,387 blocks
+		==26674==    still reachable: 345 bytes in 2 blocks
+		==26674==         suppressed: 0 bytes in 0 blocks
+		==26674==
+		==26674== For counts of detected and suppressed errors, rerun with: -v
+		==26674== ERROR SUMMARY: 2370 errors from 2370 contexts (suppressed: 45 from 10)
+		
+		valgrind after patch (mapitest):
+		==27270== LEAK SUMMARY:
+		==27270==    definitely lost: 0 bytes in 0 blocks
+		==27270==    indirectly lost: 0 bytes in 0 blocks
+		==27270==      possibly lost: 3,127,733 bytes in 23,293 blocks
+		==27270==    still reachable: 345 bytes in 2 blocks
+		==27270==         suppressed: 0 bytes in 0 blocks
+		==27270==
+		==27270== For counts of detected and suppressed errors, rerun with: -v
+		==27270== ERROR SUMMARY: 2348 errors from 2348 contexts (suppressed: 45 from 10)
+    bradh
+	[r1622]
+		Minor API documentation fixes.
+
 2009-12-19
     jkerihuel
 	[r1620]

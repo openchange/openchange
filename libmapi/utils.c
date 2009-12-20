@@ -130,7 +130,7 @@ _PUBLIC_ char *windows_to_utf8(TALLOC_CTX *mem_ctx, const char *input)
    \param cb count of lpb bytes
    \param lpb pointer on an array of bytes
    \param parent_fid the parent folder identifier
-   \param pointer on the returned fid
+   \param fid pointer to the returned fid
 
    \return MAPI_E_SUCCESS on success, otherwise
    MAPI_E_INVALID_PARAMETER

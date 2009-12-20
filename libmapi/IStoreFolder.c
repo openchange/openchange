@@ -173,16 +173,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
    This function is very similar to OpenMessage, but works on an already
    open message object.
 
-   \param obj_store the store to read from
-   \param id_folder the folder ID
-   \param id_message the message ID
-   \param obj_message the resulting message object
-   \param ulFlags
-
-   Possible ulFlags values:
-   - 0x0: read only access
-   - 0x1: ReadWrite
-   - 0x3: Create
+   \param obj_message the message object to retrieve the properties for.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 

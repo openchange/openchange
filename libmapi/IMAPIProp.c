@@ -386,6 +386,9 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
+     The developer MUST provide an allocated SPropTagArray structure
+     to the function.
+
    \sa GetProps, GetPropsAll, GetLastError
  */
 _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj, 
@@ -444,7 +447,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	proptags->cValues = mapi_response->mapi_repl->u.mapi_GetPropList.count;
 	if (proptags->cValues) {
 		size = proptags->cValues * sizeof(enum MAPITAGS);
-		proptags->aulPropTag = talloc_array((TALLOC_CTX *)session, enum MAPITAGS, proptags->cValues);
+		proptags->aulPropTag = talloc_array((TALLOC_CTX *) proptags, enum MAPITAGS, proptags->cValues);
 		memcpy((void*)proptags->aulPropTag,
 		       (void*)mapi_response->mapi_repl->u.mapi_GetPropList.tags,
 		       size);

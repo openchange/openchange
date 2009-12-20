@@ -511,6 +511,39 @@ _PUBLIC_ struct emsmdb_info *emsmdb_get_info(struct mapi_session *session)
 
 
 /**
+   \details Free property values retrieved with pull_emsmdb_property
+
+   \param lpProp pointer to SPropValue structure
+   \param data generic pointer to associated lpProp data
+
+ */
+void free_emsmdb_property(struct SPropValue *lpProp, void *data)
+{
+	if (!data) return;
+	if (!lpProp) return;
+
+	switch (lpProp->ulPropTag & 0xFFFF) {
+	case PT_I2:
+		talloc_free((uint16_t *)data);
+		break;
+	case PT_ERROR:
+	case PT_LONG:
+		talloc_free((uint32_t *)data);
+		break;
+	case PT_I8:
+		talloc_free((uint64_t *)data);
+		break;
+	case PT_BOOLEAN:
+		talloc_free((uint8_t *)data);
+		break;
+	default:
+		break;
+		
+	}
+}
+
+
+/**
    \details Retrieves a property value from a DATA blob
 
    \param mem_ctx pointer to the memory context
@@ -697,11 +730,13 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 
 		data = pull_emsmdb_property(mem_ctx, lp_ctx, &offset, tags->aulPropTag[i_tag], content);
 		if (data) {
-			talloc_steal(*propvals, data);
+			data = talloc_steal(*propvals, data);
 			p_propval = &((*propvals)[i_propval]);
 			p_propval->ulPropTag = tags->aulPropTag[i_tag];
 			p_propval->dwAlignPad = 0x0;
+
 			set_SPropValue(p_propval, data);
+			free_emsmdb_property(p_propval, (void *) data);
 			i_propval++;
 		}
 	}
@@ -786,6 +821,7 @@ _PUBLIC_ void emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx,
 				data = pull_emsmdb_property(mem_ctx, lp_ctx, &offset, lpProps[prop].ulPropTag, content);
 				talloc_steal(lpProps, data);
 				set_SPropValue(&lpProps[prop], data);
+				free_emsmdb_property(&lpProps[prop], (void *) data);
 			}
 		}
 
@@ -844,6 +880,7 @@ void emsmdb_get_SRow(TALLOC_CTX *mem_ctx,
 		aRow->lpProps[i].ulPropTag = aulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
 		set_SPropValue(&(aRow->lpProps[i]), data);
+		free_emsmdb_property(&aRow->lpProps[i], (void *) data);
 	}
 	if (align) {
 		offset += align;

@@ -730,6 +730,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	mapitest_print_retval(mt, "DeleteMessage");
 
 	/* Release */
+	mapi_object_release(&dst_contents);
 	mapi_object_release(&obj_folder_src);
 	mapi_object_release(&obj_folder_dst);
 	mapi_object_release(&obj_store);
@@ -1095,6 +1096,7 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
 
 cleanup:
 	/* Release */
+	mapi_object_release(&contents);
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);
 

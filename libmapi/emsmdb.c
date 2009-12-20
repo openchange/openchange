@@ -122,9 +122,6 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 	r.out.pcRetry = &ret->info.pcRetry;
 	r.out.pcmsRetryDelay = &ret->info.pcmsRetryDelay;
 	r.out.picxr = &ret->info.picxr;
-	r.out.rgwServerVersion[0] = ret->info.rgwServerVersion[0];
-	r.out.rgwServerVersion[1] = ret->info.rgwServerVersion[1];
-	r.out.rgwServerVersion[2] = ret->info.rgwServerVersion[2];
 	r.out.pullTimeStamp = &pullTimeStamp;
 
 	status = dcerpc_EcDoConnect(p, mem_ctx, &r);
@@ -138,6 +135,10 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 
 	ret->info.szDisplayName = talloc_strdup(parent_mem_ctx, r.out.szDisplayName);
 	ret->info.szDNPrefix = talloc_strdup(parent_mem_ctx, r.out.szDNPrefix);
+
+	ret->info.rgwServerVersion[0] = r.out.rgwServerVersion[0];
+	ret->info.rgwServerVersion[1] = r.out.rgwServerVersion[1];
+	ret->info.rgwServerVersion[2] = r.out.rgwServerVersion[2];
 
 	ret->cred = cred;
 	ret->max_data = 0xFFF0;

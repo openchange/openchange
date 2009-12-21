@@ -2318,7 +2318,7 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* wait for notifications: infinite loop */
-	retval = MonitorNotification(mapi_object_get_session(obj_store), (void *)obj_store);
+	retval = MonitorNotification(mapi_object_get_session(obj_store), (void *)obj_store, NULL);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = Unsubscribe(mapi_object_get_session(obj_store), ulConnection);

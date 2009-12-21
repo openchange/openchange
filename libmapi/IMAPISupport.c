@@ -365,14 +365,15 @@ _PUBLIC_ enum MAPISTATUS DispatchNotifications(struct mapi_session *session)
 /**
    \details Wait for notifications and process them
 
-   This function indefinively waits for notifications on the UDP port
+   This function waits for notifications on the UDP port
    and generates the traffic needed to receive MAPI
    notifications. These MAPI notifications are next compared to the
    registered ones and the callback specified in Subscribe() called if
    it matches.
 
-   Note that the function will loop indefinitively until an error
-   occurs.
+   The function takes a callback in cb_data to check if it should 
+   continue to process notifications. Timeval in cb_data can be
+   used to control the behavior of select.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.  
 
@@ -388,37 +389,56 @@ _PUBLIC_ enum MAPISTATUS DispatchNotifications(struct mapi_session *session)
    non-threaded, only supports fnevNewmail and fnevCreatedObject
    notifications and will block your process until you send a signal.
 */
-_PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session,
-					     void *private_data)
+_PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session, void *private_data, 
+					     struct mapi_notify_continue_callback_data *cb_data)
 {
 	struct mapi_response	*mapi_response;
 	struct mapi_notify_ctx	*notify_ctx;
-	enum MAPISTATUS		retval;
 	NTSTATUS		status;
 	int			is_done;
 	int			err;
 	char			buf[512];
-	
+	fd_set                  read_fds;
+	int                     nread;
+        mapi_notify_continue_callback_t callback;
+	void                    *data;
+	struct timeval          *tv;
+	enum MAPISTATUS		retval;
+
 	/* sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 
 	notify_ctx = session->notify_ctx;
+	callback = cb_data ? cb_data->callback : NULL;
+	data = cb_data ? cb_data->data : NULL;
+	tv = cb_data ? &cb_data->tv : NULL;
 
+	nread = 0;
 	is_done = 0;
 	while (!is_done) {
-		err = read(notify_ctx->fd, buf, sizeof(buf));
-		if (err > 0) {
-			status = emsmdb_transaction_null((struct emsmdb_context *)session->emsmdb->ctx, &mapi_response);
-			if (!NT_STATUS_IS_OK(status)) {
-				err = -1;
-			} else {
-				retval = ProcessNotification(notify_ctx, mapi_response);
-				OPENCHANGE_RETVAL_IF(retval, retval, NULL);
-			}
+	        FD_ZERO(&read_fds);
+		FD_SET(notify_ctx->fd, &read_fds);
+
+		err = select(notify_ctx->fd + 1, &read_fds, NULL, NULL, tv);
+		if (FD_ISSET(notify_ctx->fd, &read_fds)) {
+		        do {
+			         nread = read(notify_ctx->fd, buf, sizeof(buf));
+				 if (nread > 0) {
+			                status = emsmdb_transaction_null((struct emsmdb_context *)session->emsmdb->ctx,
+									 &mapi_response);
+					if (!NT_STATUS_IS_OK(status))
+					         err = -1;
+					else {
+					         retval = ProcessNotification(notify_ctx, mapi_response);
+						 OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+					}
+				 }
+			} while (nread > 0 && err != -1);
 		}
-		if (err <= 0) is_done = 1;
+		if ((callback != NULL && callback (data)) || err < 0)
+		        is_done = 1;
 	}
 
 	return MAPI_E_SUCCESS;

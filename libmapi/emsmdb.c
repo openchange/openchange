@@ -18,6 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <unistd.h>
+#include <fcntl.h>
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_exchange.h>
@@ -406,6 +408,8 @@ retry:
 		talloc_free(notify_ctx);
 		return NULL;
 	}
+
+	fcntl(notify_ctx->fd, F_SETFL, O_NONBLOCK);
 
 	if (bind(notify_ctx->fd, notify_ctx->addr, sizeof(struct sockaddr)) == -1) {
 		shutdown(notify_ctx->fd, SHUT_RDWR);

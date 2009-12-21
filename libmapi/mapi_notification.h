@@ -27,6 +27,8 @@
 */
 typedef int (*mapi_notify_callback_t)(uint16_t, void *, void *);
 
+typedef int (*mapi_notify_continue_callback_t)(void *);
+
 struct notifications {
 	uint32_t		ulConnection;		/* connection number */
 	uint32_t		NotificationFlags;	/* events mask associated */
@@ -43,6 +45,12 @@ struct mapi_notify_ctx {
 	int			fd;		/* UDP socket file descriptor */
 	struct sockaddr		*addr;
 	struct notifications	*notifications;
+};
+
+struct mapi_notify_continue_callback_data {
+        mapi_notify_continue_callback_t callback; /* Consulted for continuing processing events*/
+        void *data;                               /* Data for callback */
+        struct timeval tv;                        /* Timeout for Select call */
 };
 
 #define	DFLT_NOTIF_PORT	2500

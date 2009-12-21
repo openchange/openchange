@@ -109,7 +109,7 @@ bool torture_rpc_mapi_newmail(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
  	/* wait for notifications */
-	MonitorNotification(mapi_object_get_session(&obj_inbox),(void *)&obj_store);
+	MonitorNotification(mapi_object_get_session(&obj_inbox),(void *)&obj_store, NULL);
 
 	mapi_object_release(&obj_inbox);
 	mapi_object_release(&obj_store);

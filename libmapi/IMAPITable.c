@@ -115,7 +115,7 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 	table = (mapi_object_table_t *)obj_table->private_data;
 	if (table) {
 		table->proptags.cValues = properties->cValues;
-		table->proptags.aulPropTag = talloc_array((TALLOC_CTX *)obj_table->private_data,
+		table->proptags.aulPropTag = talloc_array((TALLOC_CTX *) table,
 							  enum MAPITAGS, table->proptags.cValues);
 		memcpy((void*)table->proptags.aulPropTag, (void*)properties->aulPropTag,
 		       table->proptags.cValues * sizeof(enum MAPITAGS));

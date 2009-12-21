@@ -279,6 +279,7 @@ static int mapi_response_destructor(void *data)
    \details Make a EMSMDB transaction.
 
    \param emsmdb_ctx pointer to the EMSMDB connection context
+   \param mem_ctx pointer to the memory context
    \param req pointer to the MAPI request to send
    \param repl pointer on pointer to the MAPI reply returned by the
    server
@@ -286,10 +287,10 @@ static int mapi_response_destructor(void *data)
    \return NT_STATUS_OK on success, otherwise NT status error
  */
 _PUBLIC_ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb_ctx, 
+				     TALLOC_CTX *mem_ctx,
 				     struct mapi_request *req, 
 				     struct mapi_response **repl)
 {
-	TALLOC_CTX		*mem_ctx;
 	struct EcDoRpc		r;
 	struct mapi_response	*mapi_response;
 	uint16_t		*length;
@@ -298,8 +299,6 @@ _PUBLIC_ NTSTATUS emsmdb_transaction(struct emsmdb_context *emsmdb_ctx,
 	uint8_t			i = 0;
 
 start:
-	mem_ctx = talloc_named(NULL, 0, "emsmdb_transaction");
-
 	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
 	r.in.size = emsmdb_ctx->max_data;
 	r.in.offset = 0x0;
@@ -331,18 +330,16 @@ start:
 	r.in.length = r.out.length = length;
 	r.in.max_data = (*length >= 0x4000) ? 0x7FFF : emsmdb_ctx->max_data;
 
-	status = dcerpc_EcDoRpc(emsmdb_ctx->rpc_connection, emsmdb_ctx->mem_ctx, &r);
+	status = dcerpc_EcDoRpc(emsmdb_ctx->rpc_connection, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (emsmdb_ctx->setup == false) {
 			errno = 0;
 			emsmdb_ctx->max_data = 0x7FFF;
 			emsmdb_ctx->setup = true;
 			talloc_free(mapi_response);
-			talloc_free(mem_ctx);
 			goto start;
 		} else {
 			talloc_free(mapi_response);
-			talloc_free(mem_ctx);
 			return status;
 		}
 	} else {
@@ -355,8 +352,6 @@ start:
 	}
 
 	*repl = r.out.mapi_response;
-
-	talloc_free(mem_ctx);
 
 	return status;
 }

@@ -1,3 +1,46 @@
+2009-12-21
+    jkerihuel
+	[r1635]
+		Patch from Johnny Jacob <johnnyjacob@gmail.com>:
+		
+		Changed MonitorNotification to be non-blocking.
+		Also checks whether to process notifications using a callback.
+	[r1634]
+		Open Profile Store using global_mapi_ctx for the memory context. This
+		fix removes 20 context errors when running valgrind on mapitest.
+	[r1633]
+		- Fix important memory leaks in OpenChange NSPI stack. The memory
+		  context modifications applied to the EMSMDB stack have been
+		  propagated to the NSPI one. NSPI dcerpc_* functions now rely on a
+		  temporary context passed in parameter to the nspi_* functions from
+		  libmapi/nspi.c.
+		
+		- Changes propagated to torture, mapitest, IProfAdmin interface and
+		  ResolveNames function to match the internal API.
+		
+		- Add missing MAPIFreeBuffer call in mapitest modules
+	[r1632]
+		Minor cosmetic change
+	[r1631]
+		Minor changes to match our coding convention more closely
+	[r1630]
+		Return (const void *) instead of (void *) where missing
+	[r1629]
+		- Fix important memory leaks within the OpenChange stack. Most of the
+		  leaks came from the pipe memory context used in emsmdb_transaction
+		  which was only released on MAPIUninitialize and sometimes leaded in
+		  lost blocks. This fix makes extensive usage of the temporary memory
+		  context used in top MAPI calls implementation. This context is
+		  passed in argument to emsmdb_transaction and used for dcerpc_*
+		  operations.
+		
+		  When we return from any libmapi call implementation, this context is
+		  destroyed. This guarantee no extra memory within NDR layer is kept.
+		
+		  The only requirement for this patch to work is to make sure the data
+		  we return from MAPI calls is either reparent to another memory
+		  context or copied properly.
+
 2009-12-20
     jkerihuel
 	[r1627]

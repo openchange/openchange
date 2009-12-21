@@ -273,6 +273,39 @@ _PUBLIC_ void mapitest_print_headers_info(struct mapitest *mt)
 	mapitest_deindent();
 }
 
+/**
+  \details Print out a normalized version number for a client or server.
+  
+  \param mt pointer to the top level mapitest structure
+  \param label label for the version (e.g. "Store Version" or "Client Version")
+  \param word0 highest order word for the version
+  \param word1 middle word for the version
+  \param word2 low word for the version
+*/
+static void mapitest_print_version_normalised(struct mapitest *mt, const char* label,
+					      const uint16_t word0, const uint16_t word1, const uint16_t word2)
+{
+	/* See MS-OXRPC Section 3.1.9 to understand this */
+	uint16_t normalisedword0;
+	uint16_t normalisedword1;
+	uint16_t normalisedword2;
+	uint16_t normalisedword3;
+
+	if (word1 & 0x8000) {
+		/* new format */
+		normalisedword0 = (word0 & 0xFF00) >> 8;
+		normalisedword1 = (word0 & 0x00FF);
+		normalisedword2 = (word1 & 0x7FFF);
+		normalisedword3 = word2;
+	} else {
+		normalisedword0 = word0;
+		normalisedword1 = 0;
+		normalisedword2 = word1;
+		normalisedword3 = word2;
+	}
+	mapitest_print(mt, MT_HDR_FMT_VER_NORM, label, normalisedword0,
+		       normalisedword1, normalisedword2, normalisedword3);
+}
 
 /**
    \details Print a report of the Exchange server and account information
@@ -288,10 +321,10 @@ _PUBLIC_ void mapitest_print_headers_server_info(struct mapitest *mt)
 	mapitest_print_newline(mt, 1);
 	mapitest_print(mt, MT_HDR_FMT_SECTION, "Exchange Server");
 	mapitest_indent();
-	mapitest_print(mt, MT_HDR_FMT_STORE_VER, "Store version",
-		       mt->info.rgwServerVersion[0],
-		       mt->info.rgwServerVersion[1],
-		       mt->info.rgwServerVersion[2]);
+	mapitest_print_version_normalised(mt, "Store Version",
+					  mt->info.rgwServerVersion[0],
+					  mt->info.rgwServerVersion[1],
+					  mt->info.rgwServerVersion[2]);
 	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Username",
 		       (mt->confidential == true) ? MT_CONFIDENTIAL : mt->info.szDisplayName);
 	mapitest_print(mt, MT_HDR_FMT_SUBSECTION, "Organization",

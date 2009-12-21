@@ -588,26 +588,26 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		ndr_pull_uint16(ndr, NDR_SCALARS, pt_i2);
 		*offset = ndr->offset;
 		talloc_free(ndr);
-		return (void *) pt_i2;
+		return (const void *) pt_i2;
 	case PT_ERROR:
 	case PT_LONG:
 		pt_long = talloc_zero(mem_ctx, uint32_t);
 		ndr_pull_uint32(ndr, NDR_SCALARS, pt_long);
 		*offset = ndr->offset;
 		talloc_free(ndr);
-		return (void *) pt_long;
+		return (const void *) pt_long;
 	case PT_BOOLEAN:
 		pt_boolean = talloc_zero(mem_ctx, uint8_t);
 		ndr_pull_uint8(ndr, NDR_SCALARS, pt_boolean);
 		*offset = ndr->offset;
 		talloc_free(ndr);
-		return (void *) pt_boolean;
+		return (const void *) pt_boolean;
 	case PT_I8:
 		pt_i8 = talloc_zero(mem_ctx, uint64_t);
 		ndr_pull_hyper(ndr, NDR_SCALARS, pt_i8);
 		*offset = ndr->offset;
 		talloc_free(ndr);
-		return (void *) pt_i8;
+		return (const void *) pt_i8;
 	case PT_UNICODE:
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 		ndr_pull_string(ndr, NDR_SCALARS, &pt_unicode);
@@ -625,13 +625,13 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		ndr_pull_hyper(ndr, NDR_SCALARS, (uint64_t *) pt_filetime);
 		*offset = ndr->offset;
 		talloc_free(ndr);
-		return (void *) pt_filetime;
+		return (const void *) pt_filetime;
 	case PT_CLSID:
 		pt_clsid = talloc_zero(mem_ctx, struct GUID);
 		ndr_pull_GUID(ndr, NDR_SCALARS, pt_clsid);
 		*offset = ndr->offset;
 		talloc_free(ndr);
-		return (void *) pt_clsid;
+		return (const void *) pt_clsid;
 	case 0xFB:
 	case PT_BINARY:
 		ndr_pull_SBinary_short(ndr, NDR_SCALARS, &pt_binary);
@@ -640,7 +640,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		sbin->cb = pt_binary.cb;
 		sbin->lpb = talloc_memdup(sbin, pt_binary.lpb, pt_binary.cb);
 		talloc_free(ndr);
-		return (void *) sbin;
+		return (const void *) sbin;
 	case PT_MV_LONG:
 		ndr_pull_mapi_MV_LONG_STRUCT(ndr, NDR_SCALARS, &pt_MVl);
 		*offset = ndr->offset;

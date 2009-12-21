@@ -30,6 +30,7 @@
 
 static enum MAPISTATUS FindGoodServer(struct mapi_session *session, const char *legacyDN, bool server)
 {
+	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi;
 	struct StringsArray_r	pNames;
@@ -47,56 +48,58 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session, const char *
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
 	OPENCHANGE_RETVAL_IF(!legacyDN, MAPI_E_INVALID_PARAMETER, NULL);
 
+	mem_ctx = talloc_named(NULL, 0, "FindGoodServer");
 	nspi = (struct nspi_context *) session->nspi->ctx;
 
 	if (server == false) {
 		/* Step 1. Retrieve a MID for our legacyDN */
 		pNames.Count = 0x1;
-		pNames.Strings = (const char **) talloc_array(nspi->mem_ctx, char **, 1);
+		pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
 		pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, legacyDN);
 
-		MId_array = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
-		retval = nspi_DNToMId(nspi, &pNames, &MId_array);
+		MId_array = talloc_zero(mem_ctx, struct SPropTagArray);
+		retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);
 		MAPIFreeBuffer(pNames.Strings);
-		OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 		/* Step 2. Retrieve the Server DN associated to this MId */
-		SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
-		SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x1, PR_EMS_AB_HOME_MDB);
-		retval = nspi_GetProps(nspi, SPropTagArray, MId_array, &SRowSet);
+		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+		SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_EMS_AB_HOME_MDB);
+		retval = nspi_GetProps(nspi, mem_ctx, SPropTagArray, MId_array, &SRowSet);
 		MAPIFreeBuffer(SPropTagArray);
 		MAPIFreeBuffer(MId_array);
-		OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 		HomeMDB = (char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_EMS_AB_HOME_MDB);
-		OPENCHANGE_RETVAL_IF(!HomeMDB, MAPI_E_NOT_FOUND, SRowSet);
-		server_dn = x500_truncate_dn_last_elements(nspi->mem_ctx, HomeMDB, 1);
+		OPENCHANGE_RETVAL_IF(!HomeMDB, MAPI_E_NOT_FOUND, mem_ctx);
+		server_dn = x500_truncate_dn_last_elements(mem_ctx, HomeMDB, 1);
 		MAPIFreeBuffer(SRowSet);
 	} else {
-		server_dn = talloc_strdup(nspi->mem_ctx, legacyDN);
+		server_dn = talloc_strdup(mem_ctx, legacyDN);
 	}
 
 	/* Step 3. Retrieve the MId for this server DN */
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(nspi->mem_ctx, char **, 1);
+	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
 	pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, server_dn);
-	MId_array = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
-	retval = nspi_DNToMId(nspi, &pNames, &MId_array);
+	MId_array = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);
 	MAPIFreeBuffer(pNames.Strings);
-	OPENCHANGE_RETVAL_IF(retval, retval, server_dn);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Step 4. Retrieve the binding strings associated to this DN */
-	SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
-	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x1, PR_EMS_AB_NETWORK_ADDRESS);
-	retval = nspi_GetProps(nspi, SPropTagArray, MId_array, &SRowSet);
+	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_EMS_AB_NETWORK_ADDRESS);
+	retval = nspi_GetProps(nspi, mem_ctx, SPropTagArray, MId_array, &SRowSet);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(MId_array);
 	MAPIFreeBuffer(server_dn);
-	OPENCHANGE_RETVAL_IF(retval, retval, SRowSet);
+	MAPIFreeBuffer(SRowSet);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Step 5. Extract host from ncacn_ip_tcp binding string */
 	MVszA = (struct StringArray_r *) find_SPropValue_data(&(SRowSet->aRow[0]), PR_EMS_AB_NETWORK_ADDRESS);
-	OPENCHANGE_RETVAL_IF(!MVszA, MAPI_E_NOT_FOUND, SRowSet);
+	OPENCHANGE_RETVAL_IF(!MVszA, MAPI_E_NOT_FOUND, mem_ctx);
 	for (i = 0; i != MVszA->cValues; i++) {
 		if (!strncasecmp(MVszA->lppszA[i], "ncacn_ip_tcp:", 13)) {
 			binding = MVszA->lppszA[i] + 13;
@@ -104,7 +107,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session, const char *
 		}
 	}
 	MAPIFreeBuffer(SRowSet);
-	OPENCHANGE_RETVAL_IF(!binding, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!binding, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 6. Close the existing session and initiates it again */
 	talloc_free(session->emsmdb);
@@ -113,6 +116,8 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session, const char *
 	session->profile->server = talloc_strdup(session->profile, binding);
 	retval = Logon(session, session->emsmdb, PROVIDER_ID_EMSMDB);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }

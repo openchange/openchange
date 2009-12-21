@@ -1241,6 +1241,7 @@ static bool set_profile_mvstr_attribute(const char *profname, struct SRowSet row
 _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, const char *username,
 					       mapi_profile_callback_t callback, const void *private_data)
 {
+	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi;
 	struct SPropTagArray	*SPropTagArray = NULL;
@@ -1258,16 +1259,17 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
 	
+	mem_ctx = talloc_named(NULL, 0, "ProcessNetworkProfile");
 	nspi = (struct nspi_context *) session->nspi->ctx;
 	profname = session->profile->profname;
 	index = 0;
 
-	SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
-	retval = nspi_GetSpecialTable(nspi, 0x0, &SRowSet);
+	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	retval = nspi_GetSpecialTable(nspi, mem_ctx, 0x0, &SRowSet);
 	MAPIFreeBuffer(SRowSet);
-	if (retval != MAPI_E_SUCCESS) return retval;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0xc,
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0xc,
 					  PR_DISPLAY_NAME,
 					  PR_OFFICE_TELEPHONE_NUMBER,
 					  PR_OFFICE_LOCATION,
@@ -1285,11 +1287,11 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	/* Retrieve the username to match */
 	if (!username) {
 		username = cli_credentials_get_username(nspi->cred);
-		OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+		OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, mem_ctx);
 	}
 
 	/* Build the restriction we want for NspiGetMatches */
-	lpProp = talloc_zero(nspi->mem_ctx, struct SPropValue);
+	lpProp = talloc_zero(mem_ctx, struct SPropValue);
 	lpProp->ulPropTag = PR_ANR_UNICODE;
 	lpProp->dwAlignPad = 0;
 	lpProp->value.lpszW = username;
@@ -1299,26 +1301,27 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	Filter.res.resProperty.ulPropTag = PR_ANR_UNICODE;
 	Filter.res.resProperty.lpProp = lpProp;
 
-	SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
-	MIds = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
-	retval = nspi_GetMatches(nspi, SPropTagArray, &Filter, &SRowSet, &MIds);
+	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	MIds = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = nspi_GetMatches(nspi, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(lpProp);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
 		MAPIFreeBuffer(SRowSet);
+		talloc_free(mem_ctx);
 		return retval;
 	}
 
 	/* if there's no match */
-	OPENCHANGE_RETVAL_IF(!SRowSet, MAPI_E_NOT_FOUND, NULL);
-	OPENCHANGE_RETVAL_IF(!SRowSet->cRows, MAPI_E_NOT_FOUND, NULL);
-	OPENCHANGE_RETVAL_IF(!MIds, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!SRowSet, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!SRowSet->cRows, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!MIds, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* if SRowSet count is superior than 1 an callback is specified, call it */
 	if (SRowSet->cRows > 1 && callback) {
 		index = callback(SRowSet, private_data);
-		OPENCHANGE_RETVAL_IF((index >= SRowSet->cRows), MAPI_E_USER_CANCEL, NULL);
+		OPENCHANGE_RETVAL_IF((index >= SRowSet->cRows), MAPI_E_USER_CANCEL, mem_ctx);
 		instance_key = MIds->aulPropTag[index];
 	} else {
 		instance_key = MIds->aulPropTag[0];
@@ -1333,7 +1336,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	set_profile_attribute(profname, *SRowSet, index, PR_ACCOUNT, "Account");
 	set_profile_attribute(profname, *SRowSet, index, PR_ADDRTYPE, "AddrType");
 
-	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x7,
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x7,
 					  PR_DISPLAY_NAME,
 					  PR_EMAIL_ADDRESS,
 					  PR_DISPLAY_TYPE,
@@ -1349,19 +1352,19 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	nspi->pStat->TotalRecs = 0x1;
 
 	MAPIFreeBuffer(SRowSet);
-	SRowSet = talloc(nspi->mem_ctx, struct SRowSet);
-	retval = nspi_QueryRows(nspi, SPropTagArray, &MIds2, 1, &SRowSet);
+	SRowSet = talloc(mem_ctx, struct SRowSet);
+	retval = nspi_QueryRows(nspi, mem_ctx, SPropTagArray, &MIds2, 1, &SRowSet);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return retval;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	lpProp = get_SPropValue_SRowSet(SRowSet, PR_EMS_AB_HOME_MDB);
-	OPENCHANGE_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!lpProp, MAPI_E_NOT_FOUND, mem_ctx);
 
-	nspi->org = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG);
-	nspi->org_unit = x500_get_dn_element(nspi->mem_ctx, lpProp->value.lpszA, ORG_UNIT);
+	nspi->org = x500_get_dn_element(mem_ctx, lpProp->value.lpszA, ORG);
+	nspi->org_unit = x500_get_dn_element(mem_ctx, lpProp->value.lpszA, ORG_UNIT);
 	
-	OPENCHANGE_RETVAL_IF(!nspi->org_unit, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!nspi->org, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi->org_unit, MAPI_E_INVALID_PARAMETER, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!nspi->org, MAPI_E_INVALID_PARAMETER, mem_ctx);
 
 	retval = mapi_profile_add_string_attr(profname, "Organization", nspi->org);
 	retval = mapi_profile_add_string_attr(profname, "OrganizationUnit", nspi->org_unit);
@@ -1372,29 +1375,27 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session, con
 	set_profile_mvstr_attribute(profname, *SRowSet, 0, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
 
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(nspi->mem_ctx, char **, 1);
-	pNames.Strings[0] = (const char *) talloc_asprintf(nspi->mem_ctx, SERVER_DN, 
+	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
+	pNames.Strings[0] = (const char *) talloc_asprintf(mem_ctx, SERVER_DN, 
 							   nspi->org, nspi->org_unit, 
 							   nspi->servername);
-	MId_server = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
-	retval = nspi_DNToMId(nspi, &pNames, &MId_server);
+	MId_server = talloc_zero(mem_ctx, struct SPropTagArray);
+	retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_server);
 	MAPIFreeBuffer((char *)pNames.Strings[0]);
 	MAPIFreeBuffer((char **)pNames.Strings);
-	if (retval != MAPI_E_SUCCESS) return retval;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	MAPIFreeBuffer(SRowSet);
-	SRowSet = talloc_zero(nspi->mem_ctx, struct SRowSet);
-	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x1, PR_EMS_AB_NETWORK_ADDRESS);
-	retval = nspi_GetProps(nspi, SPropTagArray, MId_server, &SRowSet);
+	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_EMS_AB_NETWORK_ADDRESS);
+	retval = nspi_GetProps(nspi, mem_ctx, SPropTagArray, MId_server, &SRowSet);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(MId_server);
-	if (retval != MAPI_E_SUCCESS) {
-		MAPIFreeBuffer(SRowSet);
-		return retval;
-	}
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	set_profile_mvstr_attribute(profname, *SRowSet, 0, PR_EMS_AB_NETWORK_ADDRESS, "NetworkAddress");
 	MAPIFreeBuffer(SRowSet);
+	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }

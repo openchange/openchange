@@ -148,9 +148,12 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	
 	nspi->mem_ctx = mem_ctx;
 
-	retval = nspi_GetSpecialTable(nspi, 0, &rowset);
+	retval = nspi_GetSpecialTable(nspi, mem_ctx, 0, &rowset);
 	mapi_errstr("NspiGetSpecialTable", GetLastError());
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) {
+		talloc_free(mem_ctx);
+		return false;
+	}
 
 	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0xc,
 					  PR_DISPLAY_NAME,
@@ -184,7 +187,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 
 	rowset = talloc_zero(nspi->mem_ctx, struct SRowSet);
 	MIds = talloc_zero(nspi->mem_ctx, struct SPropTagArray);
-	retval = nspi_GetMatches(nspi, SPropTagArray, &Filter, &rowset, &MIds);
+	retval = nspi_GetMatches(nspi, nspi->mem_ctx, SPropTagArray, &Filter, &rowset, &MIds);
 	MAPIFreeBuffer(lpProp);
 	mapi_errstr("NspiGetMatches", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -226,7 +229,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	MIds2.cValues = 0x1;
 	MIds2.aulPropTag = (enum MAPITAGS *) &instance_key;
 
-	retval = nspi_QueryRows(nspi, SPropTagArray, &MIds2, 1, &rowset);
+	retval = nspi_QueryRows(nspi, nspi->mem_ctx, SPropTagArray, &MIds2, 1, &rowset);
 	mapi_errstr("NspiQueryRows", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -250,7 +253,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	pNames.Strings[0] = (const char *) talloc_asprintf(nspi->mem_ctx, SERVER_DN, 
 							   nspi->org, nspi->org_unit, 
 							   nspi->servername);
-	retval = nspi_DNToMId(nspi, &pNames, &MId_server);
+	retval = nspi_DNToMId(nspi, nspi->mem_ctx, &pNames, &MId_server);
 	mapi_errstr("NspiDNToMId", GetLastError());
 	MAPIFreeBuffer((char *)pNames.Strings[0]);
 	MAPIFreeBuffer((char **)pNames.Strings);
@@ -258,7 +261,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 
 	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x2,
 					  PR_EMS_AB_NETWORK_ADDRESS);
-	retval = nspi_GetProps(nspi, SPropTagArray, MId_server, &rowset);
+	retval = nspi_GetProps(nspi, nspi->mem_ctx, SPropTagArray, MId_server, &rowset);
 	mapi_errstr("NspiGetProps", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

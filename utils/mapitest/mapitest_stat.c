@@ -31,6 +31,18 @@
 */
 
 /**
+  Descriptions of TestApplicabilityFlags
+*/
+struct TestApplicabilityDescription {
+	enum TestApplicabilityFlags	flags;		/*!< The flag value */
+	char*				description;	/*!< A user-visible string equivalent */
+} applicabilityFlagsDescription[] = {
+	{ ApplicableToAllVersions, 	"Applicable to all server versions" },
+	{ NotInExchange2010, 		"Not applicable to Exchange 2010" },
+	{ LastTestApplicabilityFlag,	"Sentinel Value" }
+};
+
+/**
    \details Initialize the mapitest statistic structure
    
    \param mem_ctx memory allocation context
@@ -47,7 +59,9 @@ _PUBLIC_ struct mapitest_stat *mapitest_stat_init(TALLOC_CTX *mem_ctx)
 	stat = talloc_zero(mem_ctx, struct mapitest_stat);
 	stat->success = 0;
 	stat->failure = 0;
+	stat->skipped = 0;
 	stat->failure_info = NULL;
+	stat->skip_info = NULL;
 	stat->enabled = false;
 
 	return stat;
@@ -78,6 +92,7 @@ _PUBLIC_ uint32_t mapitest_stat_add_result(struct mapitest_suite *suite,
 		suite->stat->failure++;
 		el = talloc_zero((TALLOC_CTX *) suite->stat, struct mapitest_unit);
 		el->name = talloc_strdup((TALLOC_CTX *)el, (char *)name);
+		el->reason = 0;
 		DLIST_ADD_END(suite->stat->failure_info, el, struct mapitest_unit *);
 	}
 
@@ -86,6 +101,52 @@ _PUBLIC_ uint32_t mapitest_stat_add_result(struct mapitest_suite *suite,
 	return MAPITEST_SUCCESS;
 }
 
+static void mapitest_stat_add_skipped_test_reason(struct mapitest_unit *stat_unit, enum TestApplicabilityFlags flags)
+{
+	int i;
+	for (i = 0; applicabilityFlagsDescription[i].flags != LastTestApplicabilityFlag; ++i) {
+		if (flags & applicabilityFlagsDescription[i].flags) {
+			if (!stat_unit->reason) {
+				stat_unit->reason = talloc_asprintf((TALLOC_CTX *)stat_unit, applicabilityFlagsDescription[i].description);
+			} else {
+				stat_unit->reason = talloc_asprintf_append(stat_unit->reason, ", ");
+				stat_unit->reason = talloc_asprintf_append(stat_unit->reason, applicabilityFlagsDescription[i].description);
+			}
+		}
+	}
+	if (!stat_unit->reason) {
+		stat_unit->reason = talloc_asprintf((TALLOC_CTX *)stat_unit, "Unknown reason");
+	}
+}
+
+/**
+   \details Add a skipped test to the suite statistic parameters
+
+   \param suite the suite container
+   \param name the test name
+   \param reason the reason why the test was skipped
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t mapitest_stat_add_skipped_test(struct mapitest_suite *suite,
+						 const char *name,
+						 enum TestApplicabilityFlags flags)
+{
+	struct mapitest_unit	*el = NULL;
+
+	/* Sanity check */
+	if (!suite || !suite->stat || !name) return MAPITEST_ERROR;
+
+	suite->stat->skipped++;
+	el = talloc_zero((TALLOC_CTX *) suite->stat, struct mapitest_unit);
+	el->name = talloc_strdup((TALLOC_CTX *)el, (char *)name);
+	mapitest_stat_add_skipped_test_reason(el, flags);
+	DLIST_ADD_END(suite->stat->skip_info, el, struct mapitest_unit *);
+
+	suite->stat->enabled = true;
+
+	return MAPITEST_SUCCESS;
+}
 
 /**
    \details Dump mapitest statistics about test failures
@@ -100,8 +161,23 @@ _PUBLIC_ int32_t mapitest_stat_dump(struct mapitest *mt)
 	struct mapitest_unit	*el;
 	int32_t 		num_passed_tests = 0;
 	int32_t 		num_failed_tests = 0;
+	int32_t 		num_skipped_tests = 0;
 
-	mapitest_print_title(mt, MT_STAT_TITLE, MODULE_TITLE_DELIM);
+	mapitest_print_title(mt, MT_STAT_SKIPPED_TITLE, MODULE_TITLE_DELIM);
+	for (suite = mt->mapi_suite; suite; suite = suite->next) {
+		if (suite->stat->enabled == true) {
+			num_skipped_tests += suite->stat->skipped;
+			if (suite->stat->skipped) {
+				for (el = suite->stat->skip_info; el; el = el->next) {
+					mapitest_print(mt, MT_STAT_SKIPPED, suite->name, el->name, el->reason);
+				}
+			}
+		}
+	}
+
+	mapitest_print_test_title_end(mt);
+
+	mapitest_print_title(mt, MT_STAT_FAILED_TITLE, MODULE_TITLE_DELIM);
 
 	for (suite = mt->mapi_suite; suite; suite = suite->next) {
 		if (suite->stat->enabled == true) {
@@ -120,6 +196,7 @@ _PUBLIC_ int32_t mapitest_stat_dump(struct mapitest *mt)
 	mapitest_print_title(mt, MT_SUMMARY_TITLE, MODULE_TITLE_DELIM);
 	mapitest_print(mt, "Number of passing tests: %i\n", num_passed_tests);
 	mapitest_print(mt, "Number of failing tests: %i\n", num_failed_tests);
+	mapitest_print(mt, "Number of skipped tests: %i\n", num_skipped_tests);
 	mapitest_print_test_title_end(mt);
 
 	return num_failed_tests;

@@ -98,7 +98,6 @@ _PUBLIC_ uint32_t mapitest_suite_register(struct mapitest *mt,
 	return MAPITEST_SUCCESS;
 }
 
-
 /**
    \details add a test to the mapitest suite with description
 
@@ -110,10 +109,36 @@ _PUBLIC_ uint32_t mapitest_suite_register(struct mapitest *mt,
    \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
    
    \sa mapitest_suite_init, mapitest_suite_register
+   \sa mapitest_suite_add_test_flagged for an alternative function allowing the
+   test to only be run under some conditions.
 */
 _PUBLIC_ uint32_t mapitest_suite_add_test(struct mapitest_suite *suite,
 					  const char *name, const char *description,
 					  bool (*run) (struct mapitest *test))
+{
+	return mapitest_suite_add_test_flagged(suite, name, description, run, ApplicableToAllVersions);
+}
+
+/**
+   \details add a test to the mapitest suite with description and flags
+
+   This is very similar to mapitest_suite_add_test(), except it allows a test to have
+   special applicability (e.g. to only run when a particular server configuration is available).
+   
+   \param suite pointer to the parent test suite
+   \param name the test name
+   \param description the test description
+   \param run the test function
+   \param applicability a set of applicability flags
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+   
+   \sa mapitest_suite_init, mapitest_suite_register, mapitest_suite_add_test
+*/
+_PUBLIC_ uint32_t mapitest_suite_add_test_flagged(struct mapitest_suite *suite,
+						  const char *name, const char *description,
+						  bool (*run) (struct mapitest *test),
+						  enum TestApplicabilityFlags applicability)
 {
 	struct mapitest_test	*el = NULL;
 
@@ -131,6 +156,7 @@ _PUBLIC_ uint32_t mapitest_suite_add_test(struct mapitest_suite *suite,
 	el->name = talloc_asprintf((TALLOC_CTX *)suite, "%s-%s", suite->name, name);
 	el->description = talloc_strdup((TALLOC_CTX *)suite, description);
 	el->fn = run;
+	el->flags = applicability;
 
 	DLIST_ADD_END(suite->tests, el, struct mapitest_test *);
 
@@ -162,6 +188,23 @@ _PUBLIC_ struct mapitest_suite *mapitest_suite_find(struct mapitest *mt,
 	return NULL;
 }
 
+/**
+   \details test whether a particular test is applicable
+
+   \param mt pointer to the top-level mapitest structure
+   \param el the test to check
+   
+   \return true if the test should be run, otherwise false
+*/
+static bool mapitest_suite_test_is_applicable(struct mapitest *mt, struct mapitest_test *test)
+{
+	uint16_t actualServerVer = mt->info.rgwServerVersion[0];
+
+	if ((test->flags & NotInExchange2010) && (actualServerVer >= Exchange2010Version)) {
+		return false;
+	}
+	return true;
+}
 
 /**
    \details run a test from a suite given its name
@@ -183,6 +226,10 @@ _PUBLIC_ bool mapitest_suite_run_test(struct mapitest *mt,
 	if (!suite || !name) return false;
 
 	for (el = suite->tests; el; el = el->next) {
+		if (!mapitest_suite_test_is_applicable(mt, el)) {
+			mapitest_stat_add_skipped_test(suite, el->name, el->flags);
+			return true;
+		}
 		if (!strcmp(el->name, name)) {
 			errno = 0;
 			mapitest_print_test_title_start(mt, el->name);
@@ -235,8 +282,13 @@ static bool mapitest_run_test_all(struct mapitest *mt, const char *name)
 
 		if (suite) {
 			for (el = suite->tests; el; el = el->next) {
-				mapitest_suite_run_test(mt, suite, el->name);
-				ret = true;
+				if (mapitest_suite_test_is_applicable(mt, el)) {
+					mapitest_suite_run_test(mt, suite, el->name);
+					ret = true;
+				} else {
+					printf("test is not applicable: %s\n", el->name);
+					return true;
+				}
 			}
 		}
 	}
@@ -309,15 +361,19 @@ _PUBLIC_ bool mapitest_run_all(struct mapitest *mt)
 			mapitest_print_module_title_start(mt, suite->name);
 
 			for (el = suite->tests; el; el = el->next) {
-				errno = 0;
-				mapitest_print_test_title_start(mt, el->name);
-				
-				fn = el->fn;
-				ret = fn(mt);
-				
-				mapitest_stat_add_result(suite, el->name, ret);
-				mapitest_print_test_title_end(mt);
-				mapitest_print_test_result(mt, el->name, ret);
+				if (!mapitest_suite_test_is_applicable(mt, el)) {
+					mapitest_stat_add_skipped_test(suite, el->name, el->flags);
+				} else {
+					errno = 0;
+					mapitest_print_test_title_start(mt, el->name);
+					
+					fn = el->fn;
+					ret = fn(mt);
+					
+					mapitest_stat_add_result(suite, el->name, ret);
+					mapitest_print_test_title_end(mt);
+					mapitest_print_test_result(mt, el->name, ret);
+				}
 			}
 
 			mapitest_print_module_title_end(mt);

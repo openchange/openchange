@@ -66,7 +66,7 @@ _PUBLIC_ uint32_t module_oxcstor_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "PUBLICFOLDER-ISGHOSTED", "Determine if a public folder is ghosted", mapitest_oxcstor_PublicFolderIsGhosted);
 	mapitest_suite_add_test(suite, "GETOWNINGSERVERS", "Get the list of servers that host replicas of a given public folder", mapitest_oxcstor_GetOwningServers);
 	mapitest_suite_add_test(suite, "LONGTERMID", "Map to / from a Long Term ID", mapitest_oxcstor_LongTermId);
-	mapitest_suite_add_test(suite, "GETSTORESTATE", "Retrieve the store state", mapitest_oxcstor_GetStoreState);
+	mapitest_suite_add_test_flagged(suite, "GETSTORESTATE", "Retrieve the store state", mapitest_oxcstor_GetStoreState, NotInExchange2010);
 
 	mapitest_suite_register(mt, suite);
 	

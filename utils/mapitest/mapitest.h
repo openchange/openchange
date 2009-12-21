@@ -31,12 +31,28 @@
 struct mapitest;
 struct mapitest_suite;
 
-#include "utils/mapitest/proto.h"
 
 /**
 	\file mapitest.h
- 	Data structures for %mapitest
+	Data structures for %mapitest
  */
+
+/**
+  Flags for changing test applicability
+  
+  If you add values here, you also need to add a matching description to
+  applicabilityFlagsDescription and suitable logic to
+  mapitest_suite_test_is_applicable().
+*/
+enum TestApplicabilityFlags {
+	ApplicableToAllVersions = 0,	/*!< This test is always applicable */
+	NotInExchange2010 = 0x1,	/*!< This test is not applicable to Exchange 2010 */
+	LastTestApplicabilityFlag = 0xFFFF
+};
+
+
+
+#include "utils/mapitest/proto.h"
 
 /**
 	A list of %mapitest tests
@@ -49,11 +65,12 @@ struct mapitest_suite;
 	fn element (i.e. fn is a function pointer).
 */
 struct mapitest_test {
-	struct mapitest_test	*prev;		/*!< The previous test in the list */
-	struct mapitest_test	*next;		/*!< The next test in the list */
-	char			*name;		/*!< The name of this test */
-	char			*description;	/*!< The description of this test */
-	void			*fn;		/*!< pointer to the test function */
+	struct mapitest_test		*prev;		/*!< The previous test in the list */
+	struct mapitest_test		*next;		/*!< The next test in the list */
+	char				*name;		/*!< The name of this test */
+	char				*description;	/*!< The description of this test */
+	void				*fn;		/*!< pointer to the test function */
+	enum TestApplicabilityFlags	flags;		/*!< any applicability for this test */
 };
 
 /**
@@ -66,6 +83,7 @@ struct mapitest_unit {
 	struct mapitest_unit	*prev;		/*!< The previous test in the list */
 	struct mapitest_unit	*next;		/*!< The next test in the list */
 	char			*name;		/*!< The name of the test */
+	char			*reason;	/*!< Why this test was skipped (if applicable) */
 };
 
 /**
@@ -80,7 +98,9 @@ struct mapitest_unit {
 struct mapitest_stat {
 	uint32_t		success;       /*!< Number of tests in this suite that passed */
 	uint32_t		failure;       /*!< Number of tests in this suite that failed */
+	uint32_t		skipped;       /*!< Number of tests in this suite that were skipped */
 	struct mapitest_unit	*failure_info; /*!< List of names of the tests that failed */
+	struct mapitest_unit	*skip_info;    /*!< List of names of the tests that were skipped, and why */
 	bool			enabled;       /*!< Whether this statistics structure is valid */
 };
 
@@ -160,7 +180,7 @@ struct mt_common_tf_ctx
 #define	MT_HDR_FMT_DATE		"[*] %-25s: %-20s"
 #define	MT_HDR_FMT_SECTION	"[*] %-25s:\n"
 #define	MT_HDR_FMT_SUBSECTION	"%-21s: %-10s\n"
-#define	MT_HDR_FMT_STORE_VER	"%-21s: %d.%d.%d\n"
+#define	MT_HDR_FMT_VER_NORM	"%-21s: %02d.%02d.%04d.%04d\n"
 
 #define	MT_DIRNAME_TOP		"[MT] Top of Mailbox"
 #define	MT_DIRNAME_APPOINTMENT	"[MT] Calendar"
@@ -192,13 +212,17 @@ struct mt_common_tf_ctx
 
 #define	MT_ERROR       	"[ERROR]: %s\n"
 
-#define	MT_STAT_TITLE	"[STAT] FAILURE REPORT\n"
+#define	MT_STAT_FAILED_TITLE	"[STAT] FAILED TEST CASES\n"
 #define	MT_STAT_FAILURE	"* %-35s: %s\n"
+#define	MT_STAT_SKIPPED_TITLE	"[STAT] SKIPPED TEST CASES\n"
+#define	MT_STAT_SKIPPED	"* %-35s: %s (%s)\n"
 
 #define MT_SUMMARY_TITLE "[STAT] TEST SUMMARY\n"
 
 #define	MT_WHITE	   "\033[0;29m"
 #define MT_RED             "\033[1;31m"
 #define MT_GREEN           "\033[1;32m"
+
+#define Exchange2010Version	0x0E00
 
 #endif /* !__MAPITEST_H__ */

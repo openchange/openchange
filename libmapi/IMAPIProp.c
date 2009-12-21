@@ -1266,7 +1266,7 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	if (problemCount) {
 		*problemCount = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblemCount;
 		*problems = talloc_array((TALLOC_CTX *)session[0], struct PropertyProblem, *problemCount);
-		for(i=0; i < *problemCount; ++i) {
+		for(i = 0; i < *problemCount; i++) {
 			(*(problems[i])).index = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblem[i].index;
 			(*(problems[i])).property_tag = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblem[i].property_tag;
 			(*(problems[i])).error_code = mapi_response->mapi_repl->u.mapi_CopyProperties.PropertyProblem[i].error_code;

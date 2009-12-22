@@ -518,10 +518,13 @@ uint32_t get_minutes_from_icaltimetype(icaltimetype icaltime)
 	tm.tm_min	= icaltime.minute;
 	tm.tm_sec	= icaltime.second;
 	tm.tm_isdst	= 0;
-	
+
+	/* TODO: fix this properly when we implement ical2exchange */
+#if !defined(__FreeBSD__)
  	if(timezone!=0){
  		tm.tm_hour-=timezone/3600;
  	}
+#endif
 	time = mktime(&tm);
 	unix_to_nt_time(&nttime, time);
 	nttime_to_timeval(&t, nttime);
@@ -545,10 +548,13 @@ struct FILETIME get_FILETIME_from_icaltimetype(icaltimetype *tt)
 	tm.tm_min	= tt->minute;
 	tm.tm_sec	= tt->second;
 	tm.tm_isdst	= 0;
-	
+
+	/* TODO: fix this properly when we implement ical2exchange */
+#if !defined(__FreeBSD__)
  	if(timezone!=0){
  		tm.tm_hour-=timezone/3600;
  	}
+#endif
 	time = mktime(&tm);
 	unix_to_nt_time(&nttime, time);
 	

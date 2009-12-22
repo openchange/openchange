@@ -1,3 +1,11 @@
+2009-12-22
+    bradh
+	[r1641]
+		Minor documentation update to reflect GSoC exchange2ical merge.
+	[r1640]
+		temporary fix for building on FreeBSD 7.2.
+	[r1639]
+		Remove this file - converted it to trac tasks.
 2009-12-21
     jkerihuel
 	[r1635]
@@ -40,6 +48,13 @@
 		  The only requirement for this patch to work is to make sure the data
 		  we return from MAPI calls is either reparent to another memory
 		  context or copied properly.
+    bradh
+	[r1638]
+		Add support for skipping tests that don't apply to some
+		server versions.
+	[r1637]
+		Change the format of the server version, so it matches the Microsoft
+		way of doing versions.
 
 2009-12-20
     jkerihuel

@@ -59,6 +59,11 @@ of this directory are generated (using Samba's pidl IDL compiler) at
 build time. The main input file is exchange.idl (see top level
 directory).
 
+- libexchange2ical  This directory provides functionality for 
+converting between Exchange calendar appointments and ICalendar (RFC2445 /
+RFC5545) format. Exchange -> ICalendar is fairly mature, ICalendar to 
+Exchange is in work.
+
 - libmapi/  This directory contains the main client-side library,
 called libmapi. libmapi closely reflects the underlying protocol
 operations (Exchange RPC) being performed between the client and the
@@ -125,7 +130,7 @@ obsoleted by the standalone "mapitest" suite - see utils/mapitest/ below.
 applications / utilities that can be used to interact with an exchange
 server. They include:
  - utils/backup/  	backup and restore tools
- - utils/exchange2ical/ converts Exchange calendar into an ICal file
+ - utils/exchange2ical  converts Exchange calendar into an ICal file
  - utils/exchange2mbox	two way conversion between Exchange mail and mbox
  - utils/mapiprofile	set up client side profiles (login information)
  - utils/mapitest/	test tools for libmapi functionality

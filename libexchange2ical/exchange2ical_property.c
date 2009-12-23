@@ -236,7 +236,6 @@ void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 			icalparameter *participantType;
 			enum icalparameter_partstat	partstat = ICAL_PARTSTAT_NONE;
 
-
 			if (smtp) {
 				char *mailtoURL;
 				mailtoURL = talloc_strdup(exchange2ical->mem_ctx, "mailto:");
@@ -248,8 +247,10 @@ void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 				icalcomponent_add_property(exchange2ical->vevent, prop);
 			}
 
-			cn = icalparameter_new_cn(display_name);
-			icalproperty_add_parameter(prop, cn);
+			if (display_name) {
+				cn = icalparameter_new_cn(display_name);
+				icalproperty_add_parameter(prop, cn);
+			}
 
 			if (*RecipientType == 0x3) {
 				icalparameter *cutype = icalparameter_new_cutype(ICAL_CUTYPE_RESOURCE);
@@ -590,6 +591,7 @@ void ical_property_ORGANIZER(struct exchange2ical *exchange2ical)
 		    ((*RecipientFlags & 0x2) || (RecipientType && !*RecipientType))) {
 			icalproperty *prop;
 			icalparameter *cn;
+
 			if (smtp) {
 				char *mailtoURL;
 				mailtoURL = talloc_strdup(exchange2ical->mem_ctx, "mailto:");
@@ -601,8 +603,11 @@ void ical_property_ORGANIZER(struct exchange2ical *exchange2ical)
 				prop = icalproperty_new_organizer("invalid:nomail");
 				icalcomponent_add_property(exchange2ical->vevent, prop);
 			}
-			cn = icalparameter_new_cn(display_name);
-			icalproperty_add_parameter(prop, cn);
+
+			if (display_name) {
+				cn = icalparameter_new_cn(display_name);
+				icalproperty_add_parameter(prop, cn);
+			}
 		}
 	}
 }

@@ -216,10 +216,10 @@ int main(int argc, const char *argv[])
 
 	if(vcal){				
 		/* Icalendar save or print to console */
-		if(!opt_filename){
-			printf("\n\nICAL file:\n%s\n", icalcomponent_as_ical_string(vcal));
-		}else{
-			const char *cal = icalcomponent_as_ical_string(vcal);
+		char *cal = icalcomponent_as_ical_string(vcal);
+		if (!opt_filename) {
+			printf("\n\nICAL file:\n%s\n", cal);
+		} else {
 			size_t bytesWritten;
 			
 			if ((fp = fopen(opt_filename, "w")) == NULL) {
@@ -232,6 +232,7 @@ int main(int argc, const char *argv[])
 			}
 			fclose(fp);
 		}
+		free(cal);
 		icalcomponent_free(vcal);
 	}
 	poptFreeContext(pc);

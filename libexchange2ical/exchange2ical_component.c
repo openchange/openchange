@@ -137,6 +137,8 @@ void ical_component_VTIMEZONE(struct exchange2ical *exchange2ical)
 		if (has_component_DAYLIGHT(exchange2ical)) {
 			ical_component_DAYLIGHT(exchange2ical);
 		}
+	} else {
+		icalcomponent_free(exchange2ical->vtimezone);
 	}
 }
 

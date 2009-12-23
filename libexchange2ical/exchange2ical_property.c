@@ -1141,7 +1141,8 @@ void ical_property_UID(struct exchange2ical *exchange2ical)
 	char*			outstr;
 	struct GlobalObjectId	*GlbObjId;
 	icalproperty		*prop;
-	outstr=talloc_init("uid");
+
+	outstr = talloc_strdup(exchange2ical->mem_ctx, "uid");
 	
 	if(exchange2ical->GlobalObjectId){
 		GlbObjId = get_GlobalObjectId(exchange2ical->mem_ctx, exchange2ical->GlobalObjectId);
@@ -1202,6 +1203,7 @@ static icalproperty * ical_property_add_x_property_value(icalcomponent *parent, 
 
 	icalText = icalvalue_new_text(value);
 	prop = icalproperty_new_x(icalvalue_as_ical_string(icalText));
+	icalvalue_free(icalText);
 	icalproperty_set_x_name(prop, propname);
 	icalcomponent_add_property(parent, prop);
 	return prop;

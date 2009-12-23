@@ -352,12 +352,18 @@ struct icaltimetype get_icaldate_from_FILETIME(const struct FILETIME *ft)
 
 	nttime = FILETIME_to_NTTIME(*ft);
 	nttime_to_timeval(&temp_timeval, nttime);
-	
+
 	tm = gmtime(&temp_timeval.tv_sec);
                                                                  
 	tt.year   = tm->tm_year + 1900;                                        
 	tt.month  = tm->tm_mon + 1;                                            
-	tt.day    = tm->tm_mday;                                               
+	tt.day    = tm->tm_mday;
+	if (tm->tm_hour >= 12) {
+		/* If the time is greater than or equal to 12, and we're representing midnight, then
+		the actual day is one less (e.g. if we're at UTC+11 timezone, then local
+		midnight is 1300 UTC, on the day before). So we add a day. */
+		tt.day++;
+	}
 	tt.hour   = 0;                                               
 	tt.minute = 0;                                                
 	tt.second = 0;

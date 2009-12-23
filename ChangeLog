@@ -1,3 +1,22 @@
+2009-12-23
+    bradh
+	[r1645]
+		Fix property tag array count, so we get the language in Summary
+		lines in the ical output.
+	[r1644]
+		Add protection against null CN values.
+		
+		Resolves ticket #232.
+		
+		Thanks to Arnout Engelen for the bug report and the patch to fix the problem.
+	[r1643]
+		Handle all day events for UTC+  timezones.
+		
+		This resolves ticket #217. Thanks to Arnout Engelen for both reporting
+		the problem, and providing a patch. In the end I heavily modified the 
+		patch, and implemented a much simpler version while we sort out the
+		timezone identifier problems.
+
 2009-12-22
     bradh
 	[r1641]

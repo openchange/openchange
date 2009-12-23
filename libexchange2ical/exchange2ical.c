@@ -456,7 +456,7 @@ static uint8_t exchange2ical_exception_from_EmbeddedObj(struct exchange2ical *ex
 						if (retval != MAPI_E_SUCCESS) {
 							return 1;
 						}else {							
- 							SPropTagArray = set_SPropTagArray(exchange2ical->mem_ctx, 0x2c,
+ 							SPropTagArray = set_SPropTagArray(exchange2ical->mem_ctx, 0x2d,
 												PidLidFExceptionalBody,
 												PidLidRecurring,
 												PidLidAppointmentRecur,
@@ -638,7 +638,7 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 					     SRowSet.aRow[i].lpProps[1].value.d,
 					     &exchange2ical.obj_message, 0);
 			if (retval != MAPI_E_NOT_FOUND) {
-				SPropTagArray = set_SPropTagArray(mem_ctx, 0x2F,
+				SPropTagArray = set_SPropTagArray(mem_ctx, 0x30,
 								  PidLidGlobalObjectId,
 								  PidNameKeywords,
 								  PidLidRecurring,

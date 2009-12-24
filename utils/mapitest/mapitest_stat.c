@@ -124,7 +124,7 @@ static void mapitest_stat_add_skipped_test_reason(struct mapitest_unit *stat_uni
 
    \param suite the suite container
    \param name the test name
-   \param reason the reason why the test was skipped
+   \param flags flags to indicate the reason why the test was skipped
 
    \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
  */

@@ -5,7 +5,7 @@
 # ./script/mkrelease.sh 0.7 PHASER Phaser 308
 #
 
-TMPDIR=`mktemp libmapi-XXXXX`
+TMPDIR=`mktemp openchange-XXXXX`
 rm $TMPDIR || exit 1
 svn export . $TMPDIR || exit 1
 svn log -r$4:HEAD > $TMPDIR/CHANGELOG || exit 1
@@ -26,10 +26,10 @@ svn log -r$4:HEAD > $TMPDIR/CHANGELOG || exit 1
 ) || exit 1
 
 VERSION=$1-$2
-mv $TMPDIR libmapi-$VERSION || exit 1
-tar -cf libmapi-$VERSION.tar libmapi-$VERSION || exit 1
+mv $TMPDIR openchange-$VERSION || exit 1
+tar -cf openchange-$VERSION.tar openchange-$VERSION || exit 1
 echo "Now run: "
-echo "gpg --detach-sign --armor libmapi-$VERSION.tar"
-echo "gzip libmapi-$VERSION.tar" 
+echo "gpg --detach-sign --armor openchange-$VERSION.tar"
+echo "gzip openchange-$VERSION.tar" 
 echo "And then upload "
-echo "libmapi-$VERSION.tar.gz libmapi-$VERSION.tar.asc" 
+echo "openchange-$VERSION.tar.gz openchange-$VERSION.tar.asc" 

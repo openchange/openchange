@@ -107,15 +107,14 @@ static void mapitest_stat_add_skipped_test_reason(struct mapitest_unit *stat_uni
 	for (i = 0; applicabilityFlagsDescription[i].flags != LastTestApplicabilityFlag; ++i) {
 		if (flags & applicabilityFlagsDescription[i].flags) {
 			if (!stat_unit->reason) {
-				stat_unit->reason = talloc_asprintf((TALLOC_CTX *)stat_unit, applicabilityFlagsDescription[i].description);
+				stat_unit->reason = talloc_strdup((TALLOC_CTX *)stat_unit, applicabilityFlagsDescription[i].description);
 			} else {
-				stat_unit->reason = talloc_asprintf_append(stat_unit->reason, ", ");
-				stat_unit->reason = talloc_asprintf_append(stat_unit->reason, applicabilityFlagsDescription[i].description);
+				stat_unit->reason = talloc_asprintf_append(stat_unit->reason, ", %s", applicabilityFlagsDescription[i].description);
 			}
 		}
 	}
 	if (!stat_unit->reason) {
-		stat_unit->reason = talloc_asprintf((TALLOC_CTX *)stat_unit, "Unknown reason");
+		stat_unit->reason = talloc_strdup((TALLOC_CTX *)stat_unit, "Unknown reason");
 	}
 }
 

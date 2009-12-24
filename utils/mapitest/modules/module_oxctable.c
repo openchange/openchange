@@ -93,7 +93,6 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 	mapi_object_t		obj_htable;
 	mapi_object_t		obj_test_folder;
 	struct SPropTagArray	columns;
-	struct SPropTagArray	*SPropTagArray;
 	struct mt_common_tf_ctx	*context;
 	uint32_t		count;
 
@@ -124,19 +123,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 	}
 
 
-	/* Step 4. SetColumns */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3,
-					  PR_DISPLAY_NAME,
-					  PR_FID,
-					  PR_FOLDER_CHILD_COUNT);
-	retval = SetColumns(&(obj_test_folder), SPropTagArray);
-	MAPIFreeBuffer(SPropTagArray);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		mapitest_print_retval(mt, "SetColumns");
-		return false;
-	}
-
-	/* Step 5. QueryColumns on a contents folder */
+	/* Step 4. QueryColumns on a contents folder */
 	retval = QueryColumns(&(obj_test_folder), &columns);
 	mapitest_print_retval(mt, "QueryColumns");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -419,9 +406,10 @@ _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
 	/* Step 2. GetStatus */
 	retval = GetStatus(&obj_htable, &TableStatus);
 	mapitest_print_retval(mt, "GetStatus");
-	mapitest_print(mt, "* %-35s: TableStatus: %d\n", "GetStatus", TableStatus);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
+	} else {
+		mapitest_print(mt, "* %-35s: TableStatus: %d\n", "GetStatus", TableStatus);
 	}
 
 	/* Step 3. Release */

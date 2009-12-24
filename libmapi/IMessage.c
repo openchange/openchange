@@ -525,71 +525,143 @@ uint8_t mapi_recipients_get_org_length(struct mapi_profile *profile)
 }
 
 
-/*
- * EXPERIMENTAL:
- * bitmask calculation for recipients headers structures
+/**
+   /details RecipientFlags bitmask calculation for RecipientRows
+   structure.
+
+   \param aRow pointer to the SRow structures with the properties to
+   pass to ModifyRecipients.
+
+   According to MS-OXCDATA 2.9.3.1 RecipientFlags structure, the bitmask
+   can be represented as the following:
+
+   0      3   4   5   6   7   8   9  10  11         15   16
+   +------+---+---+---+---+---+---+---+---+----------+---+
+   | Type | E | D | T | S | R | N | U | I | Reserved | O |
+   +------+---+---+---+---+---+---+---+---+----------+---+
+   
+   Type: (0x7 mask) 3-bit enumeration describing the Address Type (PR_ADDRTYPE)
+   E: (0x8)    Email address included (PR_SMTP_ADDRESS)
+   D: (0x10)   Display Name included (PR_DISPLAY_NAME)
+   T: (0x20)   Transmittable Display Name included (PR_TRANSMITTABLE_DISPLAY_NAME)
+   S: (0x40)   If Transmittable Display Name is the same than Display Name (D == T)
+   R: (0x80)   Different transport is responsible for delivery
+   N: (0x100)  Recipient does not support receiving Rich Text messages
+   U: (0x200)  If we are using Unicode properties
+   I: (0x400)  If Simple Display Name is included (PR_7BIT_DISPLAY_NAME)
+   Reserved:   Must be zero
+   O: (0x8000) Non-standard address type is used
+
+   The PidTag property to bitmask mapping was unclear for some
+   fields. mapiproxy between Outlook 2003 and Exchange 2010 has been
+   used for this purpose.
+
+   For further information about PidTagAddressType, refer to
+   [MS-OXCMAIL] section 2.1.1.9
+
+   \return uint16_t holding the RecipientFlags value. 0 is returned
+   when an inconsistency or a failure occurs
+
  */
-uint16_t mapi_recipients_bitmask(struct SRow *aRow)
+uint16_t mapi_recipients_RecipientFlags(struct SRow *aRow)
 {
 	uint16_t		bitmask;
 	struct SPropValue	*lpProp = NULL;
+	bool			unicode = false;
+	const char		*addrtype = NULL;
+	const char		*tmp = NULL;
+	const char		*display_name = NULL;
+	const char		*transmit_display_name = NULL;
+
+	/* Sanity Checks */
+	if (!aRow) return 0;
 
 	bitmask = 0;
 
-	/* recipient type: EXCHANGE or SMTP */
+	/* (Type) - 0x0 to 0x7: PR_ADDRTYPE */
 	lpProp = get_SPropValue_SRow(aRow, PR_ADDRTYPE);
 	if (lpProp && lpProp->value.lpszA) {
-		if (!strcmp("SMTP", lpProp->value.lpszA)) {
-			bitmask |= 0xB;
-		}
+		addrtype = lpProp->value.lpszA;
 	} else {
-		/* (Bit 8) doesn't seem to work if unset */
-		bitmask |= 0x81;
-	}
-
-	/* Bit 15: DISPLAY_NAME */
-	lpProp = get_SPropValue_SRow(aRow, PR_DISPLAY_NAME);
-	if (lpProp && lpProp->value.lpszA) {
-		bitmask |= 0x400;
-	}
-
-	lpProp = get_SPropValue_SRow(aRow, PR_DISPLAY_NAME_UNICODE);
-	if (lpProp && lpProp->value.lpszW) {
-		bitmask |= 0x600;
-	}
-
-	/* Bit 6: PR_GIVEN_NAME */
-	lpProp = get_SPropValue_SRow(aRow, PR_GIVEN_NAME);
-	if (lpProp && lpProp->value.lpszA) {
-		bitmask |= 0x20;
-	}
-
-	lpProp = get_SPropValue_SRow(aRow, PR_GIVEN_NAME_UNICODE);
-	if (lpProp && lpProp->value.lpszW) {
-		bitmask |= 0x220;
-	}
-
-	/* Bit 5. PR_7BIT_DISPLAY_NAME */
-	lpProp = get_SPropValue_SRow(aRow, PR_7BIT_DISPLAY_NAME);
-	if (lpProp && lpProp->value.lpszA) {
-		bitmask |= 0x10;
-	}
-
-	lpProp = get_SPropValue_SRow(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
-	if (lpProp && lpProp->value.lpszW) {
-		bitmask |= 0x210;
-	}
-
-	/* Bit 4: PR_EMAIL_ADDRESS */
-	if (bitmask & 0xA) {
-		lpProp = get_SPropValue_SRow(aRow, PR_SMTP_ADDRESS);
-		if (lpProp && lpProp->value.lpszA) {
-			bitmask |= 0x8;
-		}
-		
-		lpProp = get_SPropValue_SRow(aRow, PR_SMTP_ADDRESS_UNICODE);
+		lpProp = get_SPropValue_SRow(aRow, PR_ADDRTYPE_UNICODE);
 		if (lpProp && lpProp->value.lpszW) {
-			bitmask |= 0x208;
+			unicode = true;
+			addrtype = lpProp->value.lpszW;
+		} 
+	}
+
+	if (!addrtype) {
+		return 0;
+	}
+	/* WARNING: This check is yet incomplete */
+	if (!strcmp("EX", addrtype)) { 
+		bitmask |= 0x1;
+	} else if (!strcmp("SMTP", addrtype)) {
+		bitmask |= 0x3;
+	}
+
+	/* (E) - 0x8: PR_SMTP_ADDRESS (If we have Exchange type, we don't need it) */
+	if (strcmp(addrtype, "EX")) {
+		lpProp = get_SPropValue_SRow(aRow, (unicode == true) ? PR_SMTP_ADDRESS_UNICODE: PR_SMTP_ADDRESS);
+		if (lpProp) {
+			tmp = (unicode == true) ? lpProp->value.lpszW : lpProp->value.lpszA;
+			if (tmp) {
+				bitmask |= 0x8;
+			}
+		}
+	}
+
+	/* (D) - 0x10: PR_DISPLAY_NAME */
+	lpProp = get_SPropValue_SRow(aRow, (unicode == true) ? PR_DISPLAY_NAME_UNICODE : PR_DISPLAY_NAME);
+	if (lpProp) {
+		display_name = (unicode == true) ? lpProp->value.lpszW : lpProp->value.lpszA;
+		if (display_name) {
+			bitmask |= 0x10;
+		}
+	}
+
+	/* (T) - 0x20: PR_TRANSMITTABLE_DISPLAY_NAME */
+	lpProp = get_SPropValue_SRow(aRow, (unicode == true) ? PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE : PR_TRANSMITTABLE_DISPLAY_NAME);
+	if (lpProp) {
+		transmit_display_name = (unicode == true) ? lpProp->value.lpszW : lpProp->value.lpszA;
+		if (transmit_display_name) {
+			if (!display_name) {
+				bitmask |= 0x20;
+			} else if (display_name && strcmp(display_name, transmit_display_name)) {
+				bitmask |= 0x20;
+			}
+		}
+	}
+
+	/* (S) - 0x40: Does D equals T? If so, we shouldn't include PR_TRANSMITTABLE_DISPLAY_NAME within RecipientRows */
+	if (display_name && transmit_display_name) {
+		if (!strcmp(display_name, transmit_display_name)) {
+			bitmask |= 0x40;
+		}
+	}
+
+	/* (R) - 0x80: Different transport is responsible for delivery */
+	if (addrtype && strcmp(addrtype, "EX")) {
+		bitmask |= 0x80;
+	}
+
+	/* (N) - 0x100: Recipient doesn't support rich-text messages */
+	lpProp = get_SPropValue_SRow(aRow, PR_SEND_RICH_INFO);
+	if (lpProp && (lpProp->value.b == false)) {
+		bitmask |= 0x100;
+	}
+
+	/* (U) - 0x200: Unicode properties */
+	if (unicode == true) {
+		bitmask |= 0x200;
+	}
+
+	/* (I) - 0x400: PR_7BIT_DISPLAY_NAME */
+	lpProp = get_SPropValue_SRow(aRow, (unicode == true) ? PR_7BIT_DISPLAY_NAME_UNICODE : PR_7BIT_DISPLAY_NAME);
+	if (lpProp) {
+		tmp = (unicode == true) ? lpProp->value.lpszW : lpProp->value.lpszA;
+		if (tmp) {
+			bitmask |= 0x400;
 		}
 	}
 
@@ -658,16 +730,25 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	 */
 	request.properties = get_MAPITAGS_SRow(mem_ctx, &SRowSet->aRow[0]);
 	count = SRowSet->aRow[0].cValues - 1;
- 	request.prop_count = MAPITAGS_delete_entries(request.properties, count, 7,
+ 	request.prop_count = MAPITAGS_delete_entries(request.properties, count, 17,
+						     PR_ENTRYID,
 						     PR_DISPLAY_NAME,
 						     PR_DISPLAY_NAME_UNICODE,
+						     PR_DISPLAY_NAME_ERROR,
 						     PR_GIVEN_NAME,
 						     PR_GIVEN_NAME_UNICODE,
 						     PR_GIVEN_NAME_ERROR,
+						     PR_EMAIL_ADDRESS,
+						     PR_EMAIL_ADDRESS_UNICODE,
+						     PR_TRANSMITTABLE_DISPLAY_NAME,
+						     PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE,
 						     PR_RECIPIENT_TYPE,
-						     PR_ADDRTYPE);
+						     PR_ADDRTYPE,
+						     PR_ADDRTYPE_UNICODE,
+						     PR_ADDRTYPE_ERROR,
+						     PR_SEND_INTERNET_ENCODING,
+						     PR_SEND_INTERNET_ENCODING_ERROR);
 	size += request.prop_count * sizeof(uint32_t);
-
 	request.cValues = SRowSet->cRows;
 	size += sizeof(uint16_t);
 	request.RecipientRow = talloc_array(mem_ctx, struct ModifyRecipientRow, request.cValues);
@@ -693,64 +774,30 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		request.RecipientRow[i_recip].RecipClass = (enum ulRecipClass) *RecipClass;
 		size += sizeof(uint8_t);
 		
-		RecipientRow->RecipientFlags = mapi_recipients_bitmask(aRow);
+		RecipientRow->RecipientFlags = mapi_recipients_RecipientFlags(aRow);
 		
-		/* recipient type EXCHANGE or SMTP */
-		switch (RecipientRow->RecipientFlags & 0xB) {
+		/* (Type) - 0x0 to 0x7: Recipient type (Exchange, SMTP or other?) */
+		switch (RecipientRow->RecipientFlags & 0x7) {
 		case 0x1: 
-			RecipientRow->type.EXCHANGE.organization_length = mapi_recipients_get_org_length(session->profile);
+		  //			RecipientRow->type.EXCHANGE.organization_length = mapi_recipients_get_org_length(session->profile);
+			RecipientRow->type.EXCHANGE.organization_length = 0;
 			RecipientRow->type.EXCHANGE.addr_type = SINGLE_RECIPIENT;
-			RecipientRow->type.EXCHANGE.username = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
+			switch (RecipientRow->RecipientFlags & 0x200) {
+			case 0x0:
+				RecipientRow->type.EXCHANGE.username = (const char *) find_SPropValue_data(aRow, PR_EMAIL_ADDRESS);
+				break;
+			case 0x200:
+				RecipientRow->type.EXCHANGE.username = (const char *) find_SPropValue_data(aRow, PR_EMAIL_ADDRESS_UNICODE);
+				break;
+			}
 			size += sizeof(uint32_t) + strlen(RecipientRow->type.EXCHANGE.username) + 1;
 			break;
-		case 0xB:
+		case 0x3:
 			size += sizeof(uint16_t);
 			break;
 		}
-		
-		/* Bit 15: PR_DISPLAY_NAME */
-		switch(RecipientRow->RecipientFlags & 0x600) {
-		case (0x400):
-			RecipientRow->SimpleDisplayName.lpszA = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME);
-			size += strlen(RecipientRow->SimpleDisplayName.lpszA) + 1;
-			break;
-		case (0x600):
-			RecipientRow->SimpleDisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
-			size += strlen(RecipientRow->SimpleDisplayName.lpszW) * 2 + 2;
-			break;
-		default:
-			break;
-		}
 
-		/* Bit 6: PR_GIVEN_NAME */
-		switch (RecipientRow->RecipientFlags & 0x220) {
-		case (0x20):
-			RecipientRow->TransmittableDisplayName.lpszA = (const char *) find_SPropValue_data(aRow, PR_GIVEN_NAME);
-			size += strlen(RecipientRow->TransmittableDisplayName.lpszA) + 1;
-			break;
-		case (0x220):
-			RecipientRow->TransmittableDisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_GIVEN_NAME_UNICODE);
-			size += strlen(RecipientRow->TransmittableDisplayName.lpszW) * 2 + 2;
-			break;
-		default:
-			break;
-		}
-
-		/* Bit 5: PR_7BIT_DISPLAY_NAME */
-		switch (RecipientRow->RecipientFlags & 0x210) {
-		case (0x10):
-			RecipientRow->DisplayName.lpszA = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
-			size += strlen(RecipientRow->DisplayName.lpszA) + 1;
-			break;
-		case (0x210):
-			RecipientRow->DisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
-			size += strlen(RecipientRow->DisplayName.lpszW) * 2 + 2;
-			break;
-		default:
-			break;
-		}
-
-		/* Bit 4: PR_SMTP_ADDRESS */
+		/* (E) - 0x8: PR_SMTP_ADDRESS */
 		switch (RecipientRow->RecipientFlags & 0x208) {
 		case (0x8):
 			RecipientRow->EmailAddress.lpszA = (const char *) find_SPropValue_data(aRow, PR_SMTP_ADDRESS);
@@ -763,7 +810,50 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		default:
 			break;
 		}
+
+		/* (D) - 0x10: PR_DISPLAY_NAME */
+		switch (RecipientRow->RecipientFlags & 0x210) {
+		case (0x10):
+			RecipientRow->DisplayName.lpszA = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME);
+			size += strlen(RecipientRow->DisplayName.lpszA) + 1;
+			break;
+		case (0x210):
+			RecipientRow->DisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
+			size += strlen(RecipientRow->DisplayName.lpszW) * 2 + 2;
+			break;
+		default:
+			break;
+		}
+
+		/* (T) - 0x20: PR_TRANSMITTABLE_DISPLAY_NAME */
+		switch (RecipientRow->RecipientFlags & 0x260) {
+		case (0x20):
+			RecipientRow->TransmittableDisplayName.lpszA = (const char *) find_SPropValue_data(aRow, PR_TRANSMITTABLE_DISPLAY_NAME);
+			size += strlen(RecipientRow->TransmittableDisplayName.lpszA) + 1;
+			break;
+		case (0x220):
+			RecipientRow->TransmittableDisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE);
+			size += strlen(RecipientRow->TransmittableDisplayName.lpszW) * 2 + 2;
+			break;
+		default:
+			break;
+		}
 		
+		
+		/* (I) - 0x400: PR_7BIT_DISPLAY_NAME */
+		switch(RecipientRow->RecipientFlags & 0x600) {
+		case (0x400):
+			RecipientRow->SimpleDisplayName.lpszA = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME);
+			size += strlen(RecipientRow->SimpleDisplayName.lpszA) + 1;
+			break;
+		case (0x600):
+			RecipientRow->SimpleDisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
+			size += strlen(RecipientRow->SimpleDisplayName.lpszW) * 2 + 2;
+			break;
+		default:
+			break;
+		}
+
 		RecipientRow->prop_count = request.prop_count;
 		size += sizeof(uint16_t);
 		RecipientRow->layout = 0;

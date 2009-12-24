@@ -279,13 +279,17 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 
 
 	/* Step 4. Resolve the recipients and call ModifyRecipients */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x6,
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0xA,
+					  PR_ENTRYID,
+					  PR_DISPLAY_NAME_UNICODE,
 					  PR_OBJECT_TYPE,
 					  PR_DISPLAY_TYPE,
-					  PR_7BIT_DISPLAY_NAME,
-					  PR_DISPLAY_NAME,
-					  PR_SMTP_ADDRESS,
-					  PR_GIVEN_NAME);
+					  PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE,
+					  PR_EMAIL_ADDRESS_UNICODE,
+					  PR_ADDRTYPE_UNICODE,
+					  PR_SEND_RICH_INFO,
+					  PR_7BIT_DISPLAY_NAME_UNICODE,
+					  PR_SMTP_ADDRESS_UNICODE);
 
 	username = talloc_array(mt->mem_ctx, char *, 2);
 	username[0] = mt->info.szDisplayName;
@@ -293,7 +297,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 
 	retval = ResolveNames(mapi_object_get_session(&obj_message), 
 			      (const char **)username, SPropTagArray, 
-			      &SRowSet, &flaglist, 0);
+			      &SRowSet, &flaglist, MAPI_UNICODE);
 	mapitest_print_retval(mt, "ResolveNames");
 
 	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
@@ -411,13 +415,17 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 		return false;
 	}
 
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x6,
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0xA,
+					  PR_ENTRYID,
+					  PR_DISPLAY_NAME_UNICODE,
 					  PR_OBJECT_TYPE,
 					  PR_DISPLAY_TYPE,
-					  PR_7BIT_DISPLAY_NAME,
-					  PR_DISPLAY_NAME,
-					  PR_SMTP_ADDRESS,
-					  PR_GIVEN_NAME);
+					  PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE,
+					  PR_EMAIL_ADDRESS_UNICODE,
+					  PR_ADDRTYPE_UNICODE,
+					  PR_SEND_RICH_INFO,
+					  PR_7BIT_DISPLAY_NAME_UNICODE,
+					  PR_SMTP_ADDRESS_UNICODE);
 
 	username = talloc_array(mt->mem_ctx, char *, 2);
 	username[0] = mt->info.szDisplayName;
@@ -425,7 +433,7 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 
 	retval = ResolveNames(mapi_object_get_session(&obj_message),
 			      (const char **)username, SPropTagArray, 
-			      &SRowSet, &flaglist, 0);
+			      &SRowSet, &flaglist, MAPI_UNICODE);
 	mapitest_print_retval(mt, "ResolveNames");
 
 	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
@@ -564,13 +572,17 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 		return false;
 	}
 
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x6,
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0xA,
+					  PR_ENTRYID,
+					  PR_DISPLAY_NAME_UNICODE,
 					  PR_OBJECT_TYPE,
 					  PR_DISPLAY_TYPE,
-					  PR_7BIT_DISPLAY_NAME,
-					  PR_DISPLAY_NAME,
-					  PR_SMTP_ADDRESS,
-					  PR_GIVEN_NAME);
+					  PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE,
+					  PR_EMAIL_ADDRESS_UNICODE,
+					  PR_ADDRTYPE_UNICODE,
+					  PR_SEND_RICH_INFO,
+					  PR_7BIT_DISPLAY_NAME_UNICODE,
+					  PR_SMTP_ADDRESS_UNICODE);
 
 	username = talloc_array(mt->mem_ctx, char *, 2);
 	username[0] = mt->info.szDisplayName;
@@ -578,7 +590,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 
 	retval = ResolveNames(mapi_object_get_session(&obj_message),
 			      (const char **)username, SPropTagArray, 
-			      &SRowSet, &flaglist, 0);
+			      &SRowSet, &flaglist, MAPI_UNICODE);
 	mapitest_print_retval(mt, "ResolveNames");
 
 	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;

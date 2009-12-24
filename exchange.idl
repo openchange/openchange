@@ -1191,8 +1191,8 @@ System Attendant Private Interface
 	} RecipSMTP;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x0)] RecipExchange	EXCHANGE;
-		[case(0xA)] RecipSMTP		SMTP;
+		[case(0x1)] RecipExchange	EXCHANGE;
+		[case(0x3)] RecipSMTP		SMTP;
 		[default];
 	} recipient_type;
 
@@ -1205,6 +1205,8 @@ System Attendant Private Interface
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x0)];
+		[case(0x60)];
+		[case(0x260)];
 		[case(0x20)] astring				lpszA;
 		[case(0x220)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
@@ -1226,11 +1228,11 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16									RecipientFlags;
-		[switch_is(RecipientFlags & 0xA)]   recipient_type			type;
+		[switch_is(RecipientFlags & 0x7)]   recipient_type			type;
 		[switch_is(RecipientFlags & 0x208)] recipient_EmailAddress	       	EmailAddress;
 		[switch_is(RecipientFlags & 0x210)] recipient_DisplayName		DisplayName;
 		[switch_is(RecipientFlags & 0x600)] recipient_SimpleDisplayName    	SimpleDisplayName;
-		[switch_is(RecipientFlags & 0x220)] recipient_TransmittableDisplayName	TransmittableDisplayName;
+		[switch_is(RecipientFlags & 0x260)] recipient_TransmittableDisplayName	TransmittableDisplayName;
 		uint16									prop_count;
 		uint8									layout;
 		[flag(NDR_REMAINING)] DATA_BLOB						prop_values;

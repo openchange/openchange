@@ -774,19 +774,23 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	if (retval != MAPI_E_SUCCESS) return retval;
 
 	/* Recipients operations */
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0xA,
+					  PR_ENTRYID,
+					  PR_DISPLAY_NAME_UNICODE,
 					  PR_OBJECT_TYPE,
 					  PR_DISPLAY_TYPE,
-					  PR_7BIT_DISPLAY_NAME,
-					  PR_DISPLAY_NAME,
-					  PR_SMTP_ADDRESS,
-					  PR_GIVEN_NAME);
+					  PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE,
+					  PR_EMAIL_ADDRESS_UNICODE,
+					  PR_ADDRTYPE_UNICODE,
+					  PR_SEND_RICH_INFO,
+					  PR_7BIT_DISPLAY_NAME_UNICODE,
+					  PR_SMTP_ADDRESS_UNICODE);
 
 	oclient->usernames = collapse_recipients(mem_ctx, oclient);
 
 	/* ResolveNames */
 	retval = ResolveNames(mapi_object_get_session(&obj_message), (const char **)oclient->usernames, 
-			      SPropTagArray, &SRowSet, &flaglist, 0);
+			      SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return retval;
 

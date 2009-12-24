@@ -245,13 +245,17 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 	if (subject == NULL) return false;
 
 	/* Resolve recipients */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x6,
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0xA,
+					  PR_ENTRYID,
+					  PR_DISPLAY_NAME_UNICODE,
 					  PR_OBJECT_TYPE,
 					  PR_DISPLAY_TYPE,
-					  PR_7BIT_DISPLAY_NAME,
-					  PR_DISPLAY_NAME,
-					  PR_SMTP_ADDRESS,
-					  PR_GIVEN_NAME);
+					  PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE,
+					  PR_EMAIL_ADDRESS_UNICODE,
+					  PR_ADDRTYPE_UNICODE,
+					  PR_SEND_RICH_INFO,
+					  PR_7BIT_DISPLAY_NAME_UNICODE,
+					  PR_SMTP_ADDRESS_UNICODE);
 
 	username[0] = (const char *)mt->info.szDisplayName;
 	username[1] = NULL;
@@ -260,7 +264,7 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 	flaglist = talloc_zero(mt->mem_ctx, struct SPropTagArray);
 
 	retval = ResolveNames(mapi_object_get_session(obj_message), username, SPropTagArray, 
-			      &SRowSet, &flaglist, 0);
+			      &SRowSet, &flaglist, MAPI_UNICODE);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "ResolveNames", GetLastError());
@@ -513,6 +517,7 @@ _PUBLIC_ bool mapitest_common_setup(struct mapitest *mt, mapi_object_t *obj_htab
 _PUBLIC_ void mapitest_common_cleanup(struct mapitest *mt)
 {
 	struct mt_common_tf_ctx	*context;
+	enum MAPISTATUS		retval;
 	int			i;
 
 	context = mt->priv;
@@ -521,14 +526,14 @@ _PUBLIC_ void mapitest_common_cleanup(struct mapitest *mt)
 		mapi_object_release(&(context->obj_test_msg[i]));
 	}
 
-	EmptyFolder(&(context->obj_test_folder));
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	retval = EmptyFolder(&(context->obj_test_folder));
+	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "Empty test folder", GetLastError());
 	}
 
-	DeleteFolder(&(context->obj_top_folder), mapi_object_get_id(&(context->obj_test_folder)),
-		     DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	retval = DeleteFolder(&(context->obj_top_folder), mapi_object_get_id(&(context->obj_test_folder)),
+			      DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);
+	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "Delete test folder", GetLastError());
 	}
 

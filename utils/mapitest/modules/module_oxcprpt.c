@@ -63,6 +63,7 @@ _PUBLIC_ bool mapitest_oxcprpt_GetProps(struct mapitest *mt)
 	retval = GetPropList(&obj_store, SPropTagArray);
 	mapitest_print_retval(mt, "GetPropList");
 	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(SPropTagArray);
 		return false;
 	}
 
@@ -70,6 +71,7 @@ _PUBLIC_ bool mapitest_oxcprpt_GetProps(struct mapitest *mt)
 	retval = GetProps(&obj_store, SPropTagArray, &lpProps, &cValues);
 	mapitest_print_retval(mt, "GetProps");
 	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(SPropTagArray);
 		return false;
 	}
 	MAPIFreeBuffer(SPropTagArray);

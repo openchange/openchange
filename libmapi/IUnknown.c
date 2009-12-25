@@ -165,8 +165,9 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
    This function returns the error code set by a previous function
    call.
 
-   \note Calls to the function won't work in multi-threaded or
-   multisession code.
+   \note Calls to this function may not work reliably in multi-threaded or
+   multisession code. We suggest you capture the return value of the call,
+   and check that instead.
 */
 _PUBLIC_ enum MAPISTATUS GetLastError(void)
 {

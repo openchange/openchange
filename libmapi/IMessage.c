@@ -526,7 +526,7 @@ uint8_t mapi_recipients_get_org_length(struct mapi_profile *profile)
 
 
 /**
-   /details RecipientFlags bitmask calculation for RecipientRows
+   \details RecipientFlags bitmask calculation for RecipientRows
    structure.
 
    \param aRow pointer to the SRow structures with the properties to

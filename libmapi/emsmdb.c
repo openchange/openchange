@@ -263,6 +263,8 @@ static int mapi_response_destructor(void *data)
 {
 	struct mapi_response	*mapi_response = (struct mapi_response *)data;
 
+	if (!mapi_response) return 0;
+
 	if (mapi_response->mapi_repl) {
 		if (mapi_response->handles) {
 			talloc_free(mapi_response->handles);
@@ -350,6 +352,7 @@ start:
 	emsmdb_ctx->cache_size = emsmdb_ctx->cache_count = 0;
 
 	if (r.out.mapi_response->mapi_repl && r.out.mapi_response->mapi_repl->error_code) {
+		talloc_set_destructor((void *)mapi_response, NULL);
 		r.out.mapi_response->handles = NULL;
 	}
 

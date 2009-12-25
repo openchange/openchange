@@ -1,3 +1,14 @@
+2009-12-25
+    jkerihuel
+	[r1654]
+		Fix MAPIUninitialize() crash when leaving after an unsuccessful call.
+		In such situation, mapi_response is not allocated but has a destructor
+		associated. This fix removes the destructor whenever the error code is
+		different from MAPI_E_SUCCESS.
+		
+		Also add a minor (probably useless) check on mapi_response pointer validity
+		before attempting any other child's free.
+
 2009-12-24
     jkerihuel
 	[r1651]

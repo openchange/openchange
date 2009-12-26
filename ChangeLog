@@ -1,3 +1,9 @@
+2009-12-26
+    bradh
+	[r1658]
+		Add first part of Restrictions support.
+	[r1657]
+		A little more documentation fixes.
 2009-12-25
     jkerihuel
 	[r1654]
@@ -8,6 +14,9 @@
 		
 		Also add a minor (probably useless) check on mapi_response pointer validity
 		before attempting any other child's free.
+    bradh
+	[r1656]
+		A couple of minor API documentation fixes.
 
 2009-12-24
     jkerihuel

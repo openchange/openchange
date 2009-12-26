@@ -522,7 +522,7 @@ _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowL
 	mem_ctx = talloc_named(NULL, 0, "ModifyTable");
 	size = 0;
 
-	/* Fill the GetTable operation */
+	/* Fill the ModifyTable operation */
 	request.rowList = *rowList;
 	request.rowList.padding = 0;
 	size += sizeof (uint8_t) + sizeof (uint16_t);
@@ -567,9 +567,9 @@ _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowL
 }
 
 /**
-   \details Etablishes search criteria for the container
+   \details Establishes search criteria for the container
 
-   \param obj_container the object we apply search criteria on
+   \param obj_container the object we apply search criteria to
    \param res pointer to a mapi_SRestriction structure defining the
    search criteria
    \param SearchFlags bitmask of flags that controls how the search
@@ -605,6 +605,7 @@ _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowL
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: One or more parameters were invalid (usually null pointer)
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
      

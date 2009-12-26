@@ -38,8 +38,9 @@ my	%prop_types = (
     0x1e	=> "PT_STRING8",
     0x1f	=> "PT_UNICODE",
     0x40	=> "PT_SYSTIME",
-    0xFE	=> "PT_ACTIONS",
     0x48	=> "PT_CLSID",
+    0xFD	=> "PT_SRESTRICT",
+    0xFE	=> "PT_ACTIONS",
     0x102	=> "PT_BINARY",
 # Multi-valued property types
     0x1002	=> "PT_MV_SHORT",
@@ -73,6 +74,7 @@ my	%prop_names = (
     "PT_UNICODE"	=>	0x1f,
     "PT_SYSTIME"	=>	0x40,
     "PT_CLSID"		=>	0x48,
+    "PT_SRESTRICT"	=>	0xfd,
     "PT_ACTIONS"	=>	0xfe,
     "PT_BINARY"		=>	0x102,
 # Multi-valued property types

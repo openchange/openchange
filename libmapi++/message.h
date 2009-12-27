@@ -24,14 +24,16 @@
 
 #include <iostream> //for debugging
 #include <vector>
+#include <boost/shared_ptr.hpp>
 
 #include <libmapi++/mapi_exception.h>
 #include <libmapi++/session.h>
 #include <libmapi++/clibmapi.h>
+#include <libmapi++/object.h>
+#include <libmapi++/message_store.h>
 
 namespace libmapipp
 {
-class object;
 class attachment;
 
 /** 
@@ -90,7 +92,5 @@ class message : public object {
 };
 
 } // namespace libmapipp
-
-#include <libmapi++/impl/message.ipp>
 
 #endif //!LIBMAPIPP__MESSAGE_H__

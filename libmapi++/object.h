@@ -26,7 +26,6 @@
 #include <stdexcept>
 
 #include <libmapi++/clibmapi.h>
-#include <libmapi++/session.h>
 
 /**
  *  The libmapi++ classes and other definitions are all enclosed in
@@ -36,7 +35,7 @@ namespace libmapipp
 {
 // #define INVALID_HANDLE_VALUE 0xffffffff
 class property_container;
-
+class session;
 /**
  * Base Object class
  *
@@ -102,7 +101,5 @@ class object {
 };
 
 } // namespace libmapipp
-
-#include <libmapi++/impl/object.ipp>
 
 #endif //!LIBMAPIPP__OBJECT_H__

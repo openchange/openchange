@@ -1,6 +1,6 @@
 /*
    libmapi C++ Wrapper
-   Object Class implementation.
+   mapi_exception Class implementation.
 
    Copyright (C) Alan Alvarez 2008.
 
@@ -18,15 +18,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libmapi++/session.h>
-#include <libmapi++/property_container.h>
+#include <libmapi++/mapi_exception.h>
 
 namespace libmapipp {
 
-inline property_container object::get_property_container() 
-{ 
-	return property_container(m_session.get_memory_ctx(), m_object); 
-}
+mapi_exception::status_map mapi_exception::sm_status_map = status_map();
 
 } // namespace libmapipp
 

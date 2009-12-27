@@ -139,8 +139,6 @@ class mapi_exception : public std::exception
 		}	
 };
 
-mapi_exception::status_map mapi_exception::sm_status_map = status_map();
-
 } // namespace libmapipp
 
 #endif //!LIBMAPIPP__EXCEPTION_H__

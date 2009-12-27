@@ -30,13 +30,13 @@
 
 #include <libmapi++/clibmapi.h>
 #include <libmapi++/mapi_exception.h>
+#include <libmapi++/message_store.h>
 
 using std::cout;
 using std::endl;
 
 namespace libmapipp
 {
-class message_store;
 /**
  * This class represents a MAPI %session with the Exchange Server
  *
@@ -136,11 +136,14 @@ class session {
 		message_store		*m_message_store;
 		std::string		m_profile_name;
 
-		void uninitialize() throw();
+		void uninitialize() throw()
+		{
+			talloc_free(m_memory_ctx);
+			MAPIUninitialize();
+			delete m_message_store;
+		}
 };
 
 } // namespace libmapipp
-
-#include <libmapi++/impl/session.ipp>
 
 #endif //!LIBMAPIPP__SESSION_H__

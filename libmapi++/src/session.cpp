@@ -20,6 +20,7 @@
 
 #include <libmapi++/message_store.h>
 #include <libmapi++/profile.h>
+#include <libmapi++/session.h>
 
 namespace libmapipp {
 
@@ -86,13 +87,6 @@ void session::login(const std::string& profile_name, const std::string& password
 	} catch (mapi_exception e) {
 		throw;
 	}
-}
-
-inline void session::uninitialize() throw()
-{
-	talloc_free(m_memory_ctx);
-	MAPIUninitialize();
-	delete m_message_store;
 }
 
 } // namespace libmapipp

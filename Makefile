@@ -109,7 +109,9 @@ re:: clean install
 	@echo "Compiling $< with -fPIC"
 	@$(CC) $(CFLAGS) -fPIC -c $< -o $@
 
-
+.cpp.po:
+	@echo "Compiling $< with -fPIC"
+	@$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
 
 #################################################################
 # IDL compilation rules
@@ -366,15 +368,30 @@ libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: \
 # libmapi++ compilation rules
 #################################################################
 
-libmapixx: libmapi libmapixx-tests libmapixx-examples
+LIBMAPIPP_SO_VERSION = 0
+
+libmapixx: libmapi \
+	libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
+	libmapixx-tests \
+	libmapixx-examples
+
+libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
+	libmapi++/src/attachment.po 		\
+	libmapi++/src/folder.po 		\
+	libmapi++/src/mapi_exception.po		\
+	libmapi++/src/message.po		\
+	libmapi++/src/object.po			\
+	libmapi++/src/session.po
+	@echo "Linking $@"
+	@$(CXX) $(DSOOPT) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS)
 
 libmapixx-installpc:
 
 libmapixx-clean: libmapixx-tests-clean
 
-libmapixx-install: libmapixx-installheader
+libmapixx-install: libmapixx-installheader libmapixx-installlib
 
-libmapixx-uninstall: libmapixx-uninstallheader
+libmapixx-uninstall: libmapixx-uninstallheader libmapixx-uninstalllib
 
 libmapixx-installheader:
 	@echo "[*] install: libmapi++ headers"
@@ -390,12 +407,21 @@ libmapixx-installheader:
 	$(INSTALL) -m 0644 libmapi++/profile.h $(DESTDIR)$(includedir)/libmapi++/
 	$(INSTALL) -m 0644 libmapi++/property_container.h $(DESTDIR)$(includedir)/libmapi++/
 	$(INSTALL) -m 0644 libmapi++/session.h $(DESTDIR)$(includedir)/libmapi++/
-	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi++/impl
-	$(INSTALL) -m 0644 libmapi++/impl/* $(DESTDIR)$(includedir)/libmapi++/impl/
+
+libmapixx-installlib:
+	@echo "[*] install: libmapi++ library"
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(INSTALL) -m 0755 libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapipp.$(SHLIBEXT)
+ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
+	ln -sf libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION)
+endif
 
 libmapixx-uninstallheader:
 	rm -rf $(DESTDIR)$(includedir)/libmapi++
 
+libmapixx-uninstalllib:
+	rm -f $(DESTDIR)$(libdir)/libmapipp.*
 
 libmapixx-tests:	libmapixx-test		\
 			libmapixx-attach 	\
@@ -414,9 +440,10 @@ libmapixx-test-clean:
 clean:: libmapixx-tests-clean
 
 bin/libmapixx-test:	libmapi++/tests/test.cpp	\
+		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking sample application $@"
-	@$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) 
 
 clean:: libmapixx-test-clean
 
@@ -426,8 +453,9 @@ libmapixx-attach-clean:
 	rm -f bin/libmapixx-attach
 	rm -f libmapi++/tests/*.o
 
-bin/libmapixx-attach: libmapi++/tests/attach_test.cpp	\
-		  libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+bin/libmapixx-attach: libmapi++/tests/attach_test.po	\
+		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking sample application $@"
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
@@ -436,7 +464,8 @@ clean:: libmapixx-attach-clean
 libmapixx-exception: bin/libmapixx-exception
  
 bin/libmapixx-exception: libmapi++/tests/exception_test.cpp \
-		  libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking exception test application $@"
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
@@ -458,14 +487,16 @@ libmapixx-messages-clean:
 	rm -f libmapi++/examples/*.o
 
 libmapi++/examples/foldertree: libmapi++/examples/foldertree.cpp	\
-		  libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking foldertree example application $@"
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-foldertree-clean
 
 libmapi++/examples/messages: libmapi++/examples/messages.cpp	\
-		  libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking messages example application $@"
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
@@ -596,7 +627,7 @@ libocpf-installlib:
 	$(INSTALL) -m 0755 libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libocpf.$(SHLIBEXT)
 ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
-	ln -sf libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libocpf.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
+	ln -sf libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION)
 endif
 
 libocpf-installheader:

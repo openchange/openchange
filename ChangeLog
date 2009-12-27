@@ -1,3 +1,8 @@
+2009-12-27
+    clsk
+	[r1660]
+		libmapi++ is no longer a header-only library
+
 2009-12-26
     bradh
 	[r1658]

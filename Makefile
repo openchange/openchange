@@ -387,7 +387,7 @@ libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 
 libmapixx-installpc:
 
-libmapixx-clean: libmapixx-tests-clean
+libmapixx-clean: libmapixx-tests-clean libmapixx-libs-clean
 
 libmapixx-install: libmapixx-installheader libmapixx-installlib
 
@@ -417,6 +417,11 @@ ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
 	ln -sf libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION)
 endif
 
+libmapixx-libs-clean::
+	rm -f libmapi++/src/*.po
+	rm -f libmapi++/src/*.gcno libmapi/src/*.gcda
+	rm -f libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION)
+
 libmapixx-uninstallheader:
 	rm -rf $(DESTDIR)$(includedir)/libmapi++
 
@@ -436,8 +441,9 @@ libmapixx-test: bin/libmapixx-test
 libmapixx-test-clean:
 	rm -f bin/libmapixx-test
 	rm -f libmapi++/tests/*.o
+	rm -f libmapi++/tests/*.po
 
-clean:: libmapixx-tests-clean
+clean:: libmapixx-clean
 
 bin/libmapixx-test:	libmapi++/tests/test.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \

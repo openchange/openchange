@@ -24,7 +24,7 @@
 
 namespace libmapipp {
 
-inline property_container object::get_property_container() 
+property_container object::get_property_container() 
 { 
 	return property_container(m_session.get_memory_ctx(), m_object); 
 }

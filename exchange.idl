@@ -1146,10 +1146,11 @@ System Attendant Private Interface
 		[switch_is(StringType)] String	String;
 	} TypedString;
 
-	typedef [bitmap8bit] bitmap {
-		/* 0x0 means Read Only */
+	typedef [enum8bit] enum {
+		ReadOnly	= 0x0,
 		ReadWrite	= 0x1,
-		Create		= 0x3
+		Create		= 0x3,
+		OpenSoftDelete	= 0x4
 	} OpenMessage_OpenModeFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {

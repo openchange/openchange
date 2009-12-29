@@ -46,6 +46,7 @@
    - 0x0: read only access
    - 0x1: ReadWrite
    - 0x3: Create
+   - 0x4: OpenSoftDeleted
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 

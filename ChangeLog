@@ -1,3 +1,16 @@
+2009-12-29
+    bradh
+	[r1665]
+		Update OpenMessage flags to match specification values.
+	[r1664]
+		Cleanup libmapi++ code when we "make clean".
+	[r1663]
+		Add svn ignore entries.
+	[r1662]
+		Remove inline from shared library class.
+		
+		Fixes build on Intel C++ compiler.
+
 2009-12-27
     clsk
 	[r1660]

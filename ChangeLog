@@ -1,3 +1,12 @@
+2009-12-31
+    bradh
+	[r1668]
+		Quiet the build here.
+		
+		Inadvertent removal in a previous patch.
+	[r1667]
+		Some support for ReviewBoard.
+
 2009-12-29
     bradh
 	[r1665]

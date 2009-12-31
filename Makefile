@@ -449,7 +449,7 @@ bin/libmapixx-test:	libmapi++/tests/test.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking sample application $@"
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) 
+	@$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) 
 
 clean:: libmapixx-test-clean
 

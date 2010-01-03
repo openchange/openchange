@@ -625,12 +625,14 @@ if test x$enable_openchange_qt4 = xyes; then
 elif test x$enable_openchange_qt4 = xtry; then
   PKG_CHECK_MODULES(Qt4,
                     QtCore >= 4.3.0 QtGui >= 4.3.0,
-                    [enable_openchange_qt4="yes"],
+                    [enable_openchange_qt4="yes"
+                     MOC=`$PKG_CONFIG --variable=moc_location QtCore`],
                     [enable_openchange_qt4="no"])
 fi
 
 AC_SUBST(Qt4_CFLAGS)
 AC_SUBST(Qt4_LIBS)
+AC_SUBST(MOC)
 
 if test "x$enable_openchange_qt4" = "xyes"; then
    OPENCHANGE_QT4="openchange_qt4"

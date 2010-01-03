@@ -1,3 +1,26 @@
+2010-01-03
+    jkerihuel
+	[r1673]
+		Ignore moc files and generated binary
+	[r1672]
+		Update OpenChange version to 0.10 NOMAD
+		
+		Nomad is a mechanical explorer sent from Earth in 2002. 
+		It was melded with an alien device named Tan Ru and the resulting robotic
+		hybrid began destroying anything that was imperfect including, in 2267,
+		itself. 
+    bradh
+	[r1674]
+		Add documentation for qt/ subdirectory.
+	[r1671]
+		Try harder to find moc.
+	[r1670]
+		Initial commit of some Qt-style bindings.
+		
+		This is mostly for testing, although hopefully the library will
+		emerge with a set of mostly-useful widgets for implementing
+		real clients.
+
 2009-12-31
     bradh
 	[r1668]

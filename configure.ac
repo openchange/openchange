@@ -611,6 +611,32 @@ else
 	AC_SUBST(DOXYGEN)
 fi
 
+dnl ##########################################################################
+dnl Qt4 support
+dnl ##########################################################################
+AC_ARG_ENABLE(openchange-qt4,
+              AC_HELP_STRING([--disable-openchange-qt4],
+                             [Don't compile OpenChange Qt4 wrapper.]),
+              enable_openchange_qt4=$enableval,
+              enable_openchange_qt4="try")
+if test x$enable_openchange_qt4 = xyes; then
+  PKG_CHECK_MODULES(Qt4,
+                    QtCore >= 4.3.0 QtGui >= 4.3.0)
+elif test x$enable_openchange_qt4 = xtry; then
+  PKG_CHECK_MODULES(Qt4,
+                    QtCore >= 4.3.0 QtGui >= 4.3.0,
+                    [enable_openchange_qt4="yes"],
+                    [enable_openchange_qt4="no"])
+fi
+
+AC_SUBST(Qt4_CFLAGS)
+AC_SUBST(Qt4_LIBS)
+
+if test "x$enable_openchange_qt4" = "xyes"; then
+   OPENCHANGE_QT4="openchange_qt4"
+fi
+AC_SUBST(OPENCHANGE_QT4)
+
 dnl ***********************
 dnl Makefiles 
 dnl ***********************
@@ -686,6 +712,7 @@ OpenChange Configuration (Please review)
 	   * OpenChange Bindings:
 	     - Perl:			$enable_perlswig
 	     - Python:			$enable_pymapi
+	     - Qt4:			$enable_openchange_qt4
 
 
 ===============================================================

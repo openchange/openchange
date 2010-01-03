@@ -38,7 +38,8 @@ all: 		$(OC_IDL)		\
 		$(OC_SERVER)		\
 		$(SWIGDIRS-ALL)		\
 		$(PYMAPIALL)		\
-		$(COVERAGE_INIT)
+		$(COVERAGE_INIT)	\
+		$(OPENCHANGE_QT4)
 
 install: 	all 			\
 		installlib 		\
@@ -95,7 +96,7 @@ re:: clean install
 # Suffixes compilation rules
 #################################################################
 
-.SUFFIXES: .c .o .h .po .idl
+.SUFFIXES: .c .o .h .po .idl .cpp
 
 .idl.h:
 	@echo "Generating $@"
@@ -111,7 +112,7 @@ re:: clean install
 
 .cpp.po:
 	@echo "Compiling $< with -fPIC"
-	@$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
+	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
 
 #################################################################
 # IDL compilation rules
@@ -387,7 +388,7 @@ libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 
 libmapixx-installpc:
 
-libmapixx-clean: libmapixx-tests-clean libmapixx-libs-clean
+libmapixx-clean: libmapixx-tests-clean
 
 libmapixx-install: libmapixx-installheader libmapixx-installlib
 
@@ -417,11 +418,6 @@ ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
 	ln -sf libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION)
 endif
 
-libmapixx-libs-clean::
-	rm -f libmapi++/src/*.po
-	rm -f libmapi++/src/*.gcno libmapi/src/*.gcda
-	rm -f libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION)
-
 libmapixx-uninstallheader:
 	rm -rf $(DESTDIR)$(includedir)/libmapi++
 
@@ -441,9 +437,8 @@ libmapixx-test: bin/libmapixx-test
 libmapixx-test-clean:
 	rm -f bin/libmapixx-test
 	rm -f libmapi++/tests/*.o
-	rm -f libmapi++/tests/*.po
 
-clean:: libmapixx-clean
+clean:: libmapixx-tests-clean
 
 bin/libmapixx-test:	libmapi++/tests/test.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
@@ -1649,3 +1644,62 @@ clean:: coverage-clean
 # need config.mk
 distclean::
 	rm -f config.mk
+
+####################################
+# Qt4 widgets
+####################################
+openchange_qt4:	qt-lib qt-demoapp
+
+qt-lib: libqtmapi
+
+qt-demoapp: qt/demo/demoapp.moc qt/demo/demoapp 
+
+# No install yet - we need to finish this first
+
+qt-clean::
+	rm -f qt/demo/demoapp
+	rm -f qt/demo/*.o
+	rm -f qt/lib/*.o
+	rm -f qt/demo/*.moc
+	rm -f qt/lib/*.moc
+	rm -f libqtmapi*
+
+clean:: qt-clean
+
+qt/demo/demoapp.moc:	qt/demo/demoapp.h
+	moc -i qt/demo/demoapp.h -o qt/demo/demoapp.moc
+
+qt/lib/foldermodel.moc:	qt/lib/foldermodel.h
+	moc -i qt/lib/foldermodel.h -o qt/lib/foldermodel.moc
+
+qt/lib/messagesmodel.moc:	qt/lib/messagesmodel.h
+	moc -i qt/lib/messagesmodel.h -o qt/lib/messagesmodel.moc
+
+.cpp.o:
+	$(CXX) $(CXXFLAGS) $(QT4_CXXFLAGS) -fPIC -c $< -o $@
+
+libqtmapi: libmapi 					\
+	qt/lib/foldermodel.moc				\
+	qt/lib/messagesmodel.moc			\
+	libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+LIBQTMAPI_SO_VERSION = 0
+
+libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
+	qt/lib/foldermodel.o			\
+	qt/lib/messagesmodel.o
+	@echo "Linking $@"
+	@$(CXX) $(DSOOPT) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libqtmapi.$(SHLIBEXT).$(LIBQTMAPI_SO_VERSION) -o $@ $^ $(LIBS)
+
+
+qt/demo/demoapp: qt/demo/demoapp.o 				\
+	qt/demo/main.o 					\
+	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) 		\
+	libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+	libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CXX) $(CXXFLAGS) -o $@ $^ $(QT4_LIBS) $(LDFLAGS) $(LIBS)
+	# we don't yet install this...
+	ln -sf libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libqtmapi.$(SHLIBEXT)
+	ln -sf libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libqtmapi.$(SHLIBEXT).$(LIBQTMAPI_SO_VERSION)
+

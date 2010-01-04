@@ -388,7 +388,9 @@ libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 
 libmapixx-installpc:
 
-libmapixx-clean: libmapixx-tests-clean
+libmapixx-clean: libmapixx-tests-clean libmapixx-libs-clean
+
+clean:: libmapixx-clean
 
 libmapixx-install: libmapixx-installheader libmapixx-installlib
 
@@ -408,6 +410,10 @@ libmapixx-installheader:
 	$(INSTALL) -m 0644 libmapi++/profile.h $(DESTDIR)$(includedir)/libmapi++/
 	$(INSTALL) -m 0644 libmapi++/property_container.h $(DESTDIR)$(includedir)/libmapi++/
 	$(INSTALL) -m 0644 libmapi++/session.h $(DESTDIR)$(includedir)/libmapi++/
+
+libmapixx-libs-clean:
+	rm -f libmapi++/src/*.po
+	rm -f libmapipp.$(SHLIBEXT)*
 
 libmapixx-installlib:
 	@echo "[*] install: libmapi++ library"
@@ -452,7 +458,7 @@ libmapixx-attach: bin/libmapixx-attach
 
 libmapixx-attach-clean:
 	rm -f bin/libmapixx-attach
-	rm -f libmapi++/tests/*.o
+	rm -f libmapi++/tests/*.po
 
 bin/libmapixx-attach: libmapi++/tests/attach_test.po	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \

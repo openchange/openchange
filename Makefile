@@ -110,9 +110,13 @@ re:: clean install
 	@echo "Compiling $< with -fPIC"
 	@$(CC) $(CFLAGS) -fPIC -c $< -o $@
 
+.cpp.o:
+	@echo "Compiling $< with -fPIC"
+	@$(CXX) $(CXXFLAGS) $(QT4_CXXFLAGS) -fPIC -c $< -o $@
+
 .cpp.po:
 	@echo "Compiling $< with -fPIC"
-	$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
 
 #################################################################
 # IDL compilation rules
@@ -1673,16 +1677,13 @@ qt-clean::
 clean:: qt-clean
 
 qt/demo/demoapp.moc:	qt/demo/demoapp.h
-	$(MOC) -i qt/demo/demoapp.h -o qt/demo/demoapp.moc
+	@$(MOC) -i qt/demo/demoapp.h -o qt/demo/demoapp.moc
 
 qt/lib/foldermodel.moc:	qt/lib/foldermodel.h
-	$(MOC) -i qt/lib/foldermodel.h -o qt/lib/foldermodel.moc
+	@$(MOC) -i qt/lib/foldermodel.h -o qt/lib/foldermodel.moc
 
 qt/lib/messagesmodel.moc:	qt/lib/messagesmodel.h
-	$(MOC) -i qt/lib/messagesmodel.h -o qt/lib/messagesmodel.moc
-
-.cpp.o:
-	$(CXX) $(CXXFLAGS) $(QT4_CXXFLAGS) -fPIC -c $< -o $@
+	@$(MOC) -i qt/lib/messagesmodel.h -o qt/lib/messagesmodel.moc
 
 libqtmapi: libmapi 					\
 	qt/lib/foldermodel.moc				\

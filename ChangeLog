@@ -1,3 +1,10 @@
+2010-01-06
+    bradh
+	[r1679]
+		Add unit tests for IsMailboxFolder
+		
+		Also use 0xFFFFFFFFF instead of -1 for no-such-mailbox, consistent with the unsigned data type.
+
 2010-01-04
     jkerihuel
 	[r1677]

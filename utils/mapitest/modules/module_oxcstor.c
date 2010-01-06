@@ -499,3 +499,214 @@ _PUBLIC_ bool mapitest_oxcstor_GetStoreState(struct mapitest *mt)
 	mapi_object_release(&obj_store);
 	return ret;
 }
+
+/**
+   \details Test the IsMailboxFolder convenience function
+
+   This function:
+   -# Logs into the user private mailbox
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcstor_IsMailboxFolder(struct mapitest *mt)
+{
+	mapi_object_t		obj_store;
+	bool			ret = true;
+	mapi_object_store_t *	store;
+	uint32_t 		olFolderNumber;
+	bool			callResult;
+	enum MAPISTATUS		retval;
+
+	/* Step 1. Logon Private Mailbox */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	store = (mapi_object_store_t *) obj_store.private_data;
+	if (! store) {
+		mapitest_print(mt, "* FAILED to get store private_data\n" );
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_top_information_store, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for top_information_store\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderTopInformationStore) {
+		mapitest_print(mt, "* FAILED - wrong folder number for top_information_store\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_deleted_items, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for deleted_items\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderDeletedItems) {
+		mapitest_print(mt, "* FAILED - wrong folder number for deleted_items\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_outbox, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for outbox\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderOutbox) {
+		mapitest_print(mt, "* FAILED - wrong folder number for outbox\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_sent_items, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for sent items\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderSentMail) {
+		mapitest_print(mt, "* FAILED - wrong folder number for sent items\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_inbox, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for inbox\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderInbox) {
+		mapitest_print(mt, "* FAILED - wrong folder number for inbox\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_common_views, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for views\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderCommonView) {
+		mapitest_print(mt, "* FAILED - wrong folder number for views\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_calendar, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for calendar\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderCalendar) {
+		mapitest_print(mt, "* FAILED - wrong folder number for calendar\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_contact, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for contacts\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderContacts) {
+		mapitest_print(mt, "* FAILED - wrong folder number for contacts\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_journal, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for journal\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderJournal) {
+		mapitest_print(mt, "* FAILED - wrong folder number for journal\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_note, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for notes\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderNotes) {
+		mapitest_print(mt, "* FAILED - wrong folder number for note\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_task, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for tasks\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderTasks) {
+		mapitest_print(mt, "* FAILED - wrong folder number for tasks\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_drafts, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for drafts\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderDrafts) {
+		mapitest_print(mt, "* FAILED - wrong folder number for drafts\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_store, store->fid_search, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for search\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderFinder) {
+		mapitest_print(mt, "* FAILED - wrong folder number for search\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	/* this is meant to break */
+	callResult = IsMailboxFolder(&obj_store, 0x0, &olFolderNumber);
+	if (callResult) {
+		mapitest_print(mt, "* FAILED - expected no folder number\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != 0xFFFFFFFF) {
+		mapitest_print(mt, "* FAILED - wrong folder number for bad folder id\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	mapitest_print(mt, "* All PASSED\n");
+
+cleanup:
+	mapi_object_release(&obj_store);
+	return ret;
+}

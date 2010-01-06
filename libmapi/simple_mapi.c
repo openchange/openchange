@@ -356,7 +356,7 @@ _PUBLIC_ bool IsMailboxFolder(mapi_object_t *obj_store,
 	} else if (fid == store->fid_search) {
 		olFolderNum = olFolderFinder;
 	} else {
-		olFolderNum = -1;
+		olFolderNum = 0xFFFFFFFF;
 		ret = false;
 	}
 

@@ -1,3 +1,15 @@
+2010-01-08
+    bradh
+	[r1681]
+		Implement IsMailboxFolder for public folder types.
+		
+		Involves some refactoring of the way we handled the mapi_object_store_t,
+		such that we now talloc_zero the structure. 
+		
+		Adds mapitest coverage for these.
+		
+		Resolves Ticket #134.
+
 2010-01-06
     bradh
 	[r1679]

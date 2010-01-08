@@ -49,45 +49,53 @@ typedef struct mapi_object {
  * Interface objects
  */
 
+/**
+  IMsgStore store type
+  */
+enum MsgStoreType {
+	PrivateFolderWithoutCachedFids, /*!< Private folder store without the cached folder values filled in */
+	PrivateFolderWithCachedFids,  /*!< Private folder store with the cached folder values filled in */
+	PublicFolder  /*!< Public folder store */
+};
 
 /**
  * IMsgStore object 
  */
 typedef struct mapi_obj_store
 {
+	enum MsgStoreType	store_type;
 	/* Mailbox */
-	uint64_t	fid_mailbox_root;
-	uint64_t	fid_deferred_actions;
-	uint64_t	fid_spooler_queue;
-	uint64_t	fid_top_information_store;
-	uint64_t	fid_inbox;
-	uint64_t	fid_outbox;
-	uint64_t	fid_sent_items;
-	uint64_t	fid_deleted_items;
-	uint64_t	fid_common_views;
-	uint64_t	fid_schedule;
-	uint64_t	fid_search;
-	uint64_t	fid_views;
-	uint64_t	fid_shortcuts;
+	uint64_t		fid_mailbox_root;
+	uint64_t		fid_deferred_actions;
+	uint64_t		fid_spooler_queue;
+	uint64_t		fid_top_information_store;
+	uint64_t		fid_inbox;
+	uint64_t		fid_outbox;
+	uint64_t		fid_sent_items;
+	uint64_t		fid_deleted_items;
+	uint64_t		fid_common_views;
+	uint64_t		fid_schedule;
+	uint64_t		fid_search;
+	uint64_t		fid_views;
+	uint64_t		fid_shortcuts;
 	/* Public Folders */
-	uint64_t	fid_pf_public_root;
-	uint64_t	fid_pf_ipm_subtree;
-	uint64_t	fid_pf_non_ipm_subtree;
-	uint64_t	fid_pf_EFormsRegistryRoot;
-	uint64_t	fid_pf_FreeBusyRoot;
-	uint64_t	fid_pf_OfflineAB;
-	uint64_t	fid_pf_EFormsRegistry;
-	uint64_t	fid_pf_LocalSiteFreeBusy;
-	uint64_t	fid_pf_LocalSiteOfflineAB;
-	uint64_t	fid_pf_NNTPArticle;
+	uint64_t		fid_pf_public_root;
+	uint64_t		fid_pf_ipm_subtree;
+	uint64_t		fid_pf_non_ipm_subtree;
+	uint64_t		fid_pf_EFormsRegistryRoot;
+	uint64_t		fid_pf_FreeBusyRoot;
+	uint64_t		fid_pf_OfflineAB;
+	uint64_t		fid_pf_EFormsRegistry;
+	uint64_t		fid_pf_LocalSiteFreeBusy;
+	uint64_t		fid_pf_LocalSiteOfflineAB;
+	uint64_t		fid_pf_NNTPArticle;
 	/* cached data */
-	bool		cached_mailbox_fid;
-	uint64_t	fid_calendar;
-	uint64_t	fid_contact;
-	uint64_t	fid_journal;
-	uint64_t	fid_note;
-	uint64_t	fid_task;
-	uint64_t	fid_drafts;
+	uint64_t		fid_calendar;
+	uint64_t		fid_contact;
+	uint64_t		fid_journal;
+	uint64_t		fid_note;
+	uint64_t		fid_task;
+	uint64_t		fid_drafts;
 } mapi_object_store_t;
 
 

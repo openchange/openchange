@@ -219,7 +219,7 @@ retry:
 	mapi_object_set_logon_store(obj_store);
 
 	/* retrieve store content */
-	obj_store->private_data = talloc((TALLOC_CTX *)session, mapi_object_store_t);
+	obj_store->private_data = talloc_zero((TALLOC_CTX *)session, mapi_object_store_t);
 	store = (mapi_object_store_t*)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
@@ -233,7 +233,7 @@ retry:
 	store->fid_pf_LocalSiteFreeBusy = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[7];
 	store->fid_pf_LocalSiteOfflineAB = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[8];
 	store->fid_pf_NNTPArticle = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[9];
-	store->cached_mailbox_fid = false;
+	store->store_type = PublicFolder;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -394,7 +394,7 @@ retry:
 	mapi_object_set_logon_store(obj_store);
 
 	/* retrieve store content */
-	obj_store->private_data = talloc((TALLOC_CTX *)session, mapi_object_store_t);
+	obj_store->private_data = talloc_zero((TALLOC_CTX *)session, mapi_object_store_t);
 	store = (mapi_object_store_t *)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
@@ -411,7 +411,7 @@ retry:
 	store->fid_search = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[10];
 	store->fid_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[11];
 	store->fid_shortcuts = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[12];
-	store->cached_mailbox_fid = false;
+	store->store_type = PrivateFolderWithoutCachedFids;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

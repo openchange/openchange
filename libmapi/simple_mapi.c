@@ -184,8 +184,8 @@ static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
 	OPENCHANGE_RETVAL_IF(!entryid, MAPI_E_NOT_FOUND, mem_ctx);
 	retval = GetFIDFromEntryID(entryid->cb, entryid->lpb, id_inbox, &store->fid_drafts);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
-	
-	store->cached_mailbox_fid = true;
+
+	store->store_type = PrivateFolderWithCachedFids;
 	
 	mapi_object_release(&obj_inbox);
 	talloc_free(mem_ctx);
@@ -249,7 +249,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	store = (mapi_object_store_t *)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);
 
-	if ((id > 6) && (store->cached_mailbox_fid == false)) {
+	if ((id > 6) && (store->store_type == PrivateFolderWithoutCachedFids)) {
 		retval = CacheDefaultFolders(obj_store);
 		OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 	} 
@@ -317,16 +317,26 @@ _PUBLIC_ bool IsMailboxFolder(mapi_object_t *obj_store,
 {
 	enum MAPISTATUS		retval;
 	mapi_object_store_t	*store;
-	uint32_t		olFolderNum;
+	uint32_t		olFolderNum = 0;
 	bool			ret = true;
 
-	if (!obj_store) return false;
+	if (!obj_store) {
+		return false;
+	}
 	store = (mapi_object_store_t *) obj_store->private_data;
-	if (!store) return false;
+	if (!store) {
+		return false;
+	}
 
-	if (store->cached_mailbox_fid == false) {
+	if (fid == 0x0) {
+		return false;
+	}
+
+	if (store->store_type == PrivateFolderWithoutCachedFids) {
 		retval = CacheDefaultFolders(obj_store);
-		if (retval) return false;
+		if (retval) {
+			return false;
+		}
 	}
 
 	if(fid == store->fid_top_information_store) {
@@ -355,6 +365,26 @@ _PUBLIC_ bool IsMailboxFolder(mapi_object_t *obj_store,
 		olFolderNum = olFolderDrafts;
 	} else if (fid == store->fid_search) {
 		olFolderNum = olFolderFinder;
+	} else if (fid == store->fid_pf_OfflineAB) {
+		olFolderNum = olFolderPublicOfflineAB;
+	} else if (fid == store->fid_pf_FreeBusyRoot) {
+		olFolderNum = olFolderPublicFreeBusyRoot;
+	} else if (fid == store->fid_pf_EFormsRegistryRoot) {
+		olFolderNum = olFolderPublicEFormsRoot;
+	} else if (fid == store->fid_pf_EFormsRegistry) {
+		olFolderNum = olFolderPublicEFormsRegistry;
+	} else if (fid == store->fid_pf_public_root) {
+		olFolderNum = olFolderPublicRoot;
+	} else if (fid == store->fid_pf_ipm_subtree) {
+		olFolderNum = olFolderPublicIPMSubtree;
+	} else if (fid == store->fid_pf_non_ipm_subtree) {
+		olFolderNum = olFolderPublicNonIPMSubtree;
+	} else if (fid == store->fid_pf_LocalSiteFreeBusy) {
+		olFolderNum = olFolderPublicLocalFreeBusy;
+	} else if (fid == store->fid_pf_LocalSiteOfflineAB) {
+		olFolderNum = olFolderPublicLocalOfflineAB;
+	} else if (fid == store->fid_pf_NNTPArticle) {
+		olFolderNum = olFolderPublicNNTPArticle;
 	} else {
 		olFolderNum = 0xFFFFFFFF;
 		ret = false;

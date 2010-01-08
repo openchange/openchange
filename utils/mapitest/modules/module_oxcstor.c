@@ -513,14 +513,18 @@ _PUBLIC_ bool mapitest_oxcstor_GetStoreState(struct mapitest *mt)
 _PUBLIC_ bool mapitest_oxcstor_IsMailboxFolder(struct mapitest *mt)
 {
 	mapi_object_t		obj_store;
+	mapi_object_t		obj_pf_store;
 	bool			ret = true;
 	mapi_object_store_t *	store;
+	mapi_object_store_t *	pf_store;
 	uint32_t 		olFolderNumber;
 	bool			callResult;
 	enum MAPISTATUS		retval;
 
-	/* Step 1. Logon Private Mailbox */
 	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_pf_store);
+	
+	/* Step 1. Logon Private Mailbox */
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (retval != MAPI_E_SUCCESS) {
@@ -691,8 +695,143 @@ _PUBLIC_ bool mapitest_oxcstor_IsMailboxFolder(struct mapitest *mt)
 		goto cleanup;
 	}
 
+	retval = OpenPublicFolder(mt->session, &obj_pf_store);
+	mapitest_print_retval(mt, "OpenPublicFolder");
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	pf_store = (mapi_object_store_t *) obj_pf_store.private_data;
+
+	callResult = IsMailboxFolder(&obj_pf_store, pf_store->fid_pf_OfflineAB, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for offline address book\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderPublicOfflineAB) {
+		mapitest_print(mt, "* FAILED - wrong folder number for offline address book\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_pf_store, pf_store->fid_pf_FreeBusyRoot, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for free-busy root\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderPublicFreeBusyRoot) {
+		mapitest_print(mt, "* FAILED - wrong folder number for free-busy root\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_pf_store, pf_store->fid_pf_EFormsRegistryRoot, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for EForms root\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderPublicEFormsRoot) {
+		mapitest_print(mt, "* FAILED - wrong folder number for EForms root\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	/* this one is a bit sensitive. sometimes the EFormsRegistry is null */
+	callResult = IsMailboxFolder(&obj_pf_store, pf_store->fid_pf_EFormsRegistry, &olFolderNumber);
+	if (pf_store->fid_pf_EFormsRegistry != 0) {
+		if (! callResult) {
+			mapitest_print(mt, "* FAILED to get folder number for EForms registry\n");
+			ret = false;
+			goto cleanup;
+		}
+		if (olFolderNumber != olFolderPublicEFormsRegistry) {
+			mapitest_print(mt, "* FAILED - wrong folder number for EForms registry\n");
+			ret = false;
+			goto cleanup;
+		}
+	}
+
+	callResult = IsMailboxFolder(&obj_pf_store, pf_store->fid_pf_public_root, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for Public root\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderPublicRoot) {
+		mapitest_print(mt, "* FAILED - wrong folder number for Public root\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_pf_store, pf_store->fid_pf_ipm_subtree, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for IPM subtree\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderPublicIPMSubtree) {
+		mapitest_print(mt, "* FAILED - wrong folder number for IPM subtree\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_pf_store, pf_store->fid_pf_non_ipm_subtree, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for non-IPM subtree\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderPublicNonIPMSubtree) {
+		mapitest_print(mt, "* FAILED - wrong folder number for non-IPM subtree\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_pf_store, pf_store->fid_pf_LocalSiteFreeBusy, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for local free busy folder\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderPublicLocalFreeBusy) {
+		mapitest_print(mt, "* FAILED - wrong folder number for local free busy folder\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	callResult = IsMailboxFolder(&obj_pf_store, pf_store->fid_pf_LocalSiteOfflineAB, &olFolderNumber);
+	if (! callResult) {
+		mapitest_print(mt, "* FAILED to get folder number for local offline address book\n");
+		ret = false;
+		goto cleanup;
+	}
+	if (olFolderNumber != olFolderPublicLocalOfflineAB) {
+		mapitest_print(mt, "* FAILED - wrong folder number for local offline address folder\n");
+		ret = false;
+		goto cleanup;
+	}
+
+	/* this one is a bit sensitive. sometimes the NNTP Articles Folder ID is null */
+	callResult = IsMailboxFolder(&obj_pf_store, pf_store->fid_pf_NNTPArticle, &olFolderNumber);
+	if (pf_store->fid_pf_NNTPArticle != 0) {
+		if (! callResult) {
+			mapitest_print(mt, "* FAILED to get folder number for NNTP Articles\n");
+			ret = false;
+			goto cleanup;
+		}
+		if (olFolderNumber != olFolderPublicNNTPArticle) {
+			mapitest_print(mt, "* FAILED - wrong folder number for NNTP Articles\n");
+			ret = false;
+			goto cleanup;
+		}
+	}
+
 	/* this is meant to break */
-	callResult = IsMailboxFolder(&obj_store, 0x0, &olFolderNumber);
+	callResult = IsMailboxFolder(&obj_store, 0xFFEEDDCC, &olFolderNumber);
 	if (callResult) {
 		mapitest_print(mt, "* FAILED - expected no folder number\n");
 		ret = false;
@@ -708,5 +847,7 @@ _PUBLIC_ bool mapitest_oxcstor_IsMailboxFolder(struct mapitest *mt)
 
 cleanup:
 	mapi_object_release(&obj_store);
+	mapi_object_release(&obj_pf_store);
+
 	return ret;
 }

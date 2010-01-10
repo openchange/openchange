@@ -75,6 +75,7 @@ distclean:: clean
 	rm -f libmapi++/Doxyfile
 	rm -f mapiproxy/Doxyfile
 	rm -f config.status config.log
+	rm -f config.h
 	rm -f stamp-h1
 	rm -f utils/mapitest/Doxyfile
 	rm -f intltool-extract intltool-merge intltool-update
@@ -1527,6 +1528,13 @@ check-python:
 	PYTHONPATH=$(pythonscriptdir):$(PYTHONPATH) trial openchange
 
 check:: check-python
+
+clean-python:
+	rm -f pymapi/*.o
+	rm -f $(pythonscriptdir)/mapi.$(SHLIBEXT)
+	rm -f $(pythonscriptdir)/openchange/*.pyc
+
+clean:: clean-python
 
 ###################
 # nagios plugin

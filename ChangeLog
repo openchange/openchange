@@ -1,3 +1,8 @@
+2010-01-13
+    bradh
+	[r1686]
+		Allow us to find samba python code on 64-bit machines.
+
 2010-01-10
     jkerihuel
 	[r1684]

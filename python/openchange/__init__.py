@@ -32,11 +32,13 @@ def find_samba_python_path():
         return None # No extra path necessary
     except ImportError:
         SAMBA_PREFIXES = ["/usr/local/samba", "/opt/samba"]
+        LIB_DIRS = ["lib", "lib64"]
         PYTHON_NAMES = ["python2.3", "python2.4", "python2.5", "python2.6"]
         for samba_prefix in SAMBA_PREFIXES:
-            for python_name in PYTHON_NAMES:
-                path = os.path.join(samba_prefix, "lib", python_name, 
-                                    "site-packages")
-                if os.path.isdir(os.path.join(path, "samba")):
-                    return path
+            for lib_dir in LIB_DIRS:
+                for python_name in PYTHON_NAMES:
+                    path = os.path.join(samba_prefix, lib_dir, python_name, 
+                                        "site-packages")
+                    if os.path.isdir(os.path.join(path, "samba")):
+                        return path
         raise ImportError("Unable to find the Samba python path")

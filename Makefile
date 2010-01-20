@@ -1078,6 +1078,7 @@ provision-install: python-install
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/AD
 	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(datadir)/setup/AD/
 	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(datadir)/setup/AD/
+	$(INSTALL) -m 0644 setup/AD/provision_schema_basedn_modify.ldif $(DESTDIR)$(datadir)/setup/AD/
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/openchangedb
 	$(INSTALL) -m 0644 setup/openchangedb/oc_provision* $(DESTDIR)$(datadir)/setup/openchangedb/
 

@@ -1,3 +1,9 @@
+2010-01-23
+    bradh
+	[r1690]
+		Remove a copy of the dlinklist.h header, and just use the samba
+		version instead.
+
 2010-01-20
     bradh
 	[r1688]

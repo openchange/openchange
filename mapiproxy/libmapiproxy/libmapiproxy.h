@@ -29,7 +29,7 @@
 #include <tdb.h>
 #include <ldb.h>
 #include <ldb_errors.h>
-#include <libmapi/dlinklist.h>
+#include <dlinklist.h>
 #include <fcntl.h>
 #include <errno.h>
 

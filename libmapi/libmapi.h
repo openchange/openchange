@@ -50,12 +50,12 @@
 #include <util/debug.h>
 #include <tevent.h>
 #include <param.h>
+#include <dlinklist.h>
 
 /* OpenChange includes */
 #include <gen_ndr/exchange.h>
 #include <gen_ndr/property.h>
 
-#include <libmapi/dlinklist.h>
 #include <libmapi/version.h>
 #include <libmapi/nspi.h>
 #include <libmapi/emsmdb.h>

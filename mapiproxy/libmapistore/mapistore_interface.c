@@ -22,7 +22,7 @@
 #include "mapistore.h"
 #include "mapistore_errors.h"
 #include "mapistore_private.h"
-#include <libmapi/dlinklist.h>
+#include <dlinklist.h>
 
 #include <string.h>
 

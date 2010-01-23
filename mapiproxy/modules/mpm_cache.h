@@ -24,7 +24,7 @@
 
 #include <stdio.h>
 
-#include <libmapi/dlinklist.h>
+#include <dlinklist.h>
 #include <ldb_errors.h>
 #include <ldb.h>
 

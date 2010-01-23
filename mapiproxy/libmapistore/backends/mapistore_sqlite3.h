@@ -25,7 +25,7 @@
 
 #include <mapiproxy/libmapistore/mapistore.h>
 #include <mapiproxy/libmapistore/mapistore_errors.h>
-#include <libmapi/dlinklist.h>
+#include <dlinklist.h>
 #include <sqlite3.h>
 
 struct sqlite3_context {

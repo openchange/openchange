@@ -225,7 +225,6 @@ libmapi-installheader:
 	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi 
 	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi/socket 
 	$(INSTALL) -d $(DESTDIR)$(includedir)/gen_ndr
-	$(INSTALL) -m 0644 libmapi/dlinklist.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/libmapi.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/proto.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/nspi.h $(DESTDIR)$(includedir)/libmapi/

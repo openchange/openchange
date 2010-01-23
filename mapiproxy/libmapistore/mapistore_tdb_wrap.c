@@ -25,7 +25,7 @@
 
 #include "mapistore.h"
 #include "mapistore_private.h"
-#include <libmapi/dlinklist.h>
+#include <dlinklist.h>
 
 static struct tdb_wrap *tdb_list;
 

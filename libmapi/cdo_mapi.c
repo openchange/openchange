@@ -20,7 +20,6 @@
 
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
-#include <libmapi/dlinklist.h>
 #include <param.h>
 #include <ldb.h>
 

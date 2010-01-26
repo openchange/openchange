@@ -1658,11 +1658,6 @@ coverage-clean::
 
 clean:: coverage-clean
 
-# This should be the last line in the makefile since other distclean rules may 
-# need config.mk
-distclean::
-	rm -f config.mk
-
 ####################################
 # Qt4 widgets
 ####################################
@@ -1718,3 +1713,7 @@ qt/demo/demoapp: qt/demo/demoapp.o 				\
 	ln -sf libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libqtmapi.$(SHLIBEXT)
 	ln -sf libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libqtmapi.$(SHLIBEXT).$(LIBQTMAPI_SO_VERSION)
 
+# This should be the last line in the makefile since other distclean rules may 
+# need config.mk
+distclean::
+	rm -f config.mk

@@ -244,6 +244,62 @@ _PUBLIC_ void mapidump_date_SPropValue(struct SPropValue lpProp, const char *lab
 }
 
 /**
+   \details This function dumps message information retrieved from
+   OpenMessage call. It provides a quick method to print message
+   summaries with information such as subject and recipients.
+
+   \param obj_message pointer to the MAPI message object to use
+ */
+_PUBLIC_ void mapidump_message_summary(mapi_object_t *obj_message)
+{
+	mapi_object_message_t		*msg;
+	int				*recipient_type;
+	const char			*recipient;
+	int				i;
+
+	if (!obj_message) return;
+	if (!obj_message->private_data) return;
+
+	msg = (mapi_object_message_t *) obj_message->private_data;
+
+	printf("Subject: ");
+	if (msg->SubjectPrefix) {
+		printf("[%s] ", msg->SubjectPrefix);
+	}
+
+	if (msg->NormalizedSubject) {
+		printf("%s", msg->NormalizedSubject);
+	}
+	printf("\n");
+
+	if (!&(msg->SRowSet)) return;
+	for (i = 0; i < msg->SRowSet.cRows; i++) {
+		recipient_type = (int *) find_SPropValue_data(&(msg->SRowSet.aRow[i]), PR_RECIPIENT_TYPE);
+		recipient = (const char *) find_SPropValue_data(&(msg->SRowSet.aRow[i]), PR_SMTP_ADDRESS_UNICODE);
+		if (!recipient) {
+			recipient = (const char *) find_SPropValue_data(&(msg->SRowSet.aRow[i]), PR_SMTP_ADDRESS);
+		}
+		if (recipient_type && recipient) {
+			switch (*recipient_type) {
+			case MAPI_ORIG:
+				printf("From: %s\n", recipient);
+				break;
+			case MAPI_TO:
+				printf("To: %s\n", recipient);
+				break;
+			case MAPI_CC:
+				printf("Cc: %s\n", recipient);
+				break;
+			case MAPI_BCC:
+				printf("Bcc: %s\n", recipient);
+				break;
+			}
+		}
+	}
+	printf("\n");
+}
+
+/**
    \details This function dumps the properties relating to an email message to standard output
 
    The expected way to obtain the properties array is to use OpenMessage() to obtain the

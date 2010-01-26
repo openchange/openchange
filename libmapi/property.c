@@ -934,3 +934,31 @@ _PUBLIC_ struct GlobalObjectId *get_GlobalObjectId(TALLOC_CTX *mem_ctx,
 
 	return GlobalObjectId;
 }
+
+/**
+   \details Return the effective value used in a TypedString
+   structure.
+
+   \param tstring pointer to TypedString structure
+
+   \return pointer to a valid string on success, otherwise NULL
+ */
+_PUBLIC_ const char *get_TypedString(struct TypedString *tstring)
+{
+	if (!tstring) return NULL;
+
+	switch (tstring->StringType) {
+	case StringType_STRING8:
+		return tstring->String.lpszA;
+	case StringType_UNICODE_REDUCED:
+		return tstring->String.lpszW_reduced;
+	case StringType_UNICODE:
+		return tstring->String.lpszW;
+	case StringType_NONE:
+	case StringType_EMPTY:
+	default:
+		return NULL;
+	}
+
+	return NULL;
+}

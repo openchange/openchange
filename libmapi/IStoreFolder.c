@@ -73,6 +73,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	struct mapi_session		*session;
 	mapi_object_message_t		*message;
 	struct SPropValue		lpProp;
+	const char			*tstring;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			size = 0;
@@ -133,6 +134,18 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	reply = &mapi_response->mapi_repl->u.mapi_OpenMessage;
 
 	message = talloc_zero((TALLOC_CTX *)session, mapi_object_message_t);
+
+	tstring = get_TypedString(&reply->SubjectPrefix);
+	if (tstring) {
+		message->SubjectPrefix = talloc_strdup((TALLOC_CTX *)message, tstring);
+	}
+
+	tstring = get_TypedString(&reply->NormalizedSubject);
+	if (tstring) {
+		message->NormalizedSubject = talloc_strdup((TALLOC_CTX *)message, tstring);
+	}
+	
+
 	message->cValues = reply->RecipientColumns.cValues;
 	message->SRowSet.cRows = reply->RowCount;
 	message->SRowSet.aRow = talloc_array((TALLOC_CTX *)message, struct SRow, reply->RowCount + 1);

@@ -120,6 +120,8 @@ typedef struct mapi_obj_table {
 
 typedef struct mapi_obj_message {
 	uint32_t			cValues;
+	char				*SubjectPrefix;
+	char				*NormalizedSubject;
 	struct SPropTagArray   		SPropTagArray;
 	struct SRowSet			SRowSet;
 } mapi_object_message_t;

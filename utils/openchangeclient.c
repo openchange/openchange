@@ -65,6 +65,7 @@ static void init_oclient(struct oclient *oclient)
 	oclient->private = false;
 	oclient->freebusy = NULL;
 	oclient->force = false;
+	oclient->summary = false;
 
 	/* contact related parameters */
 	oclient->email = NULL;
@@ -446,77 +447,81 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 					     rowset.aRow[i].lpProps[1].value.d,
 					     &obj_message, 0);
 			if (GetLastError() == MAPI_E_SUCCESS) {
-				struct SPropValue	*lpProps;
-				struct SRow		aRow;
-
-				SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_HASATTACH);
-				lpProps = talloc_zero(mem_ctx, struct SPropValue);
-				retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
-				MAPIFreeBuffer(SPropTagArray);
-				if (retval != MAPI_E_SUCCESS) return retval;
-
-				aRow.ulAdrEntryPad = 0;
-				aRow.cValues = count;
-				aRow.lpProps = lpProps;
-
-				retval = octool_message(mem_ctx, &obj_message);
-
-				has_attach = (const uint8_t *) get_SPropValue_SRow_data(&aRow, PR_HASATTACH);
-
- 				/* If we have attachments, retrieve them */
-				if (has_attach && *has_attach) {
-					mapi_object_init(&obj_tb_attach);
-					retval = GetAttachmentTable(&obj_message, &obj_tb_attach);
-					if (retval == MAPI_E_SUCCESS) {
-						SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_ATTACH_NUM);
-						retval = SetColumns(&obj_tb_attach, SPropTagArray);
-						if (retval != MAPI_E_SUCCESS) return retval;
-						MAPIFreeBuffer(SPropTagArray);
-						
-						retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
-						if (retval != MAPI_E_SUCCESS) return retval;
-
-						for (j = 0; j < rowset_attach.cRows; j++) {
-							attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[j]), PR_ATTACH_NUM);
-							retval = OpenAttach(&obj_message, *attach_num, &obj_attach);
-							if (retval == MAPI_E_SUCCESS) {
-								struct SPropValue	*lpProps2;
-								uint32_t		count2;
-
-								SPropTagArray = set_SPropTagArray(mem_ctx, 0x3, 
-												  PR_ATTACH_FILENAME,
-												  PR_ATTACH_LONG_FILENAME,
-												  PR_ATTACH_SIZE);
-								lpProps2 = talloc_zero(mem_ctx, struct SPropValue);
-								retval = GetProps(&obj_attach, SPropTagArray, &lpProps2, &count2);
-								MAPIFreeBuffer(SPropTagArray);
-								if (retval != MAPI_E_SUCCESS) return retval;
-								
-								aRow.ulAdrEntryPad = 0;
-								aRow.cValues = count2;
-								aRow.lpProps = lpProps2;
-
-								attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_LONG_FILENAME));
-								if (!attach_filename || (attach_filename && !strcmp(attach_filename, ""))) {
-									attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_FILENAME));
-								}
-								attach_size = (const uint32_t *) octool_get_propval(&aRow, PR_ATTACH_SIZE);
-								printf("[%u] %s (%u Bytes)\n", j, attach_filename, attach_size ? *attach_size : 0);
-								fflush(0);
-								if (oclient->store_folder) {
-								  status = store_attachment(obj_attach, attach_filename, attach_size ? *attach_size : 0, oclient);
-									if (status == false) {
-										printf("A Problem was encountered while storing attachments on the filesystem\n");
-										MAPI_RETVAL_IF(status == false, MAPI_E_UNABLE_TO_COMPLETE, mem_ctx);
-
+				if (oclient->summary) {
+					mapidump_message_summary(&obj_message);
+				} else {
+					struct SPropValue	*lpProps;
+					struct SRow		aRow;
+					
+					SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_HASATTACH);
+					lpProps = talloc_zero(mem_ctx, struct SPropValue);
+					retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
+					MAPIFreeBuffer(SPropTagArray);
+					if (retval != MAPI_E_SUCCESS) return retval;
+					
+					aRow.ulAdrEntryPad = 0;
+					aRow.cValues = count;
+					aRow.lpProps = lpProps;
+					
+					retval = octool_message(mem_ctx, &obj_message);
+					
+					has_attach = (const uint8_t *) get_SPropValue_SRow_data(&aRow, PR_HASATTACH);
+					
+					/* If we have attachments, retrieve them */
+					if (has_attach && *has_attach) {
+						mapi_object_init(&obj_tb_attach);
+						retval = GetAttachmentTable(&obj_message, &obj_tb_attach);
+						if (retval == MAPI_E_SUCCESS) {
+							SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_ATTACH_NUM);
+							retval = SetColumns(&obj_tb_attach, SPropTagArray);
+							if (retval != MAPI_E_SUCCESS) return retval;
+							MAPIFreeBuffer(SPropTagArray);
+							
+							retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
+							if (retval != MAPI_E_SUCCESS) return retval;
+							
+							for (j = 0; j < rowset_attach.cRows; j++) {
+								attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[j]), PR_ATTACH_NUM);
+								retval = OpenAttach(&obj_message, *attach_num, &obj_attach);
+								if (retval == MAPI_E_SUCCESS) {
+									struct SPropValue	*lpProps2;
+									uint32_t		count2;
+									
+									SPropTagArray = set_SPropTagArray(mem_ctx, 0x3, 
+													  PR_ATTACH_FILENAME,
+													  PR_ATTACH_LONG_FILENAME,
+													  PR_ATTACH_SIZE);
+									lpProps2 = talloc_zero(mem_ctx, struct SPropValue);
+									retval = GetProps(&obj_attach, SPropTagArray, &lpProps2, &count2);
+									MAPIFreeBuffer(SPropTagArray);
+									if (retval != MAPI_E_SUCCESS) return retval;
+									
+									aRow.ulAdrEntryPad = 0;
+									aRow.cValues = count2;
+									aRow.lpProps = lpProps2;
+									
+									attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_LONG_FILENAME));
+									if (!attach_filename || (attach_filename && !strcmp(attach_filename, ""))) {
+										attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_FILENAME));
 									}
+									attach_size = (const uint32_t *) octool_get_propval(&aRow, PR_ATTACH_SIZE);
+									printf("[%u] %s (%u Bytes)\n", j, attach_filename, attach_size ? *attach_size : 0);
+									fflush(0);
+									if (oclient->store_folder) {
+										status = store_attachment(obj_attach, attach_filename, attach_size ? *attach_size : 0, oclient);
+										if (status == false) {
+											printf("A Problem was encountered while storing attachments on the filesystem\n");
+											MAPI_RETVAL_IF(status == false, MAPI_E_UNABLE_TO_COMPLETE, mem_ctx);
+											
+										}
+									}
+									MAPIFreeBuffer(lpProps2);
 								}
-								MAPIFreeBuffer(lpProps2);
 							}
+							errno = 0;
 						}
-						errno = 0;
+						MAPIFreeBuffer(lpProps);
 					}
-					MAPIFreeBuffer(lpProps);
 				}
 			}
 			mapi_object_release(&obj_message);
@@ -1792,33 +1797,37 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 					     SRowSet.aRow[i].lpProps[1].value.d,
 					     &obj_message, 0);
 			if (retval != MAPI_E_NOT_FOUND) {
-				retval = GetPropsAll(&obj_message, &properties_array);
-				if (retval == MAPI_E_SUCCESS) {
-					id = talloc_asprintf(mem_ctx, ": %"PRIX64"/%"PRIX64,
-							     SRowSet.aRow[i].lpProps[0].value.d,
-							     SRowSet.aRow[i].lpProps[1].value.d);
-					mapi_SPropValue_array_named(&obj_message, 
-								    &properties_array);
-					switch (olFolder) {
-					case olFolderInbox:
-					  mapidump_message(&properties_array, id);
-						break;
-					case olFolderCalendar:
-						mapidump_appointment(&properties_array, id);
-						break;
-					case olFolderContacts:
-						mapidump_contact(&properties_array, id);
-						break;
-					case olFolderTasks:
-						mapidump_task(&properties_array, id);
-						break;
-					case olFolderNotes:
-						mapidump_note(&properties_array, id);
-						break;
+				if (oclient->summary) {
+					mapidump_message_summary(&obj_message);
+				} else {
+					retval = GetPropsAll(&obj_message, &properties_array);
+					if (retval == MAPI_E_SUCCESS) {
+						id = talloc_asprintf(mem_ctx, ": %"PRIX64"/%"PRIX64,
+								     SRowSet.aRow[i].lpProps[0].value.d,
+								     SRowSet.aRow[i].lpProps[1].value.d);
+						mapi_SPropValue_array_named(&obj_message, 
+									    &properties_array);
+						switch (olFolder) {
+						case olFolderInbox:
+							mapidump_message(&properties_array, id);
+							break;
+						case olFolderCalendar:
+							mapidump_appointment(&properties_array, id);
+							break;
+						case olFolderContacts:
+							mapidump_contact(&properties_array, id);
+							break;
+						case olFolderTasks:
+							mapidump_task(&properties_array, id);
+							break;
+						case olFolderNotes:
+							mapidump_note(&properties_array, id);
+							break;
+						}
+						talloc_free(id);
 					}
-					talloc_free(id);
-					mapi_object_release(&obj_message);
 				}
+				mapi_object_release(&obj_message);
 			}
 		}
 	}
@@ -2797,7 +2806,7 @@ int main(int argc, const char *argv[])
 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
 	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE,
 	      OPT_UPDATE, OPT_DELETEITEMS, OPT_OCPF_FILE, OPT_OCPF_SYNTAX,
-	      OPT_OCPF_SENDER, OPT_OCPF_DUMP, OPT_FREEBUSY, OPT_FORCE};
+	      OPT_OCPF_SENDER, OPT_OCPF_DUMP, OPT_FREEBUSY, OPT_FORCE, OPT_FETCHSUMMARY};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -2811,6 +2820,7 @@ int main(int argc, const char *argv[])
 		{"sendtask", 0, POPT_ARG_NONE, NULL, OPT_SENDTASK, "send a task", NULL },
 		{"sendnote", 0, POPT_ARG_NONE, NULL, OPT_SENDNOTE, "send a note", NULL },
 		{"fetchmail", 'F', POPT_ARG_NONE, NULL, OPT_FETCHMAIL, "fetch user INBOX mails", NULL },
+		{"fetchsummary", 0, POPT_ARG_NONE, NULL, OPT_FETCHSUMMARY, "fetch message summaries only", NULL },
 		{"storemail", 'G', POPT_ARG_STRING, NULL, OPT_STOREMAIL, "retrieve a mail on the filesystem", NULL },
 		{"fetch-items", 'i', POPT_ARG_STRING, NULL, OPT_FETCHITEMS, "fetch specified user INBOX items", NULL },
 		{"freebusy", 0, POPT_ARG_STRING, NULL, OPT_FREEBUSY, "display free / busy information for the specified user", NULL },
@@ -2908,6 +2918,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_FETCHITEMS:
 			opt_fetchitems = poptGetOptArg(pc);
+			break;
+		case OPT_FETCHSUMMARY:
+			oclient.summary = true;
 			break;
 		case OPT_DELETEITEMS:
 			oclient.delete = poptGetOptArg(pc);

@@ -1,3 +1,18 @@
+2010-01-26
+    jkerihuel
+	[r1693]
+		- Add NormalizedSubject and SubjectPrefix strings to object_message_t
+		  structure.
+		- Add a function to retrieve TypedString value
+		- Add a mapidump function for obj_message (only retrieve subject and
+		  recipients)
+		- Add --fetchsummary option to openchangeclient: Dumps properties from
+		  OpenMessage response only (subject and recipients) rather than going
+		  through GetProps and dumping a more complete version.
+    bradh
+	[r1692]
+		Move make distclean to the end again.
+
 2010-01-23
     bradh
 	[r1690]

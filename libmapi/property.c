@@ -483,7 +483,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 	case PT_UNICODE:
 		mapi_sprop->value.lpszW = sprop->value.lpszW;
 		if (!mapi_sprop->value.lpszW) return 0;
-		return (strlen(sprop->value.lpszW) * 2 + 2);
+		return get_utf8_utf16_conv_length(mapi_sprop->value.lpszW);
 	case PT_SYSTIME:
 		mapi_sprop->value.ft.dwLowDateTime = sprop->value.ft.dwLowDateTime;
 		mapi_sprop->value.ft.dwHighDateTime = sprop->value.ft.dwHighDateTime;
@@ -961,4 +961,104 @@ _PUBLIC_ const char *get_TypedString(struct TypedString *tstring)
 	}
 
 	return NULL;
+}
+
+/**
+   \details Return the expected size of the utf8 string after
+   conversion to utf16 by iconv() function.
+
+   \param inbuf pointer to the input string
+
+   \return expected length of the converted string
+
+   \note This routine is based upon utf8_pull() function from
+   samba4/lib/util/charset/iconv.c
+ */
+size_t get_utf8_utf16_conv_length(const char *inbuf)
+{
+	size_t		in_left;
+	size_t		out_left;
+	size_t		max_out;
+	const uint8_t	*c = (const uint8_t *) inbuf;
+
+	/* Sanity checks */
+	if (!inbuf) return 0;
+
+	in_left = strlen(inbuf);
+	out_left = in_left;
+	out_left = ( out_left * 3);
+	/* includes null-termination bytes */
+	max_out = out_left + 2;
+
+	while (in_left >= 1 && out_left >= 2) {
+		if ((c[0] & 0x80) == 0) {
+			c += 1;
+			in_left -= 1;
+			out_left -= 2;
+			continue;
+		}
+
+		if ((c[0] & 0xe0) == 0xc0) {
+			if (in_left < 2 || (c[1] & 0xc0) != 0x80) {
+				return -1;
+			}
+			c += 2;
+			in_left -= 2;
+			out_left -= 2;
+			continue;
+		}
+
+		if ((c[0] & 0xf0) == 0xe0) {
+			if (in_left < 3 ||
+			    (c[1] & 0xc0) != 0x80 ||
+			    (c[2] & 0xc0) != 0x80) {
+				return -1;
+			}
+			c += 3;
+			in_left -= 3;
+			out_left -= 2;
+			continue;
+		}
+
+		if ((c[0] & 0xf8) == 0xf0) {
+			unsigned int codepoint;
+			if (in_left < 4 ||
+			    (c[1] & 0xc0) != 0x80 ||
+			    (c[2] & 0xc0) != 0x80 ||
+			    (c[3] & 0xc0) != 0x80) {
+				return -1;
+			}
+			codepoint = 
+				(c[3]&0x3f) | 
+				((c[2]&0x3f)<<6) | 
+				((c[1]&0x3f)<<12) |
+				((c[0]&0x7)<<18);
+			if (codepoint < 0x10000) {
+				c += 4;
+				in_left -= 4;
+				out_left -= 2;
+				continue;
+			}
+
+			codepoint -= 0x10000;
+
+			if (out_left < 4) {
+				return -1;
+			}
+
+			c += 4;
+			in_left -= 4;
+			out_left -= 4;
+			continue;
+		}
+		
+		/* we don't handle 5 byte sequences */
+		return -1;
+	}
+
+	if (in_left > 0) {
+		return -1;
+	}
+
+	return (max_out - out_left);
 }

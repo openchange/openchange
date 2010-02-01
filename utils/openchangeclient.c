@@ -820,7 +820,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	/* set message properties */
 	msgflag = MSGFLAG_UNSENT;
 	oclient->subject = (!oclient->subject) ? "" : oclient->subject;
-	set_SPropValue_proptag(&props[0], PR_SUBJECT, 
+	set_SPropValue_proptag(&props[0], PR_SUBJECT_UNICODE, 
 			       (const void *)oclient->subject);
 	set_SPropValue_proptag(&props[1], PR_MESSAGE_FLAGS, 
 			       (const void *)&msgflag);
@@ -838,7 +838,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			bin.cb = strlen(oclient->pr_body);
 			openchangeclient_stream(mem_ctx, obj_message, obj_stream, PR_BODY, 2, bin);
 		} else {
-			set_SPropValue_proptag(&props[2], PR_BODY, 
+			set_SPropValue_proptag(&props[2], PR_BODY_UNICODE, 
 								   (const void *)oclient->pr_body);
 			prop_count++;
 		}
@@ -1066,13 +1066,13 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
 
 	if (oclient->subject) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_CONVERSATION_TOPIC, 
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_CONVERSATION_TOPIC_UNICODE, 
 			       (const void *) oclient->subject);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT,
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT_UNICODE,
 			       (const void *) oclient->subject);
 	}
 	if (oclient->pr_body) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_BODY, (const void *)oclient->pr_body);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_BODY_UNICODE, (const void *)oclient->pr_body);
 	}
 	if (oclient->location) {
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidLocation, (const void *)oclient->location);
@@ -1233,12 +1233,12 @@ static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
 	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
 
 	if (oclient->card_name) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT_UNICODE, (const void *)oclient->card_name);
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidFileUnder, (const void *)oclient->card_name);
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, SPropTagArray->aulPropTag[0], (const void *)oclient->card_name);
 	}
 	if (oclient->full_name) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_DISPLAY_NAME, (const void *)oclient->full_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_DISPLAY_NAME_UNICODE, (const void *)oclient->full_name);
 	}
 	if (oclient->email) {
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidEmail1OriginalDisplayName, (const void *)oclient->email);
@@ -1320,8 +1320,8 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
 
 	if (oclient->card_name) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_CONVERSATION_TOPIC, (const void *)oclient->card_name);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_CONVERSATION_TOPIC_UNICODE, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT_UNICODE, (const void *)oclient->card_name);
 	}
 
 	if (oclient->dtstart) {
@@ -1349,7 +1349,7 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 	}
 
 	if (oclient->pr_body) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_BODY, (const void *)oclient->pr_body);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_BODY_UNICODE, (const void *)oclient->pr_body);
 	}
 
 	if (!oclient->update) {
@@ -1436,10 +1436,10 @@ static enum MAPISTATUS note_SetProps(TALLOC_CTX *mem_ctx,
 	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
 
 	if (oclient->card_name) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_CONVERSATION_TOPIC, (const void *)oclient->card_name);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_SUBJECT, (const void *)oclient->card_name);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT, (const void *)oclient->card_name);
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_BODY, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_CONVERSATION_TOPIC_UNICODE, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_SUBJECT_UNICODE, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_NORMALIZED_SUBJECT_UNICODE, (const void *)oclient->card_name);
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_BODY_UNICODE, (const void *)oclient->card_name);
 	}
 
 	if (!oclient->update) {

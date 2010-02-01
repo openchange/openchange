@@ -1,3 +1,17 @@
+2010-02-01
+    jkerihuel
+	[r1695]
+		Fix ticket #123 (known as 562948 on gnome bugzilla):
+		"Unable to send mails containing UTF8 strings"
+		
+		OpenChange was using strlen(str) * 2 + 2 to calculate the 
+		expected size for utf16 string. This patch fixes this and
+		replaces it with a function that make proper utf8 to utf16 
+		conversion.
+		
+		This commit also replaces PT_STRING8 properties in openchangeclient.c
+		with PT_UNICODE ones to ensure utf8 strings get converted properly.
+
 2010-01-26
     jkerihuel
 	[r1693]

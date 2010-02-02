@@ -391,14 +391,25 @@ libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 	@$(CXX) $(DSOOPT) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS)
 
 libmapixx-installpc:
+	@echo "[*] install: libmapi++ pc files"
+	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 libmapi++.pc $(DESTDIR)$(libdir)/pkgconfig
+
+libmapixx-distclean:
+	rm -f libmapi++.pc
+
+libmapixx-uninstallpc:
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapi++.pc
+
+distclean::libmapixx-distclean
 
 libmapixx-clean: libmapixx-tests-clean libmapixx-libs-clean
 
 clean:: libmapixx-clean
 
-libmapixx-install: libmapixx-installheader libmapixx-installlib
+libmapixx-install: libmapixx-installheader libmapixx-installlib libmapixx-installpc
 
-libmapixx-uninstall: libmapixx-uninstallheader libmapixx-uninstalllib
+libmapixx-uninstall: libmapixx-uninstallheader libmapixx-uninstalllib libmapixx-uninstallpc
 
 libmapixx-installheader:
 	@echo "[*] install: libmapi++ headers"

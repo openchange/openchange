@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+datarootdir=@prefix@/share
+datadir=@datadir@
+
+Name: OpenChange C++ bindings
+Description: C++ bindings for the OpenChange MAPI library
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lmapipp
+Cflags: -I${includedir}
+Requires: libmapi

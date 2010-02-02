@@ -643,9 +643,9 @@ dnl ***********************
 dnl Makefiles 
 dnl ***********************
 AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc libocpf.pc mapiproxy/libmapiproxy.pc
-		 mapiproxy/libmapiserver.pc mapiproxy/libmapistore.pc Doxyfile libmapi++/Doxyfile 
-		 libocpf/Doxyfile libmapiadmin/Doxyfile libmapi/Doxyfile mapiproxy/Doxyfile 
-		 utils/mapitest/Doxyfile])
+		 mapiproxy/libmapiserver.pc mapiproxy/libmapistore.pc libmapi++.pc
+		 Doxyfile libmapi++/Doxyfile libocpf/Doxyfile libmapiadmin/Doxyfile
+		 libmapi/Doxyfile mapiproxy/Doxyfile utils/mapitest/Doxyfile])
 AC_OUTPUT
 
 

@@ -563,37 +563,37 @@ _PUBLIC_ bool mapitest_mapidump_message(struct mapitest *mt)
 	props.lpProps[8].ulPropTag = PR_HASATTACH;
 	props.lpProps[8].value.b = false;
 
-	mapidump_message(&props, "[dummy ID]");
+	mapidump_message(&props, "[dummy ID]", NULL);
 
 	props.lpProps[7].ulPropTag = PR_MESSAGE_CODEPAGE;
 	props.lpProps[7].value.l = CP_USASCII;
 
-	mapidump_message(&props, "[dummy ID]");
+	mapidump_message(&props, "[dummy ID]", NULL);
 
 	props.lpProps[7].ulPropTag = PR_MESSAGE_CODEPAGE;
 	props.lpProps[7].value.l = CP_UNICODE;
 
-	mapidump_message(&props, "[dummy ID]");
+	mapidump_message(&props, "[dummy ID]", NULL);
 
 	props.lpProps[7].ulPropTag = PR_MESSAGE_CODEPAGE;
 	props.lpProps[7].value.l = CP_JAUTODETECT;
 
-	mapidump_message(&props, "[dummy ID]");
+	mapidump_message(&props, "[dummy ID]", NULL);
 
 	props.lpProps[7].ulPropTag = PR_MESSAGE_CODEPAGE;
 	props.lpProps[7].value.l = CP_KAUTODETECT;
 
-	mapidump_message(&props, "[dummy ID]");
+	mapidump_message(&props, "[dummy ID]", NULL);
 
 	props.lpProps[7].ulPropTag = PR_MESSAGE_CODEPAGE;
 	props.lpProps[7].value.l = CP_ISO2022JPESC;
 
-	mapidump_message(&props, "[dummy ID]");
+	mapidump_message(&props, "[dummy ID]", NULL);
 
 	props.lpProps[7].ulPropTag = PR_MESSAGE_CODEPAGE;
 	props.lpProps[7].value.l = CP_ISO2022JPSIO;
 
-	mapidump_message(&props, "[dummy ID]");
+	mapidump_message(&props, "[dummy ID]", NULL);
 
 	return true;
 }

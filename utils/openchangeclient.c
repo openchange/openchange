@@ -94,14 +94,6 @@ static void init_oclient(struct oclient *oclient)
 	oclient->ocpf_dump = NULL;
 }
 
-static char *utf8tolinux(TALLOC_CTX *mem_ctx, const char *wstring)
-{
-	char		*newstr;
-
-	newstr = windows_to_utf8(mem_ctx, wstring);
-	return newstr;
-}
-
 static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 					       mapi_object_t *obj_container,
 					       mapi_object_t *obj_child,
@@ -112,7 +104,6 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 	struct SRowSet		SRowSet;
 	mapi_object_t		obj_htable;
 	mapi_object_t		obj_folder;
-	char			*newname;
 	char     		**folder  = NULL;
 	const char		*name;
 	const uint64_t		*fid;
@@ -141,17 +132,15 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 		while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
 			for (index = 0; (index < SRowSet.cRows) && (found == false); index++) {
 				fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[index], PR_FID);
-				name = (const char *)find_SPropValue_data(&SRowSet.aRow[index], PR_DISPLAY_NAME);
+				name = (const char *)find_SPropValue_data(&SRowSet.aRow[index], PR_DISPLAY_NAME_UNICODE);
 
-				newname = utf8tolinux(mem_ctx, name);
-				if (newname && fid && !strcmp(newname, folder[i])) {
+				if (name && fid && !strcmp(name, folder[i])) {
 					retval = OpenFolder(&obj_folder, *fid, obj_child);
 					MAPI_RETVAL_IF(retval, retval, folder);
 
 					found = true;
 					mapi_object_copy(&obj_folder, obj_child);
 				}
-				MAPIFreeBuffer(newname);
 			}
 		}
 
@@ -1561,7 +1550,6 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		rowset;
 	const char	       	*name;
-	char			*newname;
 	const char		*comment;
 	const uint32_t		*total;
 	const uint32_t		*unread;
@@ -1579,9 +1567,9 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
-					  PR_DISPLAY_NAME,
+					  PR_DISPLAY_NAME_UNICODE,
 					  PR_FID,
-					  PR_COMMENT,
+					  PR_COMMENT_UNICODE,
 					  PR_CONTENT_UNREAD,
 					  PR_CONTENT_COUNT,
 					  PR_FOLDER_CHILD_COUNT);
@@ -1592,8 +1580,8 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
-			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
-			comment = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_COMMENT);
+			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
+			comment = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_COMMENT_UNICODE);
 			total = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT);
 			unread = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_UNREAD);
 			child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
@@ -1601,11 +1589,9 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 			for (i = 0; i < count; i++) {
 				printf("|   ");
 			}
-			newname = utf8tolinux(mem_ctx, name);
 			printf("|---+ %-15s : %-20s (Total: %u / Unread: %u - Container class: %s) [FID: 0x%016"PRIx64"]\n", 
-			       newname, comment?comment:"", total?*total:0, unread?*unread:0,
+			       name, comment?comment:"", total?*total:0, unread?*unread:0,
 			       get_container_class(mem_ctx, parent, *fid), *fid);
-			MAPIFreeBuffer(newname);
 			if (child && *child) {
 				ret = get_child_folders(mem_ctx, &obj_folder, *fid, count + 1);
 				if (ret == false) return ret;
@@ -1625,7 +1611,6 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		rowset;
 	const char	       	*name;
-	char			*newname;
 	const uint32_t		*child;
 	uint32_t		index;
 	const uint64_t		*fid;
@@ -1640,7 +1625,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
-					  PR_DISPLAY_NAME,
+					  PR_DISPLAY_NAME_UNICODE,
 					  PR_FID,
 					  PR_FOLDER_CHILD_COUNT);
 	retval = SetColumns(&obj_htable, SPropTagArray);
@@ -1650,15 +1635,13 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
-			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);
+			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
 			child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
 
 			for (i = 0; i < count; i++) {
 				printf("|   ");
 			}
-			newname = utf8tolinux(mem_ctx, name);
-			printf("|---+ %-15s [FID: 0x%016"PRIx64"]\n", newname, *fid);
-			MAPIFreeBuffer(newname);
+			printf("|---+ %-15s [FID: 0x%016"PRIx64"]\n", name, *fid);
 			if (*child) {
 				ret = get_child_folders_pf(mem_ctx, &obj_folder, *fid, count + 1);
 				if (ret == false) return ret;
@@ -1691,16 +1674,15 @@ static bool openchangeclient_mailbox(TALLOC_CTX *mem_ctx,
 	struct SPropValue		*lpProps;
 	uint32_t			cValues;
 	const char			*mailbox_name;
-	char				*utf8_mailbox_name;
 
 	/* Retrieve the mailbox folder name */
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME);
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
 	retval = GetProps(obj_store, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	if (lpProps[0].value.lpszA) {
-		mailbox_name = lpProps[0].value.lpszA;
+	if (lpProps[0].value.lpszW) {
+		mailbox_name = lpProps[0].value.lpszW;
 	} else {
 		return false;
 	}
@@ -1709,9 +1691,7 @@ static bool openchangeclient_mailbox(TALLOC_CTX *mem_ctx,
 	retval = GetDefaultFolder(obj_store, &id_mailbox, olFolderTopInformationStore);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	utf8_mailbox_name = utf8tolinux(mem_ctx, mailbox_name);
-	printf("+ %s\n", utf8_mailbox_name);
-	MAPIFreeBuffer(utf8_mailbox_name);
+	printf("+ %s\n", mailbox_name);
 	return get_child_folders(mem_ctx, obj_store, id_mailbox, 0);
 }
 
@@ -1809,7 +1789,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 									    &properties_array);
 						switch (olFolder) {
 						case olFolderInbox:
-							mapidump_message(&properties_array, id);
+						  mapidump_message(&properties_array, id, NULL);
 							break;
 						case olFolderCalendar:
 							mapidump_appointment(&properties_array, id);
@@ -2136,7 +2116,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 						id = talloc_asprintf(mem_ctx, ": %"PRIX64"/%"PRIX64,
 								     SRowSet.aRow[i].lpProps[0].value.d,
 								     SRowSet.aRow[i].lpProps[1].value.d);
-						mapidump_message(&properties_array, id);
+						mapidump_message(&properties_array, id, NULL);
 						mapi_object_release(&obj_message);
 						talloc_free(id);
 

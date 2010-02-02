@@ -178,7 +178,6 @@ libmapi-clean::
 	rm -f libmapi/util/*.gcno libmapi/util/*.gcda
 	rm -f libmapi/version.h
 ifneq ($(SNAPSHOT), no)
-	rm -f libmapi/utf8_convert.yy.c
 	rm -f libmapi/mapicode.c libmapi/mapicode.h
 	rm -f libmapi/mapitags.c libmapi/mapitags.h
 	rm -f libmapi/mapi_nameid.h libmapi/mapi_nameid_private.h
@@ -301,8 +300,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	gen_ndr/ndr_exchange_c.po			\
 	gen_ndr/ndr_property.po				\
 	libmapi/socket/interface.po			\
-	libmapi/socket/netif.po				\
-	libmapi/utf8_convert.yy.po
+	libmapi/socket/netif.po				
 	@echo "Linking $@"
 	@$(CC) $(DSOOPT) $(CFLAGS) $(LDFLAGS) -Wl,-soname,libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) -o $@ $^ $(LIBS)
 
@@ -312,14 +310,6 @@ libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION): libmapi.$(SHLIBEXT).$(PACKAGE_VERSION
 
 libmapi/version.h: VERSION
 	@./script/mkversion.sh 	VERSION libmapi/version.h $(PACKAGE_VERSION) $(top_builddir)/
-
-libmapi/utf8_convert.yy.c: 	libmapi/utf8_convert.l
-	@echo "Generating $@"
-	@$(FLEX) -Plibmapi_utf8_convert_ -t $< > $@
-
-# Avoid warnings:
-libmapi/utf8_convert.yy.o: CFLAGS=
-libmapi/utf8_convert.yy.po: CFLAGS=
 
 libmapi/proto.h libmapi/proto_private.h:		\
 	libmapi/nspi.c					\

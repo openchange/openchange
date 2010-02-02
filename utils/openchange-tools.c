@@ -45,7 +45,7 @@ struct poptOption popt_openchange_version[] = {
 /*
  * Retrieve the property value for a given SRow and property tag.  
  *
- * If the property type is a string: fetch PT_STRING8 then PT_UNICODE
+ * If the property type is a string: fetch PT_UNICODE then PT_STRING8
  * in case the desired property is not available in first choice.
  *
  * Fetch property normally for any others properties
@@ -56,11 +56,11 @@ _PUBLIC_ void *octool_get_propval(struct SRow *aRow, uint32_t proptag)
 
 	if (((proptag & 0xFFFF) == PT_STRING8) ||
 	    ((proptag & 0xFFFF) == PT_UNICODE)) {
-		proptag = (proptag & 0xFFFF0000) | PT_STRING8;
+		proptag = (proptag & 0xFFFF0000) | PT_UNICODE;
 		str = (const char *) find_SPropValue_data(aRow, proptag);
 		if (str) return (void *)str;
 
-		proptag = (proptag & 0xFFFF0000) | PT_UNICODE;
+		proptag = (proptag & 0xFFFF0000) | PT_STRING8;
 		str = (const char *) find_SPropValue_data(aRow, proptag);
 		return (void *)str;
 	} 
@@ -125,13 +125,13 @@ _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *mem_ctx,
 
 	switch (format) {
 	case olEditorText:
-		data = octool_get_propval(aRow, PR_BODY);
+		data = octool_get_propval(aRow, PR_BODY_UNICODE);
 		if (data) {
 			body->data = talloc_memdup(mem_ctx, data, strlen(data));
 			body->length = strlen(data);
 		} else {
 			mapi_object_init(&obj_stream);
-			retval = OpenStream(obj_message, PR_BODY, 0, &obj_stream);
+			retval = OpenStream(obj_message, PR_BODY_UNICODE, 0, &obj_stream);
 			MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 			
 			retval = octool_get_stream(mem_ctx, &obj_stream, body);
@@ -239,9 +239,9 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 	}
 	
 	from = (const char *) octool_get_propval(&aRow, PR_SENT_REPRESENTING_NAME);
-	to = (const char *) octool_get_propval(&aRow, PR_DISPLAY_TO);
-	cc = (const char *) octool_get_propval(&aRow, PR_DISPLAY_CC);
-	bcc = (const char *) octool_get_propval(&aRow, PR_DISPLAY_BCC);
+	to = (const char *) octool_get_propval(&aRow, PR_DISPLAY_TO_UNICODE);
+	cc = (const char *) octool_get_propval(&aRow, PR_DISPLAY_CC_UNICODE);
+	bcc = (const char *) octool_get_propval(&aRow, PR_DISPLAY_BCC_UNICODE);
 
 	has_attach = (const uint8_t *) octool_get_propval(&aRow, PR_HASATTACH);
 	cp = (const uint32_t *) octool_get_propval(&aRow, PR_MESSAGE_CODEPAGE);

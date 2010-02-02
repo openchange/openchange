@@ -307,10 +307,11 @@ _PUBLIC_ void mapidump_message_summary(mapi_object_t *obj_message)
 
    \param properties array of message properties
    \param id identification to display for the message (can be NULL)
+   \param obj_msg pointer to the message MAPI object (can be NULL)
 
    \sa mapidump_appointment, mapidump_contact, mapidump_task, mapidump_note
 */
-_PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const char *id)
+_PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const char *id, mapi_object_t *obj_msg)
 {
 	const char			*msgid;
 	const char			*from;
@@ -368,11 +369,15 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 
 	printf("+-------------------------------------+\n");
 	printf("message id: %s %s\n", msgid ? msgid : "", id?id:"");
-	printf("subject: %s\n", subject ? subject : "");
-	printf("From: %s\n", from ? from : "");
-	printf("To:  %s\n", to ? to : "");
-	printf("Cc:  %s\n", cc ? cc : "");
-	printf("Bcc: %s\n", bcc ? bcc : "");
+	if (obj_msg) {
+		mapidump_message_summary(obj_msg);
+	} else {
+		printf("subject: %s\n", subject ? subject : "");
+		printf("From: %s\n", from ? from : "");
+		printf("To:  %s\n", to ? to : "");
+		printf("Cc:  %s\n", cc ? cc : "");
+		printf("Bcc: %s\n", bcc ? bcc : "");
+	}
 	if (has_attach) {
 		printf("Attachment: %s\n", *has_attach ? "True" : "False");
 	}

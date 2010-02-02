@@ -1,3 +1,26 @@
+2010-02-02
+    jkerihuel
+	[r1699]
+		- Fix trac ticket #183: PT_UNICODE properties are now turned to UTF-8
+		  directly.
+		
+		- Remove deprecated utf8_convert lexer and windows_to_utf8 routine
+		
+		- Change openchange tools to use _UNICODE tag version instead
+		
+		- octool_get_propval now prefer UNICODE properties over PT_STRING8
+		  ones (default behavior).
+		
+		- Change mapidump_message API to take an optional mapi_object_t
+		  message parameter. If the message object is specified, we can have
+		  access to the subject, and recipients (to, cc, bcc) without having
+		  to query them within a GetProps call.
+    bradh
+	[r1698]
+		Fix an ugly cut-n-paste error.
+	[r1697]
+		Add pkg-config support for libmapi++.
+
 2010-02-01
     jkerihuel
 	[r1695]

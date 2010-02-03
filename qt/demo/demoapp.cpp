@@ -93,7 +93,8 @@ void DemoApp::addMessagesDockWidget()
     MessagesModel *messages = new MessagesModel( m_folder );
     
     m_messagesDockView = new QTableView( messagesDock );
-    m_messagesDockView->setModel( messages->buildModel() );
+    m_messagesModel = messages->buildModel();
+    m_messagesDockView->setModel( m_messagesModel );
     m_messagesDockView->setShowGrid( false );
     m_messagesDockView->resizeColumnsToContents();
     m_messagesDockView->resizeRowsToContents();

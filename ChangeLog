@@ -1,3 +1,12 @@
+2010-02-03
+    bradh
+	[r1701]
+		Fix bug where you couldn't select another messages in the default folder without
+		changing folder first.
+		
+		Looks like this is just a bit I forgot to update when changing from an initial
+		cut to the "more working" implementation.
+
 2010-02-02
     jkerihuel
 	[r1699]

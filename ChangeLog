@@ -1,3 +1,15 @@
+2010-02-04
+    jkerihuel
+	[r1703]
+		Template file which associates Language, LCID, Locale and Codepage.
+		Furthermore commits will implement the mparse parser which will
+		auto-generate the associated C files. This should give us a reliable
+		way to use it in mapiprofile, MAPI profiles database and for
+		PT_STRING8 proper conversion purposes.
+		
+		If anything is missing or is incorrect, updating the file will
+		be trivial.
+
 2010-02-03
     bradh
 	[r1701]

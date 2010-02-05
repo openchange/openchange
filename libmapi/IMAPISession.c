@@ -94,7 +94,6 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session, const char *
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(MId_array);
 	MAPIFreeBuffer(server_dn);
-	MAPIFreeBuffer(SRowSet);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Step 5. Extract host from ncacn_ip_tcp binding string */

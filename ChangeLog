@@ -1,3 +1,11 @@
+2010-02-05
+    jkerihuel
+	[r1706]
+		In this particular case (error returned, mapi_response shouldn't
+		be free'd)
+	[r1705]
+		Fix bug 605827 - SRowSet was free'd while still needed
+
 2010-02-04
     jkerihuel
 	[r1703]

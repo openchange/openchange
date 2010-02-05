@@ -377,7 +377,6 @@ retry:
 	if (retval == ecWrongServer && retry == false) {
 		retval = FindGoodServer(session, mailbox, false);
 		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
-		talloc_free(mapi_response);
 		talloc_free(mem_ctx);
 		retry = true;
 		goto retry;

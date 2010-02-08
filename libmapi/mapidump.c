@@ -144,7 +144,17 @@ _PUBLIC_ void mapidump_SRow(struct SRow *aRow, const char *sep)
 	}
 }
 
-
+/**
+  Output a row of the public address book
+  
+  \param aRow one row of the public address book (Global Address List)
+  
+  This function is usually used with GetGALTable, which can obtain several
+  rows at once - you'll need to iterate over the rows.
+  
+  The SRow is assumed to contain entries for PR_ADDRTYPE_UNICODE, PR_DISPLAY_NAME_UNICODE,
+  PR_EMAIL_ADDRESS_UNICODE and PR_ACCOUNT_UNICODE.
+*/
 _PUBLIC_ void mapidump_PAB_entry(struct SRow *aRow)
 {
 	const char	*addrtype;

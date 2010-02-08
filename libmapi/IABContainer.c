@@ -107,16 +107,35 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
 /**
    \details Retrieve the global address list
    
+   The Global Address List is the full list of email addresses (and other
+   account-type things, such as "rooms" and distribution lists) accessible
+   on the server. A user will usually have access to both a personal
+   address book, and to the Global Address List. Public Address Book is
+   another name for Global Address List.
+   
+   You access the Global Address List by setting the list of things that
+   you want to retrieve from the Global Address List as property names
+   in the SPropTagArray argument, and then calling this function. The 
+   results are returned in SRowSet.
+   
+   You can get a convenient output of the results using mapidump_PAB_entry()
+   for each row returned.
+   
    \param session pointer to the MAPI session context
-   \param SPropTagArray pointer on an array of MAPI properties we want
+   \param SPropTagArray pointer to an array of MAPI properties we want
    to fetch
-   \param SRowSet pointer on the rows returned
+   \param SRowSet pointer to the rows of the table returned
    \param count the number of rows we want to fetch
    \param ulFlags specify the table cursor location
 
    Possible value for ulFlags:
    -# TABLE_START: Fetch rows from the beginning of the table
    -# TABLE_CUR: Fetch rows from current table location
+   
+   The Global Address List may be quite large (tens of thousands of
+   entries in a large deployment), so you usually call this function
+   with ulFlags set to TABLE_START the first time, and then subsequent
+   calls will be made with TABLE_CUR to progress through the table.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
@@ -128,7 +147,7 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
    -# MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   \sa MapiLogonEx, MapiLogonProvider
+   \sa MapiLogonEx, MapiLogonProvider, mapidump_PAB_entry
  */
 _PUBLIC_ enum MAPISTATUS GetGALTable(struct mapi_session *session,
 				     struct SPropTagArray *SPropTagArray, 

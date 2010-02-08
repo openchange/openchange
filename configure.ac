@@ -615,10 +615,10 @@ dnl ##########################################################################
 dnl Qt4 support
 dnl ##########################################################################
 AC_ARG_ENABLE(openchange-qt4,
-              AC_HELP_STRING([--disable-openchange-qt4],
-                             [Don't compile OpenChange Qt4 wrapper.]),
+              AC_HELP_STRING([--enable-openchange-qt4],
+                             [Compile OpenChange Qt4 wrapper.]),
               enable_openchange_qt4=$enableval,
-              enable_openchange_qt4="try")
+              enable_openchange_qt4="no")
 if test x$enable_openchange_qt4 = xyes; then
   PKG_CHECK_MODULES(Qt4,
                     QtCore >= 4.3.0 QtGui >= 4.3.0)

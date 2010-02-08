@@ -1,3 +1,38 @@
+2010-02-08
+    jkerihuel
+	[r1711]
+		- Add parser for codepage-lcid
+		
+		- Add entire set of conversion functions for lcid, codepage, language
+		  and locale
+		
+		- mapiprofile now uses codepage/lcid matching LC_CTYPE environment
+		  variable for language detection, otherwise codepage/lcid matching
+		  language list. Language list is now dumped from codepage-lcid
+		  auto-generaed code.
+		
+		- Remove deprecated util and tests directory from libmapi and from
+		  build system. We now only rely on codepage_lcid.c
+		
+		- Update openchange code (utils, mapiprofile, mapitest and
+		  exchange2ical libs) to use this new API.
+		
+		- I have not looked into icalparameter_get_language, but assuming it
+		  is relying on previous API, I may have introduced a bug here. Looks
+		  like the function outputs for example "en-US" while we now checks
+		  for "en_US" to match setlocale output.
+    bradh
+	[r1710]
+		Minor API documentation adds.
+	[r1709]
+		Add unit test coverage for the GetGALTable() function.
+		
+		This is mostly lifted from utils/openchangeclient.c
+	[r1708]
+		Switch to only building Qt4 bindings if specifically asked for.
+		
+		This is a bit experimental for now, so lets go safer...
+
 2010-02-05
     jkerihuel
 	[r1706]

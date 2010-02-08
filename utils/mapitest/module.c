@@ -322,6 +322,7 @@ _PUBLIC_ uint32_t module_nspi_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "GETNAMESFROMIDS", "Returns a list of property names for a set of proptags", mapitest_nspi_GetNamesFromIDs);
 	mapitest_suite_add_test(suite, "GETIDSFROMNAMES", "Returns the property IDs associated with property names", mapitest_nspi_GetIDsFromNames);
 	mapitest_suite_add_test(suite, "RESOLVENAMES", "Resolve usernames", mapitest_nspi_ResolveNames);
+	mapitest_suite_add_test(suite, "GETGALTABLE", "Fetches the Global Address List", mapitest_nspi_GetGALTable);
 
 	mapitest_suite_register(mt, suite);
 

@@ -918,3 +918,67 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 
 	return true;
 }
+
+/**
+   \details Test the GetGALTable function
+
+   \param mt pointer to the top-level mapitest structure
+   
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_nspi_GetGALTable(struct mapitest *mt)
+{
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		*SRowSet;
+	enum MAPISTATUS		retval;
+	uint32_t		i;
+	uint32_t		count;
+	uint8_t			ulFlags;
+	uint32_t		rowsFetched = 0;
+	uint32_t		totalRowsFetched = 0;
+	bool			ret = true;
+
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0xc,
+					  PR_INSTANCE_KEY,
+					  PR_ENTRYID,
+					  PR_DISPLAY_NAME_UNICODE,
+					  PR_EMAIL_ADDRESS_UNICODE,
+					  PR_DISPLAY_TYPE,
+					  PR_OBJECT_TYPE,
+					  PR_ADDRTYPE_UNICODE,
+					  PR_OFFICE_TELEPHONE_NUMBER_UNICODE,
+					  PR_OFFICE_LOCATION_UNICODE,
+					  PR_TITLE_UNICODE,
+					  PR_COMPANY_NAME_UNICODE,
+					  PR_ACCOUNT_UNICODE);
+
+	count = 0x20;
+	ulFlags = TABLE_START;
+	do {
+		retval = GetGALTable(mt->session, SPropTagArray, &SRowSet, count, ulFlags);
+		mapitest_print_retval(mt, "GetGALTable");
+		if ((!SRowSet) || (!(SRowSet->aRow))) {
+			ret = false;
+			goto cleanup;
+		}
+		rowsFetched = SRowSet->cRows;
+		totalRowsFetched += rowsFetched;
+		if (rowsFetched) {
+			for (i = 0; i < rowsFetched; i++) {
+				mapidump_PAB_entry(&SRowSet->aRow[i]);
+			}
+		}
+		ulFlags = TABLE_CUR;
+		MAPIFreeBuffer(SRowSet);
+	} while (rowsFetched == count);
+
+	if (totalRowsFetched < 1) {
+		/* We should always have at least ourselves in the list */
+		/* So if we got no rows at all, there is a problem */
+		ret = false;
+	}
+cleanup:
+	MAPIFreeBuffer(SPropTagArray);
+
+	return ret;
+}

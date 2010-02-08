@@ -403,7 +403,7 @@ void ical2exchange_property_LOCATION(struct ical2exchange *ical2exchange)
 		const char* langName;
 		langtag = talloc(ical2exchange->mem_ctx, uint32_t);
 		langName = icalparameter_get_language(param);
-		*langtag = lcid_lang2lcid(langName);
+		*langtag = mapi_get_lcid_from_language(langName);
 		ical2exchange->lpProps = add_SPropValue(ical2exchange->mem_ctx, ical2exchange->lpProps, &ical2exchange->cValues, PR_MESSAGE_LOCALE_ID, 
 					(const void *) langtag);
 	} 
@@ -753,7 +753,7 @@ void ical2exchange_property_SUMMARY(struct ical2exchange *ical2exchange)
 	if((param=icalproperty_get_first_parameter(ical2exchange->summaryProp, ICAL_LANGUAGE_PARAMETER))){
 		const char *langName;
 		langName = icalparameter_get_language(param);
-		langtag = lcid_lang2lcid(langName);
+		langtag = mapi_get_lcid_from_language(langName);
 		ical2exchange->lpProps = add_SPropValue(ical2exchange->mem_ctx, ical2exchange->lpProps, &ical2exchange->cValues, PR_MESSAGE_LOCALE_ID, 
 						(const void *) &langtag);
 	}

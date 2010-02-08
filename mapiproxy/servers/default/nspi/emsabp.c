@@ -202,7 +202,7 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 _PUBLIC_ bool emsabp_verify_codepage(struct emsabp_context *emsabp_ctx,
 				     uint32_t CodePage)
 {
-	return valid_codepage(CodePage);
+	return mapi_verify_cpid(CodePage);
 }
 
 

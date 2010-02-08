@@ -44,35 +44,35 @@
 */ 
 _PUBLIC_ bool mapitest_lcid_langcode2langtag(struct mapitest *mt)
 {
-	const char	*tag;
+	const char	*locale;
 
-	tag = lcid_langcode2langtag( 0x0409 );
-	if (strcmp(tag, "en-US") != 0) {
-		mapitest_print(mt, "* %-35s: [FAILURE] - %s\n", "Step 1 - mismatch", tag);
+	locale = mapi_get_locale_from_lcid(0x0409);
+	if (strcmp(locale, "en_US") != 0) {
+		mapitest_print(mt, "* %-35s: [FAILURE] - %s\n", "Step 1 - mismatch", locale);
 		return false;
 	} else {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 1");
 	}
 
-	tag = lcid_langcode2langtag( 0x0439 );
-	if (strcmp(tag, "hi-IN") != 0) {
-		mapitest_print(mt, "* %-35s: [FAILURE] - %s\n", "Step 2 - mismatch", tag);
+	locale = mapi_get_locale_from_lcid(0x0439);
+	if (strcmp(locale, "hi_IN") != 0) {
+		mapitest_print(mt, "* %-35s: [FAILURE] - %s\n", "Step 2 - mismatch", locale);
 		return false;
 	} else {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 2");
 	}
 
-	tag = lcid_langcode2langtag( 0x1401 );
-	if (strcmp(tag, "ar-DZ") != 0) {
-		mapitest_print(mt, "* %-35s: [FAILURE] - %s\n", "Step 3 - mismatch", tag);
+	locale = mapi_get_locale_from_lcid(0x1401);
+	if (strcmp(locale, "ar_DZ") != 0) {
+		mapitest_print(mt, "* %-35s: [FAILURE] - %s\n", "Step 3 - mismatch", locale);
 		return false;
 	} else {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 3");
 	}
 
-	tag = lcid_langcode2langtag( 0x0 );
-	if (tag != 0) {
-		mapitest_print(mt, "* %-35s: [FAILURE] - %s\n", "Step 4 - expected NULL", tag);
+	locale = mapi_get_locale_from_lcid(0x0);
+	if (locale != NULL) {
+		mapitest_print(mt, "* %-35s: [FAILURE] - %s\n", "Step 4 - expected NULL", locale);
 		return false;
 	} else {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 4");

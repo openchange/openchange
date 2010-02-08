@@ -1,6 +1,6 @@
 .\" OpenChange Project Tools Man Pages
 .\"
-.\" This manpage is Copyright (C) 2007-2008 Julien Kerihuel;
+.\" This manpage is Copyright (C) 2007-2010 Julien Kerihuel;
 .\" This manpage is Copyright (C) 2008-2009 Brad Hards;
 .\"
 .\" Permission is granted to make and distribute verbatim copies of this
@@ -36,7 +36,7 @@ mapiprofile \- administer OpenChange MAPI Profiles databases
 mapiprofile [-?GSnEcrlV] [-?|--help] [--usage] [-L|--ldif PATH] [-G|--getdefault] [-S|--default]
 	[-n|--newdb] [-f|--database PATH] [-P|--profile PROFILE] [-I|--address xxx.xxx.xxx.xxx]
 	[-M|--workstation WORKSTATION_NAME] [-D|--domain DOMAIN] [-R|--realm REALM] [-E|--encrypt]
-	[-u|--username USERNAME] [-C|--langcode LANGCODE] [-s|--pattern USERNAME]
+	[-u|--username USERNAME] [-C|--language LANGUAGE] [-s|--pattern USERNAME]
 	[-p|--password PASSWORD] [--nopass] [-c|--create] [-r|--delete] [-R|--rename STRING]
 	[-l|--list] [--listlangs] [--dump] [-a|--attr VALUE] [--dump-data] [-d|--debuglevel LEVEL]
 	[--getfqdn] [-V|--version]
@@ -179,15 +179,15 @@ Set the username to use to log on the Exchange server.
 Set the password corresponding to the username described above.
 
 .TP
-.B --langcode
+.B --language
 .TP
 .B -C
-Specify the language to use with the account. This can be specified
-as a code (in hexadecimal) or as a name. When specifying the name,
-you use the name of the language, and the location (if any), separated
-by underscores (e.g. English_United_States). See the --listlangs option for
-how to obtain the full list of languages. The default language code is 0x0409,
-for US English.
+
+Specify the language to use with the account. When specifying the
+name, you use the name of the language returned within the list
+--listlangs option displays. See the --listlangs option for how to
+obtain the full list of languages. The default language code is the
+system one stored within the LC_CTYPE environment variable.
 
 .TP
 .B --pattern

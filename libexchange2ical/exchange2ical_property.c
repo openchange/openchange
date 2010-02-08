@@ -1083,7 +1083,7 @@ void ical_property_SUMMARY(struct exchange2ical *exchange2ical)
 	}
 
 	if (exchange2ical->MessageLocaleId) {
-		const char *langtag = lcid_langcode2langtag( *(exchange2ical->MessageLocaleId) ); 
+		const char *langtag = mapi_get_locale_from_lcid( *(exchange2ical->MessageLocaleId) ); 
 		language = icalparameter_new_language( langtag );
 		icalproperty_add_parameter(prop, language);
 	}

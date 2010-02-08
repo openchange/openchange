@@ -31,7 +31,6 @@
 
 #define	DEFAULT_DIR	"%s/.openchange"
 #define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
-#define	DEFAULT_LCID	"0x409" /* language code ID: en-US */
 
 static bool mapiprofile_createdb(const char *profdb, const char *ldif_path)
 {
@@ -103,7 +102,7 @@ static void signal_delete_profile(void)
 static bool mapiprofile_create(const char *profdb, const char *profname,
 			       const char *pattern, const char *username, 
 			       const char *password, const char *address, 
-			       const char *lcid, const char *workstation,
+			       const char *language, const char *workstation,
 			       const char *domain, const char *realm,
 			       uint32_t flags, bool seal,
 			       bool opt_dumpdata, const char *opt_debuglevel)
@@ -112,6 +111,11 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	struct mapi_session	*session = NULL;
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_profile	profile;
+	const char		*locale;
+	uint32_t		cpid;
+	uint32_t		lcid;
+	char			*cpid_str;
+	char			*lcid_str;
 
 	mem_ctx = talloc_named(NULL, 0, "mapiprofile_create");
 
@@ -165,22 +169,32 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 		mapi_profile_add_string_attr(profname, "realm", realm);
 	}
 
-	if (strncmp(lcid, "0x", 2) != 0) {
-		/* it doesn't look like a hex id, so try to convert it from
-		   a string name (like "English_Australian" to a language code
-		   ID string (like "0x0c09")
-		*/
-		lcid = talloc_asprintf(mem_ctx, "0x%04x", lcid_lang2lcid(lcid));
-	}
-	if (!lcid_valid_locale(strtoul(lcid, 0, 16))) {
-		lcid = DEFAULT_LCID;
-		printf("Language code not recognised, using default (%s) instead\n", lcid);
+	locale = (const char *) (language) ? mapi_get_locale_from_language(language) : mapi_get_system_locale();
+
+	if (locale) {
+		cpid = mapi_get_cpid_from_locale(locale);
+		lcid = mapi_get_lcid_from_locale(locale);
 	}
 
-	/* This is only convenient here and should be replaced at some point */
-	mapi_profile_add_string_attr(profname, "codepage", "0x4e4");
-	mapi_profile_add_string_attr(profname, "language", lcid );
-	mapi_profile_add_string_attr(profname, "method", "0x409");
+	if (!locale || !cpid || !lcid) {
+		printf("Invalid Language supplied or unknown system language '%s\n'", language);
+		printf("Deleting profile\n");
+		if ((retval = DeleteProfile(profname)) != MAPI_E_SUCCESS) {
+			mapi_errstr("DeleteProfile", GetLastError());
+		}
+		talloc_free(mem_ctx);
+		return false;
+	}
+
+	cpid_str = talloc_asprintf(mem_ctx, "%d", cpid);
+	lcid_str = talloc_asprintf(mem_ctx, "0x%.4x", lcid);
+
+	mapi_profile_add_string_attr(profname, "codepage", cpid_str);
+	mapi_profile_add_string_attr(profname, "language", lcid_str);
+	mapi_profile_add_string_attr(profname, "method", lcid_str);
+
+	talloc_free(cpid_str);
+	talloc_free(lcid_str);
 
 	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
 	if (retval != MAPI_E_SUCCESS) {
@@ -527,7 +541,7 @@ int main(int argc, const char *argv[])
 	const char	*domain = NULL;
 	const char	*realm = NULL;
 	const char	*username = NULL;
-	const char      *lcid = NULL;
+	const char      *language = NULL;
 	const char	*pattern = NULL;
 	const char	*password = NULL;
 	const char	*profdb = NULL;
@@ -540,7 +554,7 @@ int main(int argc, const char *argv[])
 	int		retcode = EXIT_SUCCESS;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_ADDRESS, OPT_WORKSTATION,
-	      OPT_DOMAIN, OPT_REALM, OPT_USERNAME, OPT_LCID, OPT_PASSWORD, 
+	      OPT_DOMAIN, OPT_REALM, OPT_USERNAME, OPT_LANGUAGE, OPT_PASSWORD, 
 	      OPT_CREATE_PROFILE, OPT_DELETE_PROFILE, OPT_LIST_PROFILE, OPT_DUMP_PROFILE, 
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
@@ -561,7 +575,7 @@ int main(int argc, const char *argv[])
 		{"realm", 'R', POPT_ARG_STRING, NULL, OPT_REALM, "set the realm", "REALM"},
 		{"encrypt", 'E', POPT_ARG_NONE, NULL, OPT_ENCRYPT_CONN, "enable encryption with Exchange server", NULL },
 		{"username", 'u', POPT_ARG_STRING, NULL, OPT_USERNAME, "set the profile username", "USERNAME"},
-		{"langcode", 'C', POPT_ARG_STRING, NULL, OPT_LCID, "set the language code ID", "LANGCODE"},
+		{"language", 'C', POPT_ARG_STRING, NULL, OPT_LANGUAGE, "set the user's language (if different from system one)", "LANGUAGE"},
 		{"pattern", 's', POPT_ARG_STRING, NULL, OPT_PATTERN, "username to search for", "USERNAME"},
 		{"password", 'p', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password", "PASSWORD"},
 		{"nopass", 0, POPT_ARG_NONE, NULL, OPT_NOPASS, "do not save password in the profile", NULL},
@@ -636,9 +650,9 @@ int main(int argc, const char *argv[])
 		case OPT_USERNAME:
 			username = poptGetOptArg(pc);
 			break;
-		case OPT_LCID:
+		case OPT_LANGUAGE:
 			opt_tmp = poptGetOptArg(pc);
-			lcid = talloc_strdup(mem_ctx, opt_tmp);
+			language = talloc_strdup(mem_ctx, opt_tmp);
 			free((void*)opt_tmp);
 			opt_tmp = NULL;
 			break;
@@ -726,11 +740,8 @@ int main(int argc, const char *argv[])
 		if (!address) show_help(pc, "address");
 		if (!domain) show_help(pc, "domain");
 
-		if (!lcid) {
-		  lcid = talloc_strdup(mem_ctx, DEFAULT_LCID);
-		}
 		if (! mapiprofile_create(profdb, profname, pattern, username, password, address,
-					 lcid, workstation, domain, realm, nopass, opt_seal, 
+					 language, workstation, domain, realm, nopass, opt_seal, 
 					 opt_dumpdata, opt_debuglevel) ) {
 			retcode = EXIT_FAILURE;
 			goto cleanup;
@@ -746,7 +757,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (listlangs == true) {
-		lcid_print_languages();
+		mapidump_languages_list();
 	}
 
 	if (setdflt == true) {

@@ -170,16 +170,13 @@ libmapi-uninstall:	libmapi-uninstallpc	\
 libmapi-clean::
 	rm -f libmapi/*.o libmapi/*.po
 	rm -f libmapi/*.gcno libmapi/*.gcda libmapi/*.gcov
-	rm -f libmapi/tests/*.o libmapi/tests/*.po
-	rm -f libmapi/tests/*.gcno libmapi/tests/*.gcda
 	rm -f libmapi/socket/*.o libmapi/socket/*.po
 	rm -f libmapi/socket/*.gcno libmapi/socket/*.gcda
-	rm -f libmapi/util/*.o libmapi/util/*.po
-	rm -f libmapi/util/*.gcno libmapi/util/*.gcda
 	rm -f libmapi/version.h
 ifneq ($(SNAPSHOT), no)
 	rm -f libmapi/mapicode.c libmapi/mapicode.h
 	rm -f libmapi/mapitags.c libmapi/mapitags.h
+	rm -f libmapi/codepage_lcid.c
 	rm -f libmapi/mapi_nameid.h libmapi/mapi_nameid_private.h
 	rm -f libmapi/proto.h
 	rm -f libmapi/proto_private.h
@@ -287,12 +284,11 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/mapitags.po				\
 	libmapi/mapidump.po				\
 	libmapi/mapicode.po 				\
+	libmapi/codepage_lcid.po			\
 	libmapi/mapi_nameid.po				\
 	libmapi/emsmdb.po				\
 	libmapi/nspi.po 				\
 	libmapi/simple_mapi.po				\
-	libmapi/util/lcid.po 				\
-	libmapi/util/codepage.po			\
 	libmapi/freebusy.po				\
 	libmapi/x500.po 				\
 	ndr_mapi.po					\
@@ -318,6 +314,7 @@ libmapi/proto.h libmapi/proto_private.h:		\
 	libmapi/simple_mapi.c				\
 	libmapi/mapitags.c				\
 	libmapi/mapicode.c				\
+	libmapi/codepage_lcid.c				\
 	libmapi/mapidump.c				\
 	libmapi/mapi_object.c				\
 	libmapi/mapi_id_array.c				\
@@ -343,8 +340,6 @@ libmapi/proto.h libmapi/proto_private.h:		\
 	libmapi/x500.c 					\
 	libmapi/lzfu.c					\
 	libmapi/utils.c 				\
-	libmapi/util/lcid.c 				\
-	libmapi/util/codepage.c 			\
 	libmapi/socket/interface.c			\
 	libmapi/socket/netif.c		
 	@echo "Generating $@"
@@ -352,10 +347,11 @@ libmapi/proto.h libmapi/proto_private.h:		\
 
 libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
-libmapi/mapitags.c libmapi/mapicode.c mapitags_enum.h mapicodes_enum.h: \
-	libmapi/conf/mapi-properties 					\
-	libmapi/conf/mapi-codes 					\
-	libmapi/conf/mapi-named-properties 				\
+libmapi/mapitags.c libmapi/mapicode.c libmapi/codepage_lcid.c mapitags_enum.h mapicodes_enum.h: \
+	libmapi/conf/mapi-properties								\
+	libmapi/conf/mapi-codes									\
+	libmapi/conf/mapi-named-properties							\
+	libmapi/conf/codepage-lcid								\
 	libmapi/conf/mparse.pl
 	@./libmapi/conf/build.sh
 
@@ -1464,29 +1460,6 @@ bin/schemaIDGUID: utils/schemaIDGUID.o
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-
-##################
-# locale_codepage
-##################
-
-locale_codepage:	bin/locale_codepage
-
-locale_codepage-install:	locale_codepage
-	$(INSTALL) -m 0755 bin/locale_codepage $(DESTDIR)$(bindir)
-
-locale_codepage-uninstall:
-	rm -f bin/locale_codepage
-	rm -f $(DESTDIR)$(bindir)/locale_codepage
-
-locale_codepage-clean::
-	rm -f bin/locale_codepage
-	rm -f libmapi/tests/locale_codepage.o
-
-clean:: locale_codepage-clean
-
-bin/locale_codepage: libmapi/tests/locale_codepage.o libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
 ###################
 # python code

@@ -20,6 +20,7 @@
 #include <libmapi/libmapi.h>
 #include <libmapi/mapidump.h>
 #include <libmapi/defs_private.h>
+#include <libmapi/proto_private.h>
 #include <time.h>
 
 #ifdef ENABLE_ASSERTS
@@ -958,4 +959,12 @@ _PUBLIC_ void mapidump_freebusy_event(struct Binary_r *bin, uint32_t month, uint
 		}
 		
 	}	
+}
+
+/**
+   \details print the list of languages OpenChange supports
+ */
+_PUBLIC_ void mapidump_languages_list(void)
+{
+	mapi_get_language_list();
 }

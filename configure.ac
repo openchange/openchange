@@ -480,7 +480,6 @@ if test x"$enable_libpopt" = x"yes"; then
 	OC_RULE_ADD(mapiprofile, TOOLS)
 	OC_RULE_ADD(openchangemapidump, TOOLS)
 	OC_RULE_ADD(schemaIDGUID, TOOLS)
-	OC_RULE_ADD(locale_codepage, TOOLS)
 fi
 
 dnl --------------------------------------------------------------------------
@@ -666,7 +665,6 @@ OC_SETVAL(exchange2ical)
 OC_SETVAL(mapitest)
 OC_SETVAL(openchangemapidump)
 OC_SETVAL(schemaIDGUID)
-OC_SETVAL(locale_codepage)
 OC_SETVAL(mapiproxy)
 
 OC_SETVAL(torture)
@@ -703,7 +701,6 @@ OpenChange Configuration (Please review)
 	     - mapitest:		$enable_mapitest
 	     - openchangemapidump:	$enable_openchangemapidump
 	     - schemaIDGUID:		$enable_schemaIDGUID
-	     - locale_codepage:		$enable_locale_codepage
 
 	   * OpenChange Torture Suite:	$enable_torture
 

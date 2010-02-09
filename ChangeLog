@@ -1,3 +1,9 @@
+2010-02-09
+    jkerihuel
+	[r1715]
+		Add canonical names for codepage related properties (involved in
+		PT_STRING8 encoding/decoding)
+
 2010-02-08
     jkerihuel
 	[r1711]

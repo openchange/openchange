@@ -1404,6 +1404,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetValidAttachments(struct mapitest *mt)
 
 	/* Step 5. Create two attachments to the message */
 	mapi_object_init(&obj_attach0);
+	mapi_object_init(&obj_attach1);
 	retval = CreateAttach(&obj_message, &obj_attach0);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateAttach", retval);
 	if (retval != MAPI_E_SUCCESS) {
@@ -1433,7 +1434,6 @@ _PUBLIC_ bool mapitest_oxcmsg_GetValidAttachments(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	mapi_object_init(&obj_attach1);
 	retval = CreateAttach(&obj_message, &obj_attach1);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateAttach", retval);
 	if (retval != MAPI_E_SUCCESS) {
@@ -1522,11 +1522,12 @@ _PUBLIC_ bool mapitest_oxcmsg_GetValidAttachments(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
+
 cleanup:
 	/* Release */
 	mapi_object_release(&obj_attach0);
 	mapi_object_release(&obj_attach1);
- cleanup_wo_attach:
+cleanup_wo_attach:
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);
@@ -1561,6 +1562,8 @@ _PUBLIC_ bool mapitest_oxcmsg_ReloadCachedInformation(struct mapitest *mt)
 
 	ret = true;
 
+	mapi_object_init(&obj_folder);
+	mapi_object_init(&obj_message);
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(mt->session, &obj_store);
@@ -1578,7 +1581,6 @@ _PUBLIC_ bool mapitest_oxcmsg_ReloadCachedInformation(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	mapi_object_init(&obj_folder);
 	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (retval != MAPI_E_SUCCESS) {
@@ -1587,7 +1589,6 @@ _PUBLIC_ bool mapitest_oxcmsg_ReloadCachedInformation(struct mapitest *mt)
 	}
 
 	/* Step 3. Create the message */
-	mapi_object_init(&obj_message);
 	retval = CreateMessage(&obj_folder, &obj_message);
 	mapitest_print_retval(mt, "CreateMessage");
 	if (retval != MAPI_E_SUCCESS) {

@@ -989,6 +989,7 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	mapi_object_init(&obj_folder);
+	mapi_object_init(&contents);
 
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
@@ -1012,7 +1013,6 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	mapi_object_init(&(contents));
 	retval = GetContentsTable(&(obj_folder), &(contents), 0, &count);
 	mapitest_print_retval(mt, "GetContentsTable");
 	if (retval != MAPI_E_SUCCESS) {

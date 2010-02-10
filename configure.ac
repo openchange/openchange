@@ -621,6 +621,7 @@ AC_ARG_ENABLE(openchange-qt4,
 if test x$enable_openchange_qt4 = xyes; then
   PKG_CHECK_MODULES(Qt4,
                     QtCore >= 4.3.0 QtGui >= 4.3.0)
+  MOC=`$PKG_CONFIG --variable=moc_location QtCore`
 elif test x$enable_openchange_qt4 = xtry; then
   PKG_CHECK_MODULES(Qt4,
                     QtCore >= 4.3.0 QtGui >= 4.3.0,

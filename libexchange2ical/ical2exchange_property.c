@@ -112,7 +112,8 @@ void ical2exchange_property_ATTACH(struct ical2exchange *ical2exchange)
 		if(filename){
 			char buff[256]; 
 			char *temp;
-			strcpy(buff,filename);
+			strncpy(buff,filename, 255);
+			buff[255] = '\0';
 			extension = strtok(buff, ".");
 			while((temp = strtok(NULL, "."))) extension = temp;
 		}

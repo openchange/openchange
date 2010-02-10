@@ -107,7 +107,7 @@ static void ical2exchange_get_properties(struct ical2exchange *ical2exchange, ic
 				if(!ical2exchange->rdateEvent){
 					ical2exchange->rdateEvent=icalcomponent_new_vevent();
 				}
-				icalproperty *prop = icalproperty_new_clone(icalProp);
+				prop = icalproperty_new_clone(icalProp);
 				ical2exchange->rdateCount ++;
 				icalcomponent_add_property(ical2exchange->rdateEvent, prop);
 				break;

@@ -1266,7 +1266,7 @@ static bool openchangeclient_sendcontact(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 		if (retval != MAPI_E_SUCCESS) return false;
 	}
 
-	/* Create contact mesage */
+	/* Create contact message */
 	mapi_object_init(&obj_message);
 	retval = CreateMessage(&obj_contact, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -1385,7 +1385,7 @@ static bool openchangeclient_sendtask(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 		if (retval != MAPI_E_SUCCESS) return false;
 	}
 
-	/* Create contact mesage */
+	/* Create contact message */
 	mapi_object_init(&obj_message);
 	retval = CreateMessage(&obj_task, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -1494,7 +1494,7 @@ static bool openchangeclient_sendnote(TALLOC_CTX *mem_ctx, mapi_object_t *obj_st
 		if (retval != MAPI_E_SUCCESS) return false;
 	}
 
-	/* Create contact mesage */
+	/* Create contact message */
 	mapi_object_init(&obj_message);
 	retval = CreateMessage(&obj_note, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;

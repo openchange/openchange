@@ -81,7 +81,7 @@ void ical_component_VEVENT(struct exchange2ical *exchange2ical)
 	ical_property_LOCATION(exchange2ical);
 	ical_property_ORGANIZER(exchange2ical);
 	ical_property_PRIORITY(exchange2ical);
-	/*All posible RDATE properties are now exported as seperate vevents.
+	/*All possible RDATE properties are now exported as separate vevents.
 	No longer a need for it*/
 	//ical_property_RDATE(exchange2ical);
 	ical_property_RRULE(exchange2ical);

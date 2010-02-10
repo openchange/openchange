@@ -208,7 +208,7 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 {
 	enum MAPISTATUS		retval;
 
-	/* Create the mesage */
+	/* Create the message */
 	retval = CreateMessage(obj_folder, obj_message);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateMessage", GetLastError());

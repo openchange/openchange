@@ -58,7 +58,7 @@
    -# MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-     It is the developer responsability to call MAPIFreeBuffer on
+     It is the developer responsibility to call MAPIFreeBuffer on
      rowset and flaglist once they have finished to use them.
    
    \sa MAPILogonProvider, GetLastError

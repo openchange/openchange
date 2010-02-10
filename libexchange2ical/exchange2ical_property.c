@@ -982,12 +982,12 @@ void ical_property_RRULE_daylight_standard(icalcomponent* component , struct SYS
 	if(st.wYear ==0x0000){
 		recurrence.by_month[0]=st.wMonth;
 		/* Microsoft day of week = libIcal day of week +1; */
-		/* Day encode = day + occurence*8 */
+		/* Day encode = day + occurrence*8 */
 		if (st.wDay==5){
-			/* Last occurence of day in the month*/
+			/* Last occurrence of day in the month*/
 			recurrence.by_day[0] = -1 * (st.wDayOfWeek + 9);
 		}else{
-			/* st.wDay occurence of day in the month */
+			/* st.wDay occurrence of day in the month */
 			recurrence.by_day[0] = (st.wDayOfWeek + 1 + st.wDay*8);
 		}
 		

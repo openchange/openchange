@@ -1091,7 +1091,7 @@ _PUBLIC_ bool mapitest_noserver_proptagvalue(struct mapitest *mt)
 
 	proptag = get_proptag_value("No such tag, ok?");
 	if (proptag != 0) {
-		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with non-existant tag");
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with non-existent tag");
 		return false;
 	}
 

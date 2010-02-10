@@ -49,7 +49,7 @@
    \return MAPI_E_SUCCESS on success, otherwise MAPI error. Possible MAPI
    error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_PARAMETER: A problem occured obtaining the session context
+   - MAPI_E_INVALID_PARAMETER: A problem occurred obtaining the session context
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
@@ -149,7 +149,7 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, enum MAPITAGS Pr
    \return MAPI_E_SUCCESS on success, otherwise MAPI error. Possible MAPI
    error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_PARAMETER: A problem occured obtaining the session context
+   - MAPI_E_INVALID_PARAMETER: A problem occurred obtaining the session context
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
@@ -250,7 +250,7 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_PARAMETER: A problem occured obtaining the session
+   - MAPI_E_INVALID_PARAMETER: A problem occurred obtaining the session
      context, or blob was null.
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
@@ -1017,7 +1017,7 @@ _PUBLIC_ enum MAPISTATUS CloneStream(mapi_object_t *obj_src, mapi_object_t *obj_
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
-   - MAPI_E_INVALID_PARAMETER: A problem occured obtaining the session
+   - MAPI_E_INVALID_PARAMETER: A problem occurred obtaining the session
      context, or the stream or blob were null.
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction

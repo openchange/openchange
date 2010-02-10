@@ -392,7 +392,7 @@ void ndr_print_mapi_response(struct ndr_print *ndr, const char *name, const stru
   MAPI length field includes length bytes. 
   But these bytes do not belong to the mapi content in the user
   context. We have to add them when pushing mapi content length
-  (uint16_t) and next substract when pushing the content blob
+  (uint16_t) and next subtract when pushing the content blob
 */
 
 enum ndr_err_code ndr_push_mapi_request(struct ndr_push *ndr, int ndr_flags, const struct mapi_request *r)

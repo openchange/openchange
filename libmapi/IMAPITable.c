@@ -1498,7 +1498,7 @@ _PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
 	mapi_req->handle_idx = 0;
 	size += 5;
 
-	/* Fill the mapi_request stucture */
+	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
 	mapi_request->mapi_len = size + sizeof (uint32_t);
 	mapi_request->length = size;

@@ -70,7 +70,7 @@ class session {
 		 *
 		 * \param debug Whether to output debug information to stdout
 		 */
-		session(const std::string& profiledb = "", const bool debug = false) throw(std::runtime_error, mapi_exception);
+		explicit session(const std::string& profiledb = "", const bool debug = false) throw(std::runtime_error, mapi_exception);
 
 		/**
 		 * \brief Log-in to the Exchange Server

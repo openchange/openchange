@@ -1,3 +1,52 @@
+2010-02-10
+    bradh
+	[r1724]
+		Ensure we always initialise before trying to cleanup (e.g. in a failure scenario).
+		
+		Issue identified and patch provided by Erik Hovland, minor changes by me.
+		
+		Resolves ticket #236.
+	[r1723]
+		prop is declared within the switch statement.
+		
+		Fix by Erik Hovland - thanks very much.
+		
+		Resolves ticket #239.
+	[r1722]
+		Use strncpy instead of strcpy.
+		
+		Patch by Erik Hovland, plus a minor change by me to ensure the string is null terminated.
+		
+		Resolves ticket #237.
+	[r1721]
+		Add missing break statements
+		
+		Patch by Erik Hovland <erik@hovland.org>
+		
+		Resolves ticket #238.
+	[r1720]
+		Mark appropriate constructors as explicit.
+		
+		Patch by Erik Hovland - thanks very much.
+		
+		Resolves ticket #240.
+	[r1719]
+		Add newline.
+		
+		Patch from Erik Hovland - thanks again.
+		
+		Resolves ticket #242.
+	[r1718]
+		Fix spelling errors.
+		
+		Patch by Erik Hovland - thanks very much.
+		
+		Resolves ticket #241.
+	[r1717]
+		Make sure we actually can compile when using --enable-openchange-qt4
+		
+		This patch ensures that $(MOC) gets set in the Makefile.
+
 2010-02-09
     jkerihuel
 	[r1715]

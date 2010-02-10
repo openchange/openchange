@@ -697,6 +697,7 @@ void ical2exchange_property_STATUS(struct ical2exchange *ical2exchange)
 				break;
 			case ICAL_TRANSP_OPAQUE:
 				temp = 0x00000002;
+				break;
 			default:
 				return;
 		}
@@ -712,6 +713,7 @@ void ical2exchange_property_STATUS(struct ical2exchange *ical2exchange)
 				break;
 			case ICAL_STATUS_CONFIRMED:
 				temp = 0x00000002;
+				break;
 			default:
 				return;
 		}

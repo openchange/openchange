@@ -43,182 +43,182 @@ DEFINE	CP_INDIC			15
 DEFINE	CP_GEORGIAN			16
 DEFINE	CP_ARMENIAN			17
 
-#Language     	     Locale		Language Tag	LCID (hex)	CodePage (dec)	Language Group
+#Language     	     Locale		Language Tag	LCID (hex)	CodePage (dec)	Language Group			Country Code
 
-Afrikaans      	      NULL     		 af_ZA	    	  0x0436	    1252     	CP_WESTERN_EUROPE_AND_US
-Albanian     	      NULL     		 sq_AL	    	  0x041c	    1250	CP_CENTRAL_EUROPE
-Amharic     	      Ethiopia 		 am_ET	 	  0x045e	    0		CP_UNICODE_ONLY
-Arabic	     	      Algeria		 ar_DZ	 	  0x1401	    1256	CP_ARABIC
-Arabic	     	      Bahrain		 ar_BH	 	  0x3c01	    1256	CP_ARABIC
-Arabic	     	      Egypt		 ar_EG	 	  0x0c01	    1256	CP_ARABIC
-Arabic	     	      Iraq		 ar_SA	 	  0x0801	    1256	CP_ARABIC
-Arabic	     	      Jordan		 ar_JO	 	  0x2c01	    1256	CP_ARABIC
-Arabic	     	      Kuwait		 ar_KW	 	  0x3401	    1256	CP_ARABIC
-Arabic	     	      Lebanon		 ar_LB	 	  0x3001	    1256	CP_ARABIC
-Arabic	     	      Libya		 ar_LY	 	  0x1001	    1256	CP_ARABIC
-Arabic	     	      Morocco		 ar_MA	 	  0x1801	    1256	CP_ARABIC
-Arabic	     	      Oman		 ar_OM	 	  0x2001	    1256	CP_ARABIC
-Arabic	     	      Qatar		 ar_QA	 	  0x4001	    1256	CP_ARABIC
-Arabic	     	      Saudi_Arabia	 ar_SA	 	  0x0401	    1256	CP_ARABIC
-Arabic	     	      Syria		 ar_SY	 	  0x2801	    1256	CP_ARABIC
-Arabic	     	      Tunisia		 ar_TN	 	  0x1c01	    1256	CP_ARABIC
-Arabic	     	      U.A.E.		 ar_AE	 	  0x3801	    1256	CP_ARABIC
-Arabic	     	      Yemen		 ar_YE	 	  0x2401	    1256	CP_ARABIC
-Armenian     	      NULL		 hy_AM	 	  0x042b	    0		CP_ARMENIAN
-Assamese   	      NULL		 as_IN 	 	  0x044d	    0		CP_INDIC
-Azeri	     	      Cyrillic		 az_Cyrl_AZ	  0x082c	    1251	CP_CYRILLIC
-Azeri	     	      Latin		 az_Latn_AZ	  0x042c	    1254	CP_TURKIC
-Basque	     	      NULL		 eu_ES		  0x042d	    1252	CP_WESTERN_EUROPE_AND_US
-Belarusian   	      NULL		 be_BY		  0x0423	    1251	CP_CYRILLIC
-Bengali     	      India		 bn_IN		  0x0445	    0		CP_INDIC
-Bosnian     	      Bosnia/Herzegovina bs_Latn_BA	  0x141A	    1250	CP_CENTRAL_EUROPE
-Breton		      France		 br_FR		  0x047e	    1252	CP_WESTERN_EUROPE_AND_US
-Bulgarian    	      NULL		 bg_BG		  0x0402	    1251	CP_CYRILLIC
-Catalan	     	      NULL		 ca_ES		  0x0403	    1252	CP_WESTERN_EUROPE_AND_US
-Chinese	     	      Hong_Kong_S.A.R.	 zh_HK		  0x0c04	    950		CP_TRADITIONAL_CHINESE
-Chinese	     	      Macau_S.A.R.	 zh_MO		  0x1404	    950		CP_TRADITIONAL_CHINESE
-Chinese	     	      PRC		 zh_CN		  0x0804	    936		CP_SIMPLIFIED_CHINESE
-Chinese	     	      Singapore		 zh_SG		  0x1004	    936		CP_SIMPLIFIED_CHINESE
-Chinese	     	      Taiwan		 zh_TW		  0x0404	    950		CP_TRADITIONAL_CHINESE
-Croatian     	      NULL		 hr_HR		  0x041a	    1250	CP_CENTRAL_EUROPE
-Croatian    	      Bosnia/Herzegovina hr_BA	 	  0x101a	    1250	CP_CENTRAL_EUROPE
-Czech	     	      NULL		 cz_CZ		  0x0405	    1250	CP_CENTRAL_EUROPE
-Danish	     	      NULL		 da_DK		  0x0406	    1252	CP_WESTERN_EUROPE_AND_US
-Dari		      Afghanistan	 gbz_AF		  0x048c	    1256	CP_ARABIC
-Divehi	     	      NULL		 dv_MV		  0x0465	    0		CP_UNICODE_ONLY
-Dutch	     	      Belgium		 nl_BE		  0x0813	    1252	CP_WESTERN_EUROPE_AND_US
-Dutch	     	      Netherlands	 nl_NL		  0x0413	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      Australia		 en_AU		  0x0c09	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      Belize		 en_BZ		  0x2809	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      Canada		 en_CA		  0x1009	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      Caribbean		 en_CB		  0x2409	    1252	CP_WESTERN_EUROPE_AND_US
-English     	      India		 en_IN		  0x4009	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      Ireland		 en_IE		  0x1809	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      Jamaica		 en_JM		  0x2009	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      New_Zealand	 en_NZ		  0x1409	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      Philippines	 en_PH		  0x3409	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      South_Africa	 en_ZA		  0x1c09	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      Trinidad		 en_TT		  0x2c09	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      United_Kingdom	 en_GB		  0x0809	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      United_States	 en_US		  0x0409	    1252	CP_WESTERN_EUROPE_AND_US
-English	     	      Zimbabwe		 en_ZW		  0x3009	    1252	CP_WESTERN_EUROPE_AND_US
-Estonian     	      NULL		 et_EE		  0x0425	    1257	CP_BALTIC
-Faroese	     	      NULL		 fo_FO		  0x0438	    1252	CP_WESTERN_EUROPE_AND_US
-Farsi	     	      NULL		 fa_IR		  0x0429	    1256	CP_ARABIC
-Filipino    	      NULL		 fil_PH		  0x0464	    1252	CP_WESTERN_EUROPE_AND_US
-Finnish	     	      NULL		 fi_FI		  0x040b	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Belgium		 fr_BE		  0x080c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Cameroon		 fr_CM		  0x2c0c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Canada		 fr_CA		  0x0c0c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Congo,DRC		 fr_CG		  0x240c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Cote_d'Ivoire	 fr_CI		  0x300c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      France		 fr_FR		  0x040c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Luxembourg	 fr_LU		  0x140c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Mali		 fr_ML		  0x340c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Monaco		 fr_MC		  0x180c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Morocco		 fr_MA		  0x380c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Senegal		 fr_SN		  0x280c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      Switzerland	 fr_CH		  0x100c	    1252	CP_WESTERN_EUROPE_AND_US
-French	     	      West_Indies	 fr_West_Indies	  0x1c0c	    1252	CP_WESTERN_EUROPE_AND_US
-Frisian     	      Netherlands	 fy_NL		  0x0462	    1252	CP_WESTERN_EUROPE_AND_US
-FYRO_Macedonian	      NULL		 mk_MK	  	  0x042f	    1251	CP_CYRILLIC
-Gaelic_Ireland	      NULL		 ga_IE		  0x083c	    1252	CP_WESTERN_EUROPE_AND_US
-Galician	      Spain		 gl_ES		  0x0456	    1252	CP_WESTERN_EUROPE_AND_US
-Georgian	      NULL		 ka_GE		  0x0437	    0		CP_GEORGIAN
-German		      Austria		 de_AT		  0x0c07	    1252	CP_WESTERN_EUROPE_AND_US
-German		      Germany		 de_DE		  0x0407	    1252	CP_WESTERN_EUROPE_AND_US
-German		      Liechtenstein	 de_LI		  0x1407	    1252	CP_WESTERN_EUROPE_AND_US
-German		      Luxembourg	 de_LU		  0x1007	    1252	CP_WESTERN_EUROPE_AND_US
-German		      Switzerland	 de_CH		  0x0807	    1252	CP_WESTERN_EUROPE_AND_US
-Greek		      NULL		 el_GR		  0x0408	    1253	CP_GREEK
-Gujarati	      NULL		 gu_IN		  0x0447	    0		CP_INDIC
-Hebrew		      NULL		 he_IL		  0x040d	    1255	CP_HEBREW
-Hindi		      NULL		 hi_IN		  0x0439	    0		CP_INDIC
-Hungarian	      NULL		 hu_HU		  0x040e	    1250	CP_CENTRAL_EUROPE
-Icelandic	      NULL		 is_IS		  0x040f	    1252	CP_WESTERN_EUROPE_AND_US
-Igbo		      Nigeria		 ig_NG		  0x0470	    1252	CP_WESTERN_EUROPE_AND_US
-Indonesian	      NULL		 id_ID		  0x0421	    1252	CP_WESTERN_EUROPE_AND_US
-Italian		      Italy		 it_IT		  0x0410	    1252	CP_WESTERN_EUROPE_AND_US
-Italian		      Switzerland	 it_CH		  0x0810	    1252	CP_WESTERN_EUROPE_AND_US
-Japanese	      NULL		 ja_JP		  0x0411	    932		CP_JAPANESE
-Kannada	      	      NULL		 kn_IN		  0x044b	    0		CP_UNICODE_ONLY
-Kazakh		      NULL		 kk_KZ		  0x043f	    1251	CP_CYRILLIC
-Khmer		      NULL		 km_KH		  0x0453	    0		CP_UNICODE_ONLY
-Konkani	      	      NULL		 kok_IN		  0x0457	    0		CP_INDIC
-Korean		      NULL		 ko_KR		  0x0412	    949		CP_KOREAN
-Kyrgyz		      Cyrillic		 ky_KG		  0x0440	    1251	CP_CYRILLIC
-Lao		      NULL		 lo_LA		  0x0454	    0		CP_UNICODE_ONLY
-Latvian		      NULL		 lv_LV		  0x0426	    1257	CP_BALTIC
-Lithuanian	      NULL		 lt_LT		  0x0427	    1257	CP_BALTIC
-Macedonian	      NULL		 mk_MK		  0x042f	    1251	CP_CYRILLIC
-Malay		      Brunei_Darussalam	 ms_BN		  0x083e	    1252	CP_WESTERN_EUROPE_AND_US
-Malay		      Malaysia		 ms_MY		  0x043e	    1252	CP_WESTERN_EUROPE_AND_US
-Malayalam	      NULL		 ml_IN		  0x044c	    0		CP_UNICODE_ONLY
-Maltese	      	      NULL		 mt_MT		  0x043a	    1252	CP_WESTERN_EUROPE_AND_US
-Maori		      New_Zealand	 mi_NZ	  	  0x0481	    1252	CP_WESTERN_EUROPE_AND_US
-Marathi		      NULL		 ms_IN		  0x044e	    0		CP_INDIC
-Mongolian	      Cyrillic		 mn_MN		  0x0450	    1251	CP_CYRILLIC
-Mongolian	      Mongolia		 mn_Mong_CN	  0x0850	    0		CP_UNICODE_ONLY
-Nepali		      NULL		 ne_NP		  0x0461	    0		CP_UNICODE_ONLY
-Norwegian	      Bokmal		 nb_NO		  0x0414	    1252	CP_WESTERN_EUROPE_AND_US
-Norwegian	      Nynorsk		 nn_NO		  0x0814	    1252	CP_WESTERN_EUROPE_AND_US
-Oriya		      NULL		 or_IN		  0x0448	    0		CP_INDIC
-Polish		      NULL		 pl_PL		  0x0415	    1250	CP_CENTRAL_EUROPE
-Portuguese	      Brazil		 pt_BR		  0x0416	    1252	CP_WESTERN_EUROPE_AND_US
-Portuguese	      Portugal		 pt_PT		  0x0816	    1252	CP_WESTERN_EUROPE_AND_US
-Punjabi	      	      NULL		 pa_IN		  0x0446	    0		CP_INDIC
-Rhaeto-Romanic	      NULL		 rm_CH		  0x0417	    1252	CP_WESTERN_EUROPE_AND_US
-Romanian	      NULL		 ro_RM		  0x0418	    1250	CP_CENTRAL_EUROPE
-Romanian	      Moldova		 ro_MO		  0x0818	    819		CP_CENTRAL_EUROPE
-Russian		      NULL		 ru_RU		  0x0419	    1251	CP_CYRILLIC
-Sami_Lappish	      NULL		 se_NO		  0x043b	    1252	CP_WESTERN_EUROPE_AND_US
-Sanskrit	      NULL		 sa_IN		  0x044f	    0		CP_INDIC
-Serbian		      Cyrillic		 sr_Cyrl_CS	  0x0c1a	    1251	CP_CYRILLIC
-Serbian		      Latin		 sr_Latn_CS	  0x081a	    1250	CP_CENTRAL_EUROPE
-Sindhi		      NULL		 sd_IN		  0x0459	    0		CP_INDIC
-Sinhalese	      Sri_Lanka		 si_LK		  0x045b	    0		CP_UNICODE_ONLY
-Slovak		      NULL		 sk_SK		  0x041b	    1250	CP_CENTRAL_EUROPE
-Slovenian	      NULL		 sl_SI		  0x0424	    1250	CP_CENTRAL_EUROPE
-Spanish		      Argentina		 es_AR		  0x2c0a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Bolivia		 es_BO		  0x400a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Chile		 es_CL		  0x340a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Colombia		 es_CO		  0x240a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Costa_Rica	 es_CR		  0x140a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Dominican_Republic es_DO		  0x1c0a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Ecuador		 es_EC		  0x300a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      El_Salvador	 es_SV		  0x440a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Guatemala		 es_GT		  0x100a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Honduras		 es_HN		  0x480a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      International_Sort es_ES	  	  0x0c0a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Mexico		 es_MX		  0x080a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Nicaragua		 es_NI		  0x4c0a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Panama		 es_PA		  0x180a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Paraguay		 es_PY		  0x3c0a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Peru		 es_PE		  0x280a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Puerto_Rico	 es_PR		  0x500a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Traditional_Sort	 es_ES_tradnl	  0x040a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Uruguay		 es_UY		  0x380a	    1252	CP_WESTERN_EUROPE_AND_US
-Spanish		      Venezuela		 es_VE		  0x200a	    1252	CP_WESTERN_EUROPE_AND_US
-Swahili		      NULL		 sw_KE		  0x0441	    1252	CP_WESTERN_EUROPE_AND_US
-Swedish		      NULL		 sv_SE		  0x041d	    1252	CP_WESTERN_EUROPE_AND_US
-Swedish		      Finland		 sv_FI		  0x081d	    1252	CP_WESTERN_EUROPE_AND_US
-Tajik		      NULL	 	 tg_Cyrl_TJ	  0x0428	    1251	CP_CYRILLIC
-Tamil		      NULL		 ta_IN		  0x0449	    0		CP_INDIC
-Tatar		      NULL		 tt_RU		  0x0444	    1251	CP_CYRILLIC
-Telegu		      NULL		 te_IN		  0x044a	    0		CP_INDIC
-Thai		      NULL		 th_TH		  0x041e	    874		CP_THAI
-Tibetan	      	      NULL		 bo_CN		  0x0451	    0		CP_UNICODE_ONLY
-Tsonga		      NULL		 ts_ZA		  0x0431	    1252	CP_WESTERN_EUROPE_AND_US
-Twana		      NULL		 tn_ZA		  0x0432	    1252	CP_WESTERN_EUROPE_AND_US
-Turkish		      NULL		 tr_TR		  0x041f	    1254	CP_TURKIC
-Turkmen	      	      NULL		 tk_TM		  0x0442	    1251	CP_CYRILLIC
-Ukrainian	      NULL		 uk_UA		  0x0422	    1251	CP_CYRILLIC 
-Urdu		      NULL		 ur_PK		  0x0420	    1256	CP_ARABIC
-Uzbek		      Cyrillic		 uz_Cyrl_UZ	  0x0843	    1251	CP_CYRILLIC
-Uzbek		      Latin		 uz_Latn_UZ	  0x0443	    1254	CP_TURKIC
-Venda		      NULL		 ven_ZA		  0x0433	    1252	CP_WESTERN_EUROPE_AND_US
-Vietnamese	      NULL		 vi_VN		  0x042a	    1258	CP_VIETNAMESE
-Welsh		      NULL		 cy_GB		  0x0452	    1252	CP_WESTERN_EUROPE_AND_US
-Wolof		      Senegal		 wo_SN		  0x0488	    1252	CP_WESTERN_EUROPE_AND_US
-Xhosa		      NULL		 xh_ZA		  0x0434	    1252	CP_WESTERN_EUROPE_AND_US
-Zulu		      NULL		 zu_ZA		  0x0435	    1252	CP_WESTERN_EUROPE_AND_US
+Afrikaans      	      NULL     		 af_ZA	    	  0x0436	    1252     	CP_WESTERN_EUROPE_AND_US	ZAF
+Albanian     	      NULL     		 sq_AL	    	  0x041c	    1250	CP_CENTRAL_EUROPE		ALB
+Amharic     	      Ethiopia 		 am_ET	 	  0x045e	    0		CP_UNICODE_ONLY			ETH
+Arabic	     	      Algeria		 ar_DZ	 	  0x1401	    1256	CP_ARABIC			DZA
+Arabic	     	      Bahrain		 ar_BH	 	  0x3c01	    1256	CP_ARABIC			BHR
+Arabic	     	      Egypt		 ar_EG	 	  0x0c01	    1256	CP_ARABIC			EGY
+Arabic	     	      Iraq		 ar_SA	 	  0x0801	    1256	CP_ARABIC			IRQ
+Arabic	     	      Jordan		 ar_JO	 	  0x2c01	    1256	CP_ARABIC			JOR
+Arabic	     	      Kuwait		 ar_KW	 	  0x3401	    1256	CP_ARABIC			KWT
+Arabic	     	      Lebanon		 ar_LB	 	  0x3001	    1256	CP_ARABIC			LBN
+Arabic	     	      Libya		 ar_LY	 	  0x1001	    1256	CP_ARABIC			LBY
+Arabic	     	      Morocco		 ar_MA	 	  0x1801	    1256	CP_ARABIC			MAR
+Arabic	     	      Oman		 ar_OM	 	  0x2001	    1256	CP_ARABIC			OMN
+Arabic	     	      Qatar		 ar_QA	 	  0x4001	    1256	CP_ARABIC			QAT
+Arabic	     	      Saudi_Arabia	 ar_SA	 	  0x0401	    1256	CP_ARABIC			SAU
+Arabic	     	      Syria		 ar_SY	 	  0x2801	    1256	CP_ARABIC			SYR
+Arabic	     	      Tunisia		 ar_TN	 	  0x1c01	    1256	CP_ARABIC			TUN
+Arabic	     	      U.A.E.		 ar_AE	 	  0x3801	    1256	CP_ARABIC			ARE
+Arabic	     	      Yemen		 ar_YE	 	  0x2401	    1256	CP_ARABIC			YEM
+Armenian     	      NULL		 hy_AM	 	  0x042b	    0		CP_ARMENIAN			ARM
+Assamese   	      NULL		 as_IN 	 	  0x044d	    0		CP_INDIC			NULL
+Azeri	     	      Cyrillic		 az_Cyrl_AZ	  0x082c	    1251	CP_CYRILLIC			AZE
+Azeri	     	      Latin		 az_Latn_AZ	  0x042c	    1254	CP_TURKIC			AZE
+Basque	     	      NULL		 eu_ES		  0x042d	    1252	CP_WESTERN_EUROPE_AND_US	ESP
+Belarusian   	      NULL		 be_BY		  0x0423	    1251	CP_CYRILLIC			BLR
+Bengali     	      India		 bn_IN		  0x0445	    0		CP_INDIC			BGD
+Bosnian     	      Bosnia/Herzegovina bs_Latn_BA	  0x141A	    1250	CP_CENTRAL_EUROPE		BIH
+Breton		      France		 br_FR		  0x047e	    1252	CP_WESTERN_EUROPE_AND_US	BRE
+Bulgarian    	      NULL		 bg_BG		  0x0402	    1251	CP_CYRILLIC			BGR
+Catalan	     	      NULL		 ca_ES		  0x0403	    1252	CP_WESTERN_EUROPE_AND_US	ESP
+Chinese	     	      Hong_Kong_S.A.R.	 zh_HK		  0x0c04	    950		CP_TRADITIONAL_CHINESE		HKG
+Chinese	     	      Macau_S.A.R.	 zh_MO		  0x1404	    950		CP_TRADITIONAL_CHINESE		MCO
+Chinese	     	      PRC		 zh_CN		  0x0804	    936		CP_SIMPLIFIED_CHINESE		CHN
+Chinese	     	      Singapore		 zh_SG		  0x1004	    936		CP_SIMPLIFIED_CHINESE		SGP
+Chinese	     	      Taiwan		 zh_TW		  0x0404	    950		CP_TRADITIONAL_CHINESE		TWN
+Croatian     	      NULL		 hr_HR		  0x041a	    1250	CP_CENTRAL_EUROPE		HRV
+Croatian    	      Bosnia/Herzegovina hr_BA	 	  0x101a	    1250	CP_CENTRAL_EUROPE		BIH
+Czech	     	      NULL		 cz_CZ		  0x0405	    1250	CP_CENTRAL_EUROPE		CZE
+Danish	     	      NULL		 da_DK		  0x0406	    1252	CP_WESTERN_EUROPE_AND_US	DNK
+Dari		      Afghanistan	 gbz_AF		  0x048c	    1256	CP_ARABIC			AFG
+Divehi	     	      NULL		 dv_MV		  0x0465	    0		CP_UNICODE_ONLY			MDV
+Dutch	     	      Belgium		 nl_BE		  0x0813	    1252	CP_WESTERN_EUROPE_AND_US	BEL
+Dutch	     	      Netherlands	 nl_NL		  0x0413	    1252	CP_WESTERN_EUROPE_AND_US	NLD
+English	     	      Australia		 en_AU		  0x0c09	    1252	CP_WESTERN_EUROPE_AND_US	AUS
+English	     	      Belize		 en_BZ		  0x2809	    1252	CP_WESTERN_EUROPE_AND_US	BLZ
+English	     	      Canada		 en_CA		  0x1009	    1252	CP_WESTERN_EUROPE_AND_US	CAN
+English	     	      Caribbean		 en_CB		  0x2409	    1252	CP_WESTERN_EUROPE_AND_US	CAR
+English     	      India		 en_IN		  0x4009	    1252	CP_WESTERN_EUROPE_AND_US	IND
+English	     	      Ireland		 en_IE		  0x1809	    1252	CP_WESTERN_EUROPE_AND_US	IRL
+English	     	      Jamaica		 en_JM		  0x2009	    1252	CP_WESTERN_EUROPE_AND_US	JAM
+English	     	      New_Zealand	 en_NZ		  0x1409	    1252	CP_WESTERN_EUROPE_AND_US	NZL
+English	     	      Philippines	 en_PH		  0x3409	    1252	CP_WESTERN_EUROPE_AND_US	PHL
+English	     	      South_Africa	 en_ZA		  0x1c09	    1252	CP_WESTERN_EUROPE_AND_US	ZAF
+English	     	      Trinidad		 en_TT		  0x2c09	    1252	CP_WESTERN_EUROPE_AND_US	TTO
+English	     	      United_Kingdom	 en_GB		  0x0809	    1252	CP_WESTERN_EUROPE_AND_US	GBR
+English	     	      United_States	 en_US		  0x0409	    1252	CP_WESTERN_EUROPE_AND_US	USA
+English	     	      Zimbabwe		 en_ZW		  0x3009	    1252	CP_WESTERN_EUROPE_AND_US	ZWE
+Estonian     	      NULL		 et_EE		  0x0425	    1257	CP_BALTIC			EST
+Faroese	     	      NULL		 fo_FO		  0x0438	    1252	CP_WESTERN_EUROPE_AND_US	FRO
+Farsi	     	      NULL		 fa_IR		  0x0429	    1256	CP_ARABIC			IRN
+Filipino    	      NULL		 fil_PH		  0x0464	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Finnish	     	      NULL		 fi_FI		  0x040b	    1252	CP_WESTERN_EUROPE_AND_US	FIN
+French	     	      Belgium		 fr_BE		  0x080c	    1252	CP_WESTERN_EUROPE_AND_US	BEL
+French	     	      Cameroon		 fr_CM		  0x2c0c	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+French	     	      Canada		 fr_CA		  0x0c0c	    1252	CP_WESTERN_EUROPE_AND_US	CAN
+French	     	      Congo,DRC		 fr_CG		  0x240c	    1252	CP_WESTERN_EUROPE_AND_US	COD
+French	     	      Cote_d'Ivoire	 fr_CI		  0x300c	    1252	CP_WESTERN_EUROPE_AND_US	CIV
+French	     	      France		 fr_FR		  0x040c	    1252	CP_WESTERN_EUROPE_AND_US	FRA
+French	     	      Luxembourg	 fr_LU		  0x140c	    1252	CP_WESTERN_EUROPE_AND_US	LUX
+French	     	      Mali		 fr_ML		  0x340c	    1252	CP_WESTERN_EUROPE_AND_US	MLI
+French	     	      Monaco		 fr_MC		  0x180c	    1252	CP_WESTERN_EUROPE_AND_US	MCO
+French	     	      Morocco		 fr_MA		  0x380c	    1252	CP_WESTERN_EUROPE_AND_US	MAR
+French	     	      Senegal		 fr_SN		  0x280c	    1252	CP_WESTERN_EUROPE_AND_US	SEN
+French	     	      Switzerland	 fr_CH		  0x100c	    1252	CP_WESTERN_EUROPE_AND_US	CHE
+French	     	      West_Indies	 fr_West_Indies	  0x1c0c	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Frisian     	      Netherlands	 fy_NL		  0x0462	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+FYRO_Macedonian	      NULL		 mk_MK	  	  0x042f	    1251	CP_CYRILLIC			MKD
+Gaelic_Ireland	      NULL		 ga_IE		  0x083c	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Galician	      Spain		 gl_ES		  0x0456	    1252	CP_WESTERN_EUROPE_AND_US	ESP
+Georgian	      NULL		 ka_GE		  0x0437	    0		CP_GEORGIAN			GEO
+German		      Austria		 de_AT		  0x0c07	    1252	CP_WESTERN_EUROPE_AND_US	AUT
+German		      Germany		 de_DE		  0x0407	    1252	CP_WESTERN_EUROPE_AND_US	DEU
+German		      Liechtenstein	 de_LI		  0x1407	    1252	CP_WESTERN_EUROPE_AND_US	LIE
+German		      Luxembourg	 de_LU		  0x1007	    1252	CP_WESTERN_EUROPE_AND_US	LUX
+German		      Switzerland	 de_CH		  0x0807	    1252	CP_WESTERN_EUROPE_AND_US	CHE
+Greek		      NULL		 el_GR		  0x0408	    1253	CP_GREEK			GRC
+Gujarati	      NULL		 gu_IN		  0x0447	    0		CP_INDIC			IND
+Hebrew		      NULL		 he_IL		  0x040d	    1255	CP_HEBREW			ISR
+Hindi		      NULL		 hi_IN		  0x0439	    0		CP_INDIC			IND
+Hungarian	      NULL		 hu_HU		  0x040e	    1250	CP_CENTRAL_EUROPE		HUNG
+Icelandic	      NULL		 is_IS		  0x040f	    1252	CP_WESTERN_EUROPE_AND_US	ISL
+Igbo		      Nigeria		 ig_NG		  0x0470	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Indonesian	      NULL		 id_ID		  0x0421	    1252	CP_WESTERN_EUROPE_AND_US	IDN
+Italian		      Italy		 it_IT		  0x0410	    1252	CP_WESTERN_EUROPE_AND_US	ITA
+Italian		      Switzerland	 it_CH		  0x0810	    1252	CP_WESTERN_EUROPE_AND_US	CHE
+Japanese	      NULL		 ja_JP		  0x0411	    932		CP_JAPANESE			JPN
+Kannada	      	      NULL		 kn_IN		  0x044b	    0		CP_UNICODE_ONLY			IDN
+Kazakh		      NULL		 kk_KZ		  0x043f	    1251	CP_CYRILLIC			KAZ
+Khmer		      NULL		 km_KH		  0x0453	    0		CP_UNICODE_ONLY			NULL
+Konkani	      	      NULL		 kok_IN		  0x0457	    0		CP_INDIC			IND
+Korean		      NULL		 ko_KR		  0x0412	    949		CP_KOREAN			KOR
+Kyrgyz		      Cyrillic		 ky_KG		  0x0440	    1251	CP_CYRILLIC			KGZ
+Lao		      NULL		 lo_LA		  0x0454	    0		CP_UNICODE_ONLY			NULL
+Latvian		      NULL		 lv_LV		  0x0426	    1257	CP_BALTIC			LVA
+Lithuanian	      NULL		 lt_LT		  0x0427	    1257	CP_BALTIC			LTU
+Macedonian	      NULL		 mk_MK		  0x042f	    1251	CP_CYRILLIC			MKD
+Malay		      Brunei_Darussalam	 ms_BN		  0x083e	    1252	CP_WESTERN_EUROPE_AND_US	BRN
+Malay		      Malaysia		 ms_MY		  0x043e	    1252	CP_WESTERN_EUROPE_AND_US	MYS
+Malayalam	      NULL		 ml_IN		  0x044c	    0		CP_UNICODE_ONLY			NULL
+Maltese	      	      NULL		 mt_MT		  0x043a	    1252	CP_WESTERN_EUROPE_AND_US	MLT
+Maori		      New_Zealand	 mi_NZ	  	  0x0481	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Marathi		      NULL		 ms_IN		  0x044e	    0		CP_INDIC			IND
+Mongolian	      Cyrillic		 mn_MN		  0x0450	    1251	CP_CYRILLIC			MNG
+Mongolian	      Mongolia		 mn_Mong_CN	  0x0850	    0		CP_UNICODE_ONLY			MNG
+Nepali		      NULL		 ne_NP		  0x0461	    0		CP_UNICODE_ONLY			NPL
+Norwegian	      Bokmal		 nb_NO		  0x0414	    1252	CP_WESTERN_EUROPE_AND_US	NOR
+Norwegian	      Nynorsk		 nn_NO		  0x0814	    1252	CP_WESTERN_EUROPE_AND_US	NOR
+Oriya		      NULL		 or_IN		  0x0448	    0		CP_INDIC			NULL
+Polish		      NULL		 pl_PL		  0x0415	    1250	CP_CENTRAL_EUROPE		POL
+Portuguese	      Brazil		 pt_BR		  0x0416	    1252	CP_WESTERN_EUROPE_AND_US	BRA
+Portuguese	      Portugal		 pt_PT		  0x0816	    1252	CP_WESTERN_EUROPE_AND_US	PLT
+Punjabi	      	      NULL		 pa_IN		  0x0446	    0		CP_INDIC			IND
+Rhaeto-Romanic	      NULL		 rm_CH		  0x0417	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Romanian	      NULL		 ro_RM		  0x0418	    1250	CP_CENTRAL_EUROPE		ROM
+Romanian	      Moldova		 ro_MO		  0x0818	    819		CP_CENTRAL_EUROPE		NULL
+Russian		      NULL		 ru_RU		  0x0419	    1251	CP_CYRILLIC			RUS
+Sami_Lappish	      NULL		 se_NO		  0x043b	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Sanskrit	      NULL		 sa_IN		  0x044f	    0		CP_INDIC			IND
+Serbian		      Cyrillic		 sr_Cyrl_CS	  0x0c1a	    1251	CP_CYRILLIC			SPB
+Serbian		      Latin		 sr_Latn_CS	  0x081a	    1250	CP_CENTRAL_EUROPE		SPB
+Sindhi		      NULL		 sd_IN		  0x0459	    0		CP_INDIC			NULL
+Sinhalese	      Sri_Lanka		 si_LK		  0x045b	    0		CP_UNICODE_ONLY			NULL
+Slovak		      NULL		 sk_SK		  0x041b	    1250	CP_CENTRAL_EUROPE		SVK
+Slovenian	      NULL		 sl_SI		  0x0424	    1250	CP_CENTRAL_EUROPE		SVN
+Spanish		      Argentina		 es_AR		  0x2c0a	    1252	CP_WESTERN_EUROPE_AND_US	ARG
+Spanish		      Bolivia		 es_BO		  0x400a	    1252	CP_WESTERN_EUROPE_AND_US	BOL
+Spanish		      Chile		 es_CL		  0x340a	    1252	CP_WESTERN_EUROPE_AND_US	CHL
+Spanish		      Colombia		 es_CO		  0x240a	    1252	CP_WESTERN_EUROPE_AND_US	COL
+Spanish		      Costa_Rica	 es_CR		  0x140a	    1252	CP_WESTERN_EUROPE_AND_US	CRI
+Spanish		      Dominican_Republic es_DO		  0x1c0a	    1252	CP_WESTERN_EUROPE_AND_US	DOM
+Spanish		      Ecuador		 es_EC		  0x300a	    1252	CP_WESTERN_EUROPE_AND_US	ECU
+Spanish		      El_Salvador	 es_SV		  0x440a	    1252	CP_WESTERN_EUROPE_AND_US	SLV
+Spanish		      Guatemala		 es_GT		  0x100a	    1252	CP_WESTERN_EUROPE_AND_US	GTM
+Spanish		      Honduras		 es_HN		  0x480a	    1252	CP_WESTERN_EUROPE_AND_US	HND
+Spanish		      International_Sort es_ES	  	  0x0c0a	    1252	CP_WESTERN_EUROPE_AND_US	ESP
+Spanish		      Mexico		 es_MX		  0x080a	    1252	CP_WESTERN_EUROPE_AND_US	MEX
+Spanish		      Nicaragua		 es_NI		  0x4c0a	    1252	CP_WESTERN_EUROPE_AND_US	NIC
+Spanish		      Panama		 es_PA		  0x180a	    1252	CP_WESTERN_EUROPE_AND_US	PAN
+Spanish		      Paraguay		 es_PY		  0x3c0a	    1252	CP_WESTERN_EUROPE_AND_US	PRY
+Spanish		      Peru		 es_PE		  0x280a	    1252	CP_WESTERN_EUROPE_AND_US	PER
+Spanish		      Puerto_Rico	 es_PR		  0x500a	    1252	CP_WESTERN_EUROPE_AND_US	PRI
+Spanish		      Traditional_Sort	 es_ES_tradnl	  0x040a	    1252	CP_WESTERN_EUROPE_AND_US	ESP
+Spanish		      Uruguay		 es_UY		  0x380a	    1252	CP_WESTERN_EUROPE_AND_US	URY
+Spanish		      Venezuela		 es_VE		  0x200a	    1252	CP_WESTERN_EUROPE_AND_US	VEN
+Swahili		      NULL		 sw_KE		  0x0441	    1252	CP_WESTERN_EUROPE_AND_US	KEN
+Swedish		      NULL		 sv_SE		  0x041d	    1252	CP_WESTERN_EUROPE_AND_US	SWE
+Swedish		      Finland		 sv_FI		  0x081d	    1252	CP_WESTERN_EUROPE_AND_US	FIN
+Tajik		      NULL	 	 tg_Cyrl_TJ	  0x0428	    1251	CP_CYRILLIC			NULL
+Tamil		      NULL		 ta_IN		  0x0449	    0		CP_INDIC			IND
+Tatar		      NULL		 tt_RU		  0x0444	    1251	CP_CYRILLIC			RUS
+Telegu		      NULL		 te_IN		  0x044a	    0		CP_INDIC			IND
+Thai		      NULL		 th_TH		  0x041e	    874		CP_THAI				THA
+Tibetan	      	      NULL		 bo_CN		  0x0451	    0		CP_UNICODE_ONLY			NULL
+Tsonga		      NULL		 ts_ZA		  0x0431	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Twana		      NULL		 tn_ZA		  0x0432	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Turkish		      NULL		 tr_TR		  0x041f	    1254	CP_TURKIC			TUR
+Turkmen	      	      NULL		 tk_TM		  0x0442	    1251	CP_CYRILLIC			NULL
+Ukrainian	      NULL		 uk_UA		  0x0422	    1251	CP_CYRILLIC 			UKR
+Urdu		      NULL		 ur_PK		  0x0420	    1256	CP_ARABIC			PAK
+Uzbek		      Cyrillic		 uz_Cyrl_UZ	  0x0843	    1251	CP_CYRILLIC			UZB
+Uzbek		      Latin		 uz_Latn_UZ	  0x0443	    1254	CP_TURKIC			UZB
+Venda		      NULL		 ven_ZA		  0x0433	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Vietnamese	      NULL		 vi_VN		  0x042a	    1258	CP_VIETNAMESE			VNM
+Welsh		      NULL		 cy_GB		  0x0452	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Wolof		      Senegal		 wo_SN		  0x0488	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Xhosa		      NULL		 xh_ZA		  0x0434	    1252	CP_WESTERN_EUROPE_AND_US	NULL
+Zulu		      NULL		 zu_ZA		  0x0435	    1252	CP_WESTERN_EUROPE_AND_US	NULL

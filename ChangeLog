@@ -1,3 +1,30 @@
+2010-02-11
+    jkerihuel
+	[r1729]
+		Add country codes to codepage-lcid description file
+    bradh
+	[r1727]
+		Remove copied code from samba (ldb) and just use the ldb
+		version.
+		
+		Resolves ticket #167
+	[r1726]
+		Allow building if popt isn't available.
+		
+		The changes are to:
+		- remove unnecessary include in libmapiadmin
+		- only build mapistore test tool if popt is available
+		- only build torture tests if popt is available.
+		
+		The last change could be finer (e.g. only leaving out the
+		part of the torture test that actually requires popt) but
+		that seemed more fragile and generally unnecessary.
+		
+		Resolves ticket #233.
+    jelmer
+	[r1728]
+		Update bzrignore.
+
 2010-02-10
     bradh
 	[r1724]

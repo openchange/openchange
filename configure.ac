@@ -477,10 +477,20 @@ if test x"$enable_libpopt" = x"yes"; then
 	    OC_RULE_ADD(exchange2ical, TOOLS)
 	fi
 
+	AC_PATH_PROG([SMBTORTURE], [smbtorture], no)
+
+	if test x"$SMBTORTURE" != x""; then
+	    TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`
+	    AC_SUBST(TORTURE_MODULESDIR)
+	    OC_RULE_ADD(torture, TORTURE)
+	fi
+
+	MAPISTORE_TEST=mapistore_test
 	OC_RULE_ADD(mapiprofile, TOOLS)
 	OC_RULE_ADD(openchangemapidump, TOOLS)
 	OC_RULE_ADD(schemaIDGUID, TOOLS)
 fi
+AC_SUBST(MAPISTORE_TEST)
 
 dnl --------------------------------------------------------------------------
 dnl Check for libmagic
@@ -523,18 +533,6 @@ if test x"$SQLITEFOUND" = x"yes"; then
    OC_RULE_ADD(mapistore_sqlite3, MAPISTORE)
 else
    enable_mapistore_sqlite3="no"
-fi
-
-
-dnl ##########################################################################
-dnl torture dependencies
-dnl ##########################################################################
-AC_PATH_PROG([SMBTORTURE], [smbtorture], no)
-
-if test x"$SMBTORTURE" != x""; then
-   	TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`
-   	AC_SUBST(TORTURE_MODULESDIR)
-   	OC_RULE_ADD(torture, TORTURE)
 fi
 
 

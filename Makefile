@@ -933,7 +933,7 @@ LIBMAPISTORE_SO_VERSION = 0
 
 libmapistore: 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 		$(OC_MAPISTORE)						\
-		mapistore_test
+		$(MAPISTORE_TEST)
 
 libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -m 0755 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)

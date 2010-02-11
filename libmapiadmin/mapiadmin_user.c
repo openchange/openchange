@@ -28,7 +28,6 @@
 
 #include <param.h>
 #include <credentials.h>
-#include <samba/popt.h>
 #include <ldb_errors.h>
 #include <ldb_wrap.h>
 #include <ldap_ndr.h>

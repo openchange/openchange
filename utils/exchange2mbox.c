@@ -21,6 +21,7 @@
 
 #include <libmapi/libmapi.h>
 #include <samba/popt.h>
+#include <ldb.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -225,43 +226,6 @@ static const char *get_filename(const char *filename)
 	if (substr) return substr;
 
 	return filename;
-}
-
-/*
-  encode as base64
-  Samba4 code
-  caller frees
-*/
-static char *ldb_base64_encode(void *mem_ctx, const char *buf, int len)
-{
-	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-	int bit_offset, byte_offset, idx, i;
-	const uint8_t *d = (const uint8_t *)buf;
-	int bytes = (len*8 + 5)/6, pad_bytes = (bytes % 4) ? 4 - (bytes % 4) : 0;
-	char *out;
-
-	out = talloc_array(mem_ctx, char, bytes+pad_bytes+1);
-	if (!out) return NULL;
-
-	for (i=0;i<bytes;i++) {
-		byte_offset = (i*6)/8;
-		bit_offset = (i*6)%8;
-		if (bit_offset < 3) {
-			idx = (d[byte_offset] >> (2-bit_offset)) & 0x3F;
-		} else {
-			idx = (d[byte_offset] << (bit_offset-2)) & 0x3F;
-			if (byte_offset+1 < len) {
-				idx |= (d[byte_offset+1] >> (8-(bit_offset-2)));
-			}
-		}
-		out[i] = b64[idx];
-	}
-
-	for (;i<bytes+pad_bytes;i++)
-		out[i] = '=';
-	out[i] = 0;
-
-	return out;
 }
 
 

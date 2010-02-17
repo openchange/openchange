@@ -1,3 +1,17 @@
+2010-02-17
+    bradh
+	[r1731]
+		Update the IDL and implementation for RopGetPermissionsTable (0x3e)
+		and RopModifyPermissions (0x40) to match MS-OXCPERM.
+		
+		The function signature for GetTable() and ModifyTable() has changed.
+		They are now called GetPermissionsTable() and ModifyPermissions()
+		respectively, and there is an additional "flags" argument, which you
+		almost certainly want to pass as 0x00 if you are porting from some
+		older implementation.
+		
+		Updates all users, and adds mapitest unit tests.
+
 2010-02-11
     jkerihuel
 	[r1729]

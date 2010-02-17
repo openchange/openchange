@@ -1371,6 +1371,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_oxorule.o		\
 		utils/mapitest/modules/module_oxcnotif.o	\
 		utils/mapitest/modules/module_oxcfxics.o	\
+		utils/mapitest/modules/module_oxcperm.o		\
 		utils/mapitest/modules/module_nspi.o		\
 		utils/mapitest/modules/module_noserver.o	\
 		utils/mapitest/modules/module_errorchecks.o	\
@@ -1395,6 +1396,7 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_oxorule.c		\
 	utils/mapitest/modules/module_oxcnotif.c	\
 	utils/mapitest/modules/module_oxcfxics.c	\
+	utils/mapitest/modules/module_oxcperm.c		\
 	utils/mapitest/modules/module_nspi.c		\
 	utils/mapitest/modules/module_noserver.c	\
 	utils/mapitest/modules/module_errorchecks.c	\

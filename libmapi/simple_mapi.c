@@ -486,24 +486,24 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized.
    - MAPI_E_INVALID_PARAMETER: username is NULL
 
-   \sa ResolveNames, ModifyTable
+   \sa ResolveNames, ModifyPermissions
  */
 _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char *username, enum ACLRIGHTS role)
 {
-	enum MAPISTATUS		retval;
-	TALLOC_CTX		*mem_ctx;
-	struct SPropTagArray	*SPropTagArray;
-	const char		*names[2];
-	struct SRowSet		*rows = NULL;
-	struct SPropTagArray   	*flaglist = NULL;
-	struct mapi_SRowList	rowList;
+	enum MAPISTATUS                 retval;
+	TALLOC_CTX                      *mem_ctx;
+	struct SPropTagArray            *SPropTagArray;
+	const char                      *names[2];
+	struct SRowSet                  *rows = NULL;
+	struct SPropTagArray            *flaglist = NULL;
+	struct mapi_PermissionsData     rowList;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
-	rowList.padding = 0;
+	rowList.ModifyFlags = 0;
 
 	mem_ctx = talloc_named(NULL, 0, "AddUserPermission");
 
@@ -512,7 +512,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
 	names[0] = username;
 	names[1] = NULL;
-	retval = ResolveNames(mapi_object_get_session(obj_folder), (const char **)names, 
+	retval = ResolveNames(mapi_object_get_session(obj_folder), (const char **)names,
 			      SPropTagArray, &rows, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
@@ -520,16 +520,16 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	/* Check if the username was found */
 	OPENCHANGE_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
 
-	rowList.cEntries = 1;
-	rowList.aEntries = talloc_array(mem_ctx, struct mapi_SRow, 1);
-	rowList.aEntries[0].ulRowFlags = ROW_ADD;
-	rowList.aEntries[0].lpProps.cValues = 2;
-	rowList.aEntries[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
-	cast_mapi_SPropValue(&rowList.aEntries[0].lpProps.lpProps[0], &rows->aRow[0].lpProps[0]);
-	rowList.aEntries[0].lpProps.lpProps[1].ulPropTag = PR_MEMBER_RIGHTS;
-	rowList.aEntries[0].lpProps.lpProps[1].value.l = role;
+	rowList.ModifyCount = 1;
+	rowList.PermissionsData = talloc_array(mem_ctx, struct PermissionData, 1);
+	rowList.PermissionsData[0].PermissionDataFlags = ROW_ADD;
+	rowList.PermissionsData[0].lpProps.cValues = 2;
+	rowList.PermissionsData[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
+	cast_mapi_SPropValue(&rowList.PermissionsData[0].lpProps.lpProps[0], &rows->aRow[0].lpProps[0]);
+	rowList.PermissionsData[0].lpProps.lpProps[1].ulPropTag = PR_MEMBER_RIGHTS;
+	rowList.PermissionsData[0].lpProps.lpProps[1].value.l = role;
 
-	retval = ModifyTable(obj_folder, &rowList);
+	retval = ModifyPermissions(obj_folder, 0, &rowList);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	talloc_free(mem_ctx);
@@ -555,31 +555,31 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
    - MAPI_E_NOT_FOUND: couldn't find or change permissions for the
      given user
 
-   \sa AddUserPermission, ResolveNames, GetTable, ModifyTable
+   \sa AddUserPermission, ResolveNames, GetPermissionsTable, ModifyPermissions
  */
 _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const char *username, enum ACLRIGHTS role)
 {
-	enum MAPISTATUS		retval;
-	TALLOC_CTX		*mem_ctx;
-	struct SPropTagArray	*SPropTagArray;
-	const char		*names[2];
-	const char		*user = NULL;
-	struct SRowSet		*rows = NULL;
-	struct SRowSet		rowset;
-	struct SPropTagArray   	*flaglist = NULL;
-	struct mapi_SRowList	rowList;
-	struct SPropValue	*lpProp;
-	mapi_object_t		obj_table;
-	uint32_t		Numerator;
-	uint32_t		Denominator;
-	bool			found = false;
-	uint32_t		i = 0;
+	enum MAPISTATUS			retval;
+	TALLOC_CTX			*mem_ctx;
+	struct SPropTagArray		*SPropTagArray;
+	const char			*names[2];
+	const char			*user = NULL;
+	struct SRowSet			*rows = NULL;
+	struct SRowSet			rowset;
+	struct SPropTagArray		*flaglist = NULL;
+	struct mapi_PermissionsData	rowList;
+	struct SPropValue		*lpProp;
+	mapi_object_t			obj_table;
+	uint32_t			Numerator;
+	uint32_t			Denominator;
+	bool				found = false;
+	uint32_t			i = 0;
 
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
-	rowList.padding = 0;
+	rowList.ModifyFlags = 0;
 
 	mem_ctx = talloc_named(NULL, 0, "ModifyUserPermission");
 
@@ -602,7 +602,8 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	}
 
 	mapi_object_init(&obj_table);
-	retval = GetTable(obj_folder, &obj_table);
+	retval = GetPermissionsTable(obj_folder, 0x00, &obj_table);
+
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 4,
@@ -624,19 +625,20 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 		lpProp = get_SPropValue_SRow(&rowset.aRow[i], PR_MEMBER_NAME);
 		if (lpProp && lpProp->value.lpszA) {
 			if (!strcmp(lpProp->value.lpszA, user)) {
-				rowList.cEntries = 1;
-				rowList.aEntries = talloc_array(mem_ctx, struct mapi_SRow, 1);
-				rowList.aEntries[0].ulRowFlags = ROW_MODIFY;
-				rowList.aEntries[0].lpProps.cValues = 2;
-				rowList.aEntries[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
+				rowList.ModifyCount = 1;
+				rowList.PermissionsData = talloc_array(mem_ctx, struct PermissionData, 1);
+				rowList.PermissionsData[0].PermissionDataFlags = ROW_MODIFY;
+				rowList.PermissionsData[0].lpProps.cValues = 2;
+				rowList.PermissionsData[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
 				lpProp = get_SPropValue_SRow(&(rowset.aRow[i]), PR_MEMBER_ID);
-				rowList.aEntries[0].lpProps.lpProps[0].ulPropTag = PR_MEMBER_ID;
-				rowList.aEntries[0].lpProps.lpProps[0].value.d = lpProp->value.d;
-				rowList.aEntries[0].lpProps.lpProps[1].ulPropTag = PR_MEMBER_RIGHTS;
-				rowList.aEntries[0].lpProps.lpProps[1].value.l = role;
+				rowList.PermissionsData[0].lpProps.lpProps[0].ulPropTag = PR_MEMBER_ID;
+				rowList.PermissionsData[0].lpProps.lpProps[0].value.d = lpProp->value.d;
+				rowList.PermissionsData[0].lpProps.lpProps[1].ulPropTag = PR_MEMBER_RIGHTS;
+				rowList.PermissionsData[0].lpProps.lpProps[1].value.l = role;
 				
-				retval = ModifyTable(obj_folder, &rowList);
+				retval = ModifyPermissions(obj_folder, 0, &rowList);
 				OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
 				found = true;
 				break;
 			}
@@ -645,8 +647,8 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 
 	mapi_object_release(&obj_table);
 	talloc_free(mem_ctx);
-	
-	OPENCHANGE_RETVAL_IF((found == true), MAPI_E_NOT_FOUND, 0);
+
+	OPENCHANGE_RETVAL_IF((!found), MAPI_E_NOT_FOUND, 0);
 
 	return MAPI_E_SUCCESS;
 }
@@ -668,25 +670,25 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
    - MAPI_E_NOT_FOUND: couldn't find or remove permissions for the
      given user
 
-   \sa ResolveNames, GetTable, ModifyTable
+   \sa ResolveNames, GetPermissionsTable, ModifyPermissions
  */
 _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const char *username)
 {
-	enum MAPISTATUS		retval;
-	TALLOC_CTX		*mem_ctx;
-	struct SPropTagArray	*SPropTagArray;
-	const char		*names[2];
-	const char		*user = NULL;
-	struct SRowSet		*rows = NULL;
-	struct SRowSet		rowset;
-	struct SPropTagArray   	*flaglist = NULL;
-	struct mapi_SRowList	rowList;
-	struct SPropValue	*lpProp;
-	mapi_object_t		obj_table;
-	uint32_t		Numerator;
-	uint32_t		Denominator;
-	bool			found = false;
-	uint32_t		i = 0;
+	enum MAPISTATUS			retval;
+	TALLOC_CTX			*mem_ctx;
+	struct SPropTagArray		*SPropTagArray;
+	const char			*names[2];
+	const char			*user = NULL;
+	struct SRowSet			*rows = NULL;
+	struct SRowSet			rowset;
+	struct SPropTagArray		*flaglist = NULL;
+	struct mapi_PermissionsData	rowList;
+	struct SPropValue		*lpProp;
+	mapi_object_t			obj_table;
+	uint32_t			Numerator;
+	uint32_t			Denominator;
+	bool				found = false;
+	uint32_t			i = 0;
 
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
@@ -708,7 +710,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
 
 	mapi_object_init(&obj_table);
-	retval = GetTable(obj_folder, &obj_table);
+	retval = GetPermissionsTable(obj_folder, 0x00, &obj_table);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 4,
@@ -730,16 +732,16 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 		lpProp = get_SPropValue_SRow(&rowset.aRow[i], PR_MEMBER_NAME);
 		if (lpProp && lpProp->value.lpszA) {
 			if (!strcmp(lpProp->value.lpszA, user)) {
-				rowList.cEntries = 1;
-				rowList.aEntries = talloc_array(mem_ctx, struct mapi_SRow, 1);
-				rowList.aEntries[0].ulRowFlags = ROW_REMOVE;
-				rowList.aEntries[0].lpProps.cValues = 1;
-				rowList.aEntries[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 1);
+				rowList.ModifyCount = 1;
+				rowList.PermissionsData = talloc_array(mem_ctx, struct PermissionData, 1);
+				rowList.PermissionsData[0].PermissionDataFlags = ROW_REMOVE;
+				rowList.PermissionsData[0].lpProps.cValues = 1;
+				rowList.PermissionsData[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 1);
 				lpProp = get_SPropValue_SRow(&(rowset.aRow[i]), PR_MEMBER_ID);
-				rowList.aEntries[0].lpProps.lpProps[0].ulPropTag = PR_MEMBER_ID;
-				rowList.aEntries[0].lpProps.lpProps[0].value.d = lpProp->value.d;
+				rowList.PermissionsData[0].lpProps.lpProps[0].ulPropTag = PR_MEMBER_ID;
+				rowList.PermissionsData[0].lpProps.lpProps[0].value.d = lpProp->value.d;
 				
-				retval = ModifyTable(obj_folder, &rowList);
+				retval = ModifyPermissions(obj_folder, 0, &rowList);
 				OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 				found = true;
 				break;
@@ -750,7 +752,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	mapi_object_release(&obj_table);
 	talloc_free(mem_ctx);
 
-	OPENCHANGE_RETVAL_IF((found == true), MAPI_E_NOT_FOUND, 0);
+	OPENCHANGE_RETVAL_IF((found != true), MAPI_E_NOT_FOUND, 0);
 
 	return MAPI_E_SUCCESS;
 }

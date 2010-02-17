@@ -92,8 +92,8 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 	}
 	if (!strncasecmp(operation, "list", strlen(operation))) {
 		mapi_object_init(&obj_table);
-		retval = GetTable(&obj_inbox, &obj_table);
-		mapi_errstr("GetTable", GetLastError());
+		retval = GetPermissionsTable(&obj_inbox, 0x00, &obj_table);
+		mapi_errstr("GetPermissionsTable", GetLastError());
 		if (retval != MAPI_E_SUCCESS) return false;
 
 		proptags = set_SPropTagArray(mem_ctx, 4,

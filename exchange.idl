@@ -838,9 +838,9 @@ System Attendant Private Interface
 			op_MAPI_CopyTo				= 0x39,
 			op_MAPI_CopyToStream			= 0x3a,
 			op_MAPI_CloneStream			= 0x3b,
-			op_MAPI_GetTable			= 0x3e,
+			op_MAPI_GetPermissionsTable		= 0x3e,
 			op_MAPI_GetRulesTable			= 0x3f,
-			op_MAPI_ModifyTable			= 0x40,
+			op_MAPI_ModifyPermissions		= 0x40,
 			op_MAPI_ModifyRules			= 0x41,
 			op_MAPI_GetOwningServers		= 0x42,
 			op_MAPI_LongTermIdFromId		= 0x43,
@@ -1073,17 +1073,6 @@ System Attendant Private Interface
 		ROW_MODIFY	=	0x2,
 		ROW_REMOVE	=	0x4
 	} ulRowFlags;
-
-	typedef [flag(NDR_NOALIGN)] struct {
-		ulRowFlags				ulRowFlags;
-		mapi_SPropValue_array			lpProps;
-	} mapi_SRow;
-
-	typedef [flag(NDR_NOALIGN)] struct {
-		uint8					padding;
-		uint16					cEntries;
-		mapi_SRow				aEntries[cEntries];
-	} mapi_SRowList;
 
 	/**************************/
 	/* EcDoRpc Function 0x1   */
@@ -2525,13 +2514,17 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x3e */
-	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		handle_idx;
-		uint8		padding;
-	} GetTable_req;
+	typedef [bitmap8bit] bitmap {
+		IncludeFreeBusy	= 0x02
+	} PermissionsTableFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-	} GetTable_repl;
+		uint8			handle_idx;
+		PermissionsTableFlags	TableFlags;
+	} GetPermissionsTable_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} GetPermissionsTable_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x3f */
@@ -2549,13 +2542,28 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x40 */
-	typedef [flag(NDR_NOALIGN)] struct {
- 		mapi_SRowList		rowList;
-	} ModifyTable_req;
+	typedef [bitmap8bit] bitmap {
+		ModifyPerms_IncludeFreeBusy     = 0x02,
+		ModifyPerms_ReplaceRows         = 0x01
+	} ModifyPermissionsFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		[flag(NDR_REMAINING)] DATA_BLOB remaining;
-	} ModifyTable_repl;
+		ulRowFlags              PermissionDataFlags;
+		mapi_SPropValue_array   lpProps;
+	} PermissionData;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		ModifyPermissionsFlags  ModifyFlags;
+		uint16                  ModifyCount;
+		PermissionData          PermissionsData[ModifyCount];
+	} mapi_PermissionsData;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		mapi_PermissionsData    rowList;
+	} ModifyPermissions_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} ModifyPermissions_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x41 */
@@ -3518,9 +3526,9 @@ System Attendant Private Interface
 		[case(op_MAPI_CopyTo)] CopyTo_req mapi_CopyTo;
 		[case(op_MAPI_CopyToStream)] CopyToStream_req mapi_CopyToStream;
 		[case(op_MAPI_CloneStream)] CloneStream_req mapi_CloneStream;
-		[case(op_MAPI_GetTable)] GetTable_req mapi_GetTable;
+		[case(op_MAPI_GetPermissionsTable)] GetPermissionsTable_req mapi_GetPermissionsTable;
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_req mapi_GetRulesTable;
-		[case(op_MAPI_ModifyTable)] ModifyTable_req mapi_ModifyTable;
+		[case(op_MAPI_ModifyPermissions)] ModifyPermissions_req mapi_ModifyPermissions;
 		[case(op_MAPI_ModifyRules)] ModifyRules_req mapi_ModifyRules;
 		[case(op_MAPI_GetOwningServers)] GetOwningServers_req mapi_GetOwningServers;
 		[case(op_MAPI_LongTermIdFromId)] LongTermIdFromId_req mapi_LongTermIdFromId;
@@ -3641,9 +3649,9 @@ System Attendant Private Interface
 		[case(op_MAPI_CopyTo)] CopyTo_repl mapi_CopyTo;
 		[case(op_MAPI_CopyToStream)] CopyToStream_repl mapi_CopyToStream;
 		[case(op_MAPI_CloneStream)] CloneStream_repl mapi_CloneStream;
-		[case(op_MAPI_GetTable)] GetTable_repl mapi_GetTable;
+		[case(op_MAPI_GetPermissionsTable)] GetPermissionsTable_repl mapi_GetPermissionsTable;
 		[case(op_MAPI_GetRulesTable)] GetRulesTable_repl mapi_GetRulesTable;
-		[case(op_MAPI_ModifyTable)] ModifyTable_repl mapi_ModifyTable;
+		[case(op_MAPI_ModifyPermissions)] ModifyPermissions_repl mapi_ModifyPermissions;
 		[case(op_MAPI_ModifyRules)] ModifyRules_repl mapi_ModifyRules;
 		[case(op_MAPI_GetOwningServers)] GetOwningServers_repl mapi_GetOwningServers;
 		[case(op_MAPI_LongTermIdFromId)] LongTermIdFromId_repl mapi_LongTermIdFromId;

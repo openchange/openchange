@@ -289,10 +289,15 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
    pointer to its associated permission table
 
    \param obj_container the object to get the contents of
+   \param flags any special flags to pass
    \param obj_table the resulting table containing the container's
    permissions
-
+   
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   The only meaningful value for flags is IncludeFreeBusy (0x02). This
+   should be set when getting permissions on the Calendar folder when
+   using Exchange 2007 and later. It should not be set in other situations.
 
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
@@ -300,20 +305,20 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   \sa ModifyTable
+   \sa ModifyPermissions
  */
-_PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *obj_table)
+_PUBLIC_ enum MAPISTATUS GetPermissionsTable(mapi_object_t *obj_container, uint8_t flags, mapi_object_t *obj_table)
 {
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct GetTable_req	request;
-	struct mapi_session	*session;
-	NTSTATUS		status;
-	enum MAPISTATUS		retval;
-	uint32_t		size = 0;
-	TALLOC_CTX		*mem_ctx;
-	uint8_t			logon_id;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct GetPermissionsTable_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	uint8_t				logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -325,20 +330,20 @@ _PUBLIC_ enum MAPISTATUS GetTable(mapi_object_t *obj_container, mapi_object_t *o
 	if ((retval = mapi_object_get_logon_id(obj_container, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetTable");
+	mem_ctx = talloc_named(NULL, 0, "GetPermissionsTable");
 	size = 0;
 
-	/* Fill the GetTable operation */
+	/* Fill the GetPermissionsTable operation */
 	request.handle_idx = 0x1;
-	request.padding = 0x0;
+	request.TableFlags = flags;
 	size += 2;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_GetTable;
+	mapi_req->opnum = op_MAPI_GetPermissionsTable;
 	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx= 0;
-	mapi_req->u.mapi_GetTable = request;
+	mapi_req->u.mapi_GetPermissionsTable = request;
 	size += 5;
 
 	/* Fill the mapi_request structure */
@@ -481,7 +486,16 @@ _PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder,
    permissions.
 
    \param obj_table the table containing the container's permissions
-   \param rowList the list of table entries to modify
+   \param flags any special flags to use
+   \param permsdata the list of permissions table entries to modify
+
+   Possible values for flags:
+
+   - 0x02 for IncludeFreeBusy.  This should be set when modifying permissions
+   on the Calendar folder when using Exchange 2007 and later. It should not
+   be set in other situations.
+   - 0x01 for ReplaceRows. This means "remove all current permissions and use
+   this set instead", so the permsdata must consist of ROW_ADD operations.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
@@ -491,27 +505,27 @@ _PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder,
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   \sa GetTable, AddUserPermission, ModifyUserPermission,
+   \sa GetPermissionsTable, AddUserPermission, ModifyUserPermission,
    RemoveUserPermission
  */
-_PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowList *rowList)
+_PUBLIC_ enum MAPISTATUS ModifyPermissions(mapi_object_t *obj_table, uint8_t flags, struct mapi_PermissionsData *permsdata)
 {
-	struct mapi_request	*mapi_request;
-	struct mapi_response	*mapi_response;
-	struct EcDoRpc_MAPI_REQ	*mapi_req;
-	struct ModifyTable_req	request;
-	struct mapi_session	*session;
-	NTSTATUS		status;
-	enum MAPISTATUS		retval;
-	uint32_t		size = 0;
-	TALLOC_CTX		*mem_ctx;
-	uint32_t		i, j;
-	uint8_t			logon_id;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct ModifyPermissions_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	uint32_t			i, j;
+	uint8_t				logon_id;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!rowList, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!permsdata, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_table);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
@@ -519,18 +533,17 @@ _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowL
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ModifyTable");
-	size = 0;
+	mem_ctx = talloc_named(NULL, 0, "ModifyPermissions");
 
-	/* Fill the ModifyTable operation */
-	request.rowList = *rowList;
-	request.rowList.padding = 0;
+	/* Fill the ModifyPermissions operation */
+	request.rowList = *permsdata;
+	request.rowList.ModifyFlags = flags;
 	size += sizeof (uint8_t) + sizeof (uint16_t);
 
-	for (i = 0; i < rowList->cEntries; i++) {
+	for (i = 0; i < permsdata->ModifyCount; i++) {
 		size += sizeof (uint8_t);
-			for (j = 0; j < rowList->aEntries[i].lpProps.cValues; j++) {
-				size += get_mapi_property_size(&(rowList->aEntries[i].lpProps.lpProps[j]));
+			for (j = 0; j < permsdata->PermissionsData[i].lpProps.cValues; j++) {
+				size += get_mapi_property_size(&(permsdata->PermissionsData[i].lpProps.lpProps[j]));
 				size += sizeof (uint32_t);
 			}
 	size += sizeof (uint16_t);
@@ -538,10 +551,10 @@ _PUBLIC_ enum MAPISTATUS ModifyTable(mapi_object_t *obj_table, struct mapi_SRowL
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
-	mapi_req->opnum = op_MAPI_ModifyTable;
+	mapi_req->opnum = op_MAPI_ModifyPermissions;
 	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx= 0;
-	mapi_req->u.mapi_ModifyTable = request;
+	mapi_req->u.mapi_ModifyPermissions = request;
 	size += 5;
 
 	/* Fill the mapi_request structure */

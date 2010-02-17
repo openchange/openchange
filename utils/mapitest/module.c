@@ -36,6 +36,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	ret += module_oxorule_init(mt);
 	ret += module_oxcnotif_init(mt);
 	ret += module_oxcfxics_init(mt);
+	ret += module_oxcperm_init(mt);
 	ret += module_nspi_init(mt);
 	ret += module_noserver_init(mt);
 	ret += module_errorchecks_init(mt);
@@ -291,6 +292,27 @@ _PUBLIC_ uint32_t module_oxcfxics_init(struct mapitest *mt)
 	return MAPITEST_SUCCESS;
 }
 
+
+/**
+   \details Register the Permissions Protocol test suite
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_oxcperm_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "OXCPERM", "Permissions Protocol", true);
+	
+	mapitest_suite_add_test(suite, "GET-PERMISSIONS-TABLE", "Get handle to the Permissions table", mapitest_oxcperm_GetPermissionsTable);
+	mapitest_suite_add_test(suite, "MODIFY-PERMISSIONS", "Modify access permissions on a folder", mapitest_oxcperm_ModifyPermissions);
+
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
 
 /**
    \details Register the NSPI test suite

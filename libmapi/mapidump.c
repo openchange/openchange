@@ -36,6 +36,12 @@
    \brief Functions for displaying various data structures, mainly for debugging
  */
 
+/**
+  Output one property tag and value
+
+  \param lpProp the property to print
+  \param sep a separator / spacer to insert in front of the label
+*/
 _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 {
 	const char			*proptag;

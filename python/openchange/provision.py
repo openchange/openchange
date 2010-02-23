@@ -40,6 +40,30 @@ def openchangedb_url(lp):
 def openchangedb_mapistore_url(lp):
     return os.path.join(lp.get("private dir"), "mapistore");
 
+# This is a hack. Kind-of cute, but still a hack
+def abstract():
+    import inspect
+    caller = inspect.getouterframes(inspect.currentframe())[1][3]
+    raise NotImplementedError(caller + ' must be implemented in subclass')
+
+# Define an abstraction for progress reporting from the provisioning
+class AbstractProgressReporter(object):
+    def __init__(self):
+        self.currentStep = 0
+
+    def reportNextStep(self, stepName):
+        self.currentStep = self.currentStep + 1
+        self.doReporting(stepName)
+
+    def doReporting(self, stepName):
+        abstract()
+
+# A concrete example of a progress reporter - just provides text output for
+# each new step.
+class TextProgressReporter(AbstractProgressReporter):
+    def doReporting(self, stepName):
+        print "[+] Step %d: %s" % (self.currentStep, stepName)
+
 class ProvisionNames(object):
 
     def __init__(self):
@@ -115,13 +139,14 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     return names
 
 
-def install_schemas(setup_path, names, lp, creds):
+def install_schemas(setup_path, names, lp, creds, reporter):
     """Install the OpenChange-specific schemas in the SAM LDAP database. 
     
     :param setup_path: Path to the setup directory.
     :param names: provision names object.
     :param lp: Loadparm context
     :param creds: Credentials Context
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     """
     session_info = system_session()
 
@@ -134,7 +159,7 @@ def install_schemas(setup_path, names, lp, creds):
     db.transaction_start()
 
     try:
-        print "[+] Step 1: Register Exchange OIDs"
+        reporter.reportNextStep("Register Exchange OIDs")
         setup_modify_ldif(db,
                           setup_path("AD/provision_schema_basedn_modify.ldif"), {
                 "SCHEMADN": names.schemadn,
@@ -158,7 +183,7 @@ def install_schemas(setup_path, names, lp, creds):
     db.transaction_start()
 
     try:
-        print "[+] Step 2: Add new Exchange classes and attributes to Samba schema"
+        reporter.reportNextStep("Add new Exchange classes and attributes to Samba schema")
         setup_add_ldif(db, setup_path("AD/oc_provision_schema.ldif"), { 
                 "SCHEMADN": names.schemadn
                 })
@@ -175,7 +200,7 @@ def install_schemas(setup_path, names, lp, creds):
     db.transaction_start()
 
     try:
-        print "[+] Step 3: Extend existing Samba classes and attributes"
+        reporter.reportNextStep("Extend existing Samba classes and attributes")
         setup_modify_ldif(db, setup_path("AD/oc_provision_schema_modify.ldif"), {
                 "SCHEMADN": names.schemadn
                 })
@@ -193,7 +218,7 @@ def install_schemas(setup_path, names, lp, creds):
     db.transaction_start()
 
     try:
-        print "[+] Step 4: Exchange Samba with Exchange configuration objects"
+        reporter.reportNextStep("Exchange Samba with Exchange configuration objects")
         setup_add_ldif(db, setup_path("AD/oc_provision_configuration.ldif"), {
                 "FIRSTORG": names.firstorg,
                 "FIRSTORGDN": names.firstorgdn,
@@ -404,7 +429,7 @@ msExchUserAccountControl: %d
         print "[+] Account %s enabled" % username
 
 
-def provision(setup_path, lp, creds, firstorg=None, firstou=None):
+def provision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None):
     """Extend Samba4 with OpenChange data.
     
     :param setup_path: Path to the setup directory
@@ -412,13 +437,19 @@ def provision(setup_path, lp, creds, firstorg=None, firstou=None):
     :param creds: Credentials context
     :param firstorg: First Organization
     :param firstou: First Organization Unit
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+
+    If a progress reporter is not provided, a text output reporter is provided
     """
     names = guess_names_from_smbconf(lp, firstorg, firstou)
 
     print "NOTE: This operation can take several minutes"
 
+    if reporter is None:
+        reporter = TextProgressReporter()
+
     # Install OpenChange-specific schemas
-    install_schemas(setup_path, names, lp, creds)
+    install_schemas(setup_path, names, lp, creds, reporter)
 
 
 def openchangedb_provision(lp, firstorg=None, firstou=None):

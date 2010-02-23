@@ -1,3 +1,18 @@
+2010-02-23
+    jkerihuel
+	[r1738]
+		Fix format string problem #184 ticket
+    bradh
+	[r1737]
+		Add status reporter classes to allow redirecting the progress
+		messages.
+	[r1736]
+		Update man page to reflect mapitest --subunit option.
+	[r1735]
+		Implement basic subunit output protocol format for mapitest.
+		
+		There are a couple of documentation bits to follow.
+
 2010-02-20
     bradh
 	[r1733]

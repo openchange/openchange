@@ -1,6 +1,6 @@
 .\" OpenChange Project Tools Man Pages
 .\"
-.\" This manpage is Copyright (C) 2008 Brad Hards
+.\" This manpage is Copyright (C) 2008, 2010 Brad Hards
 .\"
 .\" Permission is granted to make and distribute verbatim copies of this
 .\" manual provided the copyright notice and this permission notice are
@@ -25,7 +25,7 @@
 .\" Process this file with
 .\" groff -man -Tascii mapitest.1
 .\"
-.TH MAPITEST 1 2008-11-21 "OpenChange libmapi 0.8" "OpenChange Users' Manual"
+.TH MAPITEST 1 2010-02-23 "OpenChange libmapi 0.10" "OpenChange Users' Manual"
 
 .SH NAME
 mapitest \- OpenChange torture test utility
@@ -33,7 +33,7 @@ mapitest \- OpenChange torture test utility
 .SH SYNOPSIS
 .nf
 mapitest [-?|--help] [--usage] [-f|--database=STRING] [-p|--profile=STRING]
-  [-p|--password=STRING] [--confidential] [--color]
+  [-p|--password=STRING] [--confidential] [--color] [--subunit]
   [-o|--outfile=STRING] [--mapi-calls=STRING] [--list-all] [--no-server]
   [--dump-data] [-d|--debuglevel=STRING]
 .fi
@@ -81,6 +81,13 @@ Remove any sensitive data from the report.
 .TP
 .B --color
 Use colors to indicate the results of each operation.
+
+.TP
+.B --subunit
+Produce output in subunit protocol format, instead of the normal text
+output. This disables colored output. Note that availability of this
+option depends on suitable libraries being available at build time, so
+check availability before relying on this.
 
 .TP
 .B --outfile

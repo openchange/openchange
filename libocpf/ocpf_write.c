@@ -187,7 +187,7 @@ static char *ocpf_write_escape_string(const char *value)
 		return str;
 	} else {
 		str = talloc_strndup(ocpf->mem_ctx, value, tmp);
-		str = talloc_asprintf_append_buffer(str, "\\\%c", value[tmp]);
+		str = talloc_asprintf_append_buffer(str, "\\%c", value[tmp]);
 	}
 	len += tmp + 1;
 
@@ -199,7 +199,7 @@ static char *ocpf_write_escape_string(const char *value)
 			break;
 		} else {
 			stmp = talloc_strndup(ocpf->mem_ctx, value + len, tmp);
-			str = talloc_asprintf_append_buffer(str, "%s\\\%c", stmp, value[len + tmp]);
+			str = talloc_asprintf_append_buffer(str, "%s\\%c", stmp, value[len + tmp]);
 			talloc_free(stmp);
 			len += tmp + 1;
 		}

@@ -609,6 +609,20 @@ else
 fi
 
 dnl ##########################################################################
+dnl (Optional) subunit support in mapitest
+dnl ##########################################################################
+PKG_CHECK_MODULES(SUBUNIT, libsubunit, found_subunit=yes, found_subunit=no)
+AC_SUBST(SUBUNIT_CFLAGS)
+AC_SUBST(SUBUNIT_LIBS)
+
+if test x"$found_subunit" = x"yes"; then
+	AC_DEFINE(HAVE_SUBUNIT, 1, [Define if you want to use subunit])
+	have_subunit="yes"
+else
+	have_subunit="no"
+fi
+
+dnl ##########################################################################
 dnl Qt4 support
 dnl ##########################################################################
 AC_ARG_ENABLE(openchange-qt4,
@@ -702,6 +716,8 @@ OpenChange Configuration (Please review)
 	     - schemaIDGUID:		$enable_schemaIDGUID
 
 	   * OpenChange Torture Suite:	$enable_torture
+
+	   * subunit format (mapitest):	$have_subunit
 
 	   * OpenChange Documentation:	$enable_doxygen
 

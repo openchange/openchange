@@ -965,7 +965,7 @@ _PUBLIC_ bool mapitest_nspi_GetGALTable(struct mapitest *mt)
 		totalRowsFetched += rowsFetched;
 		if (rowsFetched) {
 			for (i = 0; i < rowsFetched; i++) {
-				mapidump_PAB_entry(&SRowSet->aRow[i]);
+				mapitest_print_PAB_entry(mt, &SRowSet->aRow[i]);
 			}
 		}
 		ulFlags = TABLE_CUR;

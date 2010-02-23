@@ -23,6 +23,8 @@
 #include <samba/popt.h>
 #include <param.h>
 
+#include "config.h"
+
 #include <utils/openchange-tools.h>
 #include "utils/mapitest/mapitest.h"
 
@@ -50,6 +52,7 @@ static void mapitest_init(TALLOC_CTX *mem_ctx, struct mapitest *mt)
 	mt->mapi_suite = false;
 	mt->cmdline_calls = NULL;
 	mt->cmdline_suite = NULL;
+	mt->subunit_output = false;
 }
 
 /**
@@ -211,7 +214,7 @@ int main(int argc, const char *argv[])
 	enum { OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD,
 	       OPT_CONFIDENTIAL, OPT_OUTFILE, OPT_MAPI_CALLS,
 	       OPT_NO_SERVER, OPT_LIST_ALL, OPT_DUMP_DATA,
-	       OPT_DEBUG, OPT_COLOR };
+	       OPT_DEBUG, OPT_COLOR, OPT_SUBUNIT };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -220,6 +223,9 @@ int main(int argc, const char *argv[])
 		{ "password",     'p', POPT_ARG_STRING, NULL, OPT_PASSWORD,      "set the profile or account password", NULL },
 		{ "confidential",  0,  POPT_ARG_NONE,   NULL, OPT_CONFIDENTIAL,  "remove any sensitive data from the report", NULL },
 		{ "color",         0,  POPT_ARG_NONE,   NULL, OPT_COLOR,         "color MAPI retval", NULL },
+#if HAVE_SUBUNIT
+		{ "subunit",       0,  POPT_ARG_NONE,   NULL, OPT_SUBUNIT,       "output in subunit protocol format", NULL },
+#endif
 		{ "outfile",      'o', POPT_ARG_STRING, NULL, OPT_OUTFILE,       "set the report output file", NULL },
 		{ "mapi-calls",    0,  POPT_ARG_STRING, NULL, OPT_MAPI_CALLS,    "test custom ExchangeRPC tests", NULL },
 		{ "list-all",      0,  POPT_ARG_NONE,   NULL, OPT_LIST_ALL,      "list suite and tests - names and description", NULL },
@@ -272,6 +278,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_COLOR:
 			mt.color = true;
+			break;
+		case OPT_SUBUNIT:
+			mt.subunit_output = true;
 			break;
 		case OPT_LIST_ALL:
 			mapitest_list(&mt, NULL);

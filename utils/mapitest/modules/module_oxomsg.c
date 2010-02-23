@@ -467,7 +467,7 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 		lpProp.dwAlignPad = 0;
 		for (i = 0; i < lpProps.cValues; i++) {
 			cast_SPropValue(&lpProps.lpProps[i], &lpProp);
-			mapidump_SPropValue(lpProp, "\t* ");
+			mapitest_print_SPropValue(mt, lpProp, "\t* ");
 		}
 		MAPIFreeBuffer(lpProps.lpProps);
 	}

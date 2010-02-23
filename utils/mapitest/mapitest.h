@@ -134,6 +134,7 @@ struct mapitest {
 	bool			mapi_all;	/*!< true if all tests should be run */
 	bool			online;		/*!< true if the server could be accessed */
 	bool			color;		/*!< true if the output should be colored */
+	bool			subunit_output; /*!< true if we should write output in subunit protocol format */
 	struct emsmdb_info	info;
 	struct mapitest_suite	*mapi_suite;	/*!< the various test suites */
 	struct mapitest_unit   	*cmdline_calls;

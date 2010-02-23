@@ -34,7 +34,7 @@
  
  This depends on PR_ENTRYID being the first property returned
  */
-static void mapitest_dump_SRowSet(struct SRowSet *SRowSet, const char *sep)
+static void mapitest_dump_permissions_SRowSet(struct mapitest *mt, struct SRowSet *SRowSet, const char *sep)
 {
 	uint32_t		i, j;
 
@@ -49,7 +49,7 @@ static void mapitest_dump_SRowSet(struct SRowSet *SRowSet, const char *sep)
 			continue;
 		}
 		for (j = 0; j < thisRow->cValues; j++) {
-			mapidump_SPropValue(thisRow->lpProps[j], sep);
+			mapitest_print_SPropValue(mt, thisRow->lpProps[j], sep);
 		}
 	}
 }
@@ -122,7 +122,7 @@ _PUBLIC_ bool mapitest_oxcperm_GetPermissionsTable(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	mapitest_dump_SRowSet(&SRowSet, "\t");
+	mapitest_dump_permissions_SRowSet(mt, &SRowSet, "\t");
 	
 cleanup:
 	mapi_object_release(&obj_permtable);
@@ -218,7 +218,7 @@ _PUBLIC_ bool mapitest_oxcperm_ModifyPermissions(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	mapitest_dump_SRowSet(&SRowSet, "\t");
+	mapitest_dump_permissions_SRowSet(mt, &SRowSet, "\t");
 
 	/* Step 5. Modify user permissions on the folder, and check it */
 	retval = ModifyUserPermission(&obj_temp_folder, "Administrator", RightsAll);
@@ -252,7 +252,7 @@ _PUBLIC_ bool mapitest_oxcperm_ModifyPermissions(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	mapitest_dump_SRowSet(&SRowSet, "\t");
+	mapitest_dump_permissions_SRowSet(mt, &SRowSet, "\t");
 
 	/* Step 6. Remove user permissions on the folder, and check it */
 	retval = RemoveUserPermission(&obj_temp_folder, "Administrator");
@@ -286,7 +286,7 @@ _PUBLIC_ bool mapitest_oxcperm_ModifyPermissions(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	mapitest_dump_SRowSet(&SRowSet, "\t");
+	mapitest_dump_permissions_SRowSet(mt, &SRowSet, "\t");
 
 	/* Step 7. Delete the folder */
 	retval = EmptyFolder(&obj_temp_folder);

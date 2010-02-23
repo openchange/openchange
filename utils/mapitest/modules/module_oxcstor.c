@@ -381,7 +381,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolderTable(struct mapitest *mt)
 		return false;
 	}
 
-	mapidump_SRowSet(&SRowSet, "\t\t[*]");
+	mapitest_print_SRowSet(mt, &SRowSet, "\t\t[*]");
 	MAPIFreeBuffer(SRowSet.aRow);
 
 	/* Release */

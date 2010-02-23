@@ -1299,7 +1299,7 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 	retval = GetRecipientTable(&obj_embeddedmsg, &SRowSet, &SPropTagArray);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetRecipientTable", retval);
 
-	mapidump_SRowSet(&SRowSet, "\t * ");
+	mapitest_print_SRowSet(mt, &SRowSet, "\t * ");
 	mapi_object_release(&obj_embeddedmsg);
 
 	/* Step 7. Delete the message */

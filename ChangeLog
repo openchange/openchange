@@ -1,3 +1,14 @@
+2010-02-26
+    bradh
+	[r1743]
+		Add special handling for PS_MAPI property name mapping.
+		
+		This fixes a long-standing mapitest failure.
+		
+		The logic is based on MS-OXCPRPT, section 2.2.12.2.2 PropertyIds.
+	[r1742]
+		Minor API documentation fix.
+
 2010-02-24
     bradh
 	[r1740]

@@ -350,7 +350,11 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_string_add(struct mapi_nameid *mapi_
 	mapi_nameid->entries[count].ulKind = MNID_STRING;
 	mapi_nameid->entries[count].OLEGUID = OLEGUID;
 
-	mapi_nameid->nameid[count].ulKind = MNID_STRING;
+	if (strcmp(OLEGUID, PS_MAPI) == 0) {
+		mapi_nameid->nameid[count].ulKind = MNID_ID;
+	} else {
+		mapi_nameid->nameid[count].ulKind = MNID_STRING;
+	}
 	GUID_from_string(OLEGUID, &(mapi_nameid->nameid[count].lpguid));
 	mapi_nameid->nameid[count].kind.lpwstr.Name = Name;
 	mapi_nameid->nameid[count].kind.lpwstr.NameSize = strlen(Name) * 2 + 2;

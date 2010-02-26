@@ -956,7 +956,7 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   \sa GetIDsFromNames, QueryNamesFromIDs, mapi_nameid_new
+   \sa GetNamesFromIds, QueryNamesFromIDs, mapi_nameid_new
 */
 _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 					 uint16_t count,

@@ -1,7 +1,7 @@
 .\" OpenChange Project Tools Man Pages
 .\"
 .\" This manpage is Copyright (C) 2007-2010 Julien Kerihuel;
-.\" This manpage is Copyright (C) 2008-2009 Brad Hards;
+.\" This manpage is Copyright (C) 2008-2010 Brad Hards;
 .\"
 .\" Permission is granted to make and distribute verbatim copies of this
 .\" manual provided the copyright notice and this permission notice are
@@ -26,7 +26,7 @@
 .\" Process this file with
 .\" groff -man -Tascii mapiprofile.1
 .\"
-.TH MAPIPROFILE 1 2008-12-16 "OpenChange libmapi 0.8" "OpenChange Users' Manual"
+.TH MAPIPROFILE 1 2010-02-27 "OpenChange libmapi 0.10" "OpenChange Users' Manual"
 
 .SH NAME
 mapiprofile \- administer OpenChange MAPI Profiles databases
@@ -230,17 +230,17 @@ mapiprofile --database=/tmp/profiles2.ldb --ldif=/usr/local/samba/share/setup --
 .B Create a new profile using NTLMSSP authentication:
 .nf
 mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel
-     --username=jkerihuel --password=secret --language=0x040C
+     --username=jkerihuel --password=secret --language=French\\ \\(France\\)
      --address=192.168.194.22 --workstation=LOCALHOST --domain=OPENCHANGE 
      --create
-Profile jkerihuel completed and added to database /tmp/profiles.ldb. Note
-that this account will use French.
+Profile jkerihuel completed and added to database /tmp/profiles.ldb.
+Note that this account will use French.
 .fi
 
 .B Create a new profile using Kerberos authentication:
 .nf
 mapiprofile --database=/tmp/profiles.ldb --profile=jkerihuel
-     --username=jkerihuel --password=secret --language=0x040C
+     --username=jkerihuel --password=secret --language=French\\ \\(France\\)
      --address=exchange.openchange.local --domain=OPENCHANGE
      --realm=OPENCHANGE.LOCAL --create
 .fi

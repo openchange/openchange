@@ -1,3 +1,8 @@
+2010-02-28
+    bradh
+	[r1747]
+		Add talloc leak checking options to mapitest.
+
 2010-02-27
     bradh
 	[r1745]

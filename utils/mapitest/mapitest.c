@@ -210,28 +210,33 @@ int main(int argc, const char *argv[])
 	const char		*opt_password = NULL;
 	const char		*opt_outfile = NULL;
 	char			*prof_tmp = NULL;
+	bool			opt_leak_report = false;
+	bool			opt_leak_report_full = false;
 
 	enum { OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD,
 	       OPT_CONFIDENTIAL, OPT_OUTFILE, OPT_MAPI_CALLS,
 	       OPT_NO_SERVER, OPT_LIST_ALL, OPT_DUMP_DATA,
-	       OPT_DEBUG, OPT_COLOR, OPT_SUBUNIT };
+	       OPT_DEBUG, OPT_COLOR, OPT_SUBUNIT, OPT_LEAK_REPORT,
+	       OPT_LEAK_REPORT_FULL };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "database",     'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB,    "set the profile database", NULL },
-		{ "profile",      'p', POPT_ARG_STRING, NULL, OPT_PROFILE,       "set the profile name", NULL },
-		{ "password",     'p', POPT_ARG_STRING, NULL, OPT_PASSWORD,      "set the profile or account password", NULL },
-		{ "confidential",  0,  POPT_ARG_NONE,   NULL, OPT_CONFIDENTIAL,  "remove any sensitive data from the report", NULL },
-		{ "color",         0,  POPT_ARG_NONE,   NULL, OPT_COLOR,         "color MAPI retval", NULL },
+		{ "database",        'f', POPT_ARG_STRING, NULL, OPT_PROFILE_DB,       "set the profile database", NULL },
+		{ "profile",         'p', POPT_ARG_STRING, NULL, OPT_PROFILE,          "set the profile name", NULL },
+		{ "password",        'p', POPT_ARG_STRING, NULL, OPT_PASSWORD,         "set the profile or account password", NULL },
+		{ "confidential",      0, POPT_ARG_NONE,   NULL, OPT_CONFIDENTIAL,     "remove any sensitive data from the report", NULL },
+		{ "color",             0, POPT_ARG_NONE,   NULL, OPT_COLOR,            "color MAPI retval", NULL },
 #if HAVE_SUBUNIT
-		{ "subunit",       0,  POPT_ARG_NONE,   NULL, OPT_SUBUNIT,       "output in subunit protocol format", NULL },
+		{ "subunit",           0, POPT_ARG_NONE,   NULL, OPT_SUBUNIT,          "output in subunit protocol format", NULL },
 #endif
-		{ "outfile",      'o', POPT_ARG_STRING, NULL, OPT_OUTFILE,       "set the report output file", NULL },
-		{ "mapi-calls",    0,  POPT_ARG_STRING, NULL, OPT_MAPI_CALLS,    "test custom ExchangeRPC tests", NULL },
-		{ "list-all",      0,  POPT_ARG_NONE,   NULL, OPT_LIST_ALL,      "list suite and tests - names and description", NULL },
-		{ "no-server",     0,  POPT_ARG_NONE,   NULL, OPT_NO_SERVER,     "only run tests that do not require server connection", NULL },
-		{ "dump-data",     0,  POPT_ARG_NONE,   NULL, OPT_DUMP_DATA,     "dump the hex data", NULL },
-		{ "debuglevel",   'd', POPT_ARG_STRING, NULL, OPT_DEBUG,         "set debug level", NULL },
+		{ "outfile",         'o', POPT_ARG_STRING, NULL, OPT_OUTFILE,          "set the report output file", NULL },
+		{ "mapi-calls",        0, POPT_ARG_STRING, NULL, OPT_MAPI_CALLS,       "test custom ExchangeRPC tests", NULL },
+		{ "list-all",          0, POPT_ARG_NONE,   NULL, OPT_LIST_ALL,         "list suite and tests - names and description", NULL },
+		{ "no-server",         0, POPT_ARG_NONE,   NULL, OPT_NO_SERVER,        "only run tests that do not require server connection", NULL },
+		{ "dump-data",         0, POPT_ARG_NONE,   NULL, OPT_DUMP_DATA,        "dump the hex data", NULL },
+		{ "debuglevel",      'd', POPT_ARG_STRING, NULL, OPT_DEBUG,            "set debug level", NULL },
+		{ "leak-report",       0, POPT_ARG_NONE,   NULL, OPT_LEAK_REPORT,      "enable talloc leak reporting on exit", NULL },
+		{ "leak-report-full",  0, POPT_ARG_NONE,   NULL, OPT_LEAK_REPORT_FULL, "enable full talloc leak reporting on exit", NULL },
 		POPT_OPENCHANGE_VERSION
 		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
@@ -288,6 +293,14 @@ int main(int argc, const char *argv[])
 			poptFreeContext(pc);
 			return 0;
 			break;
+		case OPT_LEAK_REPORT:
+			opt_leak_report = true;
+			talloc_enable_leak_report();
+			break;
+		case OPT_LEAK_REPORT_FULL:
+			opt_leak_report_full = true;
+			talloc_enable_leak_report_full();
+			break;
 		}
 	}
 
@@ -336,6 +349,14 @@ int main(int argc, const char *argv[])
 	/* Uninitialize and free memory */
 	MAPIUninitialize();
 	talloc_free(mt.mem_ctx);
+
+	if (opt_leak_report) {
+		talloc_report(NULL, stdout);
+	}
+
+	if (opt_leak_report_full) {
+		talloc_report_full(NULL, stdout);
+	}
 
 	return num_tests_failed;
 }

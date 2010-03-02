@@ -1,3 +1,12 @@
+2010-03-02
+    bradh
+	[r1749]
+		Implement RopOptionsData (0x6F).
+		
+		Updates IDL, adds implementation and mapitest coverage.
+		
+		This has no practical use, but might be useful for testing the server.
+
 2010-02-28
     bradh
 	[r1747]

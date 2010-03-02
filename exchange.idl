@@ -877,7 +877,7 @@ System Attendant Private Interface
 			op_MAPI_SetCollapseState		= 0x6c,
 			op_MAPI_GetTransportFolder		= 0x6d,
 			op_MAPI_Pending				= 0x6e,
-			op_MAPI_RegisterOptions			= 0x6f,
+			op_MAPI_OptionsData			= 0x6f,
 			op_MAPI_SyncConfigure			= 0x70,
 			op_MAPI_SyncImportMessageChange		= 0x72,
 			op_MAPI_SyncImportHierarchyChange	= 0x73,
@@ -3057,20 +3057,23 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x6f */
-	typedef [enum8bit,flag(NDR_NOALIGN)] enum {
-		OPTION_TYPE_RECIPIENT	= 0x1,
-		OPTION_TYPE_MESSAGE	= 0x2
-	} OPTIONDATA_ulFlags;
+	typedef [flag(NDR_NOALIGN)] struct {
+		astring		AddressType;
+		boolean8	WantWin32;
+	} OptionsData_req;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
+		[default]  astring	HelpFileName;
+	} OptionsData_HelpFileName;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		astring			transport;
-		OPTIONDATA_ulFlags     	type;
-	} RegisterOptions_req;
-
-	typedef [flag(NDR_NOALIGN)] struct {
-		OPTIONDATA_ulFlags     	ulFlags;
-		DATA_BLOB		data;
-	} RegisterOptions_repl;
+		uint8							Reserved;
+		SBinary_short						OptionsInfo;
+		uint16							HelpFileSize;
+		uint8                                           	HelpFile[HelpFileSize];
+		[switch_is(HelpFileSize)] OptionsData_HelpFileName	HelpFileName;
+	} OptionsData_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x70 */
@@ -3564,7 +3567,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_req mapi_GetCollapseState;
 		[case(op_MAPI_SetCollapseState)] SetCollapseState_req mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_req mapi_GetTransportFolder;
-		[case(op_MAPI_RegisterOptions)] RegisterOptions_req mapi_RegisterOptions;
+		[case(op_MAPI_OptionsData)] OptionsData_req mapi_OptionsData;
 		[case(op_MAPI_SyncConfigure)] SyncConfigure_req mapi_SyncConfigure;
 		[case(op_MAPI_SyncImportMessageChange)] SyncImportMessageChange_req mapi_SyncImportMessageChange;
 		[case(op_MAPI_SyncImportHierarchyChange)] SyncImportHierarchyChange_req mapi_SyncImportHierarchyChange;
@@ -3688,7 +3691,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_repl mapi_GetCollapseState;
 		[case(op_MAPI_SetCollapseState)] SetCollapseState_repl mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_repl mapi_GetTransportFolder;
-		[case(op_MAPI_RegisterOptions)] RegisterOptions_repl mapi_RegisterOptions;
+		[case(op_MAPI_OptionsData)] OptionsData_repl mapi_OptionsData;
 		[case(op_MAPI_SyncConfigure)] SyncConfigure_repl mapi_SyncConfigure;
 		[case(op_MAPI_SyncImportMessageChange)] SyncImportMessageChange_repl mapi_SyncImportMessageChange;
 		[case(op_MAPI_SyncImportHierarchyChange)] SyncImportHierarchyChange_repl mapi_SyncImportHierarchyChange;

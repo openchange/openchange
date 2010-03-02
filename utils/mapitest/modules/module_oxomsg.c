@@ -31,11 +31,12 @@
 
 
 /**
-   \details Test the AddressTypes (0x49) operation
+   \details Test the AddressTypes (0x49) and OptionsData (0x6f) operations
 
    This function:
    -# Log on the user private mailbox
    -# Call the AddressTypes operation
+   -# Call the OptionsData operation on each address type
 
    \param mt pointer on the top-level mapitest structure
 
@@ -48,6 +49,16 @@ _PUBLIC_ bool mapitest_oxomsg_AddressTypes(struct mapitest *mt)
 	uint16_t		cValues;
 	struct mapi_LPSTR	*transport = NULL;
 	uint32_t		i;
+	uint8_t			*optData;
+	uint16_t		OptionsDataLength;
+	uint8_t			*helpData;
+	uint16_t		HelpFileLength;
+	const char*		HelpFileName;
+	bool                    result = true;
+	/* 
+	uint8_t			txt[1024];
+	uint32_t		j;
+	*/
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
@@ -64,12 +75,42 @@ _PUBLIC_ bool mapitest_oxomsg_AddressTypes(struct mapitest *mt)
 	
 	for (i = 0; i < cValues; i++) {
 		mapitest_print(mt, "* Recipient Type: %s\n", transport[i].lppszA);
+		retval = OptionsData(&obj_store, transport[i].lppszA, &optData, &OptionsDataLength,
+				     &helpData, &HelpFileLength, &HelpFileName);
+		mapitest_print_retval(mt, "OptionsData");
+		if (retval != MAPI_E_SUCCESS) {
+			result = false;
+		}
+
+		mapitest_print(mt, "** Size of Options Data: %i\n", OptionsDataLength);
+
+		/* Just noise to print this out */
+		/*
+		for (j = 0; j < OptionsDataLength; ++j) {
+			printf("0x%02x ", optData[j]);
+			if (isprint(optData[j])) {
+				txt[j%16] = optData[j];
+			} else {
+				txt[j%16] = '.';
+			}
+			txt[16] = '\0';
+			if (((j+1) % 16) == 0) { 
+				printf("   %s\n", txt);
+			}
+		}
+		txt[(j%16)+1] = '\0';
+		printf(" %s\n", txt);
+		*/
+		mapitest_print(mt, "** Size of Help Data: %i\n", HelpFileLength);
+
+		mapitest_print(mt, "** Help Data file name: %s\n", HelpFileName);
+
 	}
 
 	/* Release */
 	mapi_object_release(&obj_store);
 
-	return true;
+	return result;
 }
 
 

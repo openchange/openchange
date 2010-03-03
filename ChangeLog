@@ -1,3 +1,13 @@
+2010-03-03
+    bradh
+	[r1752]
+		Mix of api documentation fixes for server side.
+	[r1751]
+		Add MAPI_E_NOT_IMPLEMENTED.
+		
+		This is based on information at 
+		http://social.msdn.microsoft.com/Forums/en-US/os_exchangeprotocols/thread/d3c860a8-f131-4c7a-aa11-b9ec328d06c4
+
 2010-03-02
     bradh
 	[r1749]

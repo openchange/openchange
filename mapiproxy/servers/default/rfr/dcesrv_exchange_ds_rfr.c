@@ -20,7 +20,7 @@
  */
 
 /**
-   \file dcesrv_exchange_rfr.c
+   \file dcesrv_exchange_ds_rfr.c
 
    \brief OpenChange RFR Server implementation
  */

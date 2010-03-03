@@ -108,7 +108,7 @@ _PUBLIC_ bool emsabp_destructor(void *data)
 /**
    \details Get AD record for Mail-enabled account
 
-   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the session context
    \param emsabp_ctx pointer to the EMSABP context
    \param username User common name
    \param ldb_msg Pointer on pointer to ldb_message to return result to
@@ -303,7 +303,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_EphemeralEntryID_to_Binary_r(TALLOC_CTX *mem_ctx
 
    \param emsabp_ctx pointer to the EMSABP context
    \param DisplayType the AB object display type
-   \param ldb_recipient pointer on the LDB message
+   \param msg pointer to the LDB message
    \param permEntryID pointer to the PermanentEntryID returned by the
    function
 
@@ -988,10 +988,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_CreationTemplatesTable(TALLOC_CTX *mem_ctx, 
    \param mem_ctx pointer to the memory context
    \param emsabp_ctx pointer to the EMSABP context
    \param MIds pointer to the list of MIds the function returns
-   \param Restriction pointer to restriction rules to apply to the
+   \param restriction pointer to restriction rules to apply to the
    search
    \param pStat pointer the STAT structure associated to the search
-   param limit the limit number of results the function can return
+   \param limit the limit number of results the function can return
 
    \note SortTypePhoneticDisplayName sort type is currently not supported.
 

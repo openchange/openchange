@@ -338,7 +338,7 @@ end:
    \param emsmdbp_ctx pointer to the emsmdb provider context
    \param mapi_req pointer to the QueryPosition EcDoRpc_MAPI_REQ structure
    \param mapi_repl pointer to the QueryPosition EcDoRpc_MAPI_REPL structure
-   \handles pointer to the MAPI handles array
+   \param handles pointer to the MAPI handles array
    \param size pointer to the mapi_response size to update
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error

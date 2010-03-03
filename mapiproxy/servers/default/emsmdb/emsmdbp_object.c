@@ -83,6 +83,7 @@ static int emsmdbp_object_destructor(void *data)
    \details Initialize an emsmdbp_object
 
    \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
 
    \return Allocated emsmdbp object on success, otherwise NULL
  */

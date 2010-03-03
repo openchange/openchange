@@ -144,6 +144,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_tdb_close(TDB_CONTEXT *tdb_ctx)
 /**
    \details Fetch an element within a TDB database given its key
 
+   \param tdb_ctx pointer to the EMSABP TDB context
    \param keyname pointer to the TDB key to fetch
    \param result pointer on TDB results
 

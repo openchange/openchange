@@ -171,6 +171,8 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
    \param request GetProps request
    \param response pointer to the private data stored for this
    object
+   \param private_data pointer to the private data stored for this
+   object
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */

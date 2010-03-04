@@ -399,7 +399,7 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_set_private_data(struct mapi_handles *hand
    \details Get the system folder identifier associated to a MAPI handle
 
    \param handle pointer to the MAPI handle structure
-   \param systemFolderIdx pointer to the system folder index to retrieve
+   \param systemfolder pointer to the system folder index to retrieve
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
  */
@@ -419,7 +419,7 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_get_systemfolder(struct mapi_handles *hand
    \details Set the system folder identifier associated to a MAPI handle
 
    \param handle pointer to the MAPI handle structure
-   \param systemFolderIdx the system folder index to set
+   \param systemfolder the system folder index to set
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */

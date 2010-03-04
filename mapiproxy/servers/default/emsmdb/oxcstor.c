@@ -20,7 +20,7 @@
  */
 
 /**
-   \file ocxstor.c
+   \file oxcstor.c
 
    \brief Server-side store objects routines and Rops
  */
@@ -36,6 +36,7 @@
 /**
    \details Logs on a private mailbox
 
+   \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
    \param mapi_req pointer to the RopLogon EcDoRpc_MAPI_REQ structure
    \param mapi_repl pointer to the RopLogon EcDoRpc_MAPI_REPL
@@ -129,8 +130,8 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
-   \param request pointer to the Logon EcDoRpc_MAPI_REQ structure
-   \param response pointer to the Logon EcDoRpc_MAPI_REPL structure
+   \param mapi_req pointer to the Logon EcDoRpc_MAPI_REQ structure
+   \param mapi_repl pointer to the Logon EcDoRpc_MAPI_REPL structure
    the function returns
    \param handles pointer to the MAPI handles array
    \param size pointer to the mapi_response size to update

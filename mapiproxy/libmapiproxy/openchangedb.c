@@ -550,6 +550,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 
    \param parent_ctx pointer to the memory context
    \param ldb_ctx pointer to the openchange LDB context
+   \param recipient the mailbox username
    \param ldb_filter the ldb search string
    \param proptag the MAPI property tag to retrieve value for
    \param pos the record position in search results

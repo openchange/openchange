@@ -142,7 +142,7 @@ static init_backend_fn load_backend(const char *path)
    \details Load backends from specified directory
 
    \param mem_ctx pointer to the memory context
-   \param pointer to the backends shared library folder
+   \param path name of the backend's shared library folder
 
    \return allocated array of functions pointers to initialization
    functions on success, otherwise NULL.

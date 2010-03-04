@@ -169,7 +169,8 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
    \param request GetProps request
-   \param response pointer to the private data stored for this
+   \param response pointer to the GetProps reply
+   \param private_data pointer to the private data stored for this
    object
    \param private_data pointer to the private data stored for this
    object

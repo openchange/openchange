@@ -1,3 +1,14 @@
+2010-04-20
+    jkerihuel
+	[r1758]
+		Fix OpenChange notification subsystem to handle multiple session properly
+		Patch OpenChange trunk to reflect this API change
+		
+		Add quick and dirty doc/examples/multiple_notif.c to show how to setup
+		multiple sessions + notifications with threads. 
+	[r1757]
+		Add PidTag for transport message headers
+
 2010-03-04
     bradh
 	[r1755]

@@ -53,6 +53,7 @@ _PUBLIC_ bool mapitest_oxcnotif_RegisterNotification(struct mapitest *mt)
 	bool			ret;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_folder;
+	struct mapi_session	*session;
 	uint32_t tcon;
 
 	/* Step 1. Logon */
@@ -71,7 +72,8 @@ _PUBLIC_ bool mapitest_oxcnotif_RegisterNotification(struct mapitest *mt)
 	}
 
 	/* Step 3. Register notification */
-	retval = RegisterNotification(fnevObjectCopied);
+	session = mapi_object_get_session(&obj_store);
+	retval = RegisterNotification(session, fnevObjectCopied);
 	mapitest_print_retval(mt, "RegisterNotification");
 	if ( retval != MAPI_E_SUCCESS) {
 		return false;

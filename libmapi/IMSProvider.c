@@ -362,24 +362,23 @@ enum MAPISTATUS GetNewLogonId(struct mapi_session *session, uint8_t *logon_id)
 
    \sa Subscribe, Unsubscribe, MonitorNotification, GetLastError 
 */
-_PUBLIC_ enum MAPISTATUS RegisterNotification(uint16_t ulEventMask)
+_PUBLIC_ enum MAPISTATUS RegisterNotification(struct mapi_session *session,
+					      uint16_t ulEventMask)
 {
 	NTSTATUS		status;
 	struct emsmdb_context	*emsmdb;
-	struct mapi_session	*session;
 	TALLOC_CTX		*mem_ctx;
 	struct NOTIFKEY		*lpKey;
 	static uint8_t		rand = 0;
 	static uint8_t		attempt = 0;
 	
 	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx->session, MAPI_E_SESSION_LIMIT, NULL);
-
-	session = (struct mapi_session *)global_mapi_ctx->session;
 	OPENCHANGE_RETVAL_IF(!session->emsmdb, MAPI_E_SESSION_LIMIT, NULL);
 
-	emsmdb = (struct emsmdb_context *)global_mapi_ctx->session->emsmdb->ctx;
+	emsmdb = (struct emsmdb_context *)session->emsmdb->ctx;
 	OPENCHANGE_RETVAL_IF(!emsmdb, MAPI_E_SESSION_LIMIT, NULL);
 
 	mem_ctx = emsmdb->mem_ctx;
@@ -396,7 +395,7 @@ _PUBLIC_ enum MAPISTATUS RegisterNotification(uint16_t ulEventMask)
 retry:
 	lpKey->ab[7] = rand;
 
-	status = emsmdb_register_notification(lpKey, ulEventMask);
+	status = emsmdb_register_notification(session, lpKey, ulEventMask);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (attempt < 5) {
 			rand++;
@@ -408,6 +407,8 @@ retry:
 			return MAPI_E_CALL_FAILED;
 		}
 	}
+
+	attempt = 0;
 	talloc_free(lpKey);
 	return MAPI_E_SUCCESS;
 }

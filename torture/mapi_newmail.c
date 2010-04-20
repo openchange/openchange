@@ -83,7 +83,7 @@ bool torture_rpc_mapi_newmail(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Register notification */
-	retval = RegisterNotification(fnevTableModified);
+	retval = RegisterNotification(session, fnevTableModified);
 	mapi_errstr("RegisterNotification", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 

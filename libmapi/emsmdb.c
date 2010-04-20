@@ -436,13 +436,15 @@ retry:
 /**
    \details Register for notifications on the server
    
+   \param session Pointer to the current MAPI session
    \param notifkey The opaque client-generated context data
    \param ulEventMask Notification flags. Exchange completely ignores
    this value and it should be set to 0
 
    \return NTSTATUS_OK on success, otherwise NT status error
  */
-NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey, 
+NTSTATUS emsmdb_register_notification(struct mapi_session *session,
+				      struct NOTIFKEY *notifkey, 
 				      uint16_t ulEventMask)
 {
 	struct EcRRegisterPushNotification	request;
@@ -450,7 +452,6 @@ NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey,
 	enum MAPISTATUS				retval;
 	TALLOC_CTX				*mem_ctx;
 	struct emsmdb_context			*emsmdb_ctx;
-	struct mapi_session			*session;
 	struct mapi_notify_ctx			*notify_ctx;
 	struct policy_handle			handle;
 	uint32_t				hNotification = 0;
@@ -462,7 +463,6 @@ NTSTATUS emsmdb_register_notification(struct NOTIFKEY *notifkey,
 	if (!global_mapi_ctx->session->emsmdb->ctx) return NT_STATUS_INVALID_PARAMETER;
 	if (!notifkey) return NT_STATUS_INVALID_PARAMETER;
 
-	session = (struct mapi_session *)global_mapi_ctx->session;
 	emsmdb_ctx = (struct emsmdb_context *)session->emsmdb->ctx;
 	notify_ctx = (struct mapi_notify_ctx *)session->notify_ctx;
 	mem_ctx = talloc_named(NULL, 0, "emsmdb_register_notification");

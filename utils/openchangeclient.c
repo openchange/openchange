@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2007-2008
+   Copyright (C) Julien Kerihuel 2007-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -2276,14 +2276,16 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 
 static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
 {
-	enum MAPISTATUS	retval;
-	mapi_object_t	obj_inbox;
-	mapi_id_t	fid;
-	uint32_t	ulConnection;
-	uint16_t	ulEventMask;
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_inbox;
+	mapi_id_t		fid;
+	uint32_t		ulConnection;
+	uint16_t		ulEventMask;
+	struct mapi_session	*session;
 
 	/* Register notification */
-	retval = RegisterNotification(0);
+	session = mapi_object_get_session(obj_store);
+	retval = RegisterNotification(session, 0);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (oclient->pf == true) {
@@ -2306,7 +2308,7 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 		fnevSearchComplete|fnevTableModified|fnevStatusObjectModified;
 	retval = Subscribe(obj_store, &ulConnection, ulEventMask, true, (mapi_notify_callback_t)callback,
 		(void*) obj_store);
-	retval = Subscribe(&obj_inbox, &ulConnection, ulEventMask, false, (mapi_notify_callback_t)callback,
+	retval = Subscribe(&obj_inbox, &ulConnection, ulEventMask, true, (mapi_notify_callback_t)callback,
 		(void*) obj_store);
 	if (retval != MAPI_E_SUCCESS) return false;
 

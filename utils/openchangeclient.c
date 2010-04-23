@@ -2425,6 +2425,10 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 	uint32_t		count;
 	uint8_t			ulFlags;
 	uint32_t		rowsFetched = 0;
+	uint32_t		totalRecs = 0;
+
+	retval = GetGALTableCount(session, &totalRecs);
+	printf("Total Number of entries in GAL: %d\n", totalRecs);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0xc,
 					  PR_INSTANCE_KEY,

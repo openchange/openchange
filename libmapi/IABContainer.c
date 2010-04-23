@@ -152,7 +152,7 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
 _PUBLIC_ enum MAPISTATUS GetGALTable(struct mapi_session *session,
 				     struct SPropTagArray *SPropTagArray, 
 				     struct SRowSet **SRowSet, 
-				     uint32_t count, 
+				     uint32_t count,
 				     uint8_t ulFlags)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -189,6 +189,62 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct mapi_session *session,
 	return MAPI_E_SUCCESS;
 }
 
+/**
+   \details Retrieve the total number of records in the global address
+   list
+
+   The Global Address List is the full list of email addresses (and other
+   account-type things, such as "rooms" and distribution lists) accessible
+   on the server. A user will usually have access to both a personal
+   address book, and to the Global Address List. Public Address Book is
+   another name for Global Address List.
+
+   \param session pointer to the MAPI session context
+   \param totalRecs pointers to the total number of records in the
+   global address list returned
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   -# MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   -# MAPI_E_SESSION_LIMIT: No session has been opened on the provider
+   -# MAPI_E_INVALID_PARAMETER: if a function parameter is invalid
+   -# MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+ */
+_PUBLIC_ enum MAPISTATUS GetGALTableCount(struct mapi_session *session,
+					  uint32_t *totalRecs)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct nspi_context	*nspi;
+	enum MAPISTATUS		retval;
+	struct SRowSet		*srowset;
+
+	/* Sanity Checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "GetGALTableCount");
+	nspi = (struct nspi_context *) session->nspi->ctx;
+
+	nspi->pStat->CurrentRec = 0;
+	nspi->pStat->Delta = 0;
+	nspi->pStat->NumPos = 0;
+	nspi->pStat->TotalRecs = 0xffffffff;
+
+	srowset = talloc_zero(mem_ctx, struct SRowSet);
+	retval = nspi_QueryRows(nspi, mem_ctx, NULL, NULL, 0, &srowset);
+
+	*totalRecs = nspi->pStat->TotalRecs;
+	
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+	talloc_free(mem_ctx);
+	
+	return MAPI_E_SUCCESS;
+}
 
 /**
    \details Retrieve Address Book information for a given recipient

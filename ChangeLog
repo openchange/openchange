@@ -1,3 +1,12 @@
+2010-04-23
+    jkerihuel
+	[r1760]
+		Add a convenient function to retrieve the total 
+		number of records in the Global Address List.
+		
+		Modify openchangeclient to expose this change in
+		the --userlist option.
+
 2010-04-20
     jkerihuel
 	[r1758]

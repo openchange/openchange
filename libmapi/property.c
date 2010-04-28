@@ -494,6 +494,9 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 		mapi_sprop->value.bin.cb = sprop->value.bin.cb;
 		mapi_sprop->value.bin.lpb = sprop->value.bin.lpb;
 		return (mapi_sprop->value.bin.cb + sizeof(uint16_t));
+        case PT_ERROR:
+                mapi_sprop->value.err = sprop->value.err;
+                return sizeof(uint32_t);
 	case PT_MV_STRING8:
 		{
 			uint32_t	i;

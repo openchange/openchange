@@ -1,3 +1,12 @@
+2010-04-28
+    bradh
+	[r1763]
+		Add support for PT_ERROR in mapi_SPropValue casting function.
+	[r1762]
+		Add support for a couple more types in the casting code.
+		
+		Also adds a development-version "OPENCHANGE_ASSERT()" that flags incomplete code.
+
 2010-04-23
     jkerihuel
 	[r1760]

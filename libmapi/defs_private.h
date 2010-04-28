@@ -40,4 +40,14 @@
 #endif
 
 
+/* This provides a "we need to fix this problem" signal
+   in development builds, but not in release builds */
+#if SNAPSHOT == yes
+  #include <assert.h>
+  #define OPENCHANGE_ASSERT() assert(0)
+#else
+  #define OPENCHANGE_ASSERT()
+#endif
+
+
 #endif	/* ! _DEFS_PRIVATE_H */

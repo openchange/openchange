@@ -22,12 +22,14 @@
 #include <libmapi/proto_private.h>
 #include <gen_ndr/ndr_property.h>
 #include <param.h>
+#include "defs_private.h"
 
 /**
    \file property.c
 
    \brief Functions for manipulating MAPI properties
  */
+
 
 /**
   \details Create a property tag array
@@ -507,13 +509,32 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 			}
 			return size;
 		}
+	case PT_MV_BINARY:
+                {
+                        uint32_t        i;
+                        uint32_t        size = 0;
+
+                        mapi_sprop->value.MVbin.cValues = sprop->value.MVbin.cValues;
+                        size += 4;
+
+                        mapi_sprop->value.MVbin.bin = talloc_array(global_mapi_ctx->mem_ctx, struct SBinary_short, mapi_sprop->value.MVbin.cValues);
+                        for (i = 0; i < mapi_sprop->value.MVbin.cValues; i++) {
+                                mapi_sprop->value.MVbin.bin[i].cb = sprop->value.MVbin.lpbin[i].cb;
+                                mapi_sprop->value.MVbin.bin[i].lpb = sprop->value.MVbin.lpbin[i].lpb;
+                                size += sprop->value.MVbin.lpbin[i].cb + sizeof (uint16_t);
+                        }
+                        return size;
+                }
+        default:
+                printf("unhandled conversion case in cast_mapi_SPropValue(): 0x%x\n", (sprop->ulPropTag & 0xFFFF));
+                OPENCHANGE_ASSERT();
 	}
 	return 0;
 
 }
 
 /*
- *
+ * convenience function to convert a mapi_SPropValue structure into a SPropValue structure and return the associated size
  */
 _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPropValue *sprop)
 {
@@ -548,7 +569,9 @@ _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPr
 		sprop->value.bin.cb = mapi_sprop->value.bin.cb;
 		sprop->value.bin.lpb = mapi_sprop->value.bin.lpb;
 		return (sprop->value.bin.cb + sizeof(uint16_t));
-
+        case PT_ERROR:
+                sprop->value.err = (enum MAPISTATUS)mapi_sprop->value.err;
+                return sizeof(uint32_t);
 	case PT_MV_STRING8:
 		{
 		uint32_t	i;
@@ -564,6 +587,24 @@ _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPr
 		}
 		return size;
 		}
+        case PT_MV_UNICODE:
+                {
+                        uint32_t        i;
+                        uint32_t        size = 0;
+
+                        sprop->value.MVszW.cValues = mapi_sprop->value.MVszW.cValues;
+                        size += 4;
+
+                        sprop->value.MVszW.lppszW = talloc_array(global_mapi_ctx->mem_ctx, const char*, sprop->value.MVszW.cValues);
+                        for (i = 0; i < sprop->value.MVszW.cValues; i++) {
+                                sprop->value.MVszW.lppszW[i] = mapi_sprop->value.MVszW.strings[i].lppszW;
+                                size += 2 * (strlen(sprop->value.MVszW.lppszW[i]) + 1);
+                        }
+                        return size;
+                }
+        default:
+                printf("unhandled conversion case in cast_SPropValue(): 0x%x\n", (sprop->ulPropTag & 0xFFFF));
+                OPENCHANGE_ASSERT();
 	}
 	return 0;
 }

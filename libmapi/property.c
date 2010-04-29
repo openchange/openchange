@@ -372,6 +372,9 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 	case PT_LONG:
 		lpProps->value.l = *((const uint32_t *)data);
 		break;
+	case PT_DOUBLE:
+		lpProps->value.dbl = *((const int64_t *)data);
+		break;
 	case PT_I8:
 		lpProps->value.d = *((const uint64_t *)data);
 		break;

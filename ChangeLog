@@ -1,3 +1,8 @@
+2010-04-29
+    bradh
+	[r1765]
+		Add PT_DOUBLE support for set_SPropValue().
+
 2010-04-28
     bradh
 	[r1763]

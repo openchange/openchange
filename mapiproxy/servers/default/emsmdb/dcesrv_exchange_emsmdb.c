@@ -108,6 +108,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	}
 
 	emsmdbp_ctx->szUserDN = talloc_strdup(emsmdbp_ctx, r->in.szUserDN);
+	emsmdbp_ctx->userLanguage = r->in.ulLcidString;
 
 	/* Step 4. Retrieve the display name of the user */
 	r->out.szDisplayName = ldb_msg_find_attr_as_string(msg, "displayName", NULL);
@@ -385,6 +386,18 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 								    &(mapi_request->mapi_req[i]),
 								    &(mapi_response->mapi_repl[idx]),
 								    mapi_response->handles, &size);
+			break;
+		case op_MAPI_AddressTypes:
+			retval = EcDoRpc_RopGetAddressTypes(mem_ctx, emsmdbp_ctx,
+							    &(mapi_request->mapi_req[i]),
+							    &(mapi_response->mapi_repl[idx]),
+							    mapi_response->handles, &size);
+			break;
+		case op_MAPI_OptionsData:
+			retval = EcDoRpc_RopOptionsData(mem_ctx, emsmdbp_ctx,
+							&(mapi_request->mapi_req[i]),
+							&(mapi_response->mapi_repl[idx]),
+							mapi_response->handles, &size);
 			break;
 		case op_MAPI_Logon:
 			retval = EcDoRpc_RopLogon(mem_ctx, emsmdbp_ctx,

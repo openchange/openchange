@@ -142,6 +142,21 @@
 #define	SIZE_DFLT_ROPGETRECEIVEFOLDER		8
 
 /**
+   \details GetAddressTypes has fixed response size for:
+   -# cValues: uint16_t
+   -# size: uint16_t
+ */
+#define	SIZE_DFLT_ROPGETADDRESSTYPES		4
+
+/**
+   \details OptionsData has fixed response size for:
+   -# Reserved: uint8_t
+   -# OptionsInfo: uint16_t part of SBinary_short
+   -# HelpFileSize: uint16_t
+ */
+#define	SIZE_DFLT_ROPOPTIONSDATA		5
+
+/**
    \details FindRow has fixed response size for:
    -# RowNoLongerVisible: uint8_t
    -# HasRowData: uint8_t
@@ -210,6 +225,10 @@ uint16_t libmapiserver_RopQueryRows_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopQueryPosition_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSeekRow_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopFindRow_size(struct EcDoRpc_MAPI_REPL *);
+
+/* definitions from libmapiserver_oxomsg.c */
+uint16_t libmapiserver_RopGetAddressTypes_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopOptionsData_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxorule.c */
 uint16_t libmapiserver_RopGetRulesTable_size(void);

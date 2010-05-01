@@ -1,3 +1,13 @@
+2010-05-01
+    bradh
+	[r1767]
+		Add support for EcDoRpc GetAddressTypes (0x49) and OptionsData (0x6f) to server.
+		
+		This is completely driven by the server provisioning - no hard coding.
+		
+		This makes a binary incompatible change, so if you get crashes, please try a
+		clean rebuild.
+
 2010-04-29
     bradh
 	[r1765]

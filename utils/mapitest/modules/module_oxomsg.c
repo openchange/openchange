@@ -599,7 +599,7 @@ _PUBLIC_ bool mapitest_oxomsg_GetTransportFolder(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;
-	mapi_id_t		folder_id;
+	mapi_id_t		folder_id = 0;
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
@@ -612,7 +612,8 @@ _PUBLIC_ bool mapitest_oxomsg_GetTransportFolder(struct mapitest *mt)
 	/* Step 2. Get the transport folder */
 	retval = GetTransportFolder(&obj_store, &folder_id);
 	mapitest_print_retval_fmt(mt, "GetTransportFolder", "(0x%llx)", folder_id);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_object_release(&obj_store);
 		return false;
 	}
 

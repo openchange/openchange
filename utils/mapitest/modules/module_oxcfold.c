@@ -636,7 +636,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
 
@@ -647,7 +647,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 
 	retval = OpenFolder(&obj_store, id_folder, &obj_folder_src);
 	mapitest_print_retval(mt, "OpenFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
 		
@@ -658,14 +658,15 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 
 	retval = OpenFolder(&obj_store, id_folder, &obj_folder_dst);
 	mapitest_print_retval(mt, "OpenFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
 	mapi_object_init(&(dst_contents));
 	retval = GetContentsTable(&(obj_folder_dst), &(dst_contents), 0, &dst_count);
 	mapitest_print_retval(mt, "GetContentsTable");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
+		goto release;
 	}
 
 	/* Step 4. Create sample messages */
@@ -674,8 +675,9 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 		mapi_object_init(&obj_message);
 		retval = mapitest_common_message_create(mt, &obj_folder_src, &obj_message, MT_MAIL_SUBJECT);
 		mapitest_print_retval(mt, "mapitest_common_message_create");
-		if (GetLastError() != MAPI_E_SUCCESS) {
+		if (retval != MAPI_E_SUCCESS) {
 			ret = false;
+			goto release;
 		}
 		
 		retval = SaveChangesMessage(&obj_folder_src, &obj_message, KeepOpenReadOnly);
@@ -692,6 +694,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	mapitest_print_retval(mt, "MoveCopyMessages");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
+		goto release;
 	}
 	mapi_id_array_release(&msg_id_array);
 
@@ -706,6 +709,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	mapitest_print_retval(mt, "Restrict");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
+		goto release;
 	}
 
 	/* Step 7. Get the filtered row */
@@ -715,6 +719,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
+		goto release;
 	}
 
 	retval = QueryRows(&(dst_contents), 20, TBL_NOADVANCE, &SRowSet);
@@ -729,6 +734,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	retval = DeleteMessage(&obj_folder_dst, msgid, i); 
 	mapitest_print_retval(mt, "DeleteMessage");
 
+release:
 	/* Release */
 	mapi_object_release(&dst_contents);
 	mapi_object_release(&obj_folder_src);

@@ -1404,11 +1404,12 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	mapi_object_init(&obj_store);
 	mapi_object_init(&obj_top_folder);
 	mapi_object_init(&obj_ref_folder);
+	mapi_object_init(&obj_targ_folder);
 	mapi_object_init(&obj_ref_message);
 	mapi_object_init(&obj_target_message);
 	mapi_object_init(&obj_ref_attach);
 	mapi_object_init(&obj_targ_attach);
-
+	
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (retval != MAPI_E_SUCCESS) {
@@ -1873,7 +1874,6 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}	
 
 	/* Create another folder */
-	mapi_object_init(&obj_targ_folder);
         retval = CreateFolder(&obj_top_folder, FOLDER_GENERIC, "[MT] Target Folder", NULL,
                               OPEN_IF_EXISTS, &obj_targ_folder);
 	mapitest_print_retval(mt, "CreateFolder");

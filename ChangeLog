@@ -1,3 +1,12 @@
+2010-05-02
+    bradh
+	[r1770]
+		Fix some mapitest issues reported by valgrind.
+		
+		These only occur when running against the openchange server - mostly problems with failure paths.
+	[r1769]
+		Fix up a few segfaults found when running against openchange server.
+
 2010-05-01
     bradh
 	[r1767]

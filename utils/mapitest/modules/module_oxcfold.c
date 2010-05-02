@@ -717,7 +717,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 		ret = false;
 	}
 
-	QueryRows(&(dst_contents), 20, TBL_NOADVANCE, &SRowSet);
+	retval = QueryRows(&(dst_contents), 20, TBL_NOADVANCE, &SRowSet);
 	mapitest_print_retval(mt, "QueryRows");
 	if ( (retval == MAPI_E_SUCCESS) && (SRowSet.cRows > 0) ) {
 		for (i = 0; i < SRowSet.cRows; ++i) {

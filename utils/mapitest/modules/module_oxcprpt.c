@@ -111,10 +111,10 @@ _PUBLIC_ bool mapitest_oxcprpt_GetPropsAll(struct mapitest *mt)
 	/* Step 2. GetPropsAll operation */
 	retval = GetPropsAll(&obj_store, &properties_array);
 	mapitest_print_retval(mt, "GetPropsAll");
-	MAPIFreeBuffer(properties_array.lpProps);
 	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
+	MAPIFreeBuffer(properties_array.lpProps);
 
 	/* Release */
 	mapi_object_release(&obj_store);

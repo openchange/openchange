@@ -364,7 +364,7 @@ _PUBLIC_ bool mapitest_nspi_GetPropList(struct mapitest *mt)
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi_ctx;
-	struct SPropTagArray	*pPropTags;
+	struct SPropTagArray	*pPropTags = 0;
 	struct SPropTagArray	*MIds;
 	struct SPropValue	*lpProp;
 	struct Restriction_r	Filter;
@@ -405,14 +405,16 @@ _PUBLIC_ bool mapitest_nspi_GetPropList(struct mapitest *mt)
 	MAPIFreeBuffer(MIds);
 	mapitest_print_retval(mt, "NspiGetPropList");
 
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(pPropTags);
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	mapitest_print(mt, "* %-35s: %d\n", "Properties number", pPropTags->cValues);
-	MAPIFreeBuffer(pPropTags);
+	if (pPropTags) {
+		mapitest_print(mt, "* %-35s: %d\n", "Properties number", pPropTags->cValues);
+		MAPIFreeBuffer(pPropTags);
+	}
 	talloc_free(mem_ctx);
 
 	return true;
@@ -751,16 +753,18 @@ _PUBLIC_ bool mapitest_nspi_QueryColumns(struct mapitest *mt)
 	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
 
 	retval = nspi_QueryColumns(nspi_ctx, mem_ctx, true, &SPropTagArray);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "NspiQueryColumns");
 		MAPIFreeBuffer(SPropTagArray);
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	mapitest_print(mt, "* %d columns returned\n", SPropTagArray->cValues);
-	mapitest_print_retval(mt, "NspiQueryColumns");
-	MAPIFreeBuffer(SPropTagArray);
+	if (SPropTagArray) {
+		mapitest_print(mt, "* %d columns returned\n", SPropTagArray->cValues);
+		mapitest_print_retval(mt, "NspiQueryColumns");
+		MAPIFreeBuffer(SPropTagArray);
+	}
 	talloc_free(mem_ctx);
 
 	return true;
@@ -827,7 +831,7 @@ _PUBLIC_ bool mapitest_nspi_GetIDsFromNames(struct mapitest *mt)
 	mapitest_print_retval(mt, "NspiGetNamesFromIDs");
 	MAPIFreeBuffer(ppReturnedPropTags);
 
-	if (retval != MAPI_E_SUCCESS) {
+	if ( (retval != MAPI_E_SUCCESS) || !ppNames ) {
 		MAPIFreeBuffer(ppNames);
 		talloc_free(mem_ctx);
 		return false;

@@ -1,3 +1,8 @@
+2010-05-03
+    bradh
+	[r1772]
+		Make sure we can load a server module when it is built with coverage testing enabled.
+
 2010-05-02
     bradh
 	[r1770]

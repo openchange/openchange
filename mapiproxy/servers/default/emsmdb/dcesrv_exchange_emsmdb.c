@@ -274,132 +274,233 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		}
 
 		switch (mapi_request->mapi_req[i].opnum) {
-		case op_MAPI_Release:
+		case op_MAPI_Release: /* 0x01 */
 			retval = EcDoRpc_RopRelease(mem_ctx, emsmdbp_ctx, 
 						    &(mapi_request->mapi_req[i]),
 						    mapi_request->handles, &size);
 			break;
-		case op_MAPI_OpenFolder:
+		case op_MAPI_OpenFolder: /* 0x02 */
 			retval = EcDoRpc_RopOpenFolder(mem_ctx, emsmdbp_ctx,
 						       &(mapi_request->mapi_req[i]),
 						       &(mapi_response->mapi_repl[idx]),
 						       mapi_response->handles, &size);
 			break;
-		case op_MAPI_GetHierarchyTable:
+		/* op_MAPI_OpenMessage: 0x3 */
+		case op_MAPI_GetHierarchyTable: /* 0x04 */
 			retval = EcDoRpc_RopGetHierarchyTable(mem_ctx, emsmdbp_ctx,
 							      &(mapi_request->mapi_req[i]),
 							      &(mapi_response->mapi_repl[idx]),
 							      mapi_response->handles, &size);
 			break;
-		case op_MAPI_GetContentsTable:
+		case op_MAPI_GetContentsTable: /* 0x05 */
 			retval = EcDoRpc_RopGetContentsTable(mem_ctx, emsmdbp_ctx,
 							     &(mapi_request->mapi_req[i]),
 							     &(mapi_response->mapi_repl[idx]),
 							     mapi_response->handles, &size);
 			break;
-		case op_MAPI_CreateMessage:
+		case op_MAPI_CreateMessage: /* 0x06 */
 			retval = EcDoRpc_RopCreateMessage(mem_ctx, emsmdbp_ctx,
 							  &(mapi_request->mapi_req[i]),
 							  &(mapi_response->mapi_repl[idx]),
 							  mapi_response->handles, &size);
 			break;
-		case op_MAPI_GetProps:
+		case op_MAPI_GetProps: /* 0x07 */
 			retval = EcDoRpc_RopGetPropertiesSpecific(mem_ctx, emsmdbp_ctx,
 								  &(mapi_request->mapi_req[i]),
 								  &(mapi_response->mapi_repl[idx]),
 								  mapi_response->handles, &size);
 			break;
-		case op_MAPI_SetProps:
+		/* op_MAPI_GetPropsAll: 0x8 */
+		/* op_MAPI_GetPropList: 0x9 */
+		case op_MAPI_SetProps: /* 0x09 */
 			retval = EcDoRpc_RopSetProperties(mem_ctx, emsmdbp_ctx,
 							  &(mapi_request->mapi_req[i]),
 							  &(mapi_response->mapi_repl[idx]),
 							  mapi_response->handles, &size);
 			break;
-		case op_MAPI_SaveChangesMessage:
+		/* op_MAPI_DeleteProps: 0xb */
+		case op_MAPI_SaveChangesMessage: /* 0x0c */
 			retval = EcDoRpc_RopSaveChangesMessage(mem_ctx, emsmdbp_ctx,
 							  &(mapi_request->mapi_req[i]),
 							  &(mapi_response->mapi_repl[idx]),
 							  mapi_response->handles, &size);
 			break;
-		case op_MAPI_SetColumns:
+		/* op_MAPI_SaveChangesMessage: 0xc */
+		/* op_MAPI_RemoveAllRecipients: 0xd */
+		/* op_MAPI_ModifyRecipients: 0xe */
+		/* op_MAPI_ReadRecipients: 0xf */
+		/* op_MAPI_ReloadCachedInformation: 0x10 */
+		/* op_MAPI_SetMessageReadFlag: 0x11 */
+		case op_MAPI_SetColumns: /* 0x12 */
 			retval = EcDoRpc_RopSetColumns(mem_ctx, emsmdbp_ctx,
 						       &(mapi_request->mapi_req[i]),
 						       &(mapi_response->mapi_repl[idx]),
 						       mapi_response->handles, &size);
 			break;
-		case op_MAPI_SortTable:
+		case op_MAPI_SortTable: /* 0x13 */
 			retval = EcDoRpc_RopSortTable(mem_ctx, emsmdbp_ctx,
 						      &(mapi_request->mapi_req[i]),
 						      &(mapi_response->mapi_repl[idx]),
 						      mapi_response->handles, &size);
 			break;
-		case op_MAPI_Restrict:
+		case op_MAPI_Restrict: /* 0x14 */
 			retval = EcDoRpc_RopRestrict(mem_ctx, emsmdbp_ctx,
 						     &(mapi_request->mapi_req[i]),
 						     &(mapi_response->mapi_repl[idx]),
 						     mapi_response->handles, &size);
 			break;
-		case op_MAPI_QueryRows:
+		case op_MAPI_QueryRows: /* 0x15 */
 			retval = EcDoRpc_RopQueryRows(mem_ctx, emsmdbp_ctx,
 						      &(mapi_request->mapi_req[i]),
 						      &(mapi_response->mapi_repl[idx]),
 						      mapi_response->handles, &size);
 			break;
-		case op_MAPI_QueryPosition:
+		/* op_MAPI_QueryRows: 0x15 */
+		/* op_MAPI_GetStatus: 0x16 */
+		case op_MAPI_QueryPosition: /* 0x17 */
 			retval = EcDoRpc_RopQueryPosition(mem_ctx, emsmdbp_ctx,
 							  &(mapi_request->mapi_req[i]),
 							  &(mapi_response->mapi_repl[idx]),
 							  mapi_response->handles, &size);
 			break;
-		case op_MAPI_SeekRow:
+		case op_MAPI_SeekRow: /* 0x18 */
 			retval = EcDoRpc_RopSeekRow(mem_ctx, emsmdbp_ctx,
 						    &(mapi_request->mapi_req[i]),
 						    &(mapi_response->mapi_repl[idx]),
 						    mapi_response->handles, &size);
 			break;
-		case op_MAPI_GetReceiveFolder:
+		/* op_MAPI_SeekRowBookmark: 0x19 */
+		/* op_MAPI_SeekRowApprox: 0x1a */
+		/* op_MAPI_CreateBookmark: 0x1b */
+		/* op_MAPI_CreateFolder: 0x1c */
+		/* op_MAPI_DeleteFolder: 0x1d */
+		/* op_MAPI_DeleteMessages: 0x1e */
+		/* op_MAPI_GetMessageStatus: 0x1f */
+		/* op_MAPI_SetMessageStatus: 0x20 */
+		/* op_MAPI_GetAttachmentTable: 0x21 */
+		/* op_MAPI_OpenAttach: 0x22 */
+		/* op_MAPI_CreateAttach: 0x23 */
+		/* op_MAPI_DeleteAttach: 0x24 */
+		/* op_MAPI_SaveChangesAttachment: 0x25 */
+		/* op_MAPI_SetReceiveFolder: 0x26 */
+		case op_MAPI_GetReceiveFolder: /* 0x27 */
 			retval = EcDoRpc_RopGetReceiveFolder(mem_ctx, emsmdbp_ctx,
 							     &(mapi_request->mapi_req[i]),
 							     &(mapi_response->mapi_repl[idx]),
 							     mapi_response->handles, &size);
 			break;
-		case op_MAPI_RegisterNotification:
+		case op_MAPI_RegisterNotification: /* 0x29 */
 			retval = EcDoRpc_RopRegisterNotification(mem_ctx, emsmdbp_ctx,
 								 &(mapi_request->mapi_req[i]),
 								 &(mapi_response->mapi_repl[idx]),
 								 mapi_response->handles, &size);
 			break;
-		case op_MAPI_GetRulesTable:
+		/* op_MAPI_Notify: 0x2a */
+		/* op_MAPI_OpenStream: 0x2b */
+		/* op_MAPI_ReadStream: 0x2c */
+		/* op_MAPI_WriteStream: 0x2d */
+		/* op_MAPI_SeekStream: 0x2e */
+		/* op_MAPI_SetStreamSize: 0x2f */
+		/* op_MAPI_SetSearchCriteria: 0x30 */
+		/* op_MAPI_GetSearchCriteria: 0x31 */
+		/* op_MAPI_SubmitMessage: 0x32 */
+		/* op_MAPI_MoveCopyMessages: 0x33 */
+		/* op_MAPI_AbortSubmit: 0x34 */
+		/* op_MAPI_MoveFolder: 0x35 */
+		/* op_MAPI_CopyFolder: 0x36 */
+		/* op_MAPI_QueryColumnsAll: 0x37 */
+		/* op_MAPI_Abort: 0x38 */
+		/* op_MAPI_CopyTo: 0x39 */
+		/* op_MAPI_CopyToStream: 0x3a */
+		/* op_MAPI_CloneStream: 0x3b */
+		/* op_MAPI_GetPermissionsTable: 0x3e */
+		case op_MAPI_GetRulesTable: /* 0x3f */
 			retval = EcDoRpc_RopGetRulesTable(mem_ctx, emsmdbp_ctx,
 							  &(mapi_request->mapi_req[i]),
 							  &(mapi_response->mapi_repl[idx]),
 							  mapi_response->handles, &size);
 			break;
-		case op_MAPI_FindRow:
-			retval = EcDoRpc_RopFindRow(mem_ctx, emsmdbp_ctx, 
-						    &(mapi_request->mapi_req[i]),
-						    &(mapi_response->mapi_repl[idx]),
-						    mapi_response->handles, &size);
-			break;
-		case op_MAPI_GetIDsFromNames:
-			retval = EcDoRpc_RopGetPropertyIdsFromNames(mem_ctx, emsmdbp_ctx,
-								    &(mapi_request->mapi_req[i]),
-								    &(mapi_response->mapi_repl[idx]),
-								    mapi_response->handles, &size);
-			break;
-		case op_MAPI_AddressTypes:
+		/* op_MAPI_ModifyPermissions: 0x40 */
+		/* op_MAPI_ModifyRules: 0x41 */
+		/* op_MAPI_GetOwningServers: 0x42 */
+		/* op_MAPI_LongTermIdFromId: 0x43 */
+		/* op_MAPI_IdFromLongTermId: 0x44 */
+		/* op_MAPI_PublicFolderIsGhosted: 0x45 */
+		/* op_MAPI_OpenEmbeddedMessage: 0x46 */
+		/* op_MAPI_SetSpooler: 0x47 */
+		/* op_MAPI_SpoolerLockMessage: 0x48 */
+		case op_MAPI_AddressTypes: /*x49 */
 			retval = EcDoRpc_RopGetAddressTypes(mem_ctx, emsmdbp_ctx,
 							    &(mapi_request->mapi_req[i]),
 							    &(mapi_response->mapi_repl[idx]),
 							    mapi_response->handles, &size);
 			break;
-		case op_MAPI_OptionsData:
+		/* op_MAPI_TransportSend: 0x4a */
+		/* op_MAPI_FastTransferSourceGetBuffer: 0x4e */
+		case op_MAPI_FindRow: /* 0x4f */
+			retval = EcDoRpc_RopFindRow(mem_ctx, emsmdbp_ctx, 
+						    &(mapi_request->mapi_req[i]),
+						    &(mapi_response->mapi_repl[idx]),
+						    mapi_response->handles, &size);
+			break;
+		/* op_MAPI_Progress: 0x50 */
+		/* op_MAPI_TransportNewMail: 0x51 */
+		/* op_MAPI_GetValidAttachments: 0x52 */
+		/* op_MAPI_GetNamesFromIDs: 0x55 */
+		case op_MAPI_GetIDsFromNames: /* 0x56 */
+			retval = EcDoRpc_RopGetPropertyIdsFromNames(mem_ctx, emsmdbp_ctx,
+								    &(mapi_request->mapi_req[i]),
+								    &(mapi_response->mapi_repl[idx]),
+								    mapi_response->handles, &size);
+			break;
+		/* op_MAPI_UpdateDeferredActionMessages: 0x57 */ 
+		/* op_MAPI_EmptyFolder: 0x58 */
+		/* op_MAPI_ExpandRow: 0x59 */
+		/* op_MAPI_CollapseRow: 0x5a */
+		/* op_MAPI_LockRegionStream: 0x5b */
+		/* op_MAPI_UnlockRegionStream: 0x5c */
+		/* op_MAPI_CommitStream: 0x5d */
+		/* op_MAPI_GetStreamSize: 0x5e */
+		/* op_MAPI_QueryNamedProperties: 0x5f */
+		/* op_MAPI_GetPerUserLongTermIds: 0x60 */
+		/* op_MAPI_GetPerUserGuid: 0x61 */
+		/* op_MAPI_ReadPerUserInformation: 0x63 */
+		/* op_MAPI_SetReadFlags: 0x66 */
+		/* op_MAPI_CopyProperties: 0x67 */
+		/* op_MAPI_GetReceiveFolderTable: 0x68 */
+		/* op_MAPI_GetCollapseState: 0x6b */
+		/* op_MAPI_SetCollapseState: 0x6c */
+		/* op_MAPI_GetTransportFolder: 0x6d */
+		/* op_MAPI_Pending: 0x6e */
+		case op_MAPI_OptionsData: /* 0x6f */
 			retval = EcDoRpc_RopOptionsData(mem_ctx, emsmdbp_ctx,
 							&(mapi_request->mapi_req[i]),
 							&(mapi_response->mapi_repl[idx]),
 							mapi_response->handles, &size);
 			break;
-		case op_MAPI_Logon:
+		/* op_MAPI_SyncConfigure: 0x70 */
+		/* op_MAPI_SyncImportMessageChange: 0x72 */
+		/* op_MAPI_SyncImportHierarchyChange: 0x73 */
+		/* op_MAPI_SyncImportDeletes: 0x74 */
+		/* op_MAPI_SyncUploadStateStreamBegin: 0x75 */
+		/* op_MAPI_SyncUploadStateStreamContinue: 0x76 */
+		/* op_MAPI_SyncUploadStateStreamEnd: 0x77 */
+		/* op_MAPI_SyncImportMessageMove: 0x78 */
+		/* op_MAPI_SetPropertiesNoReplicate: 0x79 */
+		/* op_MAPI_DeletePropertiesNoReplicate: 0x7a */
+		/* op_MAPI_GetStoreState: 0x7b */
+		/* op_MAPI_SyncOpenCollector: 0x7e */
+		/* op_MAPI_GetLocalReplicaIds: 0x7f */
+		/* op_MAPI_SyncImportReadStateChanges: 0x80 */
+		/* op_MAPI_ResetTable: 0x81 */
+		/* op_MAPI_SyncGetTransferState: 0x82 */
+		/* op_MAPI_OpenPublicFolderByName: 0x87 */
+		/* op_MAPI_SetSyncNotificationGuid: 0x88 */
+		/* op_MAPI_FreeBookmark: 0x89 */
+		/* op_MAPI_WriteAndCommitStream: 0x90 */
+		/* op_MAPI_HardDeleteMessages: 0x91 */
+		/* op_MAPI_HardDeleteMessagesAndSubfolders: 0x92 */
+		case op_MAPI_Logon: /* 0xfe */
 			retval = EcDoRpc_RopLogon(mem_ctx, emsmdbp_ctx,
 						  &(mapi_request->mapi_req[i]),
 						  &(mapi_response->mapi_repl[idx]),

@@ -1,3 +1,18 @@
+2010-05-08
+    bradh
+	[r1779]
+		Implement some more properties for cast_mapi_SPropValue().
+		
+		Patch mostly by Milan Crha, some changes by me.
+	[r1778]
+		Use retval instead of GetLastError() in a couple of places.
+	[r1777]
+		Add missing failure path handling.
+	[r1776]
+		Avoid assigning a boolean result to an enum MAPISTATUS.
+		
+		Fixes problem noted with mapitest on OXCFOLD-MOVECOPY-MESSAGES.
+
 2010-05-06
     bradh
 	[r1774]

@@ -617,6 +617,7 @@ error:
 _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
+	bool			common_result;
 	bool			ret = true;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_folder_src;
@@ -673,9 +674,9 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	mapi_id_array_init(&msg_id_array);
 	for (i = 0; i < 3; i++) {
 		mapi_object_init(&obj_message);
-		retval = mapitest_common_message_create(mt, &obj_folder_src, &obj_message, MT_MAIL_SUBJECT);
-		mapitest_print_retval(mt, "mapitest_common_message_create");
-		if (retval != MAPI_E_SUCCESS) {
+		common_result = mapitest_common_message_create(mt, &obj_folder_src, &obj_message, MT_MAIL_SUBJECT);
+		if (!common_result) {
+			mapitest_print(mt, "* mapitest_common_message_create() failed");
 			ret = false;
 			goto release;
 		}

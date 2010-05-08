@@ -685,6 +685,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 		mapitest_print_retval(mt, "SaveChangesMessage");
 		if (retval != MAPI_E_SUCCESS) {
 			ret = false;
+			goto release;
 		}
 		mapi_id_array_add_obj(&msg_id_array, &obj_message);
 		mapi_object_release(&obj_message);

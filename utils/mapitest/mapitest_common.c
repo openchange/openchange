@@ -210,8 +210,8 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 
 	/* Create the message */
 	retval = CreateMessage(obj_folder, obj_message);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateMessage", GetLastError());
+	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateMessage", retval);
 		return false;
 	}
 
@@ -263,7 +263,7 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 			      &SRowSet, &flaglist, MAPI_UNICODE);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print(mt, "* %-35s: 0x%.8x\n", "ResolveNames", GetLastError());
+		mapitest_print(mt, "* %-35s: 0x%.8x\n", "ResolveNames", retval);
 		talloc_free(SRowSet);
 		talloc_free(SPropTagArray);
 		talloc_free(flaglist);

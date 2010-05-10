@@ -334,6 +334,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_CreateFolder.IsExistingFolder = false;
 
 	/* Do effective work here */
+	switch (mapi_req->u.mapi_CreateFolder.ulFolderType) {
+	case FOLDER_GENERIC:
+		break;
+	case FOLDER_SEARCH:
+		break;
+	}
 
 	*size += libmapiserver_RopCreateFolder_size(mapi_repl);
 

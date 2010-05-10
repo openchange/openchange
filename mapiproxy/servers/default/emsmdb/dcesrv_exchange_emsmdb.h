@@ -148,6 +148,7 @@ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_co
 enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 
 /* definitions from oxcmsg.c */
 enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);

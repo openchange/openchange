@@ -92,3 +92,25 @@ _PUBLIC_ uint16_t libmapiserver_RopGetContentsTable_size(struct EcDoRpc_MAPI_REP
 	
 	return size;
 }
+
+
+/**
+   \details Calculate CreateFolder Rop size
+
+   \param response pointer to the CreateFolder EcDoRpc_MAPI_REPL
+   structure
+
+   \retun Size of CreateFolder response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopCreateFolder_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPCREATEFOLDER;
+
+	return size;
+}

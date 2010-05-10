@@ -136,6 +136,13 @@
 #define	SIZE_DFLT_ROPSEEKROW			5
 
 /**
+   \details CreateFolderRop has fixed response size for:
+   -# folder_id: uint64_t
+   -# isExistingFolder: uint8_t
+ */
+#define	SIZE_DFLT_ROPCREATEFOLDER		9
+
+/**
    \details GetReceiveFolder has fixed response size for:
    -# folder_id: uint64_t
  */
@@ -198,6 +205,7 @@ __BEGIN_DECLS
 uint16_t libmapiserver_RopOpenFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetHierarchyTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetContentsTable_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopCreateFolder_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcmsg.c */
 uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *);

@@ -114,3 +114,25 @@ _PUBLIC_ uint16_t libmapiserver_RopCreateFolder_size(struct EcDoRpc_MAPI_REPL *r
 
 	return size;
 }
+
+
+/**
+   \details Calculate DeleteFolder Rop size
+
+   \param response pointer to the DeleteFolder EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of DeleteFolder response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopDeleteFolder_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPDELETEFOLDER;
+
+	return size;
+}

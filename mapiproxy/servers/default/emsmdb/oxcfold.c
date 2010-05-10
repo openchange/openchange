@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -345,6 +345,58 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 
 	/* Need to create a new handle */
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return retval;
+}
+
+
+/**
+   \details EcDoRpc DeleteFolder (0x1d) Rop. This operation deletes a
+   folder on the remote server.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the DeleteFolder EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the DeleteFolder EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
+						 struct emsmdbp_context *emsmdbp_ctx,
+						 struct EcDoRpc_MAPI_REQ *mapi_req,
+						 struct EcDoRpc_MAPI_REPL *mapi_repl,
+						 uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_handles	*rec = NULL;
+	uint32_t		handle;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder (0x1d)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	/* Initialize default empty DeleteFolder reply */
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->u.mapi_DeleteFolder.PartialCompletion = false;
+
+	/* TODO: Effective server code to be added here */
+
+	*size += libmapiserver_RopDeleteFolder_size(mapi_repl);
 
 	return retval;
 }

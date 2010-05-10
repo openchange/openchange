@@ -143,6 +143,12 @@
 #define	SIZE_DFLT_ROPCREATEFOLDER		9
 
 /**
+   \details DeleteFolderRop has fixed response size for:
+   -# PartialCompletion: uint8_t
+ */
+#define	SIZE_DFLT_ROPDELETEFOLDER		1
+
+/**
    \details GetReceiveFolder has fixed response size for:
    -# folder_id: uint64_t
  */
@@ -206,6 +212,7 @@ uint16_t libmapiserver_RopOpenFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetHierarchyTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetContentsTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCreateFolder_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopDeleteFolder_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcmsg.c */
 uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *);

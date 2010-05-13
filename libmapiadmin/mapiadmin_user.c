@@ -345,10 +345,11 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, 
 				   "UserAccountControl", UserAccountControl);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 
-	ret = samdb_replace(remote_ldb, mem_ctx, msg);
-	DEBUG(3, (MAPIADMIN_DEBUG_STR, "samdb_replace", ldb_strerror(ret)));
-	MAPI_RETVAL_IF((ret != 0), MAPI_E_CORRUPT_DATA, mem_ctx);
+	ret = ldb_modify(remote_ldb, msg);
+	DEBUG(3, (MAPIADMIN_DEBUG_STR, "ldb_modify", ldb_strerror(ret)));
+	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CORRUPT_DATA, mem_ctx);
 
 	/* reset errno before leaving */
 	errno = 0;

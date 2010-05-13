@@ -1,0 +1,1004 @@
+#
+# ms-Exch-Container
+# An Exchange container. Used for extended rights and roles.
+#
+dn: CN=ms-Exch-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Container
+distinguishedName: CN=ms-Exch-Container,${SCHEMADN}
+possSuperiors: msExchAdminGroup
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.50010
+mayContain: msExchMinAdminVersion
+mayContain: msExchAdminGroupMode
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Container
+adminDescription: ms-Exch-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchContainer
+name: ms-Exch-Container
+schemaIDGUID: 006c91da-a981-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Container,${SCHEMADN}
+
+
+#
+# ms-Exch-Admin-Group-Container
+# description: An administrative group container. Used for extended rights and roles.
+#
+dn: CN=ms-Exch-Admin-Group-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Admin-Group-Container
+distinguishedName: CN=ms-Exch-Admin-Group-Container,${SCHEMADN}
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.50019
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Admin-Group-Container
+adminDescription: ms-Exch-Admin-Group-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchAdminGroupContainer
+name: ms-Exch-Admin-Group-Container
+schemaIDGUID: e7a44058-a980-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Admin-Group-Container,${SCHEMADN}
+
+#
+# ms-Exch-Advanced-Security-Container
+# A container object to hold the Encryption Configuration and Key
+# Manager objects
+#
+dn: CN=ms-Exch-Advanced-Security-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Advanced-Security-Container
+distinguishedName: CN=ms-Exch-Advanced-Security-Container,${SCHEMADN}
+possSuperiors: msExchAdminGroup
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.13001
+mayContain: msExchMinAdminVersion
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Advanced-Security-Container
+adminDescription: ms-Exch-Advanced-Security-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchAdvancedSecurityContainer
+name: ms-Exch-Advanced-Security-Container
+schemaIDGUID: 8cc8fb0e-b09e-11d2-aa06-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:(A;;LC;;;AU)
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Advanced-Security-Container,${SCHEMADN}
+
+#
+# ms-Exch-Conference-Container  
+# A conferencing container. Used for extended rights and
+# roles. CN=Exchange Conferencing.
+#
+dn: CN=ms-Exch-Conference-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Conference-Container
+distinguishedName: CN=ms-Exch-Conference-Container,${SCHEMADN}
+possSuperiors: msExchAdminGroup
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.9005
+mayContain: objectCount
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Conference-Container
+adminDescription: ms-Exch-Conference-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchConferenceContainer
+name: ms-Exch-Conference-Container
+schemaIDGUID: ed7fe77a-a980-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:(A;CI;LCLORPRC;;;WD)
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Conference-Container,${SCHEMADN}
+
+#
+# ms-Exch-Content-Config-Container
+#
+dn: CN=ms-Exch-Content-Config-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Content-Config-Container
+distinguishedName: CN=ms-Exch-Content-Config-Container,${SCHEMADN}
+possSuperiors: container
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.50026
+mayContain: msExchMinAdminVersion
+mayContain: msExchMimeTypes
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Content-Config-Container
+adminDescription: ms-Exch-Content-Config-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchContentConfigContainer
+name: ms-Exch-Content-Config-Container
+schemaIDGUID: ab3a1acc-1df5-11d3-aa5e-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Content-Config-Container,${SCHEMADN}
+
+
+#
+# ms-Exch-Monitors-Container	
+# A container used to hold monitors. Used for extended rights and roles.
+#
+dn: CN=ms-Exch-Monitors-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Monitors-Container
+distinguishedName: CN=ms-Exch-Monitors-Container,${SCHEMADN}
+possSuperiors: msExchAdminGroup
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.50012
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Monitors-Container
+adminDescription: ms-Exch-Monitors-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchMonitorsContainer
+name: ms-Exch-Monitors-Container
+schemaIDGUID: 03f68f72-a981-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Monitors-Container,${SCHEMADN}
+
+
+#
+# ms-Exch-Organization-Container	
+# An organization container. Used for extended rights and roles.
+#
+dn: CN=ms-Exch-Organization-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Organization-Container
+distinguishedName: CN=ms-Exch-Organization-Container,${SCHEMADN}
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.50020
+mayContain: msExchMinAdminVersion
+mayContain: heuristics
+mayContain: msExchDisableUDGConversion
+mayContain: msExchServerLocalGroups
+mayContain: msExchServerGroups
+mayContain: msExchServerGlobalGroups
+mayContain: msExchAdmins
+mayContain: msExchAdminGroupsEnabled
+mayContain: msExchWebAccessName
+mayContain: submissionContLength
+mayContain: msExchMixedMode
+mayContain: msExchMimeTypes
+mayContain: delivContLength
+mayContain: msExchRoutingEnabled
+mayContain: msExchRecipLimit
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Organization-Container
+adminDescription: ms-Exch-Organization-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchOrganizationContainer
+name: ms-Exch-Organization-Container
+schemaIDGUID: 366a319c-a982-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Organization-Container,${SCHEMADN}
+
+
+#
+# ms-Exch-Generic-Policy-Container
+#
+dn: CN=ms-Exch-Generic-Policy-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Generic-Policy-Container
+distinguishedName: CN=ms-Exch-Generic-Policy-Container,${SCHEMADN}
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.50021
+mayContain: msExchADCOptions
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Generic-Policy-Container
+adminDescription: ms-Exch-Generic-Policy-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchGenericPolicyContainer
+name: ms-Exch-Generic-Policy-Container
+schemaIDGUID: e32977c3-1d31-11d3-aa5e-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Generic-Policy-Container,${SCHEMADN}
+
+
+#
+# ms-Exch-Policies-Container 
+# A container used to hold policies. Used for extended rights and
+# roles.
+#
+dn: CN=ms-Exch-Policies-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Policies-Container
+distinguishedName: CN=ms-Exch-Policies-Container,${SCHEMADN}
+possSuperiors: msExchAdminGroup
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.50014
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Policies-Container
+adminDescription: ms-Exch-Policies-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchPoliciesContainer
+name: ms-Exch-Policies-Container
+schemaIDGUID: 3630f92c-a982-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Policies-Container,${SCHEMADN}
+
+
+#
+# ms-Exch-Servers-Container	 
+# A container used to hold servers. Used for extended rights and roles.
+#
+dn: CN=ms-Exch-Servers-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Servers-Container
+distinguishedName: CN=ms-Exch-Servers-Container,${SCHEMADN}
+possSuperiors: msExchAdminGroup
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.50013
+mayContain: msExchMinAdminVersion
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Servers-Container
+adminDescription: ms-Exch-Servers-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchServersContainer
+name: ms-Exch-Servers-Container
+schemaIDGUID: 346e5cba-a982-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:(A;;LC;;;AU)
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Servers-Container,${SCHEMADN}
+
+#
+# ms-Exch-IM-Global-Settings-Container	
+# A container for global objects.
+#
+dn: CN=ms-Exch-IM-Global-Settings-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-IM-Global-Settings-Container
+distinguishedName: CN=ms-Exch-IM-Global-Settings-Container,${SCHEMADN}
+possSuperiors: container
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.7014
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-IM-Global-Settings-Container
+adminDescription: ms-Exch-IM-Global-Settings-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchIMGlobalSettingsContainer
+name: ms-Exch-IM-Global-Settings-Container
+schemaIDGUID: 9f116eb8-284e-11d3-aa68-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-IM-Global-Settings-Container,${SCHEMADN}
+
+
+#
+# ms-Exch-MHS-Monitoring-Config 	
+# The EMS saved Monitoring configuration.
+#
+dn: CN=ms-Exch-MHS-Monitoring-Config,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-MHS-Monitoring-Config
+distinguishedName: CN=ms-Exch-MHS-Monitoring-Config,${SCHEMADN}
+possSuperiors: container
+subClassOf: top
+governsID: 1.2.840.113556.1.3.6
+mustContain: cn
+mayContain: runsOn
+mayContain: monitoringNormalPollUnits
+mayContain: monitoringNormalPollInterval
+mayContain: monitoringHotsitePollUnits
+mayContain: monitoringHotsitePollInterval
+mayContain: monitoringEscalationProcedure
+mayContain: monitoringAvailabilityWindow
+mayContain: monitoringAvailabilityStyle
+mayContain: monitoredServers
+mayContain: logFilename
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-MHS-Monitoring-Config
+adminDescription: ms-Exch-MHS-Monitoring-Config
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: mHSMonitoringConfig
+name: ms-Exch-MHS-Monitoring-Config
+schemaIDGUID: a8df74bb-c5ea-11d1-bbcb-0080c76670c0
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-MHS-Monitoring-Config,${SCHEMADN}
+
+
+
+#
+# ms-Exch-Protocol-Cfg		
+#
+dn: CN=ms-Exch-Protocol-Cfg,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Protocol-Cfg
+distinguishedName: CN=ms-Exch-Protocol-Cfg,${SCHEMADN}
+possSuperiors: container
+subClassOf: top
+governsID: 1.2.840.113556.1.3.68
+mustContain: cn
+mayContain: msExchMinAdminVersion
+mayContain: msExchDS2MBOptions
+mayContain: heuristics
+mayContain: useSiteValues
+mayContain: sendTNEF
+mayContain: requireSSL
+mayContain: preserveInternetContent
+mayContain: portNumber
+mayContain: incomingMsgSizeLimit
+mayContain: enabledProtocolCfg
+mayContain: enabledAuthorizationPackages
+mayContain: diagnosticRegKey
+mayContain: contentType
+mayContain: clientAccessEnabled
+mayContain: characterSet
+mayContain: associationLifetime
+mayContain: anonymousAccess
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Protocol-Cfg
+adminDescription: ms-Exch-Protocol-Cfg
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: protocolCfg
+name: ms-Exch-Protocol-Cfg
+schemaIDGUID: a8df74c0-c5ea-11d1-bbcb-0080c76670c0
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Protocol-Cfg,${SCHEMADN}
+
+
+#
+# ms-Exch-Protocol-Cfg-Shared-Container
+#
+dn: CN=ms-Exch-Protocol-Cfg-Shared-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Protocol-Cfg-Shared-Container
+distinguishedName: CN=ms-Exch-Protocol-Cfg-Shared-Container,${SCHEMADN}
+#possSuperiors: protocolCfgSharedServer
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.2001
+mayContain: msExchMinAdminVersion
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Protocol-Cfg-Shared-Container
+adminDescription: ms-Exch-Protocol-Cfg-Shared-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchProtocolCfgSharedContainer
+name: ms-Exch-Protocol-Cfg-Shared-Container
+schemaIDGUID: 939ef91a-b09e-11d2-aa06-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Protocol-Cfg-Shared-Container,${SCHEMADN}
+
+
+dn: CN=ms-Exch-Protocol-Cfg-Shared-Server,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Protocol-Cfg-Shared-Server
+distinguishedName: CN=ms-Exch-Protocol-Cfg-Shared-Server,${SCHEMADN}
+instanceType: 4
+possSuperiors: msExchExchangeServer
+possSuperiors: container
+possSuperiors: computer
+subClassOf: protocolCfgShared
+governsID: 1.2.840.113556.1.3.67
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Protocol-Cfg-Shared-Server
+adminDescription: ms-Exch-Protocol-Cfg-Shared-Server
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: protocolCfgSharedServer
+name: ms-Exch-Protocol-Cfg-Shared-Server
+schemaIDGUID: a8df74d1-c5ea-11d1-bbcb-0080c76670c0
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Protocol-Cfg-Shared-Server,${SCHEMADN}
+
+
+#
+# ms-Exch-Protocol-Cfg-Shared-Site
+#
+dn: CN=ms-Exch-Protocol-Cfg-Shared-Site,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Protocol-Cfg-Shared-Site
+distinguishedName: CN=ms-Exch-Protocol-Cfg-Shared-Site,${SCHEMADN}
+instanceType: 4
+possSuperiors: container
+subClassOf: protocolCfgShared
+governsID: 1.2.840.113556.1.3.66
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Protocol-Cfg-Shared-Site
+adminDescription: ms-Exch-Protocol-Cfg-Shared-Site
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: protocolCfgSharedSite
+name: ms-Exch-Protocol-Cfg-Shared-Site
+schemaIDGUID: a8df74d2-c5ea-11d1-bbcb-0080c76670c0
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Protocol-Cfg-Shared-Site,${SCHEMADN}
+
+
+#
+# ms-Exch-Protocol-Cfg-Protocol-Container
+#
+dn: CN=ms-Exch-Protocol-Cfg-Protocol-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Protocol-Cfg-Protocol-Container
+distinguishedName: CN=ms-Exch-Protocol-Cfg-Protocol-Container,${SCHEMADN}
+instanceType: 4
+#possSuperiors: protocolCfgSharedServer
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.2000
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Protocol-Cfg-Protocol-Container
+adminDescription: ms-Exch-Protocol-Cfg-Protocol-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchProtocolCfgProtocolContainer
+name: ms-Exch-Protocol-Cfg-Protocol-Container
+schemaIDGUID: 90f2b634-b09e-11d2-aa06-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Protocol-Cfg-Protocol-Container,${SCHEMADN}
+
+#
+# ms-Exch-System-Objects-Container	  
+# The Exchange container for system-related objects, such as public
+# folder proxies.
+#
+dn: CN=ms-Exch-System-Objects-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-System-Objects-Container
+distinguishedName: CN=ms-Exch-System-Objects-Container,${SCHEMADN}
+possSuperiors: domainDNS
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.50034
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-System-Objects-Container
+adminDescription: ms-Exch-System-Objects-Container
+objectClassCategory: 1
+lDAPDisplayName: msExchSystemObjectsContainer
+name: ms-Exch-System-Objects-Container
+schemaIDGUID: 0bffa04c-7d8e-44cd-968a-b2cac11d17e1
+systemOnly: FALSE
+defaultSecurityDescriptor: D:(A;;RPLCLORC;;;AU)
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-System-Objects-Container,${SCHEMADN}
+
+
+#
+# ms-Exch-Storage-Group 
+# The list of stores for this Microsoft Jet instance.
+#
+dn: CN=ms-Exch-Storage-Group,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Storage-Group
+distinguishedName: CN=ms-Exch-Storage-Group,${SCHEMADN}
+possSuperiors: computer
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.11006
+mustContain: cn
+mayContain: msExchMinAdminVersion
+mayContain: msExchESEParamCachedClosedTables
+mayContain: msExchRestore
+mayContain: msExchESEParamPageTempDBMin
+mayContain: msExchESEParamPageFragment
+mayContain: msExchESEParamMaxTemporaryTables
+mayContain: msExchESEParamMaxCursors
+mayContain: msExchESEParamEnableOnlineDefrag
+mayContain: msExchESEParamEnableIndexChecking
+mayContain: msExchESEParamDbExtensionSize
+mayContain: msExchESEParamCommitDefault
+mayContain: msExchESEParamCheckpointDepthMax
+mayContain: msExchESEParamBaseName
+mayContain: msExchRecovery
+mayContain: msExchESEParamZeroDatabaseDuringBackup
+mayContain: msExchESEParamWaitLogFlush
+mayContain: msExchESEParamTempPath
+mayContain: msExchESEParamSystemPath
+mayContain: msExchESEParamPreferredVerPages
+mayContain: msExchESEParamPreferredMaxOpenTables
+mayContain: msExchESEParamMaxVerPages
+mayContain: msExchESEParamMaxSessions
+mayContain: msExchESEParamMaxOpenTables
+mayContain: msExchESEParamLogWaitingUserMax
+mayContain: msExchESEParamLogFileSize
+mayContain: msExchESEParamLogFilePath
+mayContain: msExchESEParamLogCheckpointPeriod
+mayContain: msExchESEParamLogBuffers
+mayContain: msExchESEParamEventSource
+mayContain: msExchESEParamCircularLog
+mayContain: displayName
+mayContain: description
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Storage-Group
+adminDescription: ms-Exch-Storage-Group
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchStorageGroup
+name: ms-Exch-Storage-Group
+schemaIDGUID: 3435244a-a982-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Storage-Group,${SCHEMADN}
+
+#
+# ms-Exch-MDB  
+# Used for generic database configuration.
+#
+dn: CN=ms-Exch-MDB,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-MDB
+distinguishedName: CN=ms-Exch-MDB,${SCHEMADN}
+#possSuperiors: msExchStorageGroup
+possSuperiors: msExchExchangeServer
+possSuperiors: container
+possSuperiors: computer
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.11002
+mustContain: deliveryMechanism
+mustContain: cn
+mayContain: msExchMinAdminVersion
+mayContain: msExchPatchMDB
+mayContain: msExchDatabaseCreated
+mayContain: msExchDatabaseBeingRestored
+mayContain: msExchAllowEnhancedSecurity
+mayContain: msExchMaxCachedViews
+mayContain: msExchCIUpdateStyle
+mayContain: msExchCIUpdateSchedule
+mayContain: msExchCIRebuildStyle
+mayContain: msExchCIRebuildSchedule
+mayContain: msExchCILocation
+mayContain: msExchCIAvailable
+mayContain: msExchAgingKeepTime
+mayContain: homeMDBBL
+mayContain: msExchTrackDuplicates
+mayContain: msExchSLVFile
+mayContain: quotaNotificationStyle
+mayContain: quotaNotificationSchedule
+mayContain: msExchPolicyOptionList
+mayContain: msExchPolicyList
+mayContain: msExchOwningServer
+mayContain: messageTrackingEnabled
+mayContain: mDBStorageQuota
+mayContain: mDBOverQuotaLimit
+mayContain: mDBOverHardQuotaLimit
+mayContain: maximumObjectID
+mayContain: msExchEDBOffline
+mayContain: msExchEDBFile
+mayContain: msExchDownGradeMultipartSigned
+mayContain: diagnosticRegKey
+mayContain: deletedItemFlags
+mayContain: msExchConvertToFixedFont
+mayContain: msExchCatalog
+mayContain: activationStyle
+mayContain: activationSchedule
+mayContain: garbageCollPeriod
+mayContain: displayName
+mayContain: description
+mayContain: adminDisplayName
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-MDB
+adminDescription: ms-Exch-MDB
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchMDB
+name: ms-Exch-MDB
+schemaIDGUID: 03d069d2-a981-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-MDB,${SCHEMADN}
+
+#
+# ms-Exch-MTA  
+# Represents the message transfer agent (MTA) process on the computer.
+#
+dn: CN=ms-Exch-MTA,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-MTA
+distinguishedName: CN=ms-Exch-MTA,${SCHEMADN}
+possSuperiors: msExchExchangeServer
+possSuperiors: container
+possSuperiors: computer
+subClassOf: top
+governsID: 1.2.840.113556.1.3.49
+mustContain: transTimeoutMins
+mustContain: transRetryMins
+mustContain: mTALocalDesig
+mustContain: cn
+mayContain: msExchMinAdminVersion
+mayContain: msExchEncryptedPassword
+mayContain: msExchResponsibleMTAServerBL
+mayContain: msExchMTADatabasePath
+mayContain: xMITTimeoutUrgent
+mayContain: xMITTimeoutNormal
+mayContain: xMITTimeoutNonUrgent
+mayContain: transportExpeditedData
+mayContain: transferTimeoutUrgent
+mayContain: transferTimeoutNormal
+mayContain: transferTimeoutNonUrgent
+mayContain: transferRetryInterval
+mayContain: tempAssocThreshold
+mayContain: sessionDisconnectTimer
+mayContain: rTSWindowSize
+mayContain: rTSRecoveryTimeout
+mayContain: rTSCheckpointSize
+mayContain: openRetryInterval
+mayContain: numOfTransferRetries
+mayContain: numOfOpenRetries
+mayContain: messageTrackingEnabled
+mayContain: domainDefAltRecip
+mayContain: associationLifetime
+mayContain: mTALocalCred
+mayContain: msExchHomeRoutingGroupDNBL
+mayContain: expandDLsLocally
+mayContain: diagnosticRegKey
+mayContain: delivExtContTypes
+mayContain: delivEITs
+mayContain: delivContLength
+mayContain: msExchBridgeheadedRemoteConnectorsDNBL
+mayContain: msExchBridgeheadedLocalConnectorsDNBL
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-MTA
+adminDescription: ms-Exch-MTA
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: mTA
+name: ms-Exch-MTA
+schemaIDGUID: a8df74a7-c5ea-11d1-bbcb-0080c76670c0
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-MTA,${SCHEMADN}
+
+
+#
+# ms-Exch-DXA-Site-Server
+# The hub for all of the directory exchange agent (DXA) server
+# connections.  
+#
+dn: CN=ms-Exch-DXA-Site-Server,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-DXA-Site-Server
+distinguishedName: CN=ms-Exch-DXA-Site-Server,${SCHEMADN}
+possSuperiors: container
+subClassOf: top
+governsID: 1.2.840.113556.1.3.60
+mustContain: cn
+mayContain: versionNumber
+mayContain: assocRemoteDXA
+mayContain: responsibleLocalDXA
+mayContain: dXALocalAdmin
+mayContain: dXAAdminForward
+mayContain: dXAAdminCopy
+mayContain: activationStyle
+mayContain: activationSchedule
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-DXA-Site-Server
+adminDescription: ms-Exch-DXA-Site-Server
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: dXASiteServer
+name: ms-Exch-DXA-Site-Server
+schemaIDGUID: a8df74b0-c5ea-11d1-bbcb-0080c76670c0
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-DXA-Site-Server,${SCHEMADN}
+
+
+#
+# ms-Exch-Replication-Connector-Container	
+#
+dn: CN=ms-Exch-Replication-Connector-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Replication-Connector-Container
+distinguishedName: CN=ms-Exch-Replication-Connector-Container,${SCHEMADN}
+possSuperiors: msExchAdminGroup
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.12
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Replication-Connector-Container
+adminDescription: ms-Exch-Replication-Connector-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchReplicationConnectorContainer
+name: ms-Exch-Replication-Connector-Container
+schemaIDGUID: 99f5867e-12e8-11d3-aa58-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Replication-Connector-Container,${SCHEMADN}
+
+#
+# ms-Exch-Routing-Group-Container
+# Container used to hold routing groups.
+#
+dn: CN=ms-Exch-Routing-Group-Container,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Routing-Group-Container
+distinguishedName: CN=ms-Exch-Routing-Group-Container,${SCHEMADN}
+possSuperiors: msExchAdminGroup
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.12001
+mayContain: msExchMinAdminVersion
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Routing-Group-Container
+adminDescription: ms-Exch-Routing-Group-Container
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchRoutingGroupContainer
+name: ms-Exch-Routing-Group-Container
+schemaIDGUID: 34de6b40-a982-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Routing-Group-Container,${SCHEMADN}
+
+
+#
+# ms-Exch-Connectors
+# Container used to hold connection objects.
+#
+dn: CN=ms-Exch-Connectors,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Connectors
+distinguishedName: CN=ms-Exch-Connectors,${SCHEMADN}
+#possSuperiors: msExchRoutingGroup
+subClassOf: container
+governsID: 1.2.840.113556.1.5.7000.62.12003
+mayContain: msExchMinAdminVersion
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Connectors
+adminDescription: ms-Exch-Connectors
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchConnectors
+name: ms-Exch-Connectors
+schemaIDGUID: eee325dc-a980-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Connectors,${SCHEMADN}
+
+
+#
+# ms-Exch-Exchange-Admin-Service
+# The MAD process.
+#
+dn: CN=ms-Exch-Exchange-Admin-Service,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Exchange-Admin-Service
+distinguishedName: CN=ms-Exch-Exchange-Admin-Service,${SCHEMADN}
+possSuperiors: msExchExchangeServer
+possSuperiors: container
+possSuperiors: computer
+subClassOf: top
+governsID: 1.2.840.113556.1.3.62
+mustContain: deliveryMechanism
+mayContain: msExchMinAdminVersion
+mayContain: diagnosticRegKey
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Exchange-Admin-Service
+adminDescription: ms-Exch-Exchange-Admin-Service
+auxiliaryClass: msExchBaseClass
+auxiliaryClass: msExchMailStorage
+auxiliaryClass: mailRecipient
+objectClassCategory: 1
+lDAPDisplayName: exchangeAdminService
+name: ms-Exch-Exchange-Admin-Service
+schemaIDGUID: a8df74b2-c5ea-11d1-bbcb-0080c76670c0
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Exchange-Admin-Service,${SCHEMADN}
+
+
+#
+# ms-Exch-Message-Delivery-Config
+#
+dn: CN=ms-Exch-Message-Delivery-Config,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Message-Delivery-Config
+distinguishedName: CN=ms-Exch-Message-Delivery-Config,${SCHEMADN}
+possSuperiors: container
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.50028
+mayContain: msExchMinAdminVersion
+mayContain: msExchTurfListAction
+mayContain: submissionContLength
+mayContain: msExchRecipLimit
+mayContain: msExchLocalDomains
+mayContain: delivContLength
+mayContain: msExchAdminMailbox
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Message-Delivery-Config
+adminDescription: ms-Exch-Message-Delivery-Config
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchMessageDeliveryConfig
+name: ms-Exch-Message-Delivery-Config
+schemaIDGUID: ab3a1ad7-1df5-11d3-aa5e-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Message-Delivery-Config,${SCHEMADN}
+
+
+#
+# ms-Exch-Smtp-Connection-Turf-List	   
+# Contains the attributes for Accept and Deny Internet Protocol (IP)
+# lists.
+#
+dn: CN=ms-Exch-Smtp-Connection-Turf-List,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Smtp-Connection-Turf-List
+distinguishedName: CN=ms-Exch-Smtp-Connection-Turf-List,${SCHEMADN}
+possSuperiors: msExchSMTPTurfList
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.12010
+mayContain: msExchSMTPGlobalIPDenyList
+mayContain: msExchSMTPGlobalIPAcceptList
+mayContain: msExchMinAdminVersion
+mayContain: msExchSmtpConnectionWhitelist
+mayContain: msExchSmtpConnectionRulesPriority
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Smtp-Connection-Turf-List
+adminDescription: ms-Exch-Smtp-Connection-Turf-List
+objectClassCategory: 1
+lDAPDisplayName: msExchSmtpConnectionTurfList
+name: ms-Exch-Smtp-Connection-Turf-List
+schemaIDGUID: 7eea7de9-319e-408a-8460-e35e2c9da389
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Smtp-Connection-Turf-List,${SCHEMADN}
+
+
+#
+# ms-Exch-CTP
+# An Exchange conference technology provider (CTP)
+# template. CN=Exchange Data Conferencing Service.
+#
+dn: CN=ms-Exch-CTP,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-CTP
+distinguishedName: CN=ms-Exch-CTP,${SCHEMADN}
+possSuperiors: msExchConferenceSite
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.9002
+mayContain: objectCount
+mayContain: msExchCTPSnapinGUID
+mayContain: msExchCTPRequireCMSAuthentication
+mayContain: msExchCTPProviderName
+mayContain: msExchCTPProviderGUID
+mayContain: msExchCTPPropertySchema
+mayContain: msExchCTPFrameHint
+mayContain: msExchCTPClassGUID
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-CTP
+adminDescription: ms-Exch-CTP
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchCTP
+name: ms-Exch-CTP
+schemaIDGUID: 00aa8efe-a981-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-CTP,${SCHEMADN}

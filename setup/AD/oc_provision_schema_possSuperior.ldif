@@ -1,0 +1,74 @@
+dn: CN=ms-Exch-Admin-Group,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchAdminGroupContainer
+
+dn: CN=ms-Exch-Exchange-Server,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchServersContainer
+
+dn: CN=ms-Exch-Connector,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchConnectors
+
+dn: CN=ms-Exch-SMTP-Turf-List,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchMessageDeliveryConfig
+
+dn: CN=ms-Exch-Conference-Site,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchConferenceContainer
+
+dn: CN=ms-Exch-Protocol-Cfg-Shared-Container,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: protocolCfgSharedServer
+
+dn: CN=ms-Exch-Protocol-Cfg-Protocol-Container,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: protocolCfgSharedServer
+
+dn: CN=ms-Exch-MDB,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchStorageGroup
+
+dn: CN=ms-Exch-Connectors,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchRoutingGroup
+
+dn: CN=ms-Exch-Protocol-Cfg-SMTP-Domain-Container,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: protocolCfgSMTPServer
+
+dn: CN=ms-Exch-Protocol-Cfg-SMTP-IP-Address-Container,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: protocolCfgSMTPServer
+
+dn: CN=ms-Exch-Chat-Ban,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchChatVirtualNetwork
+
+dn: CN=ms-Exch-Chat-Channel,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchChatVirtualNetwork
+
+dn: CN=ms-Exch-Chat-User-Class,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchChatVirtualNetwork
+
+dn: CN=ms-Exch-MCU,${SCHEMADN}
+changetype: modify
+add: possSuperiors
+possSuperiors: msExchMCUContainer

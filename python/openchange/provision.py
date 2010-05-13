@@ -138,6 +138,74 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
 
     return names
 
+def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
+    """Provision schema using LDIF specified file
+
+    :param setup_path: Path to the setup directory.
+    :param names: provision names object.
+    :param lp: Loadparm context
+    :param creds: Credentials Context
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    :param ldif: path to the LDIF file
+    :param msg: reporter message
+    """
+
+    session_info = system_session()
+
+    db = SamDB(url=lp.get("sam database"), session_info=session_info, 
+               credentials=creds, lp=lp)
+
+    db.transaction_start()
+
+    try:
+        reporter.reportNextStep(msg)
+        setup_add_ldif(db, setup_path(ldif), { 
+                "FIRSTORG": names.firstorg,
+                "FIRSTORGDN": names.firstorgdn,
+                "CONFIGDN": names.configdn,
+                "SCHEMADN": names.schemadn,
+                "DOMAINDN": names.domaindn,
+                "DOMAIN": names.domain,
+                "DNSDOMAIN": names.dnsdomain,
+                "NETBIOSNAME": names.netbiosname,
+                "HOSTNAME": names.hostname
+                })
+    except:
+        db.transaction_cancel()
+        raise
+
+    db.transaction_commit()
+
+def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
+    """Modify schema using LDIF specified file
+
+    :param setup_path: Path to the setup directory.
+    :param names: provision names object.
+    :param lp: Loadparm context
+    :param creds: Credentials Context
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    :param ldif: path to the LDIF file
+    :param msg: reporter message
+    """
+
+    session_info = system_session()
+
+    db = SamDB(url=lp.get("sam database"), session_info=session_info, 
+               credentials=creds, lp=lp)
+
+    db.transaction_start()
+
+    try:
+        reporter.reportNextStep(msg)
+        setup_modify_ldif(db, setup_path(ldif), { 
+                "SCHEMADN": names.schemadn,
+                "CONFIGDN": names.configdn
+                })
+    except:
+        db.transaction_cancel()
+        raise
+
+    db.transaction_commit()
 
 def install_schemas(setup_path, names, lp, creds, reporter):
     """Install the OpenChange-specific schemas in the SAM LDAP database. 
@@ -175,67 +243,18 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
     db.transaction_commit()
 
-
-    # Step 2. Add new Exchange classes to the schema
-    db = SamDB(url=lp.get("sam database"), session_info=session_info, 
-                  credentials=creds, lp=lp)
-
-    db.transaction_start()
-
-    try:
-        reporter.reportNextStep("Add new Exchange classes and attributes to Samba schema")
-        setup_add_ldif(db, setup_path("AD/oc_provision_schema.ldif"), { 
-                "SCHEMADN": names.schemadn
-                })
-    except:
-        db.transaction_cancel()
-        raise
-
-    db.transaction_commit()
-
-    # Step 3. Extend existing classes and attributes
-    db = SamDB(url=lp.get("sam database"), session_info=session_info, 
-                  credentials=creds, lp=lp)
-
-    db.transaction_start()
-
-    try:
-        reporter.reportNextStep("Extend existing Samba classes and attributes")
-        setup_modify_ldif(db, setup_path("AD/oc_provision_schema_modify.ldif"), {
-                "SCHEMADN": names.schemadn
-                })
-    except:
-        db.transaction_cancel()
-        raise
-
-    db.transaction_commit()
-
-
-    # Step 4. Add configuration objects
-    db = SamDB(url=lp.get("sam database"), session_info=session_info, 
-                  credentials=creds, lp=lp)
-
-    db.transaction_start()
-
-    try:
-        reporter.reportNextStep("Exchange Samba with Exchange configuration objects")
-        setup_add_ldif(db, setup_path("AD/oc_provision_configuration.ldif"), {
-                "FIRSTORG": names.firstorg,
-                "FIRSTORGDN": names.firstorgdn,
-                "CONFIGDN": names.configdn,
-                "SCHEMADN": names.schemadn,
-                "DOMAINDN": names.domaindn,
-                "DOMAIN": names.domain,
-                "DNSDOMAIN": names.dnsdomain,
-                "NETBIOSNAME": names.netbiosname,
-                "HOSTNAME": names.hostname
-                })
-    except:
-        db.transaction_cancel()
-        raise
-
-    db.transaction_commit()
-
+    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_attributes.ldif", "Add Exchange attributes to Samba schema")
+    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_auxiliary_class.ldif", "Add Exchange auxiliary classes to Samba schema")
+    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_objectCategory.ldif", "Add Exchange objectCategory to Samba schema")
+    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_container.ldif", "Add Exchange containers to Samba schema")
+    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_subcontainer.ldif", "Add Exchange *sub* containers to Samba schema")
+    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_CfgProtocol.ldif", "Add Exchange CfgProtocol subcontainers to Samba schema")
+    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_mailGateway.ldif", "Add Exchange mailGateway subcontainers to Samba schema")
+    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema.ldif", "Add Exchange classes to Samba schema")
+    modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_possSuperior.ldif", "Add possSuperior attributes to Exchange classes")
+    modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_modify.ldif", "Extend existing Samba classes and attributes")
+    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Exchange Samba with Exchange configuration objects")
+    print "[SUCCESS] Done!"
 
 def newmailbox(lp, username, firstorg, firstou):
     names = guess_names_from_smbconf(lp, firstorg, firstou)

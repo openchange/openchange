@@ -5,7 +5,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2008-2009
+   Copyright (C) Julien Kerihuel 2008-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -174,7 +174,7 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface, uint32_t if_version)
 {
 	NTSTATUS				status = NT_STATUS_OK;
 	const struct ndr_interface_table	*table;
@@ -211,10 +211,11 @@ static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, cons
    \param dce_call pointer to the session context
    \param iface pointer to the dcesrv interface structure with
    function hooks
+   \param if_version the version of the pipe
 
    \return NT_STATUS_OK on success, otherwise NTSTATUS error
  */
-static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface, uint32_t if_version)
 {
 	struct dcesrv_mapiproxy_private		*private;
 	bool					server_mode;
@@ -239,7 +240,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	dce_call->context->private_data = private;
 
 	if (server_mode == false) {
-		return mapiproxy_op_bind_proxy(dce_call, iface);
+	  return mapiproxy_op_bind_proxy(dce_call, iface, if_version);
 	}
 
 	return NT_STATUS_OK;

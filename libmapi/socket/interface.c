@@ -30,6 +30,11 @@
 #define MKBCADDR(_IP, _NM) ((_IP & _NM) | (_NM ^ ALLONES))
 #define MKNETADDR(_IP, _NM) (_IP & _NM)
 
+bool is_zero_ip_v4(struct in_addr ip);
+bool same_net_v4(struct in_addr ip1, struct in_addr ip2, struct in_addr mask);
+uint32_t interpret_addr(const char *str);
+struct in_addr interpret_addr2(const char *str);
+
 /****************************************************************************
 Try and find an interface that matches an ip. If we cannot, return NULL
   **************************************************************************/

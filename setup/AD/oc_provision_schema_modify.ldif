@@ -34,8 +34,8 @@ mayContain: monitoringMailUpdateInterval
 mayContain: monitoringMailUpdateUnits
 mayContain: monitoringRPCUpdateInterval
 mayContain: monitoringRPCUpdateUnits
-mayContain: ms-Exch-Policy-List Attribute
-mayContain: ms-Exch-Policy-Option-List Attribute
+#mayContain: ms-Exch-Policy-List Attribute
+#mayContain: ms-Exch-Policy-Option-List Attribute
 mayContain: promoExpiration
 mayContain: securityProtocol
 mayContain: trackingLogPathName
@@ -154,10 +154,14 @@ mayContain: msExchPoliciesExcluded
 mayContain: msExchPoliciesIncluded
 mayContain: msExchPolicyEnabled
 mayContain: msExchPolicyOptionList
-mayContain: msExchProxyCustomProxy 
-mayContain: msExchUserAccountControl 
-mayContain: msExchMailboxFolderSet 
-mayContain: msExchRequireAuthToSendTo 
+
+#dn: CN=Mail-Recipient,${SCHEMADN}
+#changetype: modify
+#add: mayContain
+#mayContain: msExchUserAccountControl 
+#mayContain: msExchProxyCustomProxy 
+#mayContain: msExchMailboxFolderSet 
+#mayContain: msExchRequireAuthToSendTo 
 
 
 

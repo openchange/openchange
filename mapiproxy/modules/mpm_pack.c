@@ -93,7 +93,7 @@ static bool unpack(TALLOC_CTX *mem_ctx, struct EcDoRpc *EcDoRpc)
 	if (found == false) return false;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_pull);
-	ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
+	ndr->iconv_convenience = smb_iconv_convenience_reinit(mem_ctx, "CP850", "UTF8", true, NULL);
 
 	ndr->data_size = mapi_req[i].u.mapi_proxypack.bin.cb;
 	ndr->data = mapi_req[i].u.mapi_proxypack.bin.lpb;
@@ -164,10 +164,10 @@ static bool pack(TALLOC_CTX *mem_ctx, struct EcDoRpc *EcDoRpc)
 	mapi_req = EcDoRpc->in.mapi_request->mapi_req;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_push);
-	ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
+	ndr->iconv_convenience = smb_iconv_convenience_reinit(mem_ctx, "CP850", "UTF8", true, NULL);
 
 	nopack_ndr = talloc_zero(mem_ctx, struct ndr_push);
-	nopack_ndr->iconv_convenience = smb_iconv_convenience_init(mem_ctx, "CP850", "UTF8", true);
+	nopack_ndr->iconv_convenience = smb_iconv_convenience_reinit(mem_ctx, "CP850", "UTF8", true, NULL);
 
 	mapi_newreq = talloc_array(mem_ctx, struct EcDoRpc_MAPI_REQ, 2);
 

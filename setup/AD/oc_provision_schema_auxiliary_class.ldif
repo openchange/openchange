@@ -1,0 +1,216 @@
+##############################################################################
+# Auxiliary classes added
+##############################################################################
+
+#
+# ms-Exch-Base-Class
+# description: The base auxiliary class that is applied to all classes 
+# that are extended by CDO for Exchange 2000 Server (CDOEX) and the base 
+# Microsoft Windows classes that are used.
+#
+dn: CN=ms-Exch-Base-Class,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Base-Class
+distinguishedName: CN=ms-Exch-Base-Class,${SCHEMADN}
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.14
+mayContain: msExchInconsistentState
+mayContain: heuristics
+mayContain: msExchALObjectVersion
+mayContain: msExchUnmergedAttsPt
+mayContain: showInAddressBook
+mayContain: unmergedAtts
+mayContain: replicationSignature
+mayContain: replicatedObjectVersion
+mayContain: msExchHideFromAddressLists
+mayContain: msExchADCGlobalNames
+mayContain: legacyExchangeDN
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Base-Class
+adminDescription: ms-Exch-Base-Class
+objectClassCategory: 3
+lDAPDisplayName: msExchBaseClass
+schemaIDGUID: d8782c34-46ca-11d3-aa72-00c04f8eedd8
+systemOnly: FALSE
+defaultHidingValue: TRUE
+defaultObjectCategory: CN=ms-Exch-Base-Class,${SCHEMADN}
+
+
+#
+# ms-Exch-Certificate-Information
+# The auxiliary class of users and contacts that contains all
+# certificates and certificate information. Users publish their
+# certificates to attributes located on this object.
+#
+dn: CN=ms-Exch-Certificate-Information,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Certificate-Information
+distinguishedName: CN=ms-Exch-Certificate-Information,${SCHEMADN}
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.7
+mayContain: userCertificate
+mayContain: userSMIMECertificate
+mayContain: userCert
+mayContain: supportedAlgorithms
+mayContain: attributeCertificate
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Certificate-Information
+adminDescription: ms-Exch-Certificate-Information
+objectClassCategory: 3
+lDAPDisplayName: msExchCertificateInformation
+name: ms-Exch-Certificate-Information
+schemaIDGUID: e8977034-a980-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Certificate-Information,${SCHEMADN}
+
+
+#
+# ms-Exch-Custom-Attributes
+# The auxiliary class for objects that require custom attributes.
+#
+dn: CN=ms-Exch-Custom-Attributes,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Custom-Attributes
+distinguishedName: CN=ms-Exch-Custom-Attributes,${SCHEMADN}
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.6
+#mayContain: extensionAttribute9
+#mayContain: extensionAttribute8
+#mayContain: extensionAttribute7
+#mayContain: extensionAttribute6
+#mayContain: extensionAttribute5
+#mayContain: extensionAttribute4
+#mayContain: extensionAttribute3
+#mayContain: extensionAttribute2
+#mayContain: extensionAttribute15
+#mayContain: extensionAttribute14
+#mayContain: extensionAttribute13
+#mayContain: extensionAttribute12
+#mayContain: extensionAttribute11
+#mayContain: extensionAttribute10
+#mayContain: extensionAttribute1
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Custom-Attributes
+adminDescription: ms-Exch-Custom-Attributes
+objectClassCategory: 3
+lDAPDisplayName: msExchCustomAttributes
+name: ms-Exch-Custom-Attributes
+schemaIDGUID: 00e629c8-a981-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Custom-Attributes,${SCHEMADN}
+
+
+#
+# ms-Exch-IM-Recipient	
+# The auxiliary class for all objects that will be enabled for Instant
+# Messaging.
+#
+dn: CN=ms-Exch-IM-Recipient,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-IM-Recipient
+distinguishedName: CN=ms-Exch-IM-Recipient,${SCHEMADN}
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.7008
+mayContain: msExchIMVirtualServer
+mayContain: msExchIMAddress
+mayContain: msExchIMPhysicalURL
+mayContain: msExchIMMetaPhysicalURL
+mayContain: msExchIMACL
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-IM-Recipient
+adminDescription: ms-Exch-IM-Recipient
+objectClassCategory: 3
+lDAPDisplayName: msExchIMRecipient
+name: ms-Exch-IM-Recipient
+schemaIDGUID: 028502f4-a981-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-IM-Recipient,${SCHEMADN}
+
+
+#
+# ms-Exch-Mail-Storage 	
+# The auxiliary class for objects that require store-specific information.
+#
+dn: CN=ms-Exch-Mail-Storage,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Mail-Storage
+distinguishedName: CN=ms-Exch-Mail-Storage,${SCHEMADN}
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.5
+mayContain: msExchPfRootUrl
+mayContain: msExchMailboxUrl
+mayContain: msExchUseOAB
+mayContain: msExchMailboxGuid
+mayContain: mDBUseDefaults
+mayContain: mDBStorageQuota
+mayContain: mDBOverQuotaLimit
+mayContain: mDBOverHardQuotaLimit
+mayContain: msExchHomeServerName
+mayContain: homeMDB
+mayContain: deletedItemFlags
+mayContain: autoReply
+mayContain: garbageCollPeriod
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Mail-Storage
+adminDescription: ms-Exch-Mail-Storage
+objectClassCategory: 3
+lDAPDisplayName: msExchMailStorage
+name: ms-Exch-Mail-Storage
+schemaIDGUID: 03652000-a981-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Mail-Storage,${SCHEMADN}
+
+
+#
+# ms-Exch-Mailbox-Manager-Policy
+#
+dn: CN=ms-Exch-Mailbox-Manager-Policy,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Mailbox-Manager-Policy
+distinguishedName: CN=ms-Exch-Mailbox-Manager-Policy,${SCHEMADN}
+possSuperiors: container
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.50033
+mayContain: msExchMailboxManagerUserMessageHeader
+mayContain: msExchMailboxManagerUserMessageFooter
+mayContain: msExchMailboxManagerUserMessageBody
+mayContain: msExchMailboxManagerSizeLimitEnabled
+mayContain: msExchMailboxManagerSizeLimit
+mayContain: msExchMailboxManagerSendUserNotificationMail
+mayContain: msExchMailboxManagerMode
+mayContain: msExchMailboxManagerKeepMessageClasses
+mayContain: msExchMailboxManagerFolderSettings
+mayContain: msExchMailboxManagerCustomMessage
+mayContain: msExchMailboxManagerAgeLimit
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Mailbox-Manager-Policy
+adminDescription: ms-Exch-Mailbox-Manager-Policy
+objectClassCategory: 3
+lDAPDisplayName: msExchMailboxManagerPolicy
+name: ms-Exch-Mailbox-Manager-Policy
+schemaIDGUID: 36f94fcc-ebbb-4a32-b721-1cae42b2dbab
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Mailbox-Manager-Policy,${SCHEMADN}

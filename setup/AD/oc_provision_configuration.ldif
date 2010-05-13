@@ -20,8 +20,8 @@ objectCategory: CN=ms-Exch-Configuration-Container,${SCHEMADN}
 addressBookRoots: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
 globalAddressList: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
 templateRoots: CN=Addressing,${FIRSTORGDN}
-#msExchPolicyRoots: CN=System Policies,${FIRSTORGDN}
-#msExchPolicyRoots: CN=Recipient Policies,${FIRSTORGDN}
+msExchPolicyRoots: CN=System Policies,${FIRSTORGDN}
+msExchPolicyRoots: CN=Recipient Policies,${FIRSTORGDN}
 
 
 #
@@ -73,7 +73,6 @@ objectCategory: CN=ms-Exch-Admin-Group,${SCHEMADN}
 msExchAdminGroupMode: 0
 msExchDefaultAdminGroup: TRUE
 
-
 #
 # Servers
 #
@@ -121,7 +120,6 @@ msExchTrkLogCleaningInterval: 7
 msExchMailboxManagerActivationStyle: 0
 msExchMailboxManagerAdminMode: 2
 
-
 #
 # Information Store
 #
@@ -152,7 +150,6 @@ name: First Storage Group
 systemFlags: 1610612736
 objectCategory: CN=ms-Exch-Storage-Group,${SCHEMADN}
 
-
 #
 # Public Folder Store (${NETBIOSNAME})
 #
@@ -166,14 +163,14 @@ displayName: Public Folder Store (${NETBIOSNAME})
 activationStyle: 1
 messageSizeLimit: 10240
 showInAdvancedViewOnly: TRUE
-#homeMTA: CN=Microsoft MTA,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+homeMTA: CN=Microsoft MTA,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
 adminDisplayName: Public Folder Store (${NETBIOSNAME})
 proxyAddresses: SMTP:${NETBIOSNAME}-IS@${DNSDOMAIN}
 proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=EXCH2K3-IS;
 deliveryMechanism: 1
 garbageCollPeriod: 604800
 quotaNotificationStyle: 1
-#homeMDBBL: CN=SMTP (${NETBIOSNAME}-{E95EE010-3E8A-425B-806F-15ED60887F6B}),CN=Connections,${FIRSTORGDN}
+homeMDBBL: CN=SMTP (${NETBIOSNAME}-{E95EE010-3E8A-425B-806F-15ED60887F6B}),CN=Connections,${FIRSTORGDN}
 mailNickname: ${NETBIOSNAME}-IS
 name: Public Folder Store (${NETBIOSNAME})
 systemFlags: 1610612736
@@ -217,7 +214,6 @@ msExchMailboxRetentionPeriod: 2592000
 msExchMaxCachedViews: 11
 msExchDatabaseCreated: TRUE
 
-
 #
 # Address Lists Containers
 # description: Address book root container
@@ -248,7 +244,6 @@ showInAdvancedViewOnly: TRUE
 name: All Global Address Lists
 systemFlags: 1610612736
 objectCategory: CN=Address-Book-Container,${SCHEMADN}
-
 
 #
 # Default global Address List
@@ -317,7 +312,6 @@ showInAdvancedViewOnly: TRUE
 name: Recipient Update Services
 objectCategory: CN=ms-Exch-Container,${SCHEMADN}
 
-
 #
 # Recipient Update Service (${DOMAIN})
 #
@@ -344,29 +338,26 @@ msExchDomainGlobalGroupGuid: {1E2B98D3-4FAC-4FAE-B16F-A26AB09AAE34}
 msExchDomainLocalGroupSid: S-1-5-21-1226241484-1028146065-4277480997-1110
 msExchDomainGlobalGroupSid: S-1-5-21-1226241484-1028146065-4277480997-1109
 
-
 #
 # Recipient Update Service (Enterprise Configuration)
 #
-dn: CN=Recipient Update Service (Enterprise Configuration),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
-objectClass: top
-objectClass: msExchAddressListService
-cn: Recipient Update Service (Enterprise Configuration)
-distinguishedName: CN=Recipient Update Service (Enterprise Configuration),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
-activationStyle: 2
-showInAdvancedViewOnly: TRUE
-name: Recipient Update Service (Enterprise Configuration)
-systemFlags: 1073741824
-objectCategory: CN=ms-Exch-Address-List-Service,CN=Schema,CN=Configuration,DC=
- openchange2003,DC=local
-msExchServer1NetworkAddress: ${HOSTNAME}
-msExchServer1PageSize: 20
-msExchDoFullReplication: FALSE
-msExchReplicateNow: FALSE
-msExchPollInterval: 60
-msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-msExchDomainLink: CN=Configuration,${DOMAINDN}
-
+#dn: CN=Recipient Update Service (Enterprise Configuration),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+#objectClass: top
+#objectClass: msExchAddressListService
+#cn: Recipient Update Service (Enterprise Configuration)
+#distinguishedName: CN=Recipient Update Service (Enterprise Configuration),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+#activationStyle: 2
+#showInAdvancedViewOnly: TRUE
+#name: Recipient Update Service (Enterprise Configuration)
+#systemFlags: 1073741824
+#objectCategory: CN=ms-Exch-Address-List-Service,CN=Schema,CN=Configuration,DC=openchange2003,DC=local
+#msExchServer1NetworkAddress: ${HOSTNAME}
+#msExchServer1PageSize: 20
+#msExchDoFullReplication: FALSE
+#msExchReplicateNow: FALSE
+#msExchPollInterval: 60
+#msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+#msExchDomainLink: CN=Configuration,${DOMAINDN}
 
 #
 # All Address Lists
@@ -560,7 +551,6 @@ containerInfo: 64
 name: Display-Templates
 legacyExchangeDN: /o=${FIRSTORG}/cn=Configuration/cn=Addressing/cn=Display-Templates
 objectCategory: CN=ms-Exch-Container,${SCHEMADN}
-
 
 #
 # Arabic Address-Templates

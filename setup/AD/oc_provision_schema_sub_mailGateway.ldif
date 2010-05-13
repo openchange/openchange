@@ -1,0 +1,350 @@
+#
+# ms-Exch-ccMail-Connector
+# The ccMail connector
+#
+dn: CN=ms-Exch-ccMail-Connector,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-ccMail-Connector
+distinguishedName: CN=ms-Exch-ccMail-Connector,${SCHEMADN}
+possSuperiors: container
+subClassOf: mailGateway
+governsID: 1.2.840.113556.1.5.7000.62.1001
+mayContain: msExchccMailPassword
+mayContain: msExchccMailConnectAsUserid
+mayContain: msExchccMailConnectAsPassword
+mayContain: objViewContainers
+mayContain: msExchccMailPOPath
+mayContain: msExchccMailPOName
+#mayContain: msExchccMailKeepForwardHistory
+#mayContain: msExchccMailImportExportVersion
+#mayContain: msExchccMailFilterType
+mayContain: msExchccMailADEProp
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-ccMail-Connector
+adminDescription: ms-Exch-ccMail-Connector
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchccMailConnector
+name: ms-Exch-ccMail-Connector
+schemaIDGUID: e85710b6-a980-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-ccMail-Connector,${SCHEMADN}
+
+#
+# ms-Exch-Calendar-Connector
+# The calendar connector
+#
+dn: CN=ms-Exch-Calendar-Connector,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Calendar-Connector
+distinguishedName: CN=ms-Exch-Calendar-Connector,${SCHEMADN}
+possSuperiors: container
+subClassOf: mailGateway
+governsID: 1.2.840.113556.1.5.7000.62.1007
+mayContain: msExchNotesNotesServer
+mayContain: msExchNotesNotesINI
+mayContain: msExchEncryptedPassword
+mayContain: msExchGWiseAPIGateway
+mayContain: msExchCalConTargetSiteDN
+mayContain: msExchCalConRefreshInterval
+mayContain: msExchCalConQueryWindow
+mayContain: msExchCalConProviders
+mayContain: msExchCalConClientWait
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Calendar-Connector
+adminDescription: ms-Exch-Calendar-Connector
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchCalendarConnector
+name: ms-Exch-Calendar-Connector
+schemaIDGUID: 922180da-b09e-11d2-aa06-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Calendar-Connector,${SCHEMADN}
+
+#
+# ms-Exch-GroupWise-Connector	 
+# The GroupWise Connector.
+#
+dn: CN=ms-Exch-GroupWise-Connector,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-GroupWise-Connector
+distinguishedName: CN=ms-Exch-GroupWise-Connector,${SCHEMADN}
+possSuperiors: container
+subClassOf: mailGateway
+governsID: 1.2.840.113556.1.5.7000.62.1005
+mayContain: msExchGWiseUserId
+mayContain: msExchGWisePassword
+mayContain: msExchGWiseForeignDomain
+mayContain: msExchGWiseFilterType
+mayContain: msExchGWiseAPIGatewayPath
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-GroupWise-Connector
+adminDescription: ms-Exch-GroupWise-Connector
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchGroupWiseConnector
+name: ms-Exch-GroupWise-Connector
+schemaIDGUID: 91eaaac4-b09e-11d2-aa06-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-GroupWise-Connector,${SCHEMADN}
+
+
+#
+# ms-Exch-Active-Directory-Connector
+# Represents the service that synchronizes information between the
+# Exchange Server 5.5 directory and Active Directory.
+#
+dn: CN=ms-Exch-Active-Directory-Connector,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Active-Directory-Connector
+distinguishedName: CN=ms-Exch-Active-Directory-Connector,${SCHEMADN}
+possSuperiors: organizationalUnit
+possSuperiors: container
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.62.4
+mayContain: versionNumberHi
+mayContain: versionNumber
+mayContain: msExchServer2SchemaMap
+mayContain: msExchServer1SchemaMap
+mayContain: msExchChildSyncAgreements
+mayContain: displayName
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Active-Directory-Connector
+adminDescription: ms-Exch-Active-Directory-Connector
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchActiveDirectoryConnector
+name: ms-Exch-Active-Directory-Connector
+schemaIDGUID: e605672c-a980-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Active-Directory-Connector,${SCHEMADN}
+
+
+
+#
+# ms-Exch-MS-Mail-Connector	   
+# The Microsoft Mail Connector object.
+#
+dn: CN=ms-Exch-MS-Mail-Connector,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-MS-Mail-Connector
+distinguishedName: CN=ms-Exch-MS-Mail-Connector,${SCHEMADN}
+possSuperiors: container
+subClassOf: mailGateway
+governsID: 1.2.840.113556.1.3.31
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-MS-Mail-Connector
+adminDescription: ms-Exch-MS-Mail-Connector
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: mSMailConnector
+name: ms-Exch-MS-Mail-Connector
+schemaIDGUID: a8df74be-c5ea-11d1-bbcb-0080c76670c0
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-MS-Mail-Connector,${SCHEMADN}
+
+
+#
+# ms-Exch-Notes-Connector 
+# The Lotus Notes Connector object.
+#
+dn: CN=ms-Exch-Notes-Connector,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Notes-Connector
+distinguishedName: CN=ms-Exch-Notes-Connector,${SCHEMADN}
+possSuperiors: container
+subClassOf: mailGateway
+governsID: 1.2.840.113556.1.5.7000.62.1002
+mayContain: msExchNotesPassword
+mayContain: msExchNotesTargetBooks
+mayContain: msExchNotesTargetBook
+mayContain: msExchNotesSourceBooks
+mayContain: msExchNotesRtrMailbox
+mayContain: msExchNotesRoutableDomains
+mayContain: msExchNotesNotesServer
+mayContain: msExchNotesNotesLinks
+mayContain: msExchNotesNotesINI
+mayContain: msExchNotesLetterhead
+mayContain: msExchNotesForeignDomain
+mayContain: msExchNotesExportGroups
+mayContain: msExchNotesExcludeGroups
+mayContain: msExchNotesConnectorMailbox
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Notes-Connector
+adminDescription: ms-Exch-Notes-Connector
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchNotesConnector
+name: ms-Exch-Notes-Connector
+schemaIDGUID: 04c85e62-a981-11d2-a9ff-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Notes-Connector,${SCHEMADN}
+
+
+
+#
+# ms-Exch-Oma-Connector  
+#
+dn: CN=ms-Exch-Oma-Connector,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Oma-Connector
+distinguishedName: CN=ms-Exch-Oma-Connector,${SCHEMADN}
+subClassOf: msExchConnector
+governsID: 1.2.840.113556.1.6.20.2.39
+mayContain: msExchSourceBridgeheadServersDN
+mayContain: msExchOmaCarrierUrl
+mayContain: deliveryMechanism
+mayContain: legacyExchangeDN
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Oma-Connector
+adminDescription: ms-Exch-Oma-Connector
+objectClassCategory: 1
+lDAPDisplayName: msExchOmaConnector
+name: ms-Exch-Oma-Connector
+schemaIDGUID: 4dc9d0b1-594c-407e-a7d2-426e6c20dabb
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Oma-Connector,${SCHEMADN}
+
+
+#
+# ms-Exch-OVVM-Connector	
+# The OVVM Connector.
+#
+dn: CN=ms-Exch-OVVM-Connector,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-OVVM-Connector
+distinguishedName: CN=ms-Exch-OVVM-Connector,${SCHEMADN}
+possSuperiors: container
+subClassOf: mailGateway
+governsID: 1.2.840.113556.1.5.7000.62.1004
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-OVVM-Connector
+adminDescription: ms-Exch-OVVM-Connector
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: msExchOVVMConnector
+name: ms-Exch-OVVM-Connector
+schemaIDGUID: 91ce0e8c-b09e-11d2-aa06-00c04f8eedd8
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-OVVM-Connector,${SCHEMADN}
+
+# 
+# ms-Exch-Mail-Connector    
+# The Microsoft Mail Connector object.
+#
+dn: CN=ms-Exch-Mail-Connector,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-Mail-Connector
+distinguishedName: CN=ms-Exch-Mail-Connector,${SCHEMADN}
+possSuperiors: container
+subClassOf: mailGateway
+governsID: 1.2.840.113556.1.3.61
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Mail-Connector
+adminDescription: ms-Exch-Mail-Connector
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: mailConnector
+name: ms-Exch-Mail-Connector
+schemaIDGUID: a8df74b6-c5ea-11d1-bbcb-0080c76670c0
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-Mail-Connector,${SCHEMADN}
+
+#
+# ms-Exch-X400-Link	 
+# Specifies a remote X.400 MTA.
+#
+dn: CN=ms-Exch-X400-Link,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+cn: ms-Exch-X400-Link
+distinguishedName: CN=ms-Exch-X400-Link,${SCHEMADN}
+possSuperiors: container
+subClassOf: mailGateway
+governsID: 1.2.840.113556.1.3.29
+mayContain: x400SelectorSyntax
+mayContain: x400AttachmentType
+mayContain: twoWayAlternateFacility
+mayContain: turnRequestThreshold
+mayContain: transportExpeditedData
+mayContain: tempAssocThreshold
+mayContain: tSelector
+mayContain: supportingStack
+mayContain: sessionDisconnectTimer
+mayContain: sSelectorInbound
+mayContain: sSelector
+mayContain: rTSWindowSize
+mayContain: rTSRecoveryTimeout
+mayContain: rTSCheckpointSize
+mayContain: pSelectorInbound
+mayContain: pSelector
+mayContain: openRetryInterval
+mayContain: numOfTransferRetries
+mayContain: numOfOpenRetries
+mayContain: nAddressType
+mayContain: nAddress
+mayContain: mTALocalDesig
+mayContain: mTALocalCred
+mayContain: localInitialTurn
+mayContain: gatewayLocalDesig
+mayContain: gatewayLocalCred
+mayContain: associationLifetime
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-X400-Link
+adminDescription: ms-Exch-X400-Link
+auxiliaryClass: msExchBaseClass
+objectClassCategory: 1
+lDAPDisplayName: x400Link
+name: ms-Exch-X400-Link
+schemaIDGUID: a8df74e0-c5ea-11d1-bbcb-0080c76670c0
+systemOnly: FALSE
+defaultSecurityDescriptor: D:S:
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=ms-Exch-X400-Link,${SCHEMADN}

@@ -332,7 +332,7 @@ def newmailbox(lp, username, firstorg, firstou):
         (("Mailbox Root", "IPM Subtree"), "Journal",    "IPF.Journal",      "PidTagIpmJournalEntryId"),
         (("Mailbox Root", "IPM Subtree"), "Notes",      "IPF.StickyNote",   "PidTagIpmNoteEntryId"),
         (("Mailbox Root", "IPM Subtree"), "Tasks",      "IPF.Task",         "PidTagIpmTaskEntryId"),
-        (("Mailbox Root", "IPM Subtree"), "Drafts",     "IPF.Notes",        "PidTagIpmDraftsEntryId")
+        (("Mailbox Root", "IPM Subtree"), "Drafts",     "IPF.Note",        "PidTagIpmDraftsEntryId")
         ]
 
     fid_inbox = fids[("Mailbox Root", "IPM Subtree", "Inbox")]

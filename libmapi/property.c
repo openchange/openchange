@@ -588,6 +588,9 @@ _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPr
 	case PT_DOUBLE:
 		sprop->value.dbl = mapi_sprop->value.dbl;
 		return sizeof(uint64_t);
+	case PT_I8:
+		sprop->value.d = mapi_sprop->value.d;
+		return sizeof(uint64_t);
 	case PT_STRING8:
 		sprop->value.lpszA = mapi_sprop->value.lpszA;
 		if (!mapi_sprop->value.lpszA) return 0;

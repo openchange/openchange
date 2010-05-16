@@ -101,9 +101,10 @@ checkout() {
     error_check $? "Step2"
 
     echo "Step3: Revert to commit $SAMBA4_GIT_REV"
-    git reset --hard $SAMBA4_GIT_REV
-    error_check $? "Step3"
-
+    if test x"$SAMBA4_GIT_REV" != x""; then
+	git reset --hard $SAMBA4_GIT_REV
+	error_check $? "Step3"
+    fi
     cd $OLD_PWD
     return $?
 }
@@ -206,7 +207,7 @@ patch() {
 packages() {
     OLD_PWD=$PWD
 
-    delete_install
+#    delete_install
 
     echo "Step1: Installing talloc library"
     cd samba4/lib/talloc
@@ -281,25 +282,24 @@ compile() {
 
     OLD_PWD=$PWD
 
+    delete_install
+
     # Cleanup tdb and talloc directories
-    cleanup_talloc
-    cleanup_tdb
+#    cleanup_talloc
+#    cleanup_tdb
 
     echo "Step1: Preparing Samba4 system"
     cd samba4/source4
     error_check $? "Step1"
 
-    ./autogen.sh
+    ./autogen-autotools.sh
     error_check $? "Step1"
 
     ./configure.developer --enable-debug
     error_check $? "Step1"
 
-    echo "Step2: Compile Samba4 (IDL)"
-    $MAKE idl_full
-
-    echo "Step3: Compile Samba4 (Source)"
-   	$MAKE 
+    echo "Step2: Compile Samba4 (Source)"
+   	$MAKE -j3
     error_check $? "Step3"
 
     cd $OLD_PWD
@@ -378,17 +378,17 @@ case $1 in
     git-all)
 	checkout
 	patch
-	packages
 	compile
 	install
+	packages
 	post_install
 	;;
     all)
 	download
 	patch
-	packages
 	compile
 	install
+	packages
 	post_install
 	;;
     *)

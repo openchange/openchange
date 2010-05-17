@@ -1,3 +1,70 @@
+2010-05-17
+    jkerihuel
+	[r1790]
+		Add server-side skeleton for ROPs:
+		    - ModifyRecipients
+		    - DeleteMessage
+		    - SubmitMessage
+		    - GetTransportFolder
+		
+		NOTE: GetTransportFolder is using hardcoded data that will be removed
+		in futher commits.
+	[r1789]
+		Add libmapiserver size calculation for ROPs:
+		    - RopDeleteMessage
+		    - RopModifyRecipients
+		    - RopSubmitMessage
+		    - RopGetTransportFolder
+2010-05-16
+    jkerihuel
+	[r1787]
+		Fix provisioning script and push a master-git samba4 version known to compile
+		and work properly with openchange.
+		
+		There is probably a small typo left in installsamba.sh post_install script to fix
+    bradh
+	[r1788]
+		Update docs for new samba version.
+		
+		Looks like we now have real complexity requirements for passwords...
+2010-05-14
+    bradh
+	[r1786]
+		Fix the container class for the Drafts folder.
+		
+		This is per MS-OXCSFLD
+	[r1785]
+		Add PT_I8 for cast_SPropValue().
+2010-05-13
+    jkerihuel
+	[r1784]
+		  Fix openchange vs latest samba4 git-master branch
+		
+		- Fix OpenChange schema: Had to split our 1-file schema into multiple
+		  files in order to be compliant with Samba4 LDB schema validation
+		  policy/rules.
+		
+		- Fix openchange provision script
+		- Fix calls to smb_iconv_convenience_init
+		- Fix the copied libmapi/socket code to work with latest samba4 code
+		- Fix openchange server SIGSEGV when EcDoConnectEx is called
+		
+		I have tested the following to ensure nothing is broken:
+		- mapitest with Exchange 2003. All tests are OK
+		- openchangepfadmin (user creation/deletion OK)
+		- openchange server provisioning
+		- openchange server vs Outlook 2003:
+		  - profile creation OK
+		  - Outlook can open the user mailbox and display it properly
+2010-05-10
+    jkerihuel
+	[r1783]
+		Skeleton server code for DeleteFolder ROP
+	[r1782]
+		Just add more skeleton code to select between available folder types
+	[r1781]
+		Server side skeleton for CreateFolder operation
+
 2010-05-08
     bradh
 	[r1779]

@@ -26,8 +26,20 @@
  */
 
 #include "libmapiserver.h"
-
 #include <string.h>
+
+/**
+   \details Calculate SubmitMessage (0x32) Rop size
+
+   \param response pointer to the SubmitMessage EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SubmitMessage response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSubmitMessage_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
 
 /**
    \details Calculate GetAddressTypes (0x49) Rop size
@@ -50,6 +62,27 @@ _PUBLIC_ uint16_t libmapiserver_RopGetAddressTypes_size(struct EcDoRpc_MAPI_REPL
 
 	return size;
 }
+
+/**
+   \details Calculate GetTransportFolder (0x6d) ROP size
+
+   \param response pointer to the GetTransportFolder EcDoRpc_MAPI_REPL structure
+
+   \return Size of GetTransportFolder response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetTransportFolder_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETTRANSPORTFOLDER;
+
+	return size;
+}
+
 
 /**
    \details Calculate OptionsData (0x6f) Rop size

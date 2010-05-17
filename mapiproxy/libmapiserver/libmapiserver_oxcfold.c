@@ -136,3 +136,24 @@ _PUBLIC_ uint16_t libmapiserver_RopDeleteFolder_size(struct EcDoRpc_MAPI_REPL *r
 
 	return size;
 }
+
+/**
+   \details Calculate DeleteMessage (0x1e) Rop size
+
+   \param response pointer to the DeleteMessage EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of DeleteMessage response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopDeleteMessage_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPDELETEMESSAGE;
+
+	return size;
+}

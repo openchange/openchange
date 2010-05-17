@@ -26,7 +26,6 @@
  */
 
 #include "libmapiserver.h"
-#include <util/debug.h>
 
 /**
    \details Calculate CreateMessage Rop size
@@ -50,8 +49,6 @@ _PUBLIC_ uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *
 		size += sizeof (uint64_t);
 	}
 
-	DEBUG(0, ("CreateMessage: %d\n", size));
-
 	return size;
 }
 
@@ -74,7 +71,19 @@ _PUBLIC_ uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_R
 
 	size += SIZE_DFLT_ROPSAVECHANGESMESSAGE;
 
-	DEBUG(0, ("SaveChangesMessage: %d\n", size));
-
 	return size;
+}
+
+
+/**
+   \details Calculate ModifyRecipients Rop size
+
+   \param response pointer to the ModifyRecipients EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of ModifyRecipients response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopModifyRecipients_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
 }

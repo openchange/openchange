@@ -162,6 +162,12 @@
 #define	SIZE_DFLT_ROPGETADDRESSTYPES		4
 
 /**
+   \details GetTransportFolder has fixed response size for:
+   -# FolderId: uint64_t
+ */
+#define	SIZE_DFLT_ROPGETTRANSPORTFOLDER		8
+
+/**
    \details OptionsData has fixed response size for:
    -# Reserved: uint8_t
    -# OptionsInfo: uint16_t part of SBinary_short
@@ -181,6 +187,12 @@
    -# count: uint16_t
  */
 #define	SIZE_DFLT_ROPGETPROPERTYIDSFROMNAMES	2
+
+/**
+   \details DeleteMessage Rop has fixed response size for:
+   -# PartialCompletion: uint8_t
+ */
+#define	SIZE_DFLT_ROPDELETEMESSAGE		1
 
 /**
    \details LogonRop has a fixed size for mailbox:
@@ -213,10 +225,12 @@ uint16_t libmapiserver_RopGetHierarchyTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetContentsTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCreateFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeleteFolder_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopDeleteMessage_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcmsg.c */
 uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopModifyRecipients_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcnotif.c */
 uint16_t libmapiserver_RopRegisterNotification_size(void);
@@ -242,7 +256,9 @@ uint16_t libmapiserver_RopSeekRow_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopFindRow_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxomsg.c */
+uint16_t libmapiserver_RopSubmitMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetAddressTypes_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetTransportFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOptionsData_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxorule.c */

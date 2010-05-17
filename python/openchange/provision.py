@@ -484,6 +484,8 @@ def openchangedb_provision(lp, firstorg=None, firstou=None):
     openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
     openchange_ldb.setup()
 
+    openchange_ldb.add_rootDSE(names.ocserverdn, names.firstorg, names.firstou)
+
     # Add a server object
     # It is responsible for holding the GlobalCount identifier (48 bytes)
     # and the Replica identifier

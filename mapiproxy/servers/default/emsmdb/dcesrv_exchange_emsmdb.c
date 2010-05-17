@@ -327,7 +327,13 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 			break;
 		/* op_MAPI_SaveChangesMessage: 0xc */
 		/* op_MAPI_RemoveAllRecipients: 0xd */
-		/* op_MAPI_ModifyRecipients: 0xe */
+		case op_MAPI_ModifyRecipients: /* 0xe */
+			retval = EcDoRpc_RopModifyRecipients(mem_ctx, emsmdbp_ctx,
+							     &(mapi_request->mapi_req[i]),
+							     &(mapi_response->mapi_repl[idx]),
+							     mapi_response->handles, &size);
+			break;
+
 		/* op_MAPI_ReadRecipients: 0xf */
 		/* op_MAPI_ReloadCachedInformation: 0x10 */
 		/* op_MAPI_SetMessageReadFlag: 0x11 */
@@ -379,7 +385,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 							 mapi_response->handles, &size);
 			break;
 		/* op_MAPI_DeleteFolder: 0x1d */
-		/* op_MAPI_DeleteMessages: 0x1e */
+		case op_MAPI_DeleteMessages: /* 0x1e */
+			retval = EcDoRpc_RopDeleteMessage(mem_ctx, emsmdbp_ctx,
+							  &(mapi_request->mapi_req[i]),
+							  &(mapi_response->mapi_repl[idx]),
+							  mapi_response->handles, &size);
+			break;
 		/* op_MAPI_GetMessageStatus: 0x1f */
 		/* op_MAPI_SetMessageStatus: 0x20 */
 		/* op_MAPI_GetAttachmentTable: 0x21 */
@@ -408,7 +419,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		/* op_MAPI_SetStreamSize: 0x2f */
 		/* op_MAPI_SetSearchCriteria: 0x30 */
 		/* op_MAPI_GetSearchCriteria: 0x31 */
-		/* op_MAPI_SubmitMessage: 0x32 */
+		case op_MAPI_SubmitMessage: /* 0x32 */
+			retval = EcDoRpc_RopSubmitMessage(mem_ctx, emsmdbp_ctx,
+							  &(mapi_request->mapi_req[i]),
+							  &(mapi_response->mapi_repl[idx]),
+							  mapi_response->handles, &size);
+			break;
 		/* op_MAPI_MoveCopyMessages: 0x33 */
 		/* op_MAPI_AbortSubmit: 0x34 */
 		/* op_MAPI_MoveFolder: 0x35 */
@@ -475,7 +491,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		/* op_MAPI_GetReceiveFolderTable: 0x68 */
 		/* op_MAPI_GetCollapseState: 0x6b */
 		/* op_MAPI_SetCollapseState: 0x6c */
-		/* op_MAPI_GetTransportFolder: 0x6d */
+		case op_MAPI_GetTransportFolder: /* 0x6d */
+			retval = EcDoRpc_RopGetTransportFolder(mem_ctx, emsmdbp_ctx,
+							       &(mapi_request->mapi_req[i]),
+							       &(mapi_response->mapi_repl[idx]),
+							       mapi_response->handles, &size);
+			break;
 		/* op_MAPI_Pending: 0x6e */
 		case op_MAPI_OptionsData: /* 0x6f */
 			retval = EcDoRpc_RopOptionsData(mem_ctx, emsmdbp_ctx,

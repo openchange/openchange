@@ -210,6 +210,9 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 		return false;
 	}
 
+	/* Get a copy of the username for later use */
+	emsmdbp_ctx->username = talloc_strdup(emsmdbp_ctx, username);
+
 	return true;
 }
 

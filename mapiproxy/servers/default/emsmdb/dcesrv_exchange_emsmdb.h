@@ -24,6 +24,7 @@
 
 #include <libmapi/libmapi.h>
 #include <libmapi/proto_private.h>
+#include <libmapi/defs_private.h>
 #include <mapiproxy/libmapiproxy/libmapiproxy.h>
 #include <mapiproxy/libmapistore/mapistore.h>
 #include <ldb.h>

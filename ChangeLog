@@ -1,5 +1,48 @@
+2010-05-18
+    jkerihuel
+	[r1799]
+		- Push Brad's CreateFolder implementation after turning hardcoded fields to generic one.
+		
+		Note: current implementation is incorrect as it states that any folder is referenced
+		within openchange.ldb while only system/top folders are. We have a mapistore URI for
+		system/top folders, not for subfolders which are stored directly within specified
+		mapistore backend.
+		
+		However the implementation is almost correct when it comes to create folders directly
+		under / in the user mailbox.
+	[r1798]
+		- Add a 'fsocpf' mapistore backend skeleton (FileSystem + OCPF)
+		- Fix some doxygen in mapistore sqlite3 backend
+		- Add an op_mkdir skeleton to mapistore
+		- Add fsocpf:// namespace test to mapistore_test
+		- Compile fsocpf only if libocpf gets compiled
+		 
+	[r1797]
+		Add defs_private.h so we can use PRIx64 where appropriate
+	[r1796]
+		It makes more sense to directly return the next available and formated FID rather
+		than the GlobalCount raw value.
+	[r1795]
+		Add exchange username to emsmdbp_ctx structure for convenient purposes
+	[r1794]
+		After openchange_ldb is opened, map attributes of the @ROOTDSE record
+		with ldb_set_opaque so ldb_get_default_basedn and ldb_get_root_basedn work.
 2010-05-17
     jkerihuel
+	[r1793]
+		Implement a convenient function to retrieve the GlobalCount value from
+		the objectClass=server record in openchangedb - which is the next FID
+		to be available.
+		
+		Note: the function currently lacks locking mechanisms. We should
+		introduce some to prevent from race conditions.
+		
+		This code was originally designed by Brad. I've just refactored it.
+	[r1792]
+		Add a rootDSE entry to openchangedb.
+		This change makes possible to call:
+		     - ldb_get_root_basedn() to retrieve CN=server,DC=domain,DC=ext
+		     - ldb_get_default_basedn() to retrieve CN=firstou,CN=firstorg,CN=server,DC=comain,DC=ext
 	[r1790]
 		Add server-side skeleton for ROPs:
 		    - ModifyRecipients

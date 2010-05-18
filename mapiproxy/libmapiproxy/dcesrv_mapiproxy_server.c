@@ -333,6 +333,13 @@ _PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_
 	TALLOC_CTX		*mem_ctx;
 	struct tevent_context	*ev;
 	int			ret;
+	struct ldb_result	*res;
+	struct ldb_dn		*tmp_dn = NULL;
+	static const char	*attrs[] = {
+		"rootDomainNamingContext",
+		"defaultNamingContext",
+		NULL
+	};
 
 	/* Sanity checks */
 	if (openchange_ldb_ctx) return openchange_ldb_ctx;
@@ -351,12 +358,35 @@ _PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_
 		return NULL;
 	}
 
+	/* Step 1. Connect to the database */
 	ret = ldb_connect(openchange_ldb_ctx, ldb_path, 0, NULL);
 	talloc_free(ldb_path);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		return NULL;
 	}
+
+	/* Step 2. Search for the rootDSE record */
+	ret = ldb_search(openchange_ldb_ctx, mem_ctx, &res, NULL,
+			 LDB_SCOPE_SUBTREE, attrs, "(distinguishedName=@ROOTDSE)");
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	if (res->count != 1) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	/* Step 3. Set opaque naming */
+	tmp_dn = ldb_msg_find_attr_as_dn(openchange_ldb_ctx, openchange_ldb_ctx,
+					 res->msgs[0], "rootDomainNamingContext");
+	ldb_set_opaque(openchange_ldb_ctx, "rootDomainNamingContext", tmp_dn);
+
+	tmp_dn = ldb_msg_find_attr_as_dn(openchange_ldb_ctx, openchange_ldb_ctx,
+					 res->msgs[0], "defaultNamingContext");
+	ldb_set_opaque(openchange_ldb_ctx, "defaultNamingContext", tmp_dn);
 
 	return openchange_ldb_ctx;
 }

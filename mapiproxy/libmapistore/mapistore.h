@@ -55,6 +55,7 @@ struct mapistore_backend {
 	int (*init)(void);
 	int (*create_context)(TALLOC_CTX *, const char *, void **);
 	int (*delete_context)(void *);
+	int (*op_mkdir)(void *);
 };
 
 struct backend_context {

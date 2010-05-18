@@ -41,7 +41,7 @@ static int sqlite3_init(void)
 
    \param mem_ctx pointer to the memory context
    \param uri pointer to the database path
-   \param context_id pointer to the context identifier the function
+   \param private_data pointer to the private backend context
    returns
 
    \return MAPISTORE_SUCCESS on success
@@ -75,7 +75,9 @@ static int sqlite3_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **p
 /**
    \details Delete a connection context from the sqlite3 backend
 
-   \return MAPISTORE_SUCCESS on success
+   \param private_data pointer to the current sqlite3 context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
 static int sqlite3_delete_context(void *private_data)
 {
@@ -90,6 +92,25 @@ static int sqlite3_delete_context(void *private_data)
 
 	ret = sqlite3_close(sqlite_ctx->db);
 	if (ret) return MAPISTORE_ERROR;
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Atomic operation: Create directory (mkdir)
+
+   \param private_data generic pointer to the sqlite3 context
+
+   \return MAPI_E_SUCCESS on success
+ */
+static int sqlite3_op_mkdir(void *private_data)
+{
+	struct sqlite3_context		*sqlite_ctx = (struct sqlite3_context *)private_data;
+
+	if (!sqlite_ctx) {
+		return MAPISTORE_ERROR;
+	}
 
 	return MAPISTORE_SUCCESS;
 }
@@ -114,8 +135,9 @@ int mapistore_init_backend(void)
 	backend.init = sqlite3_init;
 	backend.create_context = sqlite3_create_context;
 	backend.delete_context = sqlite3_delete_context;
+	backend.op_mkdir = sqlite3_op_mkdir;
 
-	/* Register ourselves with the MAPIPROXY subsystem */
+	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);
 	if (ret != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("Failed to register the '%s' mapistore backend!\n", backend.name));

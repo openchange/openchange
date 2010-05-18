@@ -44,6 +44,7 @@ int main(int argc, const char *argv[])
 	const char			*opt_debug = NULL;
 	uint32_t			context_id = 0;
 	uint32_t			context_id2 = 0;
+	uint32_t			context_id3 = 0;
 
 	enum { OPT_DEBUG=1000 };
 
@@ -99,8 +100,16 @@ int main(int argc, const char *argv[])
 
 	DEBUG(0, ("Context ID: [1] = %d and [2] = %d\n", context_id, context_id2));
 
+
+	retval = mapistore_add_context(mstore_ctx, "fsocpf:///tmp/fsocpf", &context_id3);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
+		exit (1);
+	}
+
 	retval = mapistore_del_context(mstore_ctx, context_id);
 	retval = mapistore_del_context(mstore_ctx, context_id2);
+	retval = mapistore_del_context(mstore_ctx, context_id3);
 
 	retval = mapistore_release(mstore_ctx);
 	if (retval != MAPISTORE_SUCCESS) {

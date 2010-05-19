@@ -117,6 +117,82 @@ static int sqlite3_op_mkdir(void *private_data)
 
 
 /**
+   \details Atomic operation: Delete directory (rmdir)
+
+   \param private_data generic pointer to the sqlite3 context
+
+   \return MAPI_E_SUCCESS on success
+ */
+static int sqlite3_op_rmdir(void *private_data)
+{
+	struct sqlite3_context		*sqlite_ctx = (struct sqlite3_context *)private_data;
+
+	if (!sqlite_ctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Atomic operation: Open directory (opendir)
+
+   \param private_data generic pointer to the sqlite3 context
+
+   \return MAPI_E_SUCCESS on success
+ */
+static int sqlite3_op_opendir(void *private_data)
+{
+	struct sqlite3_context		*sqlite_ctx = (struct sqlite3_context *)private_data;
+
+	if (!sqlite_ctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Atomic operation: Close directory (closedir)
+
+   \param private_data generic pointer to the sqlite3 context
+
+   \return MAPI_E_SUCCESS on success
+ */
+static int sqlite3_op_closedir(void *private_data)
+{
+	struct sqlite3_context		*sqlite_ctx = (struct sqlite3_context *)private_data;
+
+	if (!sqlite_ctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Atomic operation: Read directory (readdir)
+
+   \param private_data generic pointer to the sqlite3 context
+
+   \return MAPI_E_SUCCESS on success
+ */
+static int sqlite3_op_readdir(void *private_data)
+{
+	struct sqlite3_context		*sqlite_ctx = (struct sqlite3_context *)private_data;
+
+	if (!sqlite_ctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Entry point for mapistore SQLite backend
 
    \return MAPISTORE_SUCCESS on success, otherwise -1
@@ -136,6 +212,10 @@ int mapistore_init_backend(void)
 	backend.create_context = sqlite3_create_context;
 	backend.delete_context = sqlite3_delete_context;
 	backend.op_mkdir = sqlite3_op_mkdir;
+	backend.op_rmdir = sqlite3_op_rmdir;
+	backend.op_opendir = sqlite3_op_opendir;
+	backend.op_closedir = sqlite3_op_closedir;
+	backend.op_readdir = sqlite3_op_readdir;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

@@ -77,6 +77,14 @@ static int fsocpf_delete_context(void *private_data)
 	return MAPISTORE_SUCCESS;
 }
 
+
+/**
+   \details Create a folder in the fsocpf backend
+   
+   \param private_data pointer to the current fsocpf context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
 static int fsocpf_op_mkdir(void *private_data)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
@@ -88,6 +96,81 @@ static int fsocpf_op_mkdir(void *private_data)
 	return MAPISTORE_SUCCESS;
 }
 
+
+/**
+   \details Delete a folder from the fsocpf backend
+
+   \param private_data pointer to the current fsocpf context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static int fsocpf_op_rmdir(void *private_data)
+{
+	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
+
+	if (!fsocpf_ctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Open a folder from the fsocpf backend
+
+   \param private_data pointer to the current fsocpf context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static int fsocpf_op_opendir(void *private_data)
+{
+	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
+
+	if (!fsocpf_ctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Close a folder from the fsocpf backend
+
+   \param private_data pointer to the current fsocpf context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static int fsocpf_op_closedir(void *private_data)
+{
+	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
+
+	if (!fsocpf_ctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Read directory content from the fsocpf backend
+
+   \param private_data pointer to the current fsocpf context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static int fsocpf_op_readdir(void *private_data)
+{
+	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
+
+	if (!fsocpf_ctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
 
 /**
    \details Entry point for mapistore FSOCPF backend
@@ -109,6 +192,10 @@ int mapistore_init_backend(void)
 	backend.create_context = fsocpf_create_context;
 	backend.delete_context = fsocpf_delete_context;
 	backend.op_mkdir = fsocpf_op_mkdir;
+	backend.op_rmdir = fsocpf_op_rmdir;
+	backend.op_opendir = fsocpf_op_opendir;
+	backend.op_closedir = fsocpf_op_closedir;
+	backend.op_readdir = fsocpf_op_readdir;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

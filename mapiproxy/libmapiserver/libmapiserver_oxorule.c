@@ -30,9 +30,6 @@
 /**
    \details Calculate GetRulesTable Rop size
 
-   \param response pointer to the GetRulesTable EcDoRpc_MAPI_REPL
-   structure
-
    \return Size of GetRulesTable response
  */
 _PUBLIC_ uint16_t libmapiserver_RopGetRulesTable_size(void)

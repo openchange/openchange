@@ -34,7 +34,8 @@
    \details Build an Address Book EntryID from a legacyExchangeDN
 
    \param mem_ctx pointer to the memory context
-   \param legacyExchangeDN
+   \param legacyExchangeDN the string to copy into the binary blob
+   \param bin the binary blob where the function stores results
  */
 _PUBLIC_ enum MAPISTATUS entryid_set_AB_EntryID(TALLOC_CTX *mem_ctx, 
 						const char *legacyExchangeDN,

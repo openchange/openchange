@@ -1,0 +1,50 @@
+/**
+\page mapistore-documentation
+
+
+<center><img src="mapistore.png"></center>
+
+\section Contents
+<table style="clear:both; margin: 0.5em auto; width:80%; text-align: center; background-color:#ffffff; border:2px solid #e0e0e0; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+<ul>
+ <li><a href="#revision">        Revision History        </a></li>
+ <li><a href="#introduction"> 1. Introduction            </a>
+  <ul>
+    <li><a href="#purpose"> 1.1. Purpose and Scope</a></li>
+  </ul></li>
+</ul>
+</table>
+
+<a name="revision"></a><h2>Revision History</h2>
+<table align="center" width="80%">
+	<tr>
+	   <td style="text-align:center"><strong>Date</strong></td>
+	   <td style="text-align:center"><strong>Revision Number</strong></td>
+	   <td style="text-align:center"><strong>Author</strong></td>
+	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">20/05/10</td>
+	   <td style="text-align:center"><strong>0.1</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">Draft document.</td>
+	</tr>
+</table>
+<br/>
+
+<a name="introduction"></a><h2>1. Introduction</h2>
+
+<a name="purpose"></a><h3>1.1. Purpose and Scope</h3>
+
+MAPIStore is the SAL component of OpenChange server. SAL stands for
+Storage Abstraction Layer. It is the component used by OpenChange
+Server to push/get information (messages, folders) to/from storage
+backends. The following document intends to describe the
+overall/theoretical SAL behavior and contraints we need to consider
+when dealing with MAPI/EMSMDB. It also describes the semantics and
+inner working of its storage backends.
+
+
+*/

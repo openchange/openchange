@@ -1,0 +1,84 @@
+/** @mainpage The OpenChange Server Reference
+
+<h2>Introduction</h2>
+
+This is the online reference for configuring mapiproxy and
+developing with the OpenChange server code:
+- Users will find documentation on how to setup mapiproxy, mapiproxy
+  modules, openchange server, how to provision samba4 and
+  openchange. User's documentation is tagged with the user icon.
+
+- Developers will find documentation on OpenChange server internals,
+  design, architecture, implementation and API references. Developer's
+  documentation is tagged with the box icon.
+
+<h2>MAPIProxy documentation</h2>
+
+<table style="clear:both; width:100%; text-align: justify; background-color:#ffffff; border:0px; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+    <img src="mapiproxy_logo.png"/>
+</td>
+<td style="border:none;">
+MAPIProxy is an endpoint server for Samba4 which proxies ExchangeRPC
+traffic from MAPI clients (Outlook, openchangeclient, etc.) to
+Microsoft Exchange Server (and back). It can either act as a
+transparent proxy, for hacking, monitoring or debugging purposes or
+modify traffic on the fly and so provide new features. It is primarily
+developed for - but not limited to - third-party implementors looking
+for a development framework they can use for MAPI acceleration
+purposes.
+</td>
+</tr>
+<tr style="border:none;">
+<td style="border:none;">
+<table style="clear:both; width:100%; text-align: left; background-color:#ffffff; border:0px; padding:5px;">
+       <tr style="border:none;">
+       	   <td style="border:none;">
+	       <img src="userdoc.png"/>
+	   </td>
+	   <td style="border:none;">
+	       <img src="devdoc.png"/>
+	   </td>
+      </tr>
+</table>
+</td>
+<td style="border:none;"><b><a href="../mapiproxy/mapiproxy-documentation.html">Link to MAPIProxy documentation</a></b>:</td>
+</tr>
+</table>
+
+
+<h2>MAPIStore documentation</h2>
+
+<table style="clear:both; width:100%; text-align: justify; background-color:#ffffff; border:0px; padding:5px;">
+<tr style="border:none;">
+<td style="border:none;">
+    <img src="mapistore_logo.png"/>
+</td>
+<td style="border:none;">
+
+MAPIStore is the SAL component of OpenChange server. SAL stands for
+Storage Abstraction Layer. It is the component used by OpenChange
+Server to push/get information (messages, folders) to/from storage
+backends. The following document intends to describe the
+overall/theoretical SAL behavior and contraints we need to consider
+when dealing with MAPI/EMSMDB. It also describes the semantics and
+inner working of its storage backends.
+
+</td>
+</tr>
+<tr style="border:none;">
+<td style="border:none;">
+<table style="clear:both; width:100%; text-align: left; background-color:#ffffff; border:0px; padding:5px;">
+       <tr style="border:none;">
+	   <td style="border:none;">
+	       <img src="devdoc.png"/>
+	   </td>
+      </tr>
+</table>
+</td>
+<td style="border:none;"><b><a href="../mapiproxy/mapistore-documentation.html">Link to MAPIStore documentation</a></b>:</td>
+</tr>
+</table>
+
+*/

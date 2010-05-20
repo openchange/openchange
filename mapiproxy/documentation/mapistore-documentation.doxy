@@ -13,6 +13,7 @@
  <li><a href="#introduction"> 1. Introduction            </a>
   <ul>
     <li><a href="#purpose"> 1.1. Purpose and Scope</a></li>
+    <li><a href="#overview">1.2. General Overview</a></li>
   </ul></li>
 </ul>
 </table>
@@ -42,9 +43,53 @@ MAPIStore is the SAL component of OpenChange server. SAL stands for
 Storage Abstraction Layer. It is the component used by OpenChange
 Server to push/get information (messages, folders) to/from storage
 backends. The following document intends to describe the
-overall/theoretical SAL behavior and contraints we need to consider
+overall/theoretical SAL behavior and constraints we need to consider
 when dealing with MAPI/EMSMDB. It also describes the semantics and
 inner working of its storage backends.
 
+<br/>
+<a name="overview"></a><h3>1.2. General overview</h3>
+
+The main objective of mapistore is to provide an interface layer with
+a common set of atomic functions (operations) used to trigger and
+dispatch data and commands to the appropriate backend. MAPIStore
+relies on a backend mechanism specifically designed to transparently
+handle some of the MAPI semantics required by any Exchange compatible
+server.
+
+The initial idea was to provide to OpenChange a highly customizable
+storage backend mechanism which would fit in any situation and any
+environments. One of the greatest limitation we have found with
+existing groupware is the storage layer which is generally limited to
+a single solution, service or format and is neither scalable nor
+modifiable when user requirements evolve upon time.
+
+MAPIStore solves this problem and go beyond classical limitations. It
+is not a revolutionary concept, but the way openchange uses it makes
+the whole difference and offer administrators an innovative way to
+customize storage.
+
+MAPIStore allows you to:
+- <b>use a different backend for any top-folder</b>
+- <b>transparently move/copy data across backends</b>
+- develop new backends quickly
+- access all the different backends through an unique API
+
+For example (assuming all associated backends are developed) a user
+could have the following storage organization for his mailbox:
+- Mails stored using an IMAP backend (Cyrus-IMAP or dovecot)
+- Calendar items stored in CalDAV or pushed in Google calendar
+- Sent emails and archives/backup stored in a compression backend
+- Tasks stored in a MySQL database
+- Notes stored on the filesystem
+
+If the user is not satisfied with one of the backends performance, he
+would just have to use an administration tool, change the backend,
+wait for the replication, synchronization to finish and his data will
+be available from the new backend.
+
+Information can be completely decentralized, stored on one of several
+servers and still be accessible transparently from OpenChange
+server.
 
 */

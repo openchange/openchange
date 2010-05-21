@@ -211,7 +211,7 @@ _PUBLIC_ bool mapitest_common_message_create(struct mapitest *mt,
 	/* Create the message */
 	retval = CreateMessage(obj_folder, obj_message);
 	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print(mt, "* %-35s: 0x%.8x\n", "CreateMessage", retval);
+		mapitest_print_retval(mt, "(Common) CreateMessage");
 		return false;
 	}
 
@@ -263,7 +263,7 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 			      &SRowSet, &flaglist, MAPI_UNICODE);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print(mt, "* %-35s: 0x%.8x\n", "ResolveNames", retval);
+		mapitest_print_retval(mt, "(Common) ResolveNames");
 		talloc_free(SRowSet);
 		talloc_free(SPropTagArray);
 		talloc_free(flaglist);
@@ -281,7 +281,7 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(flaglist);
 	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print(mt, "* %-35s: 0x%.8x\n", "ModifyRecipients", retval);
+		mapitest_print_retval(mt, "(Common) ModifyRecipients");
 		return false;
 	}
 
@@ -296,7 +296,7 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 
 	retval = SetProps(obj_message, lpProps, 4);
 	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetProps", retval);
+		mapitest_print_retval(mt, "(Common) SetProps");
 		return false;
 	}
 

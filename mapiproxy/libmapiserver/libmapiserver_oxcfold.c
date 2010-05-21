@@ -112,6 +112,15 @@ _PUBLIC_ uint16_t libmapiserver_RopCreateFolder_size(struct EcDoRpc_MAPI_REPL *r
 
 	size += SIZE_DFLT_ROPCREATEFOLDER;
 
+	if (response->u.mapi_CreateFolder.IsExistingFolder != 0) {
+		size += sizeof(response->u.mapi_CreateFolder.GhostUnion.GhostInfo.HasRules);
+		size += sizeof(response->u.mapi_CreateFolder.GhostUnion.GhostInfo.IsGhosted);
+		if (response->u.mapi_CreateFolder.GhostUnion.GhostInfo.IsGhosted != 0) {
+			size += sizeof(response->u.mapi_CreateFolder.GhostUnion.GhostInfo.Ghost.Replicas.ServerCount);
+			size += sizeof(response->u.mapi_CreateFolder.GhostUnion.GhostInfo.Ghost.Replicas.CheapServerCount);
+			/* TODO: size += sizeof( servers )*/
+		}
+	}
 	return size;
 }
 

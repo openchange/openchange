@@ -165,6 +165,69 @@ _PUBLIC_ bool mapitest_oxcfold_OpenFolder(struct mapitest *mt)
 	return true;
 }
 
+/**
+   \details Test the CreateFolder (0x1c) and DeleteFolder (0x??) operations
+
+   This is a simpler version of the CreateFolder test below.
+
+   This function:
+	-# Log on the user private mailbox
+	-# Open the top information folder
+        -# Create a test directory
+	-# Delete the folder
+
+   \param mt the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcfold_CreateDeleteFolder(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_top;
+	mapi_id_t		id_folder;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Open Top Information Store folder */
+	mapi_object_init(&obj_folder);
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderTopInformationStore);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3. Create the top test folder */
+	mapitest_print(mt, "* Create GENERIC \"%s\" folder\n", MT_DIRNAME_TOP);
+	mapi_object_init(&obj_top);
+	retval = CreateFolder(&obj_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+			      OPEN_IF_EXISTS, &obj_top);
+	mapitest_print_retval(mt, "CreateFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+
+	/* Step 4. DeleteFolder */
+	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_top),
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
+	mapitest_print_retval(mt, "DeleteFolder");
+
+	/* Release */
+	mapi_object_release(&obj_top);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return true;
+}
+
 
 /**
    \details Test the CreateFolder (0x1c) operation

@@ -49,7 +49,7 @@ static const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 
 
 /**
-   \details talloc destructor fo emsmdbp_objects
+   \details talloc destructor for emsmdbp_objects
 
    \param data generic pointer on data
 

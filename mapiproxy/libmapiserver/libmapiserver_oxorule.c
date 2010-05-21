@@ -22,7 +22,7 @@
 /**
    \file libmapiserver_oxorule.c
 
-   \brief OXORULE Rops
+   \brief OXORULE ROP Response size calculations
  */
 
 #include "libmapiserver.h"

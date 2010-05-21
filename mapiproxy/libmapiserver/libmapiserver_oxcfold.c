@@ -22,7 +22,7 @@
 /**
    \file libmapiserver_oxcfold.c
 
-   \brief OXCFOLD Rops
+   \brief OXCFOLD ROP Response size calculations
  */
 
 #include "libmapiserver.h"

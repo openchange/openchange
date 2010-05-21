@@ -22,7 +22,7 @@
 /**
    \file libmapiserver_oxomsg.c
 
-   \brief OXOMSG Rops
+   \brief OXOMSG ROP Response size calculations
  */
 
 #include "libmapiserver.h"

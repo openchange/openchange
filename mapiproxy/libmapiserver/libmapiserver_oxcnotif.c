@@ -20,9 +20,9 @@
  */
 
 /**
-   \file libmapiserver_oxcfold.c
+   \file libmapiserver_oxcnotif.c
 
-   \brief OXCNOTIF Rops
+   \brief OXCNOTIF ROP Response size calculations
  */
 
 #include "libmapiserver.h"

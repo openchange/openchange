@@ -22,7 +22,7 @@
 /**
    \file mapistore_errors.h
 
-   \brief Thie header providers a set of result codes for MAPISTORE
+   \brief This header provides a set of result codes for MAPISTORE
    function calls.
  */
 

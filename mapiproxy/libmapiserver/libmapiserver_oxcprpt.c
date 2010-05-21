@@ -22,7 +22,7 @@
 /**
    \file libmapiserver_oxcprpt.c
 
-   \brief OXCPRPT Rops
+   \brief OXCPRPT ROP Response size calculations
  */
 
 #include "libmapiserver.h"

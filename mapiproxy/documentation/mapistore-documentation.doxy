@@ -33,7 +33,12 @@
    <li><a href="#mapping"> 3.5. Object mapping</a></li>
   </ul>
  </li>
- <li><a href="#api"> 4. MAPIStore API</a></li>
+ <li><a href="#api"> 4. MAPIStore API</a>
+  <ul>
+    <li><a href="#api_init">4.1. Initialization</a></li>
+    <li><a href="#api_conn">4.2. Backend contexts</a></li>
+  </ul>
+ </li>
  <li><a href="#fsocpf"> 5. FSOCPF backend</a>
   <ul>
    <li><a href="#fsocpf_def"> 5.1. Definition </a></li>
@@ -51,6 +56,14 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">21/05/10</td>
+	   <td style="text-align:center"><strong>0.3</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">Add API documentation for
+	   initialization, backend connection contexts and add
+	   programming samples</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">21/05/10</td>
@@ -252,10 +265,11 @@ points to a valid mapistore URI (namespace + path).
 The is the only relationship between the database and the store: The
 database points to store locations.
 
-<a name="mapping"></a><h3>3.5. Object mapping</h3> MAPIStore needs to
-maintain a hash database linking unique OpenChange identifiers to
-unique backend identifiers. This hash table can be stored within a TDB
-database.
+<a name="mapping"></a><h3>3.5. Object mapping</h3> 
+
+MAPIStore needs to maintain a hash database linking unique OpenChange
+identifiers to unique backend identifiers. This hash table can be
+stored within a TDB database.
 
 MAPIStore is responsible for managing IDs mapping between OpenChange
 objects and backend specific objects. It maintains a list of free
@@ -265,6 +279,154 @@ identifiers which it reallocates on demand whenever a backend needs
 
 <br/>
 <a name="api"></a><h2>4. MAPIStore API</h2>
+MAPIStore is relying on the talloc library for memory allocation.
+
+<a name="api_init"></a><h3>4.1. Initialization</h3>
+If there was a "hello mapistore" program, it would only require to make 2 calls:
+- <b>mapistore_init</b>:<br/>The initialization routine initializes
+  the mapistore general context used along all mapistore calls, the
+  mapping context databases (described below) and finally load all the
+  backends available (DSO). When this operation is successful,
+  developers are ready to make mapistore calls.
+- <b>mapistore_release</b>:<br/>The release operation uninitialize the
+  mapistore general context, close connections to database and
+  remaining allocated memory.
+
+<b>mapistore_sample1.c</b>
+\code
+#include <mapistore/mapistore.h>
+
+int main(int ac, const char *av[])
+{
+	TALLOC_CTX			*mem_ctx;
+	struct mapistore_context	*mstore_ctx;
+	int				retval;
+
+	/* Step 1. Create the talloc memory context */
+	mem_ctx = talloc_named(NULL, 0, "mapistore_sample1");
+
+	/* Step 2. Initialize mapistore system */
+	mstore_ctx = mapistore_init(mem_ctx, NULL);
+	if (!mstore_ctx) {
+		exit (1);
+	}
+
+	/* Step 3. Uninitialize mapistore system */
+	retval = mapistore_release(mstore_ctx);
+	if (retval != MAPISTORE_SUCCESS) {
+		exit (1);
+	}
+
+	return 0;
+}
+\endcode
+
+\code
+$ export PKG_CONFIG_PATH=/usr/local/samba/lib/pkgconfig
+$ gcc mapistore_sample1.c -o mapistore_sample1 `pkg-config --cflags --libs libmapistore`
+$ ./mapistore_sample1
+$
+\endcode
+
+<br/>
+<a name="api_conn"></a><h3>4.2. Backend contexts</h3>
+
+MAPIStore registers and loads its backends upon initialization. It
+means they are only instantiated/initialized one time during the whole
+server lifetime and the same code is used for all users and all
+mapistore folders.
+
+For example, if a user registers Inbox and Sent Items to use the
+fsocpf backend, without contexts, it would be possible to having
+locking issues when 2 distinct portions of code code try to access a
+file at the same time within this backend.
+
+These backend contexts (or connection contexts) are identified by a
+<b>context id</b>, unsigned 32 bit integer which references the
+context during its lifetime. If OpenChange is used in a very large
+environment with many top folders (which implies the same number of
+mapistore contexts), or if OpenChange server has an incredibly long
+uptime, it would be possible to run out of available context
+identifier.
+
+In order to prevent this situation from happening, mapistore
+implements context databases where it stores available/free/used
+context identifiers:
+- <b>mapistore_id_mapping_used.tdb</b>: TDB database with used IDs
+- <b>mapistore_id_mapping_free.tdb</b>: TDB database with available pool of IDs
+
+MAPIStore provides a convenient set of functions to manage backend
+contexts:
+- <b>mapistore_set_mapping_path</b>: Defines the path where context
+  databases are stored. Call to this function is optional and default
+  path would be used instead. However if a call to this function has
+  to be made, it must be done before any call to mapistore (even
+  mapistore_init).
+- <b>mapistore_add_context</b>: Add a new connection context to mapistore
+- <b>mapistore_del_context</b>: Delete a connection context from mapistore
+
+<b>mapistore_sample2.c</b>:
+\code
+#include <mapistore/mapistore.h>
+
+int main(int ac, const char *av[])
+{
+	TALLOC_CTX			*mem_ctx;
+	struct mapistore_context	*mstore_ctx;
+	int				retval;
+	uint32_t			context_id = 0;
+	uint32_t			context_id2 = 0;
+
+	/* Step 1. Create the talloc memory context */
+	mem_ctx = talloc_named(NULL, 0, "mapistore_sample1");
+
+	/* Step 2. Set the mapping path to /tmp */
+	retval = mapistore_set_mapping_path("/tmp");
+	if (retval != MAPISTORE_SUCCESS) {
+	   	exit (1);
+	}
+
+	/* Step 3. Initialize mapistore system */
+	mstore_ctx = mapistore_init(mem_ctx, NULL);
+	if (!mstore_ctx) {
+		exit (1);
+	}
+
+	/* Step 4. Add connection contexts */
+	retval = mapistore_add_context(mstore_ctx, "fsocpf:///tmp/Inbox", &context_id);
+	if (retval != MAPISTORE_SUCCESS) {
+		exit (1);
+	}
+
+	retval = mapistore_add_context(mstore_ctx, "fsocpf:///tmp/Sent Items", &context_id2);
+	if (retval != MAPISTORE_SUCCESS) {
+		exit (1);
+	}
+
+	/* Step 5. Release connection contexts */
+	retval = mapistore_del_context(mstore_ctx, context_id);
+	retval = mapistore_del_context(mstore_ctx, context_id2);
+
+	/* Step 6. Uninitialize mapistore system */
+	retval = mapistore_release(mstore_ctx);
+	if (retval != MAPISTORE_SUCCESS) {
+		exit (1);
+	}
+
+	return 0;
+}
+\endcode
+
+\code
+$ ./mapistore_sample2
+sqlite3 backend initialized
+fsocpf backend initialized
+namespace is fsocpf:// and backend_uri is '/tmp/Inbox'
+[fsocpf_create_context:49]
+namespace is fsocpf:// and backend_uri is '/tmp/Sent Items'
+[fsocpf_create_context:49]
+$
+\endcode
 
 <br/>
 <a name="fsocpf"></a><h2>5. FSOCPF Backend</h3>

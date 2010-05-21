@@ -796,6 +796,7 @@ mapiproxy-install: 	mapiproxy				\
 			mapiproxy-servers-install		\
 			libmapiproxy-install			\
 			libmapiserver-install			\
+			libmapistore-installpc			\
 			libmapistore-install
 	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
 	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
@@ -935,6 +936,11 @@ LIBMAPISTORE_SO_VERSION = 0
 libmapistore: 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 		$(OC_MAPISTORE)						\
 		$(MAPISTORE_TEST)
+
+libmapistore-installpc:
+	@echo "[*] install: libmapistore pc files"
+	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 mapiproxy/libmapistore.pc $(DESTDIR)$(libdir)/pkgconfig
 
 libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -m 0755 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)

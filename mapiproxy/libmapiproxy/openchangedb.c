@@ -524,7 +524,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *ldb_ctx,
 	/* Step 2. Update GlobalCount value */
 	msg = ldb_msg_new(mem_ctx);
 	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
-	ldb_msg_add_fmt(msg, "GlobalCount", "0x%llx", ((*fid) + 1));
+	ldb_msg_add_fmt(msg, "GlobalCount", "0x%"PRIx64, ((*fid) + 1));
 	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 	ret = ldb_modify(ldb_ctx, msg);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
@@ -645,4 +645,50 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 	talloc_free(mem_ctx);
 
 	return MAPI_E_NOT_FOUND;
+}
+
+/**
+   \details Retrieve the folder ID associated with a given folder name
+
+   This function looks up the specified foldername (as a PidTagDisplayName)
+   and returns the associated folder ID. Note that folder names are only
+   unique in the context of a parent folder, so the parent folder needs to
+   be provided.
+
+   \param ldb_ctx pointer to the openchange LDB context
+   \param parent_fid the folder ID of the parent folder 
+   \param foldername the name to look up
+   \param fid the folder ID for the folder with the specified name (0 if not found)
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(void *ldb_ctx,
+						      uint64_t parent_fid,
+						      const char* foldername,
+						      uint64_t *fid)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_fid_by_name");
+	*fid = 0;
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs,
+			 "(&(PidTagParentFolderId=0x%.16"PRIx64")(PidTagDisplayName=%s))",
+			 parent_fid, foldername);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* We should only ever get 0 records or 1 record, but there is always a chance
+	   that things got confused at some point, so just return one of the records */
+	OPENCHANGE_RETVAL_IF(res->count < 1, MAPI_E_NOT_FOUND, mem_ctx);
+	
+	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
 }

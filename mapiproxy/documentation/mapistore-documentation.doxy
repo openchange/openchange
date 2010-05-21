@@ -14,7 +14,33 @@
   <ul>
     <li><a href="#purpose"> 1.1. Purpose and Scope</a></li>
     <li><a href="#overview">1.2. General Overview</a></li>
-  </ul></li>
+  </ul>
+ </li>
+ <li><a href="#mapi_cond"> 2. Technical / MAPI Considerations</a>
+  <ul>
+   <li><a href="#mapi_objects"> 2.1. MAPI objects</a></li>
+   <li><a href="#mapi_tables"> 2.2. MAPI tables</a></li>
+   <li><a href="#mapi_props"> 2.3. MAPI properties and mapping</a></li>
+   <li><a href="#mapi_namedprops"> 2.4. Named properties vs known properties</a></li>
+  </ul>
+ </li>
+ <li><a href="#arch">      3. MAPIStore architecture</a>
+  <ul>
+   <li><a href="#interface_layer"> 3.1. INTERFACE layer</a></li>
+   <li><a href="#processing_layer"> 3.2. PROCESSING layer</a></li>
+   <li><a href="#backends_layer"> 3.3. BACKENDS layer</a></li>
+   <li><a href="#ocldb"> 3.4. Relationship to OpenChange Dispatcher database</a></li>
+   <li><a href="#mapping"> 3.5. Object mapping</a></li>
+  </ul>
+ </li>
+ <li><a href="#api"> 4. MAPIStore API</a></li>
+ <li><a href="#fsocpf"> 5. FSOCPF backend</a>
+  <ul>
+   <li><a href="#fsocpf_def"> 5.1. Definition </a></li>
+   <li><a href="#fsocpf_attrs"> 5.2. Namespace and Attributes </a></li>
+   <li><a href="#fsocpf_overview"> 5.3. Overview </a></li>
+  </ul>
+ </li>
 </ul>
 </table>
 
@@ -25,6 +51,12 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">21/05/10</td>
+	   <td style="text-align:center"><strong>0.2</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:left">Merge initial Wiki document and add FSOCPF section</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">20/05/10</td>
@@ -91,5 +123,226 @@ be available from the new backend.
 Information can be completely decentralized, stored on one of several
 servers and still be accessible transparently from OpenChange
 server.
+
+<br/>
+<a name="mapi_cond"></a><h2>2. Technical / MAPI Considerations</h2>
+
+<a name="mapi_objects"></a><h3> 2.1. MAPI objects</h3>
+
+An object is a physical (message, folder) or temporary (table) but
+generic entity which can be represented as a 2 columns fixed array
+with <i>n</i> rows.
+
+From a MAPI perspective (network layer), opening an object means:
+
+- open either a <b>private mailbox</b> or <b>public folder
+  store</b>. These are referenced by <b>EssDN and not IDs</b>
+- open a <b>message</b> given its <b>PR_MID</b> (Message identifier)
+- open a <b>folder/container</b> given its <b>PR_FID</b> (Folder
+  identifier)
+
+<a name="mapi_tables"></a><h3> 2.2. MAPI tables</h3>
+
+Another category of MAPI objects are tables (also known as
+<i>views</i>) created with MAPI ROPs such as <i>GetContentsTable</i>,
+<i>GetHierarchyTable</i>, <i>GetAttachmentTable</i> or
+<i>GetRulesTable</i>. Views are temporary representation of elements a
+container holds at a specific moment. It can be represented as a list
+of <i>n</i> rows (elements) with <i>n</i> columns (property values):
+- <i>GetContentsTables</i> creates a view listing all messages
+  available within a container
+- <i>GetHierarchyTable</i> creates a view listing all containers
+  within a container
+- <i>GetAttachmentTable</i> creates a view listing all the attachment
+  of a message
+- <i>GetRulesTable</i> creates a view listing all permissions
+  associated to a container
+
+Tables are customized through the <i>SetColumns</i> MAPI ROP which
+will define the property identifiers to be retrieved. The
+<i>QueryRows</i> MAPI ROP can next be called to sequentially retrieve
+rows and associated property values. A table is similar to a MAPI
+object except it is virtual, created on purpose en represents a list
+of objects rather than a unique object.
+
+<a name="mapi_props"></a><h3>2.3. MAPI properties and mapping</h3>
+
+There is a large set of fixed and known MAPI properties available. If
+appropriate backends are developed, there can be a 1-1 mapping between
+MAPI properties and backend properties for some of them. This mapping
+may even be enough for common purposes. However there will still be a
+set of MAPI properties which won't fit in this process.
+
+There are different way to workaround this issue. For example, Kolab
+is using a Cyrus/IMAP backend and associate/store MAPI properties to
+the message using ANNOTATE-MORE within a XML file format.
+
+OpenChange provides similar mechanism with its OCPF file format.
+
+<a name="mapi_namedprops"></a><h3>2.4. Named properties vs known properties</h3>
+
+OpenChange server needs to support named properties. An initial set of
+named properties can be defined at provisioning time, but this list
+must not be static. Users must be able to add, delete, change new
+entries and create their own set of custom named properties on
+purpose.
+
+<br/>
+<a name="arch"></a><h2>3. MAPIStore Architecture</h2>
+
+Given that objects representation are similar to SQL database records,
+an architecture like the sqlite one makes sense for out purpose:
+
+<table>
+<tr>
+<td><b>Component</b></td>
+<td><b>Brief description</b></td>
+</tr>
+<tr>
+<td>INTERFACE</td>
+<td>convenient top-level functions (Public API) accessed through EMSMDB providers</td>
+</tr>
+<tr>
+<td>PROCESSING</td>
+<td>set of atomic operations (open,read,write,close,mkdir,rmdir etc.)</td>
+</tr>
+<tr>
+<td>BACKENDS</td>
+<td>The code which <i>do things</i> in the specified storage system (mysql, fsocpf, imap etc.)</td>
+</tr>
+</table>
+
+<a name="interface_layer"></a><h3>3.1. INTERFACE layer</h3> 
+The interface layer doesn't have any knowledge about mapistore
+internals, how or where objects are stored. The interface uses MAPI
+data structure, supplies PR_FID and PR_MID values and assumes the
+interface layer will return a pack of data it can directly use without
+further or significant modifications. The interface layer functions
+should also have (as a parameter) a pointer to a mapistore context
+with private/opaque set of information (void *) about the object.
+
+<a name="processing_layer"></a><h3>3.2. PROCESSING layer</h3>
+The processing layer is responsible for:
+- mapping OpenChange objects identifiers (PR_FID, PR_MID) to unique
+  backends object identifier (on purpose, depending on the kind of
+  backend).
+- format input/output data: glue between INTERFACE and BACKENDS
+- relay input requests to the correct backend through atomic operations
+- maintain mapistore's integrity
+
+<a name="backends_layer"></a><h3>3.3. BACKENDS layer</h3>
+The backends layer has a list of modules ran at mapistore
+initialization and available across user sessions, which means unique
+initialization at server start-up. Each module is a backend (fsocpf,
+sqlite, imap, etc.) and similarly to many other openchange components
+is loaded as a DSO object (dynamic shared object)
+
+<a name="ocldb"></a><h3>3.4. Relationship to OpenChange Dispatcher database</h3>
+
+MAPIStore and openchange.ldb are completely unrelated. MAPIStore is a
+standalone API and developers can use it independently from OpenChange
+server.
+
+However, this API has initially been designed to be used by OpenChange
+server, and OpenChange server is using a tiny indexing database which
+describe user mailboxes top containers. In openchange.ldb the
+mapistore_uri attribute is attached to top containers and its value
+points to a valid mapistore URI (namespace + path).
+
+The is the only relationship between the database and the store: The
+database points to store locations.
+
+<a name="mapping"></a><h3>3.5. Object mapping</h3> MAPIStore needs to
+maintain a hash database linking unique OpenChange identifiers to
+unique backend identifiers. This hash table can be stored within a TDB
+database.
+
+MAPIStore is responsible for managing IDs mapping between OpenChange
+objects and backend specific objects. It maintains a list of free
+identifiers which it reallocates on demand whenever a backend needs
+(mapistore_register_id()) one or where it wants to release one
+(mapistore_unregister_id()).
+
+<br/>
+<a name="api"></a><h2>4. MAPIStore API</h2>
+
+<br/>
+<a name="fsocpf"></a><h2>5. FSOCPF Backend</h3>
+
+<a name="fsocpf_def"></a><h3> 5.1. Definition</h3>
+
+FSOCPF stands for FileSystem and OpenChange Property Files.  It is a
+backend designed to help developers testing OpenChange server code
+easily. The main idea is to have a backend we can manipulate, analyze
+and modify from the Linux console without having to develop a specific
+tool. This backend uses UNIX filesystem for folder semantics and OCPF
+file format as a way to store MAPI objects easily.
+
+<a name="fsocpf_attrs"></a><h3>5.2. Namespace and Attributes</h3>
+
+The namespace for this backend is: \code fsocpf:// \endcode
+
+The mapistore_uri attribute for the folder definition in
+openchange.ldb must be a valid path where the last part of the URI
+is the FSOCPF container folder to create on the filesystem.
+
+<a name="fsocpf_overview"></a><h3>5.3. Overview</h3>
+
+\code
+
+[+] Private user storage space
+ |
+ +-[+] Top-MAPIStore folder (Inbox)
+    |
+    +-[+] 0xf1000001 (mapistore folder1)
+    |  |
+    |  +-[+] .properties (OCPF)
+    |  |
+    |  +-[+] 0xe10000001.ocpf (message - OCPF)
+    |  |
+    |  +-[+] 0xe10000001 (attachment folder)
+    |     |
+    |     +-[+] 1.ocpf (PR_ATTACH_NUM)
+    |     |
+    |     +-[+] 1.data (attachment / stream data)
+    |
+    +-[+] 0xf2000001 (mapistore folder2)
+       |
+       +-[+] .properties (OCPF)
+
+\endcode
+
+The figure above exposes the storage architecture of the FSOCPF
+backend using a real-world example. In this use case, we have decided
+to associate the FSOCPF backend to the Inbox folder. It means that any
+folder created under Inbox or any message stored within Inbox at any
+level of depth is stored and retrieved from the path defined in
+openchange.ldb.
+
+In openchange.ldb, the mapistore_uri attribute of the Inbox record
+points to: \code fsocpf://Private user storage space/Inbox \endcode
+where <i>Private user storage space</i> can for example be \code /usr/local/samba/private/mapistore/$username \endcode
+
+Under Inbox, we have created 2 folders:
+- 0xf1000001 folder1
+- 0xf2000001 folder2
+
+These folders are identified/named using their FID. Since they are
+classical filesystem folders, we can't associate attributes to them
+such as a folder comment, or the container class. All these attributes
+with the displayable name are stored into the <b>.properties</b> file
+within the folder.
+
+Inside 0xf1000001 folder, we have 1 message named 0xe10000001.ocpf
+stored in the OCPF file format (property/value pair). Any properties
+associated to the message (subject, recipient, body) are stored within
+this file.
+
+This message also has attachments. Attachments are stored within a
+directory at the same level named 0xe10000001 (message name without
+OCPF extension). Within this directory, we find the attachments named
+using the PR_ATTACH_NUM property value and the OCPF file
+extension. The content of the attachment is stored in
+\$PR_ATTACH_NUM.data - in this case 1.data.
 
 */

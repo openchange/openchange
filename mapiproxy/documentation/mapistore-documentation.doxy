@@ -120,7 +120,7 @@ MAPIStore allows you to:
 - develop new backends quickly
 - access all the different backends through an unique API
 
-For example (assuming all associated backends are developed) a user
+For example (assuming all associated backends were developed) a user
 could have the following storage organization for his mailbox:
 - Mails stored using an IMAP backend (Cyrus-IMAP or dovecot)
 - Calendar items stored in CalDAV or pushed in Google calendar
@@ -128,9 +128,9 @@ could have the following storage organization for his mailbox:
 - Tasks stored in a MySQL database
 - Notes stored on the filesystem
 
-If the user is not satisfied with one of the backends performance, he
+If the user is not satisfied with one of the backend's performance, they
 would just have to use an administration tool, change the backend,
-wait for the replication, synchronization to finish and his data will
+wait for the replication, synchronization to finish and there data will
 be available from the new backend.
 
 Information can be completely decentralized, stored on one of several
@@ -144,14 +144,16 @@ server.
 
 An object is a physical (message, folder) or temporary (table) but
 generic entity which can be represented as a 2 columns fixed array
-with <i>n</i> rows.
+with <i>n</i> rows, where each row contains a property of that entity.
+One column repesents the property tags (names), and the other represents
+the property value (or values). 
 
 From a MAPI perspective (network layer), opening an object means:
 
-- open either a <b>private mailbox</b> or <b>public folder
+- opening either a <b>private mailbox</b> or <b>public folder
   store</b>. These are referenced by <b>EssDN and not IDs</b>
-- open a <b>message</b> given its <b>PR_MID</b> (Message identifier)
-- open a <b>folder/container</b> given its <b>PR_FID</b> (Folder
+- opening a <b>message</b> given its <b>PR_MID</b> (Message identifier)
+- opening a <b>folder/container</b> given its <b>PR_FID</b> (Folder
   identifier)
 
 <a name="mapi_tables"></a><h3> 2.2. MAPI tables</h3>
@@ -159,7 +161,8 @@ From a MAPI perspective (network layer), opening an object means:
 Another category of MAPI objects are tables (also known as
 <i>views</i>) created with MAPI ROPs such as <i>GetContentsTable</i>,
 <i>GetHierarchyTable</i>, <i>GetAttachmentTable</i> or
-<i>GetRulesTable</i>. Views are temporary representation of elements a
+<i>GetRulesTable</i>. Views are temporary representation of the elements
+that a
 container holds at a specific moment. It can be represented as a list
 of <i>n</i> rows (elements) with <i>n</i> columns (property values):
 - <i>GetContentsTables</i> creates a view listing all messages
@@ -173,9 +176,9 @@ of <i>n</i> rows (elements) with <i>n</i> columns (property values):
 
 Tables are customized through the <i>SetColumns</i> MAPI ROP which
 will define the property identifiers to be retrieved. The
-<i>QueryRows</i> MAPI ROP can next be called to sequentially retrieve
+<i>QueryRows</i> MAPI ROP can then be called to sequentially retrieve
 rows and associated property values. A table is similar to a MAPI
-object except it is virtual, created on purpose en represents a list
+object except it is virtual, created on demand to represent a list
 of objects rather than a unique object.
 
 <a name="mapi_props"></a><h3>2.3. MAPI properties and mapping</h3>
@@ -197,14 +200,13 @@ OpenChange provides similar mechanism with its OCPF file format.
 OpenChange server needs to support named properties. An initial set of
 named properties can be defined at provisioning time, but this list
 must not be static. Users must be able to add, delete, change new
-entries and create their own set of custom named properties on
-purpose.
+entries and create their own set of custom named properties as required.
 
 <br/>
 <a name="arch"></a><h2>3. MAPIStore Architecture</h2>
 
 Given that objects representation are similar to SQL database records,
-an architecture like the sqlite one makes sense for out purpose:
+an architecture like the sqlite one makes sense for our purpose:
 
 <table>
 <tr>
@@ -217,11 +219,11 @@ an architecture like the sqlite one makes sense for out purpose:
 </tr>
 <tr>
 <td>PROCESSING</td>
-<td>set of atomic operations (open,read,write,close,mkdir,rmdir etc.)</td>
+<td>set of atomic operations (open, read, write, close, mkdir, rmdir etc.)</td>
 </tr>
 <tr>
 <td>BACKENDS</td>
-<td>The code which <i>do things</i> in the specified storage system (mysql, fsocpf, imap etc.)</td>
+<td>The code which <i>does things</i> in the specified storage system (mysql, fsocpf, imap etc.)</td>
 </tr>
 </table>
 
@@ -237,14 +239,14 @@ with private/opaque set of information (void *) about the object.
 <a name="processing_layer"></a><h3>3.2. PROCESSING layer</h3>
 The processing layer is responsible for:
 - mapping OpenChange objects identifiers (PR_FID, PR_MID) to unique
-  backends object identifier (on purpose, depending on the kind of
+  backends object identifiers (on purpose, depending on the kind of
   backend).
 - format input/output data: glue between INTERFACE and BACKENDS
 - relay input requests to the correct backend through atomic operations
 - maintain mapistore's integrity
 
 <a name="backends_layer"></a><h3>3.3. BACKENDS layer</h3>
-The backends layer has a list of modules ran at mapistore
+The backends layer has a list of modules identified at mapistore
 initialization and available across user sessions, which means unique
 initialization at server start-up. Each module is a backend (fsocpf,
 sqlite, imap, etc.) and similarly to many other openchange components
@@ -252,18 +254,20 @@ is loaded as a DSO object (dynamic shared object)
 
 <a name="ocldb"></a><h3>3.4. Relationship to OpenChange Dispatcher database</h3>
 
-MAPIStore and openchange.ldb are completely unrelated. MAPIStore is a
-standalone API and developers can use it independently from OpenChange
-server.
+MAPIStore and the openchange "dispatcher" database (openchange.ldb)
+are completely unrelated. MAPIStore is a standalone API and developers
+can use it independently from OpenChange server.
 
-However, this API has initially been designed to be used by OpenChange
+However, the mapistore API has initially been designed to be used by OpenChange
 server, and OpenChange server is using a tiny indexing database which
-describe user mailboxes top containers. In openchange.ldb the
-mapistore_uri attribute is attached to top containers and its value
-points to a valid mapistore URI (namespace + path).
+describes user mailboxes top level containers. In openchange.ldb the
+mapistore_uri attribute is attached to top level containers and its value
+points to a valid mapistore URI (namespace + path). Note that a single user
+can have several different types of mapistore databases in use (one for each
+of the top level containers).
 
 The is the only relationship between the database and the store: The
-database points to store locations.
+database points to store locations. 
 
 <a name="mapping"></a><h3>3.5. Object mapping</h3> 
 
@@ -279,7 +283,7 @@ identifiers which it reallocates on demand whenever a backend needs
 
 <br/>
 <a name="api"></a><h2>4. MAPIStore API</h2>
-MAPIStore is relying on the talloc library for memory allocation.
+MAPIStore relies on the talloc library for memory allocation.
 
 <a name="api_init"></a><h3>4.1. Initialization</h3>
 If there was a "hello mapistore" program, it would only require to make 2 calls:
@@ -288,9 +292,9 @@ If there was a "hello mapistore" program, it would only require to make 2 calls:
   mapping context databases (described below) and finally load all the
   backends available (DSO). When this operation is successful,
   developers are ready to make mapistore calls.
-- <b>mapistore_release</b>:<br/>The release operation uninitialize the
-  mapistore general context, close connections to database and
-  remaining allocated memory.
+- <b>mapistore_release</b>:<br/>The release operation uninitializes the
+  mapistore general context, closes connections to database and
+  frees the remaining allocated memory.
 
 <b>mapistore_sample1.c</b>
 \code
@@ -336,18 +340,13 @@ means they are only instantiated/initialized one time during the whole
 server lifetime and the same code is used for all users and all
 mapistore folders.
 
-For example, if a user registers Inbox and Sent Items to use the
-fsocpf backend, without contexts, it would be possible to having
-locking issues when 2 distinct portions of code code try to access a
-file at the same time within this backend.
-
 These backend contexts (or connection contexts) are identified by a
-<b>context id</b>, unsigned 32 bit integer which references the
+<b>context id</b>, which is an unsigned 32 bit integer which references the
 context during its lifetime. If OpenChange is used in a very large
 environment with many top folders (which implies the same number of
 mapistore contexts), or if OpenChange server has an incredibly long
 uptime, it would be possible to run out of available context
-identifier.
+identifiers.
 
 In order to prevent this situation from happening, mapistore
 implements context databases where it stores available/free/used
@@ -429,7 +428,7 @@ $
 \endcode
 
 <br/>
-<a name="fsocpf"></a><h2>5. FSOCPF Backend</h3>
+<a name="fsocpf"></a><h2>5. FSOCPF Backend</h2>
 
 <a name="fsocpf_def"></a><h3> 5.1. Definition</h3>
 
@@ -437,8 +436,8 @@ FSOCPF stands for FileSystem and OpenChange Property Files.  It is a
 backend designed to help developers testing OpenChange server code
 easily. The main idea is to have a backend we can manipulate, analyze
 and modify from the Linux console without having to develop a specific
-tool. This backend uses UNIX filesystem for folder semantics and OCPF
-file format as a way to store MAPI objects easily.
+tool. This backend uses the UNIX filesystem for folder semantics and
+the OCPF file format as a way to store MAPI objects easily.
 
 <a name="fsocpf_attrs"></a><h3>5.2. Namespace and Attributes</h3>
 
@@ -483,7 +482,8 @@ openchange.ldb.
 
 In openchange.ldb, the mapistore_uri attribute of the Inbox record
 points to: \code fsocpf://Private user storage space/Inbox \endcode
-where <i>Private user storage space</i> can for example be \code /usr/local/samba/private/mapistore/$username \endcode
+where <i>Private user storage space</i> can for example be
+\code /usr/local/samba/private/mapistore/$username \endcode
 
 Under Inbox, we have created 2 folders:
 - 0xf1000001 folder1

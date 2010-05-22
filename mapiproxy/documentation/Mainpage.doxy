@@ -43,7 +43,7 @@ purposes.
       </tr>
 </table>
 </td>
-<td style="border:none;"><b><a href="../mapiproxy/mapiproxy-documentation.html">Link to MAPIProxy documentation</a></b>:</td>
+<td style="border:none;"><b><a href="mapiproxy-documentation.html">Link to MAPIProxy documentation</a></b>:</td>
 </tr>
 </table>
 
@@ -77,7 +77,7 @@ inner working of its storage backends.
       </tr>
 </table>
 </td>
-<td style="border:none;"><b><a href="../mapiproxy/mapistore-documentation.html">Link to MAPIStore documentation</a></b>:</td>
+<td style="border:none;"><b><a href="mapistore-documentation.html">Link to MAPIStore documentation</a></b>:</td>
 </tr>
 </table>
 

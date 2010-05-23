@@ -204,7 +204,8 @@ GlobalCount: 0x%x
     def add_mailbox_root_folder(self, ocfirstorgdn, username, 
                                 foldername, parentfolder, 
                                 GlobalCount, ReplicaID,
-                                SystemIdx, mapistoreURL):
+                                SystemIdx, mapistoreURL,
+                                mapistoreSuffix):
         """Add a root folder to the user mailbox
 
         :param username: Username object
@@ -212,6 +213,8 @@ GlobalCount: 0x%x
         :param GlobalCount: current global counter for message database
         :param ReplicaID: replica identifier for message database
         :param SystemIdx: System Index for root folders
+        :param mapistoreURL: storage URL prefix (including type)
+        :param mapistoreSuffix: file type suffix to use with mapistore
         """
 
         ocuserdn = "CN=%s,%s" % (username, ocfirstorgdn)
@@ -223,7 +226,7 @@ GlobalCount: 0x%x
             m.dn = ldb.Dn(self.ldb, ocuserdn)
             m["PidTagFolderId"] = ldb.MessageElement([FID], ldb.CHANGETYPE_ADD, "PidTagFolderId")
             m["SystemIdx"] = ldb.MessageElement([str(SystemIdx)], ldb.CHANGETYPE_ADD, "SystemIdx")
-            m["mapistore_uri"] = ldb.MessageElement(["sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID)], ldb.CHANGETYPE_ADD, "mapistore_uri")
+            m["mapistore_uri"] = ldb.MessageElement(["%s/%s/%s%s" % (mapistoreURL, username, FID, mapistoreSuffix)], ldb.CHANGETYPE_ADD, "mapistore_uri")
             self.ldb.modify(m)
             return FID
 
@@ -240,8 +243,8 @@ GlobalCount: 0x%x
                   "PidTagFolderId": FID,
                   "PidTagDisplayName": foldername,
                   "PidTagAttrHidden": str(0),
-                      "PidTagContainerClass": "IPF.Note",
-                  "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID),
+                  "PidTagContainerClass": "IPF.Note",
+                  "mapistore_uri": "%s/%s/%s%s" % (mapistoreURL, username, FID, mapistoreSuffix),
                   "FolderType": str(1),
                   "SystemIdx": str(SystemIdx)})
 
@@ -249,7 +252,7 @@ GlobalCount: 0x%x
 
     def add_mailbox_special_folder(self, username, parentfolder, ref_fid, 
                                    foldername, containerclass, GlobalCount, ReplicaID, 
-                                   mapistoreURL):
+                                   mapistoreURL, mapistoreSuffix):
         """Add a special folder to the user mailbox
 
         :param username: Username object
@@ -260,6 +263,7 @@ GlobalCount: 0x%x
         :param GlobalCount: current global counter for message database
         :param ReplicaID: replica identifier for message database
         :param mapistoreURL: mapistore default content repository URI
+        :param mapistoreSuffix: file type suffix to use with mapistore
         """
 
         FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
@@ -277,7 +281,7 @@ GlobalCount: 0x%x
                       "PidTagFolderId": FID,
                       "PidTagDisplayName": foldername,
                       "PidTagContainerClass": containerclass,
-                      "mapistore_uri": "sqlite://%s/%s/%s.db" % (mapistoreURL, username, FID),
+                      "mapistore_uri": "%s/%s/%s%s" % (mapistoreURL, username, FID, mapistoreSuffix),
                       "PidTagContentCount": str(0),
                       "PidTagAttrHidden": str(0),
                       "PidTagContentUnreadCount": str(0),

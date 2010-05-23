@@ -37,8 +37,24 @@ FIRST_ORGANIZATION_UNIT = "First Organization Unit"
 def openchangedb_url(lp):
     return os.path.join(lp.get("private dir"), "openchange.ldb")
 
-def openchangedb_mapistore_url(lp):
-    return os.path.join(lp.get("private dir"), "mapistore");
+def openchangedb_mapistore_dir(lp):
+    return os.path.join(lp.get("private dir"), "mapistore")
+
+def openchangedb_mapistore_url(lp, backend):
+    if backend == "fsocpf":
+	return "fsocpf://" + openchangedb_mapistore_dir(lp)
+    if backend == "sqlite":
+	return "sqlite://" + openchangedb_mapistore_dir(lp)
+    print "#### unsupported mapistore backend type:" + backend
+    print "#### using fsocpf instead"
+    return "fsocpf://" + openchangedb_mapistore_dir(lp)
+
+def suffix_for_mapistore_url(url):
+    if (url.startswith("fsocpf://")):
+        return ""
+    if (url.startswith("sqlite://")):
+        return ".db"
+    return ""
 
 # This is a hack. Kind-of cute, but still a hack
 def abstract():
@@ -256,7 +272,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Exchange Samba with Exchange configuration objects")
     print "[SUCCESS] Done!"
 
-def newmailbox(lp, username, firstorg, firstou):
+def newmailbox(lp, username, firstorg, firstou, backend):
     names = guess_names_from_smbconf(lp, firstorg, firstou)
 
     db = mailbox.OpenChangeDB(openchangedb_url(lp))
@@ -273,8 +289,8 @@ def newmailbox(lp, username, firstorg, firstou):
     assert not db.user_exists(names.netbiosname, username)
 
     # Step 3. Create a default mapistore content repository for this user
-    db.add_storage_dir(mapistoreURL=openchangedb_mapistore_url(lp), username=username)
-    print "* Mapistore content repository created: %s" % os.path.join(openchangedb_mapistore_url(lp), username)
+    db.add_storage_dir(mapistoreURL=openchangedb_mapistore_dir(lp), username=username)
+    print "* Mapistore content repository created: %s" % os.path.join(openchangedb_mapistore_dir(lp), username)
 
     # Step 4. Create the user object
     retdn = db.add_mailbox_user(names.ocfirstorgdn, username=username)
@@ -306,12 +322,14 @@ def newmailbox(lp, username, firstorg, firstou):
 
         GlobalCount = db.get_message_GlobalCount(names.netbiosname)
         ReplicaID = db.get_message_ReplicaID(names.netbiosname)
+        url = openchangedb_mapistore_url(lp, backend)
 
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
             username=username, foldername=name,
             parentfolder=parent_fid, GlobalCount=GlobalCount, 
             ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
-            mapistoreURL=openchangedb_mapistore_url(lp))
+            mapistoreURL=url,
+            mapistoreSuffix=suffix_for_mapistore_url(url))
 
         GlobalCount += 1
         db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
@@ -332,7 +350,7 @@ def newmailbox(lp, username, firstorg, firstou):
         (("Mailbox Root", "IPM Subtree"), "Journal",    "IPF.Journal",      "PidTagIpmJournalEntryId"),
         (("Mailbox Root", "IPM Subtree"), "Notes",      "IPF.StickyNote",   "PidTagIpmNoteEntryId"),
         (("Mailbox Root", "IPM Subtree"), "Tasks",      "IPF.Task",         "PidTagIpmTaskEntryId"),
-        (("Mailbox Root", "IPM Subtree"), "Drafts",     "IPF.Note",        "PidTagIpmDraftsEntryId")
+        (("Mailbox Root", "IPM Subtree"), "Drafts",     "IPF.Note",         "PidTagIpmDraftsEntryId")
         ]
 
     fid_inbox = fids[("Mailbox Root", "IPM Subtree", "Inbox")]
@@ -341,9 +359,10 @@ def newmailbox(lp, username, firstorg, firstou):
     for path, foldername, containerclass, pidtag in special_folders:
         GlobalCount = db.get_message_GlobalCount(names.netbiosname)
         ReplicaID = db.get_message_ReplicaID(names.netbiosname)
+        url = openchangedb_mapistore_url(lp, backend)
         fid = db.add_mailbox_special_folder(username, fids[path], fid_inbox, foldername, 
                                             containerclass, GlobalCount, ReplicaID, 
-                                            openchangedb_mapistore_url(lp))
+                                            url, suffix_for_mapistore_url(url))
         db.add_folder_property(fid_inbox, pidtag, fid)
         db.add_folder_property(fid_mailbox, pidtag, fid)
         GlobalCount += 1

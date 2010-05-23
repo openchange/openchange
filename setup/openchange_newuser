@@ -48,7 +48,8 @@ parser.add_option("--create", action="store_true", metavar="CREATE",
 		  help="Create the OpenChange user account")
 parser.add_option("--mailbox", action="store_true", metavar="MAILBOX",
 		  help="Create the OpenChange user mailbox")
-
+parser.add_option("--mapistore", type="string", metavar="STORE",
+		  help="The backend storage type to use (only for --mailbox)")
 opts, args = parser.parse_args()
 
 if len(args) == 0:
@@ -70,5 +71,9 @@ if opts.disable == True:
 if opts.create == True:
 	openchange.newuser(lp, creds, username=args[0])
 
+backend = "fsocpf" #default
+if opts.mapistore is not None:
+	backend = opts.mapistore
+
 if opts.mailbox == True:
-	openchange.newmailbox(lp, username=args[0], firstorg=None, firstou=None)
+	openchange.newmailbox(lp, username=args[0], firstorg=None, firstou=None, backend=backend)

@@ -155,6 +155,7 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
 }
 
 
+
 /**
    \details Delete an existing connection context from mapistore
 
@@ -167,26 +168,18 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
 _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx, 
 				   uint32_t context_id)
 {
-	struct backend_context_list	*el;
+	struct backend_context		*backend_ctx;
 	int				retval;
-	bool				found = false;
 
 	/* Sanity checks */
-	if (!mstore_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!mstore_ctx->processing_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!mstore_ctx->context_list) return MAPISTORE_ERR_NOT_INITIALIZED;
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
 	/* Step 0. Ensure the context exists */
-	for (el = mstore_ctx->context_list; el; el = el->next) {
-		if (el->ctx && el->ctx->context_id == context_id) {
-			found = true;
-			break;
-		}
-	}
-	if (found == false) return MAPISTORE_ERR_INVALID_PARAMETER;
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 1. Delete the context within backend */
-	retval = mapistore_backend_delete_context(el->ctx);
+	retval = mapistore_backend_delete_context(backend_ctx);
 	if (retval) return retval;
 
 	/* Step 2. Delete the context from the processing layer */
@@ -194,6 +187,12 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
 	/* Step 2. Add the free'd context id to the free list */
 	retval = mapistore_free_context_id(mstore_ctx->processing_ctx, context_id);
 	return retval;
+}
+
+
+void mapistore_set_errno(int status)
+{
+	errno = status;
 }
 
 
@@ -231,4 +230,127 @@ _PUBLIC_ const char *mapistore_errstr(int mapistore_err)
 	}
 
 	return "Unknown error";
+}
+
+
+/**
+   \details Open a directory in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where the directory will be opened
+   \param parent_fid the parent folder identifier
+   \param fid pointer to the folder identifier of the opened folder
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_opendir(struct mapistore_context *mstore_ctx,
+			       uint32_t context_id,
+			       uint64_t parent_fid,
+			       uint64_t *fid)
+{
+	struct backend_context		*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 0. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* mapistore_backend_opendir() */
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Close a directory in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where the directory has to be closed/released
+   \param fid the folder identifier referencing the folder to close
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_closedir(struct mapistore_context *mstore_ctx,
+				uint32_t context_id,
+				uint64_t fid)
+{
+	struct backend_context		*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 0. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* mapistore_backend_closedir() */
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Create a directory in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where the directory will be created
+   \param parent_fid the parent folder identifier
+   \param new_fid the folder identifier for the new folder
+   \param properties pointer to MAPI data structures with properties
+   applied to the new folder
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_mkdir(struct mapistore_context *mstore_ctx,
+			     uint32_t context_id,
+			     uint64_t parent_fid,
+			     uint64_t new_fid,
+			     struct mapi_SPropValue *properties)
+{
+	struct backend_context		*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 0. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);	
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Remove a directory in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   \param parent_fid the parent folder identifier
+   \param fid the folder identifier representing the folder to delete
+   \param flags Flags specifying the rmdir operation behavior
+   (recursive for folders, messages)
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
+			     uint32_t context_id,
+			     uint64_t parent_fid,
+			     uint64_t fid,
+			     uint8_t flags)
+{
+	struct backend_context		*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 0. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);	
+
+	return MAPISTORE_SUCCESS;	
 }

@@ -830,7 +830,7 @@ mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT): 	mapiproxy/dcesrv_mapiproxy.po		\
 						gen_ndr/ndr_exchange.po				
 
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 mapiproxy/dcesrv_mapiproxy.c: gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
 
@@ -969,8 +969,9 @@ distclean:: libmapistore-distclean
 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mapistore_interface.po	\
 							mapiproxy/libmapistore/mapistore_processing.po	\
 							mapiproxy/libmapistore/mapistore_backend.po	\
-							mapiproxy/libmapistore/mapistore_tdb_wrap.po
-	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS)
+							mapiproxy/libmapistore/mapistore_tdb_wrap.po	\
+							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 
 mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
@@ -1043,7 +1044,7 @@ mapistore_test: bin/mapistore_test
 bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.o		\
 			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt -L. libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 mapistore_clean:
 	rm -f mapiproxy/libmapistore/tests/*.o

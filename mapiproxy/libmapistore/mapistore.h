@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,6 +40,8 @@
 #include <tdb.h>
 #include <talloc.h>
 #include <util/debug.h>
+
+#include <libmapi/libmapi.h>
 
 #define	MAPISTORE_SUCCESS	0
 
@@ -100,6 +102,10 @@ int mapistore_release(struct mapistore_context *);
 int mapistore_add_context(struct mapistore_context *, const char *uri, uint32_t *);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
 const char *mapistore_errstr(int);
+int mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t, uint64_t *);
+int mapistore_closedir(struct mapistore_context *mstore_ctx, uint32_t, uint64_t);
+int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapi_SPropValue *);
+int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);
@@ -108,6 +114,7 @@ int mapistore_set_mapping_path(const char *);
 extern int	mapistore_backend_register(const void *);
 const char	*mapistore_backend_get_installdir(void);
 init_backend_fn	*mapistore_backend_load(TALLOC_CTX *, const char *);
+struct backend_context *mapistore_backend_lookup(struct backend_context_list *, uint32_t);
 
 bool		mapistore_backend_run_init(init_backend_fn *);
 

@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +21,26 @@
 
 #ifndef	__MAPISTORE_PRIVATE_H__
 #define	__MAPISTORE_PRIVATE_H__
+
+#include <talloc.h>
+
+void mapistore_set_errno(int);
+
+#define	MAPISTORE_RETVAL_IF(x,e,c)	\
+do {					\
+	if (x) {			\
+		mapistore_set_errno(e);	\
+		if (c) {		\
+			talloc_free(c);	\
+		}			\
+		return (e);		\
+	}				\
+} while (0);
+
+#define	MAPISTORE_SANITY_CHECKS(x,c)						\
+MAPISTORE_RETVAL_IF(!x, MAPISTORE_ERR_NOT_INITIALIZED, c);			\
+MAPISTORE_RETVAL_IF(!x->processing_ctx, MAPISTORE_ERR_NOT_INITIALIZED, c);	\
+MAPISTORE_RETVAL_IF(!x->context_list, MAPISTORE_ERR_NOT_INITIALIZED, c);
 
 #ifndef	ISDOT
 #define ISDOT(path) ( \

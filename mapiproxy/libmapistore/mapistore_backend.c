@@ -320,3 +320,29 @@ _PUBLIC_ int mapistore_backend_delete_context(struct backend_context *bctx)
 
 	return bctx->backend->delete_context(bctx->private_data);
 }
+
+
+/**
+   \details find the context matching given context identifier
+
+   \param backend_list_ctx pointer to the backend context list
+   \param context_id the context identifier to search
+
+   \return Pointer to the mapistore_backend context on success, otherwise NULL
+ */
+_PUBLIC_ struct backend_context *mapistore_backend_lookup(struct backend_context_list *backend_list_ctx,
+							  uint32_t context_id)
+{
+	struct backend_context_list	*el;
+
+	/* Sanity checks */
+	if (!backend_list_ctx) return NULL;
+
+	for (el = backend_list_ctx; el; el = el->next) {
+		if (el->ctx && el->ctx->context_id == context_id) {
+			return el->ctx;
+		}
+	}
+
+	return NULL;
+}

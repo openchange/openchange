@@ -274,7 +274,7 @@ static int emsabp_tdb_traverse_MId_DN(TDB_CONTEXT *tdb_ctx,
 	uint32_t		value;
 	struct emsabp_MId	*emsabp_MId = (struct emsabp_MId *) state;
 
-	if (key.dptr && strcmp((const char *)key.dptr, EMSABP_TDB_DATA_REC)) {
+	if (key.dptr && strncmp((const char *)key.dptr, EMSABP_TDB_DATA_REC, key.dsize)) {
 		MId = talloc_strndup(emsabp_MId, (char *)dbuf.dptr, dbuf.dsize);
 		value = strtol((const char *)MId, NULL, 16);
 		talloc_free(MId);

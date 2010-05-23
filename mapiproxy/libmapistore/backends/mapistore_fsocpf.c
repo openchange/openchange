@@ -22,6 +22,12 @@
 
 #include "mapistore_fsocpf.h"
 
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include <errno.h>
+
 /**
    \details Initialize fsocpf mapistore backend
 
@@ -34,7 +40,6 @@ static int fsocpf_init(void)
 	return MAPISTORE_SUCCESS;
 }
 
-
 /**
    \details Create a connection context to the fsocpf backend
 
@@ -44,13 +49,33 @@ static int fsocpf_init(void)
  */
 static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **private_data)
 {
+	DIR				*top_dir;
 	struct fsocpf_context		*fsocpf_ctx;
 
 	DEBUG(0, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	DEBUG(4, ("[%s:%d]: fsocpf uri: %s\n", __FUNCTION__, __LINE__, uri));
 
+	/* Step 1. Try to open context directory */
+	top_dir = opendir(uri);
+	if (!top_dir) {
+		/* If it doesn't exist, try to create it */
+		if (mkdir(uri, S_IRWXU) != 0 ) {
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		top_dir = opendir(uri);
+		if (!top_dir) {
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+	}
+
+	/* Step 2. Allocate / Initialize the fsocpf context structure */
 	fsocpf_ctx = talloc_zero(mem_ctx, struct fsocpf_context);
 	fsocpf_ctx->private_data = NULL;
+	fsocpf_ctx->uri = talloc_strdup(fsocpf_ctx, uri);
+	fsocpf_ctx->dir = top_dir;
+	fsocpf_ctx->folders = talloc_zero(fsocpf_ctx, struct folder_list_context);
 
+	/* Step 3. Store fsocpf context within the opaque private_data pointer */
 	*private_data = (void *)fsocpf_ctx;
 
 	return MAPISTORE_SUCCESS;
@@ -73,6 +98,9 @@ static int fsocpf_delete_context(void *private_data)
 	if (!fsocpf_ctx) {
 		return MAPISTORE_SUCCESS;
 	}
+
+	closedir(fsocpf_ctx->dir);
+	talloc_free(fsocpf_ctx);
 
 	return MAPISTORE_SUCCESS;
 }

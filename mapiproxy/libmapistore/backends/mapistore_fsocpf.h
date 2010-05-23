@@ -26,9 +26,24 @@
 #include <mapiproxy/libmapistore/mapistore.h>
 #include <mapiproxy/libmapistore/mapistore_errors.h>
 #include <dlinklist.h>
+#include <dirent.h>
+
+struct folder_list {
+	uint64_t			fid;
+	DIR				*dir;
+};
+
+struct folder_list_context {
+	struct folder_list		*el;
+	struct folder_list_context	*next;
+	struct folder_list_context	*prev;
+};
 
 struct fsocpf_context {
-	void		*private_data;
+	void				*private_data;
+	char				*uri;
+	struct folder_list_context	*folders;
+	DIR				*dir;
 };
 
 __BEGIN_DECLS

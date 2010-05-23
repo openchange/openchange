@@ -44,6 +44,7 @@
    <li><a href="#fsocpf_def"> 5.1. Definition </a></li>
    <li><a href="#fsocpf_attrs"> 5.2. Namespace and Attributes </a></li>
    <li><a href="#fsocpf_overview"> 5.3. Overview </a></li>
+   <li><a href="#fsocpf_refs">5.4. Documentation and References</a></li>
   </ul>
  </li>
 </ul>
@@ -506,5 +507,9 @@ OCPF extension). Within this directory, we find the attachments named
 using the PR_ATTACH_NUM property value and the OCPF file
 extension. The content of the attachment is stored in
 \$PR_ATTACH_NUM.data - in this case 1.data.
+
+<br/>
+<a name="fsocpf_refs"></a><h3>5.4. Documentation and References</h3>
+- <a href="../libocpf/index.html">OpenChange Property File format (OCPF) documentation</a>
 
 */

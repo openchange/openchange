@@ -51,6 +51,8 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 {
 	DIR				*top_dir;
 	struct fsocpf_context		*fsocpf_ctx;
+	int				len;
+	int				i;
 
 	DEBUG(0, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 	DEBUG(4, ("[%s:%d]: fsocpf uri: %s\n", __FUNCTION__, __LINE__, uri));
@@ -76,7 +78,17 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 	fsocpf_ctx->folders = talloc_zero(fsocpf_ctx, struct folder_list_context);
 
 	/* FIXME: Retrieve the fid from the URI */
-	fsocpf_ctx->fid = 0x00000000000d0001;
+	len = strlen(uri);
+	for (i = strlen(uri); i > 0; i--) {
+		if (uri[i] == '/' && i != strlen(uri)) {
+			char *tmp;
+
+			tmp = talloc_strdup(mem_ctx, uri + i + 1);
+			fsocpf_ctx->fid = strtoull(tmp, NULL, 16);
+			talloc_free(tmp);
+			break;
+		}
+	}
 
 	/* Step 3. Store fsocpf context within the opaque private_data pointer */
 	*private_data = (void *)fsocpf_ctx;

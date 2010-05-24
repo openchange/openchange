@@ -1534,6 +1534,7 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_CONTAINER_CLASS);
 	retval = GetProps(&obj_folder, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
+	mapi_object_release(&obj_folder);
 	if ((lpProps[0].ulPropTag != PR_CONTAINER_CLASS) || (retval != MAPI_E_SUCCESS)) {
 		errno = 0;
 		return IPF_NOTE;

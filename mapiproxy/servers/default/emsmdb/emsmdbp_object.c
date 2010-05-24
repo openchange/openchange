@@ -279,6 +279,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->properties = NULL;
 	object->object.table->numerator = 0;
 	object->object.table->denominator = 0;
+	object->object.table->ulType = 0;
 
 	retval = mapi_handles_get_systemfolder(parent, &mailboxfolder);
 	object->object.table->IsSystemTable = (!mailboxfolder) ? true : false;

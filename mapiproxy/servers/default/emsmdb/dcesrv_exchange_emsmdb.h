@@ -89,6 +89,7 @@ struct emsmdbp_object_folder {
 
 struct emsmdbp_object_table {
 	uint64_t			folderID;
+	uint8_t				ulType;
 	bool				IsSystemTable;
 	uint16_t			prop_count;
 	uint32_t			*properties;
@@ -127,6 +128,9 @@ struct emsmdbp_object {
 #define	EMSMDBP_SEARCH			0xB
 #define	EMSMDBP_VIEWS			0xC
 #define	EMSMDBP_SHORTCUTS		0xD
+
+#define	EMSMDBP_TABLE_FOLDER_TYPE	0x1
+#define	EMSMDBP_TABLE_MESSAGE_TYPE	0x2
 
 __BEGIN_DECLS
 

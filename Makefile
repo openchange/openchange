@@ -1005,7 +1005,7 @@ distclean:: mapistore_sqlite3-distclean
 mapiproxy/libmapistore/backends/mapistore_sqlite3.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_sqlite3.po
 	@echo "Linking mapistore module $@"
 	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(SQLITE_LIBS) 	\
-	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			
 
 
 mapistore_fsocpf: mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT)
@@ -1033,7 +1033,9 @@ distclean:: mapistore_fsocpf-distclean
 mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_fsocpf.po
 	@echo "Linking mapistore module $@"
 	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(SQLITE_LIBS) 	\
-	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			\
+	-L. libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
+
 
 #######################
 # mapistore test tools

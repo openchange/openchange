@@ -1,3 +1,143 @@
+2010-05-24
+    jkerihuel
+	[r1830]
+		Replace the hardcoded fsocpf_ctx->fid with a basic code searching for last elements
+		in mapistore_uri path.
+	[r1829]
+		Fix typo in PidTag name
+	[r1828]
+		Add PidTagFolderChildCount
+	[r1827]
+		Add libocpf as a dependency to mapistore_fsocpf backend
+	[r1826]
+		Add a ulType to emsmdbp table object.
+		We need to make the difference between folders table (hierarchy) and messages ones (contents).
+	[r1825]
+		This is a large work in progress commit:
+		
+		- Do not add mapistore_uri for Mailbox and IPM Subtree. These are only
+		  openchange.ldb containers.
+		
+		- Fix a memory issue with emsmdbp object destruction: use a different
+		  context for folder object. This was preventing from having a valid
+		  DIR * when releasing the object at mapistore layer.
+		
+		- Add preliminary implementation for OpenFolder (GenericFolder) in
+		  emsmdbp server code and mapistore. It can't yet be tested properly
+		  with openchangeclient --mailbox because we need to extend QueryRows
+		  implementation first. This will be achieved in further commits
+		
+		  We are now using mapistore_uri attribute value (valid or NULL) to
+		  detect whether it is a systemfolder (blank container) or if we need
+		  to initialize a mapistore backend context.
+		
+		- Add mapistore implementation of GetHierarchyTable and backend
+		  implementation for fsocpf. Since we don't have a working
+		  Createfolder/mkdir implementation yet, you need to add
+		  PidTagFolderChildCount = 1 to the folder record in openchange.ldb +
+		  manually create the directory on the filesytem.
+	[r1824]
+		Missing mapi_object_release call added
+2010-05-23
+    jkerihuel
+	[r1823]
+		- Add libmapi as a dependency to libmapistore. We need libmapi to
+		  benefit from operations on MAPI properties.
+		
+		- Add a MAPISTORE_RETVAL_IF macro and a MAPISTORE_SANITY_CHECKS one
+		  for common checks.
+		
+		- Refactor the search of the backend context given its context id in a
+		  function and propagate the change to related functions.
+		
+		- Add skeletons for opendir, closedir, mkdir and rmdir. Prototypes of
+		  these function may change in the future.
+	[r1822]
+		Implement create_context and delete_context for fsocpf backend. Patch
+		initially from Brad Hards.
+		
+		Add a double linked list with fid/DIR couples for folders operations
+		to be developed.
+	[r1821]
+		Fix a bug in NSPI server which was preventing NspiGetMatches
+		from retrieving the correct DN from the in-memory tdb database.
+		
+		Should fix the profile creation error users were experiencing.
+		 
+	[r1819]
+		Add a reference to the libocpf documentation for ospf backend
+    bradh
+	[r1820]
+		Add forgotten part of r1818.
+	[r1818]
+		Support provisioning mailboxes with either fsocpf or sqlite backends.
+		
+		fsocpf is the default at this stage.
+		
+		OK'd by Julien.
+2010-05-22
+    jkerihuel
+	[r1817]
+		Fix paths to related pages
+	[r1816]
+		Patch from Brad, fix doc typo, grammar - makes it sound more English.
+2010-05-21
+    jkerihuel
+	[r1815]
+		Add API documentation for init, backend connection contexts
+		Add programming samples
+	[r1814]
+		Install libmapistore pc file
+	[r1813]
+		0.2 version of mapistore documentation. 
+		Merge some of the initial mapistore wiki page content.
+		Add a section on FSOCPF backend
+    bradh
+	[r1812]
+		Various API documentation fixes. All trivial.
+	[r1811]
+		Fix some hard-coded formatting in mapitest common code.
+	[r1810]
+		Add a simple create / delete folder test to mapitest.
+		
+		I've been using this to test the basic operations.
+	[r1809]
+		Enable DeleteFolder rop, now we have a partial implementation.
+	[r1808]
+		Implement RopDeleteFolder, and handle the case where a folder already exists in RopCreateFolder
+		
+		This still only works for a top level folder.
+	[r1807]
+		Add convenience API to obtain the FID for a given folder (by name).
+		
+		This is useful to tell if a folder exists, which we need to do before
+		we create it.
+		
+		Also fixes a nuisance warning about printf specifiers. 
+	[r1806]
+		Extend CreateFolder size calculations to handle some of the optional elements
+		
+		We still don't properly handle the variable length server element.
+2010-05-20
+    jkerihuel
+	[r1805]
+		Add general overview of what mapistore is and 
+		how it can be used from a user perspective
+	[r1804]
+		Fix doxygen warnings
+	[r1803]
+		Refactor mapiproxy documentation into a global mapiproxy / openchange server doc.
+		- Add a mapistore documentation skeleton
+		- Add related pictures
+2010-05-19
+    jkerihuel
+	[r1801]
+		Add folder atomic operation to mapistore and skeleton to backends:
+		mkdir,rmdir,opendir,closedir,readdir
+    bradh
+	[r1802]
+		API documentation typo fix.
+
 2010-05-18
     jkerihuel
 	[r1799]

@@ -178,6 +178,50 @@ static enum MAPISTATUS ocpf_stream(TALLOC_CTX *mem_ctx,
 
    This function builds a SPropValue array from the ocpf context and
    information stored.
+   
+   \param mem_ctx pointer to the memory context to use for memory
+   allocation
+
+   \note This function is a server-side convenient function only. It
+   doesn't handle named properties and its scope is much more limited
+   than ocpf_set_SpropValue. Developers working on a client-side
+   software/library must use ocpf_set_SPropValue instead.
+
+   \sa ocpf_get_SPropValue
+ */
+_PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue_array(TALLOC_CTX *mem_ctx)
+{
+	struct ocpf_property	*pel;
+
+	/* sanity checks */
+	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
+
+	/* Step 1. Allocate SPropValue */
+	ocpf->cValues = 0;
+	ocpf->lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+
+	/* Step 2. Add Known properties */
+	if (ocpf->props && ocpf->props->next) {
+		for (pel = ocpf->props; pel->next; pel = pel->next) {
+			ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues, 
+						       pel->aulPropTag, pel->value);
+		}
+	}
+	/* Step 3. Add message class */
+	if (ocpf->type) {
+		ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues,
+					       PR_MESSAGE_CLASS, (const void *)ocpf->type);
+	}
+	
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Build a SPropValue array from ocpf context
+
+   This function builds a SPropValue array from the ocpf context and
+   information stored.
 
    \param mem_ctx the memory context to use for memory allocation
    \param obj_folder pointer the folder object we use for internal

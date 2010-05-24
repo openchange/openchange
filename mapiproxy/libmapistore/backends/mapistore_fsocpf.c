@@ -75,8 +75,22 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 	fsocpf_ctx->dir = top_dir;
 	fsocpf_ctx->folders = talloc_zero(fsocpf_ctx, struct folder_list_context);
 
+	/* FIXME: Retrieve the fid from the URI */
+	fsocpf_ctx->fid = 0x00000000000d0001;
+
 	/* Step 3. Store fsocpf context within the opaque private_data pointer */
 	*private_data = (void *)fsocpf_ctx;
+
+	DEBUG(0, ("%s has been opened\n", uri));
+	{
+		struct dirent *curdir;
+		int i = 0;
+
+		while ((curdir = readdir(fsocpf_ctx->dir)) != NULL) {
+			DEBUG(0, ("%d: readdir: %s\n", i, curdir->d_name));
+			i++;
+		}
+	}
 
 	return MAPISTORE_SUCCESS;
 }
@@ -148,17 +162,81 @@ static int fsocpf_op_rmdir(void *private_data)
    \details Open a folder from the fsocpf backend
 
    \param private_data pointer to the current fsocpf context
+   \param parent_fid the parent folder identifier
+   \param fid the identifier of the colder to open
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_op_opendir(void *private_data)
+static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t fid)
 {
-	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	TALLOC_CTX			*mem_ctx;
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct folder_list_context	*el;
+	bool				found = false;
+	struct dirent			*curdir;
+	char				*searchdir;
+
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
 	if (!fsocpf_ctx) {
 		return MAPISTORE_ERROR;
 	}
 
+	/* Step 0. If fid equals top folder fid, it is already open*/
+	if (fsocpf_ctx->fid == fid) {
+		/* If we access it for the first time, just add an entry to the folder list */
+		if (!fsocpf_ctx->folders->ctx) {
+			el = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, struct folder_list_context);
+			el->ctx = talloc_zero((TALLOC_CTX *)el, struct folder_list);
+			el->ctx->fid = fid;
+			el->ctx->dir = fsocpf_ctx->dir;
+			DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
+			DEBUG(0, ("Element added to the list 0x%16llx\n", el->ctx->fid));
+			goto test;
+		}
+		DEBUG(0, ("OK returning success now\n"));
+		return MAPISTORE_SUCCESS;
+	}
+
+test:
+	/* Step 1. Search for the parent fid */
+	for (el = fsocpf_ctx->folders; el; el = el->next) {
+		/* if (el->ctx && el->ctx->fid == parent_fid) { */
+		if (el->ctx && el->ctx->fid == fid) {
+			found = true;
+			break;
+		}
+	}
+
+	if (found == false) {
+		return MAPISTORE_ERR_NO_DIRECTORY;
+	}
+
+	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_opendir");
+
+	/* Step 2. stringify fid */
+	searchdir = talloc_asprintf(mem_ctx, "0x%.16"PRIx64, fid);
+	DEBUG(0, ("Looking for %s\n", searchdir));
+
+	/* Read the directory and search for the fid to open */
+	rewinddir(el->ctx->dir);
+	errno = 0;
+	{
+		int i = 0;
+		while ((curdir = readdir(el->ctx->dir)) != NULL) {
+			DEBUG(0, ("%d: readdir: %s\n", i, curdir->d_name));
+			i++;
+			if (curdir->d_name && !strcmp(curdir->d_name, searchdir)) {
+				DEBUG(0, ("FOUND\n"));
+			}
+		}
+	}
+
+	DEBUG(0, ("errno = %d\n", errno));
+
+	rewinddir(el->ctx->dir);
+	talloc_free(mem_ctx);
+		
 	return MAPISTORE_SUCCESS;
 }
 
@@ -189,12 +267,64 @@ static int fsocpf_op_closedir(void *private_data)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_op_readdir(void *private_data)
+static int fsocpf_op_readdir_count(void *private_data, 
+				   uint64_t fid,
+				   uint8_t table_type,
+				   uint32_t *RowCount)
 {
-	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct folder_list_context	*el;
+	bool				found = false;
+	struct dirent			*curdir;
 
-	if (!fsocpf_ctx) {
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	if (!fsocpf_ctx || !RowCount) {
 		return MAPISTORE_ERROR;
+	}
+
+	if (fsocpf_ctx->fid == fid) {
+		/* If we access it for the first time, just add an entry to the folder list */
+		if (!fsocpf_ctx->folders->ctx) {
+			el = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, struct folder_list_context);
+			el->ctx = talloc_zero((TALLOC_CTX *)el, struct folder_list);
+			el->ctx->fid = fid;
+			el->ctx->dir = fsocpf_ctx->dir;
+			DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
+			DEBUG(0, ("Element added to the list 0x%16llx\n", el->ctx->fid));
+		}
+	}
+
+	/* Search for the fid folder_list entry */
+	for (el = fsocpf_ctx->folders; el; el = el->next) {
+		if (el->ctx && el->ctx->fid == fid) {
+			found = true;
+			break;
+		}
+	}
+	if (found == false) {
+		*RowCount = 0;
+		return MAPISTORE_ERR_NO_DIRECTORY;
+	}
+
+	switch (table_type) {
+	case MAPISTORE_FOLDER_TABLE:
+		rewinddir(el->ctx->dir);
+		errno = 0;
+		*RowCount = 0;
+		while ((curdir = readdir(el->ctx->dir)) != NULL) {
+			if (curdir->d_name && curdir->d_type == DT_DIR &&
+			    strcmp(curdir->d_name, ".") && strcmp(curdir->d_name, "..")) {
+				DEBUG(0, ("Adding %s to the RowCount\n", curdir->d_name));
+				*RowCount += 1;
+			}
+		}
+		break;
+	case MAPISTORE_MESSAGE_TABLE:
+		DEBUG(0, ("Not supported for the moment\n"));
+		break;
+	default:
+		break;
 	}
 
 	return MAPISTORE_SUCCESS;
@@ -223,7 +353,7 @@ int mapistore_init_backend(void)
 	backend.op_rmdir = fsocpf_op_rmdir;
 	backend.op_opendir = fsocpf_op_opendir;
 	backend.op_closedir = fsocpf_op_closedir;
-	backend.op_readdir = fsocpf_op_readdir;
+	backend.op_readdir_count = fsocpf_op_readdir_count;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

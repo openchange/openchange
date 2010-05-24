@@ -261,6 +261,14 @@ int mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *path)
 	return (status != true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_BACKEND_INIT;
 }
 
+static int delete_context(void *data)
+{
+	struct backend_context		*context = (struct backend_context *) data;
+
+	context->backend->delete_context(context->private_data);
+
+	return 0;
+}
 
 /**
    \details Create backend context
@@ -299,9 +307,10 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, co
 	}
 
 	context = talloc_zero(mem_ctx, struct backend_context);
+	talloc_set_destructor((void *)context, (int (*)(void *))delete_context);
 	context->backend = backends[i].backend;
 	context->private_data = private_data;
-	talloc_steal(context, context->private_data);
+	talloc_steal(context, private_data);
 
 	return context;
 }
@@ -345,4 +354,23 @@ _PUBLIC_ struct backend_context *mapistore_backend_lookup(struct backend_context
 	}
 
 	return NULL;
+}
+
+
+int mapistore_backend_opendir(struct backend_context *bctx, uint64_t parent_fid, uint64_t fid)
+{
+	return bctx->backend->op_opendir(bctx->private_data, parent_fid, fid);
+}
+
+
+int mapistore_backend_readdir_count(struct backend_context *bctx, uint64_t fid, uint8_t table_type, 
+				    uint32_t *RowCount)
+{
+	int		ret;
+	uint32_t	count = 0;
+
+	ret = bctx->backend->op_readdir_count(bctx->private_data, fid, table_type, &count);
+	*RowCount = count;
+
+	return ret;
 }

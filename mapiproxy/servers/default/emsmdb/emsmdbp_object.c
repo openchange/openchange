@@ -187,7 +187,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS			retval;
 	struct emsmdbp_object		*object;
-	int				mailboxfolder;
 	char				*mapistore_uri = NULL;
 	uint32_t			context_id;
 	int				ret;
@@ -208,30 +207,29 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 	object->type = EMSMDBP_OBJECT_FOLDER;
 	object->object.folder->contextID = -1;
 	object->object.folder->folderID = request->u.mapi_OpenFolder.folder_id;
-	
-	retval = mapi_handles_get_systemfolder(parent, &mailboxfolder);
-	object->object.folder->IsSystemFolder = (!mailboxfolder) ? true : false;
 
-	if (object->object.folder->IsSystemFolder == false) {
-		/* Retrieve the systemfolder value */
+	/* system folders acting as containers don't have
+	 * mapistore_uri attributes (Mailbox, IPM Subtree) 
+	 */
+	retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx,
+					       object->object.folder->folderID, &mapistore_uri);
+
+	if (retval == MAPI_E_SUCCESS && !mapistore_uri) {
 		object->object.folder->systemfolder = -1;
-		/* assign mapistore context from parent */
-	} else {
+		object->object.folder->IsSystemFolder = true;
+	} else if (retval == MAPI_E_SUCCESS && mapistore_uri) {
 		object->object.folder->systemfolder = 1;
-		/* mapistore backend initialization goes here */
-		retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx,
-						       object->object.folder->folderID, &mapistore_uri);
-		if (retval == MAPI_E_SUCCESS) {
-			ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, mapistore_uri, &context_id);
-			if (ret != MAPISTORE_SUCCESS) {
-				talloc_free(object);
-				return NULL;
-			}
-			object->object.folder->contextID = context_id;
-		} else {
+		object->object.folder->IsSystemFolder = false;
+		ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, mapistore_uri, &context_id);
+		if (ret != MAPISTORE_SUCCESS) {
 			talloc_free(object);
 			return NULL;
 		}
+		object->object.folder->contextID = context_id;
+		
+	} else {
+		talloc_free(object);
+		return NULL;
 	}
 
 	return object;

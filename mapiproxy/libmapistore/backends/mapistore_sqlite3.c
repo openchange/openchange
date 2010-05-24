@@ -139,10 +139,12 @@ static int sqlite3_op_rmdir(void *private_data)
    \details Atomic operation: Open directory (opendir)
 
    \param private_data generic pointer to the sqlite3 context
+   \param parent_fid the parent folder identifier
+   \param fid the identifier of the colder to open  
 
    \return MAPI_E_SUCCESS on success
  */
-static int sqlite3_op_opendir(void *private_data)
+static int sqlite3_op_opendir(void *private_data, uint64_t parent_fid, uint64_t fid)
 {
 	struct sqlite3_context		*sqlite_ctx = (struct sqlite3_context *)private_data;
 
@@ -162,25 +164,6 @@ static int sqlite3_op_opendir(void *private_data)
    \return MAPI_E_SUCCESS on success
  */
 static int sqlite3_op_closedir(void *private_data)
-{
-	struct sqlite3_context		*sqlite_ctx = (struct sqlite3_context *)private_data;
-
-	if (!sqlite_ctx) {
-		return MAPISTORE_ERROR;
-	}
-
-	return MAPISTORE_SUCCESS;
-}
-
-
-/**
-   \details Atomic operation: Read directory (readdir)
-
-   \param private_data generic pointer to the sqlite3 context
-
-   \return MAPI_E_SUCCESS on success
- */
-static int sqlite3_op_readdir(void *private_data)
 {
 	struct sqlite3_context		*sqlite_ctx = (struct sqlite3_context *)private_data;
 
@@ -215,7 +198,7 @@ int mapistore_init_backend(void)
 	backend.op_rmdir = sqlite3_op_rmdir;
 	backend.op_opendir = sqlite3_op_opendir;
 	backend.op_closedir = sqlite3_op_closedir;
-	backend.op_readdir = sqlite3_op_readdir;
+	backend.op_readdir_count = NULL;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

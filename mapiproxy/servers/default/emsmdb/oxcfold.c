@@ -53,6 +53,41 @@ static enum MAPISTATUS RopOpenFolder_SystemSpecialFolder(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+
+static enum MAPISTATUS RopOpenFolder_GenericFolder(TALLOC_CTX *mem_ctx,
+						   struct emsmdbp_context *emsmdbp_ctx,
+						   struct OpenFolder_req request,
+						   struct OpenFolder_repl *response,
+						   struct mapi_handles *parent)
+{
+	struct emsmdbp_object	*parent_object = NULL;
+	void			*data;
+	uint64_t		parent_fid;
+	int			retval;
+	uint32_t		context_id;
+
+	/* Step 1. Retrieve the parent fid given the handle */
+	mapi_handles_get_private_data(parent, &data);
+	parent_object = (struct emsmdbp_object *) data;
+	if (!parent_object) {
+		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] OpenFolder null object"));
+		return MAPI_E_NO_SUPPORT;
+	}
+
+	if (parent_object->type != EMSMDBP_OBJECT_FOLDER) {
+		DEBUG(4, ("exchane_emsmdb: [OXCFOLD] OpenFolder wrong object type: 0x%x\n", parent_object->type));
+		return MAPI_E_NO_SUPPORT;
+	}
+	parent_fid = parent_object->object.folder->folderID;
+	context_id = parent_object->object.folder->contextID;
+
+	/* Step 2. Open folder from mapistore */
+	retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid, request.folder_id);
+	if (retval) return MAPI_E_NOT_FOUND;
+
+	return MAPI_E_SUCCESS;
+}
+
 /**
    \details EcDoRpc OpenFolder (0x02) Rop. This operation opens an
    existing folder.
@@ -106,13 +141,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_get_systemfolder(parent, &parentfolder);
 
 	switch (parentfolder) {
+	case -1:
 	case 0x0:
 		/* system/special folder */
+		DEBUG(0, ("Opening system/special folder\n"));
 		retval = RopOpenFolder_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response);
 		mapi_repl->error_code = retval;
 		break;
 	default:
 		/* handled by mapistore */
+		DEBUG(0, ("Opening Generic folder\n"));
+		retval = RopOpenFolder_GenericFolder(mem_ctx, emsmdbp_ctx, request, &response, parent);
+		mapi_repl->error_code = retval;
 		break;
 	}
 
@@ -122,7 +162,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 
-		object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx, mapi_req, parent);
+		object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx, mapi_req, parent);
 		if (object) {
 			retval = mapi_handles_set_systemfolder(rec, object->object.folder->systemfolder);
 			retval = mapi_handles_set_private_data(rec, object);
@@ -163,7 +203,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL;
 	void			*data;
-	uint32_t		folderID;
+	uint64_t		folderID;
+	uint32_t		contextID;
 	uint32_t		handle;
 	int			parentfolder = -1;
 
@@ -198,9 +239,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	switch (object->type) {
 	case EMSMDBP_OBJECT_MAILBOX:
 		folderID = object->object.mailbox->folderID;
+		contextID = object->object.folder->contextID;
 		break;
 	case EMSMDBP_OBJECT_FOLDER:
 		folderID = object->object.folder->folderID;
+		contextID = object->object.folder->contextID;
 		break;
 	default:
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
@@ -208,7 +251,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (parentfolder) {
-	case 0x0:
+	case -1:
 	case 0x1:
 		/* system/special folder */
 		retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folderID, 
@@ -216,7 +259,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		/* handled by mapistore */
-		mapi_repl->u.mapi_GetHierarchyTable.RowCount = 0;
+		retval = mapistore_get_folder_count(emsmdbp_ctx->mstore_ctx, contextID, folderID, 
+						    &mapi_repl->u.mapi_GetHierarchyTable.RowCount);
 		break;
 	}
 

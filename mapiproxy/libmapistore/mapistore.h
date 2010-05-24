@@ -49,6 +49,9 @@ typedef	int (*init_backend_fn) (void);
 
 #define	MAPISTORE_INIT_MODULE	"mapistore_init_backend"
 
+#define	MAPISTORE_FOLDER_TABLE	1
+#define	MAPISTORE_MESSAGE_TABLE	2
+
 struct mapistore_backend {
 	const char	*name;
 	const char	*description;
@@ -60,9 +63,9 @@ struct mapistore_backend {
 	/* folders semantic */
 	int (*op_mkdir)(void *);
 	int (*op_rmdir)(void *);
-	int (*op_opendir)(void *);
+	int (*op_opendir)(void *, uint64_t, uint64_t);
 	int (*op_closedir)(void *);
-	int (*op_readdir)(void *);
+	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
 };
 
 struct backend_context {
@@ -102,10 +105,11 @@ int mapistore_release(struct mapistore_context *);
 int mapistore_add_context(struct mapistore_context *, const char *uri, uint32_t *);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
 const char *mapistore_errstr(int);
-int mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t, uint64_t *);
+int mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
 int mapistore_closedir(struct mapistore_context *mstore_ctx, uint32_t, uint64_t);
 int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapi_SPropValue *);
 int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
+int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

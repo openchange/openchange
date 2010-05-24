@@ -28,13 +28,31 @@
 #include <dlinklist.h>
 #include <dirent.h>
 
+/* These are essentially local versions of part of the 
+   C99 __STDC_FORMAT_MACROS */
+#ifndef PRIx64
+#if __WORDSIZE == 64
+  #define PRIx64        "lx"
+#else
+  #define PRIx64        "llx"
+#endif
+#endif
+
+#ifndef PRIX64
+#if __WORDSIZE == 64
+  #define PRIX64        "lX"
+#else
+  #define PRIX64        "llX"
+#endif
+#endif
+
 struct folder_list {
 	uint64_t			fid;
 	DIR				*dir;
 };
 
 struct folder_list_context {
-	struct folder_list		*el;
+	struct folder_list		*ctx;
 	struct folder_list_context	*next;
 	struct folder_list_context	*prev;
 };
@@ -43,6 +61,7 @@ struct fsocpf_context {
 	void				*private_data;
 	char				*uri;
 	struct folder_list_context	*folders;
+	uint64_t			fid;
 	DIR				*dir;
 };
 

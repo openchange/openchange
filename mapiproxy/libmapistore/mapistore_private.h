@@ -127,6 +127,8 @@ int mapistore_free_context_id(struct processing_context *, uint32_t);
 int mapistore_backend_init(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *);
 int mapistore_backend_delete_context(struct backend_context *);
+int mapistore_backend_opendir(struct backend_context *, uint64_t, uint64_t);
+int mapistore_backend_readdir_count(struct backend_context *, uint64_t, uint8_t, uint32_t *);
 
 /* definitions from mapistore_tdb_wrap.c */
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);

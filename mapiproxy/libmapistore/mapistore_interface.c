@@ -175,6 +175,7 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
 	/* Step 0. Ensure the context exists */
+	DEBUG(0, ("mapistore_del_context: context_id to del is %d\n", context_id));
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
@@ -240,27 +241,29 @@ _PUBLIC_ const char *mapistore_errstr(int mapistore_err)
    \param context_id the context identifier referencing the backend
    where the directory will be opened
    \param parent_fid the parent folder identifier
-   \param fid pointer to the folder identifier of the opened folder
+   \param fid folder identifier to open
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ int mapistore_opendir(struct mapistore_context *mstore_ctx,
 			       uint32_t context_id,
 			       uint64_t parent_fid,
-			       uint64_t *fid)
+			       uint64_t fid)
 {
 	struct backend_context		*backend_ctx;
+	int				ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
-	/* Step 0. Search the context */
+	/* Step 1. Search the context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* mapistore_backend_opendir() */
+	/* Step 2. Call backend opendir */
+	ret = mapistore_backend_opendir(backend_ctx, parent_fid, fid);
 
-	return MAPISTORE_SUCCESS;
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
 
@@ -353,4 +356,37 @@ _PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);	
 
 	return MAPISTORE_SUCCESS;	
+}
+
+
+/**
+   \details Retrieve the number of child folders within a mapistore
+   folder
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   \param fid the folder identifier
+   \param RowCount pointer to the count result to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_get_folder_count(struct mapistore_context *mstore_ctx,
+					uint32_t context_id,
+					uint64_t fid,
+					uint32_t *RowCount)
+{
+	struct backend_context		*backend_ctx;
+	int				ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 0. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend opendir */
+	ret = mapistore_backend_readdir_count(backend_ctx, fid, MAPISTORE_FOLDER_TABLE, RowCount);
+
+	return ret;
 }

@@ -226,7 +226,6 @@ GlobalCount: 0x%x
             m.dn = ldb.Dn(self.ldb, ocuserdn)
             m["PidTagFolderId"] = ldb.MessageElement([FID], ldb.CHANGETYPE_ADD, "PidTagFolderId")
             m["SystemIdx"] = ldb.MessageElement([str(SystemIdx)], ldb.CHANGETYPE_ADD, "SystemIdx")
-            m["mapistore_uri"] = ldb.MessageElement(["%s/%s/%s%s" % (mapistoreURL, username, FID, mapistoreSuffix)], ldb.CHANGETYPE_ADD, "mapistore_uri")
             self.ldb.modify(m)
             return FID
 
@@ -236,17 +235,29 @@ GlobalCount: 0x%x
             raise Exception("Invalid search (PidTagFolderId=%s)" % parentfolder)
 
         # Step 3. Add root folder to correct container
-        self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
-                  "objectClass": ["systemfolder"],
-                  "cn": FID,
-                  "PidTagParentFolderId": parentfolder,
-                  "PidTagFolderId": FID,
-                  "PidTagDisplayName": foldername,
-                  "PidTagAttrHidden": str(0),
-                  "PidTagContainerClass": "IPF.Note",
-                  "mapistore_uri": "%s/%s/%s%s" % (mapistoreURL, username, FID, mapistoreSuffix),
-                  "FolderType": str(1),
-                  "SystemIdx": str(SystemIdx)})
+        if (foldername == "IPM Subtree"):
+            self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
+                          "objectClass": ["systemfolder", "container"],
+                          "cn": FID,
+                          "PidTagParentFolderId": parentfolder,
+                          "PidTagFolderId": FID,
+                          "PidTagDisplayName": foldername,
+                          "PidTagAttrHidden": str(0),
+                          "PidTagContainerClass": "IPF.Note",
+                          "FolderType": str(1),
+                          "SystemIdx": str(SystemIdx)})
+        else:
+            self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
+                          "objectClass": ["systemfolder"],
+                          "cn": FID,
+                          "PidTagParentFolderId": parentfolder,
+                          "PidTagFolderId": FID,
+                          "PidTagDisplayName": foldername,
+                          "PidTagAttrHidden": str(0),
+                          "PidTagContainerClass": "IPF.Note",
+                          "mapistore_uri": "%s/%s/%s%s" % (mapistoreURL, username, FID, mapistoreSuffix),
+                          "FolderType": str(1),
+                          "SystemIdx": str(SystemIdx)})
 
         return FID
 

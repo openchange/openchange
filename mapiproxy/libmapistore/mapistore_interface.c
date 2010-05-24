@@ -390,3 +390,41 @@ _PUBLIC_ int mapistore_get_folder_count(struct mapistore_context *mstore_ctx,
 
 	return ret;
 }
+
+
+/**
+   \details Retrieve a MAPI property from a table
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   \param table_type the type of table (folders or messges)
+   \param fid the folder identifier where the search takes place
+   \param proptag the MAPI property tag to retrieve value for
+   \param pos the record position in search results
+   \param data pointer on pointer to the data the function returns
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_get_table_property(struct mapistore_context *mstore_ctx,
+					  uint32_t context_id,
+					  uint8_t table_type,
+					  uint64_t fid,
+					  uint32_t proptag,
+					  uint32_t pos,
+					  void **data)
+{
+	struct backend_context		*backend_ctx;
+	int				ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend readdir */
+	ret = mapistore_backend_get_table_property(backend_ctx, fid, table_type, pos, proptag, data);
+
+	return ret;
+}

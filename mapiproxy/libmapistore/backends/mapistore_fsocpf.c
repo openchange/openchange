@@ -201,9 +201,10 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 			el = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, struct folder_list_context);
 			el->ctx = talloc_zero((TALLOC_CTX *)el, struct folder_list);
 			el->ctx->fid = fid;
+			el->ctx->path = talloc_strdup(el, fsocpf_ctx->uri);
 			el->ctx->dir = fsocpf_ctx->dir;
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
-			DEBUG(0, ("Element added to the list 0x%16llx\n", el->ctx->fid));
+			DEBUG(0, ("Element added to the list 0x%16"PRIx64"\n", el->ctx->fid));
 			goto test;
 		}
 		DEBUG(0, ("OK returning success now\n"));
@@ -301,9 +302,10 @@ static int fsocpf_op_readdir_count(void *private_data,
 			el = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, struct folder_list_context);
 			el->ctx = talloc_zero((TALLOC_CTX *)el, struct folder_list);
 			el->ctx->fid = fid;
+			el->ctx->path = talloc_strdup(el, fsocpf_ctx->uri);
 			el->ctx->dir = fsocpf_ctx->dir;
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
-			DEBUG(0, ("Element added to the list 0x%16llx\n", el->ctx->fid));
+			DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->ctx->fid));
 		}
 	}
 
@@ -333,7 +335,7 @@ static int fsocpf_op_readdir_count(void *private_data,
 		}
 		break;
 	case MAPISTORE_MESSAGE_TABLE:
-		DEBUG(0, ("Not supported for the moment\n"));
+		DEBUG(0, ("Not implemented yet\n"));
 		break;
 	default:
 		break;
@@ -341,6 +343,138 @@ static int fsocpf_op_readdir_count(void *private_data,
 
 	return MAPISTORE_SUCCESS;
 }
+
+
+static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
+						 uint32_t pos,
+						 uint32_t proptag,
+						 void **data)
+{
+	int			ret;
+	struct dirent		*curdir;
+	uint32_t		counter = 0;
+	char			*folderID;
+	char			*propfile;
+	uint32_t		cValues = 0;
+	struct SPropValue	*lpProps;
+
+	/* Set dir listing to current position */
+	DEBUG(0, ("pos = %d\n", pos));
+	rewinddir(ctx->dir);
+	errno = 0;
+	while ((curdir = readdir(ctx->dir)) != NULL) {
+		if (curdir->d_name && curdir->d_type == DT_DIR &&
+		    strcmp(curdir->d_name, ".") && strcmp(curdir->d_name, "..") &&
+		    counter == pos) {
+			folderID = talloc_strdup(ctx, curdir->d_name);
+			break;
+		}
+		if (strcmp(curdir->d_name, ".") && strcmp(curdir->d_name, "..")) {
+			counter++;
+		}
+	}
+
+	if (!curdir) {
+		talloc_free(folderID);
+		return MAPI_E_NOT_FOUND;
+	}
+
+	/* If fid, return ctx->fid */
+	if (proptag == PR_FID) {
+		uint64_t	*fid;
+
+		fid = talloc_zero(ctx, uint64_t);
+		*fid = strtoull(folderID, NULL, 16);
+		talloc_free(folderID);
+		*data = (uint64_t *)fid;
+		return MAPI_E_SUCCESS;
+	} 
+
+	/* Otherwise opens .properties file with ocpf for fid entry */
+	ocpf_init();
+	propfile = talloc_asprintf(ctx, "%s/%s/.properties", ctx->path, folderID);
+	talloc_free(folderID);
+
+	/* process the file */
+	ret = ocpf_parse(propfile);
+	talloc_free(propfile);
+	if (ret == -1) {
+		ocpf_release();
+		*data = NULL;
+		return MAPI_E_INVALID_OBJECT;
+	}
+	
+	ocpf_set_SPropValue_array(ctx);
+	lpProps = ocpf_get_SPropValue(&cValues);
+	/* FIXME: Some talloc is required here */
+	*data = (void *) get_SPropValue(lpProps, proptag);
+	if (*data == NULL) {
+		ocpf_release();
+		return MAPI_E_NOT_FOUND;
+	}
+
+	ocpf_release();	
+	return MAPI_E_SUCCESS;
+}
+
+
+static int fsocpf_op_get_table_property(void *private_data,
+					uint64_t fid,
+					uint8_t table_type,
+					uint32_t pos,
+					uint32_t proptag,
+					void **data)
+{
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct folder_list_context	*el;
+	bool				found = false;
+	int				retval = MAPI_E_SUCCESS;
+
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	if (!fsocpf_ctx || !data) {
+		return MAPISTORE_ERROR;
+	}
+
+	if (fsocpf_ctx->fid == fid) {
+		/* If we access it for the first time, just add an entry to the folder list */
+		if (!fsocpf_ctx->folders->ctx) {
+			el = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, struct folder_list_context);
+			el->ctx = talloc_zero((TALLOC_CTX *)el, struct folder_list);
+			el->ctx->fid = fid;
+			el->ctx->path = talloc_strdup(el, fsocpf_ctx->uri);
+			el->ctx->dir = fsocpf_ctx->dir;
+			DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
+			DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->ctx->fid));			
+		}
+	}
+
+	/* Search for the fid folder_list entry */
+	for (el = fsocpf_ctx->folders; el; el = el->next) {
+		if (el->ctx && el->ctx->fid == fid) {
+			found = true;
+			break;
+		}
+	}
+	if (found == false) {
+		*data = NULL;
+		return MAPISTORE_ERR_NO_DIRECTORY;
+	}
+
+	switch (table_type) {
+	case MAPISTORE_FOLDER_TABLE:
+		retval = fsocpf_get_property_from_folder_table(el->ctx, pos, proptag, data);
+		break;
+	case MAPISTORE_MESSAGE_TABLE:
+		DEBUG(0, ("Not implemented yet\n"));
+		break;
+	default:
+		break;
+	}
+
+	return retval;
+}
+
 
 /**
    \details Entry point for mapistore FSOCPF backend
@@ -366,6 +500,7 @@ int mapistore_init_backend(void)
 	backend.op_opendir = fsocpf_op_opendir;
 	backend.op_closedir = fsocpf_op_closedir;
 	backend.op_readdir_count = fsocpf_op_readdir_count;
+	backend.op_get_table_property = fsocpf_op_get_table_property;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

@@ -50,6 +50,7 @@
 struct folder_list {
 	uint64_t			fid;
 	DIR				*dir;
+	char				*path;
 };
 
 struct folder_list_context {

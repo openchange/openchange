@@ -66,6 +66,7 @@ struct mapistore_backend {
 	int (*op_opendir)(void *, uint64_t, uint64_t);
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
+	int (*op_get_table_property)(void *, uint64_t, uint8_t, uint32_t, uint32_t, void **);
 };
 
 struct backend_context {
@@ -110,6 +111,8 @@ int mapistore_closedir(struct mapistore_context *mstore_ctx, uint32_t, uint64_t)
 int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapi_SPropValue *);
 int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
+int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, uint64_t, 
+				 uint32_t, uint32_t, void **);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

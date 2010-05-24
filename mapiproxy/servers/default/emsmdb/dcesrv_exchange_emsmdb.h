@@ -90,11 +90,13 @@ struct emsmdbp_object_folder {
 struct emsmdbp_object_table {
 	uint64_t			folderID;
 	uint8_t				ulType;
+	uint32_t			contextID;
 	bool				IsSystemTable;
 	uint16_t			prop_count;
 	uint32_t			*properties;
 	uint32_t			numerator;
 	uint32_t			denominator;
+	bool				mapistore;
 };
 
 union emsmdbp_objects {

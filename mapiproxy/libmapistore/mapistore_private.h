@@ -129,6 +129,8 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const cha
 int mapistore_backend_delete_context(struct backend_context *);
 int mapistore_backend_opendir(struct backend_context *, uint64_t, uint64_t);
 int mapistore_backend_readdir_count(struct backend_context *, uint64_t, uint8_t, uint32_t *);
+int mapistore_backend_get_table_property(struct backend_context *, uint64_t, uint8_t, uint32_t, 
+					 uint32_t, void **);
 
 /* definitions from mapistore_tdb_wrap.c */
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);

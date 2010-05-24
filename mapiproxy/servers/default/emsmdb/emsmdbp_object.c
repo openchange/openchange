@@ -280,6 +280,15 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->numerator = 0;
 	object->object.table->denominator = 0;
 	object->object.table->ulType = 0;
+	object->object.table->mapistore = false;
+	object->object.table->contextID = -1;
+
+	/* Check if the parent object has a mapistore_uri associated */
+	if ((folder->object.folder->systemfolder == 1) && 
+	    (folder->object.folder->IsSystemFolder == false)) {
+		object->object.table->mapistore = true;
+		object->object.table->contextID = folder->object.folder->contextID;
+	}
 
 	retval = mapi_handles_get_systemfolder(parent, &mailboxfolder);
 	object->object.table->IsSystemTable = (!mailboxfolder) ? true : false;

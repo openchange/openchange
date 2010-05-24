@@ -106,4 +106,9 @@
  */
 #define	MAPISTORE_ERR_INVALID_NAMESPACE		13
 
+/**
+   The function failed to find requested record/data
+ */
+#define	MAPISTORE_ERR_NOT_FOUND			14
+
 #endif /* ! __MAPISTORE_ERRORS_H */

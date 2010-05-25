@@ -115,7 +115,6 @@ struct mapi_handles {
 	uint32_t	       	handle;
 	uint32_t		parent_handle;
 	void		       	*private_data;
-	int			systemfolder;
 	struct mapi_handles	*prev;
 	struct mapi_handles	*next;
 };

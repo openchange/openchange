@@ -341,7 +341,6 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *handles_c
 	el->handle = handles_ctx->last_handle;
 	el->parent_handle = container_handle;
 	el->private_data = NULL;
-	el->systemfolder = -1;
 	*rec = el;
 	DLIST_ADD_END(handles_ctx->handles, el, struct mapi_handles *);
 

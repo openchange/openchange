@@ -359,7 +359,6 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	struct SPropValue	*lpProps;
 
 	/* Set dir listing to current position */
-	DEBUG(0, ("pos = %d\n", pos));
 	rewinddir(ctx->dir);
 	errno = 0;
 	while ((curdir = readdir(ctx->dir)) != NULL) {
@@ -376,6 +375,7 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 
 	if (!curdir) {
 		talloc_free(folderID);
+		*data = NULL;
 		return MAPI_E_NOT_FOUND;
 	}
 
@@ -406,8 +406,15 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	
 	ocpf_set_SPropValue_array(ctx);
 	lpProps = ocpf_get_SPropValue(&cValues);
-	/* FIXME: Some talloc is required here */
+
+	/* FIXME: We need to find a proper way to handle this (for all types) */
+	talloc_steal(ctx, lpProps);
+
 	*data = (void *) get_SPropValue(lpProps, proptag);
+	if ((proptag & 0xFFFF) == PT_STRING8 || (proptag & 0xFFFF) == PT_UNICODE) {
+		*data = talloc_strdup(ctx, (char *)*data);
+	}
+
 	if (*data == NULL) {
 		ocpf_release();
 		return MAPI_E_NOT_FOUND;

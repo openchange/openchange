@@ -394,7 +394,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 	ldb_msg_add_string(msg, "PidTagDisplayName", folderName.lpszA);
 	ldb_msg_add_string(msg, "PidTagParentFolderId", parentfid_formatted);
 	ldb_msg_add_string(msg, "PidTagFolderId", fid_formatted);
-	ldb_msg_add_fmt(msg, "mapistore_uri", "sqlite:///usr/local/samba/private/mapistore/%s/%s.db", 
+	ldb_msg_add_fmt(msg, "mapistore_uri", "fsocpf:///usr/local/samba/private/mapistore/%s/%s", 
 			emsmdbp_ctx->username, fid_formatted);
 	ldb_msg_add_string(msg, "PidTagSubFolders", "0");
 	ldb_msg_add_string(msg, "FolderType", "1");

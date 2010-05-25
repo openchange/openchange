@@ -58,7 +58,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < request.prop_count; i++) {
 		request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
 		retval = MAPI_E_NOT_FOUND;
-		response->layout = 1;
+		response->layout = 0x1;
 		data = (void *)&retval;
 		libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
 					    request.properties[i], (const void *)data,
@@ -109,7 +109,23 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 		case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
 			response->layout = 0x1;
 			break;
+		case PR_USER_ENTRYID:
+		case PR_MAILBOX_OWNER_ENTRYID:
+		case PR_MAILBOX_OWNER_NAME:
+		case PR_MAILBOX_OWNER_NAME_UNICODE:
+			break;
 		default:
+			retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx,
+								  emsmdbp_ctx->szDisplayName, 
+								  request.properties[i],
+								  object->object.mailbox->folderID, 
+								  (void **)&data);
+			if (retval) {
+				response->layout = 0x1;
+			}
+			break;
+		}
+		if (response->layout == 1) {
 			break;
 		}
 	}

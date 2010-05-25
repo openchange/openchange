@@ -279,6 +279,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 				}
 			}
 
+			/* SandardPropertyRow hack */
+			if (!flagged) {
+				libmapiserver_push_property(mem_ctx, 
+							    lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+							    0x00000000, (const void *)&flagged,
+							    &response.RowData, 0, 1);
+			}
+
 			/* Push the properties */
 			for (j = 0; j < table->prop_count; j++) {
 				property = table->properties[j];
@@ -326,6 +334,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 								    &response.RowData, 0, 0);
 					break;
 				}			
+			}
+
+			/* SandardPropertyRow hack */
+			if (!flagged) {
+				libmapiserver_push_property(mem_ctx, 
+							    lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+							    0x00000000, (const void *)&flagged,
+							    &response.RowData, 0, 1);
 			}
 
 			/* Push the property */

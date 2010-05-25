@@ -116,7 +116,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*rec = NULL;
 	struct emsmdbp_object		*object;
 	uint32_t			handle;
-	int				parentfolder = -1;
+	bool				mapistore = false;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] OpenFolder (0x02)\n"));
 
@@ -138,17 +138,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
-	retval = mapi_handles_get_systemfolder(parent, &parentfolder);
-
-	switch (parentfolder) {
-	case -1:
-	case 0x0:
+	mapistore = emsmdbp_is_mapistore(parent);
+	switch (mapistore) {
+	case false:
 		/* system/special folder */
 		DEBUG(0, ("Opening system/special folder\n"));
 		retval = RopOpenFolder_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response);
 		mapi_repl->error_code = retval;
 		break;
-	default:
+	case true:
 		/* handled by mapistore */
 		DEBUG(0, ("Opening Generic folder\n"));
 		retval = RopOpenFolder_GenericFolder(mem_ctx, emsmdbp_ctx, request, &response, parent);
@@ -164,7 +162,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 
 		object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx, mapi_req, parent);
 		if (object) {
-			retval = mapi_handles_set_systemfolder(rec, object->object.folder->systemfolder);
 			retval = mapi_handles_set_private_data(rec, object);
 		}
 		mapi_repl->opnum = mapi_req->opnum;
@@ -206,7 +203,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	uint64_t		folderID;
 	uint32_t		contextID;
 	uint32_t		handle;
-	int			parentfolder = -1;
+	bool			mapistore = false;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] GetHierarchyTable (0x04)\n"));
 
@@ -220,8 +217,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
-
-	retval = mapi_handles_get_systemfolder(parent, &parentfolder);
 
 	/* Initialize default empty GetHierarchyTable reply */
 	mapi_repl->opnum = mapi_req->opnum;
@@ -250,14 +245,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		return MAPI_E_SUCCESS;
 	}
 
-	switch (parentfolder) {
-	case -1:
-	case 0x1:
+	mapistore = emsmdbp_is_mapistore(parent);
+	DEBUG(0, ("mapistore value is set to %s\n", mapistore == true ? "true" : "false"));
+	switch (mapistore) {
+	case false:
 		/* system/special folder */
 		retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folderID, 
 						       &mapi_repl->u.mapi_GetHierarchyTable.RowCount);
 		break;
-	default:
+	case true:
 		/* handled by mapistore */
 		retval = mapistore_get_folder_count(emsmdbp_ctx->mstore_ctx, contextID, folderID, 
 						    &mapi_repl->u.mapi_GetHierarchyTable.RowCount);

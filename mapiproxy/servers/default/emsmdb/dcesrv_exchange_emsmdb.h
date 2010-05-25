@@ -81,9 +81,8 @@ struct emsmdbp_object_mailbox {
 
 struct emsmdbp_object_folder {
 	uint64_t			folderID;
-	bool				IsSystemFolder;
-	int				systemfolder;
 	uint32_t			contextID;
+	bool				mapistore;
 };
 
 
@@ -147,6 +146,8 @@ bool			emsmdbp_verify_user(struct dcesrv_call_state *, struct emsmdbp_context *)
 bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context *, const char *, struct ldb_message **);
 
 /* definitions from emsmdbp_object.c */
+const char	      *emsmdbp_getstr_type(struct emsmdbp_object *);
+bool		      emsmdbp_is_mapistore(struct mapi_handles *);
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *);
 struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *);
 struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct mapi_handles *);

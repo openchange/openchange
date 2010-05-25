@@ -181,8 +181,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 
 	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
-		retval = mapi_handles_set_systemfolder(rec, 0);
-
 		object = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, mapi_req);
 		retval = mapi_handles_set_private_data(rec, object);
 

@@ -249,8 +249,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	struct GetProps_repl	response;
 	uint32_t		handle;
 	struct mapi_handles	*rec = NULL;
-	int			systemfolder = -1;
 	void			*private_data = NULL;
+	bool			mapistore = false;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesSpecific (0x07)\n"));
 
@@ -277,23 +277,24 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) goto end;
 
-	retval = mapi_handles_get_systemfolder(rec, &systemfolder);
 	retval = mapi_handles_get_private_data(rec, &private_data);
 
-	DEBUG(0, ("GetProps: SystemFolder = %d\n", systemfolder));
-
-	switch (systemfolder) {
-	case -1:
-		/* folder and messages handled by mapistore */
+	mapistore = emsmdbp_is_mapistore(rec);
+	switch (mapistore) {
+	case false:
+		switch (((struct emsmdbp_object *)private_data)->type) {
+		case EMSMDBP_OBJECT_MAILBOX:
+			retval = RopGetPropertiesSpecific_Mailbox(mem_ctx, emsmdbp_ctx, request, &response, private_data);
+		case EMSMDBP_OBJECT_FOLDER:
+			retval = RopGetPropertiesSpecific_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response, private_data);
+			break;
+		default:
+			break;
+		}
+		break;
+	case true:
+		/* folder or messages handled by mapistore */
 		retval = RopGetPropertiesSpecific_mapistore(mem_ctx, emsmdbp_ctx, request, &response, private_data);
-		break;
-	case 0x0:
-		/* private mailbox */
-		retval = RopGetPropertiesSpecific_Mailbox(mem_ctx, emsmdbp_ctx, request, &response, private_data);
-		break;
-	case 0x1:
-		/* system or special folder */
-		retval = RopGetPropertiesSpecific_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response, private_data);
 		break;
 	}
 

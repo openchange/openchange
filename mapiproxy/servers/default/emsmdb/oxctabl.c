@@ -206,7 +206,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object_table	*table;
 	struct QueryRows_req		request;
 	struct QueryRows_repl		response;
-	int				parentfolder = -1;
 	void				*data;
 	char				*table_filter = NULL;
 	uint32_t			handle;
@@ -237,7 +236,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
 	if (retval) goto end;
 
-	retval = mapi_handles_get_systemfolder(parent, &parentfolder);
 	retval = mapi_handles_get_private_data(parent, &data);
 	object = (struct emsmdbp_object *) data;
 
@@ -307,8 +305,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	/* parent folder doesn't have any mapistore context associated */
 	} else {
 		table_filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=0x%.16"PRIx64")(PidTagFolderId=*))", table->folderID);
-		DEBUG(0, ("table_filter: %s\n", table_filter));
-
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 		for (i = 0, count = 0; i < request.RowCount; i++, count++) {
 			flagged = 0;

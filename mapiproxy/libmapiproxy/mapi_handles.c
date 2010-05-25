@@ -395,46 +395,6 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_set_private_data(struct mapi_handles *hand
 }
 
 
-/**
-   \details Get the system folder identifier associated to a MAPI handle
-
-   \param handle pointer to the MAPI handle structure
-   \param systemfolder pointer to the system folder index to retrieve
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
- */
-_PUBLIC_ enum MAPISTATUS mapi_handles_get_systemfolder(struct mapi_handles *handle, int *systemfolder)
-{
-	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!handle, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!systemfolder, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(handle->systemfolder == -1, MAPI_E_NOT_FOUND, NULL);
-
-	*systemfolder = handle->systemfolder;
-	return MAPI_E_SUCCESS;
-}
-
-
-/**
-   \details Set the system folder identifier associated to a MAPI handle
-
-   \param handle pointer to the MAPI handle structure
-   \param systemfolder the system folder index to set
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error
- */
-_PUBLIC_ enum MAPISTATUS mapi_handles_set_systemfolder(struct mapi_handles *handle, int systemfolder)
-{
-	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!handle, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(handle->systemfolder != -1, MAPI_E_UNABLE_TO_COMPLETE, NULL);
-
-	handle->systemfolder = systemfolder;
-
-	return MAPI_E_SUCCESS;
-}
-
-
 struct mapi_handles_private {
 	struct mapi_handles_context	*handles_ctx;
 	uint32_t			container_handle;

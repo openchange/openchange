@@ -29,7 +29,7 @@
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "dcesrv_exchange_emsmdb.h"
 
-static const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
+const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 {
 	switch (object->type) {
 	case EMSMDBP_OBJECT_UNDEF:
@@ -45,6 +45,42 @@ static const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 	default:
 		return "unknown";
 	}
+}
+
+
+/**
+   \details Convenient function to determine whether specified
+   mapi_handles refers to object using mapistore or not
+
+   \param handles pointer to the MAPI handle to lookup
+
+   \return true if parent is using mapistore, otherwise false
+ */
+bool emsmdbp_is_mapistore(struct mapi_handles *handles)
+{
+	void			*data;
+	struct emsmdbp_object	*object;
+
+	/* Sanity checks - probably pointless */
+	if (!handles) {
+		return false;
+	}
+
+	mapi_handles_get_private_data(handles, &data);
+	object = (struct emsmdbp_object *)data;
+
+	switch (object->type) {
+	case EMSMDBP_OBJECT_MAILBOX:
+		return false;
+	case EMSMDBP_OBJECT_FOLDER:
+		return object->object.folder->mapistore;
+	case EMSMDBP_OBJECT_TABLE:
+		return object->object.table->mapistore;
+	default:
+		return false;
+	}
+
+	return false;
 }
 
 
@@ -214,19 +250,18 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 	retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx,
 					       object->object.folder->folderID, &mapistore_uri);
 
-	if (retval == MAPI_E_SUCCESS && !mapistore_uri) {
-		object->object.folder->systemfolder = -1;
-		object->object.folder->IsSystemFolder = true;
-	} else if (retval == MAPI_E_SUCCESS && mapistore_uri) {
-		object->object.folder->systemfolder = 1;
-		object->object.folder->IsSystemFolder = false;
-		ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, mapistore_uri, &context_id);
-		if (ret != MAPISTORE_SUCCESS) {
-			talloc_free(object);
-			return NULL;
+	if (retval == MAPI_E_SUCCESS) {
+		if (!mapistore_uri) {
+			object->object.folder->mapistore = false;
+		} else {
+			object->object.folder->mapistore = true;
+			ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, mapistore_uri, &context_id);
+			if (ret != MAPISTORE_SUCCESS) {
+				talloc_free(object);
+				return NULL;
+			}
+			object->object.folder->contextID = context_id;
 		}
-		object->object.folder->contextID = context_id;
-		
 	} else {
 		talloc_free(object);
 		return NULL;
@@ -253,7 +288,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object	*object;
 	struct emsmdbp_object	*folder;
 	void			*data = NULL;
-	int			mailboxfolder;
+	bool			mapistore = false;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
@@ -283,17 +318,11 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->mapistore = false;
 	object->object.table->contextID = -1;
 
-	/* Check if the parent object has a mapistore_uri associated */
-	if ((folder->object.folder->systemfolder == 1) && 
-	    (folder->object.folder->IsSystemFolder == false)) {
+	mapistore = emsmdbp_is_mapistore(parent);
+	if (mapistore == true) {
 		object->object.table->mapistore = true;
-		object->object.table->contextID = folder->object.folder->contextID;
+		object->object.table->contextID = folder->object.folder->contextID;		
 	}
-
-	retval = mapi_handles_get_systemfolder(parent, &mailboxfolder);
-	object->object.table->IsSystemTable = (!mailboxfolder) ? true : false;
-
-	/* FIXME: missing mapistore folders support */
 
 	return object;
 }

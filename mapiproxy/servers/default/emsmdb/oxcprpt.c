@@ -290,6 +290,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 		switch (((struct emsmdbp_object *)private_data)->type) {
 		case EMSMDBP_OBJECT_MAILBOX:
 			retval = RopGetPropertiesSpecific_Mailbox(mem_ctx, emsmdbp_ctx, request, &response, private_data);
+			break;
 		case EMSMDBP_OBJECT_FOLDER:
 			retval = RopGetPropertiesSpecific_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response, private_data);
 			break;

@@ -372,6 +372,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *ldb_ctx,
 
 	/* Step 2. Convert proptag into PidTag attribute */
 	PidTagAttr = openchangedb_property_get_attribute(proptag);
+	OPENCHANGE_RETVAL_IF(!PidTagAttr, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 3. Search for attribute */
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);

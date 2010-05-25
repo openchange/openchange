@@ -1600,6 +1600,9 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 			
 		}
 	}
+	mapi_object_release(&obj_htable);
+	mapi_object_release(&obj_folder);
+
 	return true;
 }
 

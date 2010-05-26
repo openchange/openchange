@@ -268,6 +268,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*rec = NULL;
 	void			*private_data = NULL;
 	bool			mapistore = false;
+	struct emsmdbp_object	*object;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesSpecific (0x07)\n"));
 
@@ -301,23 +302,35 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	if (!private_data) {
 		mapistore = true;
 	}
-	switch (mapistore) {
-	case false:
-		switch (((struct emsmdbp_object *)private_data)->type) {
-		case EMSMDBP_OBJECT_MAILBOX:
-			retval = RopGetPropertiesSpecific_Mailbox(mem_ctx, emsmdbp_ctx, request, &response, private_data);
+
+	/* Temporary hack: If this is a mapistore root container
+	 * (e.g. Inbox, Calendar etc.), directly stored under
+	 * IPM.Subtree, then fetch properties from openchange
+	 * dispatcher db, not mapistore */
+	object = (struct emsmdbp_object *) private_data;
+	if (object && object->type == EMSMDBP_OBJECT_FOLDER &&
+	    object->object.folder->mapistore_root == true) {
+		retval = RopGetPropertiesSpecific_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, 
+								      request, &response, private_data);
+	} else {
+		switch (mapistore) {
+		case false:
+			switch (object->type) {
+			case EMSMDBP_OBJECT_MAILBOX:
+				retval = RopGetPropertiesSpecific_Mailbox(mem_ctx, emsmdbp_ctx, request, &response, private_data);
+				break;
+			case EMSMDBP_OBJECT_FOLDER:
+				retval = RopGetPropertiesSpecific_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response, private_data);
+				break;
+			default:
+				break;
+			}
 			break;
-		case EMSMDBP_OBJECT_FOLDER:
-			retval = RopGetPropertiesSpecific_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response, private_data);
-			break;
-		default:
+		case true:
+			/* folder or messages handled by mapistore */
+			retval = RopGetPropertiesSpecific_mapistore(mem_ctx, emsmdbp_ctx, request, &response, private_data);
 			break;
 		}
-		break;
-	case true:
-		/* folder or messages handled by mapistore */
-		retval = RopGetPropertiesSpecific_mapistore(mem_ctx, emsmdbp_ctx, request, &response, private_data);
-		break;
 	}
 
 	mapi_repl->error_code = MAPI_E_SUCCESS;

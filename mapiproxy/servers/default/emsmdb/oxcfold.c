@@ -75,7 +75,7 @@ static enum MAPISTATUS RopOpenFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 	}
 
 	if (parent_object->type != EMSMDBP_OBJECT_FOLDER) {
-		DEBUG(4, ("exchane_emsmdb: [OXCFOLD] OpenFolder wrong object type: 0x%x\n", parent_object->type));
+		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] OpenFolder wrong object type: 0x%x\n", parent_object->type));
 		return MAPI_E_NO_SUPPORT;
 	}
 	parent_fid = parent_object->object.folder->folderID;

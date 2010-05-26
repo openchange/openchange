@@ -243,6 +243,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 	object->type = EMSMDBP_OBJECT_FOLDER;
 	object->object.folder->contextID = -1;
 	object->object.folder->folderID = request->u.mapi_OpenFolder.folder_id;
+	object->object.folder->mapistore_root = false;
 
 	/* system folders acting as containers don't have
 	 * mapistore_uri attributes (Mailbox, IPM Subtree) 
@@ -252,9 +253,12 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 
 	if (retval == MAPI_E_SUCCESS) {
 		if (!mapistore_uri) {
+			DEBUG(0, ("This is not a mapistore container\n"));
 			object->object.folder->mapistore = false;
 		} else {
+			DEBUG(0, ("This is a mapistore container\n"));
 			object->object.folder->mapistore = true;
+			object->object.folder->mapistore_root = true;
 			ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, mapistore_uri, &context_id);
 			if (ret != MAPISTORE_SUCCESS) {
 				talloc_free(object);

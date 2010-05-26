@@ -83,6 +83,7 @@ struct emsmdbp_object_folder {
 	uint64_t			folderID;
 	uint32_t			contextID;
 	bool				mapistore;
+	bool				mapistore_root; /* root mapistore container or not */
 };
 
 

@@ -51,14 +51,11 @@ _PUBLIC_ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *request,
 		return size;
 	}
 
-	switch (request->u.mapi_Logon.LogonFlags) {
-	case LogonPrivate:
+	if (request->u.mapi_Logon.LogonFlags & LogonPrivate) {
 		size += SIZE_DFLT_ROPLOGON_MAILBOX;
-		break;
-	default:
-		break;
+	} else {
+		size += SIZE_DFLT_ROPLOGON_PUBLICFOLDER;
 	}
-
 	return size;
 }
 

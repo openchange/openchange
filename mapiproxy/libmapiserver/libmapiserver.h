@@ -209,6 +209,16 @@
 #define	SIZE_DFLT_ROPLOGON_MAILBOX	160
 
 /**
+   \details LogonRop has a fixed size for public folder logon:
+   -# LogonFlags: uint8_t
+   -# FolderIDs: uint64_t * 13
+   -# ReplId: uint16_t
+   -# ReplGuid: sizeof (struct GUID) = 16 bytes
+   -# PerUserGuid: sizeof (struct GUID) = 16 bytes
+ */
+#define	SIZE_DFLT_ROPLOGON_PUBLICFOLDER	139
+
+/**
    \details LogonRop has a fixed size for redirect response:
    -# LogonFlags: uint8_t
    -# ServerNameSize: uint8_t

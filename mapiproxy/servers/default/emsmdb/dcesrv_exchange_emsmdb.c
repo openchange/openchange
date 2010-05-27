@@ -381,13 +381,13 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		case op_MAPI_CreateFolder: /* 0x1c */
 			retval = EcDoRpc_RopCreateFolder(mem_ctx, emsmdbp_ctx,
 							 &(mapi_request->mapi_req[i]),
-							 &(mapi_response->mapi_repl[i]),
+							 &(mapi_response->mapi_repl[idx]),
 							 mapi_response->handles, &size);
 			break;
 		case op_MAPI_DeleteFolder: /* 0x1d */
 			retval = EcDoRpc_RopDeleteFolder(mem_ctx, emsmdbp_ctx,
 							 &(mapi_request->mapi_req[i]),
-							 &(mapi_response->mapi_repl[i]),
+							 &(mapi_response->mapi_repl[idx]),
 							 mapi_response->handles, &size);
 			break;
 		case op_MAPI_DeleteMessages: /* 0x1e */

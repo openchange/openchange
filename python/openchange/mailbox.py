@@ -165,6 +165,7 @@ GlobalCount: 0x%x
         self.ldb.add({"dn": retdn,
                   "objectClass": ["mailbox", "container"],
                   "PidTagDisplayName": "OpenChange Mailbox: %s" % (username),
+                  "PidTagParentFolderId": "0x0000000000000000",
                   "cn": username,
                   "MailboxGUID": mailboxGUID,
                   "ReplicaID": replicaID,
@@ -235,7 +236,7 @@ GlobalCount: 0x%x
             raise Exception("Invalid search (PidTagFolderId=%s)" % parentfolder)
 
         # Step 3. Add root folder to correct container
-        if (foldername == "IPM Subtree"):
+        if (foldername == "IPM Subtree" or foldername == "To-Do Search"):
             self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
                           "objectClass": ["systemfolder", "container"],
                           "cn": FID,

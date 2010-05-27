@@ -302,18 +302,19 @@ def newmailbox(lp, username, firstorg, firstou, backend):
     system_folders = ({
         "Deferred Actions": ({}, 2),
         "Spooler Queue": ({}, 3),
+        "To-Do Search": ({}, 4),
         "IPM Subtree": ({
-            "Inbox": ({}, 5),
-            "Outbox": ({}, 6),
-            "Sent Items": ({}, 7),
-            "Deleted Items": ({}, 8),
-        }, 4),
-        "Common Views": ({}, 9),
-        "Schedule": ({}, 10),
-        "Search": ({}, 11),
-        "Views": ({}, 12),
-        "Shortcuts": ({}, 13),
-        "Reminders": ({}, 14),
+            "Inbox": ({}, 6),
+            "Outbox": ({}, 7),
+            "Sent Items": ({}, 8),
+            "Deleted Items": ({}, 9),
+        }, 5),
+        "Common Views": ({}, 10),
+        "Schedule": ({}, 11),
+        "Search": ({}, 12),
+        "Views": ({}, 13),
+        "Shortcuts": ({}, 14),
+        "Reminders": ({}, 15),
     }, 1)
 
     fids = {}

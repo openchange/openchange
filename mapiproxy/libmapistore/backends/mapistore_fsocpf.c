@@ -51,6 +51,7 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 {
 	DIR				*top_dir;
 	struct fsocpf_context		*fsocpf_ctx;
+	struct folder_list_context	*el;
 	int				len;
 	int				i;
 
@@ -90,6 +91,15 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 		}
 	}
 
+	/* Create the entry in the list for top mapistore folders */
+	el = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, struct folder_list_context);
+	el->ctx = talloc_zero((TALLOC_CTX *)el, struct folder_list);
+	el->ctx->fid = fsocpf_ctx->fid;
+	el->ctx->path = talloc_strdup(fsocpf_ctx, uri);
+	el->ctx->dir = top_dir;
+	DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
+	DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->ctx->fid));
+
 	/* Step 3. Store fsocpf context within the opaque private_data pointer */
 	*private_data = (void *)fsocpf_ctx;
 
@@ -125,7 +135,9 @@ static int fsocpf_delete_context(void *private_data)
 		return MAPISTORE_SUCCESS;
 	}
 
-	closedir(fsocpf_ctx->dir);
+	if (fsocpf_ctx->dir) {
+		closedir(fsocpf_ctx->dir);
+	}
 	talloc_free(fsocpf_ctx);
 
 	return MAPISTORE_SUCCESS;
@@ -139,13 +151,67 @@ static int fsocpf_delete_context(void *private_data)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_op_mkdir(void *private_data)
+static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid,
+			   struct SRow *aRow)
 {
-	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	TALLOC_CTX			*mem_ctx;
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct folder_list_context	*el;
+	struct mapi_SPropValue_array	mapi_lpProps;
+	bool				found = false;
+	char				*newfolder;
+	char				*propfile;
+	int				ret;
+	int				i;
+
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
 	if (!fsocpf_ctx) {
+		DEBUG(0, ("No fsocpf context found :-(\n"));
 		return MAPISTORE_ERROR;
 	}
+
+	/* Step 1. Search for the parent fid */
+	for (el = fsocpf_ctx->folders; el; el = el->next) {
+		if (el->ctx && el->ctx->fid == parent_fid) {
+			found = true;
+			break;
+		}
+	}
+	if (found == false) {
+		DEBUG(0, ("parent context for folder 0x%.16llx not found\n", parent_fid));
+		return MAPISTORE_ERR_NO_DIRECTORY;
+	}
+
+	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_mkdir");
+
+	/* Step 2. Stringify fid and create directory */
+	newfolder = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, el->ctx->path, fid);
+	DEBUG(0, ("newfolder = %s\n", newfolder));
+	ret = mkdir(newfolder, 0700);
+	if (ret) {
+		DEBUG(0, ("mkdir failed with ret = %d\n", ret));
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERROR;
+	}
+
+	/* Step 3. Create the array of mapi properties */
+	mapi_lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, aRow->cValues);
+	mapi_lpProps.cValues = aRow->cValues;
+	for (i = 0; i < aRow->cValues; i++) {
+		cast_mapi_SPropValue(&(mapi_lpProps.lpProps[i]), &(aRow->lpProps[i]));
+	}
+
+	/* Step 3. Create the .properties file */
+	ocpf_init();
+	propfile = talloc_asprintf(mem_ctx, "%s/.properties", newfolder);
+	talloc_free(newfolder);
+
+	ocpf_write_init(propfile, fid);
+	DEBUG(0, ("Writing %s\n", propfile));
+	ocpf_write_auto(NULL, &mapi_lpProps);
+	ocpf_write_commit();
+	ocpf_release();
 
 	return MAPISTORE_SUCCESS;
 }
@@ -194,7 +260,7 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 		return MAPISTORE_ERROR;
 	}
 
-	/* Step 0. If fid equals top folder fid, it is already open*/
+	/* Step 0. If fid equals top folder fid, it is already open */
 	if (fsocpf_ctx->fid == fid) {
 		/* If we access it for the first time, just add an entry to the folder list */
 		if (!fsocpf_ctx->folders->ctx) {
@@ -358,6 +424,8 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	uint32_t		cValues = 0;
 	struct SPropValue	*lpProps;
 
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
 	/* Set dir listing to current position */
 	rewinddir(ctx->dir);
 	errno = 0;
@@ -398,11 +466,6 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	/* process the file */
 	ret = ocpf_parse(propfile);
 	talloc_free(propfile);
-	if (ret == -1) {
-		ocpf_release();
-		*data = NULL;
-		return MAPI_E_INVALID_OBJECT;
-	}
 	
 	ocpf_set_SPropValue_array(ctx);
 	lpProps = ocpf_get_SPropValue(&cValues);
@@ -411,7 +474,13 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	talloc_steal(ctx, lpProps);
 
 	*data = (void *) get_SPropValue(lpProps, proptag);
-	if ((proptag & 0xFFFF) == PT_STRING8 || (proptag & 0xFFFF) == PT_UNICODE) {
+	if (((proptag & 0xFFFF) == PT_STRING8) || ((proptag & 0xFFFF) == PT_UNICODE)) {
+		/* Hack around PT_STRING8 and PT_UNICODE */
+		if (*data == NULL && ((proptag & 0xFFFF) == PT_STRING8)) {
+			*data = (void *) get_SPropValue(lpProps, (proptag & 0xFFFF0000) + PT_UNICODE);
+		} else if (*data == NULL && (proptag & 0xFFFF) == PT_UNICODE) {
+			*data = (void *) get_SPropValue(lpProps, (proptag & 0xFFFF0000) + PT_STRING8);
+		}
 		*data = talloc_strdup(ctx, (char *)*data);
 	}
 

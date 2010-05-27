@@ -61,7 +61,7 @@ struct mapistore_backend {
 	int (*create_context)(TALLOC_CTX *, const char *, void **);
 	int (*delete_context)(void *);
 	/* folders semantic */
-	int (*op_mkdir)(void *);
+  int (*op_mkdir)(void *, uint64_t, uint64_t, struct SRow *);
 	int (*op_rmdir)(void *);
 	int (*op_opendir)(void *, uint64_t, uint64_t);
 	int (*op_closedir)(void *);
@@ -108,7 +108,7 @@ int mapistore_del_context(struct mapistore_context *, uint32_t);
 const char *mapistore_errstr(int);
 int mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
 int mapistore_closedir(struct mapistore_context *mstore_ctx, uint32_t, uint64_t);
-int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapi_SPropValue *);
+int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct SRow *);
 int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, uint64_t, 

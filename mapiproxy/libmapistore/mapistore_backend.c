@@ -363,6 +363,15 @@ int mapistore_backend_opendir(struct backend_context *bctx, uint64_t parent_fid,
 }
 
 
+int mapistore_backend_mkdir(struct backend_context *bctx, 
+			    uint64_t parent_fid, 
+			    uint64_t fid,
+			    struct SRow *aRow)
+{
+	return bctx->backend->op_mkdir(bctx->private_data, parent_fid, fid, aRow);
+}
+
+
 int mapistore_backend_readdir_count(struct backend_context *bctx, uint64_t fid, uint8_t table_type, 
 				    uint32_t *RowCount)
 {
@@ -381,3 +390,5 @@ int mapistore_backend_get_table_property(struct backend_context *bctx, uint64_t 
 {
 	return bctx->backend->op_get_table_property(bctx->private_data, fid, table_type, pos, proptag, data);
 }
+
+

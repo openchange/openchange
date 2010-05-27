@@ -26,8 +26,10 @@
  */
 
 #include "libmapiserver.h"
+#include <libmapi/libmapi.h>
 #include <libmapi/mapidefs.h>
 #include <gen_ndr/ndr_exchange.h>
+#include <util/debug.h>
 
 /**
    \details Calculate GetPropertiesSpecific Rop size
@@ -221,4 +223,61 @@ end:
 
 	talloc_free(ndr);
 	return 0;
+}
+
+
+/**
+   \details Turn request parameters to SPropValue array. This
+   convenient function should be used among MAPI ROPs that have
+   parameters which can be turned to MAPI properties and are stored
+   within backends.
+
+   \param mem_ctx pointer to the memory context
+   \param request generic pointer to the ROP request
+   \param opnum MAPI opnum identifying ROP contents
+
+   \note Developers must talloc_free returned SRow after they finish
+   using it.
+
+   \return Allocated SRow on success, otherwise NULL
+ */
+_PUBLIC_ struct SRow *libmapiserver_ROP_request_to_properties(TALLOC_CTX *mem_ctx, 
+							      void *request, 
+							      uint8_t opnum)
+{
+	struct SRow			*aRow;
+	struct CreateFolder_req		*CreateFolder_req;
+
+	aRow = talloc_zero(mem_ctx, struct SRow);
+	aRow->lpProps = talloc_array(aRow, struct SPropValue, 2);
+	aRow->cValues = 0;
+
+	switch (opnum) {
+	case op_MAPI_CreateFolder:
+		CreateFolder_req = (struct CreateFolder_req *) request;
+		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+					       PR_FOLDER_TYPE, (void *)&(CreateFolder_req->ulFolderType));
+		switch (CreateFolder_req->ulType) {
+		case MAPI_FOLDER_ANSI:
+			aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+						       PR_DISPLAY_NAME, (void *)(CreateFolder_req->FolderName.lpszA));
+			aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+						       PR_COMMENT, (void *)(CreateFolder_req->FolderComment.lpszA));
+			break;
+		case MAPI_FOLDER_UNICODE:
+			aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+						       PR_DISPLAY_NAME_UNICODE, (void *)(CreateFolder_req->FolderName.lpszW));
+			aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+						       PR_COMMENT_UNICODE, (void *)(CreateFolder_req->FolderComment.lpszW));
+			break;
+		}
+		
+		break;
+	default:
+		DEBUG(0, ("[%s:%d]: opnum %d not implemented yet\n", __FUNCTION__, __LINE__, opnum));
+		talloc_free(aRow);
+		return NULL;
+	}
+	
+	return aRow;
 }

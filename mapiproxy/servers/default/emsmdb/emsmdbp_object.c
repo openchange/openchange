@@ -211,15 +211,13 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
-   \param request pointer to the OpenFolder MAPI request
-   \param parent pointer to the parent MAPI handle
+   \param folderID the folder identifier
 
    \return Allocated emsmdbp object on success, otherwise NULL
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 							   struct emsmdbp_context *emsmdbp_ctx,
-							   struct EcDoRpc_MAPI_REQ *request,
-							   struct mapi_handles *parent)
+							   uint64_t folderID)
 {
 	enum MAPISTATUS			retval;
 	struct emsmdbp_object		*object;
@@ -229,7 +227,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
-	if (!request) return NULL;
 
 	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
 	if (!object) return NULL;
@@ -242,7 +239,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 
 	object->type = EMSMDBP_OBJECT_FOLDER;
 	object->object.folder->contextID = -1;
-	object->object.folder->folderID = request->u.mapi_OpenFolder.folder_id;
+	object->object.folder->folderID = folderID;
 	object->object.folder->mapistore_root = false;
 
 	/* system folders acting as containers don't have
@@ -267,6 +264,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 			object->object.folder->contextID = context_id;
 		}
 	} else {
+		/* object->object.folder->mapistore = false; */
+		DEBUG(0, ("error in emsmdbp_object_folder_init, retval = 0x%.8x\n", retval));
 		talloc_free(object);
 		return NULL;
 	}

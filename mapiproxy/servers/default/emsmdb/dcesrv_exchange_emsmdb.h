@@ -120,16 +120,17 @@ struct emsmdbp_object {
 #define	EMSMDBP_MAILBOX_ROOT		0x1
 #define	EMSMDBP_DEFERRED_ACTIONS	0x2
 #define	EMSMDBP_SPOOLER_QUEUE		0x3
-#define	EMSMDBP_TOP_INFORMATION_STORE	0x4
-#define	EMSMDBP_INBOX			0x5
-#define	EMSMDBP_OUTBOX			0x6
-#define	EMSMDBP_SENT_ITEMS		0x7
-#define	EMSMDBP_DELETED_ITEMS		0x8
-#define	EMSMDBP_COMMON_VIEWS		0x9
-#define	EMSMDBP_SCHEDULE		0xA
-#define	EMSMDBP_SEARCH			0xB
-#define	EMSMDBP_VIEWS			0xC
-#define	EMSMDBP_SHORTCUTS		0xD
+#define	EMSMDBP_TODO_SEARCH		0x4
+#define	EMSMDBP_TOP_INFORMATION_STORE	0x5
+#define	EMSMDBP_INBOX			0x6
+#define	EMSMDBP_OUTBOX			0x7
+#define	EMSMDBP_SENT_ITEMS		0x8
+#define	EMSMDBP_DELETED_ITEMS		0x9
+#define	EMSMDBP_COMMON_VIEWS		0xA
+#define	EMSMDBP_SCHEDULE		0xB
+#define	EMSMDBP_SEARCH			0xC
+#define	EMSMDBP_VIEWS			0xD
+#define	EMSMDBP_SHORTCUTS		0xE
 
 #define	EMSMDBP_TABLE_FOLDER_TYPE	0x1
 #define	EMSMDBP_TABLE_MESSAGE_TYPE	0x2
@@ -151,7 +152,7 @@ const char	      *emsmdbp_getstr_type(struct emsmdbp_object *);
 bool		      emsmdbp_is_mapistore(struct mapi_handles *);
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *);
 struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *);
-struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct mapi_handles *);
+struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct mapi_handles *);
 
 /* definitions from oxcfold.c */

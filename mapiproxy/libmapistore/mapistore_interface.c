@@ -174,6 +174,8 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
+	if (context_id == -1) return MAPISTORE_ERROR;
+
 	/* Step 0. Ensure the context exists */
 	DEBUG(0, ("mapistore_del_context: context_id to del is %d\n", context_id));
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
@@ -304,27 +306,31 @@ _PUBLIC_ int mapistore_closedir(struct mapistore_context *mstore_ctx,
    where the directory will be created
    \param parent_fid the parent folder identifier
    \param new_fid the folder identifier for the new folder
-   \param properties pointer to MAPI data structures with properties
-   applied to the new folder
+   \param aRow pointer to MAPI data structures with properties to be
+   added to the new folder
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ int mapistore_mkdir(struct mapistore_context *mstore_ctx,
 			     uint32_t context_id,
 			     uint64_t parent_fid,
-			     uint64_t new_fid,
-			     struct mapi_SPropValue *properties)
+			     uint64_t fid,
+			     struct SRow *aRow)
 {
 	struct backend_context		*backend_ctx;
+	int				ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
-	/* Step 0. Ensure the context exists */
+	/* Step 1. Search the context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);	
+	
+	/* Step 2. Call backend mkdir */
+	ret = mapistore_backend_mkdir(backend_ctx, parent_fid, fid, aRow);
 
-	return MAPISTORE_SUCCESS;
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
 

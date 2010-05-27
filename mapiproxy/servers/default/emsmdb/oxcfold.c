@@ -130,8 +130,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	request = mapi_req->u.mapi_OpenFolder;
 	response = mapi_repl->u.mapi_OpenFolder;
 
-	mapi_repl->u.mapi_OpenFolder.HasRules = 0;
-	mapi_repl->u.mapi_OpenFolder.IsGhosted = 0;
+	response.HasRules = 0;
+	response.IsGhosted = 0;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
@@ -160,7 +160,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 
-		object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx, mapi_req, parent);
+		object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx, request.folder_id);
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
 		}
@@ -327,31 +327,37 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 }
 
 
-static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *emsmdbp_ctx,
-						      union LPTSTR folderName, uint32_t parentFolder,
-						      enum FOLDER_FLAGS folderFlags,
-						      uint64_t *folderID, uint8_t *isExisting)
+static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_context *emsmdbp_ctx,
+							    struct SRow *aRow, 
+							    enum FOLDER_FLAGS folderFlags,
+							    uint64_t parentFolder,
+							    struct CreateFolder_repl *response)
 {
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
 	struct ldb_message              *msg;
 	struct ldb_dn                   *basedn;
-	uint64_t			fid = 0;
 	char                            *dn;
-	char				*fid_formatted;
-	char				*parentfid_formatted;
+	char				*parentfid;
 	int				ret = 0;
+	char				*displayName;
+	char				*comment;
+	uint32_t			*folderType;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateGenericFolder\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateSystemSpecialFolder\n"));
+
+	displayName = (char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME);
+	if (!displayName) {
+		displayName = (char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
+	}
 
 	/* Step 0. Determine if the folder already exists */
 	if (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, parentFolder,
-					 folderName.lpszA, &fid) == MAPI_E_SUCCESS) {
+					 displayName, &response->folder_id) == MAPI_E_SUCCESS) {
 		/* this folder already exists */
 		if ( folderFlags & OPEN_IF_EXISTS ) {
 		  	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder Duplicate Folder\n"));
-			*isExisting = true;
-			*folderID = fid;
+			response->IsExistingFolder = true;
 			return MAPI_E_SUCCESS;
 		} else {
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder Duplicate Folder error\n"));
@@ -359,26 +365,22 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 		}
 	}
 
-	mem_ctx = talloc_named(NULL, 0, "RopCreateGenericFolder");
-
-	/* TODO:
-	   - We need to pass more information to underlying functions
-             so folder creation also include customizable folder
-             comment, class and so on.
-	 */
+	mem_ctx = talloc_named(NULL, 0, "RopCreateSystemSpecialFolder");
 
 	/* Step 1. Retrieve the next available folderID */
-	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &fid);
+	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &response->folder_id);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Retrieve dn of parentfolder */
+	retval = openchangedb_get_distinguishedName(mem_ctx, emsmdbp_ctx->oc_ctx, parentFolder, &parentfid);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Step 2. Create the folder LDB record for openchange.ldb */
-	fid_formatted = talloc_asprintf(mem_ctx, "0x%016"PRIx64, fid);
-	parentfid_formatted = talloc_asprintf(mem_ctx, "0x%016x", parentFolder);
-	*folderID = fid;
-	
-	dn = talloc_asprintf(mem_ctx, "CN=%s,CN=%s,CN=%s,%s", fid_formatted, 
-			     parentfid_formatted, emsmdbp_ctx->username,
-			     ldb_dn_get_linearized(ldb_get_root_basedn(emsmdbp_ctx->oc_ctx)));
+	dn = talloc_asprintf(mem_ctx, "CN=%016"PRIx64",%s", response->folder_id, parentfid);
+
+	/* Ensure dn is within user mailbox / prevent from creating
+	 * folders in other mailboxes: check dn vs emsmdbp_ctx->username */
+
 	basedn = ldb_dn_new(mem_ctx, emsmdbp_ctx->oc_ctx, dn);
 	talloc_free(dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, mem_ctx);
@@ -386,29 +388,116 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 	msg = ldb_msg_new(mem_ctx);
 	msg->dn = ldb_dn_copy(mem_ctx, basedn);
 	ldb_msg_add_string(msg, "objectClass", "systemfolder");
-	ldb_msg_add_string(msg, "cn", fid_formatted);
+	ldb_msg_add_fmt(msg, "cn", "0x%.16"PRIx64, response->folder_id);
 	ldb_msg_add_string(msg, "PidTagContentUnreadCount", "0");
 	ldb_msg_add_string(msg, "PidTagContentCount", "0");
 	ldb_msg_add_string(msg, "PidTagContainerClass", "IPF.Note");
 	ldb_msg_add_string(msg, "PidTagAttrHidden", "0");
-	ldb_msg_add_string(msg, "PidTagDisplayName", folderName.lpszA);
-	ldb_msg_add_string(msg, "PidTagParentFolderId", parentfid_formatted);
-	ldb_msg_add_string(msg, "PidTagFolderId", fid_formatted);
-	ldb_msg_add_fmt(msg, "mapistore_uri", "fsocpf:///usr/local/samba/private/mapistore/%s/%s", 
-			emsmdbp_ctx->username, fid_formatted);
+	ldb_msg_add_string(msg, "PidTagDisplayName", displayName);
+
+	folderType = (uint32_t *) find_SPropValue_data(aRow, PR_FOLDER_TYPE);
+	ldb_msg_add_fmt(msg, "PidTagFolderType", "%d", *folderType);
+
+	comment = (char *) find_SPropValue_data(aRow, PR_COMMENT);
+	if (!comment) {
+		comment = (char *) find_SPropValue_data(aRow, PR_COMMENT_UNICODE);
+	}
+	ldb_msg_add_string(msg, "PidTagComment", comment);
+
+	ldb_msg_add_fmt(msg, "PidTagParentFolderId", "0x%.16"PRIx64, parentFolder);
+	ldb_msg_add_fmt(msg, "PidTagFolderId", "0x%.16"PRIx64, response->folder_id);
+	ldb_msg_add_fmt(msg, "mapistore_uri", "fsocpf:///usr/local/samba/private/mapistore/%s/%.16"PRIx64, 
+			emsmdbp_ctx->username, response->folder_id);
 	ldb_msg_add_string(msg, "PidTagSubFolders", "0");
 	ldb_msg_add_string(msg, "FolderType", "1");
 	ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
 
+	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
+
 	ret = ldb_add(emsmdbp_ctx->oc_ctx, msg);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
 
-	talloc_free(fid_formatted);
-	talloc_free(parentfid_formatted);
+	talloc_free(parentfid);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }
+
+
+static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *emsmdbp_ctx,
+						      struct mapi_handles *parent,
+						      struct SRow *aRow,
+						      enum FOLDER_FLAGS folderFlags,
+						      struct CreateFolder_repl *response)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum MAPISTATUS		retval;
+	int			ret;
+	struct ldb_result	*res = NULL;
+	struct ldb_message	*msg;
+	
+	struct ldb_dn		*ldb_dn;
+	struct emsmdbp_object	*parent_object = NULL;
+	const char * const	attrs[] = { "*", NULL };
+	void			*data;
+	uint64_t		parent_fid;
+	uint32_t		context_id;
+	char			*parentfid;
+	int			count;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateGenericFolder\n"));
+
+	/* Step 1. Retrieve the parent fid given the handle */
+	mapi_handles_get_private_data(parent, &data);
+	parent_object = (struct emsmdbp_object *) data;
+	/* checks are already done in upper function / code factorization required */
+
+	parent_fid = parent_object->object.folder->folderID;
+	context_id = parent_object->object.folder->contextID;
+
+	/* Step 0. Determine if the folder already exists */
+
+	/* Step 1. Retrieve the next available folderID */
+	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &response->folder_id);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 2. Create folder in mapistore */
+	retval = mapistore_mkdir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid, response->folder_id, 
+				 aRow);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Update openchangedb record if needed */
+	if (parent_object->type == EMSMDBP_OBJECT_FOLDER && parent_object->object.folder->mapistore_root == true) {
+		mem_ctx = talloc_named(NULL, 0, "RopCreateGenericFolder");
+
+		/* Retrieve previous value */
+		ret = ldb_search(emsmdbp_ctx->oc_ctx, mem_ctx, &res, ldb_get_default_basedn(emsmdbp_ctx->oc_ctx),
+				 LDB_SCOPE_SUBTREE, attrs, "PidTagFolderId=0x%.16"PRIx64, parent_fid);
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+		count = ldb_msg_find_attr_as_int(res->msgs[0], "PidTagFolderChildCount", 0);
+		
+		/* Update record */
+		retval = openchangedb_get_distinguishedName(mem_ctx, emsmdbp_ctx->oc_ctx, parent_fid, &parentfid);
+		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+		ldb_dn = ldb_dn_new(mem_ctx, emsmdbp_ctx->oc_ctx, parentfid);
+		OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_BAD_VALUE, mem_ctx);
+
+		msg = ldb_msg_new(mem_ctx);
+		msg->dn = ldb_dn_copy(mem_ctx, ldb_dn);
+		ldb_msg_add_fmt(msg, "PidTagFolderChildCount", "%d", count + 1);
+		msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+
+		ret = ldb_modify(emsmdbp_ctx->oc_ctx, msg);
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+
+		talloc_free(mem_ctx);
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
 
 /**
    \details EcDoRpc CreateFolder (0x1c) Rop. This operation creates a
@@ -433,17 +522,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 						 struct EcDoRpc_MAPI_REPL *mapi_repl,
 						 uint32_t *handles, uint16_t *size)
 {
-	enum MAPISTATUS		retval;
-	struct mapi_handles	*parent = NULL;
-	uint32_t		handle;
-	uint64_t		parent_fid;
-	uint64_t		fid = 0;
-	struct emsmdbp_object	*parent_object = NULL;
-	struct emsmdbp_object	*object = NULL;
-	void			*data;
-	struct mapi_handles	*rec = NULL;
-	uint32_t		folder_handle;
-	uint8_t			isExisting = 0;
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*parent = NULL;
+	uint32_t			handle;
+	uint64_t			parent_fid;
+	struct emsmdbp_object		*parent_object = NULL;
+	struct emsmdbp_object		*object = NULL;
+	struct SRow			*aRow;
+	void				*data;
+	struct mapi_handles		*rec = NULL;
+	bool				mapistore = false;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder (0x1c)\n"));
 
@@ -454,7 +542,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	/* Step 1. Search for the parent FID using handles */
+	mapi_repl->u.mapi_CreateFolder.IsExistingFolder = false;
+
+	mapi_repl->opnum = mapi_req->opnum;
+
+	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
@@ -476,54 +568,63 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder parent: 0x%"PRIx64"\n", parent_fid));
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Creating %s\n", mapi_req->u.mapi_CreateFolder.FolderName.lpszA));
 	
-	/* Step 2. Initialize default empty CreateFolder reply */
-	mapi_repl->opnum = mapi_req->opnum;
-	mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx;
-	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->u.mapi_CreateFolder.folder_id = 0;
-	mapi_repl->u.mapi_CreateFolder.IsExistingFolder = false;
+	/* Step 3. Turn CreateFolder parameters into MAPI property array */
+	aRow = libmapiserver_ROP_request_to_properties(mem_ctx, (void *)&mapi_req->u.mapi_CreateFolder, op_MAPI_CreateFolder);
 
-	/* Step 3. Do effective work here */
-	switch (mapi_req->u.mapi_CreateFolder.ulFolderType) {
-	case FOLDER_GENERIC:
-		mapi_repl->error_code = EcDoRpc_RopCreateGenericFolder(emsmdbp_ctx,
-								       mapi_req->u.mapi_CreateFolder.FolderName,
-								       parent_fid,
+	/* Step 4. Do effective work here */
+	mapistore = emsmdbp_is_mapistore(parent);
+	switch (mapistore) {
+	case false:
+		switch (mapi_req->u.mapi_CreateFolder.ulType) {
+		case FOLDER_GENERIC:
+			mapi_repl->error_code = EcDoRpc_RopCreateSystemSpecialFolder(emsmdbp_ctx, aRow,
+										     mapi_req->u.mapi_CreateFolder.ulFlags,
+										     parent_fid, &mapi_repl->u.mapi_CreateFolder);
+			break;
+		case FOLDER_SEARCH:
+			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] FOLDER_SEARCH not implemented\n"));
+			break;
+		default:
+			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Unexpected folder type\n"));
+		}
+		break;
+	case true:
+		mapi_repl->error_code = EcDoRpc_RopCreateGenericFolder(emsmdbp_ctx, parent, aRow,
 								       mapi_req->u.mapi_CreateFolder.ulFlags,
-								       &fid, &isExisting);
+								       &mapi_repl->u.mapi_CreateFolder);
 		break;
-	case FOLDER_SEARCH:
-		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] FOLDER_SEARCH not implemented\n"));
-		break;
-	default:
-		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Unexpected folder type\n"));
 	}
 
-	if (isExisting) {
-		mapi_repl->u.mapi_CreateFolder.IsExistingFolder = true;
+	if (mapi_repl->error_code == MAPI_E_COLLISION) {
+		mapi_repl->error_code = MAPI_E_SUCCESS;
+	}
+
+	if (mapi_repl->u.mapi_CreateFolder.IsExistingFolder == true) {
 		mapi_repl->u.mapi_CreateFolder.GhostUnion.GhostInfo.HasRules = false;
 		mapi_repl->u.mapi_CreateFolder.GhostUnion.GhostInfo.IsGhosted = false;
 	}
 
-	*size += libmapiserver_RopCreateFolder_size(mapi_repl);
-
 	if (!mapi_repl->error_code) {
-		/* Set the created folder FID */
-		mapi_repl->u.mapi_CreateFolder.folder_id = fid;
-
-		/* Step 4. Create a new handle */
-		folder_handle = handles[mapi_req->handle_idx];
-		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, folder_handle, &rec);
-		handles[mapi_repl->handle_idx] = rec->handle;
-
-		/* Step 5. Initialize the internal folder object */
-		object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx, mapi_req, parent);
-		if (object) {
-			retval = mapi_handles_set_private_data(rec, object);
+		*size += libmapiserver_RopCreateFolder_size(mapi_repl);
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+		if (mapistore == true) {
+			object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx, 
+							    mapi_repl->u.mapi_CreateFolder.folder_id);
+			if (object) {
+				retval = mapi_handles_set_private_data(rec, object);
+			}
 		}
+		mapi_repl->opnum = mapi_req->opnum;
+		mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx;
+
+		handles[mapi_repl->handle_idx] = rec->handle;
 	}
 
-	return retval;
+	if (aRow) {
+		talloc_free(aRow);
+	}
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS DoDeleteFolder(struct emsmdbp_context *emsmdbp_ctx,

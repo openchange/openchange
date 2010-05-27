@@ -1,5 +1,132 @@
+2010-05-27
+    jkerihuel
+	[r1853]
+		Outlook uses GetProps with the PidTagSubFolders property to check if a
+		folder has subfolders. Add this property at provisioning (set to
+		FALSE), then set it to true on system/specialfolders if folder
+		creation in mapistore went OK.
+	[r1852]
+		- Implement mkdir operation at mapistore level
+		
+		- Update PidTagFolderChildCount of parent folder when parent is the
+		  root folder of a mapistore context (folder attributes stored in
+		  openchange.ldb)
+		
+		- Improve RopCreateFolder implementation
+		
+		- Clean-up emsmdb_object_folder_init implementation
+		
+		- Add a convenient function to turn ROPs parameters into MAPI
+		  properties. This prevents from having endless number of parameters.
+		
+		- Commit remaining parts of the provision changes
+	[r1851]
+		This TODO doesn't belong here
+	[r1850]
+		Add a convenient function to retrieve the distinguishedName of a
+		folder given its folder identifier. This function is useful when
+		building dn for openchangedb ldb_add operations.
+	[r1849]
+		Add PidTagComment so it can be used in openchange.ldb when root
+		folders are created with a comment CreateFolder parameter.
+	[r1848]
+		Make it possible to retrieve MailboxRoot folder using
+		olFolderMailboxRoot in GetDefaultFolders.
+	[r1847]
+		Outlook 2007 tries to create a To-Do search folder under user
+		mailbox. Creates the folder at provision time to be kind with it.
+		
+		Set PidTagParentFolderId to 0 for mailbox root
+	[r1846]
+		The wrong index in mapi_repl was causing the crash I've investigated
+		over the past 10 hours.
+		
+		Please always use idx for mapi_response->mapi_repl[] index ;-)
+2010-05-26
+    jkerihuel
+	[r1845]
+		In current architecture, we need to retrieve root mapistore folder properties
+		from openchangedb, then use mapistore for operations such as GetHierarchyTable or
+		GetContentsTable. This was not possible with the current design where we only
+		switch between mapistore: true or false.
+		
+		I have introduced a mapistore_root boolean associated to folder object which we
+		set to true if the folder initializes a mapistore context (otherwise false).
+		
+		This boolean is used in GetProps so we retrieve mapistore container properties
+		from openchangedb and not mapistore.
+    bradh
+	[r1844]
+		Add size calculations for public folder RopLogon
+		response.
+2010-05-25
+    jkerihuel
+	[r1843]
+		We'll change CreateFolder to generic code later.
+		For the moment change from sqlite to fsopcf backend for system folders
+	[r1842]
+		Fix handling of flagged property row in GetProps (Mailbox case).
+	[r1841]
+		Missing break added, now makes Outlook 2003 launhes properly.
+	[r1840]
+		Ensure PidTagAttr is valid and prevent ldb layer from segfaulting
+	[r1839]
+		Send a flagged PropertyRow when GetProps is called with mapistore
+		Add a nasty hack and call this fake MAPI_E_NOT_FOUND property value for
+		GetProps if the object doesn't exist.
+		
+		In openchangeclient we are calling get_container_class using the parent object
+		(Mailbox root folder) and the FID of the 2-level down folder. This causes
+		openchange server to crash. The hack exposed above will help temporary workaround
+		this problem while we figure out/remember the real problem: Why do we have
+		to call the parent to retrieve the container class?
+	[r1838]
+		Remove last references to systemfolder in libmapiproxy API 
+	[r1837]
+		release objects properly in the mailbox recursive function
+	[r1836]
+		After we release ocpf_context, strings are destroyed.
+		Prevent from happening by stealing the overall context and
+		talloc_strdup strings.
+		
+		We'll need to find a better/encapsulated way to do this on long term.
+	[r1835]
+		Add a small hack to handle StandardPropertyRow properly
+		StandardPropertyRow have no errors and have a prefixing flag set to 0
+	[r1834]
+		Get ride of the previous way to detect 
+		systemfolder/mailbox/mapistore folders.
+		
+		This was barely understandable and error prone. 
+		
+		It is now replaced by a mapistore boolean set for every object
+		+ a convenient emsmdbp_object function to check mapistore value
+		for given handle quickly.
 2010-05-24
     jkerihuel
+	[r1833]
+		Add mapistore implementation for QueryRows ROPs relying on
+		GetHierarchyTable objects (folders properties listing).
+		
+		Add fsocpf backend implementation to fetch folders properties from a
+		.properties OCPF file stored within the folder (identified by its
+		PR_FID).
+		
+		Customized emsmdbp table object to have:
+		- a context_id and whether the table is within mapistore or not.
+		- to know if the table comes from GetHierarchyTabke or
+		  GetContentsTable
+		
+		Add a path element to the folder_list structure in fsocpf backend to
+		quickly use the full path and open the .properties file.
+		
+		Note: current code is for developers only. It is known to have bugs
+		(e.g. memory allocation), furthermore there is some manual
+		openchangedb and filesystem operation to perform in order to have the
+		commit intended results.
+	[r1832]
+		Add a convenient function for openchange server that lets build the
+		SPropValue array with known properties.
 	[r1830]
 		Replace the hardcoded fsocpf_ctx->fid with a basic code searching for last elements
 		in mapistore_uri path.

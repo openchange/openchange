@@ -126,8 +126,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *parent_c
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
-	/* Ensure the distinguisedName has username - prevent from overwriting over mailboxes */
-
 	*distinguishedName = talloc_strdup(parent_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
 
 	talloc_free(mem_ctx);

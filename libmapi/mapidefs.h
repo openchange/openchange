@@ -229,6 +229,7 @@
 /*
  * Default folders
  */
+#define	olFolderMailboxRoot		0
 #define	olFolderTopInformationStore	1
 #define	olFolderDeletedItems		3
 #define	olFolderOutbox			4

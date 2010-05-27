@@ -255,6 +255,9 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	} 
 
 	switch (id) {
+	case olFolderMailboxRoot:
+		*folder = store->fid_mailbox_root;
+		return MAPI_E_SUCCESS;
 	case olFolderTopInformationStore:
 		*folder = store->fid_top_information_store;
 		return MAPI_E_SUCCESS;

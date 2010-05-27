@@ -98,6 +98,45 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 
 
 /**
+   \details Retrieve the distinguishedName associated to a mailbox
+   system folder.
+
+   \param parent_ctx pointer to the parent memory context
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid the Folder identifier to search for
+   \param distinguishedName pointer on pointer to the
+   distinguishedName string the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *parent_ctx, 
+							    void *ldb_ctx, 
+							    uint64_t fid, 
+							    char **distinguishedName)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_distinguishedName");
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* Ensure the distinguisedName has username - prevent from overwriting over mailboxes */
+
+	*distinguishedName = talloc_strdup(parent_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details Retrieve the mailbox GUID for given recipient from
    openchange dispatcher database
 

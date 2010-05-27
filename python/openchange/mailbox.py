@@ -166,6 +166,7 @@ GlobalCount: 0x%x
                   "objectClass": ["mailbox", "container"],
                   "PidTagDisplayName": "OpenChange Mailbox: %s" % (username),
                   "PidTagParentFolderId": "0x0000000000000000",
+                  "PidTagSubFolders": "TRUE",
                   "cn": username,
                   "MailboxGUID": mailboxGUID,
                   "ReplicaID": replicaID,
@@ -236,7 +237,19 @@ GlobalCount: 0x%x
             raise Exception("Invalid search (PidTagFolderId=%s)" % parentfolder)
 
         # Step 3. Add root folder to correct container
-        if (foldername == "IPM Subtree" or foldername == "To-Do Search"):
+        if (foldername == "IPM Subtree"):
+             self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
+                          "objectClass": ["systemfolder", "container"],
+                          "cn": FID,
+                          "PidTagParentFolderId": parentfolder,
+                          "PidTagFolderId": FID,
+                          "PidTagDisplayName": foldername,
+                          "PidTagAttrHidden": str(0),
+                          "PidTagContainerClass": "IPF.Note",
+                           "PidTagSubFolders": "TRUE",
+                          "FolderType": str(1),
+                          "SystemIdx": str(SystemIdx)})           
+        elif (foldername == "To-Do Search"):
             self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
                           "objectClass": ["systemfolder", "container"],
                           "cn": FID,
@@ -245,6 +258,7 @@ GlobalCount: 0x%x
                           "PidTagDisplayName": foldername,
                           "PidTagAttrHidden": str(0),
                           "PidTagContainerClass": "IPF.Note",
+                          "PidTagSubFolders": "FALSE",
                           "FolderType": str(1),
                           "SystemIdx": str(SystemIdx)})
         else:
@@ -256,6 +270,9 @@ GlobalCount: 0x%x
                           "PidTagDisplayName": foldername,
                           "PidTagAttrHidden": str(0),
                           "PidTagContainerClass": "IPF.Note",
+                          "PidTagSubFolders": "TRUE",
+                          "PidTagFolderChildCount": str(0),
+                          "FolderType": str(1),
                           "mapistore_uri": "%s/%s/%s%s" % (mapistoreURL, username, FID, mapistoreSuffix),
                           "FolderType": str(1),
                           "SystemIdx": str(SystemIdx)})

@@ -110,8 +110,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 					       uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
-	struct OpenFolder_req		request;
-	struct OpenFolder_repl		response;
 	struct mapi_handles		*parent = NULL;
 	struct mapi_handles		*rec = NULL;
 	struct emsmdbp_object		*object;
@@ -127,11 +125,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	request = mapi_req->u.mapi_OpenFolder;
-	response = mapi_repl->u.mapi_OpenFolder;
-
-	response.HasRules = 0;
-	response.IsGhosted = 0;
+	mapi_repl->u.mapi_OpenFolder.HasRules = 0;
+	mapi_repl->u.mapi_OpenFolder.IsGhosted = 0;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
@@ -143,13 +138,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	case false:
 		/* system/special folder */
 		DEBUG(0, ("Opening system/special folder\n"));
-		retval = RopOpenFolder_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response);
+		retval = RopOpenFolder_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, 
+							   mapi_req->u.mapi_OpenFolder, 
+							   &mapi_repl->u.mapi_OpenFolder);
 		mapi_repl->error_code = retval;
 		break;
 	case true:
 		/* handled by mapistore */
 		DEBUG(0, ("Opening Generic folder\n"));
-		retval = RopOpenFolder_GenericFolder(mem_ctx, emsmdbp_ctx, request, &response, parent);
+		retval = RopOpenFolder_GenericFolder(mem_ctx, emsmdbp_ctx, 
+						     mapi_req->u.mapi_OpenFolder,
+						     &mapi_repl->u.mapi_OpenFolder, parent);
 		mapi_repl->error_code = retval;
 		break;
 	}
@@ -160,7 +159,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 
-		object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx, request.folder_id);
+		object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx, mapi_req->u.mapi_OpenFolder.folder_id);
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
 		}
@@ -487,7 +486,9 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 		msg = ldb_msg_new(mem_ctx);
 		msg->dn = ldb_dn_copy(mem_ctx, ldb_dn);
 		ldb_msg_add_fmt(msg, "PidTagFolderChildCount", "%d", count + 1);
+		ldb_msg_add_fmt(msg, "PidTagSubFolders", "TRUE");
 		msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+		msg->elements[1].flags = LDB_FLAG_MOD_REPLACE;
 
 		ret = ldb_modify(emsmdbp_ctx->oc_ctx, msg);
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);

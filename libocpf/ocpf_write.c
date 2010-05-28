@@ -287,7 +287,7 @@ static char *ocpf_write_property(bool *found, uint32_t ulPropTag, const void *va
 		break;
 	case PT_UNICODE:
 		str = ocpf_write_escape_string((const char *)value);
-		line = talloc_asprintf(ocpf->mem_ctx, "U\"%s\"\n", str);
+		line = talloc_asprintf(ocpf->mem_ctx, "W\"%s\"\n", str);
 		talloc_free(str);
 		*found = true;
 		break;

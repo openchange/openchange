@@ -258,7 +258,7 @@ T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
 			else
 				return INTEGER;
 			
-}
+			}
 S0x[0-9A-Fa-f]+|-S[0-9]+ {
 			   char *e, *y;
 			   y = (yytext[0] == 'S') ? yytext + 1 : yytext;
@@ -277,9 +277,8 @@ L0x[0-9A-Fa-f]+|-?[0-9]+ { char *e, *y;
 			  else
 			    return INTEGER;
 			}
-D0x[0-9A-Fa-f]+	{char *e, *y = yytext + 1;
-			  ocpf_yylval.d = strtoull((const char *)y,
-						   &e, 0);
+D0x[0-9A-Fa-f]+		{ char *e, *y = yytext + 1;
+			  ocpf_yylval.d = strtoull((const char *)y, &e, 0);
 			  if(e == y) 
 			    error_message("malformed constant (%s)", yytext); 
 			  else

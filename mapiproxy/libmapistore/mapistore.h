@@ -61,7 +61,7 @@ struct mapistore_backend {
 	int (*create_context)(TALLOC_CTX *, const char *, void **);
 	int (*delete_context)(void *);
 	/* folders semantic */
-  int (*op_mkdir)(void *, uint64_t, uint64_t, struct SRow *);
+	int (*op_mkdir)(void *, uint64_t, uint64_t, struct SRow *);
 	int (*op_rmdir)(void *);
 	int (*op_opendir)(void *, uint64_t, uint64_t);
 	int (*op_closedir)(void *);

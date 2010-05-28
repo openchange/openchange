@@ -105,7 +105,7 @@ static int sqlite3_delete_context(void *private_data)
    \return MAPI_E_SUCCESS on success
  */
 static int sqlite3_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid,
-			    const char *displayName)
+			   struct SRow *aRow)
 {
 	struct sqlite3_context		*sqlite_ctx = (struct sqlite3_context *)private_data;
 

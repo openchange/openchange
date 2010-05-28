@@ -1,3 +1,20 @@
+2010-05-28
+    jkerihuel
+	[r1858]
+		Patch from Milan Crha <mcrha@readhat.com>:
+		
+		Fix PT_DOUBLE support in openchange
+	[r1857]
+		Fix unicode ocpf format in ocpf_write
+	[r1856]
+		- Fix PT_I8 support in libocpf: PT_I8 support was incorrectly
+		processed as PT_DOUBLE and prevented properties with 0x0014 proptag
+		(e.g. PR_PARENT_FID) to be added properly to ocpf files.
+		
+		- Add PR_PARENT_FID to the set of properties when creating folders
+	[r1855]
+		Fix mkdir prototype in sqlite3 backend
+
 2010-05-27
     jkerihuel
 	[r1853]

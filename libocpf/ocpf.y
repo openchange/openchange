@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008.
+   Copyright (C) Julien Kerihuel 2008-2010.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ uint8_t			recip_type;
 %token <b> BOOLEAN
 %token <s> SHORT
 %token <l> INTEGER
-%token <d> DOUBLE
+%token <d> I8
 %token <name> IDENTIFIER
 %token <name> STRING
 %token <nameW> UNICODE
@@ -79,6 +79,7 @@ uint8_t			recip_type;
 %token kw_PT_UNICODE
 %token kw_PT_SHORT
 %token kw_PT_LONG
+%token kw_PT_I8
 %token kw_PT_SYSTIME
 %token kw_PT_MV_STRING8
 %token kw_PT_BINARY
@@ -134,7 +135,7 @@ Folder		:
 				error_message("%s", "duplicated FOLDER\n");
 			}
 		}
-		| kw_FOLDER DOUBLE
+		| kw_FOLDER I8
 		{
 			if (folderset == false) {
 				ocpf_folder_add(NULL, $2, NULL);
@@ -220,7 +221,7 @@ propvalue	: STRING
 		| SHORT		{ lpProp.i = $1; type = PT_SHORT; }
 		| INTEGER	{ lpProp.l = $1; type = PT_LONG; }
 		| BOOLEAN	{ lpProp.b = $1; type = PT_BOOLEAN; }
-		| DOUBLE	{ lpProp.d = $1; type = PT_DOUBLE; }
+		| I8		{ lpProp.d = $1; type = PT_I8; }
 		| SYSTIME
 		{
 			ocpf_add_filetime($1, &lpProp.ft);
@@ -367,6 +368,11 @@ proptype	: kw_PT_STRING8
 		{
 			memset(&nprop, 0, sizeof (struct ocpf_nprop));
 			nprop.propType = PT_LONG; 
+		}
+		| kw_PT_I8
+		{
+			memset(&nprop, 0, sizeof (struct ocpf_nprop));
+			nprop.propType = PT_I8;
 		}
 		| kw_PT_BOOLEAN
 		{

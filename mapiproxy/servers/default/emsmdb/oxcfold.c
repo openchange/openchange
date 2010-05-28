@@ -571,6 +571,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	
 	/* Step 3. Turn CreateFolder parameters into MAPI property array */
 	aRow = libmapiserver_ROP_request_to_properties(mem_ctx, (void *)&mapi_req->u.mapi_CreateFolder, op_MAPI_CreateFolder);
+	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues), PR_PARENT_FID, (void *)(&parent_fid));
 
 	/* Step 4. Do effective work here */
 	mapistore = emsmdbp_is_mapistore(parent);

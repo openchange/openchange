@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008.
+   Copyright (C) Julien Kerihuel 2008-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -72,6 +72,7 @@ PT_STRING8	{ return kw_PT_STRING8; }
 PT_UNICODE	{ return kw_PT_UNICODE; }
 PT_SHORT	{ return kw_PT_SHORT; }
 PT_LONG		{ return kw_PT_LONG; }
+PT_I8		{ return kw_PT_I8; }
 PT_SYSTIME	{ return kw_PT_SYSTIME; }
 PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
 PT_MV_STRING8	{ return kw_PT_MV_STRING8; }
@@ -282,7 +283,7 @@ D0x[0-9A-Fa-f]+	{char *e, *y = yytext + 1;
 			  if(e == y) 
 			    error_message("malformed constant (%s)", yytext); 
 			  else
-			    return DOUBLE;
+			    return I8;
 
 			}
 [A-Za-z][-A-Za-z0-9_]*	{

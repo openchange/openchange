@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008.
+   Copyright (C) Julien Kerihuel 2008-2010.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -132,7 +132,7 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptyp
 	case PT_ERROR:
 		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.err, sizeof (uint32_t));
 		return OCPF_SUCCESS;
-	case PT_DOUBLE:
+	case PT_I8:
 		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.d, sizeof (uint64_t));
 		return OCPF_SUCCESS;
 	case PT_SYSTIME:

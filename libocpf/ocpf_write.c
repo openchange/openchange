@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008.
+   Copyright (C) Julien Kerihuel 2008-2010.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -303,8 +303,8 @@ static char *ocpf_write_property(bool *found, uint32_t ulPropTag, const void *va
 		line = talloc_asprintf(ocpf->mem_ctx, "B\"%s\"\n", (*((const uint8_t *)value) == true) ? "true" : "false");
 		*found = true;
 		break;
-	case PT_DOUBLE:
-		line = talloc_asprintf(ocpf->mem_ctx, "D0x%"PRIx64"\n", *(const uint64_t *)value);
+	case PT_I8:
+		line = talloc_asprintf(ocpf->mem_ctx, "D0x%.16"PRIx64"\n", *(const uint64_t *)value);
 		*found = true;
 		break;
 	case PT_SYSTIME:
@@ -536,7 +536,7 @@ _PUBLIC_ int ocpf_write_commit(void)
 	talloc_free(line);
 
 	/* folder id */
-	line = talloc_asprintf(ocpf->mem_ctx, "FOLDER D0x%"PRIx64"\n\n", ocpf->folder);
+	line = talloc_asprintf(ocpf->mem_ctx, "FOLDER D0x%.16"PRIx64"\n\n", ocpf->folder);
 	len = fwrite(line, strlen(line), 1, fp);
 	talloc_free(line);
 

@@ -373,7 +373,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.l = *((const uint32_t *)data);
 		break;
 	case PT_DOUBLE:
-		lpProps->value.dbl = *((const int64_t *)data);
+		lpProps->value.dbl = *((const double *)data);
 		break;
 	case PT_I8:
 		lpProps->value.d = *((const uint64_t *)data);
@@ -446,6 +446,7 @@ _PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)
 	case PT_ERROR:
 		return sizeof (uint32_t);
 	case PT_DOUBLE:
+		return sizeof (double);
 	case PT_I8:
 		return sizeof (uint64_t);
 	case PT_STRING8:
@@ -480,7 +481,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 		return sizeof(uint32_t);
 	case PT_DOUBLE:
 		mapi_sprop->value.dbl = sprop->value.dbl;
-		return sizeof(uint64_t);
+		return sizeof(double);
 	case PT_I8:
 		mapi_sprop->value.d = sprop->value.d;
 		return sizeof(uint64_t);
@@ -587,7 +588,7 @@ _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPr
 		return sizeof(uint32_t);
 	case PT_DOUBLE:
 		sprop->value.dbl = mapi_sprop->value.dbl;
-		return sizeof(uint64_t);
+		return sizeof(double);
 	case PT_I8:
 		sprop->value.d = mapi_sprop->value.d;
 		return sizeof(uint64_t);

@@ -570,6 +570,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 	uint64_t			*pt_i8;
 	uint32_t			*pt_long;
 	uint8_t				*pt_boolean;
+	double				*pt_double;
 	struct FILETIME			*pt_filetime;
 	struct GUID			*pt_clsid;
 	struct SBinary_short		pt_binary;
@@ -615,6 +616,12 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		*offset = ndr->offset;
 		talloc_free(ndr);
 		return (const void *) pt_i8;
+	case PT_DOUBLE:
+		pt_double = talloc_zero(mem_ctx, double);
+		ndr_pull_double(ndr, NDR_SCALARS, pt_double);
+		*offset = ndr->offset;
+		talloc_free(ndr);
+		return (const void *) pt_double;
 	case PT_UNICODE:
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 		ndr_pull_string(ndr, NDR_SCALARS, &pt_unicode);
@@ -684,8 +691,9 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		talloc_free(ndr);
 		return (const void *) MVbin;
 	default:
+		fprintf (stderr, "unhandled type case in pull_emsmdb_property(): 0x%x\n", (tag & 0xFFFF));
 		return NULL;
-	}	
+	}
 }
 
 

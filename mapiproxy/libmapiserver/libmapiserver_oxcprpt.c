@@ -189,6 +189,8 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		ndr_push_uint32(ndr, NDR_SCALARS, *(uint32_t *) value);
 		break;
 	case PT_DOUBLE:
+		ndr_push_double(ndr, NDR_SCALARS, *(double *) value);
+		break;
 	case PT_I8:
 		ndr_push_dlong(ndr, NDR_SCALARS, *(uint64_t *) value);
 		break;

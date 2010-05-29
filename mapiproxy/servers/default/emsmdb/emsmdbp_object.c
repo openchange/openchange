@@ -314,10 +314,14 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 			object->object.folder->contextID = context_id;
 		}
 	} else {
-		/* object->object.folder->mapistore = false; */
-		DEBUG(0, ("error in emsmdbp_object_folder_init, retval = 0x%.8x\n", retval));
-		talloc_free(object);
-		return NULL;
+		if (mailboxstore == true) {
+			object->object.folder->contextID = context_id;
+		} else {
+			/* object->object.folder->mapistore = false; */
+			DEBUG(0, ("error in emsmdbp_object_folder_init, retval = 0x%.8x\n", retval));
+			talloc_free(object);
+			return NULL;
+		}
 	}
 
 	return object;

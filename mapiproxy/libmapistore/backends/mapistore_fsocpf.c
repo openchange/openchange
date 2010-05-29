@@ -251,9 +251,12 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 	TALLOC_CTX			*mem_ctx;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct folder_list_context	*el;
+	struct folder_list_context	*newel;
 	bool				found = false;
 	struct dirent			*curdir;
 	char				*searchdir;
+	char				*newpath;
+	DIR				*dir;
 
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
@@ -272,24 +275,28 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 			el->ctx->dir = fsocpf_ctx->dir;
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
 			DEBUG(0, ("Element added to the list 0x%16"PRIx64"\n", el->ctx->fid));
-			goto test;
 		}
-		DEBUG(0, ("OK returning success now\n"));
-		return MAPISTORE_SUCCESS;
-	}
 
-test:
-	/* Step 1. Search for the parent fid */
-	for (el = fsocpf_ctx->folders; el; el = el->next) {
-		/* if (el->ctx && el->ctx->fid == parent_fid) { */
-		if (el->ctx && el->ctx->fid == fid) {
-			found = true;
-			break;
+		for (el = fsocpf_ctx->folders; el; el = el->next) {
+			if (el->ctx && el->ctx->fid == fid) {
+				found = true;
+				break;
+			}
 		}
-	}
 
-	if (found == false) {
-		return MAPISTORE_ERR_NO_DIRECTORY;
+		return (found == false) ? MAPISTORE_ERR_NO_DIRECTORY : MAPISTORE_SUCCESS;
+	} else {
+		/* Step 1. Search for the parent fid */
+		for (el = fsocpf_ctx->folders; el; el = el->next) {
+			if (el->ctx && el->ctx->fid == parent_fid) {
+				found = true;
+				break;
+			}
+		}
+
+		if (found == false) {
+			return MAPISTORE_ERR_NO_DIRECTORY;
+		}
 	}
 
 	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_opendir");
@@ -307,7 +314,25 @@ test:
 			DEBUG(0, ("%d: readdir: %s\n", i, curdir->d_name));
 			i++;
 			if (curdir->d_name && !strcmp(curdir->d_name, searchdir)) {
+
+				newpath = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64,
+							  el->ctx->path, fid);
+				dir = opendir(newpath);
+				if (!dir) {
+					talloc_free(mem_ctx);
+					return MAPISTORE_ERR_CONTEXT_FAILED;
+				}
 				DEBUG(0, ("FOUND\n"));
+
+				newel = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, 
+						    struct folder_list_context);
+				newel->ctx = talloc_zero((TALLOC_CTX *)newel, struct folder_list);
+				newel->ctx->fid = fid;
+				newel->ctx->path = talloc_asprintf(newel, "%s/0x%.16"PRIx64, 
+								   el->ctx->path, fid);
+				el->ctx->dir = dir;
+				DLIST_ADD_END(fsocpf_ctx->folders, newel, struct folder_list_context *);
+				DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", fid));
 			}
 		}
 	}
@@ -468,7 +493,6 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	ret = ocpf_parse(propfile);
 	fflush(0);
 	talloc_free(propfile);
-	ocpf_dump();
 
 	ocpf_set_SPropValue_array(ctx);
 	lpProps = ocpf_get_SPropValue(&cValues);

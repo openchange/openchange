@@ -110,9 +110,13 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 			response->layout = 0x1;
 			break;
 		case PR_USER_ENTRYID:
+			break;
 		case PR_MAILBOX_OWNER_ENTRYID:
 		case PR_MAILBOX_OWNER_NAME:
 		case PR_MAILBOX_OWNER_NAME_UNICODE:
+			if (object->object.mailbox->mailboxstore == false) {
+				response->layout = 0x1;
+			}
 			break;
 		default:
 			retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx,
@@ -149,17 +153,35 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 			talloc_free(bin.lpb);
 			break;
 		case PR_MAILBOX_OWNER_ENTRYID:
-			retval = entryid_set_AB_EntryID(mem_ctx, object->object.mailbox->owner_EssDN, &bin);
-			libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
-						    request.properties[i], (const void *)&bin,
-						    &response->prop_data, response->layout, 0);
-			talloc_free(bin.lpb);
+			if (object->object.mailbox->mailboxstore == false) {
+				error = MAPI_E_NO_ACCESS;
+				request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
+				libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+							    request.properties[i], (const void *)&error,
+							    &response->prop_data, response->layout, 0);
+			} else {
+				retval = entryid_set_AB_EntryID(mem_ctx, object->object.mailbox->owner_EssDN,
+								&bin);
+				libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+							    request.properties[i], (const void *)&bin,
+							    &response->prop_data, response->layout, 0);
+				talloc_free(bin.lpb);
+			}
 			break;
 		case PR_MAILBOX_OWNER_NAME:
 		case PR_MAILBOX_OWNER_NAME_UNICODE:
-			libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
-						    request.properties[i], (const void *)object->object.mailbox->owner_Name,
-						    &response->prop_data, response->layout, 0);
+			if (object->object.mailbox->mailboxstore == false) {
+				error = MAPI_E_NO_ACCESS;
+				request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
+ 				libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+							    request.properties[i], (const void *)&error,
+							    &response->prop_data, response->layout, 0);
+			} else {
+				libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+							    request.properties[i], 
+							    (const void *)object->object.mailbox->owner_Name,
+							    &response->prop_data, response->layout, 0);
+			}
 			break;
 		default:
 			retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx,

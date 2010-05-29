@@ -76,6 +76,7 @@ struct emsmdbp_object_mailbox {
 	char				*owner_Name;
 	char				*owner_EssDN;
 	char				*szUserDN;
+	bool				mailboxstore;
 };
 
 
@@ -84,6 +85,7 @@ struct emsmdbp_object_folder {
 	uint32_t			contextID;
 	bool				mapistore;
 	bool				mapistore_root; /* root mapistore container or not */
+	bool				mailboxstore;
 };
 
 
@@ -132,6 +134,17 @@ struct emsmdbp_object {
 #define	EMSMDBP_VIEWS			0xD
 #define	EMSMDBP_SHORTCUTS		0xE
 
+#define EMSMDBP_PF_ROOT			0x0
+#define EMSMDBP_PF_IPMSUBTREE		0x1
+#define EMSMDBP_PF_NONIPMSUBTREE	0x2
+#define EMSMDBP_PF_EFORMSREGISTRY	0x3
+#define EMSMDBP_PF_FREEBUSY		0x4
+#define EMSMDBP_PF_OAB			0x5
+#define EMSMDBP_PF_LOCALEFORMS		0x6
+#define EMSMDBP_PF_LOCALFREEBUSY	0x7
+#define EMSMDBP_PF_LOCALOAB		0x8
+
+
 #define	EMSMDBP_TABLE_FOLDER_TYPE	0x1
 #define	EMSMDBP_TABLE_MESSAGE_TYPE	0x2
 
@@ -150,9 +163,10 @@ bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context 
 /* definitions from emsmdbp_object.c */
 const char	      *emsmdbp_getstr_type(struct emsmdbp_object *);
 bool		      emsmdbp_is_mapistore(struct mapi_handles *);
+bool		      emsmdbp_is_mailboxstore(struct mapi_handles *);
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *);
-struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *);
-struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t);
+struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, bool);
+struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, bool);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct mapi_handles *);
 
 /* definitions from oxcfold.c */

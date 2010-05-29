@@ -96,6 +96,44 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+/**
+   \details Retrieve the public folder FolderID (fid) for a given folder type
+
+   \param ldb_ctx pointer to the OpenChange LDB context
+   \param SystemIdx the system folder index
+   \param FolderId pointer to the folder identifier the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(void *ldb_ctx,
+							 uint32_t SystemIdx,
+							 uint64_t *FolderId)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct ldb_result		*res = NULL;
+	const char * const		attrs[] = { "*", NULL };
+	int				ret;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "get_PublicFolderID");
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs,
+			 "(&(objectClass=publicfolder)(SystemIdx=%d))", SystemIdx);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(res->count != 1, MAPI_E_NOT_FOUND, mem_ctx);
+
+	*FolderId = ldb_msg_find_attr_as_int64(res->msgs[0], "PidTagFolderId", 0);
+	OPENCHANGE_RETVAL_IF(!*FolderId, MAPI_E_CORRUPT_STORE, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
 
 /**
    \details Retrieve the distinguishedName associated to a mailbox
@@ -227,6 +265,53 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+/**
+   \details Retrieve the public folder replica identifier and GUID
+   from the openchange dispatcher database
+
+   \param ldb_ctx pointer to the OpenChange LDB context
+   \param ReplID pointer to the replica identifier the function returns
+   \param ReplGUID pointer to the replica GUID the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *ldb_ctx,
+							      uint16_t *ReplID,
+							      struct GUID *GUID)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct ldb_result		*res = NULL;
+	const char			*guid;
+	const char * const		attrs[] = { "*", NULL };
+	int				ret;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!ReplID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!GUID, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "get_PublicFolderReplica");
+
+	/* Step 1. Search Mailbox DN */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "CN=publicfolders");
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* Step 2. Retrieve ReplicaID attribute's value */
+	*ReplID = ldb_msg_find_attr_as_int(res->msgs[0], "ReplicaID", 0);
+
+	/* Step 3/ Retrieve ReplicaGUID attribute's value */
+	guid = ldb_msg_find_attr_as_string(res->msgs[0], "StoreGUID", 0);
+	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_CORRUPT_STORE, mem_ctx);
+
+	GUID_from_string(guid, GUID);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
 
 /**
    \details Retrieve the mapistore URI associated to a mailbox system
@@ -237,13 +322,16 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
    \param fid the Folder identifier to search for
    \param mapistoreURL pointer on pointer to the mapistore URI the
    function returns
+   \param mailboxstore boolean value which defines whether the record
+   has to be searched within Public folders hierarchy or not
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 						       void *ldb_ctx,
 						       uint64_t fid,
-						       char **mapistoreURL)
+						       char **mapistoreURL,
+						       bool mailboxstore)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
@@ -252,8 +340,13 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 
 	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
 
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+	if (mailboxstore == true) {
+		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+	} else {
+		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+	}
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 

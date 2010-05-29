@@ -85,6 +85,39 @@ bool emsmdbp_is_mapistore(struct mapi_handles *handles)
 
 
 /**
+   \details Convenient function to determine whether specified
+   mapi_handles refers to object within mailbox or public folders
+   store.
+
+   \param handles pointer to the MAPI handle to lookup
+
+   \return true if parent is within mailbox store, otherwise false
+ */
+bool emsmdbp_is_mailboxstore(struct mapi_handles *handles)
+{
+	void			*data;
+	struct emsmdbp_object	*object;
+
+	/* Sanity checks - irrelevant */
+
+	mapi_handles_get_private_data(handles, &data);
+	object = (struct emsmdbp_object *)data;
+
+	switch (object->type) {
+	case EMSMDBP_OBJECT_MAILBOX:
+		return  object->object.mailbox->mailboxstore;
+	case EMSMDBP_OBJECT_FOLDER:
+		return object->object.folder->mailboxstore;
+	default:
+		break;
+	}
+	
+	/* We should never hit this case */
+	return true;
+}
+
+
+/**
    \details talloc destructor for emsmdbp_objects
 
    \param data generic pointer on data
@@ -148,12 +181,15 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
    \param request pointer to the Logon MAPI request
+   \param mailboxstore boolean which specifies whether the mailbox
+   object is a PF store or a private mailbox store
 
    \return Allocated emsmdbp object on success, otherwise NULL
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 							    struct emsmdbp_context *emsmdbp_ctx,
-							    struct EcDoRpc_MAPI_REQ *request)
+							    struct EcDoRpc_MAPI_REQ *request,
+							    bool mailboxstore)
 {
 	struct emsmdbp_object		*object;
 	const char			*displayName;
@@ -180,25 +216,34 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 	object->object.mailbox->owner_EssDN = NULL;
 	object->object.mailbox->szUserDN = NULL;
 	object->object.mailbox->folderID = 0x0;
+	object->object.mailbox->mailboxstore = mailboxstore;
 
-	object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, request->u.mapi_Logon.EssDN);
-	object->object.mailbox->szUserDN = talloc_strdup(object->object.mailbox, emsmdbp_ctx->szUserDN);
+	if (mailboxstore == true) {
+		object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, 
+								    request->u.mapi_Logon.EssDN);
+		ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
+				 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+				 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s", 
+				 object->object.mailbox->owner_EssDN);
 
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
-			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s", 
-			 object->object.mailbox->owner_EssDN);
+		if (res->count == 1) {
+			displayName = ldb_msg_find_attr_as_string(res->msgs[0], "displayName", NULL);
+			if (displayName) {
+				object->object.mailbox->owner_Name = talloc_strdup(object->object.mailbox, 
+										   displayName);
 
-	if (res->count == 1) {
-		displayName = ldb_msg_find_attr_as_string(res->msgs[0], "displayName", NULL);
-		if (displayName) {
-			object->object.mailbox->owner_Name = talloc_strdup(object->object.mailbox, displayName);
-
-			/* Retrieve Mailbox folder identifier */
-			openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_Name,
-							0x1, &object->object.mailbox->folderID);
+				/* Retrieve Mailbox folder identifier */
+				openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, 
+								object->object.mailbox->owner_Name,
+								0x1, &object->object.mailbox->folderID);
+			}
 		}
+	} else {
+		/* Retrieve Public folder identifier */
+		openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, 0x1, &object->object.mailbox->folderID);
 	}
+
+	object->object.mailbox->szUserDN = talloc_strdup(object->object.mailbox, emsmdbp_ctx->szUserDN);
 
 	talloc_free(res);
 
@@ -212,12 +257,15 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
    \param folderID the folder identifier
+   \param mailboxstore boolean value which specifies whether the
+   folder is within mailbox private hierarchy or within public folders
+   one.
 
    \return Allocated emsmdbp object on success, otherwise NULL
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 							   struct emsmdbp_context *emsmdbp_ctx,
-							   uint64_t folderID)
+							   uint64_t folderID, bool mailboxstore)
 {
 	enum MAPISTATUS			retval;
 	struct emsmdbp_object		*object;
@@ -241,12 +289,14 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 	object->object.folder->contextID = -1;
 	object->object.folder->folderID = folderID;
 	object->object.folder->mapistore_root = false;
+	object->object.folder->mailboxstore = mailboxstore;
 
 	/* system folders acting as containers don't have
 	 * mapistore_uri attributes (Mailbox, IPM Subtree) 
 	 */
 	retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx,
-					       object->object.folder->folderID, &mapistore_uri);
+					       object->object.folder->folderID, 
+					       &mapistore_uri, mailboxstore);
 
 	if (retval == MAPI_E_SUCCESS) {
 		if (!mapistore_uri) {

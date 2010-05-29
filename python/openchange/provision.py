@@ -27,34 +27,13 @@ from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.provision import setup_add_ldif, setup_modify_ldif
 import ldb
+from openchange_url_utils import openchangedb_url, openchangedb_mapistore_url, openchangedb_mapistore_dir, openchangedb_suffix_for_mapistore_url
 
 __docformat__ = 'restructuredText'
 
 DEFAULTSITE = "Default-First-Site-Name"
 FIRST_ORGANIZATION = "First Organization"
 FIRST_ORGANIZATION_UNIT = "First Organization Unit"
-
-def openchangedb_url(lp):
-    return os.path.join(lp.get("private dir"), "openchange.ldb")
-
-def openchangedb_mapistore_dir(lp):
-    return os.path.join(lp.get("private dir"), "mapistore")
-
-def openchangedb_mapistore_url(lp, backend):
-    if backend == "fsocpf":
-	return "fsocpf://" + openchangedb_mapistore_dir(lp)
-    if backend == "sqlite":
-	return "sqlite://" + openchangedb_mapistore_dir(lp)
-    print "#### unsupported mapistore backend type:" + backend
-    print "#### using fsocpf instead"
-    return "fsocpf://" + openchangedb_mapistore_dir(lp)
-
-def suffix_for_mapistore_url(url):
-    if (url.startswith("fsocpf://")):
-        return ""
-    if (url.startswith("sqlite://")):
-        return ".db"
-    return ""
 
 # This is a hack. Kind-of cute, but still a hack
 def abstract():
@@ -330,7 +309,7 @@ def newmailbox(lp, username, firstorg, firstou, backend):
             parentfolder=parent_fid, GlobalCount=GlobalCount, 
             ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
             mapistoreURL=url,
-            mapistoreSuffix=suffix_for_mapistore_url(url))
+            mapistoreSuffix=openchangedb_suffix_for_mapistore_url(url))
 
         GlobalCount += 1
         db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
@@ -363,7 +342,7 @@ def newmailbox(lp, username, firstorg, firstou, backend):
         url = openchangedb_mapistore_url(lp, backend)
         fid = db.add_mailbox_special_folder(username, fids[path], fid_inbox, foldername, 
                                             containerclass, GlobalCount, ReplicaID, 
-                                            url, suffix_for_mapistore_url(url))
+                                            url, openchangedb_suffix_for_mapistore_url(url))
         db.add_folder_property(fid_inbox, pidtag, fid)
         db.add_folder_property(fid_mailbox, pidtag, fid)
         GlobalCount += 1
@@ -491,12 +470,13 @@ def provision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None)
     install_schemas(setup_path, names, lp, creds, reporter)
 
 
-def openchangedb_provision(lp, firstorg=None, firstou=None):
+def openchangedb_provision(lp, firstorg=None, firstou=None, mapistore=None):
     """Create the OpenChange database.
 
     :param lp: Loadparm context
     :param firstorg: First Organization
     :param firstou: First Organization Unit
+    :param mapistore: The public folder store type (fsocpf, sqlite, etc)
     """
     names = guess_names_from_smbconf(lp, firstorg, firstou)
     
@@ -512,6 +492,10 @@ def openchangedb_provision(lp, firstorg=None, firstou=None):
     openchange_ldb.add_server(names.ocserverdn, names.netbiosname, 
         names.firstorg, names.firstou)
 
+    mapistoreURL = os.path.join( openchangedb_mapistore_url(lp, mapistore), "publicfolders")
+    print "[+] Public Folders"
+    print "==================="
+    openchange_ldb.add_public_folders(names, mapistoreURL)
 
 def find_setup_dir():
     """Find the setup directory used by provision."""

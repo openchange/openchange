@@ -198,6 +198,7 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	/* Step 3. Create the array of mapi properties */
 	mapi_lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, aRow->cValues);
 	mapi_lpProps.cValues = aRow->cValues;
+	mapidump_SRow(aRow, "[+]");
 	for (i = 0; i < aRow->cValues; i++) {
 		cast_mapi_SPropValue(&(mapi_lpProps.lpProps[i]), &(aRow->lpProps[i]));
 	}
@@ -465,8 +466,10 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 
 	/* process the file */
 	ret = ocpf_parse(propfile);
+	fflush(0);
 	talloc_free(propfile);
-	
+	ocpf_dump();
+
 	ocpf_set_SPropValue_array(ctx);
 	lpProps = ocpf_get_SPropValue(&cValues);
 

@@ -200,10 +200,12 @@ bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
 /* definitions from openchangedb.c */
 enum MAPISTATUS openchangedb_get_new_folderID(void *, uint64_t *);
 enum MAPISTATUS openchangedb_get_SystemFolderID(void *, char *, uint32_t, uint64_t *);
+enum MAPISTATUS openchangedb_get_PublicFolderID(void *, uint32_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *, void *, uint64_t, char **);
 enum MAPISTATUS	openchangedb_get_MailboxGuid(void *, char *, struct GUID *);
 enum MAPISTATUS	openchangedb_get_MailboxReplica(void *, char *, uint16_t *, struct GUID *);
-enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, void *, uint64_t, char **);
+enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *, uint16_t *, struct GUID *);
+enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, void *, uint64_t, char **, bool);
 enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *, void *, const char *, const char *, uint64_t *, const char **);
 enum MAPISTATUS openchangedb_lookup_folder_property(void *, uint32_t, uint64_t);
 enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *, void *, char *, uint32_t, uint64_t, void **);

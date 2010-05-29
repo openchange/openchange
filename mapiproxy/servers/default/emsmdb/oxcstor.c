@@ -123,6 +123,53 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+/**
+   \details Logs on a public folder store
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the RopLogon EcDoRpc_MAPI_REQ structure
+   \param mapi_repl pointer to the RopLogon EcDoRpc_MAPI_REPL 
+   structure that the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+static enum MAPISTATUS RopLogon_PublicFolder(TALLOC_CTX *mem_ctx,
+					     struct emsmdbp_context *emsmdbp_ctx,
+					     struct EcDoRpc_MAPI_REQ *mapi_req,
+					     struct EcDoRpc_MAPI_REPL *mapi_repl)
+{
+	struct Logon_req	request;
+	struct Logon_repl	response;
+
+	request = mapi_req->u.mapi_Logon;
+	response = mapi_repl->u.mapi_Logon;
+
+	response.LogonFlags = request.LogonFlags;
+
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_ROOT, &(response.LogonType.store_pf.FolderIds[0]));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_IPMSUBTREE, &(response.LogonType.store_pf.FolderIds[1]));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_NONIPMSUBTREE, &(response.LogonType.store_pf.FolderIds[2]));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_EFORMSREGISTRY, &(response.LogonType.store_pf.FolderIds[3]));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_FREEBUSY, &(response.LogonType.store_pf.FolderIds[4]));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_OAB, &(response.LogonType.store_pf.FolderIds[5]));
+	response.LogonType.store_pf.FolderIds[6] = 0x00000000000000000000; /* Eforms Registry */
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALFREEBUSY, &(response.LogonType.store_pf.FolderIds[7]));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALOAB, &(response.LogonType.store_pf.FolderIds[8]));
+	response.LogonType.store_pf.FolderIds[9] = 0x00000000000000000000; /* NNTP Article Index */
+	response.LogonType.store_pf.FolderIds[10] = 0x00000000000000000000; /* Empty */
+	response.LogonType.store_pf.FolderIds[11] = 0x00000000000000000000; /* Empty */
+	response.LogonType.store_pf.FolderIds[12] = 0x00000000000000000000; /* Empty */
+
+	openchangedb_get_PublicFolderReplica(emsmdbp_ctx->oc_ctx,
+					     &(response.LogonType.store_pf.ReplId),
+					     &(response.LogonType.store_pf.Guid));
+	memset(&(response.LogonType.store_pf.PerUserGuid), 0, sizeof(struct GUID));
+
+	mapi_repl->u.mapi_Logon = response;
+
+	return MAPI_E_SUCCESS;
+}
 
 /**
    \details EcDoRpc Logon (0xFE) Rop. This operation logs on to a
@@ -152,6 +199,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 	struct Logon_req		request;
 	struct mapi_handles		*rec = NULL;
 	struct emsmdbp_object		*object;
+	bool				mailboxstore = true;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] Logon (0xFE)\n"));
 
@@ -173,15 +221,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = retval;
 		*size = libmapiserver_RopLogon_size(mapi_req, mapi_repl);
 	} else {
-		DEBUG(4, ("exchange_emsmdb: [OXCSTOR] Logon on Public Folders not implemented\n"));
-		retval = MAPI_E_NO_SUPPORT;
+		retval = RopLogon_PublicFolder(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl);
 		mapi_repl->error_code = retval;
-		*size = libmapiserver_RopLogon_size(mapi_req, NULL);
+		mailboxstore = false;
+		*size = libmapiserver_RopLogon_size(mapi_req, mapi_repl);
 	}
 
 	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
-		object = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, mapi_req);
+		object = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, mapi_req, mailboxstore);
 		retval = mapi_handles_set_private_data(rec, object);
 
 		handles[mapi_repl->handle_idx] = rec->handle;

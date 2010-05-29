@@ -23,6 +23,7 @@ import samba
 from samba import Ldb
 import ldb
 import uuid
+from openchange_url_utils import *
 
 __docformat__ = 'restructuredText'
 
@@ -76,6 +77,82 @@ dn: CASE_INSENSITIVE
                   "objectClass": ["top", "ou"],
                   "cn": firstou})
 
+    def add_root_public_folder(self, pfdn, fid, SystemIdx, childcount, mapistoreURL):
+	self.ldb.add({"dn": "CN=%s,%s" % (fid, pfdn),
+                      "objectClass": ["publicfolder"],
+                      "cn": fid,
+                      "PidTagFolderId": fid,
+                      "PidTagDisplayName": "Public Folder Root",
+                      "PidTagSubFolders": "TRUE" if (childcount != 0) else "FALSE",
+                      "PidTagFolderChildCount": str(childcount),
+                      "SystemIdx": str(SystemIdx)})
+	return mapistoreURL + "/" + fid
+
+    def add_sub_public_folder(self, pfdn, parentfid, fid, name, SystemIndex, childcount, mapistoreURL):
+        self.ldb.add({"dn": "CN=%s,%s" % (fid, pfdn),
+                      "objectClass": ["publicfolder"],
+                      "cn": fid,
+                      "PidTagParentFolderId": parentfid,
+                      "PidTagFolderId": fid,
+                      "PidTagDisplayName": name,
+                      "PidTagAttrHidden": str(0),
+                      "PidTagContainerClass": "IPF.Note (check this)", 
+                      "PidTagSubFolders": "TRUE" if (childcount != 0) else "FALSE",
+                      "PidTagFolderChildCount": str(childcount),
+                      "FolderType": str(1),
+                      "FolderType": str(1),
+                      "SystemIdx": str(SystemIndex)})
+	return mapistoreURL + "/" + fid
+
+    def add_one_public_folder(self, parent_fid, path, children, SystemIndex, names, mapistoreURL):
+	name = path[-1]
+	GlobalCount = self.get_message_GlobalCount(names.netbiosname)
+	ReplicaID = self.get_message_ReplicaID(names.netbiosname)
+	pfdn = "CN=publicfolders,CN=%s,CN=%s,%s" % (names.firstou, names.firstorg, names.ocserverdn)
+	fid = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
+	childcount = len(children)
+	print "\t* %-40s %s" % (name, fid)
+	if parent_fid == 0:
+	    mapistoreURL = self.add_root_public_folder(pfdn, fid, SystemIndex, childcount, mapistoreURL)
+	else:
+	    mapistoreURL = self.add_sub_public_folder(pfdn, parent_fid, fid, name, SystemIndex, childcount, mapistoreURL);
+
+	GlobalCount += 1
+	self.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
+
+	for name, grandchildren in children.iteritems():
+	    self.add_one_public_folder(fid, path + (name,), grandchildren[0], grandchildren[1], names, mapistoreURL)
+	return mapistoreURL
+
+    def add_mapistore_pf_dir(self, mapistoreURL):
+	mapistorepath = openchangedb_mapistore_url_split(mapistoreURL)[1]
+        if not os.path.isdir(mapistorepath):
+	    os.makedirs(mapistorepath, mode=0700)
+
+    def add_public_folders(self, names, mapistoreURL):
+	self.add_mapistore_pf_dir(mapistoreURL)
+	pfstoreGUID = str(uuid.uuid4())
+	self.ldb.add({"dn": "CN=publicfolders,CN=%s,CN=%s,%s" % (names.firstou, names.firstorg, names.ocserverdn),
+		"objectClass": ["container"],
+		"cn": "publicfolders",
+		"StoreGUID": pfstoreGUID,
+		"ReplicaID": str(1)})
+	public_folders = ({
+	    "IPM_SUBTREE": ({}, 1),
+	    "NON_IPM_SUBTREE": ({
+		"EFORMS REGISTRY": ({}, 3),
+		"Events Root": ({}, -1),
+		"OFFLINE ADDRESS BOOK": ({
+			"/o=%s/cn=addrlists/cn=oabs/cn=Default Offline Address Book" % (names.firstorg): ({}, 8),
+		}, 5),
+		"SCHEDULE+ FREE BUSY": ({
+			"EX:/o=%s/ou=Exchange Administrative Group (%s)" % (names.firstorg, names.netbiosname): ({}, 7),
+		}, 4),
+	    }, 2),
+	}, 0)
+
+	self.add_one_public_folder(0, ("Public Folder Root",), public_folders[0], public_folders[1], names, mapistoreURL)
+	
     def lookup_server(self, cn, attributes=[]):
         # Step 1. Search Server object
         filter = "(&(objectClass=server)(cn=%s))" % cn

@@ -160,7 +160,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 
-		mailboxstore = emsmdbp_is_mapistore(parent);
+		mailboxstore = emsmdbp_is_mailboxstore(parent);
 		object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx, 
 						    mapi_req->u.mapi_OpenFolder.folder_id, mailboxstore);
 		if (object) {

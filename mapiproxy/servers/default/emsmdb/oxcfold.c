@@ -611,16 +611,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 
 	if (!mapi_repl->error_code) {
 		*size += libmapiserver_RopCreateFolder_size(mapi_repl);
+
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-		if (mapistore == true) {
-			mailboxstore = emsmdbp_is_mailboxstore(parent);
-			object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx, 
-							    mapi_repl->u.mapi_CreateFolder.folder_id,
-							    mailboxstore);
-			if (object) {
-				retval = mapi_handles_set_private_data(rec, object);
-			}
+		mailboxstore = emsmdbp_is_mailboxstore(parent);
+		object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx, 
+						    mapi_repl->u.mapi_CreateFolder.folder_id,
+						    mailboxstore);
+		if (object) {
+			retval = mapi_handles_set_private_data(rec, object);
 		}
+
 		mapi_repl->opnum = mapi_req->opnum;
 		mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx;
 

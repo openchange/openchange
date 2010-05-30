@@ -54,6 +54,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	const char			*cn;
 	const char			*userDN;
 	char				*dnprefix;
+	bool				found = false;
 
 	DEBUG(3, ("exchange_emsmdb: EcDoConnect (0x0)\n"));
 
@@ -158,18 +159,29 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 
 	r->out.result = MAPI_E_SUCCESS;
 
-	/* Step 7. Associate this emsmdbp context to the session */
-	session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
-	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
+	/* Search for an existing session and increment ref_count, otherwise create it */
+	for (session = emsmdb_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call) == true)) {
+			mpm_session_increment_ref_count(session->session);
+			found = true;
+			break;
+		}
+	}
 
-	session->pullTimeStamp = *r->out.pullTimeStamp;
-	session->session = mpm_session_init((TALLOC_CTX *)emsmdb_session, dce_call);
-	OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
+	if (found == false) {
+		/* Step 7. Associate this emsmdbp context to the session */
+		session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
+		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
-	mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
-	mpm_session_set_destructor(session->session, emsmdbp_destructor);
+		session->pullTimeStamp = *r->out.pullTimeStamp;
+		session->session = mpm_session_init((TALLOC_CTX *)emsmdb_session, dce_call);
+		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
-	DLIST_ADD_END(emsmdb_session, session, struct exchange_emsmdb_session *);
+		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
+		mpm_session_set_destructor(session->session, emsmdbp_destructor);
+
+		DLIST_ADD_END(emsmdb_session, session, struct exchange_emsmdb_session *);
+	}
 
 	return MAPI_E_SUCCESS;
 }
@@ -190,6 +202,7 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle		*h;
 	struct exchange_emsmdb_session	*session;
+	bool				ret;
 
 	DEBUG(3, ("exchange_emsmdb: EcDoDisconnect (0x1)\n"));
 
@@ -204,9 +217,15 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 	if (h) {
 		for (session = emsmdb_session; session; session = session->next) {
 			if ((mpm_session_cmp(session->session, dce_call) == true)) {
-				DLIST_REMOVE(emsmdb_session, session);
-				mpm_session_release(session->session);
-				DEBUG(6, ("[%s:%d]: Session found and released\n", __FUNCTION__, __LINE__));
+				ret = mpm_session_release(session->session);
+				if (ret == true) {
+					DLIST_REMOVE(emsmdb_session, session);
+					DEBUG(5, ("[%s:%d]: Session found and released\n", 
+						  __FUNCTION__, __LINE__));
+				} else {
+					DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n",
+						  __FUNCTION__, __LINE__));
+				}
 				break;
 			}
 		}

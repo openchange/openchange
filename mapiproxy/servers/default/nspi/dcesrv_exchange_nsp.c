@@ -55,6 +55,7 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle		*handle;
 	struct policy_handle		wire_handle;
 	struct exchange_nsp_session	*session;
+	bool				found = false;
 
 	DEBUG(5, ("exchange_nsp: NspiBind (0x0)\n"));
 
@@ -117,17 +118,29 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	r->out.mapiuid = guid;
 	r->out.result = MAPI_E_SUCCESS;
 
-	/* Step 6. Associate this emsabp context to the session */
-	session = talloc((TALLOC_CTX *)nsp_session, struct exchange_nsp_session);
-	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
+	/* Search for an existing session and increment ref_count, otherwise create it */
+	for (session = nsp_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call) == true)) {
+			mpm_session_increment_ref_count(session->session);
+			found = true;
+			break;
+		}
+	}
 
-	session->session = mpm_session_init((TALLOC_CTX *)nsp_session, dce_call);
-	OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
+	if (found == false) {
+		/* Step 6. Associate this emsabp context to the session */
+		session = talloc((TALLOC_CTX *)nsp_session, struct exchange_nsp_session);
+		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
 
-	mpm_session_set_private_data(session->session, (void *) emsabp_ctx);
-	mpm_session_set_destructor(session->session, emsabp_destructor);
+		DEBUG(0, ("Creating new session\n"));
+		session->session = mpm_session_init((TALLOC_CTX *)nsp_session, dce_call);
+		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
 
-	DLIST_ADD_END(nsp_session, session, struct exchange_nsp_session *);
+		mpm_session_set_private_data(session->session, (void *) emsabp_ctx);
+		mpm_session_set_destructor(session->session, emsabp_destructor);
+
+		DLIST_ADD_END(nsp_session, session, struct exchange_nsp_session *);
+	}
 
 	return MAPI_E_SUCCESS;
 }
@@ -147,6 +160,7 @@ static enum MAPISTATUS dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle		*h;
 	struct exchange_nsp_session	*session;
+	bool				ret;
 
 	DEBUG(5, ("exchange_nsp: NspiUnbind (0x1)\n"));
 
@@ -161,9 +175,16 @@ static enum MAPISTATUS dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 	if (h) {
 		for (session = nsp_session; session; session = session->next) {
 			if ((mpm_session_cmp(session->session, dce_call) == true)) {
-				mpm_session_release(session->session);
-				DLIST_REMOVE(nsp_session, session);
-				DEBUG(6, ("[%s:%d]: Session found and released\n", __FUNCTION__, __LINE__));
+				ret = mpm_session_release(session->session);
+				if (ret == true) {
+					DLIST_REMOVE(nsp_session, session);
+					DEBUG(0, ("[%s:%d]: Session found and released\n", 
+						  __FUNCTION__, __LINE__));
+				} else {
+					DEBUG(0, ("[%s:%d]: Session found and ref_count decreased\n",
+						  __FUNCTION__, __LINE__));
+				}
+				break;
 			}
 		}
 	}

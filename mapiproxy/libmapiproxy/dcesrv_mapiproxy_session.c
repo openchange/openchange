@@ -55,10 +55,28 @@ struct mpm_session *mpm_session_new(TALLOC_CTX *mem_ctx,
 	session->server_id.id2 = server_id.id2;
 	session->server_id.node = server_id.node;
 	session->context_id = context_id;
+	session->ref_count = 0;
 	session->destructor = NULL;
 	session->private_data = NULL;
 
 	return session;
+}
+
+
+/**
+   \details Increment the ref_count associated to a session
+
+   \param session pointer to the session where to increment ref_count
+
+   \return true on success, otherwise false
+ */
+bool mpm_session_increment_ref_count(struct mpm_session *session)
+{
+	if (!session) return false;
+
+	session->ref_count += 1;
+
+	return true;
 }
 
 
@@ -135,6 +153,11 @@ bool mpm_session_release(struct mpm_session *session)
 	bool		ret;
 
 	if (!session) return false;
+
+	if (session->ref_count) {
+		session->ref_count -= 1;
+		return false;
+	}
 
 	if (session->destructor) {
 		ret = session->destructor(session->private_data);

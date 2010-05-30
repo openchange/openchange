@@ -463,13 +463,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		/* op_MAPI_CopyTo: 0x39 */
 		/* op_MAPI_CopyToStream: 0x3a */
 		/* op_MAPI_CloneStream: 0x3b */
-		case op_MAPI_GetPermissionsTable:
+		case op_MAPI_GetPermissionsTable: /* 0x3e */
 			retval = EcDoRpc_RopGetPermissionsTable(mem_ctx, emsmdbp_ctx,
 								&(mapi_request->mapi_req[i]),
 								&(mapi_response->mapi_repl[idx]),
 								mapi_response->handles, &size);
 			break;
-		/* op_MAPI_GetPermissionsTable: 0x3e */
 		case op_MAPI_GetRulesTable: /* 0x3f */
 			retval = EcDoRpc_RopGetRulesTable(mem_ctx, emsmdbp_ctx,
 							  &(mapi_request->mapi_req[i]),

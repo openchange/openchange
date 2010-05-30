@@ -920,6 +920,7 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiserver/
 							mapiproxy/libmapiserver/libmapiserver_oxcnotif.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxomsg.po		\
 							mapiproxy/libmapiserver/libmapiserver_oxorule.po	\
+							mapiproxy/libmapiserver/libmapiserver_oxcperm.po	\
 							ndr_mapi.po				\
 							gen_ndr/ndr_exchange.po
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiserver.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ $(LIBS)
@@ -1166,7 +1167,8 @@ mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/
 						mapiproxy/servers/default/emsmdb/oxcmsg.po			\
 						mapiproxy/servers/default/emsmdb/oxcnotif.po			\
 						mapiproxy/servers/default/emsmdb/oxomsg.po			\
-						mapiproxy/servers/default/emsmdb/oxorule.po			
+						mapiproxy/servers/default/emsmdb/oxorule.po			\
+						mapiproxy/servers/default/emsmdb/oxcperm.po
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) \
 						mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)		\

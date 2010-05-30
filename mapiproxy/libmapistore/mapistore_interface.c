@@ -186,6 +186,36 @@ _PUBLIC_ int mapistore_add_context_ref_count(struct mapistore_context *mstore_ct
 	return retval;
 }
 
+
+/**
+   \details Search for an existing context given its uri
+
+   \param mstore_ctx pointer to the mapistore context
+   \param uri the URI to lookup
+   \param context_id pointer to the context identifier to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_search_context_by_uri(struct mapistore_context *mstore_ctx,
+					     const char *uri,
+					     uint32_t *context_id)
+{
+	struct backend_context		*backend_ctx;
+	int				retval;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	if (!uri) return MAPISTORE_ERROR;
+
+	backend_ctx = mapistore_backend_lookup_by_uri(mstore_ctx->context_list, uri);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_NOT_FOUND, NULL);
+
+	*context_id = backend_ctx->context_id;
+	return MAPISTORE_SUCCESS;
+}
+
+
 /**
    \details Delete an existing connection context from mapistore
 

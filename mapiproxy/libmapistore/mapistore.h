@@ -74,6 +74,7 @@ struct backend_context {
 	void				*private_data;
 	uint32_t			context_id;
 	uint32_t			ref_count;
+	char				*uri;
 };
 
 struct backend_context_list {
@@ -104,9 +105,10 @@ __BEGIN_DECLS
 /* definitions from mapistore_interface.c */
 struct mapistore_context *mapistore_init(TALLOC_CTX *, const char *);
 int mapistore_release(struct mapistore_context *);
-int mapistore_add_context(struct mapistore_context *, const char *uri, uint32_t *);
+int mapistore_add_context(struct mapistore_context *, const char *, uint32_t *);
 int mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
+int mapistore_search_context_by_uri(struct mapistore_context *, const char *, uint32_t *);
 const char *mapistore_errstr(int);
 int mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
 int mapistore_closedir(struct mapistore_context *mstore_ctx, uint32_t, uint64_t);
@@ -124,6 +126,7 @@ extern int	mapistore_backend_register(const void *);
 const char	*mapistore_backend_get_installdir(void);
 init_backend_fn	*mapistore_backend_load(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_lookup(struct backend_context_list *, uint32_t);
+struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *, const char *);
 
 bool		mapistore_backend_run_init(init_backend_fn *);
 

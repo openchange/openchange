@@ -311,6 +311,7 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, co
 	context->backend = backends[i].backend;
 	context->private_data = private_data;
 	context->ref_count = 0;
+	context->uri = talloc_strdup(context, uri);
 	talloc_steal(context, private_data);
 
 	return context;
@@ -377,6 +378,35 @@ _PUBLIC_ struct backend_context *mapistore_backend_lookup(struct backend_context
 		}
 	}
 
+	return NULL;
+}
+
+
+/**
+   \details find the context matching given uri string
+
+   \param backend_list_ctx pointer to the backend context list
+   \param uri the uri string to search
+
+   \return Pointer to the mapistore_backend context on success,
+   otherwise NULL
+ */
+_PUBLIC_ struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *backend_list_ctx,
+								 const char *uri)
+{
+	struct backend_context_list	*el;
+
+	/* sanity checks */
+	if (!backend_list_ctx) return NULL;
+	if (!uri) return NULL;
+
+	for (el = backend_list_ctx; el; el = el->next) {
+		if (el->ctx && el->ctx->uri &&
+		    !strcmp(el->ctx->uri, uri)) {
+			return el->ctx;
+		}
+	}
+	
 	return NULL;
 }
 

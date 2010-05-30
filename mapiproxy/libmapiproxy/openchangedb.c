@@ -292,7 +292,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *ldb_ctx,
 
 	mem_ctx = talloc_named(NULL, 0, "get_PublicFolderReplica");
 
-	/* Step 1. Search Mailbox DN */
+	/* Step 1. Search for public folder container */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, "CN=publicfolders");
 
@@ -301,7 +301,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *ldb_ctx,
 	/* Step 2. Retrieve ReplicaID attribute's value */
 	*ReplID = ldb_msg_find_attr_as_int(res->msgs[0], "ReplicaID", 0);
 
-	/* Step 3/ Retrieve ReplicaGUID attribute's value */
+	/* Step 3. Retrieve ReplicaGUID attribute's value */
 	guid = ldb_msg_find_attr_as_string(res->msgs[0], "StoreGUID", 0);
 	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_CORRUPT_STORE, mem_ctx);
 

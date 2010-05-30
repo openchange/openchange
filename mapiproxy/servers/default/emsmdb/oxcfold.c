@@ -407,7 +407,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_conte
 
 	ldb_msg_add_fmt(msg, "PidTagParentFolderId", "0x%.16"PRIx64, parentFolder);
 	ldb_msg_add_fmt(msg, "PidTagFolderId", "0x%.16"PRIx64, response->folder_id);
-	ldb_msg_add_fmt(msg, "mapistore_uri", "fsocpf:///usr/local/samba/private/mapistore/%s/%.16"PRIx64, 
+	ldb_msg_add_fmt(msg, "mapistore_uri", "fsocpf:///usr/local/samba/private/mapistore/%s/0x%.16"PRIx64, 
 			emsmdbp_ctx->username, response->folder_id);
 	ldb_msg_add_string(msg, "PidTagSubFolders", "0");
 	ldb_msg_add_string(msg, "FolderType", "1");
@@ -580,7 +580,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(parent);
 	switch (mapistore) {
 	case false:
-		switch (mapi_req->u.mapi_CreateFolder.ulType) {
+		switch (mapi_req->u.mapi_CreateFolder.ulFolderType) {
 		case FOLDER_GENERIC:
 			mapi_repl->error_code = EcDoRpc_RopCreateSystemSpecialFolder(emsmdbp_ctx, aRow,
 										     mapi_req->u.mapi_CreateFolder.ulFlags,
@@ -590,7 +590,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] FOLDER_SEARCH not implemented\n"));
 			break;
 		default:
-			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Unexpected folder type\n"));
+			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Unexpected folder type 0x%x\n", mapi_req->u.mapi_CreateFolder.ulType));
 		}
 		break;
 	case true:

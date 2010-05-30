@@ -283,7 +283,8 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 
 	/* Step 1. FIXME: Idle requests */
 	if (mapi_request->mapi_len <= 2) {
-		return MAPI_E_SUCCESS;
+		mapi_response->mapi_len = 2;
+		goto end;
 	}
 
 	/* Step 2. Process serialized MAPI requests */
@@ -586,6 +587,7 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 	mapi_response->mapi_len = mapi_response->length + handles_length;
 
 	/* Step 5. Fill EcDoRpc reply */
+end:
 	r->out.handle = r->in.handle;
 	r->out.size = r->in.size;
 	r->out.offset = r->in.offset;

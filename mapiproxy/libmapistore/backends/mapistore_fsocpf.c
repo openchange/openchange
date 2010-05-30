@@ -137,8 +137,11 @@ static int fsocpf_delete_context(void *private_data)
 
 	if (fsocpf_ctx->dir) {
 		closedir(fsocpf_ctx->dir);
+		fsocpf_ctx->dir = NULL;
 	}
+
 	talloc_free(fsocpf_ctx);
+	fsocpf_ctx = NULL;
 
 	return MAPISTORE_SUCCESS;
 }

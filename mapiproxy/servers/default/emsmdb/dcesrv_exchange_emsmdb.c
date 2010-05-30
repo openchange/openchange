@@ -162,6 +162,8 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	/* Search for an existing session and increment ref_count, otherwise create it */
 	for (session = emsmdb_session; session; session = session->next) {
 		if ((mpm_session_cmp(session->session, dce_call) == true)) {
+			DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n", 
+				  session->session->context_id));
 			mpm_session_increment_ref_count(session->session);
 			found = true;
 			break;
@@ -179,6 +181,8 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 
 		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
 		mpm_session_set_destructor(session->session, emsmdbp_destructor);
+
+		DEBUG(0, ("[exchange_emsmdb]: New session added: %d\n", session->session->context_id));
 
 		DLIST_ADD_END(emsmdb_session, session, struct exchange_emsmdb_session *);
 	}

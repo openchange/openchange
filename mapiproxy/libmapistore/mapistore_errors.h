@@ -111,4 +111,9 @@
  */
 #define	MAPISTORE_ERR_NOT_FOUND			14
 
+/**
+   The function still have a reference count
+ */
+#define	MAPISTORE_ERR_REF_COUNT			15
+
 #endif /* ! __MAPISTORE_ERRORS_H */

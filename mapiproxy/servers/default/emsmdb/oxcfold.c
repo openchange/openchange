@@ -115,7 +115,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*object;
 	uint32_t			handle;
 	bool				mapistore = false;
-	bool				mailboxstore = true;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] OpenFolder (0x02)\n"));
 
@@ -160,9 +159,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 
-		mailboxstore = emsmdbp_is_mailboxstore(parent);
 		object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx, 
-						    mapi_req->u.mapi_OpenFolder.folder_id, mailboxstore);
+						    mapi_req->u.mapi_OpenFolder.folder_id, parent);
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
 		}
@@ -535,7 +533,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	void				*data;
 	struct mapi_handles		*rec = NULL;
 	bool				mapistore = false;
-	bool				mailboxstore = true;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder (0x1c)\n"));
 
@@ -613,10 +610,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		*size += libmapiserver_RopCreateFolder_size(mapi_repl);
 
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-		mailboxstore = emsmdbp_is_mailboxstore(parent);
 		object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx, 
-						    mapi_repl->u.mapi_CreateFolder.folder_id,
-						    mailboxstore);
+						    mapi_repl->u.mapi_CreateFolder.folder_id, parent);
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
 		}

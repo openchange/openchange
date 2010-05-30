@@ -73,6 +73,7 @@ struct backend_context {
 	const struct mapistore_backend	*backend;
 	void				*private_data;
 	uint32_t			context_id;
+	uint32_t			ref_count;
 };
 
 struct backend_context_list {
@@ -104,6 +105,7 @@ __BEGIN_DECLS
 struct mapistore_context *mapistore_init(TALLOC_CTX *, const char *);
 int mapistore_release(struct mapistore_context *);
 int mapistore_add_context(struct mapistore_context *, const char *uri, uint32_t *);
+int mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
 const char *mapistore_errstr(int);
 int mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t, uint64_t);

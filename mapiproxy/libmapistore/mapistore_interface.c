@@ -155,6 +155,36 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
 }
 
 
+/**
+   \details Increase the reference counter of an existing context
+
+   \param mstore_ctx pointer to the mapistore context
+   \param contex_id the context identifier referencing the context to
+   update
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_add_context_ref_count(struct mapistore_context *mstore_ctx,
+					     uint32_t context_id)
+{
+	struct backend_context		*backend_ctx;
+	int				retval;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	if (context_id == -1) return MAPISTORE_ERROR;
+
+	/* Step 0. Ensure the context exists */
+	DEBUG(0, ("mapistore_add_context_ref_count: context_is to increment is %d\n", context_id));
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Increment the ref count */
+	retval = mapistore_backend_add_ref_count(backend_ctx);
+
+	return retval;
+}
 
 /**
    \details Delete an existing connection context from mapistore
@@ -183,12 +213,17 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
 
 	/* Step 1. Delete the context within backend */
 	retval = mapistore_backend_delete_context(backend_ctx);
-	if (retval) return retval;
+	switch (retval) {
+	case MAPISTORE_ERR_REF_COUNT:
+		return MAPISTORE_SUCCESS;
+	case MAPISTORE_SUCCESS:
+		/* Step 2. Add the free'd context id to the free list */
+		retval = mapistore_free_context_id(mstore_ctx->processing_ctx, context_id);
+		break;
+	default:
+		return retval;
+	}
 
-	/* Step 2. Delete the context from the processing layer */
-
-	/* Step 2. Add the free'd context id to the free list */
-	retval = mapistore_free_context_id(mstore_ctx->processing_ctx, context_id);
 	return retval;
 }
 

@@ -164,9 +164,10 @@ bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context 
 const char	      *emsmdbp_getstr_type(struct emsmdbp_object *);
 bool		      emsmdbp_is_mapistore(struct mapi_handles *);
 bool		      emsmdbp_is_mailboxstore(struct mapi_handles *);
+uint32_t	      emsmdbp_get_contextID(struct mapi_handles *);
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *);
 struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, bool);
-struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, bool);
+struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct mapi_handles *);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct mapi_handles *);
 
 /* definitions from oxcfold.c */

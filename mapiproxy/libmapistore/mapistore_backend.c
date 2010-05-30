@@ -310,9 +310,28 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, co
 	talloc_set_destructor((void *)context, (int (*)(void *))delete_context);
 	context->backend = backends[i].backend;
 	context->private_data = private_data;
+	context->ref_count = 0;
 	talloc_steal(context, private_data);
 
 	return context;
+}
+
+/**
+   \details Increase the ref count associated to a given backend
+
+   \param bctx pointer to the backend context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+_PUBLIC_ int mapistore_backend_add_ref_count(struct backend_context *bctx)
+{
+	if (!bctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	bctx->ref_count += 1;
+
+	return MAPISTORE_SUCCESS;
 }
 
 
@@ -326,6 +345,11 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, co
 _PUBLIC_ int mapistore_backend_delete_context(struct backend_context *bctx)
 {
 	if (!bctx->backend->delete_context) return MAPISTORE_ERROR;
+
+	if (bctx->ref_count) {
+		bctx->ref_count -= 1;
+		return MAPISTORE_ERR_REF_COUNT;
+	}
 
 	return bctx->backend->delete_context(bctx->private_data);
 }

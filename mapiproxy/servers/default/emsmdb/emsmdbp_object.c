@@ -118,6 +118,34 @@ bool emsmdbp_is_mailboxstore(struct mapi_handles *handles)
 
 
 /**
+   \details Return the contextID associated to a handle
+
+   \param handles pointer to the MAPI handle to lookup
+
+   \return contextID value on success, otherwise -1
+ */
+uint32_t emsmdbp_get_contextID(struct mapi_handles *handles)
+{
+	void			*data;
+	struct emsmdbp_object	*object;
+
+	mapi_handles_get_private_data(handles, &data);
+	object = (struct emsmdbp_object *) data;
+
+	switch (object->type) {
+	case EMSMDBP_OBJECT_MAILBOX:
+		return -1;
+	case EMSMDBP_OBJECT_FOLDER:
+		return object->object.folder->contextID;
+	default:
+		return -1;
+	}
+
+	return -1;
+}
+
+
+/**
    \details talloc destructor for emsmdbp_objects
 
    \param data generic pointer on data
@@ -265,7 +293,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 							   struct emsmdbp_context *emsmdbp_ctx,
-							   uint64_t folderID, bool mailboxstore)
+							   uint64_t folderID,
+							   struct mapi_handles *parent)
 {
 	enum MAPISTATUS			retval;
 	struct emsmdbp_object		*object;
@@ -289,14 +318,14 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 	object->object.folder->contextID = -1;
 	object->object.folder->folderID = folderID;
 	object->object.folder->mapistore_root = false;
-	object->object.folder->mailboxstore = mailboxstore;
+	object->object.folder->mailboxstore = emsmdbp_is_mailboxstore(parent);
 
 	/* system folders acting as containers don't have
 	 * mapistore_uri attributes (Mailbox, IPM Subtree) 
 	 */
 	retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx,
 					       object->object.folder->folderID, 
-					       &mapistore_uri, mailboxstore);
+					       &mapistore_uri, object->object.folder->mailboxstore);
 
 	if (retval == MAPI_E_SUCCESS) {
 		if (!mapistore_uri) {
@@ -314,13 +343,13 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 			object->object.folder->contextID = context_id;
 		}
 	} else {
-		if (mailboxstore == true) {
-			object->object.folder->contextID = context_id;
+		if (emsmdbp_is_mapistore(parent)) {
+			object->object.folder->mapistore = true;
+			object->object.folder->contextID = emsmdbp_get_contextID(parent);
+			ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, 
+							      object->object.folder->contextID);
 		} else {
-			/* object->object.folder->mapistore = false; */
-			DEBUG(0, ("error in emsmdbp_object_folder_init, retval = 0x%.8x\n", retval));
-			talloc_free(object);
-			return NULL;
+			object->object.folder->mapistore = false;
 		}
 	}
 
@@ -346,6 +375,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object	*folder;
 	void			*data = NULL;
 	bool			mapistore = false;
+	int			ret;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
@@ -379,6 +409,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	if (mapistore == true) {
 		object->object.table->mapistore = true;
 		object->object.table->contextID = folder->object.folder->contextID;		
+		ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, 
+						      folder->object.folder->contextID);
 	}
 
 	return object;

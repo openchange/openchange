@@ -255,14 +255,17 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 				      struct EcDoRpc *r)
 {
 	struct dcesrv_handle		*h;
+	struct exchange_emsmdb_session	*session;
 	struct emsmdbp_context		*emsmdbp_ctx;
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
 	enum MAPISTATUS			retval;
+	int				ret;
 	uint32_t			handles_length;
 	uint16_t			size = 0;
 	uint32_t			i;
 	uint32_t			idx;
+	bool				found = false;
 
 	DEBUG(3, ("exchange_emsmdb: EcDoRpc (0x2)\n"));
 
@@ -272,16 +275,20 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
-	OPENCHANGE_RETVAL_IF(!h, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
-
-	emsmdbp_ctx = (struct emsmdbp_context *) h->data;
+	/* Retrieve the emsmdbp_context from the session management system */
+	for (session = emsmdb_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+			emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
+			found = true;
+		}
+	}
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
 	mapi_request = r->in.mapi_request;
 	mapi_response = talloc_zero(mem_ctx, struct mapi_response);
 	mapi_response->handles = mapi_request->handles;
 
-	/* Step 1. FIXME: Idle requests */
+	/* Step 1. Idle requests case */
 	if (mapi_request->mapi_len <= 2) {
 		mapi_response->mapi_len = 2;
 		goto end;

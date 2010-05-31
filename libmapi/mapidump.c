@@ -927,7 +927,7 @@ _PUBLIC_ void mapidump_freebusy_event(struct Binary_r *bin, uint32_t month, uint
 	uint32_t	day;
 	const char	*month_name;
 	uint32_t	last;
-	uint32_t	minutes;
+	uint32_t	minutes = 0;
 
 	if (!bin) return;
 	/* bin.cb must be a multiple of 4 */
@@ -942,23 +942,24 @@ _PUBLIC_ void mapidump_freebusy_event(struct Binary_r *bin, uint32_t month, uint
 		event_end = (bin->lpb[i + 3] << 8) | bin->lpb[i + 2];
 
 		for (hour = 0; hour < 24; hour++) {
-			if (!((event_start - (60 * hour)) % 1440)) {
+			if (!(((event_start - (60 * hour)) % 1440) && (((event_start - (60 * hour)) % 1440) - 30))) {
 				day = ((event_start - (60 * hour)) / 1440) + 1;
+				minutes = (event_start - (60 * hour)) % 1440;
 				last = event_end - event_start;
 #if defined (__FreeBSD__)
-				DEBUG(0, ("%s %u %s %u at %u hours and lasts ", sep ? sep : "", day, month_name, year, hour));
+				DEBUG(0, ("%s %u %s %u at %.2u%.2u hrs and lasts ", sep ? sep : "", day, month_name, year, hour, minutes));
 #else
-				DEBUG(0, ("%s %u %s %u at %u hours and lasts ", sep ? sep : "", day, month_name, year, hour + daylight));
+				DEBUG(0, ("%s %u %s %u at %.2u%.2u hrs and lasts ", sep ? sep : "", day, month_name, year, hour + daylight, minutes));
 #endif
 				if (last < 60) {
-					DEBUG(0, ("%u minutes\n", last));
+					DEBUG(0, ("%u mins\n", last));
 				} else {
 					hours = last / 60;
 					minutes = last - hours * 60;
 					if (minutes > 0) {
-						DEBUG(0, ("%u hours and %u minutes\n", hours, minutes));
+						DEBUG(0, ("%u hrs %u mins\n", hours, minutes));
 					} else {
-						DEBUG(0, ("%u hours\n", hours));
+						DEBUG(0, ("%u hrs\n", hours));
 					}
 				}
 			}

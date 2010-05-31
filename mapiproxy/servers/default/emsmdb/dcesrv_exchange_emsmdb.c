@@ -254,13 +254,11 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 				      TALLOC_CTX *mem_ctx,
 				      struct EcDoRpc *r)
 {
-	struct dcesrv_handle		*h;
 	struct exchange_emsmdb_session	*session;
-	struct emsmdbp_context		*emsmdbp_ctx;
+	struct emsmdbp_context		*emsmdbp_ctx = NULL;
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
 	enum MAPISTATUS			retval;
-	int				ret;
 	uint32_t			handles_length;
 	uint16_t			size = 0;
 	uint32_t			i;

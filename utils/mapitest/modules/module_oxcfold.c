@@ -254,31 +254,39 @@ _PUBLIC_ bool mapitest_oxcfold_CreateFolder(struct mapitest *mt)
 	mapi_object_t		obj_child;
 	mapi_id_t		id_folder;
 	int			i;
+	bool			ret = true;
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_folder);
+	mapi_object_init(&obj_top);
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Step 2. Open Top Information Store folder */
-	mapi_object_init(&obj_folder);
 	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderTopInformationStore);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
 	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Step 3. Create the top test folder */
 	mapitest_print(mt, "* Create GENERIC \"%s\" folder\n", MT_DIRNAME_TOP);
-	mapi_object_init(&obj_top);
 	retval = CreateFolder(&obj_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
 			      OPEN_IF_EXISTS, &obj_top);
 	mapitest_print_retval(mt, "CreateFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Step 4. Create sub directories */
@@ -290,12 +298,22 @@ _PUBLIC_ bool mapitest_oxcfold_CreateFolder(struct mapitest *mt)
 		retval = CreateFolder(&obj_top, FOLDER_GENERIC, subfolders[i].name, NULL,
 				      OPEN_IF_EXISTS, &obj_child);
 		mapitest_print_retval_fmt(mt, "CreateFolder", "(%s)", subfolders[i].name);
-
+		if (retval != MAPI_E_SUCCESS) {
+			mapitest_deindent();
+			mapi_object_release(&obj_child);
+			ret = false;
+			goto cleanup;
+		}
 		/* Step 4.2. Set its container class */
 		set_SPropValue_proptag(&lpProp[0], PR_CONTAINER_CLASS, (const void *) subfolders[i].class);
 		retval = SetProps(&obj_child, lpProp, 1);
 		mapitest_print_retval_fmt(mt, "SetProps", "(%s)", subfolders[i].name);		
-
+		if (retval != MAPI_E_SUCCESS) {
+			mapitest_deindent();
+			mapi_object_release(&obj_child);
+			ret = false;
+			goto cleanup;
+		}
 		mapi_object_release(&obj_child);
 	}
 	mapitest_deindent();
@@ -303,12 +321,21 @@ _PUBLIC_ bool mapitest_oxcfold_CreateFolder(struct mapitest *mt)
 	/* Step 5. Empty Folder */
 	retval = EmptyFolder(&obj_top);
 	mapitest_print_retval(mt, "EmptyFolder");
+	if (retval != MAPI_E_SUCCESS) {
+	      ret = false;
+	      goto cleanup;
+	}
 
 	/* Step 6. DeleteFolder */
 	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_top),
 			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
 	mapitest_print_retval(mt, "DeleteFolder");
-	
+	if (retval != MAPI_E_SUCCESS) {
+	      ret = false;
+	      goto cleanup;
+	}
+
+cleanup:
 	/* Release */
 	mapi_object_release(&obj_top);
 	mapi_object_release(&obj_folder);

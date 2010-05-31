@@ -201,7 +201,6 @@ _PUBLIC_ int mapistore_search_context_by_uri(struct mapistore_context *mstore_ct
 					     uint32_t *context_id)
 {
 	struct backend_context		*backend_ctx;
-	int				retval;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -228,8 +227,10 @@ _PUBLIC_ int mapistore_search_context_by_uri(struct mapistore_context *mstore_ct
 _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx, 
 				   uint32_t context_id)
 {
+	struct backend_context_list	*backend_list;
 	struct backend_context		*backend_ctx;
 	int				retval;
+	bool				found = false;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -241,12 +242,24 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
+	/* search the backend_list item */
+	for (backend_list = mstore_ctx->context_list; backend_list; backend_list = backend_list->next) {
+		if (backend_list->ctx->context_id == context_id) {
+			found = true;
+			break;
+		}		
+	}
+	if (found == false) {
+		return MAPISTORE_ERROR;
+	}
+
 	/* Step 1. Delete the context within backend */
 	retval = mapistore_backend_delete_context(backend_ctx);
 	switch (retval) {
 	case MAPISTORE_ERR_REF_COUNT:
 		return MAPISTORE_SUCCESS;
 	case MAPISTORE_SUCCESS:
+		DLIST_REMOVE(mstore_ctx->context_list, backend_list);
 		/* Step 2. Add the free'd context id to the free list */
 		retval = mapistore_free_context_id(mstore_ctx->processing_ctx, context_id);
 		break;

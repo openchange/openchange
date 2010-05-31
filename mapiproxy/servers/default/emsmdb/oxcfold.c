@@ -597,6 +597,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
+	/* Temporary hack: Prevent Outlook 2007 from creating RSS feed
+	 * folder at each startup. Should be removed as soon the
+	 * Outlook behavior is understood */
+
+	/* if (mapi_repl->error_code == MAPI_E_COLLISION) { */
+	/* 	mapi_repl->opnum = mapi_req->opnum; */
+	/* 	mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx; */
+	/* 	*size += libmapiserver_RopCreateFolder_size(NULL); */
+	/* 	return MAPI_E_COLLISION; */
+	/* } */
 	if (mapi_repl->error_code == MAPI_E_COLLISION) {
 		mapi_repl->error_code = MAPI_E_SUCCESS;
 	}

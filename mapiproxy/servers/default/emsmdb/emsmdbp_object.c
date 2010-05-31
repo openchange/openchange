@@ -341,6 +341,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 				ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, context_id);
 			} else {
 				ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, mapistore_uri, &context_id);
+				DEBUG(0, ("context id: %d (%s)\n", context_id, mapistore_uri));
 				if (ret != MAPISTORE_SUCCESS) {
 					talloc_free(object);
 					return NULL;

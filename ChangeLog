@@ -1,7 +1,7 @@
 2010-05-28
     jkerihuel
 	[r1858]
-		Patch from Milan Crha <mcrha@readhat.com>:
+		Patch from Milan Crha <mcrha@redhat.com>:
 		
 		Fix PT_DOUBLE support in openchange
 	[r1857]

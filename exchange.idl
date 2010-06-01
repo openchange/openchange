@@ -3438,10 +3438,10 @@ System Attendant Private Interface
 	} store_mailbox;
 
 	typedef [nodiscriminant] union {
- 		[case(0x0)]		store_pf	store_pf;
-		[case(LogonPrivate|UnderCover)]
-		[case(LogonPrivate|SpIProcess)]
-		[case(LogonPrivate)]	store_mailbox	store_mailbox;
+ 		[case(0x0)]			store_pf	store_pf;
+		[case(LogonPrivate|UnderCover)] store_mailbox	store_mailbox;
+		[case(LogonPrivate|SpIProcess)] store_mailbox	store_mailbox;
+		[case(LogonPrivate)]		store_mailbox	store_mailbox;
 	} LogonType;
 
 	typedef [nopush,flag(NDR_NOALIGN)] struct {

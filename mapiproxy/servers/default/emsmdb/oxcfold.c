@@ -344,7 +344,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 		contextID = object->object.folder->contextID;
 		break;
 	default:
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
 		*size = libmapiserver_RopGetContentsTable_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
@@ -353,9 +353,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	switch (mapistore) {
 	case false:
 		/* system/special folder */
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		*size = libmapiserver_RopGetContentsTable_size(NULL);
-		return MAPI_E_SUCCESS;
+		mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
+		break;
 	case true:
 		/* handled by mapistore */
 		retval = mapistore_get_message_count(emsmdbp_ctx->mstore_ctx, contextID, folderID,

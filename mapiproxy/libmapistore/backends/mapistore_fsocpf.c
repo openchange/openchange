@@ -540,7 +540,7 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 	int			ret;
 	struct dirent		*curdir;
 	uint32_t		counter = 0;
-	char			*messageID;
+	char			*messageID = NULL;
 	char			*propfile;
 	uint32_t		cValues = 0;
 	struct SPropValue	*lpProps;
@@ -556,15 +556,23 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 			messageID = talloc_strdup(ctx, curdir->d_name);
 			break;
 		}
-		if (strcmp(curdir->d_name, ".properties")) {
+		if (strcmp(curdir->d_name, ".properties") && 
+		    strcmp(curdir->d_name, ".") &&
+		    strcmp(curdir->d_name, "..")) {
 			counter++;
 		}
 	}
 
-	if (!curdir) {
+	if (!messageID) {
 		*data = NULL;
 		return MAPI_E_NOT_FOUND;
 	}
+
+	/* if fid, return ctx fid */
+	if (proptag == PR_FID) {
+		*data = (uint64_t *)&ctx->fid;
+		return MAPI_E_SUCCESS;
+	  }
 
 	/* If mid, return curdir->d_name */
 	if (proptag == PR_MID) {
@@ -584,7 +592,6 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 
 	/* process the file */
 	ret = ocpf_parse(propfile);
-	fflush(0);
 	talloc_free(propfile);
 
 	ocpf_set_SPropValue_array(ctx);

@@ -352,6 +352,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 									 table_filter, table->properties[j], 
 									 table->numerator, &data);
 				if (retval == MAPI_E_INVALID_OBJECT) {
+					count = 0;
 					goto finish;
 				}
 				if (retval == MAPI_E_NOT_FOUND) {
@@ -383,6 +384,7 @@ finish:
 		mapi_repl->u.mapi_QueryRows.RowCount = count;
 		mapi_repl->u.mapi_QueryRows.RowData.length = response.RowData.length;
 		mapi_repl->u.mapi_QueryRows.RowData.data = response.RowData.data;
+		dump_data(0, response.RowData.data, response.RowData.length);
 	} else {
 		/* useless code for the moment */
 		mapi_repl->error_code = MAPI_E_SUCCESS;

@@ -454,5 +454,6 @@ recipient	: STRING SEMICOLON
 
 void yyerror(char *s)
 {
-	printf("%s: %d", s, lineno);
+	printf("%s: %d\n", s, lineno);
+	fflush(0);
 }

@@ -118,6 +118,7 @@ _PUBLIC_ int ocpf_parse(const char *filename)
 	OCPF_RETVAL_IF(yyin == NULL, OCPF_WARN_FILENAME_INVALID, NULL);
 
 	ret = ocpf_yyparse();
+	fflush(0);
 	fclose(yyin);
 
 	return ret;

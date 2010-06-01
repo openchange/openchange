@@ -228,6 +228,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	object = (struct emsmdbp_object *)data;
 	if (!object) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		*size = libmapiserver_RopGetHierarchyTable_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 
@@ -242,6 +243,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		*size = libmapiserver_RopGetHierarchyTable_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 
@@ -299,8 +301,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 						     uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
+	struct emsmdbp_object	*object = NULL;
+	void			*data;
+	uint64_t		folderID;
+	uint32_t		contextID;
 	uint32_t		handle;
+	bool			mapistore = false;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] GetContentsTable (0x05)\n"));
 
@@ -311,16 +319,63 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	/* Initialize default empty GetContentsTable reply */
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->u.mapi_GetContentsTable.handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
 
-	*size += libmapiserver_RopGetContentsTable_size(mapi_repl);
+	/* GetContentsTable can only be called for folder objects */
+	mapi_handles_get_private_data(parent, &data);
+	object = (struct emsmdbp_object *)data;
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		*size = libmapiserver_RopGetContentsTable_size(NULL);
+		return MAPI_E_SUCCESS;
+	}
 
+	switch (object->type) {
+	case EMSMDBP_OBJECT_FOLDER:
+		folderID = object->object.folder->folderID;
+		contextID = object->object.folder->contextID;
+		break;
+	default:
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		*size = libmapiserver_RopGetContentsTable_size(NULL);
+		return MAPI_E_SUCCESS;
+	}
+
+	mapistore = emsmdbp_is_mapistore(parent);
+	switch (mapistore) {
+	case false:
+		/* system/special folder */
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		*size = libmapiserver_RopGetContentsTable_size(NULL);
+		return MAPI_E_SUCCESS;
+	case true:
+		/* handled by mapistore */
+		retval = mapistore_get_message_count(emsmdbp_ctx->mstore_ctx, contextID, folderID,
+						     &mapi_repl->u.mapi_GetContentsTable.RowCount);
+		break;
+	}
+
+	/* Initialize Table object */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
+
+	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent);
+	if (object) {
+		retval = mapi_handles_set_private_data(rec, object);
+		object->object.table->denominator = mapi_repl->u.mapi_GetHierarchyTable.RowCount;
+		object->object.table->ulType = EMSMDBP_TABLE_MESSAGE_TYPE;
+	}
+	
+	*size += libmapiserver_RopGetContentsTable_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

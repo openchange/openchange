@@ -430,7 +430,16 @@ static int fsocpf_op_readdir_count(void *private_data,
 		}
 		break;
 	case MAPISTORE_MESSAGE_TABLE:
-		DEBUG(0, ("Not implemented yet\n"));
+		rewinddir(el->ctx->dir);
+		errno = 0;
+		*RowCount = 0;
+		while ((curdir = readdir(el->ctx->dir)) != NULL) {
+			if (curdir->d_name && curdir->d_type == DT_REG &&
+			    strcmp(curdir->d_name, ".properties")) {
+				DEBUG(0, ("Adding %s to the RowCount\n", curdir->d_name));
+				*RowCount += 1;
+			}
+		}
 		break;
 	default:
 		break;

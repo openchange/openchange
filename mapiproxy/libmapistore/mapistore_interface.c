@@ -477,6 +477,38 @@ _PUBLIC_ int mapistore_get_folder_count(struct mapistore_context *mstore_ctx,
 
 
 /**
+   \details Retrieve the number of child messages within a mapistore folder
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   \param fid the folder identifier
+   \param RowCount pointer to the count result to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
+					 uint32_t context_id,
+					 uint64_t fid,
+					 uint32_t *RowCount)
+{
+	struct backend_context		*backend_ctx;
+	int				ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 0. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend readdir_count */
+	ret = mapistore_backend_readdir_count(backend_ctx, fid, MAPISTORE_MESSAGE_TABLE, RowCount);
+
+	return ret;
+}
+
+
+/**
    \details Retrieve a MAPI property from a table
 
    \param mstore_ctx pointer to the mapistore context

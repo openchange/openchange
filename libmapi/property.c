@@ -373,7 +373,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.l = *((const uint32_t *)data);
 		break;
 	case PT_DOUBLE:
-		lpProps->value.dbl = *((const double *)data);
+		memcpy(&lpProps->value.dbl, (uint8_t *)data, 8);
 		break;
 	case PT_I8:
 		lpProps->value.d = *((const uint64_t *)data);
@@ -480,7 +480,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 		mapi_sprop->value.l = sprop->value.l;
 		return sizeof(uint32_t);
 	case PT_DOUBLE:
-		mapi_sprop->value.dbl = sprop->value.dbl;
+		memcpy(&mapi_sprop->value.dbl, (uint8_t *)&sprop->value.dbl, 8);
 		return sizeof(double);
 	case PT_I8:
 		mapi_sprop->value.d = sprop->value.d;

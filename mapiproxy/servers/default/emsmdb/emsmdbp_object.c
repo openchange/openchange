@@ -422,3 +422,58 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 
 	return object;
 }
+
+
+/**
+   \details Initialize a message object
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param messageID the message identifier
+   \param parent pointer to the parent MAPI handle
+
+   \return Allocated emsmdbp object on success, otherwise NULL
+ */
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
+							    struct emsmdbp_context *emsmdbp_ctx,
+							    uint64_t messageID,
+							    struct mapi_handles *parent)
+{
+	enum MAPISTATUS		retval;
+	struct emsmdbp_object	*object;
+	struct emsmdbp_object	*folder;
+	void			*data = NULL;
+	bool			mapistore = false;
+	int			ret;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+
+	/* Retrieve parent object */
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) return NULL;
+	folder = (struct emsmdbp_object *) data;
+
+	/* Initialize message object */
+	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
+	if (!object) return NULL;
+
+	object->object.message = talloc_zero(object, struct emsmdbp_object_message);
+	if (!object->object.message) {
+		talloc_free(object);
+		return NULL;
+	}
+
+	object->object.message->folderID = folder->object.folder->folderID;
+	object->object.message->messageID = messageID;
+
+	mapistore = emsmdbp_is_mapistore(parent);
+	if (mapistore == true) {
+		object->object.message->mapistore = true;
+		object->object.message->contextID = folder->object.folder->contextID;		
+		ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, 
+						      folder->object.folder->contextID);
+	}
+
+	return object;	
+}

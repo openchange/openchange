@@ -32,6 +32,108 @@
 
 
 /**
+   \details EcDoRpc OpenMessage (0x03) Rop. This operation opens an
+   existing message in a mailbox.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the OpenMessage EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the OpenMessage EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
+						struct emsmdbp_context *emsmdbp_ctx,
+						struct EcDoRpc_MAPI_REQ *mapi_req,
+						struct EcDoRpc_MAPI_REPL *mapi_repl,
+						uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_handles	*parent = NULL;
+	struct mapi_handles	*rec = NULL;
+	struct emsmdbp_object	*object = NULL;
+	void			*data;
+	uint64_t		folderID;
+	uint64_t		messageID = 0;
+	uint32_t		contextID;
+	uint32_t		handle;
+	bool			mapistore = false;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] OpenMessage (0x03)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->u.mapi_OpenMessage.handle_idx;
+
+	/* OpenMessage can only be called for mailbox/folder objects */
+	mapi_handles_get_private_data(parent, &data);
+	object = (struct emsmdbp_object *)data;
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		*size += libmapiserver_RopOpenMessage_size(NULL);
+		return MAPI_E_SUCCESS;
+	}
+
+	switch (object->type) {
+	case EMSMDBP_OBJECT_MAILBOX:
+		folderID = object->object.mailbox->folderID;
+		contextID = object->object.folder->contextID;
+		break;
+	case EMSMDBP_OBJECT_FOLDER:
+		folderID = object->object.folder->folderID;
+		contextID = object->object.folder->contextID;
+		break;
+	default:
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		*size = libmapiserver_RopGetHierarchyTable_size(NULL);
+		return MAPI_E_SUCCESS;
+	}
+
+	mapistore = emsmdbp_is_mapistore(parent);
+	switch (mapistore) {
+	case false:
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		break;
+	case true:
+		/* mapistore implementation goes here */
+		break;
+	}
+
+	/* Initialize Message object */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	handles[mapi_repl->handle_idx] = rec->handle;
+
+	if (messageID) {
+		object = emsmdbp_object_message_init((TALLOC_CTX *)rec, emsmdbp_ctx, messageID, parent);
+		if (object) {
+			retval = mapi_handles_set_private_data(rec, object);
+		}
+	}
+
+	*size += libmapiserver_RopOpenMessage_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details EcDoRpc CreateMessage (0x06) Rop. This operation creates a
    message object in the mailbox.
 

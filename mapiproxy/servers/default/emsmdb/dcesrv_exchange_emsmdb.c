@@ -314,7 +314,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 						       &(mapi_response->mapi_repl[idx]),
 						       mapi_response->handles, &size);
 			break;
-		/* op_MAPI_OpenMessage: 0x3 */
+		case op_MAPI_OpenMessage: /* 0x3 */
+			retval = EcDoRpc_RopOpenMessage(mem_ctx, emsmdbp_ctx,
+							&(mapi_request->mapi_req[i]),
+							&(mapi_response->mapi_repl[idx]),
+							mapi_response->handles, &size);
+			break;
 		case op_MAPI_GetHierarchyTable: /* 0x04 */
 			retval = EcDoRpc_RopGetHierarchyTable(mem_ctx, emsmdbp_ctx,
 							      &(mapi_request->mapi_req[i]),
@@ -390,7 +395,6 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 						      &(mapi_response->mapi_repl[idx]),
 						      mapi_response->handles, &size);
 			break;
-		/* op_MAPI_QueryRows: 0x15 */
 		/* op_MAPI_GetStatus: 0x16 */
 		case op_MAPI_QueryPosition: /* 0x17 */
 			retval = EcDoRpc_RopQueryPosition(mem_ctx, emsmdbp_ctx,

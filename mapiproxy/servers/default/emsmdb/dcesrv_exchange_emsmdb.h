@@ -88,6 +88,12 @@ struct emsmdbp_object_folder {
 	bool				mailboxstore;
 };
 
+struct emsmdbp_object_message {
+	uint64_t			folderID;
+	uint64_t			messageID;
+	uint32_t			contextID;
+	bool				mapistore;
+};
 
 struct emsmdbp_object_table {
 	uint64_t			folderID;
@@ -104,6 +110,7 @@ struct emsmdbp_object_table {
 union emsmdbp_objects {
 	struct emsmdbp_object_mailbox	*mailbox;
 	struct emsmdbp_object_folder	*folder;
+	struct emsmdbp_object_message	*message;
 	struct emsmdbp_object_table	*table;
 };
 
@@ -169,6 +176,7 @@ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context 
 struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, bool);
 struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct mapi_handles *);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct mapi_handles *);
+struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct mapi_handles *);
 
 /* definitions from oxcfold.c */
 enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
@@ -179,6 +187,7 @@ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *, struct emsmdbp_context *, 
 enum MAPISTATUS EcDoRpc_RopDeleteMessage(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 
 /* definitions from oxcmsg.c */
+enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);

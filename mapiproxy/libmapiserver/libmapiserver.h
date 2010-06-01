@@ -32,6 +32,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <dcerpc.h>
 #include <param.h>
@@ -58,6 +59,14 @@
    -# IsGhosted: uint8_t   
  */
 #define	SIZE_DFLT_ROPOPENFOLDER			2
+
+/**
+   \details OpenMessage has fixed response size for
+   -# HasNamedProperties: uint8_t
+   -# RecipientCount: uint16_t
+   -# RowCount: uint8_t
+ */
+#define	SIZE_DFLT_ROPOPENMESSAGE		4
 
 /**
    \details GetHierarchyTableTop has fixed response size for:
@@ -238,6 +247,7 @@ uint16_t libmapiserver_RopDeleteFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeleteMessage_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcmsg.c */
+uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopModifyRecipients_size(struct EcDoRpc_MAPI_REPL *);
@@ -245,6 +255,10 @@ uint16_t libmapiserver_RopGetAttachmentTable_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcnotif.c */
 uint16_t libmapiserver_RopRegisterNotification_size(void);
+
+/* definitions from libmapiserver_oxcdata.c */
+uint16_t libmapiserver_TypedString_size(struct TypedString);
+uint16_t libmapiserver_RecipientRow_size(struct RecipientRow);
 
 /* definitions from libmapiserver_oxcprpt.c */
 uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *);

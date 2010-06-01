@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,6 +26,45 @@
  */
 
 #include "libmapiserver.h"
+
+/**
+   \details Calculate OpenMessage (0x3) Rop size
+
+   \param response pointer to the OpenMessage EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of OpenMessage response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint8_t		i;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPOPENMESSAGE;
+
+	/* SubjectPrefix */
+	size += libmapiserver_TypedString_size(response->u.mapi_OpenMessage.SubjectPrefix);
+
+	/* NormalizedSubject */
+	size += libmapiserver_TypedString_size(response->u.mapi_OpenMessage.NormalizedSubject);
+
+	/* RecipientColumns */
+	size += sizeof (response->u.mapi_OpenMessage.RecipientColumns.cValues);
+	size += response->u.mapi_OpenMessage.RecipientColumns.cValues * sizeof (uint32_t);
+
+	for (i = 0; i != response->u.mapi_OpenMessage.RowCount; i++) {
+		size += sizeof (response->u.mapi_OpenMessage.recipients[i].RecipClass);
+		size += sizeof (response->u.mapi_OpenMessage.recipients[i].codepage);
+		size += sizeof (uint16_t); /* subcontext(2) */
+		size += libmapiserver_RecipientRow_size(response->u.mapi_OpenMessage.recipients[i].RecipientRow);
+	}
+
+	return size;
+}
 
 /**
    \details Calculate CreateMessage (0x6) Rop size

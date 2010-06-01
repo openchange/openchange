@@ -28,7 +28,7 @@
 #include "libmapiserver.h"
 
 /**
-   \details Calculate CreateMessage Rop size
+   \details Calculate CreateMessage (0x6) Rop size
 
    \param response pointer to the CreateMessage EcDoRpc_MAPI_REPL
    structure
@@ -54,7 +54,7 @@ _PUBLIC_ uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *
 
 
 /**
-   \details Calculate SaveChangesMessage Rop size
+   \details Calculate SaveChangesMessage (0xc) Rop size
 
    \param response pointer to the SaveChangesMessage EcDoRpc_MAPI_REPL
    structure
@@ -76,7 +76,7 @@ _PUBLIC_ uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_R
 
 
 /**
-   \details Calculate ModifyRecipients Rop size
+   \details Calculate ModifyRecipients (0xe) Rop size
 
    \param response pointer to the ModifyRecipients EcDoRpc_MAPI_REPL
    structure
@@ -84,6 +84,19 @@ _PUBLIC_ uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_R
    \return Size of ModifyRecipients response
  */
 _PUBLIC_ uint16_t libmapiserver_RopModifyRecipients_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+
+/**
+   \details Calculate GetAttachmentTable (0x21) Rop size
+
+   \param response pointer to the GetAttachmentTable EcDoRpc_MAPI_REPL
+
+   \return Size of GetAttachmentTable response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetAttachmentTable_size(struct EcDoRpc_MAPI_REPL *response)
 {
 	return SIZE_DFLT_MAPI_RESPONSE;
 }

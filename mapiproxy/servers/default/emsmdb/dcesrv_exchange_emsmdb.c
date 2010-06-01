@@ -427,7 +427,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 			break;
 		/* op_MAPI_GetMessageStatus: 0x1f */
 		/* op_MAPI_SetMessageStatus: 0x20 */
-		/* op_MAPI_GetAttachmentTable: 0x21 */
+		case op_MAPI_GetAttachmentTable: /* 0x21 */
+			retval = EcDoRpc_RopGetAttachmentTable(mem_ctx, emsmdbp_ctx,
+							       &(mapi_request->mapi_req[i]),
+							       &(mapi_response->mapi_repl[idx]),
+							       mapi_response->handles, &size);
+			break;
 		/* op_MAPI_OpenAttach: 0x22 */
 		/* op_MAPI_CreateAttach: 0x23 */
 		/* op_MAPI_DeleteAttach: 0x24 */

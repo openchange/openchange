@@ -241,6 +241,7 @@ uint16_t libmapiserver_RopDeleteMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopModifyRecipients_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetAttachmentTable_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcnotif.c */
 uint16_t libmapiserver_RopRegisterNotification_size(void);

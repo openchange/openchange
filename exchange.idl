@@ -317,7 +317,7 @@ System Attendant Private Interface
 	typedef [switch_type(uint32)] union {
 		[case(PT_I2)]			uint16			i;
 		[case(PT_LONG)]			uint32			l;
-		[case(PT_DOUBLE)]		double			dbl;
+		[case(PT_DOUBLE)]		dlong			dbl;
 		[case(PT_BOOLEAN)]		uint8			b;
 		[case(PT_I8)]			dlong			d;
 		[case(PT_STRING8)][unique][string,charset(DOS)] uint8	*lpszA;

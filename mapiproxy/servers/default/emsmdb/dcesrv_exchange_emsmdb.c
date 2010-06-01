@@ -487,7 +487,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		/* op_MAPI_IdFromLongTermId: 0x44 */
 		/* op_MAPI_PublicFolderIsGhosted: 0x45 */
 		/* op_MAPI_OpenEmbeddedMessage: 0x46 */
-		/* op_MAPI_SetSpooler: 0x47 */
+		case op_MAPI_SetSpooler: /* 0x47 */
+			retval = EcDoRpc_RopSetSpooler(mem_ctx, emsmdbp_ctx,
+						       &(mapi_request->mapi_req[i]),
+						       &(mapi_response->mapi_repl[idx]),
+						       mapi_response->handles, &size);
+			break;
 		/* op_MAPI_SpoolerLockMessage: 0x48 */
 		case op_MAPI_AddressTypes: /*x49 */
 			retval = EcDoRpc_RopGetAddressTypes(mem_ctx, emsmdbp_ctx,

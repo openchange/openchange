@@ -41,6 +41,21 @@ _PUBLIC_ uint16_t libmapiserver_RopSubmitMessage_size(struct EcDoRpc_MAPI_REPL *
 	return SIZE_DFLT_MAPI_RESPONSE;
 }
 
+
+/**
+   \details Calculate SetSpooler (0x47) Rop size
+
+   \param response pointer to the SetSpooler EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SetSpooler response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSetSpooler_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+
 /**
    \details Calculate GetAddressTypes (0x49) Rop size
 

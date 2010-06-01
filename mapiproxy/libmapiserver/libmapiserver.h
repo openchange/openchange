@@ -268,6 +268,7 @@ uint16_t libmapiserver_RopFindRow_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxomsg.c */
 uint16_t libmapiserver_RopSubmitMessage_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSetSpooler_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetAddressTypes_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetTransportFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOptionsData_size(struct EcDoRpc_MAPI_REPL *);

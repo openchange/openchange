@@ -227,11 +227,12 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 					    struct NspiQueryRows *r)
 {
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
-	struct dcesrv_handle		*h;
-	struct emsabp_context		*emsabp_ctx;
+	struct exchange_nsp_session	*session;
+	struct emsabp_context		*emsabp_ctx = NULL;
 	struct SPropTagArray		*pPropTags;
 	struct SRowSet			*pRows;
 	uint32_t			i;
+	bool				found = false;
 
 	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
 
@@ -241,9 +242,14 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
-	if (!h) return MAPI_E_LOGON_FAILED;
-	emsabp_ctx = (struct emsabp_context *) h->data;
+	for (session = nsp_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
+			found = true;
+		}
+	}
+
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 
 	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (r->in.pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
@@ -353,10 +359,11 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 					     struct NspiGetMatches *r)
 {
 	enum MAPISTATUS			retval;
-	struct dcesrv_handle		*h;
-	struct emsabp_context		*emsabp_ctx;
+	struct exchange_nsp_session	*session;
+	struct emsabp_context		*emsabp_ctx = NULL;
 	struct SPropTagArray		*ppOutMIds = NULL;
 	uint32_t			i;
+	bool				found = false;
 	
 
 	DEBUG(3, ("exchange_nsp: NspiGetMatches (0x5)\n"));
@@ -367,9 +374,14 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
-	if (!h) return MAPI_E_LOGON_FAILED;
-	emsabp_ctx = (struct emsabp_context *) h->data;
+	for (session = nsp_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
+			found = true;
+		}
+	}
+
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 
 	/* Step 1. Retrieve MIds array given search criterias */
 	ppOutMIds = talloc_zero(mem_ctx, struct SPropTagArray);
@@ -443,14 +455,15 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
 					  struct NspiDNToMId *r)
 {
-	enum MAPISTATUS		retval;
-	struct dcesrv_handle	*h;
-	struct emsabp_context	*emsabp_ctx;
-	struct ldb_message	*msg;
-	uint32_t		i;
-	uint32_t		MId;
-	const char		*dn;
-	bool			pbUseConfPartition;
+	enum MAPISTATUS			retval;
+	struct exchange_nsp_session	*session;
+	struct emsabp_context		*emsabp_ctx = NULL;
+	struct ldb_message		*msg;
+	uint32_t			i;
+	uint32_t			MId;
+	const char			*dn;
+	bool				pbUseConfPartition;
+	bool				found = false;
 
 	DEBUG(3, ("exchange_nsp: NspiDNToMId (0x7)\n"));
 
@@ -460,11 +473,14 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
-	if (!h) return MAPI_E_LOGON_FAILED;
-	OPENCHANGE_RETVAL_IF(!h, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+	for (session = nsp_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
+			found = true;
+		}
+	}
 
-	emsabp_ctx = (struct emsabp_context *) h->data;
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 	
 	r->out.ppMIds = talloc_array(mem_ctx, struct SPropTagArray *, 2);
 	r->out.ppMIds[0] = talloc_zero(mem_ctx, struct SPropTagArray);
@@ -525,11 +541,12 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 					   TALLOC_CTX *mem_ctx,
 					   struct NspiGetProps *r)
 {
-	enum MAPISTATUS		retval;
-	struct dcesrv_handle	*h;
-	struct emsabp_context	*emsabp_ctx;
-	uint32_t		MId;
-	int			i;
+	enum MAPISTATUS			retval;
+	struct exchange_nsp_session	*session;
+	struct emsabp_context		*emsabp_ctx = NULL;
+	uint32_t			MId;
+	int				i;
+	bool				found = false;
 
 	DEBUG(3, ("exchange_nsp: NspiGetProps (0x9)\n"));
 
@@ -539,9 +556,14 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
-	if (!h) return MAPI_E_LOGON_FAILED;
-	emsabp_ctx = (struct emsabp_context *) h->data;
+	for (session = nsp_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
+			found = true;
+		}
+	}
+
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 
 	MId = r->in.pStat->CurrentRec;
 	
@@ -655,8 +677,9 @@ static enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_
 						  TALLOC_CTX *mem_ctx,
 						  struct NspiGetSpecialTable *r)
 {
-	struct dcesrv_handle		*h;
-	struct emsabp_context		*emsabp_ctx;
+	struct exchange_nsp_session	*session;
+	struct emsabp_context		*emsabp_ctx = NULL;
+	bool				found = false;
 
 	DEBUG(3, ("exchange_nsp: NspiGetSpecialTable (0xC)\n"));
 
@@ -666,9 +689,14 @@ static enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
-	if (!h) return MAPI_E_LOGON_FAILED;
-	emsabp_ctx = (struct emsabp_context *) h->data;
+	for (session = nsp_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
+			found = true;
+		}
+	}
+
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 
 	/* Step 1. (FIXME) We arbitrary set lpVersion to 0x1 */
 	r->out.lpVersion = talloc_zero(mem_ctx, uint32_t);
@@ -848,20 +876,21 @@ static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_ca
 						TALLOC_CTX *mem_ctx,
 						struct NspiResolveNamesW *r)
 {
-	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
-	struct dcesrv_handle	*h;
-	struct emsabp_context	*emsabp_ctx;
-	struct ldb_message	*ldb_msg_ab;
-	struct SPropTagArray	*pPropTags;
-	const char		*purportedSearch;
-	struct SPropTagArray	*pMIds = NULL;
-	struct SRowSet		*pRows = NULL;
-	struct WStringsArray_r	*paWStr;
-	uint32_t		i;
-	int			ret;
-	const char * const	recipient_attrs[] = { "*", NULL };
-	const char * const	search_attr[] = { "mailNickName", "mail", "name", 
-						  "displayName", "givenName", "sAMAccountName" };
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	struct exchange_nsp_session	*session;
+	struct emsabp_context		*emsabp_ctx = NULL;
+	struct ldb_message		*ldb_msg_ab;
+	struct SPropTagArray		*pPropTags;
+	const char			*purportedSearch;
+	struct SPropTagArray		*pMIds = NULL;
+	struct SRowSet			*pRows = NULL;
+	struct WStringsArray_r		*paWStr;
+	uint32_t			i;
+	int				ret;
+	bool				found = false;
+	const char * const		recipient_attrs[] = { "*", NULL };
+	const char * const		search_attr[] = { "mailNickName", "mail", "name", 
+							  "displayName", "givenName", "sAMAccountName" };
 
 	DEBUG(3, ("exchange_nsp: NspiResolveNamesW (0x14)\n"));
 
@@ -871,9 +900,14 @@ static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_ca
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
-	OPENCHANGE_RETVAL_IF(!h, MAPI_E_LOGON_FAILED, NULL);
-	emsabp_ctx = (struct emsabp_context *) h->data;
+	for (session = nsp_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
+			found = true;
+		}
+	}
+
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 
 	/* Step 1. Prepare in/out data */
 	retval = emsabp_ab_container_by_id(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &ldb_msg_ab);

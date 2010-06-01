@@ -280,7 +280,7 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 			found = true;
 		}
 	}
-	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 
 	mapi_request = r->in.mapi_request;
 	mapi_response = talloc_zero(mem_ctx, struct mapi_response);

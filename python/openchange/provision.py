@@ -355,6 +355,7 @@ def newmailbox(lp, username, firstorg, firstou, backend):
         (("Mailbox Root", "IPM Subtree", "Inbox"), "All"),
         (("Mailbox Root", "IPM Subtree", "Inbox"), "IPM"),
         (("Mailbox Root", "IPM Subtree", "Inbox"), "Report.IPM"),
+        (("Mailbox Root", "IPM Subtree", "Inbox"), "IPM.Note"),
         (("Mailbox Root", "IPM Subtree",), "IPC")
         ]
     

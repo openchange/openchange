@@ -480,7 +480,6 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	}
 
 	if (!curdir) {
-		talloc_free(folderID);
 		*data = NULL;
 		return MAPI_E_NOT_FOUND;
 	}
@@ -533,6 +532,88 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 }
 
 
+static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
+						  uint32_t pos,
+						  uint32_t proptag,
+						  void **data)
+{
+	int			ret;
+	struct dirent		*curdir;
+	uint32_t		counter = 0;
+	char			*messageID;
+	char			*propfile;
+	uint32_t		cValues = 0;
+	struct SPropValue	*lpProps;
+
+	DEBUG(5, ("[%s:%d\n]", __FUNCTION__, __LINE__));
+
+	/* Set dir listing to current position */
+	rewinddir(ctx->dir);
+	errno = 0;
+	while ((curdir = readdir(ctx->dir)) != NULL) {
+		if (curdir->d_name && curdir->d_type == DT_REG &&
+		    strcmp(curdir->d_name, ".properties") && counter == pos) {
+			messageID = talloc_strdup(ctx, curdir->d_name);
+			break;
+		}
+		if (strcmp(curdir->d_name, ".properties")) {
+			counter++;
+		}
+	}
+
+	if (!curdir) {
+		*data = NULL;
+		return MAPI_E_NOT_FOUND;
+	}
+
+	/* If mid, return curdir->d_name */
+	if (proptag == PR_MID) {
+		uint64_t	*mid;
+
+		mid = talloc_zero(ctx, uint64_t);
+		*mid = strtoull(messageID, NULL, 16);
+		talloc_free(messageID);
+		*data = (uint64_t *)mid;
+		return MAPI_E_SUCCESS;
+	}
+
+	/* Otherwise opens curdir->d_name file with ocpf */
+	ocpf_init();
+	propfile = talloc_asprintf(ctx, "%s/%s", ctx->path, messageID);
+	talloc_free(messageID);
+
+	/* process the file */
+	ret = ocpf_parse(propfile);
+	fflush(0);
+	talloc_free(propfile);
+
+	ocpf_set_SPropValue_array(ctx);
+	lpProps = ocpf_get_SPropValue(&cValues);
+
+	/* FIXME: We need to find a proper way to handle this (for all types) */
+	talloc_steal(ctx, lpProps);
+
+	*data = (void *) get_SPropValue(lpProps, proptag);
+	if (((proptag & 0xFFFF) == PT_STRING8) || ((proptag & 0xFFFF) == PT_UNICODE)) {
+		/* Hack around PT_STRING8 and PT_UNICODE */
+		if (*data == NULL && ((proptag & 0xFFFF) == PT_STRING8)) {
+			*data = (void *) get_SPropValue(lpProps, (proptag & 0xFFFF0000) + PT_UNICODE);
+		} else if (*data == NULL && (proptag & 0xFFFF) == PT_UNICODE) {
+			*data = (void *) get_SPropValue(lpProps, (proptag & 0xFFFF0000) + PT_STRING8);
+		}
+		*data = talloc_strdup(ctx, (char *)*data);
+	}
+
+	if (*data == NULL) {
+		ocpf_release();
+		return MAPI_E_NOT_FOUND;
+	}
+
+	ocpf_release();	
+	return MAPI_E_SUCCESS;	
+}
+
+
 static int fsocpf_op_get_table_property(void *private_data,
 					uint64_t fid,
 					uint8_t table_type,
@@ -581,7 +662,7 @@ static int fsocpf_op_get_table_property(void *private_data,
 		retval = fsocpf_get_property_from_folder_table(el->ctx, pos, proptag, data);
 		break;
 	case MAPISTORE_MESSAGE_TABLE:
-		DEBUG(0, ("Not implemented yet\n"));
+		retval = fsocpf_get_property_from_message_table(el->ctx, pos, proptag, data);
 		break;
 	default:
 		break;

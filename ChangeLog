@@ -1,7 +1,164 @@
+2010-06-01
+    jkerihuel
+	[r1889]
+		Untested code:
+		- add libmapiserver calculation for OpenMessage + related OXCDATA structures
+		- add skeleton implementation for server-side OpenMessage ROP
+		- add preliminary emsmdbp_object_message implementation/initialization
+	[r1888]
+		- Flush ocpf output when an error occurs
+		- Fix retrieval of message list in fsocpf backend
+	[r1887]
+		Add QueryRows implementation for mapistore in fsocpf backend.
+	[r1886]
+		- Add implementation for mapistore GetContentsTable
+		- Fix error reply for GetHierarchyTable
+	[r1885]
+		Fix how PT_DOUBLE data is passed among libmapi layers.
+	[r1884]
+		Fix an issue introduced in r1858. PT_DOUBLE patch is valid
+		for EMSMDB, not for NSPI. Rollback change for SPropValue
+	[r1883]
+		Add IPM.Note as a default receive folder for Inbox. This is used by
+		Outlook 2003 in the Send/Receive process.
+	[r1882]
+		Add server-side skeleton for GetAttachmentTable operation.
+	[r1881]
+		Implement SetSpooler server-side function. The function looks like a
+		skeleton ... and is one until we figure out what should be the
+		associated server-side mechanism when clients tells OpenChange server
+		they want to act as a mail spooler.
+	[r1880]
+		The LogonType cases were not handled properly
+	[r1879]
+		Replace existing method to retrieve emsabp_ctx in NSPI server code
+		with mpm session management API and comparison to actual dce_call structure.
+		
+		Replace MAPI_E_LOGON_FAILED rather than MAPI_E_NOT_ENOUGH_RESOURCES in emsmdb server
+		code when session is not found.
+2010-05-31
+    jkerihuel
+	[r1878]
+		Fix commit typo
+	[r1877]
+		We were adding context the list but were never removing them while the
+		context_id was added to the free list. This was causing
+		inconsistencies in mapistore context management + invalid
+		record/pointers to remain and cause OpenChange server to crash.
+		
+		Also add commented code to CreateFolder ROP that will need to be
+		enabled when we understand related Outlook behavior.
+	[r1875]
+		Patch from Bharath Acharya <abharath@gnome.org>:
+		
+		Print calendar items created at half hours
+	[r1874]
+		Minor warning fix - unused variable, not initialized
+	[r1873]
+		Fix a bug with invalid session leading to OpenChange server crash.
+		
+		We are now retrieving the emsmdbp_context pointer from our session
+		management API, after a comparison check vs dcesrv_call_state rather
+		than blindling and directly from dce_call.
+    bradh
+	[r1876]
+		Add better error path handling for the OXCFOLD-CREATE mapitest module.
+2010-05-30
+    jkerihuel
+	[r1872]
+		Extend mapistore API to have a mapistore URI associated to the backend
+		context. We want to limit creation of new contexts to the strict
+		minimum.
+		
+		Propagate this change to emsmdbp_object_folder_init. Only create a new
+		context if the uri intended to be opened is not already associated to
+		an existing context.
+	[r1870]
+		Handle additional LogonFlags cases for mailbox store in Logon_repl
+	[r1869]
+		Fix empty EcDoRpc replies. Outlook 2007 is now happy and stops from
+		disconnecting untimely.
+	[r1868]
+		Add server-side skeleton implementation for GetPermissionsTable
+	[r1867]
+		Pass parent mapi_handles to emsmdbp_object_folder_init rather than
+		specific parameters.
+		
+		Improve emsmdbp_object_folder_init to handle all the different folder
+		creation cases (root folder, mapistore or not, within mapistore or
+		openchangedb etc.) OpenChange server now passes mapistest folder
+		creation test properly.
+		
+		Fix a bug with context_id and mapistore. We were passing the parent
+		context, then deleting it at some point, causing the parent object to
+		be invalid. Now makes use of a reference counter we manage to keep
+		consistency.
+		
+		Add a convenient function to emsmdbp_object API to retrieve the
+		contextID associated to an object.
+		
+		It looks like we still have some issues when running both Outlook 2007
+		and Outlook 2003 at the same time with OpenChange server. There may be
+		some additional session checks to perform in the future.
+	[r1866]
+		Fix a bug in session management API:
+		
+		The mpm_session API uses id, id2, node and context_id from the dcerpc
+		session to uniquely identify a session context. 
+		
+		However when Outlook calls EcDoConnect multiple times, it still uses
+		the same dcerpc session. With previous API we were freeing the session
+		while it was still in used - which lead in unstable and unpredictable
+		crashes.
+		
+		The following patch adds a ref_count to the mpm_session API and server
+		code has been changed for emsmdb and nspi server to increment the
+		ref_count when the session already exists or create a new session if
+		none is already stored.
+		
+		Also the mpm_session code checks for the ref_count value and ensures
+		it is 0 before calling the destructor.
+	[r1865]
+		Call emsmdbp_object_folder_init in any case when creating a
+		folder. The emsmdbp_object function now do required checks and
+		initialize the folder's object properly.
+    bradh
+	[r1871]
+		trivial comment cleanup.
+	[r1864]
+		Minor cleanups for RopCreateFolder in the server.
+		
+		Prefix the mapistore_uri folder name in the path with "0x"
+		
+		Use ulFolderType (the folder) instead of ulType (ansi vs unicode) when
+		deciding which folder type to create.
+	[r1863]
+		Trivial comment fixes.
+2010-05-29
+    jkerihuel
+	[r1862]
+		Complete the opendir implementation for mapistore folders. Outlook
+		doesn't crash anymore when attempting to open mapistore folders.
+	[r1861]
+		was using the wrong function emsmdbp_is_mapistore instead of
+		mailboxstore.
+	[r1860]
+		Commit Brad Hards's implementation for Public Folders support.
+		Personal changes wrt initial patch:
+		
+		- remove mapistore_uri from openchangedb PF record at
+		  provisioning. Only new created folders should be mapistored.
+		- Add a mailboxstore boolean to folder and mailbox emsmdbp so we can
+		  select the correct basedn for searches.
+		- Fix GetProps to provide an accurate answer to Outlook when fetching
+		  public folder's store specific properties.
+		- Use get_PublicFolderId rather than SpecialFolderId when we open a
+		  public folder store.
+
 2010-05-28
     jkerihuel
 	[r1858]
-		Patch from Milan Crha <mcrha@redhat.com>:
+		Patch from Milan Crha <mcrha@readhat.com>:
 		
 		Fix PT_DOUBLE support in openchange
 	[r1857]

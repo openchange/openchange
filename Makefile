@@ -656,6 +656,7 @@ libocpf-uninstallheader:
 libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		\
 	libocpf/ocpf.tab.po			\
 	libocpf/lex.yy.po			\
+	libocpf/ocpf_context.po			\
 	libocpf/ocpf_public.po			\
 	libocpf/ocpf_dump.po			\
 	libocpf/ocpf_api.po			\
@@ -670,7 +671,8 @@ libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION): libocpf.$(SHLIBEXT).$(PACKAGE_VERSION
 libocpf/proto.h:	libocpf/ocpf_public.c	\
 			libocpf/ocpf_dump.c	\
 			libocpf/ocpf_api.c	\
-			libocpf/ocpf_write.c
+			libocpf/ocpf_write.c	\
+			libocpf/ocpf_context.c
 			@echo "Generating $@"
 			@./script/mkproto.pl --private=libocpf/proto_private.h \
 			--public=libocpf/proto.h $^
@@ -681,7 +683,7 @@ libocpf/lex.yy.c:		libocpf/lex.l
 
 libocpf/ocpf.tab.c:	libocpf/ocpf.y
 	@echo "Generating $@"
-	@$(BISON) -pocpf_yy -d $< -o $@
+	@$(BISON) -d $< -o $@
 
 # Avoid warnings
 libocpf/lex.yy.o: CFLAGS=

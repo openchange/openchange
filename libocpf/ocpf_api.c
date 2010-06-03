@@ -32,7 +32,7 @@
  */
 
 
-void ocpf_do_debug(const char *format, ...)
+void ocpf_do_debug(struct ocpf_context *ctx, const char *format, ...)
 {
 	va_list ap;
 	char	*s = NULL;
@@ -42,17 +42,22 @@ void ocpf_do_debug(const char *format, ...)
 	ret = vasprintf(&s, format, ap);
 	va_end(ap);
 
-	printf("%s:%d: %s\n", ocpf_get_filename(), lineno, s);
+	if (ctx) {
+		printf("%s:%d: %s\n", ctx->filename, ctx->lineno, s);
+		fflush(0);
+	} else {
+		printf("%s\n", s);
+		fflush(0);
+	}
 	free(s);
 }
 
-const char *ocpf_get_filename(void)
-{
-	return ocpf->filename;
-}
 
-
-int ocpf_propvalue_var(const char *propname, uint32_t proptag, const char *variable, bool unescape)
+int ocpf_propvalue_var(struct ocpf_context *ctx,
+		       const char *propname, 
+		       uint32_t proptag, 
+		       const char *variable, 
+		       bool unescape)
 {
 	struct ocpf_var		*vel;
 	struct ocpf_property	*element;
@@ -69,100 +74,105 @@ int ocpf_propvalue_var(const char *propname, uint32_t proptag, const char *varia
 		aulPropTag = get_proptag_value(propname);
 	}
 
-	for (element = ocpf->props; element->next; element = element->next) {
-		OCPF_RETVAL_IF(element->aulPropTag == aulPropTag, OCPF_WARN_PROP_REGISTERED, NULL);
+	for (element = ctx->props; element->next; element = element->next) {
+		OCPF_RETVAL_IF(element->aulPropTag == aulPropTag, ctx, OCPF_WARN_PROP_REGISTERED, NULL);
 	}
 
-	for (vel = ocpf->vars; vel->next; vel = vel->next) {
+	for (vel = ctx->vars; vel->next; vel = vel->next) {
 		if (vel->name && !strcmp(vel->name, variable)) {
-			OCPF_RETVAL_IF(vel->propType != (aulPropTag & 0xFFFF), OCPF_WARN_PROPVALUE_MISMATCH, NULL);
+			OCPF_RETVAL_IF(vel->propType != (aulPropTag & 0xFFFF), ctx, OCPF_WARN_PROPVALUE_MISMATCH, NULL);
 			element = NULL;
-			element = talloc_zero(ocpf->mem_ctx, struct ocpf_property);
+			element = talloc_zero(ctx->vars, struct ocpf_property);
 			element->aulPropTag = aulPropTag;
 			if (unescape && (((aulPropTag & 0xFFFF) == PT_STRING8) || 
 					 ((aulPropTag & 0xFFFF) == PT_UNICODE))) {
-				element->value = ocpf_write_unescape_string(vel->value);
+				element->value = ocpf_write_unescape_string(ctx, vel->value);
 			} else {
 				element->value = vel->value;
 			}
-			DLIST_ADD(ocpf->props, element);
+			DLIST_ADD(ctx->props, element);
 			return OCPF_SUCCESS;
 		}
 	}
 
-	OCPF_RETVAL_IF(1, OCPF_WARN_VAR_NOT_REGISTERED, NULL);
+	OCPF_RETVAL_IF(1, ctx, OCPF_WARN_VAR_NOT_REGISTERED, NULL);
 }
 
 
-int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, const void **value, uint16_t proptype, uint16_t sproptype, 
-		       union SPropValue_CTR lpProp, bool unescape)
+int ocpf_set_propvalue(TALLOC_CTX *mem_ctx, 
+		       struct ocpf_context *ctx,
+		       const void **value, 
+		       uint16_t proptype, 
+		       uint16_t sproptype, 
+		       union SPropValue_CTR lpProp, 
+		       bool unescape)
 {
 	char	*str = NULL;
 
-	OCPF_RETVAL_IF(proptype != sproptype, OCPF_WARN_PROPVALUE_MISMATCH, NULL);
+	OCPF_RETVAL_IF(proptype != sproptype, ctx, OCPF_WARN_PROPVALUE_MISMATCH, NULL);
 
 	switch (proptype) {
 	case PT_STRING8:
 		if (unescape) {
-			str = ocpf_write_unescape_string(lpProp.lpszA);
+			str = ocpf_write_unescape_string(ctx, lpProp.lpszA);
 		} else {
-			str = talloc_strdup(ocpf->mem_ctx, lpProp.lpszA);
+			str = talloc_strdup(ctx, lpProp.lpszA);
 		}
-		*value = talloc_memdup(mem_ctx, str, strlen(str) + 1);
+		*value = talloc_memdup(ctx, str, strlen(str) + 1);
 		talloc_free(str);
 		return OCPF_SUCCESS;
 	case PT_UNICODE:
 		if (unescape) {
-			str = ocpf_write_unescape_string(lpProp.lpszW);
+			str = ocpf_write_unescape_string(ctx, lpProp.lpszW);
 		} else {
-			str = talloc_strdup(ocpf->mem_ctx, lpProp.lpszW);
+			str = talloc_strdup(ctx, lpProp.lpszW);
 		}
-		*value = talloc_memdup(mem_ctx, str, strlen(str) + 1);
+		*value = talloc_memdup(ctx, str, strlen(str) + 1);
 		talloc_free(str);
 		return OCPF_SUCCESS;
 	case PT_SHORT:
-		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.i, sizeof (uint16_t));
+		*value = talloc_memdup(ctx, (const void *)&lpProp.i, sizeof (uint16_t));
 		return OCPF_SUCCESS;
 	case PT_LONG:
-		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.l, sizeof (uint32_t));
+		*value = talloc_memdup(ctx, (const void *)&lpProp.l, sizeof (uint32_t));
 		return OCPF_SUCCESS;
 	case PT_BOOLEAN:
-		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.b, sizeof (uint8_t));
+		*value = talloc_memdup(ctx, (const void *)&lpProp.b, sizeof (uint8_t));
 		return OCPF_SUCCESS;
 	case PT_ERROR:
-		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.err, sizeof (uint32_t));
+		*value = talloc_memdup(ctx, (const void *)&lpProp.err, sizeof (uint32_t));
 		return OCPF_SUCCESS;
 	case PT_I8:
-		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.d, sizeof (uint64_t));
+		*value = talloc_memdup(ctx, (const void *)&lpProp.d, sizeof (uint64_t));
 		return OCPF_SUCCESS;
 	case PT_SYSTIME:
-		*value = talloc_memdup(mem_ctx, (const void *)&lpProp.ft, sizeof (struct FILETIME));
+		*value = talloc_memdup(ctx, (const void *)&lpProp.ft, sizeof (struct FILETIME));
 		return OCPF_SUCCESS;
 	case PT_BINARY:
-		*value = (const void *)talloc_zero(mem_ctx, struct Binary_r);
+		*value = (const void *)talloc_zero(ctx, struct Binary_r);
 		((struct Binary_r *)*value)->cb = lpProp.bin.cb;
-		((struct Binary_r *)*value)->lpb = talloc_memdup(mem_ctx, (const void *)lpProp.bin.lpb, lpProp.bin.cb);
+		((struct Binary_r *)*value)->lpb = talloc_memdup(ctx, (const void *)lpProp.bin.lpb, lpProp.bin.cb);
 		return OCPF_SUCCESS;
 	case PT_MV_STRING8:
-		*value = (const void *)talloc_zero(mem_ctx, struct StringArray_r);
+		*value = (const void *)talloc_zero(ctx, struct StringArray_r);
 		((struct StringArray_r *)*value)->cValues = lpProp.MVszA.cValues;
-		((struct StringArray_r *)*value)->lppszA = talloc_array(mem_ctx, const char *, lpProp.MVszA.cValues);
+		((struct StringArray_r *)*value)->lppszA = talloc_array(ctx, const char *, lpProp.MVszA.cValues);
 		{
 			uint32_t	i;
 
 			for (i = 0; i < lpProp.MVszA.cValues; i++) {
 				if (unescape) {
-					str = ocpf_write_unescape_string(lpProp.MVszA.lppszA[i]);
+					str = ocpf_write_unescape_string(ctx, lpProp.MVszA.lppszA[i]);
 				} else {
 					str = (char *)lpProp.MVszA.lppszA[i];
 				}
-				((struct StringArray_r *)*value)->lppszA[i] = talloc_strdup(mem_ctx, str);
+				((struct StringArray_r *)*value)->lppszA[i] = talloc_strdup(ctx, str);
 				talloc_free(str);
 			}
 		}
 		return OCPF_SUCCESS;
 	default:
-		OCPF_WARN(("%s (0x%.4x)", OCPF_WARN_PROP_TYPE, proptype));
+		ocpf_do_debug(ctx, "%s (0x%.4x)", OCPF_WARN_PROP_TYPE, proptype);
 		return OCPF_ERROR;
 	}
 }
@@ -183,7 +193,11 @@ int ocpf_propvalue_free(union SPropValue_CTR lpProp, uint16_t proptype)
 	return OCPF_SUCCESS;
 }
 
-int ocpf_propvalue(uint32_t aulPropTag, union SPropValue_CTR lpProp, uint16_t proptype, bool unescape)
+int ocpf_propvalue(struct ocpf_context *ctx,
+		   uint32_t aulPropTag, 
+		   union SPropValue_CTR lpProp, 
+		   uint16_t proptype, 
+		   bool unescape)
 {
 	struct ocpf_property	*element;
 	int			ret;
@@ -191,30 +205,35 @@ int ocpf_propvalue(uint32_t aulPropTag, union SPropValue_CTR lpProp, uint16_t pr
 	if (!ocpf || !ocpf->mem_ctx) return OCPF_ERROR;
 
 	/* Sanity check: do not insert the same property twice */
-	for (element = ocpf->props; element->next; element = element->next) {
-		OCPF_RETVAL_IF(element->aulPropTag == aulPropTag, OCPF_WARN_PROP_REGISTERED, NULL);
+	for (element = ctx->props; element->next; element = element->next) {
+		OCPF_RETVAL_IF(element->aulPropTag == aulPropTag, ctx, OCPF_WARN_PROP_REGISTERED, NULL);
 	}
 
 	element = NULL;
-	element = talloc_zero(ocpf->mem_ctx, struct ocpf_property);
+	element = talloc_zero(ctx->props, struct ocpf_property);
 	element->aulPropTag = aulPropTag;
-	ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, (uint16_t)aulPropTag & 0xFFFF, proptype, lpProp, unescape);
+	ret = ocpf_set_propvalue((TALLOC_CTX *)element, ctx, &element->value, 
+				 (uint16_t)aulPropTag & 0xFFFF, proptype, lpProp, unescape);
 	if (ret == -1) {
 		talloc_free(element);
 		return OCPF_ERROR;
 	}
 
-	DLIST_ADD(ocpf->props, element);
+	DLIST_ADD(ctx->props, element);
 	return OCPF_SUCCESS;
 }
 
 
-void ocpf_propvalue_s(const char *propname, union SPropValue_CTR lpProp, uint16_t proptype, bool unescape)
+void ocpf_propvalue_s(struct ocpf_context *ctx,
+		      const char *propname, 
+		      union SPropValue_CTR lpProp, 
+		      uint16_t proptype, 
+		      bool unescape)
 {
 	uint32_t	aulPropTag;
 
 	aulPropTag = get_proptag_value(propname);
-	ocpf_propvalue(aulPropTag, lpProp, proptype, unescape);
+	ocpf_propvalue(ctx, aulPropTag, lpProp, proptype, unescape);
 }
 
 
@@ -233,8 +252,12 @@ void ocpf_propvalue_s(const char *propname, union SPropValue_CTR lpProp, uint16_
 
    \return OCPF_SUCCESS on success, otherwise OCPF_ERROR.
  */
-int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
-		       const char *var_name, uint16_t proptype, bool unescape)
+int ocpf_nproperty_add(struct ocpf_context *ctx,
+		       struct ocpf_nprop *nprop, 
+		       union SPropValue_CTR lpProp,
+		       const char *var_name, 
+		       uint16_t proptype, 
+		       bool unescape)
 {
 	enum MAPISTATUS		retval;
 	int			ret = 0;
@@ -244,11 +267,11 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 
 	if (!ocpf || !ocpf->mem_ctx) return -1;
 
-	element = talloc_zero(ocpf->mem_ctx, struct ocpf_nproperty);
+	element = talloc_zero(ctx, struct ocpf_nproperty);
 
 	if (nprop->guid) {
-		ret = ocpf_oleguid_check(nprop->guid, &element->oleguid);
-		OCPF_RETVAL_IF(ret == -1, OCPF_WARN_OLEGUID_UNREGISTERED, element);
+		ret = ocpf_oleguid_check(ctx, nprop->guid, &element->oleguid);
+		OCPF_RETVAL_IF(ret == -1, ctx, OCPF_WARN_OLEGUID_UNREGISTERED, element);
 	}
 
 	if (nprop->OOM) {
@@ -256,26 +279,26 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 		 * Sanity check: do not insert twice the same
 		 * (OOM,oleguid) couple
 		 */
-		for (el = ocpf->nprops; el->next; el = el->next) {
+		for (el = ctx->nprops; el->next; el = el->next) {
 			OCPF_RETVAL_IF((el->OOM && !strcmp(el->OOM, nprop->OOM)) &&
 				       (el->oleguid && nprop->guid && !strcmp(el->oleguid, nprop->guid)),
-				       OCPF_WARN_OOM_REGISTERED, element);
+				       ctx, OCPF_WARN_OOM_REGISTERED, element);
 		}
 
 		element->kind = OCPF_OOM;
 		element->OOM = nprop->OOM;
 		retval = mapi_nameid_OOM_lookup(element->OOM, element->oleguid,
 						&element->propType);
-		OCPF_RETVAL_IF(retval != MAPI_E_SUCCESS, OCPF_WARN_OOM_UNKNOWN, element);
+		OCPF_RETVAL_IF(retval != MAPI_E_SUCCESS, ctx, OCPF_WARN_OOM_UNKNOWN, element);
 	} else if (nprop->mnid_string) {
 		/* 
 		 * Sanity check: do not insert twice the same
 		 * (mnid_string,oleguid) couple 
 		 */
-		for (el = ocpf->nprops; el->next; el = el->next) {
+		for (el = ctx->nprops; el->next; el = el->next) {
 			OCPF_RETVAL_IF((el->mnid_string && !strcmp(el->mnid_string, nprop->mnid_string)) &&
 				       (el->oleguid && nprop->guid && !strcmp(el->oleguid, nprop->guid)),
-				       OCPF_WARN_STRING_REGISTERED, element);
+				       ctx, OCPF_WARN_STRING_REGISTERED, element);
 		}
 
 		element->kind = OCPF_MNID_STRING;
@@ -284,7 +307,7 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 			retval = mapi_nameid_string_lookup(element->mnid_string, 
 							   element->oleguid,
 							   &element->propType);
-			OCPF_RETVAL_IF(retval != MAPI_E_SUCCESS, OCPF_WARN_STRING_UNKNOWN, element);
+			OCPF_RETVAL_IF(retval != MAPI_E_SUCCESS, ctx, OCPF_WARN_STRING_UNKNOWN, element);
 		} else {
 			element->propType = nprop->propType;
 		}
@@ -293,10 +316,10 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 		 * Sanity check: do not insert twice the same
 		 * (mnid_id-oleguid) couple 
 		 */
-		for (el = ocpf->nprops; el->next; el = el->next) {
+		for (el = ctx->nprops; el->next; el = el->next) {
 			OCPF_RETVAL_IF((el->mnid_id == nprop->mnid_id) && 
 				       (el->oleguid && nprop->guid && !strcmp(el->oleguid, nprop->guid)),
-				       OCPF_WARN_LID_REGISTERED, element);
+				       ctx, OCPF_WARN_LID_REGISTERED, element);
 		}
 		element->kind = OCPF_MNID_ID;
 		element->mnid_id = nprop->mnid_id;
@@ -304,29 +327,30 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 			retval = mapi_nameid_lid_lookup(element->mnid_id,
 							element->oleguid,
 							&element->propType);
-			OCPF_RETVAL_IF(retval != MAPI_E_SUCCESS, OCPF_WARN_LID_UNKNOWN, element);
+			OCPF_RETVAL_IF(retval != MAPI_E_SUCCESS, ctx, OCPF_WARN_LID_UNKNOWN, element);
 		} else {
 			element->propType = nprop->propType;
 		}
 	}
 
 	if (var_name) {
-		for (vel = ocpf->vars; vel->next; vel = vel->next) {
+		for (vel = ctx->vars; vel->next; vel = vel->next) {
 			if (vel->name && !strcmp(vel->name, var_name)) {
-				OCPF_RETVAL_IF(element->propType != vel->propType, OCPF_WARN_PROPVALUE_MISMATCH, element);
+				OCPF_RETVAL_IF(element->propType != vel->propType, ctx, OCPF_WARN_PROPVALUE_MISMATCH, element);
 				element->value = vel->value;
 			}
 		}
-		OCPF_RETVAL_IF(!element->value, OCPF_WARN_VAR_NOT_REGISTERED, element);
+		OCPF_RETVAL_IF(!element->value, ctx, OCPF_WARN_VAR_NOT_REGISTERED, element);
 	} else {
-		ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, element->propType, proptype, lpProp, unescape);
+		ret = ocpf_set_propvalue((TALLOC_CTX *)element, ctx, &element->value, 
+					 element->propType, proptype, lpProp, unescape);
 		if (ret == -1) {
 			talloc_free(element);
 			return OCPF_ERROR;
 		}
 	}
 
-	DLIST_ADD(ocpf->nprops, element);
+	DLIST_ADD(ctx->nprops, element);
 
 	return OCPF_SUCCESS;
 }
@@ -341,11 +365,11 @@ int ocpf_nproperty_add(struct ocpf_nprop *nprop, union SPropValue_CTR lpProp,
 
    \return OCPF_SUCCESS on success, otherwise OCPF_ERROR
  */
-int ocpf_type_add(const char *type)
+int ocpf_type_add(struct ocpf_context *ctx, const char *type)
 {
 	if (!ocpf || !ocpf->mem_ctx || !type) return OCPF_ERROR;
 
-	ocpf->type = talloc_strdup(ocpf->mem_ctx, type);
+	ctx->type = talloc_strdup(ctx, type);
 
 	return OCPF_SUCCESS;
 }
@@ -393,7 +417,10 @@ static int64_t ocpf_folder_name_to_id(const char *name)
 
    \return OCPF_SUCCESS on success, otherwise OCPF_ERROR
  */
-int ocpf_folder_add(const char *name, uint64_t id, const char *var_name)
+int ocpf_folder_add(struct ocpf_context *ctx, 
+		    const char *name, 
+		    uint64_t id, 
+		    const char *var_name)
 {
 	struct ocpf_var		*element;
 
@@ -402,15 +429,15 @@ int ocpf_folder_add(const char *name, uint64_t id, const char *var_name)
 	if (!name && !id && !var_name) return OCPF_ERROR;
 
 	if (name) {
-		ocpf->folder = (uint64_t) ocpf_folder_name_to_id(name);
-		OCPF_RETVAL_IF(ocpf->folder == -1, OCPF_WARN_FOLDER_ID_UNKNOWN, NULL);
+		ctx->folder = (uint64_t) ocpf_folder_name_to_id(name);
+		OCPF_RETVAL_IF(ctx->folder == -1, ctx, OCPF_WARN_FOLDER_ID_UNKNOWN, NULL);
 	} else if (id) {
-		ocpf->folder = id;
+		ctx->folder = id;
 	} else if (var_name) {
-		for (element = ocpf->vars; element->next; element = element->next) {
+		for (element = ctx->vars; element->next; element = element->next) {
 			if (element->name && !strcmp(element->name, var_name)) {
 				/* WARNING: we assume var data is double */
-				ocpf->folder = *((uint64_t *)element->value);
+				ctx->folder = *((uint64_t *)element->value);
 			}
 		}
 	}
@@ -429,7 +456,9 @@ int ocpf_folder_add(const char *name, uint64_t id, const char *var_name)
 
    \return OCPF_SUCCESS on success, otherwise OCPF_ERROR
  */
-int ocpf_oleguid_add(const char *name, const char *oleguid)
+int ocpf_oleguid_add(struct ocpf_context *ctx,
+		     const char *name, 
+		     const char *oleguid)
 {
 	NTSTATUS		status;
 	struct ocpf_oleguid	*element;
@@ -440,23 +469,23 @@ int ocpf_oleguid_add(const char *name, const char *oleguid)
 	if (!name) return OCPF_ERROR;
 
 	/* Sanity check: Do not insert twice the same name or guid */
-	for (element = ocpf->oleguid; element->next; element = element->next) {
+	for (element = ctx->oleguid; element->next; element = element->next) {
 		OCPF_RETVAL_IF(element->name && !strcmp(element->name, name),
-			       OCPF_WARN_OLEGUID_N_REGISTERED, NULL);
+			       ctx, OCPF_WARN_OLEGUID_N_REGISTERED, NULL);
 
 		OCPF_RETVAL_IF(element->guid && !strcmp(element->guid, oleguid),
-			       OCPF_WARN_OLEGUID_G_REGISTERED, NULL);
+			       ctx, OCPF_WARN_OLEGUID_G_REGISTERED, NULL);
 	}
 
-	element = talloc_zero(ocpf->mem_ctx, struct ocpf_oleguid);
+	element = talloc_zero(ctx->oleguid, struct ocpf_oleguid);
 
 	status = GUID_from_string(oleguid, &guid);
-	OCPF_RETVAL_IF(!NT_STATUS_IS_OK(status), OCPF_WARN_OLEGUID_INVALID, element);
+	OCPF_RETVAL_IF(!NT_STATUS_IS_OK(status), ctx, OCPF_WARN_OLEGUID_INVALID, element);
 
-	element->name = talloc_strdup(ocpf->mem_ctx, name);
-	element->guid = talloc_strdup(ocpf->mem_ctx, oleguid);
+	element->name = talloc_strdup(element, name);
+	element->guid = talloc_strdup(element, oleguid);
 
-	DLIST_ADD(ocpf->oleguid, element);
+	DLIST_ADD(ctx->oleguid, element);
 
 	return OCPF_SUCCESS;
 }
@@ -470,11 +499,13 @@ int ocpf_oleguid_add(const char *name, const char *oleguid)
 
    \result OCPF_SUCCESS on success, otherwise OCPF_ERROR;
  */
-int ocpf_oleguid_check(const char *name, const char **guid)
+int ocpf_oleguid_check(struct ocpf_context *ctx,
+		       const char *name, 
+		       const char **guid)
 {
 	struct ocpf_oleguid	*element;
 
-	for (element = ocpf->oleguid; element->next; element = element->next) {	
+	for (element = ctx->oleguid; element->next; element = element->next) {	
 		if (element->name && !strcmp(element->name, name)) {
 			*guid = element->guid;
 			return OCPF_SUCCESS;
@@ -514,7 +545,11 @@ int ocpf_add_filetime(const char *date, struct FILETIME *ft)
 }
 
 
-int ocpf_variable_add(const char *name, union SPropValue_CTR lpProp, uint16_t propType, bool unescape)
+int ocpf_variable_add(struct ocpf_context *ctx,
+		      const char *name, 
+		      union SPropValue_CTR lpProp, 
+		      uint16_t propType, 
+		      bool unescape)
 {
 	struct ocpf_var		*element;
 	int			ret;
@@ -523,34 +558,35 @@ int ocpf_variable_add(const char *name, union SPropValue_CTR lpProp, uint16_t pr
 	if (!name) return OCPF_ERROR;
 
 	/* Sanity check: Do not insert twice the same variable */
-	for (element = ocpf->vars; element->next; element = element->next) {
+	for (element = ctx->vars; element->next; element = element->next) {
 		OCPF_RETVAL_IF(element->name && !strcmp(element->name, name),
-			       OCPF_WARN_VAR_REGISTERED, NULL);
+			       ctx, OCPF_WARN_VAR_REGISTERED, NULL);
 	}
 
-	element = talloc_zero(ocpf->mem_ctx, struct ocpf_var);
+	element = talloc_zero(ctx->vars, struct ocpf_var);
 	element->name = talloc_strdup((TALLOC_CTX *)element, name);
 	element->propType = propType;
 
-	ret = ocpf_set_propvalue((TALLOC_CTX *)element, &element->value, propType, propType, lpProp, unescape);
-	OCPF_RETVAL_IF(ret == -1, OCPF_WARN_VAR_TYPE, element);
+	ret = ocpf_set_propvalue((TALLOC_CTX *)element, ctx, &element->value, propType, 
+				 propType, lpProp, unescape);
+	OCPF_RETVAL_IF(ret == -1, ctx, OCPF_WARN_VAR_TYPE, element);
 
-	DLIST_ADD(ocpf->vars, element);
+	DLIST_ADD(ctx->vars, element);
 
 	return OCPF_SUCCESS;
 }
 
 
-int ocpf_binary_add(const char *filename, struct Binary_r *bin)
+int ocpf_binary_add(struct ocpf_context *ctx, const char *filename, struct Binary_r *bin)
 {
 	int		fd;
 	struct stat	sb;
 
 	fd = open(filename, O_RDONLY);
-	OCPF_RETVAL_IF(fd == -1, OCPF_WARN_FILENAME_INVALID, NULL);
-	OCPF_RETVAL_IF(fstat(fd, &sb), OCPF_WARN_FILENAME_STAT, NULL);
+	OCPF_RETVAL_IF(fd == -1, ctx, OCPF_WARN_FILENAME_INVALID, NULL);
+	OCPF_RETVAL_IF(fstat(fd, &sb), ctx, OCPF_WARN_FILENAME_STAT, NULL);
 	
-	bin->lpb = talloc_size(ocpf->mem_ctx, sb.st_size);
+	bin->lpb = talloc_size(ctx, sb.st_size);
 	bin->cb = read(fd, bin->lpb, sb.st_size);
 
 	close(fd);
@@ -558,18 +594,18 @@ int ocpf_binary_add(const char *filename, struct Binary_r *bin)
 	return OCPF_SUCCESS;
 }
 
-int ocpf_recipient_add(uint8_t recipClass, char *recipient)
+int ocpf_recipient_add(struct ocpf_context *ctx, uint8_t recipClass, char *recipient)
 {
 	struct ocpf_recipients	*element;
 
 	if (!ocpf || !ocpf->mem_ctx) return OCPF_ERROR;
 	if (!recipient) return OCPF_ERROR;
 
-	element = talloc_zero(ocpf->mem_ctx, struct ocpf_recipients);
+	element = talloc_zero(ctx->recipients, struct ocpf_recipients);
 	element->name = talloc_strdup((TALLOC_CTX *)element, recipient);
 	element->class = recipClass;
 
-	DLIST_ADD(ocpf->recipients, element);
+	DLIST_ADD(ctx->recipients, element);
 
 	return OCPF_SUCCESS;
 }

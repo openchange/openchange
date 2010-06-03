@@ -20,10 +20,10 @@
 #ifndef __LEX_H_
 #define	__LEX_H_
 
-void error_message (const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void error_message (struct ocpf_context *, const char *, ...) __attribute__ ((format (printf, 2, 3)));
 
 extern int error_flag;
 
-int ocpf_yylex(void);
+/* int ocpf_yylex(YYSTYPE *); */
 
 #endif /* __LEX_H_ */

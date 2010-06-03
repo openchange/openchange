@@ -48,13 +48,18 @@ static void ocpf_do_dump(const char *format, ...)
 
    Dump OCPF Registered Type
 */
-_PUBLIC_ void ocpf_dump_type(void)
+_PUBLIC_ void ocpf_dump_type(uint32_t context_id)
 {
+	struct ocpf_context	*ctx;
+
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	if (!ctx) return;
+
 	OCPF_DUMP_TITLE(indent, "TYPE", OCPF_DUMP_TOPLEVEL);
 	indent++;
 	
 	INDENT();
-	OCPF_DUMP(("* %s", ocpf->type ? ocpf->type : "Undefined"));
+	OCPF_DUMP(("* %s", ctx->type ? ctx->type : "Undefined"));
 	indent--;
 }
 
@@ -64,13 +69,18 @@ _PUBLIC_ void ocpf_dump_type(void)
 
    Dump OCPF Registered Destination Folder
  */
-_PUBLIC_ void ocpf_dump_folder(void)
+_PUBLIC_ void ocpf_dump_folder(uint32_t context_id)
 {
+	struct ocpf_context	*ctx;
+
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	if (!ctx) return;
+
 	OCPF_DUMP_TITLE(indent, "FOLDER", OCPF_DUMP_TOPLEVEL);
 	indent++;
 
 	INDENT();
-	OCPF_DUMP(("* 0x%llx", ocpf->folder ? ocpf->folder : -1));
+	OCPF_DUMP(("* 0x%llx", ctx->folder ? ctx->folder : -1));
 	indent--;
 }
 
@@ -80,16 +90,20 @@ _PUBLIC_ void ocpf_dump_folder(void)
 
    Dump OCPF Recipients
  */
-_PUBLIC_ void ocpf_dump_recipients(void)
+_PUBLIC_ void ocpf_dump_recipients(uint32_t context_id)
 {
+	struct ocpf_context	*ctx;
 	struct ocpf_recipients	*element;
+
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	if (!ctx) return;
 
 	OCPF_DUMP_TITLE(indent, "RECIPIENTS", OCPF_DUMP_TOPLEVEL);
 	indent++;
 
 	INDENT();
 	printf("* To: ");
-	for (element = ocpf->recipients; element->next; element = element->next) {
+	for (element = ctx->recipients; element->next; element = element->next) {
 		if (element->class == OCPF_MAPI_TO) {
 			printf("%s;", element->name);
 		}
@@ -98,7 +112,7 @@ _PUBLIC_ void ocpf_dump_recipients(void)
 
 	INDENT();
 	printf("* Cc: ");
-	for (element = ocpf->recipients; element->next; element = element->next) {
+	for (element = ctx->recipients; element->next; element = element->next) {
 		if (element->class == OCPF_MAPI_CC) {
 			printf("%s;", element->name);
 		}
@@ -107,7 +121,7 @@ _PUBLIC_ void ocpf_dump_recipients(void)
 
 	INDENT();
 	printf("* Bcc: ");
-	for (element = ocpf->recipients; element->next; element = element->next) {
+	for (element = ctx->recipients; element->next; element = element->next) {
 		if (element->class == OCPF_MAPI_BCC) {
 			printf("%s;", element->name);
 		}
@@ -121,13 +135,17 @@ _PUBLIC_ void ocpf_dump_recipients(void)
 
    Dump OCPF Registered OLEGUID
 */
-_PUBLIC_ void ocpf_dump_oleguid(void)
+_PUBLIC_ void ocpf_dump_oleguid(uint32_t context_id)
 {
+	struct ocpf_context	*ctx;
 	struct ocpf_oleguid	*element;
+
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	if (!ctx) return;
 
 	OCPF_DUMP_TITLE(indent, "OLEGUID", OCPF_DUMP_TOPLEVEL);
 	indent++;
-	for (element = ocpf->oleguid; element->next; element = element->next) {
+	for (element = ctx->oleguid; element->next; element = element->next) {
 		INDENT();
 		printf("%-25s: %s\n", element->name, element->guid);
 	}
@@ -135,27 +153,35 @@ _PUBLIC_ void ocpf_dump_oleguid(void)
 }
 
 
-_PUBLIC_ void ocpf_dump_variable(void)
+_PUBLIC_ void ocpf_dump_variable(uint32_t context_id)
 {
+	struct ocpf_context	*ctx;
 	struct ocpf_var		*element;
+
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	if (!ctx) return;
 
 	OCPF_DUMP_TITLE(indent, "VARIABLE", OCPF_DUMP_TOPLEVEL);
 	indent++;
-	for (element = ocpf->vars; element->next; element = element->next) {
+	for (element = ctx->vars; element->next; element = element->next) {
 		INDENT();
 		printf("%s\n", element->name);
 	}
 	indent--;
 }
 
-_PUBLIC_ void ocpf_dump_property(void)
+_PUBLIC_ void ocpf_dump_property(uint32_t context_id)
 {
+	struct ocpf_context	*ctx;
 	struct ocpf_property	*element;
 	const char		*proptag;
 
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	if (!ctx) return;
+
 	OCPF_DUMP_TITLE(indent, "PROPERTIES", OCPF_DUMP_TOPLEVEL);
 	indent++;
-	for (element = ocpf->props; element->next; element = element->next) {
+	for (element = ctx->props; element->next; element = element->next) {
 		INDENT();
 		proptag = (const char *)get_proptag_name(element->aulPropTag);
 		printf("0x%.8x = %s\n", element->aulPropTag,
@@ -166,16 +192,20 @@ _PUBLIC_ void ocpf_dump_property(void)
 }
 
 
-_PUBLIC_ void ocpf_dump_named_property(void)
+_PUBLIC_ void ocpf_dump_named_property(uint32_t context_id)
 {
+	struct ocpf_context	*ctx;
 	struct ocpf_nproperty	*element;
+
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	if (!ctx) return;
 
 	OCPF_DUMP_TITLE(indent, "NAMED PROPERTIES", OCPF_DUMP_TOPLEVEL);
 	indent++;
 
 	OCPF_DUMP_TITLE(indent, "OOM", OCPF_DUMP_SUBLEVEL);
 	indent++;
-	for (element = ocpf->nprops; element->next; element = element->next) {
+	for (element = ctx->nprops; element->next; element = element->next) {
 		if (element->kind == OCPF_OOM) {
 			INDENT();
 			printf("* %s\n", element->OOM);
@@ -185,7 +215,7 @@ _PUBLIC_ void ocpf_dump_named_property(void)
 
 	OCPF_DUMP_TITLE(indent, "MNID_ID", OCPF_DUMP_SUBLEVEL);
 	indent++;
-	for (element = ocpf->nprops; element->next; element = element->next) {
+	for (element = ctx->nprops; element->next; element = element->next) {
 		if (element->kind == OCPF_MNID_ID) {
 			INDENT();
 			printf("* 0x%.4x\n", element->mnid_id);
@@ -195,7 +225,7 @@ _PUBLIC_ void ocpf_dump_named_property(void)
 
 	OCPF_DUMP_TITLE(indent, "MNID_STRING", OCPF_DUMP_SUBLEVEL);
 	indent++;
-	for (element = ocpf->nprops; element->next; element = element->next) {
+	for (element = ctx->nprops; element->next; element = element->next) {
 		if (element->kind == OCPF_MNID_STRING) {
 			INDENT();
 			printf("* %s\n", element->mnid_string);
@@ -207,14 +237,14 @@ _PUBLIC_ void ocpf_dump_named_property(void)
 }
 
 
-_PUBLIC_ void ocpf_dump(void)
+_PUBLIC_ void ocpf_dump(uint32_t context_id)
 {
 	indent = 0;
-	ocpf_dump_type();
-	ocpf_dump_folder();
-	ocpf_dump_oleguid();
-	ocpf_dump_recipients();
-	ocpf_dump_variable();
-	ocpf_dump_property();
-	ocpf_dump_named_property();
+	ocpf_dump_type(context_id);
+	ocpf_dump_folder(context_id);
+	ocpf_dump_oleguid(context_id);
+	ocpf_dump_recipients(context_id);
+	ocpf_dump_variable(context_id);
+	ocpf_dump_property(context_id);
+	ocpf_dump_named_property(context_id);
 }

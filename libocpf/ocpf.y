@@ -24,16 +24,16 @@
 #include <libocpf/ocpf_api.h>
 #include <libocpf/lex.h>
 
-void yyerror(char *);
-
-union SPropValue_CTR	lpProp;
-struct ocpf_nprop      	nprop;
-int		       	typeset;
-uint16_t       	       	type;
-int			folderset;
-uint8_t			recip_type;
+int ocpf_yylex(void *, void *);
+void yyerror(struct ocpf_context *, void *, char *);
 
 %}
+
+%pure_parser
+%parse-param {struct ocpf_context *ctx}
+%parse-param {void *scanner}
+%lex-param {yyscan_t *scanner}
+%name-prefix="ocpf_yy"
 
 %union {
 	uint8_t				i;
@@ -99,7 +99,7 @@ uint8_t			recip_type;
 
 keywords	: | keywords kvalues
 		{
-			memset(&lpProp, 0, sizeof (union SPropValue_CTR));
+			memset(&ctx->lpProp, 0, sizeof (union SPropValue_CTR));
 		}
 		;
 
@@ -115,11 +115,11 @@ kvalues		: Type
 Type		: 
 		kw_TYPE STRING
 		{
-			if (!typeset) {
-				ocpf_type_add($2);
-				typeset++;
+			if (!ctx->typeset) {
+			  ocpf_type_add(ctx,$2);
+				ctx->typeset++;
 			} else {
-				error_message("%s", "duplicated TYPE\n");
+				error_message(ctx, "%s", "duplicated TYPE\n");
 				return -1;
 			}
 		}
@@ -128,29 +128,29 @@ Type		:
 Folder		:
 		kw_FOLDER STRING
 		{
-			if (folderset == false) {
-				ocpf_folder_add($2, 0, NULL);
-				folderset = true;
+			if (ctx->folderset == false) {
+				ocpf_folder_add(ctx, $2, 0, NULL);
+				ctx->folderset = true;
 			} else {
-				error_message("%s", "duplicated FOLDER\n");
+				error_message(ctx, "%s", "duplicated FOLDER\n");
 			}
 		}
 		| kw_FOLDER I8
 		{
-			if (folderset == false) {
-				ocpf_folder_add(NULL, $2, NULL);
-				folderset = true;
+			if (ctx->folderset == false) {
+				ocpf_folder_add(ctx, NULL, $2, NULL);
+				ctx->folderset = true;
 			} else {
-				error_message("%s", "duplicated FOLDER\n");
+				error_message(ctx,"%s", "duplicated FOLDER\n");
 			}
 		}
 		| kw_FOLDER VAR
 		{
-			if (folderset == false) {
-				ocpf_folder_add(NULL, 0, $2);
-				folderset = true;
+			if (ctx->folderset == false) {
+				ocpf_folder_add(ctx, NULL, 0, $2);
+				ctx->folderset = true;
 			} else {
-				error_message("%s", "duplicated FOLDER\n");
+				error_message(ctx,"%s", "duplicated FOLDER\n");
 			}
 		}
 		;
@@ -161,18 +161,18 @@ OLEGUID		:
 			char *name;
 			char *guid;
 			
-			name = talloc_strdup(ocpf->mem_ctx, $2);
-			guid = talloc_strdup(ocpf->mem_ctx, $3);
+			name = talloc_strdup(ctx, $2);
+			guid = talloc_strdup(ctx, $3);
 
-			ocpf_oleguid_add(name, guid);
+			ocpf_oleguid_add(ctx, name, guid);
 		}
 		;
 
 Set		:
 		kw_SET VAR EQUAL propvalue
 		{
-			ocpf_variable_add($2, lpProp, type, true);
-			memset(&lpProp, 0, sizeof (union SPropValue_CTR));
+			ocpf_variable_add(ctx, $2, ctx->lpProp, ctx->ltype, true);
+			memset(&ctx->lpProp, 0, sizeof (union SPropValue_CTR));
 		}
 		;
 
@@ -183,77 +183,78 @@ Property	:
 
 pcontent       	: | pcontent content
 		{
-			memset(&lpProp, 0, sizeof (union SPropValue_CTR));
+			memset(&ctx->lpProp, 0, sizeof (union SPropValue_CTR));
 		}
 		;
 
 content		:
 		IDENTIFIER EQUAL propvalue
 		{
-		  ocpf_propvalue_s($1, lpProp, type, true);
-			ocpf_propvalue_free(lpProp, type);
+			ocpf_propvalue_s(ctx, $1, ctx->lpProp, ctx->ltype, true);
+			ocpf_propvalue_free(ctx->lpProp, ctx->ltype);
 		}
 		| INTEGER EQUAL propvalue
 		{
-			ocpf_propvalue($1, lpProp, type, true);
-			ocpf_propvalue_free(lpProp, type);
+			ocpf_propvalue(ctx, $1, ctx->lpProp, ctx->ltype, true);
+			ocpf_propvalue_free(ctx->lpProp, ctx->ltype);
 		}
 		| IDENTIFIER EQUAL VAR
 		{
-			ocpf_propvalue_var($1, 0x0, $3, true);
+			ocpf_propvalue_var(ctx, $1, 0x0, $3, true);
 		}
 		| INTEGER EQUAL VAR
 		{
-			ocpf_propvalue_var(NULL, $1, $3, true);
+			ocpf_propvalue_var(ctx, NULL, $1, $3, true);
 		}
 		;
 
 propvalue	: STRING	
 		{ 
-			lpProp.lpszA = talloc_strdup(ocpf->mem_ctx, $1); 
-			type = PT_STRING8; 
+			ctx->lpProp.lpszA = talloc_strdup(ctx, $1); 
+			ctx->ltype = PT_STRING8; 
 		}
 		| UNICODE
 		{
-			lpProp.lpszW = talloc_strdup(ocpf->mem_ctx, $1);
-			type = PT_UNICODE;
+			ctx->lpProp.lpszW = talloc_strdup(ctx, $1);
+			ctx->ltype = PT_UNICODE;
 		}
-		| SHORT		{ lpProp.i = $1; type = PT_SHORT; }
-		| INTEGER	{ lpProp.l = $1; type = PT_LONG; }
-		| BOOLEAN	{ lpProp.b = $1; type = PT_BOOLEAN; }
-		| I8		{ lpProp.d = $1; type = PT_I8; }
+		| SHORT		{ ctx->lpProp.i = $1; ctx->ltype = PT_SHORT; }
+		| INTEGER	{ ctx->lpProp.l = $1; ctx->ltype = PT_LONG; }
+		| BOOLEAN	{ ctx->lpProp.b = $1; ctx->ltype = PT_BOOLEAN; }
+		| I8		{ ctx->lpProp.d = $1; ctx->ltype = PT_I8; }
 		| SYSTIME
 		{
-			ocpf_add_filetime($1, &lpProp.ft);
-			type = PT_SYSTIME;
+			ocpf_add_filetime($1, &ctx->lpProp.ft);
+			ctx->ltype = PT_SYSTIME;
 		}
 		| OBRACE mvstring_contents STRING EBRACE
 		{
 			TALLOC_CTX *mem_ctx;
 
-			if (!lpProp.MVszA.cValues) {
-				lpProp.MVszA.cValues = 0;
-				lpProp.MVszA.lppszA = talloc_array(ocpf->mem_ctx, const char *, 2);
+			if (!ctx->lpProp.MVszA.cValues) {
+				ctx->lpProp.MVszA.cValues = 0;
+				ctx->lpProp.MVszA.lppszA = talloc_array(ctx, const char *, 2);
 			} else {
-				lpProp.MVszA.lppszA = talloc_realloc(NULL, lpProp.MVszA.lppszA, const char *,
-								     lpProp.MVszA.cValues + 2);
+				ctx->lpProp.MVszA.lppszA = talloc_realloc(NULL, ctx->lpProp.MVszA.lppszA, 
+									  const char *,
+									  ctx->lpProp.MVszA.cValues + 2);
 			}
-			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.lppszA;
-			lpProp.MVszA.lppszA[lpProp.MVszA.cValues] = talloc_strdup(mem_ctx, $3);
-			lpProp.MVszA.cValues += 1;
+			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVszA.lppszA;
+			ctx->lpProp.MVszA.lppszA[ctx->lpProp.MVszA.cValues] = talloc_strdup(mem_ctx, $3);
+			ctx->lpProp.MVszA.cValues += 1;
 
-			type = PT_MV_STRING8;
+			ctx->ltype = PT_MV_STRING8;
 		}
 		| OBRACE binary_contents EBRACE
 		{
-			type = PT_BINARY;
+			ctx->ltype = PT_BINARY;
 		}
 		| LOWER STRING GREATER
 		{
 			int	ret;
 
-			ret = ocpf_binary_add($2, &lpProp.bin);
-			type = (ret == OCPF_SUCCESS) ? PT_BINARY : PT_ERROR;
+			ret = ocpf_binary_add(ctx, $2, &ctx->lpProp.bin);
+			ctx->ltype = (ret == OCPF_SUCCESS) ? PT_BINARY : PT_ERROR;
 		}
 		;
 
@@ -264,16 +265,17 @@ mvstring_content  : STRING COMMA
 		  {
 			TALLOC_CTX *mem_ctx;
 
-			if (!lpProp.MVszA.cValues) {
-				lpProp.MVszA.cValues = 0;
-				lpProp.MVszA.lppszA = talloc_array(ocpf->mem_ctx, const char *, 2);
+			if (!ctx->lpProp.MVszA.cValues) {
+				ctx->lpProp.MVszA.cValues = 0;
+				ctx->lpProp.MVszA.lppszA = talloc_array(ctx, const char *, 2);
 			} else {
-				lpProp.MVszA.lppszA = talloc_realloc(NULL, lpProp.MVszA.lppszA, const char *,
-								     lpProp.MVszA.cValues + 2);
+				ctx->lpProp.MVszA.lppszA = talloc_realloc(NULL, ctx->lpProp.MVszA.lppszA, 
+									  const char *,
+									  ctx->lpProp.MVszA.cValues + 2);
 			}
-			mem_ctx = (TALLOC_CTX *) lpProp.MVszA.lppszA;
-			lpProp.MVszA.lppszA[lpProp.MVszA.cValues] = talloc_strdup(mem_ctx, $1);
-			lpProp.MVszA.cValues += 1;
+			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVszA.lppszA;
+			ctx->lpProp.MVszA.lppszA[ctx->lpProp.MVszA.cValues] = talloc_strdup(mem_ctx, $1);
+			ctx->lpProp.MVszA.cValues += 1;
 		  }
 		  ;
 
@@ -284,19 +286,19 @@ binary_content	: INTEGER
 			TALLOC_CTX *mem_ctx;
 
 			if ($1 > 0xFF) {
-				error_message("Invalid Binary constant: 0x%x > 0xFF\n", $1);
+				error_message(ctx,"Invalid Binary constant: 0x%x > 0xFF\n", $1);
 			}
 
-			if (!lpProp.bin.cb) {
-				lpProp.bin.cb = 0;
-				lpProp.bin.lpb = talloc_array(ocpf->mem_ctx, uint8_t, 2);
+			if (!ctx->lpProp.bin.cb) {
+				ctx->lpProp.bin.cb = 0;
+				ctx->lpProp.bin.lpb = talloc_array(ctx, uint8_t, 2);
 			} else {
-				lpProp.bin.lpb = talloc_realloc(NULL, lpProp.bin.lpb, uint8_t,
-								lpProp.bin.cb + 2);
+				ctx->lpProp.bin.lpb = talloc_realloc(NULL, ctx->lpProp.bin.lpb, uint8_t,
+								ctx->lpProp.bin.cb + 2);
 			}
-			mem_ctx = (TALLOC_CTX *) lpProp.bin.lpb;
-			lpProp.bin.lpb[lpProp.bin.cb] = $1;
-			lpProp.bin.cb += 1;
+			mem_ctx = (TALLOC_CTX *) ctx->lpProp.bin.lpb;
+			ctx->lpProp.bin.lpb[ctx->lpProp.bin.cb] = $1;
+			ctx->lpProp.bin.cb += 1;
 		}
 		;
 
@@ -307,108 +309,108 @@ NProperty	:
 
 npcontent	: | npcontent ncontent
 		{
-			memset(&lpProp, 0, sizeof (union SPropValue_CTR));
+			memset(&ctx->lpProp, 0, sizeof (union SPropValue_CTR));
 		}
 		;
 
 ncontent	: kind EQUAL propvalue
 		{
-			ocpf_nproperty_add(&nprop, lpProp, NULL, type, true);
+			ocpf_nproperty_add(ctx, &ctx->nprop, ctx->lpProp, NULL, ctx->ltype, true);
 		}
 		| known_kind EQUAL propvalue
 		{
-			ocpf_nproperty_add(&nprop, lpProp, NULL, type, true);
+			ocpf_nproperty_add(ctx, &ctx->nprop, ctx->lpProp, NULL, ctx->ltype, true);
 		}
 		| kind EQUAL VAR
 		{
-			ocpf_nproperty_add(&nprop, lpProp, $3, type, true);
+			ocpf_nproperty_add(ctx, &ctx->nprop, ctx->lpProp, $3, ctx->ltype, true);
 		}
 		| known_kind EQUAL VAR
 		{
-			ocpf_nproperty_add(&nprop, lpProp, $3, type, true);
+			ocpf_nproperty_add(ctx, &ctx->nprop, ctx->lpProp, $3, ctx->ltype, true);
 		}
 		;
 
 kind		: kw_OOM COLON IDENTIFIER COLON IDENTIFIER
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.OOM = talloc_strdup(ocpf->mem_ctx, $3);
-			nprop.guid = $5;
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.OOM = talloc_strdup(ctx, $3);
+			ctx->nprop.guid = $5;
 		}
 		| kw_MNID_ID COLON INTEGER COLON proptype COLON IDENTIFIER
 		{
-			nprop.registered = false;
-			nprop.mnid_id = $3;
-			nprop.guid = $7;
+			ctx->nprop.registered = false;
+			ctx->nprop.mnid_id = $3;
+			ctx->nprop.guid = $7;
 		}
 		| kw_MNID_STRING COLON STRING COLON proptype COLON IDENTIFIER
 		{
-			nprop.registered = false;
-			nprop.mnid_string = talloc_strdup(ocpf->mem_ctx, $3);
-			nprop.guid = $7;
+			ctx->nprop.registered = false;
+			ctx->nprop.mnid_string = talloc_strdup(ctx, $3);
+			ctx->nprop.guid = $7;
 		}
 		;
 
 proptype	: kw_PT_STRING8	
 		{
- 			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.propType = PT_STRING8; 
+ 			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_STRING8; 
 		}
 		| kw_PT_UNICODE
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.propType = PT_UNICODE; 
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_UNICODE; 
 		}
 		| kw_PT_SHORT
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.propType = PT_SHORT;
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_SHORT;
 		}
 		| kw_PT_LONG 
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.propType = PT_LONG; 
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_LONG; 
 		}
 		| kw_PT_I8
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.propType = PT_I8;
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_I8;
 		}
 		| kw_PT_BOOLEAN
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.propType = PT_BOOLEAN;
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_BOOLEAN;
 		}
 		| kw_PT_SYSTIME
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.propType = PT_SYSTIME; 
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_SYSTIME; 
 		}
 		| kw_PT_MV_STRING8
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.propType = PT_MV_STRING8;
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_MV_STRING8;
 		}
 		| kw_PT_BINARY
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.propType = PT_BINARY;
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_BINARY;
 		}
 		;
 
 known_kind	: kw_MNID_ID COLON INTEGER COLON IDENTIFIER
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.registered = true;
-			nprop.mnid_id = $3;
-			nprop.guid = $5;
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.registered = true;
+			ctx->nprop.mnid_id = $3;
+			ctx->nprop.guid = $5;
 		}
 		| kw_MNID_STRING COLON STRING COLON IDENTIFIER
 		{
-			memset(&nprop, 0, sizeof (struct ocpf_nprop));
-			nprop.registered = true;
-			nprop.mnid_string = talloc_strdup(ocpf->mem_ctx, $3);
-			nprop.guid = $5;
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.registered = true;
+			ctx->nprop.mnid_string = talloc_strdup(ctx, $3);
+			ctx->nprop.guid = $5;
 		}
 		;
 
@@ -417,25 +419,25 @@ Recipient	:
 		{
 			char	*recipient = NULL;
 
-			recipient = talloc_strdup(ocpf->mem_ctx, $4);
-			ocpf_recipient_add(recip_type, recipient);
+			recipient = talloc_strdup(ctx, $4);
+			ocpf_recipient_add(ctx, ctx->recip_type, recipient);
 			talloc_free(recipient);
 
-			recip_type = 0;
+			ctx->recip_type = 0;
 		}
 		;
 
 recipClass	: kw_TO
 		{
-			recip_type = MAPI_TO;
+			ctx->recip_type = MAPI_TO;
 		}
 		| kw_CC
 		{
-			recip_type = MAPI_CC;
+			ctx->recip_type = MAPI_CC;
 		}
 		| kw_BCC
 		{
-			recip_type = MAPI_BCC;
+			ctx->recip_type = MAPI_BCC;
 		}
 		;
 
@@ -445,15 +447,15 @@ recipient	: STRING SEMICOLON
 		{
 			char	*recipient = NULL;
 
-			recipient = talloc_strdup(ocpf->mem_ctx, $1);
-			ocpf_recipient_add(recip_type, recipient);
+			recipient = talloc_strdup(ctx, $1);
+			ocpf_recipient_add(ctx, ctx->recip_type, recipient);
 			talloc_free(recipient);
 		}
 
 %%
 
-void yyerror(char *s)
+void yyerror(struct ocpf_context *ctx, void *scanner, char *s)
 {
-	printf("%s: %d\n", s, lineno);
+	printf("%s: %d\n", s, ctx->lineno);
 	fflush(0);
 }

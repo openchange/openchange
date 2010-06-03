@@ -2477,6 +2477,7 @@ static bool openchangeclient_ocpf_syntax(struct oclient *oclient)
 {
 	int			ret;
 	struct ocpf_file	*element;
+	uint32_t		context_id;
 
 	/* Sanity checks */
 	if (!oclient->ocpf_files || !oclient->ocpf_files->next) {
@@ -2493,15 +2494,24 @@ static bool openchangeclient_ocpf_syntax(struct oclient *oclient)
 
 	/* Step2. Parse OCPF files */
 	for (element = oclient->ocpf_files; element->next; element = element->next) {
-		ret = ocpf_parse(element->filename);
+	  ret = ocpf_new_context(element->filename, &context_id, OCPF_FLAGS_READ);
 		if (ret == -1) {
 			errno = MAPI_E_INVALID_PARAMETER;
 			return false;
 		}
+		ret = ocpf_parse(context_id);
+		if (ret == -1) {
+			DEBUG(0, ("ocpf_parse failed ...\n"));
+			errno = MAPI_E_INVALID_PARAMETER;
+			return false;
+		}
+
+		/* Dump OCPF contents */
+		ocpf_dump(context_id);
+
+		ret = ocpf_del_context(context_id);
 	}
 
-	/* Step3. Dump OCPF contents */
-	ocpf_dump();
 
 	/* Step4. Release OCPF context */
 	ret = ocpf_release();
@@ -2523,6 +2533,7 @@ static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	mapi_object_t		obj_message;
 	uint32_t		cValues = 0;
 	struct SPropValue	*lpProps;
+	uint32_t		context_id;
 
 	/* Sanity Check */
 	if (!oclient->ocpf_files || !oclient->ocpf_files->next) {
@@ -2539,7 +2550,8 @@ static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 
 	/* Step2. Parse OCPF files */
 	for (element = oclient->ocpf_files; element->next; element = element->next) {
-		ret = ocpf_parse(element->filename);
+	  ret = ocpf_new_context(element->filename, &context_id, OCPF_FLAGS_READ);
+		ret = ocpf_parse(context_id);
 		if (ret == -1) {
 			errno = MAPI_E_INVALID_PARAMETER;
 			return false;
@@ -2548,7 +2560,7 @@ static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 
 	/* Step3. Open destination folder using ocpf API */
 	mapi_object_init(&obj_folder);
-	retval = ocpf_OpenFolder(obj_store, &obj_folder);
+	retval = ocpf_OpenFolder(context_id, obj_store, &obj_folder);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Step4. Create the message */
@@ -2557,16 +2569,16 @@ static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Step5, Set message recipients */
-	retval = ocpf_set_Recipients(mem_ctx, &obj_message);
+	retval = ocpf_set_Recipients(mem_ctx, context_id, &obj_message);
 	if (retval != MAPI_E_SUCCESS && GetLastError() != MAPI_E_NOT_FOUND) return false;
 	errno = MAPI_E_SUCCESS;
 
 	/* Step6. Set message properties */
-	retval = ocpf_set_SPropValue(mem_ctx, &obj_folder, &obj_message);
+	retval = ocpf_set_SPropValue(mem_ctx, context_id, &obj_folder, &obj_message);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Step7. Set message properties */
-	lpProps = ocpf_get_SPropValue(&cValues);
+	lpProps = ocpf_get_SPropValue(context_id, &cValues);
 
 	retval = SetProps(&obj_message, lpProps, cValues);
 	MAPIFreeBuffer(lpProps);
@@ -2578,6 +2590,8 @@ static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 
 	mapi_object_release(&obj_message);
 	mapi_object_release(&obj_folder);
+
+	ocpf_del_context(context_id);
 
 	return true;
 }
@@ -2596,6 +2610,7 @@ static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_s
 	const char			*item = NULL;
 	char				*filename = NULL;
 	struct mapi_SPropValue_array	lpProps;
+	uint32_t			context_id;
 
 
 	/* retrieve the FID/MID for ocpf_dump parameter */
@@ -2633,13 +2648,16 @@ static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_s
 	filename = talloc_asprintf(mem_ctx, "%"PRIx64".ocpf", mid);
 	DEBUG(0, ("OCPF output file: %s\n", filename));
 
-	ret = ocpf_write_init(filename, fid);
+	ret = ocpf_new_context(filename, &context_id, OCPF_FLAGS_CREATE);
 	talloc_free(filename);
+	ret = ocpf_write_init(context_id, fid);
 
-	ret = ocpf_write_auto(&obj_message, &lpProps);
+	ret = ocpf_write_auto(context_id, &obj_message, &lpProps);
 	if (ret == OCPF_SUCCESS) {
-		ret = ocpf_write_commit();
+		ret = ocpf_write_commit(context_id);
 	} 
+
+	ret = ocpf_del_context(context_id);
 
 	ret = ocpf_release();
 

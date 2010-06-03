@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008.
+   Copyright (C) Julien Kerihuel 2008-2010.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -90,39 +90,69 @@ struct ocpf_recipients
 	enum ocpf_recipClass	class;
 };
 
-struct ocpf
-{
-	TALLOC_CTX		*mem_ctx;
-	const char		*type;
-	struct ocpf_var		*vars;
-	struct ocpf_oleguid    	*oleguid;
-	struct ocpf_property	*props;
-	struct ocpf_nproperty	*nprops;
-	struct ocpf_recipients	*recipients;
-	const char		*filename;
-	struct SPropValue	*lpProps;
-	uint32_t		cValues;
-	uint64_t		folder;
-};
-
-
 struct ocpf_olfolder
 {
 	int			id;
 	const char		*name;
 };
 
+struct ocpf_context
+{
+	/* lexer internal data */
+	int			typeset;
+	bool			folderset;
+	uint8_t			recip_type;
+	uint16_t		ltype;
+	union SPropValue_CTR	lpProp;
+	struct ocpf_nprop	nprop;
+	unsigned int		lineno;
+	int			result;
+	/* ocpf */
+	const char		*type;
+	struct ocpf_var		*vars;
+	struct ocpf_oleguid    	*oleguid;
+	struct ocpf_property	*props;
+	struct ocpf_nproperty	*nprops;
+	struct ocpf_recipients	*recipients;
+	struct SPropValue	*lpProps;
+	uint32_t		cValues;
+	uint64_t		folder;
+	/* context */
+	FILE			*fp;
+	const char		*filename;
+	uint32_t		ref_count;
+	uint32_t		context_id;
+	struct ocpf_context	*prev;
+	struct ocpf_context	*next;
+};
+
+struct ocpf_freeid
+{
+	uint32_t		context_id;
+	struct ocpf_freeid	*prev;
+	struct ocpf_freeid	*next;
+};
+
+struct ocpf
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ocpf_context	*context;
+	struct ocpf_freeid	*free_id;
+	uint32_t		last_id;
+};
+
+
 #include <libocpf/proto_private.h>
 
 /**
  * Defines
  */
-#define	OCPF_WARN(x) (ocpf_do_debug x)				
+#define	OCPF_WARN(c,x) (ocpf_do_debug(c, x))				
 
-#define	OCPF_RETVAL_IF(x, msg, mem_ctx)  		       	\
+#define	OCPF_RETVAL_IF(x, c, msg, mem_ctx)  		       	\
 do {								\
 	if (x) {						\
-		OCPF_WARN(("%s", msg));				\
+		ocpf_do_debug(c, "%s", msg);			\
 		if (mem_ctx) {					\
 			talloc_free(mem_ctx);			\
 		}						\
@@ -130,13 +160,26 @@ do {								\
 	}							\
 } while (0);
 
+#define	OCPF_RETVAL_TYPE(x, c, msg, t, mem_ctx)			\
+do {								\
+	if (x) {						\
+		ocpf_do_debug(c, "%s", msg);			\
+		if (mem_ctx) {					\
+			talloc_free(mem_ctx);			\
+		}						\
+		return t;					\
+	}							\
+} while (0);
+
 #define	OCPF_INITIALIZED		"OCPF context has already been initialized"
 #define	OCPF_NOT_INITIALIZED		"OCPF context has not been initialized"
+#define	OCPF_INVALID_CONTEXT		"Invalid OCPF context"
 
 #define	OCPF_WRITE_NOT_INITIALIZED	"OCPF write context has not been initialized"
 
 #define	OCPF_FATAL_ERROR		"Fatal error encountered"
 #define	OCPF_WARN_FILENAME_INVALID	"Invalid filename"
+#define	OCPF_WARN_FILENAME_EXIST	"filename already exists"
 #define	OCPF_WARN_FILENAME_STAT		"Unable to stat file"
 
 #define	OCPF_WARN_PROP_REGISTERED	"Property already registered"

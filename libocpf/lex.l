@@ -28,31 +28,38 @@
 #include <libocpf/ocpf.tab.h>
 #include <libocpf/lex.h>
 
-struct ocpf	*ocpf;
-unsigned lineno = 1;
-
-#define	YY_DECL int ocpf_yylex(void)
+#define	YY_EXTRA_TYPE	struct ocpf_context *
+#define	YY_NO_UNPUT
 
 /*
  * Prototypes
  */
 
-int	yyget_lineno(void);
-FILE	*yyget_in(void);
-FILE	*yyget_out(void);
-int	yyget_leng(void);
-char	*yyget_text(void);
-void	yyset_lineno(int);
-void	yyset_in (FILE *);
-void	yyset_out (FILE *);
-int	yyget_debug(void);
-void	yyset_debug(int);
-int	yylex_destroy(void);
+int	yylex(YYSTYPE *, void *);
+int	yyget_lineno(void *);
+FILE	*yyget_in(void *);
+FILE	*yyget_out(void *);
+int	yyget_leng(void *);
+char	*yyget_text(void *);
+void	yyset_lineno(int, void *);
+void	yyset_extra(YY_EXTRA_TYPE, void *);
+void	yyset_in (FILE *, void *);
+void	yyset_out (FILE *, void *);
+int	yyget_debug(void *);
+void	yyset_debug(int, void *);
+int	yylex_destroy(void *);
+void	yyset_column(int, void *);
+int	yyget_column(void *);
 
 
-static void unterminated(const char *, unsigned);
+static void unterminated(struct ocpf_context *, const char *, unsigned int);
 
 %}
+
+%option reentrant 
+%option bison-bridge
+%option prefix="ocpf_yy"
+%option noyywrap
 
 %%
 TYPE		{ return kw_TYPE; }
@@ -86,11 +93,12 @@ PT_BINARY	{ return kw_PT_BINARY; }
 \>		{ return GREATER; }
 =		{ return EQUAL;}
 \/\*			{ 
-			    int c, start_lineno = lineno;
+			    struct ocpf_context *ctx = yyextra;
+			    int c, start_lineno = ctx->lineno;
 			    int level = 1;
 			    int seen_star = 0;
 			    int seen_slash = 0;
-			    while((c = input()) != EOF) {
+			    while((c = input(yyscanner)) != EOF) {
 				if(c == '/') {
 				    if(seen_star) {
 					if(--level == 0)
@@ -118,35 +126,36 @@ PT_BINARY	{ return kw_PT_BINARY; }
 				}
 				seen_star = seen_slash = 0;
 				if(c == '\n') {
-				    lineno++;
+				    ctx->lineno++;
 				    continue;
 				}
 			    }
 			    if(c == EOF)
-				unterminated("comment", start_lineno);
+				unterminated(ctx, "comment", start_lineno);
 			}
 "\""			{ 
-			    int start_lineno = lineno;
+			    struct ocpf_context *ctx = yyextra;
+			    int start_lineno = ctx->lineno;
 			    int c, c2;
 			    char buf[0x4000];
 			    char *p = buf;
 			    int f = 0;
 			    int skip_ws = 0;
 			    
-			    while((c = input()) != EOF) {
+			    while((c = input(yyscanner)) != EOF) {
 				if(isspace(c) && skip_ws) {
 				    if(c == '\n')
-					lineno++;
+					ctx->lineno++;
 				    continue;
 				}
 				skip_ws = 0;
 
 				if (c == '\\') {
 					c2 = c;
-					c = input();
+					c = input(yyscanner);
 					if (c == '"') { 
 						*p++ = c;
-						c = input();
+						c = input(yyscanner);
 					} else {
 						*p++ = c2;
 					}
@@ -166,7 +175,7 @@ PT_BINARY	{ return kw_PT_BINARY; }
 					break;
 				}
 				if(c == '\n') {
-				    lineno++;
+				    ctx->lineno++;
 				    while(p > buf && isspace((unsigned char)p[-1]))
 					p--;
 				    skip_ws = 1;
@@ -175,33 +184,34 @@ PT_BINARY	{ return kw_PT_BINARY; }
 				*p++ = c;
 			    }
 			    if(c == EOF)
-				unterminated("string", start_lineno);
+				unterminated(ctx, "string", start_lineno);
 			    *p++ = '\0';
-			    ocpf_yylval.name = buf;
+			    yylval->name = buf;
 			    return STRING; 
 			}
 W"\""			{ 
-			    int start_lineno = lineno;
+			    struct ocpf_context *ctx = yyextra;
+			    int start_lineno = ctx->lineno;
 			    int c, c2;
 			    char buf[0x4000];
 			    char *p = buf;
 			    int f = 0;
 			    int skip_ws = 0;
 			    
-			    while((c = input()) != EOF) {
+			    while((c = input(yyscanner)) != EOF) {
 				if(isspace(c) && skip_ws) {
 				    if(c == '\n')
-					lineno++;
+					ctx->lineno++;
 				    continue;
 				}
 				skip_ws = 0;
 
 				if (c == '\\') {
 					c2 = c;
-					c = input();
+					c = input(yyscanner);
 					if (c == '"') { 
 						*p++ = c;
-						c = input();
+						c = input(yyscanner);
 					} else {
 						*p++ = c2;
 					}
@@ -221,7 +231,7 @@ W"\""			{
 					break;
 				}
 				if(c == '\n') {
-				    lineno++;
+				    ctx->lineno++;
 				    while(p > buf && isspace((unsigned char)p[-1]))
 					p--;
 				    skip_ws = 1;
@@ -230,91 +240,98 @@ W"\""			{
 				*p++ = c;
 			    }
 			    if(c == EOF)
-				unterminated("string", start_lineno);
+				unterminated(ctx, "string", start_lineno);
 			    *p++ = '\0';
-			    ocpf_yylval.name = buf;
+			    yylval->name = buf;
 			    return UNICODE; 
 			}
 \$[-A-Za-z0-9_]+      	{ char *y = yytext + 1;
-			  ocpf_yylval.var = strdup((const char *)y);
+			  yylval->var = strdup((const char *)y);
 			  return VAR;
 			}
 B\"true\"|-?B\"false\" { char *y = yytext + 1;
 			   if (y && !strcmp(y, "\"true\"")) {
-				ocpf_yylval.b = true;
+				yylval->b = true;
 			   } else {
-			       	ocpf_yylval.b = false;
+			       	yylval->b = false;
 			   }
 			   return BOOLEAN;
 			}
 T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
-			  ocpf_yylval.date = strdup((const char *)yytext + 1);
+			  yylval->date = strdup((const char *)yytext + 1);
 			  return SYSTIME;
 			}
-0x[0-9A-Fa-f]+		{ char *e, *y = yytext;
-			ocpf_yylval.l = strtoul((const char *)y, &e, 0);
+0x[0-9A-Fa-f]+		{
+			 struct ocpf_context *ctx = yyextra;
+			char *e, *y = yytext;
+			yylval->l = strtoul((const char *)y, &e, 0);
 			if (e == y)
-				error_message("malformed constant (%s)", yytext);
+				error_message(ctx, "malformed constant (%s)", yytext);
 			else
 				return INTEGER;
 			
 			}
 S0x[0-9A-Fa-f]+|-S[0-9]+ {
+			   struct ocpf_context *ctx = yyextra;
 			   char *e, *y;
 			   y = (yytext[0] == 'S') ? yytext + 1 : yytext;
-			   ocpf_yylval.s = strtoul((const char *)y, &e, 0);
+			   yylval->s = strtoul((const char *)y, &e, 0);
 			   if (e == y)
-				error_message("malformed constant (%s)", yytext);
+				error_message(ctx, "malformed constant (%s)", yytext);
 			   else
 				return SHORT;
 			 }
 
-L0x[0-9A-Fa-f]+|-?[0-9]+ { char *e, *y;
+L0x[0-9A-Fa-f]+|-?[0-9]+ {
+			  struct ocpf_context *ctx = yyextra;
+			  char *e, *y;
 			  y = (yytext[0] == 'L') ? yytext + 1 : yytext;
-			  ocpf_yylval.l = strtoul((const char *)y, &e, 0);
+			  yylval->l = strtoul((const char *)y, &e, 0);
 			  if(e == y) 
-			    error_message("malformed constant (%s)", yytext); 
+			    error_message(ctx, "malformed constant (%s)", yytext); 
 			  else
 			    return INTEGER;
 			}
-D0x[0-9A-Fa-f]+		{ char *e, *y = yytext + 1;
-			  ocpf_yylval.d = strtoull((const char *)y, &e, 0);
+D0x[0-9A-Fa-f]+		{ 
+			  struct ocpf_context *ctx = yyextra;
+			  char *e, *y = yytext + 1;
+			  yylval->d = strtoull((const char *)y, &e, 0);
 			  if(e == y) 
-			    error_message("malformed constant (%s)", yytext); 
+			    error_message(ctx, "malformed constant (%s)", yytext); 
 			  else
 			    return I8;
 
 			}
 [A-Za-z][-A-Za-z0-9_]*	{
-			  ocpf_yylval.name = strdup((const char *)yytext);
+			  yylval->name = strdup((const char *)yytext);
 			  return IDENTIFIER;
 			}
 [ \t]+			;
-\n		{ ++lineno; }
-.      		{ error_message("Ignoring char(%c)\n", *yytext); }
+\n		{
+		struct ocpf_context *ctx = yyextra;
+		 ++ctx->lineno; 
+		}
+.      		{ 
+		struct ocpf_context *ctx = yyextra;
+		error_message(ctx, "Ignoring char(%c)\n", *yytext); 
+		}
 %%
 
-#ifndef yywrap
-int
-yywrap(void)
-{
-	return 1;
-}
-#endif
-
-void error_message(const char *format, ...)
+void error_message(struct ocpf_context *ctx, const char *format, ...)
 {
 	va_list	args;
 
 	va_start(args, format);
-	fprintf(stderr, "ERROR: %s:%d: ", ocpf_get_filename(), lineno);
+	fprintf(stderr, "ERROR: %s:%d: ", ctx->filename, ctx->lineno);
 	vfprintf(stderr, format, args);
 	va_end(args);
 	error_flag++;
+	fflush(0);
 }
 
 static void
-unterminated(const char *type, unsigned start_lineno)
+unterminated(struct ocpf_context *ctx, const char *type, unsigned int start_lineno)
 {
-    error_message("unterminated %s, possibly started on line %d\n", type, start_lineno);
+    error_message(ctx, "unterminated %s, possibly started on line %d\n", type, start_lineno);
+    fflush(0);
 }

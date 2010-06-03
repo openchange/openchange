@@ -36,6 +36,8 @@
 static int fsocpf_init(void)
 {
 	DEBUG(0, ("fsocpf backend initialized\n"));
+
+	ocpf_init();
 	
 	return MAPISTORE_SUCCESS;
 }
@@ -164,6 +166,7 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	bool				found = false;
 	char				*newfolder;
 	char				*propfile;
+	uint32_t			ocpf_context_id;
 	int				ret;
 	int				i;
 
@@ -207,15 +210,16 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	}
 
 	/* Step 3. Create the .properties file */
-	ocpf_init();
 	propfile = talloc_asprintf(mem_ctx, "%s/.properties", newfolder);
 	talloc_free(newfolder);
 
-	ocpf_write_init(propfile, fid);
+	ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_CREATE);
+
+	ocpf_write_init(ocpf_context_id, fid);
 	DEBUG(0, ("Writing %s\n", propfile));
-	ocpf_write_auto(NULL, &mapi_lpProps);
-	ocpf_write_commit();
-	ocpf_release();
+	ocpf_write_auto(ocpf_context_id, NULL, &mapi_lpProps);
+	ocpf_write_commit(ocpf_context_id);
+	ocpf_del_context(ocpf_context_id);
 
 	return MAPISTORE_SUCCESS;
 }
@@ -461,6 +465,7 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	char			*propfile;
 	uint32_t		cValues = 0;
 	struct SPropValue	*lpProps;
+	uint32_t		ocpf_context_id;
 
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
@@ -474,12 +479,14 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 			folderID = talloc_strdup(ctx, curdir->d_name);
 			break;
 		}
-		if (strcmp(curdir->d_name, ".") && strcmp(curdir->d_name, "..")) {
+		if (strcmp(curdir->d_name, ".") && strcmp(curdir->d_name, "..") && 
+		    (curdir->d_type == DT_DIR)) {
 			counter++;
 		}
 	}
 
 	if (!curdir) {
+		DEBUG(0, ("curdir not found\n"));
 		*data = NULL;
 		return MAPI_E_NOT_FOUND;
 	}
@@ -496,17 +503,25 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	} 
 
 	/* Otherwise opens .properties file with ocpf for fid entry */
-	ocpf_init();
 	propfile = talloc_asprintf(ctx, "%s/%s/.properties", ctx->path, folderID);
 	talloc_free(folderID);
 
-	/* process the file */
-	ret = ocpf_parse(propfile);
-	fflush(0);
+	DEBUG(0, ("Looking for 0x%.8x\n", proptag));
+	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
+	DEBUG(0, ("ocpf_new_context (%d) = %d\n", ocpf_context_id, ret));
 	talloc_free(propfile);
 
-	ocpf_set_SPropValue_array(ctx);
-	lpProps = ocpf_get_SPropValue(&cValues);
+	/* process the file */
+	ret = ocpf_parse(ocpf_context_id);
+	DEBUG(0, ("ocpf_parse (%d) = %d\n", ocpf_context_id, ret));
+
+	ocpf_set_SPropValue_array(ctx, ocpf_context_id);
+	lpProps = ocpf_get_SPropValue(ocpf_context_id, &cValues);
+	if (lpProps) {
+		mapidump_SPropValue(lpProps[0], "=>");
+	} else {
+		DEBUG(0, ("lpProps doesn't exist ...\n"));
+	}
 
 	/* FIXME: We need to find a proper way to handle this (for all types) */
 	talloc_steal(ctx, lpProps);
@@ -523,11 +538,13 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	}
 
 	if (*data == NULL) {
-		ocpf_release();
+		ret = ocpf_del_context(ocpf_context_id);
+		DEBUG(0, ("data = NULL ocpf_del_context (%d): ret = %d\n", ocpf_context_id, ret));
 		return MAPI_E_NOT_FOUND;
 	}
 
-	ocpf_release();	
+	ret = ocpf_del_context(ocpf_context_id);
+	DEBUG(0, ("ocpf_del_context (%d): ret = %d\n", ocpf_context_id, ret));
 	return MAPI_E_SUCCESS;
 }
 
@@ -544,6 +561,7 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 	char			*propfile;
 	uint32_t		cValues = 0;
 	struct SPropValue	*lpProps;
+	uint32_t		ocpf_context_id;
 
 	DEBUG(5, ("[%s:%d\n]", __FUNCTION__, __LINE__));
 
@@ -558,7 +576,8 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 		}
 		if (strcmp(curdir->d_name, ".properties") && 
 		    strcmp(curdir->d_name, ".") &&
-		    strcmp(curdir->d_name, "..")) {
+		    strcmp(curdir->d_name, "..") &&
+		    (curdir->d_type == DT_REG)) {
 			counter++;
 		}
 	}
@@ -586,16 +605,17 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 	}
 
 	/* Otherwise opens curdir->d_name file with ocpf */
-	ocpf_init();
 	propfile = talloc_asprintf(ctx, "%s/%s", ctx->path, messageID);
 	talloc_free(messageID);
 
-	/* process the file */
-	ret = ocpf_parse(propfile);
+	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
 	talloc_free(propfile);
 
-	ocpf_set_SPropValue_array(ctx);
-	lpProps = ocpf_get_SPropValue(&cValues);
+	/* process the file */
+	ret = ocpf_parse(ocpf_context_id);
+
+	ocpf_set_SPropValue_array(ctx, ocpf_context_id);
+	lpProps = ocpf_get_SPropValue(ocpf_context_id, &cValues);
 
 	/* FIXME: We need to find a proper way to handle this (for all types) */
 	talloc_steal(ctx, lpProps);
@@ -612,11 +632,11 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 	}
 
 	if (*data == NULL) {
-		ocpf_release();
+		ocpf_del_context(ocpf_context_id);
 		return MAPI_E_NOT_FOUND;
 	}
 
-	ocpf_release();	
+	ocpf_del_context(ocpf_context_id);
 	return MAPI_E_SUCCESS;	
 }
 

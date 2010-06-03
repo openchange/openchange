@@ -29,10 +29,13 @@
 
 #include <sys/stat.h>
 
-int ocpf_yyparse(void);
+int ocpf_yylex_init(void *);
+int ocpf_yylex_init_extra(struct ocpf_context *, void *);
+void ocpf_yyset_in(FILE *, void *);
+int ocpf_yylex_destroy(void *);
+int ocpf_yyparse(struct ocpf_context *, void *);
 
 struct ocpf	*ocpf;
-extern FILE	*yyin;
 int		error_flag;
 
 
@@ -49,21 +52,16 @@ _PUBLIC_ int ocpf_init(void)
 {
 	TALLOC_CTX	*mem_ctx;
 	
-	if (ocpf) return OCPF_ERROR;
+	OCPF_RETVAL_IF(ocpf, NULL, OCPF_INITIALIZED, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "ocpf");
 	ocpf = talloc_zero(mem_ctx, struct ocpf);
 	ocpf->mem_ctx = mem_ctx;
-	ocpf->vars = talloc_zero(mem_ctx, struct ocpf_var);
-	ocpf->oleguid = talloc_zero(mem_ctx, struct ocpf_oleguid);
-	ocpf->props = talloc_zero(mem_ctx, struct ocpf_property);
-	ocpf->nprops = talloc_zero(mem_ctx, struct ocpf_nproperty);
-	ocpf->recipients = talloc_zero(mem_ctx, struct ocpf_recipients);
-	ocpf->lpProps = NULL;
-	ocpf->filename = NULL;
-	ocpf->cValues = 0;
-	ocpf->folder = 0;
-	
+
+	ocpf->context = talloc_zero(mem_ctx, struct ocpf_context);
+	ocpf->free_id = talloc_zero(mem_ctx, struct ocpf_freeid);
+	ocpf->last_id = 1;
+
 	return OCPF_SUCCESS;
 }
 
@@ -79,10 +77,63 @@ _PUBLIC_ int ocpf_init(void)
  */
 _PUBLIC_ int ocpf_release(void)
 {
-	if (!ocpf || !ocpf->mem_ctx) return OCPF_ERROR;
+	OCPF_RETVAL_IF(!ocpf || !ocpf->mem_ctx, NULL, OCPF_NOT_INITIALIZED, NULL);	
 
 	talloc_free(ocpf->mem_ctx);
 	ocpf = NULL;
+
+	return OCPF_SUCCESS;
+}
+
+
+/**
+   \details Create a new OCPF context
+
+   \param filename the filename to process
+   \param context_id pointer to the context identifier the function
+   \param flags Flags controlling how the OCPF should be opened
+
+   \return OCPF_SUCCESS on success, otherwise OCPF_ERROR
+ */
+_PUBLIC_ int ocpf_new_context(const char *filename, uint32_t *context_id, uint8_t flags)
+{
+	struct ocpf_context	*ctx;
+
+	OCPF_RETVAL_IF(!ocpf || !ocpf->mem_ctx, NULL, OCPF_NOT_INITIALIZED, NULL);
+
+	ctx = ocpf_context_add(ocpf, filename, context_id, flags);
+	if (!ctx) {
+		return OCPF_ERROR;
+	}
+
+	DLIST_ADD_END(ocpf->context, ctx, struct ocpf_context *);
+
+	return OCPF_SUCCESS;
+}
+
+
+/**
+   \details Delete an OCPF context
+
+   \param context_id context identifier referencing the context to
+   delete
+
+   \return OCPF_SUCCESS on success, otherwise OCPF_ERROR
+ */
+_PUBLIC_ int ocpf_del_context(uint32_t context_id)
+{
+	int			ret;
+	struct ocpf_context	*ctx;
+
+	/* Sanity checks */
+	OCPF_RETVAL_IF(!ocpf || !ocpf->mem_ctx, NULL, OCPF_NOT_INITIALIZED, NULL);
+
+	/* Search the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	OCPF_RETVAL_IF(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL);
+
+	ret = ocpf_context_delete(ocpf, ctx);
+	if (ret == -1) return OCPF_ERROR;
 
 	return OCPF_SUCCESS;
 }
@@ -93,33 +144,31 @@ _PUBLIC_ int ocpf_release(void)
 
    Parse and process the given ocpf file.
 
-   \param filename the file to parse
+   \param context_id the identifier of the context holding the file to
+   be parsed
 
    \return OCPF_SUCCESS on success, otherwise OCPF_ERROR
 
    \sa ocpf_init
  */
-_PUBLIC_ int ocpf_parse(const char *filename)
+_PUBLIC_ int ocpf_parse(uint32_t context_id)
 {
-	int		ret;
-	struct stat	sb;
+	int			ret;
+	struct ocpf_context	*ctx;
+	void			*scanner;
 
-	if (!filename) return OCPF_ERROR;
-	if (!ocpf || !ocpf->mem_ctx) return OCPF_ERROR;
+	/* Sanity checks */
+	OCPF_RETVAL_IF(!ocpf || !ocpf->mem_ctx, NULL, OCPF_NOT_INITIALIZED, NULL);
 
-	ocpf->filename = filename;
-	lineno = 1;
+	/* Step 1. Search the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	OCPF_RETVAL_IF(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL);
 
-	/* Sanity check on filename */
-	OCPF_RETVAL_IF((!filename || (stat(filename, &sb) == -1)), 
-		       OCPF_WARN_FILENAME_INVALID, NULL);
-
-	yyin = fopen(filename, "r");
-	OCPF_RETVAL_IF(yyin == NULL, OCPF_WARN_FILENAME_INVALID, NULL);
-
-	ret = ocpf_yyparse();
-	fflush(0);
-	fclose(yyin);
+	ret = ocpf_yylex_init(&scanner);
+	ret = ocpf_yylex_init_extra(ctx, &scanner);
+	ocpf_yyset_in(ctx->fp, scanner);
+	ret = ocpf_yyparse(ctx, scanner);
+	ocpf_yylex_destroy(scanner);
 
 	return ret;
 }
@@ -156,7 +205,7 @@ static enum MAPISTATUS ocpf_stream(TALLOC_CTX *mem_ctx,
 		
 		retval = WriteStream(&obj_stream, &stream, &read_size);
 		talloc_free(stream.data);
-		OCPF_RETVAL_IF(retval, retval, NULL);
+		MAPI_RETVAL_IF(retval, retval, NULL);
 
 		/* Exit when there is nothing left to write */
 		if (!read_size) return MAPI_E_SUCCESS;
@@ -182,6 +231,8 @@ static enum MAPISTATUS ocpf_stream(TALLOC_CTX *mem_ctx,
    
    \param mem_ctx pointer to the memory context to use for memory
    allocation
+   \param context_id identifier of the context to build a SPropValue
+   array for
 
    \note This function is a server-side convenient function only. It
    doesn't handle named properties and its scope is much more limited
@@ -190,28 +241,33 @@ static enum MAPISTATUS ocpf_stream(TALLOC_CTX *mem_ctx,
 
    \sa ocpf_get_SPropValue
  */
-_PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue_array(TALLOC_CTX *mem_ctx)
+_PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue_array(TALLOC_CTX *mem_ctx, uint32_t context_id)
 {
 	struct ocpf_property	*pel;
+	struct ocpf_context	*ctx;
 
 	/* sanity checks */
 	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
 
-	/* Step 1. Allocate SPropValue */
-	ocpf->cValues = 0;
-	ocpf->lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+	/* Step 1. Search for the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	OCPF_RETVAL_IF(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL);
 
-	/* Step 2. Add Known properties */
-	if (ocpf->props && ocpf->props->next) {
-		for (pel = ocpf->props; pel->next; pel = pel->next) {
-			ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues, 
-						       pel->aulPropTag, pel->value);
+	/* Step 2. Allocate SPropValue */
+	ctx->cValues = 0;
+	ctx->lpProps = talloc_array(ctx, struct SPropValue, 2);
+
+	/* Step 3. Add Known properties */
+	if (ctx->props && ctx->props->next) {
+		for (pel = ctx->props; pel->next; pel = pel->next) {
+			ctx->lpProps = add_SPropValue(ctx, ctx->lpProps, &ctx->cValues, 
+						      pel->aulPropTag, pel->value);
 		}
 	}
-	/* Step 3. Add message class */
-	if (ocpf->type) {
-		ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues,
-					       PR_MESSAGE_CLASS, (const void *)ocpf->type);
+	/* Step 4. Add message class */
+	if (ctx->type) {
+		ctx->lpProps = add_SPropValue(ctx, ctx->lpProps, &ctx->cValues,
+					      PR_MESSAGE_CLASS, (const void *)ctx->type);
 	}
 	
 	return MAPI_E_SUCCESS;
@@ -225,6 +281,8 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue_array(TALLOC_CTX *mem_ctx)
    information stored.
 
    \param mem_ctx the memory context to use for memory allocation
+   \param context_id identifier of the context to build a SPropValue
+   array for
    \param obj_folder pointer the folder object we use for internal
    MAPI operations
    \param obj_message pointer to the message object we use for
@@ -238,7 +296,9 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue_array(TALLOC_CTX *mem_ctx)
 
    \sa ocpf_get_SPropValue
  */
-_PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx, 
+
+_PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
+					     uint32_t context_id,
 					     mapi_object_t *obj_folder,
 					     mapi_object_t *obj_message)
 {
@@ -247,20 +307,25 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 	struct SPropTagArray	*SPropTagArray;
 	struct ocpf_property	*pel;
 	struct ocpf_nproperty	*nel;
+	struct ocpf_context	*ctx;
 	uint32_t		i;
 
 	/* sanity checks */
 	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	/* Step 1. Search for the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	OCPF_RETVAL_IF(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL);
 
 	/* Step 1. Allocate SPropValue */
-	ocpf->cValues = 0;
-	ocpf->lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+	ctx->cValues = 0;
+	ctx->lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
 
 	/* Step2. build the list of named properties we want to set */
-	if (ocpf->nprops && ocpf->nprops->next) {
+	if (ctx->nprops && ctx->nprops->next) {
 		nameid = mapi_nameid_new(mem_ctx);
-		for (nel = ocpf->nprops; nel->next; nel = nel->next) {
+		for (nel = ctx->nprops; nel->next; nel = nel->next) {
 			if (nel->OOM) {
 				mapi_nameid_OOM_add(nameid, nel->OOM, nel->oleguid);
 			} else if (nel->mnid_id) {
@@ -284,7 +349,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 
 
 		/* Step4. Add named properties */
-		for (nel = ocpf->nprops, i = 0; SPropTagArray->aulPropTag[i] && nel->next; nel = nel->next, i++) {
+		for (nel = ctx->nprops, i = 0; SPropTagArray->aulPropTag[i] && nel->next; nel = nel->next, i++) {
 			if (SPropTagArray->aulPropTag[i]) {
 				if (((SPropTagArray->aulPropTag[i] & 0xFFFF) == PT_BINARY) && 
 				    (((struct Binary_r *)nel->value)->cb > MAX_READ_SIZE)) {
@@ -292,7 +357,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 							     (struct Binary_r *)nel->value);
 					MAPI_RETVAL_IF(retval, retval, NULL);
 				} else {
-					ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues,
+					ctx->lpProps = add_SPropValue(mem_ctx, ctx->lpProps, &ctx->cValues,
 								       SPropTagArray->aulPropTag[i], nel->value);
 				}
 			}
@@ -301,23 +366,23 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Step5. Add Known properties */
-	if (ocpf->props && ocpf->props->next) {
-		for (pel = ocpf->props; pel->next; pel = pel->next) {
+	if (ctx->props && ctx->props->next) {
+		for (pel = ctx->props; pel->next; pel = pel->next) {
 			if (((pel->aulPropTag & 0xFFFF) == PT_BINARY) && 
 			    (((struct Binary_r *)pel->value)->cb > MAX_READ_SIZE)) {
 				retval = ocpf_stream(mem_ctx, obj_message, pel->aulPropTag, 
 						     (struct Binary_r *)pel->value);
 				MAPI_RETVAL_IF(retval, retval, NULL);
 			} else {
-				ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues, 
+				ctx->lpProps = add_SPropValue(mem_ctx, ctx->lpProps, &ctx->cValues, 
 							       pel->aulPropTag, pel->value);
 			}
 		}
 	}
 	/* Step 6. Add message class */
-	if (ocpf->type) {
-		ocpf->lpProps = add_SPropValue(mem_ctx, ocpf->lpProps, &ocpf->cValues,
-					       PR_MESSAGE_CLASS, (const void *)ocpf->type);
+	if (ctx->type) {
+		ctx->lpProps = add_SPropValue(mem_ctx, ctx->lpProps, &ctx->cValues,
+					       PR_MESSAGE_CLASS, (const void *)ctx->type);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -330,20 +395,29 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
    This function is an accessor designed to return the SPropValue
    structure created with ocpf_set_SPropValue.
 
+   \param context_id identifier of the context to retrieve SPropValue
+   from
    \param cValues pointer on the number of SPropValue entries
 
    \return NULL on error, otherwise returns an allocated lpProps pointer
 
    \sa ocpf_set_SPropValue
  */
-_PUBLIC_ struct SPropValue *ocpf_get_SPropValue(uint32_t *cValues)
+_PUBLIC_ struct SPropValue *ocpf_get_SPropValue(uint32_t context_id, uint32_t *cValues)
 {
-	if (!ocpf || !ocpf->lpProps) return NULL;
-	if (!ocpf->cValues) return NULL;
+	struct ocpf_context	*ctx;
 
-	*cValues = ocpf->cValues;
+	OCPF_RETVAL_TYPE(!ocpf || !ocpf->mem_ctx, NULL, OCPF_NOT_INITIALIZED, NULL, NULL);
 
-	return ocpf->lpProps;
+	/* Search the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	OCPF_RETVAL_TYPE(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL, NULL);
+
+	OCPF_RETVAL_TYPE(!ctx->lpProps || !ctx->cValues, ctx, OCPF_INVALID_PROPARRAY, NULL, NULL);
+
+	*cValues = ctx->cValues;
+
+	return ctx->lpProps;
 }
 
 
@@ -407,6 +481,7 @@ static enum MAPISTATUS ocpf_folder_lookup(TALLOC_CTX *mem_ctx,
    This function opens the folder associated with the ocpf folder
    global context value.
    
+   \param context_id identifier of the context to open the folder for
    \param obj_store the store object
    \param obj_folder the folder to open
 
@@ -421,24 +496,28 @@ static enum MAPISTATUS ocpf_folder_lookup(TALLOC_CTX *mem_ctx,
 
      \sa ocpf_init, ocpf_parse
  */
-_PUBLIC_ enum MAPISTATUS ocpf_OpenFolder(mapi_object_t *obj_store,
+_PUBLIC_ enum MAPISTATUS ocpf_OpenFolder(uint32_t context_id,
+					 mapi_object_t *obj_store,
 					 mapi_object_t *obj_folder)
 {
-	enum MAPISTATUS	retval;
-	mapi_id_t	id_folder;
-	mapi_id_t	id_tis;
+	enum MAPISTATUS		retval;
+	struct ocpf_context	*ctx;
+	mapi_id_t		id_folder;
+	mapi_id_t		id_tis;
 
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
-
 	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ocpf->folder, MAPI_E_NOT_FOUND, NULL);
 
-	/* */
+	/* Step 1. Search for the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	MAPI_RETVAL_IF(!ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ctx->folder, MAPI_E_NOT_FOUND, NULL);
+
 	mapi_object_init(obj_folder);
-	if (ocpf->folder >= 1 && ocpf->folder <= 26) {
-		retval = GetDefaultFolder(obj_store, &id_folder, ocpf->folder);
+	if (ctx->folder >= 1 && ctx->folder <= 26) {
+		retval = GetDefaultFolder(obj_store, &id_folder, ctx->folder);
 		MAPI_RETVAL_IF(retval, retval, NULL);
 
 		retval = OpenFolder(obj_store, id_folder, obj_folder);
@@ -448,7 +527,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_OpenFolder(mapi_object_t *obj_store,
 		retval = GetDefaultFolder(obj_store, &id_tis, olFolderTopInformationStore);
 		MAPI_RETVAL_IF(retval, retval, NULL);
 
-		retval = ocpf_folder_lookup((TALLOC_CTX *)ocpf->mem_ctx, ocpf->folder, 
+		retval = ocpf_folder_lookup((TALLOC_CTX *)ctx, ctx->folder, 
 					    obj_store, id_tis, obj_folder);
 		MAPI_RETVAL_IF(retval, retval, NULL);
 	}
@@ -519,6 +598,7 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
    context and information stored.
 
    \param mem_ctx the memory context to use for memory allocation
+   \param context_id identifier to the context to set recipients for
    \param obj_message pointer to the message object we use for
    internal MAPI operations
 
@@ -527,9 +607,11 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
    \sa ocpf
  */
 _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
+					     uint32_t context_id,
 					     mapi_object_t *obj_message)
 {
 	enum MAPISTATUS		retval;
+	struct ocpf_context	*ctx;
 	struct ocpf_recipients	*element;
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	SPropValue;
@@ -543,20 +625,27 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 
 	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!ocpf->recipients->next, MAPI_E_NOT_FOUND, NULL);
 
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
+	/* Step 1. Search for the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	MAPI_RETVAL_IF(!ctx, MAPI_E_INVALID_PARAMETER, NULL);
+
+	MAPI_RETVAL_IF(!ctx->recipients->next, MAPI_E_NOT_FOUND, NULL);
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
 					  PR_OBJECT_TYPE,
 					  PR_DISPLAY_TYPE,
 					  PR_7BIT_DISPLAY_NAME,
 					  PR_DISPLAY_NAME,
 					  PR_SMTP_ADDRESS,
-					  PR_GIVEN_NAME);
+					  PR_GIVEN_NAME,
+					  PR_EMAIL_ADDRESS,
+					  PR_ADDRTYPE);
 
 	/* Step 1. Group recipients and run ResolveNames */
 	usernames = talloc_array(mem_ctx, char *, 2);
 	recipClass = talloc_array(mem_ctx, int, 2);
-	for (element = ocpf->recipients, count = 0; element->next; element = element->next, count ++) {
+	for (element = ctx->recipients, count = 0; element->next; element = element->next, count ++) {
 		usernames = talloc_realloc(mem_ctx, usernames, char *, count + 2);
 		recipClass = talloc_realloc(mem_ctx, recipClass, int, count + 2);
 		usernames[count] = talloc_strdup((TALLOC_CTX *)usernames, element->name);

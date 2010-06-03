@@ -506,22 +506,14 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	propfile = talloc_asprintf(ctx, "%s/%s/.properties", ctx->path, folderID);
 	talloc_free(folderID);
 
-	DEBUG(0, ("Looking for 0x%.8x\n", proptag));
 	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
-	DEBUG(0, ("ocpf_new_context (%d) = %d\n", ocpf_context_id, ret));
 	talloc_free(propfile);
 
 	/* process the file */
 	ret = ocpf_parse(ocpf_context_id);
-	DEBUG(0, ("ocpf_parse (%d) = %d\n", ocpf_context_id, ret));
 
 	ocpf_set_SPropValue_array(ctx, ocpf_context_id);
 	lpProps = ocpf_get_SPropValue(ocpf_context_id, &cValues);
-	if (lpProps) {
-		mapidump_SPropValue(lpProps[0], "=>");
-	} else {
-		DEBUG(0, ("lpProps doesn't exist ...\n"));
-	}
 
 	/* FIXME: We need to find a proper way to handle this (for all types) */
 	talloc_steal(ctx, lpProps);
@@ -539,12 +531,10 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 
 	if (*data == NULL) {
 		ret = ocpf_del_context(ocpf_context_id);
-		DEBUG(0, ("data = NULL ocpf_del_context (%d): ret = %d\n", ocpf_context_id, ret));
 		return MAPI_E_NOT_FOUND;
 	}
 
 	ret = ocpf_del_context(ocpf_context_id);
-	DEBUG(0, ("ocpf_del_context (%d): ret = %d\n", ocpf_context_id, ret));
 	return MAPI_E_SUCCESS;
 }
 

@@ -98,17 +98,21 @@ _PUBLIC_ int ocpf_release(void)
 _PUBLIC_ int ocpf_new_context(const char *filename, uint32_t *context_id, uint8_t flags)
 {
 	struct ocpf_context	*ctx;
+	bool			existing = false;
 
 	OCPF_RETVAL_IF(!ocpf || !ocpf->mem_ctx, NULL, OCPF_NOT_INITIALIZED, NULL);
 
-	ctx = ocpf_context_add(ocpf, filename, context_id, flags);
+	ctx = ocpf_context_add(ocpf, filename, context_id, flags, &existing);
 	if (!ctx) {
 		return OCPF_ERROR;
 	}
 
-	DLIST_ADD_END(ocpf->context, ctx, struct ocpf_context *);
+	if (existing == false) {
+		DLIST_ADD_END(ocpf->context, ctx, struct ocpf_context *);
+		return OCPF_SUCCESS;
+	} 
 
-	return OCPF_SUCCESS;
+	return OCPF_E_EXIST;
 }
 
 

@@ -25,6 +25,7 @@
 
 #define	OCPF_SUCCESS	0x0
 #define	OCPF_ERROR	0x1
+#define	OCPF_E_EXIST	0x2
 
 #define	OCPF_FLAGS_RDWR			0
 #define	OCPF_FLAGS_READ			1
@@ -32,6 +33,5 @@
 #define	OCPF_FLAGS_CREATE		3
 
 extern struct ocpf	*ocpf;
-/* extern unsigned int	lineno; */
 
 #endif /* ! __OCPF_H_ */

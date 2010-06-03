@@ -114,13 +114,16 @@ struct ocpf_context *ocpf_context_init(TALLOC_CTX *mem_ctx,
    \param filename pointer to the 
    \param context_id pointer to the context_id the function returns
    \param flags Flags controlling how the OCPF should be opened
+   \param existing boolean returned by the function to specify if the
+   context was already existing or not
 
    \return valid ocpf context pointer on success, otherwise NULL
  */
 struct ocpf_context *ocpf_context_add(struct ocpf *ocpf_ctx, 
 				      const char *filename,
 				      uint32_t *context_id,
-				      uint8_t flags)
+				      uint8_t flags,
+				      bool *existing)
 {
 	struct ocpf_context	*el;
 	struct ocpf_freeid	*elf;
@@ -136,6 +139,7 @@ struct ocpf_context *ocpf_context_add(struct ocpf *ocpf_ctx,
 		if (el->filename && !strcmp(el->filename, filename)) {
 			*context_id = el->context_id;
 			el->ref_count += 1;
+			*existing = true;
 			return el;
 		}
 	}
@@ -158,6 +162,7 @@ struct ocpf_context *ocpf_context_add(struct ocpf *ocpf_ctx,
 	}
 
 	/* Initialize the new context */
+	*existing = false;
 	el = ocpf_context_init(ocpf_ctx->mem_ctx, filename, flags, *context_id);
 	/* handle the case where file couldn't be opened */
 

@@ -1,3 +1,24 @@
+2010-06-03
+    jkerihuel
+	[r1893]
+		Add a new OCPF error OCPF_E_EXIST returned if a context already exist.
+		Prevent ocpf_new_context from adding a context to the list if it
+		already existed
+	[r1892]
+		Clean up debug code introduced while working on new libocpf version
+	[r1891]
+		- Make libocpf reentrant and use contexts/ref_count: No more globals
+		  are used in libocpf, they are all specific to contexts. libOCPF is
+		  now multi-process/thread friendly.
+		
+		- Remove Makefile bison compiling option with a bison %option in
+		  ocpf.y
+		
+		- Propagate libocpf changes to openchange server and utils
+		
+		- Fix a bug in file/folder listing when we have both folders and
+		  files.
+
 2010-06-01
     jkerihuel
 	[r1889]

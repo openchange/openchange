@@ -43,6 +43,50 @@ static int fsocpf_init(void)
 }
 
 /**
+   \details Allocate / initialize the fsocpf_context structure
+
+   \param mem_ctx pointer to the memory context
+   \param uri pointer to the fsocpf path
+   \param dir pointer to the DIR structure associated with the uri
+ */
+static struct fsocpf_context* fsocpf_context_init(TALLOC_CTX *mem_ctx, const char *uri, DIR *dir)
+{
+	struct fsocpf_context	*fsocpf_ctx;
+
+	fsocpf_ctx = talloc_zero(mem_ctx, struct fsocpf_context);
+	fsocpf_ctx->private_data = NULL;
+	fsocpf_ctx->uri = talloc_strdup(fsocpf_ctx, uri);
+	fsocpf_ctx->dir = dir;
+	fsocpf_ctx->folders = talloc_zero(fsocpf_ctx, struct fsocpf_folder_list);
+
+	return fsocpf_ctx;
+}
+
+/**
+   \details Allocate / initialize a fsocpf_folder_list element
+
+   This essentially creates a node of the linked list, which will be added to the list
+   by the caller
+
+   \param mem_ctx pointer to the memory context
+   \param fid the folder id for the folder
+   \param uri pointer to the fsocpf path for the folder
+   \param dir pointer to the DIR structure associated with the fid / uri
+ */
+static struct fsocpf_folder_list* fsocpf_folder_list_element_init(TALLOC_CTX *mem_ctx, uint64_t fid, const char *uri, DIR *dir)
+{
+	struct fsocpf_folder_list *el;
+
+	el = talloc_zero(mem_ctx, struct fsocpf_folder_list);
+	el->folder = talloc_zero((TALLOC_CTX *)el, struct fsocpf_folder);
+	el->folder->fid = fid;
+	el->folder->path = talloc_strdup((TALLOC_CTX *)el, uri);
+	el->folder->dir = dir;
+
+	return el;
+}
+
+/**
    \details Create a connection context to the fsocpf backend
 
    \param mem_ctx pointer to the memory context
@@ -53,7 +97,7 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 {
 	DIR				*top_dir;
 	struct fsocpf_context		*fsocpf_ctx;
-	struct folder_list_context	*el;
+	struct fsocpf_folder_list	*el;
 	int				len;
 	int				i;
 
@@ -74,11 +118,7 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 	}
 
 	/* Step 2. Allocate / Initialize the fsocpf context structure */
-	fsocpf_ctx = talloc_zero(mem_ctx, struct fsocpf_context);
-	fsocpf_ctx->private_data = NULL;
-	fsocpf_ctx->uri = talloc_strdup(fsocpf_ctx, uri);
-	fsocpf_ctx->dir = top_dir;
-	fsocpf_ctx->folders = talloc_zero(fsocpf_ctx, struct folder_list_context);
+	fsocpf_ctx = fsocpf_context_init(mem_ctx, uri, top_dir);
 
 	/* FIXME: Retrieve the fid from the URI */
 	len = strlen(uri);
@@ -94,13 +134,9 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 	}
 
 	/* Create the entry in the list for top mapistore folders */
-	el = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, struct folder_list_context);
-	el->ctx = talloc_zero((TALLOC_CTX *)el, struct folder_list);
-	el->ctx->fid = fsocpf_ctx->fid;
-	el->ctx->path = talloc_strdup(fsocpf_ctx, uri);
-	el->ctx->dir = top_dir;
-	DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
-	DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->ctx->fid));
+	el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fsocpf_ctx->fid, uri, top_dir);
+	DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
+	DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->folder->fid));
 
 	/* Step 3. Store fsocpf context within the opaque private_data pointer */
 	*private_data = (void *)fsocpf_ctx;
@@ -148,6 +184,25 @@ static int fsocpf_delete_context(void *private_data)
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+  \details search for the fsocpf_folder for a given folder ID
+
+  \param fsocpf_ctx the store context
+  \param fid the folder ID of the fsocpf_folder to search for
+
+  \return folder on success, or NULL if the folder was not found
+*/
+static struct fsocpf_folder* fsocpf_find_folder_by_fid(struct fsocpf_context *fsocpf_ctx, uint64_t fid)
+{
+	struct fsocpf_folder_list	*el;
+
+	for (el = fsocpf_ctx->folders; el; el = el->next) {
+		if (el->folder && el->folder->fid == fid) {
+			return el->folder;
+		}
+	}
+	return NULL;
+}
 
 /**
    \details Create a folder in the fsocpf backend
@@ -161,9 +216,8 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 {
 	TALLOC_CTX			*mem_ctx;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
-	struct folder_list_context	*el;
+	struct fsocpf_folder		*folder;
 	struct mapi_SPropValue_array	mapi_lpProps;
-	bool				found = false;
 	char				*newfolder;
 	char				*propfile;
 	uint32_t			ocpf_context_id;
@@ -178,13 +232,9 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	}
 
 	/* Step 1. Search for the parent fid */
-	for (el = fsocpf_ctx->folders; el; el = el->next) {
-		if (el->ctx && el->ctx->fid == parent_fid) {
-			found = true;
-			break;
-		}
-	}
-	if (found == false) {
+	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, parent_fid);
+
+	if (! folder) {
 		DEBUG(0, ("parent context for folder 0x%.16"PRIx64" not found\n", parent_fid));
 		return MAPISTORE_ERR_NO_DIRECTORY;
 	}
@@ -192,7 +242,7 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_mkdir");
 
 	/* Step 2. Stringify fid and create directory */
-	newfolder = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, el->ctx->path, fid);
+	newfolder = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, folder->path, fid);
 	DEBUG(0, ("newfolder = %s\n", newfolder));
 	ret = mkdir(newfolder, 0700);
 	if (ret) {
@@ -257,9 +307,9 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 {
 	TALLOC_CTX			*mem_ctx;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
-	struct folder_list_context	*el;
-	struct folder_list_context	*newel;
-	bool				found = false;
+	struct fsocpf_folder		*folder;
+	struct fsocpf_folder_list	*el;
+	struct fsocpf_folder_list	*newel;
 	struct dirent			*curdir;
 	char				*searchdir;
 	char				*newpath;
@@ -274,34 +324,19 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 	/* Step 0. If fid equals top folder fid, it is already open */
 	if (fsocpf_ctx->fid == fid) {
 		/* If we access it for the first time, just add an entry to the folder list */
-		if (!fsocpf_ctx->folders->ctx) {
-			el = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, struct folder_list_context);
-			el->ctx = talloc_zero((TALLOC_CTX *)el, struct folder_list);
-			el->ctx->fid = fid;
-			el->ctx->path = talloc_strdup(el, fsocpf_ctx->uri);
-			el->ctx->dir = fsocpf_ctx->dir;
-			DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
-			DEBUG(0, ("Element added to the list 0x%16"PRIx64"\n", el->ctx->fid));
+		if (!fsocpf_ctx->folders->folder) {
+			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
+			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
+			DEBUG(0, ("Element added to the list 0x%16"PRIx64"\n", el->folder->fid));
 		}
 
-		for (el = fsocpf_ctx->folders; el; el = el->next) {
-			if (el->ctx && el->ctx->fid == fid) {
-				found = true;
-				break;
-			}
-		}
+		folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
 
-		return (found == false) ? MAPISTORE_ERR_NO_DIRECTORY : MAPISTORE_SUCCESS;
+		return (! folder) ? MAPISTORE_ERR_NO_DIRECTORY : MAPISTORE_SUCCESS;
 	} else {
 		/* Step 1. Search for the parent fid */
-		for (el = fsocpf_ctx->folders; el; el = el->next) {
-			if (el->ctx && el->ctx->fid == parent_fid) {
-				found = true;
-				break;
-			}
-		}
-
-		if (found == false) {
+		folder = fsocpf_find_folder_by_fid(fsocpf_ctx, parent_fid);
+		if (! folder) {
 			return MAPISTORE_ERR_NO_DIRECTORY;
 		}
 	}
@@ -313,17 +348,16 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 	DEBUG(0, ("Looking for %s\n", searchdir));
 
 	/* Read the directory and search for the fid to open */
-	rewinddir(el->ctx->dir);
+	rewinddir(folder->dir);
 	errno = 0;
 	{
 		int i = 0;
-		while ((curdir = readdir(el->ctx->dir)) != NULL) {
+		while ((curdir = readdir(folder->dir)) != NULL) {
 			DEBUG(0, ("%d: readdir: %s\n", i, curdir->d_name));
 			i++;
 			if (curdir->d_name && !strcmp(curdir->d_name, searchdir)) {
 
-				newpath = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64,
-							  el->ctx->path, fid);
+				newpath = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, folder->path, fid);
 				dir = opendir(newpath);
 				if (!dir) {
 					talloc_free(mem_ctx);
@@ -331,14 +365,8 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 				}
 				DEBUG(0, ("FOUND\n"));
 
-				newel = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, 
-						    struct folder_list_context);
-				newel->ctx = talloc_zero((TALLOC_CTX *)newel, struct folder_list);
-				newel->ctx->fid = fid;
-				newel->ctx->path = talloc_asprintf(newel, "%s/0x%.16"PRIx64, 
-								   el->ctx->path, fid);
-				el->ctx->dir = dir;
-				DLIST_ADD_END(fsocpf_ctx->folders, newel, struct folder_list_context *);
+				newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fid, newpath, dir);
+				DLIST_ADD_END(fsocpf_ctx->folders, newel, struct fsocpf_folder_list *);
 				DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", fid));
 			}
 		}
@@ -346,7 +374,7 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 
 	DEBUG(0, ("errno = %d\n", errno));
 
-	rewinddir(el->ctx->dir);
+	rewinddir(folder->dir);
 	talloc_free(mem_ctx);
 		
 	return MAPISTORE_SUCCESS;
@@ -385,8 +413,7 @@ static int fsocpf_op_readdir_count(void *private_data,
 				   uint32_t *RowCount)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
-	struct folder_list_context	*el;
-	bool				found = false;
+	struct fsocpf_folder		*folder;
 	struct dirent			*curdir;
 
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
@@ -397,35 +424,26 @@ static int fsocpf_op_readdir_count(void *private_data,
 
 	if (fsocpf_ctx->fid == fid) {
 		/* If we access it for the first time, just add an entry to the folder list */
-		if (!fsocpf_ctx->folders->ctx) {
-			el = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, struct folder_list_context);
-			el->ctx = talloc_zero((TALLOC_CTX *)el, struct folder_list);
-			el->ctx->fid = fid;
-			el->ctx->path = talloc_strdup(el, fsocpf_ctx->uri);
-			el->ctx->dir = fsocpf_ctx->dir;
-			DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
-			DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->ctx->fid));
+		if (!fsocpf_ctx->folders->folder) {
+			struct fsocpf_folder_list *el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
+			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
+			DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->folder->fid));
 		}
 	}
 
-	/* Search for the fid folder_list entry */
-	for (el = fsocpf_ctx->folders; el; el = el->next) {
-		if (el->ctx && el->ctx->fid == fid) {
-			found = true;
-			break;
-		}
-	}
-	if (found == false) {
+	/* Search for the fid fsocpf_folder entry */
+	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
+	if (! folder) {
 		*RowCount = 0;
 		return MAPISTORE_ERR_NO_DIRECTORY;
 	}
 
 	switch (table_type) {
 	case MAPISTORE_FOLDER_TABLE:
-		rewinddir(el->ctx->dir);
+		rewinddir(folder->dir);
 		errno = 0;
 		*RowCount = 0;
-		while ((curdir = readdir(el->ctx->dir)) != NULL) {
+		while ((curdir = readdir(folder->dir)) != NULL) {
 			if (curdir->d_name && curdir->d_type == DT_DIR &&
 			    strcmp(curdir->d_name, ".") && strcmp(curdir->d_name, "..")) {
 				DEBUG(0, ("Adding %s to the RowCount\n", curdir->d_name));
@@ -434,10 +452,10 @@ static int fsocpf_op_readdir_count(void *private_data,
 		}
 		break;
 	case MAPISTORE_MESSAGE_TABLE:
-		rewinddir(el->ctx->dir);
+		rewinddir(folder->dir);
 		errno = 0;
 		*RowCount = 0;
-		while ((curdir = readdir(el->ctx->dir)) != NULL) {
+		while ((curdir = readdir(folder->dir)) != NULL) {
 			if (curdir->d_name && curdir->d_type == DT_REG &&
 			    strcmp(curdir->d_name, ".properties")) {
 				DEBUG(0, ("Adding %s to the RowCount\n", curdir->d_name));
@@ -453,7 +471,7 @@ static int fsocpf_op_readdir_count(void *private_data,
 }
 
 
-static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
+static int fsocpf_get_property_from_folder_table(struct fsocpf_folder *folder,
 						 uint32_t pos,
 						 uint32_t proptag,
 						 void **data)
@@ -470,13 +488,13 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
 	/* Set dir listing to current position */
-	rewinddir(ctx->dir);
+	rewinddir(folder->dir);
 	errno = 0;
-	while ((curdir = readdir(ctx->dir)) != NULL) {
+	while ((curdir = readdir(folder->dir)) != NULL) {
 		if (curdir->d_name && curdir->d_type == DT_DIR &&
 		    strcmp(curdir->d_name, ".") && strcmp(curdir->d_name, "..") &&
 		    counter == pos) {
-			folderID = talloc_strdup(ctx, curdir->d_name);
+			folderID = talloc_strdup(folder, curdir->d_name);
 			break;
 		}
 		if (strcmp(curdir->d_name, ".") && strcmp(curdir->d_name, "..") && 
@@ -491,11 +509,11 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 		return MAPI_E_NOT_FOUND;
 	}
 
-	/* If fid, return ctx->fid */
+	/* If fid, return folder->fid */
 	if (proptag == PR_FID) {
 		uint64_t	*fid;
 
-		fid = talloc_zero(ctx, uint64_t);
+		fid = talloc_zero(folder, uint64_t);
 		*fid = strtoull(folderID, NULL, 16);
 		talloc_free(folderID);
 		*data = (uint64_t *)fid;
@@ -503,7 +521,7 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	} 
 
 	/* Otherwise opens .properties file with ocpf for fid entry */
-	propfile = talloc_asprintf(ctx, "%s/%s/.properties", ctx->path, folderID);
+	propfile = talloc_asprintf(folder, "%s/%s/.properties", folder->path, folderID);
 	talloc_free(folderID);
 
 	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
@@ -512,11 +530,11 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 	/* process the file */
 	ret = ocpf_parse(ocpf_context_id);
 
-	ocpf_set_SPropValue_array(ctx, ocpf_context_id);
+	ocpf_set_SPropValue_array(folder, ocpf_context_id);
 	lpProps = ocpf_get_SPropValue(ocpf_context_id, &cValues);
 
 	/* FIXME: We need to find a proper way to handle this (for all types) */
-	talloc_steal(ctx, lpProps);
+	talloc_steal(folder, lpProps);
 
 	*data = (void *) get_SPropValue(lpProps, proptag);
 	if (((proptag & 0xFFFF) == PT_STRING8) || ((proptag & 0xFFFF) == PT_UNICODE)) {
@@ -526,7 +544,7 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 		} else if (*data == NULL && (proptag & 0xFFFF) == PT_UNICODE) {
 			*data = (void *) get_SPropValue(lpProps, (proptag & 0xFFFF0000) + PT_STRING8);
 		}
-		*data = talloc_strdup(ctx, (char *)*data);
+		*data = talloc_strdup(folder, (char *)*data);
 	}
 
 	if (*data == NULL) {
@@ -539,7 +557,7 @@ static int fsocpf_get_property_from_folder_table(struct folder_list *ctx,
 }
 
 
-static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
+static int fsocpf_get_property_from_message_table(struct fsocpf_folder *folder,
 						  uint32_t pos,
 						  uint32_t proptag,
 						  void **data)
@@ -556,12 +574,12 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 	DEBUG(5, ("[%s:%d\n]", __FUNCTION__, __LINE__));
 
 	/* Set dir listing to current position */
-	rewinddir(ctx->dir);
+	rewinddir(folder->dir);
 	errno = 0;
-	while ((curdir = readdir(ctx->dir)) != NULL) {
+	while ((curdir = readdir(folder->dir)) != NULL) {
 		if (curdir->d_name && curdir->d_type == DT_REG &&
 		    strcmp(curdir->d_name, ".properties") && counter == pos) {
-			messageID = talloc_strdup(ctx, curdir->d_name);
+			messageID = talloc_strdup(folder, curdir->d_name);
 			break;
 		}
 		if (strcmp(curdir->d_name, ".properties") && 
@@ -577,9 +595,9 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 		return MAPI_E_NOT_FOUND;
 	}
 
-	/* if fid, return ctx fid */
+	/* if fid, return folder fid */
 	if (proptag == PR_FID) {
-		*data = (uint64_t *)&ctx->fid;
+		*data = (uint64_t *)&folder->fid;
 		return MAPI_E_SUCCESS;
 	  }
 
@@ -587,7 +605,7 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 	if (proptag == PR_MID) {
 		uint64_t	*mid;
 
-		mid = talloc_zero(ctx, uint64_t);
+		mid = talloc_zero(folder, uint64_t);
 		*mid = strtoull(messageID, NULL, 16);
 		talloc_free(messageID);
 		*data = (uint64_t *)mid;
@@ -595,7 +613,7 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 	}
 
 	/* Otherwise opens curdir->d_name file with ocpf */
-	propfile = talloc_asprintf(ctx, "%s/%s", ctx->path, messageID);
+	propfile = talloc_asprintf(folder, "%s/%s", folder->path, messageID);
 	talloc_free(messageID);
 
 	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
@@ -604,11 +622,11 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 	/* process the file */
 	ret = ocpf_parse(ocpf_context_id);
 
-	ocpf_set_SPropValue_array(ctx, ocpf_context_id);
+	ocpf_set_SPropValue_array(folder, ocpf_context_id);
 	lpProps = ocpf_get_SPropValue(ocpf_context_id, &cValues);
 
 	/* FIXME: We need to find a proper way to handle this (for all types) */
-	talloc_steal(ctx, lpProps);
+	talloc_steal(folder, lpProps);
 
 	*data = (void *) get_SPropValue(lpProps, proptag);
 	if (((proptag & 0xFFFF) == PT_STRING8) || ((proptag & 0xFFFF) == PT_UNICODE)) {
@@ -618,7 +636,7 @@ static int fsocpf_get_property_from_message_table(struct folder_list *ctx,
 		} else if (*data == NULL && (proptag & 0xFFFF) == PT_UNICODE) {
 			*data = (void *) get_SPropValue(lpProps, (proptag & 0xFFFF0000) + PT_STRING8);
 		}
-		*data = talloc_strdup(ctx, (char *)*data);
+		*data = talloc_strdup(folder, (char *)*data);
 	}
 
 	if (*data == NULL) {
@@ -639,8 +657,8 @@ static int fsocpf_op_get_table_property(void *private_data,
 					void **data)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
-	struct folder_list_context	*el;
-	bool				found = false;
+	struct fsocpf_folder_list	*el;
+	struct fsocpf_folder		*folder;
 	int				retval = MAPI_E_SUCCESS;
 
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
@@ -651,35 +669,26 @@ static int fsocpf_op_get_table_property(void *private_data,
 
 	if (fsocpf_ctx->fid == fid) {
 		/* If we access it for the first time, just add an entry to the folder list */
-		if (!fsocpf_ctx->folders->ctx) {
-			el = talloc_zero((TALLOC_CTX *)fsocpf_ctx->folders, struct folder_list_context);
-			el->ctx = talloc_zero((TALLOC_CTX *)el, struct folder_list);
-			el->ctx->fid = fid;
-			el->ctx->path = talloc_strdup(el, fsocpf_ctx->uri);
-			el->ctx->dir = fsocpf_ctx->dir;
-			DLIST_ADD_END(fsocpf_ctx->folders, el, struct folder_list_context *);
-			DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->ctx->fid));			
+		if (!fsocpf_ctx->folders->folder) {
+			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
+			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
+			DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->folder->fid));
 		}
 	}
 
-	/* Search for the fid folder_list entry */
-	for (el = fsocpf_ctx->folders; el; el = el->next) {
-		if (el->ctx && el->ctx->fid == fid) {
-			found = true;
-			break;
-		}
-	}
-	if (found == false) {
+	/* Search for the fid fsocpf_folder entry */
+	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
+	if (! folder) {
 		*data = NULL;
 		return MAPISTORE_ERR_NO_DIRECTORY;
 	}
 
 	switch (table_type) {
 	case MAPISTORE_FOLDER_TABLE:
-		retval = fsocpf_get_property_from_folder_table(el->ctx, pos, proptag, data);
+		retval = fsocpf_get_property_from_folder_table(folder, pos, proptag, data);
 		break;
 	case MAPISTORE_MESSAGE_TABLE:
-		retval = fsocpf_get_property_from_message_table(el->ctx, pos, proptag, data);
+		retval = fsocpf_get_property_from_message_table(folder, pos, proptag, data);
 		break;
 	default:
 		break;

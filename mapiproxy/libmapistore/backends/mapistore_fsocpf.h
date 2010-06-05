@@ -47,22 +47,22 @@
 #endif
 #endif
 
-struct folder_list {
+struct fsocpf_folder {
 	uint64_t			fid;
 	DIR				*dir;
 	char				*path;
 };
 
-struct folder_list_context {
-	struct folder_list		*ctx;
-	struct folder_list_context	*next;
-	struct folder_list_context	*prev;
+struct fsocpf_folder_list {
+	struct fsocpf_folder		*folder;
+	struct fsocpf_folder_list	*next;
+	struct fsocpf_folder_list	*prev;
 };
 
 struct fsocpf_context {
 	void				*private_data;
 	char				*uri;
-	struct folder_list_context	*folders;
+	struct fsocpf_folder_list	*folders;
 	uint64_t			fid;
 	DIR				*dir;
 };

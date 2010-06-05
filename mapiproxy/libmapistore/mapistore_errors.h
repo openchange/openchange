@@ -116,4 +116,9 @@
  */
 #define	MAPISTORE_ERR_REF_COUNT			15
 
+/**
+   The function already have record/data for the searched element
+ */
+#define	MAPISTORE_ERR_EXIST			16
+
 #endif /* ! __MAPISTORE_ERRORS_H */

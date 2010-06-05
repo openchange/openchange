@@ -347,6 +347,10 @@ _PUBLIC_ int mapistore_backend_delete_context(struct backend_context *bctx)
 {
 	if (!bctx->backend->delete_context) return MAPISTORE_ERROR;
 
+	if (bctx->indexing) {
+		mapistore_indexing_del_ref_count(bctx->indexing);
+	}
+
 	if (bctx->ref_count) {
 		bctx->ref_count -= 1;
 		return MAPISTORE_ERR_REF_COUNT;
@@ -410,6 +414,21 @@ _PUBLIC_ struct backend_context *mapistore_backend_lookup_by_uri(struct backend_
 	return NULL;
 }
 
+int mapistore_get_path(struct backend_context *bctx, uint64_t fmid, uint8_t type, char **path)
+{
+	int	ret;
+	char	*bpath = NULL;
+
+	ret = bctx->backend->get_path(bctx->private_data, fmid, type, &bpath);
+
+	if (!ret) {
+		*path = talloc_asprintf(bctx, "%s%s", bctx->backend->namespace, bpath);
+	} else {
+		*path = NULL;
+	}
+
+	return ret;
+}
 
 int mapistore_backend_opendir(struct backend_context *bctx, uint64_t parent_fid, uint64_t fid)
 {
@@ -446,3 +465,7 @@ int mapistore_backend_get_table_property(struct backend_context *bctx, uint64_t 
 }
 
 
+int mapistore_backend_openmessage(struct backend_context *bctx, uint64_t parent_fid, uint64_t mid)
+{
+	return bctx->backend->op_openmessage(bctx->private_data, parent_fid, mid);
+}

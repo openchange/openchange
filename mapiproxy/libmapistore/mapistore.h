@@ -52,6 +52,12 @@ typedef	int (*init_backend_fn) (void);
 #define	MAPISTORE_FOLDER_TABLE	1
 #define	MAPISTORE_MESSAGE_TABLE	2
 
+#define MAPISTORE_FOLDER	1
+#define	MAPISTORE_MESSAGE	2
+
+#define	MAPISTORE_SOFT_DELETE		1
+#define	MAPISTORE_PERMANENT_DELETE	2
+
 struct mapistore_backend {
 	const char	*name;
 	const char	*description;
@@ -60,6 +66,7 @@ struct mapistore_backend {
 	int (*init)(void);
 	int (*create_context)(TALLOC_CTX *, const char *, void **);
 	int (*delete_context)(void *);
+	int (*get_path)(void *, uint64_t, uint8_t, char **);
 	/* folders semantic */
 	int (*op_mkdir)(void *, uint64_t, uint64_t, struct SRow *);
 	int (*op_rmdir)(void *);
@@ -67,11 +74,15 @@ struct mapistore_backend {
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
 	int (*op_get_table_property)(void *, uint64_t, uint8_t, uint32_t, uint32_t, void **);
+	int (*op_openmessage)(void *, uint64_t, uint64_t);
 };
+
+struct indexing_context_list;
 
 struct backend_context {
 	const struct mapistore_backend	*backend;
 	void				*private_data;
+	struct indexing_context_list	*indexing;
 	uint32_t			context_id;
 	uint32_t			ref_count;
 	char				*uri;
@@ -88,6 +99,12 @@ struct processing_context;
 struct mapistore_context {
 	struct processing_context	*processing_ctx;
 	struct backend_context_list    	*context_list;
+	struct indexing_context_list	*indexing_list;
+};
+
+struct indexing_folders_list {
+	uint64_t			*folderID;
+	uint32_t			count;
 };
 
 #ifndef __BEGIN_DECLS
@@ -110,6 +127,7 @@ int mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
 int mapistore_search_context_by_uri(struct mapistore_context *, const char *, uint32_t *);
 const char *mapistore_errstr(int);
+int mapistore_add_context_indexing(struct mapistore_context *, const char *, uint32_t);
 int mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
 int mapistore_closedir(struct mapistore_context *mstore_ctx, uint32_t, uint64_t);
 int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct SRow *);
@@ -118,6 +136,7 @@ int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, u
 int mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, uint64_t, 
 				 uint32_t, uint32_t, void **);
+int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);
@@ -130,6 +149,15 @@ struct backend_context *mapistore_backend_lookup(struct backend_context_list *, 
 struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *, const char *);
 
 bool		mapistore_backend_run_init(init_backend_fn *);
+
+/* definitions from mapistore_indexing.c */
+int mapistore_indexing_add(struct mapistore_context *, const char *);
+int mapistore_indexing_del(struct mapistore_context *, const char *);
+int mapistore_indexing_get_folder_list(struct mapistore_context *, const char *, uint64_t, struct indexing_folders_list **);
+int mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, uint64_t);
+int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
+int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 
 __END_DECLS
 

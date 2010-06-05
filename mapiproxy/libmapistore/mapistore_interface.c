@@ -60,6 +60,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	}
 
 	mstore_ctx->context_list = NULL;
+	mstore_ctx->indexing_list = talloc_zero(mstore_ctx, struct indexing_context_list);
 
 	return mstore_ctx;
 }
@@ -268,6 +269,50 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
 	}
 
 	return retval;
+}
+
+
+/**
+   \details Associate an indexing context to a mapistore context
+
+   \param mstore_ctx pointer to the mapistore context
+   \param username account name referencing the indexing record
+   \param context_id the context identifier referencing the context to
+   alter
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_add_context_indexing(struct mapistore_context *mstore_ctx,
+					    const char *username,
+					    uint32_t context_id)
+{
+	struct indexing_context_list	*indexing_ctx;
+	struct backend_context		*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(context_id == -1, MAPISTORE_ERROR, NULL);
+
+	/* Step 0. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	/* If the indexing pointer is already existing, return success */
+	MAPISTORE_RETVAL_IF(backend_ctx->indexing, MAPISTORE_SUCCESS, NULL);
+
+	/* Step 1. Search the indexing record */
+	indexing_ctx = mapistore_indexing_search(mstore_ctx, username);
+	MAPISTORE_RETVAL_IF(!indexing_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Reference the indexing record within backend context */
+	backend_ctx->indexing = indexing_ctx;
+
+	/* Step 3. Increment the indexing ref counter */
+	mapistore_indexing_add_ref_count(indexing_ctx);
+
+	DEBUG(0, ("mapistore_add_context_indexing username: %s\n", backend_ctx->indexing->username));
+
+	return MAPISTORE_SUCCESS;
 }
 
 
@@ -543,4 +588,37 @@ _PUBLIC_ int mapistore_get_table_property(struct mapistore_context *mstore_ctx,
 	ret = mapistore_backend_get_table_property(backend_ctx, fid, table_type, pos, proptag, data);
 
 	return ret;
+}
+
+
+/**
+   \details Open a message in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where the directory will be opened
+   \param parent_fid the parent folder identifier
+   \param mid the message identifier to open
+
+   \return MAPISTORE SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx,
+				   uint32_t context_id,
+				   uint64_t parent_fid,
+				   uint64_t mid)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend openmessage */
+	ret = mapistore_backend_openmessage(backend_ctx, parent_fid, mid);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

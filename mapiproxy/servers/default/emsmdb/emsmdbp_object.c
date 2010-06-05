@@ -146,6 +146,34 @@ uint32_t emsmdbp_get_contextID(struct mapi_handles *handles)
 
 
 /**
+   \details Retrieve the folder handle matching given fid
+
+   \param handles_ctx pointer to the handles context
+   \param fid folder identifier to lookup
+
+   \return pointer to valid mapi_handles structure on success, otherwise NULL
+ */
+struct mapi_handles *emsmdbp_object_get_folder_handle_by_fid(struct mapi_handles_context *handles_ctx,
+							     uint64_t fid)
+{
+	struct mapi_handles	*handle;
+	struct emsmdbp_object	*object;
+	void			*data;
+
+	for (handle = handles_ctx->handles; handle; handle = handle->next) {
+		mapi_handles_get_private_data(handle, &data);
+		if (data) {
+			object = (struct emsmdbp_object *) data;
+			if (object->type == EMSMDBP_OBJECT_FOLDER && object->object.folder->folderID == fid) {
+				return handle;
+			}
+		}
+	}
+
+	return NULL;
+}
+
+/**
    \details talloc destructor for emsmdbp_objects
 
    \param data generic pointer on data
@@ -346,6 +374,11 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 					talloc_free(object);
 					return NULL;
 				}
+				ret = mapistore_add_context_indexing(emsmdbp_ctx->mstore_ctx, 
+								     emsmdbp_ctx->username,
+								     context_id);
+				ret = mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx,
+									context_id, folderID);
 			}
 			object->object.folder->contextID = context_id;
 		}

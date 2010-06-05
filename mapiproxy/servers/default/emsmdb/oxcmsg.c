@@ -52,16 +52,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 						struct EcDoRpc_MAPI_REPL *mapi_repl,
 						uint32_t *handles, uint16_t *size)
 {
-	enum MAPISTATUS		retval;
-	struct mapi_handles	*parent = NULL;
-	struct mapi_handles	*rec = NULL;
-	struct emsmdbp_object	*object = NULL;
-	void			*data;
-	uint64_t		folderID;
-	uint64_t		messageID = 0;
-	uint32_t		contextID;
-	uint32_t		handle;
-	bool			mapistore = false;
+	int				ret;
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*parent = NULL;
+	struct mapi_handles		*parent_handle = NULL;
+	struct mapi_handles		*rec = NULL;
+	struct emsmdbp_object		*object = NULL;
+	struct emsmdbp_object		*parent_object = NULL;
+	void				*data;
+	uint64_t			folderID;
+	uint64_t			messageID = 0;
+	uint32_t			contextID;
+	uint32_t			handle;
+	bool				mapistore = false;
+	struct indexing_folders_list	*flist;
+	int				i;
+
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] OpenMessage (0x03)\n"));
 
@@ -79,6 +85,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->u.mapi_OpenMessage.handle_idx;
+	messageID = mapi_req->u.mapi_OpenMessage.MessageId;
+	folderID = mapi_req->u.mapi_OpenMessage.FolderId;
 
 	/* OpenMessage can only be called for mailbox/folder objects */
 	mapi_handles_get_private_data(parent, &data);
@@ -91,10 +99,80 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 
 	switch (object->type) {
 	case EMSMDBP_OBJECT_MAILBOX:
-		folderID = object->object.mailbox->folderID;
-		contextID = object->object.folder->contextID;
+		ret = mapistore_indexing_get_folder_list(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username,
+							 messageID, &flist);
+		if (ret || !flist->count) {
+			DEBUG(0, ("No parent folder found for 0x%.16"PRIx64"\n", messageID));
+		}
+		/* If last element in the list doesn't match folderID, that's incorrect */
+		if (folderID != flist->folderID[flist->count - 1]) {
+			DEBUG(0, ("Last parent folder 0x%.16"PRIx64" doesn't match " \
+				  "with expected 0x%.16"PRIx64"\n", 
+				  flist->folderID[flist->count - 1], folderID));
+		}
+
+		/* Look if we have a parent folder already opened */
+		for (i = flist->count - 1 ; i >= 0; i--) {
+			parent_handle = emsmdbp_object_get_folder_handle_by_fid(emsmdbp_ctx->handles_ctx, 
+										flist->folderID[i]);
+			DEBUG(0, ("=> 0x%.16"PRIx64"\n", flist->folderID[i]));
+			if (parent_handle) {
+				DEBUG(0, ("We already have a handle for this folder\n"));
+				break;
+			} else {
+				DEBUG(0, ("We need to open the folder 0x%.16"PRIx64"\n", flist->folderID[i]));
+			}
+			
+		}
+
+		/* If we have a parent handle, we have a context_id
+		 * and we can call subsequent OpenFolder - this will
+		 * increment ref_count whereas needed */
+		if (parent_handle) {
+		recursive_open:
+			for (i = i + 1; i < flist->count; i++) {
+				mapi_handles_get_private_data(parent_handle, &data);
+				parent_object = (struct emsmdbp_object *) data;
+				folderID = parent_object->object.folder->folderID;
+				contextID = parent_object->object.folder->contextID;
+				retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, contextID, folderID,
+							   flist->folderID[i]);
+				mapi_handles_add(emsmdbp_ctx->handles_ctx, parent_handle->handle, &rec);
+				object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx,
+								    flist->folderID[i], parent_handle);
+				if (object) {
+					retval = mapi_handles_set_private_data(rec, object);
+				}
+
+				parent_handle = rec;
+				
+			}
+		} else {
+			DEBUG(0, ("We need to open the root mapistore folder holding message\n"));
+			retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+			object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx,
+							    flist->folderID[0], parent);
+			if (object) {
+				retval = mapi_handles_set_private_data(rec, object);
+			}
+			parent_handle = rec;
+			i = 0;
+			/* now we have a context_id, we can use code above to open subfolders subsequently */
+			goto recursive_open;
+		}
+
+		/* Add this stage our new parent_handle should point to the message */
+
+		mapi_handles_get_private_data(parent_handle, &data);
+		parent_object = (struct emsmdbp_object *) data;
+		folderID = parent_object->object.folder->folderID;
+		contextID = parent_object->object.folder->contextID;
+		DEBUG(0, ("Our message lies within 0x%.16"PRIx64" and its context_id is %d\n", 
+			  folderID, contextID));
+		parent = parent_handle;
 		break;
 	case EMSMDBP_OBJECT_FOLDER:
+		DEBUG(0, ("Not implemented yet ... segfault expected\n"));
 		folderID = object->object.folder->folderID;
 		contextID = object->object.folder->contextID;
 		break;
@@ -111,6 +189,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;
 	case true:
+		DEBUG(0, ("The only case which we should fall in\n"));
+		mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID);
 		/* mapistore implementation goes here */
 		break;
 	}

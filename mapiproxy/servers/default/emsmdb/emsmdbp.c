@@ -70,17 +70,20 @@ static int emsmdbp_mapi_handles_destructor(void *data)
    Samba databases.
 
    \param lp_ctx pointer to the loadparm_context
+   \param username account name for current session
    \param ldb_ctx pointer to the openchange dispatcher ldb database
    
    \return Allocated emsmdbp_context pointer on success, otherwise
    NULL
  */
 _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
+					      const char *username,
 					      void *ldb_ctx)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct emsmdbp_context	*emsmdbp_ctx;
 	struct tevent_context	*ev;
+	int			ret;
 
 	/* Sanity Checks */
 	if (!lp_ctx) return NULL;
@@ -124,6 +127,14 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		return NULL;
 	}
 	talloc_set_destructor((void *)emsmdbp_ctx->mstore_ctx, (int (*)(void *))emsmdbp_mapi_store_destructor);
+
+	/* Initialize the mapistore user's indexing database */
+	ret = mapistore_indexing_add(emsmdbp_ctx->mstore_ctx, username);
+	if (ret != MAPI_E_SUCCESS) {
+		DEBUG(0, ("[%s:%d]: MAPISTORE indexing database initialization failed\n", __FUNCTION__, __LINE__));
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	/* Initialize MAPI handles context */
 	emsmdbp_ctx->handles_ctx = mapi_handles_init(mem_ctx);

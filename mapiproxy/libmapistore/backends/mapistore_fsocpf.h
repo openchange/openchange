@@ -59,10 +59,24 @@ struct fsocpf_folder_list {
 	struct fsocpf_folder_list	*prev;
 };
 
+struct fsocpf_message {
+	uint64_t			mid;
+	uint64_t			fid;
+	uint32_t			ocpf_context_id;
+	char				*path;
+};
+
+struct fsocpf_message_list {
+	struct fsocpf_message		*message;
+	struct fsocpf_message_list	*prev;
+	struct fsocpf_message_list	*next;
+};
+
 struct fsocpf_context {
 	void				*private_data;
 	char				*uri;
 	struct fsocpf_folder_list	*folders;
+	struct fsocpf_message_list	*messages;
 	uint64_t			fid;
 	DIR				*dir;
 };

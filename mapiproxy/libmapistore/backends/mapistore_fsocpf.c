@@ -49,7 +49,9 @@ static int fsocpf_init(void)
    \param uri pointer to the fsocpf path
    \param dir pointer to the DIR structure associated with the uri
  */
-static struct fsocpf_context* fsocpf_context_init(TALLOC_CTX *mem_ctx, const char *uri, DIR *dir)
+static struct fsocpf_context *fsocpf_context_init(TALLOC_CTX *mem_ctx, 
+						  const char *uri, 
+						  DIR *dir)
 {
 	struct fsocpf_context	*fsocpf_ctx;
 
@@ -58,6 +60,7 @@ static struct fsocpf_context* fsocpf_context_init(TALLOC_CTX *mem_ctx, const cha
 	fsocpf_ctx->uri = talloc_strdup(fsocpf_ctx, uri);
 	fsocpf_ctx->dir = dir;
 	fsocpf_ctx->folders = talloc_zero(fsocpf_ctx, struct fsocpf_folder_list);
+	fsocpf_ctx->messages = talloc_zero(fsocpf_ctx, struct fsocpf_message_list);
 
 	return fsocpf_ctx;
 }
@@ -73,7 +76,10 @@ static struct fsocpf_context* fsocpf_context_init(TALLOC_CTX *mem_ctx, const cha
    \param uri pointer to the fsocpf path for the folder
    \param dir pointer to the DIR structure associated with the fid / uri
  */
-static struct fsocpf_folder_list* fsocpf_folder_list_element_init(TALLOC_CTX *mem_ctx, uint64_t fid, const char *uri, DIR *dir)
+static struct fsocpf_folder_list *fsocpf_folder_list_element_init(TALLOC_CTX *mem_ctx, 
+								  uint64_t fid, 
+								  const char *uri, 
+								  DIR *dir)
 {
 	struct fsocpf_folder_list *el;
 
@@ -85,6 +91,82 @@ static struct fsocpf_folder_list* fsocpf_folder_list_element_init(TALLOC_CTX *me
 
 	return el;
 }
+
+
+/**
+  \details search for the fsocpf_folder for a given folder ID
+
+  \param fsocpf_ctx the store context
+  \param fid the folder ID of the fsocpf_folder to search for
+
+  \return folder on success, or NULL if the folder was not found
+*/
+static struct fsocpf_folder *fsocpf_find_folder_by_fid(struct fsocpf_context *fsocpf_ctx, 
+						       uint64_t fid)
+{
+	struct fsocpf_folder_list	*el;
+
+	for (el = fsocpf_ctx->folders; el; el = el->next) {
+		if (el->folder && el->folder->fid == fid) {
+			return el->folder;
+		}
+	}
+	return NULL;
+}
+
+
+/**
+   \details Allocate / initialize a fsocpf_message_list element
+
+   This essentialy creates a node of the linked list, which will be
+   added to the list by the caller
+
+   \param mem_ctx pointer to the memory context
+   \param fid the folder id for the message
+   \param mid the message id for the message
+   \param uri pointer to the fsocpf path for the message
+   \param context_id the ocpf context identifier
+ */
+static struct fsocpf_message_list *fsocpf_message_list_element_init(TALLOC_CTX *mem_ctx,
+								    uint64_t fid,
+								    uint64_t mid,
+								    const char *uri,
+								    uint32_t context_id)
+{
+	struct fsocpf_message_list	*el;
+
+	el = talloc_zero(mem_ctx, struct fsocpf_message_list);
+	el->message = talloc_zero((TALLOC_CTX *)el, struct fsocpf_message);
+	el->message->fid = fid;
+	el->message->mid = mid;
+	el->message->path = talloc_strdup((TALLOC_CTX *)el, uri);
+	el->message->ocpf_context_id = context_id;
+
+	return el;
+}
+
+
+/**
+   \details search for the fsocpf_message for a given message ID
+
+   \param fsocpf_ctx the store context
+   \param mid the message ID of the fsocpf_message to search for
+
+   \return message on success, or NULL if the message was not found
+ */
+static struct fsocpf_message *fsocpf_find_message_by_mid(struct fsocpf_context *fsocpf_ctx,
+							 uint64_t mid)
+{
+	struct fsocpf_message_list	*el;
+
+	for (el = fsocpf_ctx->messages; el; el = el->next) {
+		if (el->message && el->message->mid == mid) {
+			return el->message;
+		}
+	}
+	return NULL;
+}
+
 
 /**
    \details Create a connection context to the fsocpf backend
@@ -184,25 +266,49 @@ static int fsocpf_delete_context(void *private_data)
 	return MAPISTORE_SUCCESS;
 }
 
+
 /**
-  \details search for the fsocpf_folder for a given folder ID
+   \details return the mapistore path associated to a given message or
+   folder ID
 
-  \param fsocpf_ctx the store context
-  \param fid the folder ID of the fsocpf_folder to search for
+   \param private_data pointer to the current fsocpf context
+   \param fmid the folder/message ID to lookup
+   \param type whether it is a folder or message
+   \param path pointer on pointer to the path to return
 
-  \return folder on success, or NULL if the folder was not found
-*/
-static struct fsocpf_folder* fsocpf_find_folder_by_fid(struct fsocpf_context *fsocpf_ctx, uint64_t fid)
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static int fsocpf_get_path(void *private_data, uint64_t fmid,
+			   uint8_t type, char **path)
 {
-	struct fsocpf_folder_list	*el;
+	struct fsocpf_folder	*folder;
+	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
 
-	for (el = fsocpf_ctx->folders; el; el = el->next) {
-		if (el->folder && el->folder->fid == fid) {
-			return el->folder;
-		}
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	if (!fsocpf_ctx) {
+		return MAPISTORE_ERROR;
 	}
-	return NULL;
+
+	switch (type) {
+	case MAPISTORE_FOLDER:
+		folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fmid);
+		if (!folder) {
+			DEBUG(0, ("folder doesn't exist ...\n"));
+			*path = NULL;
+			return MAPISTORE_ERROR;
+		}
+		DEBUG(0, ("folder->path is %s\n", folder->path));
+		*path = folder->path;
+		break;
+	case MAPISTORE_MESSAGE:
+		DEBUG(0, ("Not implemented yet\n"));
+		return MAPISTORE_ERROR;
+	}
+
+	return MAPISTORE_SUCCESS;
 }
+
 
 /**
    \details Create a folder in the fsocpf backend
@@ -270,6 +376,8 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	ocpf_write_auto(ocpf_context_id, NULL, &mapi_lpProps);
 	ocpf_write_commit(ocpf_context_id);
 	ocpf_del_context(ocpf_context_id);
+
+	talloc_free(mem_ctx);
 
 	return MAPISTORE_SUCCESS;
 }
@@ -698,6 +806,64 @@ static int fsocpf_op_get_table_property(void *private_data,
 }
 
 
+static int fsocpf_op_openmessage(void *private_data,
+				 uint64_t fid,
+				 uint64_t mid)
+{
+	TALLOC_CTX			*mem_ctx;
+	int				ret;
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct fsocpf_message_list	*el;
+	struct fsocpf_message		*message;
+	struct fsocpf_folder		*folder;
+	uint32_t			ocpf_context_id;
+	char				*propfile;
+
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	/* Search for the mid fsocpf_message entry */
+	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
+	if (message) {
+		DEBUG(0, ("Message was already opened\n"));
+		return MAPI_E_SUCCESS;
+	}
+
+	/* Search for the fid fsocpf_folder entry */
+	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
+	if (!folder) {
+		DEBUG(0, ("fsocpf_op_openmessage: message not found\n"));
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
+	DEBUG(0, ("Message: 0x%.16"PRIx64" is inside %s\n", mid, folder->path));
+
+	/* Trying to open and map the file with OCPF */
+	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_openmessage");
+	propfile = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, folder->path, mid);
+
+	ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_RDWR);
+	ret = ocpf_parse(ocpf_context_id);
+
+	if (!ret) {
+		el = fsocpf_message_list_element_init((TALLOC_CTX *)fsocpf_ctx->messages, fid, mid, 
+						      propfile, ocpf_context_id);
+		DLIST_ADD_END(fsocpf_ctx->messages, el, struct fsocpf_message_list *);
+		DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", mid));
+
+		ocpf_dump(ocpf_context_id);
+	} else {
+		DEBUG(0, ("An error occured while processing %s\n", propfile));
+		talloc_free(propfile);
+		talloc_free(mem_ctx);
+	}
+
+	talloc_free(propfile);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
 /**
    \details Entry point for mapistore FSOCPF backend
 
@@ -717,12 +883,14 @@ int mapistore_init_backend(void)
 	backend.init = fsocpf_init;
 	backend.create_context = fsocpf_create_context;
 	backend.delete_context = fsocpf_delete_context;
+	backend.get_path = fsocpf_get_path;
 	backend.op_mkdir = fsocpf_op_mkdir;
 	backend.op_rmdir = fsocpf_op_rmdir;
 	backend.op_opendir = fsocpf_op_opendir;
 	backend.op_closedir = fsocpf_op_closedir;
 	backend.op_readdir_count = fsocpf_op_readdir_count;
 	backend.op_get_table_property = fsocpf_op_get_table_property;
+	backend.op_openmessage = fsocpf_op_openmessage;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

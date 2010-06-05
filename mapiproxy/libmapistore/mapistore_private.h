@@ -106,6 +106,20 @@ struct processing_context {
 
 
 /**
+   Indexing identifier list
+ */
+struct indexing_context_list {
+	struct tdb_wrap			*index_ctx;
+	char				*username;
+	uint32_t			ref_count;
+	struct indexing_context_list	*prev;
+	struct indexing_context_list	*next;
+};
+
+#define	MAPISTORE_DB_INDEXING		"indexing.tdb"
+#define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
+
+/**
    The database name where in use ID mappings are stored
  */
 #define	MAPISTORE_DB_LAST_ID_KEY	"mapistore_last_id"
@@ -128,14 +142,24 @@ int mapistore_backend_init(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *);
 int mapistore_backend_add_ref_count(struct backend_context *);
 int mapistore_backend_delete_context(struct backend_context *);
+int mapistore_get_path(struct backend_context *, uint64_t, uint8_t, char **);
 int mapistore_backend_opendir(struct backend_context *, uint64_t, uint64_t);
 int mapistore_backend_mkdir(struct backend_context *, uint64_t, uint64_t, struct SRow *);
 int mapistore_backend_readdir_count(struct backend_context *, uint64_t, uint8_t, uint32_t *);
 int mapistore_backend_get_table_property(struct backend_context *, uint64_t, uint8_t, uint32_t, 
 					 uint32_t, void **);
+int mapistore_backend_openmessage(struct backend_context *, uint64_t, uint64_t);
 
 /* definitions from mapistore_tdb_wrap.c */
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
+
+/* definitions from mapistore_indexing.c */
+struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
+int mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
+int mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+int mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+int mapistore_indexing_add_ref_count(struct indexing_context_list *);
+int mapistore_indexing_del_ref_count(struct indexing_context_list *);
 
 __END_DECLS
 

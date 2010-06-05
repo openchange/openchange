@@ -279,6 +279,62 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue_array(TALLOC_CTX *mem_ctx, uint32_t
 
 
 /**
+   \details Build a SRowSet array with recipients from ocpf context
+
+   This function builds s SRowSet structure of recipient names and
+   type from the ocpf context and information stored.
+
+   \param mem_ctx pointer to the memory context to use for memory
+   allocation
+   \param context_id identifier of the context to use for building a
+   SRowSet array of recipients
+
+   \return Pointer to an allocated SRowSet structure on success,
+   otherwise NULL
+ */
+_PUBLIC_ struct SRowSet *ocpf_get_recipients(TALLOC_CTX *mem_ctx,
+					  uint32_t context_id)
+{
+	struct SRowSet		*SRowSet;
+	struct ocpf_context	*ctx;
+	struct ocpf_recipients	*recipient;
+	int			i;
+
+	/* Sanity checks */
+	if (!ocpf) return NULL;
+
+	/* Step 1. Search for the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	if (!ctx) return NULL;
+
+	/* Step 2. Allocate SRow */
+	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	SRowSet->cRows = 0;
+
+	/* Count the number of recipients and allocate memory for aRow */
+	for (recipient = ctx->recipients; recipient->next; recipient = recipient->next) {
+		SRowSet->cRows += 1;
+	}
+	SRowSet->aRow = talloc_array(SRowSet, struct SRow, SRowSet->cRows + 1);
+
+	for (i = 0, recipient = ctx->recipients; recipient->next; recipient = recipient->next, i++) {
+		SRowSet->aRow[i].ulAdrEntryPad = 0;
+		SRowSet->aRow[i].cValues = 2;
+		SRowSet->aRow[i].lpProps = talloc_array(SRowSet->aRow, struct SPropValue, 3);
+		
+		SRowSet->aRow[i].lpProps[0].ulPropTag = PR_RECIPIENT_TYPE;
+		SRowSet->aRow[i].lpProps[0].value.l = recipient->class;
+		
+		SRowSet->aRow[i].lpProps[1].ulPropTag = PR_DISPLAY_NAME;
+		SRowSet->aRow[i].lpProps[1].value.lpszA = talloc_strdup(SRowSet->aRow[i].lpProps, 
+									recipient->name);
+	}
+
+	return SRowSet;
+}
+
+
+/**
    \details Build a SPropValue array from ocpf context
 
    This function builds a SPropValue array from the ocpf context and

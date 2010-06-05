@@ -185,7 +185,7 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 		}
 	}
 	if (found == false) {
-		DEBUG(0, ("parent context for folder 0x%.16llx not found\n", parent_fid));
+		DEBUG(0, ("parent context for folder 0x%.16"PRIx64" not found\n", parent_fid));
 		return MAPISTORE_ERR_NO_DIRECTORY;
 	}
 

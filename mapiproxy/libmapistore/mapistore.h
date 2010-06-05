@@ -58,6 +58,11 @@ typedef	int (*init_backend_fn) (void);
 #define	MAPISTORE_SOFT_DELETE		1
 #define	MAPISTORE_PERMANENT_DELETE	2
 
+struct mapistore_message {
+	struct SRowSet			*recipients;
+	struct SRow			*properties;
+};
+
 struct mapistore_backend {
 	const char	*name;
 	const char	*description;
@@ -74,7 +79,7 @@ struct mapistore_backend {
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
 	int (*op_get_table_property)(void *, uint64_t, uint8_t, uint32_t, uint32_t, void **);
-	int (*op_openmessage)(void *, uint64_t, uint64_t);
+	int (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
 };
 
 struct indexing_context_list;
@@ -136,7 +141,7 @@ int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, u
 int mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, uint64_t, 
 				 uint32_t, uint32_t, void **);
-int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
+int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

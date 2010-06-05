@@ -465,7 +465,8 @@ int mapistore_backend_get_table_property(struct backend_context *bctx, uint64_t 
 }
 
 
-int mapistore_backend_openmessage(struct backend_context *bctx, uint64_t parent_fid, uint64_t mid)
+int mapistore_backend_openmessage(struct backend_context *bctx, uint64_t parent_fid, uint64_t mid, 
+				  struct mapistore_message *msg)
 {
-	return bctx->backend->op_openmessage(bctx->private_data, parent_fid, mid);
+	return bctx->backend->op_openmessage(bctx->private_data, parent_fid, mid, msg);
 }

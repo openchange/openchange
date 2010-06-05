@@ -808,10 +808,12 @@ static int fsocpf_op_get_table_property(void *private_data,
 
 static int fsocpf_op_openmessage(void *private_data,
 				 uint64_t fid,
-				 uint64_t mid)
+				 uint64_t mid,
+				 struct mapistore_message *msg)
 {
 	TALLOC_CTX			*mem_ctx;
 	int				ret;
+	enum MAPISTATUS			retval;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_message_list	*el;
 	struct fsocpf_message		*message;
@@ -825,6 +827,10 @@ static int fsocpf_op_openmessage(void *private_data,
 	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
 	if (message) {
 		DEBUG(0, ("Message was already opened\n"));
+		msg->properties = talloc_zero(fsocpf_ctx->messages, struct SRow);
+		msg->recipients = ocpf_get_recipients(message, message->ocpf_context_id);
+		msg->properties->lpProps = ocpf_get_SPropValue(message->ocpf_context_id, 
+							       &msg->properties->cValues);
 		return MAPI_E_SUCCESS;
 	}
 
@@ -841,7 +847,7 @@ static int fsocpf_op_openmessage(void *private_data,
 	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_openmessage");
 	propfile = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, folder->path, mid);
 
-	ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_RDWR);
+	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
 	ret = ocpf_parse(ocpf_context_id);
 
 	if (!ret) {
@@ -850,7 +856,13 @@ static int fsocpf_op_openmessage(void *private_data,
 		DLIST_ADD_END(fsocpf_ctx->messages, el, struct fsocpf_message_list *);
 		DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", mid));
 
-		ocpf_dump(ocpf_context_id);
+		/* Retrieve recipients from the message */
+		msg->recipients = ocpf_get_recipients(el, ocpf_context_id);
+
+		/* Retrieve properties from the message */
+		msg->properties = talloc_zero(el, struct SRow);
+		retval = ocpf_set_SPropValue_array(el, ocpf_context_id);
+		msg->properties->lpProps = ocpf_get_SPropValue(ocpf_context_id, &msg->properties->cValues);
 	} else {
 		DEBUG(0, ("An error occured while processing %s\n", propfile));
 		talloc_free(propfile);

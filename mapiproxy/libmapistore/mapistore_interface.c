@@ -599,16 +599,18 @@ _PUBLIC_ int mapistore_get_table_property(struct mapistore_context *mstore_ctx,
    where the directory will be opened
    \param parent_fid the parent folder identifier
    \param mid the message identifier to open
+   \param pointer to the mapistore_message structure
 
    \return MAPISTORE SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx,
 				   uint32_t context_id,
 				   uint64_t parent_fid,
-				   uint64_t mid)
+				   uint64_t mid,
+				   struct mapistore_message *msg)
 {
-	struct backend_context	*backend_ctx;
-	int			ret;
+	struct backend_context		*backend_ctx;
+	int				ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -618,7 +620,7 @@ _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend openmessage */
-	ret = mapistore_backend_openmessage(backend_ctx, parent_fid, mid);
+	ret = mapistore_backend_openmessage(backend_ctx, parent_fid, mid, msg);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

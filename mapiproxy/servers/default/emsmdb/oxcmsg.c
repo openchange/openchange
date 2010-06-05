@@ -59,6 +59,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*rec = NULL;
 	struct emsmdbp_object		*object = NULL;
 	struct emsmdbp_object		*parent_object = NULL;
+	struct mapistore_message	msg;
 	void				*data;
 	uint64_t			folderID;
 	uint64_t			messageID = 0;
@@ -190,7 +191,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		break;
 	case true:
 		DEBUG(0, ("The only case which we should fall in\n"));
-		mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID);
+		mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID, &msg);
+		mapidump_SRowSet(msg.recipients, "[+] ");
+		mapidump_SRow(msg.properties, "[+] ");
 		/* mapistore implementation goes here */
 		break;
 	}

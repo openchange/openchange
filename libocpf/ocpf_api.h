@@ -76,12 +76,6 @@ struct ocpf_nproperty
 	const void		*value;
 };
 
-enum ocpf_recipClass {
-	OCPF_MAPI_TO = 0x1,
-	OCPF_MAPI_CC,
-	OCPF_MAPI_BCC
-};
-
 struct ocpf_recipients
 {
 	struct ocpf_recipients	*prev;

@@ -32,6 +32,12 @@
 #define	OCPF_FLAGS_WRITE		2
 #define	OCPF_FLAGS_CREATE		3
 
+enum ocpf_recipClass {
+	OCPF_MAPI_TO = 0x1,
+	OCPF_MAPI_CC,
+	OCPF_MAPI_BCC
+};
+
 extern struct ocpf	*ocpf;
 
 #endif /* ! __OCPF_H_ */

@@ -42,6 +42,11 @@ void ocpf_do_debug(struct ocpf_context *ctx, const char *format, ...)
 	ret = vasprintf(&s, format, ap);
 	va_end(ap);
 
+	if (ret == -1) {
+		printf("%s:%d: [Debug dump failure]\n", ctx->filename, ctx->lineno);
+		fflush(0);
+		return;
+	}
 	if (ctx) {
 		printf("%s:%d: %s\n", ctx->filename, ctx->lineno, s);
 		fflush(0);

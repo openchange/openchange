@@ -38,7 +38,11 @@ static void ocpf_do_dump(const char *format, ...)
 	ret = vasprintf(&s, format, ap);
 	va_end(ap);
 
-	printf("%s\n", s);
+	if (ret == -1) {
+		printf("[Dump failure]\n");
+	} else {
+		printf("%s\n", s);
+	}
 	free(s);
 }
 

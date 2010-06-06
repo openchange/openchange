@@ -624,3 +624,40 @@ _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx,
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
+
+
+/**
+   \details Get properties of a message/folder in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where properties will be fetched
+   \param fmid the identifier referencing the message/folder
+   \param type the object type (folder or message)
+   \param properties pointer to the list of properties to fetch
+   \param aRow pointer to the SRow structure
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_getprops(struct mapistore_context *mstore_ctx,
+				uint32_t context_id,
+				uint64_t fmid,
+				uint8_t type,
+				struct SPropTagArray *properties,
+				struct SRow *aRow)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend getprops */
+	ret = mapistore_backend_getprops(backend_ctx, fmid, type, properties, aRow);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}

@@ -27,6 +27,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "dcesrv_exchange_emsmdb.h"
+#include "mapiproxy/libmapiserver/libmapiserver.h"
 
 /**
    \details Release the MAPISTORE context used by EMSMDB provider
@@ -276,4 +277,162 @@ _PUBLIC_ bool emsmdbp_verify_userdn(struct dcesrv_call_state *dce_call,
 	}
 
 	return true;
+}
+
+
+/**
+   \details Resolve a recipient and build the associated RecipientRow
+   structure
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the EMSMDBP context
+   \param recipient pointer to the recipient string
+   \param properties array of properties to lookup for a recipient
+   \param row the RecipientRow to fill in
+
+   \note This is a very preliminary implementation with a lot of
+   pseudo-hardcoded things. Lot of work is required to make this
+   function generic and to cover all different cases
+
+   \return Allocated RecipientRow on success, otherwise NULL
+ */
+_PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
+						   struct emsmdbp_context *emsmdbp_ctx,
+						   char *recipient,
+						   struct mapi_SPropTagArray *properties,
+						   struct RecipientRow *row)
+{
+	enum MAPISTATUS		retval;
+	struct ldb_result	*res = NULL;
+	const char * const	recipient_attrs[] = { "*", NULL };
+	int			ret;
+	uint32_t		i;
+	uint32_t		property = 0;
+	void			*data;
+	char			*str;
+	char			*username;
+	char			*legacyExchangeDN;
+	uint32_t		org_length;
+	uint32_t		l;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->samdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!properties, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!row, MAPI_E_INVALID_PARAMETER, NULL);
+
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+			 LDB_SCOPE_SUBTREE, recipient_attrs,
+			 "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
+			 recipient);
+
+	/* If the search failed, build an external recipient: very basic for the moment */
+	if (ret != LDB_SUCCESS || !res->count) {
+	failure:
+		row->RecipientFlags = 0x07db;
+		row->EmailAddress.lpszW = talloc_strdup(mem_ctx, recipient);
+		row->DisplayName.lpszW = talloc_strdup(mem_ctx, recipient);
+		row->SimpleDisplayName.lpszW = talloc_strdup(mem_ctx, recipient);
+		row->prop_count = properties->cValues;
+		row->layout = 0x1;
+		row->prop_values.length = 0;
+		for (i = 0; i < properties->cValues; i++) {
+			switch (properties->aulPropTag[i]) {
+			case PR_SMTP_ADDRESS:
+			case PR_SMTP_ADDRESS_UNICODE:
+				property = properties->aulPropTag[i];
+				data = (void *) recipient;
+				break;
+			default:
+				retval = MAPI_E_NOT_FOUND;
+				property = (properties->aulPropTag[i] & 0xFFFF0000) + PT_ERROR;
+				data = (void *)&retval;
+				break;
+			}
+
+			libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+						    property, (const void *)data, &row->prop_values, 
+						    row->layout, 0);
+		}
+
+		return MAPI_E_SUCCESS;
+	}
+
+	/* Otherwise build a RecipientRow for resolved username */
+
+	username = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "mailNickname", NULL);
+	legacyExchangeDN = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "legacyExchangeDN", NULL);
+	if (!username || !legacyExchangeDN) {
+		DEBUG(0, ("record found but mailNickname or legacyExchangeDN is missing for %s\n", recipient));
+		goto failure;
+	}
+	org_length = strlen(legacyExchangeDN) - strlen(username);
+
+	/* Check if we need a flagged blob */
+	row->layout = 0;
+	for (i = 0; i < properties->cValues; i++) {
+		switch (properties->aulPropTag[i]) {
+		case PR_DISPLAY_TYPE:
+		case PR_OBJECT_TYPE:
+		case PR_7BIT_DISPLAY_NAME:
+		case PR_7BIT_DISPLAY_NAME_UNICODE:
+		case PR_SMTP_ADDRESS:
+		case PR_SMTP_ADDRESS_UNICODE:
+			break;
+		default:
+			row->layout = 1;
+			break;
+		}
+	}
+
+	row->RecipientFlags = 0x06d1;
+	row->type.EXCHANGE.organization_length = org_length;
+	row->type.EXCHANGE.addr_type = SINGLE_RECIPIENT;
+	row->type.EXCHANGE.username = talloc_strdup(mem_ctx, username);
+
+	row->DisplayName.lpszW = talloc_strdup(mem_ctx, username);
+	row->SimpleDisplayName.lpszW = talloc_strdup(mem_ctx, username);
+	row->prop_count = properties->cValues;
+	row->prop_values.length = 0;
+
+	/* Add this very small set of properties */
+	for (i = 0; i < properties->cValues; i++) {
+		switch (properties->aulPropTag[i]) {
+		case PR_DISPLAY_TYPE:
+			property = properties->aulPropTag[i];
+			l = 0x0;
+			data = (void *)&l;
+			break;
+		case PR_OBJECT_TYPE:
+			property = properties->aulPropTag[i];
+			l = MAPI_MAILUSER;
+			data = (void *)&l;
+			break;
+		case PR_7BIT_DISPLAY_NAME:
+		case PR_7BIT_DISPLAY_NAME_UNICODE:
+			property = properties->aulPropTag[i];
+			str = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "mailNickname", NULL);
+			data = (void *) str;
+			break;
+		case PR_SMTP_ADDRESS:
+		case PR_SMTP_ADDRESS_UNICODE:
+			property = properties->aulPropTag[i];
+			str = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "legacyExchangeDN", NULL);
+			data = (void *) str;
+			break;
+		default:
+			retval = MAPI_E_NOT_FOUND;
+			property = (properties->aulPropTag[i] & 0xFFFF0000) + PT_ERROR;
+			data = (void *)&retval;
+			break;
+		}
+		libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+					    property, (const void *)data, &row->prop_values, 
+					    row->layout, 0);
+	}
+
+	return MAPI_E_SUCCESS;
 }

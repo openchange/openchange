@@ -76,6 +76,8 @@ bool emsmdbp_is_mapistore(struct mapi_handles *handles)
 		return object->object.folder->mapistore;
 	case EMSMDBP_OBJECT_TABLE:
 		return object->object.table->mapistore;
+	case EMSMDBP_OBJECT_MESSAGE:
+		return object->object.message->mapistore;
 	default:
 		return false;
 	}
@@ -137,6 +139,8 @@ uint32_t emsmdbp_get_contextID(struct mapi_handles *handles)
 		return -1;
 	case EMSMDBP_OBJECT_FOLDER:
 		return object->object.folder->contextID;
+	case EMSMDBP_OBJECT_MESSAGE:
+		return object->object.message->contextID;
 	default:
 		return -1;
 	}
@@ -497,6 +501,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	object->type = EMSMDBP_OBJECT_MESSAGE;
 	object->object.message->folderID = folder->object.folder->folderID;
 	object->object.message->messageID = messageID;
 
@@ -506,7 +511,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 		object->object.message->contextID = folder->object.folder->contextID;		
 		ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, 
 						      folder->object.folder->contextID);
-	}
+	} 
 
 	return object;	
 }

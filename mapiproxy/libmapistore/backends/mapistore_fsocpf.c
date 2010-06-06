@@ -875,6 +875,95 @@ static int fsocpf_op_openmessage(void *private_data,
 	return MAPI_E_SUCCESS;
 }
 
+static char *fsocpf_get_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, uint8_t class)
+{
+	char		*recipient = NULL;
+	int		i;
+
+	for (i = 0; i < SRowSet->cRows; i++) {
+		if (SRowSet->aRow[i].lpProps[0].value.l == class) {
+			if (!recipient) {
+				recipient = talloc_strdup(mem_ctx, SRowSet->aRow[i].lpProps[1].value.lpszA);
+			} else {
+				recipient = talloc_asprintf(recipient, "%s;%s", recipient, 
+							    SRowSet->aRow[i].lpProps[1].value.lpszA);
+			}
+		}
+	}
+
+	return recipient;
+}
+
+static int fsocpf_op_getprops(void *private_data, 
+			      uint64_t fmid, 
+			      uint8_t type, 
+			      struct SPropTagArray *SPropTagArray,
+			      struct SRow *aRow)
+{
+	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct fsocpf_message	*message;
+	uint32_t		cValues;
+	struct SPropValue	*lpProps;
+	struct SPropValue	lpProp;
+	struct SRowSet		*SRowSet;
+	int			i;
+	int			j;
+	char			*recip_str = NULL;
+
+
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	switch (type) {
+	case MAPISTORE_FOLDER:
+		break;
+	case MAPISTORE_MESSAGE:
+		message = fsocpf_find_message_by_mid(fsocpf_ctx, fmid);
+		lpProps = ocpf_get_SPropValue(message->ocpf_context_id, &cValues);
+		SRowSet = ocpf_get_recipients(fsocpf_ctx, message->ocpf_context_id);
+
+		ocpf_dump(message->ocpf_context_id);
+		for (i = 0; i != SPropTagArray->cValues; i++) {
+			switch (SPropTagArray->aulPropTag[i]) {
+			case PR_DISPLAY_TO:
+			case PR_DISPLAY_TO_UNICODE:
+				recip_str = fsocpf_get_recipients(fsocpf_ctx, SRowSet, OCPF_MAPI_TO);
+				break;
+			case PR_DISPLAY_CC:
+			case PR_DISPLAY_CC_UNICODE:
+				recip_str = fsocpf_get_recipients(fsocpf_ctx, SRowSet, OCPF_MAPI_CC);
+				break;
+			case PR_DISPLAY_BCC:
+			case PR_DISPLAY_BCC_UNICODE:
+				recip_str = fsocpf_get_recipients(fsocpf_ctx, SRowSet, OCPF_MAPI_BCC);
+				break;
+			default:
+				for (j = 0; j != cValues; j++) {
+					if (SPropTagArray->aulPropTag[i] == lpProps[j].ulPropTag)  {
+						SRow_addprop(aRow, lpProps[j]);
+					}
+				}
+			}
+
+			if (recip_str) {
+				lpProp.ulPropTag = SPropTagArray->aulPropTag[i];
+				switch (SPropTagArray->aulPropTag[i] & 0xFFFF) {
+				case PT_STRING8:
+					lpProp.value.lpszA = talloc_strdup(aRow, recip_str);
+					break;
+				case PT_UNICODE:
+					lpProp.value.lpszW = talloc_strdup(aRow, recip_str);
+					break;
+				}
+				SRow_addprop(aRow, lpProp);
+				talloc_free(recip_str);
+				recip_str = NULL;
+			}
+		}
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
 
 /**
    \details Entry point for mapistore FSOCPF backend
@@ -903,6 +992,7 @@ int mapistore_init_backend(void)
 	backend.op_readdir_count = fsocpf_op_readdir_count;
 	backend.op_get_table_property = fsocpf_op_get_table_property;
 	backend.op_openmessage = fsocpf_op_openmessage;
+	backend.op_getprops = fsocpf_op_getprops;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

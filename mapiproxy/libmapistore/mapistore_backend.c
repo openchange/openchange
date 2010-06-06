@@ -470,3 +470,10 @@ int mapistore_backend_openmessage(struct backend_context *bctx, uint64_t parent_
 {
 	return bctx->backend->op_openmessage(bctx->private_data, parent_fid, mid, msg);
 }
+
+
+int mapistore_backend_getprops(struct backend_context *bctx, uint64_t fmid, uint8_t type, 
+			       struct SPropTagArray *SPropTagArray, struct SRow *aRow)
+{
+	return bctx->backend->op_getprops(bctx->private_data, fmid, type, SPropTagArray, aRow);
+}

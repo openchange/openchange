@@ -80,6 +80,7 @@ struct mapistore_backend {
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
 	int (*op_get_table_property)(void *, uint64_t, uint8_t, uint32_t, uint32_t, void **);
 	int (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
+	int (*op_getprops)(void *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 };
 
 struct indexing_context_list;
@@ -142,6 +143,7 @@ int mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, 
 int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, uint64_t, 
 				 uint32_t, uint32_t, void **);
 int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
+int mapistore_getprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

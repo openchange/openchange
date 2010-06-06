@@ -50,19 +50,81 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 							  struct GetProps_repl *response,
 							  void *private_data)
 {
-	enum MAPISTATUS	retval;
-	void		*data;
-	int		i;
+	enum MAPISTATUS		retval;
+	struct emsmdbp_object	*object;
+	uint32_t		contextID = -1;
+	uint64_t		fmid = 0;
+	void			*data;
+	struct SPropTagArray	SPropTagArray;
+	struct SRow		*aRow;
+	int			i;
+	int			j;
+	uint8_t			type;
+	bool			found = false;
 
-	response->layout = 0x1;
-	for (i = 0; i < request.prop_count; i++) {
-		request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
-		retval = MAPI_E_NOT_FOUND;
+	object = (struct emsmdbp_object *) private_data;
+	if (object) {
+		switch (object->type) {
+		case EMSMDBP_OBJECT_FOLDER:
+			/* contextID = object->object.folder->contextID; */
+			/* fmid = object->object.folder->folderID; */
+			/* type = MAPISTORE_FOLDER; */
+			break;
+		case EMSMDBP_OBJECT_MESSAGE:
+			contextID = object->object.message->contextID;
+			fmid = object->object.message->messageID;
+			type = MAPISTORE_MESSAGE;
+			break;
+		default:
+			break;
+		}
+	}
+
+	SPropTagArray.cValues = request.prop_count;
+	SPropTagArray.aulPropTag = request.properties;
+
+	if (contextID != -1) {
+		aRow = talloc_zero(mem_ctx, struct SRow);
+		aRow->cValues = 0;
+		mapistore_getprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, type, &SPropTagArray, aRow);
+		/* Check if we need the layout */
+		for (i = 0; i < request.prop_count; i++) {
+			for (j = 0; j < aRow->cValues; j++) {
+				if (request.properties[i] == aRow->lpProps[j].ulPropTag) {
+					found = true;
+					response->layout = 0x0;
+				}
+			}
+			if (found == false) {
+				response->layout = 0x1;
+				break;
+			}
+		}
+		
+		for (i = 0; i < request.prop_count; i++) {
+			response->layout = 0x1;
+			data = (void *) find_SPropValue_data(aRow, request.properties[i]);
+			if (data == NULL) {
+				request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
+				retval = MAPI_E_NOT_FOUND;
+				data = (void *)&retval;
+			} 
+			libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+						    request.properties[i], (const void *)data,
+						    &response->prop_data, response->layout, 0);
+		}
+
+	} else {
 		response->layout = 0x1;
-		data = (void *)&retval;
-		libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
-					    request.properties[i], (const void *)data,
-					    &response->prop_data, response->layout, 0);
+		for (i = 0; i < request.prop_count; i++) {
+			request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
+			retval = MAPI_E_NOT_FOUND;
+			response->layout = 0x1;
+			data = (void *)&retval;
+			libmapiserver_push_property(mem_ctx, lp_iconv_convenience(emsmdbp_ctx->lp_ctx),
+						    request.properties[i], (const void *)data,
+						    &response->prop_data, response->layout, 0);
+		}
 	}
 
 	return MAPI_E_SUCCESS;

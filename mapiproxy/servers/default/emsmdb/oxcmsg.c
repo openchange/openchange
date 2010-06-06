@@ -67,6 +67,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	uint32_t			handle;
 	bool				mapistore = false;
 	struct indexing_folders_list	*flist;
+	struct SPropTagArray		*SPropTagArray;
+	char				*subject = NULL;
 	int				i;
 
 
@@ -116,12 +118,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		for (i = flist->count - 1 ; i >= 0; i--) {
 			parent_handle = emsmdbp_object_get_folder_handle_by_fid(emsmdbp_ctx->handles_ctx, 
 										flist->folderID[i]);
-			DEBUG(0, ("=> 0x%.16"PRIx64"\n", flist->folderID[i]));
 			if (parent_handle) {
-				DEBUG(0, ("We already have a handle for this folder\n"));
-				break;
-			} else {
-				DEBUG(0, ("We need to open the folder 0x%.16"PRIx64"\n", flist->folderID[i]));
+				break; 
 			}
 			
 		}
@@ -149,7 +147,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 				
 			}
 		} else {
-			DEBUG(0, ("We need to open the root mapistore folder holding message\n"));
 			retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 			object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx,
 							    flist->folderID[0], parent);
@@ -168,12 +165,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		parent_object = (struct emsmdbp_object *) data;
 		folderID = parent_object->object.folder->folderID;
 		contextID = parent_object->object.folder->contextID;
-		DEBUG(0, ("Our message lies within 0x%.16"PRIx64" and its context_id is %d\n", 
-			  folderID, contextID));
 		parent = parent_handle;
 		break;
 	case EMSMDBP_OBJECT_FOLDER:
-		DEBUG(0, ("Not implemented yet ... segfault expected\n"));
 		folderID = object->object.folder->folderID;
 		contextID = object->object.folder->contextID;
 		break;
@@ -190,11 +184,38 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;
 	case true:
-		DEBUG(0, ("The only case which we should fall in\n"));
-		mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID, &msg);
-		mapidump_SRowSet(msg.recipients, "[+] ");
-		mapidump_SRow(msg.properties, "[+] ");
 		/* mapistore implementation goes here */
+		mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID, &msg);
+
+		/* Build the OpenMessage reply */
+		subject = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT);
+
+		mapi_repl->u.mapi_OpenMessage.HasNamedProperties = false;
+		mapi_repl->u.mapi_OpenMessage.SubjectPrefix.StringType = StringType_EMPTY;
+		mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_UNICODE_REDUCED;
+		mapi_repl->u.mapi_OpenMessage.NormalizedSubject.String.lpszW_reduced = talloc_strdup(mem_ctx, subject);
+		mapi_repl->u.mapi_OpenMessage.RecipientCount = msg.recipients->cRows;
+
+		SPropTagArray = set_SPropTagArray(mem_ctx, 0x4,
+						  PR_DISPLAY_TYPE,
+						  PR_OBJECT_TYPE,
+						  PR_7BIT_DISPLAY_NAME_UNICODE,
+						  PR_SMTP_ADDRESS_UNICODE);
+		mapi_repl->u.mapi_OpenMessage.RecipientColumns.cValues = SPropTagArray->cValues;
+		mapi_repl->u.mapi_OpenMessage.RecipientColumns.aulPropTag = SPropTagArray->aulPropTag;
+		mapi_repl->u.mapi_OpenMessage.RowCount = msg.recipients->cRows;
+		mapi_repl->u.mapi_OpenMessage.recipients = talloc_array(mem_ctx, 
+									struct OpenMessage_recipients, 
+									msg.recipients->cRows + 1);
+		for (i = 0; i < msg.recipients->cRows; i++) {
+			mapi_repl->u.mapi_OpenMessage.recipients[i].RecipClass = msg.recipients->aRow[i].lpProps[0].value.l;
+			mapi_repl->u.mapi_OpenMessage.recipients[i].codepage = CP_USASCII;
+			emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx, 
+						  (char *)msg.recipients->aRow[i].lpProps[1].value.lpszA,
+						  &(mapi_repl->u.mapi_OpenMessage.RecipientColumns),
+						  &(mapi_repl->u.mapi_OpenMessage.recipients[i].RecipientRow));
+		}
+
 		break;
 	}
 
@@ -204,7 +225,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	handles[mapi_repl->handle_idx] = rec->handle;
 
 	if (messageID) {
-		object = emsmdbp_object_message_init((TALLOC_CTX *)rec, emsmdbp_ctx, messageID, parent);
+		object = emsmdbp_object_message_init((TALLOC_CTX *)rec, emsmdbp_ctx, messageID, parent_handle);
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
 		}

@@ -273,6 +273,39 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
 
 
 /**
+   \details Release private backend data associated a folder / message
+   opened within the mapistore backend
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   \param fmid a folder or message identifier
+   \param type the type of fmid, either MAPISTORE_FOLDER or MAPISTORE_MESSAGE
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_release_record(struct mapistore_context *mstore_ctx,
+				      uint32_t context_id,
+				      uint64_t fmid,
+				      uint8_t type)
+{
+	struct backend_context		*backend_ctx;
+	int				ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend release_record */
+	ret = mapistore_backend_release_record(backend_ctx, fmid, type);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+
+/**
    \details Associate an indexing context to a mapistore context
 
    \param mstore_ctx pointer to the mapistore context

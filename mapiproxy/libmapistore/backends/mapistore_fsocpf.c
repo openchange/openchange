@@ -169,6 +169,28 @@ static struct fsocpf_message *fsocpf_find_message_by_mid(struct fsocpf_context *
 
 
 /**
+   \details search for the fsocpf_message_list for a given message ID
+
+   \param fsocpf_ctx the store context
+   \param mid the message ID of the fsocpf_message to search for
+
+   \return point to message list on success, or NULL if the message was not found
+ */
+static struct fsocpf_message_list *fsocpf_find_message_list_by_mid(struct fsocpf_context *fsocpf_ctx,
+								   uint64_t mid)
+{
+	struct fsocpf_message_list	*el;
+
+	for (el = fsocpf_ctx->messages; el; el = el->next) {
+		if (el->message && el->message->mid == mid) {
+			return el;
+		}
+	}
+	return NULL;
+}
+
+
+/**
    \details Create a connection context to the fsocpf backend
 
    \param mem_ctx pointer to the memory context
@@ -262,6 +284,43 @@ static int fsocpf_delete_context(void *private_data)
 
 	talloc_free(fsocpf_ctx);
 	fsocpf_ctx = NULL;
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Delete data associated to a given folder or message
+
+   \param private_data pointer to the current fsocpf context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static int fsocpf_release_record(void *private_data, uint64_t fmid, uint8_t type)
+{
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct fsocpf_message_list	*message;
+
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	if (!fsocpf_ctx) {
+		return MAPISTORE_SUCCESS;
+	}
+
+	switch (type) {
+	case MAPISTORE_FOLDER:
+		break;
+	case MAPISTORE_MESSAGE:
+		message = fsocpf_find_message_list_by_mid(fsocpf_ctx, fmid);
+		if (message && message->message) {
+			if (message->message->ocpf_context_id) {
+				ocpf_del_context(message->message->ocpf_context_id);
+			}
+			DLIST_REMOVE(fsocpf_ctx->messages, message);
+			talloc_free(message);
+		}
+		break;
+	}
 
 	return MAPISTORE_SUCCESS;
 }
@@ -984,6 +1043,7 @@ int mapistore_init_backend(void)
 	backend.init = fsocpf_init;
 	backend.create_context = fsocpf_create_context;
 	backend.delete_context = fsocpf_delete_context;
+	backend.release_record = fsocpf_release_record;
 	backend.get_path = fsocpf_get_path;
 	backend.op_mkdir = fsocpf_op_mkdir;
 	backend.op_rmdir = fsocpf_op_rmdir;

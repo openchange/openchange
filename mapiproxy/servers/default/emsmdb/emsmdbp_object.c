@@ -199,6 +199,11 @@ static int emsmdbp_object_destructor(void *data)
 		ret = mapistore_del_context(object->mstore_ctx, object->object.folder->contextID);
 		DEBUG(4, ("[%s:%d] mapistore folder context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
+	case EMSMDBP_OBJECT_MESSAGE:
+		ret = mapistore_release_record(object->mstore_ctx, object->object.message->contextID,
+					       object->object.message->messageID, MAPISTORE_MESSAGE);
+		ret = mapistore_del_context(object->mstore_ctx, object->object.message->contextID);
+		DEBUG(4, ("[%s:%d] mapistore message context retval = %d\n", __FUNCTION__, __LINE__, ret));
 	default:
 		break;
 	}

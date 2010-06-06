@@ -360,6 +360,11 @@ _PUBLIC_ int mapistore_backend_delete_context(struct backend_context *bctx)
 }
 
 
+_PUBLIC_ int mapistore_backend_release_record(struct backend_context *bctx, uint64_t fmid, uint8_t type)
+{
+	return bctx->backend->release_record(bctx->private_data, fmid, type);
+}
+
 /**
    \details find the context matching given context identifier
 

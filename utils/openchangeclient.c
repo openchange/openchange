@@ -191,7 +191,10 @@ static bool oclient_read_file(TALLOC_CTX *mem_ctx, const char *filename,
 		return false;
 	}
 	/* stat the file */
-	if (fstat(fd, &sb) != 0) return false;
+	if (fstat(fd, &sb) != 0) {
+		close(fd);
+		return false;
+	}
 
 	switch (mapitag) {
 	case PR_HTML:
@@ -336,7 +339,9 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	}
 
 	path = talloc_asprintf(mem_ctx, "%s/%s", oclient->store_folder, filename);
-	if ((fd = open(path, O_CREAT|O_WRONLY, S_IWUSR|S_IRUSR)) == -1) return false;
+	if ((fd = open(path, O_CREAT|O_WRONLY, S_IWUSR|S_IRUSR)) == -1) {
+		goto error;
+	}
 	talloc_free(path);
 
 	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);

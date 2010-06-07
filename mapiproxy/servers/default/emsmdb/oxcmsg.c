@@ -372,6 +372,50 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 
 
 /**
+   \details EcDoRpc SetMessageReadFlag (0x11) Rop. This operation sets
+   or clears the message read flag.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the SetMessageReadFlag EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the SetMessageReadFlag
+   EcDoRpc_MAPI_REPL structure
+
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *mem_ctx,
+						       struct emsmdbp_context *emsmdbp_ctx,
+						       struct EcDoRpc_MAPI_REQ *mapi_req,
+						       struct EcDoRpc_MAPI_REPL *mapi_repl,
+						       uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SetMessageReadFlag (0x11)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	/* TODO: actually implement this */
+	mapi_repl->u.mapi_SetMessageReadFlag.ReadStatusChanged = false;
+
+	*size += libmapiserver_RopSetMessageReadFlag_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details EcDoRpc GetAttachmentTable (0x21) Rop. This operation gets
    the attachment table of a message.
 

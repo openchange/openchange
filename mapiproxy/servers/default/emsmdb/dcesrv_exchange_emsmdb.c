@@ -372,7 +372,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 
 		/* op_MAPI_ReadRecipients: 0xf */
 		/* op_MAPI_ReloadCachedInformation: 0x10 */
-		/* op_MAPI_SetMessageReadFlag: 0x11 */
+		case op_MAPI_SetMessageReadFlag: /* 0x11 */
+			retval = EcDoRpc_RopSetMessageReadFlag(mem_ctx, emsmdbp_ctx,
+							       &(mapi_request->mapi_req[i]),
+							       &(mapi_response->mapi_repl[idx]),
+							       mapi_response->handles, &size);
+			break;
 		case op_MAPI_SetColumns: /* 0x12 */
 			retval = EcDoRpc_RopSetColumns(mem_ctx, emsmdbp_ctx,
 						       &(mapi_request->mapi_req[i]),

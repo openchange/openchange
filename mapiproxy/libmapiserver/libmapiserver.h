@@ -106,6 +106,12 @@
 #define	SIZE_DFLT_ROPSAVECHANGESMESSAGE		9
 
 /**
+   \details: SetMessageReadFlagRop has fixed response size for:
+   -# ReadStatusChanged: uint8_t
+ */
+#define	SIZE_DFLT_ROPSETMESSAGEREADFLAG		1
+
+/**
    \details SetColumnsRop has fixed response size for:
    -# TableStatus: uint8_t
  */
@@ -251,6 +257,7 @@ uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopModifyRecipients_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSetMessageReadFlag_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetAttachmentTable_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcnotif.c */

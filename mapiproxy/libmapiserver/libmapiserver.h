@@ -216,6 +216,14 @@
  */
 #define	SIZE_DFLT_ROPDELETEMESSAGE		1
 
+
+/**
+   \details GetPerUserLongTermIds has fixed response size for:
+   -# LongTermIdCount: uint16_t
+ */
+#define	SIZE_DFLT_ROPGETPERUSERLONGTERMIDS	2
+
+
 /**
    \details LogonRop has a fixed size for mailbox:
    -# LogonFlags: uint8_t
@@ -249,6 +257,14 @@
 
 #define	SIZE_NULL_TRANSACTION		2
 
+/**
+   \details LongTermId structure is fixed size:
+   -# DatabaseGUID: uint8_t * 16
+   -# GlobalCounter: uint8_t * 6
+   -# padding: uint16_t
+ */
+#define	SIZE_DFLT_LONGTERMID		24
+
 __BEGIN_DECLS
 
 /* definitions from libmapiserver_oxcfold.c */
@@ -273,6 +289,7 @@ uint16_t libmapiserver_RopRegisterNotification_size(void);
 /* definitions from libmapiserver_oxcdata.c */
 uint16_t libmapiserver_TypedString_size(struct TypedString);
 uint16_t libmapiserver_RecipientRow_size(struct RecipientRow);
+uint16_t libmapiserver_LongTermId_size(void);
 
 /* definitions from libmapiserver_oxcprpt.c */
 uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *);
@@ -286,6 +303,7 @@ struct SRow *libmapiserver_ROP_request_to_properties(TALLOC_CTX *, void *, uint8
 uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopRelease_size(void);
 uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetPerUserLongTermIds_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxctabl.c */
 uint16_t libmapiserver_RopSetColumns_size(struct EcDoRpc_MAPI_REPL *);

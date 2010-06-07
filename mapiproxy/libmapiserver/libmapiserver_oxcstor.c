@@ -80,3 +80,30 @@ _PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REP
 
 	return size;
 }
+
+
+/**
+   \details Calculate GetPerUserLongTermIds Rop size
+
+   \param response pointer to the GetPerUserLongTermIds EcDoRpc_MAPI_REPL structure
+
+   \return Size of GetPerUserLongTermIds response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetPerUserLongTermIds_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint16_t	i;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETPERUSERLONGTERMIDS;
+
+	for (i = 0; i < response->u.mapi_GetPerUserLongTermIds.LongTermIdCount; i++) {
+		size += libmapiserver_LongTermId_size();
+	}
+	
+
+	return size;
+}

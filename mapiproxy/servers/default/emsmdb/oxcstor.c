@@ -376,3 +376,48 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 
 	return retval;
 }
+
+
+/**
+   \details EcDoRpc GetPerUserLongTermIds (0x60) Rop. This operations
+   gets the long-term ID of a public folder that is identified by the
+   per-user GUID of the logged on user.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetPerUserLongTermIds EcDoRpc_MAPI_REQ
+   \param mapi_repl pointer to the GetPerUserLongTermIds EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserLongTermIds(TALLOC_CTX *mem_ctx,
+							  struct emsmdbp_context *emsmdbp_ctx,
+							  struct EcDoRpc_MAPI_REQ *mapi_req,
+							  struct EcDoRpc_MAPI_REPL *mapi_repl,
+							  uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetPerUserLongTermIds (0x60)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	/* TODO effective work here */
+	mapi_repl->u.mapi_GetPerUserLongTermIds.LongTermIdCount = 0;
+	mapi_repl->u.mapi_GetPerUserLongTermIds.LongTermIds = NULL;
+
+	*size = libmapiserver_RopGetPerUserLongTermIds_size(mapi_repl);
+
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return MAPI_E_SUCCESS;
+}

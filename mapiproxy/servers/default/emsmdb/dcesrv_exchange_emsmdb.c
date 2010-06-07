@@ -548,7 +548,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		/* op_MAPI_CommitStream: 0x5d */
 		/* op_MAPI_GetStreamSize: 0x5e */
 		/* op_MAPI_QueryNamedProperties: 0x5f */
-		/* op_MAPI_GetPerUserLongTermIds: 0x60 */
+		case op_MAPI_GetPerUserLongTermIds: /* 0x60 */
+			retval = EcDoRpc_RopGetPerUserLongTermIds(mem_ctx, emsmdbp_ctx,
+								  &(mapi_request->mapi_req[i]),
+								  &(mapi_response->mapi_repl[idx]),
+								  mapi_response->handles, &size);
+			break;
 		/* op_MAPI_GetPerUserGuid: 0x61 */
 		/* op_MAPI_ReadPerUserInformation: 0x63 */
 		/* op_MAPI_SetReadFlags: 0x66 */

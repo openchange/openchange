@@ -145,3 +145,14 @@ _PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow RecipientR
 
 	return size;
 }
+
+
+/**
+   \details Calculate the size of a LongTermId structure
+
+   \return Size of LongTermId structure
+ */
+_PUBLIC_ uint16_t libmapiserver_LongTermId_size(void)
+{
+	return SIZE_DFLT_LONGTERMID;
+}

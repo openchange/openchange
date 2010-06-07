@@ -374,9 +374,13 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	
-	/* Step 1. Search for the context */
+	/* Step 0. Search for the context */
 	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
 	OCPF_RETVAL_IF(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL);
+
+	if (!mem_ctx) {
+		mem_ctx = (TALLOC_CTX *) ctx;
+	}
 
 	/* Step 1. Allocate SPropValue */
 	ctx->cValues = 0;

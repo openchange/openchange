@@ -651,19 +651,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	/* Temporary hack: Prevent Outlook 2007 from creating RSS feed
-	 * folder at each startup. Should be removed as soon the
-	 * Outlook behavior is understood */
-
-	/* if (mapi_repl->error_code == MAPI_E_COLLISION) { */
-	/* 	mapi_repl->opnum = mapi_req->opnum; */
-	/* 	mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx; */
-	/* 	*size += libmapiserver_RopCreateFolder_size(NULL); */
-	/* 	return MAPI_E_COLLISION; */
-	/* } */
-	if (mapi_repl->error_code == MAPI_E_COLLISION) {
-		mapi_repl->error_code = MAPI_E_SUCCESS;
-	}
+	mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx;
 
 	if (mapi_repl->u.mapi_CreateFolder.IsExistingFolder == true) {
 		mapi_repl->u.mapi_CreateFolder.GhostUnion.GhostInfo.HasRules = false;
@@ -671,8 +659,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!mapi_repl->error_code) {
-		*size += libmapiserver_RopCreateFolder_size(mapi_repl);
-
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 		object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx, 
 						    mapi_repl->u.mapi_CreateFolder.folder_id, parent);
@@ -685,6 +671,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 
 		handles[mapi_repl->handle_idx] = rec->handle;
 	}
+
+	*size += libmapiserver_RopCreateFolder_size(mapi_repl);
 
 	if (aRow) {
 		talloc_free(aRow);

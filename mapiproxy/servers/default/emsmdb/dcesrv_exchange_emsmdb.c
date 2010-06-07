@@ -615,7 +615,6 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		default:
 			DEBUG(1, ("MAPI Rop: 0x%.2x not implemented!\n",
 				  mapi_request->mapi_req[i].opnum));
-			sleep(5);
 		}
 
 		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {

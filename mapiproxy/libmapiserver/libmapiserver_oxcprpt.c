@@ -84,6 +84,27 @@ _PUBLIC_ uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *
 
 
 /**
+   \details Calculate OpenStream Rop size
+
+   \param response pointer to the OpenStream EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of OpenStream response   
+ */
+_PUBLIC_ uint16_t libmapiserver_RopOpenStream_size(struct EcDoRpc_MAPI_REPL *response)
+{
+  int16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPOPENSTREAM;
+
+	return size;
+}
+
+/**
    \details Calculate GetPropertyIdsFromNames Rop size
 
    \param response pointer to the GetPropertyIdsFromNames

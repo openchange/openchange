@@ -462,7 +462,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 								 mapi_response->handles, &size);
 			break;
 		/* op_MAPI_Notify: 0x2a */
-		/* op_MAPI_OpenStream: 0x2b */
+		case op_MAPI_OpenStream: /* 0x2b */
+			retval = EcDoRpc_RopOpenStream(mem_ctx, emsmdbp_ctx,
+						       &(mapi_request->mapi_req[i]),
+						       &(mapi_response->mapi_repl[idx]),
+						       mapi_response->handles, &size);
+			break;
 		/* op_MAPI_ReadStream: 0x2c */
 		/* op_MAPI_WriteStream: 0x2d */
 		/* op_MAPI_SeekStream: 0x2e */

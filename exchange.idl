@@ -1150,7 +1150,7 @@ System Attendant Private Interface
 		hyper				MessageId;
 	} OpenMessage_req;
 
-	typedef [v1_enum, flag(NDR_PAHEX)] enum {
+	typedef [enum16bit, flag(NDR_PAHEX)] enum {
 		CP_USASCII	= 0x04E4,
 		CP_UNICODE	= 0x04B0,
 		CP_JAUTODETECT	= 0xC6F4,
@@ -1231,6 +1231,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		ulRecipClass	RecipClass;
 		CODEPAGEID	codepage;
+		uint16		Reserved;
 		[subcontext(2)] RecipientRow	RecipientRow;
 	} OpenMessage_recipients;
 
@@ -1474,11 +1475,15 @@ System Attendant Private Interface
 	       	CLEAR_NRN_PENDING	= 0x40
 	} MSGFLAG_READ;
 
-	/* TODO: there is a variation that can provide "client data" here */
+	/* TODO: there is a variation that can provide "client data"
+	   here clientdata is a uint8 ClientData[24], but its
+	   existence within the request depends on flags associated to
+	   logon_id: it the private flag set or not
+	 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8				handle_idx;
 		MSGFLAG_READ			flags;
-		uint8				ClientData[24];
+		[flag(NDR_REMAINING)] DATA_BLOB	clientdata;
 	} SetMessageReadFlag_req;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {

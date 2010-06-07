@@ -210,6 +210,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		for (i = 0; i < msg.recipients->cRows; i++) {
 			mapi_repl->u.mapi_OpenMessage.recipients[i].RecipClass = msg.recipients->aRow[i].lpProps[0].value.l;
 			mapi_repl->u.mapi_OpenMessage.recipients[i].codepage = CP_USASCII;
+			mapi_repl->u.mapi_OpenMessage.recipients[i].Reserved = 0;
 			emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx, 
 						  (char *)msg.recipients->aRow[i].lpProps[1].value.lpszA,
 						  &(mapi_repl->u.mapi_OpenMessage.RecipientColumns),

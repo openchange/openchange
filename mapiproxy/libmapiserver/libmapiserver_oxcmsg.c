@@ -53,12 +53,13 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *re
 	size += libmapiserver_TypedString_size(response->u.mapi_OpenMessage.NormalizedSubject);
 
 	/* RecipientColumns */
-	size += sizeof (response->u.mapi_OpenMessage.RecipientColumns.cValues);
+	size += sizeof (uint16_t);
 	size += response->u.mapi_OpenMessage.RecipientColumns.cValues * sizeof (uint32_t);
 
 	for (i = 0; i < response->u.mapi_OpenMessage.RowCount; i++) {
 		size += sizeof (uint8_t);
-		size += sizeof (response->u.mapi_OpenMessage.recipients[i].codepage);
+		size += sizeof (uint16_t);
+		size += sizeof (uint16_t);
 		size += libmapiserver_RecipientRow_size(response->u.mapi_OpenMessage.recipients[i].RecipientRow);
 	}
 

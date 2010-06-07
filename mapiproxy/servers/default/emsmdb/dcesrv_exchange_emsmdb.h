@@ -68,7 +68,8 @@ enum emsmdbp_object_type {
 	EMSMDBP_OBJECT_MAILBOX		= 0x1,
 	EMSMDBP_OBJECT_FOLDER		= 0x2,
 	EMSMDBP_OBJECT_MESSAGE		= 0x3,
-	EMSMDBP_OBJECT_TABLE		= 0x4
+	EMSMDBP_OBJECT_TABLE		= 0x4,
+	EMSMDBP_OBJECT_STREAM		= 0x5
 };
 
 struct emsmdbp_object_mailbox {
@@ -107,11 +108,18 @@ struct emsmdbp_object_table {
 	bool				mapistore;
 };
 
+struct emsmdbp_object_stream {
+	uint32_t			property;
+	uint32_t			contextID;
+	bool				mapistore;
+};
+
 union emsmdbp_objects {
 	struct emsmdbp_object_mailbox	*mailbox;
 	struct emsmdbp_object_folder	*folder;
 	struct emsmdbp_object_message	*message;
 	struct emsmdbp_object_table	*table;
+	struct emsmdbp_object_stream	*stream;
 };
 
 struct emsmdbp_object {
@@ -179,6 +187,7 @@ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_
 struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct mapi_handles *);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct mapi_handles *);
 struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct mapi_handles *);
+struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *, struct emsmdbp_context *, uint32_t, struct mapi_handles *);
 
 /* definitions from oxcfold.c */
 enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);

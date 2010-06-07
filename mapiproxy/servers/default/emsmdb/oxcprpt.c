@@ -491,6 +491,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 					       struct EcDoRpc_MAPI_REPL *mapi_repl,
 					       uint32_t *handles, uint16_t *size)
 {
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*parent = NULL;
+	struct mapi_handles		*rec = NULL;
+	struct emsmdbp_object		*object = NULL;
+	uint32_t			handle;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] OpenStream (0x2b)\n"));
 
 	/* Sanity checks */
@@ -503,8 +509,25 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
-
 	mapi_repl->u.mapi_OpenStream.StreamSize = 0;
+
+	/* Step 1. Retrieve parent handle in the hierarchy */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	if (!mapi_repl->error_code) {
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+		object = emsmdbp_object_stream_init((TALLOC_CTX *)rec, emsmdbp_ctx,
+						    mapi_req->u.mapi_OpenStream.PropertyTag, parent);
+		
+		if (object) {
+			retval = mapi_handles_set_private_data(rec, object);
+		}
+
+		mapi_repl->handle_idx = mapi_req->u.mapi_OpenStream.handle_idx;
+		handles[mapi_repl->handle_idx] = rec->handle;
+	}
 
 	*size = libmapiserver_RopOpenStream_size(mapi_repl);
 

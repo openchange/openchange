@@ -42,6 +42,8 @@ const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 		return "message";
 	case EMSMDBP_OBJECT_TABLE:
 		return "table";
+	case EMSMDBP_OBJECT_STREAM:
+		return "stream";
 	default:
 		return "unknown";
 	}
@@ -78,6 +80,8 @@ bool emsmdbp_is_mapistore(struct mapi_handles *handles)
 		return object->object.table->mapistore;
 	case EMSMDBP_OBJECT_MESSAGE:
 		return object->object.message->mapistore;
+	case EMSMDBP_OBJECT_STREAM:
+		return object->object.stream->mapistore;
 	default:
 		return false;
 	}
@@ -141,6 +145,8 @@ uint32_t emsmdbp_get_contextID(struct mapi_handles *handles)
 		return object->object.folder->contextID;
 	case EMSMDBP_OBJECT_MESSAGE:
 		return object->object.message->contextID;
+	case EMSMDBP_OBJECT_STREAM:
+		return object->object.stream->contextID;
 	default:
 		return -1;
 	}
@@ -234,6 +240,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
 	object->mstore_ctx = emsmdbp_ctx->mstore_ctx;
 	object->object.mailbox = NULL;
 	object->object.folder = NULL;
+	object->object.message = NULL;
+	object->object.stream = NULL;
 	object->private_data = NULL;
 
 	return object;
@@ -519,4 +527,51 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	} 
 
 	return object;	
+}
+
+
+/**
+   \details Initialize a stream object
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider cotnext
+   \param property the stream property identifier
+   \param parent pointer to the parent MAPI handle
+ */
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
+							   struct emsmdbp_context *emsmdbp_ctx,
+							   uint32_t property,
+							   struct mapi_handles *parent)
+{
+	enum MAPISTATUS		retval;
+	struct emsmdbp_object	*object;
+	void			*data;
+	bool			mapistore = false;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+
+	/* Retrieve parent object */
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) return NULL;
+	
+	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
+	if (!object) return NULL;
+
+	object->object.stream = talloc_zero(object, struct emsmdbp_object_stream);
+	if (!object->object.stream) {
+		talloc_free(object);
+		return NULL;
+	}
+
+	object->type = EMSMDBP_OBJECT_STREAM;
+	object->object.stream->property = property;
+
+	mapistore = emsmdbp_is_mapistore(parent);
+	if (mapistore == true) {
+		object->object.stream->mapistore = true;
+		object->object.stream->contextID = emsmdbp_get_contextID(parent);
+	}
+
+	return object;
 }

@@ -1518,8 +1518,8 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
 	request.flags = flags;
 	size += sizeof(uint8_t);
 
-	memset(request.ClientData, 0x0, 24);
-	size += sizeof (uint8_t) * 24;
+	request.clientdata.length = 0;
+	request.clientdata.data = NULL;
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);

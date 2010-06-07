@@ -84,6 +84,32 @@ _PUBLIC_ uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *
 
 
 /**
+   \details Calculate SetProperties Rop size
+
+   \param response pointer to the SetProperties EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SetProperties response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopDeleteProperties_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPDELETEPROPERTIES;
+
+	if (response->u.mapi_DeleteProps.PropertyProblemCount) {
+		size += response->u.mapi_DeleteProps.PropertyProblemCount * sizeof(struct PropertyProblem);
+	}
+
+	return size;
+}
+
+
+/**
    \details Calculate OpenStream Rop size
 
    \param response pointer to the OpenStream EcDoRpc_MAPI_REPL

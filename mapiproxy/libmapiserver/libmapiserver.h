@@ -99,6 +99,12 @@
 #define	SIZE_DFLT_ROPSETPROPERTIES		2
 
 /**
+   \details: DeletePropertiesRop has fixed response size for:
+   -# PropertyProblemCount: uint16_t
+ */
+#define	SIZE_DFLT_ROPDELETEPROPERTIES		2
+
+/**
    \details: SaveChangesMessageRop has fixed response size for:
    -# handle_idx: uint8_t
    -# MessageId: uint64_t
@@ -231,7 +237,6 @@
 #define	SIZE_DFLT_ROPGETPERUSERGUID		16
 
 
-
 /**
    \details LogonRop has a fixed size for mailbox:
    -# LogonFlags: uint8_t
@@ -301,6 +306,7 @@ uint16_t libmapiserver_LongTermId_size(void);
 
 /* definitions from libmapiserver_oxcprpt.c */
 uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopDeleteProperties_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOpenStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_MAPI_REPL *);

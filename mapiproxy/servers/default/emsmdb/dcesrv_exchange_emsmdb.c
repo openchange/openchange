@@ -354,7 +354,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 							  &(mapi_response->mapi_repl[idx]),
 							  mapi_response->handles, &size);
 			break;
-		/* op_MAPI_DeleteProps: 0xb */
+		case op_MAPI_DeleteProps: /* 0xb */
+			retval = EcDoRpc_RopDeleteProperties(mem_ctx, emsmdbp_ctx,
+							     &(mapi_request->mapi_req[i]),
+							     &(mapi_response->mapi_repl[idx]),
+							     mapi_response->handles, &size);
+			break;
 		case op_MAPI_SaveChangesMessage: /* 0x0c */
 			retval = EcDoRpc_RopSaveChangesMessage(mem_ctx, emsmdbp_ctx,
 							  &(mapi_request->mapi_req[i]),
@@ -610,6 +615,7 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 		default:
 			DEBUG(1, ("MAPI Rop: 0x%.2x not implemented!\n",
 				  mapi_request->mapi_req[i].opnum));
+			sleep(5);
 		}
 
 		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {

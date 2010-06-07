@@ -38,7 +38,7 @@ _PUBLIC_ uint16_t libmapiserver_TypedString_size(struct TypedString TypedString)
 {
 	uint16_t	size = 0;
 
-	size += sizeof (TypedString.StringType);
+	size += sizeof (uint8_t);
 
 	switch (TypedString.StringType) {
 	case StringType_NONE:

@@ -407,6 +407,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserLongTermIds(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	/* Ensure the request is performed against a private mailbox
+	 * logon, not a public folders logon. If the operation is
+	 * performed against a public folders logon, return
+	 * MAPI_E_NO_SUPPORT */
+
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
@@ -417,6 +422,52 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserLongTermIds(TALLOC_CTX *mem_ctx,
 
 	*size = libmapiserver_RopGetPerUserLongTermIds_size(mapi_repl);
 
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details EcDoRpc GetPerUserGuid (0x61) Rop. This operations
+   gets the GUID of a public folder's per-user information.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetPerUserLongTermIds EcDoRpc_MAPI_REQ
+   \param mapi_repl pointer to the GetPerUserLongTermIds EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserGuid(TALLOC_CTX *mem_ctx,
+						   struct emsmdbp_context *emsmdbp_ctx,
+						   struct EcDoRpc_MAPI_REQ *mapi_req,
+						   struct EcDoRpc_MAPI_REPL *mapi_repl,
+						   uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetPerUserGuid (0x61)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Ensure the request is performed against a private mailbox
+	 * logon, not a public folders logon. If the operation is
+	 * performed against a public folders logon, return
+	 * MAPI_E_NO_SUPPORT */
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_NOT_FOUND;
+
+	/* TODO effective work here */
+
+	*size = libmapiserver_RopGetPerUserGuid_size(mapi_repl);
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
 	return MAPI_E_SUCCESS;

@@ -554,7 +554,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 								  &(mapi_response->mapi_repl[idx]),
 								  mapi_response->handles, &size);
 			break;
-		/* op_MAPI_GetPerUserGuid: 0x61 */
+		case op_MAPI_GetPerUserGuid: /* 0x61 */
+			retval = EcDoRpc_RopGetPerUserGuid(mem_ctx, emsmdbp_ctx,
+							   &(mapi_request->mapi_req[i]),
+							   &(mapi_response->mapi_repl[idx]),
+							   mapi_response->handles, &size);
+			break;
 		/* op_MAPI_ReadPerUserInformation: 0x63 */
 		/* op_MAPI_SetReadFlags: 0x66 */
 		/* op_MAPI_CopyProperties: 0x67 */

@@ -225,6 +225,14 @@
 
 
 /**
+   \details GetPerUserGuid has fixed response size for:
+   -# DatabaseGuid: uint8_t * 16
+ */
+#define	SIZE_DFLT_ROPGETPERUSERGUID		16
+
+
+
+/**
    \details LogonRop has a fixed size for mailbox:
    -# LogonFlags: uint8_t
    -# FolderIDs: uint64_t * 13
@@ -304,6 +312,7 @@ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_M
 uint16_t libmapiserver_RopRelease_size(void);
 uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserLongTermIds_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxctabl.c */
 uint16_t libmapiserver_RopSetColumns_size(struct EcDoRpc_MAPI_REPL *);

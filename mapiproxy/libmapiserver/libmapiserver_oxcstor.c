@@ -107,3 +107,24 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPerUserLongTermIds_size(struct EcDoRpc_MAP
 
 	return size;
 }
+
+
+/**
+   \details Calculate GetPerUserLongTermIds Rop size
+
+   \param response pointer to the GetPerUserLongTermIds EcDoRpc_MAPI_REPL structure
+
+   \return Size of GetPerUserLongTermIds response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETPERUSERGUID;
+
+	return size;
+}

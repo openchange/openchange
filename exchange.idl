@@ -1478,7 +1478,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8				handle_idx;
 		MSGFLAG_READ			flags;
-		[flag(NDR_REMAINING)] DATA_BLOB clientdata;
+		uint8				ClientData[24];
 	} SetMessageReadFlag_req;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {

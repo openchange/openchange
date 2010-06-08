@@ -542,6 +542,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->u.mapi_FindRow.RowNoLongerVisible = 0;
 	mapi_repl->u.mapi_FindRow.HasRowData = 0;
 	mapi_repl->u.mapi_FindRow.row.length = 0;

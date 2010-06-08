@@ -524,6 +524,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 					    struct EcDoRpc_MAPI_REPL *mapi_repl,
 					    uint32_t *handles, uint16_t *size)
 {
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*parent;
+	struct emsmdbp_object		*object;
+	struct emsmdbp_object_table	*table;
+	void				*data;
+	uint32_t			handle;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCTABL] FindRow (0x4f)\n"));
 
 	/* Sanity checks */
@@ -535,12 +542,40 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
-	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->u.mapi_FindRow.RowNoLongerVisible = 0;
 	mapi_repl->u.mapi_FindRow.HasRowData = 0;
 	mapi_repl->u.mapi_FindRow.row.length = 0;
 	mapi_repl->u.mapi_FindRow.row.data = 0;
 
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) goto end;
+
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) goto end;
+	object = (struct emsmdbp_object *) data;
+
+	/* Ensure object exists and is table type */
+	if (!object || (object->type != EMSMDBP_OBJECT_TABLE)) goto end;
+
+	/* We don't handle backward/forward yet , just go through the
+	 * entire table, nor do we handle bookmarks */
+
+	/* Handle PropertyRestriction */
+	if (mapi_req->u.mapi_FindRow.res.rt != 0x4) goto end;	
+	/* Ensure the property we search exists in the array */
+
+	table = object->object.table;
+	if (!table->folderID) goto end;
+
+	switch (table->mapistore) {
+	case true:
+		break;
+	case false:
+		break;
+	}
+
+end:
 	*size += libmapiserver_RopFindRow_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

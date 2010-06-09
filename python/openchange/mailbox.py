@@ -408,7 +408,7 @@ GlobalCount: 0x%x
         # Step 1. Search fid DN
         res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" % fid, ["*"])
         if len(res) != 1:
-            raise "Invalid search (PidTagFolderId=%s)" % fid
+            raise Exception("Invalid search (PidTagFolderId=%s)" % fid)
 
         m = ldb.Message()
         m.dn = res[0].dn

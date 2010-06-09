@@ -29,18 +29,18 @@ def openchangedb_mapistore_dir(lp):
 
 def openchangedb_mapistore_url(lp, backend):
     if backend == "fsocpf":
-	return "fsocpf://" + openchangedb_mapistore_dir(lp)
+        return "fsocpf://" + openchangedb_mapistore_dir(lp)
     if backend == "sqlite":
-	return "sqlite://" + openchangedb_mapistore_dir(lp)
+        return "sqlite://" + openchangedb_mapistore_dir(lp)
     print "#### unsupported mapistore backend type:" + backend
     print "#### using fsocpf instead"
     return "fsocpf://" + openchangedb_mapistore_dir(lp)
 
 def openchangedb_mapistore_url_split(url):
     if url.startswith("fsocpf://"):
-	return url.partition("fsocpf://")[1:]
+        return url.partition("fsocpf://")[1:]
     if url.startswith("sqlite://"):
-	return url.partition("sqlite://")[1:]
+        return url.partition("sqlite://")[1:]
 
 def openchangedb_suffix_for_mapistore_url(url):
     if (url.startswith("fsocpf://")):

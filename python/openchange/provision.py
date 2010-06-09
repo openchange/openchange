@@ -42,6 +42,7 @@ def abstract():
 
 # Define an abstraction for progress reporting from the provisioning
 class AbstractProgressReporter(object):
+
     def __init__(self):
         self.currentStep = 0
 

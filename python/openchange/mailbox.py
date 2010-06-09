@@ -23,7 +23,7 @@ import samba
 from samba import Ldb
 import ldb
 import uuid
-from openchange_url_utils import *
+from openchange.urlutils import *
 
 __docformat__ = 'restructuredText'
 

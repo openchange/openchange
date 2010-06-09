@@ -26,8 +26,7 @@ from samba import Ldb
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.provision import setup_add_ldif, setup_modify_ldif
-import ldb
-from openchange_url_utils import openchangedb_url, openchangedb_mapistore_url, openchangedb_mapistore_dir, openchangedb_suffix_for_mapistore_url
+from openchange.urlutils import openchangedb_url, openchangedb_mapistore_url, openchangedb_mapistore_dir, openchangedb_suffix_for_mapistore_url
 
 __docformat__ = 'restructuredText'
 

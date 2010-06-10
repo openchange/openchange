@@ -248,11 +248,11 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 	DEBUG(0, ("%s has been opened\n", uri));
 	{
 		struct dirent *curdir;
-		int i = 0;
+		int j = 0;
 
 		while ((curdir = readdir(fsocpf_ctx->dir)) != NULL) {
-			DEBUG(0, ("%d: readdir: %s\n", i, curdir->d_name));
-			i++;
+			DEBUG(0, ("%d: readdir: %s\n", j, curdir->d_name));
+			j++;
 		}
 	}
 

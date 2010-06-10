@@ -1,3 +1,145 @@
+2010-06-09
+    bradh
+	[r1922]
+		Ensure server modules work when building with coverage enabled.
+    jelmer
+	[r1925]
+		Consistently use spaces rather than tabs.
+	[r1924]
+		Remove string exception.
+	[r1923]
+		Remove duplication of openchange name in namespace.
+2010-06-08
+    jkerihuel
+	[r1921]
+		We didn't set a valid error_code for FindRow skeleton.
+	[r1920]
+		- Add server-side skeleton for ReadStream ROP.
+		- Add preliminary sanity checks on server-side FindRow
+2010-06-07
+    jkerihuel
+	[r1919]
+		Activate correct handling of retval in CreateFolder, despite Outlook
+		2007 bad behavior. Currently working on fixing this.
+	[r1918]
+		My small Outlook 2007 'Search missing ROP implementation' shouldn't
+		have been pushed ;-)
+	[r1917]
+		Add server-side skeleton for DeleteProperties Rop.
+	[r1916]
+		Implement server-size skeleton for GetPerUserGuid Rop.
+	[r1915]
+		Add server-side skeleton for GetPerUserLongTermIds Rop.
+	[r1914]
+		Add a preliminary stream object implementation
+		Add stream to emsmdbp convenient functions
+		
+		Create a handle in OpenStream
+	[r1913]
+		Add skeleton server side implementation for OpenStream
+	[r1912]
+		Forgot to redo changes here.
+	[r1911]
+		- Undo the SetMessageReadFlag IDL change and add an explanation, so we
+		don't make the same error twice and have pointers when we want to fix
+		it.
+		- Improve OpenMessage IDL and add the Reserved uint16_t bit.  
+		- Replace sizeof() with known types to prevent from IDL mismatch types
+		getting used.
+	[r1910]
+		For single process implementation, this code was fine.
+		For multi-process/contexts, when we need to cache information
+		to limit disk access, we should be using the ocpf element as
+		a memory context.
+		
+		This patch makes it possible.
+	[r1909]
+		Fix SetMessageReadFlag IDL.
+	[r1908]
+		Add server side skeleton for SetMessageReadFlag Rop.
+	[r1907]
+		the previous "or"ed value used in LogonType union was non handled
+		properly by pidl. Replace them with static values instead. This
+		prevent Outlook rom reconnecting in different situations.
+	[r1906]
+		This was causing the ndr push error. Outlook now receive OpenMessage
+		replies.
+2010-06-06
+    jkerihuel
+	[r1905]
+		With current implementation messages loaded and added to the mapistore
+		fsocpf private list were never released/unloaded/free'd.
+		
+		Similar behavior would have occured in the future with folders.  Add a
+		mapistore release_record function which will free/delete
+		information/data associated to a given folder/message.
+	[r1904]
+		- Add a preliminary OpenMessage reply implementation
+		- Add a function to resolve recipients against AD
+		- Add implementation of GetProps for mapistore messages
+		- Add mapistore getprops semantic
+		- Add fsocpf getprops implementation
+		
+		Note: current implementation does not free message object and memory
+		allocation needs to be revised.
+		
+		Note 2: openchangeclient --fetchmail works with this version :-)
+	[r1903]
+		Fix OpenMessage response size calculation. Subcontext size is already
+		calculated when we add the RecipientRow.length size to the global size.
+	[r1902]
+		- Make ocpf_recipClass public
+		- Turn path to headers to local in the lexer
+    bradh
+	[r1901]
+		Avoid leaking file descriptors on error.
+	[r1900]
+		Check return type for vasprintf in libocpf.
+2010-06-05
+    jkerihuel
+	[r1899]
+		Change mapistore openmessage semantics to fetch/retrieve recipients
+		and properties from mapistore. Modify OpenMessage ROP to dump
+		mapistore_message structure contents retrieved from mapistore.
+	[r1898]
+		Add a function to retrieve recipients from a parsed OCPF message.
+	[r1897]
+		This is a wip commit, so there is a lot of DEBUG across the code. This
+		will go away in further commits when the implementation is complete.
+		
+		- Add indexing API to mapistore. This API adds an indexing.tdb file
+		  within user's mapistore private space and associate MID and FID to
+		  their full mapistore path. Current implementation expects folder and
+		  mid are repsented under their hexadecimal representation and using
+		  the 0.16PRIx64 format string. It is not robust, but should do the
+		  trick for the moment. Among features available:
+		  	- create/open the indexing database
+			- search of existing indexing context
+			- ref count assessors
+			- add/delete fid/mid records
+			- retrieve the list of folders pointing to an element (parsing
+		          of the mapistore URI)
+		
+		- Calls to the API have been added to the emsmdb provider
+		  implementation for initialization and automatic attempt to add
+		  entries whenever we open a folder.
+		
+		- Add preliminary code (relying on indexing API) for OpenMessage when
+		  parent handle is the store object. The entire set of cases for
+		  mailbox have been included.
+		
+		- Add mapistore code for op_openmessage operation.
+		- Add message list to the fsocpf context
+		- Add preliminary fsocpf backend code to open a message and store it
+		  within ocpf_context.
+    bradh
+	[r1896]
+		Refactored some of the FSOCPF backend.
+		
+		Basically some Extract Method refactoring to improve code re-use.
+	[r1895]
+		Use PRIx64 macro to avoid compiler warning.
+
 2010-06-03
     jkerihuel
 	[r1893]

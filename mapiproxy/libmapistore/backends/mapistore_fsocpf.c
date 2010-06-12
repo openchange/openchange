@@ -226,8 +226,8 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 
 	/* FIXME: Retrieve the fid from the URI */
 	len = strlen(uri);
-	for (i = strlen(uri); i > 0; i--) {
-		if (uri[i] == '/' && i != strlen(uri)) {
+	for (i = len; i > 0; i--) {
+		if (uri[i] == '/' && i != len) {
 			char *tmp;
 
 			tmp = talloc_strdup(mem_ctx, uri + i + 1);

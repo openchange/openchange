@@ -55,7 +55,6 @@ PidLidOldWhenEndWhole                                  OldWhenEndWhole          
 
 
 ### Address Named Properties
-PidLidYomiCompanyName                                  YomiCompanyName               0x8002 NULL                          PT_UNICODE    MNID_ID     PSETID_Address
 PidLidFileUnder                                        FileUnder                     0x8005 NULL                          PT_UNICODE    MNID_ID     PSETID_Address
 PidLidFileUnderId                                      FileUnderId                   0x8006 NULL                          PT_LONG       MNID_ID     PSETID_Address
 PidLidContactItemData                                  ContactItemData               0x8007 NULL                          PT_MV_LONG    MNID_ID     PSETID_Address
@@ -222,7 +221,6 @@ PidLidAllAttendeesString                               AllAttendeesString       
 PidLidAutoFillLocation                                 AutoFillLocation              0x823A NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
 PidLidToAttendeesString                                ToAttendeesString             0x823B NULL                          PT_UNICODE    MNID_ID     PSETID_Appointment
 PidLidCcAttendeesString                                CcAttendeesString             0x823C NULL                          PT_UNICODE    MNID_ID     PSETID_Appointment
-PidLidAppointmentUnsendableRecipients                  ApptUnsendableRecips          0x823D NULL                          PT_LONG       MNID_ID     PSETID_Appointment
 PidLidConferencingCheck                                ConfCheck                     0x8240 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment
 PidLidConferencingType                                 ConfType                      0x8241 NULL                          PT_LONG       MNID_ID     PSETID_Appointment
 PidLidDirectory                                        Directory                     0x8242 NULL                          PT_UNICODE    MNID_ID     PSETID_Appointment

@@ -81,7 +81,7 @@ static void add_interface(TALLOC_CTX *mem_ctx, struct in_addr ip, struct in_addr
 	iface->ip_s = talloc_strdup(iface, inet_ntoa(iface->ip));
 	iface->nmask_s = talloc_strdup(iface, inet_ntoa(iface->nmask));
 	
-	if (nmask.s_addr != ~0) {
+	if (nmask.s_addr != ~(in_addr_t)0) {
 		iface->bcast_s = talloc_strdup(iface, inet_ntoa(bcast));
 	}
 

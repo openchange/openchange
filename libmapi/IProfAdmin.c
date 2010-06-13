@@ -823,7 +823,7 @@ _PUBLIC_ enum MAPISTATUS RenameProfile(const char *old_profile,
 	bool			found = false;
 	char			*dn = NULL;
 	int			ret;
-	int			i;
+	uint32_t		i;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);

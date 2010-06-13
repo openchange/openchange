@@ -192,11 +192,11 @@ _PUBLIC_ void mapi_object_set_session(mapi_object_t *obj,
  
    \param obj pointer on the MAPI object to get the ID for
 
-   \return the object ID, or -1 if the object does not exist
+   \return the object ID, or 0xFFFFFFFFFFFFFFFF if the object does not exist
 */
 _PUBLIC_ mapi_id_t mapi_object_get_id(mapi_object_t *obj)
 {
-	return (!obj) ? -1 : obj->id;
+	return (!obj) ? 0xFFFFFFFFFFFFFFFF : obj->id;
 }
 
 
@@ -265,11 +265,11 @@ _PUBLIC_ void mapi_object_set_logon_store(mapi_object_t *obj)
 
    \param obj pointer on the MAPI object to retrieve the handle from
 
-   \return a valid MAPI object handle on success, otherwise -1.
+   \return a valid MAPI object handle on success, otherwise 0xFFFFFFFF.
  */
 mapi_handle_t mapi_object_get_handle(mapi_object_t *obj)
 {
-	return (!obj) ? -1 : obj->handle;
+	return (!obj) ? 0xFFFFFFFF : obj->handle;
 }
 
 

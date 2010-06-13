@@ -387,7 +387,7 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	char				*propfile;
 	uint32_t			ocpf_context_id;
 	int				ret;
-	int				i;
+	uint32_t			i;
 
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
@@ -937,7 +937,7 @@ static int fsocpf_op_openmessage(void *private_data,
 static char *fsocpf_get_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, uint8_t class)
 {
 	char		*recipient = NULL;
-	int		i;
+	uint32_t	i;
 
 	for (i = 0; i < SRowSet->cRows; i++) {
 		if (SRowSet->aRow[i].lpProps[0].value.l == class) {
@@ -965,8 +965,8 @@ static int fsocpf_op_getprops(void *private_data,
 	struct SPropValue	*lpProps;
 	struct SPropValue	lpProp;
 	struct SRowSet		*SRowSet;
-	int			i;
-	int			j;
+	uint32_t		i;
+	uint32_t		j;
 	char			*recip_str = NULL;
 
 

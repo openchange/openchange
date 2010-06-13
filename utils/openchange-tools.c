@@ -36,9 +36,9 @@ static void popt_openchange_version_callback(poptContext con,
 }
 
 struct poptOption popt_openchange_version[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK, (void *)popt_openchange_version_callback	},
-	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version "		},
-	{ NULL }
+	{ NULL, '\0', POPT_ARG_CALLBACK, (void *)popt_openchange_version_callback, '\0', NULL, NULL },
+	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version ", NULL },
+	POPT_TABLEEND
 };
 
 

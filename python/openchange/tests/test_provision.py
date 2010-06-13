@@ -19,13 +19,14 @@
 
 from samba import param
 from samba.credentials import Credentials
-from samba.samdb import SamDB
 from samba.tests import TestCaseInTempDir
 from samba.tests.samdb import SamDBTestCase
-from openchange.provision import install_schemas, openchangedb_provision, guess_names_from_smbconf, find_setup_dir
+from openchange.provision import (install_schemas, openchangedb_provision,
+    guess_names_from_smbconf, find_setup_dir)
 
 import os
-import unittest
+import shutil
+
 
 class ExtendedSamDBTestCase(SamDBTestCase):
 
@@ -47,4 +48,5 @@ class OpenChangeDBProvisionTestCase(TestCaseInTempDir):
         lp.load_default()
         lp.set("private dir", self.tempdir)
         openchangedb_provision(lp)
+        shutil.rmtree(os.path.join(self.tempdir, "mapistore"))
         os.unlink(os.path.join(self.tempdir, "openchange.ldb"))

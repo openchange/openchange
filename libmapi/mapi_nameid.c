@@ -425,6 +425,28 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_canonical_add(struct mapi_nameid *mapi_name
 
 
 /**
+   \details Search for a given referenced unmapped named property and
+   return whether it was found or not.
+
+   \param proptag the unmapped property tag to lookup
+
+   \return MAPI_E_SUCCESS on success otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_property_lookup(uint32_t proptag)
+{
+	uint32_t	i;
+
+	for (i = 0; mapi_nameid_tags[i].proptag; i++) {
+		if (mapi_nameid_tags[i].proptag == proptag) {
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	return MAPI_E_NOT_FOUND;
+}
+
+
+/**
    \details Search for a given OOM,OLEGUID couple and return the
    associated propType.
 
@@ -773,8 +795,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropTagArray(struct mapi_nameid *na
 
 	for (i = 0; i < SPropTagArray->cValues; i++) {
 		proptype = (SPropTagArray->aulPropTag[i] & 0xFFFF0000) >> 16;
-		if (((proptype >= 0x8000) && (proptype <= 0x8FFF)) ||
-		    ((proptype >= 0xa000) && (proptype <= 0xaFFF))) {
+		if (mapi_nameid_property_lookup(SPropTagArray->aulPropTag[i]) == MAPI_E_SUCCESS) {
 			retval = mapi_nameid_canonical_add(nameid, SPropTagArray->aulPropTag[i]);
 			if (retval == MAPI_E_SUCCESS) {
 				status = true;

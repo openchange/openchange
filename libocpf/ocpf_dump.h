@@ -34,8 +34,8 @@ do {					\
 
 #define	OCPF_DUMP_TITLE(indent, txt, type)		\
 do {							\
-	int	odt_i;					\
-	int	txt_len;				\
+	size_t	odt_i;					\
+	size_t	txt_len;				\
 							\
 	printf("\n");					\
 	INDENT();					\
@@ -54,7 +54,7 @@ do {							\
 #define	OCPF_DUMP_SUBLEVEL	1
 
 
-int indent;
+unsigned int indent;
 
 
 

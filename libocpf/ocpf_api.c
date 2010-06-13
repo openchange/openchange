@@ -396,7 +396,7 @@ static struct ocpf_olfolder olfolders[] = {
 	{ 0, NULL }
 };
 
-static int64_t ocpf_folder_name_to_id(const char *name)
+static int ocpf_folder_name_to_id(const char *name, uint64_t *id)
 {
 	uint32_t	i;
 
@@ -404,9 +404,11 @@ static int64_t ocpf_folder_name_to_id(const char *name)
 
 	for (i = 0; olfolders[i].name; i++) {
 		if (olfolders[i].name && !strcmp(olfolders[i].name, name)) {
-			return olfolders[i].id;
+			*id =  olfolders[i].id;
+			return OCPF_SUCCESS;
 		}
 	}
+	/* not found */
 	return OCPF_ERROR;
 }
 
@@ -434,8 +436,8 @@ int ocpf_folder_add(struct ocpf_context *ctx,
 	if (!name && !id && !var_name) return OCPF_ERROR;
 
 	if (name) {
-		ctx->folder = (uint64_t) ocpf_folder_name_to_id(name);
-		OCPF_RETVAL_IF(ctx->folder == -1, ctx, OCPF_WARN_FOLDER_ID_UNKNOWN, NULL);
+		int res = ocpf_folder_name_to_id(name, &(ctx->folder));
+		OCPF_RETVAL_IF(res == OCPF_ERROR, ctx, OCPF_WARN_FOLDER_ID_UNKNOWN, NULL);
 	} else if (id) {
 		ctx->folder = id;
 	} else if (var_name) {

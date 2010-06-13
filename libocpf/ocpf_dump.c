@@ -84,7 +84,7 @@ _PUBLIC_ void ocpf_dump_folder(uint32_t context_id)
 	indent++;
 
 	INDENT();
-	OCPF_DUMP(("* 0x%llx", ctx->folder ? ctx->folder : -1));
+	OCPF_DUMP(("* 0x%llx", ctx->folder ? ctx->folder : 0xFFFFFFFF));
 	indent--;
 }
 

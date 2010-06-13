@@ -41,7 +41,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session, const char *
 	const char		*binding = NULL;
 	char			*HomeMDB = NULL;
 	char			*server_dn;
-	int			i;
+	uint32_t		i;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);

@@ -21,26 +21,35 @@
 
 import os
 
+
+class UnsupportedMapistoreBackend(Exception):
+    
+    def __init__(self, backend):
+        super(UnsupportedMapistoreBackend, self).__init__("unsupported mapistore backend type: %s" % backend)
+
+
 def openchangedb_url(lp):
     return os.path.join(lp.get("private dir"), "openchange.ldb")
+
 
 def openchangedb_mapistore_dir(lp):
     return os.path.join(lp.get("private dir"), "mapistore")
 
+
 def openchangedb_mapistore_url(lp, backend):
-    if backend == "fsocpf":
-        return "fsocpf://" + openchangedb_mapistore_dir(lp)
-    if backend == "sqlite":
-        return "sqlite://" + openchangedb_mapistore_dir(lp)
-    print "#### unsupported mapistore backend type:" + backend
-    print "#### using fsocpf instead"
-    return "fsocpf://" + openchangedb_mapistore_dir(lp)
+    if backend in ("fsocpf", None):
+        return "fsocpf://%s" % openchangedb_mapistore_dir(lp)
+    elif backend == "sqlite":
+        return "sqlite://%s" % openchangedb_mapistore_dir(lp)
+    raise UnsupportedMapistoreBackend(backend)
+
 
 def openchangedb_mapistore_url_split(url):
     if url.startswith("fsocpf://"):
         return url.partition("fsocpf://")[1:]
     if url.startswith("sqlite://"):
         return url.partition("sqlite://")[1:]
+
 
 def openchangedb_suffix_for_mapistore_url(url):
     if (url.startswith("fsocpf://")):

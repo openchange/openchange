@@ -200,7 +200,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	uint32_t			count;
 	char				**values;
 	const char			*exch_attrs[7];
-	int				i;
+	uint32_t			i;
 	char				*realm = NULL;
 	char				*org = NULL;
 	const char			*UserAccountControl;

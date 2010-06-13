@@ -139,8 +139,8 @@ NTSTATUS torture_exchange_createuser(TALLOC_CTX *mem_ctx, const char *username,
 		if (rtn == -1) return NT_STATUS_NO_MEMORY;
 
 		{
-			int	i;
-			char	*realm = NULL;
+			uint32_t	i;
+			char		*realm = NULL;
 			
 			retval = GetProfileAttr(profile, "ProxyAddress", &count, &values);
 			if (retval != MAPI_E_SUCCESS) return NT_STATUS_UNSUCCESSFUL;

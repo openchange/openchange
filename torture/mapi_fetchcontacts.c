@@ -95,7 +95,7 @@ bool torture_rpc_mapi_fetchcontacts(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	{
-		int i;
+		uint32_t i;
 		mapi_object_t obj_message;
 		struct mapi_SPropValue_array properties_array;
 

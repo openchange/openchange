@@ -55,7 +55,7 @@ bool set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
 {
 	struct SPropValue	*lpProp;
 	enum MAPISTATUS		ret;
-	int			i;
+	uint32_t		i;
 
 	lpProp = get_SPropValue_SRowSet(&rowset, property);
 

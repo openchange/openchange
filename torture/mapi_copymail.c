@@ -44,7 +44,6 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	mapi_id_array_t		msg_id_array;
 	struct SPropTagArray	*SPropTagArray = NULL;
 	struct SRowSet		rowset;
-	int			i;
 
 	/* init torture */
 	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_copymail");
@@ -105,6 +104,7 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	mapi_id_array_init(&msg_id_array);
 
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
+		uint32_t	i;
 		for (i = 0; i < rowset.cRows; i++) {
 			mapi_id_array_add_id(&msg_id_array, rowset.aRow[i].lpProps[1].value.d);
 		}

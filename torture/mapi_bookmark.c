@@ -125,7 +125,7 @@ bool torture_rpc_mapi_bookmark(struct torture_context *torture)
 	DEBUG(0, ("[2] mid: %"PRIx64", subject = %s\n", SRowSet.aRow[0].lpProps[0].value.d,
 		  SRowSet.aRow[0].lpProps[1].value.lpszA));
 
-	if (mid == SRowSet.aRow[0].lpProps[0].value.d) {
+	if (mid == (uint64_t)SRowSet.aRow[0].lpProps[0].value.d) {
 		DEBUG(0, ("[SUCCESS] Message ID are the same\n"));
 	} else {
 		DEBUG(0, ("[FAILURE] Message ID are different\n"));

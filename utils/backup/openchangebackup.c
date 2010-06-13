@@ -145,7 +145,7 @@ uint32_t ocb_record_add_property(struct ocb_context *ocb_ctx,
 				 struct mapi_SPropValue *lpProp)
 {
 	TALLOC_CTX     	*mem_ctx;
-	int    		i;
+	uint32_t	i;
 	char	       	*attr;
 	char	       	*value = NULL;
 	const char	*tag;

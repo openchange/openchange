@@ -386,8 +386,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	char				*dnstr;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
-	int				i;
-	int				length;
+	unsigned int			i;
+	size_t				length;
 
 	mem_ctx = talloc_named(NULL, 0, "get_ReceiveFolder");
 

@@ -50,7 +50,7 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 	struct FILETIME ft;
 	struct Binary_r bin;
 	struct StringArray_r mvstr;
-	int i;
+	uint32_t i;
 
 	propvalue.ulPropTag = PR_GENDER; /* enum MAPITAGS */
 	propvalue.dwAlignPad = 0;

@@ -275,7 +275,6 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 	uint32_t		idx = 0;
 	uint32_t		count = 0;
 	const char*		data;
-	int			i;
 
 	/* Step 1. Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, &count)) {
@@ -340,6 +339,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 		if (SRowSet.cRows > 0) {
 			idx += SRowSet.cRows;
 			if (retval == MAPI_E_SUCCESS) {
+			  	uint32_t	i;
 				mapitest_print(mt, "* %-35s: %.2d/%.2d [PASSED]\n", 
 					       "QueryRows", idx, count);
 				for (i = 0; i < SRowSet.cRows; ++i) {

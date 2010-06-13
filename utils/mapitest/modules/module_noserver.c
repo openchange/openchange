@@ -119,7 +119,6 @@ static bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 	struct SRowSet		referenceRowSet;
 	struct SPropTagArray	*proptags;
 	uint32_t		rowNum;
-	int		i;
 
 	retval = GetLoadparmContext(&lp_ctx);
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -179,6 +178,7 @@ static bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 
 	/* compare result with reference rowset */
 	for (rowNum = 0; rowNum < rowSet.cRows; ++rowNum) {
+		uint32_t	i;
 		/* check each row has expected number of properties */
 		if (rowSet.aRow[rowNum].cValues != referenceRowSet.aRow[rowNum].cValues) {
 			mapitest_print(mt, "* %-40s: unexpected props count, row %i: %i\n", "SRowSet", rowSet.aRow[rowNum].cValues, rowNum);
@@ -214,7 +214,6 @@ static bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 	struct SRowSet		referenceRowSet;
 	struct SPropTagArray	*proptags;
 	uint32_t		rowNum;
-	int		i;
 
 	retval = GetLoadparmContext(&lp_ctx);
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -291,6 +290,7 @@ static bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 
 	/* compare result with reference rowset */
 	for (rowNum = 0; rowNum < rowSet.cRows; ++rowNum) {
+		uint32_t	i;
 		/* check each row has expected number of properties */
 		if (rowSet.aRow[rowNum].cValues != referenceRowSet.aRow[rowNum].cValues) {
 			mapitest_print(mt, "* %-40s: unexpected props count, row %i: %i\n", "SRowSet", rowSet.aRow[rowNum].cValues, rowNum);
@@ -575,7 +575,7 @@ static bool mapitest_no_server_props_bin(struct mapitest *mt)
 
 	struct Binary_r bin;
 	const struct Binary_r *binget;
-	int i;
+	uint32_t	i;
 
 	// initialise bin
 	bin.cb = 8;
@@ -676,7 +676,7 @@ static bool mapitest_no_server_props_mv_bin(struct mapitest *mt)
 
 	// create and initialise binarray
 	struct Binary_r bin1, bin2;
-	int i;
+	uint32_t i;
 
 	// initialise bin
 	bin1.cb = 8;

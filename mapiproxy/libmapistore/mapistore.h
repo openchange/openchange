@@ -38,6 +38,7 @@
 #include <stdbool.h>
 
 #include <tdb.h>
+#include <ldb.h>
 #include <talloc.h>
 #include <util/debug.h>
 
@@ -107,6 +108,7 @@ struct mapistore_context {
 	struct processing_context	*processing_ctx;
 	struct backend_context_list    	*context_list;
 	struct indexing_context_list	*indexing_list;
+	void				*nprops_ctx;
 };
 
 struct indexing_folders_list {
@@ -167,6 +169,9 @@ int mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, uint
 int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+
+/* definitions from mapistore_namedprops.c */
+int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);
 
 __END_DECLS
 

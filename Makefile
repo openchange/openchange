@@ -938,6 +938,7 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$
 LIBMAPISTORE_SO_VERSION = 0
 
 libmapistore: 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+		setup/mapistore/mapistore_namedprops.ldif		\
 		$(OC_MAPISTORE)						\
 		$(MAPISTORE_TEST)
 
@@ -953,17 +954,21 @@ libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore.h $(DESTDIR)$(includedir)/mapistore/
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore_errors.h $(DESTDIR)$(includedir)/mapistore/
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver.pc $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/mapistore
+	$(INSTALL) -m 0644 setup/mapistore/*.ldif $(DESTDIR)$(datadir)/setup/mapistore/
 
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
+	rm -f setup/mapistore/mapistore_namedprops.ldif
 
 libmapistore-uninstall:	$(OC_MAPISTORE_UNINSTALL)
 	rm -f $(DESTDIR)$(libdir)/libmapistore.*
 	rm -rf $(DESTDIR)$(includedir)/mapistore
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapistore.pc
+	rm -rf $(DESTDIR)$(datadir)/setup/mapistore
 
 libmapistore-distclean: libmapistore-clean
 	rm -f mapiproxy/libmapistore.pc
@@ -974,12 +979,19 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mapistore_processing.po	\
 							mapiproxy/libmapistore/mapistore_backend.po	\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po	\
+							mapiproxy/libmapistore/mapistore_ldb_wrap.po	\
 							mapiproxy/libmapistore/mapistore_indexing.po	\
+							mapiproxy/libmapistore/mapistore_namedprops.po	\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 
 mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
+
+setup/mapistore/mapistore_namedprops.ldif: 	\
+	libmapi/conf/mapi-named-properties	\
+	libmapi/conf/mparse.pl			
+	@./libmapi/conf/build.sh
 
 #####################
 # mapistore backends

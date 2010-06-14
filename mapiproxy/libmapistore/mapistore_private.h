@@ -65,6 +65,18 @@ struct tdb_wrap {
 	struct tdb_wrap		*next;
 };
 
+
+struct ldb_wrap {
+  struct ldb_wrap			*next;
+	struct ldb_wrap			*prev;
+	struct ldb_wrap_context {
+		const char		*url;
+		struct tevent_context	*ev;
+		unsigned int		flags;
+	} context;
+	struct ldb_context		*ldb;
+};
+
 /**
    Identifier mapping context.
 
@@ -116,6 +128,7 @@ struct indexing_context_list {
 	struct indexing_context_list	*next;
 };
 
+#define	MAPISTORE_DB_NAMED		"named_properties.ldb"
 #define	MAPISTORE_DB_INDEXING		"indexing.tdb"
 #define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
 
@@ -156,6 +169,9 @@ int mapistore_backend_getprops(struct backend_context *, uint64_t, uint8_t,
 /* definitions from mapistore_tdb_wrap.c */
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
 
+/* definitions from mapistore_ldb_wrap.c */
+struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_context *, const char *, unsigned int);
+
 /* definitions from mapistore_indexing.c */
 struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
 int mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
@@ -163,6 +179,9 @@ int mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uin
 int mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_indexing_add_ref_count(struct indexing_context_list *);
 int mapistore_indexing_del_ref_count(struct indexing_context_list *);
+
+/* definitions from mapistore_namedprops.c */
+int mapistore_namedprops_init(TALLOC_CTX *, void **);
 
 __END_DECLS
 

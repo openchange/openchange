@@ -659,6 +659,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 							    struct EcDoRpc_MAPI_REPL *mapi_repl,
 							    uint32_t *handles, uint16_t *size)
 {
+	int		i;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertyIdsFromNames (0x56)\n"));
 
 	/* Sanity checks */
@@ -671,9 +673,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->u.mapi_GetIDsFromNames.count = mapi_req->u.mapi_GetIDsFromNames.count;
+	mapi_repl->u.mapi_GetIDsFromNames.propID = talloc_array(mem_ctx, uint16_t, 
+								mapi_req->u.mapi_GetIDsFromNames.count);
 
-	mapi_repl->u.mapi_GetIDsFromNames.count = 0;
-	mapi_repl->u.mapi_GetIDsFromNames.propID = NULL;
+	for (i = 0; i < mapi_req->u.mapi_GetIDsFromNames.count; i++) {
+		mapistore_namedprops_get_mapped_id(emsmdbp_ctx->mstore_ctx->nprops_ctx, 
+						   mapi_req->u.mapi_GetIDsFromNames.nameid[i],
+						   &mapi_repl->u.mapi_GetIDsFromNames.propID[i]);
+	}
 
 	*size += libmapiserver_RopGetPropertyIdsFromNames_size(mapi_repl);
 

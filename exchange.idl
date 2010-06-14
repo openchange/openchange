@@ -2346,7 +2346,7 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x30 */
-	typedef [bitmap32bit, flag(NDR_PAHEX)] bitmap {
+	typedef [public, bitmap32bit, flag(NDR_PAHEX)] bitmap {
 		STOP_SEARCH			= 0x00000001,
 		RESTART_SEARCH			= 0x00000002,
 		RECURSIVE_SEARCH		= 0x00000004,
@@ -2376,9 +2376,10 @@ System Attendant Private Interface
 		boolean8	IncludeFolders;
 	} GetSearchCriteria_req;
 
-	typedef [flag(NDR_NOALIGN)] struct {
-		[subcontext(2)] mapi_SRestriction	res;
- 		uint8					unknown;
+	typedef [nopush,nopull,noprint,flag(NDR_NOALIGN)] struct {
+		uint16					RestrictionDataSize;
+		[subcontext(0),subcontext_size(RestrictionDataSize)] mapi_SRestriction	RestrictionData;
+ 		uint8					LogonId;
 		uint16					FolderIdCount;
 		hyper					FolderIds[FolderIdCount];
 		SearchFlags				SearchFlags;

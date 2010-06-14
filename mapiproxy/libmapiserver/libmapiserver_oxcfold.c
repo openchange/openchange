@@ -166,3 +166,41 @@ _PUBLIC_ uint16_t libmapiserver_RopDeleteMessage_size(struct EcDoRpc_MAPI_REPL *
 
 	return size;
 }
+
+
+/**
+   \details Calculate SetSearchCriteria (0x30) Rop size
+
+   \param response pointer to the SetSearchCriteria EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SetSearchCriteria response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+
+/**
+   \details Calculate GetSearchCriteria (0x31) Rop size
+
+   \param response pointer to the GetSearchCriteria EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of GetSearchCriteria response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETSEARCHCRITERIA;
+	size += response->u.mapi_GetSearchCriteria.RestrictionDataSize;
+	size += response->u.mapi_GetSearchCriteria.FolderIdCount * sizeof (uint64_t);
+
+	return size;
+}

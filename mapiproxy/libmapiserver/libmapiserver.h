@@ -230,6 +230,15 @@
 
 
 /**
+   \details GetSearchCriteria Rop has fixed response size for:
+   -# RestrictionDataSize: uint16_t
+   -# LogonId: uint8_t
+   -# FolderIdCount: uint16_t
+   -# SearchFlags: uint32_t
+ */
+#define	SIZE_DFLT_ROPGETSEARCHCRITERIA		9
+
+/**
    \details GetPerUserLongTermIds has fixed response size for:
    -# LongTermIdCount: uint16_t
  */
@@ -293,6 +302,8 @@ uint16_t libmapiserver_RopGetContentsTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCreateFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeleteFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeleteMessage_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcmsg.c */
 uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *);

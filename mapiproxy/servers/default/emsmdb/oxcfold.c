@@ -807,7 +807,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessage(TALLOC_CTX *mem_ctx,
 						  struct EcDoRpc_MAPI_REPL *mapi_repl,
 						  uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] DeleteMessage (0x1e)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteMessage (0x1e)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -826,3 +826,95 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessage(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+
+/**
+   \details EcDoRpc SetSearchCriteria (0x30) Rop. This operation sets
+   the search criteria for a search folder.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the SetSearchCriteria EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the SetSearchCriteria EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error  
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetSearchCriteria(TALLOC_CTX *mem_ctx,
+						      struct emsmdbp_context *emsmdbp_ctx,
+						      struct EcDoRpc_MAPI_REQ *mapi_req,
+						      struct EcDoRpc_MAPI_REPL *mapi_repl,
+						      uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] SetSearchCriteria (0x30)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	/* TODO: actually implement this */
+
+	*size += libmapiserver_RopSetSearchCriteria_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details EcDoRpc GetSearchCriteria (0x31) Rop. This operation gets
+   the search criteria for a search folder.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetSearchCriteria EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the GetSearchCriteria EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error  
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetSearchCriteria(TALLOC_CTX *mem_ctx,
+						      struct emsmdbp_context *emsmdbp_ctx,
+						      struct EcDoRpc_MAPI_REQ *mapi_req,
+						      struct EcDoRpc_MAPI_REPL *mapi_repl,
+						      uint32_t *handles, uint16_t *size)
+{
+	struct mapi_SRestriction *res;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] GetSearchCriteria (0x31)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	res = NULL;
+	mapi_repl->u.mapi_GetSearchCriteria.RestrictionDataSize = 0;
+	mapi_repl->u.mapi_GetSearchCriteria.LogonId = mapi_req->logon_id;
+	mapi_repl->u.mapi_GetSearchCriteria.FolderIdCount = 0;
+	mapi_repl->u.mapi_GetSearchCriteria.FolderIds = NULL;
+	mapi_repl->u.mapi_GetSearchCriteria.SearchFlags = 0;
+
+	/* TODO: actually implement this */
+
+	*size += libmapiserver_RopGetSearchCriteria_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}

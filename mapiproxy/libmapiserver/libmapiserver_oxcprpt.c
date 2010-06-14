@@ -157,6 +157,27 @@ _PUBLIC_ uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *res
 }
 
 
+/**
+   \details Calculate WriteStream Rop size
+
+   \param response pointer to the WriteStream EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of WriteStream response   
+ */
+_PUBLIC_ uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *response)
+{
+  int16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPWRITESTREAM;
+
+	return size;
+}
+
 
 /**
    \details Calculate GetPropertyIdsFromNames Rop size

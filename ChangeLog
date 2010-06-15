@@ -1,3 +1,99 @@
+2010-06-14
+    jkerihuel
+	[r1958]
+		Add server-side skeleton for WriteStream Rop.
+	[r1957]
+		Add server-side skeleton for SetSearchCriteria and GetSearchCritera
+		Rop.
+		
+		Improve GetSearchCriteria IDL and work around the null restriction
+		response size in GetSearchCriteria reply by tweaking generated code
+		into nopull,nopush,noprint
+		
+		Add generated mapistore ldif file to the ignore list
+	[r1955]
+		- Add preliminary implementation for named properties support in
+		  mapistore. The API is yet very preliminary (init + get mapped
+		  property ID), but is enough to return consistent data to Outlook and
+		  make its behavior more reliable.
+		
+		- mparse.pl now generates a LDIF file for the mapistore namedprops LDB
+		  database which maps named properties within namespaces and store
+		  default values for common/standard named properties Outlook is
+		  using.
+		
+		- add a custom ldb_connect wrapper in mapistore to allow mapistore to
+		  open multiple instances of the same mapi named properties ldb
+		  database.
+		
+		- Complete preliminary implementation of GetIDsFromNames in oxcprpt.c.
+2010-06-13
+    jkerihuel
+	[r1944]
+		- Fix some named properties
+		- Add a referenced propID value once it is mapped.
+		Will be used by mapistore to populate/generate the initial
+		nameid props database
+	[r1938]
+		Fix a bug with unmapped named properties lookup.
+		For convenience purposes GetProps accepts within input SPropTagArray
+		unmapped named properties we internally turn into mapped ones using
+		GetIDsFroNames. This behavior was incorrect cause we were looking for
+		properties within specific ranges. Replace this behavior with a global
+		lookup over named properties we know about.
+		
+		One limitation of this fix is that custom nameid properties (not referenced
+		within libmapi/conf/mapi-named-properties) won't be lookup. However it is
+		acceptable for the moment.
+    bradh
+	[r1943]
+		Fix signed / unsigned issue in openchangebackup utility.
+	[r1942]
+		Fix some signed/unsigned issues in libmapi.
+	[r1941]
+		Fix up signed / unsigned issues with libocpf.
+		
+		This changes the API to allow easy testing of failure vs results.
+	[r1940]
+		make sure that the 0 is interpreted as unsigned.
+	[r1939]
+		Fix a signed / unsigned comparison warning in libmapi.
+	[r1937]
+		Fix some signed / unsigned warnings in torture suite.
+	[r1936]
+		Avoid signed / unsigned comparison in libmapiadmin.
+	[r1935]
+		Avoid signed / unsigned comparison in openchangedb.
+	[r1934]
+		Avoid signed / unsigned comparisions in mapitest
+	[r1933]
+		Avoid signed / unsigned comparisons in FSOCPF backend.
+	[r1932]
+		Fill in initialisers.
+		
+		Avoids warning with gcc's -Wmissing-field-initializers option.
+    jelmer
+	[r1947]
+		Fix imports, clean up.
+	[r1946]
+		Raise exception on invalid arguments to openchange_mapistore_url.
+2010-06-12
+    jkerihuel
+	[r1931]
+		Fix duplicate
+    bradh
+	[r1930]
+		Use calculated len inside the loop, instead of calling strlen each time.
+2010-06-11
+    jkerihuel
+	[r1929]
+		Add new properties and PSETID
+2010-06-10
+    bradh
+	[r1928]
+		Change variable name to avoid shadowed variable name warning with ICC.
+	[r1927]
+		Add newline at end of file to avoid compiler warning with ICC.
 2010-06-09
     bradh
 	[r1922]

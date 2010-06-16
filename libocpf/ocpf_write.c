@@ -27,6 +27,7 @@
 #include <libocpf/ocpf.h>
 #include <libocpf/ocpf_api.h>
 #include <libmapi/defs_private.h>
+#include <libmapi/mapidefs.h>
 
 #include <time.h>
 
@@ -36,14 +37,23 @@ struct ocpf_guid {
 };
 
 static const struct ocpf_guid ocpf_guid[] = {
-	{ "PSETID_Appointment",  "00062002-0000-0000-c000-000000000046" },
-	{ "PSETID_Task",	 "00062003-0000-0000-c000-000000000046" },
-	{ "PSETID_Address",    	 "00062004-0000-0000-c000-000000000046" },
-	{ "PSETID_Common",	 "00062008-0000-0000-c000-000000000046" },
-	{ "PSETID_Note",       	 "0006200e-0000-0000-c000-000000000046" },
-	{ "PSETID_Log",		 "0006200a-0000-0000-c000-000000000046" },
-	{ "PS_PUBLIC_STRINGS",   "00020329-0000-0000-c000-000000000046" },
-	{ "PS_INTERNET_HEADERS", "00020386-0000-0000-c000-000000000046" },
+	{ "PSETID_Appointment",		PSETID_Appointment },
+	{ "PSETID_Task",		PSETID_Task },
+	{ "PSETID_Address",		PSETID_Address },
+	{ "PSETID_Common",		PSETID_Common },
+	{ "PSETID_Note",		PSETID_Note },
+	{ "PSETID_Log",			PSETID_Log },
+	{ "PSETID_Sharing",		PSETID_Sharing },
+	{ "PSETID_PostRss",		PSETID_PostRss },
+	{ "PSETID_UnifiedMessaging",	PSETID_UnifiedMessaging },
+	{ "PSETID_Meeting",		PSETID_Meeting },
+	{ "PSETID_Airsync",		PSETID_AirSync },
+	{ "PSETID_Messaging",		PSETID_Messaging },
+	{ "PSETID_Attachment",		PSETID_Attachment },
+	{ "PSETID_CalendarAssistant",	PSETID_CalendarAssistant },
+	{ "PS_PUBLIC_STRINGS",		PS_PUBLIC_STRINGS },
+	{ "PS_INTERNET_HEADERS",	PS_INTERNET_HEADERS },
+	{ "PS_MAPI",			PS_MAPI },
 	{ NULL,			 NULL					}
 };
 

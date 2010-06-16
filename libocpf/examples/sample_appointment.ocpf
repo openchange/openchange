@@ -45,14 +45,14 @@ PROPERTY {
 };
 
 NPROPERTY {
-	  OOM:Label:PSETID_Appointment = 9
+	  OOM:BusyStatus:PSETID_Appointment = 9
 	  	  
-	  OOM:Start:PSETID_Appointment  =  $start_date
+	  OOM:ApptStartDate:PSETID_Appointment  =  $start_date
 	  OOM:CommonStart:PSETID_Common =  $start_date
-	  OOM:End:PSETID_Appointment    = $end_date
+	  OOM:ApptEndDate:PSETID_Appointment    = $end_date
 	  OOM:CommonEnd:PSETID_Common   = $end_date
 
-	  OOM:Location:PSETID_Appointment = "Home Sweet Home"
+	  OOM:Location:PSETID_Appointment = W"Home Sweet Home"
 
 	  /* MeetingStatus */
 	  MNID_ID:0x8217:PSETID_Appointment = $wrong

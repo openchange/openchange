@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008.
+   Copyright (C) Julien Kerihuel 2008-2010.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

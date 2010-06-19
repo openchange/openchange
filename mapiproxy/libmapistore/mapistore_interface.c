@@ -551,7 +551,7 @@ _PUBLIC_ int mapistore_get_folder_count(struct mapistore_context *mstore_ctx,
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend opendir */
+	/* Step 1. Call backend readdir */
 	ret = mapistore_backend_readdir_count(backend_ctx, fid, MAPISTORE_FOLDER_TABLE, RowCount);
 
 	return ret;

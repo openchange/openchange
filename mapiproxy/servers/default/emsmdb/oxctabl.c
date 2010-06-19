@@ -279,7 +279,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 				}
 			}
 
-			/* SandardPropertyRow hack */
+			/* StandardPropertyRow hack */
 			if (!flagged) {
 				libmapiserver_push_property(mem_ctx, 
 							    lp_iconv_convenience(emsmdbp_ctx->lp_ctx),

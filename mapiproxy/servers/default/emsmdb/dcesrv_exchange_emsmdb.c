@@ -565,7 +565,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 								    mapi_response->handles, &size);
 			break;
 		/* op_MAPI_UpdateDeferredActionMessages: 0x57 */ 
-		/* op_MAPI_EmptyFolder: 0x58 */
+		case op_MAPI_EmptyFolder: /* 0x58 */
+		retval = EcDoRpc_RopEmptyFolder(mem_ctx, emsmdbp_ctx,
+						&(mapi_request->mapi_req[i]),
+						&(mapi_response->mapi_repl[idx]),
+						mapi_response->handles, &size);
+			break;
 		/* op_MAPI_ExpandRow: 0x59 */
 		/* op_MAPI_CollapseRow: 0x5a */
 		/* op_MAPI_LockRegionStream: 0x5b */

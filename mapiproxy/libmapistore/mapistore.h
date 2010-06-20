@@ -76,7 +76,7 @@ struct mapistore_backend {
 	int (*get_path)(void *, uint64_t, uint8_t, char **);
 	/* folders semantic */
 	int (*op_mkdir)(void *, uint64_t, uint64_t, struct SRow *);
-	int (*op_rmdir)(void *);
+	int (*op_rmdir)(void *, uint64_t, uint64_t);
 	int (*op_opendir)(void *, uint64_t, uint64_t);
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
@@ -148,7 +148,7 @@ int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, 
 				 uint32_t, uint32_t, void **);
 int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
 int mapistore_getprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
-
+int mapistore_get_child_fids(struct mapistore_context *, uint32_t, uint64_t, uint64_t **, uint32_t *);
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);
 

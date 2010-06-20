@@ -386,6 +386,8 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	char				*newfolder;
 	char				*propfile;
 	uint32_t			ocpf_context_id;
+	struct fsocpf_folder_list	*newel;
+	DIR				*dir;
 	int				ret;
 	uint32_t			i;
 
@@ -415,6 +417,12 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERROR;
 	}
+	dir = opendir(newfolder);
+	
+	/* add this folder to the list of ones we know about */
+	newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fid, newfolder, dir);
+	DLIST_ADD_END(fsocpf_ctx->folders, newel, struct fsocpf_folder_list *);
+	DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", fid));
 
 	/* Step 3. Create the array of mapi properties */
 	mapi_lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, aRow->cValues);
@@ -424,7 +432,7 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 		cast_mapi_SPropValue(&(mapi_lpProps.lpProps[i]), &(aRow->lpProps[i]));
 	}
 
-	/* Step 3. Create the .properties file */
+	/* Step 4. Create the .properties file */
 	propfile = talloc_asprintf(mem_ctx, "%s/.properties", newfolder);
 	talloc_free(newfolder);
 
@@ -446,14 +454,53 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
    \details Delete a folder from the fsocpf backend
 
    \param private_data pointer to the current fsocpf context
+   \param parent_fid the FID for the parent of the folder to delete
+   \param fid the FID for the folder to delete
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_op_rmdir(void *private_data)
+static int fsocpf_op_rmdir(void *private_data, uint64_t parent_fid, uint64_t fid)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
-
+	struct fsocpf_folder	*parent;
+	char			*folderpath;
+	char			*propertiespath;
+	TALLOC_CTX		*mem_ctx;
+	int			ret;
+	
 	if (!fsocpf_ctx) {
+		DEBUG(0, ("No fsocpf context found for op_rmdir :-(\n"));
+		return MAPISTORE_ERROR;
+	}
+	DEBUG(4, ("FSOCPF would delete FID 0x%"PRIx64" from 0x%"PRIx64"\n", fid, parent_fid));
+
+	/* Step 1. Search for the parent fid */
+	parent = fsocpf_find_folder_by_fid(fsocpf_ctx, parent_fid);
+
+	if (! parent) {
+		DEBUG(0, ("parent context for folder 0x%.16"PRIx64" not found\n", parent_fid));
+		return MAPISTORE_ERR_NO_DIRECTORY;
+	}
+
+	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_mkdir");
+
+	/* Step 2. Stringify fid */
+	folderpath = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, parent->path, fid);
+	DEBUG(5, ("folder to delete = %s\n", folderpath));
+
+	/* Step 3. Remove .properties file */
+	propertiespath = talloc_asprintf(mem_ctx, "%s/.properties", folderpath);
+	ret = unlink(propertiespath);
+	if (ret) {
+		DEBUG(0, ("unlink failed with ret = %d (%s)\n", ret, strerror(errno)));
+		/* this could happen if we have no .properties file, so lets still try to delete */
+	}
+
+	/* Step 4. Delete directory */
+	ret = rmdir(folderpath);
+	if (ret) {
+		DEBUG(0, ("rmdir failed with ret = %d (%s)\n", ret, strerror(errno)));
+		talloc_free(mem_ctx);
 		return MAPISTORE_ERROR;
 	}
 

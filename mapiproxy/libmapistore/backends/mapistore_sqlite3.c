@@ -121,10 +121,12 @@ static int sqlite3_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fi
    \details Atomic operation: Delete directory (rmdir)
 
    \param private_data generic pointer to the sqlite3 context
+   \param parent_fid the FID for the parent of the folder to delete
+   \param fid the FID for the folder to delete
 
    \return MAPI_E_SUCCESS on success
  */
-static int sqlite3_op_rmdir(void *private_data)
+static int sqlite3_op_rmdir(void *private_data, uint64_t parent_fid, uint64_t fid)
 {
 	struct sqlite3_context		*sqlite_ctx = (struct sqlite3_context *)private_data;
 

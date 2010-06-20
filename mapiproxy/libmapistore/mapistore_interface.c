@@ -23,6 +23,7 @@
 #include "mapistore_errors.h"
 #include "mapistore_private.h"
 #include <dlinklist.h>
+#include <libmapi/defs_private.h>
 
 #include <string.h>
 
@@ -501,8 +502,7 @@ _PUBLIC_ int mapistore_mkdir(struct mapistore_context *mstore_ctx,
    \param context_id the context identifier referencing the backend
    \param parent_fid the parent folder identifier
    \param fid the folder identifier representing the folder to delete
-   \param flags Flags specifying the rmdir operation behavior
-   (recursive for folders, messages)
+   \param flags flags that control the behaviour of the operation
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
@@ -513,15 +513,50 @@ _PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
 			     uint8_t flags)
 {
 	struct backend_context		*backend_ctx;
+	int				ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	DEBUG(4, ("mapistore_rmdir interface, fid 0x%"PRIx64" from parent 0x%"PRIx64"\n", fid, parent_fid));
 
-	/* Step 0. Ensure the context exists */
+	/* Step 1. Find the backend context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);	
 
-	return MAPISTORE_SUCCESS;	
+	/* Step 2. Handle deletion of child folders / messages */
+	if (flags | DEL_FOLDERS) {
+		uint64_t	*childFolders;
+		uint32_t	childFolderCount;
+		int		retval;
+		uint32_t	i;
+
+		/* Get subfolders list */
+		retval = mapistore_get_child_fids(mstore_ctx, context_id, fid,
+						  &childFolders, &childFolderCount);
+		DEBUG(4, ("mapistore_rmdir fid: 0x%"PRIx64", child count: %d\n", fid, childFolderCount));
+		if (retval) {
+			DEBUG(4, ("mapistore_rmdir bad retval: 0x%x", retval));
+			return MAPI_E_NOT_FOUND;
+		}
+
+		/* Delete each subfolder in mapistore */
+		for (i = 0; i < childFolderCount; ++i) {
+			DEBUG(4, ("mapistore_rmdir child: %d, FID: 0x%"PRIx64", parent: 0x%"PRIx64"\n", i, childFolders[i], fid));
+			retval = mapistore_rmdir(mstore_ctx, context_id, fid, childFolders[i], flags);
+			if (retval) {
+				  DEBUG(4, ("mapistore_rmdir failed to delete fid 0x%"PRIx64" (0x%x)", childFolders[i], retval));
+				  talloc_free(childFolders);
+				  return MAPI_E_NOT_FOUND;
+			}
+		}
+
+	}
+	
+	/* Step 3. Call backend rmdir */
+	DEBUG(4, ("mapistore_rmdir backend delete of fid 0x%"PRIx64" from parent 0x%"PRIx64"\n", fid, parent_fid));
+	ret = mapistore_backend_rmdir(backend_ctx, parent_fid, fid);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
 
@@ -697,4 +732,55 @@ _PUBLIC_ int mapistore_getprops(struct mapistore_context *mstore_ctx,
 	ret = mapistore_backend_getprops(backend_ctx, fmid, type, properties, aRow);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+/**
+   \details Retrieve the folder IDs of child folders within a mapistore
+   folder
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   \param fid the folder identifier (for the parent folder)
+   \param child_fids pointer to where to return the array of child fids
+   \param child_fid_count pointer to the count result to return
+
+   \note The caller is responsible for freeing the \p child_fids array
+   when it is no longer required.
+   
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_get_child_fids(struct mapistore_context *mstore_ctx,
+				      uint32_t context_id,
+				      uint64_t fid,
+				      uint64_t *child_fids[],
+				      uint32_t *child_fid_count)
+{
+	struct backend_context		*backend_ctx;
+	uint32_t			i;
+	void				*data;
+	int				ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 0. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Call backend readdir to get the folder count */
+	ret = mapistore_backend_readdir_count(backend_ctx, fid, MAPISTORE_FOLDER_TABLE, child_fid_count);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_NO_DIRECTORY, NULL);
+	
+	/* Step 2. Create a suitable sized array for the fids */
+	*child_fids = talloc_zero_array((TALLOC_CTX *)mstore_ctx, uint64_t, *child_fid_count);
+
+	/* Step 3. Fill the array */
+	for (i = 0; i < *child_fid_count; ++i) {
+		// TODO: add error checking for this call
+		ret = mapistore_get_table_property(mstore_ctx, context_id, MAPISTORE_FOLDER_TABLE, fid,
+						   PR_FID, i, &data);
+		(*child_fids)[i] = *((uint64_t*)(data));
+	}
+
+	return MAPISTORE_SUCCESS;
 }

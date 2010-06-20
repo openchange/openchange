@@ -449,6 +449,12 @@ int mapistore_backend_mkdir(struct backend_context *bctx,
 	return bctx->backend->op_mkdir(bctx->private_data, parent_fid, fid, aRow);
 }
 
+int mapistore_backend_rmdir(struct backend_context *bctx,
+			    uint64_t parent_fid,
+			    uint64_t fid)
+{
+	return bctx->backend->op_rmdir(bctx->private_data, parent_fid, fid);
+}
 
 int mapistore_backend_readdir_count(struct backend_context *bctx, uint64_t fid, uint8_t table_type, 
 				    uint32_t *RowCount)

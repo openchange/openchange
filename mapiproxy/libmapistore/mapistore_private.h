@@ -160,6 +160,7 @@ int mapistore_get_path(struct backend_context *, uint64_t, uint8_t, char **);
 int mapistore_backend_opendir(struct backend_context *, uint64_t, uint64_t);
 int mapistore_backend_mkdir(struct backend_context *, uint64_t, uint64_t, struct SRow *);
 int mapistore_backend_readdir_count(struct backend_context *, uint64_t, uint8_t, uint32_t *);
+int mapistore_backend_rmdir(struct backend_context *, uint64_t, uint64_t);
 int mapistore_backend_get_table_property(struct backend_context *, uint64_t, uint8_t, uint32_t, 
 					 uint32_t, void **);
 int mapistore_backend_openmessage(struct backend_context *, uint64_t, uint64_t, struct mapistore_message *);

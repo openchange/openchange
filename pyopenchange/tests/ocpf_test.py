@@ -18,6 +18,8 @@ filename = os.getcwd() + "/ocpf_test.ocpf";
 ctx2 = Ocpf(filename, ocpf.OCPF_FLAGS_CREATE)
 # dummy test to ensure we can set an ocpf parameter properly
 ret = ctx2.write_init(0x12345678)
+ret = ctx2.write(SPropValue)
+ret = ctx2.write_commit()
 ret = ctx2.dump()
 
 del ctx

@@ -127,6 +127,39 @@ static PyObject *py_ocpf_write_init(PyOcpfObject *self, PyObject *args)
 	return PyInt_FromLong(ret);
 }
 
+static PyObject *py_ocpf_write(PyOcpfObject *self, PyObject *args)
+{
+	int				ret;
+	PyObject			*pySPropValue;
+	PySPropValueObject		*SPropValue;
+	struct mapi_SPropValue_array	mapi_lpProps;
+	int				i;
+
+	if (!PyArg_ParseTuple(args, "O", &pySPropValue)) {
+		return NULL;
+	}
+
+	SPropValue = (PySPropValueObject *) pySPropValue;
+
+	mapi_lpProps.cValues = SPropValue->cValues;
+	mapi_lpProps.lpProps = talloc_array(SPropValue->mem_ctx, struct mapi_SPropValue, SPropValue->cValues);
+	for (i = 0; i < SPropValue->cValues; i++) {
+		cast_mapi_SPropValue(&(mapi_lpProps.lpProps[i]), &(SPropValue->SPropValue[i]));
+	}
+
+	ret = ocpf_write_auto(self->context_id, NULL, &mapi_lpProps);
+	talloc_free(mapi_lpProps.lpProps);
+	return PyInt_FromLong(ret);
+}
+
+static PyObject *py_ocpf_write_commit(PyOcpfObject *self)
+{
+	int		ret;
+
+	ret = ocpf_write_commit(self->context_id);
+	return PyInt_FromLong(ret);
+}
+
 static PyMethodDef py_ocpf_global_methods[] = {
 	{ NULL }
 };
@@ -135,6 +168,8 @@ static PyMethodDef ocpf_methods[] = {
 	{ "parse", (PyCFunction) py_ocpf_parse, METH_NOARGS },
 	{ "dump", (PyCFunction) py_ocpf_dump, METH_NOARGS },
 	{ "write_init", (PyCFunction) py_ocpf_write_init, METH_VARARGS },
+	{ "write", (PyCFunction) py_ocpf_write, METH_VARARGS },
+	{ "write_commit", (PyCFunction) py_ocpf_write_commit, METH_NOARGS },
 	{ "set_SPropValue_array", (PyCFunction) py_ocpf_set_SPropValue_array, METH_NOARGS },
 	{ "get_SPropValue", (PyCFunction) py_ocpf_get_SPropValue, METH_NOARGS },
 	{ NULL },

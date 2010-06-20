@@ -55,7 +55,7 @@ static void py_SPropValue_dealloc(PyObject *_self)
 static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 {
 	uint32_t	proptag;
-	void		*data;
+	PyObject	*data;
 	int		i;
 
 	if (!PyArg_ParseTuple(args, "lO", &proptag, &data)) {
@@ -73,27 +73,59 @@ static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 
 	switch (proptag & 0xFFFF) {
 	case PT_SHORT:
+		if (!PyInt_Check(data)) {
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires long");
+			return NULL;
+		}
 		self->SPropValue[self->cValues].value.i = (uint16_t) PyInt_AsLong(data);
 		break;
 	case PT_LONG:
+		if (!PyInt_Check(data)) {
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires long");
+			return NULL;
+		}
 		self->SPropValue[self->cValues].value.l = PyInt_AsLong(data);
 		break;
 	case PT_DOUBLE:
+		if (!PyFloat_Check(data)) {
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires double");
+			return NULL;
+		}
 		self->SPropValue[self->cValues].value.dbl = PyFloat_AsDouble(data);
 		break;
 	case PT_BOOLEAN:
+		if (!PyBool_Check(data)) {
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires long");
+			return NULL;
+		}
 		self->SPropValue[self->cValues].value.b = PyInt_AsLong(data);
 		break;
 	case PT_I8:
+		if (!PyLong_Check(data)) {
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires long long int");
+			return NULL;
+		}
 		self->SPropValue[self->cValues].value.d = PyLong_AsLongLong(data);
 		break;
 	case PT_STRING8:
+		if (!PyString_Check(data)) {
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires string");
+			return NULL;
+		}
 		self->SPropValue[self->cValues].value.lpszA = PyString_AsString(data);
 		break;
 	case PT_UNICODE:
+		if (!PyString_Check(data)) {
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires string");
+			return NULL;
+		}
 		self->SPropValue[self->cValues].value.lpszW = PyString_AsString(data);
 		break;
 	case PT_ERROR:
+		if (!PyInt_Check(data)) {
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires long");
+			return NULL;
+		}
 		self->SPropValue[self->cValues].value.err = PyInt_AsLong(data);
 		break;
 	default:

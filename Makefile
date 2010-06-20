@@ -193,7 +193,7 @@ endif
 	rm -f */*~
 	rm -f */*/*~
 	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) \
-		  libmapi.$(SHLIBEXT)
+		  libmapi.$(SHLIBEXT) ocpf.$(SHLIBEXT)
 
 clean:: libmapi-clean
 
@@ -595,15 +595,18 @@ libmapiadmin/proto.h libmapiadmin/proto_private.h: 	\
 LIBOCPF_SO_VERSION = 0
 
 libocpf:	libocpf/proto.h				\
-		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
+		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+		ocpf.$(SHLIBEXT)
 
 libocpf-install:	libocpf-installpc	\
 			libocpf-installlib	\
-			libocpf-installheader
+			libocpf-installheader	\
+			ocpf-install
 
 libocpf-uninstall:	libocpf-uninstallpc	\
 			libocpf-uninstalllib	\
-			libocpf-uninstallheader
+			libocpf-uninstallheader	\
+			ocpf-uninstall
 
 libocpf-clean::
 	rm -f libocpf/*.o libocpf/*.po
@@ -615,7 +618,7 @@ ifneq ($(SNAPSHOT), no)
 	rm -f libocpf/proto_private.h
 endif
 	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) \
-		  libocpf.$(SHLIBEXT)
+		  libocpf.$(SHLIBEXT) ocpf.$(SHLIBEXT)
 
 clean:: libocpf-clean
 
@@ -689,7 +692,17 @@ libocpf/ocpf.tab.c:	libocpf/ocpf.y
 libocpf/lex.yy.o: CFLAGS=
 libocpf/ocpf.tab.o: CFLAGS=
 
+ocpf.$(SHLIBEXT):	libocpf/pyocpf.c			\
+			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
 
+ocpf-install:
+	$(INSTALL) -d $(DESTDIR)$(PYCDIR)
+	$(INSTALL) -m 0755 ocpf.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)
+
+ocpf-uninstall:
+	rm -f $(DESTDIR)$(PYCDIR)/ocpf.$(SHLIBEXT)
 
 #################################################################
 # torture suite compilation rules
@@ -1526,19 +1539,19 @@ bin/schemaIDGUID: utils/schemaIDGUID.o
 
 pythonscriptdir = python
 
-pymapi: $(pythonscriptdir)/mapi.$(SHLIBEXT)
+#pymapi: $(pythonscriptdir)/mapi.$(SHLIBEXT)
 
-pymapi/%: CFLAGS+=`$(PYTHON_CONFIG) --cflags` -fPIC
+#pymapi/%: CFLAGS+=`$(PYTHON_CONFIG) --cflags` -fPIC
 
-$(pythonscriptdir)/mapi.$(SHLIBEXT): $(patsubst %.c,%.o,$(wildcard pymapi/*.c)) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	$(CC) -o $@ $^ `$(PYTHON_CONFIG) --libs` $(DSOOPT)
+#$(pythonscriptdir)/mapi.$(SHLIBEXT): $(patsubst %.c,%.o,$(wildcard pymapi/*.c)) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+#	$(CC) -o $@ $^ `$(PYTHON_CONFIG) --libs` $(DSOOPT)
 
-pymapi-install::
-	$(INSTALL) -d $(DESTDIR)$(PYCDIR)
-	$(INSTALL) -m 0755 $(pythonscriptdir)/mapi.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)
+#pymapi-install::
+#	$(INSTALL) -d $(DESTDIR)$(PYCDIR)
+#	$(INSTALL) -m 0755 $(pythonscriptdir)/mapi.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)
 
-pymapi-uninstall::
-	rm -f $(DESTDIR)$(PYCDIR)/mapi.$(SHLIBEXT)
+#pymapi-uninstall::
+#	rm -f $(DESTDIR)$(PYCDIR)/mapi.$(SHLIBEXT)
 
 PYTHON_MODULES = $(patsubst $(pythonscriptdir)/%,%,$(shell find  $(pythonscriptdir) -name "*.py"))
 
@@ -1568,6 +1581,35 @@ clean-python:
 	rm -f $(pythonscriptdir)/openchange/*.pyc
 
 clean:: clean-python
+
+pyopenchange: $(pythonscriptdir)/mapi.$(SHLIBEXT)
+
+$(pythonscriptdir)/mapi.$(SHLIBEXT): 	pyopenchange/pymapi.c				\
+					pyopenchange/pymapi_properties.c		\
+					libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
+	$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
+
+
+pyopenchange/pymapi_properties.c:		\
+	libmapi/conf/mapi-properties		\
+	libmapi/conf/mparse.pl		
+	@./libmapi/conf/build.sh
+
+pyopenchange-clean:
+	rm -f pyopenchange/*.o
+	rm -f pyopenchange/*.pyc
+	rm -f $(pythonscriptdir)/mapi.$(SHLIBEXT)
+	rm -f pyopenchange/pymapi_properties.c
+
+clean:: pyopenchange-clean
+
+pyopenchange-install:
+	$(INSTALL) -d $(DESTDIR)$(PYCDIR)/openchange
+	$(INSTALL) -m 0755 $(pythonscriptdir)/mapi.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
+
+pyopenchange-uninstall:
+	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapi.$(SHLIBEXT)
+
 
 ###################
 # nagios plugin

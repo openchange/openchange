@@ -593,9 +593,15 @@ fi
 PYCDIR=`$PYTHON -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='\\$(prefix)')"`
 AC_SUBST(PYCDIR)
 
+dnl Enable pyopenchange by default
+PYMAPIALL="$PYMAPIALL pyopenchange"
+PYMAPIINSTALL="$PYMAPIALLINSTALL pyopenchange-install"
+PYMAPIUNINSTALL="$PYMAPIUNINSTALL pyopenchange-uninstall"
+
 AC_SUBST(PYMAPIALL)
 AC_SUBST(PYMAPIINSTALL)
 AC_SUBST(PYMAPIUNINSTALL)
+
 
 dnl ##########################################################################
 dnl Documentation dependencies

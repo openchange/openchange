@@ -21,7 +21,10 @@
 
 #include <Python.h>
 #include "pyopenchange/pyocpf.h"
+#include "pyopenchange/pymapi.h"
 #include "libocpf/ocpf.h"
+
+static PyTypeObject *SPropValue_Type;
 
 void initocpf(void);
 
@@ -78,6 +81,33 @@ static PyObject *py_ocpf_set_SPropValue_array(PyOcpfObject *self)
 	return PyInt_FromLong(ret);
 }
 
+static PyObject *py_ocpf_get_SPropValue(PyOcpfObject *self)
+{
+	uint32_t		cValues = 0;
+	PyObject		*mod_mapi;
+	PySPropValueObject	*pySPropValue;
+	struct SPropValue	*SPropValue;
+
+	mod_mapi = PyImport_ImportModule("openchange.mapi");
+	if (mod_mapi == NULL) {
+		printf("Can't load module\n");
+		return NULL;
+	}
+	SPropValue_Type = (PyTypeObject *)PyObject_GetAttrString(mod_mapi, "SPropValue");
+	if (SPropValue_Type == NULL)
+		return NULL;
+
+	SPropValue = ocpf_get_SPropValue(self->context_id, &cValues);
+
+	pySPropValue = (PySPropValueObject *)SPropValue_Type->tp_new(NULL, NULL, NULL);
+	talloc_free(pySPropValue->SPropValue);
+	pySPropValue->SPropValue = SPropValue;
+	talloc_steal(pySPropValue->mem_ctx, pySPropValue->SPropValue);
+	pySPropValue->cValues = cValues;
+
+	return (PyObject *) pySPropValue;
+}
+
 static PyObject *py_ocpf_dump(PyOcpfObject *self)
 {
 	ocpf_dump(self->context_id);
@@ -106,6 +136,7 @@ static PyMethodDef ocpf_methods[] = {
 	{ "dump", (PyCFunction) py_ocpf_dump, METH_NOARGS },
 	{ "write_init", (PyCFunction) py_ocpf_write_init, METH_VARARGS },
 	{ "set_SPropValue_array", (PyCFunction) py_ocpf_set_SPropValue_array, METH_NOARGS },
+	{ "get_SPropValue", (PyCFunction) py_ocpf_get_SPropValue, METH_NOARGS },
 	{ NULL },
 };
 
@@ -140,8 +171,6 @@ void initocpf(void)
 {
 	PyObject	*m;
 
-	printf("initocpf 1\n");
-
 	if (PyType_Ready(&PyOcpf) < 0) {
 		return;
 	}
@@ -160,8 +189,6 @@ void initocpf(void)
 	Py_INCREF(&PyOcpf);
 
 	PyModule_AddObject(m, "Ocpf", (PyObject *)&PyOcpf);
-
-	printf("OCPF\n");
 
 	/* Initialize OCPF subsystem */
 	ocpf_init();

@@ -10,6 +10,8 @@ ctx = Ocpf(filename, ocpf.OCPF_FLAGS_READ)
 
 ret = ctx.parse()
 ret = ctx.set_SPropValue_array()
+SPropValue = ctx.get_SPropValue()
+SPropValue.dump("SPropValue:  ")
 ret = ctx.dump()
 
 filename = os.getcwd() + "/ocpf_test.ocpf";

@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
 import os
-import ocpf
-from ocpf import Ocpf
+import openchange
+import openchange.ocpf as ocpf
+from openchange.ocpf import Ocpf
 
-filename = os.getcwd() + "/../sample_appointment.ocpf";
+filename = os.getcwd() + "/../../libocpf/examples/sample_appointment.ocpf";
 ctx = Ocpf(filename, ocpf.OCPF_FLAGS_READ)
 
 ret = ctx.parse()

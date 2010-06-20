@@ -20,7 +20,7 @@
 */
 
 #include <Python.h>
-#include "libocpf/pyocpf.h"
+#include "pyopenchange/pyocpf.h"
 #include "libocpf/ocpf.h"
 
 void initocpf(void);

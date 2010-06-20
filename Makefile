@@ -193,7 +193,7 @@ endif
 	rm -f */*~
 	rm -f */*/*~
 	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) \
-		  libmapi.$(SHLIBEXT) ocpf.$(SHLIBEXT)
+		  libmapi.$(SHLIBEXT)
 
 clean:: libmapi-clean
 
@@ -595,18 +595,15 @@ libmapiadmin/proto.h libmapiadmin/proto_private.h: 	\
 LIBOCPF_SO_VERSION = 0
 
 libocpf:	libocpf/proto.h				\
-		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)	\
-		ocpf.$(SHLIBEXT)
+		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)	
 
 libocpf-install:	libocpf-installpc	\
 			libocpf-installlib	\
-			libocpf-installheader	\
-			ocpf-install
+			libocpf-installheader	
 
 libocpf-uninstall:	libocpf-uninstallpc	\
 			libocpf-uninstalllib	\
-			libocpf-uninstallheader	\
-			ocpf-uninstall
+			libocpf-uninstallheader	
 
 libocpf-clean::
 	rm -f libocpf/*.o libocpf/*.po
@@ -618,7 +615,7 @@ ifneq ($(SNAPSHOT), no)
 	rm -f libocpf/proto_private.h
 endif
 	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) \
-		  libocpf.$(SHLIBEXT) ocpf.$(SHLIBEXT)
+		  libocpf.$(SHLIBEXT)
 
 clean:: libocpf-clean
 
@@ -691,18 +688,6 @@ libocpf/ocpf.tab.c:	libocpf/ocpf.y
 # Avoid warnings
 libocpf/lex.yy.o: CFLAGS=
 libocpf/ocpf.tab.o: CFLAGS=
-
-ocpf.$(SHLIBEXT):	libocpf/pyocpf.c			\
-			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)	\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
-
-ocpf-install:
-	$(INSTALL) -d $(DESTDIR)$(PYCDIR)
-	$(INSTALL) -m 0755 ocpf.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)
-
-ocpf-uninstall:
-	rm -f $(DESTDIR)$(PYCDIR)/ocpf.$(SHLIBEXT)
 
 #################################################################
 # torture suite compilation rules
@@ -1582,13 +1567,18 @@ clean-python:
 
 clean:: clean-python
 
-pyopenchange: $(pythonscriptdir)/mapi.$(SHLIBEXT)
+pyopenchange: 	$(pythonscriptdir)/mapi.$(SHLIBEXT)	\
+		$(pythonscriptdir)/ocpf.$(SHLIBEXT)
 
 $(pythonscriptdir)/mapi.$(SHLIBEXT): 	pyopenchange/pymapi.c				\
 					pyopenchange/pymapi_properties.c		\
-					libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
+					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
 
+$(pythonscriptdir)/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
+					libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
 
 pyopenchange/pymapi_properties.c:		\
 	libmapi/conf/mapi-properties		\
@@ -1599,6 +1589,7 @@ pyopenchange-clean:
 	rm -f pyopenchange/*.o
 	rm -f pyopenchange/*.pyc
 	rm -f $(pythonscriptdir)/mapi.$(SHLIBEXT)
+	rm -f $(pythonscriptdir)/ocpf.$(SHLIBEXT)
 	rm -f pyopenchange/pymapi_properties.c
 
 clean:: pyopenchange-clean
@@ -1606,9 +1597,11 @@ clean:: pyopenchange-clean
 pyopenchange-install:
 	$(INSTALL) -d $(DESTDIR)$(PYCDIR)/openchange
 	$(INSTALL) -m 0755 $(pythonscriptdir)/mapi.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
+	$(INSTALL) -m 0755 $(pythonscriptdir)/ocpf.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
 
 pyopenchange-uninstall:
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapi.$(SHLIBEXT)
+	rm -f $(DESTDIR)$(PYCDIR)/openchange/ocpf.$(SHLIBEXT)
 
 
 ###################

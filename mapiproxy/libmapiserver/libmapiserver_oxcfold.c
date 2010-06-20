@@ -204,3 +204,24 @@ _PUBLIC_ uint16_t libmapiserver_RopGetSearchCriteria_size(struct EcDoRpc_MAPI_RE
 
 	return size;
 }
+
+
+ /**
+   \details Calculate EmptyFolder Rop size
+
+   \param response pointer to the EmptyFolder EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of EmptyFolder response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopEmptyFolder_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t        size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPEMPTYFOLDER;
+	return size;
+}

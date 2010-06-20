@@ -229,6 +229,12 @@
 #define	SIZE_DFLT_ROPGETPROPERTYIDSFROMNAMES	2
 
 /**
+   \details EmptyFolder has fixed response size for:
+   -# PartialCompletion: uint8_t
+ */
+#define SIZE_DFLT_ROPEMPTYFOLDER                1
+
+/**
    \details DeleteMessage Rop has fixed response size for:
    -# PartialCompletion: uint8_t
  */
@@ -310,6 +316,7 @@ uint16_t libmapiserver_RopDeleteFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeleteMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopEmptyFolder_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcmsg.c */
 uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *);

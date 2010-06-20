@@ -57,6 +57,7 @@ static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 	uint32_t	proptag;
 	PyObject	*data;
 	int		i;
+	NTTIME		nt;
 
 	if (!PyArg_ParseTuple(args, "lO", &proptag, &data)) {
 		return NULL;
@@ -121,6 +122,15 @@ static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 		}
 		self->SPropValue[self->cValues].value.lpszW = PyString_AsString(data);
 		break;
+	case PT_SYSTIME:
+		if (!PyFloat_Check(data)) {
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires float");
+			return NULL;
+		}
+		unix_to_nt_time(&nt, PyFloat_AsDouble(data));
+		self->SPropValue[self->cValues].value.ft.dwLowDateTime = (nt << 32) >> 32;
+		self->SPropValue[self->cValues].value.ft.dwHighDateTime = nt >> 32;
+   		break;
 	case PT_ERROR:
 		if (!PyInt_Check(data)) {
 			PyErr_SetString(PyExc_TypeError, "Property Tag requires long");

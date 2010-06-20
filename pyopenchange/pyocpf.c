@@ -133,12 +133,27 @@ static PyObject *py_ocpf_write(PyOcpfObject *self, PyObject *args)
 	PyObject			*pySPropValue;
 	PySPropValueObject		*SPropValue;
 	struct mapi_SPropValue_array	mapi_lpProps;
+	PyObject			*mod_mapi;
 	int				i;
+
+	mod_mapi = PyImport_ImportModule("openchange.mapi");
+	if (mod_mapi == NULL) {
+		printf("Can't load module\n");
+		return NULL;
+	}
+	SPropValue_Type = (PyTypeObject *)PyObject_GetAttrString(mod_mapi, "SPropValue");
+	if (SPropValue_Type == NULL)
+		return NULL;
+
 
 	if (!PyArg_ParseTuple(args, "O", &pySPropValue)) {
 		return NULL;
 	}
 
+	if (!PyObject_TypeCheck(pySPropValue, SPropValue_Type)) {
+		PyErr_SetString(PyExc_TypeError, "Function require SPropValue object");
+		return NULL;
+	}
 	SPropValue = (PySPropValueObject *) pySPropValue;
 
 	mapi_lpProps.cValues = SPropValue->cValues;

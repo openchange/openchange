@@ -1,3 +1,39 @@
+2010-06-20
+    jkerihuel
+	[r1982]
+		Add TypeCheck on SPropValue rather than blind cast
+	[r1981]
+		Add python binding for ocpf_write
+		Add quick test code to ensure it works as expected
+	[r1980]
+		- Use SPropValue python object in ocpf module
+		- Add a function binding to retrieve SPropValue array from OCPF file
+		- Modify sample to test this behavior
+	[r1979]
+		- Move OCPF python bindings to pyopenchange directory
+		- Install ocpf module within openchange/
+	[r1978]
+		- Check property type for SPropValue
+		- Add auto-generated pyopenchange/pymapi_properties.c to the ignore list
+	[r1977]
+		- Add preliminary OCPF python bindings
+		- Add a new pyopenchange python bindings directory:
+		  - Preliminary handling of SPropValue data structure
+		- Add some python bindings test files
+		- Add a mparse parser to generate python bindings declaration for mapi
+		  properties
+		- Build automatically python bindings ** We need to add Python as a
+		  required dependency **
+    bradh
+	[r1976]
+		Implement EmptyFolder and enhance DeleteFolder.
+		
+		This still has quite a way to go, but it does mostly work for folders, including recursion.
+	[r1975]
+		Add extended test code for folder creation / deletion.
+	[r1974]
+		Add libmapiserver support for EmptyFolder size calculations.
+
 2010-06-19
     bradh
 	[r1972]

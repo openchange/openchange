@@ -1,5 +1,32 @@
+2010-06-21
+    jkerihuel
+	[r1990]
+		Add rmdir support to mapistore python bindings
+	[r1989]
+		- Add mapistore python C/API support for:
+		  - add_context_indexing
+		  - add_context_ref_count
+		  - opendir
+		  - closedir
+		  - mkdir
+		  - errstr MAPISTORE error to string conversion
+		
+		- Update mapistore python test script to demonstrate
+		how to create a new folder using mapistore 
+	[r1988]
+		I may be wrong here, but that was the only way I could pass
+		a folderID from python's layer to mapistore C/API
+	[r1987]
+		If context is manually deleted using public API, we need to remove the destructor
+		we set during context init, otherwise talloc_free segfault occurs
+	[r1986]
+		talloc_strdup SPropValue strings
+	[r1985]
+		Add preliminary python bindings for mapistore
 2010-06-20
     jkerihuel
+	[r1984]
+		Add FILETIME support for SPropValue
 	[r1982]
 		Add TypeCheck on SPropValue rather than blind cast
 	[r1981]

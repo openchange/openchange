@@ -559,9 +559,15 @@ _PUBLIC_ int ocpf_write_commit(uint32_t context_id)
 	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
 	OCPF_RETVAL_IF(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL);
 	OCPF_RETVAL_IF(!ctx->filename, ctx, OCPF_WRITE_NOT_INITIALIZED, NULL);
-	OCPF_RETVAL_IF(ctx->flags != OCPF_FLAGS_CREATE, ctx, OCPF_WRITE_NOT_INITIALIZED, NULL);
+	OCPF_RETVAL_IF(ctx->flags == OCPF_FLAGS_READ, ctx, OCPF_WRITE_NOT_INITIALIZED, NULL);
 
-	ctx->fp = fopen(ctx->filename, "w+");
+	if (ctx->flags == OCPF_FLAGS_CREATE) {
+		ctx->fp = fopen(ctx->filename, "w+");
+	} 
+
+	/* Position the file at the beginning of the stream */
+	fseek(ctx->fp, 0, SEEK_SET);
+
 	fp = ctx->fp;
 	OCPF_RETVAL_IF(!fp, ctx, OCPF_INVALID_FILEHANDLE, NULL);
 

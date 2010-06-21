@@ -345,6 +345,8 @@ _PUBLIC_ int mapistore_backend_add_ref_count(struct backend_context *bctx)
  */
 _PUBLIC_ int mapistore_backend_delete_context(struct backend_context *bctx)
 {
+	int	ret;
+
 	if (!bctx->backend->delete_context) return MAPISTORE_ERROR;
 
 	if (bctx->indexing) {
@@ -356,7 +358,10 @@ _PUBLIC_ int mapistore_backend_delete_context(struct backend_context *bctx)
 		return MAPISTORE_ERR_REF_COUNT;
 	}
 
-	return bctx->backend->delete_context(bctx->private_data);
+	ret = bctx->backend->delete_context(bctx->private_data);
+	talloc_set_destructor((void *)bctx, NULL);
+	
+	return ret;
 }
 
 

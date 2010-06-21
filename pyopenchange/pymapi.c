@@ -113,14 +113,14 @@ static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 			PyErr_SetString(PyExc_TypeError, "Property Tag requires string");
 			return NULL;
 		}
-		self->SPropValue[self->cValues].value.lpszA = PyString_AsString(data);
+		self->SPropValue[self->cValues].value.lpszA = talloc_strdup(self->mem_ctx, PyString_AsString(data));
 		break;
 	case PT_UNICODE:
 		if (!PyString_Check(data)) {
 			PyErr_SetString(PyExc_TypeError, "Property Tag requires string");
 			return NULL;
 		}
-		self->SPropValue[self->cValues].value.lpszW = PyString_AsString(data);
+		self->SPropValue[self->cValues].value.lpszW = talloc_strdup(self->mem_ctx, PyString_AsString(data));
 		break;
 	case PT_SYSTIME:
 		if (!PyFloat_Check(data)) {

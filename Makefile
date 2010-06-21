@@ -1568,7 +1568,8 @@ clean-python:
 clean:: clean-python
 
 pyopenchange: 	$(pythonscriptdir)/mapi.$(SHLIBEXT)	\
-		$(pythonscriptdir)/ocpf.$(SHLIBEXT)
+		$(pythonscriptdir)/ocpf.$(SHLIBEXT)	\
+		$(pythonscriptdir)/mapistore.$(SHLIBEXT)
 
 $(pythonscriptdir)/mapi.$(SHLIBEXT): 	pyopenchange/pymapi.c				\
 					pyopenchange/pymapi_properties.c		\
@@ -1580,6 +1581,10 @@ $(pythonscriptdir)/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
 					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
 
+$(pythonscriptdir)/mapistore.$(SHLIBEXT):	pyopenchange/pymapistore.c				\
+						mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
+
 pyopenchange/pymapi_properties.c:		\
 	libmapi/conf/mapi-properties		\
 	libmapi/conf/mparse.pl		
@@ -1590,6 +1595,7 @@ pyopenchange-clean:
 	rm -f pyopenchange/*.pyc
 	rm -f $(pythonscriptdir)/mapi.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/ocpf.$(SHLIBEXT)
+	rm -f $(pythonscriptdir)/mapistore.$(SHLIBEXT)
 	rm -f pyopenchange/pymapi_properties.c
 
 clean:: pyopenchange-clean
@@ -1598,10 +1604,12 @@ pyopenchange-install:
 	$(INSTALL) -d $(DESTDIR)$(PYCDIR)/openchange
 	$(INSTALL) -m 0755 $(pythonscriptdir)/mapi.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
 	$(INSTALL) -m 0755 $(pythonscriptdir)/ocpf.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
+	$(INSTALL) -m 0755 $(pythonscriptdir)/mapistore.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
 
 pyopenchange-uninstall:
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapi.$(SHLIBEXT)
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/ocpf.$(SHLIBEXT)
+	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapistore.$(SHLIBEXT)
 
 
 ###################

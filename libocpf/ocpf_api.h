@@ -116,6 +116,7 @@ struct ocpf_context
 	const char		*filename;
 	uint32_t		ref_count;
 	uint32_t		context_id;
+	uint8_t			flags;
 	struct ocpf_context	*prev;
 	struct ocpf_context	*next;
 };

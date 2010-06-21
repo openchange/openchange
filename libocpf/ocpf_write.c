@@ -559,8 +559,10 @@ _PUBLIC_ int ocpf_write_commit(uint32_t context_id)
 	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
 	OCPF_RETVAL_IF(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL);
 	OCPF_RETVAL_IF(!ctx->filename, ctx, OCPF_WRITE_NOT_INITIALIZED, NULL);
+	OCPF_RETVAL_IF(ctx->flags != OCPF_FLAGS_CREATE, ctx, OCPF_WRITE_NOT_INITIALIZED, NULL);
 
-	fp = fopen(ctx->filename, "w+");
+	ctx->fp = fopen(ctx->filename, "w+");
+	fp = ctx->fp;
 	OCPF_RETVAL_IF(!fp, ctx, OCPF_INVALID_FILEHANDLE, NULL);
 
 	/* message type */
@@ -653,6 +655,5 @@ _PUBLIC_ int ocpf_write_commit(uint32_t context_id)
 	}
 	len = fwrite(OCPF_END, strlen(OCPF_END), 1, fp);
 
-	fclose(fp);
 	return OCPF_SUCCESS;
 }

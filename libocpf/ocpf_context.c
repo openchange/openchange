@@ -76,6 +76,7 @@ struct ocpf_context *ocpf_context_init(TALLOC_CTX *mem_ctx,
 	ctx->folder = 0;
 
 	/* Initialize ocpf internal context parameters */
+	ctx->flags = flags;
 	ctx->filename = talloc_strdup(ctx, filename);
 	ctx->ref_count = 0;
 	ctx->context_id = context_id;
@@ -98,11 +99,12 @@ struct ocpf_context *ocpf_context_init(TALLOC_CTX *mem_ctx,
 		ctx->fp = fopen(filename, "w");
 		break;
 	case OCPF_FLAGS_CREATE:
-		ctx->fp = fopen(filename, "w+");
+	  /* defer fopen to ocpf_write_commit */
+	  ctx->fp = NULL;
 		break;
 	}
 
-	OCPF_RETVAL_TYPE(!ctx->fp, NULL, OCPF_WARN_FILENAME_INVALID, NULL, ctx);
+	OCPF_RETVAL_TYPE(!ctx->fp && flags != OCPF_FLAGS_CREATE, NULL, OCPF_WARN_FILENAME_INVALID, NULL, ctx);
 
 	return ctx;
 }
@@ -196,7 +198,9 @@ int ocpf_context_delete(struct ocpf *ocpf_ctx,
 	}
 
 	/* Close the file */
-	fclose(ctx->fp);
+	if (ctx->fp) {
+		fclose(ctx->fp);
+	}
 
 	/* Remove the context from the list and free it */
 	context_id = ctx->context_id;

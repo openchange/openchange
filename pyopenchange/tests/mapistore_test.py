@@ -3,17 +3,23 @@
 import os
 import openchange
 import openchange.mapistore as mapistore
+from openchange import mapi
 
 os.mkdir("/tmp/mapistore")
+
 mapistore.set_mapping_path("/tmp/mapistore")
 MAPIStore = mapistore.mapistore()
-ctx_id = MAPIStore.add_context("fsocpf:///tmp/mapistore/mapistore_test")
-ctx_id2 = MAPIStore.add_context("fsocpf:///tmp/mapistore/mapistore_test2")
-print "ctx_id = %d ctx_id2 = %d" % (ctx_id, ctx_id2)
+ctx_id = MAPIStore.add_context("fsocpf:///tmp/mapistore/0x0000000000010001")
 
-ctx_id3 = MAPIStore.search_context_by_uri("/tmp/mapistore/mapistore_test")
-print "ctx_id = %d and ctx_id3 = %d should be the same" % (ctx_id, ctx_id3)
+SPropValue = mapi.SPropValue()
+SPropValue.add(mapi.PR_PARENT_FID, 0x0000000000010001)
+SPropValue.add(mapi.PR_DISPLAY_NAME, "test")
+SPropValue.add(mapi.PR_COMMENT, "test folder")
+SPropValue.add(mapi.PR_FOLDER_TYPE, 1)
 
-MAPIStore.del_context(ctx_id3)
-MAPIStore.del_context(ctx_id2)
+MAPIStore.mkdir(ctx_id, 0x0000000000010001, 0x0000000000020001, SPropValue)
+MAPIStore.closedir(ctx_id, 0x0000000000020001)
+MAPIStore.closedir(ctx_id, 0x0000000000010001)
+
+MAPIStore.del_context(ctx_id)
 

@@ -21,6 +21,9 @@
 
 #include <Python.h>
 #include "pyopenchange/pymapistore.h"
+#include "pyopenchange/pymapi.h"
+
+static PyTypeObject *SPropValue_Type;
 
 void initmapistore(void);
 
@@ -92,6 +95,18 @@ static PyObject *py_MAPIStore_del_context(PyMAPIStoreObject *self, PyObject *arg
 	return PyInt_FromLong(mapistore_del_context(self->mstore_ctx, context_id));
 }
 
+static PyObject *py_MAPIStore_add_context_indexing(PyMAPIStoreObject *self, PyObject *args)
+{
+	uint32_t	context_id;
+	const char	*username;
+
+	if (!PyArg_ParseTuple(args, "sk", &username, &context_id)) {
+		return NULL;
+	}
+
+	return PyInt_FromLong(mapistore_add_context_indexing(self->mstore_ctx, username, context_id));
+}
+
 static PyObject *py_MAPIStore_search_context_by_uri(PyMAPIStoreObject *self, PyObject *args)
 {
 	int		ret;
@@ -110,10 +125,87 @@ static PyObject *py_MAPIStore_search_context_by_uri(PyMAPIStoreObject *self, PyO
 	return PyInt_FromLong(context_id);
 }
 
+static PyObject *py_MAPIStore_add_context_ref_count(PyMAPIStoreObject *self, PyObject *args)
+{
+	uint32_t	context_id = 0;
+
+	if (!PyArg_ParseTuple(args, "k", &context_id)) {
+		return NULL;
+	}
+
+	return PyInt_FromLong(mapistore_add_context_ref_count(self->mstore_ctx, context_id));
+}
+
+static PyObject *py_MAPIStore_opendir(PyMAPIStoreObject *self, PyObject *args)
+{
+	uint32_t	context_id;
+	uint64_t	parent_fid;
+	uint64_t	fid;
+
+	if (!PyArg_ParseTuple(args, "kKK", &context_id, &parent_fid, &fid)) {
+		return NULL;
+	}
+
+	return PyInt_FromLong(mapistore_opendir(self->mstore_ctx, context_id, parent_fid, fid));
+}
+
+static PyObject *py_MAPIStore_closedir(PyMAPIStoreObject *self, PyObject *args)
+{
+	uint32_t	context_id;
+	uint64_t	fid;
+
+	if (!PyArg_ParseTuple(args, "kK", &context_id, &fid)) {
+		return NULL;
+	}
+
+	return PyInt_FromLong(mapistore_closedir(self->mstore_ctx, context_id, fid));
+}
+
+static PyObject *py_MAPIStore_mkdir(PyMAPIStoreObject *self, PyObject *args)
+{
+	uint32_t		context_id;
+	uint64_t		parent_fid;
+	uint64_t		fid;
+	PyObject		*mod_mapi;
+	PyObject		*pySPropValue;
+	PySPropValueObject	*SPropValue;
+	struct SRow		aRow;
+
+	mod_mapi = PyImport_ImportModule("openchange.mapi");
+	if (mod_mapi == NULL) {
+		printf("Can't load module\n");
+		return NULL;
+	}
+	SPropValue_Type = (PyTypeObject *)PyObject_GetAttrString(mod_mapi, "SPropValue");
+	if (SPropValue_Type == NULL) {
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "kKKO", &context_id, &parent_fid, &fid, &pySPropValue)) {
+		return NULL;
+	}
+
+	if (!PyObject_TypeCheck(pySPropValue, SPropValue_Type)) {
+		PyErr_SetString(PyExc_TypeError, "Function require SPropValue object");
+		return NULL;
+	}
+
+	SPropValue = (PySPropValueObject *)pySPropValue;
+	aRow.cValues = SPropValue->cValues;
+	aRow.lpProps = SPropValue->SPropValue;
+
+	return PyInt_FromLong(mapistore_mkdir(self->mstore_ctx, context_id, parent_fid, fid, &aRow));
+}
+
 static PyMethodDef mapistore_methods[] = {
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	{ "del_context", (PyCFunction)py_MAPIStore_del_context, METH_VARARGS },
+	{ "add_context_idexing", (PyCFunction)py_MAPIStore_add_context_indexing, METH_VARARGS },
 	{ "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS },
+	{ "add_context_ref_count", (PyCFunction)py_MAPIStore_add_context_ref_count, METH_VARARGS },
+	{ "opendir", (PyCFunction)py_MAPIStore_opendir, METH_VARARGS },
+	{ "closedir", (PyCFunction)py_MAPIStore_closedir, METH_VARARGS },
+	{ "mkdir", (PyCFunction)py_MAPIStore_mkdir, METH_VARARGS },
 	{ NULL },
 };
 
@@ -144,8 +236,20 @@ static PyObject *py_mapistore_set_mapping_path(PyObject *mod, PyObject *args)
 	return PyInt_FromLong(mapistore_set_mapping_path(mapping_path));
 }
 
+static PyObject *py_mapistore_errstr(PyObject *mod, PyObject *args)
+{
+	int		ret;
+
+	if (!PyArg_ParseTuple(args, "k", &ret)) {
+		return NULL;
+	}
+
+	return PyString_FromString(mapistore_errstr(ret));
+}
+
 static PyMethodDef py_mapistore_global_methods[] = {
 	{ "set_mapping_path", (PyCFunction)py_mapistore_set_mapping_path, METH_VARARGS },
+	{ "errstr", (PyCFunction)py_mapistore_errstr, METH_VARARGS },
 	{ NULL },
 };
 

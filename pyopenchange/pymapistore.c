@@ -197,6 +197,20 @@ static PyObject *py_MAPIStore_mkdir(PyMAPIStoreObject *self, PyObject *args)
 	return PyInt_FromLong(mapistore_mkdir(self->mstore_ctx, context_id, parent_fid, fid, &aRow));
 }
 
+static PyObject *py_MAPIStore_rmdir(PyMAPIStoreObject *self, PyObject *args)
+{
+	uint32_t	context_id;
+	uint64_t	parent_fid;
+	uint64_t	fid;
+	uint8_t		flags;
+
+	if (!PyArg_ParseTuple(args, "kKKH", &context_id, &parent_fid, &fid, &flags)) {
+		return NULL;
+	}
+
+	return PyInt_FromLong(mapistore_rmdir(self->mstore_ctx, context_id, parent_fid, fid, flags));
+}
+
 static PyMethodDef mapistore_methods[] = {
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	{ "del_context", (PyCFunction)py_MAPIStore_del_context, METH_VARARGS },
@@ -206,6 +220,7 @@ static PyMethodDef mapistore_methods[] = {
 	{ "opendir", (PyCFunction)py_MAPIStore_opendir, METH_VARARGS },
 	{ "closedir", (PyCFunction)py_MAPIStore_closedir, METH_VARARGS },
 	{ "mkdir", (PyCFunction)py_MAPIStore_mkdir, METH_VARARGS },
+	{ "rmdir", (PyCFunction)py_MAPIStore_rmdir, METH_VARARGS },
 	{ NULL },
 };
 
@@ -266,6 +281,10 @@ void initmapistore(void)
 	if (m == NULL) {
 		return;
 	}
+
+	PyModule_AddObject(m, "DEL_MESSAGES", PyInt_FromLong(0x1));
+	PyModule_AddObject(m, "DEL_FOLDERS", PyInt_FromLong(0x4));
+	PyModule_AddObject(m, "DELETE_HEAD_DELETE", PyInt_FromLong(0x10));
 
 	Py_INCREF(&PyMAPIStore);
 

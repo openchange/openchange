@@ -18,8 +18,7 @@ SPropValue.add(mapi.PR_COMMENT, "test folder")
 SPropValue.add(mapi.PR_FOLDER_TYPE, 1)
 
 MAPIStore.mkdir(ctx_id, 0x0000000000010001, 0x0000000000020001, SPropValue)
-MAPIStore.closedir(ctx_id, 0x0000000000020001)
-MAPIStore.closedir(ctx_id, 0x0000000000010001)
+MAPIStore.rmdir(ctx_id, 0x0000000000010001, 0x0000000000020001, mapistore.DEL_FOLDERS)
 
 MAPIStore.del_context(ctx_id)
 

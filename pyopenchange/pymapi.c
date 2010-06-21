@@ -102,7 +102,7 @@ static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 		self->SPropValue[self->cValues].value.b = PyInt_AsLong(data);
 		break;
 	case PT_I8:
-		if (!PyLong_Check(data)) {
+		if (!PyInt_Check(data)) {
 			PyErr_SetString(PyExc_TypeError, "Property Tag requires long long int");
 			return NULL;
 		}

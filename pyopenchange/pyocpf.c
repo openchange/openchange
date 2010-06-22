@@ -217,6 +217,17 @@ static PyObject *py_ocpf_write_commit(PyOcpfObject *self)
 	return PyInt_FromLong(ret);
 }
 
+static PyObject *py_ocpf_set_type(PyOcpfObject *self, PyObject *args)
+{
+	const char	*type;
+
+	if (!PyArg_ParseTuple(args, "s", &type)) {
+		return NULL;
+	}
+
+	return PyInt_FromLong(ocpf_server_set_type(self->context_id, type));
+}
+
 static PyMethodDef py_ocpf_global_methods[] = {
 	{ NULL }
 };
@@ -230,6 +241,7 @@ static PyMethodDef ocpf_methods[] = {
 	{ "set_SPropValue_array", (PyCFunction) py_ocpf_set_SPropValue_array, METH_NOARGS },
 	{ "get_SPropValue", (PyCFunction) py_ocpf_get_SPropValue, METH_NOARGS },
 	{ "add_SPropValue", (PyCFunction) py_ocpf_add_SPropValue, METH_VARARGS },
+	{ "set_type", (PyCFunction) py_ocpf_set_type, METH_VARARGS },
 	{ NULL },
 };
 

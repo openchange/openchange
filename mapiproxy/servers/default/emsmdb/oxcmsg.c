@@ -261,8 +261,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS			retval;
 	struct mapi_handles		*rec = NULL;
+	struct mapi_handles		*parent = NULL;
+	struct mapi_handles		*parent_handle = NULL;
+	struct emsmdbp_object		*object = NULL;
 	uint32_t			handle;
-	
+	uint64_t			folderID;
+	uint64_t			messageID;
+	uint32_t			contextID;
+	bool				mapistore = false;
+	void				*data;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] CreateMessage (0x06)\n"));
 
 	/* Sanity checks */
@@ -275,13 +283,62 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->u.mapi_CreateMessage.handle_idx;
-
 	mapi_repl->u.mapi_CreateMessage.HasMessageId = 0;
 
+	folderID = mapi_req->u.mapi_CreateMessage.FolderId;
+
+	/* CreateMessage can only be called for a mailbox/folder object */
+	mapi_handles_get_private_data(parent, &data);
+	object = (struct emsmdbp_object *)data;
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	/* FIXME: we can't assume the folder is already opened */
+	parent_handle = emsmdbp_object_get_folder_handle_by_fid(emsmdbp_ctx->handles_ctx, folderID);
+	if (!parent_handle) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+	contextID = emsmdbp_get_contextID(parent_handle);
+	mapistore = emsmdbp_is_mapistore(parent_handle);
+
+	switch (mapistore) {
+	case false:
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		break;
+	case true:
+		/* This should be handled differently here: temporary hack */
+		retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
+		if (retval) {
+			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+			goto end;
+		}
+		mapi_repl->u.mapi_CreateMessage.HasMessageId = 1;
+		mapi_repl->u.mapi_CreateMessage.MessageId.MessageId = messageID;
+		mapistore_createmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID);
+		break;
+	}
+
+	DEBUG(0, ("CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, 
+		  emsmdbp_is_mapistore(parent_handle) == true ? "true" : "false"));
+
+	/* Initialize Message object */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
 
+	if (messageID) {
+		object = emsmdbp_object_message_init((TALLOC_CTX *)rec, emsmdbp_ctx, messageID, parent_handle);
+		if (object) {
+			/* Add default properties to message MS-OXCMSG 3.2.5.2 */
+			retval = mapi_handles_set_private_data(rec, object);
+		}
+	}
+
+end:
 	*size += libmapiserver_RopCreateMessage_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

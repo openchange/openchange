@@ -699,6 +699,40 @@ _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx,
 
 
 /**
+   \details Create a message in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+
+   \param context_id the context identifier referencing the backend
+   where the messagewill be created
+   \param parent_fid the parent folder identifier
+   \param mid the message identifier to create
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_createmessage(struct mapistore_context *mstore_ctx,
+				     uint32_t context_id,
+				     uint64_t parent_fid,
+				     uint64_t mid)
+{
+	struct backend_context		*backend_ctx;
+	int				ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	
+	/* Step 2. Call backend createmessage */
+	ret = mapistore_backend_createmessage(backend_ctx, parent_fid, mid);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+
+/**
    \details Get properties of a message/folder in mapistore
 
    \param mstore_ctx pointer to the mapistore context
@@ -733,6 +767,41 @@ _PUBLIC_ int mapistore_getprops(struct mapistore_context *mstore_ctx,
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
+
+/**
+   \details Set properties of a message/folder in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where properties will be stored
+   \param fmid the idenfifier referencing the message/folder
+   \param type the object type (folder or message)
+   \param aRow pointer to the SRow structure
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_setprops(struct mapistore_context *mstore_ctx,
+				uint32_t context_id,
+				uint64_t fmid,
+				uint8_t type,
+				struct SRow *aRow)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend setprops */
+	ret = mapistore_backend_setprops(backend_ctx, fmid, type, aRow);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
 
 /**
    \details Retrieve the folder IDs of child folders within a mapistore

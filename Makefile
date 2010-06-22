@@ -658,6 +658,7 @@ libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		\
 	libocpf/lex.yy.po			\
 	libocpf/ocpf_context.po			\
 	libocpf/ocpf_public.po			\
+	libocpf/ocpf_server.po			\
 	libocpf/ocpf_dump.po			\
 	libocpf/ocpf_api.po			\
 	libocpf/ocpf_write.po			\
@@ -669,6 +670,7 @@ libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION): libocpf.$(SHLIBEXT).$(PACKAGE_VERSION
 	ln -fs $< $@
 
 libocpf/proto.h:	libocpf/ocpf_public.c	\
+			libocpf/ocpf_server.c	\
 			libocpf/ocpf_dump.c	\
 			libocpf/ocpf_api.c	\
 			libocpf/ocpf_write.c	\

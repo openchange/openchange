@@ -228,57 +228,6 @@ static enum MAPISTATUS ocpf_stream(TALLOC_CTX *mem_ctx,
 
 
 /**
-   \details Build a SPropValue array from ocpf context
-
-   This function builds a SPropValue array from the ocpf context and
-   information stored.
-   
-   \param mem_ctx pointer to the memory context to use for memory
-   allocation
-   \param context_id identifier of the context to build a SPropValue
-   array for
-
-   \note This function is a server-side convenient function only. It
-   doesn't handle named properties and its scope is much more limited
-   than ocpf_set_SpropValue. Developers working on a client-side
-   software/library must use ocpf_set_SPropValue instead.
-
-   \sa ocpf_get_SPropValue
- */
-_PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue_array(TALLOC_CTX *mem_ctx, uint32_t context_id)
-{
-	struct ocpf_property	*pel;
-	struct ocpf_context	*ctx;
-
-	/* sanity checks */
-	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
-
-	/* Step 1. Search for the context */
-	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
-	OCPF_RETVAL_IF(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL);
-
-	/* Step 2. Allocate SPropValue */
-	ctx->cValues = 0;
-	ctx->lpProps = talloc_array(ctx, struct SPropValue, 2);
-
-	/* Step 3. Add Known properties */
-	if (ctx->props && ctx->props->next) {
-		for (pel = ctx->props; pel->next; pel = pel->next) {
-			ctx->lpProps = add_SPropValue(ctx, ctx->lpProps, &ctx->cValues, 
-						      pel->aulPropTag, pel->value);
-		}
-	}
-	/* Step 4. Add message class */
-	if (ctx->type) {
-		ctx->lpProps = add_SPropValue(ctx, ctx->lpProps, &ctx->cValues,
-					      PR_MESSAGE_CLASS, (const void *)ctx->type);
-	}
-	
-	return MAPI_E_SUCCESS;
-}
-
-
-/**
    \details Build a SRowSet array with recipients from ocpf context
 
    This function builds s SRowSet structure of recipient names and

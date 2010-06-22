@@ -744,7 +744,7 @@ static int fsocpf_get_property_from_folder_table(struct fsocpf_folder *folder,
 	/* process the file */
 	ret = ocpf_parse(ocpf_context_id);
 
-	ocpf_set_SPropValue_array(folder, ocpf_context_id);
+	ocpf_server_set_SPropValue(folder, ocpf_context_id);
 	lpProps = ocpf_get_SPropValue(ocpf_context_id, &cValues);
 
 	/* FIXME: We need to find a proper way to handle this (for all types) */
@@ -836,7 +836,7 @@ static int fsocpf_get_property_from_message_table(struct fsocpf_folder *folder,
 	/* process the file */
 	ret = ocpf_parse(ocpf_context_id);
 
-	ocpf_set_SPropValue_array(folder, ocpf_context_id);
+	ocpf_server_set_SPropValue(folder, ocpf_context_id);
 	lpProps = ocpf_get_SPropValue(ocpf_context_id, &cValues);
 
 	/* FIXME: We need to find a proper way to handle this (for all types) */
@@ -943,7 +943,7 @@ static int fsocpf_op_openmessage(void *private_data,
 	/* Search for the fid fsocpf_folder entry */
 	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
 	if (!folder) {
-		DEBUG(0, ("fsocpf_op_openmessage: message not found\n"));
+		DEBUG(0, ("fsocpf_op_openmessage: folder not found\n"));
 		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
@@ -967,12 +967,13 @@ static int fsocpf_op_openmessage(void *private_data,
 
 		/* Retrieve properties from the message */
 		msg->properties = talloc_zero(el, struct SRow);
-		retval = ocpf_set_SPropValue_array(el, ocpf_context_id);
+		retval = ocpf_server_set_SPropValue(el, ocpf_context_id);
 		msg->properties->lpProps = ocpf_get_SPropValue(ocpf_context_id, &msg->properties->cValues);
 	} else {
 		DEBUG(0, ("An error occured while processing %s\n", propfile));
 		talloc_free(propfile);
 		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
 	talloc_free(propfile);
@@ -980,6 +981,52 @@ static int fsocpf_op_openmessage(void *private_data,
 
 	return MAPI_E_SUCCESS;
 }
+
+
+static int fsocpf_op_createmessage(void *private_data,
+				   uint64_t fid,
+				   uint64_t mid)
+{
+	TALLOC_CTX			*mem_ctx;
+	int				ret;
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct fsocpf_message_list	*el;
+	struct fsocpf_folder		*folder;
+	uint32_t			ocpf_context_id;
+	char				*propfile;
+	
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	/* Search for the fid fsocpf_folder entry */
+	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
+	if (!folder) {
+		DEBUG(0, ("fsocpf_op_createmessage: folder not found\n"));
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
+	DEBUG(0, ("Message: 0x%.16"PRIx64" will be created inside %s\n", mid, folder->path));
+	
+	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_createmessage");
+	propfile = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, folder->path, mid);
+
+	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_CREATE);
+	if (!ret) {
+		el = fsocpf_message_list_element_init((TALLOC_CTX *)fsocpf_ctx->messages, fid, mid,
+						      propfile, ocpf_context_id);
+		DLIST_ADD_END(fsocpf_ctx->messages, el, struct fsocpf_message_list *);
+		DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", mid));
+	} else {
+		DEBUG(0, ("An error occured while creating %s\n", propfile));
+		talloc_free(propfile);
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	talloc_free(propfile);
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
 
 static char *fsocpf_get_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, uint8_t class)
 {
@@ -1071,6 +1118,29 @@ static int fsocpf_op_getprops(void *private_data,
 }
 
 
+static int fsocpf_op_setprops(void *private_data,
+			      uint64_t fmid,
+			      uint8_t type,
+			      struct SRow *aRow)
+{
+	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *) private_data;
+	struct fsocpf_message	*message;
+
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	switch (type) {
+	case MAPISTORE_FOLDER:
+		DEBUG(0, ("MAPISTORE_FOLDER case: Not implemented yet\n"));
+		break;
+	case MAPISTORE_MESSAGE:
+		message = fsocpf_find_message_by_mid(fsocpf_ctx, fmid);
+		break;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
 /**
    \details Entry point for mapistore FSOCPF backend
 
@@ -1099,7 +1169,9 @@ int mapistore_init_backend(void)
 	backend.op_readdir_count = fsocpf_op_readdir_count;
 	backend.op_get_table_property = fsocpf_op_get_table_property;
 	backend.op_openmessage = fsocpf_op_openmessage;
+	backend.op_createmessage = fsocpf_op_createmessage;
 	backend.op_getprops = fsocpf_op_getprops;
+	backend.op_setprops = fsocpf_op_setprops;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

@@ -77,7 +77,7 @@ static PyObject *py_ocpf_set_SPropValue_array(PyOcpfObject *self)
 {
 	int	ret;
 
-	ret = ocpf_set_SPropValue_array(self->mem_ctx, self->context_id);
+	ret = ocpf_server_set_SPropValue(self->mem_ctx, self->context_id);
 	return PyInt_FromLong(ret);
 }
 
@@ -107,6 +107,48 @@ static PyObject *py_ocpf_get_SPropValue(PyOcpfObject *self)
 
 	return (PyObject *) pySPropValue;
 }
+
+
+static PyObject *py_ocpf_add_SPropValue(PyOcpfObject *self, PyObject *args)
+{
+	PyObject		*mod_mapi;
+	PyObject		*pySPropValue;
+	PySPropValueObject	*SPropValue;
+	int			ret;
+	int			i;
+
+	mod_mapi = PyImport_ImportModule("openchange.mapi");
+	if (mod_mapi == NULL) {
+		printf("Can't load module\n");
+		return NULL;
+	}
+
+	SPropValue_Type = (PyTypeObject *)PyObject_GetAttrString(mod_mapi, "SPropValue");
+	if (SPropValue_Type == NULL) {
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "O", &pySPropValue)) {
+		return NULL;
+	}
+
+	if (!PyObject_TypeCheck(pySPropValue, SPropValue_Type)) {
+		PyErr_SetString(PyExc_TypeError, "Function requires SPropValue obnject");
+		return NULL;
+	}
+
+	SPropValue = (PySPropValueObject *) pySPropValue;
+
+	for (i = 0; i < SPropValue->cValues; i++) {
+		ret = ocpf_server_add_SPropValue(self->context_id, &SPropValue->SPropValue[i]);
+		if (ret) {
+			return PyInt_FromLong(ret);
+		}
+	}
+
+	return PyInt_FromLong(ret);
+}
+
 
 static PyObject *py_ocpf_dump(PyOcpfObject *self)
 {
@@ -187,6 +229,7 @@ static PyMethodDef ocpf_methods[] = {
 	{ "write_commit", (PyCFunction) py_ocpf_write_commit, METH_NOARGS },
 	{ "set_SPropValue_array", (PyCFunction) py_ocpf_set_SPropValue_array, METH_NOARGS },
 	{ "get_SPropValue", (PyCFunction) py_ocpf_get_SPropValue, METH_NOARGS },
+	{ "add_SPropValue", (PyCFunction) py_ocpf_add_SPropValue, METH_VARARGS },
 	{ NULL },
 };
 

@@ -374,6 +374,10 @@ int ocpf_type_add(struct ocpf_context *ctx, const char *type)
 {
 	if (!ocpf || !ocpf->mem_ctx || !type) return OCPF_ERROR;
 
+	if (ctx->type) {
+		talloc_free((void *)ctx->type);
+		ctx->type = NULL;
+	}
 	ctx->type = talloc_strdup(ctx, type);
 
 	return OCPF_SUCCESS;

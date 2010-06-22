@@ -29,6 +29,28 @@
    equivalent in ocpf_public.c or ocpf_api.c
  */
 
+/**
+   \details Set the message class (type) associated to an OCPF file.
+
+   \param context_id identifier of the context to set type for
+   \param type pointer to the type's string to set
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI/OCPF error
+ */
+_PUBLIC_ enum MAPISTATUS ocpf_server_set_type(uint32_t context_id,
+					      const char *type)
+{
+	struct ocpf_context	*ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
+
+	/* Step 1. Search for the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	OCPF_RETVAL_IF(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL);
+
+	return ocpf_type_add(ctx, type);
+}
 
 /**
    \details Build a SPropValue array from ocpf context

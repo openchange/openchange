@@ -341,6 +341,7 @@ static int fsocpf_get_path(void *private_data, uint64_t fmid,
 			   uint8_t type, char **path)
 {
 	struct fsocpf_folder	*folder;
+	struct fsocpf_message	*message;
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
 
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
@@ -361,8 +362,15 @@ static int fsocpf_get_path(void *private_data, uint64_t fmid,
 		*path = folder->path;
 		break;
 	case MAPISTORE_MESSAGE:
-		DEBUG(0, ("Not implemented yet\n"));
-		return MAPISTORE_ERROR;
+		message = fsocpf_find_message_by_mid(fsocpf_ctx, fmid);
+		if (!message) {
+			DEBUG(0, ("message doesn't exist ...\n"));
+			*path = NULL;
+			return MAPISTORE_ERROR;
+		}
+		DEBUG(0, ("message->path is %s\n", message->path));
+		*path = message->path;
+		break;
 	}
 
 	return MAPISTORE_SUCCESS;

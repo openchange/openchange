@@ -284,7 +284,7 @@ void initmapistore(void)
 
 	PyModule_AddObject(m, "DEL_MESSAGES", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "DEL_FOLDERS", PyInt_FromLong(0x4));
-	PyModule_AddObject(m, "DELETE_HEAD_DELETE", PyInt_FromLong(0x10));
+	PyModule_AddObject(m, "DELETE_HARD_DELETE", PyInt_FromLong(0x10));
 
 	Py_INCREF(&PyMAPIStore);
 

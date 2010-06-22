@@ -494,6 +494,18 @@ int mapistore_backend_createmessage(struct backend_context *bctx, uint64_t paren
 }
 
 
+int mapistore_backend_savechangesmessage(struct backend_context *bctx, uint64_t mid, uint8_t flags)
+{
+	return bctx->backend->op_savechangesmessage(bctx->private_data, mid, flags);
+}
+
+
+int mapistore_backend_submitmessage(struct backend_context *bctx, uint64_t mid, uint8_t flags)
+{
+	return bctx->backend->op_submitmessage(bctx->private_data, mid, flags);
+}
+
+
 int mapistore_backend_getprops(struct backend_context *bctx, uint64_t fmid, uint8_t type, 
 			       struct SPropTagArray *SPropTagArray, struct SRow *aRow)
 {

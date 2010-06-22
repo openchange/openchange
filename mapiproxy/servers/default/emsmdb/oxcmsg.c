@@ -25,6 +25,8 @@
    \brief Message and Attachment object routines and Rops
  */
 
+#include <sys/time.h>
+
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
@@ -270,6 +272,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	uint32_t			contextID;
 	bool				mapistore = false;
 	void				*data;
+	struct SRow			aRow;
+	uint32_t			pt_long;
+	bool				pt_boolean;
+	struct timeval			tv;
+	struct FILETIME			ft;
+	NTTIME				time;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] CreateMessage (0x06)\n"));
 
@@ -319,6 +327,40 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		mapi_repl->u.mapi_CreateMessage.HasMessageId = 1;
 		mapi_repl->u.mapi_CreateMessage.MessageId.MessageId = messageID;
 		mapistore_createmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID);
+
+		/* Set default properties for message: MS-OXCMSG 3.2.5.2 */
+		aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+		aRow.cValues = 0;
+
+		pt_long = 0x1;
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_IMPORTANCE, (const void *)&pt_long);
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Note");
+		pt_long = 0x0;
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_SENSITIVITY, (const void *)&pt_long);
+		pt_long = 0x9;
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_FLAGS, (const void *)&pt_long);
+		pt_boolean = false;
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_HASATTACH, (const void *)&pt_boolean);
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME_SET, (const void *)&pt_boolean);
+		pt_long = 0x1;
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_TRUST_SENDER, (const void *)&pt_long);
+		pt_long = 0x3;
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS, (const void *)&pt_long);
+		pt_long = 0x1;
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS_LEVEL, (const void *)&pt_long);
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME, (const void *)"No Subject.EML");
+
+		gettimeofday(&tv, NULL);
+		time = timeval_to_nttime(&tv);
+		ft.dwLowDateTime = (time << 32) >> 32;
+		ft.dwHighDateTime = time >> 32;		
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_CREATION_TIME, (const void *)&ft);
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LAST_MODIFICATION_TIME, (const void *)&ft);
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCAL_COMMIT_TIME, (const void *)&ft);
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
+		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
+
+		mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, messageID, MAPISTORE_MESSAGE, &aRow);
 		break;
 	}
 
@@ -367,6 +409,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 						       struct EcDoRpc_MAPI_REPL *mapi_repl,
 						       uint32_t *handles, uint16_t *size)
 {
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	struct mapi_handles	*rec = NULL;
+	void			*private_data;
+	bool			mapistore = false;
+	struct emsmdbp_object	*object;
+	uint64_t		messageID;
+	uint32_t		contextID;
+	uint8_t			flags;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesMessage (0x0c)\n"));
 
 	/* Sanity checks */
@@ -379,10 +431,38 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
-	
+
+	handle = handles[mapi_req->u.mapi_SaveChangesMessage.handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+	object = (struct emsmdbp_object *)private_data;
+	if (!object || object->type != EMSMDBP_OBJECT_MESSAGE) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	mapistore = emsmdbp_is_mapistore(rec);
+	switch (mapistore) {
+	case false:
+		DEBUG(0, ("Not implement yet - shouldn't occur\n"));
+		break;
+	case true:
+		messageID = object->object.message->messageID;
+		contextID = object->object.message->contextID;
+		flags = mapi_req->u.mapi_SaveChangesMessage.SaveFlags;
+		mapistore_savechangesmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags);
+		break;
+	}
+
 	mapi_repl->u.mapi_SaveChangesMessage.handle_idx = mapi_req->u.mapi_SaveChangesMessage.handle_idx;
 	mapi_repl->u.mapi_SaveChangesMessage.MessageId = 0;
 
+end:
 	*size += libmapiserver_RopSaveChangesMessage_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

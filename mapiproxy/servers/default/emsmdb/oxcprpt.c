@@ -448,6 +448,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 						  struct EcDoRpc_MAPI_REPL *mapi_repl,
 						  uint32_t *handles, uint16_t *size)
 {
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	struct mapi_handles	*rec = NULL;
+	void			*private_data = NULL;
+	bool			mapistore = false;
+	struct emsmdbp_object	*object;
+	uint64_t		messageID;
+	uint32_t		contextID;
+	uint16_t		i;
+	struct SRow		aRow;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] SetProperties (0x0a)\n"));
 
 	/* Sanity checks */
@@ -464,6 +475,45 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_SetProps.PropertyProblemCount = 0;
 	mapi_repl->u.mapi_SetProps.PropertyProblem = NULL;
 
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+	object = (struct emsmdbp_object *)private_data;
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	mapistore = emsmdbp_is_mapistore(rec);
+	switch (mapistore) {
+	case false:
+		DEBUG(0, ("SetProps on openchangedb not implemented yet\n"));
+		break;
+	case true:
+		if (object->type == EMSMDBP_OBJECT_MESSAGE) {
+			messageID = object->object.message->messageID;
+			contextID = object->object.message->contextID;
+
+			aRow.cValues = mapi_req->u.mapi_SetProps.values.cValues;
+			aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, aRow.cValues + 2);
+			for (i = 0; i < mapi_req->u.mapi_SetProps.values.cValues; i++) {
+				cast_SPropValue(&(mapi_req->u.mapi_SetProps.values.lpProps[i]),
+						&(aRow.lpProps[i]));
+			}
+
+			mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, messageID, 
+					   MAPISTORE_MESSAGE, &aRow);
+		} 
+		break;
+	}
+	
+
+end:
 	*size += libmapiserver_RopSetProperties_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

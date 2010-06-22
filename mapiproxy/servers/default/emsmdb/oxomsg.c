@@ -49,6 +49,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 						  struct EcDoRpc_MAPI_REPL *mapi_repl,
 						  uint32_t *handles, uint16_t *size)
 {
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	struct mapi_handles	*rec = NULL;
+	void			*private_data;
+	bool			mapistore = false;
+	struct emsmdbp_object	*object;
+	uint64_t		messageID;
+	uint32_t		contextID;
+	uint8_t			flags;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SubmitMessage (0x32)\n"));
 
 	/* Sanity checks */
@@ -60,9 +70,36 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
 
-	/* TODO: actually implement this */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
 
+	retval = mapi_handles_get_private_data(rec, &private_data);
+	object = (struct emsmdbp_object *)private_data;
+	if (!object || object->type != EMSMDBP_OBJECT_MESSAGE) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	mapistore = emsmdbp_is_mapistore(rec);
+	switch (mapistore) {
+	case false:
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		break;
+	case true:
+		messageID = object->object.message->messageID;
+		contextID = object->object.message->contextID;
+		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
+		mapistore_submitmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags);
+		break;
+	}
+
+ end:
 	*size += libmapiserver_RopSubmitMessage_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

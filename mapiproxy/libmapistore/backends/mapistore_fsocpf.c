@@ -1028,6 +1028,41 @@ static int fsocpf_op_createmessage(void *private_data,
 }
 
 
+static int fsocpf_op_savechangesmessage(void *private_data,
+					uint64_t mid,
+					uint8_t flags)
+{
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct fsocpf_message		*message;
+	
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
+	ocpf_write_init(message->ocpf_context_id, message->fid);
+	ocpf_write_commit(message->ocpf_context_id);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+static int fsocpf_op_submitmessage(void *private_data,
+				   uint64_t mid,
+				   uint8_t flags)
+{
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct fsocpf_message		*message;
+
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	/* This implementation is incorrect but should fit for immediate purposes */
+	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
+	ocpf_write_init(message->ocpf_context_id, message->fid);
+	ocpf_write_commit(message->ocpf_context_id);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
 static char *fsocpf_get_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, uint8_t class)
 {
 	char		*recipient = NULL;
@@ -1071,6 +1106,7 @@ static int fsocpf_op_getprops(void *private_data,
 		break;
 	case MAPISTORE_MESSAGE:
 		message = fsocpf_find_message_by_mid(fsocpf_ctx, fmid);
+		ocpf_server_set_SPropValue(fsocpf_ctx, message->ocpf_context_id);
 		lpProps = ocpf_get_SPropValue(message->ocpf_context_id, &cValues);
 		SRowSet = ocpf_get_recipients(fsocpf_ctx, message->ocpf_context_id);
 
@@ -1125,6 +1161,7 @@ static int fsocpf_op_setprops(void *private_data,
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *) private_data;
 	struct fsocpf_message	*message;
+	int			i;
 
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
@@ -1134,6 +1171,14 @@ static int fsocpf_op_setprops(void *private_data,
 		break;
 	case MAPISTORE_MESSAGE:
 		message = fsocpf_find_message_by_mid(fsocpf_ctx, fmid);
+		for (i = 0; i < aRow->cValues; i++) {
+			if (aRow->lpProps[i].ulPropTag == PR_MESSAGE_CLASS) {
+				ocpf_server_set_type(message->ocpf_context_id, aRow->lpProps[i].value.lpszA);
+			} else if (aRow->lpProps[i].ulPropTag == PR_MESSAGE_CLASS_UNICODE) {
+				ocpf_server_set_type(message->ocpf_context_id, aRow->lpProps[i].value.lpszW);
+			}
+			ocpf_server_add_SPropValue(message->ocpf_context_id, &aRow->lpProps[i]);
+		}
 		break;
 	}
 
@@ -1170,6 +1215,8 @@ int mapistore_init_backend(void)
 	backend.op_get_table_property = fsocpf_op_get_table_property;
 	backend.op_openmessage = fsocpf_op_openmessage;
 	backend.op_createmessage = fsocpf_op_createmessage;
+	backend.op_savechangesmessage = fsocpf_op_savechangesmessage;
+	backend.op_submitmessage = fsocpf_op_submitmessage;
 	backend.op_getprops = fsocpf_op_getprops;
 	backend.op_setprops = fsocpf_op_setprops;
 

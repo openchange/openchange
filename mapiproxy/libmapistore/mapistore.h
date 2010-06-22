@@ -81,8 +81,11 @@ struct mapistore_backend {
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
 	int (*op_get_table_property)(void *, uint64_t, uint8_t, uint32_t, uint32_t, void **);
+	/* message semantics */
 	int (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
 	int (*op_createmessage)(void *, uint64_t, uint64_t);
+	int (*op_savechangesmessage)(void *, uint64_t, uint8_t);
+	int (*op_submitmessage)(void *, uint64_t, uint8_t);
 	int (*op_getprops)(void *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 	int (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
 };
@@ -150,6 +153,8 @@ int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, 
 				 uint32_t, uint32_t, void **);
 int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
 int mapistore_createmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
+int mapistore_savechangesmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+int mapistore_submitmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_getprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SRow *);
 int mapistore_get_child_fids(struct mapistore_context *, uint32_t, uint64_t, uint64_t **, uint32_t *);

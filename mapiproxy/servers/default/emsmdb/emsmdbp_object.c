@@ -517,7 +517,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	object->type = EMSMDBP_OBJECT_MESSAGE;
 	object->object.message->folderID = folder->object.folder->folderID;
 	object->object.message->messageID = messageID;
-	object->object.message->message = talloc_zero(object->object.message, struct mapistore_message);
 
 	mapistore = emsmdbp_is_mapistore(parent);
 	if (mapistore == true) {

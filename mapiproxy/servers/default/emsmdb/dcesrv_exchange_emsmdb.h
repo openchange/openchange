@@ -93,7 +93,6 @@ struct emsmdbp_object_message {
 	uint64_t			folderID;
 	uint64_t			messageID;
 	uint32_t			contextID;
-	struct mapistore_message	*message;
 	bool				mapistore;
 };
 

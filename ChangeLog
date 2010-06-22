@@ -1,5 +1,48 @@
+2010-06-22
+    jkerihuel
+	[r1998]
+		- Add SetProps server side implementation for mapistore messages
+		
+		- Add a preliminary set of properties within CreateMessage (not
+		  complete yet) as stated in MS-OXCMSG 3.2.5.2
+		
+		- Add SaveChangeMessages preliminary server side implementation
+		- Add SubmitMessage preliminary server side implementation
+		
+		- add mapistore and fsocpf backend implementation for
+		  SaveChangeMessages and SubmitMessage. Note: SubmitMesage is just a
+		  hack for now.
+	[r1997]
+		- Add a wrapper to set OCPF file TYPE
+		- Free/Allocate type on purpose
+	[r1996]
+		storing a mapistore_message within the message object is useless for
+		the moment. Clean-up this bit introduced with last commit.
+	[r1995]
+		- Add preliminary OCPF API for server purposes (used by
+		  mapistore_fsocpf)
+		
+		- ocpf_server API now allows caller to dynamically update
+		  properties. If the properties was already existing, updates its
+		  value.
+		
+		- Update ocpf_test.py to reflect this behavior
+		
+		- Add preliminary server side implementation for CreateMessage (server
+		  + mapistore + fsocpf backedn)
+		
+		- Add preliminary mapistore + fsocpf backend skeleton for SetProps
+		  operation
+    bradh
+	[r1994]
+		Typo fix in constant name.
 2010-06-21
     jkerihuel
+	[r1993]
+		- Only prevent file opened in read-only to use write_commit
+		- Position the stream at the beginning of the file before writing
+	[r1992]
+		Defer ocpf file creation (fopen with w+) to ocpf_write_commit
 	[r1990]
 		Add rmdir support to mapistore python bindings
 	[r1989]

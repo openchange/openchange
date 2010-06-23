@@ -1,5 +1,48 @@
+2010-06-23
+    jkerihuel
+	[r2007]
+		- Implement server-side skeleton for ReadPerUserInformation (0x63)
+	[r2006]
+		- Use external TALLOC context for cast_SPropValue rather than
+		global_mapi_ctx->mem_ctx. This was preventing from using this function
+		properly in a context different from libmapi based application
+		(server).
+		
+		- Add cast_SPropValue support for PT_CLSID and PT_MV_LONG
+		
+		- add message path + id in the indexing database for mapistore case in
+		  SaveChangesMessage
+	[r2005]
+		Add default owner/full rights to new root folders created. Works with
+		Outlook 2003 (shift + delete for hard delete)
+	[r2004]
+		Add PT_SRVEID support in SPropValue (0xFB proptype)
+	[r2003]
+		Add owner / full-access rights for mailbox folders. It introduces less
+		stabilitity but offers wider range of available features.
+	[r2002]
+		Generate PidTagRights for PR_RIGHTS (used in openchangedb)
 2010-06-22
     jkerihuel
+	[r2001]
+		- Complete fsocpf_get_path implementation
+		- Register message into indexing.tdb after SubmitMessage
+	[r2000]
+		Add ocpf_server_set_type python bindings.
+		
+		Ohhh looks like we have reached r2000 ;-)
+		
+		 .-.                ,                                                     
+		`._ ,                           
+		   \ \                 o         
+		    \ `-,.                        
+		   .'o .  `.[]           o        
+		<~- - , ,[].'.[] ~>     ___                                               
+		 :               :     (-~.)    
+		  `             '       `|'     
+		   `           '         |      
+		    `-.     .-'          |      
+		-----{. _ _ .}-------------------                                         
 	[r1998]
 		- Add SetProps server side implementation for mapistore messages
 		

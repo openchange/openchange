@@ -27,7 +27,7 @@ static PyTypeObject *SPropValue_Type;
 
 void initmapistore(void);
 
-static PyObject *py_MAPIStore_new(PyMAPIStoreObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct mapistore_context	*mstore_ctx;

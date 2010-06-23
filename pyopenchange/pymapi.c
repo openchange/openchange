@@ -25,7 +25,7 @@
 
 void initmapi(void);
 
-static PyObject *py_SPropValue_new(PyTypeObject *_self, PyObject *args, PyObject *kwargs)
+static PyObject *py_SPropValue_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX		*mem_ctx;
 	PySPropValueObject	*SPropValue;

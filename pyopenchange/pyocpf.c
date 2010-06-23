@@ -30,7 +30,7 @@ void initocpf(void);
 
 PyAPI_DATA(PyTypeObject) PyOcpf;
 
-static PyObject *py_new_context(PyOcpfObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_new_context(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX	*mem_ctx;
 	PyOcpfObject	*ocpf_object;

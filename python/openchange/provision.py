@@ -369,7 +369,6 @@ def newmailbox(lp, username, firstorg, firstou, backend):
     db.add_folder_property(fid_inbox, "PidTagContentCount", "0")
     db.add_folder_property(fid_inbox, "PidTagContentUnreadCount", "0")
     db.add_folder_property(fid_inbox, "PidTagSubFolders", "FALSE")
-    db.add_folder_property(fid_inbox, "PidTagAccess", "63")
 
     print "* Adding additional default properties to Reminders"
     db.add_folder_property(fid_reminders, "PidTagContainerClass", "Outlook.Reminder");

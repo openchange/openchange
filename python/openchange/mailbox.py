@@ -352,6 +352,8 @@ GlobalCount: 0x%x
                           "FolderType": str(1),
                           "mapistore_uri": "%s/%s/%s%s" % (mapistoreURL, username, FID, mapistoreSuffix),
                           "FolderType": str(1),
+                          "PidTagAccess": str(63),
+                          "PidTagRights":str(2043),
                           "SystemIdx": str(SystemIdx)})
 
         return FID
@@ -390,6 +392,8 @@ GlobalCount: 0x%x
                       "mapistore_uri": "%s/%s/%s%s" % (mapistoreURL, username, FID, mapistoreSuffix),
                       "PidTagContentCount": str(0),
                       "PidTagAttrHidden": str(0),
+                      "PidTagAccess": str(63),
+                      "PidTagRights":str(2043),
                       "PidTagContentUnreadCount": str(0),
                       "PidTagSubFolders": str(0),
                       "FolderType": str(1)})

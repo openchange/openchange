@@ -456,6 +456,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 		contextID = object->object.message->contextID;
 		flags = mapi_req->u.mapi_SaveChangesMessage.SaveFlags;
 		mapistore_savechangesmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags);
+		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
 		break;
 	}
 

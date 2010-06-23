@@ -485,7 +485,7 @@ _PUBLIC_ int ocpf_write_auto(uint32_t context_id,
 	/* store properties and OLEGUID in OCPF context */
 	for (i = 0; i < mapi_lpProps->cValues; i++) {
 		propID = mapi_lpProps->lpProps[i].ulPropTag >> 16;
-		cast_SPropValue(&mapi_lpProps->lpProps[i], &lpProps);
+		cast_SPropValue(ctx, &mapi_lpProps->lpProps[i], &lpProps);
 		
 		if (propID < 0x8000) {
 			if (ocpf_write_exclude_property(lpProps.ulPropTag) == false) {
@@ -494,7 +494,7 @@ _PUBLIC_ int ocpf_write_auto(uint32_t context_id,
 					lpProps.ulPropTag = PR_SUBJECT;
 					ocpf_propvalue(ctx, lpProps.ulPropTag, lpProps.value, 
 						       lpProps.ulPropTag & 0xFFFF, false);
-					cast_SPropValue(&mapi_lpProps->lpProps[i], &lpProps);
+					cast_SPropValue(ctx, &mapi_lpProps->lpProps[i], &lpProps);
 				}
 				ocpf_propvalue(ctx, mapi_lpProps->lpProps[i].ulPropTag, 
 					       lpProps.value, mapi_lpProps->lpProps[i].ulPropTag & 0xFFFF, false);

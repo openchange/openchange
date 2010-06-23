@@ -569,10 +569,21 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 
 }
 
-/*
- * convenience function to convert a mapi_SPropValue structure into a SPropValue structure and return the associated size
+
+/**
+   \details Convenience function to convert a mapi_SPropValue
+   structure into a SPropValue structure and return the associated
+   size
+
+   \param mem_ctx pointer to the memory context to use for allocation
+   \param mapi_sprop pointer to the MAPI SPropValue structure to copy data from
+   \param sprop pointer to the SPropValue structure to copy data to
+
+   \return size of the converted data on success, otherwise 0
  */
-_PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPropValue *sprop)
+_PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx, 
+				  struct mapi_SPropValue *mapi_sprop, 
+				  struct SPropValue *sprop)
 {
 	sprop->ulPropTag = mapi_sprop->ulPropTag;
 
@@ -604,6 +615,19 @@ _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPr
 		sprop->value.ft.dwLowDateTime = mapi_sprop->value.ft.dwLowDateTime;
 		sprop->value.ft.dwHighDateTime = mapi_sprop->value.ft.dwHighDateTime;
 		return (sizeof (struct FILETIME));
+	case PT_CLSID:
+	{
+		DATA_BLOB	b;
+		
+		GUID_to_ndr_blob(&(mapi_sprop->value.lpguid), talloc_autofree_context(), &b);
+		sprop->value.lpguid = talloc_zero(mem_ctx, struct FlatUID_r);
+		sprop->value.lpguid = memcpy(sprop->value.lpguid->ab, b.data, 16);
+		return (sizeof (struct FlatUID_r));
+	}
+	case PT_SVREID:
+		sprop->value.bin.cb = mapi_sprop->value.bin.cb;
+		sprop->value.bin.lpb = mapi_sprop->value.bin.lpb;
+		return (sprop->value.bin.cb + sizeof (uint16_t));
 	case PT_BINARY:
 		sprop->value.bin.cb = mapi_sprop->value.bin.cb;
 		sprop->value.bin.lpb = mapi_sprop->value.bin.lpb;
@@ -611,21 +635,36 @@ _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPr
         case PT_ERROR:
                 sprop->value.err = (enum MAPISTATUS)mapi_sprop->value.err;
                 return sizeof(uint32_t);
+	case PT_MV_LONG:
+	{
+		uint32_t	i;
+		uint32_t	size = 0;
+
+		sprop->value.MVl.cValues = mapi_sprop->value.MVl.cValues;
+		size += 4;
+
+		sprop->value.MVl.lpl = talloc_array(mem_ctx, uint32_t, sprop->value.MVl.cValues);
+		for (i = 0; i < sprop->value.MVl.cValues; i++) {
+			sprop->value.MVl.lpl[i] = mapi_sprop->value.MVl.lpl[i];
+			size += sizeof (uint32_t);
+		}
+		return size;
+	}
 	case PT_MV_STRING8:
-		{
+	{
 		uint32_t	i;
 		uint32_t	size = 0;
 
 		sprop->value.MVszA.cValues = mapi_sprop->value.MVszA.cValues;
 		size += 4;
 
-		sprop->value.MVszA.lppszA = talloc_array(global_mapi_ctx->mem_ctx, const char *, sprop->value.MVszA.cValues);
+		sprop->value.MVszA.lppszA = talloc_array(mem_ctx, const char *, sprop->value.MVszA.cValues);
 		for (i = 0; i < sprop->value.MVszA.cValues; i++) {
 			sprop->value.MVszA.lppszA[i] = mapi_sprop->value.MVszA.strings[i].lppszA;
 			size += strlen(sprop->value.MVszA.lppszA[i]) + 1;
 		}
 		return size;
-		}
+	}
         case PT_MV_UNICODE:
                 {
                         uint32_t        i;
@@ -634,7 +673,7 @@ _PUBLIC_ uint32_t cast_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPr
                         sprop->value.MVszW.cValues = mapi_sprop->value.MVszW.cValues;
                         size += 4;
 
-                        sprop->value.MVszW.lppszW = talloc_array(global_mapi_ctx->mem_ctx, const char*, sprop->value.MVszW.cValues);
+                        sprop->value.MVszW.lppszW = talloc_array(mem_ctx, const char*, sprop->value.MVszW.cValues);
                         for (i = 0; i < sprop->value.MVszW.cValues; i++) {
                                 sprop->value.MVszW.lppszW[i] = mapi_sprop->value.MVszW.strings[i].lppszW;
                                 size += 2 * (strlen(sprop->value.MVszW.lppszW[i]) + 1);

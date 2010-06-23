@@ -322,6 +322,7 @@ System Attendant Private Interface
 		[case(PT_I8)]			dlong			d;
 		[case(PT_STRING8)][unique][string,charset(DOS)] uint8	*lpszA;
 		[case(PT_BINARY)]		Binary_r       		bin;
+		[case(PT_SVREID)]		Binary_r		bin;
 		[case(PT_UNICODE)][string,charset(UTF16)] uint16	*lpszW;
 		[case(PT_CLSID)]		FlatUID_r      		*lpguid;
 		[case(PT_SYSTIME)]		FILETIME		ft;

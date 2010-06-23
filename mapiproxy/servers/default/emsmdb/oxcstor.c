@@ -429,7 +429,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserLongTermIds(TALLOC_CTX *mem_ctx,
 
 
 /**
-   \details EcDoRpc GetPerUserGuid (0x61) Rop. This operations
+   \details EcDoRpc GetPerUserGuid (0x61) Rop. This operation
    gets the GUID of a public folder's per-user information.
 
    \param mem_ctx pointer to the memory context
@@ -468,6 +468,49 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserGuid(TALLOC_CTX *mem_ctx,
 	/* TODO effective work here */
 
 	*size = libmapiserver_RopGetPerUserGuid_size(mapi_repl);
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details EcDoRpc ReadPerUserInformation (0x63) Rop. This operation
+   gets per-user information for a public folder.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the ReadPerUserInformation EcDoRpc_MAPI_REQ
+   \param mapi_repl pointer to the ReadPerUserInformation EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadPerUserInformation(TALLOC_CTX *mem_ctx,
+							   struct emsmdbp_context *emsmdbp_ctx,
+							   struct EcDoRpc_MAPI_REQ *mapi_req,
+							   struct EcDoRpc_MAPI_REPL *mapi_repl,
+							   uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] ReadPerUserInformation (0x63)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	mapi_repl->u.mapi_ReadPerUserInformation.HasFinished = true;
+	mapi_repl->u.mapi_ReadPerUserInformation.DataSize = 0x0;
+	mapi_repl->u.mapi_ReadPerUserInformation.Data.length = 0x0;
+	mapi_repl->u.mapi_ReadPerUserInformation.Data.data = NULL;
+
+	*size = libmapiserver_RopReadPerUserInformation_size(mapi_repl);
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
 	return MAPI_E_SUCCESS;

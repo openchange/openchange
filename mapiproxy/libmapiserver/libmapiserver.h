@@ -256,6 +256,12 @@
  */
 #define	SIZE_DFLT_ROPGETPERUSERLONGTERMIDS	2
 
+/**
+   \details ReadPerUserInformation has fixed response size for:
+   -# HasFinished: uint8_t
+   -# DataSize: uint16_t
+ */
+#define	SIZE_DFLT_ROPREADPERUSERINFORMATION	3
 
 /**
    \details GetPerUserGuid has fixed response size for:
@@ -350,6 +356,7 @@ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_M
 uint16_t libmapiserver_RopRelease_size(void);
 uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserLongTermIds_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopReadPerUserInformation_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxctabl.c */

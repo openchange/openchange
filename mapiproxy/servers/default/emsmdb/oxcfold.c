@@ -446,6 +446,8 @@ static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_conte
 	ldb_msg_add_string(msg, "PidTagContentCount", "0");
 	ldb_msg_add_string(msg, "PidTagContainerClass", "IPF.Note");
 	ldb_msg_add_string(msg, "PidTagAttrHidden", "0");
+	ldb_msg_add_string(msg, "PidTagAccess", "63");
+	ldb_msg_add_string(msg, "PidTagRights", "2043");
 	ldb_msg_add_string(msg, "PidTagDisplayName", displayName);
 
 	folderType = (uint32_t *) find_SPropValue_data(aRow, PR_FOLDER_TYPE);

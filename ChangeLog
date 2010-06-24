@@ -1,5 +1,7 @@
 2010-06-23
     jkerihuel
+	[r2009]
+		Fix warnings generating by the incorrect .tp_new first argument type
 	[r2007]
 		- Implement server-side skeleton for ReadPerUserInformation (0x63)
 	[r2006]

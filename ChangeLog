@@ -1,3 +1,30 @@
+2010-06-25
+    jkerihuel
+	[r2018]
+		Add  mapidump_SPropValue for PT_MV_LONG
+	[r2017]
+		Add support for PT_MV_UNICODE type
+	[r2016]
+		Add  mapidump_SPropValue for PT_MV_UNICODE
+	[r2015]
+		Add support for PT_MV_BINARY type
+		
+		This implementation required to add a Binary_r within ocpf_context to
+		union SPropValue_CTR content consistent among recursive parsing.
+	[r2014]
+		Add PT_MV_BINARY support in cast_SPropValue
+	[r2013]
+		Add mapidump_SPropValue entry for PT_MV_BINARY
+	[r2012]
+		Do not search context if context_id is NULL
+	[r2011]
+		- Add a function to synchronize data on filesystem after a write
+		  commit (close/fopen) and change open and context flags depending on
+		  their previous value.
+		
+		- If PR_MESSAGE_CLASS or PR_MESSAGE_CLASS_UNICODE is used for
+		  set_SPropValue, update context type.
+
 2010-06-23
     jkerihuel
 	[r2009]

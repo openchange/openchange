@@ -46,6 +46,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 	char				*date;
 	char				*var;
 	struct StringArray_r		MVszA;
+	struct WStringArray_r		MVszW;
 	struct BinaryArray_r		MVbin;
 }
 
@@ -58,6 +59,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 %token <name> STRING
 %token <nameW> UNICODE
 %token <MVszA> MVSTRING
+%token <MVszW> MVUNICODE
 %token <MVbin> MVBIN
 %token <date> SYSTIME
 %token <var> VAR
@@ -85,6 +87,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 %token kw_PT_SYSTIME
 %token kw_PT_MV_BINARY
 %token kw_PT_MV_STRING8
+%token kw_PT_MV_UNICODE
 %token kw_PT_BINARY
 
 %token OBRACE
@@ -232,7 +235,7 @@ propvalue	: STRING
 		}
 		| OBRACE mvstring_contents STRING EBRACE
 		{
-			TALLOC_CTX *mem_ctx;
+			TALLOC_CTX	*mem_ctx;
 
 			if (!ctx->lpProp.MVszA.cValues) {
 				ctx->lpProp.MVszA.cValues = 0;
@@ -247,6 +250,24 @@ propvalue	: STRING
 			ctx->lpProp.MVszA.cValues += 1;
 
 			ctx->ltype = PT_MV_STRING8;
+		}
+		| OBRACE mvunicode_contents UNICODE EBRACE
+		{
+			TALLOC_CTX	*mem_ctx;
+			
+			if (!ctx->lpProp.MVszW.cValues) {
+				ctx->lpProp.MVszW.cValues = 0;
+				ctx->lpProp.MVszW.lppszW = talloc_array(ctx, const char *, 2);
+			} else {
+				ctx->lpProp.MVszW.lppszW = talloc_realloc(NULL, ctx->lpProp.MVszW.lppszW,
+									  const char *,
+									  ctx->lpProp.MVszW.cValues + 2);
+			}
+			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVszW.lppszW;
+			ctx->lpProp.MVszW.lppszW[ctx->lpProp.MVszW.cValues] = talloc_strdup(mem_ctx, $3);
+			ctx->lpProp.MVszW.cValues += 1;
+
+			ctx->ltype = PT_MV_UNICODE;
 		}
 		| OBRACE binary_contents EBRACE
 		{
@@ -310,6 +331,26 @@ mvstring_content  : STRING COMMA
 			ctx->lpProp.MVszA.cValues += 1;
 		  }
 		  ;
+
+mvunicode_contents: | mvunicode_contents mvunicode_content
+
+mvunicode_content: UNICODE COMMA
+		{
+			TALLOC_CTX *mem_ctx;
+
+			if (!ctx->lpProp.MVszW.cValues) {
+				ctx->lpProp.MVszW.cValues = 0;
+				ctx->lpProp.MVszW.lppszW = talloc_array(ctx, const char *, 2);
+			} else {
+				ctx->lpProp.MVszW.lppszW = talloc_realloc(NULL, ctx->lpProp.MVszW.lppszW,
+									  const char *,
+									  ctx->lpProp.MVszW.cValues + 2);
+			}
+			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVszW.lppszW;
+			ctx->lpProp.MVszW.lppszW[ctx->lpProp.MVszW.cValues] = talloc_strdup(mem_ctx, $1);
+			ctx->lpProp.MVszW.cValues += 1;
+		}
+		;
 
 binary_contents: | binary_contents binary_content
 

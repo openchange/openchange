@@ -44,8 +44,9 @@
 	<li><a href="#unicode">    8.6. PT_UNICODE        </a></li>
         <li><a href="#systime">    8.7. PT_SYSTIME        </a></li>
         <li><a href="#mv_string8"> 8.8. PT_MV_STRING8     </a></li>
-	<li><a href="#binary">     8.9. PT_BINARY         </a></li>
-	<li><a href="#mv_binary">  8.10. PT_MV_BINARY	  </a></li>
+	<li><a href="#mv_unicode"> 8.9. PT_MV_UNICODE     </a></li>
+	<li><a href="#binary">     8.10. PT_BINARY         </a></li>
+	<li><a href="#mv_binary">  8.11. PT_MV_BINARY	  </a></li>
    </ul>
  </li>
  <li><a href="#comments">    9. Comments                  </a>
@@ -72,7 +73,7 @@
 	   <td style="text-align:center">25/06/10</td>
 	   <td style="text-align:center"><strong>0.6</strong></td>
 	   <td style="text-align:center">Julien Kerihuel</td>
-	   <td style="text-align:center">Add PT_MV_BINARY support</td>
+	   <td style="text-align:center">Add PT_MV_BINARY, PT_MV_UNICODE support</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">01/04/08</td>
@@ -716,7 +717,27 @@ then they must be separated with comma.
 \endcode
 <br/>
 
-<a name="binary"></a><h3>8.9. PT_BINARY</h3>
+<a name="mv_unicode"></a><h3>8.9 PT_MV_UNICODE</h3>
+
+PT_MV_UNICODE are arrays ("multiple values") of unicode strings. OCPF
+defines PT_MV_UNICODE property values as UNICODE property values
+separated by commas and enclosed within braces.
+
+\code
+      { UNICODE, UNICODE, ..., UNICODE }
+\endcode
+
+At least one UNICODE property value is required to create a valid
+PT_MV_UNICODE property. If two or more UNICODE property values are
+set, then they must be separated with comma.
+
+\code
+      { W"single multi-unicode value" }
+      { W"four", W"five", W"six" }
+\endcode
+<br/>
+
+<a name="binary"></a><h3>8.10. PT_BINARY</h3>
 
 PT_BINARY are blobs of data. OCPF defines PT_BINARY property values
 using two different methods. This can either be raw/inline blob of
@@ -744,7 +765,7 @@ stream.
 \endcode
 <br/>
 
-<a name="mv_binary"></a><h3>8.10. PT_MV_BINARY</h3>
+<a name="mv_binary"></a><h3>8.11. PT_MV_BINARY</h3>
 
 PT_MV_BINARY are arrays ("multiple values") of PT_BINARY blobs. OCPF
 defines PT_MV_BINARY propery values as PT_BINARY property values

@@ -176,6 +176,24 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx,
 			}
 		}
 		return OCPF_SUCCESS;
+	case PT_MV_UNICODE:
+		*value = (const void *)talloc_zero(ctx, struct WStringArray_r);
+		((struct WStringArray_r *)*value)->cValues = lpProp.MVszW.cValues;
+		((struct WStringArray_r *)*value)->lppszW = talloc_array(ctx, const char *, lpProp.MVszW.cValues);
+		{
+			uint32_t	i;
+
+			for (i = 0; i < lpProp.MVszW.cValues; i++) {
+				if (unescape) {
+					str = ocpf_write_unescape_string(ctx, lpProp.MVszW.lppszW[i]);
+				} else {
+					str = (char *)lpProp.MVszW.lppszW[i];
+				}
+				((struct WStringArray_r *)*value)->lppszW[i] = talloc_strdup(ctx, str);
+				talloc_free(str);
+			}
+		}
+		return OCPF_SUCCESS;
 	case PT_MV_BINARY:
 		*value = (const void *)talloc_zero(ctx, struct BinaryArray_r);
 		((struct BinaryArray_r *)*value)->cValues = lpProp.MVbin.cValues;

@@ -48,6 +48,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	const void			*data;
 	TALLOC_CTX			*mem_ctx = NULL;
 	const struct StringArray_r	*StringArray_r = NULL;
+	const struct BinaryArray_r	*BinaryArray_r = NULL;
 	uint32_t			i;
 
 	proptag = get_proptag_name(lpProp.ulPropTag);
@@ -98,6 +99,14 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 			printf("%s, ", StringArray_r->lppszA[i]);
 		}
 		printf("%s\n", StringArray_r->lppszA[i]);
+		break;
+	case PT_MV_BINARY:
+		BinaryArray_r = (const struct BinaryArray_r *) get_SPropValue_data(&lpProp);
+		printf("%s%s: ARRAY(%d)\n", sep?sep:"", proptag, BinaryArray_r->cValues);
+		for (i = 0; i < BinaryArray_r->cValues; i++) {
+			printf("\tPT_MV_BINARY [%d]:\n", i);
+			dump_data(0, BinaryArray_r->lpbin[i].lpb, BinaryArray_r->lpbin[i].cb);
+		}
 		break;
 	default:
 		/* If you hit this assert, you'll need to implement whatever type is missing */

@@ -92,8 +92,17 @@ _PUBLIC_ enum MAPISTATUS ocpf_server_set_SPropValue(TALLOC_CTX *mem_ctx,
 	/* Step 3. Add Known properties */
 	if (ctx->props && ctx->props->next) {
 		for (pel = ctx->props; pel->next; pel = pel->next) {
-			ctx->lpProps = add_SPropValue(ctx, ctx->lpProps, &ctx->cValues, 
-						      pel->aulPropTag, pel->value);
+			switch (pel->aulPropTag) {
+			case PR_MESSAGE_CLASS:
+			case PR_MESSAGE_CLASS_UNICODE:
+				ocpf_server_set_type(context_id, (const char *)pel->value);
+				ctx->lpProps = add_SPropValue(ctx, ctx->lpProps, &ctx->cValues, 
+							      pel->aulPropTag, pel->value);
+				break;
+			default:
+				ctx->lpProps = add_SPropValue(ctx, ctx->lpProps, &ctx->cValues, 
+							      pel->aulPropTag, pel->value);
+			}
 		}
 	}
 	/* Step 4. Add message class */
@@ -170,5 +179,47 @@ _PUBLIC_ enum MAPISTATUS ocpf_server_add_SPropValue(uint32_t context_id,
 		}
 		DLIST_ADD(ctx->props, element);
 	}
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Synchronize data on filesystem
+
+   \param context_id identifier of the ocpf context
+
+   \return MAPI_E_SUCCESS on success, otherwise otheriwse MAPI/OCPF error
+ */
+_PUBLIC_ enum MAPISTATUS ocpf_server_sync(uint32_t context_id)
+{
+	struct ocpf_context	*ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
+
+	/* Step 1. Search the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	OCPF_RETVAL_IF(!ctx, NULL, OCPF_INVALID_CONTEXT, NULL);	
+
+	if (ctx->flags == OCPF_FLAGS_CREATE) {
+		ctx->flags = OCPF_FLAGS_RDWR;
+	}
+
+	if (ctx->fp) {
+		fclose(ctx->fp);
+	}
+	
+	switch (ctx->flags) {
+	case OCPF_FLAGS_RDWR:
+		ctx->fp = fopen(ctx->filename, "r+");
+		break;
+	case OCPF_FLAGS_READ:
+		ctx->fp = fopen(ctx->filename, "r");
+		break;
+	case OCPF_FLAGS_WRITE:
+		ctx->fp = fopen(ctx->filename, "w");
+		break;
+	}
+
 	return MAPI_E_SUCCESS;
 }

@@ -47,6 +47,7 @@
 	<li><a href="#mv_unicode"> 8.9. PT_MV_UNICODE     </a></li>
 	<li><a href="#binary">     8.10. PT_BINARY         </a></li>
 	<li><a href="#mv_binary">  8.11. PT_MV_BINARY	  </a></li>
+	<li><a href="#mv_long">    8.12. PT_MV_LONG	  </a></li>
    </ul>
  </li>
  <li><a href="#comments">    9. Comments                  </a>
@@ -73,7 +74,9 @@
 	   <td style="text-align:center">25/06/10</td>
 	   <td style="text-align:center"><strong>0.6</strong></td>
 	   <td style="text-align:center">Julien Kerihuel</td>
-	   <td style="text-align:center">Add PT_MV_BINARY, PT_MV_UNICODE support</td>
+	   <td style="text-align:center">Add PT_MV_BINARY, PT_MV_LONG
+	   and PT_MV_UNICODE support. Update PT_BINARY
+	   description</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">01/04/08</td>
@@ -744,13 +747,13 @@ using two different methods. This can either be raw/inline blob of
 data or filename/external.
 
 If users wish to add raw data blob for a given property, they need to
-enclose INTEGER values within braces. However many cases occur where
-the data blob is large (such as HTML content; PR_HTML has PT_BINARY
-property type). In such cases, users may rather prefer to write an
-external file and specify a filename.
+enclose UINT8 (from 0x00 to 0xFF) values within braces. However many
+cases occur where the data blob is large (such as HTML content;
+PR_HTML has PT_BINARY property type). In such cases, users may rather
+prefer to write an external file and specify a filename.
 
 \code
-	{ INTEGER INTEGER [...] INTEGER }
+	{ UINT8 UINT8 [...] UINT8 }
 	< STRING >
 \endcode
 
@@ -787,6 +790,31 @@ Note that current implementation does not support the following PT_BINARY format
 \code
 < STRING >
 \endcode
+<br/>
+
+<a name="mv_long"></a><h3>8.12. PT_MV_LONG</h3>
+
+PT_MV_LONG are arrays ("multiple values") of integers. OCPF defines
+PT_MV_LONG property values as INTEGER property values separated by
+commas and enclosed within braces.
+
+\code
+      { INTEGER, INTEGER, INTEGER }
+\endcode
+
+At least one INTEGER property value is required to create a valid
+PT_MV_LONG property. If two or more INTEGER property values are set,
+then they must be separated with comma.
+
+Also note that PT_MV_LONG are very similar to PT_BINARY in their
+syntax. The main difference lies in the representation of UINT8 and
+INTEGER values.
+
+\code
+     { 1, 2, 3 }
+     { L0x1, 0x123456, 42 }
+\endcode
+
 <br/>
 
 <a name="comments"></a><h2>9. Comments</h2>

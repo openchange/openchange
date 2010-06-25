@@ -181,6 +181,46 @@ static char *ocpf_write_binary(struct ocpf_context *ctx, const struct Binary_r *
 	return line;
 }
 
+static char *ocpf_write_mv_binary(struct ocpf_context *ctx, const struct BinaryArray_r *value)
+{
+	uint32_t	i;
+	uint32_t	j;
+	char		*line;
+
+	line = talloc_asprintf(ctx, "{");
+	for (i = 0; i < value->cValues; i++) {
+		line = talloc_asprintf_append(line, " {");
+		for (j = 0; j < value->lpbin[i].cb; j++) {
+			line = talloc_asprintf_append(line, " 0x%.2x", value->lpbin[i].lpb[j]);
+		}
+		if (i != value->cValues - 1) {
+			line = talloc_asprintf_append(line, " },");
+		} else {
+			line = talloc_asprintf_append(line, " }");
+		}
+	}
+	line = talloc_asprintf_append(line, " }\n");
+
+	return line;
+}
+
+static char *ocpf_write_mv_long(struct ocpf_context *ctx, const struct LongArray_r *value)
+{
+	char		*str = NULL;
+	uint32_t	i;
+
+	str = talloc_asprintf(ctx, "{ ");
+	for (i = 0; i < value->cValues; i++) {
+		if (i != value->cValues - 1) {
+			str = talloc_asprintf_append_buffer(str, "%d, ", value->lpl[i]);
+		} else {
+			str = talloc_asprintf_append_buffer(str, "%d }", value->lpl[i]);
+		}
+	}
+
+	return str;
+}
+
 static char *ocpf_write_escape_string(struct ocpf_context *ctx, const char *value)
 {
 	char	*str = NULL;
@@ -283,6 +323,27 @@ static char *ocpf_write_mv_string8(struct ocpf_context *ctx, const struct String
 	return str;
 }
 
+
+static char *ocpf_write_mv_unicode(struct ocpf_context *ctx, const struct WStringArray_r *value)
+{
+	char		*str = NULL;
+	char		*tmp = NULL;
+	uint32_t	i;
+
+	str = talloc_asprintf(ctx, "{ ");
+	for (i = 0; i < value->cValues; i++) {
+		tmp = ocpf_write_escape_string(ctx, (const char *)value->lppszW[i]);
+		if (i != value->cValues - 1) {
+			str = talloc_asprintf_append_buffer(str, "\"%s\", ", tmp);
+		} else {
+			str = talloc_asprintf_append_buffer(str, "\"%s\" }", tmp);
+		}
+		talloc_free(tmp);
+	}
+
+	return str;	
+}
+
 static char *ocpf_write_property(struct ocpf_context *ctx, bool *found, uint32_t ulPropTag, const void *value)
 {
 	char	*line = NULL;
@@ -325,8 +386,20 @@ static char *ocpf_write_property(struct ocpf_context *ctx, bool *found, uint32_t
 		line = ocpf_write_binary(ctx, (const struct Binary_r *)value);
 		*found = true;
 		break;
+	case PT_MV_LONG:
+		line = ocpf_write_mv_long(ctx, (const struct LongArray_r *)value);
+		*found = true;
+		break;
 	case PT_MV_STRING8:
 		line = ocpf_write_mv_string8(ctx, (const struct StringArray_r *)value);
+		*found = true;
+		break;
+	case PT_MV_UNICODE:
+		line = ocpf_write_mv_unicode(ctx, (const struct WStringArray_r *)value);
+		*found = true;
+		break;
+	case PT_MV_BINARY:
+		line = ocpf_write_mv_binary(ctx, (const struct BinaryArray_r *)value);
 		*found = true;
 		break;
 	}

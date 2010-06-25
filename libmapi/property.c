@@ -666,20 +666,43 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 		return size;
 	}
         case PT_MV_UNICODE:
-                {
-                        uint32_t        i;
-                        uint32_t        size = 0;
+	{
+		uint32_t        i;
+		uint32_t        size = 0;
 
-                        sprop->value.MVszW.cValues = mapi_sprop->value.MVszW.cValues;
-                        size += 4;
+		sprop->value.MVszW.cValues = mapi_sprop->value.MVszW.cValues;
+		size += 4;
 
-                        sprop->value.MVszW.lppszW = talloc_array(mem_ctx, const char*, sprop->value.MVszW.cValues);
-                        for (i = 0; i < sprop->value.MVszW.cValues; i++) {
-                                sprop->value.MVszW.lppszW[i] = mapi_sprop->value.MVszW.strings[i].lppszW;
-                                size += 2 * (strlen(sprop->value.MVszW.lppszW[i]) + 1);
-                        }
-                        return size;
-                }
+		sprop->value.MVszW.lppszW = talloc_array(mem_ctx, const char*, sprop->value.MVszW.cValues);
+		for (i = 0; i < sprop->value.MVszW.cValues; i++) {
+			sprop->value.MVszW.lppszW[i] = mapi_sprop->value.MVszW.strings[i].lppszW;
+			size += 2 * (strlen(sprop->value.MVszW.lppszW[i]) + 1);
+		}
+		return size;
+	}
+	case PT_MV_BINARY:
+	{
+		uint32_t	i;
+		uint32_t	size = 0;
+
+		sprop->value.MVbin.cValues = mapi_sprop->value.MVbin.cValues;
+		size += 4;
+
+		sprop->value.MVbin.lpbin = talloc_array(mem_ctx, struct Binary_r, sprop->value.MVbin.cValues);
+		for (i = 0; i < sprop->value.MVbin.cValues; i++) {
+			sprop->value.MVbin.lpbin[i].cb = mapi_sprop->value.MVbin.bin[i].cb;
+			if (sprop->value.MVbin.lpbin[i].cb) {
+				sprop->value.MVbin.lpbin[i].lpb = talloc_memdup(sprop->value.MVbin.lpbin, 
+										mapi_sprop->value.MVbin.bin[i].lpb,
+										mapi_sprop->value.MVbin.bin[i].cb);
+			} else {
+				sprop->value.MVbin.lpbin[i].lpb = NULL;
+			}
+			size += sizeof (uint32_t);
+			size += sprop->value.MVbin.lpbin[i].cb;
+		}
+		return size;
+	}
         default:
                 printf("unhandled conversion case in cast_SPropValue(): 0x%x\n", (sprop->ulPropTag & 0xFFFF));
                 OPENCHANGE_ASSERT();

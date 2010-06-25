@@ -176,6 +176,20 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx,
 			}
 		}
 		return OCPF_SUCCESS;
+	case PT_MV_BINARY:
+		*value = (const void *)talloc_zero(ctx, struct BinaryArray_r);
+		((struct BinaryArray_r *)*value)->cValues = lpProp.MVbin.cValues;
+		((struct BinaryArray_r *)*value)->lpbin = talloc_array(ctx, struct Binary_r, lpProp.MVbin.cValues);
+		{
+			uint32_t	i;
+
+			for (i = 0; i < lpProp.MVbin.cValues; i++) {
+				((struct BinaryArray_r *)*value)->lpbin[i].cb = lpProp.MVbin.lpbin[i].cb;
+				((struct BinaryArray_r *)*value)->lpbin[i].lpb = talloc_memdup(((struct BinaryArray_r *)*value)->lpbin,
+											       lpProp.MVbin.lpbin[i].lpb, lpProp.MVbin.lpbin[i].cb);
+			}
+		}
+		return OCPF_SUCCESS;
 	default:
 		ocpf_do_debug(ctx, "%s (0x%.4x)", OCPF_WARN_PROP_TYPE, proptype);
 		return OCPF_ERROR;
@@ -193,6 +207,9 @@ int ocpf_propvalue_free(union SPropValue_CTR lpProp, uint16_t proptype)
 		break;
 	case PT_MV_STRING8:
 		talloc_free(lpProp.MVszA.lppszA);
+		break;
+	case PT_MV_BINARY:
+		talloc_free(lpProp.MVbin.lpbin);
 		break;
 	}
 	return OCPF_SUCCESS;

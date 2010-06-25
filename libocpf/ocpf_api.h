@@ -98,6 +98,7 @@ struct ocpf_context
 	uint8_t			recip_type;
 	uint16_t		ltype;
 	union SPropValue_CTR	lpProp;
+	struct Binary_r		bin;
 	struct ocpf_nprop	nprop;
 	unsigned int		lineno;
 	int			result;

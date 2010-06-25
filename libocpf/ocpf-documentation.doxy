@@ -45,6 +45,7 @@
         <li><a href="#systime">    8.7. PT_SYSTIME        </a></li>
         <li><a href="#mv_string8"> 8.8. PT_MV_STRING8     </a></li>
 	<li><a href="#binary">     8.9. PT_BINARY         </a></li>
+	<li><a href="#mv_binary">  8.10. PT_MV_BINARY	  </a></li>
    </ul>
  </li>
  <li><a href="#comments">    9. Comments                  </a>
@@ -66,6 +67,12 @@
 	   <td style="text-align:center"><strong>Revision Number</strong></td>
 	   <td style="text-align:center"><strong>Author</strong></td>
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">25/06/10</td>
+	   <td style="text-align:center"><strong>0.6</strong></td>
+	   <td style="text-align:center">Julien Kerihuel</td>
+	   <td style="text-align:center">Add PT_MV_BINARY support</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">01/04/08</td>
@@ -735,6 +742,31 @@ stream.
 	PR_HTML = { 0x48 0x65 0x6c 0x6c 0x6f } /* Hello */
 	PR_HTML = <"/tmp/sample.html">
 \endcode
+<br/>
+
+<a name="mv_binary"></a><h3>8.10. PT_MV_BINARY</h3>
+
+PT_MV_BINARY are arrays ("multiple values") of PT_BINARY blobs. OCPF
+defines PT_MV_BINARY propery values as PT_BINARY property values
+separated by commas and encloses within braces.
+
+\code
+	{ PT_BINARY, PT_BINARY, PT_BINARY }
+\endcode
+
+At least one PT_BINARY property value is required to create a valid
+PT_MV_BINARY property. If two or more PT_BINARY are set, then they
+must be separated with comma.
+
+\code
+	{ {0x48 0x65 0x6c 0x6c 0x6f}, {0x77 0x6f 0x72 0x6c 0x64}, { 0x21 } } /* Hello world ! */
+\endcode
+
+Note that current implementation does not support the following PT_BINARY format:
+\code
+< STRING >
+\endcode
+<br/>
 
 <a name="comments"></a><h2>9. Comments</h2>
 

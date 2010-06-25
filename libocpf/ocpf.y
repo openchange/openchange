@@ -46,6 +46,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 	char				*date;
 	char				*var;
 	struct StringArray_r		MVszA;
+	struct BinaryArray_r		MVbin;
 }
 
 %token <i> UINT8
@@ -57,6 +58,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 %token <name> STRING
 %token <nameW> UNICODE
 %token <MVszA> MVSTRING
+%token <MVbin> MVBIN
 %token <date> SYSTIME
 %token <var> VAR
 
@@ -81,6 +83,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 %token kw_PT_LONG
 %token kw_PT_I8
 %token kw_PT_SYSTIME
+%token kw_PT_MV_BINARY
 %token kw_PT_MV_STRING8
 %token kw_PT_BINARY
 
@@ -247,7 +250,36 @@ propvalue	: STRING
 		}
 		| OBRACE binary_contents EBRACE
 		{
+			ctx->lpProp.bin.cb = ctx->bin.cb;
+			ctx->lpProp.bin.lpb = talloc_memdup(ctx, ctx->bin.lpb, ctx->bin.cb);
+
+			talloc_free(ctx->bin.lpb);
+			ctx->bin.cb = 0;
+
 			ctx->ltype = PT_BINARY;
+		}
+		| OBRACE mvbin_contents OBRACE binary_contents EBRACE EBRACE
+		{
+			TALLOC_CTX	*mem_ctx;
+
+			if (!ctx->lpProp.MVbin.cValues) {
+				ctx->lpProp.MVbin.cValues = 0;
+				ctx->lpProp.MVbin.lpbin = talloc_array(ctx, struct Binary_r, 2);
+			} else {
+				ctx->lpProp.MVbin.lpbin = talloc_realloc(NULL, ctx->lpProp.MVbin.lpbin,
+									 struct Binary_r,
+									 ctx->lpProp.MVbin.cValues + 2);
+			}
+			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVbin.lpbin;
+			ctx->lpProp.MVbin.lpbin[ctx->lpProp.MVbin.cValues].cb = ctx->bin.cb;
+			ctx->lpProp.MVbin.lpbin[ctx->lpProp.MVbin.cValues].lpb = talloc_memdup(mem_ctx,
+											       ctx->bin.lpb, 
+											       ctx->bin.cb);
+			ctx->lpProp.MVbin.cValues += 1;
+			talloc_free(ctx->bin.lpb);
+			ctx->bin.cb = 0;
+
+			ctx->ltype = PT_MV_BINARY;
 		}
 		| LOWER STRING GREATER
 		{
@@ -283,22 +315,45 @@ binary_contents: | binary_contents binary_content
 
 binary_content	: INTEGER
 		{
-			TALLOC_CTX *mem_ctx;
-
 			if ($1 > 0xFF) {
 				error_message(ctx,"Invalid Binary constant: 0x%x > 0xFF\n", $1);
 			}
 
-			if (!ctx->lpProp.bin.cb) {
-				ctx->lpProp.bin.cb = 0;
-				ctx->lpProp.bin.lpb = talloc_array(ctx, uint8_t, 2);
+			if (!ctx->bin.cb) {
+				ctx->bin.cb = 0;
+				ctx->bin.lpb = talloc_array(ctx, uint8_t, 2);
 			} else {
-				ctx->lpProp.bin.lpb = talloc_realloc(NULL, ctx->lpProp.bin.lpb, uint8_t,
-								ctx->lpProp.bin.cb + 2);
+				ctx->bin.lpb = talloc_realloc(NULL, ctx->bin.lpb, uint8_t,
+								     ctx->bin.cb + 2);
 			}
-			mem_ctx = (TALLOC_CTX *) ctx->lpProp.bin.lpb;
-			ctx->lpProp.bin.lpb[ctx->lpProp.bin.cb] = $1;
-			ctx->lpProp.bin.cb += 1;
+			ctx->bin.lpb[ctx->bin.cb] = $1;
+			ctx->bin.cb += 1;
+		}
+		;
+
+mvbin_contents: | mvbin_contents mvbin_content
+
+mvbin_content	: OBRACE binary_contents EBRACE COMMA
+		{
+			TALLOC_CTX	*mem_ctx;
+
+			if (!ctx->lpProp.MVbin.cValues) {
+				ctx->lpProp.MVbin.cValues = 0;
+				ctx->lpProp.MVbin.lpbin = talloc_array(ctx, struct Binary_r, 2);
+			} else {
+				ctx->lpProp.MVbin.lpbin = talloc_realloc(NULL, ctx->lpProp.MVbin.lpbin,
+									 struct Binary_r,
+									 ctx->lpProp.MVbin.cValues + 2);
+			}
+			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVbin.lpbin;
+			ctx->lpProp.MVbin.lpbin[ctx->lpProp.MVbin.cValues].cb = ctx->bin.cb;
+			ctx->lpProp.MVbin.lpbin[ctx->lpProp.MVbin.cValues].lpb = talloc_memdup(mem_ctx,
+											       ctx->bin.lpb,
+											       ctx->bin.cb);
+			ctx->lpProp.MVbin.cValues += 1;
+
+			talloc_free(ctx->bin.lpb);
+			ctx->bin.cb = 0;
 		}
 		;
 
@@ -395,6 +450,11 @@ proptype	: kw_PT_STRING8
 		{
 			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
 			ctx->nprop.propType = PT_BINARY;
+		}
+		| kw_PT_MV_BINARY
+		{
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_MV_BINARY;
 		}
 		;
 

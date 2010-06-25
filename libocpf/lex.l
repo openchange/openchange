@@ -85,6 +85,7 @@ PT_SYSTIME	{ return kw_PT_SYSTIME; }
 PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
 PT_MV_STRING8	{ return kw_PT_MV_STRING8; }
 PT_BINARY	{ return kw_PT_BINARY; }
+PT_MV_BINARY	{ return kw_PT_MV_BINARY; }
 \{		{ return OBRACE; }
 \}		{ return EBRACE; }
 ,		{ return COMMA; }

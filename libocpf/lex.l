@@ -83,6 +83,7 @@ PT_LONG		{ return kw_PT_LONG; }
 PT_I8		{ return kw_PT_I8; }
 PT_SYSTIME	{ return kw_PT_SYSTIME; }
 PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
+PT_MV_LONG	{ return kw_PT_LONG; }
 PT_MV_STRING8	{ return kw_PT_MV_STRING8; }
 PT_MV_UNICODE	{ return kw_PT_MV_UNICODE; }
 PT_BINARY	{ return kw_PT_BINARY; }
@@ -263,6 +264,15 @@ B\"true\"|-?B\"false\" { char *y = yytext + 1;
 T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
 			  yylval->date = strdup((const char *)yytext + 1);
 			  return SYSTIME;
+			}
+0x[0-9A-Fa-f]{2}	{
+			struct ocpf_context *ctx = yyextra;
+			char *e, *y = yytext;
+			yylval->i = strtoul((const char *)y, &e, 0);
+			if (e == y) 
+				error_message(ctx, "malformed constant (%s)", yytext);
+			else
+				return UINT8;
 			}
 0x[0-9A-Fa-f]+		{
 			 struct ocpf_context *ctx = yyextra;

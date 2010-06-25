@@ -158,6 +158,18 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx,
 		((struct Binary_r *)*value)->cb = lpProp.bin.cb;
 		((struct Binary_r *)*value)->lpb = talloc_memdup(ctx, (const void *)lpProp.bin.lpb, lpProp.bin.cb);
 		return OCPF_SUCCESS;
+	case PT_MV_LONG:
+		*value = (const void *)talloc_zero(ctx, struct LongArray_r);
+		((struct LongArray_r *)*value)->cValues = lpProp.MVl.cValues;
+		((struct LongArray_r *)*value)->lpl = talloc_array(ctx, uint32_t, lpProp.MVl.cValues);
+		{
+			uint32_t	i;
+			
+			for (i = 0; i < lpProp.MVl.cValues; i++) {
+				((struct LongArray_r *)*value)->lpl[i] = lpProp.MVl.lpl[i];
+			}
+			return OCPF_SUCCESS;
+		}
 	case PT_MV_STRING8:
 		*value = (const void *)talloc_zero(ctx, struct StringArray_r);
 		((struct StringArray_r *)*value)->cValues = lpProp.MVszA.cValues;
@@ -223,8 +235,14 @@ int ocpf_propvalue_free(union SPropValue_CTR lpProp, uint16_t proptype)
 	case PT_UNICODE:
 		talloc_free((char *)lpProp.lpszW);
 		break;
+	case PT_MV_LONG:
+		talloc_free(lpProp.MVl.lpl);
+		break;
 	case PT_MV_STRING8:
 		talloc_free(lpProp.MVszA.lppszA);
+		break;
+	case PT_MV_UNICODE:
+		talloc_free(lpProp.MVszW.lppszW);
 		break;
 	case PT_MV_BINARY:
 		talloc_free(lpProp.MVbin.lpbin);

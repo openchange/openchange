@@ -45,6 +45,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 	char				*nameW;
 	char				*date;
 	char				*var;
+	struct LongArray_r		MVl;
 	struct StringArray_r		MVszA;
 	struct WStringArray_r		MVszW;
 	struct BinaryArray_r		MVbin;
@@ -58,9 +59,6 @@ void yyerror(struct ocpf_context *, void *, char *);
 %token <name> IDENTIFIER
 %token <name> STRING
 %token <nameW> UNICODE
-%token <MVszA> MVSTRING
-%token <MVszW> MVUNICODE
-%token <MVbin> MVBIN
 %token <date> SYSTIME
 %token <var> VAR
 
@@ -85,6 +83,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 %token kw_PT_LONG
 %token kw_PT_I8
 %token kw_PT_SYSTIME
+%token kw_PT_MV_LONG
 %token kw_PT_MV_BINARY
 %token kw_PT_MV_STRING8
 %token kw_PT_MV_UNICODE
@@ -233,6 +232,24 @@ propvalue	: STRING
 			ocpf_add_filetime($1, &ctx->lpProp.ft);
 			ctx->ltype = PT_SYSTIME;
 		}
+		| OBRACE mvlong_contents INTEGER EBRACE
+		{
+			TALLOC_CTX	*mem_ctx;
+
+			if (!ctx->lpProp.MVl.cValues) {
+				ctx->lpProp.MVl.cValues = 0;
+				ctx->lpProp.MVl.lpl = talloc_array(ctx, uint32_t, 2);
+			} else {
+				ctx->lpProp.MVl.lpl = talloc_realloc(NULL, ctx->lpProp.MVl.lpl,
+								     uint32_t,
+								     ctx->lpProp.MVl.cValues + 2);
+			}
+			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVl.lpl;
+			ctx->lpProp.MVl.lpl[ctx->lpProp.MVl.cValues] = $3;
+			ctx->lpProp.MVl.cValues += 1;
+
+			ctx->ltype = PT_MV_LONG;
+		}
 		| OBRACE mvstring_contents STRING EBRACE
 		{
 			TALLOC_CTX	*mem_ctx;
@@ -311,12 +328,29 @@ propvalue	: STRING
 		}
 		;
 
+mvlong_contents: | mvlong_contents mvlong_content
+
+mvlong_content :  INTEGER COMMA
+		{
+			if (!ctx->lpProp.MVl.cValues) {
+				ctx->lpProp.MVl.cValues = 0;
+				ctx->lpProp.MVl.lpl = talloc_array(ctx, uint32_t, 2);
+			} else {
+				ctx->lpProp.MVl.lpl = talloc_realloc(NULL, ctx->lpProp.MVl.lpl, uint32_t,
+								     ctx->lpProp.MVl.cValues + 2);
+			}
+			ctx->lpProp.MVl.lpl[ctx->lpProp.MVl.cValues] = $1;
+			ctx->lpProp.MVl.cValues += 1;
+		}
+		;
+
+
 mvstring_contents: | mvstring_contents mvstring_content
 
 
 mvstring_content  : STRING COMMA
 		  {
-			TALLOC_CTX *mem_ctx;
+			TALLOC_CTX	*mem_ctx;
 
 			if (!ctx->lpProp.MVszA.cValues) {
 				ctx->lpProp.MVszA.cValues = 0;
@@ -354,7 +388,7 @@ mvunicode_content: UNICODE COMMA
 
 binary_contents: | binary_contents binary_content
 
-binary_content	: INTEGER
+binary_content	: UINT8
 		{
 			if ($1 > 0xFF) {
 				error_message(ctx,"Invalid Binary constant: 0x%x > 0xFF\n", $1);
@@ -482,10 +516,20 @@ proptype	: kw_PT_STRING8
 			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
 			ctx->nprop.propType = PT_SYSTIME; 
 		}
+		| kw_PT_MV_LONG
+		{
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_MV_LONG;
+		}
 		| kw_PT_MV_STRING8
 		{
 			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
 			ctx->nprop.propType = PT_MV_STRING8;
+		}
+		| kw_PT_MV_UNICODE
+		{
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_MV_UNICODE;
 		}
 		| kw_PT_BINARY
 		{

@@ -48,6 +48,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	const void			*data;
 	TALLOC_CTX			*mem_ctx = NULL;
 	const struct StringArray_r	*StringArray_r = NULL;
+	const struct WStringArray_r	*WStringArray_r = NULL;
 	const struct BinaryArray_r	*BinaryArray_r = NULL;
 	uint32_t			i;
 
@@ -99,6 +100,14 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 			printf("%s, ", StringArray_r->lppszA[i]);
 		}
 		printf("%s\n", StringArray_r->lppszA[i]);
+		break;
+	case PT_MV_UNICODE:
+		WStringArray_r = (const struct WStringArray_r *) get_SPropValue_data(&lpProp);
+		printf("%s%s: ", sep?sep:"", proptag);
+		for (i = 0; i < WStringArray_r->cValues - 1; i++) {
+			printf("%s, ", WStringArray_r->lppszW[i]);
+		}
+		printf("%s\n", WStringArray_r->lppszW[i]);
 		break;
 	case PT_MV_BINARY:
 		BinaryArray_r = (const struct BinaryArray_r *) get_SPropValue_data(&lpProp);

@@ -258,6 +258,7 @@ struct ocpf_context *ocpf_context_search_by_context_id(struct ocpf_context *ctx,
 
 	/* Sanity checks */
 	if (!ctx) return NULL;
+	if (!context_id) return NULL;
 
 	for (el = ctx; el; el = el->next) {
 		if (el->context_id == context_id) {

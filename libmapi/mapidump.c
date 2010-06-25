@@ -50,6 +50,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	const struct StringArray_r	*StringArray_r = NULL;
 	const struct WStringArray_r	*WStringArray_r = NULL;
 	const struct BinaryArray_r	*BinaryArray_r = NULL;
+	const struct LongArray_r	*LongArray_r = NULL;
 	uint32_t			i;
 
 	proptag = get_proptag_name(lpProp.ulPropTag);
@@ -92,6 +93,14 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		data = get_SPropValue_data(&lpProp);
 		printf("%s%s:\n", sep?sep:"", proptag);
 		dump_data(0, ((const struct Binary_r *)data)->lpb, ((const struct Binary_r *)data)->cb);
+		break;
+	case PT_MV_LONG:
+		LongArray_r = (const struct LongArray_r *) get_SPropValue_data(&lpProp);
+		printf("%s%s ", sep?sep:"", proptag);
+		for (i = 0; i < LongArray_r->cValues - 1; i++) {
+			printf("0x%.8x, ", LongArray_r->lpl[i]);
+		}
+		printf("0x%.8x\n", LongArray_r->lpl[i]);
 		break;
 	case PT_MV_STRING8:
 		StringArray_r = (const struct StringArray_r *) get_SPropValue_data(&lpProp);

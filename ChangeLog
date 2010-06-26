@@ -1,5 +1,33 @@
+2010-06-26
+    jkerihuel
+	[r2026]
+		add support for PT_CLSID and PT_SVREID in cast_mapi_SPropValue
+	[r2024]
+		Add a memory context argument to cast_mapi_SPropValue to be less
+		dependent to libmapi and allow better memory allocation handling.
+		
+		Propagate API change among OpenChange source tree
+		
+		Add doxygen documentation for cast_mapi_SPropValue
+    bradh
+	[r2025]
+		Make sure we always set the opnum and handle, even for error cases.
+	[r2023]
+		Suppress compilation noise in a few places for consistency with the rest of the Makefile
 2010-06-25
     jkerihuel
+	[r2022]
+		Add ocpf_write support for PT_MV_STRING8, PT_MV_UNICODE, PR_MV_BINARY
+		and PT_MV_LONG
+	[r2021]
+		- Add documentation for PT_MV_LONG
+		- Update PT_BINARY section
+	[r2020]
+		- Fix PT_BINARY to now parse uint8_t 0x00 - 0xFF instead of previous
+		  (and incorrect) long items
+		
+		- Add implementation for PT_MV_LONG
+		- Clean up useless code
 	[r2018]
 		Add  mapidump_SPropValue for PT_MV_LONG
 	[r2017]

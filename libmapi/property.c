@@ -513,63 +513,79 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
         case PT_ERROR:
                 mapi_sprop->value.err = sprop->value.err;
                 return sizeof(uint32_t);
+	case PT_CLSID:
+	{
+		DATA_BLOB	b;
+
+		b.data = sprop->value.lpguid->ab;
+		b.length = 16;
+		GUID_from_ndr_blob(&b, &mapi_sprop->value.lpguid);
+		return sizeof(struct GUID);
+	}
+	case PT_SVREID:
+		mapi_sprop->value.bin.cb = sprop->value.bin.cb;
+		mapi_sprop->value.bin.lpb = sprop->value.bin.lpb;
+		return (mapi_sprop->value.bin.cb + sizeof(uint16_t));
 	case PT_MV_STRING8:
-		{
-			uint32_t	i;
-			uint32_t	size = 0;
-
-			mapi_sprop->value.MVszA.cValues = sprop->value.MVszA.cValues;
-			size += 4;
-
-			mapi_sprop->value.MVszA.strings = talloc_array(mem_ctx, struct mapi_LPSTR, mapi_sprop->value.MVszA.cValues);
-			for (i = 0; i < mapi_sprop->value.MVszA.cValues; i++) {
-				mapi_sprop->value.MVszA.strings[i].lppszA = sprop->value.MVszA.lppszA[i];
-				size += strlen(mapi_sprop->value.MVszA.strings[i].lppszA) + 1;
-			}
-			return size;
+	{
+		uint32_t	i;
+		uint32_t	size = 0;
+		
+		mapi_sprop->value.MVszA.cValues = sprop->value.MVszA.cValues;
+		size += 4;
+		
+		mapi_sprop->value.MVszA.strings = talloc_array(mem_ctx, struct mapi_LPSTR, 
+							       mapi_sprop->value.MVszA.cValues);
+		for (i = 0; i < mapi_sprop->value.MVszA.cValues; i++) {
+			mapi_sprop->value.MVszA.strings[i].lppszA = sprop->value.MVszA.lppszA[i];
+			size += strlen(mapi_sprop->value.MVszA.strings[i].lppszA) + 1;
 		}
+		return size;
+	}
 	case PT_MV_UNICODE:
-		{
-			uint32_t	i;
-			uint32_t	size = 0;
+	{
+		uint32_t	i;
+		uint32_t	size = 0;
 
-			mapi_sprop->value.MVszW.cValues = sprop->value.MVszW.cValues;
-			size += 4;
-
-			mapi_sprop->value.MVszW.strings = talloc_array(mem_ctx, struct mapi_LPWSTR, mapi_sprop->value.MVszW.cValues);
-			for (i = 0; i < mapi_sprop->value.MVszW.cValues; i++) {
-				mapi_sprop->value.MVszW.strings[i].lppszW = sprop->value.MVszW.lppszW[i];
-				size += strlen(mapi_sprop->value.MVszW.strings[i].lppszW) + 1;
-			}
-			return size;
+		mapi_sprop->value.MVszW.cValues = sprop->value.MVszW.cValues;
+		size += 4;
+		
+		mapi_sprop->value.MVszW.strings = talloc_array(mem_ctx, struct mapi_LPWSTR, 
+							       mapi_sprop->value.MVszW.cValues);
+		for (i = 0; i < mapi_sprop->value.MVszW.cValues; i++) {
+			mapi_sprop->value.MVszW.strings[i].lppszW = sprop->value.MVszW.lppszW[i];
+			size += strlen(mapi_sprop->value.MVszW.strings[i].lppszW) + 1;
 		}
+		return size;
+	}
 	case PT_MV_BINARY:
-		{
-			uint32_t        i;
-			uint32_t        size = 0;
+	{
+		uint32_t        i;
+		uint32_t        size = 0;
+		
+		mapi_sprop->value.MVbin.cValues = sprop->value.MVbin.cValues;
+		size += 4;
 
-			mapi_sprop->value.MVbin.cValues = sprop->value.MVbin.cValues;
-			size += 4;
-
-			mapi_sprop->value.MVbin.bin = talloc_array(mem_ctx, struct SBinary_short, mapi_sprop->value.MVbin.cValues);
-			for (i = 0; i < mapi_sprop->value.MVbin.cValues; i++) {
-				mapi_sprop->value.MVbin.bin[i].cb = sprop->value.MVbin.lpbin[i].cb;
-				mapi_sprop->value.MVbin.bin[i].lpb = sprop->value.MVbin.lpbin[i].lpb;
-				size += sprop->value.MVbin.lpbin[i].cb + sizeof (uint16_t);
-			}
-			return size;
+		mapi_sprop->value.MVbin.bin = talloc_array(mem_ctx, struct SBinary_short, 
+							   mapi_sprop->value.MVbin.cValues);
+		for (i = 0; i < mapi_sprop->value.MVbin.cValues; i++) {
+			mapi_sprop->value.MVbin.bin[i].cb = sprop->value.MVbin.lpbin[i].cb;
+			mapi_sprop->value.MVbin.bin[i].lpb = sprop->value.MVbin.lpbin[i].lpb;
+			size += sprop->value.MVbin.lpbin[i].cb + sizeof (uint16_t);
 		}
+		return size;
+	}
 	case PT_MV_LONG:
-		{
-			uint32_t i;
-
-			mapi_sprop->value.MVl.cValues = sprop->value.MVl.cValues;
-			mapi_sprop->value.MVl.lpl = talloc_array (mem_ctx, uint32_t, mapi_sprop->value.MVl.cValues);
-			for (i = 0; i < mapi_sprop->value.MVl.cValues; i++) {
-				mapi_sprop->value.MVl.lpl[i] = sprop->value.MVl.lpl[i];
-			}
-			return sizeof(mapi_sprop->value.MVl.cValues) + (mapi_sprop->value.MVl.cValues * sizeof (uint32_t));
+	{
+		uint32_t i;
+		
+		mapi_sprop->value.MVl.cValues = sprop->value.MVl.cValues;
+		mapi_sprop->value.MVl.lpl = talloc_array (mem_ctx, uint32_t, mapi_sprop->value.MVl.cValues);
+		for (i = 0; i < mapi_sprop->value.MVl.cValues; i++) {
+			mapi_sprop->value.MVl.lpl[i] = sprop->value.MVl.lpl[i];
 		}
+		return sizeof(mapi_sprop->value.MVl.cValues) + (mapi_sprop->value.MVl.cValues * sizeof (uint32_t));
+	}
         default:
                 printf("unhandled conversion case in cast_mapi_SPropValue(): 0x%x\n", (sprop->ulPropTag & 0xFFFF));
                 OPENCHANGE_ASSERT();

@@ -599,9 +599,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_repl->u.mapi_CreateFolder.IsExistingFolder = false;
-
+	/* Set up sensible values for the reply */
 	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx;
+	mapi_repl->u.mapi_CreateFolder.IsExistingFolder = false;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
@@ -641,9 +642,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 			break;
 		case FOLDER_SEARCH:
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] FOLDER_SEARCH not implemented\n"));
+			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 			break;
 		default:
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Unexpected folder type 0x%x\n", mapi_req->u.mapi_CreateFolder.ulType));
+			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		}
 		break;
 	case true:
@@ -667,9 +670,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
 		}
-
-		mapi_repl->opnum = mapi_req->opnum;
-		mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx;
 
 		handles[mapi_repl->handle_idx] = rec->handle;
 	}

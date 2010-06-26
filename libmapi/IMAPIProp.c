@@ -231,7 +231,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
 	request.values.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, PropCount);
 	mapi_props = request.values.lpProps;
 	for (i = 0; i < PropCount; i++) {
-		size += cast_mapi_SPropValue(&mapi_props[i], &lpProps[i]);
+		size += cast_mapi_SPropValue((TALLOC_CTX *)request.values.lpProps, &mapi_props[i], &lpProps[i]);
 		size += sizeof(uint32_t);
 	}
 
@@ -701,7 +701,7 @@ _PUBLIC_ enum MAPISTATUS SetPropertiesNoReplicate(mapi_object_t *obj,
 	request.values.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, PropCount);
 	mapi_props = request.values.lpProps;
 	for (i = 0; i < PropCount; i++) {
-		size += cast_mapi_SPropValue(&mapi_props[i], &lpProps[i]);
+		size += cast_mapi_SPropValue((TALLOC_CTX *)request.values.lpProps, &mapi_props[i], &lpProps[i]);
 		size += sizeof(uint32_t);
 	}
 

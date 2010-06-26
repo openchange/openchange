@@ -437,7 +437,8 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	mapi_lpProps.cValues = aRow->cValues;
 	mapidump_SRow(aRow, "[+]");
 	for (i = 0; i < aRow->cValues; i++) {
-		cast_mapi_SPropValue(&(mapi_lpProps.lpProps[i]), &(aRow->lpProps[i]));
+		cast_mapi_SPropValue((TALLOC_CTX *)mapi_lpProps.lpProps,
+				     &(mapi_lpProps.lpProps[i]), &(aRow->lpProps[i]));
 	}
 
 	/* Step 4. Create the .properties file */

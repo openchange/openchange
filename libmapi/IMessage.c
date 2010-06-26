@@ -870,7 +870,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 					if (!NDR_ERR_CODE_IS_SUCCESS(ndr_retval))
 						return MAPI_E_CALL_FAILED;
 
-					cast_mapi_SPropValue(&mapi_sprop, &aRow->lpProps[j]);
+					cast_mapi_SPropValue(mem_ctx, &mapi_sprop, &aRow->lpProps[j]);
 					ndr_push_mapi_SPropValue_CTR(ndr, NDR_SCALARS, &mapi_sprop.value);
 				}
 			}

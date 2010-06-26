@@ -201,7 +201,8 @@ static PyObject *py_ocpf_write(PyOcpfObject *self, PyObject *args)
 	mapi_lpProps.cValues = SPropValue->cValues;
 	mapi_lpProps.lpProps = talloc_array(SPropValue->mem_ctx, struct mapi_SPropValue, SPropValue->cValues);
 	for (i = 0; i < SPropValue->cValues; i++) {
-		cast_mapi_SPropValue(&(mapi_lpProps.lpProps[i]), &(SPropValue->SPropValue[i]));
+	  cast_mapi_SPropValue((TALLOC_CTX *)mapi_lpProps.lpProps,
+			       &(mapi_lpProps.lpProps[i]), &(SPropValue->SPropValue[i]));
 	}
 
 	ret = ocpf_write_auto(self->context_id, NULL, &mapi_lpProps);

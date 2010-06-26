@@ -528,7 +528,8 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	rowList.PermissionsData[0].PermissionDataFlags = ROW_ADD;
 	rowList.PermissionsData[0].lpProps.cValues = 2;
 	rowList.PermissionsData[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
-	cast_mapi_SPropValue(&rowList.PermissionsData[0].lpProps.lpProps[0], &rows->aRow[0].lpProps[0]);
+	cast_mapi_SPropValue((TALLOC_CTX *)rowList.PermissionsData[0].lpProps.lpProps,
+			     &rowList.PermissionsData[0].lpProps.lpProps[0], &rows->aRow[0].lpProps[0]);
 	rowList.PermissionsData[0].lpProps.lpProps[1].ulPropTag = PR_MEMBER_RIGHTS;
 	rowList.PermissionsData[0].lpProps.lpProps[1].value.l = role;
 

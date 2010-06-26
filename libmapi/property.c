@@ -461,11 +461,20 @@ _PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)
 	return 0;
 }
 
-/*
-  convenient function which cast a SPropValue structure in a mapi_SPropValue one and return the associated size
-*/
 
-_PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struct SPropValue *sprop)
+/**
+   \details Convenience function to convert a SPropValue structure
+   into a mapi_SPropValue structure and return the associated size.
+
+   \param mem_ctx pointer to the memory context to use for allocation
+   \param mapi_sprop pointer to the MAPI SPropValue structure to copy data to
+   \param sprop pointer to the SPropValue structure to copy data from
+
+   \return size of the converted data on success, otherwise 0
+ */
+_PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
+				       struct mapi_SPropValue *mapi_sprop, 
+				       struct SPropValue *sprop)
 {
 	mapi_sprop->ulPropTag = sprop->ulPropTag;
 
@@ -512,7 +521,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 			mapi_sprop->value.MVszA.cValues = sprop->value.MVszA.cValues;
 			size += 4;
 
-			mapi_sprop->value.MVszA.strings = talloc_array(global_mapi_ctx->mem_ctx, struct mapi_LPSTR, mapi_sprop->value.MVszA.cValues);
+			mapi_sprop->value.MVszA.strings = talloc_array(mem_ctx, struct mapi_LPSTR, mapi_sprop->value.MVszA.cValues);
 			for (i = 0; i < mapi_sprop->value.MVszA.cValues; i++) {
 				mapi_sprop->value.MVszA.strings[i].lppszA = sprop->value.MVszA.lppszA[i];
 				size += strlen(mapi_sprop->value.MVszA.strings[i].lppszA) + 1;
@@ -527,7 +536,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 			mapi_sprop->value.MVszW.cValues = sprop->value.MVszW.cValues;
 			size += 4;
 
-			mapi_sprop->value.MVszW.strings = talloc_array(global_mapi_ctx->mem_ctx, struct mapi_LPWSTR, mapi_sprop->value.MVszW.cValues);
+			mapi_sprop->value.MVszW.strings = talloc_array(mem_ctx, struct mapi_LPWSTR, mapi_sprop->value.MVszW.cValues);
 			for (i = 0; i < mapi_sprop->value.MVszW.cValues; i++) {
 				mapi_sprop->value.MVszW.strings[i].lppszW = sprop->value.MVszW.lppszW[i];
 				size += strlen(mapi_sprop->value.MVszW.strings[i].lppszW) + 1;
@@ -542,7 +551,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 			mapi_sprop->value.MVbin.cValues = sprop->value.MVbin.cValues;
 			size += 4;
 
-			mapi_sprop->value.MVbin.bin = talloc_array(global_mapi_ctx->mem_ctx, struct SBinary_short, mapi_sprop->value.MVbin.cValues);
+			mapi_sprop->value.MVbin.bin = talloc_array(mem_ctx, struct SBinary_short, mapi_sprop->value.MVbin.cValues);
 			for (i = 0; i < mapi_sprop->value.MVbin.cValues; i++) {
 				mapi_sprop->value.MVbin.bin[i].cb = sprop->value.MVbin.lpbin[i].cb;
 				mapi_sprop->value.MVbin.bin[i].lpb = sprop->value.MVbin.lpbin[i].lpb;
@@ -555,7 +564,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(struct mapi_SPropValue *mapi_sprop, struc
 			uint32_t i;
 
 			mapi_sprop->value.MVl.cValues = sprop->value.MVl.cValues;
-			mapi_sprop->value.MVl.lpl = talloc_array (global_mapi_ctx->mem_ctx, uint32_t, mapi_sprop->value.MVl.cValues);
+			mapi_sprop->value.MVl.lpl = talloc_array (mem_ctx, uint32_t, mapi_sprop->value.MVl.cValues);
 			for (i = 0; i < mapi_sprop->value.MVl.cValues; i++) {
 				mapi_sprop->value.MVl.lpl[i] = sprop->value.MVl.lpl[i];
 			}

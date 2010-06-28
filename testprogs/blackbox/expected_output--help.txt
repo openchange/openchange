@@ -1,0 +1,62 @@
+Usage: openchangeclient [OPTION...]
+  -f, --database=STRING        set the profile database path
+  --pf                         access public folders instead of mailbox
+  -p, --profile=STRING         set the profile name
+  -P, --password=STRING        set the profile password
+  -S, --sendmail               send a mail
+  --sendappointment            send an appointment
+  --sendcontact                send a contact
+  --sendtask                   send a task
+  --sendnote                   send a note
+  -F, --fetchmail              fetch user INBOX mails
+  --fetchsummary               fetch message summaries only
+  -G, --storemail=STRING       retrieve a mail on the filesystem
+  -i, --fetch-items=STRING     fetch specified user INBOX items
+  --freebusy=STRING            display free / busy information for the
+                               specified user
+  --force                      force openchangeclient behavior in some
+                               circumstances
+  --delete=STRING              delete a message given its unique ID
+  -u, --update=STRING          update the specified item
+  -m, --mailbox                list mailbox folder summary
+  -D, --deletemail             delete a mail from user INBOX
+  -A, --attachments=STRING     send a list of attachments
+  -I, --html-inline=STRING     send PR_HTML content
+  -W, --html-file=STRING       use HTML file as content
+  -t, --to=STRING              set the To recipients
+  -c, --cc=STRING              set the Cc recipients
+  -b, --bcc=STRING             set the Bcc recipients
+  -s, --subject=STRING         set the mail subject
+  -B, --body=STRING            set the mail body
+  --location=STRING            set the item location
+  --label=STRING               set the event label
+  --dtstart=STRING             set the event start date
+  --dtend=STRING               set the event end date
+  --busystatus=STRING          set the item busy status
+  --taskstatus=STRING          set the task status
+  --importance=STRING          Set the item importance
+  --email=STRING               set the email address
+  --fullname=STRING            set the full name
+  --cardname=STRING            set a contact card name
+  --color=STRING               set the note color
+  --notifications              monitor INBOX newmail notifications
+  --folder=STRING              set the folder to use instead of inbox
+  --mkdir                      create a folder
+  --rmdir                      delete a folder
+  --userlist                   list Address Book entries
+  --folder-name=STRING         set the folder name
+  --folder-comment=STRING      set the folder comment
+  -d, --debuglevel=STRING      set Debug Level
+  --dump-data                  dump the hex data
+  --private                    set the private flag on messages
+  --ocpf-file=STRING           set OCPF file
+  --ocpf-dump=STRING           dump message into OCPF file
+  --ocpf-syntax                check OCPF files syntax
+  --ocpf-sender                send message using OCPF files contents
+
+Help options:
+  -?, --help                   Show this help message
+  --usage                      Display brief usage message
+
+Common openchange options:
+  -V, --version                Print version 

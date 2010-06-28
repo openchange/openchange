@@ -1,0 +1,61 @@
+
+TYPE:
+=====
+	* IPM.Appointment
+
+FOLDER:
+=======
+	* 0x9
+
+OLEGUID:
+========
+	PS_PUBLIC_STRINGS        : 00020329-0000-0000-c000-000000000046
+	PSETID_Common            : 00062008-0000-0000-c000-000000000046
+	PSETID_Appointment       : 00062002-0000-0000-c000-000000000046
+
+RECIPIENTS:
+===========
+	* To: 
+	* Cc: 
+	* Bcc: 
+
+	VARIABLE:
+	=========
+		wrong
+		private
+		keywords
+		reminder
+		end_date
+		start_date
+		subject
+
+	PROPERTIES:
+	===========
+		0x00360003 = PR_SENSITIVITY
+		0x00610040 = PR_END_DATE
+		0x00600040 = PR_START_DATE
+		0x1000001e = PR_BODY
+		0x0e1d001e = PR_NORMALIZED_SUBJECT
+		0x0070001e = PR_CONVERSATION_TOPIC
+
+	NAMED PROPERTIES:
+	=================
+
+		OOM:
+		----
+			* Private
+			* Location
+			* CommonEnd
+			* ApptEndDate
+			* CommonStart
+			* ApptStartDate
+			* BusyStatus
+
+		MNID_ID:
+		--------
+			* 0x8501
+			* 0x8217
+
+		MNID_STRING:
+		------------
+			* Keywords

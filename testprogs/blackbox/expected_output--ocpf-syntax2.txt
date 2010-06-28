@@ -1,0 +1,55 @@
+../../libocpf/examples/sample_task.ocpf:46: Unknown OOM
+../../libocpf/examples/sample_task.ocpf:47: Unknown OOM
+../../libocpf/examples/sample_task.ocpf:48: Unknown OOM
+
+TYPE:
+=====
+	* IPM.Task
+
+FOLDER:
+=======
+	* 0xd
+
+OLEGUID:
+========
+	PS_PUBLIC_STRINGS        : 00020329-0000-0000-c000-000000000046
+	PSETID_Common            : 00062008-0000-0000-c000-000000000046
+	PSETID_Task              : 00062003-0000-0000-c000-000000000046
+
+RECIPIENTS:
+===========
+	* To: 
+	* Cc: 
+	* Bcc: 
+
+	VARIABLE:
+	=========
+		task_status
+		importance
+		end_date
+		start_date
+		body
+		subject
+
+	PROPERTIES:
+	===========
+		0x00360003 = PR_SENSITIVITY
+		0x00170003 = PR_IMPORTANCE
+		0x1000001e = PR_BODY
+		0x0e1d001e = PR_NORMALIZED_SUBJECT
+		0x0070001e = PR_CONVERSATION_TOPIC
+
+	NAMED PROPERTIES:
+	=================
+
+		OOM:
+		----
+			* Private
+			* Companies
+
+		MNID_ID:
+		--------
+
+		MNID_STRING:
+		------------
+			* Keywords

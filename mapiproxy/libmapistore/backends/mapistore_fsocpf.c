@@ -376,6 +376,67 @@ static int fsocpf_get_path(void *private_data, uint64_t fmid,
 	return MAPISTORE_SUCCESS;
 }
 
+static int fsocpf_op_get_fid_by_name(void *private_data, uint64_t parent_fid, const char* foldername, uint64_t *fid)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct fsocpf_folder 	*folder;
+	uint32_t		ocpf_context_id;
+	struct dirent		*curdir;
+	char			*propfile;
+	struct SPropValue	*lpProps;
+	uint32_t		cValues = 0;
+	int			ret;
+	int			i;
+
+	if (!fsocpf_ctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	/* Step 1. Search for the parent folder by fid */
+	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, parent_fid);
+	if (!folder) {
+		return MAPISTORE_ERROR;
+	}
+	
+	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_get_fid_by_name");
+
+	/* Step 2. Iterate over the contents of the parent folder, searching for a matching name */
+	rewinddir(folder->dir);
+	while ((curdir = readdir(folder->dir)) != NULL) {
+		if ((curdir->d_type == DT_DIR) && (strncmp(curdir->d_name, "0x", 2) == 0)) {
+			// open the .properties file for this sub-directory
+			propfile = talloc_asprintf(mem_ctx, "%s/%s/.properties",
+						   folder->path, curdir->d_name);
+			DEBUG(6, ("propfile: %s\n", propfile));
+			ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
+
+			/* process the file */
+			ret = ocpf_parse(ocpf_context_id);
+			DEBUG(6, ("ocpf_parse (%d) = %d\n", ocpf_context_id, ret));
+			talloc_free(propfile);
+	
+			ocpf_server_set_SPropValue(mem_ctx, ocpf_context_id);
+			lpProps = ocpf_get_SPropValue(ocpf_context_id, &cValues);
+			for (i = 0; i < cValues; ++i) {
+				if (lpProps && lpProps[i].ulPropTag == PR_DISPLAY_NAME) {
+					const char * this_folder_display_name = get_SPropValue_data(&(lpProps[i]));
+					DEBUG(6, ("looking at %s found in %s\n", this_folder_display_name, curdir->d_name));
+					if (strcmp(this_folder_display_name, foldername) == 0) {
+						DEBUG(4, ("folder name %s found in %s\n", this_folder_display_name, curdir->d_name));
+						talloc_free(mem_ctx);
+						ocpf_del_context(ocpf_context_id);
+						*fid = strtoul(curdir->d_name, NULL, 16);
+						return MAPISTORE_SUCCESS;
+					}
+				}
+			}
+			ocpf_del_context(ocpf_context_id);
+		}
+	}
+	talloc_free(mem_ctx);
+	return MAPISTORE_ERR_NOT_FOUND;
+}
 
 /**
    \details Create a folder in the fsocpf backend
@@ -392,18 +453,32 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	struct fsocpf_folder		*folder;
 	struct mapi_SPropValue_array	mapi_lpProps;
 	char				*newfolder;
+	const char			*new_folder_name = NULL;
 	char				*propfile;
 	uint32_t			ocpf_context_id;
+	uint64_t			dummy_fid;
 	struct fsocpf_folder_list	*newel;
 	DIR				*dir;
 	int				ret;
 	uint32_t			i;
+
 
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
 	if (!fsocpf_ctx) {
 		DEBUG(0, ("No fsocpf context found :-(\n"));
 		return MAPISTORE_ERROR;
+	}
+
+	/* Step 0. Check if it already exists */
+	for (i = 0; i < aRow->cValues; ++i) {
+		if (aRow->lpProps[i].ulPropTag == PR_DISPLAY_NAME) {
+			new_folder_name = aRow->lpProps[i].value.lpszA;
+		}
+	}
+	if (fsocpf_op_get_fid_by_name(private_data, parent_fid, new_folder_name, &dummy_fid) == MAPISTORE_SUCCESS) {
+		/* already exists */
+		return MAPISTORE_ERR_EXIST;
 	}
 
 	/* Step 1. Search for the parent fid */
@@ -1227,6 +1302,7 @@ int mapistore_init_backend(void)
 	backend.op_savechangesmessage = fsocpf_op_savechangesmessage;
 	backend.op_submitmessage = fsocpf_op_submitmessage;
 	backend.op_getprops = fsocpf_op_getprops;
+	backend.op_get_fid_by_name = fsocpf_op_get_fid_by_name;
 	backend.op_setprops = fsocpf_op_setprops;
 
 	/* Register ourselves with the MAPISTORE subsystem */

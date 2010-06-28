@@ -513,6 +513,16 @@ int mapistore_backend_getprops(struct backend_context *bctx, uint64_t fmid, uint
 }
 
 
+int mapistore_backend_get_fid_by_name(struct backend_context *bctx,
+				      uint64_t parent_fid,
+				      const char *name,
+				      uint64_t *fid)
+{
+	return bctx->backend->op_get_fid_by_name(bctx->private_data, parent_fid, name, fid);
+}
+
+
+
 int mapistore_backend_setprops(struct backend_context *bctx, uint64_t fmid, uint8_t type, struct SRow *aRow)
 {
 	return bctx->backend->op_setprops(bctx->private_data, fmid, type, aRow);

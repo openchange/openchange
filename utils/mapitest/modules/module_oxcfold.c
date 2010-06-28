@@ -166,7 +166,7 @@ _PUBLIC_ bool mapitest_oxcfold_OpenFolder(struct mapitest *mt)
 }
 
 /**
-   \details Test the CreateFolder (0x1c) and DeleteFolder (0x??) operations
+   \details Test the CreateFolder (0x1c) and DeleteFolder (0x1d) operations
 
    This is a simpler version of the CreateFolder test below.
 
@@ -392,6 +392,178 @@ cleanup:
 	return true;
 }
 
+/**
+   \details Test the CreateFolder (0x1c) operations
+
+   This tests different combinations of folder creation.
+
+   This function:
+	-# Log on the user private mailbox
+	-# Open the top information folder
+	-# Create a test directory (or open the directory if it already exists)
+	-# Delete the test directory
+	-# Create the test directory again (it should not exist)
+	-# Try to create another directory with the same name (should error out)
+	-# Try to create another directory with the same name, but use open if exists
+	-# Create a generic subfolder
+	-# Try to create another generic subfolder with the same name (should error out)
+	-# Try to create another generic subfolder with the same name, but use open if exists
+	-# Delete the generic subfolder
+	-# Delete the test directory
+   \param mt the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcfold_CreateFolderVariants(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_top1, obj_top2, obj_top3;
+	mapi_object_t		obj_child1, obj_child2, obj_child3;
+	mapi_id_t		id_folder;
+	bool			ret = true;
+
+	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_folder);
+	mapi_object_init(&obj_top1);
+	mapi_object_init(&obj_top2);
+	mapi_object_init(&obj_top3);
+	mapi_object_init(&obj_child1);
+	mapi_object_init(&obj_child2);
+	mapi_object_init(&obj_child3);
+
+	/* Step 1. Logon */
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval_clean(mt, "OpenMsgStore", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 2. Open Top Information Store folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderTopInformationStore);
+	mapitest_print_retval_clean(mt, "GetDefaultFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	mapitest_print_retval_clean(mt, "OpenFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3. Create the top test folder */
+	mapitest_print(mt, "* Create GENERIC \"%s\" folder\n", MT_DIRNAME_TOP);
+	retval = CreateFolder(&obj_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+			      OPEN_IF_EXISTS, &obj_top1);
+	mapitest_print_retval_clean(mt, "CreateFolder - top", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 4. DeleteFolder on the top folder */
+	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_top1),
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
+	mapitest_print_retval_clean(mt, "DeleteFolder - top", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 5. Create the top test folder (again) */
+	mapitest_print(mt, "* Create GENERIC \"%s\" folder\n", MT_DIRNAME_TOP);
+	retval = CreateFolder(&obj_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+			      0, &obj_top1);
+	mapitest_print_retval_clean(mt, "CreateFolder - top", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 6. Create the top test folder (again) - should error out*/
+	mapitest_print(mt, "* Create GENERIC \"%s\" folder (duplicate name - expect collision)\n", MT_DIRNAME_TOP);
+	retval = CreateFolder(&obj_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+			      0, &obj_top2);
+	mapitest_print_retval_clean(mt, "CreateFolder - top", retval);
+	if (retval != MAPI_E_COLLISION) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 7. Create the top test folder (again), using OPEN_IF_EXISTS */
+	mapitest_print(mt, "* Create GENERIC \"%s\" folder (open if exists)\n", MT_DIRNAME_TOP);
+	retval = CreateFolder(&obj_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+			      OPEN_IF_EXISTS, &obj_top3);
+	mapitest_print_retval_clean(mt, "CreateFolder - top", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 8. Create child folder */
+	mapitest_print(mt, "* Create GENERIC child folder\n");
+	retval = CreateFolder(&obj_top3, FOLDER_GENERIC, "[MT] Child folder", NULL,
+			      0, &obj_child1);
+	mapitest_print_retval_clean(mt, "CreateFolder - child", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 9. Create the child test folder (again) - should error out*/
+	mapitest_print(mt, "* Create GENERIC child folder (duplicate name - expect collision)\n");
+	retval = CreateFolder(&obj_top3, FOLDER_GENERIC, "[MT] Child folder", NULL,
+			      0, &obj_child2);
+	mapitest_print_retval_clean(mt, "CreateFolder - child", retval);
+	if (retval != MAPI_E_COLLISION) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 10. Create the child test folder (again), using OPEN_IF_EXISTS */
+	mapitest_print(mt, "* Create GENERIC child folder (open if exists)\n");
+	retval = CreateFolder(&obj_top3, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+			      OPEN_IF_EXISTS, &obj_child3);
+	mapitest_print_retval_clean(mt, "CreateFolder - child", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	
+	/* Step 11. DeleteFolder on the child */
+	retval = DeleteFolder(&obj_top3, mapi_object_get_id(&obj_child3),
+			      DELETE_HARD_DELETE, NULL);
+	mapitest_print_retval_clean(mt, "DeleteFolder - child", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		/* we want to fall through on the off-chance this fails */
+	}
+
+	/* Step 12. DeleteFolder on the top folder */
+	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_top3),
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
+	mapitest_print_retval_clean(mt, "DeleteFolder - top", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+cleanup:
+	/* Release */
+	mapi_object_release(&obj_child3);
+	mapi_object_release(&obj_child2);
+	mapi_object_release(&obj_child1);
+	mapi_object_release(&obj_top3);
+	mapi_object_release(&obj_top2);
+	mapi_object_release(&obj_top1);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return ret;
+}
 
 /**
    \details Test the GetHierarchyTable (0x4) operation

@@ -491,7 +491,7 @@ _PUBLIC_ int mapistore_mkdir(struct mapistore_context *mstore_ctx,
 	/* Step 2. Call backend mkdir */
 	ret = mapistore_backend_mkdir(backend_ctx, parent_fid, fid, aRow);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	return ret;
 }
 
 
@@ -835,6 +835,41 @@ _PUBLIC_ int mapistore_getprops(struct mapistore_context *mstore_ctx,
 }
 
 /**
+   \details Search for a folder ID by name
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where the folder will be searched for
+   \param parent_fid the parent folder identifier
+   \param foldername the name of the folder to search for
+   \param fid the fid (result)
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_get_fid_by_name(struct mapistore_context *mstore_ctx,
+				       uint32_t context_id,
+				       uint64_t parent_fid,
+				       const char *name,
+				       uint64_t *fid)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend getprops */
+	ret = mapistore_backend_get_fid_by_name(backend_ctx, parent_fid, name, fid);
+
+	return ret;
+}
+
+/**
    \details Set properties of a message/folder in mapistore
 
    \param mstore_ctx pointer to the mapistore context
@@ -919,3 +954,4 @@ _PUBLIC_ int mapistore_get_child_fids(struct mapistore_context *mstore_ctx,
 
 	return MAPISTORE_SUCCESS;
 }
+

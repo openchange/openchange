@@ -29,7 +29,7 @@
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
-
+#include "mapistore/mapistore_errors.h"
 
 /**
    \details Open a System or Special folder object.
@@ -490,15 +490,17 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 	int			ret;
 	struct ldb_result	*res = NULL;
 	struct ldb_message	*msg;
-	
+	const char		*new_folder_name = NULL;
 	struct ldb_dn		*ldb_dn;
 	struct emsmdbp_object	*parent_object = NULL;
 	const char * const	attrs[] = { "*", NULL };
 	void			*data;
 	uint64_t		parent_fid;
+	uint64_t		folder_fid;
 	uint32_t		context_id;
 	char			*parentfid;
 	int			count;
+	int			i;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateGenericFolder\n"));
 
@@ -510,18 +512,43 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 	parent_fid = parent_object->object.folder->folderID;
 	context_id = parent_object->object.folder->contextID;
 
-	/* Step 0. Determine if the folder already exists */
-
-	/* Step 1. Retrieve the next available folderID */
+	/* Step 2. Get the name of the folder we have to create */
+	for (i = 0; i < aRow->cValues; ++i) {
+		if (aRow->lpProps[i].ulPropTag == PR_DISPLAY_NAME) {
+			new_folder_name = aRow->lpProps[i].value.lpszA;
+		}
+	}
+	DEBUG(4, ("target folder name: %s\n", new_folder_name));
+	if (folderFlags & OPEN_IF_EXISTS) {
+		/* Determine if the folder already exists */
+		retval = mapistore_get_fid_by_name(emsmdbp_ctx->mstore_ctx, context_id, parent_fid,
+						   new_folder_name, &folder_fid);
+		if (retval == MAPI_E_SUCCESS) {
+			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder Duplicate Folder at 0x%.16"PRIx64"\n", folder_fid));
+			/* Open the folder using folder_fid */
+			retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid, folder_fid);
+			if (retval != MAPISTORE_SUCCESS) {
+				return MAPI_E_NOT_FOUND; /* shouldn't happen */
+			}
+			response->IsExistingFolder = true;
+			return MAPI_E_SUCCESS;
+		}
+	}
+	/* Step 3. Retrieve the next available folderID */
 	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &response->folder_id);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
-	/* Step 2. Create folder in mapistore */
+	/* Step 4. Create folder in mapistore */
 	retval = mapistore_mkdir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid, response->folder_id, 
 				 aRow);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	if (retval == MAPISTORE_ERR_EXIST) {
+		/* folder with this name already exists */
+		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder Duplicate Folder error\n"));
+		return MAPI_E_COLLISION;
+	}
+	OPENCHANGE_RETVAL_IF(retval, MAPI_E_CALL_FAILED, NULL);
 
-	/* Step 3. Update openchangedb record if needed */
+	/* Step 5. Update openchangedb record if needed */
 	if (parent_object->type == EMSMDBP_OBJECT_FOLDER && parent_object->object.folder->mapistore_root == true) {
 		mem_ctx = talloc_named(NULL, 0, "RopCreateGenericFolder");
 

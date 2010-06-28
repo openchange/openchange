@@ -421,6 +421,7 @@ _PUBLIC_ void mapitest_print_test_result(struct mapitest *mt, char *name, bool r
    \param name the test name
 
    \sa mapitest_print_retval_fmt for a version providing an additional format string
+   \sa mapitest_print_retval_clean for a version that doesn't rely on GetLastError()
  */
 _PUBLIC_ void mapitest_print_retval(struct mapitest *mt, char *name)
 {
@@ -447,6 +448,41 @@ _PUBLIC_ void mapitest_print_retval(struct mapitest *mt, char *name)
 	}
 }
 
+/**
+   \details Print %mapitest return value
+   
+   This version takes an explicit return status value
+
+   \param mt pointer to the top-level mapitest structure
+   \param name the test name
+   \param retval the return value to output
+
+   \sa mapitest_print_retval_fmt for a version providing an additional format string
+ */
+_PUBLIC_ void mapitest_print_retval_clean(struct mapitest *mt, char *name, enum MAPISTATUS retval)
+{
+	const char	*retstr = NULL;
+
+	if (mt->subunit_output) {
+		return;
+	}
+
+	retstr = mapi_get_errstr(retval);
+
+	if (mt->color == true) {
+		if (retstr) {
+			mapitest_print(mt, "* %-35s: %s %s %s \n", name, (retval ? MT_RED : MT_GREEN), retstr, MT_WHITE);
+		} else {
+			mapitest_print(mt, "* %-35s: %s Unknown Error (0x%.8x) %s\n", name, MT_RED, retval, MT_WHITE);
+		}
+	} else {
+		if (retstr) {
+			mapitest_print(mt, "* %-35s: %s\n", name, retstr);
+		} else {
+			mapitest_print(mt, "* %-35s: Unknown Error (0x%.8x)\n", name, retval);
+		}
+	}
+}
 
 /**
    \details Print %mapitest return value with additional format string

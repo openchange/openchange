@@ -29,7 +29,7 @@
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
-#include "mapistore/mapistore_errors.h"
+
 
 /**
    \details Open a System or Special folder object.

@@ -27,6 +27,7 @@
 #include <libmapi/defs_private.h>
 #include <mapiproxy/libmapiproxy/libmapiproxy.h>
 #include <mapiproxy/libmapistore/mapistore.h>
+#include <mapiproxy/libmapistore/mapistore_errors.h>
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <util/debug.h>

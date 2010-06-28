@@ -481,6 +481,7 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_delete(struct mapi_handles_context *handle
 			DLIST_REMOVE(handles_ctx->handles, el);
 			talloc_free(el);
 			found = true;
+			break;
 		}
 	}
 	/* This case should never occur */

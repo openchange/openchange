@@ -1,3 +1,22 @@
+2010-06-28
+    jkerihuel
+	[r2031]
+		Fix a segfault when releasing handles. We kept 
+		processing the handles list after releasing the element.
+    bradh
+	[r2030]
+		Add some simple tests for openchangeclient.
+	[r2029]
+		Unbreak compilation problems from previous commit.
+	[r2028]
+		Ensure we don't duplicate folder names.
+		
+		This adds appropriate checks for both system (openchangedb) and normal (mapistore)
+		folders. The mapitest code also checks that the OPEN_IF_EXISTS flag works. 
+		
+		I had to add an additional mapitest_print_retval() variation, since successful operations
+		don't reset errno.
+
 2010-06-26
     jkerihuel
 	[r2026]

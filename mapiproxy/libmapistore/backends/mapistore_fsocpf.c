@@ -1269,6 +1269,27 @@ static int fsocpf_op_setprops(void *private_data,
 	return MAPISTORE_SUCCESS;
 }
 
+static int fsocpf_op_deletemessage(void *private_data,
+				   uint64_t mid,
+				   uint8_t flags)
+{
+	int res;
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct fsocpf_message		*message;
+	
+	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+
+	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
+
+	res = unlink(message->path);
+
+	if (res == 0) {
+		return MAPISTORE_SUCCESS;
+	} else {
+		DEBUG(1, ("%s, could not unlink: %s\n", __FUNCTION__, strerror(errno)));
+		return MAPISTORE_ERROR;
+	}
+}
 
 /**
    \details Entry point for mapistore FSOCPF backend
@@ -1304,6 +1325,7 @@ int mapistore_init_backend(void)
 	backend.op_getprops = fsocpf_op_getprops;
 	backend.op_get_fid_by_name = fsocpf_op_get_fid_by_name;
 	backend.op_setprops = fsocpf_op_setprops;
+	backend.op_deletemessage = fsocpf_op_deletemessage;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

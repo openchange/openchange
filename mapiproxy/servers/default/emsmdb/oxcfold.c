@@ -865,12 +865,21 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessage(TALLOC_CTX *mem_ctx,
-						  struct emsmdbp_context *emsmdbp_ctx,
-						  struct EcDoRpc_MAPI_REQ *mapi_req,
-						  struct EcDoRpc_MAPI_REPL *mapi_repl,
-						  uint32_t *handles, uint16_t *size)
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
+						   struct emsmdbp_context *emsmdbp_ctx,
+						   struct EcDoRpc_MAPI_REQ *mapi_req,
+						   struct EcDoRpc_MAPI_REPL *mapi_repl,
+						   uint32_t *handles, uint16_t *size)
 {
+	uint32_t		parent_folder_handle;
+	struct mapi_handles	*parent_folder = NULL;
+	void			*parent_folder_private_data;
+	struct emsmdbp_object	*parent_object;
+	enum MAPISTATUS		retval;
+	uint64_t		parent_folderID;
+	uint32_t		contextID;
+	int 			i;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteMessage (0x1e)\n"));
 
 	/* Sanity checks */
@@ -882,9 +891,48 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessage(TALLOC_CTX *mem_ctx,
 
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->u.mapi_DeleteMessages.PartialCompletion = false;
 
-	/* TODO: actually implement this */
+	parent_folder_handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, parent_folder_handle, &parent_folder);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto delete_message_response;
+	}
 
+	retval = mapi_handles_get_private_data(parent_folder, &parent_folder_private_data);
+	parent_object = (struct emsmdbp_object *)parent_folder_private_data;
+	if (!parent_object || parent_object->type != EMSMDBP_OBJECT_FOLDER) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto delete_message_response;
+	}
+
+	if (! emsmdbp_is_mapistore(parent_folder) ) {
+		DEBUG(0, ("Got parent folder not in mapistore\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto delete_message_response;
+	}
+
+	parent_folderID = parent_object->object.folder->folderID;
+	contextID = parent_object->object.folder->contextID;
+
+	for (i = 0; i < mapi_req->u.mapi_DeleteMessages.cn_ids; ++i) {
+		int ret;
+		uint64_t mid = mapi_req->u.mapi_DeleteMessages.message_ids[i];
+		DEBUG(0, ("MID %i to delete: 0x%016"PRIx64"\n", i, mid));
+		ret = mapistore_deletemessage(emsmdbp_ctx->mstore_ctx, contextID, mid, MAPISTORE_SOFT_DELETE);
+		if (ret != MAPISTORE_SUCCESS) {
+			mapi_repl->error_code = MAPI_E_CALL_FAILED;
+			goto delete_message_response;
+		}
+		ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, mid, MAPISTORE_SOFT_DELETE);
+		if (ret != MAPISTORE_SUCCESS) {
+			mapi_repl->error_code = MAPI_E_CALL_FAILED;
+			goto delete_message_response;
+		}
+	}
+
+delete_message_response:
 	*size += libmapiserver_RopDeleteMessage_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

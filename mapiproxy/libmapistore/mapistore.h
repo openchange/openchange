@@ -89,6 +89,7 @@ struct mapistore_backend {
 	int (*op_getprops)(void *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 	int (*op_get_fid_by_name)(void *, uint64_t, const char *, uint64_t *);
 	int (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
+	int (*op_deletemessage)(void *, uint64_t mid, uint8_t flags);
 };
 
 struct indexing_context_list;
@@ -160,6 +161,7 @@ int mapistore_getprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, 
 int mapistore_get_fid_by_name(struct mapistore_context *, uint32_t, uint64_t, const char *, uint64_t*);
 int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SRow *);
 int mapistore_get_child_fids(struct mapistore_context *, uint32_t, uint64_t, uint64_t **, uint32_t *);
+int mapistore_deletemessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);
@@ -170,7 +172,6 @@ const char	*mapistore_backend_get_installdir(void);
 init_backend_fn	*mapistore_backend_load(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_lookup(struct backend_context_list *, uint32_t);
 struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *, const char *);
-
 bool		mapistore_backend_run_init(init_backend_fn *);
 
 /* definitions from mapistore_indexing.c */

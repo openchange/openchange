@@ -436,10 +436,10 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 							 mapi_response->handles, &size);
 			break;
 		case op_MAPI_DeleteMessages: /* 0x1e */
-			retval = EcDoRpc_RopDeleteMessage(mem_ctx, emsmdbp_ctx,
-							  &(mapi_request->mapi_req[i]),
-							  &(mapi_response->mapi_repl[idx]),
-							  mapi_response->handles, &size);
+			retval = EcDoRpc_RopDeleteMessages(mem_ctx, emsmdbp_ctx,
+							   &(mapi_request->mapi_req[i]),
+							   &(mapi_response->mapi_repl[idx]),
+							   mapi_response->handles, &size);
 			break;
 		/* op_MAPI_GetMessageStatus: 0x1f */
 		/* op_MAPI_SetMessageStatus: 0x20 */

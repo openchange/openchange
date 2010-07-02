@@ -1,3 +1,18 @@
+2010-07-02
+    bradh
+	[r2037]
+		Add mapitest unit test for DeleteMessages with multiple messages.
+	[r2036]
+		Implement DeleteMessages ROP.
+		
+		Adds message deletion support to mapistore core and fsocpf backend.
+		
+		I've been testing this with OXCMSG-SAVE-CHANGES-MESSAGE from mapitest. 
+	[r2035]
+		Make it a bit easier to use alternative GIT tree.
+	[r2034]
+		Ensure we return the correct MID from SaveChangesMessage
+
 2010-06-28
     jkerihuel
 	[r2031]

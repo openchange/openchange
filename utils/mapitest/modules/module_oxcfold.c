@@ -1510,3 +1510,141 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessagesAndSubfolders(struct mapitest *
 
         return ret;
 }
+
+/**
+   \details Test the DeleteMessages (0x1e) operation
+
+   This function:
+   -# Log on the user private mailbox
+   -# Open the top of information store
+   -# Create a test folder
+   -# Create and save three messages
+   -# Save the messages
+   -# Delete the messages
+   -# Delete the test folder
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcfold_DeleteMessages(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	mapi_id_t		id_folder;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_top;
+	mapi_object_t		obj_message1;
+	mapi_object_t		obj_message2;
+	mapi_object_t		obj_message3;
+	mapi_id_t		id_msgs[3];
+	bool			ret = true; /* success */
+
+	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_folder);
+	mapi_object_init(&obj_top);
+	mapi_object_init(&obj_message1);
+	mapi_object_init(&obj_message2);
+	mapi_object_init(&obj_message3);
+
+	/* Step 1. Logon */ 
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval_clean(mt, "OpenMsgStore", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 2. Open Top Information Store folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderTopInformationStore);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 3. Create the top test folder */
+	mapitest_print(mt, "* Create GENERIC \"%s\" folder\n", MT_DIRNAME_TOP);
+	retval = CreateFolder(&obj_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
+			      OPEN_IF_EXISTS, &obj_top);
+	mapitest_print_retval_clean(mt, "CreateFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 4. Create the messages */
+	retval = CreateMessage(&obj_top, &obj_message1);
+	mapitest_print_retval_clean(mt, "CreateMessage - 1", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	retval = CreateMessage(&obj_top, &obj_message2);
+	mapitest_print_retval_clean(mt, "CreateMessage - 2", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	retval = CreateMessage(&obj_top, &obj_message3);
+	mapitest_print_retval_clean(mt, "CreateMessage - 3", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 5. Save the messages */
+	retval = SaveChangesMessage(&obj_top, &obj_message1, KeepOpenReadOnly);
+	mapitest_print_retval_clean(mt, "SaveChangesMessage - 1", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	retval = SaveChangesMessage(&obj_top, &obj_message2, KeepOpenReadOnly);
+	mapitest_print_retval_clean(mt, "SaveChangesMessage - 2", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	retval = SaveChangesMessage(&obj_top, &obj_message3, KeepOpenReadOnly);
+	mapitest_print_retval_clean(mt, "SaveChangesMessage - 3", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 6. Delete the saved messages */
+	id_msgs[0] = mapi_object_get_id(&obj_message1);
+	id_msgs[1] = mapi_object_get_id(&obj_message2);
+	id_msgs[2] = mapi_object_get_id(&obj_message3);
+	retval = DeleteMessage(&obj_top, id_msgs, 3);
+	mapitest_print_retval_clean(mt, "DeleteMessage", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Step 7. DeleteFolder on the top folder */
+	retval = DeleteFolder(&obj_folder, mapi_object_get_id(&obj_top),
+			      DEL_MESSAGES|DEL_FOLDERS|DELETE_HARD_DELETE, NULL);
+	mapitest_print_retval_clean(mt, "DeleteFolder - top", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Release */
+cleanup:
+	mapi_object_release(&obj_message3);
+	mapi_object_release(&obj_message2);
+	mapi_object_release(&obj_message1);
+	mapi_object_release(&obj_top);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return ret;
+}

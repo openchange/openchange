@@ -102,6 +102,7 @@ _PUBLIC_ uint32_t module_oxcfold_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "COPYFOLDER", "Copy folder from source to destination", mapitest_oxcfold_CopyFolder);
 	mapitest_suite_add_test(suite, "HARDDELETEMESSAGES", "Hard delete messages", mapitest_oxcfold_HardDeleteMessages);
 	mapitest_suite_add_test(suite, "HARDDELETEMESSAGESANDSUBFOLDERS", "Hard delete messages and subfolders", mapitest_oxcfold_HardDeleteMessagesAndSubfolders);
+	mapitest_suite_add_test(suite, "DELETEMESSAGES", "Soft delete messages", mapitest_oxcfold_DeleteMessages);
 
 	mapitest_suite_register(mt, suite);
 	

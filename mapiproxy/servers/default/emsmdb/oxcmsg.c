@@ -461,7 +461,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	}
 
 	mapi_repl->u.mapi_SaveChangesMessage.handle_idx = mapi_req->u.mapi_SaveChangesMessage.handle_idx;
-	mapi_repl->u.mapi_SaveChangesMessage.MessageId = 0;
+	mapi_repl->u.mapi_SaveChangesMessage.MessageId = object->object.message->messageID;
 
 end:
 	*size += libmapiserver_RopSaveChangesMessage_size(mapi_repl);

@@ -11,6 +11,10 @@ else
 	MAKE=make
 fi
 
+GIT_REPO=git://git.samba.org/samba.git
+# You could also use something like
+# GIT_REPO=$HOME/samba-master
+
 /usr/bin/env -i PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/samba/lib/pkgconfig
 
 RUNDIR=`dirname $0`
@@ -92,7 +96,7 @@ checkout() {
     fi
 
     echo "Step1: Fetching Samba4 latest GIT revision"
-    git clone git://git.samba.org/samba.git samba4
+    git clone $GIT_REPO samba4
     error_check $? "Step1"
 
     echo "Step2: Creating openchange local copy"

@@ -233,6 +233,9 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 	
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_folder);
+	mapi_object_init(&obj_message);
+
 	retval = OpenMsgStore(mt->session, &obj_store);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -246,7 +249,6 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	mapi_object_init(&obj_folder);
 	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -254,7 +256,6 @@ _PUBLIC_ bool mapitest_oxomsg_AbortSubmit(struct mapitest *mt)
 	}
 
 	/* Step 3. Create the sample message */
-	mapi_object_init(&obj_message);
 	ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);
 	if (ret == false) {
 		goto cleanup;

@@ -309,6 +309,8 @@ _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_folder);
+
 	retval = OpenPublicFolder(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -323,7 +325,6 @@ _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	mapi_object_init(&obj_folder);
 	retval = OpenFolder(&obj_store, folderId, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -336,13 +337,12 @@ _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 	mapitest_print_retval(mt, "PublicFolderIsGhosted");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
+		goto cleanup;
 	}
 	mapitest_print(mt, "* %-35s: IsGhosted is set to %s\n", "PublicFolderIsGhosted", ((IsGhosted) ? "true" : "false"));
 
-	/* cleanup objects */
-	mapi_object_release(&obj_folder);
-
 cleanup:
+	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);
 
 	return ret;

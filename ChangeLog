@@ -1,3 +1,18 @@
+2010-07-03
+    bradh
+	[r2043]
+		Make sure objects are correctly init()'d and release()'d even in fault condition.
+	[r2042]
+		Make sure objects are correctly init()'d and release()'d even in failure case.
+	[r2041]
+		Make sure all objects are initialised, even in failure cases.
+	[r2040]
+		Trivial comment change.
+	[r2039]
+		Add a few more null pointer protections into fsocpf backend.
+		
+		Trying to get mapitest running...
+
 2010-07-02
     bradh
 	[r2037]

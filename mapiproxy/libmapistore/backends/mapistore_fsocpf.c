@@ -181,6 +181,10 @@ static struct fsocpf_message_list *fsocpf_find_message_list_by_mid(struct fsocpf
 {
 	struct fsocpf_message_list	*el;
 
+	if (!fsocpf_ctx || !fsocpf_ctx->messages) {
+		return NULL;
+	}
+
 	for (el = fsocpf_ctx->messages; el; el = el->next) {
 		if (el->message && el->message->mid == mid) {
 			return el;
@@ -1122,6 +1126,9 @@ static int fsocpf_op_savechangesmessage(void *private_data,
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
 	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
+	if (!message || !message->ocpf_context_id) {
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
 	ocpf_write_init(message->ocpf_context_id, message->fid);
 	ocpf_write_commit(message->ocpf_context_id);
 
@@ -1255,6 +1262,9 @@ static int fsocpf_op_setprops(void *private_data,
 		break;
 	case MAPISTORE_MESSAGE:
 		message = fsocpf_find_message_by_mid(fsocpf_ctx, fmid);
+		if (!message || !message->ocpf_context_id) {
+			return MAPISTORE_ERR_NOT_FOUND;
+		}
 		for (i = 0; i < aRow->cValues; i++) {
 			if (aRow->lpProps[i].ulPropTag == PR_MESSAGE_CLASS) {
 				ocpf_server_set_type(message->ocpf_context_id, aRow->lpProps[i].value.lpszA);
@@ -1280,6 +1290,10 @@ static int fsocpf_op_deletemessage(void *private_data,
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
 	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
+
+	if (!message || !message->path) {
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
 
 	res = unlink(message->path);
 

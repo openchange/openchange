@@ -2321,13 +2321,16 @@ _PUBLIC_ bool mapitest_oxcprpt_NoReplicate(struct mapitest *mt)
 
 	/* Step 1. Logon Private Mailbox */
 	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_top_folder);
+	mapi_object_init(&obj_ref_folder);
+
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval_step_fmt(mt, "1.", "OpenMsgStore", "(%s)", "Logon Private Mailbox");
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
-	mapi_object_init(&obj_top_folder);
+
 	retval = GetDefaultFolder(&obj_store, &id_top_folder, olFolderTopInformationStore);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -2340,7 +2343,6 @@ _PUBLIC_ bool mapitest_oxcprpt_NoReplicate(struct mapitest *mt)
 	}
 
 	/* Step 2: Create test folder */
-	mapi_object_init(&obj_ref_folder);
         retval = CreateFolder(&obj_top_folder, FOLDER_GENERIC, MT_DIRNAME_TOP, NULL,
                               OPEN_IF_EXISTS, &obj_ref_folder);
 	mapitest_print_retval_step_fmt(mt, "2.", "CreateFolder", "(%s)", "Create the test folder");

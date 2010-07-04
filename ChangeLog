@@ -1,3 +1,12 @@
+2010-07-04
+    bradh
+	[r2046]
+		Enhance the GetReceiveFolder ROP.
+		
+		This now tries all available MessageClass entries.
+	[r2045]
+		Enhance GetReceiveFolder mapitest.
+
 2010-07-03
     bradh
 	[r2043]

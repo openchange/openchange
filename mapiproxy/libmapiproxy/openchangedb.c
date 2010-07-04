@@ -386,51 +386,77 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	char				*dnstr;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
-	unsigned int			i;
+	unsigned int			i, j;
 	size_t				length;
 
 	mem_ctx = talloc_named(NULL, 0, "get_ReceiveFolder");
 
-	/* Step 1. Search Mailbox DN */
+	DEBUG(5, ("openchangedb_get_ReceiveFolder, recipient: %s\n", recipient));
+	DEBUG(5, ("openchangedb_get_ReceiveFolder, MessageClass: %s\n", MessageClass));
+
+	/* Step 1. Find mailbox DN for the recipient */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, "CN=%s", recipient);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	dnstr = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
+	DEBUG(5, ("openchangedb_get_ReceiveFolder, dnstr: %s\n", dnstr));
+
 	OPENCHANGE_RETVAL_IF(!dnstr, MAPI_E_NOT_FOUND, mem_ctx);
 
 	talloc_free(res);
 
-	/* Step 2. Search for MessageClass substring within user's mailbox */
 	dn = ldb_dn_new(mem_ctx, ldb_ctx, dnstr);
 	talloc_free(dnstr);
 
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, 
-			 "(PidTagMessageClass=%s*)", MessageClass);
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
-	
+	/* Step 2A. As a special case, find the "All" target */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs,
+			 "(PidTagMessageClass=All)");
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || (res->count != 1), MAPI_E_NOT_FOUND, mem_ctx);
 	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
+	*ExplicitMessageClass = "";
+	DEBUG(5, ("openchangedb_get_ReceiveFolder (All target), class: %s, fid: 0x%016"PRIx64"\n",
+		  *ExplicitMessageClass, *fid));
+	if (strcmp(MessageClass, "All") == 0) {
+		/* we're done here */
+		talloc_free(mem_ctx);
+		return MAPI_E_SUCCESS;
+	}
 
-	/* Step 3. Find the longest ExplicitMessageClass matching MessageClass */
-	ldb_element = ldb_msg_find_element(res->msgs[0], "PidTagMessageClass");
-	for (i = 0, length = 0; i < ldb_element[0].num_values; i++) {
-		if (MessageClass && !strncasecmp(MessageClass, (char *)ldb_element->values[i].data, 
-						 strlen((char *)ldb_element->values[i].data)) &&
-		    strlen((char *)ldb_element->values[i].data) > length) {
+	/* Step 2B. Search for all MessageClasses within user's mailbox */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, 
+			 "(PidTagMessageClass=*)");
+	DEBUG(5, ("openchangedb_get_ReceiveFolder, res->count: %i\n", res->count));
 
-			if (*ExplicitMessageClass && strcmp(*ExplicitMessageClass, "")) {
-				talloc_free((char *)*ExplicitMessageClass);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* Step 3. Find the message class that has the longest matching string entry */
+	for (j = 0; j < res->count; ++j) {
+		ldb_element = ldb_msg_find_element(res->msgs[j], "PidTagMessageClass");
+		DEBUG(6, ("openchangedb_get_ReceiveFolder, checking fid: 0x%016"PRIx64"\n",
+			  ldb_msg_find_attr_as_uint64(res->msgs[j], "PidTagFolderId", 0x0)));
+		for (i = 0, length = 0; i < ldb_element[j].num_values; i++) {
+			DEBUG(6, ("openchangedb_get_ReceiveFolder, element %i, data: %s\n", i, (char *)ldb_element->values[i].data));
+			if (MessageClass &&
+			    !strncasecmp(MessageClass, (char *)ldb_element->values[i].data, strlen((char *)ldb_element->values[i].data)) &&
+			    strlen((char *)ldb_element->values[i].data) > length) {
+				*fid = ldb_msg_find_attr_as_uint64(res->msgs[j], "PidTagFolderId", 0x0);
+
+				if (*ExplicitMessageClass && strcmp(*ExplicitMessageClass, "")) {
+					talloc_free((char *)*ExplicitMessageClass);
+				}
+
+				if (MessageClass && !strcmp(MessageClass, "All")) {
+					*ExplicitMessageClass = "";
+				} else {
+					*ExplicitMessageClass = talloc_strdup(parent_ctx, (char *)ldb_element->values[i].data);
+				}
+				length = strlen((char *)ldb_element->values[i].data);
 			}
-
-			if (MessageClass && !strcmp(MessageClass, "All")) {
-				*ExplicitMessageClass = "";
-			} else {
-				*ExplicitMessageClass = talloc_strdup(parent_ctx, (char *)ldb_element->values[i].data);
-			}
-			length = strlen((char *)ldb_element->values[i].data);
 		}
 	}
 	OPENCHANGE_RETVAL_IF(!*ExplicitMessageClass, MAPI_E_NOT_FOUND, mem_ctx);
+	DEBUG(5, ("openchangedb_get_ReceiveFolder, fid: 0x%016"PRIx64"\n", *fid));
 
 	talloc_free(mem_ctx);
 

@@ -22,6 +22,7 @@
 #include <libmapi/libmapi.h>
 #include "utils/mapitest/mapitest.h"
 #include "utils/mapitest/proto.h"
+#include "libmapi/defs_private.h"
 
 /**
    \file module_oxcstor.c
@@ -74,7 +75,8 @@ _PUBLIC_ bool mapitest_oxcstor_Logon(struct mapitest *mt)
    This function:
    -# Log on the user private mailbox
    -# Call the GetReceiveFolder operation
-   
+   -# Call the GetReceiveFolder with different explicit message class values
+
    \param mt the top-level mapitest structure
 
    \return true on success, otherwise false
@@ -83,27 +85,58 @@ _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolder(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;
-	mapi_id_t		id_inbox;
+	mapi_id_t		receivefolder = 0;
+	bool			ret = true;
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(mt->session, &obj_store);
-	mapitest_print_retval(mt, "OpenMsgStore");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_clean(mt, "OpenMsgStore", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto release;
 	}
 	
 	/* Step 2. Call the GetReceiveFolder operation */
-	retval = GetReceiveFolder(&obj_store, &id_inbox, "IPF.Post");
-	mapitest_print_retval(mt, "GetReceiveFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	retval = GetReceiveFolder(&obj_store, &receivefolder, NULL);
+	mapitest_print_retval_clean(mt, "GetReceiveFolder for All target", retval);
+	mapitest_print(mt, "FID: 0x%016"PRIx64"\n", receivefolder);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto release;
 	}
 
-	/* Release */
+	/* Step 3. Call GetReceiveFolder again, with an explicit message class */
+	retval = GetReceiveFolder(&obj_store, &receivefolder, "IPC");
+	mapitest_print_retval_clean(mt, "GetReceiveFolder for IPC", retval);
+	mapitest_print(mt, "FID: 0x%016"PRIx64"\n", receivefolder);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto release;
+	}
+
+	/* Step 4. Call GetReceiveFolder again, with an explicit message class */
+	retval = GetReceiveFolder(&obj_store, &receivefolder, "IPM.FooBarBaz");
+	mapitest_print_retval_clean(mt, "GetReceiveFolder for IPM.FooBarBaz", retval);
+	mapitest_print(mt, "FID: 0x%016"PRIx64"\n", receivefolder);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto release;
+	}
+
+	/* Step 5. Call GetReceiveFolder again, with an explicit message class */
+	retval = GetReceiveFolder(&obj_store, &receivefolder, "MT.Mapitest.tc");
+	mapitest_print_retval_clean(mt, "GetReceiveFolder for MT.Mapitest.tc", retval);
+	mapitest_print(mt, "FID: 0x%016"PRIx64"\n", receivefolder);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto release;
+	}
+
+release:
 	mapi_object_release(&obj_store);
 
-	return true;
+	return ret;
 }
 
 

@@ -267,6 +267,142 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+/* Test MessageClass string according to [MS-OXCSTOR] section 2.2.1.2.1.1 and 2.2.1.3.1.2 */
+static bool MessageClassIsValid(const char *MessageClass)
+{
+	size_t		len = strlen(MessageClass);
+	int		i;
+	
+	if (len + 1 > 255) {
+		return false;
+	}
+
+	for (i = 0; i < len; i++) {
+		if ((MessageClass[i] < 32) || (MessageClass[i] > 126)) {
+			return false;
+		}
+		if ((MessageClass[i] == '.') && (MessageClass[i + 1]) && (MessageClass[i + 1] == '.')) {
+			return false;
+		}
+	}
+	
+	if (MessageClass[0] && (MessageClass[0] == '.')) {
+		return false;
+	}
+	if (MessageClass[0] && (MessageClass[len] == '.')) {
+		return false;
+	}
+	
+	return true;
+}
+
+/**
+   \details EcDoRpc SetReceiveFolder (0x26) Rop Internals. This
+   routine performs the SetReceiveFolder internals.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the SetReceiveFolder EcDoRpc_MAPI_REQ
+   \param mapi_repl pointer to the SetReceiveFolder EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+static enum MAPISTATUS RopSetReceiveFolder(TALLOC_CTX *mem_ctx,
+					   struct emsmdbp_context *emsmdbp_ctx,
+					   struct EcDoRpc_MAPI_REQ *mapi_req,
+					   struct EcDoRpc_MAPI_REPL *mapi_repl,
+					   uint32_t *handles)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_handles	*rec = NULL;
+	struct emsmdbp_object	*object = NULL;
+	const char		*MessageClass = NULL;
+	void			*private_data = NULL;
+	uint32_t		handle;
+	uint64_t		fid;
+
+	/* Step 1. Ensure the referring MAPI handle is mailbox one */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	retval = mapi_handles_get_private_data(rec, (void **)&private_data);
+	object = (struct emsmdbp_object *) private_data;
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(object->type != EMSMDBP_OBJECT_MAILBOX, MAPI_E_NO_SUPPORT, NULL);
+	
+	/* Step 2. Verify MessageClass string */
+	fid = mapi_req->u.mapi_SetReceiveFolder.fid;
+	MessageClass = mapi_req->u.mapi_SetReceiveFolder.lpszMessageClass;
+	if (!MessageClass || (strcmp(MessageClass, "") == 0)) {
+		MessageClass="All";
+	}
+	if ((fid == 0x0) && (strcmp(MessageClass, "All"))) {
+		return MAPI_E_CALL_FAILED;
+	}
+	if (strcasecmp(MessageClass, "IPM") == 0) {
+		return MAPI_E_NO_ACCESS;
+	}
+	if (strcasecmp(MessageClass, "Report.IPM") == 0) {
+		return MAPI_E_NO_ACCESS;
+	}
+	if (! MessageClassIsValid(MessageClass) ) {
+		return MAPI_E_INVALID_PARAMETER;
+	}
+
+	/* Step 3.Set the receive folder for this message class within user mailbox */
+	retval = openchangedb_set_ReceiveFolder(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_Name,
+						MessageClass, fid);
+	OPENCHANGE_RETVAL_IF(retval, ecNoReceiveFolder, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details EcDoRpc SetReceiveFolder (0x26) Rop. This operation sets
+   the receive folder for incoming messages of a particular message
+   class
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the SetReceiveFolder EcDoRpc_MAPI_REQ
+   \param mapi_repl pointer to the SetReceiveFolder EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetReceiveFolder(TALLOC_CTX *mem_ctx,
+						     struct emsmdbp_context *emsmdbp_ctx,
+						     struct EcDoRpc_MAPI_REQ *mapi_req,
+						     struct EcDoRpc_MAPI_REPL *mapi_repl,
+						     uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SetReceiveFolder (0x26)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	/* Call effective code */
+	retval = RopSetReceiveFolder(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl, handles);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = retval;
+
+	*size = libmapiserver_RopSetReceiveFolder_size(mapi_repl);
+	
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return retval;
+}
 
 /**
    \details EcDoRpc GetReceiveFolder (0x27) Rop Internals. This
@@ -292,7 +428,6 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	const char		*MessageClass = NULL;
 	void			*private_data = NULL;
 	uint32_t		handle;
-	int			i;
 
 	/* Step 1. Ensure the referring MAPI handle is mailbox one */
 	handle = handles[mapi_req->handle_idx];
@@ -304,23 +439,15 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 	OPENCHANGE_RETVAL_IF(object->type != EMSMDBP_OBJECT_MAILBOX, MAPI_E_NO_SUPPORT, NULL);
 	
-	/* Step 2. Test Message class string according to [MS-OXCSTOR] section 2.2.1.2.1.1 */
+	/* Step 2. Verify MessageClass string */
 	MessageClass = mapi_req->u.mapi_GetReceiveFolder.MessageClass;
 	if (!MessageClass || !strcmp(MessageClass, "")) {
 		MessageClass="All";
 	}
 
-	OPENCHANGE_RETVAL_IF(strlen(MessageClass) + 1 > 255, MAPI_E_INVALID_PARAMETER, NULL);
-	for (i = 0; MessageClass[i]; i++) {
-		OPENCHANGE_RETVAL_IF((MessageClass[i] < 32) || (MessageClass[i] > 126), 
-				     MAPI_E_INVALID_PARAMETER, NULL);
-
-		OPENCHANGE_RETVAL_IF(MessageClass[i] == '.' && MessageClass[i + 1] && MessageClass[i + 1] == '.',
-				     MAPI_E_INVALID_PARAMETER, NULL);
+	if (! MessageClassIsValid(MessageClass) ) {
+		return MAPI_E_INVALID_PARAMETER;
 	}
-	OPENCHANGE_RETVAL_IF(MessageClass[0] && MessageClass[0] == '.', MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(MessageClass[0] && MessageClass[strlen(MessageClass)] == '.', MAPI_E_INVALID_PARAMETER, NULL);
-
 	
 	/* Step 3. Search for the specified MessageClass substring within user mailbox */
 	retval = openchangedb_get_ReceiveFolder(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_Name,

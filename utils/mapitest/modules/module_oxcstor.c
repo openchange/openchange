@@ -145,7 +145,8 @@ release:
 
    This function:
    -# Log on the user private mailbox
-   -# Call the SetReceiveFolder operation
+   -# Call the SetReceiveFolder operations
+   -# Clean up
 
    \param mt the top-level mapitest structure
    
@@ -160,87 +161,111 @@ _PUBLIC_ bool mapitest_oxcstor_SetReceiveFolder(struct mapitest *mt)
 	mapi_object_t		obj_tis;
 	mapi_object_t		obj_inbox;
 	mapi_object_t		obj_folder;
+	bool			ret = true;
+
+
+	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_inbox);
+	mapi_object_init(&obj_tis);
+	mapi_object_init(&obj_folder);
 
 	/* Step 1. Logon */
-	mapi_object_init(&obj_store);
+
 	retval = OpenMsgStore(mt->session, &obj_store);
-	mapitest_print_retval_step(mt, "1.", "Logon");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_step(mt, "1.", "Logon", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Step 2. Get the original ReceiveFolder */
 	retval = GetReceiveFolder(&obj_store, &id_inbox, NULL);
-	mapitest_print_retval_step(mt, "2.", "GetReceiveFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_step(mt, "2.", "GetReceiveFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Step 3. Open the ReceiveFolder */
-	mapi_object_init(&obj_inbox);
 	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
-	mapitest_print_retval_step(mt, "3.", "OpenFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_step(mt, "3.", "OpenFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Step 4. Open the Top Information Store folder */
 	retval = GetDefaultFolder(&obj_store, &id_tis, olFolderTopInformationStore);
-	mapitest_print_retval_step(mt, "4.", "GetDefaultFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_step(mt, "4.", "GetDefaultFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
-	mapi_object_init(&obj_tis);
 	retval = OpenFolder(&obj_store, id_tis, &obj_tis);
-	mapitest_print_retval_step(mt, "4.1.", "OpenFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_step(mt, "4.1.", "OpenFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Create the New Inbox folder under Top Information Store */
-	mapi_object_init(&obj_folder);
 	retval = CreateFolder(&obj_tis, FOLDER_GENERIC, "New Inbox", NULL,
 			      OPEN_IF_EXISTS, &obj_folder);
-	mapitest_print_retval_step(mt, "5.", "CreateFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_step(mt, "5.", "CreateFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Set IPM.Note receive folder to New Inbox */
 	retval = SetReceiveFolder(&obj_store, &obj_folder, "IPM.Note");
-	mapitest_print_retval_step_fmt(mt, "6.", "SetReceiveFolder", "%s", "(New Inbox)");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_step_fmt(mt, "6.", "SetReceiveFolder", "%s", "(New Inbox)", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	/* Reset receive folder to Inbox */
 	retval = SetReceiveFolder(&obj_store, &obj_inbox, "IPM.Note");
-	mapitest_print_retval_step(mt, "6.1.", "SetReceiveFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_step_fmt(mt, "6.1.", "SetReceiveFolder", "%s", "(original folder)", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
+
+	/* Set a test message class */
+	retval = SetReceiveFolder(&obj_store, &obj_folder, "MT.Mapitest.ta");
+	mapitest_print_retval_step_fmt(mt, "7.", "SetReceiveFolder", "%s", "(MT.Mapitest.ta)", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
 	/* Delete New Inbox folder */
 	retval = EmptyFolder(&obj_folder);
-	mapitest_print_retval_step(mt, "7.", "EmptyFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_step(mt, "8.", "EmptyFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
 	retval = DeleteFolder(&obj_tis, mapi_object_get_id(&obj_folder),
 			      DEL_FOLDERS | DEL_MESSAGES | DELETE_HARD_DELETE, NULL);
-	mapitest_print_retval_step(mt, "8.", "DeleteFolder");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	mapitest_print_retval_step(mt, "9.", "DeleteFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
 	}
 
+cleanup:
 	/* Release */
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_tis);
 	mapi_object_release(&obj_inbox);
 	mapi_object_release(&obj_store);
 
-	return true;
+	return ret;
 }
 
 

@@ -525,29 +525,30 @@ _PUBLIC_ void mapitest_print_retval_fmt(struct mapitest *mt, char *name, const c
 /**
    \details Print %mapitest return value for a given step
 
-   \param mt pointer tp the top-level mapitest structure
+   \param mt pointer to the top-level mapitest structure
    \param step the test step
    \param name the test name
+   \param retval the return value
 
    \sa mapitest_print_retval_step_fmt for a version providing an additional format string
  */
-_PUBLIC_ void mapitest_print_retval_step(struct mapitest *mt, char *step, char *name)
+_PUBLIC_ void mapitest_print_retval_step(struct mapitest *mt, char *step, char *name, enum MAPISTATUS retval)
 {
 	const char	*retstr = NULL;
 
-	retstr = mapi_get_errstr(GetLastError());
+	retstr = mapi_get_errstr(retval);
 
 	if (mt->color == true) {
 		if (retstr) {
-			mapitest_print(mt, "* Step %-5s %-35s: %s %s %s\n", step, name, (GetLastError() ? MT_RED : MT_GREEN), retstr, MT_WHITE);
+			mapitest_print(mt, "* Step %-5s %-35s: %s %s %s\n", step, name, (retval ? MT_RED : MT_GREEN), retstr, MT_WHITE);
 		} else {
-			mapitest_print(mt, "* Step %-5s %-35s: %s Unknown Error (0x%.8x) %s\n", step, name, MT_RED, GetLastError(), MT_WHITE);
+			mapitest_print(mt, "* Step %-5s %-35s: %s Unknown Error (0x%.8x) %s\n", step, name, MT_RED, retval, MT_WHITE);
 		}
 	} else {
 		if (retstr) {
 			mapitest_print(mt, "* Step %-5s %-35s: %s\n", step, name, retstr);
 		} else {
-			mapitest_print(mt, "* Step %-5s %-35s: Unknown Error (0x%.8x)\n", step, name, GetLastError());
+			mapitest_print(mt, "* Step %-5s %-35s: Unknown Error (0x%.8x)\n", step, name, retval);
 		}
 	}
 }

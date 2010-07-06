@@ -61,6 +61,20 @@ _PUBLIC_ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *request,
 
 
 /**
+   \details Calculate SetReceiveFolder (0x26) Rop size
+
+   \param response pointer to the SetReceiveFolder EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SetReceiveFolder response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+
+/**
    \details Calculate GetReceiveFolder Rop size
 
    \param response pointer to the GetReceiveFolder EcDoRpc_MAPI_REPL structure

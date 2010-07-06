@@ -849,3 +849,115 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(void *ldb_ctx,
 
 	return MAPI_E_SUCCESS;
 }
+
+/**
+   \details Set the receive folder for a specific message class.
+
+   \param parent_ctx pointer to the memory context
+   \param ldb_ctx pointer to the openchange LDB context
+   \param recipient pointer to the mailbox's username
+   \param MessageClass message class (e.g. IPM.whatever) to set
+   \param fid folder identifier for the recipient folder for the message class
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
+							void *ldb_ctx,
+							const char *recipient,
+							const char *MessageClass,
+							uint64_t fid)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct ldb_result		*res = NULL;
+	struct ldb_dn			*dn;
+	char				*dnstr;
+	const char * const		attrs[] = { "*", NULL };
+	int				ret;
+
+
+	mem_ctx = talloc_named(NULL, 0, "set_ReceiveFolder");
+
+	DEBUG(5, ("openchangedb_set_ReceiveFolder, recipient: %s\n", recipient));
+	DEBUG(5, ("openchangedb_set_ReceiveFolder, MessageClass: %s\n", MessageClass));
+	DEBUG(5, ("openchangedb_set_ReceiveFolder, fid: 0x%016"PRIx64"\n", fid));
+	
+	/* Step 1. Find mailbox DN for the recipient */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "CN=%s", recipient);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	dnstr = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
+	DEBUG(5, ("openchangedb_set_ReceiveFolder, dnstr: %s\n", dnstr));
+
+	OPENCHANGE_RETVAL_IF(!dnstr, MAPI_E_NOT_FOUND, mem_ctx);
+
+	talloc_free(res);
+
+	dn = ldb_dn_new(mem_ctx, ldb_ctx, dnstr);
+	talloc_free(dnstr);
+
+	/* Step 2. Search for the MessageClass within user's mailbox */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, 
+			 "(PidTagMessageClass=%s)", MessageClass);
+	DEBUG(5, ("openchangedb_get_ReceiveFolder, res->count: %i\n", res->count));
+
+	/* We should never have more than one record with a specific MessageClass */
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || (res->count > 1), MAPI_E_CORRUPT_STORE, mem_ctx);
+	
+	/* Step 3. Delete the old entry if applicable */
+	if (res->count) {
+		/* we already have an entry for this message class, so delete it before creating the new one */
+		enum MAPISTATUS		retval;
+		char			*distinguishedName;
+		struct ldb_message	*msg;
+
+		uint64_t folderid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
+		DEBUG(6, ("openchangedb_set_ReceiveFolder, fid to delete from: 0x%016"PRIx64"\n", folderid));
+
+		retval = openchangedb_get_distinguishedName(parent_ctx, ldb_ctx, folderid, &distinguishedName);
+		DEBUG(6, ("openchangedb_set_ReceiveFolder, dn to delete from: %s\n", distinguishedName));
+		dn = ldb_dn_new(mem_ctx, ldb_ctx, distinguishedName);
+		talloc_free(distinguishedName);
+
+		msg = ldb_msg_new(mem_ctx);
+		msg->dn = ldb_dn_copy(mem_ctx, dn);
+		ldb_msg_add_string(msg, "PidTagMessageClass", MessageClass);
+		msg->elements[0].flags = LDB_FLAG_MOD_DELETE;
+
+		ret = ldb_modify(ldb_ctx, msg);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("Failed to delete old message class entry: %s\n", ldb_strerror(ret)));
+			talloc_free(mem_ctx);
+			return MAPI_E_NO_SUPPORT;
+		}
+	}
+	
+	/* Step 4. Create the new entry if applicable */
+	if (fid != 0x0) {
+		enum MAPISTATUS		retval;
+		char			*distinguishedName;
+		struct ldb_message	*msg;
+
+		retval = openchangedb_get_distinguishedName(parent_ctx, ldb_ctx, fid, &distinguishedName);
+		DEBUG(6, ("openchangedb_set_ReceiveFolder, dn to create in: %s\n", distinguishedName));
+
+		dn = ldb_dn_new(mem_ctx, ldb_ctx, distinguishedName);
+		talloc_free(distinguishedName);
+
+		msg = ldb_msg_new(mem_ctx);
+		msg->dn = ldb_dn_copy(mem_ctx, dn);
+		ldb_msg_add_string(msg, "PidTagMessageClass", MessageClass);
+		msg->elements[0].flags = LDB_FLAG_MOD_ADD;
+
+		ret = ldb_modify(ldb_ctx, msg);
+		if (ret != LDB_SUCCESS) {
+			DEBUG(0, ("Failed to add message class entry: %s\n", ldb_strerror(ret)));
+			talloc_free(mem_ctx);
+			return MAPI_E_NO_SUPPORT;
+		}
+	}
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}

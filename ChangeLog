@@ -1,3 +1,15 @@
+2010-07-06
+    bradh
+	[r2048]
+		Implement RopSetReceiveFolder
+		
+		There is a part of this missing (relating to modification times) that will be implemented
+		as part of the RopGetReceiveFolderTable implementation.
+		
+		This updates the mapitest code, including a change to the function signature for the
+		mapitest_print_retval_step() function to take an explicit MAPISTATUS value instead of
+		relying on GetLastError().
+
 2010-07-04
     bradh
 	[r2046]

@@ -45,13 +45,19 @@ _PUBLIC_ uint16_t libmapiserver_TypedString_size(struct TypedString TypedString)
 	case StringType_EMPTY:
 		break;
 	case StringType_STRING8:
-		size += strlen(TypedString.String.lpszA) + 1;
+		if (TypedString.String.lpszA) {
+			size += strlen(TypedString.String.lpszA) + 1;
+		}
 		break;
 	case StringType_UNICODE_REDUCED:
-		size += strlen(TypedString.String.lpszW_reduced) + 1;
+		if (TypedString.String.lpszW_reduced) {
+			size += strlen(TypedString.String.lpszW_reduced) + 1;
+		}
 		break;
 	case StringType_UNICODE:
-		size += strlen(TypedString.String.lpszW) * 2 + 2;
+		if (TypedString.String.lpszW) {
+			size += strlen(TypedString.String.lpszW) * 2 + 2;
+		}
 		break;
 	}
 

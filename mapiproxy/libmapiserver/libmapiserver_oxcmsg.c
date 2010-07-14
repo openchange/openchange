@@ -129,6 +129,50 @@ _PUBLIC_ uint16_t libmapiserver_RopModifyRecipients_size(struct EcDoRpc_MAPI_REP
 
 
 /**
+   \details Calculate ReloadCachedInformation (0x10) Rop size
+
+   \param response pointer to the ReloadCachedInformation
+   EcDoRpc_MAPI_REPL structure
+
+   \return Size of ReloadCachedInformation response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopReloadCachedInformation_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint8_t		i;
+	uint16_t	RecipientRowSize = 0;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPRELOADCACHEDINFORMATION;
+
+	/* SubjectPrefix */
+	size += libmapiserver_TypedString_size(response->u.mapi_ReloadCachedInformation.SubjectPrefix);
+
+	/* NormalizedSubject */
+	size += libmapiserver_TypedString_size(response->u.mapi_ReloadCachedInformation.NormalizedSubject);
+
+	/* RecipientColumns */
+	size += sizeof (uint16_t);
+	size += response->u.mapi_ReloadCachedInformation.RecipientColumns.cValues * sizeof (uint32_t);
+
+	for (i = 0; i < response->u.mapi_ReloadCachedInformation.RowCount; i++) {
+		size += sizeof (uint8_t);
+		size += sizeof (uint16_t);
+		size += sizeof (uint16_t);
+		size += sizeof (uint16_t);
+		RecipientRowSize = libmapiserver_RecipientRow_size(response->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientRow);
+		response->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientRowSize = RecipientRowSize;
+		size += RecipientRowSize;
+	}
+
+	return size;
+}
+
+
+/**
    \details Calculate SetMessageReadFlag (0x11) Rop size
 
    \param response pointer to the SetMessageReadFlag EcDoRpc_MAPI_REPL

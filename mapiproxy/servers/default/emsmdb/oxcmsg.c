@@ -511,6 +511,121 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 
 
 /**
+   \details EcDoRpc ReloadCachedInformation (0x10) Rop. This operation
+   gets message and recipient information from a message.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the ReloadCachedInformation
+   EcDoRpc_MAPI_REQ structure
+   \param mapi_repl pointer to the ReloadCachedInformation
+   EcDoRpc_MAPI_REPL structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
+							    struct emsmdbp_context *emsmdbp_ctx,
+							    struct EcDoRpc_MAPI_REQ *mapi_req,
+							    struct EcDoRpc_MAPI_REPL *mapi_repl,
+							    uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS			retval;
+	uint32_t			handle;
+	struct mapi_handles		*rec = NULL;
+	void				*private_data;
+	bool				mapistore = false;
+	struct mapistore_message	msg;
+	struct emsmdbp_object		*object;
+	uint64_t			folderID;
+	uint64_t			messageID;
+	uint32_t			contextID;
+	struct SPropTagArray		*SPropTagArray;
+	char				*subject = NULL;
+	int				i;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] ReloadCachedInformation (0x10)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+	object = (struct emsmdbp_object *)private_data;
+	if (!object || object->type != EMSMDBP_OBJECT_MESSAGE) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	mapistore = emsmdbp_is_mapistore(rec);
+	switch (mapistore) {
+	case false:
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		break;
+	case true:
+		folderID = object->object.message->folderID;
+		messageID = object->object.message->messageID;
+		contextID = object->object.message->contextID;
+		mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID, &msg);
+
+		/* Build the ReloadCachedInformation reply */
+		subject = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT);
+		mapi_repl->u.mapi_ReloadCachedInformation.HasNamedProperties = false;
+		mapi_repl->u.mapi_ReloadCachedInformation.SubjectPrefix.StringType = StringType_EMPTY;
+		if (subject) {
+			mapi_repl->u.mapi_ReloadCachedInformation.NormalizedSubject.StringType = StringType_UNICODE_REDUCED;
+			mapi_repl->u.mapi_ReloadCachedInformation.NormalizedSubject.String.lpszW_reduced = talloc_strdup(mem_ctx, subject);
+		} else {
+			mapi_repl->u.mapi_ReloadCachedInformation.NormalizedSubject.StringType = StringType_EMPTY;
+		}
+		mapi_repl->u.mapi_ReloadCachedInformation.RecipientCount = msg.recipients->cRows;
+
+		SPropTagArray = set_SPropTagArray(mem_ctx, 0x4,
+						  PR_DISPLAY_TYPE,
+						  PR_OBJECT_TYPE,
+						  PR_7BIT_DISPLAY_NAME_UNICODE,
+						  PR_SMTP_ADDRESS_UNICODE);
+		mapi_repl->u.mapi_ReloadCachedInformation.RecipientColumns.cValues = SPropTagArray->cValues;
+		mapi_repl->u.mapi_ReloadCachedInformation.RecipientColumns.aulPropTag = SPropTagArray->aulPropTag;
+		mapi_repl->u.mapi_ReloadCachedInformation.RowCount = msg.recipients->cRows;
+		mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows = talloc_array(mem_ctx, 
+										       struct OpenRecipientRow, 
+										       msg.recipients->cRows + 1);
+		for (i = 0; i < msg.recipients->cRows; i++) {
+			mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientType = msg.recipients->aRow[i].lpProps[0].value.l;
+			mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i].CodePageId = CP_USASCII;
+			mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i].Reserved = 0;
+			emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx, 
+						  (char *)msg.recipients->aRow[i].lpProps[1].value.lpszA,
+						  &(mapi_repl->u.mapi_ReloadCachedInformation.RecipientColumns),
+						  &(mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientRow));
+		}
+		break;
+	}
+
+end:
+	*size += libmapiserver_RopReloadCachedInformation_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details EcDoRpc SetMessageReadFlag (0x11) Rop. This operation sets
    or clears the message read flag.
 

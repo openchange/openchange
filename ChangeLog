@@ -1,3 +1,12 @@
+2010-07-14
+    jkerihuel
+	[r2051]
+		Add server-side preliminary ReloadCachedInformation implementation.
+		The Rop only support a specific case and it is expected to work better after
+		integration of the OCPF contexts for message transaction.
+	[r2050]
+		Missing header for stat()
+
 2010-07-06
     bradh
 	[r2048]

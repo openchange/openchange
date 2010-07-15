@@ -24,7 +24,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
 #include <dlinklist.h>
-#include <libmapi/defs_private.h>
+#include "libmapi/defs_private.h"
 #include <util/debug.h>
 
 /**
@@ -737,4 +737,4 @@ NTSTATUS samba_init_module(void)
 }
 
 /* include server boiler template */
-#include <gen_ndr/ndr_exchange_s.c>
+#include "gen_ndr/ndr_exchange_s.c"

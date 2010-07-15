@@ -37,7 +37,7 @@
 #include <dcerpc.h>
 #include <param.h>
 
-#include <gen_ndr/exchange.h>
+#include "gen_ndr/exchange.h"
 
 #ifndef	__BEGIN_DECLS
 #ifdef	__cplusplus

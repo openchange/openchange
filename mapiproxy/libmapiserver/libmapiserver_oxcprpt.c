@@ -26,9 +26,9 @@
  */
 
 #include "libmapiserver.h"
-#include <libmapi/libmapi.h>
-#include <libmapi/mapidefs.h>
-#include <gen_ndr/ndr_exchange.h>
+#include "libmapi/libmapi.h"
+#include "libmapi/mapidefs.h"
+#include "gen_ndr/ndr_exchange.h"
 #include <util/debug.h>
 
 /**

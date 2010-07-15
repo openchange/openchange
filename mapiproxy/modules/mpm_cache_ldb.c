@@ -28,7 +28,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/modules/mpm_cache.h"
-#include <libmapi/defs_private.h>
+#include "libmapi/defs_private.h"
 #include <util/debug.h>
 
 /**

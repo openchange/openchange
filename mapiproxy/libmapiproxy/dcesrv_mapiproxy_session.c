@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <mapiproxy/dcesrv_mapiproxy.h>
+#include "mapiproxy/dcesrv_mapiproxy.h"
 #include "libmapiproxy.h"
 
 /**

@@ -23,8 +23,8 @@
 #ifndef	__MAPISTORE_SQLITE3_H
 #define	__MAPISTORE_SQLITE3_H
 
-#include <mapiproxy/libmapistore/mapistore.h>
-#include <mapiproxy/libmapistore/mapistore_errors.h>
+#include "mapiproxy/libmapistore/mapistore.h"
+#include "mapiproxy/libmapistore/mapistore_errors.h"
 #include <dlinklist.h>
 #include <sqlite3.h>
 

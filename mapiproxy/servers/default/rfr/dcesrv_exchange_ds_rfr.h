@@ -22,7 +22,7 @@
 #ifndef	__DCESRV_EXCHANGE_DS_RFR_H
 #define	__DCESRV_EXCHANGE_DS_RFR_H
 
-#include <mapiproxy/libmapiproxy/libmapiproxy.h>
+#include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include <util/debug.h>
 
 #ifndef	__BEGIN_DECLS

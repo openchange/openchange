@@ -23,9 +23,9 @@
 #ifndef	__MAPISTORE_FSOCPF_H
 #define	__MAPISTORE_FSOCPF_H
 
-#include <libocpf/ocpf.h>
-#include <mapiproxy/libmapistore/mapistore.h>
-#include <mapiproxy/libmapistore/mapistore_errors.h>
+#include "libocpf/ocpf.h"
+#include "mapiproxy/libmapistore/mapistore.h"
+#include "mapiproxy/libmapistore/mapistore_errors.h"
 #include <dlinklist.h>
 #include <dirent.h>
 

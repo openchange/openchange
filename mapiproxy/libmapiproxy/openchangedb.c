@@ -25,11 +25,11 @@
    \brief OpenChange Dispatcher database routines
  */
 
-#include <mapiproxy/dcesrv_mapiproxy.h>
+#include "mapiproxy/dcesrv_mapiproxy.h"
 #include "libmapiproxy.h"
-#include <libmapi/libmapi.h>
-#include <libmapi/proto_private.h>
-#include <libmapi/defs_private.h>
+#include "libmapi/libmapi.h"
+#include "libmapi/proto_private.h"
+#include "libmapi/defs_private.h"
 
 /**
    \details Retrieve the mailbox FolderID for given recipient from

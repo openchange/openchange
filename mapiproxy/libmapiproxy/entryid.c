@@ -25,10 +25,10 @@
    \brief EntryID convenient routines
  */
 
-#include <mapiproxy/dcesrv_mapiproxy.h>
+#include "mapiproxy/dcesrv_mapiproxy.h"
 #include "libmapiproxy.h"
-#include <libmapi/libmapi.h>
-#include <libmapi/proto_private.h>
+#include "libmapi/libmapi.h"
+#include "libmapi/proto_private.h"
 
 /**
    \details Build an Address Book EntryID from a legacyExchangeDN

@@ -22,7 +22,7 @@
 #include "mapistore.h"
 #include "mapistore_errors.h"
 #include "mapistore_private.h"
-#include <libmapi/defs_private.h>
+#include "libmapi/defs_private.h"
 #include <ldb.h>
 
 

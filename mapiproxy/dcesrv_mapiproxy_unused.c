@@ -35,7 +35,7 @@
 #include <talloc.h>
 #include <dcerpc.h>
 
-#include <gen_ndr/exchange.h>
+#include "gen_ndr/exchange.h"
 
 #include <dcerpc_server.h>
 #include <util.h>

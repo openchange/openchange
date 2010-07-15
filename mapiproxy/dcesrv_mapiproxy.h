@@ -44,9 +44,9 @@
 #include <param.h>
 #include <credentials.h>
 
-#include <gen_ndr/exchange.h>
-#include <gen_ndr/ndr_exchange.h>
-#include <mapiproxy/libmapiproxy/libmapiproxy.h>
+#include "gen_ndr/exchange.h"
+#include "gen_ndr/ndr_exchange.h"
+#include "mapiproxy/libmapiproxy/libmapiproxy.h"
 
 struct dcesrv_mapiproxy_private {
 	struct dcerpc_pipe			*c_pipe;

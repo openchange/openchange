@@ -25,9 +25,9 @@
    \brief API for MAPI handles management
  */
 
-#include <mapiproxy/dcesrv_mapiproxy.h>
-#include <libmapi/libmapi.h>
-#include <libmapi/proto_private.h>
+#include "mapiproxy/dcesrv_mapiproxy.h"
+#include "libmapi/libmapi.h"
+#include "libmapi/proto_private.h"
 #include "libmapiproxy.h"
 
 

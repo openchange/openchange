@@ -22,12 +22,12 @@
 #ifndef	__DCESRV_EXCHANGE_EMSMDB_H
 #define	__DCESRV_EXCHANGE_EMSMDB_H
 
-#include <libmapi/libmapi.h>
-#include <libmapi/proto_private.h>
-#include <libmapi/defs_private.h>
-#include <mapiproxy/libmapiproxy/libmapiproxy.h>
-#include <mapiproxy/libmapistore/mapistore.h>
-#include <mapiproxy/libmapistore/mapistore_errors.h>
+#include "libmapi/libmapi.h"
+#include "libmapi/proto_private.h"
+#include "libmapi/defs_private.h"
+#include "mapiproxy/libmapiproxy/libmapiproxy.h"
+#include "mapiproxy/libmapistore/mapistore.h"
+#include "mapiproxy/libmapistore/mapistore_errors.h"
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <util/debug.h>

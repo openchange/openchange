@@ -43,7 +43,7 @@
 #include <talloc.h>
 #include <util/debug.h>
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 
 #define	MAPISTORE_SUCCESS	0
 

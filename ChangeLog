@@ -1,3 +1,33 @@
+2010-07-15
+    jkerihuel
+	[r2063]
+		Use local includes rather than installed ones for openchange tools/utils
+	[r2062]
+		Use local includes rather than installed ones for mparse.pl
+	[r2061]
+		Use local includes rather than installed ones for mapiproxy and server components
+	[r2060]
+		Use local includes rather than installed ones
+	[r2059]
+		Use local includes rather than installed ones for libexchange2ical
+		Sanitize function declarations
+	[r2058]
+		Remove proto and proto_private.h from ignore list
+	[r2057]
+		Remove auto-generated headers for libmapiadmin
+		Use local includes rather than installed ones for libmapiadmin
+	[r2056]
+		Remove proto and proto_private.h from ignore list
+	[r2055]
+		Remove auto-generated headers for libocpf
+		Use local includes rather than installed ones for libocpf
+	[r2054]
+		Fix bug #248 misnamed PR_RECIPIENTS_FLAGS
+	[r2053]
+		Add IDL implementation for WritePerUserInformation.
+		
+		Note: This IDL suffers from the same problems than SetMessageReadFlags. It depends on logon_id and Logon flags.
+
 2010-07-14
     jkerihuel
 	[r2051]

@@ -186,7 +186,7 @@ void ical_property_ATTENDEE(struct exchange2ical *exchange2ical)
 	for (i = 0; i < SRowSet->cRows; i++) {
 		smtp = (const char *) octool_get_propval(&(SRowSet->aRow[i]), PR_SMTP_ADDRESS);
 		display_name = (const char *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENT_DISPLAY_NAME);
-		RecipientFlags = (uint32_t *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENTS_FLAGS);
+		RecipientFlags = (uint32_t *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENT_FLAGS);
 		RecipientType = (uint32_t *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENT_TYPE);
 		TrackStatus  = (uint32_t *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENT_TRACKSTATUS);
 
@@ -546,7 +546,7 @@ void ical_property_ORGANIZER(struct exchange2ical *exchange2ical)
 	for (i = 0; i < SRowSet->cRows; i++) {
 		smtp = (const char *) octool_get_propval(&(SRowSet->aRow[i]), PR_SMTP_ADDRESS);
 		display_name = (const char *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENT_DISPLAY_NAME);
-		RecipientFlags = (uint32_t *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENTS_FLAGS);
+		RecipientFlags = (uint32_t *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENT_FLAGS);
 		RecipientType = (uint32_t *) octool_get_propval(&(SRowSet->aRow[i]), PR_RECIPIENT_TYPE);
 
 		if (RecipientFlags && !(*RecipientFlags & 0x20) &&

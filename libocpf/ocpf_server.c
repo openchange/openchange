@@ -17,7 +17,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "libocpf/ocpf_private.h"
 #include "libocpf/ocpf.h"
 #include "libocpf/ocpf_api.h"
 

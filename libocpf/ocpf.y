@@ -19,10 +19,9 @@
 
 %{
 
-#include "libocpf/ocpf_private.h"
-#include <libocpf/ocpf.h>
-#include <libocpf/ocpf_api.h>
-#include <libocpf/lex.h>
+#include "libocpf/ocpf.h"
+#include "libocpf/ocpf_api.h"
+#include "libocpf/lex.h"
 
 int ocpf_yylex(void *, void *);
 void yyerror(struct ocpf_context *, void *, char *);

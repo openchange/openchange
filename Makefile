@@ -594,8 +594,7 @@ libmapiadmin/proto.h libmapiadmin/proto_private.h: 	\
 
 LIBOCPF_SO_VERSION = 0
 
-libocpf:	libocpf/proto.h				\
-		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)	
+libocpf:		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 libocpf-install:	libocpf-installpc	\
 			libocpf-installlib	\
@@ -611,8 +610,6 @@ libocpf-clean::
 ifneq ($(SNAPSHOT), no)
 	rm -f libocpf/lex.yy.c
 	rm -f libocpf/ocpf.tab.c libocpf/ocpf.tab.h
-	rm -f libocpf/proto.h
-	rm -f libocpf/proto_private.h
 endif
 	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) \
 		  libocpf.$(SHLIBEXT)
@@ -642,7 +639,6 @@ libocpf-installheader:
 	@echo "[*] install: libocpf headers"
 	$(INSTALL) -d $(DESTDIR)$(includedir)/libocpf
 	$(INSTALL) -m 0644 libocpf/ocpf.h $(DESTDIR)$(includedir)/libocpf/
-	$(INSTALL) -m 0644 libocpf/proto.h $(DESTDIR)$(includedir)/libocpf/
 
 libocpf-uninstallpc:
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libocpf.pc
@@ -668,16 +664,6 @@ libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		\
 
 libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION): libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
-
-libocpf/proto.h:	libocpf/ocpf_public.c	\
-			libocpf/ocpf_server.c	\
-			libocpf/ocpf_dump.c	\
-			libocpf/ocpf_api.c	\
-			libocpf/ocpf_write.c	\
-			libocpf/ocpf_context.c
-			@echo "Generating $@"
-			@./script/mkproto.pl --private=libocpf/proto_private.h \
-			--public=libocpf/proto.h $^
 
 libocpf/lex.yy.c:		libocpf/lex.l
 	@echo "Generating $@"

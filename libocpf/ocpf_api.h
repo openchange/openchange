@@ -20,7 +20,7 @@
 #ifndef __OCPF_API_H_
 #define	__OCPF_API_H_
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 
 struct ocpf_var
 {
@@ -138,7 +138,7 @@ struct ocpf
 };
 
 
-#include <libocpf/proto_private.h>
+#include "libocpf/ocpf_private.h"
 
 /**
  * Defines

@@ -23,11 +23,10 @@
    \brief public OCPF API
  */
 
-#include "libocpf/ocpf_private.h"
-#include <libocpf/ocpf.h>
-#include <libocpf/ocpf_api.h>
-
 #include <sys/stat.h>
+
+#include "libocpf/ocpf.h"
+#include "libocpf/ocpf_api.h"
 
 int ocpf_yylex_init(void *);
 int ocpf_yylex_init_extra(struct ocpf_context *, void *);

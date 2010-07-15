@@ -6,7 +6,7 @@
    Original source code available in SAMBA_4_0:
    source/torture/rpc/testjoin.c
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2010.
 
    SAMR related code
 
@@ -24,7 +24,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libmapiadmin/libmapiadmin.h>
+#include "libmapiadmin/libmapiadmin.h"
 
 #include <param.h>
 #include <credentials.h>

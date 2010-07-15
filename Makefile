@@ -516,8 +516,7 @@ clean:: libmapixx-messages-clean
 
 LIBMAPIADMIN_SO_VERSION = 0
 
-libmapiadmin:	libmapiadmin/proto.h				\
-		libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
+libmapiadmin:		libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 libmapiadmin-install:	libmapiadmin-installpc		\
 			libmapiadmin-installlib		\
@@ -530,10 +529,6 @@ libmapiadmin-uninstall:	libmapiadmin-uninstallpc	\
 libmapiadmin-clean::
 	rm -f libmapiadmin/*.o libmapiadmin/*.po
 	rm -f libmapiadmin/*.gcno libmapiadmin/*.gcda
-ifneq ($(SNAPSHOT), no)
-	rm -f libmapiadmin/proto.h
-	rm -f libmapiadmin/proto_private.h
-endif
 	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) \
 		  libmapiadmin.$(SHLIBEXT)
 
@@ -561,7 +556,6 @@ endif
 libmapiadmin-installheader:
 	@echo "[*] install: libmapiadmin headers"
 	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapiadmin 
-	$(INSTALL) -m 0644 libmapiadmin/proto.h $(DESTDIR)$(includedir)/libmapiadmin/
 	$(INSTALL) -m 0644 libmapiadmin/libmapiadmin.h $(DESTDIR)$(includedir)/libmapiadmin/
 
 libmapiadmin-uninstallpc:
@@ -579,12 +573,6 @@ libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	\
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) -o $@ $^ $(LIBS) $(LIBMAPIADMIN_LIBS) 
-
-libmapiadmin/proto.h libmapiadmin/proto_private.h: 	\
-	libmapiadmin/mapiadmin.c 			\
-	libmapiadmin/mapiadmin_user.c			
-	@echo "Generating $@"
-	@./script/mkproto.pl -private=libmapiadmin/proto_private.h --public=libmapiadmin/proto.h $^
 
 
 

@@ -19,14 +19,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libmapi/libmapi.h>
+#include "utils/mapitest/mapitest.h"
+#include "utils/openchange-tools.h"
+
 #include <samba/popt.h>
 #include <param.h>
 
 #include "config.h"
-
-#include <utils/openchange-tools.h>
-#include "utils/mapitest/mapitest.h"
 
 /**
 	\file

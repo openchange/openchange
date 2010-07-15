@@ -19,8 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libmapi/libmapi.h>
-#include <libmapiadmin/libmapiadmin.h>
+#include "libmapi/libmapi.h"
+#include "libmapiadmin/libmapiadmin.h"
 #include <samba/popt.h>
 #include <param.h>
 

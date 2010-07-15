@@ -22,7 +22,7 @@
 #ifndef __OPENCHANGEBACKUP_H__
 #define	__OPENCHANGEBACKUP_H__
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 
 #include <sys/types.h>
 

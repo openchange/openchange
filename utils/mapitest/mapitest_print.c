@@ -19,9 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libmapi/libmapi.h>
 #include <samba/version.h>
-#include <utils/mapitest/mapitest.h>
+#include "utils/mapitest/mapitest.h"
 
 #include "config.h"
 #ifdef HAVE_SUBUNIT

@@ -20,7 +20,7 @@
 */
 
 #include "openchangebackup.h"
-#include <libmapi/defs_private.h>
+#include "libmapi/defs_private.h"
 
 /**
  * Initialize OCB (OpenChange Backup) subsystem

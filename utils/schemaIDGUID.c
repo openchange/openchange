@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 #include <ldb.h>
 
 static void usage(void)

@@ -20,12 +20,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 #include <samba/popt.h>
 #include <param.h>
 
 #include "openchangebackup.h"
-#include <utils/openchange-tools.h>
+#include "utils/openchange-tools.h"
 
 #include <sys/stat.h>
 #include <sys/mman.h>

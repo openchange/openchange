@@ -22,7 +22,7 @@
 #ifndef __MAPITEST_H__
 #define	__MAPITEST_H__
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 
 #include <errno.h>
 #include <err.h>

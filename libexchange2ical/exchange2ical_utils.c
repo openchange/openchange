@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libexchange2ical/libexchange2ical.h>
+#include "libexchange2ical/libexchange2ical.h"
 
 static struct ical_method	ical_method[] = {
 	{ ICAL_METHOD_PUBLISH,	ICAL_PARTSTAT_NONE,	"IPM.Appointment"		},

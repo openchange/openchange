@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libexchange2ical/libexchange2ical.h>
+#include "libexchange2ical/libexchange2ical.h"
 #include <ldb.h>
 
 struct RRULE_byday {

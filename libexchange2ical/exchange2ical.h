@@ -22,9 +22,9 @@
 #ifndef	__EXCHANGE2ICAL_H_
 #define	__EXCHANGE2ICAL_H_
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 #include <gen_ndr/ndr_property.h>
-#include <utils/openchange-tools.h>
+#include "utils/openchange-tools.h"
 
 #include <libical/ical.h>
 
@@ -156,7 +156,7 @@ struct ical_class {
 __BEGIN_DECLS
 
 /* definitions from exchang2ical.c */
-icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_check *exchange2ical_check);
+icalcomponent * _Exchange2Ical(mapi_object_t *, struct exchange2ical_check *);
 
 
 /* definitions from exchange2ical_utils.c */
@@ -165,30 +165,30 @@ struct icaltimetype get_icaltime_from_FILETIME_UTC(const struct FILETIME *);
 struct icaltimetype get_icaldate_from_FILETIME(const struct FILETIME *);
 struct tm *get_tm_from_FILETIME(const struct FILETIME *);
 struct icaltimetype get_icaldate_from_tm(struct tm *);
-struct icaltimetype get_icaltimetype_from_tm_UTC(struct tm *tm);
-struct icaltimetype get_icaltimetype_from_tm(struct tm *tm);
+struct icaltimetype get_icaltimetype_from_tm_UTC(struct tm *);
+struct icaltimetype get_icaltimetype_from_tm(struct tm *);
 struct FILETIME get_FILETIME_from_string(const char *);
 struct FILETIME get_FILETIME_from_icaltimetype(icaltimetype *);
-struct tm get_tm_from_minutes(uint32_t mins);
-struct tm get_tm_from_minutes_UTC(uint32_t mins);
+struct tm get_tm_from_minutes(uint32_t);
+struct tm get_tm_from_minutes_UTC(uint32_t);
 struct icaltimetype get_icaldate_from_GlobalObjectId(struct GlobalObjectId *);
 NTTIME FILETIME_to_NTTIME(struct FILETIME);
 enum icalproperty_method get_ical_method(const char *);
 enum icalparameter_partstat get_ical_partstat(const char *);
 enum icalproperty_class get_ical_class(uint32_t);
-enum icalparameter_partstat get_ical_partstat_from_status(uint32_t status);
-enum FirstDOW get_exchange_day_from_ical(enum icalrecurrencetype_weekday weekday);
+enum icalparameter_partstat get_ical_partstat_from_status(uint32_t);
+enum FirstDOW get_exchange_day_from_ical(enum icalrecurrencetype_weekday);
 uint8_t set_exception_from_ExceptionInfo(struct exchange2ical *, struct exchange2ical_check *);
 uint8_t set_exception_from_EmbeddedObj(struct exchange2ical *, struct exchange2ical_check *);
-bool checkEvent(struct exchange2ical *exchange2ical, struct exchange2ical_check *exchange2ical_check, struct tm *aptStart);
-bool compareGlobalObjectIds(struct GlobalObjectId *glb1, struct GlobalObjectId *glb2);
+bool checkEvent(struct exchange2ical *, struct exchange2ical_check *, struct tm *);
+bool compareGlobalObjectIds(struct GlobalObjectId *, struct GlobalObjectId *);
 bool has_component_DAYLIGHT(struct exchange2ical *);
 uint16_t get_exchange_calendartype(const char *);
 uint32_t get_minutes_from_icaltimetype(icaltimetype);
-uint32_t get_exchange_rdfDays_from_ical(enum icalrecurrencetype_weekday weekday);
+uint32_t get_exchange_rdfDays_from_ical(enum icalrecurrencetype_weekday);
 const char *get_ical_calendartype(uint16_t);
 char *get_ical_date(TALLOC_CTX *, struct SYSTEMTIME *);
-int compare_minutes(const void *min1, const void *min2);
+int compare_minutes(const void *, const void *);
 
 /* definitions from exchange2ical_component.c */
 void ical_component_VCALENDAR(struct exchange2ical *);
@@ -223,7 +223,7 @@ void ical_property_RRULE_NthMonthly(struct exchange2ical *);
 void ical_property_RRULE_Yearly(struct exchange2ical *);
 void ical_property_RRULE_NthYearly(struct exchange2ical *);
 void ical_property_RRULE(struct exchange2ical *);
-void ical_property_RRULE_daylight_standard(icalcomponent* component , struct SYSTEMTIME st);
+void ical_property_RRULE_daylight_standard(icalcomponent*, struct SYSTEMTIME);
 void ical_property_RECURRENCE_ID(struct exchange2ical *);
 void ical_property_RESOURCES(struct exchange2ical *);
 void ical_property_SEQUENCE(struct exchange2ical *);
@@ -325,7 +325,7 @@ struct ical2exchange{
 
 
 /*ical2exchange file*/
-void _IcalEvent2Exchange(mapi_object_t *obj_folder, icalcomponent *);
+void _IcalEvent2Exchange(mapi_object_t *, icalcomponent *);
 
 
 /*ical2exchange_property*/

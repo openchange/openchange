@@ -20,7 +20,7 @@
 */
 
 
-#include <libexchange2ical/libexchange2ical.h>
+#include "libexchange2ical/libexchange2ical.h"
 #include <libical/icalderivedproperty.h>
 
 /*

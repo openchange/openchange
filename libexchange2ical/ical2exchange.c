@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libexchange2ical/libexchange2ical.h>
+#include "libexchange2ical/libexchange2ical.h"
 
 static void ical2exchange_get_properties(struct ical2exchange *ical2exchange, icalcomponent *vevent){
 	icalproperty *icalProp = NULL;

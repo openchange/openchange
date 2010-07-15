@@ -871,6 +871,7 @@ System Attendant Private Interface
 			op_MAPI_GetPerUserLongTermIds		= 0x60,
 			op_MAPI_GetPerUserGuid			= 0x61,
 			op_MAPI_ReadPerUserInformation		= 0x63,
+			op_MAPI_WritePerUserInformation		= 0x64,
 			op_MAPI_SetReadFlags			= 0x66,
 			op_MAPI_CopyProperties			= 0x67,
 			op_MAPI_GetReceiveFolderTable		= 0x68,
@@ -2983,6 +2984,20 @@ System Attendant Private Interface
 	} ReadPerUserInformation_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x64 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		LongTermId	FolderId;
+		boolean8	HasFinished;
+		uint32		DataOffset;
+		uint16		DataSize;
+		[subcontext(0), subcontext_size(DataSize), flag(NDR_REMAINING)] DATA_BLOB Data;
+		GUID		ReplGuid;	/* Note: ReplGuid gets only included under specific circumstances */
+	} WritePerUserInformation_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} WritePerUserInformation_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x66 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		boolean8	WantAsynchronous;
@@ -3571,6 +3586,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetPerUserLongTermIds)] GetPerUserLongTermIds_req mapi_GetPerUserLongTermIds;
 		[case(op_MAPI_GetPerUserGuid)] GetPerUserGuid_req mapi_GetPerUserGuid;
 		[case(op_MAPI_ReadPerUserInformation)] ReadPerUserInformation_req mapi_ReadPerUserInformation;
+		[case(op_MAPI_WritePerUserInformation)] WritePerUserInformation_req mapi_WritePerUserInformation;
 		[case(op_MAPI_SetReadFlags)] SetReadFlags_req mapi_SetReadFlags;
 		[case(op_MAPI_CopyProperties)] CopyProperties_req mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
@@ -3694,6 +3710,7 @@ System Attendant Private Interface
 		[case(op_MAPI_GetPerUserLongTermIds)] GetPerUserLongTermIds_repl mapi_GetPerUserLongTermIds;
 		[case(op_MAPI_GetPerUserGuid)] GetPerUserGuid_repl mapi_GetPerUserGuid;
 		[case(op_MAPI_ReadPerUserInformation)] ReadPerUserInformation_repl mapi_ReadPerUserInformation;
+		[case(op_MAPI_WritePerUserInformation)] WritePerUserInformation_repl mapi_WritePerUserInformation;
 		[case(op_MAPI_SetReadFlags)] SetReadFlags_repl mapi_SetReadFlags;
 		[case(op_MAPI_CopyProperties)] CopyProperties_repl mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;

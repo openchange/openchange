@@ -1,3 +1,10 @@
+2010-07-20
+    bradh
+	[r2065]
+		Modify the samba build script to make it more flexible.
+		
+		Heavily based on changes provided by Andrew Tridgell. Thanks!
+
 2010-07-15
     jkerihuel
 	[r2063]

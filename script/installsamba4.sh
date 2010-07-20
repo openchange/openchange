@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # VARS
@@ -11,11 +11,18 @@ else
 	MAKE=make
 fi
 
+# If you have a samba checkout (even not up-to-date), you can make this a lot faster using --reference, e.g.
+# GIT_REFERENCE="--reference $HOME/samba-master"
 GIT_REPO=git://git.samba.org/samba.git
 # You could also use something like
 # GIT_REPO=$HOME/samba-master
 
-/usr/bin/env -i PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/samba/lib/pkgconfig
+# Set SAMBA_PREFIX to wherever you want to install to. Defaults to /usr/local/samba, as if you did the build manually
+if test x"$SAMBA_PREFIX" = x""; then
+    SAMBA_PREFIX="/usr/local/samba"
+fi
+
+export PKG_CONFIG_PATH=$SAMBA_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
 
 RUNDIR=`dirname $0`
 HOST_OS=`$RUNDIR/../config.guess`
@@ -33,43 +40,43 @@ error_check() {
     fi
 }
 
-cleanup_talloc() {
-    # cleanup existing talloc installation
-    if test -f samba4/lib/talloc/Makefile; then
-	echo "Step0: cleaning up talloc directory"
-	OLD_PWD=$PWD
-	cd samba4/lib/talloc
-	make realdistclean
-	cd $OLD_PWD
+cleanup_lib() {
+    lib="$1"
+    if test -f samba4/$lib/Makefile; then
+	echo "cleaning up $lib directory"
+	pushd samba4/$lib
+	make distclean
+	popd
     fi
 }
 
+cleanup_talloc() {
+    cleanup_lib "lib/talloc"
+}
+
 cleanup_tdb() {
-    # cleanup existing tdb installation
-    if test -f samba/lib/tdb/Makefile; then
-	echo "Step0: cleaning up tdb directory"
-	OLD_PWD=$PWD
-	cd samba4/lib/tdb
-	make realdistclean
-	cd $OLD_PWD
-    fi
+    cleanup_lib "lib/tdb"
 }
 
 delete_install() {
 
     # cleanup existing existing samba4 installation
-    if test -d /usr/local/samba; then
+    if test -d $SAMBA_PREFIX; then
 	echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
-	echo "A previous samba4 installation has been detected"
+	echo "A previous samba4 installation has been detected in $SAMBA_PREFIX"
 	echo "It is highly recommended to delete it prior compiling Samba4"
 	echo "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
 	echo ""
-	echo -n "Proceed? [Yn]: "
+	echo -n "Proceed removing all of $SAMBA_PREFIX? [Yn]: "
 	read answer
 	case "$answer" in
 	    Y|y|yes)
 		echo "Step0: Removing previous samba4 installation"
-		sudo rm -rf /usr/local/samba
+		if test -w $SAMBA_PREFIX; then
+		    rm -rf $SAMBA_PREFIX
+		else
+		    sudo rm -rf $SAMBA_PREFIX
+		fi
 		;;
 	    N|n|no)
 		echo "Step0: Keep previous samba4 installation"
@@ -77,16 +84,14 @@ delete_install() {
 	esac
     fi
 
-	cleanup_talloc
-	cleanup_tdb
+    cleanup_talloc
+    cleanup_tdb
 }
 
 #
 # Checkout Samba4
 #
 checkout() {
-    OLD_PWD=$PWD
-
     GITPATH=`whereis -b git`
 
     if test x"$GITPATH" = x"git:"; then
@@ -96,20 +101,20 @@ checkout() {
     fi
 
     echo "Step1: Fetching Samba4 latest GIT revision"
-    git clone $GIT_REPO samba4
+    git clone $GIT_REPO $GIT_REFERENCE samba4
     error_check $? "Step1"
 
     echo "Step2: Creating openchange local copy"
-    cd samba4
+    pushd samba4
     git checkout -b openchange origin/master
     error_check $? "Step2"
 
-    echo "Step3: Revert to commit $SAMBA4_GIT_REV"
     if test x"$SAMBA4_GIT_REV" != x""; then
+	echo "Step3: Revert to commit $SAMBA4_GIT_REV"
 	git reset --hard $SAMBA4_GIT_REV
 	error_check $? "Step3"
     fi
-    cd $OLD_PWD
+    popd
     return $?
 }
 
@@ -117,8 +122,6 @@ checkout() {
 # Download Samba4 release
 #
 download() {
-    OLD_PWD=$PWD
-
     WGETPATH=`whereis -b wget`
     TARPATH=`whereis -b tar`
 
@@ -146,7 +149,7 @@ download() {
 	case "$answer" in
 	    Y|y|yes)
 		echo "Step0: removing previous samba4 directory"
-		sudo rm -rf samba4
+		rm -rf samba4
 		;;
 	    N|n|no)
 		echo "Step0: Keep existing directory"
@@ -167,7 +170,6 @@ download() {
     error_check $? "Step2"
     mv samba-$SAMBA4_RELEASE samba4
 
-    cd $OLD_PWD
     return $?
 }
 
@@ -179,15 +181,13 @@ patch() {
 	*freebsd*)
 
 	    echo "[+] Patching tevent for FreeBSD"
-	    OLD_PWD=$PWD
-	    cd samba4/lib/tevent
+	    pushd samba4/lib/tevent
 	    sed 's/\$(PYTHON_CONFIG) --libs/\$(PYTHON_CONFIG) --ldflags/g' tevent.mk > tevent.mk2
 	    mv tevent.mk2 tevent.mk
-	    cd $OLD_PWD
+	    popd
 
 	    echo "[+] Patching heimdal for FreeBSD"
-	    OLD_PWD=$PWD
-	    cd samba4/source4/heimdal/lib/roken
+	    pushd samba4/source4/heimdal/lib/roken
 	    sed "s/#if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__)/#if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__) || defined(__FreeBSD__)/g" rkpty.c > rkpty2.c
 	    mv rkpty2.c rkpty.c
 	    sed -e "54i\\
@@ -197,7 +197,7 @@ patch() {
 #include <libutil.h>\\
 #endif" rkpty.c > rkpty2.c
 	    mv rkpty2.c rkpty.c
-	    cd $OLD_PWD
+	    popd
 	    ;;
     esac
 
@@ -206,107 +206,65 @@ patch() {
 
 #
 # Compile and Install samba4 packages:
-# talloc, tdb
+# talloc, tdb, tevent, ldb
 #
 packages() {
-    OLD_PWD=$PWD
 
 #    delete_install
+    for lib in lib/talloc lib/tdb lib/tevent; do
+	echo "Building and installing $lib library"
+	pushd samba4/$lib
+	error_check $? "** $lib setup"
 
-    echo "Step1: Installing talloc library"
-    cd samba4/lib/talloc
-    error_check $? "Step1"
+	./autogen.sh
+	error_check $? "** $lib autogen"
 
-    ./autogen.sh
-    error_check $? "Step1"
+	./configure --prefix=$SAMBA_PREFIX
+	error_check $? "** $lib configure"
 
-    ./configure --prefix=/usr/local/samba
-    error_check $? "Step1"
+	make
+	error_check $? "** $lib make"
 
-    make
-    error_check $? "Step1"
+	if test -w `dirname $SAMBA_PREFIX`; then
+	    make install
+	    error_check $? "** $lib make install"
+	else
+	    sudo make install
+	    error_check $? "** $lib sudo make install"
+	fi
 
-    sudo make install
-    error_check $? "Step1"
+	make realdistclean
+	error_check $? "** $lib make realdistclean"
 
-    make realdistclean
-    error_check $? "Step1"
-
-    cd $OLD_PWD
-
-    echo "Step2: Installing tdb library"
-
-    cd samba4/lib/tdb
-    error_check $? "Step2"
-
-    ./autogen.sh
-    error_check $? "Step2"
-
-    ./configure --prefix=/usr/local/samba
-    error_check $? "Step2"
-
-    make
-    error_check $? "Step2"
-
-    sudo make install
-    error_check $? "Step2"
-
-    make realdistclean
-    error_check $? "Step2"
-
-    cd $OLD_PWD
-
-    echo "Step3: Installing tevent library"
-
-    cd samba4/lib/tevent
-    error_check $? "Step3"
-
-    ./autogen.sh
-    error_check $? "Step3"
-
-    ./configure --prefix=/usr/local/samba
-    error_check $? "Step3"
-
-    make
-    error_check $? "Step3"
-
-    sudo make install
-    error_check $? "Step3"
-
-    make realdistclean
-    error_check $? "Step3"
-
-    cd $OLD_PWD
+	popd
+    done
 }
 
 #
 # Compile Samba4
 #
 compile() {
-
-    OLD_PWD=$PWD
-
     delete_install
 
     # Cleanup tdb and talloc directories
-#    cleanup_talloc
-#    cleanup_tdb
+    #   cleanup_talloc
+    #   cleanup_tdb
 
     echo "Step1: Preparing Samba4 system"
-    cd samba4/source4
-    error_check $? "Step1"
+    pushd samba4/source4
+    error_check $? "samba4 setup"
 
     ./autogen-autotools.sh
-    error_check $? "Step1"
+    error_check $? "samba4 autogen"
 
-    ./configure.developer --enable-debug
-    error_check $? "Step1"
+    ./configure.developer --enable-debug --prefix=$SAMBA_PREFIX
+    error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"
-   	$MAKE -j3
-    error_check $? "Step3"
+   	$MAKE
+    error_check $? "samba4 make"
 
-    cd $OLD_PWD
+    popd
 }
 
 #
@@ -315,22 +273,36 @@ compile() {
 post_install() {
     case "$HOST_OS" in
 	*freebsd*)
-	    OLD_PWD=$PWD
-	    cd samba4/pidl
-	    sudo $MAKE install
-	    error_check $? "Step 1"
-	    cd $OLD_PWD
+	    pushd samba4/pidl
+	    error_check $? "post_install setup"
+	    if test -w `dirname $SAMBA_PREFIX`; then
+		$MAKE install
+		error_check $? "** post make install"
+	    else
+		sudo $MAKE install
+		error_check $? "** post sudo make install"
+	    fi
+	    popd
             echo "[+] Add comparison_fn_t support to ndr.h header file"
-            OLD_PWD=$PWD
-            cd /usr/local/samba/include
-            sudo sed -e "34i\\
+	    pushd $SAMBA_PREFIX/include
+	    if test -w $SAMBA_PREFIX/include; then
+		sed -e "34i\\
 #if defined(__FreeBSD__)\\
 # ifndef HAVE_COMPARISON_FN_T\\
 typedef int (*comparison_fn_t)(const void *, const void *);\\
 # endif\\
 #endif" ndr.h > /tmp/ndr.h
-            sudo mv /tmp/ndr.h ndr.h
-            cd $OLD_PWD
+		mv /tmp/ndr.h ndr.h
+	    else
+		sudo sed -e "34i\\
+#if defined(__FreeBSD__)\\
+# ifndef HAVE_COMPARISON_FN_T\\
+typedef int (*comparison_fn_t)(const void *, const void *);\\
+# endif\\
+#endif" ndr.h > /tmp/ndr.h
+		sudo mv /tmp/ndr.h ndr.h
+	    fi
+            popd
 	    ;;
     esac
 }
@@ -339,18 +311,19 @@ typedef int (*comparison_fn_t)(const void *, const void *);\\
 # Install Samba4
 #
 install() {
-
-    OLD_PWD=$PWD
-
     echo "Step1: Installing Samba"
     echo "===> we are in $PWD"
-    cd samba4/source4
-    error_check $? "Step1"
+    pushd samba4/source4
+    error_check $? "samba4 setup"
 
-    sudo $MAKE install
-    error_check $? "Step1"
-
-    cd $OLD_PWD
+    if test -w `dirname $SAMBA_PREFIX`; then
+	$MAKE install
+	error_check $? "samba4 install"
+    else
+	sudo $MAKE install
+	error_check $? "samba4 install"
+    fi
+    popd
 }
 
 

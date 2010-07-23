@@ -27,7 +27,7 @@
 
 #include "libocpf/ocpf.h"
 #include "libocpf/ocpf_api.h"
-#include "libmapi/defs_private.h"
+#include "libmapi/libmapi_private.h"
 #include "libmapi/mapidefs.h"
 
 struct ocpf_guid {

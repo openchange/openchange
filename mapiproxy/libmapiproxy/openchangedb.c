@@ -29,7 +29,6 @@
 #include "libmapiproxy.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
-#include "libmapi/defs_private.h"
 
 /**
    \details Retrieve the mailbox FolderID for given recipient from

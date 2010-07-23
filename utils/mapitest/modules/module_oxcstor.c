@@ -21,7 +21,7 @@
 
 #include "utils/mapitest/mapitest.h"
 #include "utils/mapitest/proto.h"
-#include "libmapi/defs_private.h"
+#include "libmapi/libmapi_private.h"
 
 /**
    \file module_oxcstor.c

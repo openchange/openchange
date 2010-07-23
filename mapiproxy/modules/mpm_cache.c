@@ -26,7 +26,7 @@
  */
 
 #include "libmapi/libmapi.h"
-#include "libmapi/defs_private.h"
+#include "libmapi/libmapi_private.h"
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/modules/mpm_cache.h"

@@ -29,7 +29,7 @@
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
-#include "libmapi/defs_private.h"
+#include "libmapi/libmapi_private.h"
 
 /**
    \details EcDoRpc SetColumns (0x12) Rop. This operation sets the

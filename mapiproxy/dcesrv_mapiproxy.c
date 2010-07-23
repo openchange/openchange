@@ -24,7 +24,8 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
 #include <dlinklist.h>
-#include "libmapi/defs_private.h"
+#include "libmapi/libmapi.h"
+#include "libmapi/libmapi_private.h"
 #include <util/debug.h>
 
 /**

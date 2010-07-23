@@ -20,7 +20,7 @@
 */
 
 #include "libmapi/libmapi.h"
-#include "libmapi/defs_private.h"
+#include "libmapi/libmapi_private.h"
 #include "libocpf/ocpf.h"
 #include <samba/popt.h>
 #include <param.h>

@@ -234,6 +234,9 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
 	$(INSTALL) -m 0644 gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	$(INSTALL) -m 0644 gen_ndr/property.h $(DESTDIR)$(includedir)/gen_ndr/
+	@$(SED) $(DESTDIR)$(includedir)/libmapi/*.h
+	@$(SED) $(DESTDIR)$(includedir)/libmapi/socket/*.h
+	@$(SED) $(DESTDIR)$(includedir)/gen_ndr/*.h
 
 libmapi-installscript:
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/profiles
@@ -369,6 +372,7 @@ libmapixx-installheader:
 	$(INSTALL) -m 0644 libmapi++/profile.h $(DESTDIR)$(includedir)/libmapi++/
 	$(INSTALL) -m 0644 libmapi++/property_container.h $(DESTDIR)$(includedir)/libmapi++/
 	$(INSTALL) -m 0644 libmapi++/session.h $(DESTDIR)$(includedir)/libmapi++/
+	@$(SED) $(DESTDIR)$(includedir)/libmapi++/*.h
 
 libmapixx-libs-clean:
 	rm -f libmapi++/src/*.po
@@ -515,6 +519,7 @@ libmapiadmin-installheader:
 	@echo "[*] install: libmapiadmin headers"
 	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapiadmin 
 	$(INSTALL) -m 0644 libmapiadmin/libmapiadmin.h $(DESTDIR)$(includedir)/libmapiadmin/
+	@$(SED) $(DESTDIR)$(includedir)/libmapiadmin/*.h
 
 libmapiadmin-uninstallpc:
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapiadmin.pc
@@ -585,6 +590,7 @@ libocpf-installheader:
 	@echo "[*] install: libocpf headers"
 	$(INSTALL) -d $(DESTDIR)$(includedir)/libocpf
 	$(INSTALL) -m 0644 libocpf/ocpf.h $(DESTDIR)$(includedir)/libocpf/
+	@$(SED) $(DESTDIR)$(includedir)/libocpf/*.h
 
 libocpf-uninstallpc:
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libocpf.pc
@@ -830,6 +836,7 @@ libmapiserver-install:
 	ln -sf libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiserver.$(SHLIBEXT)
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver/libmapiserver.h $(DESTDIR)$(includedir)/
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver.pc $(DESTDIR)$(libdir)/pkgconfig
+	@$(SED) $(DESTDIR)$(includedir)/*.h
 
 libmapiserver-clean:
 	rm -f mapiproxy/libmapiserver/*.po mapiproxy/libmapiserver/*.o
@@ -890,6 +897,7 @@ libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver.pc $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/mapistore
 	$(INSTALL) -m 0644 setup/mapistore/*.ldif $(DESTDIR)$(datadir)/setup/mapistore/
+	@$(SED) $(DESTDIR)$(includedir)/mapistore/*.h
 
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o

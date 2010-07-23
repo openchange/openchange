@@ -1,3 +1,28 @@
+2010-07-23
+    jkerihuel
+	[r2072]
+		Use sed in Makefile to replace local headers reference in installed headers
+	[r2071]
+		Use local headers rather than installed ones
+		Propagate this behavior to torture test suites and bindings
+	[r2070]
+		Remove libmapi/defs_private.h
+		Remove references to libmapi/defs_private.h in OpenChange tree
+	[r2069]
+		Remove auto-generated headers for libmapi:
+		- Add libmapi_private.h for private definitions
+		- Use libmapi.h for public definitions
+		
+		- Merge libmapi_private.h and defs_private.h
+		
+		Use local headers rather than installed ones
+		
+		Change libmapi compilation list to have ndr_exchange_c.h 
+		available for other libmapi C files.
+		
+		Remove references to libmapi/proto_private.h in OpenChange tree
+		Remove references to libmapi/defs_private.h in OpenChange tree
+
 2010-07-20
     bradh
 	[r2065]

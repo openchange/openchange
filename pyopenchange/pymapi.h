@@ -23,7 +23,7 @@
 #define	__PYMAPI_H_
 
 #include <Python.h>
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 #include <talloc.h>
 
 typedef struct {

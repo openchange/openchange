@@ -22,7 +22,7 @@
 typedef uint64_t NTTIME;
 struct ipv4_addr;
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 
 /**
  * Note: Most of these wrapper functions are useless and are just here

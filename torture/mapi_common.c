@@ -20,11 +20,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libmapi/libmapi.h>
-#include <torture/mapi_torture.h>
+#include "libmapi/libmapi.h"
+#include "torture/mapi_torture.h"
 #include <torture.h>
-#include <torture/torture_proto.h>
-#include <torture/mapi_torture.h>
+#include "torture/torture_proto.h"
 #include <param.h>
 
 const char *get_filename(const char *filename)

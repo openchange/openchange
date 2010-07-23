@@ -17,11 +17,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 #include <samba/popt.h>
-#include <torture/mapi_torture.h>
+#include "torture/mapi_torture.h"
 #include <torture.h>
-#include <torture/torture_proto.h>
+#include "torture/torture_proto.h"
 #include <smbtorture.h>
 
 NTSTATUS ndr_table_init(void);

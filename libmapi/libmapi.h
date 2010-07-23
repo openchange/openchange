@@ -56,19 +56,19 @@
 #include <gen_ndr/exchange.h>
 #include <gen_ndr/property.h>
 
-#include <libmapi/version.h>
-#include <libmapi/nspi.h>
-#include <libmapi/emsmdb.h>
-#include <libmapi/mapi_ctx.h>
-#include <libmapi/mapi_provider.h>
-#include <libmapi/mapi_object.h>
-#include <libmapi/mapi_id_array.h>
-#include <libmapi/mapi_notification.h>
-#include <libmapi/mapi_profile.h>
-#include <libmapi/mapi_nameid.h>
-#include <libmapi/mapidefs.h>
-#include <libmapi/mapicode.h>
-#include <libmapi/socket/netif.h>
+#include "libmapi/version.h"
+#include "libmapi/nspi.h"
+#include "libmapi/emsmdb.h"
+#include "libmapi/mapi_ctx.h"
+#include "libmapi/mapi_provider.h"
+#include "libmapi/mapi_object.h"
+#include "libmapi/mapi_id_array.h"
+#include "libmapi/mapi_notification.h"
+#include "libmapi/mapi_profile.h"
+#include "libmapi/mapi_nameid.h"
+#include "libmapi/mapidefs.h"
+#include "libmapi/mapicode.h"
+#include "libmapi/socket/netif.h"
 
 extern struct mapi_ctx *global_mapi_ctx;
 

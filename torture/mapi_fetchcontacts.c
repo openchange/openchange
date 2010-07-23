@@ -19,13 +19,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libmapi/libmapi.h>
-#include <gen_ndr/ndr_exchange.h>
+#include "libmapi/libmapi.h"
+#include "gen_ndr/ndr_exchange.h"
 #include <param.h>
 #include <credentials.h>
-#include <torture/mapi_torture.h>
+#include "torture/mapi_torture.h"
 #include <torture.h>
-#include <torture/torture_proto.h>
+#include "torture/torture_proto.h"
 #include <samba/popt.h>
 
 bool torture_rpc_mapi_fetchcontacts(struct torture_context *torture)

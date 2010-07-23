@@ -20,7 +20,7 @@
 #ifndef _PYMAPI_H_
 #define _PYMAPI_H_
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 #include <Python.h>
 
 /* mapi.Session */

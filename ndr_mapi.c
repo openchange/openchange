@@ -19,9 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 #include <ndr.h>
-#include <gen_ndr/ndr_exchange.h>
+#include "gen_ndr/ndr_exchange.h"
 
 
 static void obfuscate_data(uint8_t *data, uint32_t size, uint8_t salt)

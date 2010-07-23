@@ -28,13 +28,13 @@
 		- torture_leave_domain
  */
 
-#include <libmapi/libmapi.h>
-#include <gen_ndr/ndr_exchange.h>
+#include "libmapi/libmapi.h"
+#include "gen_ndr/ndr_exchange.h"
 #include <param.h>
 #include <credentials.h>
-#include <torture/mapi_torture.h>
+#include "torture/mapi_torture.h"
 #include <torture.h>
-#include <torture/torture_proto.h>
+#include "torture/torture_proto.h"
 #include <samba/popt.h>
 #include <ldb.h>
 #include <ldb_errors.h>

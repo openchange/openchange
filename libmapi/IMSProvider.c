@@ -17,11 +17,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libmapi/libmapi.h>
-#include <libmapi/mapicode.h>
-#include <libmapi/proto_private.h>
-#include <gen_ndr/ndr_exchange.h>
-#include <gen_ndr/ndr_exchange_c.h>
+#include "libmapi/libmapi.h"
+#include "libmapi/mapicode.h"
+#include "libmapi/libmapi_private.h"
+#include "gen_ndr/ndr_exchange.h"
+#include "gen_ndr/ndr_exchange_c.h"
 #include <core/error.h>
 #include <param.h>
 

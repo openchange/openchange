@@ -23,8 +23,7 @@
 #define	__DCESRV_EXCHANGE_EMSMDB_H
 
 #include "libmapi/libmapi.h"
-#include "libmapi/proto_private.h"
-#include "libmapi/defs_private.h"
+#include "libmapi/libmapi_private.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"

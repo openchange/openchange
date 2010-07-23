@@ -20,10 +20,10 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include <libmapi/libmapi.h>
-#include <libmapi/proto_private.h>
-#include <gen_ndr/ndr_exchange.h>
-#include <gen_ndr/ndr_exchange_c.h>
+#include "libmapi/libmapi.h"
+#include "libmapi/libmapi_private.h"
+#include "gen_ndr/ndr_exchange.h"
+#include "gen_ndr/ndr_exchange_c.h"
 #include <gen_ndr/ndr_misc.h>
 
 #include <param.h>

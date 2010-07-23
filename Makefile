@@ -153,7 +153,6 @@ LIBMAPI_SO_VERSION = 0
 
 libmapi:	idl					\
 		libmapi/version.h			\
-		libmapi/proto.h				\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)	
 
 libmapi-install:	libmapi			\
@@ -178,8 +177,6 @@ ifneq ($(SNAPSHOT), no)
 	rm -f libmapi/mapitags.c libmapi/mapitags.h
 	rm -f libmapi/codepage_lcid.c
 	rm -f libmapi/mapi_nameid.h libmapi/mapi_nameid_private.h
-	rm -f libmapi/proto.h
-	rm -f libmapi/proto_private.h
 	rm -f mapicodes_enum.h
 	rm -f mapitags_enum.h
 endif
@@ -222,7 +219,6 @@ libmapi-installheader:
 	$(INSTALL) -d $(DESTDIR)$(includedir)/libmapi/socket 
 	$(INSTALL) -d $(DESTDIR)$(includedir)/gen_ndr
 	$(INSTALL) -m 0644 libmapi/libmapi.h $(DESTDIR)$(includedir)/libmapi/
-	$(INSTALL) -m 0644 libmapi/proto.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/nspi.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/emsmdb.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapi_ctx.h $(DESTDIR)$(includedir)/libmapi/
@@ -259,6 +255,7 @@ libmapi-uninstallscript:
 	rm -rf $(DESTDIR)$(datadir)/setup/profiles
 
 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
+	libmapi/emsmdb.po				\
 	libmapi/IABContainer.po				\
 	libmapi/IProfAdmin.po				\
 	libmapi/IMAPIContainer.po			\
@@ -286,7 +283,6 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/mapicode.po 				\
 	libmapi/codepage_lcid.po			\
 	libmapi/mapi_nameid.po				\
-	libmapi/emsmdb.po				\
 	libmapi/nspi.po 				\
 	libmapi/simple_mapi.po				\
 	libmapi/freebusy.po				\
@@ -306,44 +302,6 @@ libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION): libmapi.$(SHLIBEXT).$(PACKAGE_VERSION
 
 libmapi/version.h: VERSION
 	@./script/mkversion.sh 	VERSION libmapi/version.h $(PACKAGE_VERSION) $(top_builddir)/
-
-libmapi/proto.h libmapi/proto_private.h:		\
-	libmapi/nspi.c					\
-	libmapi/emsmdb.c				\
-	libmapi/cdo_mapi.c				\
-	libmapi/simple_mapi.c				\
-	libmapi/mapitags.c				\
-	libmapi/mapicode.c				\
-	libmapi/codepage_lcid.c				\
-	libmapi/mapidump.c				\
-	libmapi/mapi_object.c				\
-	libmapi/mapi_id_array.c				\
-	libmapi/mapi_nameid.c				\
-	libmapi/property.c				\
-	libmapi/IABContainer.c				\
-	libmapi/IProfAdmin.c				\
-	libmapi/IMAPIContainer.c			\
-	libmapi/IMAPIFolder.c 				\
-	libmapi/IMAPIProp.c 				\
-	libmapi/IMAPISession.c				\
-	libmapi/IMAPISupport.c				\
-	libmapi/IMAPITable.c 				\
-	libmapi/IMSProvider.c				\
-	libmapi/IMessage.c 				\
-	libmapi/IMsgStore.c 				\
-	libmapi/IStoreFolder.c				\
-	libmapi/IUnknown.c 				\
-	libmapi/IStream.c				\
-	libmapi/IXPLogon.c				\
-	libmapi/FXICS.c					\
-	libmapi/freebusy.c				\
-	libmapi/x500.c 					\
-	libmapi/lzfu.c					\
-	libmapi/utils.c 				\
-	libmapi/socket/interface.c			\
-	libmapi/socket/netif.c		
-	@echo "Generating $@"
-	@./script/mkproto.pl --private=libmapi/proto_private.h --public=libmapi/proto.h $^
 
 libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 

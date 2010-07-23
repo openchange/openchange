@@ -23,7 +23,7 @@
 #define	__DCESRV_EXCHANGE_NSP_H
 
 #include "libmapi/libmapi.h"
-#include "libmapi/proto_private.h"
+#include "libmapi/libmapi_private.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include <ldb.h>
 #include <ldb_errors.h>

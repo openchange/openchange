@@ -23,6 +23,8 @@
    \brief OCPF context API
  */
 
+#include <sys/stat.h>
+
 #include "libocpf/ocpf.h"
 #include "libocpf/ocpf_api.h"
 

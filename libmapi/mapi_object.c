@@ -2,6 +2,7 @@
    OpenChange MAPI implementation.
 
    Copyright (C) Fabien Le Mentec 2007.
+   Copyright (C) Julien Kerihuel 2007-2010.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,9 +18,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libmapi/libmapi.h>
-#include <libmapi/proto_private.h>
-#include <libmapi/defs_private.h>
+#include "libmapi/libmapi.h"
+#include "libmapi/libmapi_private.h"
 
 /**
    \file mapi_object.c

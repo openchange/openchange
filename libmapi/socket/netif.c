@@ -35,7 +35,7 @@
 #include <sys/sockio.h>
 #endif
 
-#include <libmapi/libmapi.h>
+#include "libmapi/libmapi.h"
 
 #ifdef __COMPAR_FN_T
 #define QSORT_CAST (__compar_fn_t)

@@ -17,10 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libmapi/libmapi.h>
-#include <libmapi/mapidump.h>
-#include <libmapi/defs_private.h>
-#include <libmapi/proto_private.h>
+#include "libmapi/libmapi.h"
+#include "libmapi/libmapi_private.h"
+#include "libmapi/mapidump.h"
 #include <time.h>
 
 #ifdef ENABLE_ASSERTS

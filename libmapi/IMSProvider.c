@@ -350,6 +350,7 @@ enum MAPISTATUS GetNewLogonId(struct mapi_session *session, uint8_t *logon_id)
    UDP port to receive Exchange (server side) notifications and
    configures the server to send notifications on this port.
 
+   \param session the session context to register for notifications on.
    \param ulEventMask the mask of events to provide notifications for.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.

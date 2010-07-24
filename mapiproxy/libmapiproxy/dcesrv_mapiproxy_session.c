@@ -33,7 +33,7 @@
    \details Create and return an allocated pointer to a mpm session
 
    \param mem_ctx pointer to the memory context
-   \param server_id reference to the session context server identifier
+   \param serverid reference to the session context server identifier
    structure
    \param context_id reference to the context identifier
 
@@ -41,7 +41,7 @@
    otherwise NULL
  */
 struct mpm_session *mpm_session_new(TALLOC_CTX *mem_ctx, 
-				     struct server_id server_id,
+				     struct server_id serverid,
 				     uint32_t context_id)
 {
 	struct mpm_session	*session = NULL;
@@ -51,9 +51,9 @@ struct mpm_session *mpm_session_new(TALLOC_CTX *mem_ctx,
 	session = talloc_zero(mem_ctx, struct mpm_session);
 	if (!session) return NULL;
 
-	session->server_id.id = server_id.id;
-	session->server_id.id2 = server_id.id2;
-	session->server_id.node = server_id.node;
+	session->server_id.id = serverid.id;
+	session->server_id.id2 = serverid.id2;
+	session->server_id.node = serverid.node;
 	session->context_id = context_id;
 	session->ref_count = 0;
 	session->destructor = NULL;

@@ -30,33 +30,33 @@
 /**
    \details Calculate the size of a TypedString structure
 
-   \param TypedString TypedString structure
+   \param typedstring TypedString structure
 
-   \return Size of TypedString structure
+   \return Size of typedstring structure
  */
-_PUBLIC_ uint16_t libmapiserver_TypedString_size(struct TypedString TypedString)
+_PUBLIC_ uint16_t libmapiserver_TypedString_size(struct TypedString typedstring)
 {
 	uint16_t	size = 0;
 
 	size += sizeof (uint8_t);
 
-	switch (TypedString.StringType) {
+	switch (typedstring.StringType) {
 	case StringType_NONE:
 	case StringType_EMPTY:
 		break;
 	case StringType_STRING8:
-		if (TypedString.String.lpszA) {
-			size += strlen(TypedString.String.lpszA) + 1;
+		if (typedstring.String.lpszA) {
+			size += strlen(typedstring.String.lpszA) + 1;
 		}
 		break;
 	case StringType_UNICODE_REDUCED:
-		if (TypedString.String.lpszW_reduced) {
-			size += strlen(TypedString.String.lpszW_reduced) + 1;
+		if (typedstring.String.lpszW_reduced) {
+			size += strlen(typedstring.String.lpszW_reduced) + 1;
 		}
 		break;
 	case StringType_UNICODE:
-		if (TypedString.String.lpszW) {
-			size += strlen(TypedString.String.lpszW) * 2 + 2;
+		if (typedstring.String.lpszW) {
+			size += strlen(typedstring.String.lpszW) * 2 + 2;
 		}
 		break;
 	}
@@ -68,11 +68,11 @@ _PUBLIC_ uint16_t libmapiserver_TypedString_size(struct TypedString TypedString)
 /**
    \details Calculate the size of a RecipientRow structure
 
-   \param RecipientRow RecipientRow structure
+   \param recipientrow RecipientRow structure
 
    \return Size of RecipientRow structure
  */
-_PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow RecipientRow)
+_PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow recipientrow)
 {
 	uint16_t	size = 0;
 
@@ -80,10 +80,10 @@ _PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow RecipientR
 	size += sizeof (uint16_t);
 
 	/* recipient_type */
-	switch (RecipientRow.RecipientFlags & 0x7) {
+	switch (recipientrow.RecipientFlags & 0x7) {
 	case 0x1:
 		size += sizeof (uint8_t) * 2; /* org_length + addr_type */
-		size += strlen(RecipientRow.type.EXCHANGE.username) + 1;
+		size += strlen(recipientrow.type.EXCHANGE.username) + 1;
 		break;
 	case 0x3:
 		break;
@@ -92,48 +92,48 @@ _PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow RecipientR
 	}
 
 	/* recipient_EmailAddress */
-	switch (RecipientRow.RecipientFlags & 0x208) {
+	switch (recipientrow.RecipientFlags & 0x208) {
 	case 0x8:
-		size += strlen(RecipientRow.EmailAddress.lpszA);
+		size += strlen(recipientrow.EmailAddress.lpszA);
 		break;
 	case 0x208:
-		size += strlen(RecipientRow.EmailAddress.lpszW) * 2 + 2;
+		size += strlen(recipientrow.EmailAddress.lpszW) * 2 + 2;
 		break;
 	default:
 		break;
 	}
 
 	/* recipient_DisplayName */
-	switch (RecipientRow.RecipientFlags & 0x210) {
+	switch (recipientrow.RecipientFlags & 0x210) {
 	case 0x10:
-		size += strlen(RecipientRow.DisplayName.lpszA);
+		size += strlen(recipientrow.DisplayName.lpszA);
 		break;
 	case 0x210:
-		size += strlen(RecipientRow.DisplayName.lpszW) * 2 + 2;
+		size += strlen(recipientrow.DisplayName.lpszW) * 2 + 2;
 		break;
 	default:
 		break;
 	}
 
 	/* recipient_SimpleDisplayName */
-	switch (RecipientRow.RecipientFlags & 0x600) {
+	switch (recipientrow.RecipientFlags & 0x600) {
 	case 0x400:
-		size += strlen(RecipientRow.SimpleDisplayName.lpszA);
+		size += strlen(recipientrow.SimpleDisplayName.lpszA);
 		break;
 	case 0x600:
-		size += strlen(RecipientRow.SimpleDisplayName.lpszW) * 2 + 2;
+		size += strlen(recipientrow.SimpleDisplayName.lpszW) * 2 + 2;
 		break;
 	default:
 		break;
 	}
 
 	/* recipient_TransmittableDisplayName */
-	switch (RecipientRow.RecipientFlags & 0x260) {
+	switch (recipientrow.RecipientFlags & 0x260) {
 	case 0x20:
-		size += strlen(RecipientRow.TransmittableDisplayName.lpszA);
+		size += strlen(recipientrow.TransmittableDisplayName.lpszA);
 		break;
 	case 0x220:
-		size += strlen(RecipientRow.TransmittableDisplayName.lpszW) * 2 + 2;
+		size += strlen(recipientrow.TransmittableDisplayName.lpszW) * 2 + 2;
 		break;
 	default:
 		break;
@@ -147,7 +147,7 @@ _PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow RecipientR
 
 	/* prop_values */
 	size += sizeof (uint16_t);
-	size += RecipientRow.prop_values.length;
+	size += recipientrow.prop_values.length;
 
 	return size;
 }

@@ -740,13 +740,13 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 
    \param aRow pointer to the SRow array where SPropBalue should be
    appended
-   \param SPropValue reference to the SPropValue structure to add to
+   \param spropvalue reference to the SPropValue structure to add to
    aRow
 
    \return MAPI_E_SUCCESS on success, otherwise
    MAPI_E_INVALID_PARAMETER.
  */
-_PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SPropValue)
+_PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue spropvalue)
 {
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		cValues;
@@ -760,8 +760,8 @@ _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SProp
 
 	/* If the property tag already exist, overwrite its value */
 	for (i = 0; i < aRow->cValues; i++) {
-		if (aRow->lpProps[i].ulPropTag == SPropValue.ulPropTag) {
-			aRow->lpProps[i] = SPropValue;
+		if (aRow->lpProps[i].ulPropTag == spropvalue.ulPropTag) {
+			aRow->lpProps[i] = spropvalue;
 			return MAPI_E_SUCCESS;
 		}
 	}
@@ -769,9 +769,9 @@ _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SProp
 	cValues = aRow->cValues + 1;
 	aRow->lpProps = talloc_realloc(mem_ctx, aRow->lpProps, struct SPropValue, cValues);
 	lpProp = aRow->lpProps[cValues-1];
-	lpProp.ulPropTag = SPropValue.ulPropTag;
+	lpProp.ulPropTag = spropvalue.ulPropTag;
 	lpProp.dwAlignPad = 0;
-	set_SPropValue(&(lpProp), get_SPropValue_data(&SPropValue));
+	set_SPropValue(&(lpProp), get_SPropValue_data(&spropvalue));
 	aRow->cValues = cValues;
 	aRow->lpProps[cValues - 1] = lpProp;
 
@@ -784,11 +784,11 @@ _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue SProp
 
    \param mem_ctx pointer to the memory context
    \param SRowSet pointer to the SRowSet array to update
-   \param SPropValue the SPropValue to append within SRowSet
+   \param spropvalue the SPropValue to append within SRowSet
 
    \return 0 on success, otherwise 1
  */
-_PUBLIC_ uint32_t SRowSet_propcpy(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, struct SPropValue SPropValue)
+_PUBLIC_ uint32_t SRowSet_propcpy(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, struct SPropValue spropvalue)
 {
 	uint32_t		rows;
 	uint32_t		cValues;
@@ -801,9 +801,9 @@ _PUBLIC_ uint32_t SRowSet_propcpy(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, 
 		cValues = SRowSet->aRow[rows].cValues + 1;
 		SRowSet->aRow[rows].lpProps = talloc_realloc(mem_ctx, SRowSet->aRow[rows].lpProps, struct SPropValue, cValues);
 		lpProp = SRowSet->aRow[rows].lpProps[cValues-1];
-		lpProp.ulPropTag = SPropValue.ulPropTag;
+		lpProp.ulPropTag = spropvalue.ulPropTag;
 		lpProp.dwAlignPad = 0;
-		set_SPropValue(&(lpProp), (void *)&SPropValue.value);
+		set_SPropValue(&(lpProp), (void *)&spropvalue.value);
 		SRowSet->aRow[rows].cValues = cValues;
 		SRowSet->aRow[rows].lpProps[cValues - 1] = lpProp;
 	}

@@ -185,7 +185,7 @@ _PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
 
    \param obj_store the store object
    \param obj_message the message object we want to lock
-   \param LockState the lock state
+   \param lockstate the lock state
 
    Possible values for the lock state:
    -# LockState_1stLock (0x0): Mark the message as locked
@@ -206,7 +206,7 @@ _PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
  */
 _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 					    mapi_object_t *obj_message, 
-					    enum LockState LockState)
+					    enum LockState lockstate)
 {
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
@@ -223,7 +223,7 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(LockState > 2, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(lockstate > 2, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
@@ -238,7 +238,7 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 	request.MessageId = mapi_object_get_id(obj_message);
 	size += sizeof (uint64_t);
 
-	request.LockState = LockState;
+	request.LockState = lockstate;
 	size += sizeof (uint8_t);
 
 	/* Fill the MAPI_REQ request */

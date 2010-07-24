@@ -330,9 +330,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
    \param folderID the folder identifier
-   \param mailboxstore boolean value which specifies whether the
-   folder is within mailbox private hierarchy or within public folders
-   one.
+   \param parent handle to the parent folder for this folder
 
    \return Allocated emsmdbp object on success, otherwise NULL
  */

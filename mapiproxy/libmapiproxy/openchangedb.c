@@ -276,7 +276,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *ldb_ctx,
 							      uint16_t *ReplID,
-							      struct GUID *GUID)
+							      struct GUID *ReplGUID)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct ldb_result		*res = NULL;
@@ -287,7 +287,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *ldb_ctx,
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!ReplID, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!GUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ReplGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "get_PublicFolderReplica");
 
@@ -304,7 +304,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *ldb_ctx,
 	guid = ldb_msg_find_attr_as_string(res->msgs[0], "StoreGUID", 0);
 	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_CORRUPT_STORE, mem_ctx);
 
-	GUID_from_string(guid, GUID);
+	GUID_from_string(guid, ReplGUID);
 
 	talloc_free(mem_ctx);
 

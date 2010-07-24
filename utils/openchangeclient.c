@@ -2799,6 +2799,7 @@ int main(int argc, const char *argv[])
 	bool			opt_ocpf_sender = false;
 	const char		*opt_profdb = NULL;
 	char			*opt_profname = NULL;
+	const char		*opt_username = NULL;
 	const char		*opt_password = NULL;
 	const char		*opt_attachments = NULL;
 	const char		*opt_fetchitems = NULL;
@@ -2819,7 +2820,8 @@ int main(int argc, const char *argv[])
 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
 	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE,
 	      OPT_UPDATE, OPT_DELETEITEMS, OPT_OCPF_FILE, OPT_OCPF_SYNTAX,
-	      OPT_OCPF_SENDER, OPT_OCPF_DUMP, OPT_FREEBUSY, OPT_FORCE, OPT_FETCHSUMMARY};
+	      OPT_OCPF_SENDER, OPT_OCPF_DUMP, OPT_FREEBUSY, OPT_FORCE, OPT_FETCHSUMMARY,
+	      OPT_USERNAME };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -2827,6 +2829,7 @@ int main(int argc, const char *argv[])
 		{"pf", 0, POPT_ARG_NONE, NULL, OPT_PF, "access public folders instead of mailbox", NULL },
 		{"profile", 'p', POPT_ARG_STRING, NULL, OPT_PROFILE, "set the profile name", NULL },
 		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password", NULL },
+		{"username", 0, POPT_ARG_STRING, NULL, OPT_USERNAME, "set the username of the mailbox to use", NULL },
 		{"sendmail", 'S', POPT_ARG_NONE, NULL, OPT_SENDMAIL, "send a mail", NULL },
 		{"sendappointment", 0, POPT_ARG_NONE, NULL, OPT_SENDAPPOINTMENT, "send an appointment", NULL },
 		{"sendcontact", 0, POPT_ARG_NONE, NULL, OPT_SENDCONTACT, "send a contact", NULL },
@@ -2925,6 +2928,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_PASSWORD:
 			opt_password = poptGetOptArg(pc);
+			break;
+		case OPT_USERNAME:
+			opt_username = talloc_strdup(mem_ctx, poptGetOptArg(pc));
 			break;
 		case OPT_MAILBOX:
 			opt_mailbox = true;
@@ -3184,6 +3190,12 @@ int main(int argc, const char *argv[])
 		retval = OpenPublicFolder(session, &obj_store);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("OpenPublicFolder", GetLastError());
+			exit (1);
+		}
+	} else if (opt_username) {
+		retval = OpenUserMailbox(session, opt_username, &obj_store);
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_errstr("OpenUserMailbox", GetLastError());
 			exit (1);
 		}
 	} else {

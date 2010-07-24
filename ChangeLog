@@ -1,3 +1,16 @@
+2010-07-24
+    bradh
+	[r2077]
+		Rename a few function arguments to avoid doxygen warnings.
+		
+		This is a workaround, but will allow easier checking for the future.
+	[r2076]
+		Update doxygen configuration to match latest version
+	[r2075]
+		Add missing doxygen parameter information.
+	[r2074]
+		Fix a couple of doxygen issues.
+
 2010-07-23
     jkerihuel
 	[r2072]

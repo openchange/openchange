@@ -1,4 +1,8 @@
 2010-07-24
+    jkerihuel
+	[r2079]
+		Very basic use of OpenUserMailbox in openchangeclient.
+		Doesn't handle clustered Exchange servers.
     bradh
 	[r2077]
 		Rename a few function arguments to avoid doxygen warnings.

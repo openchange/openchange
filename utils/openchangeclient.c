@@ -421,6 +421,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	printf("MAILBOX (%u messages)\n", count);
+	if (!count) goto end;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
 					  PR_FID,
@@ -521,7 +522,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 			mapi_object_release(&obj_message);
 		}
 	}
-
+ end:
 	mapi_object_release(&obj_table);
 	mapi_object_release(&obj_inbox);
 	mapi_object_release(&obj_tis);

@@ -1,3 +1,10 @@
+2010-07-26
+    jkerihuel
+	[r2087]
+		Fix a crash in openchangeclient vs Exchange 2010:
+		When Queryrows is called on Exchange 2010 and no rows are available, QueryRows returns MAPI_E_NOT_IMPLEMENTED error (0x8004FFFF).
+		Ensure we have at least one message to fetch in openchangeclient --fetchmail prior calling QueryRows.
+
 2010-07-24
     jkerihuel
 	[r2079]

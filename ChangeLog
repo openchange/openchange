@@ -1,3 +1,12 @@
+2010-07-28
+    bradh
+	[r2090]
+		Fix RecipientRow IDL to match MS-OXCDATA 2.9.3
+		
+		This allows handling of addresses that contain X400 format content.
+		
+		Patch by Samuel Sieb and I, resolves ticket #250.
+
 2010-07-26
     jkerihuel
 	[r2087]

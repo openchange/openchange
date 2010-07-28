@@ -389,9 +389,9 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 	}
 
 	row->RecipientFlags = 0x06d1;
-	row->type.EXCHANGE.organization_length = org_length;
-	row->type.EXCHANGE.addr_type = SINGLE_RECIPIENT;
-	row->type.EXCHANGE.username = talloc_strdup(mem_ctx, username);
+	row->AddressPrefixUsed.prefix_size = org_length;
+	row->DisplayType.display_type = SINGLE_RECIPIENT;
+	row->X500DN.recipient_x500name = talloc_strdup(mem_ctx, username);
 
 	row->DisplayName.lpszW = talloc_strdup(mem_ctx, username);
 	row->SimpleDisplayName.lpszW = talloc_strdup(mem_ctx, username);

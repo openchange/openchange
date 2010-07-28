@@ -80,15 +80,9 @@ _PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow recipientr
 	size += sizeof (uint16_t);
 
 	/* recipient_type */
-	switch (recipientrow.RecipientFlags & 0x7) {
-	case 0x1:
-		size += sizeof (uint8_t) * 2; /* org_length + addr_type */
-		size += strlen(recipientrow.type.EXCHANGE.username) + 1;
-		break;
-	case 0x3:
-		break;
-	default:
-		break;
+	if (recipientrow.RecipientFlags & 0x1) {
+		size += sizeof (uint8_t) * 2; /* AddressPrefixUsed + DisplayType */
+		size += strlen(recipientrow.X500DN.recipient_x500name) + 1;
 	}
 
 	/* recipient_EmailAddress */

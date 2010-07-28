@@ -780,17 +780,17 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 		switch (RecipientRow->RecipientFlags & 0x7) {
 		case 0x1: 
 		  //			RecipientRow->type.EXCHANGE.organization_length = mapi_recipients_get_org_length(session->profile);
-			RecipientRow->type.EXCHANGE.organization_length = 0;
-			RecipientRow->type.EXCHANGE.addr_type = SINGLE_RECIPIENT;
+			RecipientRow->AddressPrefixUsed.prefix_size = 0;
+			RecipientRow->DisplayType.display_type = SINGLE_RECIPIENT;
 			switch (RecipientRow->RecipientFlags & 0x200) {
 			case 0x0:
-				RecipientRow->type.EXCHANGE.username = (const char *) find_SPropValue_data(aRow, PR_EMAIL_ADDRESS);
+				RecipientRow->X500DN.recipient_x500name = (const char *) find_SPropValue_data(aRow, PR_EMAIL_ADDRESS);
 				break;
 			case 0x200:
-				RecipientRow->type.EXCHANGE.username = (const char *) find_SPropValue_data(aRow, PR_EMAIL_ADDRESS_UNICODE);
+				RecipientRow->X500DN.recipient_x500name = (const char *) find_SPropValue_data(aRow, PR_EMAIL_ADDRESS_UNICODE);
 				break;
 			}
-			size += sizeof(uint32_t) + strlen(RecipientRow->type.EXCHANGE.username) + 1;
+			size += sizeof(uint32_t) + strlen(RecipientRow->X500DN.recipient_x500name) + 1;
 			break;
 		case 0x3:
 			size += sizeof(uint16_t);

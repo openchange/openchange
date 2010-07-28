@@ -1173,46 +1173,60 @@ System Attendant Private Interface
 		DISTRIBUTION_LIST	= 0x1
 	} addr_type;
 
-	typedef  [flag(NDR_NOALIGN)]struct {
-		uint8		organization_length;
-		addr_type	addr_type;
-		astring		username;
-	} RecipExchange;
-
-	typedef [flag(NDR_NOALIGN)] struct {
-	} RecipSMTP;
-
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x1)] RecipExchange	EXCHANGE;
-		[case(0x3)] RecipSMTP		SMTP;
+		[case(0x1)] uint8	prefix_size;
 		[default];
-	} recipient_type;
+	} recipient_AddressPrefixUsed;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x0)];
+		[case(0x1)] addr_type	display_type;
+		[default];
+	} recipient_DisplayType;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x1)] astring	recipient_x500name;
+		[default];
+	} recipient_X500DN;
+
+	/* We're covering the PersonalDistributionList1 (0x0006) and PersonalDistributionList2
+           (0x0007) variations here, since we mask off the low bit in the switch. */
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x6)] SBinary_short			entryid;
+		[default];
+	} recipient_EntryId;
+
+	/* We're covering the PersonalDistributionList1 (0x0006) and PersonalDistributionList2
+           (0x0007) variations here, since we mask off the low bit in the switch. */
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x6)] SBinary_short			searchkey;
+		[default];
+	} recipient_SearchKey;
+
+	/* Present if the Type field is set to NoType (0x0) and the O flag (0x8000) is set */
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x8000)] astring				lpszA;
+		[default];
+	} recipient_AddressType;
+
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x400)] astring				lpszA;
 		[case(0x600)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
 	} recipient_SimpleDisplayName;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x0)];
-		[case(0x60)];
-		[case(0x260)];
 		[case(0x20)] astring				lpszA;
 		[case(0x220)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
 	} recipient_TransmittableDisplayName;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x0)];
 		[case(0x10)] astring				lpszA;
 		[case(0x210)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
 	} recipient_DisplayName;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x0)];
 		[case(0x8)] astring				lpszA;
 		[case(0x208)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
@@ -1220,13 +1234,20 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16									RecipientFlags;
-		[switch_is(RecipientFlags & 0x7)]   recipient_type			type;
-		[switch_is(RecipientFlags & 0x208)] recipient_EmailAddress	       	EmailAddress;
-		[switch_is(RecipientFlags & 0x210)] recipient_DisplayName		DisplayName;
-		[switch_is(RecipientFlags & 0x600)] recipient_SimpleDisplayName    	SimpleDisplayName;
-		[switch_is(RecipientFlags & 0x260)] recipient_TransmittableDisplayName	TransmittableDisplayName;
+		[switch_is(RecipientFlags & 0x0007)] recipient_AddressPrefixUsed	AddressPrefixUsed;
+		[switch_is(RecipientFlags & 0x0007)] recipient_DisplayType		DisplayType;
+		[switch_is(RecipientFlags & 0x0007)] recipient_X500DN			X500DN;
+		[switch_is(RecipientFlags & 0x0006)] recipient_EntryId			EntryId;
+		[switch_is(RecipientFlags & 0x0006)] recipient_SearchKey		SearchKey;
+		[switch_is(RecipientFlags & 0x8007)] recipient_AddressType		AddressType;
+		[switch_is(RecipientFlags & 0x0208)] recipient_EmailAddress		EmailAddress;
+		[switch_is(RecipientFlags & 0x0210)] recipient_DisplayName		DisplayName;
+		[switch_is(RecipientFlags & 0x0600)] recipient_SimpleDisplayName	SimpleDisplayName;
+		[switch_is(RecipientFlags & 0x0220)] recipient_TransmittableDisplayName	TransmittableDisplayName;
 		uint16									prop_count;
+// TODO: figure out if "layout" can go
 		uint8									layout;
+// TODO: convert this to a proper structure - see if we already have one.
 		[flag(NDR_REMAINING)] DATA_BLOB						prop_values;
 	} RecipientRow;
 

@@ -1,3 +1,19 @@
+2010-07-29
+    bradh
+	[r2095]
+		Another trivial API documentation fix.
+	[r2094]
+		More trivial API documentation fixes.
+	[r2093]
+		Minor API documentation fix.
+	[r2092]
+		Implement some null pointer checks.
+		
+		Also rewords some API documentation.
+		
+		Original issue and patch by Erik Hovland - thanks again. I implemented it
+		with some slight changes.
+
 2010-07-28
     bradh
 	[r2090]

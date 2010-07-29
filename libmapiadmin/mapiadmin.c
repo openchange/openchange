@@ -50,7 +50,7 @@ _PUBLIC_ struct mapiadmin_ctx *mapiadmin_init(struct mapi_session *session)
 /**
 	Clean up a mapiadmin_ctx structure
 
-	The structure is assumed to have been allocated uding mapiadmin_init() or
+	The structure is assumed to have been allocated using mapiadmin_init() or
 	equivalent code.
 */
 _PUBLIC_ enum MAPISTATUS mapiadmin_release(struct mapiadmin_ctx *mapiadmin_ctx)

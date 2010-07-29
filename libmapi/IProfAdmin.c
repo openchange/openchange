@@ -87,7 +87,7 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 }
 
 /**
- * Search for and attribute within profiles
+ * Remove the "default" attribute from whichever profile is currently the default profile
  */
 static enum MAPISTATUS ldb_clear_default_profile(TALLOC_CTX *mem_ctx)
 {
@@ -156,7 +156,7 @@ static enum MAPISTATUS ldb_test_password(TALLOC_CTX *mem_ctx, const char *profil
 }
 
 
-/*
+/**
  * Add a profile to the database with default fields
  */
 static enum MAPISTATUS ldb_create_profile(TALLOC_CTX *mem_ctx,

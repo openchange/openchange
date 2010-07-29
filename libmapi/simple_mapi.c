@@ -664,8 +664,8 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 /**
    \details Remove permissions for a user on a given folder
 
-   \param obj_folder the folder we add permission for
-   \param username the Exchange username we remove permissions for
+   \param obj_folder the folder to remove permission from
+   \param username the Exchange username to remove permissions for
 
    \return MAPI_E_SUCCESS on success, otherwise a failure code (MAPISTATUS)
    indicating the error.

@@ -545,8 +545,8 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 /**
    \details Modify permissions for a user on a given folder
    
-   \param obj_folder the folder we add permission for
-   \param username the Exchange username we modify permissions for
+   \param obj_folder the folder to modify permissions for
+   \param username the Exchange username to modify permissions for
    \param role the permission mask value (see AddUserPermission)
 
    \return MAPI_E_SUCCESS on success, otherwise a failure code (MAPISTATUS)
@@ -635,6 +635,9 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 				rowList.PermissionsData[0].lpProps.cValues = 2;
 				rowList.PermissionsData[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
 				lpProp = get_SPropValue_SRow(&(rowset.aRow[i]), PR_MEMBER_ID);
+				if (!lpProp) {
+					continue;
+				}
 				rowList.PermissionsData[0].lpProps.lpProps[0].ulPropTag = PR_MEMBER_ID;
 				rowList.PermissionsData[0].lpProps.lpProps[0].value.d = lpProp->value.d;
 				rowList.PermissionsData[0].lpProps.lpProps[1].ulPropTag = PR_MEMBER_RIGHTS;
@@ -742,6 +745,9 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 				rowList.PermissionsData[0].lpProps.cValues = 1;
 				rowList.PermissionsData[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 1);
 				lpProp = get_SPropValue_SRow(&(rowset.aRow[i]), PR_MEMBER_ID);
+				if (!lpProp) {
+					continue;
+				}
 				rowList.PermissionsData[0].lpProps.lpProps[0].ulPropTag = PR_MEMBER_ID;
 				rowList.PermissionsData[0].lpProps.lpProps[0].value.d = lpProp->value.d;
 				

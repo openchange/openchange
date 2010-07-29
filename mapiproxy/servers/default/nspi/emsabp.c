@@ -1048,7 +1048,13 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 				 "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
 				 recipient);
 
-		if (ret != LDB_SUCCESS || !res->count) {
+		if (ret != LDB_SUCCESS) {
+			return MAPI_E_NOT_FOUND;
+		}
+		if (res == NULL) {
+			return MAPI_E_INVALID_OBJECT;
+		}
+		if (!res->count) {
 			return MAPI_E_NOT_FOUND;
 		}
 	} else {

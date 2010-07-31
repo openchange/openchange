@@ -1,3 +1,21 @@
+2010-07-31
+    jkerihuel
+	[r2101]
+		- Add an exchange-version parameter to mapiprofile structure and tool
+		  which let user choose between 0x0/0x2 or 0xA/0xB
+		- Tweak libmapi implementation to allow EcDoConnectEx usage
+		- Improve mapiprofile --dump to show more useful parameters
+	[r2100]
+		- Add custom NDR implementation for EcDoConnectEx to bypass pointers/array problems
+		- make use of mapi2k7_AuxInfo structure for rgbAuxOut
+		
+		- Create a subcontext for AUX_HEADER structures to jump over unknown cases properly.
+	[r2099]
+		Handle the no obfuscation nor compression RPC_HEADER_EXT flags case 
+    bradh
+	[r2098]
+		Trivial api documentation change.
+
 2010-07-29
     bradh
 	[r2095]

@@ -68,6 +68,7 @@ int nspi_disconnect_dtor(void *);
 
 /* The following private definitions come from libmapi/emsmdb.c */
 struct emsmdb_context	*emsmdb_connect(TALLOC_CTX *, struct mapi_session *, struct dcerpc_pipe *, struct cli_credentials *, int *);
+struct emsmdb_context	*emsmdb_connect_ex(TALLOC_CTX *, struct mapi_session *, struct dcerpc_pipe *, struct cli_credentials *, int *);
 int			emsmdb_disconnect_dtor(void *);
 enum MAPISTATUS		emsmdb_disconnect(struct emsmdb_context *);
 struct mapi_notify_ctx	*emsmdb_bind_notification(TALLOC_CTX *);

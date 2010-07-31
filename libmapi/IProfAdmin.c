@@ -80,6 +80,7 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	profile->codepage = ldb_msg_find_attr_as_int(msg, "codepage", 0);
 	profile->language = ldb_msg_find_attr_as_int(msg, "language", 0);
 	profile->method = ldb_msg_find_attr_as_int(msg, "method", 0);
+	profile->exchange_version = ldb_msg_find_attr_as_int(msg, "exchange_version", 0);
 
 	if (!profile->password) return MAPI_E_INVALID_PARAMETER;
 

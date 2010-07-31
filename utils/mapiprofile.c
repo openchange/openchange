@@ -29,8 +29,28 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#define	DEFAULT_DIR	"%s/.openchange"
-#define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
+#define	DEFAULT_DIR			"%s/.openchange"
+#define	DEFAULT_PROFDB			"%s/.openchange/profiles.ldb"
+#define	DEFAULT_EXCHANGE_VERSION	"2000"
+
+/**
+   MAPI version:
+   #- 0: use EcDoConnect (0x0) / EcDoRpc (0x2) RPC calls
+   #- 1: use EcDoConnectEx (0xA) / EcDoRpcExt2 (0xB) RPC calls
+   #- 2: Same as 1, but require sealed pipe
+ */
+struct exchange_version {
+	const char	*name;
+	uint8_t		version;
+};
+
+static const struct exchange_version exchange_version[] = {
+	{ DEFAULT_EXCHANGE_VERSION,	0 },
+	{ "2003",			1 },
+	{ "2007",			1 },
+	{ "2010",			2 },
+	{ NULL,				0 }
+};
 
 static bool mapiprofile_createdb(const char *profdb, const char *ldif_path)
 {
@@ -105,7 +125,8 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 			       const char *language, const char *workstation,
 			       const char *domain, const char *realm,
 			       uint32_t flags, bool seal,
-			       bool opt_dumpdata, const char *opt_debuglevel)
+			       bool opt_dumpdata, const char *opt_debuglevel,
+			       uint8_t exchange_version)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
@@ -114,6 +135,7 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	const char		*locale;
 	uint32_t		cpid;
 	uint32_t		lcid;
+	char			*exchange_version_str;
 	char			*cpid_str;
 	char			*lcid_str;
 
@@ -164,6 +186,10 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	mapi_profile_add_string_attr(profname, "workstation", workstation);
 	mapi_profile_add_string_attr(profname, "domain", domain);
 	mapi_profile_add_string_attr(profname, "seal", (seal == true) ? "true" : "false");
+
+	exchange_version_str = talloc_asprintf(mem_ctx, "%d", exchange_version);
+	mapi_profile_add_string_attr(profname, "exchange_version", exchange_version_str);
+	talloc_free(exchange_version_str);
 
 	if (realm) {
 		mapi_profile_add_string_attr(profname, "realm", realm);
@@ -419,6 +445,7 @@ static void mapiprofile_dump(const char *profdb, const char *opt_profname)
 	enum MAPISTATUS		retval;
 	struct mapi_profile	profile;
 	char			*profname;
+	char			*exchange_version = NULL;
 
 	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
@@ -439,20 +466,40 @@ static void mapiprofile_dump(const char *profdb, const char *opt_profname)
 
 	retval = OpenProfile(&profile, profname, NULL);
 	talloc_free(profname);
-	talloc_free(mem_ctx);
+
 	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
+		talloc_free(mem_ctx);
 		mapi_errstr("OpenProfile", GetLastError());
 		exit (1);
 	}
 
-	printf("Profile: %s\n", profile.profname);
-	printf("\tusername       == %s\n", profile.username);
-	printf("\tpassword       == %s\n", profile.password);
-	printf("\tmailbox        == %s\n", profile.mailbox);
-	printf("\tworkstation    == %s\n", profile.workstation);
-	printf("\tdomain         == %s\n", profile.domain);
-	printf("\tserver         == %s\n", profile.server);
+	switch (profile.exchange_version) {
+	case 0x0:
+		exchange_version = talloc_strdup(mem_ctx, "exchange 2000");
+		break;
+	case 0x1:
+		exchange_version = talloc_strdup(mem_ctx, "exchange 2003/2007");
+		break;
+	case 0x2:
+		exchange_version = talloc_strdup(mem_ctx, "exchange 2010");
+		break;
+	default:
+		printf("Error: unknown Exchange server\n");
+		goto end;
+	}
 
+	printf("Profile: %s\n", profile.profname);
+	printf("\texchange server == %s\n", exchange_version);
+	printf("\tencryption      == %s\n", (profile.seal == true) ? "yes" : "no");
+	printf("\tusername        == %s\n", profile.username);
+	printf("\tpassword        == %s\n", profile.password);
+	printf("\tmailbox         == %s\n", profile.mailbox);
+	printf("\tworkstation     == %s\n", profile.workstation);
+	printf("\tdomain          == %s\n", profile.domain);
+	printf("\tserver          == %s\n", profile.server);
+
+end:
+	talloc_free(mem_ctx);
 	MAPIUninitialize();
 }
 
@@ -522,7 +569,9 @@ int main(int argc, const char *argv[])
 	int		error;
 	poptContext	pc;
 	int		opt;
+	int		i;
 	char		*default_path;
+	bool		found = false;
 	bool		create = false;
 	bool		delete = false;
 	bool		list = false;
@@ -549,6 +598,7 @@ int main(int argc, const char *argv[])
 	const char	*rename = NULL;
 	const char	*attribute = NULL;
 	const char	*opt_tmp = NULL;
+	const char	*version = NULL;
 	uint32_t	nopass = 0;
 	char		hostname[256];
 	int		retcode = EXIT_SUCCESS;
@@ -559,7 +609,7 @@ int main(int argc, const char *argv[])
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
 	      OPT_NOPASS, OPT_RENAME_PROFILE, OPT_DUMPDATA, OPT_DEBUGLEVEL,
-	      OPT_ENCRYPT_CONN};
+	      OPT_ENCRYPT_CONN, OPT_EXCHANGE_VERSION};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -574,6 +624,7 @@ int main(int argc, const char *argv[])
 		{"domain", 'D', POPT_ARG_STRING, NULL, OPT_DOMAIN, "set the domain/workgroup", "DOMAIN"},
 		{"realm", 'R', POPT_ARG_STRING, NULL, OPT_REALM, "set the realm", "REALM"},
 		{"encrypt", 'E', POPT_ARG_NONE, NULL, OPT_ENCRYPT_CONN, "enable encryption with Exchange server", NULL },
+		{"exchange-version", 'v', POPT_ARG_STRING, NULL, OPT_EXCHANGE_VERSION, "specify Exchange server version", "2000" },
 		{"username", 'u', POPT_ARG_STRING, NULL, OPT_USERNAME, "set the profile username", "USERNAME"},
 		{"language", 'C', POPT_ARG_STRING, NULL, OPT_LANGUAGE, "set the user's language (if different from system one)", "LANGUAGE"},
 		{"pattern", 's', POPT_ARG_STRING, NULL, OPT_PATTERN, "username to search for", "USERNAME"},
@@ -646,6 +697,12 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_ENCRYPT_CONN:
 			opt_seal = true;
+			break;
+		case OPT_EXCHANGE_VERSION:
+			opt_tmp = poptGetOptArg(pc);
+			version = talloc_strdup(mem_ctx, opt_tmp);
+			free((void *)opt_tmp);
+			opt_tmp = NULL;
 			break;
 		case OPT_USERNAME:
 			username = poptGetOptArg(pc);
@@ -740,9 +797,35 @@ int main(int argc, const char *argv[])
 		if (!address) show_help(pc, "address");
 		if (!domain) show_help(pc, "domain");
 
+		if (!version) {
+			version = talloc_strdup(mem_ctx, DEFAULT_EXCHANGE_VERSION);
+		}
+
+		for (i = 0; exchange_version[i].name; i++) {
+			if (!strcasecmp(version, exchange_version[i].name)) {
+				version = talloc_strdup(mem_ctx, exchange_version[i].name);
+				found = true;
+				break;
+			}
+		}
+		if (found == false) {
+			printf("Invalid Exchange server version. Possible values are:\n");
+			for (i = 0; exchange_version[i].name; i++) {
+				printf("\t[*] %s\n", exchange_version[i].name);
+			}
+			goto cleanup;
+		}
+
+		/* Force encrypt parameter if exchange2010 is specified */
+		if (!strcasecmp(version, "2010")) {
+			opt_seal = true;
+		}
+		talloc_free((void *)version);
+
 		if (! mapiprofile_create(profdb, profname, pattern, username, password, address,
 					 language, workstation, domain, realm, nopass, opt_seal, 
-					 opt_dumpdata, opt_debuglevel) ) {
+					 opt_dumpdata, opt_debuglevel,
+					 exchange_version[i].version)) {
 			retcode = EXIT_FAILURE;
 			goto cleanup;
 		}

@@ -153,6 +153,106 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 
 
 /**
+   \details Establishes a new Session Context with the server on the
+   exchange_emsmdb pipe using 0xA EcDoConnectEx opnum
+
+   \param mem_ctx pointer to the memory context
+   \param session pointer to the MAPI session context
+   \param p pointer to the DCERPC pipe
+   \param cred pointer to the user credentials
+   \param return_value pointer on EcDoConnectEx MAPI return value
+
+   \return an allocated emsmdb_context structure on success, otherwise
+   NULL
+ */
+struct emsmdb_context *emsmdb_connect_ex(TALLOC_CTX *mem_ctx,
+					 struct mapi_session *session,
+					 struct dcerpc_pipe *p,
+					 struct cli_credentials *cred,
+					 int *return_value)
+{
+	TALLOC_CTX		*tmp_ctx;
+	struct EcDoConnectEx	r;
+	struct emsmdb_context	*ctx;
+	NTSTATUS		status;
+	enum MAPISTATUS		retval;
+	uint32_t		pulTimeStamp = 0;
+	uint32_t		pcbAuxOut = 0x00001008;
+	struct mapi2k7_AuxInfo	*rgbAuxOut;
+
+	/* Sanity Checks */
+	if (!session) return NULL;
+	if (!p) return NULL;
+	if (!cred) return NULL;
+	if (!return_value) return NULL;
+
+	tmp_ctx = talloc_named(NULL, 0, "emsmdb_connect_ex");
+
+	ctx = talloc_zero(mem_ctx, struct emsmdb_context);
+	ctx->rpc_connection = p;
+	ctx->mem_ctx = mem_ctx;
+
+	ctx->info.szDisplayName = NULL;
+	ctx->info.szDNPrefix = NULL;
+	
+	r.out.handle = &ctx->handle;
+
+	r.in.szUserDN = session->profile->mailbox;
+	r.in.ulFlags = 0x00000000;
+	r.in.ulConMod = emsmdb_hash(r.in.szUserDN);
+	r.in.cbLimit = 0x00000000;
+	r.in.ulCpid = session->profile->codepage;
+	r.in.ulLcidString = session->profile->language;
+	r.in.ulLcidSort = session->profile->method;
+	r.in.ulIcxrLink = 0xFFFFFFFF;
+	r.in.usFCanConvertCodePages = 0x1;
+
+	r.out.pcmsPollsMax = &ctx->info.pcmsPollsMax;
+	r.out.pcRetry = &ctx->info.pcRetry;
+	r.out.pcmsRetryDelay = &ctx->info.pcmsRetryDelay;
+	r.out.picxr = &ctx->info.picxr;
+	r.out.pulTimeStamp = &pulTimeStamp;
+
+	r.in.rgwClientVersion[0] = 0x000c;
+	r.in.rgwClientVersion[1] = 0x183e;
+	r.in.rgwClientVersion[2] = 0x03e8;
+	r.in.pulTimeStamp = &pulTimeStamp;
+	r.in.rgbAuxIn = NULL;
+	r.in.cbAuxIn = 0x00000000;
+
+	rgbAuxOut = talloc_zero(ctx->mem_ctx, struct mapi2k7_AuxInfo);
+	rgbAuxOut->AUX_HEADER = NULL;
+	r.out.rgbAuxOut = rgbAuxOut;
+
+	r.in.pcbAuxOut = &pcbAuxOut;
+	r.out.pcbAuxOut = &pcbAuxOut;
+
+	status = dcerpc_EcDoConnectEx(p, tmp_ctx, &r);
+	retval = r.out.result;
+	if (!NT_STATUS_IS_OK(status) || retval) {
+		*return_value = retval;
+		mapi_errstr("EcDoConnectEx", retval);
+		talloc_free(tmp_ctx);
+		return NULL;
+	}
+
+	ctx->info.szDisplayName = talloc_strdup(mem_ctx, r.out.szDisplayName);
+	ctx->info.szDNPrefix = talloc_strdup(mem_ctx, r.out.szDNPrefix);
+
+	ctx->info.rgwServerVersion[0] = r.out.rgwServerVersion[0];
+	ctx->info.rgwServerVersion[1] = r.out.rgwServerVersion[1];
+	ctx->info.rgwServerVersion[2] = r.out.rgwServerVersion[2];
+	
+	ctx->cred = cred;
+	ctx->max_data = 0xFFF0;
+	ctx->setup = false;
+
+	talloc_free(tmp_ctx);
+	return ctx;
+}
+
+
+/**
    \details Destructor for the EMSMDB context. Call the EcDoDisconnect
    function.
 

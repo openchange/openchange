@@ -247,7 +247,15 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
 		OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
-		provider->ctx = emsmdb_connect(mem_ctx, session, pipe, profile->credentials, &retval);
+		switch (profile->exchange_version) {
+		case 0x0:
+			provider->ctx = emsmdb_connect(mem_ctx, session, pipe, profile->credentials, &retval);
+			break;
+		case 0x1:
+		case 0x2:
+			provider->ctx = emsmdb_connect_ex(mem_ctx, session, pipe, profile->credentials, &retval);
+			break;
+		}
 		if (retval == ecNotEncrypted) {
 			profile->seal = true;
 			retval = 0;

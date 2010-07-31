@@ -206,29 +206,37 @@ _PUBLIC_ void ndr_print_AUX_HEADER(struct ndr_print *ndr, const char *name, cons
 
 _PUBLIC_ enum ndr_err_code ndr_pull_AUX_HEADER(struct ndr_pull *ndr, int ndr_flags, struct AUX_HEADER *r)
 {
-	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
-		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_pull_align(ndr, 4));
-			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Size));
-			NDR_CHECK(ndr_pull_AUX_VERSION(ndr, NDR_SCALARS, &r->Version));
-			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->Type));
+	struct ndr_pull	*_ndr_buffer;
+	uint32_t	_flags_save_STRUCT = ndr->flags;
+	TALLOC_CTX	*_mem_save_AUX_HEADER_0;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Size));
+
+		_mem_save_AUX_HEADER_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_buffer, 0, r->Size - 2));
+		{
+			NDR_CHECK(ndr_pull_AUX_VERSION(_ndr_buffer, NDR_SCALARS, &r->Version));
+			NDR_CHECK(ndr_pull_uint8(_ndr_buffer, NDR_SCALARS, &r->Type));
 			switch (r->Version) {
 			case AUX_VERSION_1:
-				NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->Payload_1, r->Type));
-				NDR_CHECK(ndr_pull_AUX_HEADER_TYPE_UNION_1(ndr, NDR_SCALARS, &r->Payload_1));
+				NDR_CHECK(ndr_pull_set_switch_value(_ndr_buffer, &r->Payload_1, r->Type));
+				NDR_CHECK(ndr_pull_AUX_HEADER_TYPE_UNION_1(_ndr_buffer, NDR_SCALARS, &r->Payload_1));
 				break;
 			case AUX_VERSION_2:
-				NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->Payload_2, r->Type));
-				NDR_CHECK(ndr_pull_AUX_HEADER_TYPE_UNION_2(ndr, NDR_SCALARS, &r->Payload_2));
+				NDR_CHECK(ndr_pull_set_switch_value(_ndr_buffer, &r->Payload_2, r->Type));
+				NDR_CHECK(ndr_pull_AUX_HEADER_TYPE_UNION_2(_ndr_buffer, NDR_SCALARS, &r->Payload_2));
 				break;
 			}
 		}
-		if (ndr_flags & NDR_BUFFERS) {
-		}
-		ndr->flags = _flags_save_STRUCT;
+		NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_buffer, 0, -1));
 	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	ndr->flags = _flags_save_STRUCT;
+
 	return NDR_ERR_SUCCESS;
 }
 
@@ -812,6 +820,446 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoRpc(struct ndr_push *ndr, int flags, con
 }
 
 
+_PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flags, const struct EcDoConnectEx *r)
+{
+	uint32_t	cntr_rgwClientVersion_0;
+	uint32_t	cntr_rgwServerVersion_0;
+	uint32_t	cntr_rgwBestVersion_0;
+
+	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.szUserDN, CH_DOS)));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->in.szUserDN, CH_DOS)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.szUserDN, ndr_charset_length(r->in.szUserDN, CH_DOS), sizeof (uint8_t), CH_DOS));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.ulFlags));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.ulConMod));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.cbLimit));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.ulCpid));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.ulLcidString));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.ulLcidSort));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.ulIcxrLink));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.usFCanConvertCodePages));
+		for (cntr_rgwClientVersion_0 = 0; cntr_rgwClientVersion_0 < 3; cntr_rgwClientVersion_0++) {
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.rgwClientVersion[cntr_rgwClientVersion_0]));
+		}
+		if (r->in.pulTimeStamp == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.pulTimeStamp));
+		{
+			uint32_t	_flags_save_mapi2k7_AuxInfo = ndr->flags;
+			struct ndr_push	*_ndr_rgbAuxIn;
+
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REMAINING);
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_rgbAuxIn, 4, -1));
+
+			if (r->in.cbAuxIn) {
+				if (r->in.rgbAuxIn == NULL) {
+					return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+				}
+				NDR_CHECK(ndr_push_mapi2k7_AuxInfo(_ndr_rgbAuxIn, NDR_SCALARS|NDR_BUFFERS, r->in.rgbAuxIn));
+			}
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_rgbAuxIn, 4, -1));
+			ndr->flags = _flags_save_mapi2k7_AuxInfo;
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.cbAuxIn));
+		if (r->in.pcbAuxOut == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.pcbAuxOut));
+	}		
+
+	if (flags & NDR_OUT) {
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		if (r->out.pcmsPollsMax == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pcmsPollsMax));
+		if (r->out.pcRetry == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pcRetry));
+		if (r->out.pcmsRetryDelay == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pcmsRetryDelay));
+		if (r->out.picxr == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.picxr));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.szDNPrefix));
+		if (r->out.szDNPrefix) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->out.szDNPrefix, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->out.szDNPrefix, CH_DOS)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->out.szDNPrefix, ndr_charset_length(r->out.szDNPrefix, CH_DOS), sizeof(uint8_t), CH_DOS));
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.szDisplayName));
+		if (r->out.szDisplayName) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->out.szDisplayName, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->out.szDisplayName, CH_DOS)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->out.szDisplayName, ndr_charset_length(r->out.szDisplayName, CH_DOS), sizeof(uint8_t), CH_DOS));
+		}
+		for (cntr_rgwServerVersion_0 = 0; cntr_rgwServerVersion_0 < 3; cntr_rgwServerVersion_0++) {
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.rgwServerVersion[cntr_rgwServerVersion_0]));
+		}
+		for (cntr_rgwBestVersion_0 = 0; cntr_rgwBestVersion_0 < 3; cntr_rgwBestVersion_0++) {
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.rgwBestVersion[cntr_rgwBestVersion_0]));
+		}
+		if (r->out.pulTimeStamp == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pulTimeStamp));
+		if (r->out.rgbAuxOut == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));				
+		/* Only try to fetch rgbAuxOut if pcbAuxOut is > 0 */
+		if (*r->out.pcbAuxOut) {
+			NDR_CHECK(ndr_push_mapi2k7_AuxInfo(ndr, NDR_SCALARS, r->out.rgbAuxOut));
+		}
+
+		if (r->out.pcbAuxOut == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
+		NDR_CHECK(ndr_push_MAPISTATUS(ndr, NDR_SCALARS, r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flags, struct EcDoConnectEx *r)
+{
+	uint32_t	_ptr_szDNPrefix;
+	uint32_t	_ptr_szDisplayName;
+	uint32_t	cntr_rgwClientVersion_0;
+	uint32_t	cntr_rgwServerVersion_0;
+	uint32_t	cntr_rgwBestVersion_0;
+	TALLOC_CTX	*_mem_save_handle_0;
+	TALLOC_CTX	*_mem_save_pcmsPollsMax_0;
+	TALLOC_CTX	*_mem_save_pcRetry_0;
+	TALLOC_CTX	*_mem_save_pcmsRetryDelay_0;
+	TALLOC_CTX	*_mem_save_picxr_0;
+	TALLOC_CTX	*_mem_save_szDNPrefix_0;
+	TALLOC_CTX	*_mem_save_szDisplayName_0;
+	TALLOC_CTX	*_mem_save_pulTimeStamp_0;
+	TALLOC_CTX	*_mem_save_rgbAuxIn_0;
+	TALLOC_CTX	*_mem_save_pcbAuxOut_0;
+	TALLOC_CTX	*_mem_save_rgbAuxOut_1;
+
+	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.szUserDN));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.szUserDN));
+		if (ndr_get_array_length(ndr, &r->in.szUserDN) > ndr_get_array_size(ndr, &r->in.szUserDN)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.szUserDN), ndr_get_array_length(ndr, &r->in.szUserDN));
+		}
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.szUserDN), sizeof(uint8_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.szUserDN, ndr_get_array_length(ndr, &r->in.szUserDN), sizeof(uint8_t), CH_DOS));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.ulFlags));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.ulConMod));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.cbLimit));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.ulCpid));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.ulLcidString));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.ulLcidSort));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.ulIcxrLink));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.usFCanConvertCodePages));
+		for (cntr_rgwClientVersion_0 = 0; cntr_rgwClientVersion_0 < 3; cntr_rgwClientVersion_0++) {
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.rgwClientVersion[cntr_rgwClientVersion_0]));
+		}
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.pulTimeStamp);
+		}
+		_mem_save_pulTimeStamp_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.pulTimeStamp, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.pulTimeStamp));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pulTimeStamp_0, LIBNDR_FLAG_REF_ALLOC);
+		{
+			uint32_t _flags_save_mapi2k7_AuxInfo = ndr->flags;
+			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REMAINING);
+			if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+				NDR_PULL_ALLOC(ndr, r->in.rgbAuxIn);
+			}
+			_mem_save_rgbAuxIn_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.rgbAuxIn, LIBNDR_FLAG_REF_ALLOC);
+			{
+				struct ndr_pull *_ndr_rgbAuxIn;
+				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_rgbAuxIn, 4, -1));
+				NDR_CHECK(ndr_pull_mapi2k7_AuxInfo(_ndr_rgbAuxIn, NDR_SCALARS|NDR_BUFFERS, r->in.rgbAuxIn));
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_rgbAuxIn, 4, -1));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_rgbAuxIn_0, LIBNDR_FLAG_REF_ALLOC);
+			ndr->flags = _flags_save_mapi2k7_AuxInfo;
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.cbAuxIn));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.pcbAuxOut);
+		}
+		_mem_save_pcbAuxOut_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.pcbAuxOut, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.pcbAuxOut));
+		if (*r->in.pcbAuxOut > 0x1008) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pcbAuxOut_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.handle);
+		ZERO_STRUCTP(r->out.handle);
+		NDR_PULL_ALLOC(ndr, r->out.pcmsPollsMax);
+		ZERO_STRUCTP(r->out.pcmsPollsMax);
+		NDR_PULL_ALLOC(ndr, r->out.pcRetry);
+		ZERO_STRUCTP(r->out.pcRetry);
+		NDR_PULL_ALLOC(ndr, r->out.pcmsRetryDelay);
+		ZERO_STRUCTP(r->out.pcmsRetryDelay);
+		NDR_PULL_ALLOC(ndr, r->out.picxr);
+		ZERO_STRUCTP(r->out.picxr);
+		NDR_PULL_ALLOC(ndr, r->out.pulTimeStamp);
+		*r->out.pulTimeStamp = *r->in.pulTimeStamp;
+		NDR_PULL_ALLOC(ndr, r->out.rgbAuxOut);
+		NDR_PULL_ALLOC(ndr, r->out.pcbAuxOut);
+		*r->out.pcbAuxOut = *r->in.pcbAuxOut;
+	}		
+
+	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.pcmsPollsMax);
+		}
+		_mem_save_pcmsPollsMax_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.pcmsPollsMax, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.pcmsPollsMax));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pcmsPollsMax_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.pcRetry);
+		}
+		_mem_save_pcRetry_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.pcRetry, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.pcRetry));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pcRetry_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.pcmsRetryDelay);
+		}
+		_mem_save_pcmsRetryDelay_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.pcmsRetryDelay, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.pcmsRetryDelay));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pcmsRetryDelay_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.picxr);
+		}
+		_mem_save_picxr_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.picxr, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.picxr));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_picxr_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_szDNPrefix));
+		if (_ptr_szDNPrefix) {
+			NDR_PULL_ALLOC(ndr, r->out.szDNPrefix);
+		} else {
+			r->out.szDNPrefix = NULL;
+		}
+		if (r->out.szDNPrefix) {
+			_mem_save_szDNPrefix_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.szDNPrefix, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->out.szDNPrefix));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->out.szDNPrefix));
+			if (ndr_get_array_length(ndr, &r->out.szDNPrefix) > ndr_get_array_size(ndr, &r->out.szDNPrefix)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.szDNPrefix), ndr_get_array_length(ndr, &r->out.szDNPrefix));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->out.szDNPrefix), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->out.szDNPrefix, ndr_get_array_length(ndr, &r->out.szDNPrefix), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDNPrefix_0, 0);
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_szDisplayName));
+		if (_ptr_szDisplayName) {
+			NDR_PULL_ALLOC(ndr, r->out.szDisplayName);
+		} else {
+			r->out.szDisplayName = NULL;
+		}
+		if (r->out.szDisplayName) {
+			_mem_save_szDisplayName_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.szDisplayName, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->out.szDisplayName));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->out.szDisplayName));
+			if (ndr_get_array_length(ndr, &r->out.szDisplayName) > ndr_get_array_size(ndr, &r->out.szDisplayName)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.szDisplayName), ndr_get_array_length(ndr, &r->out.szDisplayName));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->out.szDisplayName), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->out.szDisplayName, ndr_get_array_length(ndr, &r->out.szDisplayName), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDisplayName_0, 0);
+		}
+		for (cntr_rgwServerVersion_0 = 0; cntr_rgwServerVersion_0 < 3; cntr_rgwServerVersion_0++) {
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.rgwServerVersion[cntr_rgwServerVersion_0]));
+		}
+		for (cntr_rgwBestVersion_0 = 0; cntr_rgwBestVersion_0 < 3; cntr_rgwBestVersion_0++) {
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.rgwBestVersion[cntr_rgwBestVersion_0]));
+		}
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.pulTimeStamp);
+		}
+		_mem_save_pulTimeStamp_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.pulTimeStamp, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.pulTimeStamp));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pulTimeStamp_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.rgbAuxOut));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->out.rgbAuxOut));
+		if (ndr_get_array_length(ndr, &r->out.rgbAuxOut) > ndr_get_array_size(ndr, &r->out.rgbAuxOut)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.rgbAuxOut), ndr_get_array_length(ndr, &r->out.rgbAuxOut));
+		}
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC_N(ndr, r->out.rgbAuxOut, ndr_get_array_size(ndr, &r->out.rgbAuxOut));
+		}
+		/* Only try to pull rgbAuxOut if the fake array size is > 0 */
+		if (ndr_get_array_size(ndr, &r->out.rgbAuxOut)) {
+			_mem_save_rgbAuxOut_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->out.rgbAuxOut, 0);
+			NDR_CHECK(ndr_pull_mapi2k7_AuxInfo(ndr, NDR_SCALARS, r->out.rgbAuxOut));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_rgbAuxOut_1, 0);
+		}
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.pcbAuxOut);
+		}
+		_mem_save_pcbAuxOut_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.pcbAuxOut, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.pcbAuxOut));
+		if (*r->out.pcbAuxOut > 0x1008) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pcbAuxOut_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_MAPISTATUS(ndr, NDR_SCALARS, &r->out.result));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_EcDoConnectEx(struct ndr_print *ndr, const char *name, int flags, const struct EcDoConnectEx *r)
+{
+	uint32_t	cntr_rgwClientVersion_0;
+	uint32_t	cntr_rgwServerVersion_0;
+	uint32_t	cntr_rgwBestVersion_0;
+
+	ndr_print_struct(ndr, name, "EcDoConnectEx");
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "EcDoConnectEx");
+		ndr->depth++;
+		ndr_print_string(ndr, "szUserDN", r->in.szUserDN);
+		ndr_print_uint32(ndr, "ulFlags", r->in.ulFlags);
+		ndr_print_uint32(ndr, "ulConMod", r->in.ulConMod);
+		ndr_print_uint32(ndr, "cbLimit", r->in.cbLimit);
+		ndr_print_uint32(ndr, "ulCpid", r->in.ulCpid);
+		ndr_print_uint32(ndr, "ulLcidString", r->in.ulLcidString);
+		ndr_print_uint32(ndr, "ulLcidSort", r->in.ulLcidSort);
+		ndr_print_uint32(ndr, "ulIcxrLink", r->in.ulIcxrLink);
+		ndr_print_uint16(ndr, "usFCanConvertCodePages", r->in.usFCanConvertCodePages);
+		ndr->print(ndr, "%s: ARRAY(%d)", "rgwClientVersion", (int)3);
+		ndr->depth++;
+		for (cntr_rgwClientVersion_0=0;cntr_rgwClientVersion_0<3;cntr_rgwClientVersion_0++) {
+			char *idx_0=NULL;
+			if (asprintf(&idx_0, "[%d]", cntr_rgwClientVersion_0) != -1) {
+				ndr_print_uint16(ndr, "rgwClientVersion", r->in.rgwClientVersion[cntr_rgwClientVersion_0]);
+				free(idx_0);
+			}
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pulTimeStamp", r->in.pulTimeStamp);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pulTimeStamp", *r->in.pulTimeStamp);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "rgbAuxIn", r->in.rgbAuxIn);
+		if (r->in.rgbAuxIn) {
+			ndr->depth++;
+			ndr_print_mapi2k7_AuxInfo(ndr, "rgbAuxIn", r->in.rgbAuxIn);
+			ndr->depth--;
+		}
+		ndr_print_uint32(ndr, "cbAuxIn", r->in.cbAuxIn);
+		ndr_print_ptr(ndr, "pcbAuxOut", r->in.pcbAuxOut);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pcbAuxOut", *r->in.pcbAuxOut);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "EcDoConnectEx");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->out.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pcmsPollsMax", r->out.pcmsPollsMax);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pcmsPollsMax", *r->out.pcmsPollsMax);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pcRetry", r->out.pcRetry);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pcRetry", *r->out.pcRetry);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pcmsRetryDelay", r->out.pcmsRetryDelay);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pcmsRetryDelay", *r->out.pcmsRetryDelay);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "picxr", r->out.picxr);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "picxr", *r->out.picxr);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "szDNPrefix", r->out.szDNPrefix);
+		ndr->depth++;
+		if (r->out.szDNPrefix) {
+			ndr_print_string(ndr, "szDNPrefix", r->out.szDNPrefix);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "szDisplayName", r->out.szDisplayName);
+		ndr->depth++;
+		if (r->out.szDisplayName) {
+			ndr_print_string(ndr, "szDisplayName", r->out.szDisplayName);
+		}
+		ndr->depth--;
+		ndr->print(ndr, "%s: ARRAY(%d)", "rgwServerVersion", (int)3);
+		ndr->depth++;
+		for (cntr_rgwServerVersion_0=0;cntr_rgwServerVersion_0<3;cntr_rgwServerVersion_0++) {
+			char *idx_0=NULL;
+			if (asprintf(&idx_0, "[%d]", cntr_rgwServerVersion_0) != -1) {
+				ndr_print_uint16(ndr, "rgwServerVersion", r->out.rgwServerVersion[cntr_rgwServerVersion_0]);
+				free(idx_0);
+			}
+		}
+		ndr->depth--;
+		ndr->print(ndr, "%s: ARRAY(%d)", "rgwBestVersion", (int)3);
+		ndr->depth++;
+		for (cntr_rgwBestVersion_0=0;cntr_rgwBestVersion_0<3;cntr_rgwBestVersion_0++) {
+			char *idx_0=NULL;
+			if (asprintf(&idx_0, "[%d]", cntr_rgwBestVersion_0) != -1) {
+				ndr_print_uint16(ndr, "rgwBestVersion", r->out.rgwBestVersion[cntr_rgwBestVersion_0]);
+				free(idx_0);
+			}
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pulTimeStamp", r->out.pulTimeStamp);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pulTimeStamp", *r->out.pulTimeStamp);
+		ndr->depth--;
+		ndr_print_mapi2k7_AuxInfo(ndr, "rgbAuxOut", r->out.rgbAuxOut);
+		ndr_print_ptr(ndr, "pcbAuxOut", r->out.pcbAuxOut);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pcbAuxOut", *r->out.pcbAuxOut);
+		ndr->depth--;
+		ndr_print_MAPISTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
 
 /*
   We need to pull QueryRows replies on our own:

@@ -3,7 +3,7 @@
 
    libndr mapi support
 
-   Copyright (C) Julien Kerihuel 2005-2009
+   Copyright (C) Julien Kerihuel 2005-2010
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -277,6 +277,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_AuxInfo(struct ndr_pull *ndr, int nd
 				{
 					r->AUX_HEADER = talloc_array(_mem_save_AUX_HEADER_0, struct AUX_HEADER, 2);
 
+					/* lzxpress case */
 					if (r->RPC_HEADER_EXT.Flags & RHEF_Compressed) {
 						struct ndr_pull *_ndr_data_compressed = NULL;
 
@@ -290,9 +291,18 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_AuxInfo(struct ndr_pull *ndr, int nd
 						r->AUX_HEADER = talloc_realloc(_mem_save_AUX_HEADER_0, r->AUX_HEADER, struct AUX_HEADER, cntr_AUX_HEADER_0 + 2);
 						r->AUX_HEADER[cntr_AUX_HEADER_0].Size = 0;
 						
+					/* obfuscation case */
 					} else if (r->RPC_HEADER_EXT.Flags & RHEF_XorMagic) {
 						obfuscate_data(_ndr_buffer->data, _ndr_buffer->data_size, 0xA5);
 
+						for (cntr_AUX_HEADER_0 = 0; _ndr_buffer->offset < _ndr_buffer->data_size; cntr_AUX_HEADER_0++) {
+							NDR_CHECK(ndr_pull_AUX_HEADER(_ndr_buffer, NDR_SCALARS, &r->AUX_HEADER[cntr_AUX_HEADER_0]));
+							r->AUX_HEADER = talloc_realloc(_mem_save_AUX_HEADER_0, r->AUX_HEADER, struct AUX_HEADER, cntr_AUX_HEADER_0 + 2);
+						}
+						r->AUX_HEADER = talloc_realloc(_mem_save_AUX_HEADER_0, r->AUX_HEADER, struct AUX_HEADER, cntr_AUX_HEADER_0 + 2);
+						r->AUX_HEADER[cntr_AUX_HEADER_0].Size = 0;
+					/* plain case */
+					} else {
 						for (cntr_AUX_HEADER_0 = 0; _ndr_buffer->offset < _ndr_buffer->data_size; cntr_AUX_HEADER_0++) {
 							NDR_CHECK(ndr_pull_AUX_HEADER(_ndr_buffer, NDR_SCALARS, &r->AUX_HEADER[cntr_AUX_HEADER_0]));
 							r->AUX_HEADER = talloc_realloc(_mem_save_AUX_HEADER_0, r->AUX_HEADER, struct AUX_HEADER, cntr_AUX_HEADER_0 + 2);

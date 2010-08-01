@@ -360,17 +360,36 @@ dnl ---------------------------------------------------------------------------
 dnl Check for pthread libs
 dnl ---------------------------------------------------------------------------
 enable_pthread=no
+enable_thread_lib=""
 AC_CHECK_LIB([pthread], [pthread_mutex_init],
 	     [
-		AC_DEFINE(HAVE_PTHREAD, 1, [Define if you want to use pthread for thread safety])
+		AC_DEFINE(HAVE_PTHREADS, 1, [Define if you want to use pthread for thread safety])
 		THREAD_LIBS=-lpthread
-		AC_SUBST(THREAD_LIBS)
 	     	enable_pthread="yes"
+		enable_thread_lib="(pthread)"
 	     ],
 	     [
 	     AC_MSG_WARN([pthread is missing - library is not thread safe])
 	     enable_pthread="no"
 	     ])
+
+if test x"$enable_pthread" = x"no"; then
+	dnl Check for gthread-2.0 / glib based implementation
+   	PKG_CHECK_MODULES(GTHREAD, gthread-2.0, 
+		[
+			AC_DEFINE(HAVE_GTHREAD, 1, [Define if you want to use gthread for thread safety])
+			THREAD_LIBS=$GTHREAD_LIBS
+			THREAD_CFLAGS=$GTHREAD_CFLAGS
+			enable_pthread=yes
+			enable_thread_lib="(gthread)"
+		], 
+		[
+			enable_pthread=no
+		])
+fi
+
+AC_SUBST(THREAD_LIBS)
+AC_SUBST(THREAD_CFLAGS)
 
 dnl Additional thread library detection is required here:
 dnl FreeBSD (pthreads), glib etc.
@@ -719,7 +738,7 @@ OpenChange Configuration (Please review)
 	     - prefix:			$prefix
 
 	   * OpenChange MAPI library:	$enable_libmapi
-                      Thread support:	$enable_pthread
+                      Thread support:	$enable_pthread $enable_thread_lib
 
 	   * OpenChange Libraries:
 	     - libmapi++:		$enable_libmapixx

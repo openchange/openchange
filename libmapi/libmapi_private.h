@@ -23,6 +23,12 @@
 
 #include "config.h"
 
+#if defined(HAVE_PTHREADS)
+#include <pthread.h>
+#elif defined(HAVE_GTHREAD)
+#include <gthread.h>
+#endif
+
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 

@@ -1,3 +1,16 @@
+2010-08-01
+    jkerihuel
+	[r2105]
+		Move from auto-generated mapicode.h to static code.
+	[r2104]
+		Add configure.ac support for gthread implementation but give preferences to pthread
+		Add THREAD_CFLAGS to config.mk.in
+		ifdef between pthread and gthread in libmapi_private.h
+	[r2103]
+		Check for libpthread in configure.ac and make this lib optional
+		Add references to config.h in libmapi_private.h
+		Replace references to config.h with libmapi_private.h
+
 2010-07-31
     jkerihuel
 	[r2101]

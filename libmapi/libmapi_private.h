@@ -21,6 +21,8 @@
 #ifndef __LIBMAPI_PRIVATE_H__
 #define __LIBMAPI_PRIVATE_H__
 
+#include "config.h"
+
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 

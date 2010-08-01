@@ -18,8 +18,7 @@
  */
 
 #include "libmapi/libmapi.h"
-
-#include "config.h"
+#include "libmapi/libmapi_private.h"
 
 #ifndef HAVE_STRCASESTR
 static char *strcasestr(const char *haystack, const char *needle)

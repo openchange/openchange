@@ -356,6 +356,25 @@ dnl libraries require libmapi and libmapi require IDL
 OC_IDL="idl"
 AC_SUBST(OC_IDL)
 
+dnl ---------------------------------------------------------------------------
+dnl Check for pthread libs
+dnl ---------------------------------------------------------------------------
+enable_pthread=no
+AC_CHECK_LIB([pthread], [pthread_mutex_init],
+	     [
+		AC_DEFINE(HAVE_PTHREAD, 1, [Define if you want to use pthread for thread safety])
+		THREAD_LIBS=-lpthread
+		AC_SUBST(THREAD_LIBS)
+	     	enable_pthread="yes"
+	     ],
+	     [
+	     AC_MSG_WARN([pthread is missing - library is not thread safe])
+	     enable_pthread="no"
+	     ])
+
+dnl Additional thread library detection is required here:
+dnl FreeBSD (pthreads), glib etc.
+
 dnl ###########################################################################
 dnl libmapi++ dependencies
 dnl ###########################################################################
@@ -700,6 +719,7 @@ OpenChange Configuration (Please review)
 	     - prefix:			$prefix
 
 	   * OpenChange MAPI library:	$enable_libmapi
+                      Thread support:	$enable_pthread
 
 	   * OpenChange Libraries:
 	     - libmapi++:		$enable_libmapixx

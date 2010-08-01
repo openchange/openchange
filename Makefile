@@ -173,7 +173,7 @@ libmapi-clean::
 	rm -f libmapi/socket/*.gcno libmapi/socket/*.gcda
 	rm -f libmapi/version.h
 ifneq ($(SNAPSHOT), no)
-	rm -f libmapi/mapicode.c libmapi/mapicode.h
+	rm -f libmapi/mapicode.c
 	rm -f libmapi/mapitags.c libmapi/mapitags.h
 	rm -f libmapi/codepage_lcid.c
 	rm -f libmapi/mapi_nameid.h libmapi/mapi_nameid_private.h

@@ -59,7 +59,7 @@ icalcomponent * Exchange2IcalRange(mapi_object_t *obj_folder, struct tm *begin, 
    \details Retrieve a specific exchange appointment as an Icalendar
 
    This function returns an Icalendar with an appointments that match
-   the specified GlobalObjectId amd sequence number.
+   the specified GlobalObjectId and sequence number.
 
    \param obj_folder the folder to operate in
    \param GlobalObjectId the unique GlobalObjectId of the appointment
@@ -78,7 +78,7 @@ icalcomponent *Exchange2IcalEvent(mapi_object_t *obj_folder, struct GlobalObject
    \details Retrieve an exchange appointment and its occurrences as an Icalendar
 
    This function returns an Icalendar with any appointments that match
-   the specified GlobalObjectId amd sequence number.
+   the specified GlobalObjectId and sequence number.
    
    \param obj_folder the folder to operate in
    \param GlobalObjectId the unique GlobalObjectId of the appointment

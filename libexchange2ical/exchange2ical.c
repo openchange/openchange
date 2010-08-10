@@ -712,7 +712,7 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 					
 					/*Check to see if event is acceptable*/
 					if (!checkEvent(&exchange2ical, exchange2ical_check, get_tm_from_FILETIME(exchange2ical.apptStartWhole))){
-						break;
+						continue;
 					}
 					
 					/*Set RecipientTable*/

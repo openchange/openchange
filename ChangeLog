@@ -1,3 +1,26 @@
+2010-08-11
+    bradh
+	[r2114]
+		fix missing part of r2113.
+	[r2113]
+		Fixes to better work with Exchange 2010.
+		
+		Still some open issues to resolving bug 227.
+	[r2112]
+		Fix handling of "not applicable" tests when using --mapi-calls
+		
+		Prior to this, if you asked for a test that was after a test that was
+		flagged as suppressed, the test you asked for didn't get run, and the
+		flagged test was reported instead.
+2010-08-10
+    bradh
+	[r2111]
+		Correctly handle cases where the start date of the range is after the first calendar appointment.
+		
+		Resolves bug:272.
+		
+		Thanks to Eric Reischer for reporting the problem and testing the fix.
+
 2010-08-03
     bradh
 	[r2107]

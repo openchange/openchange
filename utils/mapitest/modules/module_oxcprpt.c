@@ -1002,7 +1002,7 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_stream_clone);
-	if (mt->info.rgwServerVersion[0] >= Exchange2010Version) {
+	if (mt->info.rgwServerVersion[0] >= Exchange2010SP0Version) {
 		mapitest_print(mt, "* SKIPPING test for LockRegionStream, UnlockRegionStream and CloneStream\n");
 	} else {
 		/* Step 13. Lock a region */

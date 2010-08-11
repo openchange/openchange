@@ -185,10 +185,10 @@ _PUBLIC_ uint32_t module_oxctable_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "SETCOLUMNS", "Set Table Columns", mapitest_oxctable_SetColumns);
 	mapitest_suite_add_test(suite, "QUERYCOLUMNS", "Query Table Columns", mapitest_oxctable_QueryColumns);
 	mapitest_suite_add_test(suite, "QUERYROWS", "Query Table Rows", mapitest_oxctable_QueryRows);
-	mapitest_suite_add_test(suite, "GETSTATUS", "Get Table Status", mapitest_oxctable_GetStatus);
+	mapitest_suite_add_test_flagged(suite, "GETSTATUS", "Get Table Status", mapitest_oxctable_GetStatus, NotInExchange2010);
 	mapitest_suite_add_test(suite, "SEEKROW", "Seek a row", mapitest_oxctable_SeekRow);
 	mapitest_suite_add_test(suite, "RESTRICT", "Apply filters to a table", mapitest_oxctable_Restrict);
-	mapitest_suite_add_test(suite, "SEEKROW-APPROX", "Seek an approximate row", mapitest_oxctable_SeekRowApprox);
+	mapitest_suite_add_test_flagged(suite, "SEEKROW-APPROX", "Seek an approximate row", mapitest_oxctable_SeekRowApprox, NotInExchange2010);
 	mapitest_suite_add_test(suite, "CREATE-BOOKMARK", "Create a table bookmark", mapitest_oxctable_CreateBookmark);
 	mapitest_suite_add_test(suite, "SEEKROW-BOOKMARK", "Seek a row given a bookmark", mapitest_oxctable_SeekRowBookmark);
 	mapitest_suite_add_test(suite, "CATEGORY", "Expand/collapse category rows", mapitest_oxctable_Category);
@@ -222,8 +222,8 @@ _PUBLIC_ uint32_t module_oxcprpt_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "COPY-PROPS", "Copy a specified set of properties", mapitest_oxcprpt_CopyProps);
 	mapitest_suite_add_test(suite, "STREAM", "Test stream operations", mapitest_oxcprpt_Stream);
 	mapitest_suite_add_test(suite, "COPYTO", "Copy or move properties", mapitest_oxcprpt_CopyTo);
-	mapitest_suite_add_test(suite, "WRITE-COMMIT-STREAM", "Test atomic Write / Commit operation", mapitest_oxcprpt_WriteAndCommitStream);
-	mapitest_suite_add_test(suite, "COPYTO-STREAM", "Copy stream from source to destination stream", mapitest_oxcprpt_CopyToStream);
+	mapitest_suite_add_test_flagged(suite, "WRITE-COMMIT-STREAM", "Test atomic Write / Commit operation", mapitest_oxcprpt_WriteAndCommitStream, NotInExchange2010);
+	mapitest_suite_add_test_flagged(suite, "COPYTO-STREAM", "Copy stream from source to destination stream", mapitest_oxcprpt_CopyToStream, NotInExchange2010SP0);
 	mapitest_suite_add_test(suite, "NAME-ID", "Convert between Names and IDs", mapitest_oxcprpt_NameId);
 
 	mapitest_suite_register(mt, suite);

@@ -1001,41 +1001,45 @@ _PUBLIC_ bool mapitest_oxcprpt_Stream(struct mapitest *mt)
 		mapitest_print(mt, "* %-35s: [FAILURE]\n", "Comparison");
 	}
 
-	/* Step 13. Lock a region */
-	retval = LockRegionStream(&obj_stream, 0x2000, 0x1000, 0x0);
-	mapitest_print_retval(mt, "LockRegionStream");
-	if (retval != MAPI_E_SUCCESS) {
-		ret = false;
-	}
-
-	/* TODO: Step 14. Test the locking */
-
-
-	/* Step 15. Unlock the region */
-	retval = UnlockRegionStream(&obj_stream, 0x2000, 0x1000, 0x0);
-	mapitest_print_retval(mt, "UnlockRegionStream");
-	if (retval != MAPI_E_SUCCESS) {
-		ret = false;
-	}
-
-	/* Step 16. Clone the stream */
 	mapi_object_init(&obj_stream_clone);
-	retval = CloneStream(&obj_stream, &obj_stream_clone);
-	mapitest_print_retval(mt, "CloneStream");
-	if (retval != MAPI_E_SUCCESS) {
-		ret = false;
-	}
+	if (mt->info.rgwServerVersion[0] >= Exchange2010Version) {
+		mapitest_print(mt, "* SKIPPING test for LockRegionStream, UnlockRegionStream and CloneStream\n");
+	} else {
+		/* Step 13. Lock a region */
+		retval = LockRegionStream(&obj_stream, 0x2000, 0x1000, 0x0);
+		mapitest_print_retval(mt, "LockRegionStream");
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+		}
 
-	/* Step 17. Test the clone */
-	retval = SeekStream(&obj_stream_clone, 0x0, 0, &NewPosition);
-	mapitest_print_retval(mt, "SeekStream");
-	if (retval != MAPI_E_SUCCESS) {
-		ret = false;
-	}
-	retval = ReadStream(&obj_stream_clone, buf, MT_STREAM_MAX_SIZE, &read_size);
-	mapitest_print_retval_fmt(mt, "ReadStream", "(0x%x bytes read)", read_size);
-	if (retval != MAPI_E_SUCCESS) {
-		ret = false;
+		/* TODO: Step 14. Test the locking */
+
+
+		/* Step 15. Unlock the region */
+		retval = UnlockRegionStream(&obj_stream, 0x2000, 0x1000, 0x0);
+		mapitest_print_retval(mt, "UnlockRegionStream");
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+		}
+
+		/* Step 16. Clone the stream */
+		retval = CloneStream(&obj_stream, &obj_stream_clone);
+		mapitest_print_retval(mt, "CloneStream");
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+		}
+
+		/* Step 17. Test the clone */
+		retval = SeekStream(&obj_stream_clone, 0x0, 0, &NewPosition);
+		mapitest_print_retval(mt, "SeekStream");
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+		}
+		retval = ReadStream(&obj_stream_clone, buf, MT_STREAM_MAX_SIZE, &read_size);
+		mapitest_print_retval_fmt(mt, "ReadStream", "(0x%x bytes read)", read_size);
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+		}
 	}
 
 	/* Delete the message */
@@ -1515,7 +1519,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		goto cleanup;
 	}
 	retval = SaveChangesMessage(&obj_ref_folder, &obj_target_message, KeepOpenReadWrite);
-	mapitest_print_retval(mt, "SaveChangesMessage");
+	mapitest_print_retval_clean(mt, "SaveChangesMessage", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -1526,7 +1530,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	set_SPropValue_proptag(&lpProp[0], PR_DISPLAY_NAME, (const void *)targ_name);
 	set_SPropValue_proptag(&lpProp[1], PR_DEPARTMENT_NAME, (const void *)targ_dept);
 	retval = SetProps(&obj_target_message, lpProp, 2);
-	mapitest_print_retval(mt, "SetProps");
+	mapitest_print_retval_clean(mt, "SetProps", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
@@ -1594,8 +1598,8 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 			mapitest_print(mt, "* Step 8B - Check: Reference props still good - [SUCCESS] (%s)\n",
 				       lpProps[1].value.lpszA);
 		} else {
-			mapitest_print(mt, "* Step 8B - Check: Reference props still good [FAILURE] (%s)\n",
-				       lpProps[1].value.lpszA);
+			mapitest_print(mt, "* Step 8B - Check: Reference props still good [FAILURE] (%s, %s)\n",
+				       subject, lpProps[1].value.lpszA);
 			ret = false;
 			goto cleanup;
 		}
@@ -2536,27 +2540,27 @@ _PUBLIC_ bool mapitest_oxcprpt_WriteAndCommitStream(struct mapitest *mt)
 	data.length = stream_len;
 	data.data = (uint8_t *) stream;
 	retval = WriteAndCommitStream(&obj_stream, &data, &write_len);
-	mapitest_print_retval_fmt(mt, "WriteStream", "(0x%x bytes written)", write_len);
+	mapitest_print_retval_fmt_clean(mt, "WriteAndCommitStream", retval, "(0x%x bytes written)", write_len);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
 	/* Step 8. Save the attachment */
 	retval = SaveChangesAttachment(&obj_message, &obj_attach, KeepOpenReadOnly);
-	mapitest_print_retval(mt, "SaveChangesAttachment");
+	mapitest_print_retval_clean(mt, "SaveChangesAttachment", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
 	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
-	mapitest_print_retval(mt, "SaveChangesMessage");
+	mapitest_print_retval_clean(mt, "SaveChangesMessage", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
 	/* Step 9. Get stream size */
 	retval = GetStreamSize(&obj_stream, &StreamSize);
-	mapitest_print_retval(mt, "GetStreamSize");
+	mapitest_print_retval_clean(mt, "GetStreamSize", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
@@ -2568,7 +2572,7 @@ _PUBLIC_ bool mapitest_oxcprpt_WriteAndCommitStream(struct mapitest *mt)
 	mapi_object_init(&obj_stream);
 
 	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
-	mapitest_print_retval(mt, "OpenStream");
+	mapitest_print_retval_clean(mt, "OpenStream", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
@@ -2577,7 +2581,7 @@ _PUBLIC_ bool mapitest_oxcprpt_WriteAndCommitStream(struct mapitest *mt)
 	out_stream = talloc_size(mt->mem_ctx, StreamSize + 1);
 	do {
 		retval = ReadStream(&obj_stream, buf, MT_STREAM_MAX_SIZE, &read_size);
-		mapitest_print_retval_fmt(mt, "ReadStream", "(0x%x bytes read)", read_size);
+		mapitest_print_retval_fmt_clean(mt, "ReadStream", retval, "(0x%x bytes read)", read_size);
 		memcpy(out_stream + offset, buf, read_size);
 		offset += read_size;
 		if (retval != MAPI_E_SUCCESS) {

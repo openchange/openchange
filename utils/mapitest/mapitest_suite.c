@@ -199,7 +199,10 @@ static bool mapitest_suite_test_is_applicable(struct mapitest *mt, struct mapite
 {
 	uint16_t actualServerVer = mt->info.rgwServerVersion[0];
 
-	if ((test->flags & NotInExchange2010) && (actualServerVer >= Exchange2010Version)) {
+	if ((test->flags & NotInExchange2010) && (actualServerVer >= Exchange2010SP0Version)) {
+		return false;
+	}
+	if ((test->flags & NotInExchange2010SP0) && (actualServerVer == Exchange2010SP0Version)) {
 		return false;
 	}
 	return true;

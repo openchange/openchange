@@ -569,8 +569,8 @@ _PUBLIC_ bool mapitest_oxomsg_TransportNewMail(struct mapitest *mt)
 
 	/* Perform the TransportNewMail operation */
 	for (i = 0; i<10; ++i) {
-		retval = TransportNewMail(&(context->obj_test_folder), &(context->obj_test_msg[i]), "IPM.Note", MSGFLAG_SUBMIT);
-		mapitest_print_retval(mt, "TransportNewMail");
+		retval = TransportNewMail(&(context->obj_test_folder), &(context->obj_test_msg[i]), "IPM.Note", 0x8);
+		mapitest_print_retval_clean(mt, "TransportNewMail", retval);
 		if (retval != MAPI_E_SUCCESS) {
 			ret = false;
 		}

@@ -47,6 +47,8 @@ struct mapitest_suite;
 enum TestApplicabilityFlags {
 	ApplicableToAllVersions = 0,	/*!< This test is always applicable */
 	NotInExchange2010 = 0x1,	/*!< This test is not applicable to Exchange 2010 */
+	NotInExchange2010SP0 = 0x2,	/*!< This test is not applicable to Exchange 2010
+	                                     Service Pack 0, but is applicable to later versions */
 	LastTestApplicabilityFlag = 0xFFFF
 };
 
@@ -224,6 +226,6 @@ struct mt_common_tf_ctx
 #define MT_RED             "\033[1;31m"
 #define MT_GREEN           "\033[1;32m"
 
-#define Exchange2010Version	0x0E00
+#define Exchange2010SP0Version	0x0E00
 
 #endif /* !__MAPITEST_H__ */

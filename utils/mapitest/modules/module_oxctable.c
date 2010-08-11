@@ -558,22 +558,19 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 					  PR_FOLDER_CHILD_COUNT);
 	retval = SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Step 3. Create Bookmarks */
 	bkPosition = talloc_array(mt->mem_ctx, uint32_t, 1);
-	while (((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
-	       SRowSet.cRows) {
-		count -= SRowSet.cRows;
-		for (i = 0; i < SRowSet.cRows; i++) {
-			bkPosition = talloc_realloc(mt->mem_ctx, bkPosition, uint32_t, i + 2);
-			retval = CreateBookmark(&obj_htable, &(bkPosition[i]));
-			mapitest_print_retval_fmt(mt, "CreateBookmark", "(%.2d)", i);
-			if (GetLastError() != MAPI_E_SUCCESS) {
-				return false;
-			}
+	retval = QueryRows(&obj_htable, 100, TBL_ADVANCE, &SRowSet);
+	for (i = 0; i < SRowSet.cRows; i++) {
+		bkPosition = talloc_realloc(mt->mem_ctx, bkPosition, uint32_t, i + 2);
+		retval = CreateBookmark(&obj_htable, &(bkPosition[i]));
+		mapitest_print_retval_fmt_clean(mt, "CreateBookmark", retval, "(%.2d)", i);
+		if (retval != MAPI_E_SUCCESS) {
+			return false;
 		}
 	}
 
@@ -582,8 +579,8 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 	/* Step 4. Free Bookmarks */
 	for (i = 0; i < count; i++) {
 		retval = FreeBookmark(&obj_htable, bkPosition[i]);
-		mapitest_print_retval_fmt(mt, "FreeBookmark", "(%.2d)", i);
-		if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print_retval_fmt_clean(mt, "FreeBookmark", retval, "(%.2d)", i);
+		if (retval != MAPI_E_SUCCESS) {
 			return false;
 		}
 	}
@@ -634,21 +631,19 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 					  PR_FOLDER_CHILD_COUNT);
 	retval = SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Step 3. Create Bookmarks */
 	bkPosition = talloc_array(mt->mem_ctx, uint32_t, 1);
-	while (((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
-	       SRowSet.cRows) {
-		count -= SRowSet.cRows;
-		for (i = 0; i < SRowSet.cRows; i++) {
-			bkPosition = talloc_realloc(mt->mem_ctx, bkPosition, uint32_t, i + 2);
-			retval = CreateBookmark(&obj_htable, &(bkPosition[i]));
-			if (GetLastError() != MAPI_E_SUCCESS) {
-				return false;
-			}
+	retval = QueryRows(&obj_htable, 100, TBL_ADVANCE, &SRowSet);
+	for (i = 0; i < SRowSet.cRows; i++) {
+		bkPosition = talloc_realloc(mt->mem_ctx, bkPosition, uint32_t, i + 2);
+		retval = CreateBookmark(&obj_htable, &(bkPosition[i]));
+		mapitest_print_retval_fmt_clean(mt, "CreateBookmark", retval, "(%.2d)", i);
+		if (retval != MAPI_E_SUCCESS) {
+			return false;
 		}
 	}
 	mapitest_print_retval(mt, "CreateBookmark");
@@ -656,20 +651,20 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 	retval = mapi_object_bookmark_get_count(&obj_htable, &count);
 
 	/* Step 4. SeekRowBookmark */
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < SRowSet.cRows; i++) {
 		retval = SeekRowBookmark(&obj_htable, bkPosition[i], 0, &row);
-		mapitest_print_retval_fmt(mt, "SeekRowBookmark", "(%.2d)", i);
+		mapitest_print_retval_fmt_clean(mt, "SeekRowBookmark", retval, "(%.2d)", i);
 	}
 
 
 	/* Step 5. Free Bookmarks */
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < SRowSet.cRows; i++) {
 		retval = FreeBookmark(&obj_htable, bkPosition[i]);
-		if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print_retval_fmt_clean(mt, "FreeBookmark", retval, "(%.2d)", i);
+		if (retval != MAPI_E_SUCCESS) {
 			return false;
 		}
 	}
-	mapitest_print_retval(mt, "FreeBookmark");
 
 	/* Step 6. Release */
 	mapi_object_release(&obj_htable);

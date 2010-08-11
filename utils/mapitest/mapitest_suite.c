@@ -225,11 +225,11 @@ _PUBLIC_ bool mapitest_suite_run_test(struct mapitest *mt,
 	if (!suite || !name) return false;
 
 	for (el = suite->tests; el; el = el->next) {
-		if (!mapitest_suite_test_is_applicable(mt, el)) {
-			mapitest_stat_add_skipped_test(suite, el->name, el->flags);
-			return true;
-		}
 		if (!strcmp(el->name, name)) {
+			if (!mapitest_suite_test_is_applicable(mt, el)) {
+				mapitest_stat_add_skipped_test(suite, el->name, el->flags);
+				return true;
+			}
 			errno = 0;
 			mapitest_print_test_title_start(mt, el->name);
 			fn = el->fn;

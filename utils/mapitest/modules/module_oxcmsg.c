@@ -1130,7 +1130,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 }
 
 /**
-   \details Test the OpenEmbeddedMessage (0x46) and CreateAttach operations
+   \details Test the OpenEmbeddedMessage (0x46) and CreateAttach (0x23) operations
 
    This function:
         -# Logs on the user private mailbox

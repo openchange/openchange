@@ -1,5 +1,7 @@
 2010-08-11
     bradh
+	[r2117]
+		Microsoft confirmed that RopGetValidAttachments isn't supported in Exchange 2010.
 	[r2114]
 		fix missing part of r2113.
 	[r2113]

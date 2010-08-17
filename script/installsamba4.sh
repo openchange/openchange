@@ -223,10 +223,6 @@ packages() {
 	echo "Building and installing $lib library"
 	pushd samba4/$lib
 	error_check $? "$lib setup"
-    for lib in lib/talloc lib/tdb lib/tevent; do
-	echo "Building and installing $lib library"
-	pushd samba4/$lib
-	error_check $? "** $lib setup"
 
 	./autogen-waf.sh
 	error_check $? "$lib autogen"

@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+import sys
+
+sys.path.append("python")
+
 import os
 import openchange
 import openchange.ocpf as ocpf

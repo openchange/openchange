@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+import sys
+
+sys.path.append("python")
+
 from openchange import mapi
 import time
 

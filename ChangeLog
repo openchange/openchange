@@ -1,3 +1,10 @@
+2010-08-17
+    jkerihuel
+	[r2127]
+		Manually commit remaining changes from current-samba4 into trunk
+	[r2126]
+		Merge current-samba4 branch back into trunk
+
 2010-08-11
     bradh
 	[r2117]

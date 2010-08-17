@@ -19,6 +19,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#define DCERPC_IFACE_EXCHANGE_NSP_COMPAT 1
 #include "gen_ndr/ndr_exchange_c.h"
 #include <param.h>
 

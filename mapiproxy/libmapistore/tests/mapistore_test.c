@@ -56,7 +56,7 @@ int main(int argc, const char *argv[])
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_test");
 	lp_ctx = loadparm_init(mem_ctx);
-	lp_load_default(lp_ctx);
+	lpcfg_load_default(lp_ctx);
 	setup_logging(NULL, DEBUG_STDOUT);
 	
 	pc = poptGetContext("mapistore_test", argc, argv, long_options, 0);
@@ -71,7 +71,7 @@ int main(int argc, const char *argv[])
 	poptFreeContext(pc);
 
 	if (opt_debug) {
-		lp_set_cmdline(lp_ctx, "log level", opt_debug);
+		lpcfg_set_cmdline(lp_ctx, "log level", opt_debug);
 	}
 	
 	retval = mapistore_set_mapping_path("/tmp");

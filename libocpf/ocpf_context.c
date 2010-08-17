@@ -28,6 +28,8 @@
 #include "libocpf/ocpf.h"
 #include "libocpf/ocpf_api.h"
 
+#include <sys/stat.h>
+
 /**
    \details Initialize a new OCPF context
 

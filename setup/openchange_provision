@@ -23,14 +23,10 @@ import os,sys
 # To allow running from the source directory
 sys.path.append("python")
 
-from openchange import find_samba_python_path
-samba_path = find_samba_python_path()
-if samba_path is not None:
-	sys.path.append(samba_path)
+import openchange
 
 import samba
 import samba.getopt as options
-from samba.auth import system_session
 import openchange.provision as openchange
 
 parser = optparse.OptionParser("openchange_provision [options]")

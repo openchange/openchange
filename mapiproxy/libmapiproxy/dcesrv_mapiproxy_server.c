@@ -179,7 +179,7 @@ static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
 								   NDR_EXCHANGE_DS_RFR_NAME, NULL };
 
 	/* Check server mode */
-	server_mode = lp_parm_bool(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", false);
+	server_mode = lpcfg_parm_bool(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", false);
 	DEBUG(0, ("MAPIPROXY server mode %s\n", (server_mode == false) ? "disabled" : "enabled"));
 
 	if (server_mode == true) {
@@ -197,15 +197,15 @@ static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
 	}
 
 	/* Check for override/custom NSPI server */
-	nspi = lp_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "nspi_server");
+	nspi = lpcfg_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "nspi_server");
 	mapiproxy_server_overwrite(dce_ctx, nspi, NDR_EXCHANGE_NSP_NAME);
 
 	/* Check for override/custom EMSMDB server */
-	emsmdb = lp_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "emsmdb_server");
+	emsmdb = lpcfg_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "emsmdb_server");
 	mapiproxy_server_overwrite(dce_ctx, emsmdb, NDR_EXCHANGE_EMSMDB_NAME);
 
 	/* Check for override/custom RFR server */
-	rfr = lp_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "rfr_server");
+	rfr = lpcfg_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "rfr_server");
 	mapiproxy_server_overwrite(dce_ctx, rfr, NDR_EXCHANGE_DS_RFR_NAME);
 
 	for (server = server_list; server; server = server->next) {
@@ -300,7 +300,7 @@ _PUBLIC_ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *
 	if (!mem_ctx) return NULL;
 
 	/* Step 0. Retrieve a TDB context pointer on the emsabp_tdb database */
-	tdb_path = talloc_asprintf(mem_ctx, "%s/%s", lp_private_dir(lp_ctx), EMSABP_TDB_NAME);
+	tdb_path = talloc_asprintf(mem_ctx, "%s/%s", lpcfg_private_dir(lp_ctx), EMSABP_TDB_NAME);
 	emsabp_tdb_ctx = tdb_open(tdb_path, 0, 0, O_RDWR|O_CREAT, 0600);
 	talloc_free(tdb_path);
 	if (!emsabp_tdb_ctx) {
@@ -351,7 +351,7 @@ _PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_
 	if (!mem_ctx) return NULL;
 
 	/* Step 0. Retrieve a LDB context pointer on openchange.ldb database */
-	ldb_path = talloc_asprintf(mem_ctx, "%s/%s", lp_private_dir(lp_ctx), OPENCHANGE_LDB_NAME);
+	ldb_path = talloc_asprintf(mem_ctx, "%s/%s", lpcfg_private_dir(lp_ctx), OPENCHANGE_LDB_NAME);
 	openchange_ldb_ctx = ldb_init(mem_ctx, ev);
 	if (!openchange_ldb_ctx) {
 		talloc_free(mem_ctx);

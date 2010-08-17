@@ -443,6 +443,46 @@ static int fsocpf_op_get_fid_by_name(void *private_data, uint64_t parent_fid, co
 }
 
 /**
+  \details Set the properties for a folder
+  
+  \param path the path to the folder
+  \param fid the folder ID of the folder
+  \param aRow the properties to set on the folder
+*/
+static void fsocpf_set_folder_props(const char *path, uint64_t fid, struct SRow *aRow)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct mapi_SPropValue_array	mapi_lpProps;
+	uint32_t			ocpf_context_id;
+	char				*propfile;
+	uint32_t			i;
+
+	mem_ctx = talloc_named(NULL, 0, "fsocpf_set_folder_props");
+	
+	/* Create the array of mapi properties */
+	mapi_lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, aRow->cValues);
+	mapi_lpProps.cValues = aRow->cValues;
+	mapidump_SRow(aRow, "[+]");
+	for (i = 0; i < aRow->cValues; i++) {
+		cast_mapi_SPropValue((TALLOC_CTX *)mapi_lpProps.lpProps,
+				     &(mapi_lpProps.lpProps[i]), &(aRow->lpProps[i]));
+	}
+
+	/* Create the .properties file */
+	propfile = talloc_asprintf(mem_ctx, "%s/.properties", path);
+
+	ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_CREATE);
+
+	ocpf_write_init(ocpf_context_id, fid);
+	DEBUG(0, ("Writing %s\n", propfile));
+	ocpf_write_auto(ocpf_context_id, NULL, &mapi_lpProps);
+	ocpf_write_commit(ocpf_context_id);
+	ocpf_del_context(ocpf_context_id);
+	
+	talloc_free(mem_ctx);
+}
+
+/**
    \details Create a folder in the fsocpf backend
    
    \param private_data pointer to the current fsocpf context
@@ -455,11 +495,8 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	TALLOC_CTX			*mem_ctx;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_folder		*folder;
-	struct mapi_SPropValue_array	mapi_lpProps;
 	char				*newfolder;
 	const char			*new_folder_name = NULL;
-	char				*propfile;
-	uint32_t			ocpf_context_id;
 	uint64_t			dummy_fid;
 	struct fsocpf_folder_list	*newel;
 	DIR				*dir;
@@ -511,27 +548,8 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	DLIST_ADD_END(fsocpf_ctx->folders, newel, struct fsocpf_folder_list *);
 	DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", fid));
 
-	/* Step 3. Create the array of mapi properties */
-	mapi_lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, aRow->cValues);
-	mapi_lpProps.cValues = aRow->cValues;
-	mapidump_SRow(aRow, "[+]");
-	for (i = 0; i < aRow->cValues; i++) {
-		cast_mapi_SPropValue((TALLOC_CTX *)mapi_lpProps.lpProps,
-				     &(mapi_lpProps.lpProps[i]), &(aRow->lpProps[i]));
-	}
-
-	/* Step 4. Create the .properties file */
-	propfile = talloc_asprintf(mem_ctx, "%s/.properties", newfolder);
-	talloc_free(newfolder);
-
-	ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_CREATE);
-
-	ocpf_write_init(ocpf_context_id, fid);
-	DEBUG(0, ("Writing %s\n", propfile));
-	ocpf_write_auto(ocpf_context_id, NULL, &mapi_lpProps);
-	ocpf_write_commit(ocpf_context_id);
-	ocpf_del_context(ocpf_context_id);
-
+	fsocpf_set_folder_props(newfolder, fid, aRow);
+	
 	talloc_free(mem_ctx);
 
 	return MAPISTORE_SUCCESS;
@@ -1251,6 +1269,7 @@ static int fsocpf_op_setprops(void *private_data,
 			      struct SRow *aRow)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *) private_data;
+	struct fsocpf_folder	*folder;
 	struct fsocpf_message	*message;
 	int			i;
 
@@ -1258,7 +1277,11 @@ static int fsocpf_op_setprops(void *private_data,
 
 	switch (type) {
 	case MAPISTORE_FOLDER:
-		DEBUG(0, ("MAPISTORE_FOLDER case: Not implemented yet\n"));
+		folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fmid);
+		if (!folder) {
+			return MAPISTORE_ERR_NOT_FOUND;
+		}
+		fsocpf_set_folder_props(folder->path, folder->fid, aRow);
 		break;
 	case MAPISTORE_MESSAGE:
 		message = fsocpf_find_message_by_mid(fsocpf_ctx, fmid);

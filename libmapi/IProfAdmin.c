@@ -544,13 +544,16 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 	talloc_free(filename);
 
 	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
-		ldif->msg = ldb_msg_canonicalize(ldb_ctx, ldif->msg);
-		ret = ldb_add(ldb_ctx, ldif->msg);
+		struct ldb_message *normalized_msg;
+		ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &normalized_msg);
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_ACCESS, NULL);
+		ret = ldb_add(ldb_ctx, normalized_msg);
 		if (ret != LDB_SUCCESS) {
 			fclose(f);
 			OPENCHANGE_RETVAL_ERR(MAPI_E_NO_ACCESS, mem_ctx);
 		}
 		ldb_ldif_read_free(ldb_ctx, ldif);
+		talloc_free(normalized_msg);
 	}
 	fclose(f);
 
@@ -560,14 +563,17 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 
 	talloc_free(filename);
 	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
-		ldif->msg = ldb_msg_canonicalize(ldb_ctx, ldif->msg);
-		ret = ldb_add(ldb_ctx, ldif->msg);
+		struct ldb_message *normalized_msg;
+		ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &normalized_msg);
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_ACCESS, NULL);
+		ret = ldb_add(ldb_ctx, normalized_msg);
 		if (ret != LDB_SUCCESS) {
 			fclose(f);
 			OPENCHANGE_RETVAL_ERR(MAPI_E_NO_ACCESS, mem_ctx);
 		}
 
 		ldb_ldif_read_free(ldb_ctx, ldif);
+		talloc_free(normalized_msg);
 	}
 	fclose(f);
 

@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2008.
+   Copyright (C) Julien Kerihuel 2005 - 2010.
    Copyright (C) Jelmer Vernooij 2005.
  
    This program is free software; you can redistribute it and/or modify
@@ -22,6 +22,11 @@
 #include <fcntl.h>
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#define DCERPC_CALL_ECDOCONNECT_COMPAT 1
+#define DCERPC_CALL_ECDOCONNECTEX_COMPAT 1
+#define DCERPC_CALL_ECDODISCONNECT_COMPAT 1
+#define DCERPC_CALL_ECDORPC_COMPAT 1
+#define DCERPC_CALL_ECRREGISTERPUSHNOTIFICATION_COMPAT 1
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_exchange_c.h"
 #include <gen_ndr/ndr_misc.h>
@@ -119,6 +124,8 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 	r.in.rgwClientVersion[2] = 0x03e8;
 	r.in.pullTimeStamp = &pullTimeStamp;
 
+	r.out.szDNPrefix = (const char **)&ret->info.szDNPrefix;
+	r.out.szDisplayName = (const char **)&ret->info.szDisplayName;
 	r.out.handle = &ret->handle;
 	r.out.pcmsPollsMax = &ret->info.pcmsPollsMax;
 	r.out.pcRetry = &ret->info.pcRetry;
@@ -135,8 +142,8 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 		return NULL;
 	}
 
-	ret->info.szDisplayName = talloc_strdup(parent_mem_ctx, r.out.szDisplayName);
-	ret->info.szDNPrefix = talloc_strdup(parent_mem_ctx, r.out.szDNPrefix);
+	ret->info.szDNPrefix = talloc_steal(parent_mem_ctx, ret->info.szDNPrefix);
+	ret->info.szDisplayName = talloc_steal(parent_mem_ctx, ret->info.szDisplayName);
 
 	ret->info.rgwServerVersion[0] = r.out.rgwServerVersion[0];
 	ret->info.rgwServerVersion[1] = r.out.rgwServerVersion[1];
@@ -207,6 +214,8 @@ struct emsmdb_context *emsmdb_connect_ex(TALLOC_CTX *mem_ctx,
 	r.in.ulIcxrLink = 0xFFFFFFFF;
 	r.in.usFCanConvertCodePages = 0x1;
 
+	r.out.szDNPrefix = (const char **) &ctx->info.szDNPrefix;
+	r.out.szDisplayName = (const char **) &ctx->info.szDisplayName;
 	r.out.pcmsPollsMax = &ctx->info.pcmsPollsMax;
 	r.out.pcRetry = &ctx->info.pcRetry;
 	r.out.pcmsRetryDelay = &ctx->info.pcmsRetryDelay;
@@ -236,8 +245,8 @@ struct emsmdb_context *emsmdb_connect_ex(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ctx->info.szDisplayName = talloc_strdup(mem_ctx, r.out.szDisplayName);
-	ctx->info.szDNPrefix = talloc_strdup(mem_ctx, r.out.szDNPrefix);
+	ctx->info.szDisplayName = talloc_steal(mem_ctx, ctx->info.szDisplayName);
+	ctx->info.szDNPrefix = talloc_steal(mem_ctx, ctx->info.szDNPrefix);
 
 	ctx->info.rgwServerVersion[0] = r.out.rgwServerVersion[0];
 	ctx->info.rgwServerVersion[1] = r.out.rgwServerVersion[1];
@@ -490,7 +499,7 @@ struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 	notify_ctx->notifications->prev = NULL;
 	notify_ctx->notifications->next = NULL;
 
-	load_interfaces(mem_ctx, lp_interfaces(global_mapi_ctx->lp_ctx), &ifaces);
+	load_interfaces(mem_ctx, lpcfg_interfaces(global_mapi_ctx->lp_ctx), &ifaces);
 	ipaddr = iface_best_ip(ifaces, global_mapi_ctx->session->profile->server);
 	if (!ipaddr) {
 		talloc_free(notify_ctx->notifications);
@@ -688,7 +697,6 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 	ndr->data = data->data;
 	ndr->data_size = data->length;
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-	ndr->iconv_convenience = lp_iconv_convenience(lp_ctx);
 
 	switch(tag & 0xFFFF) {
 	case PT_I2:

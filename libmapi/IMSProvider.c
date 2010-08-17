@@ -20,6 +20,8 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/libmapi_private.h"
+#define DCERPC_CALL_RFRGETNEWDSA_COMPAT 1
+#define DCERPC_CALL_RFRGETFQDNFROMLEGACYDN_COMPAT 1
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_exchange_c.h"
 #include <core/error.h>

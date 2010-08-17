@@ -67,12 +67,24 @@ _PUBLIC_ bool mapitest_noserver_lzfu(struct mapitest *mt)
 		return false;
 	}
 
+	uint32_t crc = calculateCRC(compressed, 0x10, (49-0x10));
+	if (crc == 0xA7C7C5F1) {
+		  mapitest_print(mt, "* CRC pass\n");
+	} else {
+		  mapitest_print(mt, "* CRC failure, expected 0xA7C7C5F1, but got 0x%08X\n", crc);
+	}
+
 	retval = uncompress_rtf(mt->mem_ctx, compressed, compressed_length, &uncompressed1);
 	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print_retval(mt, "uncompress_rtf - step 1");
+		mapitest_print_retval(mt, "uncompress_rtf - step 1 (bad retval)");
 		return false;
 	}	   
 
+	if (sizeof(RTF_UNCOMPRESSED1) != uncompressed1.length) {
+		mapitest_print(mt, "* %-40s: FAILED (bad length: %i vs %i)\n", "uncompress_rtf - step 1",
+			       sizeof(RTF_UNCOMPRESSED1), uncompressed1.length);
+		return false;
+	}
 	if (!strncmp((char*)uncompressed1.data, RTF_UNCOMPRESSED1, uncompressed1.length)) {
 		mapitest_print(mt, "* %-40s: PASSED\n", "uncompress_rtf - step 1");
 	} else {
@@ -86,10 +98,9 @@ _PUBLIC_ bool mapitest_noserver_lzfu(struct mapitest *mt)
 		mapitest_print(mt, "* %-40s: uncompress RTF - Bad length\n", "LZFU");
 		return false;
 	}
-
 	retval = uncompress_rtf(mt->mem_ctx, compressed, compressed_length, &uncompressed2);
 	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print_retval(mt, "uncompress_rtf - step 2");
+		mapitest_print_retval(mt, "uncompress_rtf - step 2 (bad retval)");
 		return false;
 	}	   
 

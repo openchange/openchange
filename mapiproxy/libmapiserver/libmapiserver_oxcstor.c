@@ -75,7 +75,7 @@ _PUBLIC_ uint16_t libmapiserver_RopSetReceiveFolder_size(struct EcDoRpc_MAPI_REP
 
 
 /**
-   \details Calculate GetReceiveFolder (0x68) Rop size
+   \details Calculate GetReceiveFolder Rop size
 
    \param response pointer to the GetReceiveFolder EcDoRpc_MAPI_REPL structure
 
@@ -97,7 +97,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REP
 
 
 /**
-   \details Calculate GetPerUserLongTermIds (0x60) Rop size
+   \details Calculate GetPerUserLongTermIds Rop size
 
    \param response pointer to the GetPerUserLongTermIds EcDoRpc_MAPI_REPL structure
 
@@ -123,7 +123,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPerUserLongTermIds_size(struct EcDoRpc_MAP
 }
 
 /**
-   \details Calculate ReadPerUserInformation (0x63) Rop size
+   \details Calculate ReadPerUserInformation Rop size
 
    \param response pointer to the ReadPerUserInformation EcDoRpc_MAPI_REPL structure
 

@@ -93,7 +93,6 @@ static bool unpack(TALLOC_CTX *mem_ctx, struct EcDoRpc *EcDoRpc)
 	if (found == false) return false;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_pull);
-	ndr->iconv_convenience = smb_iconv_convenience_reinit(mem_ctx, "CP850", "UTF8", true, NULL);
 
 	ndr->data_size = mapi_req[i].u.mapi_proxypack.bin.cb;
 	ndr->data = mapi_req[i].u.mapi_proxypack.bin.lpb;
@@ -164,10 +163,8 @@ static bool pack(TALLOC_CTX *mem_ctx, struct EcDoRpc *EcDoRpc)
 	mapi_req = EcDoRpc->in.mapi_request->mapi_req;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_push);
-	ndr->iconv_convenience = smb_iconv_convenience_reinit(mem_ctx, "CP850", "UTF8", true, NULL);
 
 	nopack_ndr = talloc_zero(mem_ctx, struct ndr_push);
-	nopack_ndr->iconv_convenience = smb_iconv_convenience_reinit(mem_ctx, "CP850", "UTF8", true, NULL);
 
 	mapi_newreq = talloc_array(mem_ctx, struct EcDoRpc_MAPI_REQ, 2);
 
@@ -298,7 +295,7 @@ static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 	struct loadparm_context	*lp_ctx;
 
 	/* Fetch the mapi call list from smb.conf */
-	calls = str_list_make(dce_ctx, lp_parm_string(dce_ctx->lp_ctx, NULL, MPM_NAME, "opnums"), NULL);
+	calls = str_list_make(dce_ctx, lpcfg_parm_string(dce_ctx->lp_ctx, NULL, MPM_NAME, "opnums"), NULL);
 
 	mpm = talloc_zero(dce_ctx, struct mpm_pack);
 	mpm->mapi_calls = talloc_zero(mpm, uint8_t);
@@ -324,10 +321,10 @@ static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 	mpm->mapi_calls[i] = 0;
 
 	/* Fetch the lasthop parameter from smb.conf */
-	mpm->lasthop = lp_parm_bool(dce_ctx->lp_ctx, NULL, MPM_NAME, "lasthop", true);
+	mpm->lasthop = lpcfg_parm_bool(dce_ctx->lp_ctx, NULL, MPM_NAME, "lasthop", true);
 
 	lp_ctx = loadparm_init(dce_ctx);
-	lp_load_default(lp_ctx);
+	lpcfg_load_default(lp_ctx);
 	dcerpc_init(lp_ctx);
 
 	return NT_STATUS_OK;

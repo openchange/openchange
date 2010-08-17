@@ -58,7 +58,7 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 
 	/* Retrieve the binding string from parametric options if undefined */
 	if (!binding) {
-		binding = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "binding");
+		binding = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "binding");
 		if (!binding) {
 			DEBUG(0, ("You must specify a DCE/RPC binding string\n"));
 			return NT_STATUS_INVALID_PARAMETER;
@@ -66,10 +66,10 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Retrieve parametric options */
-	machine_account = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "use_machine_account", false);
-	user = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "username");
-	pass = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "password");
-	domain = lp_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "domain");
+	machine_account = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "use_machine_account", false);
+	user = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "username");
+	pass = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "password");
+	domain = lpcfg_parm_string(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "domain");
 
 	/* Retrieve private mapiproxy data */
 	private = dce_call->context->private_data;
@@ -196,7 +196,7 @@ static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, cons
 		DEBUG(5, ("dcerpc_mapiproxy: Delegated credentials acquired\n"));
 	}
 
-	delegated = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "delegated_auth", false);
+	delegated = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "delegated_auth", false);
 	if (delegated == false) {
 		status = mapiproxy_op_connect(dce_call, table, NULL);
 	}
@@ -225,7 +225,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 		  dce_call->conn->server_id.id, dce_call->conn->server_id.id2, dce_call->conn->server_id.node));
 
 	/* Retrieve server mode parametric option */
-	server_mode = lp_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", false);
+	server_mode = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", false);
 
 	/* Initialize private structure */
 	private = talloc(dce_call->context, struct dcesrv_mapiproxy_private);
@@ -493,8 +493,7 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	if (private->server_mode == false) {
 	ahead:
 		if (mapiproxy.ahead == true) {
-			push = ndr_push_init_ctx(dce_call, 
-						 lp_iconv_convenience(dce_call->conn->dce_ctx->lp_ctx));
+			push = ndr_push_init_ctx(dce_call);
 			NT_STATUS_HAVE_NO_MEMORY(push);
 			ndr_err = call->ndr_push(push, NDR_OUT, r);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -589,7 +588,7 @@ static NTSTATUS mapiproxy_op_init_server(struct dcesrv_context *dce_ctx, const s
 	ret = mapiproxy_server_init(dce_ctx);
 	NT_STATUS_NOT_OK_RETURN(ret);
 
-	ifaces = str_list_make(dce_ctx, lp_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "interfaces"), NULL);
+	ifaces = str_list_make(dce_ctx, lpcfg_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "interfaces"), NULL);
 
 	for (i = 0; ifaces[i]; i++) {
 		/* Register the interface */

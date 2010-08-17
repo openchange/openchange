@@ -61,8 +61,8 @@ static enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 1. We don't have load-balancing support yet, just return Samba FQDN name */
-	netbiosname = lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
-	realm = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+	netbiosname = lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
+	realm = lpcfg_realm(dce_call->conn->dce_ctx->lp_ctx);
 	if (!netbiosname || !realm) {
 		r->out.ppszUnused = NULL;
 		r->out.ppszServer = NULL;
@@ -110,8 +110,8 @@ static enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *d
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	netbiosname = lp_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
-	realm = lp_realm(dce_call->conn->dce_ctx->lp_ctx);
+	netbiosname = lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
+	realm = lpcfg_realm(dce_call->conn->dce_ctx->lp_ctx);
 	if (!netbiosname || !realm) {
 		goto failure;
 	}

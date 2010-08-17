@@ -76,7 +76,7 @@ static enum ndr_err_code ndr_pull_lzxpress_decompress(struct ndr_pull *subndr,
 	struct ndr_pull *comndr;
 	DATA_BLOB uncompressed;
 
-	ndrpush = ndr_push_init_ctx(subndr, subndr->iconv_convenience);
+	ndrpush = ndr_push_init_ctx(subndr);
 	NDR_ERR_HAVE_NO_MEMORY(ndrpush);
 
 	NDR_CHECK(ndr_pull_lxpress_chunk(subndr, ndrpush, decompressed_len));
@@ -98,7 +98,6 @@ static enum ndr_err_code ndr_pull_lzxpress_decompress(struct ndr_pull *subndr,
 	comndr->data_size = uncompressed.length;
 	comndr->offset = 0;
 
-	comndr->iconv_convenience = talloc_reference(comndr, subndr->iconv_convenience);
 	*_comndr = comndr;
 	return NDR_ERR_SUCCESS;
 }
@@ -890,19 +889,25 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.picxr));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.szDNPrefix));
-		if (r->out.szDNPrefix) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->out.szDNPrefix, CH_DOS)));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->out.szDNPrefix, CH_DOS)));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->out.szDNPrefix, ndr_charset_length(r->out.szDNPrefix, CH_DOS), sizeof(uint8_t), CH_DOS));
+		if (r->out.szDNPrefix == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.szDisplayName));
-		if (r->out.szDisplayName) {
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->out.szDisplayName, CH_DOS)));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.szDNPrefix));
+		if (r->out.szDNPrefix) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDNPrefix, CH_DOS)));
 			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(r->out.szDisplayName, CH_DOS)));
-			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->out.szDisplayName, ndr_charset_length(r->out.szDisplayName, CH_DOS), sizeof(uint8_t), CH_DOS));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDNPrefix, CH_DOS)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.szDNPrefix, ndr_charset_length(*r->out.szDNPrefix, CH_DOS), sizeof(uint8_t), CH_DOS));
+		}
+		if (r->out.szDisplayName == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.szDisplayName));
+		if (*r->out.szDisplayName) {
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDisplayName, CH_DOS)));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, ndr_charset_length(*r->out.szDisplayName, CH_DOS)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.szDisplayName, ndr_charset_length(*r->out.szDisplayName, CH_DOS), sizeof(uint8_t), CH_DOS));
 		}
 		for (cntr_rgwServerVersion_0 = 0; cntr_rgwServerVersion_0 < 3; cntr_rgwServerVersion_0++) {
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.rgwServerVersion[cntr_rgwServerVersion_0]));
@@ -947,7 +952,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 	TALLOC_CTX	*_mem_save_pcmsRetryDelay_0;
 	TALLOC_CTX	*_mem_save_picxr_0;
 	TALLOC_CTX	*_mem_save_szDNPrefix_0;
+	TALLOC_CTX	*_mem_save_szDNPrefix_1;
 	TALLOC_CTX	*_mem_save_szDisplayName_0;
+	TALLOC_CTX	*_mem_save_szDisplayName_1;
 	TALLOC_CTX	*_mem_save_pulTimeStamp_0;
 	TALLOC_CTX	*_mem_save_rgbAuxIn_0;
 	TALLOC_CTX	*_mem_save_pcbAuxOut_0;
@@ -1019,9 +1026,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 		ZERO_STRUCTP(r->out.pcmsRetryDelay);
 		NDR_PULL_ALLOC(ndr, r->out.picxr);
 		ZERO_STRUCTP(r->out.picxr);
+		NDR_PULL_ALLOC(ndr, r->out.szDNPrefix);
+		ZERO_STRUCTP(r->out.szDNPrefix);
+		NDR_PULL_ALLOC(ndr, r->out.szDisplayName);
+		ZERO_STRUCTP(r->out.szDisplayName);
 		NDR_PULL_ALLOC(ndr, r->out.pulTimeStamp);
 		*r->out.pulTimeStamp = *r->in.pulTimeStamp;
-		NDR_PULL_ALLOC(ndr, r->out.rgbAuxOut);
 		NDR_PULL_ALLOC(ndr, r->out.pcbAuxOut);
 		*r->out.pcbAuxOut = *r->in.pcbAuxOut;
 	}		
@@ -1062,42 +1072,54 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.picxr, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.picxr));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_picxr_0, LIBNDR_FLAG_REF_ALLOC);
+
+		_mem_save_szDNPrefix_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.szDNPrefix, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_szDNPrefix));
 		if (_ptr_szDNPrefix) {
-			NDR_PULL_ALLOC(ndr, r->out.szDNPrefix);
+			NDR_PULL_ALLOC(ndr, *r->out.szDNPrefix);
 		} else {
-			r->out.szDNPrefix = NULL;
+			*r->out.szDNPrefix = NULL;
 		}
-		if (r->out.szDNPrefix) {
-			_mem_save_szDNPrefix_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.szDNPrefix, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->out.szDNPrefix));
-			NDR_CHECK(ndr_pull_array_length(ndr, &r->out.szDNPrefix));
-			if (ndr_get_array_length(ndr, &r->out.szDNPrefix) > ndr_get_array_size(ndr, &r->out.szDNPrefix)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.szDNPrefix), ndr_get_array_length(ndr, &r->out.szDNPrefix));
+		if (*r->out.szDNPrefix) {
+			_mem_save_szDNPrefix_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.szDNPrefix, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, r->out.szDNPrefix));
+			NDR_CHECK(ndr_pull_array_length(ndr, r->out.szDNPrefix));
+			if (ndr_get_array_length(ndr, r->out.szDNPrefix) > ndr_get_array_size(ndr, r->out.szDNPrefix)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.szDNPrefix), ndr_get_array_length(ndr, r->out.szDNPrefix));
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->out.szDNPrefix), sizeof(uint8_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->out.szDNPrefix, ndr_get_array_length(ndr, &r->out.szDNPrefix), sizeof(uint8_t), CH_DOS));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDNPrefix_0, 0);
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.szDNPrefix), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.szDNPrefix, ndr_get_array_length(ndr, r->out.szDNPrefix), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDNPrefix_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDNPrefix_0, LIBNDR_FLAG_REF_ALLOC);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.szDisplayName);
+		}
+		_mem_save_szDisplayName_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.szDisplayName, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_szDisplayName));
 		if (_ptr_szDisplayName) {
-			NDR_PULL_ALLOC(ndr, r->out.szDisplayName);
+			NDR_PULL_ALLOC(ndr, *r->out.szDisplayName);
 		} else {
-			r->out.szDisplayName = NULL;
+			*r->out.szDisplayName = NULL;
 		}
-		if (r->out.szDisplayName) {
-			_mem_save_szDisplayName_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.szDisplayName, 0);
-			NDR_CHECK(ndr_pull_array_size(ndr, &r->out.szDisplayName));
-			NDR_CHECK(ndr_pull_array_length(ndr, &r->out.szDisplayName));
-			if (ndr_get_array_length(ndr, &r->out.szDisplayName) > ndr_get_array_size(ndr, &r->out.szDisplayName)) {
-				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->out.szDisplayName), ndr_get_array_length(ndr, &r->out.szDisplayName));
+		if (*r->out.szDisplayName) {
+			_mem_save_szDisplayName_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.szDisplayName, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, r->out.szDisplayName));
+			NDR_CHECK(ndr_pull_array_length(ndr, r->out.szDisplayName));
+			if (ndr_get_array_length(ndr, r->out.szDisplayName) > ndr_get_array_size(ndr, r->out.szDisplayName)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.szDisplayName), ndr_get_array_length(ndr, r->out.szDisplayName));
 			}
-			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->out.szDisplayName), sizeof(uint8_t)));
-			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->out.szDisplayName, ndr_get_array_length(ndr, &r->out.szDisplayName), sizeof(uint8_t), CH_DOS));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDisplayName_0, 0);
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.szDisplayName), sizeof(uint8_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.szDisplayName, ndr_get_array_length(ndr, r->out.szDisplayName), sizeof(uint8_t), CH_DOS));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDisplayName_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_szDisplayName_0, LIBNDR_FLAG_REF_ALLOC);
+
 		for (cntr_rgwServerVersion_0 = 0; cntr_rgwServerVersion_0 < 3; cntr_rgwServerVersion_0++) {
 			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->out.rgwServerVersion[cntr_rgwServerVersion_0]));
 		}
@@ -1216,15 +1238,21 @@ _PUBLIC_ void ndr_print_EcDoConnectEx(struct ndr_print *ndr, const char *name, i
 		ndr->depth--;
 		ndr_print_ptr(ndr, "szDNPrefix", r->out.szDNPrefix);
 		ndr->depth++;
-		if (r->out.szDNPrefix) {
-			ndr_print_string(ndr, "szDNPrefix", r->out.szDNPrefix);
+		ndr_print_ptr(ndr, "szDNPrefix", *r->out.szDNPrefix);
+		ndr->depth++;
+		if (*r->out.szDNPrefix) {
+			ndr_print_string(ndr, "szDNPrefix", *r->out.szDNPrefix);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "szDisplayName", r->out.szDisplayName);
 		ndr->depth++;
-		if (r->out.szDisplayName) {
-			ndr_print_string(ndr, "szDisplayName", r->out.szDisplayName);
+		ndr_print_ptr(ndr, "szDisplayName", *r->out.szDisplayName);
+		ndr->depth++;
+		if (*r->out.szDisplayName) {
+			ndr_print_string(ndr, "szDisplayName", *r->out.szDisplayName);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr->print(ndr, "%s: ARRAY(%d)", "rgwServerVersion", (int)3);
 		ndr->depth++;

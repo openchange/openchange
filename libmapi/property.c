@@ -935,7 +935,6 @@ _PUBLIC_ struct RecurrencePattern *get_RecurrencePattern(TALLOC_CTX *mem_ctx,
         ndr->data_size = bin->cb;
 
         ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-        ndr->iconv_convenience = smb_iconv_convenience_reinit(mem_ctx, "CP850", "UTF8", true, NULL);
         RecurrencePattern = talloc_zero(mem_ctx, struct RecurrencePattern);
         ndr_err_code = ndr_pull_RecurrencePattern(ndr, NDR_SCALARS, RecurrencePattern);
 
@@ -977,7 +976,6 @@ _PUBLIC_ struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(T
         ndr->data_size = bin->cb;
 
         ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-        ndr->iconv_convenience = smb_iconv_convenience_reinit(mem_ctx, "CP850", "UTF8", true, NULL);
         arp = talloc_zero(mem_ctx, struct AppointmentRecurrencePattern);
         ndr_err_code = ndr_pull_AppointmentRecurrencePattern(ndr, NDR_SCALARS, arp);
 
@@ -1041,7 +1039,6 @@ _PUBLIC_ struct TimeZoneStruct *get_TimeZoneStruct(TALLOC_CTX *mem_ctx,
 	ndr->data_size = bin->cb;
 
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-	ndr->iconv_convenience = smb_iconv_convenience_reinit(mem_ctx, "CP850", "UTF8", true, NULL);
 	TimeZoneStruct = talloc_zero(mem_ctx, struct TimeZoneStruct);
 	ndr_err_code = ndr_pull_TimeZoneStruct(ndr, NDR_SCALARS, TimeZoneStruct);
 
@@ -1087,7 +1084,6 @@ _PUBLIC_ struct GlobalObjectId *get_GlobalObjectId(TALLOC_CTX *mem_ctx,
 	ndr->data_size = bin->cb;
 
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-	ndr->iconv_convenience = smb_iconv_convenience_reinit(mem_ctx, "CP850", "UTF8", true, NULL);
 	GlobalObjectId = talloc_zero(mem_ctx, struct GlobalObjectId);
 	ndr_err_code = ndr_pull_GlobalObjectId(ndr, NDR_SCALARS, GlobalObjectId);
 

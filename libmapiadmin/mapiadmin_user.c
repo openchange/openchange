@@ -33,6 +33,7 @@
 #include <ldap_ndr.h>
 
 #include <core/error.h>
+#define DCERPC_IFACE_SAMR_COMPAT 1
 #include <gen_ndr/ndr_samr.h>
 #include <gen_ndr/ndr_samr_c.h>
 
@@ -482,7 +483,7 @@ again:
 						      mapiadmin_ctx->description ?
 						      mapiadmin_ctx->description :
 						      "OpenChange account created by host %s: %s", 
-					 lp_netbios_name(global_mapi_ctx->lp_ctx), 
+					 lpcfg_netbios_name(global_mapi_ctx->lp_ctx), 
 					 timestring(mapiadmin_ctx->user_ctx, time(NULL)));
 
 	DEBUG(3, ("Resetting ACB flags, force pw change time\n"));

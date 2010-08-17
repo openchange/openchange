@@ -42,10 +42,10 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 	struct SRowSet		SRowSet;
 	struct SPropTagArray	*proptags;
 	uint32_t		i;
-	const char		*operation = lp_parm_string(torture->lp_ctx, NULL, "mapi", "operation");
-	const char		*role = lp_parm_string(torture->lp_ctx, NULL, "mapi", "role");
+	const char		*operation = lpcfg_parm_string(torture->lp_ctx, NULL, "mapi", "operation");
+	const char		*role = lpcfg_parm_string(torture->lp_ctx, NULL, "mapi", "role");
 	uint32_t		permission;
-	const char		*username = lp_parm_string(torture->lp_ctx, NULL, "mapi", "username");
+	const char		*username = lpcfg_parm_string(torture->lp_ctx, NULL, "mapi", "username");
 
 	/* init torture */
 	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_permissions");

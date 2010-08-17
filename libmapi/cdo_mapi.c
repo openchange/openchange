@@ -235,7 +235,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 	global_mapi_ctx->dumpdata = false;
 	global_mapi_ctx->session = NULL;
 	global_mapi_ctx->lp_ctx = loadparm_init(global_mapi_ctx->mem_ctx);
-	lp_load_default(global_mapi_ctx->lp_ctx);
+	lpcfg_load_default(global_mapi_ctx->lp_ctx);
 
 	/* Enable logging on stdout */
 	setup_logging(NULL, DEBUG_STDOUT);
@@ -324,7 +324,7 @@ _PUBLIC_ enum MAPISTATUS SetMAPIDebugLevel(uint32_t level)
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	debuglevel = talloc_asprintf(talloc_autofree_context(), "%u", level);
-	ret = lp_set_cmdline(global_mapi_ctx->lp_ctx, "log level", debuglevel);
+	ret = lpcfg_set_cmdline(global_mapi_ctx->lp_ctx, "log level", debuglevel);
 	talloc_free(debuglevel);
 
 	return (ret == true) ? MAPI_E_SUCCESS : MAPI_E_INVALID_PARAMETER;

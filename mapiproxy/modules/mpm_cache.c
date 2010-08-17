@@ -1109,11 +1109,11 @@ static NTSTATUS cache_init(struct dcesrv_context *dce_ctx)
 	mpm->attachments = NULL;
 	mpm->streams = NULL;
 
-	mpm->ahead = lp_parm_bool(dce_ctx->lp_ctx, NULL, MPM_NAME, "ahead", false);
-	mpm->sync = lp_parm_bool(dce_ctx->lp_ctx, NULL, MPM_NAME, "sync", false);
-	mpm->sync_min = lp_parm_int(dce_ctx->lp_ctx, NULL, MPM_NAME, "sync_min", 500000);
-	mpm->sync_cmd = str_list_make(dce_ctx, lp_parm_string(dce_ctx->lp_ctx, NULL, MPM_NAME, "sync_cmd"), " ");
-	mpm->dbpath = lp_parm_string(dce_ctx->lp_ctx, NULL, MPM_NAME, "path");
+	mpm->ahead = lpcfg_parm_bool(dce_ctx->lp_ctx, NULL, MPM_NAME, "ahead", false);
+	mpm->sync = lpcfg_parm_bool(dce_ctx->lp_ctx, NULL, MPM_NAME, "sync", false);
+	mpm->sync_min = lpcfg_parm_int(dce_ctx->lp_ctx, NULL, MPM_NAME, "sync_min", 500000);
+	mpm->sync_cmd = str_list_make(dce_ctx, lpcfg_parm_string(dce_ctx->lp_ctx, NULL, MPM_NAME, "sync_cmd"), " ");
+	mpm->dbpath = lpcfg_parm_string(dce_ctx->lp_ctx, NULL, MPM_NAME, "path");
 
 	if ((mpm->ahead == true) && mpm->sync) {
 		DEBUG(0, ("%s: cache:ahead and cache:sync are exclusive!\n", MPM_ERROR));
@@ -1136,7 +1136,7 @@ static NTSTATUS cache_init(struct dcesrv_context *dce_ctx)
 	}
 
 	lp_ctx = loadparm_init(dce_ctx);
-	lp_load_default(lp_ctx);
+	lpcfg_load_default(lp_ctx);
 	dcerpc_init(lp_ctx);
 
 	talloc_free(database);

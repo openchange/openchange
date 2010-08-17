@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+import sys
+
+sys.path.append("python")
+
 import os
 import openchange
 import openchange.mapistore as mapistore
@@ -10,6 +14,13 @@ os.mkdir("/tmp/mapistore")
 mapistore.set_mapping_path("/tmp/mapistore")
 MAPIStore = mapistore.mapistore()
 ctx_id = MAPIStore.add_context("fsocpf:///tmp/mapistore/0x0000000000010001")
+
+SPropParent = mapi.SPropValue()
+SPropParent.add(mapi.PR_FID, 0x0000000000010001)
+SPropParent.add(mapi.PR_DISPLAY_NAME, "parent")
+SPropParent.add(mapi.PR_COMMENT, "test parent")
+SPropParent.add(mapi.PR_FOLDER_TYPE, 1)
+MAPIStore.setprops(ctx_id, 0x0000000000010001, mapistore.MAPISTORE_FOLDER, SPropParent)
 
 SPropValue = mapi.SPropValue()
 SPropValue.add(mapi.PR_PARENT_FID, 0x0000000000010001)

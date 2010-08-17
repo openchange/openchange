@@ -452,6 +452,7 @@ char			*x500_get_servername(const char *);
 /* The following public definitions come from libmapi/lzfu.c */
 enum MAPISTATUS		WrapCompressedRTFStream(mapi_object_t *, DATA_BLOB *);
 enum MAPISTATUS		uncompress_rtf(TALLOC_CTX *, uint8_t *, uint32_t, DATA_BLOB *);
+uint32_t calculateCRC(uint8_t *, uint32_t, uint32_t);
 
 /* The following public definitions come from libmapi/utils.c */
 char			*guid_delete_dash(TALLOC_CTX *, const char *);

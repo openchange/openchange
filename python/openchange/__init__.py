@@ -21,24 +21,25 @@ __docformat__ = 'restructuredText'
 
 import os, sys
 
-def find_samba_python_path():
-    """Find the python path for the Samba python modules
+try:
+    import samba
+except ImportError:
+    # Try to fix up sys.path if Samba is installed in an unusual location
+    SAMBA_PREFIXES = ["/usr/local/samba", "/opt/samba"]
+    for samba_prefix in SAMBA_PREFIXES:
+        if not os.path.isdir(samba_prefix):
+            continue
+        for lib_dir in ["lib", "lib64"]:
+            python_version = "%d.%d" % sys.version_info[:2]
+            path = os.path.join(samba_prefix, lib_dir,
+                "python%s" % python_version, "site-packages")
+            if os.path.isdir(os.path.join(path, "samba")):
+                sys.path.append(path)
+                break
+    import samba
 
-    :return: Python path to Samba python modules, or None if 
-        it was already in the path
-    """
-    try:
-        import samba
-        return None # No extra path necessary
-    except ImportError:
-        SAMBA_PREFIXES = ["/usr/local/samba", "/opt/samba"]
-        LIB_DIRS = ["lib", "lib64"]
-        PYTHON_NAMES = ["python2.3", "python2.4", "python2.5", "python2.6"]
-        for samba_prefix in SAMBA_PREFIXES:
-            for lib_dir in LIB_DIRS:
-                for python_name in PYTHON_NAMES:
-                    path = os.path.join(samba_prefix, lib_dir, python_name, 
-                                        "site-packages")
-                    if os.path.isdir(os.path.join(path, "samba")):
-                        return path
-        raise ImportError("Unable to find the Samba python path")
+
+def test_suite():
+    import openchange.tests
+    return openchange.tests.test_suite()
+

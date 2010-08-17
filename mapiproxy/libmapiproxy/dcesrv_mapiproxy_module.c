@@ -178,7 +178,7 @@ static NTSTATUS mapiproxy_module_load(struct dcesrv_context *dce_ctx)
 	NTSTATUS			status;
 
 	/* Fetch the module list from smb.conf */
-	modules = str_list_make(dce_ctx, lp_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "modules"), NULL);
+	modules = str_list_make(dce_ctx, lpcfg_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "modules"), NULL);
 
 	/* Add modules to the list */
 	for (i = 0; modules[i]; i++) {

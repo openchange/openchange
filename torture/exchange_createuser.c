@@ -41,6 +41,7 @@
 #include <ldb_wrap.h>
 #include <ldap_ndr.h>
 #include <util_ldb.h>
+#define DCERPC_IFACE_SAMR_COMPAT 1
 #include <gen_ndr/ndr_samr.h>
 #include <gen_ndr/ndr_samr_c.h>
 #include <time.h>
@@ -320,7 +321,7 @@ struct test_join *torture_create_testuser(struct torture_context *torture,
 	int policy_min_pw_len = 0;
 	struct test_join *join;
 	char *random_pw;
-	const char *dc_binding = lp_parm_string(torture->lp_ctx,
+	const char *dc_binding = lpcfg_parm_string(torture->lp_ctx,
 											NULL, "torture", "dc_binding");
 
 	join = talloc(NULL, struct test_join);
@@ -473,7 +474,7 @@ again:
 	
 	u.info21.description.string = talloc_asprintf(join, 
 					 "Samba4 torture account created by host %s: %s", 
-					 lp_netbios_name(torture->lp_ctx), 
+					 lpcfg_netbios_name(torture->lp_ctx), 
 					 timestring(join, time(NULL)));
 
 	printf("Resetting ACB flags, force pw change time\n");

@@ -875,7 +875,7 @@ _PUBLIC_ int mapistore_get_fid_by_name(struct mapistore_context *mstore_ctx,
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
    where properties will be stored
-   \param fmid the idenfifier referencing the message/folder
+   \param fmid the identifier referencing the message/folder
    \param type the object type (folder or message)
    \param aRow pointer to the SRow structure
 

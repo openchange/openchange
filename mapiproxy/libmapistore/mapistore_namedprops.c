@@ -25,6 +25,7 @@
 #include "libmapi/libmapi_private.h"
 #include <ldb.h>
 
+#include <sys/stat.h>
 
 static const char *mapistore_namedprops_get_ldif_path(void)
 {
@@ -75,8 +76,11 @@ int mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
 		MAPISTORE_RETVAL_IF(!f, MAPISTORE_ERROR, NULL);
 
 		while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
-			ldif->msg = ldb_msg_canonicalize(ldb_ctx, ldif->msg);
-			ret = ldb_add(ldb_ctx, ldif->msg);
+			struct ldb_message *normalized_msg;
+			ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &normalized_msg);
+			MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);
+			ret = ldb_add(ldb_ctx, normalized_msg);
+			talloc_free(normalized_msg);
 			if (ret != LDB_SUCCESS) {
 				fclose(f);
 				MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);

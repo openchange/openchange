@@ -235,7 +235,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 {
 	struct ndr_push		*ndr;
 	
-	ndr = ndr_push_init_ctx(mem_ctx, iconv_convenience);
+	ndr = ndr_push_init_ctx(mem_ctx);
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	ndr->offset = 0;
 	if (blob->length) {

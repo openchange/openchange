@@ -37,9 +37,9 @@ bool torture_rpc_mapi_sendtasks(struct torture_context *torture)
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
 	bool			ret = true;
-	const char		*task = lp_parm_string(torture->lp_ctx, NULL, "mapi", "task");
-	uint32_t		priority = lp_parm_int(torture->lp_ctx, NULL, "mapi", "priority", 0);
-	uint32_t		status = lp_parm_int(torture->lp_ctx, NULL, "mapi", "status", 0);
+	const char		*task = lpcfg_parm_string(torture->lp_ctx, NULL, "mapi", "task");
+	uint32_t		priority = lpcfg_parm_int(torture->lp_ctx, NULL, "mapi", "priority", 0);
+	uint32_t		status = lpcfg_parm_int(torture->lp_ctx, NULL, "mapi", "status", 0);
 	struct mapi_session	*session;
 	uint64_t		id_task;
 	mapi_object_t		obj_store;

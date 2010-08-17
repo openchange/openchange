@@ -31,7 +31,7 @@ static NTSTATUS dummy_init(struct dcesrv_context *dce_ctx)
 {
 	const char	*test;
 
-	test = lp_parm_string(dce_ctx->lp_ctx, NULL, "mpm_dummy", "test");
+	test = lpcfg_parm_string(dce_ctx->lp_ctx, NULL, "mpm_dummy", "test");
 	if (test) {
 		DEBUG(0, ("Sample dummy string: %s\n", test));
 	}

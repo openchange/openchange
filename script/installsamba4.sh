@@ -14,13 +14,16 @@ fi
 # If you have a samba checkout (even not up-to-date), you can make this a lot faster using --reference, e.g.
 # GIT_REFERENCE="--reference $HOME/samba-master"
 GIT_REPO=git://git.samba.org/samba.git
-# You could also use something like
+# If you have an up-to-date checkout, you could also use something like
 # GIT_REPO=$HOME/samba-master
 
 # Set SAMBA_PREFIX to wherever you want to install to. Defaults to /usr/local/samba, as if you did the build manually
 if test x"$SAMBA_PREFIX" = x""; then
     SAMBA_PREFIX="/usr/local/samba"
 fi
+
+# hack to work around waf build bug
+export CC="ccache gcc -I$SAMBA_PREFIX/include"
 
 export PKG_CONFIG_PATH=$SAMBA_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
 
@@ -45,7 +48,7 @@ cleanup_lib() {
     if test -f samba4/$lib/Makefile; then
 	echo "cleaning up $lib directory"
 	pushd samba4/$lib
-	make distclean
+	$MAKE distclean
 	popd
     fi
 }
@@ -56,6 +59,10 @@ cleanup_talloc() {
 
 cleanup_tdb() {
     cleanup_lib "lib/tdb"
+}
+
+cleanup_ldb() {
+    cleanup_lib "source4/lib/ldb"
 }
 
 delete_install() {
@@ -86,6 +93,7 @@ delete_install() {
 
     cleanup_talloc
     cleanup_tdb
+    cleanup_ldb
 }
 
 #
@@ -209,32 +217,37 @@ patch() {
 # talloc, tdb, tevent, ldb
 #
 packages() {
+    delete_install
 
-#    delete_install
+    for lib in lib/talloc lib/tdb lib/tevent source4/lib/ldb; do
+	echo "Building and installing $lib library"
+	pushd samba4/$lib
+	error_check $? "$lib setup"
     for lib in lib/talloc lib/tdb lib/tevent; do
 	echo "Building and installing $lib library"
 	pushd samba4/$lib
 	error_check $? "** $lib setup"
 
-	./autogen.sh
-	error_check $? "** $lib autogen"
+	./autogen-waf.sh
+	error_check $? "$lib autogen"
 
-	./configure --prefix=$SAMBA_PREFIX
-	error_check $? "** $lib configure"
+	./configure --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
+	error_check $? "$lib configure"
 
 	make
-	error_check $? "** $lib make"
+	error_check $? "$lib make"
 
 	if test -w `dirname $SAMBA_PREFIX`; then
 	    make install
-	    error_check $? "** $lib make install"
+	    error_check $? "$lib make install"
 	else
 	    sudo make install
-	    error_check $? "** $lib sudo make install"
+	    error_check $? "$lib sudo make install"
 	fi
 
-	make realdistclean
-	error_check $? "** $lib make realdistclean"
+
+	make distclean
+	error_check $? "$lib make distclean"
 
 	popd
     done
@@ -244,20 +257,14 @@ packages() {
 # Compile Samba4
 #
 compile() {
-    delete_install
-
-    # Cleanup tdb and talloc directories
-    #   cleanup_talloc
-    #   cleanup_tdb
-
     echo "Step1: Preparing Samba4 system"
     pushd samba4/source4
     error_check $? "samba4 setup"
 
-    ./autogen-autotools.sh
+    ./autogen.sh
     error_check $? "samba4 autogen"
 
-    ./configure.developer --enable-debug --prefix=$SAMBA_PREFIX
+    ./configure.developer --bundled-libraries=ldb,NONE --prefix=$SAMBA_PREFIX
     error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"
@@ -277,13 +284,13 @@ post_install() {
 	    error_check $? "post_install setup"
 	    if test -w `dirname $SAMBA_PREFIX`; then
 		$MAKE install
-		error_check $? "** post make install"
+		error_check $? "post make install"
 	    else
 		sudo $MAKE install
-		error_check $? "** post sudo make install"
+		error_check $? "post sudo make install"
 	    fi
 	    popd
-            echo "[+] Add comparison_fn_t support to ndr.h header file"
+	    echo "[+] Add comparison_fn_t support to ndr.h header file"
 	    pushd $SAMBA_PREFIX/include
 	    if test -w $SAMBA_PREFIX/include; then
 		sed -e "34i\\
@@ -302,7 +309,7 @@ typedef int (*comparison_fn_t)(const void *, const void *);\\
 #endif" ndr.h > /tmp/ndr.h
 		sudo mv /tmp/ndr.h ndr.h
 	    fi
-            popd
+	    popd
 	    ;;
     esac
 }
@@ -323,6 +330,7 @@ install() {
 	sudo $MAKE install
 	error_check $? "samba4 install"
     fi
+
     popd
 }
 
@@ -355,17 +363,17 @@ case $1 in
     git-all)
 	checkout
 	patch
+	packages
 	compile
 	install
-	packages
 	post_install
 	;;
     all)
 	download
 	patch
+	packages
 	compile
 	install
-	packages
 	post_install
 	;;
     *)

@@ -211,6 +211,42 @@ static PyObject *py_MAPIStore_rmdir(PyMAPIStoreObject *self, PyObject *args)
 	return PyInt_FromLong(mapistore_rmdir(self->mstore_ctx, context_id, parent_fid, fid, flags));
 }
 
+static PyObject *py_MAPIStore_setprops(PyMAPIStoreObject *self, PyObject *args)
+{
+	uint32_t		context_id;
+	uint64_t		fid;
+	uint8_t			object_type;
+	PyObject		*mod_mapi;
+	PyObject		*pySPropValue;
+	PySPropValueObject	*SPropValue;
+	struct SRow		aRow;
+
+	mod_mapi = PyImport_ImportModule("openchange.mapi");
+	if (mod_mapi == NULL) {
+		printf("Can't load module\n");
+		return NULL;
+	}
+	SPropValue_Type = (PyTypeObject *)PyObject_GetAttrString(mod_mapi, "SPropValue");
+	if (SPropValue_Type == NULL) {
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "kKbO", &context_id, &fid, &object_type, &pySPropValue)) {
+		return NULL;
+	}
+
+	if (!PyObject_TypeCheck(pySPropValue, SPropValue_Type)) {
+		PyErr_SetString(PyExc_TypeError, "Function require SPropValue object");
+		return NULL;
+	}
+
+	SPropValue = (PySPropValueObject *)pySPropValue;
+	aRow.cValues = SPropValue->cValues;
+	aRow.lpProps = SPropValue->SPropValue;
+
+	return PyInt_FromLong(mapistore_setprops(self->mstore_ctx, context_id, fid, object_type, &aRow));
+}
+
 static PyMethodDef mapistore_methods[] = {
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	{ "del_context", (PyCFunction)py_MAPIStore_del_context, METH_VARARGS },
@@ -221,6 +257,7 @@ static PyMethodDef mapistore_methods[] = {
 	{ "closedir", (PyCFunction)py_MAPIStore_closedir, METH_VARARGS },
 	{ "mkdir", (PyCFunction)py_MAPIStore_mkdir, METH_VARARGS },
 	{ "rmdir", (PyCFunction)py_MAPIStore_rmdir, METH_VARARGS },
+	{ "setprops", (PyCFunction)py_MAPIStore_setprops, METH_VARARGS },
 	{ NULL },
 };
 
@@ -285,6 +322,9 @@ void initmapistore(void)
 	PyModule_AddObject(m, "DEL_MESSAGES", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "DEL_FOLDERS", PyInt_FromLong(0x4));
 	PyModule_AddObject(m, "DELETE_HARD_DELETE", PyInt_FromLong(0x10));
+
+	PyModule_AddObject(m, "MAPISTORE_FOLDER", PyInt_FromLong(MAPISTORE_FOLDER));
+	PyModule_AddObject(m, "MAPISTORE_MESSAGE", PyInt_FromLong(MAPISTORE_MESSAGE));
 
 	Py_INCREF(&PyMAPIStore);
 

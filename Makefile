@@ -21,6 +21,9 @@ samba:
 samba-git: 
 	./script/installsamba4.sh git-all
 
+samba-git-update:
+	./script/installsamba4.sh git-update
+
 ifneq ($(MAKECMDGOALS), samba)
 ifneq ($(MAKECMDGOALS), samba-git)
 include config.mk

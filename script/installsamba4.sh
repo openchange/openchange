@@ -127,6 +127,32 @@ checkout() {
 }
 
 #
+# Update Samba4
+#
+update() {
+    GITPATH=`whereis -b git`
+
+    if test x"$GITPATH" = x"git:"; then
+	echo "git was not found in your path!"
+	echo "Please install git"
+	exit 1
+    fi
+
+    echo "Step1: Update Samba4 to latest GIT revision"
+    pushd samba4
+    git pull 
+    error_check $? "Step1"
+
+    if test x"$SAMBA4_GIT_REV" != x""; then
+	echo "Step3: Revert to commit $SAMBA4_GIT_REV"
+	git reset --hard $SAMBA4_GIT_REV
+	error_check $? "Step3"
+    fi
+    popd
+    return $?
+}
+
+#
 # Download Samba4 release
 #
 download() {
@@ -359,6 +385,13 @@ case $1 in
     git-all)
 	checkout
 	patch
+	packages
+	compile
+	install
+	post_install
+	;;
+    git-update)
+	update
 	packages
 	compile
 	install

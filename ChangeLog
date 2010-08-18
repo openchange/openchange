@@ -1,3 +1,9 @@
+2010-08-18
+    jkerihuel
+	[r2131]
+		Add a git update case in installsamba.sh script and make it available
+		within OpenChange Makefile.
+
 2010-08-17
     jkerihuel
 	[r2127]

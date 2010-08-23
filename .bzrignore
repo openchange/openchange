@@ -55,3 +55,6 @@ libmapi++/examples/messages
 _trial_temp
 mapiproxy/libmapiproxy/openchangedb_property.c
 stamp-h1
+libmapi/codepage_lcid.c
+pyopenchange/pymapi_properties.c
+setup/mapistore/mapistore_namedprops.ldif

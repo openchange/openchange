@@ -291,7 +291,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 					  PR_SMTP_ADDRESS_UNICODE);
 
 	username = talloc_array(mt->mem_ctx, char *, 2);
-	username[0] = mt->info.szDisplayName;
+	username[0] = (char *)mt->profile->mailbox;
 	username[1] = NULL;
 
 	retval = ResolveNames(mapi_object_get_session(&obj_message), 
@@ -427,7 +427,7 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 					  PR_SMTP_ADDRESS_UNICODE);
 
 	username = talloc_array(mt->mem_ctx, char *, 2);
-	username[0] = mt->info.szDisplayName;
+	username[0] = (char *)mt->profile->mailbox;
 	username[1] = NULL;
 
 	retval = ResolveNames(mapi_object_get_session(&obj_message),
@@ -584,7 +584,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 					  PR_SMTP_ADDRESS_UNICODE);
 
 	username = talloc_array(mt->mem_ctx, char *, 2);
-	username[0] = mt->info.szDisplayName;
+	username[0] = (char *)mt->profile->mailbox;
 	username[1] = NULL;
 
 	retval = ResolveNames(mapi_object_get_session(&obj_message),

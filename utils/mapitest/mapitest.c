@@ -177,6 +177,7 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 		return false;
 	}
 	mt->session = session;
+	mt->profile = session->profile;
 
 	info = emsmdb_get_info(session);
 	memcpy(&mt->info, info, sizeof (struct emsmdb_info));

@@ -613,10 +613,15 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 	mapi_object_init(&obj_table);
 	retval = GetContentsTable(obj_folder, &obj_table, 0, &count);
 	if (retval != MAPI_E_SUCCESS){
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	
 	DEBUG(0, ("MAILBOX (%d appointments)\n", count));
+	if (count == 0) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
 					  PR_FID,
@@ -625,7 +630,8 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("SetColumns", GetLastError());
+		mapi_errstr("SetColumns", retval);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 	

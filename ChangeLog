@@ -1,3 +1,18 @@
+2010-08-26
+    bradh
+	[r2137]
+		Prevent segfault if we don't have any appointments.
+		
+		Resolves issue #284.
+		
+		Also prevent leaking talloc context in a couple of error cases.
+	[r2136]
+		Merge Rev 2133 from branches/current-samba4 to trunk.
+		
+		I inadvertently committed this to the wrong branch.
+		
+		This pushes the fix for #229 into trunk.
+
 2010-08-23
     jelmer
 	[r2134]

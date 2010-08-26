@@ -1104,19 +1104,17 @@ void ical_property_UID(struct exchange2ical *exchange2ical)
 	struct GlobalObjectId	*GlbObjId;
 	icalproperty		*prop;
 
-	outstr = talloc_strdup(exchange2ical->mem_ctx, "uid");
+	outstr = talloc_strdup(exchange2ical->mem_ctx, "");
 	
 	if(exchange2ical->GlobalObjectId){
 		GlbObjId = get_GlobalObjectId(exchange2ical->mem_ctx, exchange2ical->GlobalObjectId);
 	}
 	
       
-	if (exchange2ical->GlobalObjectId && GlbObjId) {
-		if (GlbObjId->Size >= 12 && (0 == memcmp(GlbObjId->Data, GLOBAL_OBJECT_ID_DATA_START, 12))) {
+	if (exchange2ical->GlobalObjectId && (exchange2ical->GlobalObjectId->cb >= 36) && GlbObjId) {
+		if (GlbObjId->Size >= 16 && (0 == memcmp(GlbObjId->Data, GLOBAL_OBJECT_ID_DATA_START, 12))) {
 			fflush(0);
-			// TODO: could this code overrun GlobalObjectId->lpb?
-			// TODO: I think we should start at 12, not at zero...
-			for (i = 12; i < 52; i++) {
+			for (i = 12; i < exchange2ical->GlobalObjectId->cb; i++) {
 				char objID[6];
 				snprintf(objID, 6, "%.2X", exchange2ical->GlobalObjectId->lpb[i]);
 				outstr = talloc_strdup_append(outstr, objID);

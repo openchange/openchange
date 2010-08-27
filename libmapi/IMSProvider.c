@@ -98,7 +98,7 @@ static char *build_binding_string(TALLOC_CTX *mem_ctx,
 	}
 	/* If seal option is enabled in the profile */
 	if (profile->seal == true) {
-		binding = talloc_strdup_append(binding, "seal");
+		binding = talloc_strdup_append(binding, "seal,");
 	}
 
 	binding = talloc_strdup_append(binding, "]");

@@ -4263,20 +4263,18 @@ System Attendant Private Interface
 		[subcontext(0),flag(NDR_NOALIGN|NDR_REMAINING)] mapi_response	*mapi_response;
 	} mapi2k7_response;
 
-	MAPISTATUS EcDoRpcExt2(
-		[in,out]					   policy_handle	*handle,
-		[in,out]					   pulFlags		*pulFlags,
-		[in,subcontext(4),flag(NDR_NOALIGN|NDR_REMAINING)] mapi2k7_request	*rgbIn,
-		[in]						   uint32		cbIn,
-		[out]						   uint32		size,
-		[out]						   uint32		offset,
-		[out,subcontext(4),flag(NDR_NOALIGN|NDR_REMAINING)]mapi2k7_response	*rgbOut,
-		[in,out][range(0,262144)]			   uint32		*pcbOut,
-		[in,subcontext(4),flag(NDR_NOALIGN|NDR_REMAINING)] mapi2k7_AuxInfo	*rgbAuxIn,
-		[in]						   uint32		cbAuxIn,
- 		[out,subcontext(4),flag(NDR_NOALIGN|NDR_REMAINING)]mapi2k7_AuxInfo	*rgbAuxOut,
-		[in,out][range(0,4104)]				   uint32		*pcbAuxOut,
-		[out]						   uint32		*pullTransTime
+	[public,noprint] MAPISTATUS EcDoRpcExt2(
+		[in,out]					policy_handle	*handle,
+		[in,out]					uint32		*pulFlags,
+		[in, size_is(cbIn)]				uint8		rgbIn[],
+		[in]						uint32		cbIn,
+		[out, length_is(*pcbOut), size_is(*pcbOut)]	uint8		rgbOut[],
+		[in,out][range(0x0,0x40000)]			uint32		*pcbOut,
+		[in, size_is(cbAuxIn)]				uint8		rgbAuxIn[],
+		[in]						uint32		cbAuxIn,
+		[out, length_is(*pcbAuxOut), size_is(*pcbAuxOut)] uint32	rgbAuxOut[],
+		[in,out][range(0x0,0x1008)]			uint32		*pcbAuxOut,
+		[out]						uint32		*pulTransTime
 		);
 }
 

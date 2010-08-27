@@ -26,6 +26,7 @@
 #define DCERPC_CALL_ECDOCONNECTEX_COMPAT 1
 #define DCERPC_CALL_ECDODISCONNECT_COMPAT 1
 #define DCERPC_CALL_ECDORPC_COMPAT 1
+#define DCERPC_CALL_ECDORPCEXT2_COMPAT 1
 #define DCERPC_CALL_ECRREGISTERPUSHNOTIFICATION_COMPAT 1
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_exchange_c.h"
@@ -468,6 +469,141 @@ start:
 	*repl = r.out.mapi_response;
 
 	return status;
+}
+
+
+/**
+   \details Make a EMSMDB EXT2 transaction.
+
+   \param emsmdb_ctx pointer to the EMSMDB connection context
+   \param mem_ctx pointer to the memory context
+   \param req pointer to the MAPI request to send
+   \param repl pointer on pointer to the MAPI reply returned by the
+   server
+
+   \return NT_STATUS_OK on success, otherwise NT status error
+ */
+_PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
+					  TALLOC_CTX *mem_ctx,
+					  struct mapi_request *req,
+					  struct mapi_response **repl)
+{
+	NTSTATUS		status;
+	struct EcDoRpcExt2	r;
+	struct mapi2k7_response	mapi2k7_response;
+	struct ndr_push		*ndr_uncomp_rgbIn;
+	struct ndr_push		*ndr_comp_rgbIn;
+	struct ndr_push		*ndr_rgbIn;
+	struct ndr_pull		*ndr_pull = NULL;
+	uint32_t		pulFlags = 0x0;
+	uint32_t		pcbOut = 0x8007;
+	uint32_t		pcbAuxOut = 0x1008;
+	uint32_t		pulTransTime = 0;
+	DATA_BLOB		rgbOut;
+	struct RPC_HEADER_EXT	RPC_HEADER_EXT;
+
+	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
+	r.in.pulFlags = r.out.pulFlags = &pulFlags;
+
+	/* Step 1. Push mapi_request in a data blob */
+	ndr_uncomp_rgbIn = ndr_push_init_ctx(mem_ctx);
+	ndr_set_flags(&ndr_uncomp_rgbIn->flags, LIBNDR_FLAG_NOALIGN);
+	ndr_push_mapi_request(ndr_uncomp_rgbIn, NDR_SCALARS|NDR_BUFFERS, req);
+
+	/* Step 2. Compress the blob */
+	/* 	ndr_comp_rgbIn = ndr_push_init_ctx(mem_ctx); */
+	/* 	ndr_push_lzxpress_compress(ndr_comp_rgbIn, ndr_uncomp_rgbIn); */
+
+	/* If the compressed blob is larger than the uncompressed one, use obfuscation */
+	/* 	if (ndr_comp_rgbIn->offset > ndr_uncomp_rgbIn->offset) { */
+	/* 		talloc_free(ndr_comp_rgbIn); */
+	ndr_comp_rgbIn = ndr_uncomp_rgbIn;
+	obfuscate_data(ndr_comp_rgbIn->data, ndr_comp_rgbIn->offset, 0xA5);
+		
+	RPC_HEADER_EXT.Version = 0x0000;
+	RPC_HEADER_EXT.Flags = RHEF_XorMagic|RHEF_Last;
+	RPC_HEADER_EXT.Size = ndr_comp_rgbIn->offset;
+	RPC_HEADER_EXT.SizeActual = ndr_comp_rgbIn->offset;
+
+	ndr_rgbIn = ndr_push_init_ctx(mem_ctx);
+	ndr_set_flags(&ndr_rgbIn->flags, LIBNDR_FLAG_NOALIGN);
+	ndr_push_RPC_HEADER_EXT(ndr_rgbIn, NDR_SCALARS|NDR_BUFFERS, &RPC_HEADER_EXT);
+	ndr_push_bytes(ndr_rgbIn, ndr_comp_rgbIn->data, ndr_comp_rgbIn->offset);
+		/* 	} else { */
+		/* 		RPC_HEADER_EXT.Version = 0x0000; */
+		/* 		RPC_HEADER_EXT.Flags = RHEF_Compressed|RHEF_Last; */
+		/* 		RPC_HEADER_EXT.Size = ndr_comp_rgbIn->offset; */
+		/* 		RPC_HEADER_EXT.SizeActual = ndr_uncomp_rgbIn->offset; */
+
+		/* 		ndr_rgbIn = ndr_push_init_ctx(mem_ctx); */
+		/* 		ndr_set_flags(&ndr_rgbIn->flags, LIBNDR_FLAG_NOALIGN); */
+		/* 		ndr_push_RPC_HEADER_EXT(ndr_rgbIn, NDR_SCALARS|NDR_BUFFERS, &RPC_HEADER_EXT); */
+		/* 		ndr_push_bytes(ndr_rgbIn, ndr_comp_rgbIn->data, ndr_comp_rgbIn->offset); */
+		/* 	} */
+
+		/* Plain request (no obfuscation or compression) */
+		/* ndr_comp_rgbIn = ndr_uncomp_rgbIn; */
+		/* RPC_HEADER_EXT.Version = 0x0000; */
+		/* RPC_HEADER_EXT.Flags = RHEF_Last; */
+		/* RPC_HEADER_EXT.Size = ndr_uncomp_rgbIn->offset; */
+		/* RPC_HEADER_EXT.SizeActual = ndr_uncomp_rgbIn->offset; */
+
+		/* Pull the complete rgbIn */
+		/* ndr_rgbIn = ndr_push_init_ctx(mem_ctx); */
+		/* ndr_set_flags(&ndr_rgbIn->flags, LIBNDR_FLAG_NOALIGN); */
+		/* ndr_push_RPC_HEADER_EXT(ndr_rgbIn, NDR_SCALARS|NDR_BUFFERS, &RPC_HEADER_EXT); */
+		/* ndr_push_bytes(ndr_rgbIn, ndr_comp_rgbIn->data, ndr_comp_rgbIn->offset); */
+
+	r.in.rgbIn = ndr_rgbIn->data;
+	r.in.cbIn = ndr_rgbIn->offset;
+	r.in.pcbOut = r.out.pcbOut = &pcbOut;
+
+	r.in.rgbAuxIn = NULL;
+	r.in.cbAuxIn = 0;
+
+	r.in.pcbAuxOut = r.out.pcbAuxOut = &pcbAuxOut;
+
+	r.out.pulTransTime = &pulTransTime;
+
+	status = dcerpc_EcDoRpcExt2(emsmdb_ctx->rpc_connection, mem_ctx, &r);
+	talloc_free(ndr_rgbIn);
+	talloc_free(ndr_comp_rgbIn);
+		
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	} else if (r.out.result) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* Pull MAPI response form rgbOut */
+	rgbOut.data = r.out.rgbOut;
+	rgbOut.length = *r.out.pcbOut;
+	ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
+	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
+	
+	ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_response);
+
+	*repl = mapi2k7_response.mapi_response;
+
+	return status;
+}
+
+
+_PUBLIC_ NTSTATUS emsmdb_transaction_wrapper(struct mapi_session *session,
+					     TALLOC_CTX *mem_ctx,
+					     struct mapi_request *req,
+					     struct mapi_response **repl)
+{
+	switch (session->profile->exchange_version) {
+	case 0x0:
+		return emsmdb_transaction(session->emsmdb->ctx, mem_ctx, req, repl);
+	case 0x1:
+	case 0x2:
+		return emsmdb_transaction_ext2(session->emsmdb->ctx, mem_ctx, req, repl);
+		break;
+	}
+
+	return NT_STATUS_OK;
 }
 
 

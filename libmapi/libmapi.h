@@ -116,6 +116,8 @@ enum MAPISTATUS		nspi_ResolveNamesW(struct nspi_context *, TALLOC_CTX *, const c
 /* The following public definitions come from libmapi/emsmdb.c */
 NTSTATUS		emsmdb_transaction_null(struct emsmdb_context *, struct mapi_response **);
 NTSTATUS		emsmdb_transaction(struct emsmdb_context *, TALLOC_CTX *, struct mapi_request *, struct mapi_response **);
+NTSTATUS		emsmdb_transaction_ext2(struct emsmdb_context *, TALLOC_CTX *, struct mapi_request *, struct mapi_response **);
+NTSTATUS		emsmdb_transaction_wrapper(struct mapi_session *, TALLOC_CTX *, struct mapi_request *, struct mapi_response **);
 struct emsmdb_info	*emsmdb_get_info(struct mapi_session *);
 void			emsmdb_get_SRowSet(TALLOC_CTX *, struct loadparm_context *, struct SRowSet *, struct SPropTagArray *, DATA_BLOB *);
 

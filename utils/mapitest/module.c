@@ -41,6 +41,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	ret += module_errorchecks_init(mt);
 	ret += module_lcid_init(mt);
 	ret += module_mapidump_init(mt);
+	ret += module_lzxpress_init(mt);
 
 	return ret;
 }
@@ -452,6 +453,27 @@ _PUBLIC_ uint32_t module_mapidump_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "MESSAGEMOVEDNOTIF", "Test dump of a message move notification", mapitest_mapidump_messagemoved);
 	mapitest_suite_add_test(suite, "MESSAGECOPYNOTIF", "Test dump of a message copy notification", mapitest_mapidump_messagecopied);
 	mapitest_suite_add_test(suite, "MESSAGEMODIFIEDNOTIF", "Test dump of a message modification notification", mapitest_mapidump_messagemodified);
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
+
+
+/**
+   \details Initialise the language code / ID test suite
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_lzxpress_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "LZXPRESS", "lzxpress algorithm test suite", false);
+
+	mapitest_suite_add_test(suite, "VALIDATE-001", "Validate LZXPRESS implementation using sample file 001", mapitest_lzxpress_validate_test_001);
+
 	mapitest_suite_register(mt, suite);
 
 	return MAPITEST_SUCCESS;

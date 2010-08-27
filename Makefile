@@ -1339,9 +1339,12 @@ mapitest:	libmapi			\
 mapitest-install:	mapitest
 	$(INSTALL) -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/mapitest $(DESTDIR)$(bindir)
+	$(INSTALL) -d $(DESTDIR)$(datadir)/mapitest/lzxpress
+	$(INSTALL) -m 0644 utils/mapitest/data/lzxpress/* $(DESTDIR)$(datadir)/mapitest/lzxpress/
 
 mapitest-uninstall:
 	rm -f $(DESTDIR)$(bindir)/mapitest
+	rm -rf $(DESTDIR)$(datadir)/mapitest
 
 mapitest-clean:
 	rm -f bin/mapitest
@@ -1380,6 +1383,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_errorchecks.o	\
 		utils/mapitest/modules/module_lcid.o		\
 		utils/mapitest/modules/module_mapidump.o	\
+		utils/mapitest/modules/module_lzxpress.o	\
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)
@@ -1404,7 +1408,8 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_noserver.c	\
 	utils/mapitest/modules/module_errorchecks.c	\
 	utils/mapitest/modules/module_lcid.c		\
-	utils/mapitest/modules/module_mapidump.c
+	utils/mapitest/modules/module_mapidump.c	\
+	utils/mapitest/modules/module_lzxpress.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
 

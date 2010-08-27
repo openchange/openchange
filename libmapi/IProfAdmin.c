@@ -73,6 +73,7 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	profile->domain = ldb_msg_find_attr_as_string(msg, "domain", NULL);
 	profile->mailbox = ldb_msg_find_attr_as_string(msg, "EmailAddress", NULL);
 	profile->homemdb = ldb_msg_find_attr_as_string(msg, "HomeMDB", NULL);
+	profile->localaddr = ldb_msg_find_attr_as_string(msg, "localaddress", NULL);
 	profile->server = ldb_msg_find_attr_as_string(msg, "binding", NULL);
 	profile->seal = ldb_msg_find_attr_as_bool(msg, "seal", false);
 	profile->org = ldb_msg_find_attr_as_string(msg, "Organization", NULL);

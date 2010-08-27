@@ -92,6 +92,7 @@ static char *build_binding_string(TALLOC_CTX *mem_ctx,
 	if (!global_mapi_ctx) return NULL;
 
 	binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s[", server);
+
 	/* If dump-data option is enabled */
 	if (global_mapi_ctx->dumpdata == true) {
 		binding = talloc_strdup_append(binding, "print,");
@@ -100,7 +101,11 @@ static char *build_binding_string(TALLOC_CTX *mem_ctx,
 	if (profile->seal == true) {
 		binding = talloc_strdup_append(binding, "seal,");
 	}
-
+	/* If localaddress parameter is available in the profile */
+	if (profile->localaddr) {
+		binding = talloc_asprintf_append(binding, "localaddress=%s,", profile->localaddr);
+	}
+	
 	binding = talloc_strdup_append(binding, "]");
 
 	return binding;

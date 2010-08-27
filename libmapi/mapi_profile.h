@@ -46,6 +46,7 @@ struct mapi_profile
 	const char     		*domain;
 	const char     		*realm;
 	const char     		*server;
+	const char		*localaddr;
 	bool			seal;
 	uint32_t		codepage;
 	uint32_t		language;

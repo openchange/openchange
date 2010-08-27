@@ -1,4 +1,44 @@
+2010-08-27
+    jkerihuel
+	[r2142]
+		Add the localaddress patch prior Samba4 integration. Pending new
+		Samba4 localaddress patch fixing memory leaks in the pipe.
+	[r2141]
+		Include a mapitest test suite / challenge for lzxpress
+		
+		The idea of this test is to check if lzxpress compressed blobs
+		provided by OpenChange are the same than Outlook ones. The test takes
+		a Outlook->Exchange capture file with compressed blob, pull the
+		content, decompressed the content, recompress the content and check
+		the output for differing bytes.
+		
+		This challenge code should give us good information when lzxpress
+		compress code is fixed. Additionally you can uncomment the compression
+		code in libmapi/emsmdb.c to do further testing.
+	[r2140]
+		- Add implementation for EcDoRpcExt2 (0xB) RPC opnum. Current code
+		  doesn't provide compression for request and use obfuscation
+		  instead. However mapi_response makes use of xpress and are
+		  decompressed properly.
+		
+		- EcDoRpcExt2 implemented without subcontexts but uint8_t array
+		
+		- add a wrapper for emsmdb transaction to switch between
+		  EcDoConnect/EcDoRpc and EcDoConnectEx/EcDoRpcExt2 depending on MAPI
+		  profile 'exchange version' attribute.
+		
+		NOTE: emsmdb.c implements the logic for using compressed blob and
+		checks whether compressed or obfuscation should be used depending on
+		blob length. However this behavior has been commented out because
+		comrpessed blobs are rejected by Exchange (ecRpcFormat 0x4B6 error).
 2010-08-26
+    jkerihuel
+	[r2139]
+		Reference profile structure in mapitest structure.
+		
+		Use profile->mailbox instead of szDisplayName for sending mapitest
+		emails. This also fix ResolveNames mapitest issues when conflicts
+		between usernames exist (e.g. user1, user11, user100).
     bradh
 	[r2137]
 		Prevent segfault if we don't have any appointments.

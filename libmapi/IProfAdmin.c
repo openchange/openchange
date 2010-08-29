@@ -182,7 +182,7 @@ static enum MAPISTATUS ldb_create_profile(TALLOC_CTX *mem_ctx,
 	/* Does the profile already exists? */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), 
 					 scope, attrs, "(cn=%s)(cn=Profiles)", profname);
-	if (res->msgs) return MAPI_E_NO_ACCESS;
+	if (ret == LDB_SUCCESS && res && res->msgs) return MAPI_E_NO_ACCESS;
 
 	/*
 	 * We now prepare the entry for transaction
@@ -236,6 +236,73 @@ static enum MAPISTATUS ldb_delete_profile(TALLOC_CTX *mem_ctx,
 	ret = ldb_delete(ldb_ctx, res->msgs[0]->dn);
 	if (ret != LDB_SUCCESS) return MAPI_E_NOT_FOUND;
 	
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Copy the MAPI profile
+
+   \param mem_ctx pointer to the memory context
+   \param ldb_ctx pointer to the LDB context
+   \param profname_src pointer to the source profile name
+   \param profname_dest pointer to the destination profile name
+ */
+static enum MAPISTATUS ldb_copy_profile(TALLOC_CTX *mem_ctx,
+					struct ldb_context *ldb_ctx,
+					const char *profname_src,
+					const char *profname_dest)
+{
+	int				ret;
+	enum ldb_scope			scope = LDB_SCOPE_SUBTREE;
+	struct ldb_result		*res;
+	struct ldb_result		*res_dest;
+	struct ldb_message		*msg;
+	const char * const		attrs[] = { "*", NULL };
+	int				i;
+	char				*dn;
+	struct ldb_message_element	*el;
+	struct ldb_dn			*basedn;
+
+	/* Step 1. Load the source profile */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs,
+			 "(cn=%s)(cn=Profiles)", profname_src);
+	/* profile not found */
+	if (ret != LDB_SUCCESS) return MAPI_E_NOT_FOUND;
+	/* more than one profile */
+	if (res->count > 1) return MAPI_E_COLLISION;
+
+	/* fills in profile with query result */
+	msg = res->msgs[0];
+
+	/* Step 2. Encure the desintation profile doesn't exist */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res_dest, ldb_get_default_basedn(ldb_ctx), scope, attrs,
+			 "(cn=%s)(cn=Profiles)", profname_dest);
+	/* If profile exists or there is more than one */
+	if (ret == LDB_SUCCESS && res_dest->count) return MAPI_E_COLLISION;
+
+	/* Step 3. Customize destination profile */
+	dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Profiles", profname_dest);
+	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, dn);
+	talloc_free(dn);
+	if (!ldb_dn_validate(basedn)) return MAPI_E_BAD_VALUE;
+	msg->dn = ldb_dn_copy(mem_ctx, basedn);
+
+	/* Change cn */
+	el = msg->elements;
+	for (i = 0; i < msg->num_elements; i++) {
+		if (el[i].name && !strcmp(el[i].name, "cn")) {
+			el[i].values[0].data = (uint8_t *)talloc_strdup(mem_ctx, profname_dest);
+			el[i].values[0].length = strlen(profname_dest);
+		}
+	}
+
+	/* Step 4. Copy the profile */
+	ret = ldb_add(ldb_ctx, msg);
+	/* talloc_free(basedn); */
+	
+	if (ret != LDB_SUCCESS) return MAPI_E_NO_SUPPORT;
+
 	return MAPI_E_SUCCESS;
 }
 
@@ -811,6 +878,136 @@ _PUBLIC_ enum MAPISTATUS ChangeProfilePassword(const char *profile,
 	return retval;
 }
 
+/**
+   \details Copy a profile
+
+   \param profile_src the source profile to copy from
+   \param profile_dst the destination profile to copy to
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+ */
+_PUBLIC_ enum MAPISTATUS CopyProfile(const char *profile_src,
+				     const char *profile_dst)
+{
+	TALLOC_CTX	*mem_ctx;
+	enum MAPISTATUS	retval;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!profile_src, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!profile_dst, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "CopyProfile");
+
+	retval = ldb_copy_profile(mem_ctx, global_mapi_ctx->ldb_ctx, profile_src, profile_dst);
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mem_ctx);
+	return retval;
+}
+
+
+/**
+   \details Duplicate an existing profile.
+
+   The username specified in parameter is used to customize the new
+   profile. This function should only be used in environments where
+   users are within the same administrative group, storage group,
+   server etc. Otherwise this will create an invalid profile and may
+   cause unpredictable results.
+
+   \param profile_src the source profile to duplicate from
+   \param profile_dst the destination profile to duplicate to
+   \param username the username to replace within the destination
+   profile
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS DuplicateProfile(const char *profile_src,
+					  const char *profile_dst,
+					  const char *username)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum MAPISTATUS		retval;
+	char			*username_src = NULL;
+	char			*EmailAddress = NULL;
+	char			*ProxyAddress = NULL;
+	struct mapi_profile	profile;
+	char			**attr_tmp = NULL;
+	char			*tmp = NULL;
+	char			*attr;
+	uint32_t		count = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!profile_src, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!profile_dst, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Copy the profile */
+	retval = CopyProfile(profile_src, profile_dst);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	/* retrieve username, EmailAddress and ProxyAddress */
+	retval = OpenProfile(&profile, profile_src, NULL);
+	OPENCHANGE_RETVAL_IF(retval, MAPI_E_NOT_FOUND, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "DuplicateProfile");
+
+	retval = GetProfileAttr(&profile, "username", &count, &attr_tmp);
+	OPENCHANGE_RETVAL_IF(retval || !count, MAPI_E_NOT_FOUND, mem_ctx);
+	username_src = talloc_strdup(mem_ctx, attr_tmp[0]);
+	talloc_free(attr_tmp[0]);
+
+	retval = GetProfileAttr(&profile, "EmailAddress", &count, &attr_tmp);
+	OPENCHANGE_RETVAL_IF(retval || !count, MAPI_E_NOT_FOUND, mem_ctx);
+	EmailAddress = talloc_strdup(mem_ctx, attr_tmp[0]);
+	talloc_free(attr_tmp[0]);
+
+	retval = GetProfileAttr(&profile, "ProxyAddress", &count, &attr_tmp);
+	OPENCHANGE_RETVAL_IF(retval, MAPI_E_NOT_FOUND, mem_ctx);
+	ProxyAddress = talloc_strdup(mem_ctx, attr_tmp[0]);
+	talloc_free(attr_tmp[0]);
+
+	/* Change EmailAddress */
+	{
+		int	i;
+
+		tmp = NULL;
+		for (i = strlen(EmailAddress); i > 0; i--) {
+			if (EmailAddress[i] == '=') {
+				tmp = talloc_strndup(mem_ctx, EmailAddress, i + 1);
+				break;
+			}
+		}
+		OPENCHANGE_RETVAL_IF(!tmp, MAPI_E_INVALID_PARAMETER, mem_ctx);
+
+		attr = talloc_asprintf(mem_ctx, "%s%s", tmp, username);
+		talloc_free(tmp);
+		mapi_profile_modify_string_attr(profile_dst, "EmailAddress", attr);
+		talloc_free(attr);
+	}
+
+	/* Change ProxyAddress */
+	{
+		tmp = strstr(ProxyAddress, username_src);
+		attr = talloc_strndup(mem_ctx, ProxyAddress, strlen(ProxyAddress) - strlen(tmp));
+		tmp += strlen(username_src);
+		attr = talloc_asprintf_append(attr, "%s%s", username, tmp);
+		mapi_profile_modify_string_attr(profile_dst, "ProxyAddress", attr);
+		talloc_free(attr);
+	}
+
+	/* Step 2. Change parameters but cn (already changed) */
+	mapi_profile_modify_string_attr(profile_dst, "name", profile_dst);
+	mapi_profile_modify_string_attr(profile_dst, "username", username);
+	mapi_profile_modify_string_attr(profile_dst, "DisplayName", username);
+	mapi_profile_modify_string_attr(profile_dst, "Account", username);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
 
 /**
    \details Rename a profile

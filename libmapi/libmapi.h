@@ -290,6 +290,8 @@ enum MAPISTATUS		ShutDown(struct mapi_profile *);
 enum MAPISTATUS		CreateProfile(const char *, const char *, const char *, uint32_t);
 enum MAPISTATUS		DeleteProfile(const char *);
 enum MAPISTATUS		ChangeProfilePassword(const char *, const char *, const char *);
+enum MAPISTATUS		CopyProfile(const char *, const char *);
+enum MAPISTATUS		DuplicateProfile(const char *, const char *, const char *);
 enum MAPISTATUS		RenameProfile(const char *, const char *);
 enum MAPISTATUS		SetDefaultProfile(const char *);
 enum MAPISTATUS		GetDefaultProfile(char **);

@@ -196,7 +196,7 @@ _PUBLIC_ void mapi_object_set_session(mapi_object_t *obj,
 */
 _PUBLIC_ mapi_id_t mapi_object_get_id(mapi_object_t *obj)
 {
-	return (!obj) ? 0xFFFFFFFFFFFFFFFF : obj->id;
+	return (!obj) ? -1 : obj->id;
 }
 
 

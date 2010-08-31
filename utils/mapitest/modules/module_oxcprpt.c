@@ -687,7 +687,11 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 		}
 	}
 
-
+	if ( mt->info.rgwServerVersion[0] >= Exchange2010SP0Version ) {
+		/* the combination of CopyFlagsNoOverwrite|CopyFlagsMove isn't support in Exchange2010 */
+		goto cleanup;
+	}
+	    
 	/* Step 11: Move properties, no overwrite */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
 	retval = CopyProps(&obj_ref_message, &obj_target_message, SPropTagArray, CopyFlagsNoOverwrite|CopyFlagsMove,
@@ -741,6 +745,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyProps(struct mapitest *mt)
 		}
 	}
 
+	cleanup:
 
 	/* Cleanup reference strings */
 	MAPIFreeBuffer((void *)subject);

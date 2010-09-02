@@ -957,11 +957,11 @@ mapistore_sqlite3-clean:
 	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.po
 	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.gcno
 	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.gcda
+	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.so
 
 clean:: mapistore_sqlite3-clean
 
 mapistore_sqlite3-distclean: mapistore_sqlite3-clean
-	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.so
 
 distclean:: mapistore_sqlite3-distclean
 
@@ -985,11 +985,11 @@ mapistore_fsocpf-clean:
 	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.po
 	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.gcno
 	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.gcda
+	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.so
 
 clean:: mapistore_fsocpf-clean
 
 mapistore_fsocpf-distclean: mapistore_fsocpf-clean
-	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.so
 
 distclean:: mapistore_fsocpf-distclean
 

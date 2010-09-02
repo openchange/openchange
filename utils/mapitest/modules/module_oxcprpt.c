@@ -2074,8 +2074,8 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	}
 
 	result = mapitest_common_message_create(mt, &obj_ref_folder, &obj_ref_message, MT_MAIL_SUBJECT);
-	mapitest_print_retval(mt, "mapitest_common_message_create");
 	if (result != true) {
+		mapitest_print_retval(mt, "mapitest_common_message_create failed");
 		ret = false;
 		goto cleanup;
 	}

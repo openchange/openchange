@@ -520,6 +520,9 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	MAPIFreeBuffer(SPropTagArray);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!flaglist, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!rows, MAPI_E_NOT_FOUND, mem_ctx);
 	/* Check if the username was found */
 	OPENCHANGE_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
 

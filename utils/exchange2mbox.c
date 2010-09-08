@@ -240,6 +240,9 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 	uint32_t	max_read_size = MAX_READ_SIZE;
 	DATA_BLOB	data;
 	magic_t		cookie = NULL;
+	char		*base64_data;
+	char		*linewrapped_base64_data;
+	int		i;
 
 	data.length = 0;
 	data.data = talloc_size(mem_ctx, size);
@@ -273,9 +276,18 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 	tmp = magic_buffer(cookie, (void *)data.data, data.length);
 	*magic = talloc_strdup(mem_ctx, tmp);
 	magic_close(cookie);
+	
+	base64_data = ldb_base64_encode(mem_ctx, (const char *)data.data, data.length);
+
+	linewrapped_base64_data = talloc_array(mem_ctx, char, 0);
+
+	for (i = 0; i < strlen(base64_data); i += 72) {
+		linewrapped_base64_data = talloc_strndup_append_buffer(linewrapped_base64_data, &(base64_data[i]), 72);
+		linewrapped_base64_data = talloc_strdup_append(linewrapped_base64_data, "\n");
+	}
 
 	/* convert attachment to base64 */
-	return (ldb_base64_encode(mem_ctx, (const char *)data.data, data.length));
+	return linewrapped_base64_data;
 }
 
 /**

@@ -234,10 +234,8 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 	enum MAPISTATUS	retval;
 	const char     	*tmp;
 	mapi_object_t	obj_stream;
-	uint32_t	stream_size;
 	uint16_t	read_size;
 	unsigned char  	buf[MAX_READ_SIZE];
-	uint32_t	max_read_size = MAX_READ_SIZE;
 	DATA_BLOB	data;
 	magic_t		cookie = NULL;
 	char		*base64_data;
@@ -245,24 +243,20 @@ static char *get_base64_attachment(TALLOC_CTX *mem_ctx, mapi_object_t obj_attach
 	int		i;
 
 	data.length = 0;
-	data.data = talloc_size(mem_ctx, size);
+	data.data = talloc_zero(mem_ctx, uint8_t);
 
 	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	if (size < MAX_READ_SIZE) {
-		retval = ReadStream(&obj_stream, buf, size, &read_size);
+	do {
+		retval = ReadStream(&obj_stream, buf, MAX_READ_SIZE, &read_size);
 		if (retval != MAPI_E_SUCCESS) return NULL;
-		memcpy(data.data, buf, read_size);
-	}
-
-	for (stream_size = 0; stream_size < size; stream_size += 0x4000) {
-		retval = ReadStream(&obj_stream, buf, max_read_size, &read_size);
-		if (retval != MAPI_E_SUCCESS) return NULL;
-		memcpy(data.data + stream_size, buf, read_size);
-	}
-
-	data.length = size;
+		if (read_size) {
+			data.data = talloc_realloc(mem_ctx, data.data, uint8_t, data.length + read_size);
+			memcpy(&(data.data[data.length]), buf, read_size);
+			data.length += read_size;
+		}
+	} while (read_size);
 
 	cookie = magic_open(MAGIC_MIME);
 	if (cookie == NULL) {

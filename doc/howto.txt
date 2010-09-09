@@ -1,11 +1,11 @@
-Copyright 2005-2009 OpenChange Project
+Copyright 2005-2010 OpenChange Project
 under the terms at http://creativecommons.org/licenses/by-sa/3.0/
 
 
 OpenChange developer howto
 --------------------------
 
-== Updated in December 2009 ==
+== Updated in May 2010 ==
 
 
 ###############

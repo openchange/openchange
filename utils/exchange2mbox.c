@@ -308,7 +308,8 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	const char			*to = NULL;
 	const char			*cc = NULL;
 	const char			*bcc = NULL;
-	const char			*headers = NULL;
+	const char			*from = NULL;
+	const char			*subject = NULL;
 	const char			*msgid;
 	DATA_BLOB			body;
 	const char			*attach_filename;
@@ -328,12 +329,11 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	ssize_t				len;
 
 	has_attach = (const uint32_t *) octool_get_propval(aRow, PR_HASATTACH);
-	headers = (const char *) octool_get_propval(aRow, PR_TRANSPORT_MESSAGE_HEADERS);
 	to = (const char *) octool_get_propval(aRow, PR_DISPLAY_TO);
 	cc = (const char *) octool_get_propval(aRow, PR_DISPLAY_CC);
 	bcc = (const char *) octool_get_propval(aRow, PR_DISPLAY_BCC);
 
-	if (!to && !cc && !bcc && !headers) {
+	if (!to && !cc && !bcc) {
 		return false;
 	}
 
@@ -344,82 +344,71 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 		date = "None";
 	}
 
-	if (headers) {
-		/* we have pre-formatted internet headers */
-		line = talloc_asprintf(mem_ctx, "%s\n", headers);
+
+	from = (const char *) octool_get_propval(aRow, PR_SENT_REPRESENTING_NAME);
+	subject = (const char *) octool_get_propval(aRow, PR_CONVERSATION_TOPIC);
+	msgid = (const char *) octool_get_propval(aRow, PR_INTERNET_MESSAGE_ID);
+
+	/* First line From */
+	line = talloc_asprintf(mem_ctx, "From \"%s\" %s\n", from, date);
+	if (line) {
+		len = fwrite(line, strlen(line), 1, fp);
+	}
+	talloc_free(line);
+
+	/* Second line: Date */
+	line = talloc_asprintf(mem_ctx, "Date: %s\n", date);
+	if (line) {
+		len = fwrite(line, strlen(line), 1, fp);
+	}
+	talloc_free(line);
+
+	/* Third line From */
+	line = talloc_asprintf(mem_ctx, "From: %s\n", from);
+	if (line) {
+		len = fwrite(line, strlen(line), 1, fp);
+	}
+	talloc_free(line);
+
+	/* To, Cc, Bcc */
+	if (to) {
+		line = talloc_asprintf(mem_ctx, "To: %s\n", to);
 		if (line) {
 			len = fwrite(line, strlen(line), 1, fp);
 		}
 		talloc_free(line);
-	} else {
-		/* no internet headers, manually construct something similar */
-		const char	*from = NULL;
-		const char	*subject = NULL;
-		from = (const char *) octool_get_propval(aRow, PR_SENT_REPRESENTING_NAME);
-		subject = (const char *) octool_get_propval(aRow, PR_CONVERSATION_TOPIC);
-		msgid = (const char *) octool_get_propval(aRow, PR_INTERNET_MESSAGE_ID);
+	}
 
-		/* First line From */
-		line = talloc_asprintf(mem_ctx, "From \"%s\" %s\n", from, date);
+	if (cc) {
+		line = talloc_asprintf(mem_ctx, "Cc: %s\n", cc);
 		if (line) {
 			len = fwrite(line, strlen(line), 1, fp);
 		}
 		talloc_free(line);
+	}
 
-		/* Second line: Date */
-		line = talloc_asprintf(mem_ctx, "Date: %s\n", date);
+	if (bcc) {
+		line = talloc_asprintf(mem_ctx, "Bcc: %s\n", bcc);
 		if (line) {
 			len = fwrite(line, strlen(line), 1, fp);
 		}
 		talloc_free(line);
+	}
 
-		/* Third line From */
-		line = talloc_asprintf(mem_ctx, "From: %s\n", from);
+	if (subject) {
+		line = talloc_asprintf(mem_ctx, "Subject: %s\n", subject);
 		if (line) {
 			len = fwrite(line, strlen(line), 1, fp);
 		}
 		talloc_free(line);
+	}
 
-		/* To, Cc, Bcc */
-		if (to) {
-			line = talloc_asprintf(mem_ctx, "To: %s\n", to);
-			if (line) {
-				len = fwrite(line, strlen(line), 1, fp);
-			}
-			talloc_free(line);
+	if (msgid) {
+		line = talloc_asprintf(mem_ctx, "Message-ID: %s\n", msgid);
+		if (line) {
+			len = fwrite(line, strlen(line), 1, fp);
 		}
-
-		if (cc) {
-			line = talloc_asprintf(mem_ctx, "Cc: %s\n", cc);
-			if (line) {
-				len = fwrite(line, strlen(line), 1, fp);
-			}
-			talloc_free(line);
-		}
-	
-		if (bcc) {
-			line = talloc_asprintf(mem_ctx, "Bcc: %s\n", bcc);
-			if (line) {
-				len = fwrite(line, strlen(line), 1, fp);
-			}
-			talloc_free(line);
-		}
-
-		if (subject) {
-			line = talloc_asprintf(mem_ctx, "Subject: %s\n", subject);
-			if (line) {
-				len = fwrite(line, strlen(line), 1, fp);
-			}
-			talloc_free(line);
-		}
-	
-		if (msgid) {
-			line = talloc_asprintf(mem_ctx, "Message-ID: %s\n", msgid);
-			if (line) {
-				len = fwrite(line, strlen(line), 1, fp);
-			}
-			talloc_free(line);
-		}
+		talloc_free(line);
 	}
 
 	retval = octool_get_body(mem_ctx, obj_message, aRow, &body);

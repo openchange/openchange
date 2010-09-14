@@ -999,6 +999,32 @@ mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT): mapiproxy/libmapis
 	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			\
 	-L. libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
+mapistore_sogo: mapiproxy/libmapistore/backends/mapistore_sogo.$(SHLIBEXT)
+
+mapistore_sogo-install:
+	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
+	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_sogo.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
+
+mapistore_sogo-uninstall:
+	rm -rf $(DESTDIR)$(libdir)/mapistore_backends
+
+mapistore_sogo-clean:
+	rm -f mapiproxy/libmapistore/backends/mapistore_sogo.o
+	rm -f mapiproxy/libmapistore/backends/mapistore_sogo.po
+	rm -f mapiproxy/libmapistore/backends/mapistore_sogo.gcno
+	rm -f mapiproxy/libmapistore/backends/mapistore_sogo.gcda
+	rm -f mapiproxy/libmapistore/backends/mapistore_sogo.so
+
+clean:: mapistore_sogo-clean
+
+mapistore_sogo-distclean: mapistore_sogo-clean
+
+distclean:: mapistore_sogo-distclean
+
+mapiproxy/libmapistore/backends/mapistore_sogo.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_sogo.po
+	@echo "Linking mapistore module $@"
+	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) 			\
+	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	
 
 #######################
 # mapistore test tools

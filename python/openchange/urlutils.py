@@ -41,6 +41,8 @@ def openchangedb_mapistore_url(lp, backend):
         return "fsocpf://%s" % openchangedb_mapistore_dir(lp)
     elif backend == "sqlite":
         return "sqlite://%s" % openchangedb_mapistore_dir(lp)
+    elif backend == "sogo":
+        return "sogo://%s" % openchangedb_mapistore_dir(lp)
     raise UnsupportedMapistoreBackend(backend)
 
 
@@ -49,6 +51,8 @@ def openchangedb_mapistore_url_split(url):
         return url.partition("fsocpf://")[1:]
     if url.startswith("sqlite://"):
         return url.partition("sqlite://")[1:]
+    if url.startswith("sogo://"):
+        return url.partition("sogo://")[1:]
 
 
 def openchangedb_suffix_for_mapistore_url(url):
@@ -56,4 +60,6 @@ def openchangedb_suffix_for_mapistore_url(url):
         return ""
     if (url.startswith("sqlite://")):
         return ".db"
+    if (url.startswith("sogo://")):
+        return ""
     return ""

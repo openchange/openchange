@@ -247,6 +247,34 @@ static PyObject *py_MAPIStore_setprops(PyMAPIStoreObject *self, PyObject *args)
 	return PyInt_FromLong(mapistore_setprops(self->mstore_ctx, context_id, fid, object_type, &aRow));
 }
 
+static PyObject *py_MAPIStore_get_folder_count(PyMAPIStoreObject *self, PyObject *args)
+{
+	uint32_t		context_id;
+	uint64_t		fid;
+	uint8_t			object_type;
+	uint32_t		RowCount = 0;
+
+	if (!PyArg_ParseTuple(args, "kKb", &context_id, &fid, &object_type)) {
+		return NULL;
+	}
+
+	switch (object_type) {
+	case MAPISTORE_FOLDER:
+		mapistore_get_folder_count(self->mstore_ctx, context_id, 
+					   fid, &RowCount);
+		break;
+	case MAPISTORE_MESSAGE:
+		mapistore_get_message_count(self->mstore_ctx, context_id, 
+					    fid, &RowCount);
+		break;
+	default:
+		RowCount = 0;
+		break;
+	}
+
+	return PyInt_FromLong(RowCount);
+}
+
 static PyMethodDef mapistore_methods[] = {
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	{ "del_context", (PyCFunction)py_MAPIStore_del_context, METH_VARARGS },
@@ -258,6 +286,7 @@ static PyMethodDef mapistore_methods[] = {
 	{ "mkdir", (PyCFunction)py_MAPIStore_mkdir, METH_VARARGS },
 	{ "rmdir", (PyCFunction)py_MAPIStore_rmdir, METH_VARARGS },
 	{ "setprops", (PyCFunction)py_MAPIStore_setprops, METH_VARARGS },
+	{ "get_folder_count", (PyCFunction)py_MAPIStore_get_folder_count, METH_VARARGS },
 	{ NULL },
 };
 

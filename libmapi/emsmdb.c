@@ -611,12 +611,14 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_wrapper(struct mapi_session *session,
    \details Initialize the notify context structure and bind a local
    UDP port to receive notifications from the server
 
+   \param mapi_ctx pointer to the MAPI context
    \param mem_ctx pointer to the memory context
 
    \return an allocated mapi_notify_ctx structure on success,
    otherwise NULL
  */
-struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
+struct mapi_notify_ctx *emsmdb_bind_notification(struct mapi_context *mapi_ctx,
+						 TALLOC_CTX *mem_ctx)
 {
 	struct interface	*ifaces;
 	struct mapi_notify_ctx	*notify_ctx = NULL;
@@ -625,9 +627,9 @@ struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 	uint32_t		try = 0;
 
 	/* Sanity Checks */
-	if (!global_mapi_ctx) return NULL;
-	if (!global_mapi_ctx->session) return NULL;
-	if (!global_mapi_ctx->session->profile) return NULL;
+	if (!mapi_ctx) return NULL;
+	if (!mapi_ctx->session) return NULL;
+	if (!mapi_ctx->session->profile) return NULL;
 
 	notify_ctx = talloc_zero(mem_ctx, struct mapi_notify_ctx);
 
@@ -635,8 +637,8 @@ struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 	notify_ctx->notifications->prev = NULL;
 	notify_ctx->notifications->next = NULL;
 
-	load_interfaces(mem_ctx, lpcfg_interfaces(global_mapi_ctx->lp_ctx), &ifaces);
-	ipaddr = iface_best_ip(ifaces, global_mapi_ctx->session->profile->server);
+	load_interfaces(mem_ctx, lpcfg_interfaces(mapi_ctx->lp_ctx), &ifaces);
+	ipaddr = iface_best_ip(ifaces, mapi_ctx->session->profile->server);
 	if (!ipaddr) {
 		talloc_free(notify_ctx->notifications);
 		talloc_free(notify_ctx);
@@ -702,10 +704,6 @@ NTSTATUS emsmdb_register_notification(struct mapi_session *session,
 	uint32_t				hNotification = 0;
 
 	/* Sanity Checks*/
-	if (!global_mapi_ctx) return NT_STATUS_INVALID_PARAMETER;
-	if (!global_mapi_ctx->session) return NT_STATUS_INVALID_PARAMETER;
-	if (!global_mapi_ctx->session->emsmdb) return NT_STATUS_INVALID_PARAMETER;
-	if (!global_mapi_ctx->session->emsmdb->ctx) return NT_STATUS_INVALID_PARAMETER;
 	if (!notifkey) return NT_STATUS_INVALID_PARAMETER;
 
 	emsmdb_ctx = (struct emsmdb_context *)session->emsmdb->ctx;
@@ -750,7 +748,7 @@ NTSTATUS emsmdb_register_notification(struct mapi_session *session,
  */
 _PUBLIC_ struct emsmdb_info *emsmdb_get_info(struct mapi_session *session)
 {
-	if (!global_mapi_ctx || !session->emsmdb->ctx) {
+	if (!session->emsmdb->ctx) {
 		return NULL;
 	}
 

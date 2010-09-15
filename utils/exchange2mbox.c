@@ -44,7 +44,8 @@
 /**
  * delete a message on the exchange server
  */
-static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid, 
+static bool delete_message(struct mapi_context *mapi_ctx,
+			   TALLOC_CTX *mem_ctx, char *msgid, 
 			   const char *profname, const char *password)
 {
 	enum MAPISTATUS		retval;
@@ -62,7 +63,7 @@ static bool delete_message(TALLOC_CTX *mem_ctx, char *msgid,
 		return false;
 	}
 
-	retval = MapiLogonEx(&session, profname, password);
+	retval = MapiLogonEx(mapi_ctx, &session, profname, password);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Open the default message store */
@@ -121,6 +122,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 		       const char *password)
 {
 	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 	struct mapi_profile	profile;
 	size_t			read_size;
 	char			*line = NULL;
@@ -136,15 +138,15 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	unsigned int		i, j;
 	bool			found = false;
 
-	retval = MAPIInitialize(profdb);
+	retval = MAPIInitialize(&mapi_ctx, profdb);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	if (!profname) {
-		retval = GetDefaultProfile(&profname);
+		retval = GetDefaultProfile(mapi_ctx, &profname);
 		MAPI_RETVAL_IF(retval, retval, NULL);
 	}
 
-	retval = OpenProfile(&profile, profname, password);
+	retval = OpenProfile(mapi_ctx, &profile, profname, password);
 	MAPI_RETVAL_IF(retval, retval, profname);
 
 	mbox_msgids = talloc_zero(mem_ctx, char *);
@@ -167,11 +169,11 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 			if (GetLastError() == MAPI_E_NOT_FOUND) {
 				errno = 0;
 				printf("[+] Adding %s to %s\n", id, profname);
-				retval = mapi_profile_add_string_attr(profname, "Message-ID", id);
+				retval = mapi_profile_add_string_attr(mapi_ctx, profname, "Message-ID", id);
 				if (retval != MAPI_E_SUCCESS) {
 					mapi_errstr("mapi_profile_add_string_attr", GetLastError());
 					talloc_free(profname);
-					MAPIUninitialize();
+					MAPIUninitialize(mapi_ctx);
 					return -1;
 				}
 			}
@@ -198,9 +200,9 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 				}
 			}
 			if (found == false) {
-				if (delete_message(mem_ctx, prof_msgids[i], profname, password) == true) {
+				if (delete_message(mapi_ctx, mem_ctx, prof_msgids[i], profname, password) == true) {
 					printf("%s deleted from the Exchange server\n", prof_msgids[i]);
-					mapi_profile_delete_string_attr(profname, "Message-ID", prof_msgids[i]);
+					mapi_profile_delete_string_attr(mapi_ctx, profname, "Message-ID", prof_msgids[i]);
 				}
 			}
 		}
@@ -211,7 +213,7 @@ static uint32_t update(TALLOC_CTX *mem_ctx, FILE *fp,
 	talloc_free(prof_msgids);
 	talloc_free(mbox_msgids);
 	talloc_free(profname);
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 
 	return MAPI_E_SUCCESS;
 }
@@ -572,6 +574,7 @@ int main(int argc, const char *argv[])
 {
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
+	struct mapi_context		*mapi_ctx;
 	struct mapi_session		*session = NULL;
 	struct mapi_profile		*profile;
 	mapi_object_t			obj_store;
@@ -676,29 +679,29 @@ int main(int argc, const char *argv[])
 	 * Initialize MAPI subsystem
 	 */
 
-	retval = MAPIInitialize(opt_profdb);
+	retval = MAPIInitialize(&mapi_ctx, opt_profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
 	/* debug options */
-	SetMAPIDumpData(opt_dumpdata);
+	SetMAPIDumpData(mapi_ctx, opt_dumpdata);
 
 	if (opt_debug) {
-		SetMAPIDebugLevel(atoi(opt_debug));
+		SetMAPIDebugLevel(mapi_ctx, atoi(opt_debug));
 	}
 
 	/* if no profile is supplied use the default one */
 	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname);
+		retval = GetDefaultProfile(mapi_ctx, &opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			printf("No profile specified and no default profile found\n");
 			exit (1);
 		}
 	}
 	
-	retval = MapiLogonEx(&session, opt_profname, opt_password);
+	retval = MapiLogonEx(mapi_ctx, &session, opt_profname, opt_password);
 	talloc_free(opt_profname);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
@@ -782,7 +785,7 @@ int main(int argc, const char *argv[])
 					retval = FindProfileAttr(profile, "Message-ID", msgid);
 					if (GetLastError() == MAPI_E_NOT_FOUND) {
 						message2mbox(mem_ctx, fp, &aRow, &obj_message);
-						if (mapi_profile_add_string_attr(profile->profname, "Message-ID", msgid) != MAPI_E_SUCCESS) {
+						if (mapi_profile_add_string_attr(mapi_ctx, profile->profname, "Message-ID", msgid) != MAPI_E_SUCCESS) {
 							mapi_errstr("mapi_profile_add_string_attr", GetLastError());
 						} else {
 							printf("Message-ID: %s added to profile %s\n", msgid, profile->profname);
@@ -800,7 +803,7 @@ int main(int argc, const char *argv[])
 	mapi_object_release(&obj_table);
 	mapi_object_release(&obj_inbox);
 	mapi_object_release(&obj_store);
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 
 	talloc_free(mem_ctx);
 

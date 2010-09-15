@@ -23,9 +23,6 @@
 #include <param.h>
 #include <ldb.h>
 
-struct mapi_ctx *global_mapi_ctx = NULL;
-
-
 /**
    \file cdo_mapi.c
 
@@ -39,6 +36,7 @@ struct mapi_ctx *global_mapi_ctx = NULL;
    Open providers stored in the profile and return a pointer on a
    IMAPISession object.
 
+   \param mapi_ctx pointer to the MAPI context
    \param session pointer to a pointer to a MAPI session object
    \param profname profile name to use
    \param password password to use for the profile
@@ -58,16 +56,18 @@ struct mapi_ctx *global_mapi_ctx = NULL;
 
    \sa MAPIInitialize, OpenProfile, MapiLogonProvider
 */
-_PUBLIC_ enum MAPISTATUS MapiLogonEx(struct mapi_session **session, 
-				     const char *profname, const char *password)
+_PUBLIC_ enum MAPISTATUS MapiLogonEx(struct mapi_context *mapi_ctx,
+				     struct mapi_session **session, 
+				     const char *profname, 
+				     const char *password)
 {
 	struct mapi_session	*tmp_session = NULL;
 	enum MAPISTATUS		retval;
 
-	retval = MapiLogonProvider(&tmp_session, profname, password, PROVIDER_ID_NSPI);
+	retval = MapiLogonProvider(mapi_ctx, &tmp_session, profname, password, PROVIDER_ID_NSPI);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
-	retval = MapiLogonProvider(&tmp_session, profname, password, PROVIDER_ID_EMSMDB);
+	retval = MapiLogonProvider(mapi_ctx, &tmp_session, profname, password, PROVIDER_ID_EMSMDB);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
 	*session = tmp_session;
@@ -79,6 +79,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonEx(struct mapi_session **session,
 /**
    \details Initialize a session on the specified provider
 
+   \param mapi_ctx pointer to the MAPI context
    \param session pointer to a pointer to a MAPI session object
    \param profname profile name
    \param password profile password
@@ -103,7 +104,8 @@ _PUBLIC_ enum MAPISTATUS MapiLogonEx(struct mapi_session **session,
 
    \sa MapiLogonEx, OpenProfile, LoadProfile
 */
-_PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
+_PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_context *mapi_ctx,
+					   struct mapi_session **session,
 					   const char *profname, 
 					   const char *password,
 					   enum PROVIDER_ID provider)
@@ -119,22 +121,23 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 
 	/* If no MAPI session has already been created */
-	if (!global_mapi_ctx->session) {
-		global_mapi_ctx->session = talloc_zero(global_mapi_ctx->mem_ctx, struct mapi_session);
+	if (!mapi_ctx->session) {
+		mapi_ctx->session = talloc_zero(mapi_ctx->mem_ctx, struct mapi_session);
 	}
 	
 	/* If the session doesn't exist, create a new one */
 	if (!*session) {
-		el = talloc_zero((TALLOC_CTX *)global_mapi_ctx->session, struct mapi_session);
+		el = talloc_zero((TALLOC_CTX *)mapi_ctx->session, struct mapi_session);
 		memset(el->logon_ids, 0, 255);
+		el->mapi_ctx = mapi_ctx;
 		OPENCHANGE_RETVAL_IF(!el, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	} else {
 		/* Lookup the session within the chained list */
-		for (el = global_mapi_ctx->session; el; el = el->next) {
+		for (el = mapi_ctx->session; el; el = el->next) {
 			if (*session == el) {
 				found = true;
 				break;
@@ -151,10 +154,10 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 		profile = talloc_zero(mem_ctx, struct mapi_profile);
 		OPENCHANGE_RETVAL_IF(!profile, MAPI_E_NOT_ENOUGH_RESOURCES, el);
 
-		retval = OpenProfile(profile, profname, password);
+		retval = OpenProfile(mapi_ctx, profile, profname, password);
 		OPENCHANGE_RETVAL_IF(retval, retval, el);
 		
-		retval = LoadProfile(profile);
+		retval = LoadProfile(mapi_ctx, profile);
 		OPENCHANGE_RETVAL_IF(retval, retval, el);
 
 		el->profile = profile;
@@ -184,7 +187,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 
 	/* Add the element to the session list */
 	if (exist == false) {
-		DLIST_ADD(global_mapi_ctx->session, el);
+		DLIST_ADD(mapi_ctx->session, el);
 		*session = el;
 	}
 
@@ -198,6 +201,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
    This function inititalizes the MAPI subsystem and open the profile
    database pointed by profiledb .
 
+   \param mapi_ctx pointer to the MAPI context
    \param profiledb profile database path
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
@@ -214,40 +218,44 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_session **session,
 
    \sa MAPIUninitialize
 */
-_PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
+_PUBLIC_ enum MAPISTATUS MAPIInitialize(struct mapi_context **_mapi_ctx, const char *profiledb)
 {
-	enum MAPISTATUS	retval;
-	TALLOC_CTX	*mem_ctx;
+	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
+	TALLOC_CTX		*mem_ctx;
 
 	/* Set the initial errno value for GetLastError */
 	errno = 0;
 
-	OPENCHANGE_RETVAL_IF(global_mapi_ctx, MAPI_E_SESSION_LIMIT, NULL);
+	OPENCHANGE_RETVAL_IF(!_mapi_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!profiledb, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "MAPIInitialize");
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
 	/* global context */
-	global_mapi_ctx = talloc_zero(mem_ctx, struct mapi_ctx);
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
-	global_mapi_ctx->mem_ctx = mem_ctx;
-	global_mapi_ctx->dumpdata = false;
-	global_mapi_ctx->session = NULL;
-	global_mapi_ctx->lp_ctx = loadparm_init(global_mapi_ctx->mem_ctx);
-	lpcfg_load_default(global_mapi_ctx->lp_ctx);
+	mapi_ctx = talloc_zero(mem_ctx, struct mapi_context);
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	mapi_ctx->mem_ctx = mem_ctx;
+	mapi_ctx->dumpdata = false;
+	mapi_ctx->session = NULL;
+	mapi_ctx->lp_ctx = loadparm_init(mapi_ctx->mem_ctx);
+	lpcfg_load_default(mapi_ctx->lp_ctx);
 
 	/* Enable logging on stdout */
 	setup_logging(NULL, DEBUG_STDOUT);
 
 	/* profile store */
-	retval = OpenProfileStore(global_mapi_ctx, &global_mapi_ctx->ldb_ctx, profiledb);
+	retval = OpenProfileStore(mapi_ctx, &mapi_ctx->ldb_ctx, profiledb);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Initialize dcerpc subsystem */
-	dcerpc_init(global_mapi_ctx->lp_ctx);
+	dcerpc_init(mapi_ctx->lp_ctx);
 
 	errno = 0;
+	
+	*_mapi_ctx = mapi_ctx;
+	
 	return MAPI_E_SUCCESS;
 }
 
@@ -256,34 +264,37 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(const char *profiledb)
 /**
    \details Uninitialize MAPI subsystem
 
+   \param mapi_ctx pointer to the MAPI context
+
    This function uninitializes the MAPI context and destroy
    recursively the whole mapi session and associated objects hierarchy
 
    \sa MAPIInitialize, GetLastError
  */
-_PUBLIC_ void MAPIUninitialize(void)
+_PUBLIC_ void MAPIUninitialize(struct mapi_context *mapi_ctx)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_session	*session;
 
-	if (!global_mapi_ctx) return;
+	if (!mapi_ctx) return;
 
-	session = global_mapi_ctx->session;
+	session = mapi_ctx->session;
 	if (session && session->notify_ctx && session->notify_ctx->fd != -1) {
 		DEBUG(3, ("emsmdb_disconnect_dtor: unbind udp\n"));
 		shutdown(session->notify_ctx->fd, SHUT_RDWR);
 		close(session->notify_ctx->fd);
 	}
 	
-	mem_ctx = global_mapi_ctx->mem_ctx;
+	mem_ctx = mapi_ctx->mem_ctx;
 	talloc_free(mem_ctx);
-	global_mapi_ctx = NULL;
+	mapi_ctx = NULL;
 }
 
 
 /**
    \details Enable MAPI network trace output
 
+   \param mapi_ctx pointer to the MAPI context
    \param status the status
 
    possible status values/behavior:
@@ -292,12 +303,12 @@ _PUBLIC_ void MAPIUninitialize(void)
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_INITIALIZED
  */
-_PUBLIC_ enum MAPISTATUS SetMAPIDumpData(bool status)
+_PUBLIC_ enum MAPISTATUS SetMAPIDumpData(struct mapi_context *mapi_ctx, bool status)
 {
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	
-	global_mapi_ctx->dumpdata = status;
+	mapi_ctx->dumpdata = status;
 
 	return MAPI_E_SUCCESS;
 }
@@ -306,6 +317,7 @@ _PUBLIC_ enum MAPISTATUS SetMAPIDumpData(bool status)
 /**
    \details Set MAPI debug level
 
+   \param mapi_ctx pointer to the MAPI context
    \param level the debug level to set
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
@@ -315,16 +327,16 @@ _PUBLIC_ enum MAPISTATUS SetMAPIDumpData(bool status)
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_INVALID_PARAMETER: the function parameter is invalid
  */
-_PUBLIC_ enum MAPISTATUS SetMAPIDebugLevel(uint32_t level)
+_PUBLIC_ enum MAPISTATUS SetMAPIDebugLevel(struct mapi_context *mapi_ctx, uint32_t level)
 {
 	char	*debuglevel;
 	bool	ret;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	debuglevel = talloc_asprintf(talloc_autofree_context(), "%u", level);
-	ret = lpcfg_set_cmdline(global_mapi_ctx->lp_ctx, "log level", debuglevel);
+	ret = lpcfg_set_cmdline(mapi_ctx->lp_ctx, "log level", debuglevel);
 	talloc_free(debuglevel);
 
 	return (ret == true) ? MAPI_E_SUCCESS : MAPI_E_INVALID_PARAMETER;
@@ -332,21 +344,24 @@ _PUBLIC_ enum MAPISTATUS SetMAPIDebugLevel(uint32_t level)
 
 
 /**
-   \details Retrieve the global MAPI loadparm context
+   \details Retrieve the MAPI loadparm context for specified MAPI
+   context
 
+   \param mapi_ctx pointer to the MAPI context
    \param lp_ctx pointer to a pointer to the loadparm context that the
    function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_INITIALIZED
    or MAPI_E_INVALID_PARAMETER
  */
-_PUBLIC_ enum MAPISTATUS GetLoadparmContext(struct loadparm_context **lp_ctx)
+_PUBLIC_ enum MAPISTATUS GetLoadparmContext(struct mapi_context *mapi_ctx, 
+					    struct loadparm_context **lp_ctx)
 {
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!lp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 
-	*lp_ctx = global_mapi_ctx->lp_ctx;
+	*lp_ctx = mapi_ctx->lp_ctx;
 
 	return MAPI_E_SUCCESS;
 }

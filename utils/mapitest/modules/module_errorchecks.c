@@ -31,22 +31,6 @@
   not be used as a programming reference.
 */
 
-/**
-   \details Create a correctly initialized global context
-*/
-static void make_global_ctx_valid(char* mem_ctx)
-{
-	global_mapi_ctx = talloc_zero(mem_ctx, struct mapi_ctx);
-}
-
-/**
-   \details De-initialize the global context
-*/
-static void make_global_ctx_invalid(void)
-{
-	talloc_free(global_mapi_ctx);
-	global_mapi_ctx = 0;
-}
 
 /**
    \details Verify simplemapi.c functions
@@ -71,8 +55,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	uint32_t	arg; 		// an all purpose argument...
 	TALLOC_CTX	*mem_ctx;
 
-	make_global_ctx_invalid();
-
 	status = GetDefaultPublicFolder(obj_store, folder, id);
 	if ( (status != MAPI_E_NOT_INITIALIZED) || (GetLastError() != MAPI_E_NOT_INITIALIZED) ) {
 		mapitest_print(mt, "* %-35s: [FAILURE] - 0x%x\n", "Step 1 - MAPI_E_NOT_INITIALIZED", status);
@@ -82,7 +64,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	}
 
 	mem_ctx = talloc_autofree_context();
-	make_global_ctx_valid(mem_ctx);
 
 	status = GetDefaultPublicFolder(obj_store, folder, id);
 	if ( ( status != MAPI_E_INVALID_PARAMETER ) || (GetLastError() != MAPI_E_INVALID_PARAMETER) ) {
@@ -100,8 +81,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 3 - MAPI_E_NOT_FOUND");
 	}
 
-	make_global_ctx_invalid();
-
 	obj_store = 0;
 
 	status = GetDefaultFolder(obj_store, folder, id);
@@ -111,8 +90,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	} else {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 4 - MAPI_E_NOT_INITIALIZED");
 	}
-
-	make_global_ctx_valid(mem_ctx);
 
 	status = GetDefaultFolder(obj_store, folder, id);
 	if ( ( status != MAPI_E_INVALID_PARAMETER ) || (GetLastError() != MAPI_E_INVALID_PARAMETER) ) {
@@ -132,8 +109,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 6 - MAPI_E_INVALID_PARAMETER");
 	}
 
-	make_global_ctx_invalid();
-
 	obj_store = 0;
 
 	status = GetFolderItemsCount(obj_folder, 0, 0);
@@ -143,8 +118,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	} else {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 7 - MAPI_E_NOT_INITIALIZED");
 	}
-
-	make_global_ctx_valid(mem_ctx);
 
 	status = GetFolderItemsCount(obj_folder, 0, 0);
 	if ( ( status != MAPI_E_INVALID_PARAMETER ) || (GetLastError() != MAPI_E_INVALID_PARAMETER) ) {
@@ -171,7 +144,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 10 - MAPI_E_INVALID_PARAMETER");
 	}
 
-	make_global_ctx_invalid();
 	obj_folder = 0;
 
 	/**************************************************************************************
@@ -184,8 +156,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	} else {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 11 - MAPI_E_NOT_INITIALIZED");
 	}
-
-	make_global_ctx_valid(mem_ctx);
 
 	status = AddUserPermission(obj_folder, 0, RightsNone);
 	if ( ( status != MAPI_E_INVALID_PARAMETER ) || (GetLastError() != MAPI_E_INVALID_PARAMETER) ) {
@@ -204,7 +174,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 13 - MAPI_E_INVALID_PARAMETER");
 	}
 
-	make_global_ctx_invalid();
 	obj_folder = 0;
 
 	/**************************************************************************************
@@ -217,8 +186,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	} else {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 14 - MAPI_E_NOT_INITIALIZED");
 	}
-
-	make_global_ctx_valid(mem_ctx);
 
 	status = ModifyUserPermission(obj_folder, 0, RightsNone);
 	if ( ( status != MAPI_E_INVALID_PARAMETER ) || (GetLastError() != MAPI_E_INVALID_PARAMETER) ) {
@@ -237,7 +204,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 16 - MAPI_E_INVALID_PARAMETER");
 	}
 
-	make_global_ctx_invalid();
 	obj_folder = 0;
 
 	/**************************************************************************************
@@ -250,8 +216,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	} else {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 17 - MAPI_E_NOT_INITIALIZED");
 	}
-
-	make_global_ctx_valid(mem_ctx);
 
 	status = RemoveUserPermission(obj_folder, 0);
 	if ( ( status != MAPI_E_INVALID_PARAMETER ) || (GetLastError() != MAPI_E_INVALID_PARAMETER) ) {
@@ -270,7 +234,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 19 - MAPI_E_INVALID_PARAMETER");
 	}
 
-	make_global_ctx_invalid();
 	obj_folder = 0;
 
 	/**************************************************************************************
@@ -283,8 +246,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	} else {
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 20 - MAPI_E_NOT_INITIALIZED");
 	}
-
-	make_global_ctx_valid(mem_ctx);
 
 	status = GetBestBody(obj_message, 0);
 	if ( ( status != MAPI_E_INVALID_PARAMETER ) || (GetLastError() != MAPI_E_INVALID_PARAMETER) ) {
@@ -303,7 +264,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 		mapitest_print(mt, "* %-35s: [SUCCESS]\n", "Step 22 - MAPI_E_INVALID_PARAMETER");
 	}
 
-	make_global_ctx_invalid();
 	obj_message = 0;
 
 

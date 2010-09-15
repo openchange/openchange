@@ -71,13 +71,14 @@ int main(int argc, const char *argv[])
 	bool				opt_dumpdata = false;
 	FILE 	 			*fp = NULL;
 	mapi_id_t			fid;
+	struct mapi_context		*mapi_ctx;
 	struct mapi_session		*session = NULL;
-	icalcomponent *vcal;
-	struct tm start;
-	struct tm end;
-	icalparser *parser;
-	icalcomponent *ical;
-	icalcomponent *vevent;
+	icalcomponent			*vcal;
+	struct tm			start;
+	struct tm			end;
+	icalparser			*parser;
+	icalcomponent			*ical;
+	icalcomponent			*vevent;
 	TALLOC_CTX			*mem_ctx;
 
 	
@@ -138,7 +139,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* Initialize MAPI subsystem */
-	retval = MAPIInitialize(opt_profdb);
+	retval = MAPIInitialize(&mapi_ctx, opt_profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		return 1;
@@ -146,11 +147,11 @@ int main(int argc, const char *argv[])
 	
 	/* debug options */
 	if (opt_debug) {
-		SetMAPIDebugLevel(atoi(opt_debug));
+		SetMAPIDebugLevel(mapi_ctx, atoi(opt_debug));
 	}
-	SetMAPIDumpData(opt_dumpdata);
+	SetMAPIDumpData(mapi_ctx, opt_dumpdata);
 	
-	session = octool_init_mapi(opt_profname, opt_password, 0);
+	session = octool_init_mapi(mapi_ctx, opt_profname, opt_password, 0);
 	if(!session){
 		mapi_errstr("Session", GetLastError());
 		return 1;
@@ -238,7 +239,7 @@ int main(int argc, const char *argv[])
 	poptFreeContext(pc);
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 	talloc_free(mem_ctx);	
 
 	return 0;

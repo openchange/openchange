@@ -221,6 +221,7 @@ int main(int argc, const char *argv[])
 {
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 	struct mapi_session	*session = NULL;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_ipm_subtree;
@@ -388,17 +389,17 @@ int main(int argc, const char *argv[])
 	/**
 	 * Initialize MAPI subsystem
 	 */
-	retval = MAPIInitialize(opt_profdb);
+	retval = MAPIInitialize(&mapi_ctx, opt_profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
 	/* debug options */
-	SetMAPIDumpData(opt_dumpdata);
+	SetMAPIDumpData(mapi_ctx, opt_dumpdata);
 
 	if (opt_debug) {
-		SetMAPIDebugLevel(atoi(opt_debug));
+		SetMAPIDebugLevel(mapi_ctx, atoi(opt_debug));
 	}
 
 	/**
@@ -406,14 +407,14 @@ int main(int argc, const char *argv[])
 	 * from the database
 	 */
 	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname);
+		retval = GetDefaultProfile(mapi_ctx, &opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			exit (1);
 		}
 	}
 
-	retval = MapiLogonEx(&session, opt_profname, opt_password);
+	retval = MapiLogonEx(mapi_ctx, &session, opt_profname, opt_password);
 	talloc_free(opt_profname);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
@@ -575,7 +576,7 @@ int main(int argc, const char *argv[])
 end:
 	mapi_object_release(&obj_store);
 
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 	talloc_free(mem_ctx);
 	return 0;
 }

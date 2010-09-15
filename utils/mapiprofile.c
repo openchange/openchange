@@ -105,13 +105,14 @@ getentry:
 }
 
 const char *g_profname;
+struct mapi_context *g_mapi_ctx;
 
 static void signal_delete_profile(void)
 {
 	enum MAPISTATUS	retval;
 
 	fprintf(stderr, "CTRL-C caught ... Deleting profile\n");
-	if ((retval = DeleteProfile(g_profname)) != MAPI_E_SUCCESS) {
+	if ((retval = DeleteProfile(g_mapi_ctx, g_profname)) != MAPI_E_SUCCESS) {
 		mapi_errstr("DeleteProfile", GetLastError());
 	}
 
@@ -129,6 +130,7 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 			       uint8_t exchange_version)
 {
 	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 	struct mapi_session	*session = NULL;
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_profile	profile;
@@ -141,8 +143,16 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 
 	mem_ctx = talloc_named(NULL, 0, "mapiprofile_create");
 
+	retval = MAPIInitialize(&mapi_ctx, profdb);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_errstr("MAPIInitialize", GetLastError());
+		talloc_free(mem_ctx);
+		return false;
+	}
+
 	/* catch CTRL-C */
 	g_profname = profname;
+	g_mapi_ctx = mapi_ctx;
 
 #if defined (__FreeBSD__)
 	(void) signal(SIGINT, (sig_t) signal_delete_profile);
@@ -152,47 +162,40 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	(void) signal(SIGINT, (sighandler_t) signal_delete_profile);
 #endif
 
-	retval = MAPIInitialize(profdb);
-	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("MAPIInitialize", GetLastError());
-		talloc_free(mem_ctx);
-		return false;
-	}
-
 	/* debug options */
-	SetMAPIDumpData(opt_dumpdata);
+	SetMAPIDumpData(mapi_ctx, opt_dumpdata);
 
 	if (opt_debuglevel) {
-		SetMAPIDebugLevel(atoi(opt_debuglevel));
+		SetMAPIDebugLevel(mapi_ctx, atoi(opt_debuglevel));
 	}
 
 	/* Sanity check */
-	retval = OpenProfile(&profile, profname, NULL);
+	retval = OpenProfile(mapi_ctx, &profile, profname, NULL);
 	if (retval == MAPI_E_SUCCESS) {
 		fprintf(stderr, "[ERROR] mapiprofile: profile \"%s\" already exists\n", profname);
-		MAPIUninitialize();
+		MAPIUninitialize(mapi_ctx);
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	retval = CreateProfile(profname, username, password, flags);
+	retval = CreateProfile(mapi_ctx, profname, username, password, flags);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("CreateProfile", GetLastError());
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	mapi_profile_add_string_attr(profname, "binding", address);
-	mapi_profile_add_string_attr(profname, "workstation", workstation);
-	mapi_profile_add_string_attr(profname, "domain", domain);
-	mapi_profile_add_string_attr(profname, "seal", (seal == true) ? "true" : "false");
+	mapi_profile_add_string_attr(mapi_ctx, profname, "binding", address);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "workstation", workstation);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "domain", domain);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "seal", (seal == true) ? "true" : "false");
 
 	exchange_version_str = talloc_asprintf(mem_ctx, "%d", exchange_version);
-	mapi_profile_add_string_attr(profname, "exchange_version", exchange_version_str);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "exchange_version", exchange_version_str);
 	talloc_free(exchange_version_str);
 
 	if (realm) {
-		mapi_profile_add_string_attr(profname, "realm", realm);
+		mapi_profile_add_string_attr(mapi_ctx, profname, "realm", realm);
 	}
 
 	locale = (const char *) (language) ? mapi_get_locale_from_language(language) : mapi_get_system_locale();
@@ -205,7 +208,7 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	if (!locale || !cpid || !lcid) {
 		printf("Invalid Language supplied or unknown system language '%s\n'", language);
 		printf("Deleting profile\n");
-		if ((retval = DeleteProfile(profname)) != MAPI_E_SUCCESS) {
+		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("DeleteProfile", GetLastError());
 		}
 		talloc_free(mem_ctx);
@@ -215,18 +218,18 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	cpid_str = talloc_asprintf(mem_ctx, "%d", cpid);
 	lcid_str = talloc_asprintf(mem_ctx, "0x%.4x", lcid);
 
-	mapi_profile_add_string_attr(profname, "codepage", cpid_str);
-	mapi_profile_add_string_attr(profname, "language", lcid_str);
-	mapi_profile_add_string_attr(profname, "method", lcid_str);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "codepage", cpid_str);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "language", lcid_str);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "method", lcid_str);
 
 	talloc_free(cpid_str);
 	talloc_free(lcid_str);
 
-	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
+	retval = MapiLogonProvider(mapi_ctx, &session, profname, password, PROVIDER_ID_NSPI);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonProvider", GetLastError());
 		printf("Deleting profile\n");
-		if ((retval = DeleteProfile(profname)) != MAPI_E_SUCCESS) {
+		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("DeleteProfile", GetLastError());
 		}
 		talloc_free(mem_ctx);
@@ -241,7 +244,7 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	if (retval != MAPI_E_SUCCESS && retval != 0x1) {
 		mapi_errstr("ProcessNetworkProfile", GetLastError());
 		printf("Deleting profile\n");
-		if ((retval = DeleteProfile(profname)) != MAPI_E_SUCCESS) {
+		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("DeleteProfile", GetLastError());
 		}
 		talloc_free(mem_ctx);
@@ -252,38 +255,40 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 
 	talloc_free(mem_ctx);
 
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 
 	return true;
 }
 
 static void mapiprofile_delete(const char *profdb, const char *profname)
 {
-	enum MAPISTATUS retval;
+	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 
-	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
+	if ((retval = MAPIInitialize(&mapi_ctx, profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
-	if ((retval = DeleteProfile(profname)) != MAPI_E_SUCCESS) {
+	if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
 		mapi_errstr("DeleteProfile", GetLastError());
 		exit (1);
 	}
 
 	printf("Profile %s deleted from database %s\n", profname, profdb);
 
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 }
 
 
 static void mapiprofile_rename(const char *profdb, const char *old_profname, const char *new_profname)
 {
-	TALLOC_CTX	*mem_ctx;
-	enum MAPISTATUS	retval;
-	char		*profname;
+	TALLOC_CTX		*mem_ctx;
+	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
+	char			*profname;
 
-	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
+	if ((retval = MAPIInitialize(&mapi_ctx, profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", retval);
 		exit (1);
 	}
@@ -291,7 +296,7 @@ static void mapiprofile_rename(const char *profdb, const char *old_profname, con
 	mem_ctx = talloc_named(NULL, 0, "mapiprofile_rename");
 
 	if (!old_profname) {
-		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
+		if ((retval = GetDefaultProfile(mapi_ctx, &profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", retval);
 			talloc_free(mem_ctx);
 			exit (1);
@@ -300,7 +305,7 @@ static void mapiprofile_rename(const char *profdb, const char *old_profname, con
 		profname = talloc_strdup(mem_ctx, old_profname);
 	}
 
-	if ((retval = RenameProfile(profname, new_profname)) != MAPI_E_SUCCESS) {
+	if ((retval = RenameProfile(mapi_ctx, profname, new_profname)) != MAPI_E_SUCCESS) {
 		mapi_errstr("RenameProfile", retval);
 		talloc_free(profname);
 		talloc_free(mem_ctx);
@@ -309,40 +314,42 @@ static void mapiprofile_rename(const char *profdb, const char *old_profname, con
 
 	talloc_free(profname);
 	talloc_free(mem_ctx);
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 }
 
 
 static void mapiprofile_set_default(const char *profdb, const char *profname)
 {
-	enum MAPISTATUS retval;
+	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 
-	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
+	if ((retval = MAPIInitialize(&mapi_ctx, profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
-	if ((retval = SetDefaultProfile(profname)) != MAPI_E_SUCCESS) {
+	if ((retval = SetDefaultProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
 		mapi_errstr("SetDefaultProfile", GetLastError());
 		exit (1);
 	}
 
 	printf("Profile %s is now set the default one\n", profname);
 
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 }
 
 static void mapiprofile_get_default(const char *profdb)
 {
-	enum MAPISTATUS retval;
-	char		*profname;
+	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
+	char			*profname;
 
-	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
+	if ((retval = MAPIInitialize(&mapi_ctx, profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 	
-	if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
+	if ((retval = GetDefaultProfile(mapi_ctx, &profname)) != MAPI_E_SUCCESS) {
 		mapi_errstr("GetDefaultProfile", GetLastError());
 		exit (1);
 	}
@@ -350,7 +357,7 @@ static void mapiprofile_get_default(const char *profdb)
 	printf("Default profile is set to %s\n", profname);
 
 	talloc_free(profname);
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 }
 
 static void mapiprofile_get_fqdn(const char *profdb, 
@@ -360,21 +367,22 @@ static void mapiprofile_get_fqdn(const char *profdb,
 {
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 	struct mapi_session	*session = NULL;
 	const char		*serverFQDN;
 	char			*profname;
 
-	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
+	if ((retval = MAPIInitialize(&mapi_ctx, profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
-	SetMAPIDumpData(opt_dumpdata);
+	SetMAPIDumpData(mapi_ctx, opt_dumpdata);
 
 	mem_ctx = talloc_named(NULL, 0, "mapiprofile_get_fqdn");
 
 	if (!opt_profname) {
-		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
+		if ((retval = GetDefaultProfile(mapi_ctx, &profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			talloc_free(mem_ctx);
 			exit (1);
@@ -383,7 +391,7 @@ static void mapiprofile_get_fqdn(const char *profdb,
 		profname = talloc_strdup(mem_ctx, (char *)opt_profname);
 	}
 
-	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
+	retval = MapiLogonProvider(mapi_ctx, &session, profname, password, PROVIDER_ID_NSPI);
 	talloc_free(profname);
 	talloc_free(mem_ctx);
 	if (retval != MAPI_E_SUCCESS) {
@@ -391,30 +399,31 @@ static void mapiprofile_get_fqdn(const char *profdb,
 		exit (1);
 	}
 
-	retval = RfrGetFQDNFromLegacyDN(session, &serverFQDN);
+	retval = RfrGetFQDNFromLegacyDN(mapi_ctx, session, &serverFQDN);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("RfrGetFQDNFromLegacyDN", GetLastError());
 		exit (1);
 	}
 
-	printf("%s is at %s\n", global_mapi_ctx->session->profile->homemdb, serverFQDN);
+	printf("%s is at %s\n", mapi_ctx->session->profile->homemdb, serverFQDN);
 
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 }
 
 static void mapiprofile_list(const char *profdb)
 {
-	enum MAPISTATUS retval;
-	struct SRowSet	proftable;
-	uint32_t	count = 0;
+	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
+	struct SRowSet		proftable;
+	uint32_t		count = 0;
 
-	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
+	if ((retval = MAPIInitialize(&mapi_ctx, profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
 	memset(&proftable, 0, sizeof (struct SRowSet));
-	if ((retval = GetProfileTable(&proftable)) != MAPI_E_SUCCESS) {
+	if ((retval = GetProfileTable(mapi_ctx, &proftable)) != MAPI_E_SUCCESS) {
 		mapi_errstr("GetProfileTable", GetLastError());
 		exit (1);
 	}
@@ -436,18 +445,19 @@ static void mapiprofile_list(const char *profdb)
 
 	}
 
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 }
 
 static void mapiprofile_dump(const char *profdb, const char *opt_profname)
 {
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 	struct mapi_profile	profile;
 	char			*profname;
 	char			*exchange_version = NULL;
 
-	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
+	if ((retval = MAPIInitialize(&mapi_ctx, profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
@@ -455,7 +465,7 @@ static void mapiprofile_dump(const char *profdb, const char *opt_profname)
 	mem_ctx = talloc_named(NULL, 0, "mapiprofile_dump");
 
 	if (!opt_profname) {
-		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
+		if ((retval = GetDefaultProfile(mapi_ctx, &profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			talloc_free(mem_ctx);
 			exit (1);
@@ -464,7 +474,7 @@ static void mapiprofile_dump(const char *profdb, const char *opt_profname)
 		profname = talloc_strdup(mem_ctx, (const char *)opt_profname);
 	}
 
-	retval = OpenProfile(&profile, profname, NULL);
+	retval = OpenProfile(mapi_ctx, &profile, profname, NULL);
 	talloc_free(profname);
 
 	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
@@ -500,7 +510,7 @@ static void mapiprofile_dump(const char *profdb, const char *opt_profname)
 
 end:
 	talloc_free(mem_ctx);
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 }
 
 static void mapiprofile_attribute(const char *profdb, const char *opt_profname, 
@@ -508,13 +518,14 @@ static void mapiprofile_attribute(const char *profdb, const char *opt_profname,
 {
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 	struct mapi_profile	profile;
 	char			*profname = NULL;
 	char			**value = NULL;
 	unsigned int		count = 0;
 	unsigned int		i;
 
-	if ((retval = MAPIInitialize(profdb)) != MAPI_E_SUCCESS) {
+	if ((retval = MAPIInitialize(&mapi_ctx, profdb)) != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
@@ -522,7 +533,7 @@ static void mapiprofile_attribute(const char *profdb, const char *opt_profname,
 	mem_ctx = talloc_named(NULL, 0, "mapiprofile_attribute");
 
 	if (!opt_profname) {
-		if ((retval = GetDefaultProfile(&profname)) != MAPI_E_SUCCESS) {
+		if ((retval = GetDefaultProfile(mapi_ctx, &profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			exit (1);
 		}
@@ -530,7 +541,7 @@ static void mapiprofile_attribute(const char *profdb, const char *opt_profname,
 		profname = talloc_strdup(mem_ctx, (const char *)opt_profname);
 	}
 
-	retval = OpenProfile(&profile, profname, NULL);
+	retval = OpenProfile(mapi_ctx, &profile, profname, NULL);
 	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
 		mapi_errstr("OpenProfile", GetLastError());
 		talloc_free(profname);
@@ -553,7 +564,7 @@ static void mapiprofile_attribute(const char *profdb, const char *opt_profname,
 	talloc_free(profname);
 	talloc_free(mem_ctx);
 
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 }
 
 static void show_help(poptContext pc, const char *param)

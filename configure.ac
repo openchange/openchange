@@ -433,7 +433,7 @@ AC_CACHE_CHECK([for boost_thread$BOOST_LIB_SUFFIX library], [ov_cv_boost_thread]
 if test x"$ac_cv_libmapixx_gxx_works" = "xyes"; then
    if test x"$ov_cv_boost_thread" = "xyes"; then
       AC_PROG_CXX 
-      OC_RULE_ADD(libmapixx, LIBS)
+#      OC_RULE_ADD(libmapixx, LIBS)
    fi
 fi
 

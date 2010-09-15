@@ -149,7 +149,9 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 
-	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+	if (mapi_response->mapi_repl) {
+		OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+	}
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

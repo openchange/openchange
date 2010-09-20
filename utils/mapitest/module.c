@@ -226,6 +226,7 @@ _PUBLIC_ uint32_t module_oxcprpt_init(struct mapitest *mt)
 	mapitest_suite_add_test_flagged(suite, "WRITE-COMMIT-STREAM", "Test atomic Write / Commit operation", mapitest_oxcprpt_WriteAndCommitStream, NotInExchange2010);
 	mapitest_suite_add_test_flagged(suite, "COPYTO-STREAM", "Copy stream from source to destination stream", mapitest_oxcprpt_CopyToStream, NotInExchange2010SP0);
 	mapitest_suite_add_test(suite, "NAME-ID", "Convert between Names and IDs", mapitest_oxcprpt_NameId);
+	mapitest_suite_add_test(suite, "PSMAPI-NAME-ID", "Convert between Names and IDs for PS_MAPI namespace", mapitest_oxcprpt_NameId_PSMAPI);
 
 	mapitest_suite_register(mt, suite);
 

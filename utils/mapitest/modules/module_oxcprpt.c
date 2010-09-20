@@ -2090,7 +2090,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 
 	/* Build the list of named properties we want to create */
 	nameid = mapi_nameid_new(mt->mem_ctx);
-	mapi_nameid_custom_lid_add(nameid, NAMEDPROP_IDNUM, PT_STRING8, PS_MAPI);
+	mapi_nameid_custom_lid_add(nameid, NAMEDPROP_IDNUM, PT_STRING8, PS_PUBLIC_STRINGS);
 
 	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mt->mem_ctx, struct SPropTagArray);
@@ -2133,7 +2133,7 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	nameid = mapi_nameid_new(mt->mem_ctx);
 	SPropTagArray = talloc_zero(mt->mem_ctx, struct SPropTagArray);
 
-	mapi_nameid_custom_string_add(nameid, NAMEDPROP_NAME, PT_STRING8, PS_MAPI);
+	mapi_nameid_custom_string_add(nameid, NAMEDPROP_NAME, PT_STRING8, PS_PUBLIC_STRINGS);
 	retval = GetIDsFromNames(&obj_ref_folder, nameid->count, nameid->nameid, MAPI_CREATE, &SPropTagArray);
 	mapitest_print_retval(mt, "GetIDsFromNames");
 	if (retval != MAPI_E_SUCCESS) {
@@ -2294,7 +2294,102 @@ _PUBLIC_ bool mapitest_oxcprpt_NameId(struct mapitest *mt)
 	return ret;
 }
 
+/**
+   \details Test the GetPropertyIdsFromNames (0x56) and
+   GetNamesFromPropertyIds (0x55) operations for the special
+   case of the PS_MAPI namespace
 
+   This function:
+   -# Logs into the server
+   -# Gets a property ID for a known property name
+   -# Gets a property name for a known property ID
+   -# Cleans up
+
+   Refer to MS-OXPROPS for the list of properties
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcprpt_NameId_PSMAPI(struct mapitest *mt)
+{	enum MAPISTATUS		retval;
+	mapi_object_t		obj_store;
+	struct mapi_nameid	*nameid;
+	struct SPropTagArray	*SPropTagArray;
+	bool 			ret = true;
+
+	/* Log into the server */
+	mapi_object_init(&obj_store);
+
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval_clean(mt, "OpenMsgStore", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Build the list of named properties we want to get */
+	nameid = mapi_nameid_new(mt->mem_ctx);
+	mapi_nameid_custom_lid_add(nameid, (PR_ACCESS>>16), PT_LONG, PS_MAPI); // 0x0FF4
+	mapi_nameid_custom_lid_add(nameid, (PR_ATTACHMENT_HIDDEN>>16), PT_BOOLEAN, PS_MAPI);
+
+	/* GetIDsFromNames and map property types */
+	SPropTagArray = talloc_zero(mt->mem_ctx, struct SPropTagArray);
+	retval = GetIDsFromNames(&obj_store, nameid->count, 
+				 nameid->nameid, 0, &SPropTagArray);
+	mapitest_print_retval_clean(mt, "GetIDsFromNames", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		MAPIFreeBuffer(nameid);
+		goto cleanup;
+	}
+
+	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
+	MAPIFreeBuffer(nameid);
+	
+	if (SPropTagArray->aulPropTag[0] == PR_ACCESS) {
+		mapitest_print(mt, "Comparison [0] matched\n");
+	} else {
+		mapitest_print(mt, "Comparison [0] failed : 0x%08x\n", SPropTagArray->aulPropTag[0]);
+	}
+	if (SPropTagArray->aulPropTag[1] == PR_ATTACHMENT_HIDDEN) {
+		mapitest_print(mt, "Comparison [1] matched\n");
+	} else {
+		mapitest_print(mt, "Comparison [1] failed : 0x%08x\n", SPropTagArray->aulPropTag[1]);
+	}
+	MAPIFreeBuffer(SPropTagArray);
+
+	nameid = mapi_nameid_new(mt->mem_ctx);
+	retval = GetNamesFromIDs(&obj_store, PR_ATTACHMENT_HIDDEN, &nameid->count, &nameid->nameid);
+	mapitest_print_retval_clean(mt, "GetNamesFromIDs", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(nameid);
+		ret = false;
+		goto cleanup;
+	}
+	
+	if (nameid->count != 1) {
+		mapitest_print(mt, "Unexpected count from GetNamesFromIDs: %i", nameid->count);
+		MAPIFreeBuffer(nameid);
+		ret = false;
+		goto cleanup;
+	}
+	if (nameid->nameid[0].ulKind != MNID_ID) {
+		mapitest_print(mt, "Unexpected kind from GetNamesFromIDs: %i", nameid->nameid[0].ulKind);
+		MAPIFreeBuffer(nameid);
+		ret = false;
+		goto cleanup;
+	}
+	if (nameid->nameid[0].kind.lid == (PR_ATTACHMENT_HIDDEN >> 16)) {
+		mapitest_print(mt, "Comparision of values matches\n");
+	} else {
+		mapitest_print(mt, "Comparison of values mismatch (nameid->lid: 0x%04x)\n", nameid->nameid[0].kind.lid); 
+	}
+
+cleanup:
+	mapi_object_release(&obj_store);
+	return ret;
+}
 /**
    \details Test the SetPropertiesNoReplicate (0x79) and
     DeletePropertiesNoReplicate (0x7a) operations

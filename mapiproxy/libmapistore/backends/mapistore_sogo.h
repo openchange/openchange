@@ -23,6 +23,12 @@
 #endif
 #endif
 
+@class MAPIStoreContext;
+
+typedef struct {
+    MAPIStoreContext *objcContext;
+} sogo_context;
+
 __BEGIN_DECLS
 
 int	mapistore_init_backend(void);

@@ -1,6 +1,9 @@
 # Makefile for OpenChange
 # Written by Jelmer Vernooij <jelmer@openchange.org>, 2005.
 
+SOGO_SOURCES = /home/wsourdeau/src/SOGo
+SOGO_CFLAGS = -I$(SOGO_SOURCES)/SoObjects
+
 default: all
 
 # Until we add proper dependencies for all the C files:
@@ -100,7 +103,7 @@ re:: clean install
 # Suffixes compilation rules
 #################################################################
 
-.SUFFIXES: .c .o .h .po .idl .cpp
+.SUFFIXES: .c .m .o .h .po .idl .cpp
 
 .idl.h:
 	@echo "Generating $@"
@@ -113,6 +116,9 @@ re:: clean install
 .c.po:
 	@echo "Compiling $< with -fPIC"
 	@$(CC) $(CFLAGS) -fPIC -c $< -o $@
+
+.m.po:
+	$(CC) $(CFLAGS) `gnustep-config --objc-flags` $(SOGO_CFLAGS) -ggdb -O0 -fPIC -c $< -o $@
 
 .cpp.o:
 	@echo "Compiling $< with -fPIC"
@@ -999,9 +1005,12 @@ mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT): mapiproxy/libmapis
 	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			\
 	-L. libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
+# SOGo backend
 mapistore_sogo: mapiproxy/libmapistore/backends/mapistore_sogo.$(SHLIBEXT)
 
-mapistore_sogo-install:
+mapiproxy/libmapistore/backends/mapistore_sogo.po: $(wildcard mapiproxy/libmapistore/backends/mapistore_sogo/*.m)
+
+mapistore_sogo-install: mapistore_sogo
 	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
 	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_sogo.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
 
@@ -1024,7 +1033,8 @@ distclean:: mapistore_sogo-distclean
 mapiproxy/libmapistore/backends/mapistore_sogo.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_sogo.po
 	@echo "Linking mapistore module $@"
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) 			\
-	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	
+	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+	`gnustep-config --base-libs` -lSOGo
 
 #######################
 # mapistore test tools

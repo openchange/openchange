@@ -28,8 +28,8 @@
 
 #import "MAPIStoreMapping.h"
 
-static uint64_t idCounter = 0x160001;
-static const uint64_t idIncrement = 0x010000;
+static const uint64_t idIncrement = 0x010000; /* we choose a high enough id to avoid any clash with system folders */
+static uint64_t idCounter = 0x200001;
 
 @implementation MAPIStoreMapping
 
@@ -86,7 +86,6 @@ static const uint64_t idIncrement = 0x010000;
                 rc = NO;
         }
         else {
-                idKey = [NSNumber numberWithUnsignedLongLong: idNbr];
                 [mapping setObject: urlString forKey: idKey];
                 [reverseMapping setObject: idKey forKey: urlString];
                 rc = YES;
@@ -99,12 +98,31 @@ static const uint64_t idIncrement = 0x010000;
 
 - (void) registerURL: (NSString *) urlString
 {
-        // uint64_t newID;
+        uint64_t idNbr;
 
         // newID = openchangedb_get_new_folderID();
         if (![reverseMapping objectForKey: urlString]) {
-                while (![self registerURL: urlString withID: idCounter])
+                if ([urlString isEqualToString: @"sogo://openchange:openchange@mail/folderINBOX"]) {
+                        idNbr = 0x160001;
+                        if (![self registerURL: urlString withID: idNbr])
+                                [self errorWithFormat: @"Unable to register root folder: %@",
+                                      urlString];
+                }
+                // else if ([urlString isEqualToString: @"sogo://openchange:openchange@mail/folderSent"]) {
+                //         idNbr = 0x140001;
+                //         idCounter = idNbr;
+                // }
+                else if ([urlString isEqualToString: @"sogo://openchange:openchange@contacts/personal"]) {
+                        idNbr = 0x1a0001;
+                        if (![self registerURL: urlString withID: idNbr])
+                                [self errorWithFormat: @"Unable to register root folder: %@",
+                                      urlString];
+                }
+                else {
                         idCounter += idIncrement;
+                        while (![self registerURL: urlString withID: idCounter])
+                                idCounter += idIncrement;
+                }
                 // [self _registerURL: urlString withID: newID];
         }
 }

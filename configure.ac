@@ -228,7 +228,7 @@ dnl Sun Studio Compiler
     LDFLAGS="$LDFLAGS -z ignore -R '\$\$ORIGIN/../lib'"
 elif test x"$ac_cv_c_compiler_icc" = x"yes"; then
 dnl Intel Compiler
-    COMPILER_OPTIONS_SHARED="-O3 -Wall -g3 -fstrict-aliasing -Wmissing-prototypes -Wstrict-prototypes -wd2259,188,593,869,981,181,1419,2218"
+    COMPILER_OPTIONS_SHARED="-O0 -Wall -g3 -fstrict-aliasing -Wmissing-prototypes -Wstrict-prototypes -wd2259,188,593,869,981,181,1419,2218"
     COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED"
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
 else
@@ -237,7 +237,7 @@ dnl GNU Compiler
     if test "x$use_cov" = "xyes"; then
         COMPILER_OPTIONS_SHARED="-O0 $COMPILER_OPTIONS_SHARED"
     else
-        COMPILER_OPTIONS_SHARED="-O3 $COMPILER_OPTIONS_SHARED"
+        COMPILER_OPTIONS_SHARED="-O0 $COMPILER_OPTIONS_SHARED"
     fi
     COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes"
     if test "x$use_cov" = "xyes"; then

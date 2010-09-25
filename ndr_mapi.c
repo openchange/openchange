@@ -1348,21 +1348,18 @@ _PUBLIC_ void ndr_print_EcDoConnectEx(struct ndr_print *ndr, const char *name, i
 		ndr->depth--;
 		ndr_print_ptr(ndr, "szDNPrefix", r->out.szDNPrefix);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "szDNPrefix", *r->out.szDNPrefix);
-		ndr->depth++;
-		if (*r->out.szDNPrefix) {
-			ndr_print_string(ndr, "szDNPrefix", *r->out.szDNPrefix);
-		}
+                if (r->out.szDNPrefix) {
+                  ndr_print_ptr(ndr, "szDNPrefix", *r->out.szDNPrefix);
+                  ndr->depth++;
+                }
 		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "szDisplayName", r->out.szDisplayName);
-		ndr->depth++;
-		ndr_print_ptr(ndr, "szDisplayName", *r->out.szDisplayName);
-		ndr->depth++;
-		if (*r->out.szDisplayName) {
+		if (r->out.szDisplayName) {
+                        ndr->depth++;
 			ndr_print_string(ndr, "szDisplayName", *r->out.szDisplayName);
+                        ndr->depth--;
 		}
-		ndr->depth--;
 		ndr->depth--;
 		ndr->print(ndr, "%s: ARRAY(%d)", "rgwServerVersion", (int)3);
 		ndr->depth++;
@@ -1385,14 +1382,18 @@ _PUBLIC_ void ndr_print_EcDoConnectEx(struct ndr_print *ndr, const char *name, i
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "pulTimeStamp", r->out.pulTimeStamp);
-		ndr->depth++;
-		ndr_print_uint32(ndr, "pulTimeStamp", *r->out.pulTimeStamp);
-		ndr->depth--;
+                if (r->out.pulTimeStamp) {
+                        ndr->depth++;
+                        ndr_print_uint32(ndr, "pulTimeStamp", *r->out.pulTimeStamp);
+                        ndr->depth--;
+                }
 		ndr_print_mapi2k7_AuxInfo(ndr, "rgbAuxOut", r->out.rgbAuxOut);
 		ndr_print_ptr(ndr, "pcbAuxOut", r->out.pcbAuxOut);
-		ndr->depth++;
-		ndr_print_uint32(ndr, "pcbAuxOut", *r->out.pcbAuxOut);
-		ndr->depth--;
+                if (r->out.pcbAuxOut) {
+                        ndr->depth++;
+                        ndr_print_uint32(ndr, "pcbAuxOut", *r->out.pcbAuxOut);
+                        ndr->depth--;
+                }
 		ndr_print_MAPISTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

@@ -33,6 +33,14 @@
 
 MAPIApplication *MAPIApp = nil;
 
+@interface UnixSignalHandler : NSObject
+
++ sharedHandler;
+
+- (void)removeObserver:(id)observer;
+
+@end
+
 @implementation MAPIApplication
 
 - (id) init
@@ -68,6 +76,11 @@ MAPIApplication *MAPIApp = nil;
 
                 MAPIApp = [super init];
                 [MAPIApp retain];
+
+                /* This is a hack to revert what is done in [WOCoreApplication
+                   init] */
+                [[NSClassFromString(@"UnixSignalHandler") sharedHandler]
+                  removeObserver: self];
         }
 
         return MAPIApp;

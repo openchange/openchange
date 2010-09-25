@@ -104,9 +104,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 
 	switch (object->type) {
 	case EMSMDBP_OBJECT_MAILBOX:
+		folderID = object->object.folder->folderID;
+		contextID = object->object.folder->contextID;
+		break;
+
+                flist = NULL;
 		ret = mapistore_indexing_get_folder_list(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username,
 							 messageID, &flist);
-		if (ret || !flist->count) {
+		if (ret || !flist || !flist->count) {
 			DEBUG(0, ("No parent folder found for 0x%.16"PRIx64"\n", messageID));
 		}
 		/* If last element in the list doesn't match folderID, that's incorrect */

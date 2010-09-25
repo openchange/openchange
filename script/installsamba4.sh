@@ -253,7 +253,7 @@ packages() {
 	./autogen-waf.sh
 	error_check $? "$lib autogen"
 
-	./configure --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
+	./configure --prefix=$SAMBA_PREFIX --enable-developer --abi-check-disable --bundled-libraries=NONE
 	error_check $? "$lib configure"
 
 	make

@@ -54,7 +54,14 @@
 @interface SOGoObject (MAPIStoreProtocol)
 
 - (NSString *) davContentLength;
-- (NSString *) decodedSubject;
+
+@end
+
+@interface MAPIStoreMailContext : MAPIStoreContext
+
+@end
+
+@interface MAPIStoreContactsContext : MAPIStoreContext
 
 @end
 
@@ -62,28 +69,72 @@
 
 /* sogo://username:password@{contacts,calendar,tasks,journal,notes,mail}/dossier/id */
 
+Class NSNullK;
 Class SOGoMailAccountsK, SOGoMailAccountK, SOGoMailFolderK, SOGoUserFolderK, SOGoObjectK;
 static MAPIStoreMapping *mapping = nil;
 
 + (void) initialize
 {
+        NSNullK = NSClassFromString (@"NSNull");
+
         SOGoMailAccountsK = NSClassFromString (@"SOGoMailAccounts");
         SOGoMailAccountK = NSClassFromString (@"SOGoMailAccount");
         SOGoMailFolderK = NSClassFromString (@"SOGoMailFolder");
         SOGoUserFolderK = NSClassFromString (@"SOGoUserFolder");
         SOGoObjectK = NSClassFromString (@"SOGoObject");
+
         mapping = [MAPIStoreMapping new];
 }
 
 + (id) contextFromURI: (const char *) newUri
 {
         MAPIStoreContext *context;
+        MAPIStoreAuthenticator *authenticator;
+        NSString *contextClass, *module, *completeURLString, *urlString;
+        NSURL *baseURL;
 
 	NSLog (@"METHOD '%s' (%d) -- uri: '%s'", __FUNCTION__, __LINE__, newUri);
 
-        context = [self new];
-        [context setURI: newUri];
-        [context autorelease];
+        context = nil;
+
+        urlString = [NSString stringWithUTF8String: newUri];
+        if (urlString) {
+                completeURLString = [@"sogo://" stringByAppendingString: urlString];
+                baseURL = [NSURL URLWithString: completeURLString];
+                if (baseURL) {
+                        module = [baseURL host];
+                        if (module) {
+                                if ([module isEqualToString: @"mail"])
+                                        contextClass = @"MAPIStoreMailContext";
+                                else if ([module isEqualToString: @"contacts"])
+                                        contextClass = @"MAPIStoreContactsContext";
+                                else {
+                                        NSLog (@"ERROR: unrecognized module name '%@'", module);
+                                        contextClass = nil;
+                                }
+                                
+                                if (contextClass) {
+                                        [mapping registerURL: completeURLString];
+                                        context = [NSClassFromString (contextClass) new];
+                                        [context autorelease];
+
+                                        authenticator = [MAPIStoreAuthenticator new];
+                                        [authenticator setUsername: [baseURL user]];
+                                        [authenticator setPassword: [baseURL password]];
+                                        [context setAuthenticator: authenticator];
+                                        [authenticator release];
+
+                                        [context setupRequest];
+                                        [context setupModuleFolder];
+                                        [context tearDownRequest];
+                                }
+                        }
+                }
+                else
+                        NSLog (@"ERROR: url could not be parsed");
+        }
+        else
+                NSLog (@"ERROR: url is an invalid UTF-8 string");
 
         return context;
 }
@@ -91,12 +142,12 @@ static MAPIStoreMapping *mapping = nil;
 - (id) init
 {
         if ((self = [super init])) {
-                uri = nil;
-                objectCache = [NSMutableDictionary new];
+                // objectCache = [NSMutableDictionary new];
                 messageCache = [NSMutableDictionary new];
                 subfolderCache = [NSMutableDictionary new];
                 woContext = [WOContext contextWithRequest: nil];
                 [woContext retain];
+                moduleFolder = nil;
         }
 
         [self logWithFormat: @"-init"];
@@ -107,39 +158,25 @@ static MAPIStoreMapping *mapping = nil;
 - (void) dealloc
 {
         [self logWithFormat: @"-dealloc"];
-        [uri release];
-        [objectCache release];
+
+        // [objectCache release];
         [messageCache release];
         [subfolderCache release];
+
+        [moduleFolder release];
         [woContext release];
+        [authenticator release];
         [super dealloc];
 }
 
-- (id) authenticator
+- (void) setAuthenticator: (MAPIStoreAuthenticator *) newAuthenticator
 {
-        MAPIStoreAuthenticator *authenticator;
-        NSURL *url;
-
-        url = [NSURL URLWithString: uri];
-        if (!url)
-                [self errorWithFormat: @"url string gave nil NSURL: '%@'", uri];
-
-        authenticator = [MAPIStoreAuthenticator new];
-        [authenticator setUsername: [url user]];
-        [authenticator setPassword: [url password]];
-        [authenticator autorelease];
-
-        return authenticator;
+        ASSIGN (authenticator, newAuthenticator);
 }
 
-- (void) setURI: (const char *) newUri
+- (MAPIStoreAuthenticator *) authenticator
 {
-        uri = [NSString stringWithFormat: @"sogo://%@",
-                        [NSString stringWithCString: newUri
-                                           encoding: NSUTF8StringEncoding]];
-        [uri retain];
-
-        [mapping registerURL: uri];
+        return authenticator;
 }
 
 - (void) setMemCtx: (void *) newMemCtx
@@ -165,38 +202,9 @@ static MAPIStoreMapping *mapping = nil;
         [MAPIApp setMAPIStoreContext: nil];
 }
 
-- (id) _moduleFromURL: (NSURL *) moduleURL
+- (void) setupModuleFolder
 {
-        id userFolder, moduleFolder, accountsFolder;
-        NSString *userName, *mapiModule;
-
-        userName = [moduleURL user];
-        userFolder = [objectCache objectForKey: userName];
-        if (!userFolder) {
-                userFolder = [SOGoUserFolderK objectWithName: userName
-                                                 inContainer: MAPIApp];
-                /* Potential crash here as the username might be invalid and
-                 * unknown from SOGo and hence the userFolder be nil. */
-                [objectCache setObject: userFolder forKey: userName];
-                [woContext setClientObject: userFolder];
-        }
-
-        mapiModule = [moduleURL host];
-        if ([mapiModule isEqualToString: @"mail"]) {
-                accountsFolder = [userFolder lookupName: @"Mail"
-                                              inContext: woContext
-                                                acquire: NO];
-                moduleFolder = [accountsFolder lookupName: @"0"
-                                                inContext: woContext
-                                                  acquire: NO];
-        }
-        else {
-                [self errorWithFormat: @"module name not handled: '%@'",
-                      mapiModule];
-                moduleFolder = nil;
-        }
-
-        return moduleFolder;
+        [self subclassResponsibility: _cmd];
 }
 
 - (id) _lookupObject: (NSString *) objectURLString
@@ -212,7 +220,7 @@ static MAPIStoreMapping *mapping = nil;
         objectURL = [NSURL URLWithString: objectURLString];
         if (!objectURL)
                 [self errorWithFormat: @"url string gave nil NSURL: '%@'", objectURLString];
-        object = [self _moduleFromURL: objectURL];
+        object = moduleFolder;
         
         pathString = [objectURL path];
         if ([pathString hasPrefix: @"/"])
@@ -221,23 +229,31 @@ static MAPIStoreMapping *mapping = nil;
                 path = [pathString componentsSeparatedByString: @"/"];
                 max = [path count];
                 if (max > 0) {
-                        for (count = 0; count < max; count++) {
+                        for (count = 0;
+                             object && count < max;
+                             count++) {
                                 nameInContainer = [[path objectAtIndex: count]
                                                           stringByUnescapingURL];
                                 object = [object lookupName: nameInContainer
                                                   inContext: woContext
                                                     acquire: NO];
-                                [woContext setClientObject: object];
+                                if ([object isKindOfClass: SOGoObjectK])
+                                        [woContext setClientObject: object];
+                                else
+                                        object = nil;
                         }
                 }
-        }
-        if (object && [object isKindOfClass: SOGoObjectK])
-                [objectCache setObject: object
-                                forKey: objectURLString];
-        else {
+        } else
                 object = nil;
-                [woContext setClientObject: nil];
-        }
+
+        [woContext setClientObject: object];
+        // if (object && [object isKindOfClass: SOGoObjectK])
+        //         [objectCache setObject: object
+        //                         forKey: objectURLString];
+        // else {
+        //         object = nil;
+        //         [woContext setClientObject: nil];
+        // }
         
         return object;
 }
@@ -401,8 +417,11 @@ static MAPIStoreMapping *mapping = nil;
         keys = [subfolderCache objectForKey: folderURL];
         if (!keys) {
                 folder = [self _lookupObject: folderURL];
-                if (folder)
+                if (folder) {
                         keys = [folder toManyRelationshipKeys];
+                        if (!keys)
+                                keys = (NSArray *) [NSNull null];
+                }
                 else
                         keys = (NSArray *) [NSNull null];
                 [subfolderCache setObject: keys forKey: folderURL];
@@ -454,54 +473,33 @@ static MAPIStoreMapping *mapping = nil;
         return rc;
 }
 
-- (int) _getCommonTableChildproperty: (void **) data
-                               atURL: (NSString *) childURL
-                             withTag: (uint32_t) proptag
-                            inFolder: (SOGoFolder *) folder
-                             withFID: (uint64_t) fid
+- (int) getCommonTableChildproperty: (void **) data
+                              atURL: (NSString *) childURL
+                            withTag: (uint32_t) proptag
+                           inFolder: (SOGoFolder *) folder
+                            withFID: (uint64_t) fid
 {
         NSString *stringData;
         id child;
-        uint64_t *llongValue;
-        uint32_t *longValue;
+        // uint64_t *llongValue;
+        // uint32_t *longValue;
         int rc;
 
         rc = MAPI_E_SUCCESS;
         switch (proptag) {
-        case PR_PARENT_FID:
-                llongValue = talloc_zero(memCtx, uint64_t);
-                *llongValue = fid;
-                *data = llongValue;
-                break;
-        case PR_INST_ID: // TODO: DOUBT
-                llongValue = talloc_zero(memCtx, uint64_t);
-                *llongValue = [mapping idFromURL: childURL];
-                if (*llongValue == NSNotFound) {
-                        [mapping registerURL: childURL];
-                        *llongValue = [mapping idFromURL: childURL];
-                }
-                *data = llongValue;
-                break;
-        case PR_INSTANCE_NUM: // TODO: DOUBT
-                longValue = talloc_zero(memCtx, uint32_t);
-                *longValue = [childURL hash]; /* we return a unique id based on the url */
-                *data = longValue;
-                break;
         case PR_DISPLAY_NAME_UNICODE:
                 child = [self _lookupObject: childURL];
-                if ([child respondsToSelector: @selector (displayName)])
-                        stringData = [child displayName];
-                else
-                        stringData = [child nameInContainer];
+                stringData = [child displayName];
                 *data = talloc_strdup(memCtx,
                                       [stringData UTF8String]);
                 break;
-        case PR_DEPTH: // TODO: DOUBT
-                longValue = talloc_zero(memCtx, uint32_t);
-                *longValue = 1;
-                *data = longValue;
-                break;
         default:
+                // if ((proptag & 0x001F) == 0x001F) {
+                //         stringValue = [NSString stringWithFormat: @"Unhandled unicode value: 0x%x", proptag];
+                //         *data = talloc_strdup(memCtx, [stringValue UTF8String]);
+                //         break;
+                // }
+                // else
                 [self errorWithFormat: @"Unknown proptag: %.8x for child '%@'",
                       proptag, childURL];
                 *data = NULL;
@@ -511,21 +509,44 @@ static MAPIStoreMapping *mapping = nil;
         return rc;
 }
 
-- (int) _getMessageTableChildproperty: (void **) data
-                                atURL: (NSString *) childURL
-                              withTag: (uint32_t) proptag
-                             inFolder: (SOGoFolder *) folder
-                              withFID: (uint64_t) fid
+- (int) getMessageTableChildproperty: (void **) data
+                               atURL: (NSString *) childURL
+                             withTag: (uint32_t) proptag
+                            inFolder: (SOGoFolder *) folder
+                             withFID: (uint64_t) fid
 {
-        NSString *stringData;
-        id child;
-        uint64_t *llongValue;
-        uint8_t *boolValue;
         uint32_t *longValue;
+        uint64_t *llongValue;
         int rc;
 
         rc = MAPI_E_SUCCESS;
         switch (proptag) {
+        case PR_INST_ID: // TODO: DOUBT
+                llongValue = talloc_zero(memCtx, uint64_t);
+                // *llongValue = 1;
+                *llongValue = [childURL hash]; /* we return a unique id based on the url */
+                *data = llongValue;
+                break;
+                // case PR_INST_ID: // TODO: DOUBT
+        case PR_INSTANCE_NUM: // TODO: DOUBT
+                longValue = talloc_zero(memCtx, uint32_t);
+                *longValue = 0;
+                *data = longValue;
+                break;
+        case PR_VD_VERSION:
+                longValue = talloc_zero(memCtx, uint32_t);
+                *longValue = 8; /* mandatory value... wtf? */
+                *data = longValue;
+                break;
+        // case PR_DEPTH: // TODO: DOUBT
+        //         longValue = talloc_zero(memCtx, uint32_t);
+        //         *longValue = 1;
+        //         *data = longValue;
+        //         break;
+        case PR_FID:
+                llongValue = talloc_zero(memCtx, uint64_t);
+                *llongValue = fid;
+                *data = llongValue;
         case PR_MID:
                 llongValue = talloc_zero(memCtx, uint64_t);
                 *llongValue = [mapping idFromURL: childURL];
@@ -535,73 +556,6 @@ static MAPIStoreMapping *mapping = nil;
                 }
                 *data = llongValue;
                 break;
-        case PR_ROW_TYPE: // TODO: DOUBT
-                longValue = talloc_zero(memCtx, uint32_t);
-                *longValue = 1;
-                *data = longValue;
-                break;
-        case PR_FLAG_STATUS: // TODO
-                longValue = talloc_zero(memCtx, uint32_t);
-                *longValue = 0;
-                *data = longValue;
-                break;
-        case PR_MSG_STATUS: // TODO
-                longValue = talloc_zero(memCtx, uint32_t);
-                *longValue = 0;
-                *data = longValue;
-                break;
-        case PR_MESSAGE_FLAGS: // TODO
-                longValue = talloc_zero(memCtx, uint32_t);
-                *longValue = 0;
-                *data = longValue;
-                break;
-        case PR_ICON_INDEX: // TODO
-                longValue = talloc_zero(memCtx, uint32_t);
-                *longValue = 0x00000100; /* read mail, see http://msdn.microsoft.com/en-us/library/cc815472.aspx */
-                *data = longValue;
-                break;
-        case PR_SUBJECT_UNICODE:
-                child = [self _lookupObject: childURL];
-                stringData = [child decodedSubject];
-                *data = talloc_strdup(memCtx,
-                                      [stringData UTF8String]);
-                break;
-        case PR_MESSAGE_CLASS_UNICODE:
-                *data = talloc_strdup(memCtx, "IPM.Note");
-                break;
-        case PR_MESSAGE_SIZE:
-                child = [self _lookupObject: childURL];
-                longValue = talloc_zero(memCtx, uint32_t);
-                /* TODO: choose another name for that method */
-                *longValue = [[child davContentLength] intValue];
-                *data = longValue;
-                break;
-        case PR_HASATTACH:
-                boolValue = talloc_zero(memCtx, uint8_t);
-                *boolValue = NO;
-                *data = boolValue;
-                break;
-                // case PR_MESSAGE_DELIVERY_TIME:
-                //         llongValue = talloc_zero(memCtx, int64_t);
-                //         child = [self _lookupObject: childURL];
-
-                //         refDate = [NSCalendarDate dateWithYear: 1601 month: 1 day: 1
-                //                                           hour: 0 minute: 0 second: 0
-                //                                       timeZone: [NSTimeZone timeZoneWithName: @"UTC"]];
-                //         *llongValue = (uint64_t) [[child date] timeIntervalSinceDate: refDate];
-                //         // timeValue->dwLowDateTime = (uint32_t) (timeCompValue & 0xffffffff);
-                //         // timeValue->dwHighDateTime = (uint32_t) ((timeCompValue >> 32) & 0xffffffff);
-                //         *data = llongValue;
-                //         break;
-// #define PR_REPLY_TIME                                       PROP_TAG(PT_SYSTIME   , 0x0030) /* 0x00300040 */
-// #define PR_EXPIRY_TIME                                      PROP_TAG(PT_SYSTIME   , 0x0015) /* 0x00150040 */
-// #define PR_MESSAGE_DELIVERY_TIME                            PROP_TAG(PT_SYSTIME   , 0x0e06) /* 0x0e060040 */
-// #define PR_IMPORTANCE                                       PROP_TAG(PT_LONG      , 0x0017) /* 0x00170003 */
-// #define PR_SENSITIVITY                                      PROP_TAG(PT_LONG      , 0x0036) /* 0x00360003 */
-// #define PR_FOLLOWUP_ICON                                    PROP_TAG(PT_LONG      , 0x1095) /* 0x10950003 */
-// #define PR_ITEM_TEMPORARY_FLAGS                             PROP_TAG(PT_LONG      , 0x1097) /* 0x10970003 */
-// #define PR_SEARCH_KEY                                       PROP_TAG(PT_BINARY    , 0x300b) /* 0x300b0102 */
-
 
                 /* those are queried while they really pertain to the
                    addressbook module */
@@ -612,41 +566,50 @@ static MAPIStoreMapping *mapping = nil;
 // 0x68420102  PidTagScheduleInfoDelegatorWantsCopy (BOOL)
 
 
-        case PR_SENT_REPRESENTING_NAME_UNICODE:
-                *data = talloc_strdup(memCtx, "PR_SENT_REPRESENTING_NAME_UNICODE");
-                // child = [self _lookupObject: childURL];
-                // stringData = [child from];
-                // *data = talloc_strdup(memCtx,
-                //                       [stringData UTF8String]);
-                break;
-        case PR_INTERNET_MESSAGE_ID_UNICODE:
-                *data = talloc_strdup(memCtx, "PR_INTERNET_MESSAGE_ID_UNICODE");
-                break;
         default:
-                rc = [self _getCommonTableChildproperty: data
-                                                  atURL: childURL
-                                                withTag: proptag
-                                               inFolder: folder
-                                                withFID: fid];
+                rc = [self getCommonTableChildproperty: data
+                                                 atURL: childURL
+                                               withTag: proptag
+                                              inFolder: folder
+                                               withFID: fid];
         }
 
         return rc;
 }
 
-- (int) _getFolderTableChildproperty: (void **) data
-                               atURL: (NSString *) childURL
-                             withTag: (uint32_t) proptag
-                            inFolder: (SOGoFolder *) folder
-                             withFID: (uint64_t) fid
+- (NSString *) _parentURLFromURL: (NSString *) urlString
 {
-        id child;
+        NSString *newURL;
+        NSArray *parts;
+        NSMutableArray *newParts;
+
+        parts = [urlString componentsSeparatedByString: @"/"];
+        if ([parts count] > 3) {
+                newParts = [parts mutableCopy];
+                [newParts autorelease];
+                [newParts removeLastObject];
+                newURL = [newParts componentsJoinedByString: @"/"];
+        }
+        else
+                newURL = nil;
+
+        return newURL;
+}
+
+- (int) getFolderTableChildproperty: (void **) data
+                              atURL: (NSString *) childURL
+                            withTag: (uint32_t) proptag
+                           inFolder: (SOGoFolder *) folder
+                            withFID: (uint64_t) fid
+{
+        // id child;
         uint64_t *llongValue;
         uint8_t *boolValue;
         uint32_t *longValue;
         struct Binary_r *binaryValue;
         int rc;
+        NSString *parentURL;
 
-        [self logWithFormat: @"  querying child folder at URL: %@", childURL];
         rc = MAPI_E_SUCCESS;
         switch (proptag) {
         case PR_FID:
@@ -658,6 +621,22 @@ static MAPIStoreMapping *mapping = nil;
                 }
                 *data = llongValue;
                 break;
+        case PR_PARENT_FID:
+                llongValue = talloc_zero(memCtx, uint64_t);
+                parentURL = [self _parentURLFromURL: childURL];
+                if (parentURL) {
+                        *llongValue = [mapping idFromURL: childURL];
+                        if (*llongValue == NSNotFound) {
+                                [mapping registerURL: childURL];
+                                *llongValue = [mapping idFromURL: childURL];
+                        }
+                        *data = llongValue;
+                }
+                else {
+                        *data = NULL;
+                        rc = MAPISTORE_ERR_NOT_FOUND;
+                }
+                break;
         case PR_ATTR_HIDDEN:
         case PR_ATTR_SYSTEM:
         case PR_ATTR_READONLY:
@@ -667,24 +646,14 @@ static MAPIStoreMapping *mapping = nil;
                 break;
         case PR_SUBFOLDERS:
                 boolValue = talloc_zero(memCtx, uint8_t);
-                child = [self _lookupObject: childURL];
-                *boolValue = ([[child toManyRelationshipKeys]
-                                      count]
-                              > 0);
+                *boolValue = ([[self _subfolderKeysForFolderURL: childURL]
+                                      count] > 0);
                 *data = boolValue;
                 break;
         case PR_CONTENT_COUNT:
                 longValue = talloc_zero(memCtx, uint32_t);
-                child = [self _lookupObject: childURL];
-                *longValue = ([[child toOneRelationshipKeys]
-                                      count]
-                              > 0);
-                *data = longValue;
-                break;
-        // case 0x36de0003: http://social.msdn.microsoft.com/Forums/en-US/os_exchangeprotocols/thread/17c68add-1f62-4b68-9d83-f9ec7c1c6c9b
-        case PR_CONTENT_UNREAD:
-                longValue = talloc_zero(memCtx, uint32_t);
-                *longValue = 0;
+                *longValue = ([[self _messageKeysForFolderURL: childURL]
+                                      count] > 0);
                 *data = longValue;
                 break;
         case PR_EXTENDED_FOLDER_FLAGS: // TODO: DOUBT: how to indicate the
@@ -692,15 +661,12 @@ static MAPIStoreMapping *mapping = nil;
                 binaryValue = talloc_zero(memCtx, struct Binary_r);
                 *data = binaryValue;
                 break;
-        case PR_CONTAINER_CLASS_UNICODE:
-                *data = talloc_strdup(memCtx, "IPF.Note");
-                break;
         default:
-                rc = [self _getCommonTableChildproperty: data
-                                                  atURL: childURL
-                                                withTag: proptag
-                                               inFolder: folder
-                                                withFID: fid];
+                rc = [self getCommonTableChildproperty: data
+                                                 atURL: childURL
+                                               withTag: proptag
+                                              inFolder: folder
+                                               withFID: fid];
         }
 
         return rc;
@@ -739,24 +705,25 @@ static MAPIStoreMapping *mapping = nil;
                         childName = [children objectAtIndex: pos];
                         childURL = [folderURL stringByAppendingFormat: @"/%@",
                                               [childName stringByEscapingURL]];
-                        [self logWithFormat: @"  querying child message at URL: %@", childURL];
 
-                        if (tableType == MAPISTORE_FOLDER_TABLE)
-                                rc = [self _getFolderTableChildproperty: data
+                        if (tableType == MAPISTORE_FOLDER_TABLE) {
+                                [self logWithFormat: @"  querying child folder at URL: %@", childURL];
+                                rc = [self getFolderTableChildproperty: data
+                                                                 atURL: childURL
+                                                               withTag: proptag
+                                                              inFolder: folder
+                                                               withFID: fid];
+                        }
+                        else {
+                                [self logWithFormat: @"  querying child message at URL: %@", childURL];
+                                rc = [self getMessageTableChildproperty: data
                                                                   atURL: childURL
                                                                 withTag: proptag
                                                                inFolder: folder
                                                                 withFID: fid];
-                        else
-                                rc = [self _getMessageTableChildproperty: data
-                                                                   atURL: childURL
-                                                                 withTag: proptag
-                                                                inFolder: folder
-                                                                 withFID: fid];
-
+                        }
                         /* Unhandled: */
 // #define PR_EXPIRY_TIME                                      PROP_TAG(PT_SYSTIME   , 0x0015) /* 0x00150040 */
-// #define PR_IMPORTANCE                                       PROP_TAG(PT_LONG      , 0x0017) /* 0x00170003 */
 // #define PR_REPLY_TIME                                       PROP_TAG(PT_SYSTIME   , 0x0030) /* 0x00300040 */
 // #define PR_SENSITIVITY                                      PROP_TAG(PT_LONG      , 0x0036) /* 0x00360003 */
 // #define PR_MESSAGE_DELIVERY_TIME                            PROP_TAG(PT_SYSTIME   , 0x0e06) /* 0x0e060040 */
@@ -766,7 +733,7 @@ static MAPIStoreMapping *mapping = nil;
 // #define PR_CONTENT_COUNT                                    PROP_TAG(PT_LONG      , 0x3602) /* 0x36020003 */
 // #define PR_CONTENT_UNREAD                                   PROP_TAG(PT_LONG      , 0x3603) /* 0x36030003 */
 // #define PR_FID                                              PROP_TAG(PT_I8        , 0x6748) /* 0x67480014 */
-// unknown 36de0003
+// unknown 36de0003 http://social.msdn.microsoft.com/Forums/en-US/os_exchangeprotocols/thread/17c68add-1f62-4b68-9d83-f9ec7c1c6c9b
 // unknown 819d0003
 // unknown 81f80003
 // unknown 81fa000b
@@ -867,6 +834,454 @@ static MAPIStoreMapping *mapping = nil;
 	[self logWithFormat: @"METHOD '%s' (%d)", __FUNCTION__, __LINE__];
 
 	return MAPI_E_SUCCESS;
+}
+
+@end
+
+#import <Mailer/SOGoMailFolder.h>
+#import <Mailer/SOGoMailObject.h>
+
+@implementation MAPIStoreMailContext
+
+- (void) setupModuleFolder
+{
+        id userFolder, accountsFolder;
+
+        userFolder = [SOGoUserFolderK objectWithName: [authenticator username]
+                                         inContainer: MAPIApp];
+        [woContext setClientObject: userFolder];
+        [userFolder retain]; // LEAK
+
+        accountsFolder = [userFolder lookupName: @"Mail"
+                                      inContext: woContext
+                                        acquire: NO];
+        [woContext setClientObject: accountsFolder];
+        [accountsFolder retain]; // LEAK
+
+        moduleFolder = [accountsFolder lookupName: @"0"
+                                        inContext: woContext
+                                          acquire: NO];
+        [moduleFolder retain];
+}
+
+// - (int) getCommonTableChildproperty: (void **) data
+//                               atURL: (NSString *) childURL
+//                             withTag: (uint32_t) proptag
+//                            inFolder: (SOGoFolder *) folder
+//                             withFID: (uint64_t) fid
+// {
+//         int rc;
+
+//         rc = MAPI_E_SUCCESS;
+//         switch (proptag) {
+//         default:
+//                 rc = [super getCommonTableChildproperty: data
+//                                                   atURL: childURL
+//                                                 withTag: proptag
+//                                                inFolder: folder
+//                                                 withFID: fid];
+//         }
+
+//         return rc;
+// }
+
+- (int) getMessageTableChildproperty: (void **) data
+                               atURL: (NSString *) childURL
+                             withTag: (uint32_t) proptag
+                            inFolder: (SOGoFolder *) folder
+                             withFID: (uint64_t) fid
+{
+        NSCalendarDate *refDate;
+        uint64_t timeCompValue;
+        struct FILETIME *timeValue;
+
+        uint8_t *boolValue;
+        uint32_t *longValue;
+        NSString *stringData;
+        SOGoMailObject *child;
+        int rc;
+
+        rc = MAPI_E_SUCCESS;
+        switch (proptag) {
+        case PR_ICON_INDEX: // TODO
+                longValue = talloc_zero(memCtx, uint32_t);
+                *longValue = 0x00000100; /* read mail, see http://msdn.microsoft.com/en-us/library/cc815472.aspx */
+                *data = longValue;
+                break;
+        case PR_SUBJECT_UNICODE:
+                child = [self _lookupObject: childURL];
+                stringData = [child decodedSubject];
+                *data = talloc_strdup(memCtx,
+                                      [stringData UTF8String]);
+                break;
+        case PR_MESSAGE_CLASS_UNICODE:
+                *data = talloc_strdup(memCtx, "IPM.Note");
+                break;
+        case PR_HASATTACH:
+                boolValue = talloc_zero(memCtx, uint8_t);
+                *boolValue = NO;
+                *data = boolValue;
+                break;
+        case PR_MESSAGE_DELIVERY_TIME:
+                // llongValue = talloc_zero(memCtx, int64_t);
+                // child = [self _lookupObject: childURL];
+                
+                // refDate = [NSCalendarDate dateWithYear: 1601 month: 1 day: 1
+                //                                   hour: 0 minute: 0 second: 0
+                //                               timeZone: [NSTimeZone timeZoneWithName: @"UTC"]];
+                // *llongValue = (uint64_t) [[child date] timeIntervalSinceDate:
+                //                                   refDate];
+
+                child = [self _lookupObject: childURL];
+                refDate = [NSCalendarDate dateWithYear: 1601 month: 1 day: 1
+                                                  hour: 0 minute: 0 second: 0
+                                              timeZone: [NSTimeZone timeZoneWithName: @"UTC"]];
+                timeCompValue = (((uint64_t) [[child date] timeIntervalSinceDate: refDate] + (86400 * -365))
+                                 * 10000000);
+                // timeCompValue = ((uint64_t) 86400 * 31 );
+                timeValue = talloc_zero(memCtx, struct FILETIME);
+                timeValue->dwLowDateTime = (uint32_t) (timeCompValue & 0xffffffff);
+                timeValue->dwHighDateTime = (uint32_t) ((timeCompValue >> 32) & 0xffffffff);
+                NSLog (@"%@ -> %lld", [child date], timeCompValue);
+                NSLog (@"time conversion: %llx  -> %lx, %lx", timeCompValue,
+                       timeValue->dwHighDateTime, timeValue->dwLowDateTime);
+                *data = timeValue;
+                break;
+        // case PR_ROW_TYPE: // TODO: DOUBT
+        //         longValue = talloc_zero(memCtx, uint32_t);
+        //         *longValue = 1;
+        //         *data = longValue;
+        //         break;
+        case PR_FLAG_STATUS: // TODO
+        case PR_MSG_STATUS: // TODO
+        case PR_MESSAGE_FLAGS: // TODO
+        case PR_SENSITIVITY: // TODO
+                longValue = talloc_zero(memCtx, uint32_t);
+                *longValue = 0;
+                *data = longValue;
+                break;
+        case PR_IMPORTANCE:
+                longValue = talloc_zero(memCtx, uint32_t);
+                *longValue = 1;
+                *data = longValue;
+                break;
+        case PR_MESSAGE_SIZE: // TODO
+                child = [self _lookupObject: childURL];
+                longValue = talloc_zero(memCtx, uint32_t);
+                /* TODO: choose another name for that method */
+                *longValue = [[child davContentLength] intValue];
+                *data = longValue;
+                break;
+// #define PR_REPLY_TIME                                       PROP_TAG(PT_SYSTIME   , 0x0030) /* 0x00300040 */
+// #define PR_EXPIRY_TIME                                      PROP_TAG(PT_SYSTIME   , 0x0015) /* 0x00150040 */
+// #define PR_MESSAGE_DELIVERY_TIME                            PROP_TAG(PT_SYSTIME   , 0x0e06) /* 0x0e060040 */
+// #define PR_FOLLOWUP_ICON                                    PROP_TAG(PT_LONG      , 0x1095) /* 0x10950003 */
+// #define PR_ITEM_TEMPORARY_FLAGS                             PROP_TAG(PT_LONG      , 0x1097) /* 0x10970003 */
+// #define PR_SEARCH_KEY                                       PROP_TAG(PT_BINARY    , 0x300b) /* 0x300b0102 */
+
+
+
+        case PR_SENT_REPRESENTING_NAME_UNICODE:
+                child = [self _lookupObject: childURL];
+                stringData = [child from];
+                *data = talloc_strdup(memCtx, [stringData UTF8String]);
+                break;
+        case PR_INTERNET_MESSAGE_ID_UNICODE:
+                child = [self _lookupObject: childURL];
+                stringData = [child messageId];
+                *data = talloc_strdup(memCtx, [stringData UTF8String]);
+                break;
+        default:
+                rc = [super getMessageTableChildproperty: data
+                                                   atURL: childURL
+                                                 withTag: proptag
+                                                inFolder: folder
+                                                 withFID: fid];
+        }
+        
+        return rc;
+}
+
+- (int) getFolderTableChildproperty: (void **) data
+                              atURL: (NSString *) childURL
+                            withTag: (uint32_t) proptag
+                           inFolder: (SOGoFolder *) folder
+                            withFID: (uint64_t) fid
+{
+        uint32_t *longValue;
+        int rc;
+
+        rc = MAPI_E_SUCCESS;
+        switch (proptag) {
+        case PR_CONTENT_UNREAD:
+                longValue = talloc_zero(memCtx, uint32_t);
+                *longValue = 0;
+                *data = longValue;
+                break;
+        case PR_CONTAINER_CLASS_UNICODE:
+                *data = talloc_strdup(memCtx, "IPF.Note");
+                break;
+        default:
+                rc = [super getFolderTableChildproperty: data
+                                          atURL: childURL
+                                                withTag: proptag
+                                               inFolder: folder
+                                                withFID: fid];
+        }
+        
+        return rc;
+}
+
+@end
+
+#import <Contacts/SOGoContactObject.h>
+#import <NGCards/NGVCard.h>
+
+@implementation MAPIStoreContactsContext
+
+- (void) setupModuleFolder
+{
+        id userFolder;
+
+        userFolder = [SOGoUserFolderK objectWithName: [authenticator username]
+                                         inContainer: MAPIApp];
+        [woContext setClientObject: userFolder];
+        [userFolder retain]; // LEAK
+
+        moduleFolder = [userFolder lookupName: @"Contacts"
+                                    inContext: woContext
+                                      acquire: NO];
+        [moduleFolder retain];
+}
+
+// - (int) getCommonTableChildproperty: (void **) data
+//                               atURL: (NSString *) childURL
+//                             withTag: (uint32_t) proptag
+//                            inFolder: (SOGoFolder *) folder
+//                             withFID: (uint64_t) fid
+// {
+//         int rc;
+
+//         rc = MAPI_E_SUCCESS;
+//         switch (proptag) {
+//         default:
+//                 rc = [super getCommonTableChildproperty: data
+//                                                   atURL: childURL
+//                                                 withTag: proptag
+//                                                inFolder: folder
+//                                                 withFID: fid];
+//         }
+
+//         return rc;
+// }
+
+- (NSString *) _phoneOfType: (NSString *) aType
+                  excluding: (NSString *) aTypeToExclude
+                     inCard: (NGVCard *) card
+{
+  NSArray *elements;
+  NSArray *phones;
+  NSString *phone;
+
+  phones = [card childrenWithTag: @"tel"];
+
+  elements = [phones cardElementsWithAttribute: @"type"
+                     havingValue: aType];
+
+  phone = nil;
+
+  if ([elements count] > 0)
+    {
+      CardElement *ce;
+      int i;
+
+      for (i = 0; i < [elements count]; i++)
+	{
+	  ce = [elements objectAtIndex: i];
+	  phone = [ce value: 0];
+
+	  if (!aTypeToExclude)
+	    break;
+	  
+	  if (![ce hasAttribute: @"type" havingValue: aTypeToExclude])
+	    break;
+
+	  phone = nil;
+	}
+    }
+
+  if (!phone)
+          phone = @"";
+
+  return phone;
+}
+
+- (int) getMessageTableChildproperty: (void **) data
+                               atURL: (NSString *) childURL
+                             withTag: (uint32_t) proptag
+                            inFolder: (SOGoFolder *) folder
+                             withFID: (uint64_t) fid
+{
+        NSString *stringValue;
+        uint32_t *longValue;
+        id child;
+        int rc;
+
+        rc = MAPI_E_SUCCESS;
+        switch (proptag) {
+        case PR_ICON_INDEX: // TODO
+                longValue = talloc_zero(memCtx, uint32_t);
+                *longValue = 0x00000200; /* see http://msdn.microsoft.com/en-us/library/cc815472.aspx */
+                *data = longValue;
+                break;
+        case PR_MESSAGE_CLASS_UNICODE:
+                *data = talloc_strdup(memCtx, "IPM.Contact");
+                break;
+        // case PR_VD_NAME_UNICODE:
+        //         *data = talloc_strdup(memCtx, "PR_VD_NAME_UNICODE");
+        //         break;
+        // case PR_EMS_AB_DXA_REMOTE_CLIENT_UNICODE: "Home:" ???
+        //         *data = talloc_strdup(memCtx, "PR_EMS...");
+        //         break;
+        case PR_SUBJECT_UNICODE:
+                *data = talloc_strdup(memCtx, "PR_SUBJECT...");
+                break;
+        case PR_OAB_NAME_UNICODE:
+                *data = talloc_strdup(memCtx, "PR_OAB_NAME_UNICODE");
+                break;
+        case PR_OAB_LANGID:
+                longValue = talloc_zero(memCtx, uint32_t);
+                *longValue = 1033; /* English US */
+                *data = longValue;
+                break;
+
+        case PR_TITLE_UNICODE:
+                child = [self _lookupObject: childURL];
+                stringValue = [[child vCard] title];
+                *data = talloc_strdup(memCtx, [stringValue UTF8String]);
+                break;
+
+        case PR_COMPANY_NAME_UNICODE:
+                child = [self _lookupObject: childURL];
+                /* that's buggy but it's for the demo */
+                stringValue = [[[child vCard] org] componentsJoinedByString: @", "];
+                *data = talloc_strdup(memCtx, [stringValue UTF8String]);
+                break;
+
+        case 0x3001001f: // Full Name
+        case 0x81c2001f: // contact block title name
+                rc = [super getMessageTableChildproperty: data
+                                                   atURL: childURL
+                                                 withTag: PR_DISPLAY_NAME_UNICODE
+                                                inFolder: folder
+                                                 withFID: fid];
+                break;
+        case 0x81b0001f: // E-mail
+                child = [self _lookupObject: childURL];
+                stringValue = [[child vCard] preferredEMail];
+                *data = talloc_strdup(memCtx, [stringValue UTF8String]);
+                break;
+        case PR_BODY_UNICODE:
+                child = [self _lookupObject: childURL];
+                stringValue = [[child vCard] note];
+                *data = talloc_strdup(memCtx, [stringValue UTF8String]);
+                break;
+
+        case PR_OFFICE_TELEPHONE_NUMBER_UNICODE:
+                child = [self _lookupObject: childURL];
+                stringValue = [self _phoneOfType: @"work"
+                                       excluding: @"fax"
+                                          inCard: [child vCard]];
+                *data = talloc_strdup(memCtx, [stringValue UTF8String]);
+                break;
+        case PR_HOME_TELEPHONE_NUMBER_UNICODE:
+                child = [self _lookupObject: childURL];
+                stringValue = [self _phoneOfType: @"home"
+                                       excluding: @"fax"
+                                          inCard: [child vCard]];
+                *data = talloc_strdup(memCtx, [stringValue UTF8String]);
+                break;
+        case PR_MOBILE_TELEPHONE_NUMBER_UNICODE:
+                child = [self _lookupObject: childURL];
+                stringValue = [self _phoneOfType: @"cell"
+                                       excluding: nil
+                                          inCard: [child vCard]];
+                *data = talloc_strdup(memCtx, [stringValue UTF8String]);
+                break;
+        case PR_PRIMARY_TELEPHONE_NUMBER_UNICODE:
+                child = [self _lookupObject: childURL];
+                stringValue = [self _phoneOfType: @"pref"
+                                       excluding: nil
+                                          inCard: [child vCard]];
+                *data = talloc_strdup(memCtx, [stringValue UTF8String]);
+                break;
+
+        // case PR_POSTAL_ADDRESS_UNICODE:
+        // case PR_INTERNET_MESSAGE_ID_UNICODE:
+        // case PR_CAR_TELEPHONE_NUMBER_UNICODE:
+        // case PR_OTHER_TELEPHONE_NUMBER_UNICODE:
+        // case PR_BUSINESS_FAX_NUMBER_UNICODE:
+        // case PR_HOME_FAX_NUMBER_UNICODE:
+        // case PR_COMPANY_MAIN_PHONE_NUMBER_UNICODE:
+        // case PR_EMS_AB_GROUP_BY_ATTR_4_UNICODE:
+        // case PR_CALLBACK_TELEPHONE_NUMBER_UNICODE:
+        // case PR_DEPARTMENT_NAME_UNICODE:
+        // case PR_OFFICE2_TELEPHONE_NUMBER_UNICODE:
+        // case PR_RADIO_TELEPHONE_NUMBER_UNICODE:
+        // case PR_PAGER_TELEPHONE_NUMBER_UNICODE:
+        // case PR_PRIMARY_FAX_NUMBER_UNICODE:
+        // case PR_TELEX_NUMBER_UNICODE:
+        // case PR_ISDN_NUMBER_UNICODE:
+        // case PR_ASSISTANT_TELEPHONE_NUMBER_UNICODE:
+        // case PR_HOME2_TELEPHONE_NUMBER_UNICODE:
+        // case PR_TTYTDD_PHONE_NUMBER_UNICODE:
+        // case PR_BUSINESS_HOME_PAGE_UNICODE:
+        //         *data = talloc_strdup(memCtx, "[Generic and fake unicode value]");
+        //         break;
+
+// (18:54:45) Wolfgang-: 0x80a7001f (  Business: ) -> don't ask me which "business"
+// (18:55:05) Wolfgang-: 0x809c001f   (  Other: )
+// (18:55:58) Wolfgang-: 0x81b5001f: E-mail  2
+
+
+// #define PR_REPLY_TIME                                       PROP_TAG(PT_SYSTIME   , 0x0030) /* 0x00300040 */
+// #define PR_SENSITIVITY                                      PROP_TAG(PT_LONG      , 0x0036) /* 0x00360003 */
+// #define PR_FOLLOWUP_ICON                                    PROP_TAG(PT_LONG      , 0x1095) /* 0x10950003 */
+// #define PR_SEARCH_KEY                                       PROP_TAG(PT_BINARY    , 0x300b) /* 0x300b0102 */
+// #define PR_VIEW_STYLE                                       PROP_TAG(PT_LONG      , 0x6834) /* 0x68340003 */
+// #define PR_VD_VERSION                                       PROP_TAG(PT_LONG      , 0x7007) /* 0x70070003 */
+
+        default:
+                rc = [super getMessageTableChildproperty: data
+                                                   atURL: childURL
+                                                 withTag: proptag
+                                                inFolder: folder
+                                                 withFID: fid];
+        }
+        
+        return rc;
+}
+
+- (int) getFolderTableChildproperty: (void **) data
+                              atURL: (NSString *) childURL
+                            withTag: (uint32_t) proptag
+                           inFolder: (SOGoFolder *) folder
+                            withFID: (uint64_t) fid
+{
+        int rc;
+
+        [self logWithFormat: @"XXXXX unexpected!!!!!!!!!"];
+        rc = MAPI_E_SUCCESS;
+        switch (proptag) {
+        default:
+                rc = [super getFolderTableChildproperty: data
+                                          atURL: childURL
+                                                withTag: proptag
+                                               inFolder: folder
+                                                withFID: fid];
+        }
+        
+        return rc;
 }
 
 @end

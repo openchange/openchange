@@ -39,6 +39,11 @@
         ASSIGN (username, newUsername);
 }
 
+- (NSString *) username
+{
+  return username;
+}
+
 - (void) setPassword: (NSString *) newPassword
 {
         ASSIGN (password, newPassword);

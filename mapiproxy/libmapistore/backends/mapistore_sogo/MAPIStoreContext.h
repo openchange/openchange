@@ -30,20 +30,30 @@
 @class WOContext;
 
 @class SOGoFolder;
+@class SOGoObject;
+
+@class MAPIStoreAuthenticator;
 
 @interface MAPIStoreContext : NSObject
 {
-        NSString *uri;
         NSMutableDictionary *objectCache;
+        MAPIStoreAuthenticator *authenticator;
         WOContext *woContext;
         NSMutableDictionary *messageCache;
         NSMutableDictionary *subfolderCache;
+        SOGoFolder *moduleFolder;
         void *memCtx;
 }
 
-- (void) setURI: (const char *) newUri;
+- (void) setupModuleFolder;
+
 - (void) setMemCtx: (void *) newMemCtx;
-- (id) authenticator;
+
+- (void) setAuthenticator: (MAPIStoreAuthenticator *) newAuthenticator;
+- (MAPIStoreAuthenticator *) authenticator;
+
+- (void) setupRequest;
+- (void) tearDownRequest;
 
 @end
 

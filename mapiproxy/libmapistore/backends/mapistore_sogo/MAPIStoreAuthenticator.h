@@ -36,6 +36,8 @@
 }
 
 - (void) setUsername: (NSString *) newUsername;
+- (NSString *) username;
+
 - (void) setPassword: (NSString *) newPassword;
 
 - (NSString *) imapPasswordInContext: (WOContext *) context

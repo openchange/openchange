@@ -286,7 +286,7 @@ compile() {
     ./autogen.sh
     error_check $? "samba4 autogen"
 
-    ./configure.developer --bundled-libraries=ldb,NONE --prefix=$SAMBA_PREFIX
+    ./configure.developer --bundled-libraries=ldb,subunit,NONE --prefix=$SAMBA_PREFIX
     error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"

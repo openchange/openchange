@@ -2,7 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@openchange.org>, 2005.
 
 SOGO_SOURCES = /home/wsourdeau/src/SOGo
-SOGO_CFLAGS = -I$(SOGO_SOURCES)/SoObjects
+SOGO_CFLAGS = -I$(SOGO_SOURCES)/SoObjects -I$(SOGO_SOURCES)/SOPE
 
 default: all
 

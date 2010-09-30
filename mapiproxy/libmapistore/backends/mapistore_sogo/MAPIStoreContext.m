@@ -35,6 +35,8 @@
 #import <NGExtensions/NSString+misc.h>
 #import <NGExtensions/NSObject+Logs.h>
 
+#import <NGCards/NSArray+NGCards.h>
+
 #import <SOGo/NSString+Utilities.h>
 #import <SOGo/SOGoFolder.h>
 
@@ -1086,7 +1088,7 @@ static MAPIStoreMapping *mapping = nil;
   phones = [card childrenWithTag: @"tel"];
 
   elements = [phones cardElementsWithAttribute: @"type"
-                     havingValue: aType];
+                                   havingValue: aType];
 
   phone = nil;
 

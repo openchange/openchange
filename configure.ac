@@ -136,7 +136,7 @@ dnl ##################################################################
 dnl Some general portability stuff
 dnl ##################################################################
 AC_CHECK_HEADERS( sys/cdefs.h string.h sys/sockio.h)
-AC_CHECK_FUNCS( strcasestr )
+AC_CHECK_FUNCS(strcasestr)
 
 
 
@@ -355,6 +355,24 @@ dnl nasty hack: only compile IDL if we have a library
 dnl libraries require libmapi and libmapi require IDL
 OC_IDL="idl"
 AC_SUBST(OC_IDL)
+
+dnl ---------------------------------------------------------------------------
+dnl Check for dl libs
+dnl ---------------------------------------------------------------------------
+
+AC_CHECK_LIB([dl], [dlopen],
+	    [
+		 	DL_LIBS="-ldl"
+			AC_SUBST(DL_LIBS)
+		],
+		[
+			AC_CHECK_FUNCS(dlopen, [
+				DL_LIBS=""
+				AC_SUBST(DL_LIBS)
+			], [
+				AC_MSG_ERROR([unable to find dlopen])
+		 	])
+		])
 
 dnl ---------------------------------------------------------------------------
 dnl Check for pthread libs

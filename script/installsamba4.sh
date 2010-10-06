@@ -26,6 +26,8 @@ fi
 export CC="ccache gcc -I$SAMBA_PREFIX/include"
 
 export PKG_CONFIG_PATH=$SAMBA_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
+pythondir=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,'/')"`
+export PYTHONPATH=$SAMBA_PREFIX$pythondir:$PYTHONPATH
 
 RUNDIR=`dirname $0`
 HOST_OS=`$RUNDIR/../config.guess`

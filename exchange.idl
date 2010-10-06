@@ -857,6 +857,7 @@ System Attendant Private Interface
 			op_MAPI_Progress			= 0x50,
 			op_MAPI_TransportNewMail		= 0x51,
 			op_MAPI_GetValidAttachments		= 0x52,
+			op_MAPI_FastTransferDestConfigure	= 0x53,
 			op_MAPI_GetNamesFromIDs			= 0x55,
 			op_MAPI_GetIDsFromNames			= 0x56,
 			op_MAPI_UpdateDeferredActionMessages	= 0x57,
@@ -896,6 +897,7 @@ System Attendant Private Interface
 			op_MAPI_SyncImportReadStateChanges	= 0x80,
 			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_SyncGetTransferState		= 0x82,
+			op_MAPI_TellVersion			= 0x86,
 			op_MAPI_OpenPublicFolderByName		= 0x87,
 			op_MAPI_SetSyncNotificationGuid		= 0x88,
 			op_MAPI_FreeBookmark			= 0x89,
@@ -2815,6 +2817,28 @@ System Attendant Private Interface
 		uint32		AttachmentIdArray[AttachmentIdCount];
 	} GetValidAttachments_repl;
 
+	/**************************/
+	/* EcDoRpc Function 0x53  */
+	typedef [enum8bit] enum {
+		FastTransferDest_CopyTo	  	= 0x1,
+		FastTransferDest_CopyProperties = 0x2,
+		FastTransferDest_CopyMessages 	= 0x3,
+		FastTransferDest_CopyFolder	= 0x4
+	} FastTransferDestConfig_SourceOperation;
+
+	typedef [bitmap8bit] bitmap {
+		FastTransferDest_Move		= 0x01
+	} FastTransferDestConfig_CopyFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8					handle_idx;
+		FastTransferDestConfig_SourceOperation	SourceOperation;
+		FastTransferDestConfig_CopyFlags	CopyFlags;
+	} FastTransferDestinationConfigure_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} FastTransferDestinationConfigure_repl;
+
 	/*************************/
 	/* EcDoRpc Function 0x55 */
 	typedef [enum8bit] enum {
@@ -3351,6 +3375,15 @@ System Attendant Private Interface
 	} SyncGetTransferState_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x86 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		version[3];
+	} TellVersion_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} TellVersion_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x87 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
@@ -3593,6 +3626,7 @@ System Attendant Private Interface
 		[case(op_MAPI_Progress)] Progress_req mapi_Progress;
 		[case(op_MAPI_TransportNewMail)] TransportNewMail_req mapi_TransportNewMail;
 		[case(op_MAPI_GetValidAttachments)] GetValidAttachments_req mapi_GetValidAttachments;
+		[case(op_MAPI_FastTransferDestConfigure)] FastTransferDestinationConfigure_req mapi_FastTransferDestinationConfigure;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
 		[case(op_MAPI_UpdateDeferredActionMessages)] UpdateDeferredActionMessages_req mapi_UpdateDeferredActionMessages;
@@ -3631,6 +3665,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncImportReadStateChanges)] SyncImportReadStateChanges_req mapi_SyncImportReadStateChanges;
 		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_SyncGetTransferState)] SyncGetTransferState_req mapi_SyncGetTransferState;
+		[case(op_MAPI_TellVersion)] TellVersion_req mapi_TellVersion;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_req mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_req mapi_FreeBookmark;
@@ -3717,6 +3752,7 @@ System Attendant Private Interface
 		[case(op_MAPI_Progress)] Progress_repl mapi_Progress;
 		[case(op_MAPI_TransportNewMail)] TransportNewMail_repl mapi_TransportNewMail;
 		[case(op_MAPI_GetValidAttachments)] GetValidAttachments_repl mapi_GetValidAttachments;
+		[case(op_MAPI_FastTransferDestConfigure)] FastTransferDestinationConfigure_repl mapi_FastTransferDestinationConfigure;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
 		[case(op_MAPI_UpdateDeferredActionMessages)] UpdateDeferredActionMessages_repl mapi_UpdateDeferredActionMessages;
@@ -3756,6 +3792,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncImportReadStateChanges)] SyncImportReadStateChanges_repl mapi_SyncImportReadStateChanges;
 		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
 		[case(op_MAPI_SyncGetTransferState)] SyncGetTransferState_repl mapi_SyncGetTransferState;
+		[case(op_MAPI_TellVersion)] TellVersion_repl mapi_TellVersion;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_repl mapi_SetSyncNotificationGuid;
 		[case(op_MAPI_FreeBookmark)] FreeBookmark_repl mapi_FreeBookmark;

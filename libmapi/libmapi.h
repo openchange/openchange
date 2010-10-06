@@ -442,6 +442,8 @@ enum MAPISTATUS		OptionsData(mapi_object_t *, const char *, uint8_t **, uint16_t
 
 /* The following public definitions come from libmapi/FXICS.c */
 enum MAPISTATUS		GetLocalReplicaIds(mapi_object_t *, uint32_t, struct GUID *, uint8_t [6]);
+enum MAPISTATUS		TellVersion(mapi_object_t *, uint16_t version[3]);
+enum MAPISTATUS		FXDestConfigure(mapi_object_t *, enum FastTransferDestConfig_SourceOperation);
 
 /* The following public definitions come from libmapi/freebusy.c */
 enum MAPISTATUS		GetUserFreeBusyData(mapi_object_t *, const char *, struct SRow *);

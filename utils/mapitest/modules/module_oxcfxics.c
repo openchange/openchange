@@ -47,7 +47,7 @@ _PUBLIC_ bool mapitest_oxcfxics_GetLocalReplicaIds(struct mapitest *mt)
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		return false;
 	}
 
@@ -64,5 +64,71 @@ _PUBLIC_ bool mapitest_oxcfxics_GetLocalReplicaIds(struct mapitest *mt)
 		       GlobalCount[5]);
 	talloc_free(guid);
 
+	mapi_object_release(&obj_store);
+
 	return true;
+}
+
+
+/**
+   \details Test the FastTransferDestinationConfigure (0x53) and TellVersion (0x86) operations
+
+   This function:
+   -# Log on private message store
+   -# Creates a test folder
+   -# Setup destination
+   -# Sends the "server version"
+ */
+_PUBLIC_ bool mapitest_oxcfxics_DestConfigure(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	struct mt_common_tf_ctx	*context;
+	mapi_object_t		obj_htable;
+	mapi_object_t		destfolder;
+	uint16_t		version[3];
+	bool			ret = true;
+
+	/* Logon */
+	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
+		return false;
+	}
+
+	context = mt->priv;
+
+	/* Create destfolders */
+	mapi_object_init(&destfolder);
+	retval = CreateFolder(&(context->obj_test_folder), FOLDER_GENERIC,
+			      "DestFolder", NULL /*folder comment*/,
+			      OPEN_IF_EXISTS, &destfolder);
+	mapitest_print_retval_clean(mt, "Create DestFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = FXDestConfigure(&(context->obj_test_folder), FastTransferDest_CopyTo);
+	mapitest_print_retval_clean(mt, "FXDestConfigure", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Send server version */
+	version[0] = 3;
+	version[1] = 1;
+	version[2] = 4;
+	retval = TellVersion(&(context->obj_test_folder), version);
+	mapitest_print_retval_clean(mt, "TellVersion", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+cleanup:
+	/* Cleanup and release */
+	mapi_object_release(&destfolder);
+	mapi_object_release(&obj_htable);
+	mapitest_common_cleanup(mt);
+
+	return ret;
 }

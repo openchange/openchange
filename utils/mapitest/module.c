@@ -290,6 +290,10 @@ _PUBLIC_ uint32_t module_oxcfxics_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "OXCFXICS", "Bulk Data Transfer Protocol", true);
 	
 	mapitest_suite_add_test(suite, "GET-LOCAL-REPLICA-IDS", "Reserve a range of IDs for local replica", mapitest_oxcfxics_GetLocalReplicaIds);
+	mapitest_suite_add_test(suite, "COPYFOLDER", "Test CopyFolder operation", mapitest_oxcfxics_CopyFolder);
+	mapitest_suite_add_test(suite, "COPYMESSAGES", "Test CopyMessages operation", mapitest_oxcfxics_CopyMessages);
+	mapitest_suite_add_test(suite, "COPYTO", "Test CopyTo operation", mapitest_oxcfxics_CopyTo);
+	mapitest_suite_add_test(suite, "COPYPROPS", "Test CopyProperties operation", mapitest_oxcfxics_CopyProperties);
 	mapitest_suite_add_test(suite, "DEST-CONFIGURE", "Test Destination Configure operation", mapitest_oxcfxics_DestConfigure);
 
 	mapitest_suite_register(mt, suite);

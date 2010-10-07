@@ -852,6 +852,9 @@ System Attendant Private Interface
 			op_MAPI_SpoolerLockMessage		= 0x48,
 			op_MAPI_AddressTypes			= 0x49,
 			op_MAPI_TransportSend			= 0x4a,
+			op_MAPI_FastTransferSourceCopyMessages	= 0x4b,
+			op_MAPI_FastTransferSourceCopyFolder	= 0x4c,
+			op_MAPI_FastTransferSourceCopyTo	= 0x4d,
 			op_MAPI_FastTransferSourceGetBuffer	= 0x4e,
 			op_MAPI_FindRow				= 0x4f,
 			op_MAPI_Progress			= 0x50,
@@ -876,6 +879,7 @@ System Attendant Private Interface
 			op_MAPI_SetReadFlags			= 0x66,
 			op_MAPI_CopyProperties			= 0x67,
 			op_MAPI_GetReceiveFolderTable		= 0x68,
+			op_MAPI_FastTransferSourceCopyProps	= 0x69,
 			op_MAPI_GetCollapseState		= 0x6b,
 			op_MAPI_SetCollapseState		= 0x6c,
 			op_MAPI_GetTransportFolder		= 0x6d,
@@ -2743,16 +2747,97 @@ System Attendant Private Interface
 	} TransportSend_repl;
 
 	/**************************/
-	/* EcDoRpc Function 0x4e  */
+	/* EcDoRpc Function 0x4b  */
+	typedef [bitmap8bit] bitmap {
+		FastTransferCopyMessage_Move		= 0x01,
+		FastTransferCopyMessage_Unknown1	= 0x02,
+		FastTransferCopyMessage_Unknown2	= 0x04,
+		FastTransferCopyMessage_Unknown3	= 0x08,
+		FastTransferCopyMessage_BestBody	= 0x10,
+		FastTransferCopyMessage_SendEntryId	= 0x20
+	} FastCopyMessagesCopyFlags;
+
+	/* this one is used in a few ROPs */
+	typedef [bitmap8bit] bitmap {
+		FastTransfer_Unicode		= 0x01,
+		FastTransfer_UseCpid		= 0x02,
+		FastTransfer_ForUpload		= FastTransfer_Unicode | FastTransfer_UseCpid,
+		FastTransfer_RecoverMode	= 0x04,
+		FastTransfer_ForceUnicode	= 0x08,
+		FastTransfer_PartialItem	= 0x10
+	} FastCopySendOptions;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		BufferSize;
+		uint8				handle_idx;
+		uint16				MessageIdCount;
+		hyper				MessageIds[MessageIdCount];
+		FastCopyMessagesCopyFlags	CopyFlags;
+		FastCopySendOptions		SendOptions;
+	} FastTransferSourceCopyMessages_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} FastTransferSourceCopyMessages_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x4c  */
+	typedef [bitmap8bit] bitmap {
+		FastTransferCopyFolder_Move		= 0x01,
+		FastTransferCopyFolder_Unused1		= 0x02,
+		FastTransferCopyFolder_Unused2		= 0x04,
+		FastTransferCopyFolder_Unused3		= 0x08,
+		FastTransferCopyFolder_CopySubfolders	= 0x10,
+		FastTransferCopyFolder_NoGhostedContent	= 0x20
+	} FastCopyFolderCopyFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8				handle_idx;
+		FastCopyFolderCopyFlags		CopyFlags;
+		FastCopySendOptions		SendOptions;
+	} FastTransferSourceCopyFolder_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} FastTransferSourceCopyFolder_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x4d  */
+	typedef [bitmap32bit] bitmap {
+		FastTransferCopyTo_Move		= 0x00000001,
+		FastTransferCopyToUnused1	= 0x00000002,
+		FastTransferCopyToUnused2	= 0x00000004,
+		FastTransferCopyToUnused3	= 0x00000008,
+		FastTransferCopyToUnused4	= 0x00000200,
+		FastTransferCopyToUnused5	= 0x00000400,
+		FastTransferCopyTo_BestBody	= 0x00002000
+	} FastCopyToCopyFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8			handle_idx;
+		uint8			Level;
+		FastCopyToCopyFlags	CopyFlags;
+		FastCopySendOptions	SendOptions;
+		mapi_SPropTagArray	PropertyTags;
+	} FastTransferSourceCopyTo_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} FastTransferSourceCopyTo_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x4e  */
+	typedef [nodiscriminant] union {
+		[case(0xBABE)] uint16	MaximumBufferSize;
+		[default];
+	} FastTransferSourceGetBuffer_MaxBufferSize;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16								  BufferSize;
+		[switch_is(BufferSize)] FastTransferSourceGetBuffer_MaxBufferSize MaximumBufferSize;
 	} FastTransferSourceGetBuffer_req;
 
 	typedef [enum16bit] enum {
-		TransferStatus_Error	= 0x0,
-		TransferStatus_Partial	= 0x1,
-		TransferStatus_NoRoom	= 0x2,
-		TransferStatus_Done	= 0x3
+		TransferStatus_Error	= 0x0000,
+		TransferStatus_Partial	= 0x0001,
+		TransferStatus_NoRoom	= 0x0002,
+		TransferStatus_Done	= 0x0003
 	} TransferStatus;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -3085,6 +3170,26 @@ System Attendant Private Interface
 		uint32		cValues;
 		ReceiveFolder	entries[cValues];
 	} GetReceiveFolderTable_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x69  */
+	typedef [bitmap8bit] bitmap {
+		FastTransferCopyProperties_Move		= 0x01,
+		FastTransferCopyProperties_Unused1 	= 0x02,
+		FastTransferCopyProperties_Unused2	= 0x04,
+		FastTransferCopyProperties_Unused3	= 0x08
+	} FastCopyPropertiesCopyFlags;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8				handle_idx;
+		uint8				Level;
+		FastCopyPropertiesCopyFlags	CopyFlags;
+		FastCopySendOptions		SendOptions;
+		mapi_SPropTagArray		PropertyTags;
+	} FastTransferSourceCopyProperties_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} FastTransferSourceCopyProperties_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x6b */
@@ -3621,6 +3726,9 @@ System Attendant Private Interface
 		[case(op_MAPI_SpoolerLockMessage)] SpoolerLockMessage_req mapi_SpoolerLockMessage;
 		[case(op_MAPI_AddressTypes)] AddressTypes_req mapi_AddressTypes;
 		[case(op_MAPI_TransportSend)] TransportSend_req mapi_TransportSend;
+		[case(op_MAPI_FastTransferSourceCopyMessages)] FastTransferSourceCopyMessages_req mapi_FastTransferSourceCopyMessages;
+		[case(op_MAPI_FastTransferSourceCopyFolder)] FastTransferSourceCopyFolder_req mapi_FastTransferSourceCopyFolder;
+		[case(op_MAPI_FastTransferSourceCopyTo)] FastTransferSourceCopyTo_req mapi_FastTransferSourceCopyTo;
 		[case(op_MAPI_FastTransferSourceGetBuffer)] FastTransferSourceGetBuffer_req mapi_FastTransferSourceGetBuffer;
 		[case(op_MAPI_FindRow)] FindRow_req mapi_FindRow;
 		[case(op_MAPI_Progress)] Progress_req mapi_Progress;
@@ -3645,6 +3753,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SetReadFlags)] SetReadFlags_req mapi_SetReadFlags;
 		[case(op_MAPI_CopyProperties)] CopyProperties_req mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_req mapi_GetReceiveFolderTable;
+		[case(op_MAPI_FastTransferSourceCopyProps)] FastTransferSourceCopyProperties_req mapi_FastTransferSourceCopyProperties;
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_req mapi_GetCollapseState;
 		[case(op_MAPI_SetCollapseState)] SetCollapseState_req mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_req mapi_GetTransportFolder;
@@ -3747,6 +3856,9 @@ System Attendant Private Interface
 		[case(op_MAPI_SpoolerLockMessage)] SpoolerLockMessage_repl mapi_SpoolerLockMessage;
 		[case(op_MAPI_AddressTypes)] AddressTypes_repl mapi_AddressTypes;
 		[case(op_MAPI_TransportSend)] TransportSend_repl mapi_TransportSend;
+		[case(op_MAPI_FastTransferSourceCopyMessages)] FastTransferSourceCopyMessages_repl mapi_FastTransferSourceCopyMessages;
+		[case(op_MAPI_FastTransferSourceCopyFolder)] FastTransferSourceCopyFolder_repl mapi_FastTransferSourceCopyFolder;
+		[case(op_MAPI_FastTransferSourceCopyTo)] FastTransferSourceCopyTo_repl mapi_FastTransferSourceCopyTo;
 		[case(op_MAPI_FastTransferSourceGetBuffer)] FastTransferSourceGetBuffer_repl mapi_FastTransferSourceGetBuffer;
 		[case(op_MAPI_FindRow)] FindRow_repl mapi_FindRow;
 		[case(op_MAPI_Progress)] Progress_repl mapi_Progress;
@@ -3772,6 +3884,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CopyProperties)] CopyProperties_repl mapi_CopyProperties;
 		[case(op_MAPI_GetReceiveFolderTable)] GetReceiveFolderTable_repl mapi_GetReceiveFolderTable;
 		[case(op_MAPI_Pending)] Pending_repl mapi_Pending;
+		[case(op_MAPI_FastTransferSourceCopyProps)] FastTransferSourceCopyProperties_repl mapi_FastTransferSourceCopyProperties;
 		[case(op_MAPI_GetCollapseState)] GetCollapseState_repl mapi_GetCollapseState;
 		[case(op_MAPI_SetCollapseState)] SetCollapseState_repl mapi_SetCollapseState;
 		[case(op_MAPI_GetTransportFolder)] GetTransportFolder_repl mapi_GetTransportFolder;

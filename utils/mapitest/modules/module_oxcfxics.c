@@ -4,6 +4,7 @@
    OpenChange Project - BULK DATA TRANSFER PROTOCOL operations
 
    Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Brad Hards 2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -154,6 +155,10 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyFolder(struct mapitest *mt)
 	mapi_object_t		sourcefolder;
 	uint16_t		version[3];
 	bool			ret = true;
+	enum TransferStatus	transferStatus;
+	uint16_t		progress;
+	uint16_t		totalSteps;
+	DATA_BLOB		transferdata;
 
 	/* Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
@@ -192,9 +197,19 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyFolder(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = FXGetBuffer(&obj_context, 0);
+	retval = FXGetBuffer(&obj_context, 0, &transferStatus, &progress, &totalSteps, &transferdata);
 	mapitest_print_retval_clean(mt, "FXGetBuffer", retval);
 	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	if (transferStatus != TransferStatus_Done) {
+		mapitest_print(mt, "unexpected transferStatus 0x%04x\n", transferStatus);
+		ret = false;
+		goto cleanup;
+	}
+	if (progress != totalSteps) {
+		mapitest_print(mt, "unexpected final step count, progress 0x%04x, total 0x%04x\n", progress, totalSteps);
 		ret = false;
 		goto cleanup;
 	}
@@ -228,6 +243,10 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyMessages(struct mapitest *mt)
 	mapi_id_array_t		mids;
 	int			i;
 	bool			ret = true;
+	enum TransferStatus	transferStatus;
+	uint16_t		progress;
+	uint16_t		totalSteps;
+	DATA_BLOB		transferdata;
 
 	/* Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
@@ -271,9 +290,19 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyMessages(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = FXGetBuffer(&obj_context, 0);
+	retval = FXGetBuffer(&obj_context, 0, &transferStatus, &progress, &totalSteps, &transferdata);
 	mapitest_print_retval_clean(mt, "FXGetBuffer", retval);
 	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	if (transferStatus != TransferStatus_Done) {
+		mapitest_print(mt, "unexpected transferStatus 0x%04x\n", transferStatus);
+		ret = false;
+		goto cleanup;
+	}
+	if (progress != totalSteps) {
+		mapitest_print(mt, "unexpected final step count, progress 0x%04x, total 0x%04x\n", progress, totalSteps);
 		ret = false;
 		goto cleanup;
 	}
@@ -308,6 +337,10 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyTo(struct mapitest *mt)
 	struct SPropTagArray	*propsToExclude;
 	int			i;
 	bool			ret = true;
+	enum TransferStatus	transferStatus;
+	uint16_t		progress;
+	uint16_t		totalSteps;
+	DATA_BLOB		transferdata;
 
 	/* Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
@@ -352,9 +385,19 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyTo(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = FXGetBuffer(&obj_context, 0);
+	retval = FXGetBuffer(&obj_context, 0, &transferStatus, &progress, &totalSteps, &transferdata);
 	mapitest_print_retval_clean(mt, "FXGetBuffer", retval);
 	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	if (transferStatus != TransferStatus_Done) {
+		mapitest_print(mt, "unexpected transferStatus 0x%04x\n", transferStatus);
+		ret = false;
+		goto cleanup;
+	}
+	if (progress != totalSteps) {
+		mapitest_print(mt, "unexpected final step count, progress 0x%04x, total 0x%04x\n", progress, totalSteps);
 		ret = false;
 		goto cleanup;
 	}
@@ -387,6 +430,10 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyProperties(struct mapitest *mt)
 	mapi_object_t		sourcefolder;
 	struct SPropTagArray	*props;
 	bool			ret = true;
+	enum TransferStatus	transferStatus;
+	uint16_t		progress;
+	uint16_t		totalSteps;
+	DATA_BLOB		transferdata;
 
 	/* Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
@@ -416,9 +463,19 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyProperties(struct mapitest *mt)
 		goto cleanup;
 	}
 	
-	retval = FXGetBuffer(&obj_context, 0);
+	retval = FXGetBuffer(&obj_context, 0, &transferStatus, &progress, &totalSteps, &transferdata);
 	mapitest_print_retval_clean(mt, "FXGetBuffer", retval);
 	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	if (transferStatus != TransferStatus_Done) {
+		mapitest_print(mt, "unexpected transferStatus 0x%04x\n", transferStatus);
+		ret = false;
+		goto cleanup;
+	}
+	if (progress != totalSteps) {
+		mapitest_print(mt, "unexpected final step count, progress 0x%04x, total 0x%04x\n", progress, totalSteps);
 		ret = false;
 		goto cleanup;
 	}

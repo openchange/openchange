@@ -448,8 +448,7 @@ enum MAPISTATUS		FXCopyFolder(mapi_object_t *, uint8_t, uint8_t, mapi_object_t *
 enum MAPISTATUS		FXCopyMessages(mapi_object_t *, mapi_id_array_t *, uint8_t, uint8_t, mapi_object_t *);
 enum MAPISTATUS		FXCopyTo(mapi_object_t *, uint8_t, uint32_t, uint8_t, struct SPropTagArray *, mapi_object_t *);
 enum MAPISTATUS		FXCopyProperties(mapi_object_t *, uint8_t, uint32_t, uint8_t, struct SPropTagArray *, mapi_object_t *);
-// TODO: this isn't the final signature.
-enum MAPISTATUS 	FXGetBuffer(mapi_object_t *obj_source_context, uint16_t maxSize);
+enum MAPISTATUS 	FXGetBuffer(mapi_object_t *obj_source_context, uint16_t maxSize, enum TransferStatus *, uint16_t *, uint16_t *, DATA_BLOB *);
 
 /* The following public definitions come from libmapi/freebusy.c */
 enum MAPISTATUS		GetUserFreeBusyData(mapi_object_t *, const char *, struct SRow *);

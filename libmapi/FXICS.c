@@ -728,19 +728,35 @@ _PUBLIC_ enum MAPISTATUS FXCopyProperties(mapi_object_t *obj, uint8_t level, uin
 /**
     Get data from source fast transfer object
 
-    TODO:
-    - finish documenting this
-    - add return parameter(s)
+    Fast transfers are done in blocks, each block transfered over a call to FXGetBuffer. If the block
+    is small, it will fit into a single call, and the transferStatus will indicate completion. However
+    larger transfers will require multiple calls.
 
     \param obj_source_context the source object (from FXCopyTo, FXCopyProperties, FXCopyFolder or FXCopyMessages)
     \param maxSize the maximum size (pass 0 to indicate maximum available size)
+    \param transferStatus result of the transfer
+    \param progressStepCount the approximate number of steps (of totalStepCount) completed
+    \param totalStepCount the approximate number of steps (total)
+    \param blob this part of the transfer
+    
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+     invalid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
 */
-_PUBLIC_ enum MAPISTATUS FXGetBuffer(mapi_object_t *obj_source_context, uint16_t maxSize)
+_PUBLIC_ enum MAPISTATUS FXGetBuffer(mapi_object_t *obj_source_context, uint16_t maxSize, enum TransferStatus *transferStatus,
+				     uint16_t *progressStepCount, uint16_t *totalStepCount, DATA_BLOB *blob)
 {
 	struct mapi_request				*mapi_request;
 	struct mapi_response				*mapi_response;
 	struct EcDoRpc_MAPI_REQ				*mapi_req;
 	struct FastTransferSourceGetBuffer_req		request;
+	struct FastTransferSourceGetBuffer_repl		*reply;
 	struct mapi_session				*session;
 	NTSTATUS					status;
 	enum MAPISTATUS					retval;
@@ -788,11 +804,21 @@ _PUBLIC_ enum MAPISTATUS FXGetBuffer(mapi_object_t *obj_source_context, uint16_t
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
 	mapi_request->handles[0] = mapi_object_get_handle(obj_source_context);
 
+	// TODO: handle backoff (0x00000480)
 	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Retrieve the result */
+	reply = &(mapi_response->mapi_repl->u.mapi_FastTransferSourceGetBuffer);
+	*transferStatus = reply->TransferStatus;
+	*progressStepCount = reply->InProgressCount;
+	*totalStepCount = reply->TotalStepCount;
+	blob->length = reply->TransferBufferSize;
+	blob->data = talloc_size(mem_ctx, blob->length);
+	memcpy(blob->data, reply->TransferBuffer.data, blob->length);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

@@ -817,7 +817,7 @@ _PUBLIC_ enum MAPISTATUS FXGetBuffer(mapi_object_t *obj_source_context, uint16_t
 	*progressStepCount = reply->InProgressCount;
 	*totalStepCount = reply->TotalStepCount;
 	blob->length = reply->TransferBufferSize;
-	blob->data = talloc_size(mem_ctx, blob->length);
+	blob->data = talloc_size((TALLOC_CTX *)session, blob->length);
 	memcpy(blob->data, reply->TransferBuffer.data, blob->length);
 
 	talloc_free(mapi_response);

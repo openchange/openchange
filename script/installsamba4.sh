@@ -279,9 +279,6 @@ compile() {
     pushd samba4/source4
     error_check $? "samba4 setup"
 
-    ./autogen.sh
-    error_check $? "samba4 autogen"
-
     ./configure.developer --prefix=$SAMBA_PREFIX
     error_check $? "samba4 configure"
 

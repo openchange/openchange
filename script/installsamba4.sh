@@ -216,12 +216,6 @@ patch() {
     case "$HOST_OS" in
 	*freebsd*)
 
-	    echo "[+] Patching tevent for FreeBSD"
-	    pushd samba4/lib/tevent
-	    sed 's/\$(PYTHON_CONFIG) --libs/\$(PYTHON_CONFIG) --ldflags/g' tevent.mk > tevent.mk2
-	    mv tevent.mk2 tevent.mk
-	    popd
-
 	    echo "[+] Patching heimdal for FreeBSD"
 	    pushd samba4/source4/heimdal/lib/roken
 	    sed "s/#if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__)/#if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__) || defined(__FreeBSD__)/g" rkpty.c > rkpty2.c

@@ -861,6 +861,7 @@ System Attendant Private Interface
 			op_MAPI_TransportNewMail		= 0x51,
 			op_MAPI_GetValidAttachments		= 0x52,
 			op_MAPI_FastTransferDestConfigure	= 0x53,
+			op_MAPI_FastTransferDestPutBuffer	= 0x54,
 			op_MAPI_GetNamesFromIDs			= 0x55,
 			op_MAPI_GetIDsFromNames			= 0x56,
 			op_MAPI_UpdateDeferredActionMessages	= 0x57,
@@ -2924,6 +2925,21 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 	} FastTransferDestinationConfigure_repl;
 
+	/**************************/
+	/* EcDoRpc Function 0x54  */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16		TransferBufferSize;
+		[subcontext(0),subcontext_size(TransferBufferSize),flag(NDR_REMAINING)] DATA_BLOB TransferBuffer;
+	} FastTransferDestinationPutBuffer_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		TransferStatus	TransferStatus;
+		uint16		InProgressCount;
+		uint16		TotalStepCount;
+		uint8		Reserved;
+		uint16		BufferUsedCount;
+	} FastTransferDestinationPutBuffer_repl;
+
 	/*************************/
 	/* EcDoRpc Function 0x55 */
 	typedef [enum8bit] enum {
@@ -3735,6 +3751,7 @@ System Attendant Private Interface
 		[case(op_MAPI_TransportNewMail)] TransportNewMail_req mapi_TransportNewMail;
 		[case(op_MAPI_GetValidAttachments)] GetValidAttachments_req mapi_GetValidAttachments;
 		[case(op_MAPI_FastTransferDestConfigure)] FastTransferDestinationConfigure_req mapi_FastTransferDestinationConfigure;
+		[case(op_MAPI_FastTransferDestPutBuffer)] FastTransferDestinationPutBuffer_req mapi_FastTransferDestinationPutBuffer;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_req mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_req mapi_GetIDsFromNames;
 		[case(op_MAPI_UpdateDeferredActionMessages)] UpdateDeferredActionMessages_req mapi_UpdateDeferredActionMessages;
@@ -3865,6 +3882,7 @@ System Attendant Private Interface
 		[case(op_MAPI_TransportNewMail)] TransportNewMail_repl mapi_TransportNewMail;
 		[case(op_MAPI_GetValidAttachments)] GetValidAttachments_repl mapi_GetValidAttachments;
 		[case(op_MAPI_FastTransferDestConfigure)] FastTransferDestinationConfigure_repl mapi_FastTransferDestinationConfigure;
+		[case(op_MAPI_FastTransferDestPutBuffer)] FastTransferDestinationPutBuffer_repl mapi_FastTransferDestinationPutBuffer;
 		[case(op_MAPI_GetNamesFromIDs)] GetNamesFromIDs_repl mapi_GetNamesFromIDs;
 		[case(op_MAPI_GetIDsFromNames)] GetIDsFromNames_repl mapi_GetIDsFromNames;
 		[case(op_MAPI_UpdateDeferredActionMessages)] UpdateDeferredActionMessages_repl mapi_UpdateDeferredActionMessages;

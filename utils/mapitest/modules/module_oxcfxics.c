@@ -72,7 +72,8 @@ _PUBLIC_ bool mapitest_oxcfxics_GetLocalReplicaIds(struct mapitest *mt)
 
 
 /**
-   \details Test the FastTransferDestinationConfigure (0x53) and TellVersion (0x86) operations
+   \details Test the FastTransferDestinationConfigure (0x53), TellVersion (0x86) and
+   FastTransferDestinationPutBuffer (0x54) operations
 
    This function:
    -# Log on private message store
@@ -88,6 +89,8 @@ _PUBLIC_ bool mapitest_oxcfxics_DestConfigure(struct mapitest *mt)
 	mapi_object_t		obj_context;
 	mapi_object_t		destfolder;
 	uint16_t		version[3];
+	DATA_BLOB		put_buffer_data;
+	uint16_t		usedSize;
 	bool			ret = true;
 
 	/* Logon */
@@ -127,6 +130,20 @@ _PUBLIC_ bool mapitest_oxcfxics_DestConfigure(struct mapitest *mt)
 		goto cleanup;
 	}
 
+	/* start top folder, followed by end folder */
+	put_buffer_data = data_blob_named("\x03\x00\x09\x40\x03\x00\x0b\x40", 8, "putbuffer");
+	/* printf("data_blob: %s\n", data_blob_hex_string_lower(mt->mem_ctx, &put_buffer_data)); */
+	retval = FXPutBuffer(&obj_context, &put_buffer_data, &usedSize);
+	mapitest_print_retval_clean(mt, "FXPutBuffer", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	if (usedSize != 8) {
+		mapitest_print(mt, "unexpected used count 0x%04x\n", usedSize);
+		ret = false;
+		goto cleanup;
+	}
 cleanup:
 	/* Cleanup and release */
 	mapi_object_release(&obj_context);

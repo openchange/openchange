@@ -26,6 +26,8 @@ fi
 export CC="ccache gcc -I$SAMBA_PREFIX/include"
 
 export PKG_CONFIG_PATH=$SAMBA_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
+pythondir=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,'/')"`
+export PYTHONPATH=$SAMBA_PREFIX$pythondir:$PYTHONPATH
 
 RUNDIR=`dirname $0`
 HOST_OS=`$RUNDIR/../config.guess`
@@ -214,12 +216,6 @@ patch() {
     case "$HOST_OS" in
 	*freebsd*)
 
-	    echo "[+] Patching tevent for FreeBSD"
-	    pushd samba4/lib/tevent
-	    sed 's/\$(PYTHON_CONFIG) --libs/\$(PYTHON_CONFIG) --ldflags/g' tevent.mk > tevent.mk2
-	    mv tevent.mk2 tevent.mk
-	    popd
-
 	    echo "[+] Patching heimdal for FreeBSD"
 	    pushd samba4/source4/heimdal/lib/roken
 	    sed "s/#if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__)/#if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__) || defined(__FreeBSD__)/g" rkpty.c > rkpty2.c
@@ -283,10 +279,7 @@ compile() {
     pushd samba4/source4
     error_check $? "samba4 setup"
 
-    ./autogen.sh
-    error_check $? "samba4 autogen"
-
-    ./configure.developer --bundled-libraries=ldb,NONE --prefix=$SAMBA_PREFIX
+    ./configure.developer --prefix=$SAMBA_PREFIX
     error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"

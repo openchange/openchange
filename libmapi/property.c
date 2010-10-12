@@ -704,6 +704,33 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 		}
 		return size;
 	}
+	case PT_MV_CLSID:
+	{
+		uint32_t        i;
+		uint32_t        size = 0;
+		// conceptually we're copying  mapi_SGuidArray over to FlatUIDArray_r
+		//	typedef struct {
+		//		uint32		cValues;
+		//		GUID		lpguid[cValues];
+		//	} mapi_SGuidArray;
+		// 	typedef [flag(NDR_NOALIGN)] struct {
+		//		[range(0,100000)]uint32		cValues;
+		//		[size_is(cValues)] FlatUID_r	**lpguid; 
+		//	} FlatUIDArray_r;
+		sprop->value.MVguid.cValues = mapi_sprop->value.MVguid.cValues;
+		size += sizeof(uint32_t);
+		
+		sprop->value.MVguid.lpguid = talloc_array(mem_ctx, struct FlatUID_r*, sprop->value.MVguid.cValues);
+		for (i = 0; i < sprop->value.MVguid.cValues; ++i) {
+			DATA_BLOB	b;
+			
+			sprop->value.MVguid.lpguid[i] = talloc_zero(mem_ctx, struct FlatUID_r);
+			GUID_to_ndr_blob(&(mapi_sprop->value.MVguid.lpguid[i]), talloc_autofree_context(), &b);
+			sprop->value.MVguid.lpguid[i] = memcpy(sprop->value.MVguid.lpguid[i]->ab, b.data, sizeof(struct FlatUID_r));
+			size += (sizeof (struct FlatUID_r));
+		}
+		return size;
+	}
 	case PT_MV_BINARY:
 	{
 		uint32_t	i;

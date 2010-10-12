@@ -28,7 +28,7 @@
 #include "torture/torture_proto.h"
 #include <samba/popt.h>
 
-bool set_profile_attribute(const char *profname, struct SRowSet rowset, 
+bool set_profile_attribute(struct mapi_context *mapi_ctx, const char *profname, struct SRowSet rowset, 
 			   uint32_t property, const char *attr)
 {
 	struct SPropValue	*lpProp;
@@ -41,7 +41,7 @@ bool set_profile_attribute(const char *profname, struct SRowSet rowset,
 		return true;
 	}
 
-	ret = mapi_profile_add_string_attr(profname, attr, lpProp->value.lpszA);
+	ret = mapi_profile_add_string_attr(mapi_ctx, profname, attr, lpProp->value.lpszA);
 
 	if (ret != MAPI_E_SUCCESS) {
 		DEBUG(0, ("Problem adding attribute %s in profile %s\n", attr, profname));
@@ -50,7 +50,7 @@ bool set_profile_attribute(const char *profname, struct SRowSet rowset,
 	return true;
 }
 
-bool set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
+bool set_profile_mvstr_attribute(struct mapi_context *mapi_ctx, const char *profname, struct SRowSet rowset,
 				 uint32_t property, const char *attr)
 {
 	struct SPropValue	*lpProp;
@@ -65,7 +65,7 @@ bool set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
 	}
 
 	for (i = 0; i < lpProp->value.MVszA.cValues; i++) {
-		ret = mapi_profile_add_string_attr(profname, attr, lpProp->value.MVszA.lppszA[i]);
+		ret = mapi_profile_add_string_attr(mapi_ctx, profname, attr, lpProp->value.MVszA.lppszA[i]);
 		if (ret != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Problem adding attriute %s in profile %s\n", attr, profname));
 			return false;
@@ -77,6 +77,7 @@ bool set_profile_mvstr_attribute(const char *profname, struct SRowSet rowset,
 bool torture_rpc_nspi_profile(struct torture_context *torture)
 {
 	NTSTATUS		status;
+	struct mapi_context	*mapi_ctx;
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
@@ -108,8 +109,8 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	}
 
 	/* profiles */
-	retval = MAPIInitialize(profdb);
-	mapi_errstr("MAPIInitialize", GetLastError());
+	retval = MAPIInitialize(&mapi_ctx, profdb);
+	mapi_errstr("MAPIInitialize", retval);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	nspi = nspi_bind(mem_ctx, p, cmdline_credentials, codepage, language, method);
@@ -119,7 +120,7 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 		const char *username = cli_credentials_get_username(cmdline_credentials);
 		const char *password = cli_credentials_get_password(cmdline_credentials);
 		
-		retval = CreateProfile(profname, username, password, 0);
+		retval = CreateProfile(mapi_ctx, profname, username, password, 0);
 		mapi_errstr("CreateProfile", GetLastError());
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Unable to create %s profile\n", profname));
@@ -137,19 +138,19 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 			
 			dcerpc_parse_binding(mem_ctx, binding, &dcerpc_binding);
 
-			retval = mapi_profile_add_string_attr(profname, "workstation", workstation);
-			retval = mapi_profile_add_string_attr(profname, "domain", domain);
-			retval = mapi_profile_add_string_attr(profname, "binding", dcerpc_binding->host);
-			retval = mapi_profile_add_string_attr(profname, "codepage", p_codepage);
-			retval = mapi_profile_add_string_attr(profname, "language", p_language);
-			retval = mapi_profile_add_string_attr(profname, "method", p_method);
+			retval = mapi_profile_add_string_attr(mapi_ctx, profname, "workstation", workstation);
+			retval = mapi_profile_add_string_attr(mapi_ctx, profname, "domain", domain);
+			retval = mapi_profile_add_string_attr(mapi_ctx, profname, "binding", dcerpc_binding->host);
+			retval = mapi_profile_add_string_attr(mapi_ctx, profname, "codepage", p_codepage);
+			retval = mapi_profile_add_string_attr(mapi_ctx, profname, "language", p_language);
+			retval = mapi_profile_add_string_attr(mapi_ctx, profname, "method", p_method);
 		}
 	}
 	
 	nspi->mem_ctx = mem_ctx;
 
 	retval = nspi_GetSpecialTable(nspi, mem_ctx, 0, &rowset);
-	mapi_errstr("NspiGetSpecialTable", GetLastError());
+	mapi_errstr("NspiGetSpecialTable", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		talloc_free(mem_ctx);
 		return false;
@@ -202,12 +203,12 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	}
 
 	if (profname) {
-		set_profile_attribute(profname, *rowset, PR_EMAIL_ADDRESS, "EmailAddress");
-		set_profile_attribute(profname, *rowset, PR_DISPLAY_NAME, "DisplayName");
-		set_profile_attribute(profname, *rowset, PR_ACCOUNT, "Account");
-		set_profile_attribute(profname, *rowset, PR_ADDRTYPE, "AddrType");
-		retval = mapi_profile_add_string_attr(profname, "Organization", nspi->org);
-		retval = mapi_profile_add_string_attr(profname, "OrganizationUnit", nspi->org_unit);
+		set_profile_attribute(mapi_ctx, profname, *rowset, PR_EMAIL_ADDRESS, "EmailAddress");
+		set_profile_attribute(mapi_ctx, profname, *rowset, PR_DISPLAY_NAME, "DisplayName");
+		set_profile_attribute(mapi_ctx, profname, *rowset, PR_ACCOUNT, "Account");
+		set_profile_attribute(mapi_ctx, profname, *rowset, PR_ADDRTYPE, "AddrType");
+		retval = mapi_profile_add_string_attr(mapi_ctx, profname, "Organization", nspi->org);
+		retval = mapi_profile_add_string_attr(mapi_ctx, profname, "OrganizationUnit", nspi->org_unit);
 	}
 
 	SPropTagArray = set_SPropTagArray(nspi->mem_ctx, 0x7,
@@ -237,9 +238,9 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	if (lpProp) {
 		nspi->servername = x500_get_servername(lpProp->value.lpszA);
 		if (profname) {
-			mapi_profile_add_string_attr(profname, "ServerName", nspi->servername);
-			set_profile_attribute(profname, *rowset, PR_EMS_AB_HOME_MDB, "HomeMDB");
-			set_profile_mvstr_attribute(profname, *rowset, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
+			mapi_profile_add_string_attr(mapi_ctx, profname, "ServerName", nspi->servername);
+			set_profile_attribute(mapi_ctx, profname, *rowset, PR_EMS_AB_HOME_MDB, "HomeMDB");
+			set_profile_mvstr_attribute(mapi_ctx, profname, *rowset, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
 		}
 	} else {
 		printf("Unable to find the server name\n");
@@ -266,14 +267,14 @@ bool torture_rpc_nspi_profile(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (profname) {
-		set_profile_mvstr_attribute(profname, *rowset, PR_EMS_AB_NETWORK_ADDRESS, "NetworkAddress");
+		set_profile_mvstr_attribute(mapi_ctx, profname, *rowset, PR_EMS_AB_NETWORK_ADDRESS, "NetworkAddress");
 	}
 
 	retval = nspi_unbind(nspi);
 	mapi_errstr("NspiUnbind", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 
 	talloc_free(mem_ctx);
 

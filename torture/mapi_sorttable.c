@@ -31,6 +31,7 @@ bool torture_rpc_mapi_sorttable(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
+	struct mapi_context	*mapi_ctx;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_folder;
 	mapi_object_t		obj_ctable;
@@ -44,7 +45,7 @@ bool torture_rpc_mapi_sorttable(struct torture_context *torture)
 
 	/* init torture test */
 	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_sorttable");
-	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, &mapi_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* Open Message Store*/
 	mapi_object_init(&obj_store);
@@ -115,6 +116,8 @@ bool torture_rpc_mapi_sorttable(struct torture_context *torture)
 	mapi_object_release(&obj_ctable);
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);
+	MAPIUninitialize(mapi_ctx);
+	talloc_free(mem_ctx);
 
 	return true;
 }

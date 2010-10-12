@@ -36,6 +36,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
+	struct mapi_context	*mapi_ctx;
 	bool			ret = true;
 	const char		*s_subject = lpcfg_parm_string(torture->lp_ctx, NULL, "mapi", "subject");
 	int			len_subject;
@@ -56,7 +57,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_deletemail");
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, &mapi_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* init objets */
 	mapi_object_init(&obj_store);
@@ -133,7 +134,7 @@ bool torture_rpc_mapi_deletemail(struct torture_context *torture)
 
 	/* uninitialize mapi
 	 */
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 	talloc_free(mem_ctx);
 	
 	return (ret);

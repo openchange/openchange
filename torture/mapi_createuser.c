@@ -33,6 +33,7 @@ bool torture_mapi_createuser(struct torture_context *torture)
 {
 	NTSTATUS		ntstatus;
 	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_profile	*profile;
 	struct test_join        *user_ctx = (struct test_join *) NULL;
@@ -48,7 +49,7 @@ bool torture_mapi_createuser(struct torture_context *torture)
 
 	/* init mapi */
 	mem_ctx = talloc_named(NULL, 0, "torture_mapi_createuser");
-	retval = torture_load_profile(mem_ctx, torture->lp_ctx, &session);
+	retval = torture_load_profile(mem_ctx, &mapi_ctx, torture->lp_ctx, &session);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	profile = session->profile;
@@ -64,13 +65,14 @@ bool torture_mapi_createuser(struct torture_context *torture)
 		return false;
 	}
 
-       /* We extend the user with Exchange attributes */
+	/* We extend the user with Exchange attributes */
 	ntstatus = torture_exchange_createuser(mem_ctx, username, torture_join_user_sid(user_ctx));
-       if (!NT_STATUS_IS_OK(ntstatus)) {
+	if (!NT_STATUS_IS_OK(ntstatus)) {
 	       torture_leave_domain(user_ctx);
 	       talloc_free(mem_ctx);
 	       return false;
-       }
-
-       return true;
+	}
+	MAPIUninitialize(mapi_ctx);
+	talloc_free(mem_ctx);
+	return true;
 }

@@ -32,6 +32,7 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 {
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_session	*session;
@@ -54,7 +55,7 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	}
 	
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, &mapi_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -101,7 +102,7 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 	mapi_errstr("SetColumns", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	mapi_id_array_init(&msg_id_array);
+	mapi_id_array_init(mapi_ctx, &msg_id_array);
 
 	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		uint32_t	i;
@@ -123,7 +124,7 @@ bool torture_rpc_mapi_copymail(struct torture_context *torture)
 
 	/* uninitialize mapi
 	 */
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 	talloc_free(mem_ctx);
 
 	return true;

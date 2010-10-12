@@ -52,6 +52,7 @@ bool torture_rpc_mapi_newmail(struct torture_context *torture)
 {
 	NTSTATUS		nt_status;
 	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
 	bool			ret = true;
@@ -71,7 +72,7 @@ bool torture_rpc_mapi_newmail(struct torture_context *torture)
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, &mapi_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -115,7 +116,7 @@ bool torture_rpc_mapi_newmail(struct torture_context *torture)
 	mapi_object_release(&obj_store);
 
 	/* uninitialize mapi */
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 	talloc_free(mem_ctx);
 	
 	return (ret);

@@ -32,6 +32,7 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 {
 	NTSTATUS		ntstatus;
 	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
 	struct dcerpc_pipe	*p;
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_session	*session;
@@ -56,7 +57,7 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, &mapi_ctx, torture->lp_ctx)) == NULL) return false;
 
 	mapi_object_init(&obj_store);
 	retval = OpenMsgStore(session, &obj_store);
@@ -127,7 +128,7 @@ bool torture_rpc_mapi_permissions(struct torture_context *torture)
 	mapi_object_release(&obj_inbox);
 	mapi_object_release(&obj_store);
 
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 	talloc_free(mem_ctx);
 	return true;
 }

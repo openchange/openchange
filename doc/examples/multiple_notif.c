@@ -75,6 +75,7 @@ int main(int ac, const char *av[])
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
+	struct mapi_context	*mapi_ctx;
 	struct mapi_session	*sessionA = NULL;
 	struct mapi_session	*sessionB = NULL;
 	mapi_object_t		obj_storeA;
@@ -127,19 +128,19 @@ int main(int ac, const char *av[])
 	}
 
 	/* Step 2. Initialize MAPI subsystem */
-	retval = MAPIInitialize(opt_profdb);
+	retval = MAPIInitialize(&mapi_ctx, opt_profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
-	retval = MapiLogonEx(&sessionA, profileA, NULL);
+	retval = MapiLogonEx(mapi_ctx, &sessionA, profileA, NULL);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx for profileA", GetLastError());
 		exit (1);
 	}
 
-	retval = MapiLogonEx(&sessionB, profileB, NULL);
+	retval = MapiLogonEx(mapi_ctx, &sessionB, profileB, NULL);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx for profileB", GetLastError());
 		exit (1);
@@ -201,7 +202,7 @@ int main(int ac, const char *av[])
 
 	sleep(200);
 	pthread_exit(NULL);
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 
 	return 0;
 }

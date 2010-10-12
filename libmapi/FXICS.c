@@ -403,7 +403,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyFolder(mapi_object_t *obj, uint8_t copyFlags, uin
    messages).
 
    \param obj the source object for the operation (folder)
-   \param mids the message IDs for the messages to copy.
+   \param message_ids the message IDs for the messages to copy.
    \param copyFlags flags that change the copy behaviour (see below)
    \param sendOptions flags that change the format of the transfer (see below)
    \param obj_source_context the fast transfer source context for future ROPs
@@ -530,6 +530,10 @@ _PUBLIC_ enum MAPISTATUS FXCopyMessages(mapi_object_t *obj, mapi_id_array_t *mes
    - FastTransferCopyTo_Move to configure as part of a move operation
    - FastTransferCopyTo_BestBody to use original format for message bodies (if not set, use RTF instead)
 
+   Be careful in setting \a level to something other than zero. In particular, if \a level is
+   non-zero for a message, then the list of recipients, and any attachments or embedded messages, will
+   not be transferred.
+
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
    \note Developers may also call GetLastError() to retrieve the last
@@ -636,6 +640,10 @@ _PUBLIC_ enum MAPISTATUS FXCopyTo(mapi_object_t *obj, uint8_t level, uint32_t co
 
    \a copyflags may be the following:
    - FastTransferCopyProperties_Move to configure as part of a move operation
+
+   Be careful in setting \a level to something other than zero. In particular, if \a level is
+   non-zero for a message, then the list of recipients, and any attachments or embedded messages, will
+   not be transferred.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 

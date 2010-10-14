@@ -822,7 +822,8 @@ _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format
 	aRow.lpProps = lpProps;
 
 	/* Step 2. Retrieve properties values and map errors */
-	RtfInSync = *(const uint8_t *)find_SPropValue_data(&aRow, PR_RTF_IN_SYNC);
+	err_code = (const uint32_t *)find_SPropValue_data(&aRow, PR_RTF_IN_SYNC);
+	RtfInSync = (err_code) ? *err_code : 0;
 
 	err_code = (const uint32_t *)find_SPropValue_data(&aRow, PR_BODY_ERROR);
 	PlainStatus = (err_code) ? *err_code : 0;

@@ -474,6 +474,20 @@ enum MAPISTATUS		GetFIDFromEntryID(uint16_t, uint8_t *, uint64_t, uint64_t *);
 /* The following public definitions come from libmapi/socket/netif.c */
 int			get_interfaces(struct iface_struct *, int);
 
+/* The following public definitions come from libmapi/fxparser.c */
+struct fx_parser_context;
+typedef enum MAPISTATUS (*fxparser_marker_callback_t)(uint32_t);
+typedef enum MAPISTATUS (*fxparser_delprop_callback_t)(uint32_t);
+typedef enum MAPISTATUS (*fxparser_namedprop_callback_t)(uint32_t, struct MAPINAMEID);
+typedef enum MAPISTATUS (*fxparser_property_callback_t)(struct SPropValue);
+
+struct fx_parser_context *fxparser_init(TALLOC_CTX *);
+void 			 fxparser_set_marker_callback(struct fx_parser_context *, fxparser_marker_callback_t);
+void 			 fxparser_set_delprop_callback(struct fx_parser_context *, fxparser_delprop_callback_t);
+void 			 fxparser_set_namedprop_callback(struct fx_parser_context *, fxparser_namedprop_callback_t);
+void 			 fxparser_set_property_callback(struct fx_parser_context *, fxparser_property_callback_t);
+void			 fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
+
 __END_DECLS
 
 #undef _PRINTF_ATTRIBUTE

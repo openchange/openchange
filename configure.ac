@@ -546,6 +546,8 @@ if test x"$enable_libpopt" = x"yes"; then
 	OC_RULE_ADD(mapiprofile, TOOLS)
 	OC_RULE_ADD(openchangemapidump, TOOLS)
 	OC_RULE_ADD(schemaIDGUID, TOOLS)
+
+	OC_RULE_ADD(check_fasttransfer, TORTURE)
 fi
 AC_SUBST(MAPISTORE_TEST)
 

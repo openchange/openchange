@@ -165,17 +165,18 @@ cleanup:
  */
 _PUBLIC_ bool mapitest_oxcfxics_CopyFolder(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
-	struct mt_common_tf_ctx	*context;
-	mapi_object_t		obj_htable;
-	mapi_object_t		obj_context;
-	mapi_object_t		sourcefolder;
-	uint16_t		version[3];
-	bool			ret = true;
-	enum TransferStatus	transferStatus;
-	uint16_t		progress;
-	uint16_t		totalSteps;
-	DATA_BLOB		transferdata;
+	enum MAPISTATUS			retval;
+	struct mt_common_tf_ctx		*context;
+	mapi_object_t			obj_htable;
+	mapi_object_t			obj_context;
+	mapi_object_t			sourcefolder;
+	uint16_t			version[3];
+	bool				ret = true;
+	enum TransferStatus		transferStatus;
+	uint16_t			progress;
+	uint16_t			totalSteps;
+	DATA_BLOB			transferdata;
+	struct fx_parser_context	*parser;
 
 	/* Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
@@ -230,6 +231,9 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyFolder(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
+	parser = fxparser_init(mt->mem_ctx);
+	fxparser_parse(parser, &transferdata);
+	talloc_free(parser);
 	// TODO: verify that the buffer is as expected
 cleanup:
 	/* Cleanup and release */
@@ -246,24 +250,25 @@ cleanup:
 
    This function:
    -# Log on private message store
-   -# Creates a test folder
+   -# Cremapidump_fx_bufferates a test folder
    -# Setup source
    -# Get data
  */
 _PUBLIC_ bool mapitest_oxcfxics_CopyMessages(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
-	struct mt_common_tf_ctx	*context;
-	mapi_object_t		obj_htable;
-	mapi_object_t		obj_context;
-	mapi_object_t		sourcefolder;
-	mapi_id_array_t		mids;
-	int			i;
-	bool			ret = true;
-	enum TransferStatus	transferStatus;
-	uint16_t		progress;
-	uint16_t		totalSteps;
-	DATA_BLOB		transferdata;
+	enum MAPISTATUS			retval;
+	struct mt_common_tf_ctx		*context;
+	mapi_object_t			obj_htable;
+	mapi_object_t			obj_context;
+	mapi_object_t			sourcefolder;
+	mapi_id_array_t			mids;
+	int				i;
+	bool				ret = true;
+	enum TransferStatus		transferStatus;
+	uint16_t			progress;
+	uint16_t			totalSteps;
+	DATA_BLOB			transferdata;
+	struct fx_parser_context	*parser;
 
 	/* Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
@@ -323,6 +328,9 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyMessages(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
+	parser = fxparser_init(mt->mem_ctx);
+	fxparser_parse(parser, &transferdata);
+	talloc_free(parser);
 	// TODO: verify that the buffer is as expected
 cleanup:
 	/* Cleanup and release */
@@ -345,19 +353,20 @@ cleanup:
  */
 _PUBLIC_ bool mapitest_oxcfxics_CopyTo(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
-	struct mt_common_tf_ctx	*context;
-	mapi_object_t		obj_htable;
-	mapi_object_t		obj_context;
-	mapi_object_t		sourcefolder;
-	mapi_id_array_t		mids;
-	struct SPropTagArray	*propsToExclude;
-	int			i;
-	bool			ret = true;
-	enum TransferStatus	transferStatus;
-	uint16_t		progress;
-	uint16_t		totalSteps;
-	DATA_BLOB		transferdata;
+	enum MAPISTATUS			retval;
+	struct mt_common_tf_ctx		*context;
+	mapi_object_t			obj_htable;
+	mapi_object_t			obj_context;
+	mapi_object_t			sourcefolder;
+	mapi_id_array_t			mids;
+	struct SPropTagArray		*propsToExclude;
+	int				i;
+	bool				ret = true;
+	enum TransferStatus		transferStatus;
+	uint16_t			progress;
+	uint16_t			totalSteps;
+	DATA_BLOB			transferdata;
+	struct fx_parser_context	*parser;
 
 	/* Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
@@ -418,6 +427,9 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyTo(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
+	parser = fxparser_init(mt->mem_ctx);
+	fxparser_parse(parser, &transferdata);
+	talloc_free(parser);
 	// TODO: verify that the buffer is as expected
 cleanup:
 	/* Cleanup and release */
@@ -440,18 +452,18 @@ cleanup:
  */
 _PUBLIC_ bool mapitest_oxcfxics_CopyProperties(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
-	struct mt_common_tf_ctx	*context;
-	mapi_object_t		obj_htable;
-	mapi_object_t		obj_context;
-	mapi_object_t		sourcefolder;
-	struct SPropTagArray	*props;
-	bool			ret = true;
-	enum TransferStatus	transferStatus;
-	uint16_t		progress;
-	uint16_t		totalSteps;
-	DATA_BLOB		transferdata;
-
+	enum MAPISTATUS			retval;
+	struct mt_common_tf_ctx		*context;
+	mapi_object_t			obj_htable;
+	mapi_object_t			obj_context;
+	mapi_object_t			sourcefolder;
+	struct SPropTagArray		*props;
+	bool				ret = true;
+	enum TransferStatus		transferStatus;
+	uint16_t			progress;
+	uint16_t			totalSteps;
+	DATA_BLOB			transferdata;
+	struct fx_parser_context	*parser;
 	/* Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
 		return false;
@@ -472,7 +484,7 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyProperties(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	props = set_SPropTagArray(mt->mem_ctx, 0x1, PR_DISPLAY_NAME);
+	props = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_FOLDER_TYPE, PR_NTSD_MODIFICATION_TIME);
 	retval = FXCopyProperties(&(context->obj_test_folder), 0 /* level */, 0 /*copyflags */, FastTransfer_Unicode, props, &obj_context);
 	mapitest_print_retval_clean(mt, "FXCopyProperties", retval);
 	if (retval != MAPI_E_SUCCESS) {
@@ -496,6 +508,9 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyProperties(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
+	parser = fxparser_init(mt->mem_ctx);
+	fxparser_parse(parser, &transferdata);
+	talloc_free(parser);
 	// TODO: verify that the buffer is as expected
 cleanup:
 	/* Cleanup and release */

@@ -128,6 +128,12 @@ static bool pull_int64_t(struct fx_parser_context *parser, int64_t *val)
 	return true;
 }
 
+/* This is dubious */
+static bool pull_double(struct fx_parser_context *parser, int64_t *val)
+{
+	return pull_int64_t(parser, val);
+}
+
 static bool pull_uint8_t(struct fx_parser_context *parser, uint8_t *val)
 {
 	if ((parser->idx) + 1 > parser->data.length) {
@@ -198,6 +204,11 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 		pull_uint32_t(parser, &(prop->value.l));
 		break;
 	}
+	case PT_DOUBLE:
+	{
+		pull_double(parser, &(prop->value.dbl));
+		break;
+	}
 	case PT_BOOLEAN:
 	{
 		pull_uint8_t(parser, &(prop->value.b));
@@ -210,6 +221,24 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 		int64_t val;
 		pull_int64_t(parser, &(val));
 		prop->value.d = val;
+		break;
+	}
+	case PT_STRING8:
+	{
+		int i = 0;
+		char *ptr = 0;
+		if (parser->length == 0) {
+			pull_uint32_t(parser, &(parser->length));
+			prop->value.lpszA = talloc_array(parser->mem_ctx, char, parser->length + 1);
+		}
+		for (i = 0; i < parser->length; ++i) {
+			if (!pull_uint8_t(parser, (uint8_t*)&(prop->value.lpszA[i]))) {
+				return false;
+			}
+		}
+		ptr = (char*)prop->value.lpszA;
+		ptr += parser->length;
+		*ptr = '\0';
 		break;
 	}
 	case PT_UNICODE:
@@ -303,7 +332,7 @@ static void pull_named_property(struct fx_parser_context *parser)
 		OPENCHANGE_ASSERT();
 	}
 	if (parser->op_namedprop) {
-		parser->op_namedprop(parser->lpProp.ulPropTag, parser->namedprop);
+		parser->op_namedprop(parser->lpProp.ulPropTag, parser->namedprop, parser->priv);
 	}
 }
 
@@ -342,7 +371,7 @@ _PUBLIC_ void fxparser_set_property_callback(struct fx_parser_context *parser, f
 /**
   \details initialise a fast transfer parser
 */
-_PUBLIC_ struct fx_parser_context* fxparser_init(TALLOC_CTX *mem_ctx)
+_PUBLIC_ struct fx_parser_context* fxparser_init(TALLOC_CTX *mem_ctx, void *priv)
 {
 	struct fx_parser_context *parser = talloc_zero(mem_ctx, struct fx_parser_context);
 
@@ -354,6 +383,7 @@ _PUBLIC_ struct fx_parser_context* fxparser_init(TALLOC_CTX *mem_ctx)
 	parser->lpProp.dwAlignPad = 0;
 	parser->lpProp.value.l = 0;
 	parser->length = 0;
+	parser->priv = priv;
 
 	return parser;
 }
@@ -390,7 +420,7 @@ _PUBLIC_ void fxparser_parse(struct fx_parser_context *parser, DATA_BLOB *fxbuf)
 					case PR_START_EMBED:
 					case PR_END_EMBED:
 						if (parser->op_marker) {
-							parser->op_marker(parser->tag);
+							parser->op_marker(parser->tag, parser->priv);
 						}
 						parser->state = ParserState_Entry;
 						break;
@@ -399,7 +429,7 @@ _PUBLIC_ void fxparser_parse(struct fx_parser_context *parser, DATA_BLOB *fxbuf)
 						uint32_t tag;
 						if (pull_uint32_t(parser, &tag)) {
 							if (parser->op_delprop) {
-								parser->op_delprop(tag);
+								parser->op_delprop(tag, parser->priv);
 							}
 							parser->state = ParserState_Entry;
 						} else {
@@ -429,7 +459,7 @@ _PUBLIC_ void fxparser_parse(struct fx_parser_context *parser, DATA_BLOB *fxbuf)
 				if (fetch_property_value(parser, &(parser->data), &(parser->lpProp), &(parser->length))) {
 					// printf("position %i of %zi\n", parser->idx, parser->data.length);
 					if (parser->op_property) {
-						parser->op_property(parser->lpProp);
+						parser->op_property(parser->lpProp, parser->priv);
 					}
 					parser->state = ParserState_Entry;
 					parser->length = 0;

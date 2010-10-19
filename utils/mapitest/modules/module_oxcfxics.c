@@ -231,7 +231,7 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyFolder(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	parser = fxparser_init(mt->mem_ctx);
+	parser = fxparser_init(mt->mem_ctx, NULL);
 	fxparser_parse(parser, &transferdata);
 	talloc_free(parser);
 	// TODO: verify that the buffer is as expected
@@ -328,7 +328,7 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyMessages(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	parser = fxparser_init(mt->mem_ctx);
+	parser = fxparser_init(mt->mem_ctx, NULL);
 	fxparser_parse(parser, &transferdata);
 	talloc_free(parser);
 	// TODO: verify that the buffer is as expected
@@ -427,7 +427,7 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyTo(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	parser = fxparser_init(mt->mem_ctx);
+	parser = fxparser_init(mt->mem_ctx, NULL);
 	fxparser_parse(parser, &transferdata);
 	talloc_free(parser);
 	// TODO: verify that the buffer is as expected
@@ -508,7 +508,7 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyProperties(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	parser = fxparser_init(mt->mem_ctx);
+	parser = fxparser_init(mt->mem_ctx, NULL);
 	fxparser_parse(parser, &transferdata);
 	talloc_free(parser);
 	// TODO: verify that the buffer is as expected

@@ -1492,8 +1492,9 @@ check_fasttransfer-clean::
 
 clean:: check_fasttransfer-clean
 
-bin/check_fasttransfer:	testprogs/check_fasttransfer.o				\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+bin/check_fasttransfer:	testprogs/check_fasttransfer.o			\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt
 

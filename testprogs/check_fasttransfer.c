@@ -20,6 +20,8 @@
 */
 
 #include "libmapi/libmapi.h"
+#include "mapiproxy/libmapistore/mapistore.h"
+
 #include <samba/popt.h>
 #include <ldb.h>
 #include <talloc.h>
@@ -46,19 +48,131 @@ struct poptOption popt_openchange_version[] = {
 #define POPT_OPENCHANGE_VERSION { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_openchange_version, 0, "Common openchange options:", NULL },
 #define DEFAULT_PROFDB  "%s/.openchange/profiles.ldb"
 
-static enum MAPISTATUS process_marker(uint32_t marker)
+/* These callbacks are for deserialising the fast transfer stream to a mapistore instance */
+struct mapistore_output_ctx {
+	struct mapistore_context	*mstore_ctx;
+	uint32_t			mapistore_context_id;
+	uint64_t			root_fid;
+	uint64_t			current_parent; /* probably needs to be a stack */
+	uint64_t			current_id;
+	uint8_t				current_output_type;
+	struct SRow			*proplist; /* the properties on the "current" object */
+};
+
+static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
+{
+	struct mapistore_output_ctx *mapistore = priv;
+
+	if (mapistore->proplist) {
+		if (mapistore->current_id == mapistore->root_fid) {
+			/* This is the top level folder */
+			mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+					   mapistore->root_fid, mapistore->current_output_type,
+					   mapistore->proplist);
+		} else if (mapistore->current_output_type == MAPISTORE_FOLDER) {
+			mapistore_mkdir(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+					mapistore->current_parent, mapistore->current_id,
+					mapistore->proplist);
+			mapistore->current_parent = mapistore->current_id;
+		} else {
+			mapistore_createmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+					        mapistore->current_parent, mapistore->current_id);
+			mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+					   mapistore->current_id, mapistore->current_output_type,
+					   mapistore->proplist);
+			mapistore_savechangesmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+						     mapistore->current_id, 0);
+		}
+		talloc_free(mapistore->proplist);
+		mapistore->proplist = 0;
+		(mapistore->current_id)++;
+	}
+
+	switch (marker) {
+	case PR_START_TOP_FLD:
+	{
+		/* start collecting properties */
+		struct SPropValue one_prop;
+		mapistore->proplist = talloc_zero(mapistore->mstore_ctx, struct SRow);
+		one_prop.ulPropTag = PR_FID;
+		one_prop.dwAlignPad = 0;
+		one_prop.value.d = mapistore->root_fid;
+		SRow_addprop(mapistore->proplist, one_prop);
+		one_prop.ulPropTag = PR_FOLDER_TYPE;
+		one_prop.value.l = MAPISTORE_FOLDER;
+		SRow_addprop(mapistore->proplist, one_prop);
+		mapistore->current_id = mapistore->root_fid;
+		mapistore->current_parent = mapistore->current_id;
+		mapistore->current_output_type = MAPISTORE_FOLDER;
+		break;
+	}
+	case PR_START_SUB_FLD:
+		mapistore->proplist = talloc_zero(mapistore->mstore_ctx, struct SRow);
+		mapistore->current_output_type = MAPISTORE_FOLDER;
+		break;
+	case PR_START_MESSAGE:
+		mapistore->proplist = talloc_zero(mapistore->mstore_ctx, struct SRow);
+		mapistore->current_output_type = MAPISTORE_MESSAGE;
+		break;
+	case PR_START_FAI_MSG:
+	case PR_START_RECIP:
+	case PR_START_EMBED:
+	case PR_NEW_ATTACH:
+	case PR_END_FOLDER:
+	case PR_END_MESSAGE:
+	case PR_END_RECIP:
+	case PR_END_ATTACH:
+	case PR_END_EMBED:
+		break;
+	default:
+		printf("***unhandled *** TODO: Marker: %s (0x%08x)\n", get_proptag_name(marker), marker);
+	}
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS mapistore_delprop(uint32_t proptag, void *priv)
+{
+	printf("TODO: DelProps: 0x%08x (%s)\n", proptag, get_proptag_name(proptag));
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS mapistore_namedprop(uint32_t proptag, struct MAPINAMEID nameid, void *priv)
+{
+	TALLOC_CTX *mem_ctx;
+	// struct mapistore_output_ctx *mapistore = priv;
+	mem_ctx = talloc_init("process_namedprop");
+	printf("TODO: Named Property: 0x%08x has GUID %s and ", proptag, GUID_string(mem_ctx, &(nameid.lpguid)));
+	if (nameid.ulKind == MNID_ID) {
+		printf("dispId 0x%08x\n", nameid.kind.lid);
+	} else if (nameid.ulKind == MNID_STRING) {
+		printf("name %s\n", nameid.kind.lpwstr.Name);
+	}
+	talloc_free(mem_ctx);
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS mapistore_property(struct SPropValue prop, void *priv)
+{
+	struct mapistore_output_ctx *mapistore = priv;
+	SRow_addprop(mapistore->proplist, prop);
+	return MAPI_E_SUCCESS;
+}
+
+/* These callbacks are for the "dump-data" mode, so they don't do much */
+
+static enum MAPISTATUS dump_marker(uint32_t marker, void *priv)
 {
 	printf("Marker: %s (0x%08x)\n", get_proptag_name(marker), marker);
 	return MAPI_E_SUCCESS;
 }
 
-static enum MAPISTATUS process_delprop(uint32_t proptag)
+static enum MAPISTATUS dump_delprop(uint32_t proptag, void *priv)
 {
 	printf("DelProps: 0x%08x (%s)\n", proptag, get_proptag_name(proptag));
 	return MAPI_E_SUCCESS;
 }
 
-static enum MAPISTATUS process_namedprop(uint32_t proptag, struct MAPINAMEID nameid)
+static enum MAPISTATUS dump_namedprop(uint32_t proptag, struct MAPINAMEID nameid, void *priv)
 {
 	TALLOC_CTX *mem_ctx;
 	mem_ctx = talloc_init("process_namedprop");
@@ -72,7 +186,7 @@ static enum MAPISTATUS process_namedprop(uint32_t proptag, struct MAPINAMEID nam
 	return MAPI_E_SUCCESS;
 }
 
-static enum MAPISTATUS process_property(struct SPropValue prop)
+static enum MAPISTATUS dump_property(struct SPropValue prop, void *priv)
 {
 	mapidump_SPropValue(prop, "\t");
 	return MAPI_E_SUCCESS;
@@ -96,6 +210,7 @@ int main(int argc, const char *argv[])
 	enum TransferStatus		fxTransferStatus;
 	DATA_BLOB			transferdata;
 	struct fx_parser_context	*parser;
+	struct mapistore_output_ctx	output_ctx;
 
 	uint32_t			count;
 	struct SPropTagArray		*SPropTagArray = NULL;
@@ -110,11 +225,12 @@ int main(int argc, const char *argv[])
 	char				*opt_profname = NULL;
 	const char			*opt_password = NULL;
 	uint32_t			opt_maxsize = 0;
+	const char			*opt_mapistore = NULL;
 	bool				opt_showprogress = false;
 	bool				opt_dumpdata = false;
 	const char			*opt_debug = NULL;
 
-	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_MAXDATA, OPT_SHOWPROGRESS, OPT_DEBUG, OPT_DUMPDATA};
+	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_MAXDATA, OPT_SHOWPROGRESS, OPT_MAPISTORE, OPT_DEBUG, OPT_DUMPDATA};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -123,6 +239,7 @@ int main(int argc, const char *argv[])
 		{"password", 'P', POPT_ARG_STRING, NULL, OPT_PASSWORD, "set the profile password", "PASSWORD"},
 		{"maxdata", 0, POPT_ARG_INT, NULL, OPT_MAXDATA, "the maximum transfer data size", "SIZE"},
 		{"showprogress", 0, POPT_ARG_NONE, NULL, OPT_SHOWPROGRESS, "enable progress display", NULL},
+		{"mapistore", 0, POPT_ARG_STRING, NULL, OPT_MAPISTORE, "serialise to mapistore", "FILESYSTEM_PATH"},
 		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUG, "set the debug level", "LEVEL"},
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the transfer data", NULL},
 		POPT_OPENCHANGE_VERSION
@@ -149,6 +266,9 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_SHOWPROGRESS:
 			opt_showprogress = true;
+			break;
+		case OPT_MAPISTORE:
+			opt_mapistore = poptGetOptArg(pc);
 			break;
 		case OPT_DEBUG:
 			opt_debug = poptGetOptArg(pc);
@@ -238,12 +358,46 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
-	parser = fxparser_init(mem_ctx);
-	if (opt_dumpdata) {
-		fxparser_set_marker_callback(parser, process_marker);
-		fxparser_set_delprop_callback(parser, process_delprop);
-		fxparser_set_namedprop_callback(parser, process_namedprop);
-		fxparser_set_property_callback(parser, process_property);
+	if (opt_mapistore) {
+		char *root_folder;
+		// TODO: check the path is valid / exists / can be opened, etc.
+		// TODO: maybe allow a URI instead of path.
+		output_ctx.root_fid = 0x0000000000010001;
+		output_ctx.current_id = output_ctx.root_fid;
+		root_folder = talloc_asprintf(mem_ctx, "fsocpf://%s/0x%016lx", opt_mapistore, output_ctx.root_fid);
+		parser = fxparser_init(mem_ctx, &output_ctx);
+		retval = mapistore_set_mapping_path(opt_mapistore);
+		if (retval != MAPISTORE_SUCCESS) {
+			mapi_errstr("mapistore_set_mapping_path", retval);
+			exit (1);
+		}
+
+		output_ctx.mstore_ctx = mapistore_init(mem_ctx, NULL);
+		if (!(output_ctx.mstore_ctx)) {
+			mapi_errstr("mapistore_init", retval);
+			exit (1);
+		}
+
+		retval = mapistore_add_context(output_ctx.mstore_ctx, root_folder, &(output_ctx.mapistore_context_id));
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("%s\n", mapistore_errstr(retval)));
+			exit (1);
+		}
+		
+		output_ctx.proplist = 0;
+
+		fxparser_set_marker_callback(parser, mapistore_marker);
+		fxparser_set_delprop_callback(parser, mapistore_delprop);
+		fxparser_set_namedprop_callback(parser, mapistore_namedprop);
+		fxparser_set_property_callback(parser, mapistore_property);
+	} else if (opt_dumpdata) {
+		parser = fxparser_init(mem_ctx, NULL);
+		fxparser_set_marker_callback(parser, dump_marker);
+		fxparser_set_delprop_callback(parser, dump_delprop);
+		fxparser_set_namedprop_callback(parser, dump_namedprop);
+		fxparser_set_property_callback(parser, dump_property);
+	} else {
+		parser = fxparser_init(mem_ctx, NULL);
 	}
 
 	do {
@@ -260,9 +414,23 @@ int main(int argc, const char *argv[])
 		}
 
 		fxparser_parse(parser, &transferdata);
-	} while (fxTransferStatus == TransferStatus_Partial);
+	} while ((fxTransferStatus == TransferStatus_Partial) || (fxTransferStatus == TransferStatus_NoRoom));
 
 	printf("total transfers: %i\n", transfers);
+
+	if (opt_mapistore) {
+		retval = mapistore_del_context(output_ctx.mstore_ctx, output_ctx.mapistore_context_id);
+		if (retval != MAPISTORE_SUCCESS) {
+			mapi_errstr("mapistore_del_context", retval);
+			exit (1);
+		}
+
+		retval = mapistore_release(output_ctx.mstore_ctx);
+		if (retval != MAPISTORE_SUCCESS) {
+			mapi_errstr("mapistore_release", retval);
+			exit (1);
+		}
+	}
 
 	talloc_free(parser);
 

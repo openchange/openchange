@@ -37,12 +37,13 @@ struct fx_parser_context {
 	uint32_t		length;
 	bool 			enough_data;
 	uint32_t		tag;
+	void			*priv;
 	
 	/* callbacks for parser actions */
-	enum MAPISTATUS (*op_marker)(uint32_t);
-	enum MAPISTATUS (*op_delprop)(uint32_t);
-	enum MAPISTATUS (*op_namedprop)(uint32_t, struct MAPINAMEID);
-	enum MAPISTATUS (*op_property)(struct SPropValue);
+	enum MAPISTATUS (*op_marker)(uint32_t, void *);
+	enum MAPISTATUS (*op_delprop)(uint32_t, void *);
+	enum MAPISTATUS (*op_namedprop)(uint32_t, struct MAPINAMEID, void *);
+	enum MAPISTATUS (*op_property)(struct SPropValue, void *);
 };
 
 #endif

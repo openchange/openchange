@@ -728,8 +728,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	 * append here property tags that can be fetched with
 	 * ResolveNames but shouldn't be included in ModifyRecipients rows
 	 */
-	request.properties = get_MAPITAGS_SRow(mem_ctx, &SRowSet->aRow[0]);
-	count = SRowSet->aRow[0].cValues - 1;
+	request.properties = get_MAPITAGS_SRow(mem_ctx, &SRowSet->aRow[0], &count);
  	request.prop_count = MAPITAGS_delete_entries(request.properties, count, 17,
 						     PR_ENTRYID,
 						     PR_DISPLAY_NAME,

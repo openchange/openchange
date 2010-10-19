@@ -183,7 +183,9 @@ _PUBLIC_ const void *get_SPropValue_SRow_data(struct SRow *aRow,
   Create a MAPITAGS array from a SRow entry
  */
 
-enum MAPITAGS *get_MAPITAGS_SRow(TALLOC_CTX *mem_ctx, struct SRow *aRow)
+enum MAPITAGS *get_MAPITAGS_SRow(TALLOC_CTX *mem_ctx, 
+				 struct SRow *aRow, 
+				 uint32_t *actual_count)
 {
 	enum MAPITAGS	*mapitags;
 	uint32_t	count, idx;
@@ -197,6 +199,8 @@ enum MAPITAGS *get_MAPITAGS_SRow(TALLOC_CTX *mem_ctx, struct SRow *aRow)
 		}
 	}
 	mapitags[idx] = 0;
+	*actual_count = idx;
+
 	return mapitags;
 }
 

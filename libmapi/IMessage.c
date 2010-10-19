@@ -729,7 +729,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	 * ResolveNames but shouldn't be included in ModifyRecipients rows
 	 */
 	request.properties = get_MAPITAGS_SRow(mem_ctx, &SRowSet->aRow[0], &count);
- 	request.prop_count = MAPITAGS_delete_entries(request.properties, count, 17,
+ 	request.prop_count = MAPITAGS_delete_entries(request.properties, count, 19,
 						     PR_ENTRYID,
 						     PR_DISPLAY_NAME,
 						     PR_DISPLAY_NAME_UNICODE,
@@ -746,7 +746,9 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 						     PR_ADDRTYPE_UNICODE,
 						     PR_ADDRTYPE_ERROR,
 						     PR_SEND_INTERNET_ENCODING,
-						     PR_SEND_INTERNET_ENCODING_ERROR);
+						     PR_SEND_INTERNET_ENCODING_ERROR,
+						     PR_SEND_RICH_INFO,
+						     PR_SEND_RICH_INFO_ERROR);
 	size += request.prop_count * sizeof(uint32_t);
 	request.cValues = SRowSet->cRows;
 	size += sizeof(uint16_t);

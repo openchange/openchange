@@ -765,7 +765,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 /**
    \details add a SPropValue structure to a SRow array
 
-   \param aRow pointer to the SRow array where SPropBalue should be
+   \param aRow pointer to the SRow array where spropvalue should be
    appended
    \param spropvalue reference to the SPropValue structure to add to
    aRow

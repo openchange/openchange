@@ -128,10 +128,9 @@ static bool pull_int64_t(struct fx_parser_context *parser, int64_t *val)
 	return true;
 }
 
-/* This is dubious */
-static bool pull_double(struct fx_parser_context *parser, int64_t *val)
+static bool pull_double(struct fx_parser_context *parser, double *val)
 {
-	return pull_int64_t(parser, val);
+	return pull_int64_t(parser, (int64_t *)val);
 }
 
 static bool pull_uint8_t(struct fx_parser_context *parser, uint8_t *val)
@@ -206,7 +205,7 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 	}
 	case PT_DOUBLE:
 	{
-		pull_double(parser, &(prop->value.dbl));
+		pull_double(parser, (double *)&(prop->value.dbl));
 		break;
 	}
 	case PT_BOOLEAN:

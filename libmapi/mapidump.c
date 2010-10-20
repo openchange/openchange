@@ -64,6 +64,15 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		data = get_SPropValue_data(&lpProp);
 		printf("%s%s: 0x%x\n", sep?sep:"", proptag, (*(const uint16_t *)data));
 		break;
+	case PT_LONG:
+	case PT_OBJECT:
+		data = get_SPropValue_data(&lpProp);
+		printf("%s%s: %u\n", sep?sep:"", proptag, (*(const uint32_t *)data));
+		break;
+	case PT_DOUBLE:
+		data = get_SPropValue_data(&lpProp);
+		printf("%s%s: %f\n", sep?sep:"", proptag, (*(const double *)data));
+		break;
 	case PT_BOOLEAN:
 		data = get_SPropValue_data(&lpProp);
 		printf("%s%s: 0x%x\n", sep?sep:"", proptag, (*(const uint8_t *)data));
@@ -93,11 +102,6 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	case PT_ERROR:
 		data = get_SPropValue_data(&lpProp);
 		printf("%s%s_ERROR: 0x%.8x\n", sep?sep:"", proptag, (*(const uint32_t *)data));
-		break;
-	case PT_LONG:
-	case PT_OBJECT:
-		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: %u\n", sep?sep:"", proptag, (*(const uint32_t *)data));
 		break;
 	case PT_CLSID:
 	{

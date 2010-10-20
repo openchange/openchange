@@ -598,6 +598,7 @@ int ocpf_add_filetime(const char *date, struct FILETIME *ft)
 	NTTIME		nt;
 	struct tm	tm;
 
+	memset(&tm, 0, sizeof(struct tm));
 	if (!strptime(date, DATE_FORMAT, &tm)) {
 		printf("Invalid data format: Tyyy-mm-dd hh:mm:ss (e.g.: T2008-03-06 23:30:00");
 		return OCPF_ERROR;

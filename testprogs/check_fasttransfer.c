@@ -49,11 +49,17 @@ struct poptOption popt_openchange_version[] = {
 #define DEFAULT_PROFDB  "%s/.openchange/profiles.ldb"
 
 /* These callbacks are for deserialising the fast transfer stream to a mapistore instance */
+struct parent_fid {
+        struct parent_fid	*prev;
+        struct parent_fid	*next;
+        uint64_t		fid;
+};
+
 struct mapistore_output_ctx {
 	struct mapistore_context	*mstore_ctx;
 	uint32_t			mapistore_context_id;
 	uint64_t			root_fid;
-	uint64_t			current_parent; /* probably needs to be a stack */
+	struct parent_fid		*parent_fids; /* stack */
 	uint64_t			current_id;
 	uint8_t				current_output_type;
 	struct SRow			*proplist; /* the properties on the "current" object */
@@ -64,19 +70,27 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 	struct mapistore_output_ctx *mapistore = priv;
 
 	if (mapistore->proplist) {
+		struct parent_fid *it;
+		printf("parent_fids: ");
+		for (it = mapistore->parent_fids; it->next; it = it->next) {
+			printf("0x%016lx,", it->fid);
+		}
+		printf("\n");
 		if (mapistore->current_id == mapistore->root_fid) {
 			/* This is the top level folder */
 			mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id,
 					   mapistore->root_fid, mapistore->current_output_type,
 					   mapistore->proplist);
 		} else if (mapistore->current_output_type == MAPISTORE_FOLDER) {
+                        struct parent_fid *element = talloc_zero(mapistore->mstore_ctx, struct parent_fid);
 			mapistore_mkdir(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					mapistore->current_parent, mapistore->current_id,
+					mapistore->parent_fids->fid, mapistore->current_id,
 					mapistore->proplist);
-			mapistore->current_parent = mapistore->current_id;
+                        element->fid = mapistore->current_id;
+			DLIST_ADD(mapistore->parent_fids, element);
 		} else {
 			mapistore_createmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					        mapistore->current_parent, mapistore->current_id);
+					        mapistore->parent_fids->fid, mapistore->current_id);
 			mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id,
 					   mapistore->current_id, mapistore->current_output_type,
 					   mapistore->proplist);
@@ -93,6 +107,7 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 	{
 		/* start collecting properties */
 		struct SPropValue one_prop;
+		struct parent_fid *element = talloc_zero(mapistore->mstore_ctx, struct parent_fid);
 		mapistore->proplist = talloc_zero(mapistore->mstore_ctx, struct SRow);
 		one_prop.ulPropTag = PR_FID;
 		one_prop.dwAlignPad = 0;
@@ -102,7 +117,9 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 		one_prop.value.l = MAPISTORE_FOLDER;
 		SRow_addprop(mapistore->proplist, one_prop);
 		mapistore->current_id = mapistore->root_fid;
-		mapistore->current_parent = mapistore->current_id;
+		mapistore->parent_fids = talloc_zero(mapistore->mstore_ctx, struct parent_fid);
+		element->fid = mapistore->current_id;
+		DLIST_ADD(mapistore->parent_fids, element);
 		mapistore->current_output_type = MAPISTORE_FOLDER;
 		break;
 	}
@@ -118,7 +135,10 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 	case PR_START_RECIP:
 	case PR_START_EMBED:
 	case PR_NEW_ATTACH:
+		break;
 	case PR_END_FOLDER:
+		DLIST_REMOVE(mapistore->parent_fids, mapistore->parent_fids);
+		break;
 	case PR_END_MESSAGE:
 	case PR_END_RECIP:
 	case PR_END_ATTACH:

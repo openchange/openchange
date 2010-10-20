@@ -199,10 +199,9 @@ int main(int argc, const char *argv[])
 	struct mapi_session		*session = NULL;
 	struct mapi_profile		*profile;
 	mapi_object_t			obj_store;
-	mapi_object_t			obj_inbox;
-	mapi_object_t			obj_table;
+	mapi_object_t			obj_folder;
 	mapi_object_t			obj_fx_context;
-	mapi_id_t			id_inbox;
+	mapi_id_t			id_folder;
 
 	uint16_t			progressCount;
 	uint16_t			totalStepCount;
@@ -211,14 +210,6 @@ int main(int argc, const char *argv[])
 	DATA_BLOB			transferdata;
 	struct fx_parser_context	*parser;
 	struct mapistore_output_ctx	output_ctx;
-
-	uint32_t			count;
-	struct SPropTagArray		*SPropTagArray = NULL;
-#if 0
-	unsigned int			i;
-	mapi_object_t			obj_message;
-	struct SRowSet			rowset;
-#endif
 	poptContext			pc;
 	int				opt;
 	const char			*opt_profdb = NULL;
@@ -323,8 +314,8 @@ int main(int argc, const char *argv[])
 
 	/* Open the default message store */
 	mapi_object_init(&obj_store);
-	mapi_object_init(&obj_inbox);
-	mapi_object_init(&obj_table);
+	mapi_object_init(&obj_folder);
+	/* mapi_object_init(&obj_table); */
 	mapi_object_init(&obj_fx_context);
 
 	retval = OpenMsgStore(session, &obj_store);
@@ -333,26 +324,20 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
-	/* Open Inbox */
-	retval = GetReceiveFolder(&obj_store, &id_inbox, NULL);
+	/* Open the top level folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderTopInformationStore);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("GetReceiveFolder", retval);
 		exit (1);
 	}
 
-	retval = OpenFolder(&obj_store, id_inbox, &obj_inbox);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("OpenFolder", retval);
 		exit (1);
 	}
 
-	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
-	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("GetContentsTable", retval);
-		exit (1);
-	}
-
-	retval = FXCopyFolder(&obj_inbox, FastTransferCopyFolder_CopySubfolders, FastTransfer_Unicode, &obj_fx_context);
+	retval = FXCopyFolder(&obj_folder, FastTransferCopyFolder_CopySubfolders, FastTransfer_Unicode, &obj_fx_context);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("FXCopyFolder", retval);
 		exit (1);
@@ -436,29 +421,7 @@ int main(int argc, const char *argv[])
 
 	mapi_object_release(&obj_fx_context);
 
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
-					  PR_FID,
-					  PR_MID);
-	retval = SetColumns(&obj_table, SPropTagArray);
-	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
-#if 0
-	// Do some CopyTo or CopyFolder here.
-	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
-		for (i = 0; i < rowset.cRows; i++) {
-			mapi_object_init(&obj_message);
-			retval = OpenMessage(&obj_store,
-					     rowset.aRow[i].lpProps[0].value.d,
-					     rowset.aRow[i].lpProps[1].value.d,
-					     &obj_message, 0);
-			printf("FID: 0x%016lx, MID: 0x%016lx\n", rowset.aRow[i].lpProps[0].value.d, rowset.aRow[i].lpProps[1].value.d);
-			// TODO: do some CopyMessages here
-			mapi_object_release(&obj_message);
-		}
-	}
-#endif
-	mapi_object_release(&obj_table);
-	mapi_object_release(&obj_inbox);
+	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);
 	MAPIUninitialize();
 

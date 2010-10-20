@@ -140,6 +140,9 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx,
 	case PT_LONG:
 		*value = talloc_memdup(ctx, (const void *)&lpProp.l, sizeof (uint32_t));
 		return OCPF_SUCCESS;
+	case PT_DOUBLE:
+		*value = talloc_memdup(ctx, (const void *)&lpProp.dbl, sizeof (uint64_t));
+		return OCPF_SUCCESS;
 	case PT_BOOLEAN:
 		*value = talloc_memdup(ctx, (const void *)&lpProp.b, sizeof (uint8_t));
 		return OCPF_SUCCESS;

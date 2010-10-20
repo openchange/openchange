@@ -40,6 +40,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 	uint16_t			s;
 	uint32_t			l;
 	uint64_t			d;
+	double				dbl;
 	char				*name;
 	char				*nameW;
 	char				*date;
@@ -55,6 +56,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 %token <s> SHORT
 %token <l> INTEGER
 %token <d> I8
+%token <dbl> DOUBLE
 %token <name> IDENTIFIER
 %token <name> STRING
 %token <nameW> UNICODE
@@ -81,6 +83,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 %token kw_PT_SHORT
 %token kw_PT_LONG
 %token kw_PT_I8
+%token kw_PT_DOUBLE
 %token kw_PT_SYSTIME
 %token kw_PT_MV_LONG
 %token kw_PT_MV_BINARY
@@ -226,6 +229,7 @@ propvalue	: STRING
 		| INTEGER	{ ctx->lpProp.l = $1; ctx->ltype = PT_LONG; }
 		| BOOLEAN	{ ctx->lpProp.b = $1; ctx->ltype = PT_BOOLEAN; }
 		| I8		{ ctx->lpProp.d = $1; ctx->ltype = PT_I8; }
+		| DOUBLE	{ ctx->lpProp.dbl = $1, ctx->ltype = PT_DOUBLE; }
 		| SYSTIME
 		{
 			ocpf_add_filetime($1, &ctx->lpProp.ft);
@@ -499,6 +503,11 @@ proptype	: kw_PT_STRING8
 		{
 			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
 			ctx->nprop.propType = PT_LONG; 
+		}
+		| kw_PT_DOUBLE
+		{
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_DOUBLE;
 		}
 		| kw_PT_I8
 		{

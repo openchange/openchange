@@ -79,6 +79,7 @@ PT_STRING8	{ return kw_PT_STRING8; }
 PT_UNICODE	{ return kw_PT_UNICODE; }
 PT_SHORT	{ return kw_PT_SHORT; }
 PT_LONG		{ return kw_PT_LONG; }
+PT_DOUBLE	{ return kw_PT_DOUBLE; }
 PT_I8		{ return kw_PT_I8; }
 PT_SYSTIME	{ return kw_PT_SYSTIME; }
 PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
@@ -260,6 +261,17 @@ B\"true\"|-?B\"false\" { char *y = yytext + 1;
 			   }
 			   return BOOLEAN;
 			}
+F-?[0-9]"."[0-9]+e[-+]?[0-9]+ {
+			struct ocpf_context *ctx = yyextra;
+			char *y = yytext + 1;
+			char *e;
+			yylval->dbl = strtod((const char *)y, &e);
+			if (e == y) {
+				error_message(ctx, "malformed constant (%s)", yytext);
+			} else {
+				return DOUBLE;
+			}
+		     }
 T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
 			  yylval->date = strdup((const char *)yytext + 1);
 			  return SYSTIME;

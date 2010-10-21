@@ -430,7 +430,6 @@ mvbin_content	: OBRACE binary_contents EBRACE COMMA
 											       ctx->bin.cb);
 			ctx->lpProp.MVbin.cValues += 1;
 
-			talloc_free(ctx->bin.lpb);
 			ctx->bin.cb = 0;
 		}
 		;

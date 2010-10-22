@@ -1346,23 +1346,23 @@ _PUBLIC_ void ndr_print_EcDoConnectEx(struct ndr_print *ndr, const char *name, i
 		ndr->depth++;
 		ndr_print_uint32(ndr, "picxr", *r->out.picxr);
 		ndr->depth--;
-		ndr_print_ptr(ndr, "szDNPrefix", r->out.szDNPrefix);
+		ndr_print_ptr(ndr, "szDNPrefix", r->out.szDisplayName);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "szDNPrefix", *r->out.szDNPrefix);
-		ndr->depth++;
-		if (*r->out.szDNPrefix) {
+		if (r->out.szDNPrefix && *r->out.szDNPrefix) {
+			ndr_print_ptr(ndr, "szDNPrefix", *r->out.szDNPrefix);
+			ndr->depth++;
 			ndr_print_string(ndr, "szDNPrefix", *r->out.szDNPrefix);
+			ndr->depth--;
 		}
-		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "szDisplayName", r->out.szDisplayName);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "szDisplayName", *r->out.szDisplayName);
-		ndr->depth++;
-		if (*r->out.szDisplayName) {
+		if (r->out.szDisplayName && *r->out.szDisplayName) {
+			ndr_print_ptr(ndr, "szDisplayName", *r->out.szDisplayName);
+			ndr->depth++;
 			ndr_print_string(ndr, "szDisplayName", *r->out.szDisplayName);
+			ndr->depth--;
 		}
-		ndr->depth--;
 		ndr->depth--;
 		ndr->print(ndr, "%s: ARRAY(%d)", "rgwServerVersion", (int)3);
 		ndr->depth++;
@@ -1388,7 +1388,12 @@ _PUBLIC_ void ndr_print_EcDoConnectEx(struct ndr_print *ndr, const char *name, i
 		ndr->depth++;
 		ndr_print_uint32(ndr, "pulTimeStamp", *r->out.pulTimeStamp);
 		ndr->depth--;
-		ndr_print_mapi2k7_AuxInfo(ndr, "rgbAuxOut", r->out.rgbAuxOut);
+		ndr_print_ptr(ndr, "rgbAuxOut", r->out.rgbAuxOut);
+		if (r->out.rgbAuxOut && r->out.pcbAuxOut) {
+			ndr->depth++;
+			ndr_print_mapi2k7_AuxInfo(ndr, "rgbAuxOut", r->out.rgbAuxOut);
+			ndr->depth--;
+		}
 		ndr_print_ptr(ndr, "pcbAuxOut", r->out.pcbAuxOut);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "pcbAuxOut", *r->out.pcbAuxOut);
@@ -1493,14 +1498,18 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 		ndr->depth++;
 		ndr_print_uint32(ndr, "pcbOut", *r->out.pcbOut);
 		ndr->depth--;
-		ndr->print(ndr, "%s: ARRAY(%d)", "rgbAuxOut", (int)*r->out.pcbAuxOut);
-		ndr->depth++;
-		for (cntr_rgbAuxOut_0=0;cntr_rgbAuxOut_0<*r->out.pcbAuxOut;cntr_rgbAuxOut_0++) {
-			char *idx_0=NULL;
-			if (asprintf(&idx_0, "[%d]", cntr_rgbAuxOut_0) != -1) {
-				ndr_print_uint32(ndr, "rgbAuxOut", r->out.rgbAuxOut[cntr_rgbAuxOut_0]);
-				free(idx_0);
+		if (r->out.rgbAuxOut && r->out.pcbAuxOut) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "rgbAuxOut", (int)*r->out.pcbAuxOut);
+			ndr->depth++;
+			for (cntr_rgbAuxOut_0=0;cntr_rgbAuxOut_0<*r->out.pcbAuxOut;cntr_rgbAuxOut_0++) {
+				char *idx_0=NULL;
+				if (asprintf(&idx_0, "[%d]", cntr_rgbAuxOut_0) != -1) {
+					ndr_print_uint32(ndr, "rgbAuxOut", r->out.rgbAuxOut[cntr_rgbAuxOut_0]);
+					free(idx_0);
+				}
 			}
+		} else {
+			ndr->print(ndr, "%s: NULL", "rgbAuxOut");
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "pcbAuxOut", r->out.pcbAuxOut);

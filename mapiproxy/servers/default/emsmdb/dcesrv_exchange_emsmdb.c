@@ -1022,12 +1022,14 @@ static void dcesrv_EcUnknown0xD(struct dcesrv_call_state *dce_call,
 
    \return MAPI_E_SUCCESS on success
  */
-static void dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_call,
-				      TALLOC_CTX *mem_ctx,
-				      struct EcDoAsyncConnectEx *r)
+static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_call,
+						 TALLOC_CTX *mem_ctx,
+						 struct EcDoAsyncConnectEx *r)
 {
 	DEBUG(3, ("exchange_emsmdb: EcDoAsyncConnectEx (0xe) not implemented\n"));
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+
+	return MAPI_E_SUCCESS;
 }
 
 

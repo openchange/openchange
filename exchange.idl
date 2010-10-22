@@ -4320,7 +4320,7 @@ System Attendant Private Interface
 
 	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
 		[case(AUX_TYPE_PERF_REQUESTID)]		AUX_PERF_REQUESTID		AUX_PERF_REQUESTID;
-		[case(AUX_TYPE_PERF_CLIENTDINFO)]	AUX_PERF_CLIENTINFO		AUX_PERF_CLIENTINFO;
+	  //		[case(AUX_TYPE_PERF_CLIENTDINFO)]	AUX_PERF_CLIENTINFO		AUX_PERF_CLIENTINFO;
 		[case(AUX_TYPE_PERF_SERVERINFO)]	AUX_PERF_SERVERINFO		AUX_PERF_SERVERINFO;
 		[case(AUX_TYPE_PERF_SESSIONINFO)]	AUX_PERF_SESSIONINFO		AUX_PERF_SESSIONINFO;
 		[case(AUX_TYPE_PERF_DEFMDB_SUCCESS)]	AUX_PERF_DEFMDB_SUCCESS		AUX_PERF_DEFMDB_SUCCESS;
@@ -4347,7 +4347,7 @@ System Attendant Private Interface
 
 	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
 		[case(AUX_TYPE_PERF_REQUESTID)]		AUX_PERF_REQUESTID		AUX_PERF_REQUESTID;
-		[case(AUX_TYPE_PERF_CLIENTDINFO)]	AUX_PERF_CLIENTINFO		AUX_PERF_CLIENTINFO;
+	  //	[case(AUX_TYPE_PERF_CLIENTDINFO)]	AUX_PERF_CLIENTINFO		AUX_PERF_CLIENTINFO;
 		[case(AUX_TYPE_PERF_SERVERINFO)]	AUX_PERF_SERVERINFO		AUX_PERF_SERVERINFO;
 		[case(AUX_TYPE_PERF_SESSIONINFO_2)]	AUX_PERF_SESSIONINFO_V2		AUX_PERF_SESSIONINFO_V2;	/* V2 specific */
 		[case(AUX_TYPE_PERF_DEFMDB_SUCCESS)]	AUX_PERF_DEFMDB_SUCCESS		AUX_PERF_DEFMDB_SUCCESS;
@@ -4443,6 +4443,36 @@ System Attendant Private Interface
 		[out, length_is(*pcbAuxOut), size_is(*pcbAuxOut)] uint32	rgbAuxOut[],
 		[in,out][range(0x0,0x1008)]			uint32		*pcbAuxOut,
 		[out]						uint32		*pulTransTime
+		);
+
+	/*****************/
+	/* Function 0xc  */
+	void EcUnknown0xC();
+
+	/*****************/
+	/* Function 0xd  */
+	void EcUnknown0xD();
+
+	/*****************/
+	/* Function 0xe  */
+	[public] MAPISTATUS EcDoAsyncConnectEx(
+		[in] policy_handle	*handle,
+		[out] policy_handle	*asyn_handle
+		);
+
+}
+
+[
+  uuid("5261574a-4572-206e-b268-6b199213b4e4"),
+  pointer_default(unique),
+  endpoint("ncacn_ip_tcp:"),
+  version(0.01)
+] interface exchange_async_emsmdb
+{
+	[public] MAPISTATUS EcDoAsyncWaitEx(
+		[in] policy_handle	*async_handle,
+		[in] uint32		ulFlagsIn,
+		[out] uint32		*pulFlagsOut
 		);
 }
 

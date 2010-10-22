@@ -147,7 +147,13 @@ void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRN
 void dcesrv_EcDoRpcExt(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDoRpcExt *);
 enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *, TALLOC_CTX *, struct EcDoConnectEx *);
 enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *, TALLOC_CTX *, struct EcDoRpcExt2 *);
+void dcesrv_EcUnknown0xC(struct dcesrv_call_state *, TALLOC_CTX *, struct EcUnknown0xC *);
+void dcesrv_EcUnknown0xD(struct dcesrv_call_state *, TALLOC_CTX *, struct EcUnknown0xD *);
+void dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *, TALLOC_CTX *, struct EcDoAsyncConnectEx *);
 void dcesrv_unknown_dummy(struct dcesrv_call_state *, TALLOC_CTX *,struct unknown_dummy *);
+
+/* AsyncEMSMDB protocol function */
+enum MAPISTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *, TALLOC_CTX *, struct EcDoAsyncWaitEx *);
 
 __END_DECLS
 

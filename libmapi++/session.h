@@ -84,6 +84,7 @@ class session {
 		 */
 		void login(const std::string& profile_name = "", const std::string& password = "") throw(mapi_exception); 
 
+#if 0
 		/**
 		 * \brief The path to the default %profile database
 		 *
@@ -91,7 +92,7 @@ class session {
 		 * but might be useful under some circumstances.
 		 */
 		static std::string get_default_profile_path();
-
+#endif
 		/**
 		 * \brief The name of the profile that is in use
 		 *
@@ -132,15 +133,16 @@ class session {
 
 	private:
 		mapi_session		*m_session;
+		struct mapi_context	*m_mapi_context;
 		TALLOC_CTX		*m_memory_ctx;
 		message_store		*m_message_store;
 		std::string		m_profile_name;
 
 		void uninitialize() throw()
 		{
-			talloc_free(m_memory_ctx);
-			MAPIUninitialize();
+			MAPIUninitialize(m_mapi_context);
 			delete m_message_store;
+			talloc_free(m_memory_ctx);
 		}
 };
 

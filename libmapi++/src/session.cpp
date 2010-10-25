@@ -24,18 +24,6 @@
 
 namespace libmapipp {
 
-inline std::string session::get_default_profile_path()
-{
-	const char* profile_path = getenv("HOME");
-	std::string retval = "";
-	if (profile_path) {
-		retval = profile_path;
-		retval += "/.openchange/profiles.ldb";
-	}
-
-	return retval;
-}
-
 session::session(const std::string& profiledb, bool debug) throw(std::runtime_error, mapi_exception) 
 : m_session(NULL), m_memory_ctx(talloc_named(NULL, 0, "libmapi++")), m_message_store(new message_store(*this))
 {
@@ -56,13 +44,15 @@ session::session(const std::string& profiledb, bool debug) throw(std::runtime_er
 		profile_path = profiledb;
 	}
 
-	if (MAPIInitialize(profile_path.c_str()) != MAPI_E_SUCCESS) {
+	if (MAPIInitialize(&m_mapi_context, profile_path.c_str()) != MAPI_E_SUCCESS) {
 		talloc_free(m_memory_ctx);
 		delete m_message_store;
 		throw mapi_exception(GetLastError(), "session::session : MAPIInitialize");
 	}
 
-	if (debug) global_mapi_ctx->dumpdata = true;
+	if (debug) {
+		m_mapi_context->dumpdata = true;
+	}
 }
 
 void session::login(const std::string& profile_name, const std::string& password) throw (mapi_exception)
@@ -70,14 +60,14 @@ void session::login(const std::string& profile_name, const std::string& password
 	m_profile_name = profile_name;
 	if (m_profile_name == "") { // if profile is not set, try to get default profile
 		try {
-			m_profile_name = profile::get_default_profile();
+			m_profile_name = profile().get_default_profile();
 		} catch(mapi_exception e) {
 			uninitialize();
 			throw;
 		}
 	}
 
-	if (MapiLogonEx(&m_session, m_profile_name.c_str(), (password != "") ? password.c_str() : 0 ) != MAPI_E_SUCCESS) {
+	if (MapiLogonEx(m_mapi_context, &m_session, m_profile_name.c_str(), (password != "") ? password.c_str() : 0 ) != MAPI_E_SUCCESS) {
 		uninitialize();
 		throw mapi_exception(GetLastError(), "session::session : MapiLogonEx");
 	}

@@ -24,6 +24,18 @@
 
 #include <libmapi++/clibmapi.h>
 
+inline std::string get_default_profile_path()
+{
+	const char* profile_path = getenv("HOME");
+	std::string retval = "";
+	if (profile_path) {
+		retval = profile_path;
+		retval += "/.openchange/profiles.ldb";
+	}
+
+	return retval;
+}
+
 namespace libmapipp {
 
 /**
@@ -37,6 +49,37 @@ namespace libmapipp {
 class profile 
 {
 	public:
+		/**
+		 * \brief Constructor
+		 *
+		 * \param profiledb An absolute path specifying the location of the
+		 * %profile database. If not specified (or ""  is specified) the default
+		 * location will be used (~/.openchange.profiles.ldb).
+		 *
+		 * \param debug Whether to output debug information to stdout
+		 */
+		explicit profile(const std::string& profiledb = "")  throw(std::runtime_error, mapi_exception)
+		: m_memory_ctx(talloc_named(NULL, 0, "libmapi++"))
+		{
+			std::string profile_path;
+
+			// If profile is not provided, attempt to get it from default location
+			// (~/.openchange/profiles.ldb)
+			if (profiledb == "") {
+				profile_path = get_default_profile_path();
+				if (profile_path == "") {
+					talloc_free(m_memory_ctx);
+					throw std::runtime_error("libmapipp::session(): Failed to get $HOME env variable");
+				}
+			} else {
+				profile_path = profiledb;
+			}
+
+			if (MAPIInitialize(&m_mapi_context, profile_path.c_str()) != MAPI_E_SUCCESS) {
+				talloc_free(m_memory_ctx);
+				throw mapi_exception(GetLastError(), "session::session : MAPIInitialize");
+			}
+		}
 
 		/* Create an new profile database
 		 *
@@ -44,7 +87,7 @@ class profile
 		 * \param ldif_path the absolute path to the LDIF information to use for initial setup
 		 *
 		 */
-		bool static create_profile_store(const char* profiledb, const char* ldif_path = NULL)
+		bool create_profile_store(const char* profiledb, const char* ldif_path = NULL)
 		{
                         if (ldif_path == NULL)
                             ldif_path = ::mapi_profile_get_ldif_path();
@@ -58,7 +101,7 @@ class profile
 		 * \param ldif_path the absolute path to the LDIF information to use for initial setup
 		 *
 		 */
-		bool static create_profile_store(const std::string& profiledb, const std::string& ldif_path)
+		bool create_profile_store(const std::string& profiledb, const std::string& ldif_path)
 		{
 			return create_profile_store(profiledb.c_str(), ldif_path.c_str());
 		}
@@ -68,9 +111,9 @@ class profile
 		 *
 		 * \param profname the name of the profile to make default
 		 */
-		bool static set_default(const char* profname)
+		bool set_default(const char* profname)
 		{
-			return (SetDefaultProfile(profname) == MAPI_E_SUCCESS);
+			return (SetDefaultProfile(m_mapi_context, profname) == MAPI_E_SUCCESS);
 		}
 
 		/**
@@ -78,7 +121,7 @@ class profile
 		 *
 		 * \param profname the name of the profile to make default
 		 */
-		bool static set_default(const std::string& profname)
+		bool set_default(const std::string& profname)
 		{
 			return set_default(profname.c_str());
 		}
@@ -88,12 +131,11 @@ class profile
 		 *
 		 * \return the name of the default profile
 		 */
-		std::string static get_default_profile() throw (mapi_exception)
+		std::string get_default_profile() throw (mapi_exception)
 		{
 			char* profname = NULL;
-			if (GetDefaultProfile(&profname) != MAPI_E_SUCCESS)
+			if (GetDefaultProfile(m_mapi_context, &profname) != MAPI_E_SUCCESS)
 				throw mapi_exception(GetLastError(), "profile::get_default_profile : GetDefaultProfile()");
-
 			return std::string(profname);
 		}
 
@@ -106,6 +148,8 @@ class profile
 
 	private:
 		mapi_profile	*m_profile;
+		struct mapi_context	*m_mapi_context;
+		TALLOC_CTX		*m_memory_ctx;
 };
 
 } // namespace libmapipp

@@ -208,6 +208,39 @@ static bool mapitest_suite_test_is_applicable(struct mapitest *mt, struct mapite
 	return true;
 }
 
+static bool run_test(struct mapitest *mt, struct mapitest_suite *suite, struct mapitest_test *el)
+{
+	bool			(*fn)(struct mapitest *);
+	bool			ret = false;
+
+	if (!mapitest_suite_test_is_applicable(mt, el)) {
+		mapitest_stat_add_skipped_test(suite, el->name, el->flags);
+	} else {
+		errno = 0;
+		mapitest_print_test_title_start(mt, el->name);
+		
+		fn = el->fn;
+		ret = fn(mt);
+
+		if (el->flags & ExpectedFail) {
+			if (ret) {
+				mapitest_stat_add_result(suite, el->name, UnexpectedPass);
+			} else {
+				mapitest_stat_add_result(suite, el->name, ExpectedFail);
+			}
+		} else {
+			if (ret) {
+				mapitest_stat_add_result(suite, el->name, Pass);
+			} else {
+				mapitest_stat_add_result(suite, el->name, Fail);
+			}
+		}
+		mapitest_print_test_title_end(mt);
+		mapitest_print_test_result(mt, el->name, ret);
+	}
+	return ret;
+}
+
 /**
    \details run a test from a suite given its name
    
@@ -223,24 +256,12 @@ _PUBLIC_ bool mapitest_suite_run_test(struct mapitest *mt,
 {
 	struct mapitest_test	*el;
 	bool			ret;
-	bool			(*fn)(struct mapitest *);
 
 	if (!suite || !name) return false;
 
 	for (el = suite->tests; el; el = el->next) {
 		if (!strcmp(el->name, name)) {
-			if (!mapitest_suite_test_is_applicable(mt, el)) {
-				mapitest_stat_add_skipped_test(suite, el->name, el->flags);
-				return true;
-			}
-			errno = 0;
-			mapitest_print_test_title_start(mt, el->name);
-			fn = el->fn;
-			ret = fn(mt);
-
-			mapitest_stat_add_result(suite, el->name, ret);
-			mapitest_print_test_title_end(mt);
-			mapitest_print_test_result(mt, el->name, ret);
+			ret = run_test(mt, suite, el);
 			return ret;
 		}
 	}
@@ -343,6 +364,14 @@ _PUBLIC_ bool mapitest_run_test(struct mapitest *mt, const char *name)
 	return ret;
 }
 
+static void run_tests_in_suite(struct mapitest *mt, struct mapitest_suite *suite)
+{
+	struct mapitest_test	*el;
+
+	for (el = suite->tests; el; el = el->next) {
+		run_test(mt, suite, el);
+	}
+}
 
 /**
    \details all tests from all suites
@@ -351,35 +380,18 @@ _PUBLIC_ bool mapitest_run_test(struct mapitest *mt, const char *name)
 
    \return true on success, otherwise -1
  */
-_PUBLIC_ bool mapitest_run_all(struct mapitest *mt)
+_PUBLIC_ void mapitest_run_all(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite;
-	struct mapitest_test	*el;
-	bool			(*fn)(struct mapitest *);
-	bool			ret = false;
+
 
 	for (suite = mt->mapi_suite; suite; suite = suite->next) {
 		if ((mt->online == suite->online) || (suite->online == false)) {
 			mapitest_print_module_title_start(mt, suite->name);
 
-			for (el = suite->tests; el; el = el->next) {
-				if (!mapitest_suite_test_is_applicable(mt, el)) {
-					mapitest_stat_add_skipped_test(suite, el->name, el->flags);
-				} else {
-					errno = 0;
-					mapitest_print_test_title_start(mt, el->name);
-					
-					fn = el->fn;
-					ret = fn(mt);
-					
-					mapitest_stat_add_result(suite, el->name, ret);
-					mapitest_print_test_title_end(mt);
-					mapitest_print_test_result(mt, el->name, ret);
-				}
-			}
+			run_tests_in_suite(mt, suite);
 
 			mapitest_print_module_title_end(mt);
 		}
 	}
-	return ret;
 }

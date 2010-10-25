@@ -25,7 +25,7 @@
 namespace libmapipp {
 
 session::session(const std::string& profiledb, bool debug) throw(std::runtime_error, mapi_exception) 
-: m_session(NULL), m_memory_ctx(talloc_named(NULL, 0, "libmapi++")), m_message_store(new message_store(*this))
+: m_session(NULL), m_mapi_context(0), m_memory_ctx(talloc_named(NULL, 0, "libmapipp-session")), m_message_store(new message_store(*this))
 {
 	mapi_exception::fill_status_map();
 

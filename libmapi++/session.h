@@ -140,8 +140,10 @@ class session {
 
 		void uninitialize() throw()
 		{
-			MAPIUninitialize(m_mapi_context);
 			delete m_message_store;
+			if (m_mapi_context) {
+				MAPIUninitialize(m_mapi_context);
+			}
 			talloc_free(m_memory_ctx);
 		}
 };

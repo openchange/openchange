@@ -59,7 +59,7 @@ class profile
 		 * \param debug Whether to output debug information to stdout
 		 */
 		explicit profile(const std::string& profiledb = "")  throw(std::runtime_error, mapi_exception)
-		: m_memory_ctx(talloc_named(NULL, 0, "libmapi++"))
+		:  m_profile(0), m_mapi_context(0), m_memory_ctx(talloc_named(NULL, 0, "libmapipp-profile"))
 		{
 			std::string profile_path;
 
@@ -141,13 +141,18 @@ class profile
 
 		~profile()
 		{
-			if (m_profile)
+			if (m_profile) {
 				::ShutDown(m_profile);
+			}
+			if (m_mapi_context) {
+				MAPIUninitialize(m_mapi_context);
+			}
+			talloc_free(m_memory_ctx);
 		}
 
 
 	private:
-		mapi_profile	*m_profile;
+		mapi_profile		*m_profile;
 		struct mapi_context	*m_mapi_context;
 		TALLOC_CTX		*m_memory_ctx;
 };

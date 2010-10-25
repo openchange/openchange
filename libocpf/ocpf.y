@@ -126,7 +126,7 @@ Type		:
 			  ocpf_type_add(ctx,$2);
 				ctx->typeset++;
 			} else {
-				error_message(ctx, "%s", "duplicated TYPE\n");
+				ocpf_error_message(ctx, "%s", "duplicated TYPE\n");
 				return -1;
 			}
 		}
@@ -139,7 +139,7 @@ Folder		:
 				ocpf_folder_add(ctx, $2, 0, NULL);
 				ctx->folderset = true;
 			} else {
-				error_message(ctx, "%s", "duplicated FOLDER\n");
+				ocpf_error_message(ctx, "%s", "duplicated FOLDER\n");
 			}
 		}
 		| kw_FOLDER I8
@@ -148,7 +148,7 @@ Folder		:
 				ocpf_folder_add(ctx, NULL, $2, NULL);
 				ctx->folderset = true;
 			} else {
-				error_message(ctx,"%s", "duplicated FOLDER\n");
+				ocpf_error_message(ctx,"%s", "duplicated FOLDER\n");
 			}
 		}
 		| kw_FOLDER VAR
@@ -157,7 +157,7 @@ Folder		:
 				ocpf_folder_add(ctx, NULL, 0, $2);
 				ctx->folderset = true;
 			} else {
-				error_message(ctx,"%s", "duplicated FOLDER\n");
+				ocpf_error_message(ctx,"%s", "duplicated FOLDER\n");
 			}
 		}
 		;
@@ -394,7 +394,7 @@ binary_contents: | binary_contents binary_content
 binary_content	: UINT8
 		{
 			if ($1 > 0xFF) {
-				error_message(ctx,"Invalid Binary constant: 0x%x > 0xFF\n", $1);
+				ocpf_error_message(ctx,"Invalid Binary constant: 0x%x > 0xFF\n", $1);
 			}
 
 			if (!ctx->bin.cb) {

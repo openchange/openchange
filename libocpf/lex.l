@@ -267,7 +267,7 @@ F-?[0-9]"."[0-9]+e[-+]?[0-9]+ {
 			char *e;
 			yylval->dbl = strtod((const char *)y, &e);
 			if (e == y) {
-				error_message(ctx, "malformed constant (%s)", yytext);
+				ocpf_error_message(ctx, "malformed constant (%s)", yytext);
 			} else {
 				return DOUBLE;
 			}
@@ -281,7 +281,7 @@ T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
 			char *e, *y = yytext;
 			yylval->i = strtoul((const char *)y, &e, 0);
 			if (e == y) 
-				error_message(ctx, "malformed constant (%s)", yytext);
+				ocpf_error_message(ctx, "malformed constant (%s)", yytext);
 			else
 				return UINT8;
 			}
@@ -290,7 +290,7 @@ T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
 			char *e, *y = yytext;
 			yylval->l = strtoul((const char *)y, &e, 0);
 			if (e == y)
-				error_message(ctx, "malformed constant (%s)", yytext);
+				ocpf_error_message(ctx, "malformed constant (%s)", yytext);
 			else
 				return INTEGER;
 			
@@ -301,7 +301,7 @@ S0x[0-9A-Fa-f]+|-S[0-9]+ {
 			   y = (yytext[0] == 'S') ? yytext + 1 : yytext;
 			   yylval->s = strtoul((const char *)y, &e, 0);
 			   if (e == y)
-				error_message(ctx, "malformed constant (%s)", yytext);
+				ocpf_error_message(ctx, "malformed constant (%s)", yytext);
 			   else
 				return SHORT;
 			 }
@@ -312,7 +312,7 @@ L0x[0-9A-Fa-f]+|-?[0-9]+ {
 			  y = (yytext[0] == 'L') ? yytext + 1 : yytext;
 			  yylval->l = strtoul((const char *)y, &e, 0);
 			  if(e == y) 
-			    error_message(ctx, "malformed constant (%s)", yytext); 
+			    ocpf_error_message(ctx, "malformed constant (%s)", yytext); 
 			  else
 			    return INTEGER;
 			}
@@ -321,7 +321,7 @@ D0x[0-9A-Fa-f]+		{
 			  char *e, *y = yytext + 1;
 			  yylval->d = strtoull((const char *)y, &e, 0);
 			  if(e == y) 
-			    error_message(ctx, "malformed constant (%s)", yytext); 
+			    ocpf_error_message(ctx, "malformed constant (%s)", yytext); 
 			  else
 			    return I8;
 
@@ -337,11 +337,11 @@ D0x[0-9A-Fa-f]+		{
 		}
 .      		{ 
 		struct ocpf_context *ctx = yyextra;
-		error_message(ctx, "Ignoring char(%c)\n", *yytext); 
+		ocpf_error_message(ctx, "Ignoring char(%c)\n", *yytext); 
 		}
 %%
 
-void error_message(struct ocpf_context *ctx, const char *format, ...)
+void ocpf_error_message(struct ocpf_context *ctx, const char *format, ...)
 {
 	va_list	args;
 
@@ -356,6 +356,6 @@ void error_message(struct ocpf_context *ctx, const char *format, ...)
 static void
 unterminated(struct ocpf_context *ctx, const char *type, unsigned int start_lineno)
 {
-    error_message(ctx, "unterminated %s, possibly started on line %d\n", type, start_lineno);
+    ocpf_error_message(ctx, "unterminated %s, possibly started on line %d\n", type, start_lineno);
     fflush(0);
 }

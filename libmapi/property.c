@@ -455,7 +455,7 @@ _PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)
 	case PT_STRING8:
 		return strlen(lpProp->value.lpszA) + 1;
 	case PT_UNICODE:
-		return strlen(lpProp->value.lpszW) * 2 + 2;
+		return get_utf8_utf16_conv_length(lpProp->value.lpszW);
 	case PT_SYSTIME:
 		return sizeof (struct FILETIME);
 	case PT_BINARY:
@@ -504,7 +504,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
 	case PT_UNICODE:
 		mapi_sprop->value.lpszW = sprop->value.lpszW;
 		if (!mapi_sprop->value.lpszW) return 0;
-		return get_utf8_utf16_conv_length(mapi_sprop->value.lpszW);
+		return (get_utf8_utf16_conv_length(mapi_sprop->value.lpszW));
 	case PT_SYSTIME:
 		mapi_sprop->value.ft.dwLowDateTime = sprop->value.ft.dwLowDateTime;
 		mapi_sprop->value.ft.dwHighDateTime = sprop->value.ft.dwHighDateTime;
@@ -638,7 +638,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 	case PT_UNICODE:
 		sprop->value.lpszW = mapi_sprop->value.lpszW;
 		if (!sprop->value.lpszW) return 0;
-		return (strlen(mapi_sprop->value.lpszW) * 2 + 2);
+		return (get_utf8_utf16_conv_length(mapi_sprop->value.lpszW));
 	case PT_SYSTIME:
 		sprop->value.ft.dwLowDateTime = mapi_sprop->value.ft.dwLowDateTime;
 		sprop->value.ft.dwHighDateTime = mapi_sprop->value.ft.dwHighDateTime;

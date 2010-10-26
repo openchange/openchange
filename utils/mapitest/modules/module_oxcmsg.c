@@ -1110,8 +1110,9 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
+	/* 0x0400 is mfEverRead - the message has been read at least once. We see this on Exchange 2010 */
 	for (i = 0; i < 10; ++i) {
-		if (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1])) != 0x0) {
+		if ((*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1])) & ~0x0400) != 0x0) {
 			mapitest_print(mt, "* %-35s: unexpected flag at %i 0x%x\n", "QueryRows", i,
 				       (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1]))));
 			ret = false;
@@ -1137,13 +1138,13 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 		goto cleanup;
 	}
 	for (i = 0; i < 10; i+=2) {
-		if (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1])) != MSGFLAG_READ) {
+		if ((*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1])) & ~0x0400) != MSGFLAG_READ) {
 			mapitest_print(mt, "* %-35s: unexpected flag (0) at %i 0x%x\n", "QueryRows", i,
 				       (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1]))));
 			ret = false;
 			goto cleanup;
 		}
-		if (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i+1].lpProps[1])) != 0x0) {
+		if ((*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i+1].lpProps[1])) & ~0x0400) != 0x0) {
 			mapitest_print(mt, "* %-35s: unexpected flag (1) at %i 0x%x\n", "QueryRows", i,
 				       (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i+1].lpProps[1]))));
 			ret = false;
@@ -1160,8 +1161,8 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 		goto cleanup;
 	}
 	for (i = 0; i < 10; ++i) {
-		if (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1])) != 0x0) {
-			mapitest_print(mt, "* %-35s: unexpected flag at %i 0x%x\n", "QueryRows", i,
+		if ((*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1])) & ~0x0400) != 0x0) {
+			mapitest_print(mt, "* %-35s: unexpected flag (3) at %i 0x%x\n", "QueryRows", i,
 				       (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[i].lpProps[1]))));
 			ret = false;
 			goto cleanup;

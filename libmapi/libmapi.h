@@ -406,7 +406,7 @@ enum MAPISTATUS		GetTransportFolder(mapi_object_t *, mapi_id_t *);
 enum MAPISTATUS		GetOwningServers(mapi_object_t *, mapi_object_t *, uint16_t *, uint16_t *, char **);
 enum MAPISTATUS		GetStoreState(mapi_object_t *, uint32_t *);
 enum MAPISTATUS		GetOutboxFolder(mapi_object_t *, mapi_id_t *);
-enum MAPISTATUS		TransportNewMail(mapi_object_t *, mapi_object_t *,const char *, uint32_t);
+enum MAPISTATUS		TransportNewMail(mapi_object_t *, mapi_object_t *, mapi_object_t *,const char *, uint32_t);
 
 /* The following public definitions come from libmapi/IStoreFolder.c */
 enum MAPISTATUS		OpenMessage(mapi_object_t *, mapi_id_t, mapi_id_t, mapi_object_t *, uint8_t);

@@ -883,6 +883,7 @@ _PUBLIC_ enum MAPISTATUS GetOutboxFolder(mapi_object_t *obj_store,
 /**
    \details Notify the store of a new message to be processed
 
+   \param obj_store the store that the message is in (logon object)
    \param obj_folder the folder that the message is in
    \param obj_msg the message to be processed
    \param MessageClass the message class of the message to be processed
@@ -899,7 +900,8 @@ _PUBLIC_ enum MAPISTATUS GetOutboxFolder(mapi_object_t *obj_store,
 
    \sa GetReceiveFolder, GetReceiveFolderTable
  */
-_PUBLIC_ enum MAPISTATUS TransportNewMail(mapi_object_t *obj_folder, mapi_object_t *obj_msg,
+_PUBLIC_ enum MAPISTATUS TransportNewMail(mapi_object_t *obj_store, mapi_object_t *obj_folder,
+					  mapi_object_t *obj_msg,
 					  const char *MessageClass, uint32_t MessageFlags)
 {
 	struct mapi_request		*mapi_request;
@@ -915,6 +917,7 @@ _PUBLIC_ enum MAPISTATUS TransportNewMail(mapi_object_t *obj_folder, mapi_object
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_msg, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!MessageClass, MAPI_E_INVALID_PARAMETER, NULL);
@@ -951,7 +954,7 @@ _PUBLIC_ enum MAPISTATUS TransportNewMail(mapi_object_t *obj_folder, mapi_object
 	mapi_request->length = size;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
-	mapi_request->handles[0] = mapi_object_get_handle(obj_folder);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);

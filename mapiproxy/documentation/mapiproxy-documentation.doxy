@@ -1190,9 +1190,9 @@ Samba does. It only extends existing users from the SAM database and
 add attributes required to access OpenChange server. The underlying
 concept is that system administrators may want to give access to Samba
 shares to a specific user but do not want him to access OpenChange
-server.<strong>The user must have been created using <i>samba4 newuser
-script</i></strong> prior you run this command. Run under the root
-account:
+server.<strong>The user must have been created using the Samba4 
+<i>samba-tool newuser</i> script</strong> before you run this command.
+Run under the root account:
 \code
 # ./setup/openchange_newuser --create <username>
 \endcode

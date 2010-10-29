@@ -34,6 +34,17 @@
    \brief Fast Transfer stream parser
  */
 
+static bool pull_uint8_t(struct fx_parser_context *parser, uint8_t *val)
+{
+	if ((parser->idx) + 1 > parser->data.length) {
+		val = 0;
+		return false;
+	}
+	*val = parser->data.data[parser->idx];
+	(parser->idx)++;
+	return true;
+}
+
 static bool pull_uint16_t(struct fx_parser_context *parser, uint16_t *val)
 {
 	if ((parser->idx) + 2 > parser->data.length) {
@@ -74,16 +85,14 @@ static bool pull_tag(struct fx_parser_context *parser)
 	return result;
 }
 
-static bool pull_uint8_data(struct fx_parser_context *parser, uint32_t numbytes, uint8_t **data_read)
+static bool pull_uint8_data(struct fx_parser_context *parser, uint8_t **data_read)
 {
-	if ((parser->idx) + numbytes > parser->data.length) {
-		// printf("insufficient data in pull_uint8_t (%i requested, %zi available)\n", numbytes, (parser->data.length-parser->idx));
-		return false;
+	for (; parser->offset < parser->length; ++(parser->offset)) {
+		/* printf("parser %i of %i\n", parser->offset, parser->length); */
+		if (!pull_uint8_t(parser, (uint8_t*)&((*data_read)[parser->offset]))) {
+			return false;
+		}
 	}
-
-	*data_read = talloc_array(parser->mem_ctx, uint8_t, numbytes);
-	memcpy(*data_read, &(parser->data.data[parser->idx]), numbytes);
-	parser->idx += numbytes;
 	return true;
 }
 
@@ -131,17 +140,6 @@ static bool pull_int64_t(struct fx_parser_context *parser, int64_t *val)
 static bool pull_double(struct fx_parser_context *parser, double *val)
 {
 	return pull_int64_t(parser, (int64_t *)val);
-}
-
-static bool pull_uint8_t(struct fx_parser_context *parser, uint8_t *val)
-{
-	if ((parser->idx) + 1 > parser->data.length) {
-		val = 0;
-		return false;
-	}
-	*val = parser->data.data[parser->idx];
-	(parser->idx)++;
-	return true;
 }
 
 static bool pull_guid(struct fx_parser_context *parser, struct GUID *guid)
@@ -198,6 +196,11 @@ static bool fetch_ucs2_nullterminated(struct fx_parser_context *parser, smb_ucs2
 static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *buf, struct SPropValue *prop, uint32_t *len)
 {
 	switch(prop->ulPropTag & 0xFFFF) {
+	case PT_SHORT:
+	{
+		pull_uint16_t(parser, &(prop->value.i));
+		break;
+	}
 	case PT_LONG:
 	{
 		pull_uint32_t(parser, &(prop->value.l));
@@ -224,14 +227,14 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 	}
 	case PT_STRING8:
 	{
-		int i = 0;
 		char *ptr = 0;
 		if (parser->length == 0) {
 			pull_uint32_t(parser, &(parser->length));
+			parser->offset = 0;
 			prop->value.lpszA = talloc_array(parser->mem_ctx, char, parser->length + 1);
 		}
-		for (i = 0; i < parser->length; ++i) {
-			if (!pull_uint8_t(parser, (uint8_t*)&(prop->value.lpszA[i]))) {
+		for (; parser->offset < parser->length; ++(parser->offset)) {
+			if (!pull_uint8_t(parser, (uint8_t*)&(prop->value.lpszA[parser->offset]))) {
 				return false;
 			}
 		}
@@ -242,10 +245,13 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 	}
 	case PT_UNICODE:
 	{
+		/* TODO: rethink this to handle split buffers */
+		smb_ucs2_t *ucs2_data = NULL;
 		if (parser->length == 0) {
 			pull_uint32_t(parser, &(parser->length));
+			ucs2_data = talloc_array(parser->mem_ctx, smb_ucs2_t, parser->length/2);
+			parser->offset = 0;
 		}
-		smb_ucs2_t *ucs2_data = NULL;
 		char *utf8_data = NULL;
 		size_t utf8_len;
 		if (!fetch_ucs2_data(parser, parser->length, &ucs2_data)) {
@@ -272,13 +278,16 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 		}
 		break;
 	}
+	case PT_SVREID:
 	case PT_BINARY:
 	{
 		if (parser->length == 0) {
 			  pull_uint32_t(parser, &(prop->value.bin.cb));
 			  parser->length = prop->value.bin.cb;
+			  prop->value.bin.lpb = talloc_array(parser->mem_ctx, uint8_t, parser->length + 1);
+			  parser->offset = 0;
 		}
-		if (!pull_uint8_data(parser, prop->value.bin.cb, &(prop->value.bin.lpb))) {
+		if (!pull_uint8_data(parser, &(prop->value.bin.lpb))) {
 			return false;
 		}
 		break;
@@ -290,12 +299,16 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 	}
 	case PT_MV_BINARY:
 	{
+		/* TODO: handle partial count / length */
 		uint32_t        i;
 		pull_uint32_t(parser, &(prop->value.MVbin.cValues));
 		prop->value.MVbin.lpbin = talloc_array(parser->mem_ctx, struct Binary_r, prop->value.MVbin.cValues);
 		for (i = 0; i < prop->value.MVbin.cValues; i++) {
 			pull_uint32_t(parser, &(prop->value.MVbin.lpbin[i].cb));
-			if (!pull_uint8_data(parser, prop->value.MVbin.lpbin[i].cb, &(prop->value.MVbin.lpbin[i].lpb))) {
+			parser->length = prop->value.MVbin.lpbin[i].cb;
+			prop->value.MVbin.lpbin[i].lpb = talloc_array(parser->mem_ctx, uint8_t, parser->length + 1);
+			parser->offset = 0;
+			if (!pull_uint8_data(parser, &(prop->value.MVbin.lpbin[i].lpb))) {
 				return false;
 			}
 		}

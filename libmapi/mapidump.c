@@ -113,10 +113,15 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		printf("%x\n", ab[15]);
 		break;
 	}
+	case PT_SVREID:
 	case PT_BINARY:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s:\n", sep?sep:"", proptag);
-		dump_data(0, ((const struct Binary_r *)data)->lpb, ((const struct Binary_r *)data)->cb);
+		if (data) {
+			printf("%s%s:\n", sep?sep:"", proptag);
+			dump_data(0, ((const struct Binary_r *)data)->lpb, ((const struct Binary_r *)data)->cb);
+		} else {
+			printf("%s%s: (NULL)\n", sep?sep:"", proptag);
+		}
 		break;
 	case PT_MV_LONG:
 		LongArray_r = (const struct LongArray_r *) get_SPropValue_data(&lpProp);

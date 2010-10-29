@@ -32,9 +32,10 @@ struct fx_parser_context {
 	DATA_BLOB		data;	/* the data we have (so far) to parse */
 	uint32_t		idx;	/* where we are up to in the data blob */
 	enum fx_parser_state	state;
-	struct SPropValue	lpProp;
-	struct MAPINAMEID	namedprop;
-	uint32_t		length;
+	struct SPropValue	lpProp;		/* the current property tag and value we are parsing */
+	struct MAPINAMEID	namedprop;	/* the current named property we are parsing */
+	uint32_t		length;		/* the total length of the property we're parsing (for variable length props such as strings */
+	uint32_t		offset;		/* the current offset in the variable length property (how much of the length do we already have */
 	bool 			enough_data;
 	uint32_t		tag;
 	void			*priv;

@@ -26,6 +26,14 @@
 #include <ldb.h>
 #include <talloc.h>
 
+#ifndef PRIx64
+#if __WORDSIZE == 64
+  #define PRIx64        "lx"
+#else
+  #define PRIx64        "llx"
+#endif
+#endif
+
 static void popt_openchange_version_callback(poptContext con,
                                              enum poptCallbackReason reason,
                                              const struct poptOption *opt,
@@ -73,7 +81,7 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 		struct parent_fid *it;
 		printf("parent_fids: ");
 		for (it = mapistore->parent_fids; it->next; it = it->next) {
-			printf("0x%016lx,", it->fid);
+			printf("0x%016"PRIx64",", it->fid);
 		}
 		printf("\n");
 		if (mapistore->current_id == mapistore->root_fid) {
@@ -369,7 +377,7 @@ int main(int argc, const char *argv[])
 		// TODO: maybe allow a URI instead of path.
 		output_ctx.root_fid = 0x0000000000010001;
 		output_ctx.current_id = output_ctx.root_fid;
-		root_folder = talloc_asprintf(mem_ctx, "fsocpf://%s/0x%016lx", opt_mapistore, output_ctx.root_fid);
+		root_folder = talloc_asprintf(mem_ctx, "fsocpf://%s/0x%016"PRIx64, opt_mapistore, output_ctx.root_fid);
 		parser = fxparser_init(mem_ctx, &output_ctx);
 		retval = mapistore_set_mapping_path(opt_mapistore);
 		if (retval != MAPISTORE_SUCCESS) {

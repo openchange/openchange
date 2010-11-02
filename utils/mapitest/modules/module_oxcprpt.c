@@ -1468,7 +1468,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	subject = talloc_asprintf(mt->mem_ctx, "Reference: %s", "subject");
 	dept = talloc_asprintf(mt->mem_ctx, "Reference: %s", "dept");
 	set_SPropValue_proptag(&lpProp[0], PR_DISPLAY_NAME, (const void *)name);
-	set_SPropValue_proptag(&lpProp[1], PR_CONVERSATION_TOPIC, (const void *)subject);
+	set_SPropValue_proptag(&lpProp[1], PR_SUBJECT, (const void *)subject);
 	set_SPropValue_proptag(&lpProp[2], PR_DEPARTMENT_NAME, (const void *)dept);
 	retval = SetProps(&obj_ref_message, lpProp, 3);
 	mapitest_print_retval(mt, "SetProps");
@@ -1478,7 +1478,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 
 	/* Step 4: Double check with GetProps */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC,
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_SUBJECT,
 					  PR_DEPARTMENT_NAME);
 	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
@@ -1523,13 +1523,19 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
+
 	retval = SaveChangesMessage(&obj_ref_folder, &obj_target_message, KeepOpenReadWrite);
-	mapitest_print_retval_clean(mt, "SaveChangesMessage", retval);
+	mapitest_print_retval_clean(mt, "5A. SaveChangesMessage", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
 
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_SUBJECT);
+	retval = DeleteProps(&obj_target_message, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	mapitest_print_retval_clean(mt, "5B. DeleteProps - PR_SUBJECT", retval);
+	
         targ_name = talloc_asprintf(mt->mem_ctx, "Target: %s", "display name");
 	targ_dept = talloc_asprintf(mt->mem_ctx, "Target: %s", "department");
 	set_SPropValue_proptag(&lpProp[0], PR_DISPLAY_NAME, (const void *)targ_name);
@@ -1584,7 +1590,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 
 	/* Step 8: Double check with GetProps */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_SUBJECT);
 	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
@@ -1609,7 +1615,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 			goto cleanup;
 		}
 	}
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC, PR_DEPARTMENT_NAME);
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_SUBJECT, PR_DEPARTMENT_NAME);
 	retval = GetProps(&obj_target_message, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	/* this one shouldn't be overwritten */
@@ -1661,7 +1667,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 
 	/* Step 10: Double check with GetProps */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_SUBJECT);
 	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
@@ -1686,7 +1692,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 			goto cleanup;
 		}
 	}
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC, PR_DEPARTMENT_NAME);
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_SUBJECT, PR_DEPARTMENT_NAME);
 	retval = GetProps(&obj_target_message, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	/* this one should now be overwritten */
@@ -1726,20 +1732,20 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}
 
-	/* Step 11: Move properties, no overwrite */
+	/* Step 11: Move properties, with overwrite */
 	exclude = set_SPropTagArray(mt->mem_ctx, 0x0);
-	retval = CopyTo(&obj_ref_message, &obj_target_message, exclude, CopyFlagsNoOverwrite|CopyFlagsMove,
+	retval = CopyTo(&obj_ref_message, &obj_target_message, exclude, CopyFlagsMove,
 			   &problem_count, &problems);
 	MAPIFreeBuffer(exclude);
 	MAPIFreeBuffer(problems);
-	mapitest_print_retval(mt, "* Step 11 - CopyTo (move)");
+	mapitest_print_retval_clean(mt, "* Step 11 - CopyTo (move)", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
 
 	/* Step 12: Double check with GetProps */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC);
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_DISPLAY_NAME, PR_SUBJECT);
 	retval = GetProps(&obj_ref_message, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (cValues == 2) {
@@ -1749,7 +1755,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_CONVERSATION_TOPIC, PR_DEPARTMENT_NAME);
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_SUBJECT, PR_DEPARTMENT_NAME);
 	retval = GetProps(&obj_target_message, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
@@ -1775,7 +1781,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		}
 	}
 	if (lpProps[2].value.lpszA) {
-		if (!strncmp(targ_dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
+		if (!strncmp(dept, lpProps[2].value.lpszA, strlen(lpProps[2].value.lpszA))) {
 			mapitest_print(mt, "* Step 12D - Check: Reference props move - [SUCCESS] (%s)\n",
 				       lpProps[2].value.lpszA);
 		} else {
@@ -1827,8 +1833,8 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	SaveChangesAttachment(&obj_target_message, &obj_targ_attach, KeepOpenReadWrite);
-	mapitest_print_retval(mt, "SaveChangesAttachment");
+	retval = SaveChangesAttachment(&obj_target_message, &obj_targ_attach, KeepOpenReadWrite);
+	mapitest_print_retval_clean(mt, "SaveChangesAttachment", retval);
 
 	/* Step 15: Copy props from reference email attachment to target email attachment */
 	exclude = set_SPropTagArray(mt->mem_ctx, 0x0);
@@ -1840,6 +1846,8 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
+	retval = SaveChangesAttachment(&obj_target_message, &obj_targ_attach, KeepOpenReadWrite);
+	mapitest_print_retval_clean(mt, "SaveChangesAttachment 2", retval);
 
 	/* Step 16: Check properties on both attachments are correct */
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_ATTACH_FILENAME);
@@ -1855,8 +1863,8 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 			mapitest_print(mt, "* Step 16B - Check: Reference attachment props - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {
-			mapitest_print(mt, "* Step 16B - Check: Reference attachment props [FAILURE] (%s)\n",
-				       lpProps[0].value.lpszA);
+			mapitest_print(mt, "* Step 16B - Check: Reference attachment props [FAILURE] (%s, %s)\n",
+				       lpProps[0].value.lpszA, MT_MAIL_ATTACH);
 			ret = false;
 			goto cleanup;
 		}

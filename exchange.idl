@@ -1499,7 +1499,6 @@ System Attendant Private Interface
 	typedef [bitmap8bit] bitmap {
 		SUPPRESS_RECEIPT	= 0x01,
 		CLEAR_READ_FLAG		= 0x04,
-		MAPI_DEFERRED_ERRORS	= 0x08,
 		GENERATE_RECEIPT_ONLY	= 0x10,
 		CLEAR_RN_PENDING	= 0x20,
 	       	CLEAR_NRN_PENDING	= 0x40

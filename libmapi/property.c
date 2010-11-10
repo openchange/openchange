@@ -323,6 +323,8 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 		return (const void *)lpProps->value.lpguid;
 	case PT_BINARY:
 		return (const void *)&lpProps->value.bin;
+	case PT_OBJECT:
+		return (const void *)&lpProps->value.object;
 	case PT_MV_SHORT:
 		return (const void *)(struct ShortArray_r *)&lpProps->value.MVi;
 	case PT_MV_LONG:

@@ -579,6 +579,8 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	*lpProp;
 	struct Restriction_r	Filter;
+	const char		*original_office_location;
+	bool			ret = true;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_ModProps");
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
@@ -604,7 +606,7 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(SPropTagArray);
-	mapitest_print_retval_clean(mt, "NspiGetMatches", retval);
+	mapitest_print_retval_clean(mt, "nspi_GetMatches", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);
@@ -614,35 +616,84 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	/* Query the rows */
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &SRowSet);
-	mapidump_SRowSet(SRowSet, "[sep]");
-	MAPIFreeBuffer(SRowSet);
-	mapitest_print_retval_clean(mt, "NspiQueryRows", retval);
+	mapitest_print_retval_clean(mt, "nspi_QueryRows", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(SRowSet);
+		talloc_free(mem_ctx);
+		return false;
+	}
+	if (SRowSet->cRows != 1) {
+		mapitest_print(mem_ctx, "unexpected number of rows: %i\n", SRowSet->cRows);
+		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(SRowSet);
+		talloc_free(mem_ctx);
+		return false;
+	}
+	original_office_location = (const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION);
+	mapitest_print(mt, "original PR_OFFICE_LOCATION value: %s\n", original_office_location);
+
+	/* Build the SRow and SPropTagArray for NspiModProps */
+	pRow = talloc_zero(mem_ctx, struct SRow);
+	modProp.ulPropTag = PR_OFFICE_LOCATION;
+	modProp.value.lpszA = "[MT] office location";
+	SRow_addprop(pRow, modProp);
+
+	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_OFFICE_LOCATION);
+	retval = nspi_ModProps(nspi_ctx, mem_ctx, MIds->aulPropTag[0], pPropTags, pRow);
+	mapitest_print_retval_clean(mt, "nspi_ModProps", retval);
+	MAPIFreeBuffer(pRow);
+
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(pPropTags);
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	/* Build the SRow and SPropTagArray for NspiModProps */
+	/* Check that the property was set correctly */
+	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &SRowSet);
+	mapitest_print_retval_clean(mt, "nspi_QueryRows", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(SRowSet);
+		talloc_free(mem_ctx);
+		return false;
+	}
+	if (SRowSet->cRows != 1) {
+		mapitest_print(mem_ctx, "unexpected number of rows: %i\n", SRowSet->cRows);
+		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(SRowSet);
+		talloc_free(mem_ctx);
+		return false;
+	}
+	if (strcmp((const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION), "[MT] office location") != 0) {
+		mapitest_print(mt, "PR_OFFICE_LOCATION string value mismatch: %s", (const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION));
+		ret = false;
+	} else {
+		mapitest_print(mt, "correctly set PR_OFFICE_LOCATION\n");
+	}
+
+	/* try to reset the office location back to the original value */
 	pRow = talloc_zero(mem_ctx, struct SRow);
-	modProp.ulPropTag = PR_DISPLAY_NAME;
-	modProp.value.lpszA = "mapitest ModProps";
+	modProp.ulPropTag = PR_OFFICE_LOCATION;
+	modProp.value.lpszA = original_office_location;
 	SRow_addprop(pRow, modProp);
 
-	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME);
-	mapidump_SPropTagArray( pPropTags );
 	retval = nspi_ModProps(nspi_ctx, mem_ctx, MIds->aulPropTag[0], pPropTags, pRow);
-	mapitest_print_retval_clean(mt, "NspiModProps", retval);
+	mapitest_print_retval_clean(mt, "nspi_ModProps (reset original value)", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
 	MAPIFreeBuffer(MIds);
 	MAPIFreeBuffer(pPropTags);
 	MAPIFreeBuffer(pRow);
-	talloc_free(mem_ctx);
 
-	if (retval == MAPI_E_SUCCESS) {
-	      return true;
-	} else {
-	      return false;
-	}
+	talloc_free(mem_ctx);
+	
+	return ret;
 }
 
 

@@ -34,7 +34,7 @@ session::session(const std::string& profiledb, bool debug) throw(std::runtime_er
 	// If profile is not provided, attempt to get it from default location
 	// (~/.openchange/profiles.ldb)
 	if (profiledb == "") {
-		profile_path = get_default_profile_path();
+		profile_path = profile_database::get_default_profile_path();
 		if (profile_path == "") {
 			talloc_free(m_memory_ctx);
 			delete m_message_store;
@@ -60,7 +60,7 @@ void session::login(const std::string& profile_name, const std::string& password
 	m_profile_name = profile_name;
 	if (m_profile_name == "") { // if profile is not set, try to get default profile
 		try {
-			m_profile_name = profile().get_default_profile();
+			m_profile_name = profile_database().get_default_profile_name();
 		} catch(mapi_exception e) {
 			uninitialize();
 			throw;

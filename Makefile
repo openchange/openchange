@@ -336,6 +336,7 @@ libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 	libmapi++/src/mapi_exception.po		\
 	libmapi++/src/message.po		\
 	libmapi++/src/object.po			\
+	libmapi++/src/profile.po		\
 	libmapi++/src/session.po
 	@echo "Linking $@"
 	@$(CXX) $(DSOOPT) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS)
@@ -352,8 +353,6 @@ libmapixx-uninstallpc:
 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libmapi++.pc
 
 distclean::libmapixx-distclean
-
-libmapixx-clean: libmapixx-tests-clean libmapixx-libs-clean
 
 clean:: libmapixx-clean
 
@@ -380,6 +379,9 @@ libmapixx-installheader:
 libmapixx-libs-clean:
 	rm -f libmapi++/src/*.po
 	rm -f libmapipp.$(SHLIBEXT)*
+	rm -f libmapi++/src/*.gcno libmapi++/src/*.gcda
+
+libmapixx-clean: libmapixx-tests-clean libmapixx-libs-clean
 
 libmapixx-installlib:
 	@echo "[*] install: libmapi++ library"
@@ -398,11 +400,13 @@ libmapixx-uninstalllib:
 
 libmapixx-tests:	libmapixx-test		\
 			libmapixx-attach 	\
-			libmapixx-exception
+			libmapixx-exception	\
+			libmapixx-profiletest
 
-libmapixx-tests-clean:	libmapixx-test-clean	\
-			libmapixx-attach-clean	\
-			libmapixx-exception-clean 
+libmapixx-tests-clean:	libmapixx-test-clean		\
+			libmapixx-attach-clean		\
+			libmapixx-exception-clean	\
+			libmapixx-profiletest-clean
 
 libmapixx-test: bin/libmapixx-test
 
@@ -425,6 +429,7 @@ libmapixx-attach: bin/libmapixx-attach
 libmapixx-attach-clean:
 	rm -f bin/libmapixx-attach
 	rm -f libmapi++/tests/*.po
+	rm -f libmapi++/tests/*.gcno libmapi++/tests/*.gcda
 
 bin/libmapixx-attach: libmapi++/tests/attach_test.po	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
@@ -445,8 +450,24 @@ bin/libmapixx-exception: libmapi++/tests/exception_test.cpp \
 libmapixx-exception-clean:
 	rm -f bin/libmapixx-exception
 	rm -f libmapi++/tests/*.o
+	rm -f libmapi++/tests/*.gcno libmapi++/tests/*.gcda
 
 clean:: libmapixx-exception-clean
+
+libmapixx-profiletest: bin/libmapixx-profiletest
+
+libmapixx-profiletest-clean:
+	rm -f bin/libmapixx-profiletest
+	rm -f libmapi++/tests/*.po
+	rm -f libmapi++/tests/*.gcno libmapi++/tests/*.gcda
+
+bin/libmapixx-profiletest: libmapi++/tests/profile_test.po	\
+		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
+		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking profile test application $@"
+	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+
+clean:: libmapixx-profiletest-clean
 
 libmapixx-examples: libmapi++/examples/foldertree \
 		  libmapi++/examples/messages
@@ -454,10 +475,12 @@ libmapixx-examples: libmapi++/examples/foldertree \
 libmapixx-foldertree-clean:
 	rm -f libmapi++/examples/foldertree
 	rm -f libmapi++/examples/*.o
+	rm -f libmapi++/examples/*.gcno libmapi++/examples/*.gcda
 
 libmapixx-messages-clean:
 	rm -f libmapi++/examples/messages
 	rm -f libmapi++/examples/*.o
+	rm -f libmapi++/examples/*.gcno libmapi++/examples/*.gcda
 
 libmapi++/examples/foldertree: libmapi++/examples/foldertree.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \

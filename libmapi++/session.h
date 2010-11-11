@@ -84,15 +84,6 @@ class session {
 		 */
 		void login(const std::string& profile_name = "", const std::string& password = "") throw(mapi_exception); 
 
-#if 0
-		/**
-		 * \brief The path to the default %profile database
-		 *
-		 * This method is not normally required to be called by user applications
-		 * but might be useful under some circumstances.
-		 */
-		static std::string get_default_profile_path();
-#endif
 		/**
 		 * \brief The name of the profile that is in use
 		 *
@@ -140,7 +131,9 @@ class session {
 
 		void uninitialize() throw()
 		{
-			delete m_message_store;
+			if (m_message_store) {
+				delete m_message_store;
+			}
 			if (m_mapi_context) {
 				MAPIUninitialize(m_mapi_context);
 			}

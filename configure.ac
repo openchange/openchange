@@ -245,6 +245,10 @@ dnl GNU Compiler
         LDFLAGS="$LDFLAGS -lgcov --coverage"
     fi
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
+    if test "x$use_cov" = "xyes"; then
+        COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_CXX -fprofile-arcs -ftest-coverage"
+        LDFLAGS="$LDFLAGS -lgcov --coverage"
+    fi
 fi
 AC_SUBST(COMPILER_OPTIONS_C)
 AC_SUBST(COMPILER_OPTIONS_CXX)
@@ -451,7 +455,7 @@ AC_CACHE_CHECK([for boost_thread$BOOST_LIB_SUFFIX library], [ov_cv_boost_thread]
 if test x"$ac_cv_libmapixx_gxx_works" = "xyes"; then
    if test x"$ov_cv_boost_thread" = "xyes"; then
       AC_PROG_CXX 
-#      OC_RULE_ADD(libmapixx, LIBS)
+      OC_RULE_ADD(libmapixx, LIBS)
    fi
 fi
 

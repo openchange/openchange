@@ -127,10 +127,9 @@
 #define	MAPI_CREATE		0x2
 
 /* SaveChanges flags */
-#define KEEP_OPEN_READONLY	0x1
-#define KEEP_OPEN_READWRITE	0x2
-#define FORCE_SAVE		0x4
-/* #define MAPI_DEFERRED_ERRORS 0x8 (already defined in the IDL */
+#define KEEP_OPEN_READONLY	0x09
+#define KEEP_OPEN_READWRITE	0x0A
+#define FORCE_SAVE		0x0C
 
 /* OpenMessage flags */
 #define	MAPI_MODIFY             0x1

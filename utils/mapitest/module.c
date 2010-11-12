@@ -478,7 +478,7 @@ _PUBLIC_ uint32_t module_lzxpress_init(struct mapitest *mt)
 
 	suite = mapitest_suite_init(mt, "LZXPRESS", "lzxpress algorithm test suite", false);
 
-	mapitest_suite_add_test(suite, "VALIDATE-001", "Validate LZXPRESS implementation using sample file 001", mapitest_lzxpress_validate_test_001);
+	mapitest_suite_add_test_flagged(suite, "VALIDATE-001", "Validate LZXPRESS implementation using sample file 001", mapitest_lzxpress_validate_test_001, ExpectedFail);
 
 	mapitest_suite_register(mt, suite);
 

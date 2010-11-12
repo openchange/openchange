@@ -49,10 +49,19 @@ enum TestApplicabilityFlags {
 	NotInExchange2010 = 0x1,	/*!< This test is not applicable to Exchange 2010 */
 	NotInExchange2010SP0 = 0x2,	/*!< This test is not applicable to Exchange 2010
 	                                     Service Pack 0, but is applicable to later versions */
+	ExpectedFail = 0x8000,          /*!< This test is expected to fail */
 	LastTestApplicabilityFlag = 0xFFFF
 };
 
-
+/**
+  List of possible test results
+*/
+enum TestResult {
+	Pass,			/*!< The test was expected to pass, and it did */
+	Fail,			/*!< The test was expected to pass, but it failed */
+	UnexpectedPass,		/*!< The test was expected to fail, but it passed instead */
+	ExpectedFailure		/*!< The test was expected to fail, and it did */
+};
 
 #include "utils/mapitest/proto.h"
 
@@ -85,7 +94,7 @@ struct mapitest_unit {
 	struct mapitest_unit	*prev;		/*!< The previous test in the list */
 	struct mapitest_unit	*next;		/*!< The next test in the list */
 	char			*name;		/*!< The name of the test */
-	char			*reason;	/*!< Why this test was skipped (if applicable) */
+	char			*reason;	/*!< Why this test was skipped or failed (if applicable) */
 };
 
 /**
@@ -98,12 +107,13 @@ struct mapitest_unit {
 	There should be one entry in the failure_info list for each failure.
 */
 struct mapitest_stat {
-	uint32_t		success;       /*!< Number of tests in this suite that passed */
-	uint32_t		failure;       /*!< Number of tests in this suite that failed */
-	uint32_t		skipped;       /*!< Number of tests in this suite that were skipped */
-	struct mapitest_unit	*failure_info; /*!< List of names of the tests that failed */
-	struct mapitest_unit	*skip_info;    /*!< List of names of the tests that were skipped, and why */
-	bool			enabled;       /*!< Whether this statistics structure is valid */
+	uint32_t		success;        /*!< Number of tests in this suite that passed */
+	uint32_t		failure;        /*!< Number of tests in this suite that failed */
+	uint32_t		skipped;        /*!< Number of tests in this suite that were skipped */
+	uint32_t		x_fail;         /*!< Number of tests in this suite that were expected failures */
+	struct mapitest_unit	*failure_info;  /*!< List of names of the tests that failed */
+	struct mapitest_unit	*skip_info;     /*!< List of names of the tests that were skipped, and why */
+	bool			enabled;        /*!< Whether this statistics structure is valid */
 };
 
 /**
@@ -198,8 +208,8 @@ struct mt_common_tf_ctx
 #define	MT_DIRNAME_TEST		"[MT] Test Folder1"
 
 #define	MT_MAIL_SUBJECT		"[MT] Sample E-MAIL"
-#define	MT_MAIL_ATTACH		"[MT]_Sample_Attachment.txt"
-#define	MT_MAIL_ATTACH2		"[MT]_Sample_Attachment2.txt"
+#define	MT_MAIL_ATTACH		"Attach1.txt"
+#define	MT_MAIL_ATTACH2		"Attach2.txt"
 
 #define	MODULE_TITLE		"[MODULE] %s\n"
 #define	MODULE_TITLE_DELIM	'#'
@@ -218,9 +228,8 @@ struct mt_common_tf_ctx
 #define	MT_ERROR       	"[ERROR]: %s\n"
 
 #define	MT_STAT_FAILED_TITLE	"[STAT] FAILED TEST CASES\n"
-#define	MT_STAT_FAILURE	"* %-35s: %s\n"
+#define	MT_STAT_RESULT	"* %-35s: %s (%s)\n"
 #define	MT_STAT_SKIPPED_TITLE	"[STAT] SKIPPED TEST CASES\n"
-#define	MT_STAT_SKIPPED	"* %-35s: %s (%s)\n"
 
 #define MT_SUMMARY_TITLE "[STAT] TEST SUMMARY\n"
 

@@ -183,7 +183,9 @@ _PUBLIC_ const void *get_SPropValue_SRow_data(struct SRow *aRow,
   Create a MAPITAGS array from a SRow entry
  */
 
-enum MAPITAGS *get_MAPITAGS_SRow(TALLOC_CTX *mem_ctx, struct SRow *aRow)
+enum MAPITAGS *get_MAPITAGS_SRow(TALLOC_CTX *mem_ctx, 
+				 struct SRow *aRow, 
+				 uint32_t *actual_count)
 {
 	enum MAPITAGS	*mapitags;
 	uint32_t	count, idx;
@@ -197,6 +199,8 @@ enum MAPITAGS *get_MAPITAGS_SRow(TALLOC_CTX *mem_ctx, struct SRow *aRow)
 		}
 	}
 	mapitags[idx] = 0;
+	*actual_count = idx;
+
 	return mapitags;
 }
 
@@ -319,6 +323,8 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 		return (const void *)lpProps->value.lpguid;
 	case PT_BINARY:
 		return (const void *)&lpProps->value.bin;
+	case PT_OBJECT:
+		return (const void *)&lpProps->value.object;
 	case PT_MV_SHORT:
 		return (const void *)(struct ShortArray_r *)&lpProps->value.MVi;
 	case PT_MV_LONG:
@@ -451,7 +457,7 @@ _PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)
 	case PT_STRING8:
 		return strlen(lpProp->value.lpszA) + 1;
 	case PT_UNICODE:
-		return strlen(lpProp->value.lpszW) * 2 + 2;
+		return get_utf8_utf16_conv_length(lpProp->value.lpszW);
 	case PT_SYSTIME:
 		return sizeof (struct FILETIME);
 	case PT_BINARY:
@@ -500,7 +506,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
 	case PT_UNICODE:
 		mapi_sprop->value.lpszW = sprop->value.lpszW;
 		if (!mapi_sprop->value.lpszW) return 0;
-		return get_utf8_utf16_conv_length(mapi_sprop->value.lpszW);
+		return (get_utf8_utf16_conv_length(mapi_sprop->value.lpszW));
 	case PT_SYSTIME:
 		mapi_sprop->value.ft.dwLowDateTime = sprop->value.ft.dwLowDateTime;
 		mapi_sprop->value.ft.dwHighDateTime = sprop->value.ft.dwHighDateTime;
@@ -634,7 +640,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 	case PT_UNICODE:
 		sprop->value.lpszW = mapi_sprop->value.lpszW;
 		if (!sprop->value.lpszW) return 0;
-		return (strlen(mapi_sprop->value.lpszW) * 2 + 2);
+		return (get_utf8_utf16_conv_length(mapi_sprop->value.lpszW));
 	case PT_SYSTIME:
 		sprop->value.ft.dwLowDateTime = mapi_sprop->value.ft.dwLowDateTime;
 		sprop->value.ft.dwHighDateTime = mapi_sprop->value.ft.dwHighDateTime;
@@ -765,7 +771,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 /**
    \details add a SPropValue structure to a SRow array
 
-   \param aRow pointer to the SRow array where SPropBalue should be
+   \param aRow pointer to the SRow array where spropvalue should be
    appended
    \param spropvalue reference to the SPropValue structure to add to
    aRow

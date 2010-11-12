@@ -705,10 +705,9 @@ _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_context *mapi_ctx,
 	enum MAPISTATUS	retval;
 
 	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!mapi_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapi_ctx->ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = (TALLOC_CTX *) mapi_ctx->session;
+	mem_ctx = (TALLOC_CTX *) mapi_ctx;
 	
 	/* find the profile in ldb store */
 	retval = ldb_load_profile(mem_ctx, mapi_ctx->ldb_ctx, profile, profname, password);

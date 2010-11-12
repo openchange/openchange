@@ -313,6 +313,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	const char			*from = NULL;
 	const char			*normalizedsubject = NULL;
 	const char			*subject_prefix = NULL;
+	const char			*subject = NULL;
 	const char			*thread_topic = NULL;
 	const char			*msgid;
 	DATA_BLOB			body;
@@ -352,6 +353,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	from = (const char *) octool_get_propval(aRow, PR_SENT_REPRESENTING_NAME);
 	subject_prefix = (const char *) octool_get_propval(aRow, PR_SUBJECT_PREFIX);
 	normalizedsubject = (const char *) octool_get_propval(aRow, PR_NORMALIZED_SUBJECT);
+	subject = (const char*) octool_get_propval(aRow, PR_SUBJECT);
 	thread_topic = (const char *) octool_get_propval(aRow, PR_CONVERSATION_TOPIC);
 	msgid = (const char *) octool_get_propval(aRow, PR_INTERNET_MESSAGE_ID);
 
@@ -403,6 +405,12 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 
 	if (normalizedsubject && subject_prefix) {
 		line = talloc_asprintf(mem_ctx, "Subject: %s%s\n", subject_prefix, normalizedsubject);
+		if (line) {
+			len = fwrite(line, strlen(line), 1, fp);
+		}
+		talloc_free(line);
+	} else {
+		line = talloc_asprintf(mem_ctx, "Subject: %s\n", subject);
 		if (line) {
 			len = fwrite(line, strlen(line), 1, fp);
 		}
@@ -747,7 +755,7 @@ int main(int argc, const char *argv[])
 					     rowset.aRow[i].lpProps[1].value.d, 
 					     &obj_message, 0);
 			if (GetLastError() == MAPI_E_SUCCESS) {
-				SPropTagArray = set_SPropTagArray(mem_ctx, 0x15,
+				SPropTagArray = set_SPropTagArray(mem_ctx, 0x19,
 								  PR_INTERNET_MESSAGE_ID,
 								  PR_INTERNET_MESSAGE_ID_UNICODE,
 								  PR_CONVERSATION_TOPIC,
@@ -768,7 +776,11 @@ int main(int argc, const char *argv[])
 								  PR_DISPLAY_BCC_UNICODE,
 								  PR_HASATTACH,
 								  PR_SUBJECT_PREFIX,
-								  PR_NORMALIZED_SUBJECT);
+								  PR_SUBJECT_PREFIX_UNICODE,
+								  PR_NORMALIZED_SUBJECT,
+								  PR_NORMALIZED_SUBJECT_UNICODE,
+								  PR_SUBJECT,
+								  PR_SUBJECT_UNICODE);
 				retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
 				if (retval != MAPI_E_SUCCESS) {

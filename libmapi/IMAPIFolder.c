@@ -666,7 +666,7 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent,
 		break;
 	case MAPI_FOLDER_UNICODE:
 		request.FolderName.lpszW = name;
-		size += strlen(name) * 2 + 2;
+		size += get_utf8_utf16_conv_length(name);
 		break;
 	}
 
@@ -678,7 +678,7 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent,
 			break;
 		case MAPI_FOLDER_UNICODE:
 			request.FolderComment.lpszW = comment;
-			size += strlen(comment) * 2 + 2;
+			size +=  get_utf8_utf16_conv_length(comment);
 			break;
 		}
 	} else {
@@ -983,7 +983,7 @@ _PUBLIC_ enum MAPISTATUS MoveFolder(mapi_object_t *obj_folder,
 		size += strlen(NewFolderName) + 1;
 	} else {
 		request.NewFolderName.lpszW = NewFolderName;
-		size += strlen(NewFolderName) * 2 + 2;
+		size += get_utf8_utf16_conv_length(NewFolderName);
 	}
 
 
@@ -1099,7 +1099,7 @@ _PUBLIC_ enum MAPISTATUS CopyFolder(mapi_object_t *obj_folder,
 		size += strlen(NewFolderName) + 1;
 	} else {
 		request.NewFolderName.lpszW = NewFolderName;
-		size += strlen(NewFolderName) * 2 + 2;
+		size += get_utf8_utf16_conv_length(NewFolderName);
 	}
 
 	/* Fill the MAPI_REQ request */

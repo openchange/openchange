@@ -722,9 +722,8 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	 * append here property tags that can be fetched with
 	 * ResolveNames but shouldn't be included in ModifyRecipients rows
 	 */
-	request.properties = get_MAPITAGS_SRow(mem_ctx, &SRowSet->aRow[0]);
-	count = SRowSet->aRow[0].cValues - 1;
- 	request.prop_count = MAPITAGS_delete_entries(request.properties, count, 17,
+	request.properties = get_MAPITAGS_SRow(mem_ctx, &SRowSet->aRow[0], &count);
+ 	request.prop_count = MAPITAGS_delete_entries(request.properties, count, 19,
 						     PR_ENTRYID,
 						     PR_DISPLAY_NAME,
 						     PR_DISPLAY_NAME_UNICODE,
@@ -741,7 +740,9 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 						     PR_ADDRTYPE_UNICODE,
 						     PR_ADDRTYPE_ERROR,
 						     PR_SEND_INTERNET_ENCODING,
-						     PR_SEND_INTERNET_ENCODING_ERROR);
+						     PR_SEND_INTERNET_ENCODING_ERROR,
+						     PR_SEND_RICH_INFO,
+						     PR_SEND_RICH_INFO_ERROR);
 	size += request.prop_count * sizeof(uint32_t);
 	request.cValues = SRowSet->cRows;
 	size += sizeof(uint16_t);
@@ -798,7 +799,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 			break;
 		case (0x208):
 			RecipientRow->EmailAddress.lpszW = (const char *) find_SPropValue_data(aRow, PR_SMTP_ADDRESS_UNICODE);
-			size += strlen(RecipientRow->EmailAddress.lpszW) * 2 + 2;
+			size += get_utf8_utf16_conv_length(RecipientRow->EmailAddress.lpszW);
 			break;
 		default:
 			break;
@@ -812,7 +813,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 			break;
 		case (0x210):
 			RecipientRow->DisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
-			size += strlen(RecipientRow->DisplayName.lpszW) * 2 + 2;
+			size += get_utf8_utf16_conv_length(RecipientRow->DisplayName.lpszW);
 			break;
 		default:
 			break;
@@ -826,7 +827,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 			break;
 		case (0x220):
 			RecipientRow->TransmittableDisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE);
-			size += strlen(RecipientRow->TransmittableDisplayName.lpszW) * 2 + 2;
+			size += get_utf8_utf16_conv_length(RecipientRow->TransmittableDisplayName.lpszW);
 			break;
 		default:
 			break;
@@ -841,7 +842,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 			break;
 		case (0x600):
 			RecipientRow->SimpleDisplayName.lpszW = (const char *) find_SPropValue_data(aRow, PR_7BIT_DISPLAY_NAME_UNICODE);
-			size += strlen(RecipientRow->SimpleDisplayName.lpszW) * 2 + 2;
+			size += get_utf8_utf16_conv_length(RecipientRow->SimpleDisplayName.lpszW);
 			break;
 		default:
 			break;

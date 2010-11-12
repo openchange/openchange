@@ -21,6 +21,8 @@
 
 #include "utils/mapitest/mapitest.h"
 
+#include <assert.h>
+
 /**
 	\file
 	mapitest statistics functions
@@ -60,6 +62,7 @@ _PUBLIC_ struct mapitest_stat *mapitest_stat_init(TALLOC_CTX *mem_ctx)
 	stat->success = 0;
 	stat->failure = 0;
 	stat->skipped = 0;
+	stat->x_fail = 0;
 	stat->failure_info = NULL;
 	stat->skip_info = NULL;
 	stat->enabled = false;
@@ -79,20 +82,31 @@ _PUBLIC_ struct mapitest_stat *mapitest_stat_init(TALLOC_CTX *mem_ctx)
  */
 _PUBLIC_ uint32_t mapitest_stat_add_result(struct mapitest_suite *suite,
 					   const char *name,
-					   bool result)
+					   enum TestResult testresult)
 {
 	struct mapitest_unit	*el = NULL;
 
 	/* Sanity check */
 	if (!suite || !suite->stat || !name) return MAPITEST_ERROR;
 
-	if (result == true) {
+	if (testresult == Pass) {
 		suite->stat->success++;
 	} else {
-		suite->stat->failure++;
 		el = talloc_zero((TALLOC_CTX *) suite->stat, struct mapitest_unit);
 		el->name = talloc_strdup((TALLOC_CTX *)el, (char *)name);
-		el->reason = 0;
+
+		if (testresult == Fail) {
+			suite->stat->failure++;
+			el->reason = talloc_strdup((TALLOC_CTX *) el, "Unexpected Fail");
+		} else if (testresult == ExpectedFail) {
+			suite->stat->x_fail++;
+			el->reason = talloc_strdup((TALLOC_CTX *) el, "Expected Fail");
+		} else if (testresult == UnexpectedPass) {
+			suite->stat->failure++;
+			el->reason = talloc_strdup((TALLOC_CTX *) el, "Unexpected Pass");
+		} else {
+			assert(0); /* this indicates that we're passing a bad enum into this function */
+		}
 		DLIST_ADD_END(suite->stat->failure_info, el, struct mapitest_unit *);
 	}
 
@@ -161,6 +175,7 @@ _PUBLIC_ int32_t mapitest_stat_dump(struct mapitest *mt)
 	int32_t 		num_passed_tests = 0;
 	int32_t 		num_failed_tests = 0;
 	int32_t 		num_skipped_tests = 0;
+	int32_t			num_xfail_tests = 0;
 
 	mapitest_print_title(mt, MT_STAT_SKIPPED_TITLE, MODULE_TITLE_DELIM);
 	for (suite = mt->mapi_suite; suite; suite = suite->next) {
@@ -168,7 +183,7 @@ _PUBLIC_ int32_t mapitest_stat_dump(struct mapitest *mt)
 			num_skipped_tests += suite->stat->skipped;
 			if (suite->stat->skipped) {
 				for (el = suite->stat->skip_info; el; el = el->next) {
-					mapitest_print(mt, MT_STAT_SKIPPED, suite->name, el->name, el->reason);
+					mapitest_print(mt, MT_STAT_RESULT, suite->name, el->name, el->reason);
 				}
 			}
 		}
@@ -182,9 +197,10 @@ _PUBLIC_ int32_t mapitest_stat_dump(struct mapitest *mt)
 		if (suite->stat->enabled == true) {
 			num_passed_tests += suite->stat->success;
 			num_failed_tests += suite->stat->failure;
-			if (suite->stat->failure) {
+			num_xfail_tests += suite->stat->x_fail;
+			if (suite->stat->failure || suite->stat->x_fail) {
 				for (el = suite->stat->failure_info; el; el = el->next) {
-					mapitest_print(mt, MT_STAT_FAILURE, suite->name, el->name);
+					mapitest_print(mt, MT_STAT_RESULT, suite->name, el->name, el->reason);
 				}
 			}
 		}
@@ -196,6 +212,7 @@ _PUBLIC_ int32_t mapitest_stat_dump(struct mapitest *mt)
 	mapitest_print(mt, "Number of passing tests: %i\n", num_passed_tests);
 	mapitest_print(mt, "Number of failing tests: %i\n", num_failed_tests);
 	mapitest_print(mt, "Number of skipped tests: %i\n", num_skipped_tests);
+	mapitest_print(mt, "Number of expected fails: %i\n", num_xfail_tests);
 	mapitest_print_test_title_end(mt);
 
 	return num_failed_tests;

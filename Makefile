@@ -293,6 +293,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/simple_mapi.po				\
 	libmapi/freebusy.po				\
 	libmapi/x500.po 				\
+	libmapi/fxparser.po				\
 	ndr_mapi.po					\
 	gen_ndr/ndr_exchange.po				\
 	gen_ndr/ndr_exchange_c.po			\
@@ -1493,6 +1494,32 @@ bin/schemaIDGUID: utils/schemaIDGUID.o
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
+###################
+# check_fasttransfer test app.
+###################
+
+check_fasttransfer:		bin/check_fasttransfer
+
+check_fasttransfer-install:	check_fasttransfer
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/check_fasttransfer $(DESTDIR)$(bindir)
+
+check_fasttransfer-uninstall:
+	rm -f $(DESTDIR)$(bindir)/check_fasttransfer
+
+check_fasttransfer-clean::
+	rm -f bin/check_fasttransfer
+	rm -f testprogs/check_fasttransfer.o
+	rm -f testprogs/check_fasttransfer.gcno
+	rm -f testprogs/check_fasttransfer.gcda
+
+clean:: check_fasttransfer-clean
+
+bin/check_fasttransfer:	testprogs/check_fasttransfer.o			\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt
 
 ###################
 # python code

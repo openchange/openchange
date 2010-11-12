@@ -106,7 +106,7 @@ void			mapi_object_table_init(TALLOC_CTX *, mapi_object_t *);
 enum MAPISTATUS		mapi_object_bookmark_find(mapi_object_t *, uint32_t,struct SBinary_short *);
 
 /* The following private definitions come from libmapi/property.c */
-enum MAPITAGS		*get_MAPITAGS_SRow(TALLOC_CTX *, struct SRow *);
+enum MAPITAGS		*get_MAPITAGS_SRow(TALLOC_CTX *, struct SRow *, uint32_t *);
 uint32_t		MAPITAGS_delete_entries(enum MAPITAGS *, uint32_t, uint32_t, ...);
 size_t			get_utf8_utf16_conv_length(const char *);
 

@@ -564,6 +564,7 @@ sub mapicodes_interface($)
     mparse "";
     mparse "ndr_print.depth = 1;";
     mparse "ndr_print.print = ndr_print_debug_helper;";
+    mparse "ndr_print.no_newline = false;";
     mparse "ndr_print_MAPISTATUS(&ndr_print, function, mapi_code);";
     deindent;
     mparse "}";

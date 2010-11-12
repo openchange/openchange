@@ -148,9 +148,17 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	r->out.picxr = talloc_zero(mem_ctx, uint32_t);
 	*r->out.picxr = 0;
 
+	/* The following server version is not supported by Outlook 2010 */
 	r->out.rgwServerVersion[0] = 0x6;
 	r->out.rgwServerVersion[1] = 0x1141;
 	r->out.rgwServerVersion[2] = 0x5;
+
+	/* This one is but requires EcDoConnectEx/EcDoRpcExt2/Async
+	 * EMSMDB implementation */
+
+	/* r->out.rgwServerVersion[0] = 0x8; */
+	/* r->out.rgwServerVersion[1] = 0x82B4; */
+	/* r->out.rgwServerVersion[2] = 0x3; */
 
 	r->out.rgwClientVersion[0] = r->in.rgwClientVersion[0];
 	r->out.rgwClientVersion[1] = r->in.rgwClientVersion[1];
@@ -243,57 +251,31 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 }
 
 
-/**
-   \details exchange_emsmdb EcDoRpc (0x2) function
-
-   \param dce_call pointer to the session context
-   \param mem_ctx pointer to the memory context
-   \param r pointer to the EcDoRpc request data
-
-   \return MAPI_E_SUCCESS on success
- */
-static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
-				      TALLOC_CTX *mem_ctx,
-				      struct EcDoRpc *r)
+static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx, 
+							 struct emsmdbp_context *emsmdbp_ctx,
+							 struct mapi_request *mapi_request)
 {
-	struct exchange_emsmdb_session	*session;
-	struct emsmdbp_context		*emsmdbp_ctx = NULL;
-	struct mapi_request		*mapi_request;
-	struct mapi_response		*mapi_response;
-	enum MAPISTATUS			retval;
-	uint32_t			handles_length;
-	uint16_t			size = 0;
-	uint32_t			i;
-	uint32_t			idx;
-	bool				found = false;
+	enum MAPISTATUS		retval;
+	struct mapi_response	*mapi_response;
+	uint32_t		handles_length;
+	uint16_t		size = 0;
+	uint32_t		i;
+	uint32_t		idx;
 
-	DEBUG(3, ("exchange_emsmdb: EcDoRpc (0x2)\n"));
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+	if (!mapi_request) return NULL;
 
-	/* Step 0. Ensure incoming user is authenticated */
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-		return MAPI_E_LOGON_FAILED;
-	}
-
-	/* Retrieve the emsmdbp_context from the session management system */
-	for (session = emsmdb_session; session; session = session->next) {
-		if ((mpm_session_cmp(session->session, dce_call)) == true) {
-			emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
-			found = true;
-		}
-	}
-	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
-
-	mapi_request = r->in.mapi_request;
+	/* Allocate mapi_response */
 	mapi_response = talloc_zero(mem_ctx, struct mapi_response);
 	mapi_response->handles = mapi_request->handles;
 
-	/* Step 1. Idle requests case */
+	/* Step 1. Handle Idle requests case */
 	if (mapi_request->mapi_len <= 2) {
 		mapi_response->mapi_len = 2;
-		goto end;
+		return mapi_response;
 	}
-
+	
 	/* Step 2. Process serialized MAPI requests */
 	mapi_response->mapi_repl = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REPL);
 	for (i = 0, idx = 0, size = 0; mapi_request->mapi_req[i].opnum != 0; i++) {
@@ -672,8 +654,51 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 	mapi_response->length = size + sizeof (mapi_response->length);
 	mapi_response->mapi_len = mapi_response->length + handles_length;
 
-	/* Step 5. Fill EcDoRpc reply */
-end:
+	return mapi_response;
+}
+
+
+/**
+   \details exchange_emsmdb EcDoRpc (0x2) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcDoRpc request data
+
+   \return MAPI_E_SUCCESS on success
+ */
+static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
+				      TALLOC_CTX *mem_ctx,
+				      struct EcDoRpc *r)
+{
+	struct exchange_emsmdb_session	*session;
+	struct emsmdbp_context		*emsmdbp_ctx = NULL;
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	bool				found = false;
+
+	DEBUG(3, ("exchange_emsmdb: EcDoRpc (0x2)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Retrieve the emsmdbp_context from the session management system */
+	for (session = emsmdb_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+			emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
+			found = true;
+		}
+	}
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
+
+	/* Step 1. Process EcDoRpc requests */
+	mapi_request = r->in.mapi_request;
+	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi_request);
+
+	/* Step 2. Fill EcDoRpc reply */
 	r->out.handle = r->in.handle;
 	r->out.size = r->in.size;
 	r->out.offset = r->in.offset;
@@ -860,6 +885,153 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+/**
+   \details exchange_emsmdb EcDoRpcExt2 (0xB) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcDoRpcExt2 request data
+
+   \return MAPI_E_SUCCESS on success
+ */
+static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
+					  TALLOC_CTX *mem_ctx,
+					  struct EcDoRpcExt2 *r)
+{
+	struct exchange_emsmdb_session	*session;
+	struct emsmdbp_context		*emsmdbp_ctx = NULL;
+	struct mapi2k7_request		mapi2k7_request;
+	struct mapi_response		*mapi_response;
+	struct RPC_HEADER_EXT		RPC_HEADER_EXT;
+	struct ndr_pull			*ndr_pull = NULL;
+	struct ndr_push			*ndr_uncomp_rgbOut;
+	struct ndr_push			*ndr_comp_rgbOut;
+	struct ndr_push			*ndr_rgbOut;
+	uint32_t			pulFlags = 0x0;
+	uint32_t			pulTransTime = 0;
+	DATA_BLOB			rgbIn;
+	bool				found = false;
+
+	DEBUG(3, ("exchange_emsmdb: EcDoRpcExt2 (0xB)\n"));
+
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!NTLM_AUTH_IS_OK(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Retrieve the emsmdbp_context from the session management system */
+	for (session = emsmdb_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+			emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
+			found = true;
+		}
+	}
+	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
+
+	/* Extract mapi_request from rgbIn */
+	rgbIn.data = r->in.rgbIn;
+	rgbIn.length = r->in.cbIn;
+	ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
+	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
+	ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
+	talloc_free(ndr_pull);
+
+	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request);
+	talloc_free(mapi2k7_request.mapi_request);
+
+	/* Fill EcDoRpcExt2 reply */
+	r->out.handle = r->in.handle;
+	r->out.pulFlags = &pulFlags;
+
+	/* Push MAPI response into a DATA blob */
+	ndr_uncomp_rgbOut = ndr_push_init_ctx(mem_ctx);
+	ndr_set_flags(&ndr_uncomp_rgbOut->flags, LIBNDR_FLAG_NOALIGN);
+	ndr_push_mapi_response(ndr_uncomp_rgbOut, NDR_SCALARS|NDR_BUFFERS, mapi_response);
+	talloc_free(mapi_response);
+
+	/* Obfuscate content */
+	ndr_comp_rgbOut = ndr_uncomp_rgbOut;
+	obfuscate_data(ndr_comp_rgbOut->data, ndr_comp_rgbOut->offset, 0xA5);
+
+	/* Build RPC_HEADER_EXT header for MAPI response DATA blob */
+	RPC_HEADER_EXT.Version = 0x0000;
+	RPC_HEADER_EXT.Flags = RHEF_XorMagic|RHEF_Last;
+	RPC_HEADER_EXT.Size = ndr_comp_rgbOut->offset;
+	RPC_HEADER_EXT.SizeActual = ndr_comp_rgbOut->offset;
+
+	/* Push the constructed blob */
+	ndr_rgbOut = ndr_push_init_ctx(mem_ctx);
+	ndr_set_flags(&ndr_rgbOut->flags, LIBNDR_FLAG_NOALIGN);
+	ndr_push_RPC_HEADER_EXT(ndr_rgbOut, NDR_SCALARS|NDR_BUFFERS, &RPC_HEADER_EXT);
+	ndr_push_bytes(ndr_rgbOut, ndr_comp_rgbOut->data, ndr_comp_rgbOut->offset);
+
+	/* Push MAPI response into a DATA blob */
+	r->out.rgbOut = ndr_rgbOut->data;
+	r->out.pcbOut = &ndr_rgbOut->offset;
+
+	r->out.rgbAuxOut = NULL;
+	*r->out.pcbAuxOut = 0;
+	r->out.pulTransTime = &pulTransTime;
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details exchange_emsmdb EcUnknown0xC (0xc) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcUnknown0xC request data
+
+   \return MAPI_E_SUCCESS on success
+ */
+static void dcesrv_EcUnknown0xC(struct dcesrv_call_state *dce_call,
+				      TALLOC_CTX *mem_ctx,
+				      struct EcUnknown0xC *r)
+{
+	DEBUG(3, ("exchange_emsmdb: EcUnknown0xC (0xc) not implemented\n"));
+	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/**
+   \details exchange_emsmdb EcUnknown0xD (0xc) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcUnknown0xD request data
+
+   \return MAPI_E_SUCCESS on success
+ */
+static void dcesrv_EcUnknown0xD(struct dcesrv_call_state *dce_call,
+				      TALLOC_CTX *mem_ctx,
+				      struct EcUnknown0xD *r)
+{
+	DEBUG(3, ("exchange_emsmdb: EcUnknown0xC (0xd) not implemented\n"));
+	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/**
+   \details exchange_emsmdb EcGetMoreRpc (0xe) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param r pointer to the EcDoAsyncConnectExt request data
+
+   \return MAPI_E_SUCCESS on success
+ */
+static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_call,
+						 TALLOC_CTX *mem_ctx,
+						 struct EcDoAsyncConnectEx *r)
+{
+	DEBUG(3, ("exchange_emsmdb: EcDoAsyncConnectEx (0xe) not implemented\n"));
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+
+	return MAPI_E_SUCCESS;
+}
+
 
 /**
    \details Dispatch incoming EMSMDB call to the correct OpenChange
@@ -922,6 +1094,18 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
 	case NDR_ECDOCONNECTEX:
 		retval = dcesrv_EcDoConnectEx(dce_call, mem_ctx, (struct EcDoConnectEx *)r);
 		return NT_STATUS_NET_WRITE_FAULT;
+		break;
+	case NDR_ECDORPCEXT2:
+		retval = dcesrv_EcDoRpcExt2(dce_call, mem_ctx, (struct EcDoRpcExt2 *)r);
+		break;
+	case NDR_ECUNKNOWN0XC:
+		dcesrv_EcUnknown0xC(dce_call, mem_ctx, (struct EcUnknown0xC *)r);
+		break;
+	case NDR_ECUNKNOWN0XD:
+		dcesrv_EcUnknown0xD(dce_call, mem_ctx, (struct EcUnknown0xD *)r);
+		break;
+	case NDR_ECDOASYNCCONNECTEX:
+		dcesrv_EcDoAsyncConnectEx(dce_call, mem_ctx, (struct EcDoAsyncConnectEx *)r);
 		break;
 	}
 

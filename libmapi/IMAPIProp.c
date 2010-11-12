@@ -1003,7 +1003,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 			size += sizeof (request.nameid[i].kind.lid);
 			break;
 		case MNID_STRING:
-			size += strlen(request.nameid[i].kind.lpwstr.Name) * 2 + 2;
+		  size +=  get_utf8_utf16_conv_length(request.nameid[i].kind.lpwstr.Name);
 			size += sizeof (uint8_t);
 			break;
 		default:

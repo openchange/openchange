@@ -369,6 +369,10 @@ static char *ocpf_write_property(struct ocpf_context *ctx, bool *found, uint32_t
 		line = talloc_asprintf(ctx, "%d\n", *((const uint32_t *)value));			
 		*found = true;
 		break;
+	case PT_DOUBLE:
+		line = talloc_asprintf(ctx, "F%e\n", *((const double *)value));
+		*found = true;
+		break;
 	case PT_BOOLEAN:
 		line = talloc_asprintf(ctx, "B\"%s\"\n", (*((const uint8_t *)value) == true) ? "true" : "false");
 		*found = true;

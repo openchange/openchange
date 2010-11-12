@@ -64,6 +64,15 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		data = get_SPropValue_data(&lpProp);
 		printf("%s%s: 0x%x\n", sep?sep:"", proptag, (*(const uint16_t *)data));
 		break;
+	case PT_LONG:
+	case PT_OBJECT:
+		data = get_SPropValue_data(&lpProp);
+		printf("%s%s: %u\n", sep?sep:"", proptag, (*(const uint32_t *)data));
+		break;
+	case PT_DOUBLE:
+		data = get_SPropValue_data(&lpProp);
+		printf("%s%s: %f\n", sep?sep:"", proptag, (*(const double *)data));
+		break;
 	case PT_BOOLEAN:
 		data = get_SPropValue_data(&lpProp);
 		printf("%s%s: 0x%x\n", sep?sep:"", proptag, (*(const uint8_t *)data));
@@ -75,7 +84,17 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	case PT_STRING8:
 	case PT_UNICODE:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: %s\n", sep?sep:"", proptag, (data && (*(const uint32_t *)data) != MAPI_E_NOT_FOUND) ? (const char *)data : "NULL");
+		printf("%s%s:", sep?sep:"", proptag);
+		if (data && ((*(const uint16_t *)data) == 0x0000)) {
+			/* its an empty string */
+			printf("\n");
+		} else if (data && ((*(const uint32_t *)data) != MAPI_E_NOT_FOUND)) {
+			/* its a valid string */
+			printf(" %s\n", (const char *)data);
+		} else {
+			/* its a null or otherwise problematic string */
+			printf(" (NULL)\n");
+		}
 		break;
 	case PT_SYSTIME:
 		mapidump_date_SPropValue(lpProp, proptag, sep);
@@ -84,14 +103,25 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		data = get_SPropValue_data(&lpProp);
 		printf("%s%s_ERROR: 0x%.8x\n", sep?sep:"", proptag, (*(const uint32_t *)data));
 		break;
-	case PT_LONG:
-		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: %u\n", sep?sep:"", proptag, (*(const uint32_t *)data));
+	case PT_CLSID:
+	{
+		const uint8_t *ab = get_SPropValue_data(&lpProp);
+		printf("%s%s: ", sep?sep:"", proptag);
+		for (i = 0; i < 15; ++i) {
+			printf("%02x ", ab[i]);
+		}
+		printf("%x\n", ab[15]);
 		break;
+	}
+	case PT_SVREID:
 	case PT_BINARY:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s:\n", sep?sep:"", proptag);
-		dump_data(0, ((const struct Binary_r *)data)->lpb, ((const struct Binary_r *)data)->cb);
+		if (data) {
+			printf("%s%s:\n", sep?sep:"", proptag);
+			dump_data(0, ((const struct Binary_r *)data)->lpb, ((const struct Binary_r *)data)->cb);
+		} else {
+			printf("%s%s: (NULL)\n", sep?sep:"", proptag);
+		}
 		break;
 	case PT_MV_LONG:
 		LongArray_r = (const struct LongArray_r *) get_SPropValue_data(&lpProp);
@@ -990,7 +1020,6 @@ _PUBLIC_ void mapidump_freebusy_event(struct Binary_r *bin, uint32_t month, uint
 				}
 			}
 		}
-		
 	}	
 }
 

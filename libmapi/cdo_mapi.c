@@ -196,12 +196,12 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_context *mapi_ctx,
 
 
 /**
-   \details Initialize mapi context global structure
+   \details Initialize mapi context structure
 
    This function inititalizes the MAPI subsystem and open the profile
    database pointed by profiledb .
 
-   \param mapi_ctx pointer to the MAPI context
+   \param _mapi_ctx pointer to the MAPI context
    \param profiledb profile database path
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
@@ -233,7 +233,6 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(struct mapi_context **_mapi_ctx, const c
 	mem_ctx = talloc_named(NULL, 0, "MAPIInitialize");
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
-	/* global context */
 	mapi_ctx = talloc_zero(mem_ctx, struct mapi_context);
 	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 	mapi_ctx->mem_ctx = mem_ctx;

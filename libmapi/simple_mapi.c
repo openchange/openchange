@@ -773,7 +773,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder,
    content type for a given message.
 
    \param obj_message the message we find the best body for
-   \param format the format - see above.
+   \param format the format - see below.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND. If
    MAPI_E_NOT_FOUND is returned then format is set to 0x0

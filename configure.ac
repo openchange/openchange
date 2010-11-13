@@ -109,7 +109,7 @@ if test "x$1_set" != "xset"; then
 		AC_SUBST(OC_$2_INSTALLHEADER)
 		AC_SUBST(OC_$2_INSTALLLIB)
 	;;
-	TOOLS|TORTURE)
+	TOOLS)
 		OC_$2="$OC_$2 $1"
 		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
    		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
@@ -538,20 +538,12 @@ if test x"$enable_libpopt" = x"yes"; then
 	    OC_RULE_ADD(exchange2ical, TOOLS)
 	fi
 
-	AC_PATH_PROG([SMBTORTURE], [smbtorture], no)
-
-	if test x"$SMBTORTURE" != x""; then
-	    TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`
-	    AC_SUBST(TORTURE_MODULESDIR)
-	    OC_RULE_ADD(torture, TORTURE)
-	fi
-
 	MAPISTORE_TEST=mapistore_test
 	OC_RULE_ADD(mapiprofile, TOOLS)
 	OC_RULE_ADD(openchangemapidump, TOOLS)
 	OC_RULE_ADD(schemaIDGUID, TOOLS)
 
-	OC_RULE_ADD(check_fasttransfer, TORTURE)
+	OC_RULE_ADD(check_fasttransfer, TOOLS)
 fi
 AC_SUBST(MAPISTORE_TEST)
 
@@ -612,32 +604,6 @@ AC_ARG_WITH(modulesdir,
 [modulesdir="\${prefix}/modules"; ])
 
 AC_SUBST(modulesdir)
-
-dnl ##########################################################################
-dnl Swig bindings dependencies
-dnl ##########################################################################
-AC_ARG_ENABLE(swig-perl, AC_HELP_STRING([--enable-swig-perl],
-			   [build SWIG interfaces for Perl]),
-			   enable_perlswig="$enableval")
-if test "x${enable_perlswig}" = xyes; then
-   AC_PATH_PROG(SWIG, swig)
-
-   if test -z "$SWIG"
-      then
-	AC_MSG_ERROR(Please install swig)
-   fi
-
-   SWIGDIRSALL="swigperl-all"
-   SWIGDIRSINSTALL="swigperl-install"
-   SWIGDIRSUNINSTALL="swigperl-uninstall"
-fi
-
-PERL5DIR=`$PERL -e 'use Config; my $dir = $Config{sitelib}; print $dir'`
-AC_SUBST(PERL5DIR)
-
-AC_SUBST(SWIGDIRSALL)
-AC_SUBST(SWIGDIRSINSTALL)
-AC_SUBST(SWIGDIRSUNINSTALL)
 
 dnl ##########################################################################
 dnl Python bindings dependencies
@@ -749,9 +715,7 @@ OC_SETVAL(openchangemapidump)
 OC_SETVAL(schemaIDGUID)
 OC_SETVAL(mapiproxy)
 
-OC_SETVAL(torture)
 OC_SETVAL(doxygen)
-OC_SETVAL(perlswig)
 
 AC_MSG_RESULT([
 
@@ -785,8 +749,6 @@ OpenChange Configuration (Please review)
 	     - openchangemapidump:	$enable_openchangemapidump
 	     - schemaIDGUID:		$enable_schemaIDGUID
 
-	   * OpenChange Torture Suite:	$enable_torture
-
 	   * subunit format (mapitest):	$have_subunit
 
 	   * OpenChange Documentation:	$enable_doxygen
@@ -794,7 +756,6 @@ OpenChange Configuration (Please review)
 	   * Coverage Tests:		$use_cov
 
 	   * OpenChange Bindings:
-	     - Perl:			$enable_perlswig
 	     - Python:			$enable_pymapi
 	     - Qt4:			$enable_openchange_qt4
 

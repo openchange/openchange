@@ -37,9 +37,7 @@ endif
 all: 		$(OC_IDL)		\
 		$(OC_LIBS)		\
 		$(OC_TOOLS)		\
-		$(OC_TORTURE)		\
 		$(OC_SERVER)		\
-		$(SWIGDIRS-ALL)		\
 		$(PYMAPIALL)		\
 		$(COVERAGE_INIT)	\
 		$(OPENCHANGE_QT4)
@@ -50,8 +48,6 @@ install: 	all 			\
 		installheader 		\
 		$(OC_TOOLS_INSTALL) 	\
 		$(OC_SERVER_INSTALL) 	\
-		$(OC_TORTURE_INSTALL) 	\
-		$(SWIGDIRS-INSTALL) 	\
 		$(PYMAPIINSTALL) \
 		installnagios
 
@@ -62,8 +58,6 @@ installheader:	$(OC_LIBS_INSTALLHEADERS)
 uninstall:: 	$(OC_LIBS_UNINSTALL) 	\
 		$(OC_TOOLS_UNINSTALL) 	\
 		$(OC_SERVER_UNINSTALL) 	\
-		$(OC_TORTURE_UNINSTALL) \
-		$(SWIGDIRS-UNINSTALL) \
 		$(PYMAPIUNINSTALL)
 
 dist:: distclean
@@ -655,92 +649,6 @@ libocpf/ocpf.tab.c:	libocpf/ocpf.y
 # Avoid warnings
 libocpf/lex.yy.o: CFLAGS=
 libocpf/ocpf.tab.o: CFLAGS=
-
-#################################################################
-# torture suite compilation rules
-#################################################################
-
-torture:	#torture/torture_proto.h		\
-		#torture/openchange.$(SHLIBEXT)
-
-torture-install:
-	@echo "[*] install: openchange torture suite"
-	$(INSTALL) -d $(DESTDIR)$(TORTURE_MODULESDIR)
-#	$(INSTALL) -m 0755 torture/openchange.$(SHLIBEXT) $(DESTDIR)$(TORTURE_MODULESDIR)
-
-torture-uninstall:
-	rm -f $(DESTDIR)$(TORTURE_MODULESDIR)/openchange.*
-
-torture-clean::
-	rm -f torture/*.$(SHLIBEXT)
-ifneq ($(SNAPSHOT), no)
-	rm -f torture/torture_proto.h
-endif
-	rm -f torture/*.o torture/*.po torture/*.gcno torture/*.gcda
-
-clean:: torture-clean
-
-torture/openchange.$(SHLIBEXT):			\
-	torture/nspi_profile.po			\
-	torture/nspi_resolvenames.po		\
-	torture/mapi_restrictions.po		\
-	torture/mapi_criteria.po		\
-	torture/mapi_copymail.po		\
-	torture/mapi_sorttable.po		\
-	torture/mapi_bookmark.po		\
-	torture/mapi_fetchmail.po		\
-	torture/mapi_sendmail.po		\
-	torture/mapi_sendmail_html.po		\
-	torture/mapi_deletemail.po		\
-	torture/mapi_newmail.po			\
-	torture/mapi_sendattach.po		\
-	torture/mapi_fetchattach.po		\
-	torture/mapi_fetchappointment.po	\
-	torture/mapi_sendappointment.po		\
-	torture/mapi_fetchcontacts.po		\
-	torture/mapi_sendcontacts.po		\
-	torture/mapi_fetchtasks.po		\
-	torture/mapi_sendtasks.po		\
-	torture/mapi_common.po			\
-	torture/mapi_permissions.po		\
-	torture/mapi_createuser.po		\
-	torture/exchange_createuser.po		\
-	torture/mapi_namedprops.po		\
-	torture/mapi_recipient.po		\
-	torture/openchange.po			\
-	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LIBS)
-
-torture/torture_proto.h: torture/mapi_restrictions.c	\
-	torture/mapi_criteria.c		\
-	torture/mapi_deletemail.c	\
-	torture/mapi_newmail.c		\
-	torture/mapi_fetchmail.c	\
-	torture/mapi_sendattach.c 	\
-	torture/mapi_sorttable.c	\
-	torture/mapi_bookmark.c		\
-	torture/mapi_copymail.c		\
-	torture/mapi_fetchattach.c	\
-	torture/mapi_sendmail.c		\
-	torture/mapi_sendmail_html.c	\
-	torture/nspi_profile.c 		\
-	torture/nspi_resolvenames.c	\
-	torture/mapi_fetchappointment.c	\
-	torture/mapi_sendappointment.c	\
-	torture/mapi_fetchcontacts.c	\
-	torture/mapi_sendcontacts.c	\
-	torture/mapi_fetchtasks.c	\
-	torture/mapi_sendtasks.c	\
-	torture/mapi_common.c		\
-	torture/mapi_permissions.c	\
-	torture/mapi_namedprops.c	\
-	torture/mapi_recipient.c	\
-	torture/mapi_createuser.c	\
-	torture/exchange_createuser.c	\
-	torture/openchange.c
-	@echo "Generating $@"
-	@./script/mkproto.pl --private=torture/torture_proto.h --public=torture/torture_proto.h $^
 
 #################################################################
 # mapiproxy compilation rules
@@ -1689,32 +1597,12 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-swigperl-all:
-	@echo "Creating Perl bindings ..."
-	@$(MAKE) -C swig/perl all
-
-swigperl-install:
-	@echo "Install Perl bindings ..."
-	@$(MAKE) -C swig/perl install
-
-swigperl-uninstall:
-	@echo "Uninstall Perl bindings ..."
-	@$(MAKE) -C swig/perl uninstall
-
-distclean::
-	@$(MAKE) -C swig/perl distclean
-
-clean::
-	@echo "Cleaning Perl bindings ..."
-	@$(MAKE) -C swig/perl clean
-
 .PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h
 
 test:: check
 
-check:: torture/openchange.$(SHLIBEXT) libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
+check:: libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
 	# FIXME: Set up server
-	LD_LIBRARY_PATH=`pwd` $(SMBTORTURE) --load-module torture/openchange.$(SHLIBEXT) ncalrpc: OPENCHANGE
 	./bin/mapitest --mapi-calls 
 
 ####################################

@@ -66,7 +66,6 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!ReplGuid, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -157,7 +156,6 @@ _PUBLIC_ enum MAPISTATUS FXDestConfigure(mapi_object_t *obj,
 	uint8_t 					logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
@@ -244,7 +242,6 @@ _PUBLIC_ enum MAPISTATUS TellVersion(mapi_object_t *obj_store, uint16_t version[
 	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!version, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -337,7 +334,6 @@ _PUBLIC_ enum MAPISTATUS FXCopyFolder(mapi_object_t *obj, uint8_t copyFlags, uin
 	uint8_t 					logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
@@ -449,7 +445,6 @@ _PUBLIC_ enum MAPISTATUS FXCopyMessages(mapi_object_t *obj, mapi_id_array_t *mes
 	uint8_t 					logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
@@ -560,7 +555,6 @@ _PUBLIC_ enum MAPISTATUS FXCopyTo(mapi_object_t *obj, uint8_t level, uint32_t co
 	uint8_t 					logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
@@ -671,7 +665,6 @@ _PUBLIC_ enum MAPISTATUS FXCopyProperties(mapi_object_t *obj, uint8_t level, uin
 	uint8_t 					logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
@@ -773,7 +766,6 @@ _PUBLIC_ enum MAPISTATUS FXGetBuffer(mapi_object_t *obj_source_context, uint16_t
 	uint8_t 					logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_source_context, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_source_context);
@@ -870,7 +862,6 @@ _PUBLIC_ enum MAPISTATUS FXPutBuffer(mapi_object_t *obj_dest_context, DATA_BLOB 
 	uint8_t 					logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_dest_context, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!blob, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!usedSize, MAPI_E_INVALID_PARAMETER, NULL);

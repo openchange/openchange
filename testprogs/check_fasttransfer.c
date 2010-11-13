@@ -224,6 +224,7 @@ int main(int argc, const char *argv[])
 {
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
+	struct mapi_context		*mapi_ctx;
 	struct mapi_session		*session = NULL;
 	struct mapi_profile		*profile;
 	mapi_object_t			obj_store;
@@ -310,29 +311,29 @@ int main(int argc, const char *argv[])
 	 * Initialize MAPI subsystem
 	 */
 
-	retval = MAPIInitialize(opt_profdb);
+	retval = MAPIInitialize(&mapi_ctx, opt_profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", retval);
 		exit (1);
 	}
 
 	/* debug options */
-	SetMAPIDumpData(opt_dumpdata);
+	SetMAPIDumpData(mapi_ctx, opt_dumpdata);
 
 	if (opt_debug) {
-		SetMAPIDebugLevel(atoi(opt_debug));
+		SetMAPIDebugLevel(mapi_ctx, atoi(opt_debug));
 	}
 
 	/* if no profile is supplied use the default one */
 	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname);
+		retval = GetDefaultProfile(mapi_ctx, &opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			printf("No profile specified and no default profile found\n");
 			exit (1);
 		}
 	}
 
-	retval = MapiLogonEx(&session, opt_profname, opt_password);
+	retval = MapiLogonEx(mapi_ctx, &session, opt_profname, opt_password);
 	talloc_free(opt_profname);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", retval);
@@ -451,7 +452,7 @@ int main(int argc, const char *argv[])
 
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 
 	talloc_free(mem_ctx);
 

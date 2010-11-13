@@ -41,6 +41,8 @@
 
 static void init_oclient(struct oclient *oclient)
 {
+	oclient->mapi_ctx = NULL;
+
 	/* update and delete parameter */
 	oclient->update = NULL;
 	oclient->delete = NULL;
@@ -1010,7 +1012,8 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 }
 
 
-static enum MAPISTATUS check_conflict_date(mapi_object_t *obj,
+static enum MAPISTATUS check_conflict_date(struct oclient *oclient,
+					   mapi_object_t *obj,
 					   struct FILETIME *ft)
 {
 	enum MAPISTATUS		retval;
@@ -1020,7 +1023,7 @@ static enum MAPISTATUS check_conflict_date(mapi_object_t *obj,
 	bool			conflict;
 			
 	session = mapi_object_get_session(obj);
-	retval = MapiLogonEx(&session2, session->profile->profname, session->profile->password);
+	retval = MapiLogonEx(oclient->mapi_ctx, &session2, session->profile->profname, session->profile->password);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	mapi_object_init(&obj_store);
@@ -1082,7 +1085,7 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 		start_date->dwLowDateTime = (nt << 32) >> 32;
 		start_date->dwHighDateTime = (nt >> 32);
 
-		retval = check_conflict_date(obj_folder, start_date);
+		retval = check_conflict_date(oclient, obj_folder, start_date);
 		if (oclient->force == false) {
 			MAPI_RETVAL_IF(retval, retval, NULL);
 		}
@@ -1101,7 +1104,7 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 		end_date->dwLowDateTime = (nt << 32) >> 32;
 		end_date->dwHighDateTime = (nt >> 32);
 
-		retval = check_conflict_date(obj_folder, end_date);
+		retval = check_conflict_date(oclient, obj_folder, end_date);
 		if (oclient->force == false) {
 			MAPI_RETVAL_IF(retval, retval, NULL);
 		}
@@ -3142,17 +3145,17 @@ int main(int argc, const char *argv[])
 	 * Initialize MAPI subsystem
 	 */
 
-	retval = MAPIInitialize(opt_profdb);
+	retval = MAPIInitialize(&oclient.mapi_ctx, opt_profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
 	/* debug options */
-	SetMAPIDumpData(opt_dumpdata);
+	SetMAPIDumpData(oclient.mapi_ctx, opt_dumpdata);
 
 	if (opt_debug) {
-		SetMAPIDebugLevel(atoi(opt_debug));
+		SetMAPIDebugLevel(oclient.mapi_ctx, atoi(opt_debug));
 	}
 	
 	/* If no profile is specified try to load the default one from
@@ -3160,14 +3163,14 @@ int main(int argc, const char *argv[])
 	 */
 
 	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname);
+		retval = GetDefaultProfile(oclient.mapi_ctx, &opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			exit (1);
 		}
 	}
 
-	retval = MapiLogonEx(&session, opt_profname, opt_password);
+	retval = MapiLogonEx(oclient.mapi_ctx, &session, opt_profname, opt_password);
 	talloc_free(opt_profname);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
@@ -3410,7 +3413,7 @@ end:
 
 	mapi_object_release(&obj_store);
 
-	MAPIUninitialize();
+	MAPIUninitialize(oclient.mapi_ctx);
 
 	talloc_free(mem_ctx);
 

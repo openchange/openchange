@@ -63,7 +63,6 @@ _PUBLIC_ enum MAPISTATUS AddressTypes(mapi_object_t *obj_store,
 	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session = mapi_object_get_session(obj_store);
@@ -139,7 +138,6 @@ _PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
 	uint8_t 		logon_id = 0;
 	
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_store);
@@ -220,7 +218,6 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(lockstate > 2, MAPI_E_INVALID_PARAMETER, NULL);
@@ -312,7 +309,6 @@ _PUBLIC_ enum MAPISTATUS OptionsData(mapi_object_t *obj_store, const char *addrt
 	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!addrtype, MAPI_E_INVALID_PARAMETER, NULL);
 

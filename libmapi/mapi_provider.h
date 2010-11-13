@@ -50,6 +50,7 @@ struct mapi_session {
 	struct mapi_profile		*profile;
 	struct mapi_notify_ctx		*notify_ctx;
 	struct mapi_objects		*objects;
+	struct mapi_context		*mapi_ctx;
 	uint8_t				logon_ids[255];
 
 	struct mapi_session		*next;

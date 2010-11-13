@@ -31,6 +31,7 @@
 bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 {
 	NTSTATUS                status;
+	struct mapi_context	*mapi_ctx;
 	enum MAPISTATUS		retval;
 	struct dcerpc_pipe      *p;
 	TALLOC_CTX              *mem_ctx;
@@ -71,21 +72,21 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 			return false;
 		}
 	}
-	retval = MAPIInitialize(profdb);
-	mapi_errstr("MAPIInitialize", GetLastError());
+	retval = MAPIInitialize(&mapi_ctx, profdb);
+	mapi_errstr("MAPIInitialize", retval);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* profile name */
 	profname = talloc_strdup(mem_ctx, lpcfg_parm_string(torture->lp_ctx, NULL, "mapi", "profile"));
 	if (!profname) {
-		retval = GetDefaultProfile(&profname);
+		retval = GetDefaultProfile(mapi_ctx, &profname);
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Please specify a valid profile name\n"));
 			return false;
 		}
 	}
 	
-	retval = MapiLogonProvider(&session, profname, password, PROVIDER_ID_NSPI);
+	retval = MapiLogonProvider(mapi_ctx, &session, profname, password, PROVIDER_ID_NSPI);
 	talloc_free(profname);
 	mapi_errstr("MapiLogonProvider", GetLastError());
 	if (retval != MAPI_E_SUCCESS) return false;
@@ -131,7 +132,7 @@ bool torture_rpc_nspi_resolvenames(struct torture_context *torture)
 	retval = MAPIFreeBuffer(flaglist);
 	mapi_errstr("MAPIFreeBuffer: flaglist", GetLastError());
 	
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 
 	talloc_free(mem_ctx);
 

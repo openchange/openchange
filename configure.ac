@@ -245,6 +245,10 @@ dnl GNU Compiler
         LDFLAGS="$LDFLAGS -lgcov --coverage"
     fi
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
+    if test "x$use_cov" = "xyes"; then
+        COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_CXX -fprofile-arcs -ftest-coverage"
+        LDFLAGS="$LDFLAGS -lgcov --coverage"
+    fi
 fi
 AC_SUBST(COMPILER_OPTIONS_C)
 AC_SUBST(COMPILER_OPTIONS_CXX)

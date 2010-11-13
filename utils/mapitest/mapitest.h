@@ -140,6 +140,7 @@ struct mapitest_suite {
 */
 struct mapitest {
 	TALLOC_CTX		*mem_ctx;	/*!< talloc memory context for memory allocations */
+	struct mapi_context	*mapi_ctx;	/*!< mapi context */
 	struct mapi_session	*session;
 	bool			confidential;	/*!< true if confidential information should be omitted */
 	bool			no_server;	/*!< true if only non-server tests should be run */

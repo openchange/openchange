@@ -90,6 +90,7 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
+	struct mapi_context	*mapi_ctx;
 	bool			ret = true;
 	struct mapi_session	*session;
 	mapi_object_t		obj_store;
@@ -115,7 +116,7 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_fetchattach");
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, &mapi_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -222,7 +223,7 @@ bool torture_rpc_mapi_fetchattach(struct torture_context *torture)
 	mapi_object_release(&obj_attach);
 	mapi_object_release(&obj_stream);
 
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 
 	talloc_free(mem_ctx);
 	return (ret);

@@ -102,17 +102,25 @@ typedef struct _lzfuheader {
 _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream, 
 						 DATA_BLOB *rtf)
 {
-	enum MAPISTATUS	retval;
-	TALLOC_CTX	*mem_ctx;
-	uint32_t	in_size;
-	uint8_t		*rtfcomp;
-	uint16_t	read_size;
-	unsigned char	buf[0x1000];
+	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
+	struct mapi_session	*session;
+	TALLOC_CTX		*mem_ctx;
+	uint32_t		in_size;
+	uint8_t			*rtfcomp;
+	uint16_t		read_size;
+	unsigned char		buf[0x1000];
 
 	/* sanity check and init */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
-	mem_ctx = global_mapi_ctx->mem_ctx;
+
+	session = mapi_object_get_session(obj_stream);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mapi_ctx = session->mapi_ctx;
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mem_ctx = mapi_ctx->mem_ctx;
 
 	/* Read the stream pointed by obj_stream */
 	read_size = 0;

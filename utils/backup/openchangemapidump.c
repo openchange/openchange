@@ -344,6 +344,7 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
 	struct ocb_context		*ocb_ctx = NULL;
+	struct mapi_context		*mapi_ctx;
 	struct mapi_session		*session = NULL;
 	mapi_object_t			obj_store;
 	poptContext			pc;
@@ -405,24 +406,24 @@ int main(int argc, const char *argv[])
 	}
 
 	/* Initialize MAPI subsystem */
-	retval = MAPIInitialize(opt_profdb);
+	retval = MAPIInitialize(&mapi_ctx, opt_profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
 	/* debug options */
-	SetMAPIDumpData(opt_dumpdata);
+	SetMAPIDumpData(mapi_ctx, opt_dumpdata);
 
 	if (opt_debug) {
-		SetMAPIDebugLevel(atoi(opt_debug));
+		SetMAPIDebugLevel(mapi_ctx, atoi(opt_debug));
 	}
 
 	/* If no profile is specified try to load the default one from
 	 * the database 
 	 */
 	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname);
+		retval = GetDefaultProfile(mapi_ctx, &opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			exit (1);
@@ -442,7 +443,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* We only need to log on EMSMDB to backup Mailbox store or Public Folders */
-	retval = MapiLogonProvider(&session, opt_profname, opt_password, PROVIDER_ID_EMSMDB);
+	retval = MapiLogonProvider(mapi_ctx, &session, opt_profname, opt_password, PROVIDER_ID_EMSMDB);
 	talloc_free(opt_profname);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
@@ -461,7 +462,7 @@ int main(int argc, const char *argv[])
 
 	/* Uninitialize MAPI and OCB subsystem */
 	mapi_object_release(&obj_store);
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 	ocb_release(ocb_ctx);
 	talloc_free(mem_ctx);
 

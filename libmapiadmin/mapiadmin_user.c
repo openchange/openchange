@@ -53,6 +53,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 {
 	NTSTATUS			status;
 	struct tevent_context		*ev;
+	struct mapi_context		*mapi_ctx;
 	struct mapi_profile		*profile;
 	struct samr_Connect		c;
 	struct samr_OpenDomain		o;
@@ -61,12 +62,14 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 	struct policy_handle		domain_handle;
 	struct lsa_String		name;
 
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->session->profile->credentials, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->username, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mapi_ctx = mapiadmin_ctx->session->mapi_ctx;
+	MAPI_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	profile = mapiadmin_ctx->session->profile;
 	
@@ -83,7 +86,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 				     mapiadmin_ctx->dc_binding : 
 				     mapiadmin_ctx->binding,
 				     &ndr_table_samr,
-				     profile->credentials, ev, global_mapi_ctx->lp_ctx);
+				     profile->credentials, ev, mapi_ctx->lp_ctx);
 					     
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);	
 
@@ -186,6 +189,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
 	struct tevent_context		*ev = NULL;
+	struct mapi_context		*mapi_ctx;
 	struct mapi_profile		*profile;
 	struct ldb_context		*remote_ldb;
 	struct ldb_request		*req;
@@ -208,12 +212,14 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	struct ldb_dn			*account_dn;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->session->profile->credentials, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->user_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mapi_ctx = mapiadmin_ctx->session->mapi_ctx;
+	MAPI_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	profile = mapiadmin_ctx->session->profile;
 	dom_sid = mapiadmin_ctx->user_ctx->user_sid;
@@ -225,7 +231,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	ev = tevent_context_init(talloc_autofree_context());
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);
 	MAPI_RETVAL_IF(!remote_ldb_url, MAPI_E_CORRUPT_DATA, mem_ctx);
-	remote_ldb = ldb_wrap_connect(mem_ctx, ev, global_mapi_ctx->lp_ctx, remote_ldb_url, 
+	remote_ldb = ldb_wrap_connect(mem_ctx, ev, mapi_ctx->lp_ctx, remote_ldb_url, 
 				      NULL, mapiadmin_ctx->session->profile->credentials, 0);
 	MAPI_RETVAL_IF(!remote_ldb, MAPI_E_NETWORK_ERROR, mem_ctx);
 
@@ -366,6 +372,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_add(struct mapiadmin_ctx *mapiadmin_ctx)
 	TALLOC_CTX			*mem_ctx;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
+	struct mapi_context		*mapi_ctx;
 	struct mapi_profile		*profile;
 	struct samr_CreateUser2		r;
 	struct samr_GetUserPwInfo	pwp;
@@ -384,6 +391,9 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_add(struct mapiadmin_ctx *mapiadmin_ctx)
 
 	DEBUG(3, ("Creating account %s\n", mapiadmin_ctx->username));
 	profile = mapiadmin_ctx->session->profile;
+
+	mapi_ctx = mapiadmin_ctx->session->mapi_ctx;
+	MAPI_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, mem_ctx);
 
 again:
 	name.string = mapiadmin_ctx->username;
@@ -483,7 +493,7 @@ again:
 						      mapiadmin_ctx->description ?
 						      mapiadmin_ctx->description :
 						      "OpenChange account created by host %s: %s", 
-					 lpcfg_netbios_name(global_mapi_ctx->lp_ctx), 
+					 lpcfg_netbios_name(mapi_ctx->lp_ctx), 
 					 timestring(mapiadmin_ctx->user_ctx, time(NULL)));
 
 	DEBUG(3, ("Resetting ACB flags, force pw change time\n"));

@@ -97,7 +97,7 @@ _PUBLIC_ bool mapitest_nspi_QueryRows(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct SPropValue);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = global_mapi_ctx->session->profile->username;
+	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -224,7 +224,7 @@ _PUBLIC_ bool mapitest_nspi_GetMatches(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct SPropValue);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = global_mapi_ctx->session->profile->username;
+	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -345,7 +345,7 @@ _PUBLIC_ bool mapitest_nspi_DNToMId(struct mapitest *mt)
 
 	pNames.Count = 0x1;
 	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
-	pNames.Strings[0] = global_mapi_ctx->session->profile->homemdb;
+	pNames.Strings[0] = mt->mapi_ctx->session->profile->homemdb;
 
 	MId = talloc_zero(mem_ctx, struct SPropTagArray);
 
@@ -391,7 +391,7 @@ _PUBLIC_ bool mapitest_nspi_GetPropList(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct SPropValue);
 	lpProp->ulPropTag = PR_ANR_UNICODE;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszW = global_mapi_ctx->session->profile->username;
+	lpProp->value.lpszW = mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -455,7 +455,7 @@ _PUBLIC_ bool mapitest_nspi_GetProps(struct mapitest *mt)
 
 	pNames.Count = 0x1;
 	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
-	pNames.Strings[0] = global_mapi_ctx->session->profile->homemdb;
+	pNames.Strings[0] = mt->mapi_ctx->session->profile->homemdb;
 
 	MId = talloc_zero(mem_ctx, struct SPropTagArray);
 
@@ -593,7 +593,7 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct SPropValue);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = global_mapi_ctx->session->profile->username;
+	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;

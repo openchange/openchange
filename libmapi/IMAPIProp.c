@@ -58,8 +58,10 @@
 */
 _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj, 
 				  struct SPropTagArray *SPropTagArray,
-				  struct SPropValue **lpProps, uint32_t *PropCount)
+				  struct SPropValue **lpProps, 
+				  uint32_t *PropCount)
 {
+	struct mapi_context	*mapi_ctx;
 	struct mapi_request	*mapi_request;
 	struct mapi_response	*mapi_response;
 	struct EcDoRpc_MAPI_REQ	*mapi_req;
@@ -76,12 +78,14 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	uint8_t			logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = session->mapi_ctx;
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
@@ -150,7 +154,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	talloc_free(nameid);
 
 	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)session,
-					   global_mapi_ctx->lp_ctx,
+					   mapi_ctx->lp_ctx,
 					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
 					   SPropTagArray, lpProps, PropCount, 
 					   mapi_response->mapi_repl->u.mapi_GetProps.layout);
@@ -182,7 +186,8 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 
    \sa GetProps, GetPropList, GetPropsAll, DeleteProps, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps, 
+_PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, 
+				  struct SPropValue *lpProps, 
 				  unsigned long PropCount)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -202,7 +207,6 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, struct SPropValue *lpProps
 	uint8_t			logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
@@ -316,7 +320,6 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 	uint8_t					logon_id;
 
 	/* Sanity Checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_parent, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_child, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF((flags != 0x9) && (flags != 0xA) && (flags != 0xC), 
@@ -405,7 +408,6 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	uint8_t			logon_id;
 
 	/* sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session = mapi_object_get_session(obj);
@@ -496,7 +498,6 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	uint8_t			logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
@@ -579,7 +580,6 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	uint8_t			logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -672,7 +672,6 @@ _PUBLIC_ enum MAPISTATUS SetPropertiesNoReplicate(mapi_object_t *obj,
 	uint8_t					logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
@@ -777,7 +776,6 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
 	uint8_t					logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!proptags, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -868,7 +866,6 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 	uint8_t				logon_id;
 
 	/* sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
@@ -977,7 +974,6 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	uint8_t				logon_id;
 
 	/* sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!nameid, MAPI_E_INVALID_PARAMETER, NULL);
@@ -1095,7 +1091,6 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 	uint8_t					logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj);
@@ -1209,7 +1204,6 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	uint8_t				logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_src, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!tags, MAPI_E_INVALID_PARAMETER, NULL);
@@ -1329,7 +1323,6 @@ _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
 	uint8_t			logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_src, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_dst, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!excludeTags, MAPI_E_INVALID_PARAMETER, NULL);

@@ -290,7 +290,7 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyMessages(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = mapi_id_array_init(&mids);
+	retval = mapi_id_array_init(mt->mapi_ctx, &mids);
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval_clean(mt, "mapi_id_array_init", retval);
 		ret = false;
@@ -388,7 +388,7 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyTo(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = mapi_id_array_init(&mids);
+	retval = mapi_id_array_init(mt->mapi_ctx, &mids);
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval_clean(mt, "mapi_id_array_init", retval);
 		ret = false;

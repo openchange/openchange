@@ -759,7 +759,7 @@ _PUBLIC_ bool mapitest_oxcfold_SetSearchCriteria(struct mapitest *mt)
 	}
 
 	/* Step 6. Search criteria on this folder */
-	mapi_id_array_init(&id);
+	mapi_id_array_init(mt->mapi_ctx, &id);
 	mapi_id_array_add_id(&id, id_inbox);
 
 	res.rt = RES_CONTENT;
@@ -871,7 +871,7 @@ _PUBLIC_ bool mapitest_oxcfold_GetSearchCriteria(struct mapitest *mt)
 	}
 
 	/* Step 6. Search criteria on this folder */
-	mapi_id_array_init(&id);
+	mapi_id_array_init(mt->mapi_ctx, &id);
 	mapi_id_array_add_id(&id, id_inbox);
 
 	res.rt = RES_CONTENT;
@@ -980,7 +980,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 	}
 
 	/* Step 4. Create sample messages */
-	mapi_id_array_init(&msg_id_array);
+	mapi_id_array_init(mt->mapi_ctx, &msg_id_array);
 	for (i = 0; i < 3; i++) {
 		mapi_object_init(&obj_message);
 		common_result = mapitest_common_message_create(mt, &obj_folder_src, &obj_message, MT_MAIL_SUBJECT);
@@ -1338,7 +1338,7 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
 	}
 
 	/* Step 3. Create sample messages */
-	mapi_id_array_init(&msg_id_array);
+	mapi_id_array_init(mt->mapi_ctx, &msg_id_array);
 	for (i = 0; i < 3; i++) {
 		mapi_object_init(&obj_message);
 		ret = mapitest_common_message_create(mt, &obj_folder, &obj_message, MT_MAIL_SUBJECT);

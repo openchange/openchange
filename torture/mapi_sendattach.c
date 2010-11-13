@@ -38,6 +38,7 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
+	struct mapi_context	*mapi_ctx;
 	bool			ret = true;
 	const char		*subject = lpcfg_parm_string(torture->lp_ctx, NULL, "mapi", "subject");
 	const char		*body = lpcfg_parm_string(torture->lp_ctx, NULL, "mapi", "body");
@@ -74,7 +75,7 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 	mem_ctx = talloc_named(NULL, 0, "torture_rpc_mapi_sendmail");
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, &mapi_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -113,9 +114,9 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 					  PR_SMTP_ADDRESS,
 					  PR_GIVEN_NAME);
 
-	usernames_to = get_cmdline_recipients(mem_ctx, "to");
-	usernames_cc = get_cmdline_recipients(mem_ctx, "cc");
-	usernames_bcc = get_cmdline_recipients(mem_ctx, "bcc");
+	usernames_to = get_cmdline_recipients(mem_ctx, torture->lp_ctx, "to");
+	usernames_cc = get_cmdline_recipients(mem_ctx, torture->lp_ctx, "cc");
+	usernames_bcc = get_cmdline_recipients(mem_ctx, torture->lp_ctx, "bcc");
 	usernames = collapse_recipients(mem_ctx, usernames_to, usernames_cc, usernames_bcc);
 
 	retval = ResolveNames(mapi_object_get_session(&obj_outbox), usernames, 
@@ -229,7 +230,7 @@ bool torture_rpc_mapi_sendattach(struct torture_context *torture)
 	
 	/* session::Uninitialize()
 	 */
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 
 	talloc_free(mem_ctx);
 	return ret;

@@ -116,6 +116,7 @@ bool torture_create_environment(struct loadparm_context *lp_ctx,
 bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 {
 	NTSTATUS			nt_status;
+	struct mapi_context		*mapi_ctx;
 	enum MAPISTATUS			retval;
 	struct dcerpc_pipe		*p;
 	TALLOC_CTX			*mem_ctx;
@@ -146,7 +147,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 	}
 
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, &mapi_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* init objects */
 	mapi_object_init(&obj_store);
@@ -367,7 +368,7 @@ bool torture_rpc_mapi_restrictions(struct torture_context *torture)
 
 	/* uninitialize mapi
 	 */
-	MAPIUninitialize();
+	MAPIUninitialize(mapi_ctx);
 	talloc_free(mem_ctx);
 	
 	return (ret);

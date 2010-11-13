@@ -30,7 +30,8 @@
 
 /**
    \details Allocate memory using the MAPI memory context
-
+   
+   \param mapi_ctx pointer to the MAPI context
    \param size the number of bytes to allocate
    \param ptr pointer to the allocated byte region
 
@@ -46,15 +47,15 @@
 
    \sa MAPIFreeBuffer, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS MAPIAllocateBuffer(uint32_t size, void **ptr)
+_PUBLIC_ enum MAPISTATUS MAPIAllocateBuffer(struct mapi_context *mapi_ctx, uint32_t size, void **ptr)
 {
 	TALLOC_CTX	*mem_ctx;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = (TALLOC_CTX *) global_mapi_ctx->mem_ctx;
+	mem_ctx = (TALLOC_CTX *) mapi_ctx->mem_ctx;
 
 	*ptr = talloc_size(mem_ctx, size);
 	OPENCHANGE_RETVAL_IF(!ptr, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
@@ -122,7 +123,6 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	uint8_t 		logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -149,7 +149,9 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 
-	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+	if (mapi_response->mapi_repl) {
+		OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+	}
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
@@ -211,7 +213,6 @@ _PUBLIC_ enum MAPISTATUS GetLongTermIdFromId(mapi_object_t *obj, mapi_id_t id,
 	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
@@ -298,7 +299,6 @@ _PUBLIC_ enum MAPISTATUS GetIdFromLongTermId(mapi_object_t *obj, struct LongTerm
 	uint8_t 			logon_id = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);

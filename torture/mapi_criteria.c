@@ -39,6 +39,7 @@ bool torture_rpc_mapi_criteria(struct torture_context *torture)
 {
 	NTSTATUS			ntstatus;
 	enum MAPISTATUS			retval;
+	struct mapi_context		*mapi_ctx;
 	struct dcerpc_pipe		*p;
 	TALLOC_CTX			*mem_ctx;
 	struct mapi_session		*session;
@@ -64,7 +65,7 @@ bool torture_rpc_mapi_criteria(struct torture_context *torture)
 	}
 	
 	/* init mapi */
-	if ((session = torture_init_mapi(mem_ctx, torture->lp_ctx)) == NULL) return false;
+	if ((session = torture_init_mapi(mem_ctx, &mapi_ctx, torture->lp_ctx)) == NULL) return false;
 
 	/* Open Message Store */
 	mapi_object_init(&obj_store);
@@ -103,7 +104,7 @@ bool torture_rpc_mapi_criteria(struct torture_context *torture)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Set Search criteria on this folder */
-	mapi_id_array_init(&id);
+	mapi_id_array_init(mapi_ctx, &id);
 	mapi_id_array_add_id(&id, id_tis);
 
 	res.rt = RES_CONTENT;
@@ -140,6 +141,7 @@ bool torture_rpc_mapi_criteria(struct torture_context *torture)
 	mapi_object_release(&obj_searchdir);
 	mapi_object_release(&obj_search);
 	mapi_object_release(&obj_store);
+	MAPIUninitialize(mapi_ctx);
 	talloc_free(mem_ctx);
 
 	return true;

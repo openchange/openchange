@@ -42,9 +42,8 @@
 
    TableFlags possible values:
 
-   - TableFlags_Depth (0x4): Fills the hierarchy table with containers
-   from all levels. If this flag is not set, the hierarchy table
-   contains only the container's immediate child containers.
+   - TableFlags_Associated (0x2): Get the contents table for "Folder Associated
+   Information" messages, rather than normal messages.
 
    - TableFlags_DeferredErrors (0x8): The call response can return immediately,
    possibly before the call execution is complete and in this case the

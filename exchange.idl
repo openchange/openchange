@@ -1278,7 +1278,8 @@ System Attendant Private Interface
 	/**************************/
 	/* EcDoRpc Function 0x4   */
 	typedef [bitmap8bit] bitmap {
-		TableFlags_Depth			= 0x4,
+		TableFlags_Associated			= 0x2, /* only for GetContentsTable */
+		TableFlags_Depth			= 0x4, /* only for GetHierarchyTable */
 		TableFlags_DeferredErrors		= 0x8,
 		TableFlags_NoNotifications		= 0x10,
 		TableFlags_SoftDeletes			= 0x20,

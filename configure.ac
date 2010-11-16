@@ -723,14 +723,10 @@ AC_MSG_RESULT([
 ===============================================================
 OpenChange Configuration (Please review)
 
-	   * Install:
-	     - prefix:			$prefix
-
-	   * OpenChange MAPI library:	$enable_libmapi
-                      Thread support:	$enable_pthread $enable_thread_lib
-
 	   * OpenChange Libraries:
-	     - libmapi++:		$enable_libmapixx
+	     - libmapi (C library):	$enable_libmapi
+		      Thread support:	$enable_pthread $enable_thread_lib
+	     - libmapi++ (C++ library):	$enable_libmapixx
 	     - libmapiadmin:		$enable_libmapiadmin
 	     - libocpf:			$enable_libocpf
 
@@ -760,6 +756,7 @@ OpenChange Configuration (Please review)
 	     - Python:			$enable_pymapi
 	     - Qt4:			$enable_openchange_qt4
 
+	   * Installation prefix:	$prefix
 
 ===============================================================
 

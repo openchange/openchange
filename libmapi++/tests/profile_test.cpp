@@ -35,7 +35,10 @@ int main ()
 		{
 			char *tmpname = (char*) calloc(sizeof(PROFILEDB_NAME_TEMPLATE) + 1, sizeof(char));
 			strncpy(tmpname, PROFILEDB_NAME_TEMPLATE, sizeof(PROFILEDB_NAME_TEMPLATE));
-			mkstemp(tmpname);
+			int ret = mkstemp(tmpname);
+			if (ret < 0) {
+				std::cout << "failed to create temporary file: " << strerror(errno) << std::endl;
+			}
 			if (libmapipp::profile_database::create_profile_store(tmpname)) {
 				std::cout << "success creating a temporary profile store" << std::endl;
 			} else {
@@ -47,7 +50,10 @@ int main ()
 		{
 			char *tmpname2 = (char*) calloc(sizeof(PROFILEDB_NAME_TEMPLATE) + 1, sizeof(char));
 			strncpy(tmpname2, PROFILEDB_NAME_TEMPLATE, sizeof(PROFILEDB_NAME_TEMPLATE));
-			mkstemp(tmpname2);
+			int ret = mkstemp(tmpname2);
+			if (ret < 0) {
+				std::cout << "failed to create temporary file: " << strerror(errno) << std::endl;
+			}
 			if (libmapipp::profile_database::create_profile_store(std::string(tmpname2))) {
 				std::cout << "success creating a temporary profile store with std::string" << std::endl;
 			} else {

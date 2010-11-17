@@ -270,7 +270,7 @@ static const char *get_filename(const char *filename)
 	if (!filename) return NULL;
 
 	substr = rindex(filename, '/');
-	if (substr) return substr;
+	if (substr) return substr + 1;
 
 	return filename;
 }
@@ -484,10 +484,11 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 									struct SPropValue	*lpProps2;
 									uint32_t		count2;
 									
-									SPropTagArray = set_SPropTagArray(mem_ctx, 0x3, 
+									SPropTagArray = set_SPropTagArray(mem_ctx, 0x4, 
 													  PR_ATTACH_FILENAME,
 													  PR_ATTACH_LONG_FILENAME,
-													  PR_ATTACH_SIZE);
+													  PR_ATTACH_SIZE,
+													  PR_ATTACH_CONTENT_ID);
 									lpProps2 = talloc_zero(mem_ctx, struct SPropValue);
 									retval = GetProps(&obj_attach, SPropTagArray, &lpProps2, &count2);
 									MAPIFreeBuffer(SPropTagArray);
@@ -887,7 +888,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 		for (i = 0; oclient->attach[i].filename; i++) {
 			mapi_object_t		obj_attach;
 			mapi_object_t		obj_stream;
-			struct SPropValue	props_attach[3];
+			struct SPropValue	props_attach[4];
 			uint32_t		count_props_attach;
 
 			mapi_object_init(&obj_attach);
@@ -902,7 +903,9 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			props_attach[2].ulPropTag = PR_ATTACH_FILENAME;
 			printf("Sending %s:\n", oclient->attach[i].filename);
 			props_attach[2].value.lpszA = get_filename(oclient->attach[i].filename);
-			count_props_attach = 3;
+			props_attach[3].ulPropTag = PR_ATTACH_CONTENT_ID;
+			props_attach[3].value.lpszA = get_filename(oclient->attach[i].filename);
+			count_props_attach = 4;
 
 			/* SetProps */
 			retval = SetProps(&obj_attach, props_attach, count_props_attach);

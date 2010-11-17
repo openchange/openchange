@@ -1220,13 +1220,20 @@ static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
 
 	/* Build the list of named properties we want to set */
 	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
+	retval = mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
+	if (retval != MAPI_E_SUCCESS) {
+		talloc_free(nameid);
+		return retval;
+	}
 
 	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
 	retval = GetIDsFromNames(obj_folder, nameid->count,
 				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return retval;
+	if (retval != MAPI_E_SUCCESS) {
+		talloc_free(nameid);
+		return retval;
+	}
 	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
 	MAPIFreeBuffer(nameid);
 

@@ -1770,6 +1770,13 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	printf("MAILBOX (%u messages)\n", count);
+	if (!count) {
+		mapi_object_release(&obj_table);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_tis);
+
+		return true;
+	}
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
 					  PR_FID,

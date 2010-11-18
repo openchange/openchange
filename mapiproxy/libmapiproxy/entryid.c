@@ -119,14 +119,14 @@ _PUBLIC_ enum MAPISTATUS entryid_set_folder_EntryID(TALLOC_CTX *mem_ctx,
 	memcpy(&bin->lpb[30],  ReplGuid->clock_seq, sizeof (uint8_t) * 2);
 	memcpy(&bin->lpb[32], ReplGuid->node, sizeof (uint8_t) * 6);
 
-	/* 8 bytes: FolderID, first byte unset */
-	bin->lpb[39] = ((fid >> 8) & 0xFF);
-	bin->lpb[40] = ((fid >> 16) & 0xFF);
-	bin->lpb[41] = ((fid >> 24) & 0xFF);
-	bin->lpb[42] = ((fid >> 32) & 0xFF);
-	bin->lpb[43] = ((fid >> 40) & 0xFF);
-	bin->lpb[44] = ((fid >> 48) & 0xFF);
-	bin->lpb[45] = ((fid >> 56) & 0xFF);
+	/* 6 bytes: FolderID, first two byte unset */
+	bin->lpb[38] = ((fid >> 16) & 0xFF);
+	bin->lpb[39] = ((fid >> 24) & 0xFF);
+	bin->lpb[40] = ((fid >> 32) & 0xFF);
+	bin->lpb[41] = ((fid >> 40) & 0xFF);
+	bin->lpb[42] = ((fid >> 48) & 0xFF);
+	bin->lpb[43] = ((fid >> 56) & 0xFF);
+	/* 44 and 45 are zero padding */
 
 	*rbin = bin;
 

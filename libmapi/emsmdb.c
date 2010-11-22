@@ -22,12 +22,6 @@
 #include <fcntl.h>
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
-#define DCERPC_CALL_ECDOCONNECT_COMPAT 1
-#define DCERPC_CALL_ECDOCONNECTEX_COMPAT 1
-#define DCERPC_CALL_ECDODISCONNECT_COMPAT 1
-#define DCERPC_CALL_ECDORPC_COMPAT 1
-#define DCERPC_CALL_ECDORPCEXT2_COMPAT 1
-#define DCERPC_CALL_ECRREGISTERPUSHNOTIFICATION_COMPAT 1
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_exchange_c.h"
 #include <gen_ndr/ndr_misc.h>
@@ -134,7 +128,7 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 	r.out.picxr = &ret->info.picxr;
 	r.out.pullTimeStamp = &pullTimeStamp;
 
-	status = dcerpc_EcDoConnect(p, mem_ctx, &r);
+	status = dcerpc_EcDoConnect_r(p->binding_handle, mem_ctx, &r);
 	retval = r.out.result;
 	if (!NT_STATUS_IS_OK(status) || retval) {
 		*return_value = retval;
@@ -237,7 +231,7 @@ struct emsmdb_context *emsmdb_connect_ex(TALLOC_CTX *mem_ctx,
 	r.in.pcbAuxOut = &pcbAuxOut;
 	r.out.pcbAuxOut = &pcbAuxOut;
 
-	status = dcerpc_EcDoConnectEx(p, tmp_ctx, &r);
+	status = dcerpc_EcDoConnectEx_r(p->binding_handle, tmp_ctx, &r);
 	retval = r.out.result;
 	if (!NT_STATUS_IS_OK(status) || retval) {
 		*return_value = retval;
@@ -310,7 +304,7 @@ enum MAPISTATUS emsmdb_disconnect(struct emsmdb_context *emsmdb_ctx)
 
 	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
 
-	status = dcerpc_EcDoDisconnect(emsmdb_ctx->rpc_connection, emsmdb_ctx, &r);
+	status = dcerpc_EcDoDisconnect_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx, &r);
 	retval = r.out.result;
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
@@ -358,7 +352,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_null(struct emsmdb_context *emsmdb_ctx,
 
 	r.out.mapi_response = mapi_response;
 
-	status = dcerpc_EcDoRpc(emsmdb_ctx->rpc_connection, emsmdb_ctx->mem_ctx, &r);
+	status = dcerpc_EcDoRpc_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx->mem_ctx, &r);
 	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
 		return status;
 	}
@@ -444,7 +438,7 @@ start:
 	r.in.length = r.out.length = length;
 	r.in.max_data = (*length >= 0x4000) ? 0x7FFF : emsmdb_ctx->max_data;
 
-	status = dcerpc_EcDoRpc(emsmdb_ctx->rpc_connection, mem_ctx, &r);
+	status = dcerpc_EcDoRpc_r(emsmdb_ctx->rpc_connection->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (emsmdb_ctx->setup == false) {
 			errno = 0;
@@ -565,7 +559,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 
 	r.out.pulTransTime = &pulTransTime;
 
-	status = dcerpc_EcDoRpcExt2(emsmdb_ctx->rpc_connection, mem_ctx, &r);
+	status = dcerpc_EcDoRpcExt2_r(emsmdb_ctx->rpc_connection->binding_handle, mem_ctx, &r);
 	talloc_free(ndr_rgbIn);
 	talloc_free(ndr_comp_rgbIn);
 		
@@ -726,7 +720,7 @@ NTSTATUS emsmdb_register_notification(struct mapi_session *session,
 	request.out.handle = &handle;
 	request.out.hNotification = &hNotification;
 
-	status = dcerpc_EcRRegisterPushNotification(emsmdb_ctx->rpc_connection, emsmdb_ctx->mem_ctx, &request);
+	status = dcerpc_EcRRegisterPushNotification_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx->mem_ctx, &request);
 	retval = request.out.result;
 	if (!NT_STATUS_IS_OK(status) || retval) {
 		talloc_free(mem_ctx);

@@ -33,7 +33,6 @@
 #include <ldap_ndr.h>
 
 #include <core/error.h>
-#define DCERPC_IFACE_SAMR_COMPAT 1
 #include <gen_ndr/ndr_samr.h>
 #include <gen_ndr/ndr_samr_c.h>
 
@@ -96,8 +95,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 	c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	c.out.connect_handle = &handle;
 
-	status = dcerpc_samr_Connect(mapiadmin_ctx->user_ctx->p, 
-				     mapiadmin_ctx->user_ctx, &c);
+	status = dcerpc_samr_Connect_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		const char *errstr = nt_errstr(status);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
@@ -116,8 +114,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 	l.out.sid = talloc(mem_ctx, struct dom_sid2 *);
 	talloc_steal(mapiadmin_ctx->user_ctx, l.out.sid);
 
-	status = dcerpc_samr_LookupDomain(mapiadmin_ctx->user_ctx->p, 
-					  mapiadmin_ctx->user_ctx, &l);
+	status = dcerpc_samr_LookupDomain_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("LookupDomain failed - %s\n", nt_errstr(status)));
 		return MAPI_E_CALL_FAILED;
@@ -132,7 +129,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 	o.in.sid = *l.out.sid;
 	o.out.domain_handle = &domain_handle;
 
-	status = dcerpc_samr_OpenDomain(mapiadmin_ctx->user_ctx->p, mapiadmin_ctx->user_ctx, &o);
+	status = dcerpc_samr_OpenDomain_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &o);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("OpenDomain failed - %s\n", nt_errstr(status)));
 		return MAPI_E_CALL_FAILED;
@@ -405,8 +402,7 @@ again:
 	r.out.access_granted = &access_granted;
 	r.out.rid = &rid;
 
-	status = dcerpc_samr_CreateUser2(mapiadmin_ctx->user_ctx->p, 
-					 mapiadmin_ctx->user_ctx, &r);
+	status = dcerpc_samr_CreateUser2_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &r);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 		mapiadmin_user_del(mapiadmin_ctx);
@@ -427,7 +423,7 @@ again:
 	pwp.in.user_handle = &mapiadmin_ctx->user_ctx->user_handle;
 	pwp.out.info = talloc_zero(mem_ctx, struct samr_PwInfo);
 
-	status = dcerpc_samr_GetUserPwInfo(mapiadmin_ctx->user_ctx->p, mapiadmin_ctx->user_ctx, &pwp);
+	status = dcerpc_samr_GetUserPwInfo_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &pwp);
 	if (NT_STATUS_IS_OK(status)) {
 		policy_min_pw_len = pwp.out.info->min_password_length;
 	} else {
@@ -459,7 +455,7 @@ again:
 
 	arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
 
-	status = dcerpc_samr_SetUserInfo(mapiadmin_ctx->user_ctx->p, mapiadmin_ctx->user_ctx, &s);
+	status = dcerpc_samr_SetUserInfo_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("SetUserInfo failed - %s\n", nt_errstr(status)));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
@@ -498,7 +494,7 @@ again:
 
 	DEBUG(3, ("Resetting ACB flags, force pw change time\n"));
 
-	status = dcerpc_samr_SetUserInfo(mapiadmin_ctx->user_ctx->p, mapiadmin_ctx->user_ctx, &s);
+	status = dcerpc_samr_SetUserInfo_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("SetUserInfo failed - %s\n", nt_errstr(status)));
 	        MAPI_RETVAL_IF(1, MAPI_E_CALL_FAILED, mem_ctx);
@@ -549,7 +545,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_del(struct mapiadmin_ctx *mapiadmin_ctx)
 	n.out.rids = talloc_zero(mem_ctx, struct samr_Ids);
 	n.out.types = talloc_zero(mem_ctx, struct samr_Ids);
 
-	status = dcerpc_samr_LookupNames(mapiadmin_ctx->user_ctx->p, mem_ctx, &n);
+	status = dcerpc_samr_LookupNames_r(mapiadmin_ctx->user_ctx->p->binding_handle, mem_ctx, &n);
 	if (NT_STATUS_IS_OK(status)) {
 		rid = n.out.rids->ids[0];
 	} else {
@@ -562,7 +558,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_del(struct mapiadmin_ctx *mapiadmin_ctx)
 	r.in.rid = rid;
 	r.out.user_handle = &user_handle;
 
-	status = dcerpc_samr_OpenUser(mapiadmin_ctx->user_ctx->p, mem_ctx, &r);
+	status = dcerpc_samr_OpenUser_r(mapiadmin_ctx->user_ctx->p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("OpenUser(%s) failed - %s\n", mapiadmin_ctx->username, nt_errstr(status)));
 		MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_NOT_FOUND, mem_ctx);
@@ -570,7 +566,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_del(struct mapiadmin_ctx *mapiadmin_ctx)
 
 	d.in.user_handle = &user_handle;
 	d.out.user_handle = &user_handle;
-	status = dcerpc_samr_DeleteUser(mapiadmin_ctx->user_ctx->p, mem_ctx, &d);
+	status = dcerpc_samr_DeleteUser_r(mapiadmin_ctx->user_ctx->p->binding_handle, mem_ctx, &d);
 	MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 
 	talloc_free(mem_ctx);

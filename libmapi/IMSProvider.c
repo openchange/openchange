@@ -20,8 +20,6 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/libmapi_private.h"
-#define DCERPC_CALL_RFRGETNEWDSA_COMPAT 1
-#define DCERPC_CALL_RFRGETFQDNFROMLEGACYDN_COMPAT 1
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_exchange_c.h"
 #include <core/error.h>
@@ -165,7 +163,7 @@ _PUBLIC_ char *RfrGetNewDSA(struct mapi_context *mapi_ctx,
 	r.in.ppszUnused = NULL;
 	r.in.ppszServer = (const char **) &ppszServer;
 
-	status = dcerpc_RfrGetNewDSA(pipe, mem_ctx, &r);
+	status = dcerpc_RfrGetNewDSA_r(pipe->binding_handle, mem_ctx, &r);
 	if ((!NT_STATUS_IS_OK(status) || !ppszServer) && server) {
 		ppszServer = talloc_strdup((TALLOC_CTX *)session, server);
 	} else {
@@ -218,7 +216,7 @@ _PUBLIC_ enum MAPISTATUS RfrGetFQDNFromLegacyDN(struct mapi_context *mapi_ctx, s
 	r.in.szMailboxServerDN = profile->homemdb;
 	r.out.ppszServerFQDN = &ppszServerFQDN;
 
-	status = dcerpc_RfrGetFQDNFromLegacyDN(pipe, mem_ctx, &r);
+	status = dcerpc_RfrGetFQDNFromLegacyDN_r(pipe->binding_handle, mem_ctx, &r);
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	
 	if (ppszServerFQDN) {

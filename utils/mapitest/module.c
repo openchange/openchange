@@ -374,7 +374,9 @@ _PUBLIC_ uint32_t module_noserver_init(struct mapitest *mt)
 
 	suite = mapitest_suite_init(mt, "NOSERVER", "No server operations", false);
 
-	mapitest_suite_add_test(suite, "LZFU", "Test Compressed RTF operations", mapitest_noserver_lzfu);
+	mapitest_suite_add_test(suite, "LZFU-DECOMPRESS", "Test Compressed RTF decompression operations", mapitest_noserver_lzfu);
+	mapitest_suite_add_test(suite, "LZFU-COMPRESS", "Test Compressed RTF compression operations", mapitest_noserver_rtfcp);
+	mapitest_suite_add_test(suite, "LZFU-COMPRESS-LARGE", "Test RTF (de)compression operations on larger file", mapitest_noserver_rtfcp_large);
 	mapitest_suite_add_test(suite, "SROWSET", "Test SRowSet parsing", mapitest_noserver_srowset);
 	mapitest_suite_add_test(suite, "GETSETPROPS", "Test Property handling", mapitest_noserver_properties);
 	mapitest_suite_add_test(suite, "MAPIPROPS", "Test MAPI Property handling", mapitest_noserver_mapi_properties);

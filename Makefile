@@ -1272,7 +1272,9 @@ mapitest-install:	mapitest
 	$(INSTALL) -d $(DESTDIR)$(bindir)
 	$(INSTALL) -m 0755 bin/mapitest $(DESTDIR)$(bindir)
 	$(INSTALL) -d $(DESTDIR)$(datadir)/mapitest/lzxpress
+	$(INSTALL) -d $(DESTDIR)$(datadir)/mapitest/lzfu
 	$(INSTALL) -m 0644 utils/mapitest/data/lzxpress/* $(DESTDIR)$(datadir)/mapitest/lzxpress/
+	$(INSTALL) -m 0644 utils/mapitest/data/lzfu/* $(DESTDIR)$(datadir)/mapitest/lzfu/
 
 mapitest-uninstall:
 	rm -f $(DESTDIR)$(bindir)/mapitest

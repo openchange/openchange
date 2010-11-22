@@ -116,6 +116,155 @@ _PUBLIC_ bool mapitest_noserver_lzfu(struct mapitest *mt)
 	return true;
 }
 
+/**
+     \details Test the Compressed RTF compression routine.
+
+   This function:
+   -# Loads some test data and checks it
+   -# Compresses the test data
+   -# Checks that the compressed data matches the expected result
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+*/ 
+_PUBLIC_ bool mapitest_noserver_rtfcp(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	uint8_t			*compressed;
+	size_t			compressed_length;
+	char 			*compressed_hex;
+
+	/* compress the test data */
+	retval = compress_rtf(mt->mem_ctx, RTF_UNCOMPRESSED1, sizeof(RTF_UNCOMPRESSED1) - 1, &compressed, &compressed_length);
+	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print_retval(mt, "compress_rtf - step 1 (bad retval)");
+		return false;
+	}
+
+	/* Check the compressed result matches the compressed array */
+	compressed_hex = hex_encode_talloc(mt->mem_ctx, compressed, compressed_length);
+	if (strncasecmp(compressed_hex, RTF_COMPRESSED1_HEX, (size_t)98) != 0) {
+		mapitest_print(mt, "* %-40s: compare results RTF_COMPRESSED1 - mismatch\n", "RTFCP");
+		mapitest_print(mt, "- %s\n", RTF_COMPRESSED1_HEX);
+		mapitest_print(mt, "- %s\n", compressed_hex);
+		return false;
+	} else {
+		mapitest_print(mt, "* %-40s: compare results RTF_COMPRESSED1 - match\n", "RTFCP");
+		mapitest_print(mt, "- %s\n", RTF_COMPRESSED1_HEX);
+		mapitest_print(mt, "- %s\n", compressed_hex);
+	}
+	talloc_free(compressed_hex);
+	talloc_free(compressed);
+
+	/* compress the test data */
+	retval = compress_rtf(mt->mem_ctx, RTF_UNCOMPRESSED2, sizeof(RTF_UNCOMPRESSED2) - 1, &compressed, &compressed_length);
+	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print_retval(mt, "compress_rtf - step 2 (bad retval)");
+		return false;
+	}
+
+	// Check the compressed result matches the compressed array.
+	compressed_hex = hex_encode_talloc(mt->mem_ctx, compressed, compressed_length);
+	if (strncasecmp(compressed_hex, RTF_COMPRESSED2_HEX, sizeof(RTF_COMPRESSED2_HEX)) != 0) {
+		mapitest_print(mt, "* %-40s: compare results RTF_COMPRESSED2 - mismatch\n", "RTFCP");
+		mapitest_print(mt, "- %s\n", RTF_COMPRESSED2_HEX);
+		mapitest_print(mt, "- %s\n", compressed_hex);
+		return false;
+	} else {
+		mapitest_print(mt, "* %-40s: compare results RTF_COMPRESSED2 - match\n", "RTFCP");
+		mapitest_print(mt, "- %s\n", RTF_COMPRESSED2_HEX);
+		mapitest_print(mt, "- %s\n", compressed_hex);
+	}
+	talloc_free(compressed_hex);
+	talloc_free(compressed);
+	return true;
+}
+
+/**
+     \details Test the Compressed RTF compression / decompression routines on a larger file
+
+   \param mt pointer to the top-level mapitest structure
+
+   \return true on success, otherwise false
+*/ 
+_PUBLIC_ bool mapitest_noserver_rtfcp_large(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+
+	char			*filename = NULL;
+	char			*original_uncompressed_data;
+	size_t			original_uncompressed_length;
+	char			*original_uncompressed_hex;
+
+	uint8_t			*compressed;
+	size_t			compressed_length;
+
+	DATA_BLOB		decompressed;
+	char 			*decompressed_hex;
+
+	/* load the test file */
+	filename = talloc_asprintf(mt->mem_ctx, "%s/testcase.rtf", LZFU_DATADIR);
+	original_uncompressed_data = file_load(filename, &original_uncompressed_length, 0, mt->mem_ctx);
+	if (!original_uncompressed_data) {
+		perror(filename);
+		mapitest_print(mt, "%s: Error while loading %s\n", __FUNCTION__, filename);
+		talloc_free(filename);
+		return false;
+	}
+	talloc_free(filename);
+	original_uncompressed_hex = hex_encode_talloc(mt->mem_ctx, (const unsigned char*)original_uncompressed_data, original_uncompressed_length);
+
+	/* compress it */
+	retval = compress_rtf(mt->mem_ctx, original_uncompressed_data, original_uncompressed_length, &compressed, &compressed_length);
+	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print_retval_clean(mt, "mapitest_noserver_rtfcp_large - step 1 (bad retval)", retval);
+		return false;
+	}
+
+	/* decompress it */
+	retval = uncompress_rtf(mt->mem_ctx, compressed, compressed_length, &decompressed);
+	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print_retval_clean(mt, "mapitest_noserver_rtfcp_large - step 2 (bad retval)", retval);
+		return false;
+	}
+
+	mapitest_print(mt, "Original data size = 0x%zx\n", original_uncompressed_length);
+	mapitest_print(mt, "Decompressed size  = 0x%zx\n", decompressed.length);
+	{
+		int i;
+		int min;
+
+		min = (original_uncompressed_length >= decompressed.length) ? decompressed.length : original_uncompressed_length;
+		mapitest_print(mt, "Comparing data over 0x%x bytes\n", min);
+		for (i = 0; i < min; i++) {
+			if (decompressed.data[i] != original_uncompressed_data[i]) {
+				mapitest_print(mt, "Bytes differ at offset 0x%x: original (0x%.2x) decompressed (0x%.2x)\n", 
+						i, original_uncompressed_data[i], decompressed.data[i]);
+			}
+		}
+		
+	}
+
+	/* check the uncompressed version (less trailing null) matches the original test file contents */
+	decompressed_hex = hex_encode_talloc(mt->mem_ctx, decompressed.data, decompressed.length -1);
+	if (strncasecmp(original_uncompressed_hex, decompressed_hex, original_uncompressed_length) != 0) {
+		mapitest_print(mt, "* %-40s: compare results - mismatch\n", "RTFCP_LARGE");
+		return false;
+	} else {
+		mapitest_print(mt, "* %-40s: compare results - match\n", "RTFCP_LARGE");
+		// mapitest_print(mt, "- %s\n", original_uncompressed_hex);
+		// mapitest_print(mt, "- %s\n", decompressed_hex);
+	}
+	
+	/* clean up */
+	talloc_free(decompressed_hex);
+	talloc_free(compressed);
+	talloc_free(original_uncompressed_hex);
+
+	return true;
+}
+
 #define SROWSET_UNTAGGED "005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203800005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203900005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203700005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203600005b4d545d2044756d6d793400426f6479206f66206d657373616765203400005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203500005b4d545d2044756d6d793300426f6479206f66206d657373616765203300005b4d545d2044756d6d793100426f6479206f66206d657373616765203100005b4d545d2044756d6d793200426f6479206f66206d657373616765203200005b4d545d2044756d6d793000426f6479206f66206d657373616765203000"
 #define SROWSET_UNTAGGED_LEN 330
 

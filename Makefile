@@ -1,4 +1,4 @@
-# Makefile for OpenChange
+# # Makefile for OpenChange
 # Written by Jelmer Vernooij <jelmer@openchange.org>, 2005.
 
 default: all
@@ -256,6 +256,7 @@ libmapi-uninstallscript:
 
 libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/emsmdb.po				\
+	libmapi/async_emsmdb.po				\
 	libmapi/IABContainer.po				\
 	libmapi/IProfAdmin.po				\
 	libmapi/IMAPIContainer.po			\
@@ -305,6 +306,8 @@ libmapi/version.h: VERSION
 	@./script/mkversion.sh 	VERSION libmapi/version.h $(PACKAGE_VERSION) $(top_builddir)/
 
 libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
+
+libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
 libmapi/mapitags.c libmapi/mapicode.c libmapi/codepage_lcid.c mapitags_enum.h mapicodes_enum.h: \
 	libmapi/conf/mapi-properties								\
@@ -1428,6 +1431,32 @@ clean:: check_fasttransfer-clean
 bin/check_fasttransfer:	testprogs/check_fasttransfer.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt
+
+###################
+# test_asyncnotif test app.
+###################
+
+test_asyncnotif:		bin/test_asyncnotif
+
+test_asyncnotif-install:	test_asyncnotif
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/test_asyncnotif $(DESTDIR)$(bindir)
+
+test_asyncnotif-uninstall:
+	rm -f $(DESTDIR)$(bindir)/test_asyncnotif
+
+test_asyncnotif-clean::
+	rm -f bin/test_asyncnotif
+	rm -f testprogs/test_asyncnotif.o
+	rm -f testprogs/test_asyncnotif.gcno
+	rm -f testprogs/test_asyncnotif.gcda
+
+clean:: test_asyncnotif-clean
+
+bin/test_asyncnotif:	testprogs/test_asyncnotif.o			\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt
 

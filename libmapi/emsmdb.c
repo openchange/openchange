@@ -1133,3 +1133,86 @@ void emsmdb_get_SRow(TALLOC_CTX *mem_ctx,
 		offset += align;
 	}
 }
+
+/**
+   \details Get an async notification context handle
+
+   \param emsmdb_ctx pointer to the EMSMDB context
+   \param async_ctx Pointer to the async notification context handle
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+enum MAPISTATUS emsmdb_async_connect(struct emsmdb_context *emsmdb_ctx)
+{
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	struct EcDoAsyncConnectEx	r;
+
+	/* Sanity Checks */
+	OPENCHANGE_RETVAL_IF(!emsmdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	r.in.handle = &(emsmdb_ctx->handle);
+	r.out.async_handle = &(emsmdb_ctx->async_handle);
+	status = dcerpc_EcDoAsyncConnectEx_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	
+	return MAPI_E_SUCCESS;
+}
+
+bool server_version_at_least(struct emsmdb_context *ctx, uint16_t major_ver, uint16_t minor_ver, uint16_t major_build, uint16_t minor_build)
+{
+	/* See MS-OXCRPC Section 3.1.9 to understand this */
+	uint16_t normalisedword0;
+	uint16_t normalisedword1;
+	uint16_t normalisedword2;
+	uint16_t normalisedword3;
+
+	if (ctx->info.rgwServerVersion[1] & 0x8000) {
+		/* new format */
+		normalisedword0 = (ctx->info.rgwServerVersion[0] & 0xFF00) >> 8;
+		normalisedword1 = (ctx->info.rgwServerVersion[0] & 0x00FF);
+		normalisedword2 = (ctx->info.rgwServerVersion[1] & 0x7FFF);
+		normalisedword3 = ctx->info.rgwServerVersion[2];
+	} else {
+		normalisedword0 = ctx->info.rgwServerVersion[0];
+		normalisedword1 = 0;
+		normalisedword2 = ctx->info.rgwServerVersion[1];
+		normalisedword3 = ctx->info.rgwServerVersion[2];
+	}
+	if (normalisedword0 < major_ver) {
+		/* the server major version is less than the minimum we wanted */
+		return false;
+	}
+	if (normalisedword0 > major_ver) {
+		/* the server major version is greater than we wanted */
+		return true;
+	}
+	/* the server major number matches the minimum we wanted, so proceed to check further */
+	if (normalisedword1 < minor_ver) {
+		/* major numbers match, but minor version was too low */
+		return false;
+	}
+	if (normalisedword1 > minor_ver) {
+		/* major numbers match, and minor number was greater, so thats enough */
+		return true;
+	}
+	/* both major and minor versions match, start testing build numbers */
+	if (normalisedword2 < major_build) {
+		/* major and minor numbers match, build number less than required */
+		return false;
+	}
+	if (normalisedword2 > major_build) {
+		/* major and minor numbers match, build number was greater */
+		return true;
+	}
+	/* major and minor versions and major build numbers match */
+	if (normalisedword3 < minor_build) {
+		/* not quite high enough */
+		return false;
+	}
+	/* if we get here, then major and minor build numbers match, major build matches
+	   and minor build was greater than or equal to that required */
+	return true;
+}

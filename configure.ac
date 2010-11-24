@@ -545,6 +545,7 @@ if test x"$enable_libpopt" = x"yes"; then
 	OC_RULE_ADD(schemaIDGUID, TOOLS)
 
 	OC_RULE_ADD(check_fasttransfer, TOOLS)
+	OC_RULE_ADD(test_asyncnotif, TOOLS)
 fi
 AC_SUBST(MAPISTORE_TEST)
 

@@ -90,6 +90,11 @@ void			free_emsmdb_property(struct SPropValue *, void *);
 const void		*pull_emsmdb_property(TALLOC_CTX *, struct loadparm_context *, uint32_t *, enum MAPITAGS, DATA_BLOB *);
 enum MAPISTATUS		emsmdb_get_SPropValue(TALLOC_CTX *, struct loadparm_context *, DATA_BLOB *, struct SPropTagArray *, struct SPropValue **, uint32_t *, uint8_t);
 void			emsmdb_get_SRow(TALLOC_CTX *, struct loadparm_context *, struct SRow *, struct SPropTagArray *, uint16_t, DATA_BLOB *, uint8_t, uint8_t);
+enum MAPISTATUS		emsmdb_async_connect(struct emsmdb_context *);
+bool 			server_version_at_least(struct emsmdb_context *, uint16_t, uint16_t, uint16_t, uint16_t);
+
+/* The following private definition comes from libmapi/async_emsmdb.c */
+enum MAPISTATUS emsmdb_async_waitex(struct emsmdb_context *, uint32_t, uint32_t *);
 
 /* The following private definitions come from auto-generated libmapi/mapicode.c */
 void			set_errno(enum MAPISTATUS);

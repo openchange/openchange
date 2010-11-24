@@ -240,6 +240,7 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 	char			*binding;
 	char			*server;
 	int			retval = 0;
+	enum MAPISTATUS		mapistatus;
 
 	/*Sanity checks */
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
@@ -274,6 +275,19 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 			goto emsmdb_retry;
 		}
 		OPENCHANGE_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
+
+		if (server_version_at_least(provider->ctx, 8, 0, 835, 0)){
+			struct emsmdb_context *prov_ctx = provider->ctx;
+			status = dcerpc_secondary_context(pipe, &(prov_ctx->async_rpc_connection), &ndr_table_exchange_async_emsmdb);
+			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
+			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
+			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
+			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
+			OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
+			mapistatus = emsmdb_async_connect(provider->ctx);
+			OPENCHANGE_RETVAL_IF(mapistatus, mapistatus, NULL);
+		}
+
 		break;
 	case PROVIDER_ID_NSPI:
 		/* Call RfrGetNewDSA prior any NSPI call */
@@ -384,7 +398,7 @@ enum MAPISTATUS GetNewLogonId(struct mapi_session *session, uint8_t *logon_id)
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
 
-   \sa Subscribe, Unsubscribe, MonitorNotification, GetLastError 
+   \sa RegisterAsyncNotification, Subscribe, Unsubscribe, MonitorNotification, GetLastError 
 */
 _PUBLIC_ enum MAPISTATUS RegisterNotification(struct mapi_session *session,
 					      uint16_t ulEventMask)
@@ -438,3 +452,46 @@ retry:
 	talloc_free(lpKey);
 	return MAPI_E_SUCCESS;
 }
+
+/**
+   \details Create an asynchronous notification
+
+   This function initializes the notification subsystem and configures the
+   server to send notifications. Note that this call will block.
+
+   \param session the session context to register for notifications on.
+   \param resultFlag the result of the operation (true if there was anything returned)
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+     transaction
+
+   \sa RegisterNotification
+*/
+_PUBLIC_ enum MAPISTATUS RegisterAsyncNotification(struct mapi_session *session, uint32_t *resultFlag)
+{
+	enum MAPISTATUS		mapistatus;
+	struct emsmdb_context	*emsmdb;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!session->emsmdb, MAPI_E_SESSION_LIMIT, NULL);
+
+	emsmdb = (struct emsmdb_context *)session->emsmdb->ctx;
+	
+	session->notify_ctx = talloc_zero(emsmdb->mem_ctx, struct mapi_notify_ctx);
+
+	session->notify_ctx->notifications = talloc_zero((TALLOC_CTX *)session->notify_ctx, struct notifications);
+	session->notify_ctx->notifications->prev = NULL;
+	session->notify_ctx->notifications->next = NULL;
+
+	mapistatus = emsmdb_async_waitex(emsmdb, 0, resultFlag);
+	OPENCHANGE_RETVAL_IF(mapistatus, mapistatus, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+

@@ -4457,7 +4457,7 @@ System Attendant Private Interface
 	/* Function 0xe  */
 	[public] MAPISTATUS EcDoAsyncConnectEx(
 		[in] policy_handle	*handle,
-		[out] policy_handle	*asyn_handle
+		[out] policy_handle	*async_handle
 		);
 
 }

@@ -88,7 +88,6 @@ _PUBLIC_ bool mapitest_oxcfxics_DestConfigure(struct mapitest *mt)
 	mapi_object_t		obj_htable;
 	mapi_object_t		obj_context;
 	mapi_object_t		destfolder;
-	uint16_t		version[3];
 	DATA_BLOB		put_buffer_data;
 	uint16_t		usedSize;
 	bool			ret = true;
@@ -120,10 +119,7 @@ _PUBLIC_ bool mapitest_oxcfxics_DestConfigure(struct mapitest *mt)
 	}
 
 	/* Send server version */
-	version[0] = 3;
-	version[1] = 1;
-	version[2] = 4;
-	retval = TellVersion(&(context->obj_test_folder), version);
+	retval = TellVersion(&obj_context, mt->info.rgwServerVersion);
 	mapitest_print_retval_clean(mt, "TellVersion", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -170,7 +166,6 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyFolder(struct mapitest *mt)
 	mapi_object_t			obj_htable;
 	mapi_object_t			obj_context;
 	mapi_object_t			sourcefolder;
-	uint16_t			version[3];
 	bool				ret = true;
 	enum TransferStatus		transferStatus;
 	uint16_t			progress;
@@ -205,10 +200,7 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyFolder(struct mapitest *mt)
 	}
 
 	/* Send server version */
-	version[0] = 3;
-	version[1] = 1;
-	version[2] = 4;
-	retval = TellVersion(&(context->obj_test_folder), version);
+	retval = TellVersion(&obj_context, mt->info.rgwServerVersion);
 	mapitest_print_retval_clean(mt, "TellVersion", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;

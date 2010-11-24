@@ -65,6 +65,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 				     mapi_object_t *obj_message,
 				     uint8_t ulFlags)
 {
+	struct mapi_context		*mapi_ctx;
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
@@ -82,10 +83,12 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	uint8_t				logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_store);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = session->mapi_ctx;
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
@@ -154,7 +157,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	message->SPropTagArray.aulPropTag = talloc_steal(message, reply->RecipientColumns.aulPropTag);
 
 	for (i = 0; i < reply->RowCount; i++) {
-		emsmdb_get_SRow((TALLOC_CTX *)message, global_mapi_ctx->lp_ctx,
+		emsmdb_get_SRow((TALLOC_CTX *)message, mapi_ctx->lp_ctx,
 				&(message->SRowSet.aRow[i]), &message->SPropTagArray, 
 				reply->recipients[i].RecipientRow.prop_count,
 				&reply->recipients[i].RecipientRow.prop_values,
@@ -202,6 +205,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 */
 _PUBLIC_ enum MAPISTATUS ReloadCachedInformation(mapi_object_t *obj_message)
 {
+	struct mapi_context			*mapi_ctx;
 	struct mapi_request			*mapi_request;
 	struct mapi_response			*mapi_response;
 	struct EcDoRpc_MAPI_REQ			*mapi_req;
@@ -218,10 +222,12 @@ _PUBLIC_ enum MAPISTATUS ReloadCachedInformation(mapi_object_t *obj_message)
 	uint8_t					logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 	session = mapi_object_get_session(obj_message);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_ctx = session->mapi_ctx;
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
@@ -269,7 +275,7 @@ _PUBLIC_ enum MAPISTATUS ReloadCachedInformation(mapi_object_t *obj_message)
 	message->SPropTagArray.aulPropTag = talloc_steal(message, reply->RecipientColumns.aulPropTag);
 
 	for (i = 0; i < reply->RowCount; i++) {
-		emsmdb_get_SRow((TALLOC_CTX *)message, global_mapi_ctx->lp_ctx,
+		emsmdb_get_SRow((TALLOC_CTX *)message, mapi_ctx->lp_ctx,
 				&(message->SRowSet.aRow[i]), &message->SPropTagArray, 
 				reply->RecipientRows[i].RecipientRow.prop_count,
 				&reply->RecipientRows[i].RecipientRow.prop_values,

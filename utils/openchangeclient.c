@@ -41,6 +41,8 @@
 
 static void init_oclient(struct oclient *oclient)
 {
+	oclient->mapi_ctx = NULL;
+
 	/* update and delete parameter */
 	oclient->update = NULL;
 	oclient->delete = NULL;
@@ -268,7 +270,7 @@ static const char *get_filename(const char *filename)
 	if (!filename) return NULL;
 
 	substr = rindex(filename, '/');
-	if (substr) return substr;
+	if (substr) return substr + 1;
 
 	return filename;
 }
@@ -482,10 +484,11 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 									struct SPropValue	*lpProps2;
 									uint32_t		count2;
 									
-									SPropTagArray = set_SPropTagArray(mem_ctx, 0x3, 
+									SPropTagArray = set_SPropTagArray(mem_ctx, 0x4, 
 													  PR_ATTACH_FILENAME,
 													  PR_ATTACH_LONG_FILENAME,
-													  PR_ATTACH_SIZE);
+													  PR_ATTACH_SIZE,
+													  PR_ATTACH_CONTENT_ID);
 									lpProps2 = talloc_zero(mem_ctx, struct SPropValue);
 									retval = GetProps(&obj_attach, SPropTagArray, &lpProps2, &count2);
 									MAPIFreeBuffer(SPropTagArray);
@@ -885,7 +888,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 		for (i = 0; oclient->attach[i].filename; i++) {
 			mapi_object_t		obj_attach;
 			mapi_object_t		obj_stream;
-			struct SPropValue	props_attach[3];
+			struct SPropValue	props_attach[4];
 			uint32_t		count_props_attach;
 
 			mapi_object_init(&obj_attach);
@@ -900,7 +903,9 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			props_attach[2].ulPropTag = PR_ATTACH_FILENAME;
 			printf("Sending %s:\n", oclient->attach[i].filename);
 			props_attach[2].value.lpszA = get_filename(oclient->attach[i].filename);
-			count_props_attach = 3;
+			props_attach[3].ulPropTag = PR_ATTACH_CONTENT_ID;
+			props_attach[3].value.lpszA = get_filename(oclient->attach[i].filename);
+			count_props_attach = 4;
 
 			/* SetProps */
 			retval = SetProps(&obj_attach, props_attach, count_props_attach);
@@ -1010,7 +1015,8 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 }
 
 
-static enum MAPISTATUS check_conflict_date(mapi_object_t *obj,
+static enum MAPISTATUS check_conflict_date(struct oclient *oclient,
+					   mapi_object_t *obj,
 					   struct FILETIME *ft)
 {
 	enum MAPISTATUS		retval;
@@ -1020,7 +1026,7 @@ static enum MAPISTATUS check_conflict_date(mapi_object_t *obj,
 	bool			conflict;
 			
 	session = mapi_object_get_session(obj);
-	retval = MapiLogonEx(&session2, session->profile->profname, session->profile->password);
+	retval = MapiLogonEx(oclient->mapi_ctx, &session2, session->profile->profname, session->profile->password);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	mapi_object_init(&obj_store);
@@ -1082,7 +1088,7 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 		start_date->dwLowDateTime = (nt << 32) >> 32;
 		start_date->dwHighDateTime = (nt >> 32);
 
-		retval = check_conflict_date(obj_folder, start_date);
+		retval = check_conflict_date(oclient, obj_folder, start_date);
 		if (oclient->force == false) {
 			MAPI_RETVAL_IF(retval, retval, NULL);
 		}
@@ -1101,7 +1107,7 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 		end_date->dwLowDateTime = (nt << 32) >> 32;
 		end_date->dwHighDateTime = (nt >> 32);
 
-		retval = check_conflict_date(obj_folder, end_date);
+		retval = check_conflict_date(oclient, obj_folder, end_date);
 		if (oclient->force == false) {
 			MAPI_RETVAL_IF(retval, retval, NULL);
 		}
@@ -1214,13 +1220,20 @@ static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
 
 	/* Build the list of named properties we want to set */
 	nameid = mapi_nameid_new(mem_ctx);
-	mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
+	retval = mapi_nameid_string_add(nameid, "urn:schemas:contacts:fileas", PS_PUBLIC_STRINGS);
+	if (retval != MAPI_E_SUCCESS) {
+		talloc_free(nameid);
+		return retval;
+	}
 
 	/* GetIDsFromNames and map property types */
 	SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
 	retval = GetIDsFromNames(obj_folder, nameid->count,
 				 nameid->nameid, 0, &SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return retval;
+	if (retval != MAPI_E_SUCCESS) {
+		talloc_free(nameid);
+		return retval;
+	}
 	mapi_nameid_SPropTagArray(nameid, SPropTagArray);
 	MAPIFreeBuffer(nameid);
 
@@ -1764,6 +1777,13 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	printf("MAILBOX (%u messages)\n", count);
+	if (!count) {
+		mapi_object_release(&obj_table);
+		mapi_object_release(&obj_folder);
+		mapi_object_release(&obj_tis);
+
+		return true;
+	}
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
 					  PR_FID,
@@ -3142,17 +3162,17 @@ int main(int argc, const char *argv[])
 	 * Initialize MAPI subsystem
 	 */
 
-	retval = MAPIInitialize(opt_profdb);
+	retval = MAPIInitialize(&oclient.mapi_ctx, opt_profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", GetLastError());
 		exit (1);
 	}
 
 	/* debug options */
-	SetMAPIDumpData(opt_dumpdata);
+	SetMAPIDumpData(oclient.mapi_ctx, opt_dumpdata);
 
 	if (opt_debug) {
-		SetMAPIDebugLevel(atoi(opt_debug));
+		SetMAPIDebugLevel(oclient.mapi_ctx, atoi(opt_debug));
 	}
 	
 	/* If no profile is specified try to load the default one from
@@ -3160,14 +3180,14 @@ int main(int argc, const char *argv[])
 	 */
 
 	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname);
+		retval = GetDefaultProfile(oclient.mapi_ctx, &opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", GetLastError());
 			exit (1);
 		}
 	}
 
-	retval = MapiLogonEx(&session, opt_profname, opt_password);
+	retval = MapiLogonEx(oclient.mapi_ctx, &session, opt_profname, opt_password);
 	talloc_free(opt_profname);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MapiLogonEx", GetLastError());
@@ -3410,7 +3430,7 @@ end:
 
 	mapi_object_release(&obj_store);
 
-	MAPIUninitialize();
+	MAPIUninitialize(oclient.mapi_ctx);
 
 	talloc_free(mem_ctx);
 

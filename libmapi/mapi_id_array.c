@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2008.
+   Copyright (C) Julien Kerihuel 2008-2010.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 /**
    \details Initialize a mapi_id_array structure
 
+   \param mapi_ctx pointer to the MAPI context
    \param id pointer to a mapi_id_array structure
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
@@ -43,15 +44,16 @@
 
    \sa mapi_id_array_release
  */
-_PUBLIC_ enum MAPISTATUS mapi_id_array_init(mapi_id_array_t *id)
+_PUBLIC_ enum MAPISTATUS mapi_id_array_init(struct mapi_context *mapi_ctx,
+					    mapi_id_array_t *id)
 {
 	TALLOC_CTX	*mem_ctx;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = global_mapi_ctx->mem_ctx;
+	mem_ctx = mapi_ctx->mem_ctx;
 
 	id->count = 0;
 	id->lpContainerList = talloc_zero((TALLOC_CTX *)mem_ctx, mapi_container_list_t);
@@ -79,7 +81,6 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_init(mapi_id_array_t *id)
 _PUBLIC_ enum MAPISTATUS mapi_id_array_release(mapi_id_array_t *id)
 {
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -117,7 +118,6 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_get(TALLOC_CTX *mem_ctx,
 	uint32_t		i = 0;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!ContainerList, MAPI_E_INVALID_PARAMETER, NULL);
@@ -159,7 +159,6 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_add_obj(mapi_id_array_t *id,
 	mapi_container_list_t	*element;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
@@ -196,7 +195,6 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_add_id(mapi_id_array_t *id, mapi_id_t fid
 	mapi_container_list_t	*element;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
@@ -233,7 +231,6 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_del_id(mapi_id_array_t *id, mapi_id_t fid
 	mapi_container_list_t	*element;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!id->count, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_NOT_INITIALIZED, NULL);
@@ -275,7 +272,6 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_del_obj(mapi_id_array_t *id, mapi_object_
 	mapi_id_t		fid;
 	
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!id->count, MAPI_E_NOT_INITIALIZED, NULL);

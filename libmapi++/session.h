@@ -85,14 +85,6 @@ class session {
 		void login(const std::string& profile_name = "", const std::string& password = "") throw(mapi_exception); 
 
 		/**
-		 * \brief The path to the default %profile database
-		 *
-		 * This method is not normally required to be called by user applications
-		 * but might be useful under some circumstances.
-		 */
-		static std::string get_default_profile_path();
-
-		/**
 		 * \brief The name of the profile that is in use
 		 *
 		 * Calling this method only makes sense if login() has been called with
@@ -132,15 +124,20 @@ class session {
 
 	private:
 		mapi_session		*m_session;
+		struct mapi_context	*m_mapi_context;
 		TALLOC_CTX		*m_memory_ctx;
 		message_store		*m_message_store;
 		std::string		m_profile_name;
 
 		void uninitialize() throw()
 		{
+			if (m_message_store) {
+				delete m_message_store;
+			}
+			if (m_mapi_context) {
+				MAPIUninitialize(m_mapi_context);
+			}
 			talloc_free(m_memory_ctx);
-			MAPIUninitialize();
-			delete m_message_store;
 		}
 };
 

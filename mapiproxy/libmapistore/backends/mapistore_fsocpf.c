@@ -375,6 +375,9 @@ static int fsocpf_get_path(void *private_data, uint64_t fmid,
 		DEBUG(0, ("message->path is %s\n", message->path));
 		*path = message->path;
 		break;
+	default:
+		DEBUG(0, ("[%s]: Invalid type %d\n", __FUNCTION__, type));
+		return MAPISTORE_ERROR;
 	}
 
 	return MAPISTORE_SUCCESS;

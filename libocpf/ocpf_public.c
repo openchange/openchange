@@ -518,7 +518,6 @@ _PUBLIC_ enum MAPISTATUS ocpf_OpenFolder(uint32_t context_id,
 	mapi_id_t		id_tis;
 
 	/* Sanity checks */
-	MAPI_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 

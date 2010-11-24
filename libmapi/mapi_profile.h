@@ -34,6 +34,7 @@ struct ldb_context;
  */
 struct mapi_profile
 {
+	struct mapi_context	*mapi_ctx;
 	struct cli_credentials	*credentials;
 	char			*profname;
 	const char		*org;

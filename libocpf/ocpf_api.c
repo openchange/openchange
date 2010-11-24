@@ -140,6 +140,9 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx,
 	case PT_LONG:
 		*value = talloc_memdup(ctx, (const void *)&lpProp.l, sizeof (uint32_t));
 		return OCPF_SUCCESS;
+	case PT_DOUBLE:
+		*value = talloc_memdup(ctx, (const void *)&lpProp.dbl, sizeof (uint64_t));
+		return OCPF_SUCCESS;
 	case PT_BOOLEAN:
 		*value = talloc_memdup(ctx, (const void *)&lpProp.b, sizeof (uint8_t));
 		return OCPF_SUCCESS;
@@ -595,6 +598,7 @@ int ocpf_add_filetime(const char *date, struct FILETIME *ft)
 	NTTIME		nt;
 	struct tm	tm;
 
+	memset(&tm, 0, sizeof(struct tm));
 	if (!strptime(date, DATE_FORMAT, &tm)) {
 		printf("Invalid data format: Tyyy-mm-dd hh:mm:ss (e.g.: T2008-03-06 23:30:00");
 		return OCPF_ERROR;

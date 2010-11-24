@@ -22,12 +22,6 @@
 #include <fcntl.h>
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
-#define DCERPC_CALL_ECDOCONNECT_COMPAT 1
-#define DCERPC_CALL_ECDOCONNECTEX_COMPAT 1
-#define DCERPC_CALL_ECDODISCONNECT_COMPAT 1
-#define DCERPC_CALL_ECDORPC_COMPAT 1
-#define DCERPC_CALL_ECDORPCEXT2_COMPAT 1
-#define DCERPC_CALL_ECRREGISTERPUSHNOTIFICATION_COMPAT 1
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_exchange_c.h"
 #include <gen_ndr/ndr_misc.h>
@@ -134,7 +128,7 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 	r.out.picxr = &ret->info.picxr;
 	r.out.pullTimeStamp = &pullTimeStamp;
 
-	status = dcerpc_EcDoConnect(p, mem_ctx, &r);
+	status = dcerpc_EcDoConnect_r(p->binding_handle, mem_ctx, &r);
 	retval = r.out.result;
 	if (!NT_STATUS_IS_OK(status) || retval) {
 		*return_value = retval;
@@ -237,7 +231,7 @@ struct emsmdb_context *emsmdb_connect_ex(TALLOC_CTX *mem_ctx,
 	r.in.pcbAuxOut = &pcbAuxOut;
 	r.out.pcbAuxOut = &pcbAuxOut;
 
-	status = dcerpc_EcDoConnectEx(p, tmp_ctx, &r);
+	status = dcerpc_EcDoConnectEx_r(p->binding_handle, tmp_ctx, &r);
 	retval = r.out.result;
 	if (!NT_STATUS_IS_OK(status) || retval) {
 		*return_value = retval;
@@ -310,7 +304,7 @@ enum MAPISTATUS emsmdb_disconnect(struct emsmdb_context *emsmdb_ctx)
 
 	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
 
-	status = dcerpc_EcDoDisconnect(emsmdb_ctx->rpc_connection, emsmdb_ctx, &r);
+	status = dcerpc_EcDoDisconnect_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx, &r);
 	retval = r.out.result;
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
@@ -358,7 +352,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_null(struct emsmdb_context *emsmdb_ctx,
 
 	r.out.mapi_response = mapi_response;
 
-	status = dcerpc_EcDoRpc(emsmdb_ctx->rpc_connection, emsmdb_ctx->mem_ctx, &r);
+	status = dcerpc_EcDoRpc_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx->mem_ctx, &r);
 	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
 		return status;
 	}
@@ -444,7 +438,7 @@ start:
 	r.in.length = r.out.length = length;
 	r.in.max_data = (*length >= 0x4000) ? 0x7FFF : emsmdb_ctx->max_data;
 
-	status = dcerpc_EcDoRpc(emsmdb_ctx->rpc_connection, mem_ctx, &r);
+	status = dcerpc_EcDoRpc_r(emsmdb_ctx->rpc_connection->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (emsmdb_ctx->setup == false) {
 			errno = 0;
@@ -565,7 +559,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 
 	r.out.pulTransTime = &pulTransTime;
 
-	status = dcerpc_EcDoRpcExt2(emsmdb_ctx->rpc_connection, mem_ctx, &r);
+	status = dcerpc_EcDoRpcExt2_r(emsmdb_ctx->rpc_connection->binding_handle, mem_ctx, &r);
 	talloc_free(ndr_rgbIn);
 	talloc_free(ndr_comp_rgbIn);
 		
@@ -611,12 +605,14 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_wrapper(struct mapi_session *session,
    \details Initialize the notify context structure and bind a local
    UDP port to receive notifications from the server
 
+   \param mapi_ctx pointer to the MAPI context
    \param mem_ctx pointer to the memory context
 
    \return an allocated mapi_notify_ctx structure on success,
    otherwise NULL
  */
-struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
+struct mapi_notify_ctx *emsmdb_bind_notification(struct mapi_context *mapi_ctx,
+						 TALLOC_CTX *mem_ctx)
 {
 	struct interface	*ifaces;
 	struct mapi_notify_ctx	*notify_ctx = NULL;
@@ -625,9 +621,9 @@ struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 	uint32_t		try = 0;
 
 	/* Sanity Checks */
-	if (!global_mapi_ctx) return NULL;
-	if (!global_mapi_ctx->session) return NULL;
-	if (!global_mapi_ctx->session->profile) return NULL;
+	if (!mapi_ctx) return NULL;
+	if (!mapi_ctx->session) return NULL;
+	if (!mapi_ctx->session->profile) return NULL;
 
 	notify_ctx = talloc_zero(mem_ctx, struct mapi_notify_ctx);
 
@@ -635,8 +631,8 @@ struct mapi_notify_ctx *emsmdb_bind_notification(TALLOC_CTX *mem_ctx)
 	notify_ctx->notifications->prev = NULL;
 	notify_ctx->notifications->next = NULL;
 
-	load_interfaces(mem_ctx, lpcfg_interfaces(global_mapi_ctx->lp_ctx), &ifaces);
-	ipaddr = iface_best_ip(ifaces, global_mapi_ctx->session->profile->server);
+	load_interfaces(mem_ctx, lpcfg_interfaces(mapi_ctx->lp_ctx), &ifaces);
+	ipaddr = iface_best_ip(ifaces, mapi_ctx->session->profile->server);
 	if (!ipaddr) {
 		talloc_free(notify_ctx->notifications);
 		talloc_free(notify_ctx);
@@ -702,10 +698,6 @@ NTSTATUS emsmdb_register_notification(struct mapi_session *session,
 	uint32_t				hNotification = 0;
 
 	/* Sanity Checks*/
-	if (!global_mapi_ctx) return NT_STATUS_INVALID_PARAMETER;
-	if (!global_mapi_ctx->session) return NT_STATUS_INVALID_PARAMETER;
-	if (!global_mapi_ctx->session->emsmdb) return NT_STATUS_INVALID_PARAMETER;
-	if (!global_mapi_ctx->session->emsmdb->ctx) return NT_STATUS_INVALID_PARAMETER;
 	if (!notifkey) return NT_STATUS_INVALID_PARAMETER;
 
 	emsmdb_ctx = (struct emsmdb_context *)session->emsmdb->ctx;
@@ -728,7 +720,7 @@ NTSTATUS emsmdb_register_notification(struct mapi_session *session,
 	request.out.handle = &handle;
 	request.out.hNotification = &hNotification;
 
-	status = dcerpc_EcRRegisterPushNotification(emsmdb_ctx->rpc_connection, emsmdb_ctx->mem_ctx, &request);
+	status = dcerpc_EcRRegisterPushNotification_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx->mem_ctx, &request);
 	retval = request.out.result;
 	if (!NT_STATUS_IS_OK(status) || retval) {
 		talloc_free(mem_ctx);
@@ -750,7 +742,7 @@ NTSTATUS emsmdb_register_notification(struct mapi_session *session,
  */
 _PUBLIC_ struct emsmdb_info *emsmdb_get_info(struct mapi_session *session)
 {
-	if (!global_mapi_ctx || !session->emsmdb->ctx) {
+	if (!session->emsmdb->ctx) {
 		return NULL;
 	}
 
@@ -1140,4 +1132,87 @@ void emsmdb_get_SRow(TALLOC_CTX *mem_ctx,
 	if (align) {
 		offset += align;
 	}
+}
+
+/**
+   \details Get an async notification context handle
+
+   \param emsmdb_ctx pointer to the EMSMDB context
+   \param async_ctx Pointer to the async notification context handle
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+enum MAPISTATUS emsmdb_async_connect(struct emsmdb_context *emsmdb_ctx)
+{
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	struct EcDoAsyncConnectEx	r;
+
+	/* Sanity Checks */
+	OPENCHANGE_RETVAL_IF(!emsmdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	r.in.handle = &(emsmdb_ctx->handle);
+	r.out.async_handle = &(emsmdb_ctx->async_handle);
+	status = dcerpc_EcDoAsyncConnectEx_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx->mem_ctx, &r);
+	retval = r.out.result;
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	
+	return MAPI_E_SUCCESS;
+}
+
+bool server_version_at_least(struct emsmdb_context *ctx, uint16_t major_ver, uint16_t minor_ver, uint16_t major_build, uint16_t minor_build)
+{
+	/* See MS-OXCRPC Section 3.1.9 to understand this */
+	uint16_t normalisedword0;
+	uint16_t normalisedword1;
+	uint16_t normalisedword2;
+	uint16_t normalisedword3;
+
+	if (ctx->info.rgwServerVersion[1] & 0x8000) {
+		/* new format */
+		normalisedword0 = (ctx->info.rgwServerVersion[0] & 0xFF00) >> 8;
+		normalisedword1 = (ctx->info.rgwServerVersion[0] & 0x00FF);
+		normalisedword2 = (ctx->info.rgwServerVersion[1] & 0x7FFF);
+		normalisedword3 = ctx->info.rgwServerVersion[2];
+	} else {
+		normalisedword0 = ctx->info.rgwServerVersion[0];
+		normalisedword1 = 0;
+		normalisedword2 = ctx->info.rgwServerVersion[1];
+		normalisedword3 = ctx->info.rgwServerVersion[2];
+	}
+	if (normalisedword0 < major_ver) {
+		/* the server major version is less than the minimum we wanted */
+		return false;
+	}
+	if (normalisedword0 > major_ver) {
+		/* the server major version is greater than we wanted */
+		return true;
+	}
+	/* the server major number matches the minimum we wanted, so proceed to check further */
+	if (normalisedword1 < minor_ver) {
+		/* major numbers match, but minor version was too low */
+		return false;
+	}
+	if (normalisedword1 > minor_ver) {
+		/* major numbers match, and minor number was greater, so thats enough */
+		return true;
+	}
+	/* both major and minor versions match, start testing build numbers */
+	if (normalisedword2 < major_build) {
+		/* major and minor numbers match, build number less than required */
+		return false;
+	}
+	if (normalisedword2 > major_build) {
+		/* major and minor numbers match, build number was greater */
+		return true;
+	}
+	/* major and minor versions and major build numbers match */
+	if (normalisedword3 < minor_build) {
+		/* not quite high enough */
+		return false;
+	}
+	/* if we get here, then major and minor build numbers match, major build matches
+	   and minor build was greater than or equal to that required */
+	return true;
 }

@@ -84,12 +84,17 @@ struct emsmdb_context	*emsmdb_connect(TALLOC_CTX *, struct mapi_session *, struc
 struct emsmdb_context	*emsmdb_connect_ex(TALLOC_CTX *, struct mapi_session *, struct dcerpc_pipe *, struct cli_credentials *, int *);
 int			emsmdb_disconnect_dtor(void *);
 enum MAPISTATUS		emsmdb_disconnect(struct emsmdb_context *);
-struct mapi_notify_ctx	*emsmdb_bind_notification(TALLOC_CTX *);
+struct mapi_notify_ctx	*emsmdb_bind_notification(struct mapi_context *, TALLOC_CTX *);
 NTSTATUS		emsmdb_register_notification(struct mapi_session *, struct NOTIFKEY *, uint16_t);
 void			free_emsmdb_property(struct SPropValue *, void *);
 const void		*pull_emsmdb_property(TALLOC_CTX *, struct loadparm_context *, uint32_t *, enum MAPITAGS, DATA_BLOB *);
 enum MAPISTATUS		emsmdb_get_SPropValue(TALLOC_CTX *, struct loadparm_context *, DATA_BLOB *, struct SPropTagArray *, struct SPropValue **, uint32_t *, uint8_t);
 void			emsmdb_get_SRow(TALLOC_CTX *, struct loadparm_context *, struct SRow *, struct SPropTagArray *, uint16_t, DATA_BLOB *, uint8_t, uint8_t);
+enum MAPISTATUS		emsmdb_async_connect(struct emsmdb_context *);
+bool 			server_version_at_least(struct emsmdb_context *, uint16_t, uint16_t, uint16_t, uint16_t);
+
+/* The following private definition comes from libmapi/async_emsmdb.c */
+enum MAPISTATUS emsmdb_async_waitex(struct emsmdb_context *, uint32_t, uint32_t *);
 
 /* The following private definitions come from auto-generated libmapi/mapicode.c */
 void			set_errno(enum MAPISTATUS);
@@ -106,7 +111,7 @@ void			mapi_object_table_init(TALLOC_CTX *, mapi_object_t *);
 enum MAPISTATUS		mapi_object_bookmark_find(mapi_object_t *, uint32_t,struct SBinary_short *);
 
 /* The following private definitions come from libmapi/property.c */
-enum MAPITAGS		*get_MAPITAGS_SRow(TALLOC_CTX *, struct SRow *);
+enum MAPITAGS		*get_MAPITAGS_SRow(TALLOC_CTX *, struct SRow *, uint32_t *);
 uint32_t		MAPITAGS_delete_entries(enum MAPITAGS *, uint32_t, uint32_t, ...);
 size_t			get_utf8_utf16_conv_length(const char *);
 

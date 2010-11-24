@@ -226,6 +226,7 @@ _PUBLIC_ uint32_t module_oxcprpt_init(struct mapitest *mt)
 	mapitest_suite_add_test_flagged(suite, "WRITE-COMMIT-STREAM", "Test atomic Write / Commit operation", mapitest_oxcprpt_WriteAndCommitStream, NotInExchange2010);
 	mapitest_suite_add_test_flagged(suite, "COPYTO-STREAM", "Copy stream from source to destination stream", mapitest_oxcprpt_CopyToStream, NotInExchange2010SP0);
 	mapitest_suite_add_test(suite, "NAME-ID", "Convert between Names and IDs", mapitest_oxcprpt_NameId);
+	mapitest_suite_add_test(suite, "PSMAPI-NAME-ID", "Convert between Names and IDs for PS_MAPI namespace", mapitest_oxcprpt_NameId_PSMAPI);
 
 	mapitest_suite_register(mt, suite);
 
@@ -289,6 +290,11 @@ _PUBLIC_ uint32_t module_oxcfxics_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "OXCFXICS", "Bulk Data Transfer Protocol", true);
 	
 	mapitest_suite_add_test(suite, "GET-LOCAL-REPLICA-IDS", "Reserve a range of IDs for local replica", mapitest_oxcfxics_GetLocalReplicaIds);
+	mapitest_suite_add_test(suite, "COPYFOLDER", "Test CopyFolder operation", mapitest_oxcfxics_CopyFolder);
+	mapitest_suite_add_test(suite, "COPYMESSAGES", "Test CopyMessages operation", mapitest_oxcfxics_CopyMessages);
+	mapitest_suite_add_test(suite, "COPYTO", "Test CopyTo operation", mapitest_oxcfxics_CopyTo);
+	mapitest_suite_add_test(suite, "COPYPROPS", "Test CopyProperties operation", mapitest_oxcfxics_CopyProperties);
+	mapitest_suite_add_test(suite, "DEST-CONFIGURE", "Test Destination Configure operation", mapitest_oxcfxics_DestConfigure);
 
 	mapitest_suite_register(mt, suite);
 
@@ -368,7 +374,9 @@ _PUBLIC_ uint32_t module_noserver_init(struct mapitest *mt)
 
 	suite = mapitest_suite_init(mt, "NOSERVER", "No server operations", false);
 
-	mapitest_suite_add_test(suite, "LZFU", "Test Compressed RTF operations", mapitest_noserver_lzfu);
+	mapitest_suite_add_test(suite, "LZFU-DECOMPRESS", "Test Compressed RTF decompression operations", mapitest_noserver_lzfu);
+	mapitest_suite_add_test(suite, "LZFU-COMPRESS", "Test Compressed RTF compression operations", mapitest_noserver_rtfcp);
+	mapitest_suite_add_test(suite, "LZFU-COMPRESS-LARGE", "Test RTF (de)compression operations on larger file", mapitest_noserver_rtfcp_large);
 	mapitest_suite_add_test(suite, "SROWSET", "Test SRowSet parsing", mapitest_noserver_srowset);
 	mapitest_suite_add_test(suite, "GETSETPROPS", "Test Property handling", mapitest_noserver_properties);
 	mapitest_suite_add_test(suite, "MAPIPROPS", "Test MAPI Property handling", mapitest_noserver_mapi_properties);
@@ -472,7 +480,7 @@ _PUBLIC_ uint32_t module_lzxpress_init(struct mapitest *mt)
 
 	suite = mapitest_suite_init(mt, "LZXPRESS", "lzxpress algorithm test suite", false);
 
-	mapitest_suite_add_test(suite, "VALIDATE-001", "Validate LZXPRESS implementation using sample file 001", mapitest_lzxpress_validate_test_001);
+	mapitest_suite_add_test_flagged(suite, "VALIDATE-001", "Validate LZXPRESS implementation using sample file 001", mapitest_lzxpress_validate_test_001, ExpectedFail);
 
 	mapitest_suite_register(mt, suite);
 

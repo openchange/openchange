@@ -1,0 +1,19 @@
+{
+   ocpf_bison1
+   Memcheck:Addr1
+   fun:__GI_strlen
+   fun:talloc_strdup
+   ...
+   fun:ocpf_yyparse
+   fun:ocpf_parse
+}
+ 
+{
+   ocpf_bison2
+   Memcheck:Addr1
+   fun:memcpy
+   fun:__talloc_strlendup
+   ...
+   fun:ocpf_yyparse
+   fun:ocpf_parse
+}

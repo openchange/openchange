@@ -73,8 +73,6 @@ _PUBLIC_ enum MAPISTATUS mapi_object_init(mapi_object_t *obj)
 {
 	mapi_object_reset(obj);
 
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-
 	return MAPI_E_SUCCESS;
 }
 
@@ -347,7 +345,6 @@ enum MAPISTATUS mapi_object_bookmark_find(mapi_object_t *obj_table, uint32_t bkP
 	bookmark = table->bookmark;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!bookmark, MAPI_E_NOT_INITIALIZED, NULL);
@@ -381,7 +378,6 @@ _PUBLIC_ enum MAPISTATUS mapi_object_bookmark_get_count(mapi_object_t *obj_table
 	table = (mapi_object_table_t *)obj_table->private_data;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
 
@@ -407,7 +403,6 @@ _PUBLIC_ enum MAPISTATUS mapi_object_bookmark_debug(mapi_object_t *obj_table)
 	bookmark = table->bookmark;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!table, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!bookmark, MAPI_E_NOT_INITIALIZED, NULL);

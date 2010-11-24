@@ -102,17 +102,25 @@ typedef struct _lzfuheader {
 _PUBLIC_ enum MAPISTATUS WrapCompressedRTFStream(mapi_object_t *obj_stream, 
 						 DATA_BLOB *rtf)
 {
-	enum MAPISTATUS	retval;
-	TALLOC_CTX	*mem_ctx;
-	uint32_t	in_size;
-	uint8_t		*rtfcomp;
-	uint16_t	read_size;
-	unsigned char	buf[0x1000];
+	enum MAPISTATUS		retval;
+	struct mapi_context	*mapi_ctx;
+	struct mapi_session	*session;
+	TALLOC_CTX		*mem_ctx;
+	uint32_t		in_size;
+	uint8_t			*rtfcomp;
+	uint16_t		read_size;
+	unsigned char		buf[0x1000];
 
 	/* sanity check and init */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_stream, MAPI_E_INVALID_PARAMETER, NULL);
-	mem_ctx = global_mapi_ctx->mem_ctx;
+
+	session = mapi_object_get_session(obj_stream);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mapi_ctx = session->mapi_ctx;
+	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mem_ctx = mapi_ctx->mem_ctx;
 
 	/* Read the stream pointed by obj_stream */
 	read_size = 0;
@@ -275,7 +283,7 @@ static char get_dictionary_entry(decompression_state *state, uint32_t index)
 	if (isprint(c)) {
 		DEBUG(3, ("dict entry %i: %c\n", index, c));
 	} else {
-		DEBUG(3, ("dict entry %i: 0x%02x\n", index, c));
+		DEBUG(3, ("dict entry 0x%04x: 0x%02x\n", index, c));
 	}
 	return c;
 }
@@ -450,4 +458,111 @@ uint32_t calculateCRC(uint8_t *input, uint32_t offset, uint32_t length)
 		DEBUG(5, ("crc: 0x%08x\n", crc));
 	}
 	return crc;
+}
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+
+static size_t longest_match(const char *rtf, const size_t rtf_size, size_t input_idx, uint8_t *dict, size_t *dict_write_idx, size_t *dict_match_offset, size_t *dict_match_length)
+{
+	size_t best_match_length = 0;
+	size_t dict_iterator;
+	for (dict_iterator = 0; dict_iterator < MIN(*dict_write_idx, LZFU_DICTLENGTH); ++dict_iterator) {
+		size_t match_length_from_this_pos = 0;
+		while ((rtf[input_idx + match_length_from_this_pos] == dict[dict_iterator + match_length_from_this_pos]) &&
+		       ((dict_iterator + match_length_from_this_pos) < ((*dict_write_idx) % LZFU_DICTLENGTH)) && /* does this line need to have % LZFU_DICTLENGTH? */
+		       ((input_idx + match_length_from_this_pos) < rtf_size) && 
+		       (match_length_from_this_pos < 17)) {
+			match_length_from_this_pos += 1;
+			if (match_length_from_this_pos > best_match_length) {
+				best_match_length = match_length_from_this_pos;
+				dict[(*dict_write_idx) % LZFU_DICTLENGTH] = rtf[input_idx + match_length_from_this_pos - 1];
+				*dict_write_idx += 1;
+				*dict_match_offset = dict_iterator;
+			}
+		}
+	}
+	*dict_match_length = best_match_length;
+	return best_match_length;
+}
+
+_PUBLIC_ enum MAPISTATUS compress_rtf(TALLOC_CTX *mem_ctx, const char *rtf, const size_t rtf_size,
+				      uint8_t **rtfcomp, size_t *rtfcomp_size)
+{
+	size_t			input_idx = 0;
+	lzfuheader		header;
+	uint8_t			*dict;
+	size_t			output_idx = 0;
+	size_t			control_byte_idx = 0;
+	uint8_t			control_bit = 0x01;
+	size_t			dict_write_idx = 0;
+
+	/* as an upper bound, assume that the output is no larger than 9/8 of the input size, plus the header size */
+	*rtfcomp = talloc_size(mem_ctx, 9 * rtf_size / 8 + sizeof(lzfuheader));
+	control_byte_idx = sizeof(lzfuheader);
+	(*rtfcomp)[control_byte_idx] = 0x00;
+	output_idx = control_byte_idx + 1;
+
+	/* allocate and initialise the dictionary */
+	dict = talloc_zero_array(mem_ctx, uint8_t, LZFU_DICTLENGTH);
+	memcpy(dict, LZFU_INITDICT, LZFU_INITLENGTH);
+	dict_write_idx = LZFU_INITLENGTH;
+
+	while (input_idx < rtf_size) {
+		size_t dict_match_length = 0;
+		size_t dict_match_offset = 0;
+		DEBUG(4, ("compressing byte %zi of %zi\n", input_idx, rtf_size));
+		if (longest_match(rtf, rtf_size, input_idx, dict, &dict_write_idx, &dict_match_offset, &dict_match_length) > 1) {
+			uint16_t dict_ref = dict_match_offset << 4;
+			dict_ref += (dict_match_length - 2);
+			input_idx += dict_match_length;
+			(*rtfcomp)[control_byte_idx] |= control_bit;
+			/* append dictionary reference to output */
+			(*rtfcomp)[output_idx] = (dict_ref & 0xFF00) >> 8;
+			output_idx += 1;
+			(*rtfcomp)[output_idx] = (dict_ref & 0xFF);
+			output_idx += 1;
+		} else {
+			if (dict_match_length == 0) {
+				/* we haven't written a literal to the dict yet */
+				dict[dict_write_idx % LZFU_DICTLENGTH] = rtf[input_idx];
+				dict_write_idx += 1;
+			}
+			/* append to output, and increment the output position */
+			(*rtfcomp)[output_idx] = rtf[input_idx];
+			output_idx += 1;
+			DEBUG(5, ("new output_idx = 0x%08zx (for char value 0x%02x)\n", output_idx, rtf[input_idx]));
+			/* increment the input position */
+			input_idx += 1;
+		}
+		if (control_bit == 0x80) {
+			control_bit = 0x01;
+			control_byte_idx = output_idx;
+			(*rtfcomp)[control_byte_idx] = 0x00;
+			output_idx = control_byte_idx + 1;
+			DEBUG(5, ("new output_idx cb = 0x%08zx\n", output_idx));
+		} else {
+			control_bit = control_bit << 1;
+		}
+	}
+	{
+		/* append final marker dictionary reference to output */
+		uint16_t dict_ref = (dict_write_idx % LZFU_DICTLENGTH) << 4;
+		// printf("dict ref: 0x%04x at 0x%08zx\n", dict_ref, output_idx);
+		(*rtfcomp)[control_byte_idx] |= control_bit;
+		// printf("dict ref hi: 0x%02x\n", (dict_ref & 0xFF00) >> 8);
+		(*rtfcomp)[output_idx] = (dict_ref & 0xFF00) >> 8;
+		output_idx += 1;
+		// printf("dict ref lo: 0x%02x\n", dict_ref & 0xFF);
+		(*rtfcomp)[output_idx] = (dict_ref & 0xFF);
+		output_idx += 1;
+	}
+
+	header.cbSize = output_idx - sizeof(lzfuheader) + 12;
+	header.cbRawSize = rtf_size;
+	header.dwMagic = LZFU_COMPRESSED;
+	header.dwCRC = calculateCRC(*rtfcomp, sizeof(lzfuheader), output_idx - sizeof(lzfuheader));
+	memcpy(*rtfcomp, &header, sizeof(lzfuheader));
+	*rtfcomp_size = output_idx;
+	*rtfcomp = talloc_realloc_size(mem_ctx, *rtfcomp, *rtfcomp_size);
+
+	return MAPI_E_SUCCESS;
 }

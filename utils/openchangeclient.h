@@ -43,6 +43,7 @@ struct attach {
 };
 
 struct oclient {
+	struct mapi_context	*mapi_ctx;
 	struct oc_property	*props;
 	const char     		*update;
 	const char		*delete;

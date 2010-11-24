@@ -12,20 +12,26 @@ else
 fi
 
 # If you have a samba checkout (even not up-to-date), you can make this a lot faster using --reference, e.g.
-# GIT_REFERENCE="--reference $HOME/samba-master"
-GIT_REPO=git://git.samba.org/samba.git
-# If you have an up-to-date checkout, you could also use something like
-# GIT_REPO=$HOME/samba-master
+# SAMBA_GIT_REFERENCE="--reference $HOME/samba-master"
+if test x"$SAMBA_GIT_REPO" = x""; then
+    SAMBA_GIT_REPO=git://git.samba.org/samba.git
+fi
 
 # Set SAMBA_PREFIX to wherever you want to install to. Defaults to /usr/local/samba, as if you did the build manually
 if test x"$SAMBA_PREFIX" = x""; then
     SAMBA_PREFIX="/usr/local/samba"
 fi
 
-# hack to work around waf build bug
-export CC="ccache gcc -I$SAMBA_PREFIX/include"
+# use ccache for faster rebuild, where available
+if which ccache 2>/dev/null; then
+	export CC="ccache gcc"
+else
+	export CC="gcc"
+fi
 
 export PKG_CONFIG_PATH=$SAMBA_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
+pythondir=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,'/')"`
+export PYTHONPATH=$SAMBA_PREFIX$pythondir:$PYTHONPATH
 
 RUNDIR=`dirname $0`
 HOST_OS=`$RUNDIR/../config.guess`
@@ -109,7 +115,7 @@ checkout() {
     fi
 
     echo "Step1: Fetching Samba4 latest GIT revision"
-    git clone $GIT_REPO $GIT_REFERENCE samba4
+    git clone $SAMBA_GIT_REPO $SAMBA_GIT_REFERENCE samba4
     error_check $? "Step1"
 
     echo "Step2: Creating openchange local copy"
@@ -214,12 +220,6 @@ patch() {
     case "$HOST_OS" in
 	*freebsd*)
 
-	    echo "[+] Patching tevent for FreeBSD"
-	    pushd samba4/lib/tevent
-	    sed 's/\$(PYTHON_CONFIG) --libs/\$(PYTHON_CONFIG) --ldflags/g' tevent.mk > tevent.mk2
-	    mv tevent.mk2 tevent.mk
-	    popd
-
 	    echo "[+] Patching heimdal for FreeBSD"
 	    pushd samba4/source4/heimdal/lib/roken
 	    sed "s/#if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__)/#if defined(HAVE_OPENPTY) || defined(__linux) || defined(__osf__) || defined(__FreeBSD__)/g" rkpty.c > rkpty2.c
@@ -252,23 +252,23 @@ packages() {
 
 	./autogen-waf.sh
 	error_check $? "$lib autogen"
-
-	./configure --prefix=$SAMBA_PREFIX --enable-developer --abi-check-disable --bundled-libraries=NONE
+	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
+	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
 	error_check $? "$lib configure"
 
-	make
+	$MAKE -j
 	error_check $? "$lib make"
 
 	if test -w `dirname $SAMBA_PREFIX`; then
-	    make install
+	    $MAKE install
 	    error_check $? "$lib make install"
 	else
-	    sudo make install
+	    sudo $MAKE install
 	    error_check $? "$lib sudo make install"
 	fi
 
 
-	make distclean
+	$MAKE distclean
 	error_check $? "$lib make distclean"
 
 	popd
@@ -283,14 +283,11 @@ compile() {
     pushd samba4/source4
     error_check $? "samba4 setup"
 
-    ./autogen.sh
-    error_check $? "samba4 autogen"
-
-    ./configure.developer --bundled-libraries=ldb,NONE --prefix=$SAMBA_PREFIX
+    ./configure.developer -C --prefix=$SAMBA_PREFIX
     error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"
-   	$MAKE
+    $MAKE -j
     error_check $? "samba4 make"
 
     popd

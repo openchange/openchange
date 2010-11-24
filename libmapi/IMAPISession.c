@@ -28,7 +28,9 @@
  */
 
 
-static enum MAPISTATUS FindGoodServer(struct mapi_session *session, const char *legacyDN, bool server)
+static enum MAPISTATUS FindGoodServer(struct mapi_session *session, 
+				      const char *legacyDN, 
+				      bool server)
 {
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
@@ -159,7 +161,6 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	bool			retry = false;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
@@ -268,7 +269,6 @@ _PUBLIC_ enum MAPISTATUS OpenMsgStore(struct mapi_session *session,
 	enum MAPISTATUS		retval;
 
 	/* sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 
@@ -325,7 +325,6 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	bool			retry = false;
 
 	/* sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->profile, MAPI_E_NOT_INITIALIZED, NULL);
 

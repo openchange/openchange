@@ -50,14 +50,14 @@ _PUBLIC_ bool mapitest_nspi_UpdateStat(struct mapitest *mt)
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	retval = nspi_GetSpecialTable(nspi_ctx, mem_ctx, 0x2, &SRowSet);
 	MAPIFreeBuffer(SRowSet);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		talloc_free(mem_ctx);
 		return false;
 	}
 
 	retval = nspi_UpdateStat(nspi_ctx, mem_ctx, &plDelta);
 	mapitest_print_retval(mt, "NspiUpdateStat");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -97,7 +97,7 @@ _PUBLIC_ bool mapitest_nspi_QueryRows(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct SPropValue);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = global_mapi_ctx->session->profile->username;
+	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -110,8 +110,8 @@ _PUBLIC_ bool mapitest_nspi_QueryRows(struct mapitest *mt)
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(SPropTagArray);
-	mapitest_print_retval(mt, "NspiGetMatches");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	mapitest_print_retval_clean(mt, "NspiGetMatches", retval);
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);
 		return false;
@@ -121,8 +121,8 @@ _PUBLIC_ bool mapitest_nspi_QueryRows(struct mapitest *mt)
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &SRowSet);
 	MAPIFreeBuffer(SRowSet);
-	mapitest_print_retval(mt, "NspiQueryRows");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	mapitest_print_retval_clean(mt, "NspiQueryRows", retval);
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);
 		return false;
@@ -149,33 +149,48 @@ _PUBLIC_ bool mapitest_nspi_SeekEntries(struct mapitest *mt)
 	struct SPropValue	pTarget;
 	struct SPropTagArray	*pPropTags;
 	struct SRowSet		*SRowSet;
+	struct emsmdb_context	*emsmdb;
+	bool			ret = true;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_SeekEntries");
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
+	emsmdb = (struct emsmdb_context *) mt->session->emsmdb->ctx;
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	
 	pTarget.ulPropTag = PR_DISPLAY_NAME;
 	pTarget.dwAlignPad = 0x0;
-	pTarget.value.lpszA = global_mapi_ctx->session->profile->username;
+	pTarget.value.lpszA = emsmdb->info.szDisplayName;
 
 	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_ACCOUNT);
-
 	retval = nspi_SeekEntries(nspi_ctx, mem_ctx, SortTypeDisplayName, &pTarget, pPropTags, NULL, &SRowSet);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		mapitest_print_retval(mt, "NspiSeekEntries");
-		talloc_free(pPropTags);
-		talloc_free(SRowSet);
-		talloc_free(mem_ctx);
-		return false;
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
 	}
 
-	mapitest_print_retval(mt, "NspiSeekEntries");
+	mapitest_print_retval_clean(mt, "NspiSeekEntries", retval);
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(pPropTags);
+
+	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+
+	pTarget.ulPropTag = PR_DISPLAY_NAME_UNICODE;
+	pTarget.dwAlignPad = 0x0;
+	pTarget.value.lpszA = emsmdb->info.szDisplayName;
+
+	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_ACCOUNT);
+	retval = nspi_SeekEntries(nspi_ctx, mem_ctx, SortTypeDisplayName, &pTarget, pPropTags, NULL, &SRowSet);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
+	mapitest_print_retval_clean(mt, "NspiSeekEntries", retval);
+	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(pPropTags);
+
 	talloc_free(mem_ctx);
 
-	return true;
+	return ret;
 }
 
 
@@ -196,6 +211,7 @@ _PUBLIC_ bool mapitest_nspi_GetMatches(struct mapitest *mt)
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	*lpProp;
 	struct Restriction_r	Filter;
+	bool			ret = true;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_GetMatches");
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
@@ -208,7 +224,7 @@ _PUBLIC_ bool mapitest_nspi_GetMatches(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct SPropValue);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = global_mapi_ctx->session->profile->username;
+	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -222,14 +238,13 @@ _PUBLIC_ bool mapitest_nspi_GetMatches(struct mapitest *mt)
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(MIds);
-	mapitest_print_retval(mt, "NspiGetMatches");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		talloc_free(mem_ctx);
-		return false;
+	mapitest_print_retval_clean(mt, "NspiGetMatches", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
 	}
 
 	talloc_free(mem_ctx);
-	return true;
+	return ret;
 }
 
 
@@ -251,6 +266,7 @@ _PUBLIC_ bool mapitest_nspi_ResortRestriction(struct mapitest *mt)
 	struct SPropValue	*lpProp = NULL;
 	struct SPropTagArray	*MIds = NULL;
 	struct SPropTagArray	*ppMIds = NULL;
+	bool			ret = true;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_ResortRestriction");
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
@@ -287,8 +303,8 @@ _PUBLIC_ bool mapitest_nspi_ResortRestriction(struct mapitest *mt)
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(SRowSet);
-	mapitest_print_retval(mt, "NspiGetMatches");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	mapitest_print_retval_clean(mt, "NspiGetMatches", retval);
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);
 		return false;
@@ -296,19 +312,16 @@ _PUBLIC_ bool mapitest_nspi_ResortRestriction(struct mapitest *mt)
 
 	ppMIds = talloc_zero(mem_ctx, struct SPropTagArray);
 	retval = nspi_ResortRestriction(nspi_ctx, mem_ctx, SortTypeDisplayName, MIds, &ppMIds);
-	mapitest_print_retval(mt, "NspiResortRestriction");
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		MAPIFreeBuffer(MIds);
-		MAPIFreeBuffer(ppMIds);
-		talloc_free(mem_ctx);
-		return false;
+	mapitest_print_retval_clean(mt, "NspiResortRestriction", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
 	}
 
 	MAPIFreeBuffer(MIds);
 	MAPIFreeBuffer(ppMIds);
 	talloc_free(mem_ctx);
 
-	return true;
+	return ret;
 }
 
 
@@ -332,7 +345,7 @@ _PUBLIC_ bool mapitest_nspi_DNToMId(struct mapitest *mt)
 
 	pNames.Count = 0x1;
 	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
-	pNames.Strings[0] = global_mapi_ctx->session->profile->homemdb;
+	pNames.Strings[0] = mt->mapi_ctx->session->profile->homemdb;
 
 	MId = talloc_zero(mem_ctx, struct SPropTagArray);
 
@@ -341,13 +354,13 @@ _PUBLIC_ bool mapitest_nspi_DNToMId(struct mapitest *mt)
 	MAPIFreeBuffer(MId);
 	talloc_free(mem_ctx);
 
-	mapitest_print_retval(mt, "NspiDNToMId");
+	mapitest_print_retval_clean(mt, "NspiDNToMId", retval);
 
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	if (retval == MAPI_E_SUCCESS) {
+	      return true;
+	} else {
+	      return false;
 	}
-
-	return true;
 }
 
 
@@ -378,7 +391,7 @@ _PUBLIC_ bool mapitest_nspi_GetPropList(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct SPropValue);
 	lpProp->ulPropTag = PR_ANR_UNICODE;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszW = global_mapi_ctx->session->profile->username;
+	lpProp->value.lpszW = mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -442,7 +455,7 @@ _PUBLIC_ bool mapitest_nspi_GetProps(struct mapitest *mt)
 
 	pNames.Count = 0x1;
 	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
-	pNames.Strings[0] = global_mapi_ctx->session->profile->homemdb;
+	pNames.Strings[0] = mt->mapi_ctx->session->profile->homemdb;
 
 	MId = talloc_zero(mem_ctx, struct SPropTagArray);
 
@@ -450,7 +463,7 @@ _PUBLIC_ bool mapitest_nspi_GetProps(struct mapitest *mt)
 	MAPIFreeBuffer((char **)pNames.Strings);
 	mapitest_print_retval(mt, "NspiDNToMId");
 
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MId);
 		talloc_free(mem_ctx);
 		return false;
@@ -459,18 +472,18 @@ _PUBLIC_ bool mapitest_nspi_GetProps(struct mapitest *mt)
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_EMS_AB_NETWORK_ADDRESS);
 	retval = nspi_GetProps(nspi_ctx, mem_ctx, SPropTagArray, MId, &SRowSet);
-	mapitest_print_retval(mt, "NspiGetProps");
+	mapitest_print_retval_clean(mt, "NspiGetProps", retval);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(MId);
 	MAPIFreeBuffer(SRowSet);
 
 	talloc_free(mem_ctx);
 
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	if (retval == MAPI_E_SUCCESS) {
+	      return true;
+	} else {
+	      return false;
 	}
-
-	return true;
 }
 
 
@@ -516,8 +529,8 @@ _PUBLIC_ bool mapitest_nspi_CompareMIds(struct mapitest *mt)
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(SRowSet);
-	mapitest_print_retval(mt, "NspiGetMatches");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	mapitest_print_retval_clean(mt, "NspiGetMatches", retval);
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);
 		return false;
@@ -532,9 +545,9 @@ _PUBLIC_ bool mapitest_nspi_CompareMIds(struct mapitest *mt)
 	}
 
 	retval = nspi_CompareMIds(nspi_ctx, mem_ctx, MIds->aulPropTag[0], MIds->aulPropTag[1], &plResult);
-	mapitest_print_retval(mt, "NspiCompareMIds");
+	mapitest_print_retval_clean(mt, "NspiCompareMIds", retval);
 	MAPIFreeBuffer(MIds);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -566,6 +579,8 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	*lpProp;
 	struct Restriction_r	Filter;
+	const char		*original_office_location;
+	bool			ret = true;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_ModProps");
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
@@ -578,7 +593,7 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct SPropValue);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = global_mapi_ctx->session->profile->username;
+	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
@@ -591,8 +606,8 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(SPropTagArray);
-	mapitest_print_retval(mt, "NspiGetMatches");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	mapitest_print_retval_clean(mt, "nspi_GetMatches", retval);
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);
 		return false;
@@ -601,31 +616,84 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	/* Query the rows */
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &SRowSet);
-	MAPIFreeBuffer(SRowSet);
-	mapitest_print_retval(mt, "NspiQueryRows");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	mapitest_print_retval_clean(mt, "nspi_QueryRows", retval);
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(SRowSet);
+		talloc_free(mem_ctx);
+		return false;
+	}
+	if (SRowSet->cRows != 1) {
+		mapitest_print(mem_ctx, "unexpected number of rows: %i\n", SRowSet->cRows);
+		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(SRowSet);
+		talloc_free(mem_ctx);
+		return false;
+	}
+	original_office_location = (const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION);
+	mapitest_print(mt, "original PR_OFFICE_LOCATION value: %s\n", original_office_location);
+
+	/* Build the SRow and SPropTagArray for NspiModProps */
+	pRow = talloc_zero(mem_ctx, struct SRow);
+	modProp.ulPropTag = PR_OFFICE_LOCATION;
+	modProp.value.lpszA = "[MT] office location";
+	SRow_addprop(pRow, modProp);
+
+	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_OFFICE_LOCATION);
+	retval = nspi_ModProps(nspi_ctx, mem_ctx, MIds->aulPropTag[0], pPropTags, pRow);
+	mapitest_print_retval_clean(mt, "nspi_ModProps", retval);
+	MAPIFreeBuffer(pRow);
+
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(pPropTags);
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	/* Build the SRow and SPropTagArray for NspiModProps */
+	/* Check that the property was set correctly */
+	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &SRowSet);
+	mapitest_print_retval_clean(mt, "nspi_QueryRows", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(SRowSet);
+		talloc_free(mem_ctx);
+		return false;
+	}
+	if (SRowSet->cRows != 1) {
+		mapitest_print(mem_ctx, "unexpected number of rows: %i\n", SRowSet->cRows);
+		MAPIFreeBuffer(MIds);
+		MAPIFreeBuffer(SRowSet);
+		talloc_free(mem_ctx);
+		return false;
+	}
+	if (strcmp((const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION), "[MT] office location") != 0) {
+		mapitest_print(mt, "PR_OFFICE_LOCATION string value mismatch: %s", (const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION));
+		ret = false;
+	} else {
+		mapitest_print(mt, "correctly set PR_OFFICE_LOCATION\n");
+	}
+
+	/* try to reset the office location back to the original value */
 	pRow = talloc_zero(mem_ctx, struct SRow);
-	modProp.ulPropTag = PR_DISPLAY_NAME_UNICODE;
-	modProp.value.lpszW = "mapitest ModProps";
+	modProp.ulPropTag = PR_OFFICE_LOCATION;
+	modProp.value.lpszA = original_office_location;
 	SRow_addprop(pRow, modProp);
 
-	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
-
 	retval = nspi_ModProps(nspi_ctx, mem_ctx, MIds->aulPropTag[0], pPropTags, pRow);
-	mapitest_print_retval(mt, "NspiModProps");
+	mapitest_print_retval_clean(mt, "nspi_ModProps (reset original value)", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+	}
+
 	MAPIFreeBuffer(MIds);
 	MAPIFreeBuffer(pPropTags);
 	MAPIFreeBuffer(pRow);
-	talloc_free(mem_ctx);
 
-	/* Assuming true for the moment */
-	return true;
+	talloc_free(mem_ctx);
+	
+	return ret;
 }
 
 
@@ -649,9 +717,9 @@ _PUBLIC_ bool mapitest_nspi_GetSpecialTable(struct mapitest *mt)
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	retval = nspi_GetSpecialTable(nspi_ctx, mem_ctx, 0x0, &SRowSet);
 	MAPIFreeBuffer(SRowSet);
-	mapitest_print_retval(mt, "NspiGetSpecialTable (Hierarchy Table)");
+	mapitest_print_retval_clean(mt, "NspiGetSpecialTable (Hierarchy Table)", retval);
 
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -659,14 +727,14 @@ _PUBLIC_ bool mapitest_nspi_GetSpecialTable(struct mapitest *mt)
 	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
 	retval = nspi_GetSpecialTable(nspi_ctx, mem_ctx, 0x2, &SRowSet);
 	MAPIFreeBuffer(SRowSet);
-	mapitest_print_retval(mt, "NspiGetSpecialTable (Address Creation Template)");
+	mapitest_print_retval_clean(mt, "NspiGetSpecialTable (Address Creation Template)", retval);
 	talloc_free(mem_ctx);
 
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	if (retval == MAPI_E_SUCCESS) {
+	      return true;
+	} else {
+	      return false;
 	}
-
-	return true;
 }
 
 
@@ -691,14 +759,15 @@ _PUBLIC_ bool mapitest_nspi_GetTemplateInfo(struct mapitest *mt)
 	retval = nspi_GetTemplateInfo(nspi_ctx, mem_ctx,
 				      TI_TEMPLATE|TI_SCRIPT|TI_EMT|TI_HELPFILE_NAME|TI_HELPFILE_CONTENTS,
 				      0, NULL, &ppData);
-	mapitest_print_retval(mt, "NspiGetTemplateInfo");
+	mapitest_print_retval_clean(mt, "NspiGetTemplateInfo", retval);
 	MAPIFreeBuffer(ppData);
 	talloc_free(mem_ctx);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
-	}
 
-	return true;
+	if (retval == MAPI_E_SUCCESS) {
+	      return true;
+	} else {
+	      return false;
+	}
 }
 
 
@@ -723,11 +792,14 @@ _PUBLIC_ bool mapitest_nspi_ModLinkAtt(struct mapitest *mt)
 	lpEntryIds->lpbin = NULL;
 
 	retval = nspi_ModLinkAtt(nspi_ctx, false, PR_EMS_AB_REPORTS, 0x0, lpEntryIds);
-	mapitest_print_retval(mt, "NspiModLinkAtt");
+	mapitest_print_retval_clean(mt, "NspiModLinkAtt", retval);
 	MAPIFreeBuffer(lpEntryIds);
 
-	/* Assuming true for the moment */
-	return true;
+	if (retval == MAPI_E_SUCCESS) {
+	      return true;
+	} else {
+	      return false;
+	}
 }
 
 
@@ -753,7 +825,7 @@ _PUBLIC_ bool mapitest_nspi_QueryColumns(struct mapitest *mt)
 
 	retval = nspi_QueryColumns(nspi_ctx, mem_ctx, true, &SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print_retval(mt, "NspiQueryColumns");
+		mapitest_print_retval_clean(mt, "NspiQueryColumns", retval);
 		MAPIFreeBuffer(SPropTagArray);
 		talloc_free(mem_ctx);
 		return false;
@@ -761,7 +833,7 @@ _PUBLIC_ bool mapitest_nspi_QueryColumns(struct mapitest *mt)
 
 	if (SPropTagArray) {
 		mapitest_print(mt, "* %d columns returned\n", SPropTagArray->cValues);
-		mapitest_print_retval(mt, "NspiQueryColumns");
+		mapitest_print_retval_clean(mt, "NspiQueryColumns", retval);
 		MAPIFreeBuffer(SPropTagArray);
 	}
 	talloc_free(mem_ctx);
@@ -792,16 +864,16 @@ _PUBLIC_ bool mapitest_nspi_GetNamesFromIDs(struct mapitest *mt)
 	ppReturnedPropTags = talloc_zero(mem_ctx, struct SPropTagArray);
 	ppNames = talloc_zero(mem_ctx, struct PropertyNameSet_r);
 	retval = nspi_GetNamesFromIDs(nspi_ctx, mem_ctx, NULL, NULL, &ppReturnedPropTags, &ppNames);
-	mapitest_print_retval(mt, "NspiGetNamesFromIDs");
+	mapitest_print_retval_clean(mt, "NspiGetNamesFromIDs", retval);
 	MAPIFreeBuffer(ppReturnedPropTags);
 	MAPIFreeBuffer(ppNames);
 	talloc_free(mem_ctx);
 
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		return false;
+	if (retval == MAPI_E_SUCCESS) {
+	      return true;
+	} else {
+	      return false;
 	}
-
-	return true;
 }
 
 
@@ -827,7 +899,7 @@ _PUBLIC_ bool mapitest_nspi_GetIDsFromNames(struct mapitest *mt)
 	ppReturnedPropTags = talloc_zero(mem_ctx, struct SPropTagArray);
 	ppNames = talloc_zero(mem_ctx, struct PropertyNameSet_r);
 	retval = nspi_GetNamesFromIDs(nspi_ctx, mem_ctx, NULL, NULL, &ppReturnedPropTags, &ppNames);
-	mapitest_print_retval(mt, "NspiGetNamesFromIDs");
+	mapitest_print_retval_clean(mt, "NspiGetNamesFromIDs", retval);
 	MAPIFreeBuffer(ppReturnedPropTags);
 
 	if ( (retval != MAPI_E_SUCCESS) || !ppNames ) {
@@ -838,17 +910,16 @@ _PUBLIC_ bool mapitest_nspi_GetIDsFromNames(struct mapitest *mt)
 
 	ppReturnedPropTags = talloc_zero(mem_ctx, struct SPropTagArray);
 	retval = nspi_GetIDsFromNames(nspi_ctx, mem_ctx, true, ppNames->cNames, ppNames->aNames, &ppReturnedPropTags);
-	mapitest_print_retval(mt, "NspiGetIDsFromNames");
+	mapitest_print_retval_clean(mt, "NspiGetIDsFromNames", retval);
 	MAPIFreeBuffer(ppReturnedPropTags);
 	MAPIFreeBuffer(ppNames);
 	talloc_free(mem_ctx);
 
-	if (retval != MAPI_E_SUCCESS) {
-		return false;
+	if (retval == MAPI_E_SUCCESS) {
+	      return true;
+	} else {
+	      return false;
 	}
-
-	errno = retval;
-	return true;
 }
 
 
@@ -895,8 +966,8 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
 
 	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &SRowSet, &flaglist, 0);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		mapitest_print_retval(mt, "NspiResolveNames");
+	if (retval != MAPI_E_SUCCESS) {
+		mapitest_print_retval_clean(mt, "NspiResolveNames", retval);
 		MAPIFreeBuffer(SPropTagArray);
 		talloc_free(flaglist);
 		talloc_free(SRowSet);
@@ -909,15 +980,14 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	/* NspiResolveNamesW (0x14) */
 	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
 	MAPIFreeBuffer(SPropTagArray);
-	if (GetLastError() != MAPI_E_SUCCESS) {
-		mapitest_print_retval(mt, "NspiResolveNamesW");
+	mapitest_print_retval_clean(mt, "NspiResolveNamesW", retval);
+	if (retval != MAPI_E_SUCCESS) {
 		talloc_free(flaglist);
 		talloc_free(SRowSet);
 		return false;
 	}
 	talloc_free(flaglist);
 	talloc_free(SRowSet);
-	mapitest_print_retval(mt, "NspiResolveNamesW");
 
 	return true;
 }
@@ -959,7 +1029,7 @@ _PUBLIC_ bool mapitest_nspi_GetGALTable(struct mapitest *mt)
 	ulFlags = TABLE_START;
 	do {
 		retval = GetGALTable(mt->session, SPropTagArray, &SRowSet, count, ulFlags);
-		mapitest_print_retval(mt, "GetGALTable");
+		mapitest_print_retval_clean(mt, "GetGALTable", retval);
 		if ((!SRowSet) || (!(SRowSet->aRow))) {
 			ret = false;
 			goto cleanup;

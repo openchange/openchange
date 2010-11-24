@@ -32,7 +32,7 @@ struct emsmdb_info {
 };
 
 struct emsmdb_context {
-	struct dcerpc_pipe     	*rpc_connection;
+	struct dcerpc_pipe	*rpc_connection;
 	struct policy_handle   	handle;
 	struct nspi_context    	*nspi;
 	struct cli_credentials	*cred;
@@ -45,6 +45,8 @@ struct emsmdb_context {
 	uint16_t     	       	max_data;
 	bool		       	setup;
 	struct emsmdb_info	info;
+	struct policy_handle	async_handle; ///< The handle to use for Async notification requests
+	struct dcerpc_pipe	*async_rpc_connection;
 };
 
 #define	MAILBOX_PATH	"/o=%s/ou=%s/cn=Recipients/cn=%s"

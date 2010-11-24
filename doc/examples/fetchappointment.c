@@ -5,6 +5,7 @@
 int main(int argc, char *argv[])
 {
         enum MAPISTATUS                 retval;
+	struct mapi_context		*mapi_ctx;
 	TALLOC_CTX			*mem_ctx;
         struct mapi_session             *session = NULL;
         mapi_object_t                   obj_store;
@@ -26,15 +27,15 @@ int main(int argc, char *argv[])
 
         /* Initialize MAPI */
 	profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, getenv("HOME"));
-        retval = MAPIInitialize(profdb);
+        retval = MAPIInitialize(&mapi_ctx, profdb);
         MAPI_RETVAL_IF(retval, retval, NULL);
 
         /* Find Default Profile */
-        retval = GetDefaultProfile(&profname);
+        retval = GetDefaultProfile(mapi_ctx, &profname);
         MAPI_RETVAL_IF(retval, retval, NULL);
 
         /* Log on EMSMDB and NSPI */
-        retval = MapiLogonEx(&session, profname, NULL);
+        retval = MapiLogonEx(mapi_ctx, &session, profname, NULL);
         MAPI_RETVAL_IF(retval, retval, NULL);
 
         /* Open Message Store */
@@ -89,7 +90,7 @@ int main(int argc, char *argv[])
 	Logoff(&obj_store);
 
         /* Uninitialize MAPI */
-        MAPIUninitialize();
+        MAPIUninitialize(mapi_ctx);
 
 	talloc_free(mem_ctx);
 

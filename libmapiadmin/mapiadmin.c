@@ -34,7 +34,6 @@ _PUBLIC_ struct mapiadmin_ctx *mapiadmin_init(struct mapi_session *session)
 {
 	struct mapiadmin_ctx	*mapiadmin_ctx;
 
-	if (!global_mapi_ctx) return NULL;
 	if (!session) return NULL;
 	if (!session->profile) return NULL;
 

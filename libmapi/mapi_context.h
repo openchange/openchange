@@ -1,8 +1,8 @@
 /*
    OpenChange MAPI implementation.
-   Status codes returned by MAPI
+   MAPI Context.
 
-   Copyright (C) Julien Kerihuel 2007.
+   Copyright (C) Julien Kerihuel 2007-2010.
    Copyright (C) Fabien Le Mentec 2007.
 
    This program is free software; you can redistribute it and/or modify
@@ -19,26 +19,22 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef	_MAPI_CTX_H
-#define	_MAPI_CTX_H
+#ifndef	_MAPI_CONTEXT_H
+#define	_MAPI_CONTEXT_H
 
 #include <talloc.h>
-
-/**
- * mapi global context
- */
 
 struct ldb_context;
 struct mapi_session;
 
-typedef struct mapi_ctx
+struct mapi_context
 {
   TALLOC_CTX		*mem_ctx;
   struct ldb_context	*ldb_ctx;
   struct mapi_session	*session;
   bool			dumpdata;
   struct loadparm_context *lp_ctx;
-} mapi_ctx_t;
+};
 
 
-#endif	/* ! _MAPI_CTX_H */
+#endif	/* ! _MAPI_CONTEXT_H */

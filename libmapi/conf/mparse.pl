@@ -39,6 +39,7 @@ my	%prop_types = (
     0x1f	=> "PT_UNICODE",
     0x40	=> "PT_SYSTIME",
     0x48	=> "PT_CLSID",
+    0xFB	=> "PT_SVREID",
     0xFD	=> "PT_SRESTRICT",
     0xFE	=> "PT_ACTIONS",
     0x102	=> "PT_BINARY",
@@ -74,6 +75,7 @@ my	%prop_names = (
     "PT_UNICODE"	=>	0x1f,
     "PT_SYSTIME"	=>	0x40,
     "PT_CLSID"		=>	0x48,
+    "PT_SVREID"		=>	0xfb,
     "PT_SRESTRICT"	=>	0xfd,
     "PT_ACTIONS"	=>	0xfe,
     "PT_BINARY"		=>	0x102,
@@ -562,6 +564,7 @@ sub mapicodes_interface($)
     mparse "";
     mparse "ndr_print.depth = 1;";
     mparse "ndr_print.print = ndr_print_debug_helper;";
+    mparse "ndr_print.no_newline = false;";
     mparse "ndr_print_MAPISTATUS(&ndr_print, function, mapi_code);";
     deindent;
     mparse "}";

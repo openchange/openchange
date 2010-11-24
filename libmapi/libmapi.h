@@ -59,7 +59,7 @@
 #include "libmapi/version.h"
 #include "libmapi/nspi.h"
 #include "libmapi/emsmdb.h"
-#include "libmapi/mapi_ctx.h"
+#include "libmapi/mapi_context.h"
 #include "libmapi/mapi_provider.h"
 #include "libmapi/mapi_object.h"
 #include "libmapi/mapi_id_array.h"
@@ -69,8 +69,6 @@
 #include "libmapi/mapidefs.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/socket/netif.h"
-
-extern struct mapi_ctx *global_mapi_ctx;
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
@@ -122,13 +120,13 @@ struct emsmdb_info	*emsmdb_get_info(struct mapi_session *);
 void			emsmdb_get_SRowSet(TALLOC_CTX *, struct loadparm_context *, struct SRowSet *, struct SPropTagArray *, DATA_BLOB *);
 
 /* The following public definitions come from libmapi/cdo_mapi.c */
-enum MAPISTATUS		MapiLogonEx(struct mapi_session **, const char *, const char *);
-enum MAPISTATUS		MapiLogonProvider(struct mapi_session **, const char *, const char *, enum PROVIDER_ID);
-enum MAPISTATUS		MAPIInitialize(const char *);
-void			MAPIUninitialize(void);
-enum MAPISTATUS		SetMAPIDumpData(bool);
-enum MAPISTATUS		SetMAPIDebugLevel(uint32_t);
-enum MAPISTATUS		GetLoadparmContext(struct loadparm_context **);
+enum MAPISTATUS		MapiLogonEx(struct mapi_context *, struct mapi_session **, const char *, const char *);
+enum MAPISTATUS		MapiLogonProvider(struct mapi_context *, struct mapi_session **, const char *, const char *, enum PROVIDER_ID);
+enum MAPISTATUS		MAPIInitialize(struct mapi_context **, const char *);
+void			MAPIUninitialize(struct mapi_context *);
+enum MAPISTATUS		SetMAPIDumpData(struct mapi_context *, bool);
+enum MAPISTATUS		SetMAPIDebugLevel(struct mapi_context *, uint32_t);
+enum MAPISTATUS		GetLoadparmContext(struct mapi_context *, struct loadparm_context **);
 
 /* The following public definitions come from libmapi/simple_mapi.c */
 enum MAPISTATUS		GetDefaultPublicFolder(mapi_object_t *, uint64_t *, const uint32_t);
@@ -212,7 +210,7 @@ enum MAPISTATUS		mapi_object_bookmark_get_count(mapi_object_t *, uint32_t *);
 enum MAPISTATUS		mapi_object_bookmark_debug(mapi_object_t *);
 
 /* The following public definitions come from libmapi/mapi_id_array.c */
-enum MAPISTATUS		mapi_id_array_init(mapi_id_array_t *);
+enum MAPISTATUS		mapi_id_array_init(struct mapi_context *, mapi_id_array_t *);
 enum MAPISTATUS		mapi_id_array_release(mapi_id_array_t *);
 enum MAPISTATUS		mapi_id_array_get(TALLOC_CTX *, mapi_id_array_t *, mapi_id_t **);
 enum MAPISTATUS		mapi_id_array_add_obj(mapi_id_array_t *, mapi_object_t *);
@@ -279,26 +277,26 @@ enum MAPISTATUS		GetGALTableCount(struct mapi_session *, uint32_t *);
 enum MAPISTATUS		GetABRecipientInfo(struct mapi_session *, const char *, struct SPropTagArray *, struct SRowSet **);
 
 /* The following public definitions come from libmapi/IProfAdmin.c */
-enum MAPISTATUS		mapi_profile_add_string_attr(const char *, const char *, const char *);
-enum MAPISTATUS		mapi_profile_modify_string_attr(const char *, const char *, const char *);
-enum MAPISTATUS		mapi_profile_delete_string_attr(const char *, const char *, const char *);
+enum MAPISTATUS		mapi_profile_add_string_attr(struct mapi_context *, const char *, const char *, const char *);
+enum MAPISTATUS		mapi_profile_modify_string_attr(struct mapi_context *, const char *, const char *, const char *);
+enum MAPISTATUS		mapi_profile_delete_string_attr(struct mapi_context *, const char *, const char *, const char *);
 const char		*mapi_profile_get_ldif_path(void);
 enum MAPISTATUS		CreateProfileStore(const char *, const char *);
-enum MAPISTATUS		OpenProfile(struct mapi_profile *, const char *, const char *);
-enum MAPISTATUS		LoadProfile(struct mapi_profile *);
+enum MAPISTATUS		OpenProfile(struct mapi_context *, struct mapi_profile *, const char *, const char *);
+enum MAPISTATUS		LoadProfile(struct mapi_context *, struct mapi_profile *);
 enum MAPISTATUS		ShutDown(struct mapi_profile *);
-enum MAPISTATUS		CreateProfile(const char *, const char *, const char *, uint32_t);
-enum MAPISTATUS		DeleteProfile(const char *);
-enum MAPISTATUS		ChangeProfilePassword(const char *, const char *, const char *);
-enum MAPISTATUS		CopyProfile(const char *, const char *);
-enum MAPISTATUS		DuplicateProfile(const char *, const char *, const char *);
-enum MAPISTATUS		RenameProfile(const char *, const char *);
-enum MAPISTATUS		SetDefaultProfile(const char *);
-enum MAPISTATUS		GetDefaultProfile(char **);
-enum MAPISTATUS		GetProfileTable(struct SRowSet *);
+enum MAPISTATUS		CreateProfile(struct mapi_context *, const char *, const char *, const char *, uint32_t);
+enum MAPISTATUS		DeleteProfile(struct mapi_context *, const char *);
+enum MAPISTATUS		ChangeProfilePassword(struct mapi_context *, const char *, const char *, const char *);
+enum MAPISTATUS		CopyProfile(struct mapi_context *, const char *, const char *);
+enum MAPISTATUS		DuplicateProfile(struct mapi_context *, const char *, const char *, const char *);
+enum MAPISTATUS		RenameProfile(struct mapi_context *, const char *, const char *);
+enum MAPISTATUS		SetDefaultProfile(struct mapi_context *, const char *);
+enum MAPISTATUS		GetDefaultProfile(struct mapi_context *, char **);
+enum MAPISTATUS		GetProfileTable(struct mapi_context *, struct SRowSet *);
 enum MAPISTATUS		GetProfileAttr(struct mapi_profile *, const char *, unsigned int *, char ***);
 enum MAPISTATUS		FindProfileAttr(struct mapi_profile *, const char *, const char *);
-enum MAPISTATUS		ProcessNetworkProfile(struct mapi_session *session, const char *, mapi_profile_callback_t, const void *);
+enum MAPISTATUS		ProcessNetworkProfile(struct mapi_session *, const char *, mapi_profile_callback_t, const void *);
 
 /* The following public definitions come from libmapi/IMAPIContainer.c */
 enum MAPISTATUS		GetContentsTable(mapi_object_t *, mapi_object_t *, uint8_t, uint32_t *);
@@ -372,10 +370,11 @@ enum MAPISTATUS		GetCollapseState(mapi_object_t *, uint64_t, uint32_t, struct SB
 enum MAPISTATUS		SetCollapseState(mapi_object_t *, struct SBinary_short *);
 
 /* The following public definitions come from libmapi/IMSProvider.c */
-char			*RfrGetNewDSA(struct mapi_session *, const char *, const char *);
-enum MAPISTATUS		RfrGetFQDNFromLegacyDN(struct mapi_session *, const char **);
+char			*RfrGetNewDSA(struct mapi_context *, struct mapi_session *, const char *, const char *);
+enum MAPISTATUS		RfrGetFQDNFromLegacyDN(struct mapi_context *, struct mapi_session *, const char **);
 enum MAPISTATUS		Logoff(mapi_object_t *);
 enum MAPISTATUS		RegisterNotification(struct mapi_session *, uint16_t);
+enum MAPISTATUS		RegisterAsyncNotification(struct mapi_session *, uint32_t *);
 
 /* The following public definitions come from libmapi/IMessage.c */
 enum MAPISTATUS		CreateAttach(mapi_object_t *, mapi_object_t *);
@@ -406,14 +405,14 @@ enum MAPISTATUS		GetTransportFolder(mapi_object_t *, mapi_id_t *);
 enum MAPISTATUS		GetOwningServers(mapi_object_t *, mapi_object_t *, uint16_t *, uint16_t *, char **);
 enum MAPISTATUS		GetStoreState(mapi_object_t *, uint32_t *);
 enum MAPISTATUS		GetOutboxFolder(mapi_object_t *, mapi_id_t *);
-enum MAPISTATUS		TransportNewMail(mapi_object_t *, mapi_object_t *,const char *, uint32_t);
+enum MAPISTATUS		TransportNewMail(mapi_object_t *, mapi_object_t *, mapi_object_t *,const char *, uint32_t);
 
 /* The following public definitions come from libmapi/IStoreFolder.c */
 enum MAPISTATUS		OpenMessage(mapi_object_t *, mapi_id_t, mapi_id_t, mapi_object_t *, uint8_t);
 enum MAPISTATUS		ReloadCachedInformation(mapi_object_t *);
 
 /* The following public definitions come from libmapi/IUnknown.c */
-enum MAPISTATUS		MAPIAllocateBuffer(uint32_t, void **);
+enum MAPISTATUS		MAPIAllocateBuffer(struct mapi_context *, uint32_t, void **);
 enum MAPISTATUS		MAPIFreeBuffer(void *);
 enum MAPISTATUS		Release(mapi_object_t *);
 enum MAPISTATUS		GetLastError(void);
@@ -442,6 +441,14 @@ enum MAPISTATUS		OptionsData(mapi_object_t *, const char *, uint8_t **, uint16_t
 
 /* The following public definitions come from libmapi/FXICS.c */
 enum MAPISTATUS		GetLocalReplicaIds(mapi_object_t *, uint32_t, struct GUID *, uint8_t [6]);
+enum MAPISTATUS		TellVersion(mapi_object_t *, uint16_t version[3]);
+enum MAPISTATUS		FXDestConfigure(mapi_object_t *, enum FastTransferDestConfig_SourceOperation, mapi_object_t *);
+enum MAPISTATUS		FXCopyFolder(mapi_object_t *, uint8_t, uint8_t, mapi_object_t *);
+enum MAPISTATUS		FXCopyMessages(mapi_object_t *, mapi_id_array_t *, uint8_t, uint8_t, mapi_object_t *);
+enum MAPISTATUS		FXCopyTo(mapi_object_t *, uint8_t, uint32_t, uint8_t, struct SPropTagArray *, mapi_object_t *);
+enum MAPISTATUS		FXCopyProperties(mapi_object_t *, uint8_t, uint32_t, uint8_t, struct SPropTagArray *, mapi_object_t *);
+enum MAPISTATUS		FXGetBuffer(mapi_object_t *obj_source_context, uint16_t maxSize, enum TransferStatus *, uint16_t *, uint16_t *, DATA_BLOB *);
+enum MAPISTATUS		FXPutBuffer(mapi_object_t *obj_dest_context, DATA_BLOB *blob, uint16_t *usedSize);
 
 /* The following public definitions come from libmapi/freebusy.c */
 enum MAPISTATUS		GetUserFreeBusyData(mapi_object_t *, const char *, struct SRow *);
@@ -456,7 +463,8 @@ char			*x500_get_servername(const char *);
 /* The following public definitions come from libmapi/lzfu.c */
 enum MAPISTATUS		WrapCompressedRTFStream(mapi_object_t *, DATA_BLOB *);
 enum MAPISTATUS		uncompress_rtf(TALLOC_CTX *, uint8_t *, uint32_t, DATA_BLOB *);
-uint32_t calculateCRC(uint8_t *, uint32_t, uint32_t);
+uint32_t		calculateCRC(uint8_t *, uint32_t, uint32_t);
+enum MAPISTATUS		compress_rtf(TALLOC_CTX *, const char*, const size_t, uint8_t **, size_t *);
 
 /* The following public definitions come from libmapi/utils.c */
 char			*guid_delete_dash(TALLOC_CTX *, const char *);
@@ -465,6 +473,20 @@ enum MAPISTATUS		GetFIDFromEntryID(uint16_t, uint8_t *, uint64_t, uint64_t *);
 
 /* The following public definitions come from libmapi/socket/netif.c */
 int			get_interfaces(struct iface_struct *, int);
+
+/* The following public definitions come from libmapi/fxparser.c */
+struct fx_parser_context;
+typedef enum MAPISTATUS (*fxparser_marker_callback_t)(uint32_t, void *);
+typedef enum MAPISTATUS (*fxparser_delprop_callback_t)(uint32_t, void *);
+typedef enum MAPISTATUS (*fxparser_namedprop_callback_t)(uint32_t, struct MAPINAMEID, void *);
+typedef enum MAPISTATUS (*fxparser_property_callback_t)(struct SPropValue, void *);
+
+struct fx_parser_context *fxparser_init(TALLOC_CTX *, void *);
+void 			 fxparser_set_marker_callback(struct fx_parser_context *, fxparser_marker_callback_t);
+void 			 fxparser_set_delprop_callback(struct fx_parser_context *, fxparser_delprop_callback_t);
+void 			 fxparser_set_namedprop_callback(struct fx_parser_context *, fxparser_namedprop_callback_t);
+void 			 fxparser_set_property_callback(struct fx_parser_context *, fxparser_property_callback_t);
+void			 fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
 
 __END_DECLS
 

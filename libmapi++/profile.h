@@ -24,6 +24,10 @@
 
 #include <libmapi++/clibmapi.h>
 
+#include <string>
+#include <stdexcept>
+#include <libmapi++/mapi_exception.h>
+
 namespace libmapipp {
 
 /**
@@ -34,9 +38,19 @@ namespace libmapipp {
  * \todo we should be able to delete a profile using libmapi++ classes
  * \todo maybe move some of the session.h documentation on profiles to profile.h?
  */
-class profile 
+class profile_database
 {
 	public:
+		/**
+		 * \brief Constructor
+		 *
+		 * \param profiledb_path An absolute path specifying the location of the
+		 * %profile database. If not specified (or ""  is specified) the default
+		 * location will be used (~/.openchange.profiles.ldb).
+		 *
+		 * \param debug Whether to output debug information to stdout
+		 */
+		explicit profile_database(const std::string& profiledb_path = "")  throw(std::runtime_error, mapi_exception);
 
 		/* Create an new profile database
 		 *
@@ -44,12 +58,7 @@ class profile
 		 * \param ldif_path the absolute path to the LDIF information to use for initial setup
 		 *
 		 */
-		bool static create_profile_store(const char* profiledb, const char* ldif_path = NULL)
-		{
-                        if (ldif_path == NULL)
-                            ldif_path = ::mapi_profile_get_ldif_path();
-			return (CreateProfileStore(profiledb, ldif_path) == MAPI_E_SUCCESS);
-		}
+		static bool create_profile_store(const char* profiledb, const char* ldif_path = NULL);
  
  		/**
 		 * Create an new profile database
@@ -58,9 +67,16 @@ class profile
 		 * \param ldif_path the absolute path to the LDIF information to use for initial setup
 		 *
 		 */
-		bool static create_profile_store(const std::string& profiledb, const std::string& ldif_path)
+		static bool create_profile_store(const std::string& profiledb, const std::string& ldif_path = "");
+
+		/**
+		 * Make the specified profile the default profile
+		 *
+		 * \param profname the name of the profile to make default
+		 */
+		bool set_default(const char* profname)
 		{
-			return create_profile_store(profiledb.c_str(), ldif_path.c_str());
+			return (SetDefaultProfile(m_mapi_context, profname) == MAPI_E_SUCCESS);
 		}
 
 		/**
@@ -68,17 +84,7 @@ class profile
 		 *
 		 * \param profname the name of the profile to make default
 		 */
-		bool static set_default(const char* profname)
-		{
-			return (SetDefaultProfile(profname) == MAPI_E_SUCCESS);
-		}
-
-		/**
-		 * Make the specified profile the default profile
-		 *
-		 * \param profname the name of the profile to make default
-		 */
-		bool static set_default(const std::string& profname)
+		bool set_default(const std::string& profname)
 		{
 			return set_default(profname.c_str());
 		}
@@ -88,24 +94,40 @@ class profile
 		 *
 		 * \return the name of the default profile
 		 */
-		std::string static get_default_profile() throw (mapi_exception)
-		{
-			char* profname = NULL;
-			if (GetDefaultProfile(&profname) != MAPI_E_SUCCESS)
-				throw mapi_exception(GetLastError(), "profile::get_default_profile : GetDefaultProfile()");
+		std::string get_default_profile_name() throw (mapi_exception);
 
-			return std::string(profname);
-		}
+		/**
+		 * \brief The path to the default %profile database
+		 *
+		 * This method is not normally required to be called by user applications
+		 * but might be useful under some circumstances.
+		 */
+		static std::string get_default_profile_path();
 
-		~profile()
-		{
-			if (m_profile)
-				::ShutDown(m_profile);
-		}
-
+		~profile_database();
 
 	private:
-		mapi_profile	*m_profile;
+		struct mapi_context	*m_mapi_context;
+		TALLOC_CTX		*m_memory_ctx;
+};
+
+class profile
+{
+	public:
+		~profile()
+		{
+			if (m_profile) {
+				::ShutDown(m_profile);
+			}
+			if (m_mapi_context) {
+				MAPIUninitialize(m_mapi_context);
+			}
+			talloc_free(m_memory_ctx);
+		}
+	private:
+		mapi_profile		*m_profile;
+		struct mapi_context	*m_mapi_context;
+		TALLOC_CTX		*m_memory_ctx;
 };
 
 } // namespace libmapipp

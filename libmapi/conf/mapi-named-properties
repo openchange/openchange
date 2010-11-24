@@ -463,9 +463,9 @@ PidNameSubject                                         NULL                     
 PidNameTemplate                                        NULL                          0x0000 Template                      PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS	   0x80dd
 PidNameTitle                                           NULL                          0x0000 Title                         PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS	   0x80d8
 PidNameWordCount                                       NULL                          0x0000 WordCount                     PT_LONG       MNID_STRING PS_PUBLIC_STRINGS	   0x80e5
-#NULL                                                   NULL                          0x0000 urn:schemas:contacts:fileas   PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS
-#NULL                                                   NULL                          0x0000 urn:schemas:calendar:sequence PT_LONG       MNID_STRING PS_PUBLIC_STRINGS
-#NULL                                                   NULL                          0x0000 urn:schemas:calendar:version  PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS
+NULL                                                   NULL                          0x0000 urn:schemas:contacts:fileas   PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS
+NULL                                                   NULL                          0x0000 urn:schemas:calendar:sequence PT_LONG       MNID_STRING PS_PUBLIC_STRINGS
+NULL                                                   NULL                          0x0000 urn:schemas:calendar:version  PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS
 
 
 ### PS_INTERNET_HEADERS

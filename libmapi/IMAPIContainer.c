@@ -42,9 +42,8 @@
 
    TableFlags possible values:
 
-   - TableFlags_Depth (0x4): Fills the hierarchy table with containers
-   from all levels. If this flag is not set, the hierarchy table
-   contains only the container's immediate child containers.
+   - TableFlags_Associated (0x2): Get the contents table for "Folder Associated
+   Information" messages, rather than normal messages.
 
    - TableFlags_DeferredErrors (0x8): The call response can return immediately,
    possibly before the call execution is complete and in this case the
@@ -93,7 +92,6 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	uint8_t				logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_container, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_container);
@@ -220,7 +218,6 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	uint8_t				logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_container, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	session = mapi_object_get_session(obj_container);
@@ -321,7 +318,6 @@ _PUBLIC_ enum MAPISTATUS GetPermissionsTable(mapi_object_t *obj_container, uint8
 	uint8_t				logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_container, MAPI_E_INVALID_PARAMETER, NULL);
 
 	session = mapi_object_get_session(obj_container);
@@ -416,7 +412,6 @@ _PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder,
 	uint8_t				logon_id;
 
 	/* Sanity check */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -523,7 +518,6 @@ _PUBLIC_ enum MAPISTATUS ModifyPermissions(mapi_object_t *obj_table, uint8_t fla
 	uint8_t				logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_table, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!permsdata, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -641,7 +635,6 @@ _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container,
 	uint8_t				logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_container, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!res, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -746,7 +739,6 @@ _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 	uint8_t				logon_id;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_container, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!SearchFlags, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!FolderIdCount, MAPI_E_INVALID_PARAMETER, NULL);

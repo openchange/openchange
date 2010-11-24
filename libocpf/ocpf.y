@@ -40,6 +40,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 	uint16_t			s;
 	uint32_t			l;
 	uint64_t			d;
+	double				dbl;
 	char				*name;
 	char				*nameW;
 	char				*date;
@@ -55,6 +56,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 %token <s> SHORT
 %token <l> INTEGER
 %token <d> I8
+%token <dbl> DOUBLE
 %token <name> IDENTIFIER
 %token <name> STRING
 %token <nameW> UNICODE
@@ -81,6 +83,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 %token kw_PT_SHORT
 %token kw_PT_LONG
 %token kw_PT_I8
+%token kw_PT_DOUBLE
 %token kw_PT_SYSTIME
 %token kw_PT_MV_LONG
 %token kw_PT_MV_BINARY
@@ -123,7 +126,7 @@ Type		:
 			  ocpf_type_add(ctx,$2);
 				ctx->typeset++;
 			} else {
-				error_message(ctx, "%s", "duplicated TYPE\n");
+				ocpf_error_message(ctx, "%s", "duplicated TYPE\n");
 				return -1;
 			}
 		}
@@ -136,7 +139,7 @@ Folder		:
 				ocpf_folder_add(ctx, $2, 0, NULL);
 				ctx->folderset = true;
 			} else {
-				error_message(ctx, "%s", "duplicated FOLDER\n");
+				ocpf_error_message(ctx, "%s", "duplicated FOLDER\n");
 			}
 		}
 		| kw_FOLDER I8
@@ -145,7 +148,7 @@ Folder		:
 				ocpf_folder_add(ctx, NULL, $2, NULL);
 				ctx->folderset = true;
 			} else {
-				error_message(ctx,"%s", "duplicated FOLDER\n");
+				ocpf_error_message(ctx,"%s", "duplicated FOLDER\n");
 			}
 		}
 		| kw_FOLDER VAR
@@ -154,7 +157,7 @@ Folder		:
 				ocpf_folder_add(ctx, NULL, 0, $2);
 				ctx->folderset = true;
 			} else {
-				error_message(ctx,"%s", "duplicated FOLDER\n");
+				ocpf_error_message(ctx,"%s", "duplicated FOLDER\n");
 			}
 		}
 		;
@@ -226,6 +229,7 @@ propvalue	: STRING
 		| INTEGER	{ ctx->lpProp.l = $1; ctx->ltype = PT_LONG; }
 		| BOOLEAN	{ ctx->lpProp.b = $1; ctx->ltype = PT_BOOLEAN; }
 		| I8		{ ctx->lpProp.d = $1; ctx->ltype = PT_I8; }
+		| DOUBLE	{ ctx->lpProp.dbl = $1, ctx->ltype = PT_DOUBLE; }
 		| SYSTIME
 		{
 			ocpf_add_filetime($1, &ctx->lpProp.ft);
@@ -390,7 +394,7 @@ binary_contents: | binary_contents binary_content
 binary_content	: UINT8
 		{
 			if ($1 > 0xFF) {
-				error_message(ctx,"Invalid Binary constant: 0x%x > 0xFF\n", $1);
+				ocpf_error_message(ctx,"Invalid Binary constant: 0x%x > 0xFF\n", $1);
 			}
 
 			if (!ctx->bin.cb) {
@@ -426,7 +430,6 @@ mvbin_content	: OBRACE binary_contents EBRACE COMMA
 											       ctx->bin.cb);
 			ctx->lpProp.MVbin.cValues += 1;
 
-			talloc_free(ctx->bin.lpb);
 			ctx->bin.cb = 0;
 		}
 		;
@@ -499,6 +502,11 @@ proptype	: kw_PT_STRING8
 		{
 			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
 			ctx->nprop.propType = PT_LONG; 
+		}
+		| kw_PT_DOUBLE
+		{
+			memset(&ctx->nprop, 0, sizeof (struct ocpf_nprop));
+			ctx->nprop.propType = PT_DOUBLE;
 		}
 		| kw_PT_I8
 		{

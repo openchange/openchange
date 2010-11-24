@@ -153,7 +153,7 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 
 	/* if no profile was specified, get the default */
 	if (!opt_profname) {
-		retval = GetDefaultProfile(&opt_profname);
+		retval = GetDefaultProfile(mt->mapi_ctx, &opt_profname);
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_errstr("GetDefaultProfile", retval);
 			talloc_free(mem_ctx);
@@ -163,13 +163,13 @@ static bool mapitest_get_server_info(struct mapitest *mt,
 		
 
 	/* debug options */
-	SetMAPIDumpData(opt_dumpdata);
+	SetMAPIDumpData(mt->mapi_ctx, opt_dumpdata);
 
 	if (opt_debug) {
-		SetMAPIDebugLevel(atoi(opt_debug));
+		SetMAPIDebugLevel(mt->mapi_ctx, atoi(opt_debug));
 	}
 
-	retval = MapiLogonEx(&session, opt_profname, password);
+	retval = MapiLogonEx(mt->mapi_ctx, &session, opt_profname, password);
 	MAPIFreeBuffer(opt_profname);
 	talloc_free(mem_ctx);
 	if (retval != MAPI_E_SUCCESS) {
@@ -317,7 +317,7 @@ int main(int argc, const char *argv[])
 		opt_profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, getenv("HOME"));
 	}
 
-	retval = MAPIInitialize(opt_profdb);
+	retval = MAPIInitialize(&(mt.mapi_ctx), opt_profdb);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("MAPIInitialize", retval);
 		return -2;
@@ -347,7 +347,7 @@ int main(int argc, const char *argv[])
 	mapitest_cleanup_stream(&mt);
 
 	/* Uninitialize and free memory */
-	MAPIUninitialize();
+	MAPIUninitialize(mt.mapi_ctx);
 	talloc_free(mt.mem_ctx);
 
 	if (opt_leak_report) {

@@ -58,7 +58,7 @@ _PUBLIC_ enum MAPISTATUS octool_get_body(TALLOC_CTX *, mapi_object_t *,
 _PUBLIC_ enum MAPISTATUS octool_get_stream(TALLOC_CTX *mem_ctx,
 					 mapi_object_t *obj_stream, 
 					 DATA_BLOB *body);
-_PUBLIC_ struct mapi_session *octool_init_mapi(const char *, const char *, uint32_t);
+_PUBLIC_ struct mapi_session *octool_init_mapi(struct mapi_context *, const char *, const char *, uint32_t);
 __END_DECLS
 
 #endif /*!__OPENCHANGETOOLS_H__ */

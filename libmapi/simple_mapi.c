@@ -64,7 +64,6 @@ _PUBLIC_ enum MAPISTATUS GetDefaultPublicFolder(mapi_object_t *obj_store,
 						uint64_t *folder,
 						const uint32_t id)
 {
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 
 	switch (id) {
@@ -125,7 +124,7 @@ static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
 	store = (mapi_object_store_t *)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "GetDefaultFolder");
+	mem_ctx = talloc_named(NULL, 0, "CacheDefaultFolders");
 
 	mapi_object_init(&obj_inbox);
 	retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
@@ -242,7 +241,6 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
 	mapi_object_store_t		*store;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!folder, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -428,7 +426,6 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 	struct SPropValue	*lpProps;
 	uint32_t		count;
 
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!unread, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!total, MAPI_E_INVALID_PARAMETER, NULL);
@@ -502,7 +499,6 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	struct mapi_PermissionsData     rowList;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -564,7 +560,9 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 
    \sa AddUserPermission, ResolveNames, GetPermissionsTable, ModifyPermissions
  */
-_PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const char *username, enum ACLRIGHTS role)
+_PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, 
+					      const char *username, 
+					      enum ACLRIGHTS role)
 {
 	enum MAPISTATUS			retval;
 	TALLOC_CTX			*mem_ctx;
@@ -582,7 +580,6 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 	bool				found = false;
 	uint32_t			i = 0;
 
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -682,7 +679,8 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder, const c
 
    \sa ResolveNames, GetPermissionsTable, ModifyPermissions
  */
-_PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const char *username)
+_PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, 
+					      const char *username)
 {
 	enum MAPISTATUS			retval;
 	TALLOC_CTX			*mem_ctx;
@@ -700,7 +698,6 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
 	bool				found = false;
 	uint32_t			i = 0;
 
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -775,6 +772,9 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
    \details Implement the BestBody algorithm and return the best body
    content type for a given message.
 
+   \param obj_message the message we find the best body for
+   \param format the format - see below.
+
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND. If
    MAPI_E_NOT_FOUND is returned then format is set to 0x0
    (undefined). If MAPI_E_SUCCESS is returned, then format can have
@@ -782,12 +782,12 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder, const c
    - olEditorText: format is plain text
    - olEditorHTML: format is HTML
    - olEditorRTF: format is RTF
-
-   \param obj_message the message we find the best body for
-   \param format the format - see above.
  */
-_PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format)
+_PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, 
+				     uint8_t *format)
 {
+	struct mapi_context	*mapi_ctx;
+	struct mapi_session	*session;
 	enum MAPISTATUS		retval;
 	struct SPropTagArray	*SPropTagArray = NULL;
 	struct SPropValue	*lpProps;
@@ -800,12 +800,14 @@ _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format
 	const uint32_t		*err_code;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!format, MAPI_E_INVALID_PARAMETER, NULL);
 
+	session = mapi_object_get_session(obj_message);
+	mapi_ctx = session->mapi_ctx;
+
 	/* Step 1. Retrieve properties needed by the BestBody algorithm */
-	SPropTagArray = set_SPropTagArray(global_mapi_ctx->mem_ctx, 0x4,
+	SPropTagArray = set_SPropTagArray(mapi_ctx->mem_ctx, 0x4,
 					  PR_BODY,
 					  PR_RTF_COMPRESSED,
 					  PR_HTML,
@@ -822,7 +824,8 @@ _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message, uint8_t *format
 	aRow.lpProps = lpProps;
 
 	/* Step 2. Retrieve properties values and map errors */
-	RtfInSync = *(const uint8_t *)find_SPropValue_data(&aRow, PR_RTF_IN_SYNC);
+	err_code = (const uint32_t *)find_SPropValue_data(&aRow, PR_RTF_IN_SYNC);
+	RtfInSync = (err_code) ? *err_code : 0;
 
 	err_code = (const uint32_t *)find_SPropValue_data(&aRow, PR_BODY_ERROR);
 	PlainStatus = (err_code) ? *err_code : 0;

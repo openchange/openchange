@@ -36,7 +36,7 @@
    monitored in as a bitmask.
 
    \param obj the object to get notifications for
-   \param connection connection identifier for callabck function
+   \param connection connection identifier for callback function
    \param NotificationFlags mask for events to provide notifications
    for (see below)
    \param WholeStore whether the scope for this notification is whole
@@ -91,7 +91,6 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	uint8_t 			logon_id = 0;
 
 	/* Sanity Checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!connection, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -203,7 +202,6 @@ _PUBLIC_ enum MAPISTATUS Unsubscribe(struct mapi_session *session, uint32_t ulCo
 	struct notifications	*notification;
 
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -348,7 +346,6 @@ _PUBLIC_ enum MAPISTATUS DispatchNotifications(struct mapi_session *session)
 	NTSTATUS		status;
 
 	/* sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -406,7 +403,6 @@ _PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session, void 
 	enum MAPISTATUS		retval;
 
 	/* sanity checks */
-	OPENCHANGE_RETVAL_IF(!global_mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!session->notify_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 

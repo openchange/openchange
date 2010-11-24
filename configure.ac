@@ -2,7 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@openchange.org>
 
 AC_PREREQ(2.57)
-AC_INIT(openchange, 0.10, [openchange@openchange.org])
+AC_INIT(openchange, 0.11, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
@@ -109,7 +109,7 @@ if test "x$1_set" != "xset"; then
 		AC_SUBST(OC_$2_INSTALLHEADER)
 		AC_SUBST(OC_$2_INSTALLLIB)
 	;;
-	TOOLS|TORTURE)
+	TOOLS)
 		OC_$2="$OC_$2 $1"
 		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
    		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
@@ -136,7 +136,7 @@ dnl ##################################################################
 dnl Some general portability stuff
 dnl ##################################################################
 AC_CHECK_HEADERS( sys/cdefs.h string.h sys/sockio.h)
-AC_CHECK_FUNCS( strcasestr )
+AC_CHECK_FUNCS(strcasestr)
 
 
 
@@ -245,6 +245,10 @@ dnl GNU Compiler
         LDFLAGS="$LDFLAGS -lgcov --coverage"
     fi
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
+    if test "x$use_cov" = "xyes"; then
+        COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_CXX -fprofile-arcs -ftest-coverage"
+        LDFLAGS="$LDFLAGS -lgcov --coverage"
+    fi
 fi
 AC_SUBST(COMPILER_OPTIONS_C)
 AC_SUBST(COMPILER_OPTIONS_CXX)
@@ -329,6 +333,7 @@ dnl Samba4 modules
 dnl ---------------------------------------------------------------------------
 PKG_CHECK_MODULES(TALLOC, talloc)
 PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig samba-util tevent)
+PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server)
 PKG_CHECK_MODULES(TDB, tdb)
 PKG_CHECK_MODULES(LDB, ldb)
 
@@ -355,6 +360,24 @@ dnl nasty hack: only compile IDL if we have a library
 dnl libraries require libmapi and libmapi require IDL
 OC_IDL="idl"
 AC_SUBST(OC_IDL)
+
+dnl ---------------------------------------------------------------------------
+dnl Check for dl libs
+dnl ---------------------------------------------------------------------------
+
+AC_CHECK_LIB([dl], [dlopen],
+	    [
+		 	DL_LIBS="-ldl"
+			AC_SUBST(DL_LIBS)
+		],
+		[
+			AC_CHECK_FUNCS(dlopen, [
+				DL_LIBS=""
+				AC_SUBST(DL_LIBS)
+			], [
+				AC_MSG_ERROR([unable to find dlopen])
+		 	])
+		])
 
 dnl ---------------------------------------------------------------------------
 dnl Check for pthread libs
@@ -520,18 +543,13 @@ if test x"$enable_libpopt" = x"yes"; then
 	    OC_RULE_ADD(exchange2ical, TOOLS)
 	fi
 
-	AC_PATH_PROG([SMBTORTURE], [smbtorture], no)
-
-	if test x"$SMBTORTURE" != x""; then
-	    TORTURE_MODULESDIR=`$PKG_CONFIG --variable=modulesdir torture`
-	    AC_SUBST(TORTURE_MODULESDIR)
-	    OC_RULE_ADD(torture, TORTURE)
-	fi
-
 	MAPISTORE_TEST=mapistore_test
 	OC_RULE_ADD(mapiprofile, TOOLS)
 	OC_RULE_ADD(openchangemapidump, TOOLS)
 	OC_RULE_ADD(schemaIDGUID, TOOLS)
+
+	OC_RULE_ADD(check_fasttransfer, TOOLS)
+	OC_RULE_ADD(test_asyncnotif, TOOLS)
 fi
 AC_SUBST(MAPISTORE_TEST)
 
@@ -592,32 +610,6 @@ AC_ARG_WITH(modulesdir,
 [modulesdir="\${prefix}/modules"; ])
 
 AC_SUBST(modulesdir)
-
-dnl ##########################################################################
-dnl Swig bindings dependencies
-dnl ##########################################################################
-AC_ARG_ENABLE(swig-perl, AC_HELP_STRING([--enable-swig-perl],
-			   [build SWIG interfaces for Perl]),
-			   enable_perlswig="$enableval")
-if test "x${enable_perlswig}" = xyes; then
-   AC_PATH_PROG(SWIG, swig)
-
-   if test -z "$SWIG"
-      then
-	AC_MSG_ERROR(Please install swig)
-   fi
-
-   SWIGDIRSALL="swigperl-all"
-   SWIGDIRSINSTALL="swigperl-install"
-   SWIGDIRSUNINSTALL="swigperl-uninstall"
-fi
-
-PERL5DIR=`$PERL -e 'use Config; my $dir = $Config{sitelib}; print $dir'`
-AC_SUBST(PERL5DIR)
-
-AC_SUBST(SWIGDIRSALL)
-AC_SUBST(SWIGDIRSINSTALL)
-AC_SUBST(SWIGDIRSUNINSTALL)
 
 dnl ##########################################################################
 dnl Python bindings dependencies
@@ -729,23 +721,17 @@ OC_SETVAL(openchangemapidump)
 OC_SETVAL(schemaIDGUID)
 OC_SETVAL(mapiproxy)
 
-OC_SETVAL(torture)
 OC_SETVAL(doxygen)
-OC_SETVAL(perlswig)
 
 AC_MSG_RESULT([
 
 ===============================================================
 OpenChange Configuration (Please review)
 
-	   * Install:
-	     - prefix:			$prefix
-
-	   * OpenChange MAPI library:	$enable_libmapi
-                      Thread support:	$enable_pthread $enable_thread_lib
-
 	   * OpenChange Libraries:
-	     - libmapi++:		$enable_libmapixx
+	     - libmapi (C library):	$enable_libmapi
+		      Thread support:	$enable_pthread $enable_thread_lib
+	     - libmapi++ (C++ library):	$enable_libmapixx
 	     - libmapiadmin:		$enable_libmapiadmin
 	     - libocpf:			$enable_libocpf
 
@@ -765,8 +751,6 @@ OpenChange Configuration (Please review)
 	     - openchangemapidump:	$enable_openchangemapidump
 	     - schemaIDGUID:		$enable_schemaIDGUID
 
-	   * OpenChange Torture Suite:	$enable_torture
-
 	   * subunit format (mapitest):	$have_subunit
 
 	   * OpenChange Documentation:	$enable_doxygen
@@ -774,10 +758,10 @@ OpenChange Configuration (Please review)
 	   * Coverage Tests:		$use_cov
 
 	   * OpenChange Bindings:
-	     - Perl:			$enable_perlswig
 	     - Python:			$enable_pymapi
 	     - Qt4:			$enable_openchange_qt4
 
+	   * Installation prefix:	$prefix
 
 ===============================================================
 

@@ -36,7 +36,7 @@
    monitored in as a bitmask.
 
    \param obj the object to get notifications for
-   \param connection connection identifier for callabck function
+   \param connection connection identifier for callback function
    \param NotificationFlags mask for events to provide notifications
    for (see below)
    \param WholeStore whether the scope for this notification is whole

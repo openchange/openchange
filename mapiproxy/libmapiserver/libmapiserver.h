@@ -180,9 +180,9 @@
 
 /**
    \details OpenStreamRop has fixed response size for:
-   -# StreamSize: uint16_t
+   -# StreamSize: uint32_t
  */
-#define	SIZE_DFLT_ROPOPENSTREAM			2
+#define	SIZE_DFLT_ROPOPENSTREAM			4
 
 /**
    \details ReadStreamRop has fixed response size for:

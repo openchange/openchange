@@ -535,10 +535,6 @@ if test x"$enable_libpopt" = x"yes"; then
 	   OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
 	fi
 
-	OC_RULE_ADD(mapistore_sogo, MAPISTORE)
-
-
-
 	if test x"$have_libical" = x"yes"; then
 	    OC_RULE_ADD(exchange2ical, TOOLS)
 	fi

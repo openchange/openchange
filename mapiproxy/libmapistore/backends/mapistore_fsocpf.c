@@ -1331,6 +1331,43 @@ static int fsocpf_op_deletemessage(void *private_data,
 	}
 }
 
+static int fsocpf_op_get_folders_list(void *private_data,
+                                      uint64_t fmid,
+                                      struct indexing_folders_list **folders_list)
+{
+        struct indexing_folders_list *flist;
+        /* char *folder, *tmp_uri, *uri, *substr; */
+	int				ret;
+        char *path;
+        struct fsocpf_message *message;
+        struct fsocpf_folder *folder;
+	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
+
+        flist = talloc_zero(fsocpf_ctx, struct indexing_folders_list);
+        flist->folderID = talloc_array(flist, uint64_t, 64);
+        flist->count = 1;
+        flist->folderID[0] = fsocpf_ctx->fid;
+        *folders_list = flist;
+
+        message = fsocpf_find_message_by_mid (fsocpf_ctx, fmid);
+        if (message) {
+                path = message->path;
+        }
+        else {
+                folder = fsocpf_find_folder_by_fid (fsocpf_ctx, fmid);
+                if (folder) {
+                        path = message->path;
+                } 
+                else {
+                        return MAPISTORE_ERR_NOT_FOUND;
+                }
+        }
+
+        path = path + strlen(fsocpf_ctx->uri) + 1;
+
+        return MAPISTORE_SUCCESS;
+}
+
 /**
    \details Entry point for mapistore FSOCPF backend
 
@@ -1366,6 +1403,7 @@ int mapistore_init_backend(void)
 	backend.op_get_fid_by_name = fsocpf_op_get_fid_by_name;
 	backend.op_setprops = fsocpf_op_setprops;
 	backend.op_deletemessage = fsocpf_op_deletemessage;
+	backend.op_get_folders_list = fsocpf_op_get_folders_list;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

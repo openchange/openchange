@@ -1,9 +1,6 @@
 # # Makefile for OpenChange
 # Written by Jelmer Vernooij <jelmer@openchange.org>, 2005.
 
-SOGO_SOURCES = /home/wsourdeau/src/SOGo
-SOGO_CFLAGS = -I$(SOGO_SOURCES)/SoObjects -I$(SOGO_SOURCES)/SOPE
-
 default: all
 
 # Until we add proper dependencies for all the C files:
@@ -97,7 +94,7 @@ re:: clean install
 # Suffixes compilation rules
 #################################################################
 
-.SUFFIXES: .c .m .o .h .po .idl .cpp
+.SUFFIXES: .c .o .h .po .idl .cpp
 
 .idl.h:
 	@echo "Generating $@"
@@ -110,9 +107,6 @@ re:: clean install
 .c.po:
 	@echo "Compiling $< with -fPIC"
 	@$(CC) $(CFLAGS) -fPIC -c $< -o $@
-
-.m.po:
-	$(CC) $(CFLAGS) `gnustep-config --objc-flags` $(SOGO_CFLAGS) -ggdb -O0 -fPIC -c $< -o $@
 
 .cpp.o:
 	@echo "Compiling $< with -fPIC"
@@ -939,37 +933,6 @@ mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT): mapiproxy/libmapis
 	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(SQLITE_LIBS) 	\
 	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			\
 	-L. libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
-
-# SOGo backend
-mapistore_sogo: mapiproxy/libmapistore/backends/mapistore_sogo.$(SHLIBEXT)
-
-mapiproxy/libmapistore/backends/mapistore_sogo.po: $(wildcard mapiproxy/libmapistore/backends/mapistore_sogo/*.m)
-
-mapistore_sogo-install: mapistore_sogo
-	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
-	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_sogo.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
-
-mapistore_sogo-uninstall:
-	rm -rf $(DESTDIR)$(libdir)/mapistore_backends
-
-mapistore_sogo-clean:
-	rm -f mapiproxy/libmapistore/backends/mapistore_sogo.o
-	rm -f mapiproxy/libmapistore/backends/mapistore_sogo.po
-	rm -f mapiproxy/libmapistore/backends/mapistore_sogo.gcno
-	rm -f mapiproxy/libmapistore/backends/mapistore_sogo.gcda
-	rm -f mapiproxy/libmapistore/backends/mapistore_sogo.so
-
-clean:: mapistore_sogo-clean
-
-mapistore_sogo-distclean: mapistore_sogo-clean
-
-distclean:: mapistore_sogo-distclean
-
-mapiproxy/libmapistore/backends/mapistore_sogo.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_sogo.po
-	@echo "Linking mapistore module $@"
-	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) 			\
-	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
-	`gnustep-config --base-libs` -lSOGo
 
 #######################
 # mapistore test tools

@@ -389,14 +389,14 @@ _PUBLIC_ int mapistore_indexing_get_folder_list(struct mapistore_context *mstore
 {
 	int				ret;
 	struct indexing_context_list	*ictx;
-	struct indexing_folders_list	*flist = NULL;
+        struct indexing_folders_list	*flist = NULL;
 	TDB_DATA			key;
 	TDB_DATA			dbuf;
 	bool				IsSoftDeleted = false;
 	char				*uri = NULL;
-	char				*tmp_uri;
-	char				*substr;
-	char				*folder;
+	/* char				*tmp_uri; */
+	/* char				*substr; */
+	/* char				*folder; */
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -433,29 +433,34 @@ _PUBLIC_ int mapistore_indexing_get_folder_list(struct mapistore_context *mstore
 
 	/* FIXME: Look for folders starting with 0x ... nasty but will do the trick for now */
 
-	flist = talloc_zero(mstore_ctx, struct indexing_folders_list);
-	flist->folderID = talloc_array(flist, uint64_t, 2);
-	flist->count = 0;
-	
-	tmp_uri = uri;
-	while ((substr = strcasestr(uri, "0x")) != NULL) {
-		folder = talloc_strndup(mstore_ctx, substr, 18);
-		flist->folderID[flist->count] = strtoull(folder, NULL, 16);
-		if (flist->folderID[flist->count] != fmid) {
-			flist->count += 1;
-			flist->folderID = talloc_realloc(flist, flist->folderID, uint64_t, flist->count + 1);
-		} else {
-			flist->folderID[flist->count] = 0;
-		}
-		talloc_free(folder);
-		uri = substr + 18;
-	}
+        flist = talloc_zero(mstore_ctx, struct indexing_folders_list);
+        flist->folderID = talloc_array(flist, uint64_t, 2);
+        flist->count = 0;
 
-	talloc_free(tmp_uri);
+        ret = mapistore_get_folders_list(mstore_ctx, fmid, &flist);
+        *_flist = flist;
 
-	*_flist = flist;
+        return ret;
 
-	return MAPISTORE_SUCCESS;
+	/* tmp_uri = uri; */
+	/* while ((substr = strcasestr(uri, "0x")) != NULL) { */
+	/* 	folder = talloc_strndup(mstore_ctx, substr, 18); */
+	/* 	flist->folderID[flist->count] = strtoull(folder, NULL, 16); */
+	/* 	if (flist->folderID[flist->count] != fmid) { */
+	/* 		flist->count += 1; */
+	/* 		flist->folderID = talloc_realloc(flist, flist->folderID, uint64_t, flist->count + 1); */
+	/* 	} else { */
+	/* 		flist->folderID[flist->count] = 0; */
+	/* 	} */
+	/* 	talloc_free(folder); */
+	/* 	uri = substr + 18; */
+	/* } */
+
+	/* talloc_free(tmp_uri); */
+
+	/* *_flist = flist; */
+
+	/* return MAPISTORE_SUCCESS; */
 }
 
 

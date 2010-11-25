@@ -395,7 +395,6 @@ _PUBLIC_ struct backend_context *mapistore_backend_lookup(struct backend_context
 	return NULL;
 }
 
-
 /**
    \details find the context matching given uri string
 
@@ -531,4 +530,9 @@ int mapistore_backend_setprops(struct backend_context *bctx, uint64_t fmid, uint
 int mapistore_backend_deletemessage(struct backend_context *bctx, uint64_t mid, uint8_t flags)
 {
 	return bctx->backend->op_deletemessage(bctx->private_data, mid, flags);
+}
+
+int mapistore_backend_get_folders_list(struct backend_context *bctx, uint64_t fmid, struct indexing_folders_list **folders_list)
+{
+	return bctx->backend->op_get_folders_list(bctx->private_data, fmid, folders_list);
 }

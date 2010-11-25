@@ -65,6 +65,11 @@ struct mapistore_message {
 	struct SRow			*properties;
 };
 
+struct indexing_folders_list {
+	uint64_t			*folderID;
+	uint32_t			count;
+};
+
 struct mapistore_backend {
 	const char	*name;
 	const char	*description;
@@ -91,6 +96,8 @@ struct mapistore_backend {
 	int (*op_get_fid_by_name)(void *, uint64_t, const char *, uint64_t *);
 	int (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
 	int (*op_deletemessage)(void *, uint64_t mid, uint8_t flags);
+
+	int (*op_get_folders_list)(void *, uint64_t fmid, struct indexing_folders_list **folders_list);
 };
 
 struct indexing_context_list;
@@ -117,11 +124,6 @@ struct mapistore_context {
 	struct backend_context_list    	*context_list;
 	struct indexing_context_list	*indexing_list;
 	void				*nprops_ctx;
-};
-
-struct indexing_folders_list {
-	uint64_t			*folderID;
-	uint32_t			count;
 };
 
 #ifndef __BEGIN_DECLS
@@ -163,6 +165,7 @@ int mapistore_get_fid_by_name(struct mapistore_context *, uint32_t, uint64_t, co
 int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SRow *);
 int mapistore_get_child_fids(struct mapistore_context *, uint32_t, uint64_t, uint64_t **, uint32_t *);
 int mapistore_deletemessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+int mapistore_get_folders_list(struct mapistore_context *, uint64_t, struct indexing_folders_list **);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

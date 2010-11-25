@@ -172,6 +172,7 @@ int mapistore_backend_getprops(struct backend_context *, uint64_t, uint8_t,
 int mapistore_backend_setprops(struct backend_context *, uint64_t, uint8_t, struct SRow *);
 int mapistore_backend_get_fid_by_name(struct backend_context *, uint64_t, const char *, uint64_t *);
 int mapistore_backend_deletemessage(struct backend_context *, uint64_t, uint8_t);
+int mapistore_backend_get_folders_list(struct backend_context *, uint64_t, struct indexing_folders_list **);
 
 /* definitions from mapistore_tdb_wrap.c */
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);

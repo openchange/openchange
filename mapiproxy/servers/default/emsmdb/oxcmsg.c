@@ -195,7 +195,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID, &msg);
 
 		/* Build the OpenMessage reply */
-		subject = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT);
+		subject = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT_UNICODE);
 
 		mapi_repl->u.mapi_OpenMessage.HasNamedProperties = false;
 		mapi_repl->u.mapi_OpenMessage.SubjectPrefix.StringType = StringType_EMPTY;

@@ -527,6 +527,11 @@ int mapistore_backend_setprops(struct backend_context *bctx, uint64_t fmid, uint
 	return bctx->backend->op_setprops(bctx->private_data, fmid, type, aRow);
 }
 
+int mapistore_backend_modifyrecipients(struct backend_context *bctx, uint64_t mid, struct ModifyRecipientRow *rows, uint16_t count)
+{
+	return bctx->backend->op_modifyrecipients(bctx->private_data, mid, rows, count);
+}
+
 int mapistore_backend_deletemessage(struct backend_context *bctx, uint64_t mid, uint8_t flags)
 {
 	return bctx->backend->op_deletemessage(bctx->private_data, mid, flags);

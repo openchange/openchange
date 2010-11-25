@@ -903,6 +903,35 @@ _PUBLIC_ int mapistore_setprops(struct mapistore_context *mstore_ctx,
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
+/**
+   \details Modify recipients of a message in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where properties will be stored
+   \param mid the identifier referencing the message
+   \rows the array of recipient rows
+   \count the number of elements in the array
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+int mapistore_modifyrecipients(struct mapistore_context *mstore_ctx, uint32_t context_id, uint64_t mid, struct ModifyRecipientRow *rows, uint16_t count)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend modifyrecipients */
+	ret = mapistore_backend_modifyrecipients(backend_ctx, mid, rows, count);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
 
 /**
    \details Retrieve the folder IDs of child folders within a mapistore

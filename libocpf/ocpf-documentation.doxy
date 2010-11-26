@@ -71,6 +71,12 @@
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
 	</tr>
 	<tr>
+	   <td style="text-align:center">27/11/10</td>
+	   <td style="text-align:center"><strong>0.6.1</strong></td>
+	   <td style="text-align:center">Brad Hards</td>
+	   <td style="text-align:center">Update bug tracker link, minor rewording</td>
+	</tr>
+	<tr>
 	   <td style="text-align:center">25/06/10</td>
 	   <td style="text-align:center"><strong>0.6</strong></td>
 	   <td style="text-align:center">Julien Kerihuel</td>
@@ -131,8 +137,8 @@ different purposes:
   have often requested for an easy way to test properties and
   properties values. Prior to OCPF, developers had to write an application
   linked with libmapi and compile it so that they could test
-  properties. Moreover, adding new named properties in trunk was kept
-  under OpenChange commiters agreement. OCPF solves this issue and
+  properties. Moreover, adding new named properties in trunk required
+  commit permission to OpenChange source repository. OCPF solves this issue and
   allow developers to write OCPF files with custom properties that they can
   send using OpenChange tools. Furthermore OCPF will provide the
   community a convenient way to agree on a particular property.</li>
@@ -167,9 +173,8 @@ These limitations will be removed in later versions of OCPF.
 
 If you find bugs, limitations or encounter issues while using the OCPF
 library, please consider reporting them on <a
-href="http://trac.openchange.org">http://trac.openchange.org</a> and
-select the libocpf component. (Note: registration is required to create
-new tickets).
+href="http://tracker.openchange.org">http://tracker.openchange.org</a>.
+(Note: registration is required to create new tickets).
 
 For questions about its usage or about libocpf development, please
 post on the <a href="http://mailman.openchange.org/listinfo/devel">
@@ -613,7 +618,6 @@ MNID_STRING named property using any of the following example:
 \endcode
 
 <br/>
-
 
 <a name="proptype"></a><h2>8. Supported Property Types</h2>
 <a name="boolean"></a><h3>8.1. PT_BOOLEAN</h3>

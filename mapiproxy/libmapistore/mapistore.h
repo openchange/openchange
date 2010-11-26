@@ -95,6 +95,7 @@ struct mapistore_backend {
 	int (*op_getprops)(void *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 	int (*op_get_fid_by_name)(void *, uint64_t, const char *, uint64_t *);
 	int (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
+	int (*op_set_property_from_fd)(void *, uint64_t, uint8_t, uint32_t, int);
 	int (*op_modifyrecipients)(void *, uint64_t, struct ModifyRecipientRow *, uint16_t);
 	int (*op_deletemessage)(void *, uint64_t mid, uint8_t flags);
 
@@ -164,6 +165,7 @@ int mapistore_submitmessage(struct mapistore_context *, uint32_t, uint64_t, uint
 int mapistore_getprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 int mapistore_get_fid_by_name(struct mapistore_context *, uint32_t, uint64_t, const char *, uint64_t*);
 int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SRow *);
+int mapistore_set_property_from_fd(struct mapistore_context *, uint32_t, uint64_t, uint8_t, uint32_t, int);
 int mapistore_modifyrecipients(struct mapistore_context *, uint32_t, uint64_t, struct ModifyRecipientRow*, uint16_t);
 int mapistore_get_child_fids(struct mapistore_context *, uint32_t, uint64_t, uint64_t **, uint32_t *);
 int mapistore_deletemessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);

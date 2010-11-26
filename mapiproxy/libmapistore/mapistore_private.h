@@ -170,6 +170,7 @@ int mapistore_backend_submitmessage(struct backend_context *, uint64_t, uint8_t)
 int mapistore_backend_getprops(struct backend_context *, uint64_t, uint8_t, 
 			       struct SPropTagArray *, struct SRow *);
 int mapistore_backend_setprops(struct backend_context *, uint64_t, uint8_t, struct SRow *);
+int mapistore_backend_set_property_from_fd(struct backend_context *, uint64_t, uint8_t, uint32_t, int);
 int mapistore_backend_modifyrecipients(struct backend_context *, uint64_t, struct ModifyRecipientRow *, uint16_t);
 int mapistore_backend_get_fid_by_name(struct backend_context *, uint64_t, const char *, uint64_t *);
 int mapistore_backend_deletemessage(struct backend_context *, uint64_t, uint8_t);

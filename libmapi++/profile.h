@@ -47,8 +47,6 @@ class profile_database
 		 * \param profiledb_path An absolute path specifying the location of the
 		 * %profile database. If not specified (or ""  is specified) the default
 		 * location will be used (~/.openchange.profiles.ldb).
-		 *
-		 * \param debug Whether to output debug information to stdout
 		 */
 		explicit profile_database(const std::string& profiledb_path = "")  throw(std::runtime_error, mapi_exception);
 

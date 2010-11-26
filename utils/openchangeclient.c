@@ -331,8 +331,9 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 
 	if (!filename || !size) return false;
 
-	mem_ctx = talloc_named(NULL, 0, "store_attachment");
 	mapi_object_init(&obj_stream);
+
+	mem_ctx = talloc_named(NULL, 0, "store_attachment");
 
 	if (!(dir = opendir(oclient->store_folder))) {
 		if (mkdir(oclient->store_folder, 0700) == -1) return false;
@@ -700,6 +701,9 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 
 	/* Open a stream on the parent for the given property */
 	retval = OpenStream(&obj_parent, mapitag, access_flags, &obj_stream);
+	fprintf (stderr, "openstream: retval = %s (0x%.8x)\n",
+		 mapi_get_errstr (retval), retval);
+
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* WriteStream operation */
@@ -718,7 +722,10 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 		fflush(0);
 
 		/* Exit when there is nothing left to write */
-		if (!read_size) return true;
+		if (!read_size) {
+			mapi_object_release(&obj_stream);
+			return true;
+		}
 		
 		offset += read_size;
 
@@ -726,6 +733,8 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 			size = bin.cb - offset;
 		}
 	}
+
+	mapi_object_release(&obj_stream);
 
 	return true;
 }
@@ -849,6 +858,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			
 			bin.lpb = (uint8_t *)oclient->pr_html_inline;
 			bin.cb = strlen(oclient->pr_html_inline);
+
 			openchangeclient_stream(mem_ctx, obj_message, obj_stream, PR_HTML, 2, bin);
 		} else {
 			struct SBinary_short bin;
@@ -874,7 +884,6 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 		} else {
 			mapi_object_init(&obj_stream);
 			openchangeclient_stream(mem_ctx, obj_message, obj_stream, PR_HTML, 2, oclient->pr_html);
-			mapi_object_release(&obj_stream);
 		}
 	}
 
@@ -912,6 +921,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			if (retval != MAPI_E_SUCCESS) return retval;
 
 			/* Stream operations */
+			mapi_object_init(&obj_stream);
 			openchangeclient_stream(mem_ctx, obj_attach, obj_stream, PR_ATTACH_DATA_BIN, 2, oclient->attach[i].bin);
 
 			/* Save changes on attachment */

@@ -25,6 +25,8 @@
    \brief Property and Stream Object routines and Rops
  */
 
+#include <stdlib.h>
+
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
@@ -588,7 +590,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*parent = NULL;
 	struct mapi_handles		*rec = NULL;
 	struct emsmdbp_object		*object = NULL;
+	struct emsmdbp_object		*parent_object = NULL;
 	uint32_t			handle;
+	uint64_t			objectID;
+	uint8_t				objectType;
+	int				fd;
+	char				*filename;
+	void				*data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] OpenStream (0x2b)\n"));
 
@@ -609,13 +617,58 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
+	mapi_handles_get_private_data(parent, &data);
+	parent_object = (struct emsmdbp_object *) data;
+	if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
+		objectID = parent_object->object.folder->folderID;
+		objectType = MAPISTORE_FOLDER;
+	}
+	else if (parent_object->type == EMSMDBP_OBJECT_MESSAGE) {
+		objectID = parent_object->object.message->messageID;
+		objectType = MAPISTORE_MESSAGE;
+	}
+	else {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+	}
+
+	/* TODO: implementation status:
+	   - message:
+	     - OpenStream_ReadOnly
+	     - OpenStream_ReadWrite
+	     - OpenStream_Create (supported)
+	     - OpenStream_BestAccess
+	   - folder:
+	     - OpenStream_ReadOnly
+	     - OpenStream_ReadWrite
+	     - OpenStream_Create
+	     - OpenStream_BestAccess
+	*/
+
 	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 		object = emsmdbp_object_stream_init((TALLOC_CTX *)rec, emsmdbp_ctx,
-						    mapi_req->u.mapi_OpenStream.PropertyTag, parent);
+						    mapi_req->u.mapi_OpenStream.PropertyTag,
+						    mapi_req->u.mapi_OpenStream.OpenModeFlags,
+						    parent);
 		
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
+			filename = talloc_asprintf(mem_ctx, "/tmp/openchange-stream-%p-%.8x", object, handle);
+			fd = open(filename, O_CREAT | O_RDWR | O_TRUNC | S_IWUSR | S_IRUSR);
+			if (fd > -1) {
+				object->object.stream->fd = fd;
+				object->object.stream->objectID = objectID;
+				object->object.stream->objectType = objectType;
+
+				/* We unlink the file immediately as we will
+				   only use its fd from now on... */
+				unlink(filename);
+			}
+			else {
+				mapi_repl->error_code = MAPI_E_DISK_ERROR;
+			}
+
+			talloc_free(filename);
 		}
 
 		mapi_repl->handle_idx = mapi_req->u.mapi_OpenStream.handle_idx;
@@ -650,7 +703,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 					       uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
-	struct mapi_handles		*parent = NULL;
 	struct mapi_handles		*rec = NULL;
 	void				*private_data;
 	struct emsmdbp_object		*object = NULL;
@@ -673,7 +725,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) goto end;
 
 	retval = mapi_handles_get_private_data(rec, &private_data);
@@ -711,10 +763,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS			retval;
 	struct mapi_handles		*parent = NULL;
-	struct mapi_handles		*rec = NULL;
 	void				*private_data;
 	struct emsmdbp_object		*object = NULL;
 	uint32_t			handle;
+	ssize_t				written;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] WriteStream (0x2d)\n"));
 
@@ -728,18 +780,39 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
-	mapi_repl->u.mapi_WriteStream.WrittenSize = mapi_req->u.mapi_WriteStream.data.length;
+	mapi_repl->u.mapi_WriteStream.WrittenSize = 0;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
 	if (retval) goto end;
 
-	retval = mapi_handles_get_private_data(rec, &private_data);
+	retval = mapi_handles_get_private_data(parent, &private_data);
 	object = (struct emsmdbp_object *) private_data;
-	if (!object || object->type != EMSMDBP_OBJECT_STREAM) goto end;
+	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
 
-	/* TODO effective work goes here */
+	if (object->object.stream->fd == -1) {
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+	}
+	else {
+		if (mapi_req->u.mapi_WriteStream.data.length > 0) {
+			written = write(object->object.stream->fd,
+					mapi_req->u.mapi_WriteStream.data.data,
+					mapi_req->u.mapi_WriteStream.data.length);
+			if (written < 0) {
+				DEBUG (5, ("%s: write failed (%d): %s\n",
+					   __PRETTY_FUNCTION__, errno,
+					   strerror(errno)));
+				mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+			}
+			else {
+				mapi_repl->u.mapi_WriteStream.WrittenSize = written;
+			}
+		}
+	}
 end:
 	*size = libmapiserver_RopWriteStream_size(mapi_repl);
 

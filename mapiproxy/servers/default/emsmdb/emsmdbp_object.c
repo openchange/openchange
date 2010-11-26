@@ -183,6 +183,34 @@ struct mapi_handles *emsmdbp_object_get_folder_handle_by_fid(struct mapi_handles
 	return NULL;
 }
 
+#warning 'emsmdbp_commit_stream' is a tmp function to be moved somewhere...
+static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct emsmdbp_object_stream *stream)
+{
+	int rc;
+
+	rc = MAPISTORE_SUCCESS;
+	if (stream->fd > -1) {
+		if ((stream->flags & OpenStream_Create)) {
+			lseek(stream->fd, SEEK_SET, 0);
+			rc = mapistore_set_property_from_fd(mstore_ctx,
+							    stream->contextID,
+							    stream->objectID,
+							    stream->objectType,
+							    stream->property,
+							    stream->fd);
+			close (stream->fd);
+		}
+		else {
+			rc = MAPISTORE_ERROR;
+		}
+	}
+	else {
+		rc = MAPISTORE_ERROR;
+	}
+	
+	return rc;
+}
+
 /**
    \details talloc destructor for emsmdbp_objects
 
@@ -210,6 +238,12 @@ static int emsmdbp_object_destructor(void *data)
 					       object->object.message->messageID, MAPISTORE_MESSAGE);
 		ret = mapistore_del_context(object->mstore_ctx, object->object.message->contextID);
 		DEBUG(4, ("[%s:%d] mapistore message context retval = %d\n", __FUNCTION__, __LINE__, ret));
+		break;
+	case EMSMDBP_OBJECT_STREAM:
+		ret = emsmdbp_commit_stream(object->mstore_ctx, object->object.stream);
+		ret = mapistore_del_context(object->mstore_ctx, object->object.stream->contextID);
+		DEBUG(4, ("[%s:%d] mapistore stream context retval = %d\n", __FUNCTION__, __LINE__, ret));
+		break;
 	default:
 		break;
 	}
@@ -539,6 +573,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
 							   struct emsmdbp_context *emsmdbp_ctx,
 							   uint32_t property,
+							   enum OpenStream_OpenModeFlags flags,
 							   struct mapi_handles *parent)
 {
 	enum MAPISTATUS		retval;
@@ -564,11 +599,15 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
 
 	object->type = EMSMDBP_OBJECT_STREAM;
 	object->object.stream->property = property;
+	object->object.stream->flags = flags;
 
 	mapistore = emsmdbp_is_mapistore(parent);
 	if (mapistore == true) {
 		object->object.stream->mapistore = true;
 		object->object.stream->contextID = emsmdbp_get_contextID(parent);
+		object->object.stream->fd = -1;
+		object->object.stream->objectID = -1;
+		object->object.stream->objectType = -1;
 	}
 
 	return object;

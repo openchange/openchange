@@ -81,6 +81,12 @@
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
 	</tr>
 	<tr>
+	   <td style="text-align:center">27/11/2010</td>
+	   <td style="text-align:center"><strong>0.6.3</strong></td>
+	   <td style="text-align:center">Brad Hards</td>
+	   <td style="text-align:left">Fix tracker link and a couple of typos.</td>
+	</tr>
+	<tr>
 	   <td style="text-align:center">03/03/09</td>
 	   <td style="text-align:center"><strong>0.6.2</strong></td>
 	   <td style="text-align:center">Julien Kerihuel</td>
@@ -248,16 +254,9 @@ Exchange server. </li>
 <a name="bugs"></a><h2>1.3. Bugs and Limitations</h2></a>
 
 If you find bugs, limitations or have features you would like to see
-included in MAPIProxy, please register on the OpenChange Ticket System
-and create new tickets for the MAPIProxy component:
-<ul>
-<li><a
-href="http://trac.openchange.org">http://trac.openchange.org</a>
-(OpenChange Ticket System)</li>
-<li><a
-href="http://trac.openchange.org/query?status=new&status=assigned&status=reopened&component=mapiproxy&order=priority">MAPIProxy
-Component Tickets</a></li>
-</ul>
+included in MAPIProxy, please register on the <a
+href="http://tracker.openchange.org">OpenChange Tracker System</a>
+and create new tickets.
 <br/>
 
 
@@ -268,7 +267,7 @@ MAPIProxy is only available through SVN at the moment. A tarball
 release will only be made when we have a stabilized API with a
 preliminary set of useful features. You will need a <a
 href="http://subversion.tigris.org/">SVN client</a> to download
-openchange (including  MAPIProxy)..
+openchange (including  MAPIProxy).
 
 \code
  $ svn co https://svn.openchange.org/openchange/trunk openchange
@@ -668,7 +667,7 @@ libmapi reliability.
 <a name="mod_dev"></a><h2>5. Stackable Modules</h2>
 <a name="mpm_overview"></a><h3>5.1. General Overview</h3>
 
-The MAPIProxy stackable modules system provides implementors a
+The MAPIProxy stackable modules system provides implementers a
 development framework to add new features. This stackable mechanism
 allows developers to write modules with a very specific scope of 
 which modifications will transparently be relayed to the next module
@@ -688,7 +687,7 @@ With this system, developers can focus their effort on ExchangeRPC
 traffic - or any other protocol samba supports - interception,
 modification, analysis and avoid spending time on implementing a new
 endpoint server. Furthermore it provides an easier way for
-implementors to divide the work in smaller units and develop each of
+implementers to divide the work in smaller units and develop each of
 them in a separated module.
 <br/>
 

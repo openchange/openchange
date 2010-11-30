@@ -594,7 +594,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*rec = NULL;
 	struct emsmdbp_object		*object = NULL;
 	struct emsmdbp_object		*parent_object = NULL;
-	uint32_t			handle;
+	uint32_t			handle, contextID;
 	uint64_t			objectID;
 	uint8_t				objectType;
 	int				fd;
@@ -636,7 +636,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 
 	/* TODO: implementation status:
 	   - message:
-	     - OpenStream_ReadOnly
+	     - OpenStream_ReadOnly (supported)
 	     - OpenStream_ReadWrite
 	     - OpenStream_Create (supported)
 	     - OpenStream_BestAccess
@@ -666,6 +666,23 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 				/* We unlink the file immediately as we will
 				   only use its fd from now on... */
 				unlink(filename);
+
+				if (object->object.stream->flags == OpenStream_ReadOnly) {
+					if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
+						contextID = parent_object->object.folder->contextID;
+					}
+					else {
+						contextID = parent_object->object.message->contextID;
+					}
+					mapi_repl->error_code = mapistore_get_property_into_fd(parent_object->mstore_ctx,
+											       contextID,
+											       objectID,
+											       objectType,
+											       mapi_req->u.mapi_OpenStream.PropertyTag,
+											       fd);
+					
+					lseek(object->object.stream->fd, SEEK_SET, 0);
+				}
 			}
 			else {
 				mapi_repl->error_code = MAPI_E_DISK_ERROR;
@@ -709,7 +726,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*rec = NULL;
 	void				*private_data;
 	struct emsmdbp_object		*object = NULL;
-	uint32_t			handle;
+	uint32_t			handle, bufferSize;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] ReadStream (0x2c)\n"));
 
@@ -733,9 +750,21 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *) private_data;
-	if (!object || object->type != EMSMDBP_OBJECT_STREAM) goto end;
-
-	/* TODO effective work goes here */
+	if (!object || object->type != EMSMDBP_OBJECT_STREAM
+	    || object->object.stream->fd == -1) {
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+	}
+	else {
+		bufferSize = mapi_req->u.mapi_ReadStream.ByteCount;
+		/* careful here, let's switch to idiot mode */
+		if (bufferSize == 0xBABE) {
+			bufferSize = mapi_req->u.mapi_ReadStream.MaximumByteCount.value;
+		}
+		mapi_repl->u.mapi_ReadStream.data.data = talloc_array(object, uint8_t, bufferSize);
+		mapi_repl->u.mapi_ReadStream.data.length = read(object->object.stream->fd,
+								mapi_repl->u.mapi_ReadStream.data.data,
+								bufferSize);
+	}
 end:
 	*size = libmapiserver_RopReadStream_size(mapi_repl);
 
@@ -792,12 +821,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 
 	retval = mapi_handles_get_private_data(parent, &private_data);
 	object = (struct emsmdbp_object *) private_data;
-	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
-		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
-		goto end;
-	}
-
-	if (object->object.stream->fd == -1) {
+	if (!object || object->type != EMSMDBP_OBJECT_STREAM
+	    || object->object.stream->fd == -1) {
 		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
 	}
 	else {
@@ -816,6 +841,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 			}
 		}
 	}
+
 end:
 	*size = libmapiserver_RopWriteStream_size(mapi_repl);
 

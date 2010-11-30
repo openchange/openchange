@@ -198,7 +198,7 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 	const char			*codepage;
 
 	/* Build the array of properties we want to fetch */
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x13,
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x14,
 					  PR_INTERNET_MESSAGE_ID,
 					  PR_INTERNET_MESSAGE_ID_UNICODE,
 					  PR_CONVERSATION_TOPIC,

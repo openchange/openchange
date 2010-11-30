@@ -198,11 +198,9 @@ static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct em
 							    stream->objectType,
 							    stream->property,
 							    stream->fd);
-			close (stream->fd);
 		}
-		else {
-			rc = MAPISTORE_ERROR;
-		}
+		close (stream->fd);
+		stream->fd = -1;
 	}
 	else {
 		rc = MAPISTORE_ERROR;

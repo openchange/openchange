@@ -667,7 +667,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 				   only use its fd from now on... */
 				unlink(filename);
 
-				if (object->object.stream->flags == OpenStream_ReadOnly) {
+				if (object->object.stream->flags == OpenStream_ReadOnly
+				    || object->object.stream->flags == OpenStream_ReadWrite) {
 					if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
 						contextID = parent_object->object.folder->contextID;
 					}

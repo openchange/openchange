@@ -106,7 +106,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	case EMSMDBP_OBJECT_MAILBOX:
 		folderID = object->object.folder->folderID;
 		contextID = object->object.folder->contextID;
-		break;
 
                 flist = NULL;
 		ret = mapistore_indexing_get_folder_list(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username,
@@ -192,38 +191,42 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		break;
 	case true:
 		/* mapistore implementation goes here */
-		mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID, &msg);
+		if (mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID,
+					  folderID, messageID, &msg) == 0) {
+			/* Build the OpenMessage reply */
+			subject = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT_UNICODE);
+			
+			mapi_repl->u.mapi_OpenMessage.HasNamedProperties = false;
+			mapi_repl->u.mapi_OpenMessage.SubjectPrefix.StringType = StringType_EMPTY;
+			mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_UNICODE_REDUCED;
+			mapi_repl->u.mapi_OpenMessage.NormalizedSubject.String.lpszW_reduced = talloc_strdup(mem_ctx, subject);
+			mapi_repl->u.mapi_OpenMessage.RecipientCount = msg.recipients->cRows;
 
-		/* Build the OpenMessage reply */
-		subject = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT_UNICODE);
-
-		mapi_repl->u.mapi_OpenMessage.HasNamedProperties = false;
-		mapi_repl->u.mapi_OpenMessage.SubjectPrefix.StringType = StringType_EMPTY;
-		mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_UNICODE_REDUCED;
-		mapi_repl->u.mapi_OpenMessage.NormalizedSubject.String.lpszW_reduced = talloc_strdup(mem_ctx, subject);
-		mapi_repl->u.mapi_OpenMessage.RecipientCount = msg.recipients->cRows;
-
-		SPropTagArray = set_SPropTagArray(mem_ctx, 0x4,
-						  PR_DISPLAY_TYPE,
-						  PR_OBJECT_TYPE,
-						  PR_7BIT_DISPLAY_NAME_UNICODE,
-						  PR_SMTP_ADDRESS_UNICODE);
-		mapi_repl->u.mapi_OpenMessage.RecipientColumns.cValues = SPropTagArray->cValues;
-		mapi_repl->u.mapi_OpenMessage.RecipientColumns.aulPropTag = SPropTagArray->aulPropTag;
-		mapi_repl->u.mapi_OpenMessage.RowCount = msg.recipients->cRows;
-		mapi_repl->u.mapi_OpenMessage.recipients = talloc_array(mem_ctx, 
-									struct OpenMessage_recipients, 
-									msg.recipients->cRows + 1);
-		for (i = 0; i < msg.recipients->cRows; i++) {
-			mapi_repl->u.mapi_OpenMessage.recipients[i].RecipClass = msg.recipients->aRow[i].lpProps[0].value.l;
-			mapi_repl->u.mapi_OpenMessage.recipients[i].codepage = CP_USASCII;
-			mapi_repl->u.mapi_OpenMessage.recipients[i].Reserved = 0;
-			emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx, 
-						  (char *)msg.recipients->aRow[i].lpProps[1].value.lpszA,
-						  &(mapi_repl->u.mapi_OpenMessage.RecipientColumns),
-						  &(mapi_repl->u.mapi_OpenMessage.recipients[i].RecipientRow));
+			SPropTagArray = set_SPropTagArray(mem_ctx, 0x4,
+							  PR_DISPLAY_TYPE,
+							  PR_OBJECT_TYPE,
+							  PR_7BIT_DISPLAY_NAME_UNICODE,
+							  PR_SMTP_ADDRESS_UNICODE);
+			mapi_repl->u.mapi_OpenMessage.RecipientColumns.cValues = SPropTagArray->cValues;
+			mapi_repl->u.mapi_OpenMessage.RecipientColumns.aulPropTag = SPropTagArray->aulPropTag;
+			mapi_repl->u.mapi_OpenMessage.RowCount = msg.recipients->cRows;
+			mapi_repl->u.mapi_OpenMessage.recipients = talloc_array(mem_ctx, 
+										struct OpenMessage_recipients, 
+										msg.recipients->cRows + 1);
+			for (i = 0; i < msg.recipients->cRows; i++) {
+				mapi_repl->u.mapi_OpenMessage.recipients[i].RecipClass = msg.recipients->aRow[i].lpProps[0].value.l;
+				mapi_repl->u.mapi_OpenMessage.recipients[i].codepage = CP_USASCII;
+				mapi_repl->u.mapi_OpenMessage.recipients[i].Reserved = 0;
+				emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx, 
+							  (char *)msg.recipients->aRow[i].lpProps[1].value.lpszA,
+							  &(mapi_repl->u.mapi_OpenMessage.RecipientColumns),
+							  &(mapi_repl->u.mapi_OpenMessage.recipients[i].RecipientRow));
+			}
 		}
-
+		else {
+			mapi_repl->error_code = MAPI_E_NOT_FOUND;
+			goto end;
+		}
 		break;
 	}
 
@@ -239,6 +242,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+end:
 	*size += libmapiserver_RopOpenMessage_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

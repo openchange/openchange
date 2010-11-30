@@ -108,8 +108,11 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 			data = (void *) find_SPropValue_data(aRow, request.properties[i]);
 			if (data == NULL) {
 				request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
-				retval = MAPI_E_NOT_FOUND;
-				data = (void *)&retval;
+				data = (void *) find_SPropValue_data(aRow, request.properties[i]);
+				if (data == NULL) {
+					retval = MAPI_E_NOT_FOUND;
+					data = (void *)&retval;
+				}
 			} 
 			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 						    request.properties[i], (const void *)data,

@@ -656,8 +656,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 		
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
-			filename = talloc_asprintf(mem_ctx, "/tmp/openchange-stream-%p-%.8x", object, handle);
-			fd = open(filename, O_CREAT | O_RDWR | O_TRUNC | S_IWUSR | S_IRUSR);
+			filename = talloc_asprintf(mem_ctx, "/tmp/openchange-stream-XXXXXX");
+			fd = mkstemp(filename);
 			if (fd > -1) {
 				object->object.stream->fd = fd;
 				object->object.stream->objectID = objectID;

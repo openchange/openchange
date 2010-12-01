@@ -39,15 +39,16 @@
 	<li><a href="#boolean">    8.1. PT_BOOLEAN        </a></li>
 	<li><a href="#short">      8.2. PT_SHORT          </a></li>
         <li><a href="#long">       8.3. PT_LONG           </a></li>
-        <li><a href="#double">     8.4. PT_I8             </a></li>
-        <li><a href="#string8">    8.5. PT_STRING8        </a></li>
-	<li><a href="#unicode">    8.6. PT_UNICODE        </a></li>
-        <li><a href="#systime">    8.7. PT_SYSTIME        </a></li>
-        <li><a href="#mv_string8"> 8.8. PT_MV_STRING8     </a></li>
-	<li><a href="#mv_unicode"> 8.9. PT_MV_UNICODE     </a></li>
-	<li><a href="#binary">     8.10. PT_BINARY         </a></li>
-	<li><a href="#mv_binary">  8.11. PT_MV_BINARY	  </a></li>
-	<li><a href="#mv_long">    8.12. PT_MV_LONG	  </a></li>
+        <li><a href="#longlong">   8.4. PT_I8             </a></li>
+        <li><a href="#double">     8.5. PT_DOUBLE         </a></li>
+        <li><a href="#string8">    8.6. PT_STRING8        </a></li>
+	<li><a href="#unicode">    8.7. PT_UNICODE        </a></li>
+        <li><a href="#systime">    8.8. PT_SYSTIME        </a></li>
+        <li><a href="#mv_string8"> 8.9. PT_MV_STRING8     </a></li>
+	<li><a href="#mv_unicode"> 8.10. PT_MV_UNICODE     </a></li>
+	<li><a href="#binary">     8.11. PT_BINARY         </a></li>
+	<li><a href="#mv_binary">  8.12. PT_MV_BINARY	  </a></li>
+	<li><a href="#mv_long">    8.13. PT_MV_LONG	  </a></li>
    </ul>
  </li>
  <li><a href="#comments">    9. Comments                  </a>
@@ -71,12 +72,24 @@
 	   <td style="text-align:center"><strong>Revision Content</strong></td>
 	</tr>
 	<tr>
+	   <td style="text-align:center">27/11/10</td>
+	   <td style="text-align:center"><strong>0.7</strong></td>
+	   <td style="text-align:center">Brad Hards</td>
+	   <td style="text-align:center">Add PT_DOUBLE support. Update PT_I8 description.</td>
+	</tr>
+	<tr>
+	   <td style="text-align:center">27/11/10</td>
+	   <td style="text-align:center"><strong>0.6.1</strong></td>
+	   <td style="text-align:center">Brad Hards</td>
+	   <td style="text-align:center">Update bug tracker link, minor rewording</td>
+	</tr>
+	<tr>
 	   <td style="text-align:center">25/06/10</td>
 	   <td style="text-align:center"><strong>0.6</strong></td>
 	   <td style="text-align:center">Julien Kerihuel</td>
 	   <td style="text-align:center">Add PT_MV_BINARY, PT_MV_LONG
 	   and PT_MV_UNICODE support. Update PT_BINARY
-	   description</td>
+	   description.</td>
 	</tr>
 	<tr>
 	   <td style="text-align:center">01/04/08</td>
@@ -131,8 +144,8 @@ different purposes:
   have often requested for an easy way to test properties and
   properties values. Prior to OCPF, developers had to write an application
   linked with libmapi and compile it so that they could test
-  properties. Moreover, adding new named properties in trunk was kept
-  under OpenChange commiters agreement. OCPF solves this issue and
+  properties. Moreover, adding new named properties in trunk required
+  commit permission to OpenChange source repository. OCPF solves this issue and
   allow developers to write OCPF files with custom properties that they can
   send using OpenChange tools. Furthermore OCPF will provide the
   community a convenient way to agree on a particular property.</li>
@@ -167,9 +180,8 @@ These limitations will be removed in later versions of OCPF.
 
 If you find bugs, limitations or encounter issues while using the OCPF
 library, please consider reporting them on <a
-href="http://trac.openchange.org">http://trac.openchange.org</a> and
-select the libocpf component. (Note: registration is required to create
-new tickets).
+href="http://tracker.openchange.org">http://tracker.openchange.org</a>.
+(Note: registration is required to create new tickets).
 
 For questions about its usage or about libocpf development, please
 post on the <a href="http://mailman.openchange.org/listinfo/devel">
@@ -228,7 +240,7 @@ top-level keywords, sections and properties types.
   <li><strong>Format:</strong>
 \code
       FOLDER STRING
-      FOLDER DOUBLE
+      FOLDER PT_I8
       FOLDER VAR
 \endcode
   </li>
@@ -236,11 +248,11 @@ top-level keywords, sections and properties types.
 
   This keyword defines the destination folder of the message. Users
   can either specify a default folder using the string value or a
-  custom folder ID using its PR_FID double value. It is also possible
-  to substitute the value with a variable, but it is limited to DOUBLE
-  value.
+  custom folder ID using its PR_FID value. It is also possible
+  to substitute the value with a variable, but it is limited to PT_I8
+  values.
 
-  When FOLDER is set with DOUBLE custom value and ocpf_OpenFolder
+  When FOLDER is set with a PT_I8 custom value and the ocpf_OpenFolder
   public function used, it can be set to any folder identifier within
   the message store. The function will loop over mailbox folders until
   it finds the folder with the given folder ID and opens it.
@@ -614,7 +626,6 @@ MNID_STRING named property using any of the following example:
 
 <br/>
 
-
 <a name="proptype"></a><h2>8. Supported Property Types</h2>
 <a name="boolean"></a><h3>8.1. PT_BOOLEAN</h3>
 
@@ -651,14 +662,22 @@ hexadecimal notation consider using the 'L' prefixed form since other form
 may disappear in further versions.
 <br/>
 
-<a name="double"></a><h3>8.4. PT_I8</h3>
+<a name="longlong"></a><h3>8.4. PT_I8</h3>
 OCPF uses the following format for PT_I8 (uint64_t) values:
 \code
       D0x9504000000000001
 \endcode
 <br/>
 
-<a name="string8"></a><h3>8.5. PT_STRING8</h3>
+<a name="double"></a><h3>8.5. PT_DOUBLE</h3>
+OCPF uses an exponent format for floating point (double) number, as shown
+in this example:
+\code
+      F3.1415e+03
+\endcode
+<br/>
+
+<a name="string8"></a><h3>8.6. PT_STRING8</h3>
 
 OCPF defines a string as a set of characters (A-Za-z0-9_) enclosed
 with double quotes:
@@ -667,7 +686,7 @@ with double quotes:
 \endcode
 <br/>
 
-<a name="unicode"></a><h3>8.6. PT_UNICODE</h3>
+<a name="unicode"></a><h3>8.7. PT_UNICODE</h3>
 
 OCPF defines a unicode string as a set of characters enclosed with
 double quotes and prefixed with <strong>W</strong>:
@@ -676,7 +695,7 @@ double quotes and prefixed with <strong>W</strong>:
 \endcode
 <br/>
 
-<a name="systime"></a><h3>8.7. PT_SYSTIME</h3>
+<a name="systime"></a><h3>8.8. PT_SYSTIME</h3>
 
 OCPF defines date using the following format string:
 \code
@@ -700,7 +719,7 @@ with the syntax below:
 \endcode
 <br/>
 
-<a name="mv_string8"></a><h3>8.8. PT_MV_STRING8</h3>
+<a name="mv_string8"></a><h3>8.9. PT_MV_STRING8</h3>
 
 PT_MV_STRING8 are arrays ("multiple values") of strings. OCPF defines PT_MV_STRING8
 property values as STRING property values separated by commas and enclosed within
@@ -720,7 +739,7 @@ then they must be separated with comma.
 \endcode
 <br/>
 
-<a name="mv_unicode"></a><h3>8.9 PT_MV_UNICODE</h3>
+<a name="mv_unicode"></a><h3>8.10. PT_MV_UNICODE</h3>
 
 PT_MV_UNICODE are arrays ("multiple values") of unicode strings. OCPF
 defines PT_MV_UNICODE property values as UNICODE property values
@@ -740,7 +759,7 @@ set, then they must be separated with comma.
 \endcode
 <br/>
 
-<a name="binary"></a><h3>8.10. PT_BINARY</h3>
+<a name="binary"></a><h3>8.11. PT_BINARY</h3>
 
 PT_BINARY are blobs of data. OCPF defines PT_BINARY property values
 using two different methods. This can either be raw/inline blob of
@@ -768,7 +787,7 @@ stream.
 \endcode
 <br/>
 
-<a name="mv_binary"></a><h3>8.11. PT_MV_BINARY</h3>
+<a name="mv_binary"></a><h3>8.12. PT_MV_BINARY</h3>
 
 PT_MV_BINARY are arrays ("multiple values") of PT_BINARY blobs. OCPF
 defines PT_MV_BINARY propery values as PT_BINARY property values
@@ -792,7 +811,7 @@ Note that current implementation does not support the following PT_BINARY format
 \endcode
 <br/>
 
-<a name="mv_long"></a><h3>8.12. PT_MV_LONG</h3>
+<a name="mv_long"></a><h3>8.13. PT_MV_LONG</h3>
 
 PT_MV_LONG are arrays ("multiple values") of integers. OCPF defines
 PT_MV_LONG property values as INTEGER property values separated by

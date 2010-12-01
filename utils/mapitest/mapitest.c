@@ -330,6 +330,14 @@ int main(int argc, const char *argv[])
 
 	mapitest_print_headers(&mt);
 
+	/* Do not run any tests if we couldn't find a profile or if
+	 * server is offline and connection to server was implicitly
+	 * specified */
+	if (!opt_profname && mt.online == false && mt.no_server == false) {
+		fprintf(stderr, "No MAPI profile found for online tests\n");
+		return -2;
+	}
+
 	/* Run custom tests */
 	if (mt.cmdline_calls) {
 		struct mapitest_unit	*el;

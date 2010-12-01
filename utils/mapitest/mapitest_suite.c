@@ -303,7 +303,7 @@ static bool mapitest_run_test_all(struct mapitest *mt, const char *name)
 	if (!strcmp(tmp,"ALL")) {
 		suite = mapitest_suite_find(mt, sname);
 
-		if (suite) {
+		if ((suite && (suite->online == mt->online)) || (suite && (suite->online == false))) {
 			for (el = suite->tests; el; el = el->next) {
 				if (mapitest_suite_test_is_applicable(mt, el)) {
 					mapitest_suite_run_test(mt, suite, el->name);
@@ -342,7 +342,7 @@ _PUBLIC_ bool mapitest_run_test(struct mapitest *mt, const char *name)
 	for (suite = mt->mapi_suite; suite; suite = suite->next) {
 		for (el = suite->tests; el; el = el->next) {
 			if (!strcmp(name, el->name)) {
-				if ((mt->online == suite->online) || (suite->online == false)) {
+				if (((mt->online == suite->online) && mt->session) || (suite->online == false)) {
 					errno = 0;
 					ret = mapitest_suite_run_test(mt, suite, name);
 					return ret;
@@ -384,9 +384,8 @@ _PUBLIC_ void mapitest_run_all(struct mapitest *mt)
 {
 	struct mapitest_suite	*suite;
 
-
 	for (suite = mt->mapi_suite; suite; suite = suite->next) {
-		if ((mt->online == suite->online) || (suite->online == false)) {
+		if (((mt->online == suite->online) && mt->session) || (suite->online == false)) {
 			mapitest_print_module_title_start(mt, suite->name);
 
 			run_tests_in_suite(mt, suite);

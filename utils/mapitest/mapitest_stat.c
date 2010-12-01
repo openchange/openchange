@@ -76,7 +76,7 @@ _PUBLIC_ struct mapitest_stat *mapitest_stat_init(TALLOC_CTX *mem_ctx)
 
    \param suite the suite container
    \param name the test name
-   \param result the test result
+   \param testresult the test result
 
    \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
  */

@@ -1138,7 +1138,6 @@ void emsmdb_get_SRow(TALLOC_CTX *mem_ctx,
    \details Get an async notification context handle
 
    \param emsmdb_ctx pointer to the EMSMDB context
-   \param async_ctx Pointer to the async notification context handle
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */

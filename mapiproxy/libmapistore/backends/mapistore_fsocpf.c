@@ -59,8 +59,8 @@ static struct fsocpf_context *fsocpf_context_init(TALLOC_CTX *mem_ctx,
 	fsocpf_ctx->private_data = NULL;
 	fsocpf_ctx->uri = talloc_strdup(fsocpf_ctx, uri);
 	fsocpf_ctx->dir = dir;
-	fsocpf_ctx->folders = talloc_zero(fsocpf_ctx, struct fsocpf_folder_list);
-	fsocpf_ctx->messages = talloc_zero(fsocpf_ctx, struct fsocpf_message_list);
+	fsocpf_ctx->folders = NULL;
+	fsocpf_ctx->messages = NULL;
 
 	return fsocpf_ctx;
 }
@@ -242,7 +242,7 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 	}
 
 	/* Create the entry in the list for top mapistore folders */
-	el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fsocpf_ctx->fid, uri, top_dir);
+	el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->fid, uri, top_dir);
 	DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
 	DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->folder->fid));
 
@@ -547,7 +547,7 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 	dir = opendir(newfolder);
 	
 	/* add this folder to the list of ones we know about */
-	newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fid, newfolder, dir);
+	newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, newfolder, dir);
 	DLIST_ADD_END(fsocpf_ctx->folders, newel, struct fsocpf_folder_list *);
 	DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", fid));
 
@@ -647,8 +647,8 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 	/* Step 0. If fid equals top folder fid, it is already open */
 	if (fsocpf_ctx->fid == fid) {
 		/* If we access it for the first time, just add an entry to the folder list */
-		if (!fsocpf_ctx->folders->folder) {
-			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
+		if (!fsocpf_ctx->folders) {
+			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
 			DEBUG(0, ("Element added to the list 0x%16"PRIx64"\n", el->folder->fid));
 		}
@@ -688,7 +688,7 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 				}
 				DEBUG(0, ("FOUND\n"));
 
-				newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fid, newpath, dir);
+				newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, newpath, dir);
 				DLIST_ADD_END(fsocpf_ctx->folders, newel, struct fsocpf_folder_list *);
 				DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", fid));
 			}
@@ -747,8 +747,8 @@ static int fsocpf_op_readdir_count(void *private_data,
 
 	if (fsocpf_ctx->fid == fid) {
 		/* If we access it for the first time, just add an entry to the folder list */
-		if (!fsocpf_ctx->folders->folder) {
-			struct fsocpf_folder_list *el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
+		if (!fsocpf_ctx->folders) {
+			struct fsocpf_folder_list *el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
 			DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->folder->fid));
 		}
@@ -992,8 +992,8 @@ static int fsocpf_op_get_table_property(void *private_data,
 
 	if (fsocpf_ctx->fid == fid) {
 		/* If we access it for the first time, just add an entry to the folder list */
-		if (!fsocpf_ctx->folders->folder) {
-			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx->folders, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
+		if (!fsocpf_ctx->folders || !fsocpf_ctx->folders->folder) {
+			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
 			DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->folder->fid));
 		}
@@ -1042,7 +1042,7 @@ static int fsocpf_op_openmessage(void *private_data,
 	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
 	if (message) {
 		DEBUG(0, ("Message was already opened\n"));
-		msg->properties = talloc_zero(fsocpf_ctx->messages, struct SRow);
+		msg->properties = talloc_zero(fsocpf_ctx, struct SRow);
 		msg->recipients = ocpf_get_recipients(message, message->ocpf_context_id);
 		msg->properties->lpProps = ocpf_get_SPropValue(message->ocpf_context_id, 
 							       &msg->properties->cValues);
@@ -1066,7 +1066,7 @@ static int fsocpf_op_openmessage(void *private_data,
 	ret = ocpf_parse(ocpf_context_id);
 
 	if (!ret) {
-		el = fsocpf_message_list_element_init((TALLOC_CTX *)fsocpf_ctx->messages, fid, mid, 
+		el = fsocpf_message_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, mid, 
 						      propfile, ocpf_context_id);
 		DLIST_ADD_END(fsocpf_ctx->messages, el, struct fsocpf_message_list *);
 		DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", mid));
@@ -1120,7 +1120,7 @@ static int fsocpf_op_createmessage(void *private_data,
 
 	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_CREATE);
 	if (!ret) {
-		el = fsocpf_message_list_element_init((TALLOC_CTX *)fsocpf_ctx->messages, fid, mid,
+		el = fsocpf_message_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, mid,
 						      propfile, ocpf_context_id);
 		DLIST_ADD_END(fsocpf_ctx->messages, el, struct fsocpf_message_list *);
 		DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", mid));

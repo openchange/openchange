@@ -886,6 +886,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProfile(struct mapi_context *mapi_ctx,
 /**
    \details Change the profile password of an existing MAPI profile
 
+   \param mapi_ctx pointer to the MAPI context
    \param profile the name of the profile to have its password changed
    \param old_password the old password
    \param password the new password
@@ -1383,9 +1384,8 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 /**
    \details Search the value of an attribute within a given profile
 
-   \param mapi_ctx pointer to the MAPI context
    \param profile pointer to the MAPI profile
-   \param attibute pointer to the attribute name
+   \param attribute pointer to the attribute name
    \param value pointer to the attribute value
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error

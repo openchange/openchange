@@ -337,7 +337,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetTransportFolder(TALLOC_CTX *mem_ctx,
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = retval;
 	/* TODO: find the real FID */
-	mapi_repl->u.mapi_GetTransportFolder.FolderId = 0x12345678;
+	mapi_repl->u.mapi_GetTransportFolder.FolderId = 0x150001;
+	/* mapi_repl->u.mapi_GetTransportFolder.FolderId = 0x12345678; */
 
 	*size = libmapiserver_RopGetTransportFolder_size(mapi_repl);
 

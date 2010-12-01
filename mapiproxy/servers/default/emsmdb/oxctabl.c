@@ -573,8 +573,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*parent;
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
+	struct FindRow_req		request;
 	void				*data;
 	uint32_t			handle;
+	DATA_BLOB			row;
+	uint32_t			property;
+	uint8_t				flagged;
+	uint8_t				status = 0;
+	uint32_t			i,j;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCTABL] FindRow (0x4f)\n"));
 
@@ -584,6 +590,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	request = mapi_req->u.mapi_FindRow;
 	
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
@@ -591,7 +599,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_FindRow.RowNoLongerVisible = 0;
 	mapi_repl->u.mapi_FindRow.HasRowData = 0;
 	mapi_repl->u.mapi_FindRow.row.length = 0;
-	mapi_repl->u.mapi_FindRow.row.data = 0;
+	mapi_repl->u.mapi_FindRow.row.data = NULL;
 
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
@@ -607,15 +615,79 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	/* We don't handle backward/forward yet , just go through the
 	 * entire table, nor do we handle bookmarks */
 
-	/* Handle PropertyRestriction */
-	if (mapi_req->u.mapi_FindRow.res.rt != 0x4) goto end;	
-	/* Ensure the property we search exists in the array */
-
 	table = object->object.table;
 	if (!table->folderID) goto end;
 
 	switch (table->mapistore) {
 	case true:
+		/* Restrict rows to be fetched */
+		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
+						    table->ulType, table->folderID, request.res, &status);
+		/* Then fetch rows */
+		/* Lookup the properties and check if we need to flag the PropertyRow blob */
+		for (i = 0; table->numerator < table->denominator; i++) {
+			flagged = 0;
+
+			/* Lookup for flagged property row */
+			for (j = 0; j < table->prop_count; j++) {
+				retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
+								      table->ulType, table->folderID, 
+								      table->properties[j],
+								      table->numerator, &data);
+				if (retval == MAPI_E_INVALID_OBJECT) {
+					goto finish;
+				}
+
+				if (retval == MAPI_E_NOT_FOUND) {
+					flagged = 1;
+					libmapiserver_push_property(mem_ctx, 
+								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+								    0x0000000b, (const void *)&flagged,
+								    &row, 0, 0);
+					break;
+				}
+			}
+
+			/* StandardPropertyRow hack */
+			if (!flagged) {
+				libmapiserver_push_property(mem_ctx, 
+							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+							    0x00000000, (const void *)&flagged,
+							    &row, 0, 1);
+			}
+
+			/* Push the properties */
+			for (j = 0; j < table->prop_count; j++) {
+				property = table->properties[j];
+				retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
+								      table->ulType, table->folderID,
+								      table->properties[j],
+								      table->numerator, &data);
+				if (retval == MAPI_E_INVALID_OBJECT) {
+					goto finish;
+				}
+				if (retval == MAPI_E_NOT_FOUND) {
+					property = (property & 0xFFFF0000) + PT_ERROR;
+					data = (void *)&retval;
+				}
+
+				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+							    property, (const void *)data, &row,
+							    flagged?PT_ERROR:0, flagged);
+			}
+
+			table->numerator++;
+		}
+
+	finish:
+		/* Adjust parameters */
+		if (row.length) {
+			mapi_repl->u.mapi_FindRow.HasRowData = 1;
+		}
+
+		mapi_repl->u.mapi_FindRow.row.length = row.length;
+		mapi_repl->u.mapi_FindRow.row.data = row.data;
+
 		break;
 	case false:
 		break;

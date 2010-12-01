@@ -1146,6 +1146,7 @@ _PUBLIC_ int mapistore_get_folders_list(struct mapistore_context *mstore_ctx,
 
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend where the 
+   \param table_type the table type
  */
 _PUBLIC_ int mapistore_set_restrictions(struct mapistore_context *mstore_ctx,
 					uint32_t context_id,

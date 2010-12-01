@@ -162,6 +162,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 					     struct EcDoRpc_MAPI_REPL *mapi_repl,
 					     uint32_t *handles, uint16_t *size)
 {
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*parent;
+	struct emsmdbp_object		*object;
+	struct emsmdbp_object_table	*table;
+	struct Restrict_req		request;
+	uint32_t			handle;
+	void				*data;
+	uint8_t				status;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCTABL] Restrict (0x14)\n"));
 
 	/* Sanity checks */
@@ -171,11 +180,47 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 	
+	request = mapi_req->u.mapi_Restrict;
+
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->u.mapi_Restrict.TableStatus = TBLSTAT_COMPLETE;
 
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) goto end;
+
+	retval = mapi_handles_get_private_data(parent, &data);
+	object = (struct emsmdbp_object *) data;
+
+	/* Ensure referring object exists and is a table */
+	if (!object || (object->type != EMSMDBP_OBJECT_TABLE)) {
+		goto end;
+	}
+
+	table = object->object.table;
+	if (!table->folderID) {
+		goto end;
+	}
+
+	/* If parent folder has a mapistore context */
+	if (table->mapistore == true) {
+		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID, 
+						    table->ulType, table->folderID, request.restrictions, &status);
+		if (retval) {
+			mapi_repl->error_code = retval;
+			goto end;
+		}
+
+		mapi_repl->u.mapi_Restrict.TableStatus = status;
+	/* Parent folder doesn't have any mapistore context associated */
+	} else {
+		DEBUG(0, ("not mapistored Restrict: Not implemented yet\n"));
+		goto end;
+	}
+
+end:
 	*size += libmapiserver_RopRestrict_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;	

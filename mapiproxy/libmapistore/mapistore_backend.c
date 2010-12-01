@@ -557,3 +557,10 @@ int mapistore_backend_get_folders_list(struct backend_context *bctx, uint64_t fm
 {
 	return bctx->backend->op_get_folders_list(bctx->private_data, fmid, folders_list);
 }
+
+
+int mapistore_backend_set_restrictions(struct backend_context *bctx, uint64_t fmid, uint8_t type, 
+				       struct mapi_SRestriction res, uint8_t *table_status)
+{
+	return bctx->backend->op_set_restrictions(bctx->private_data, fmid, type, res, table_status);
+}

@@ -99,6 +99,8 @@ struct mapistore_backend {
 	int (*op_get_property_into_fd)(void *, uint64_t, uint8_t, uint32_t, int);
 	int (*op_modifyrecipients)(void *, uint64_t, struct ModifyRecipientRow *, uint16_t);
 	int (*op_deletemessage)(void *, uint64_t mid, uint8_t flags);
+	/* restriction semantics */
+	int (*op_set_restrictions)(void *, uint64_t, uint8_t, struct mapi_SRestriction, uint8_t *);
 
 	int (*op_get_folders_list)(void *, uint64_t fmid, struct indexing_folders_list **folders_list);
 };
@@ -172,6 +174,7 @@ int mapistore_modifyrecipients(struct mapistore_context *, uint32_t, uint64_t, s
 int mapistore_get_child_fids(struct mapistore_context *, uint32_t, uint64_t, uint64_t **, uint32_t *);
 int mapistore_deletemessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_get_folders_list(struct mapistore_context *, uint64_t, struct indexing_folders_list **);
+int mapistore_set_restrictions(struct mapistore_context *, uint32_t, uint8_t, uint64_t, struct mapi_SRestriction, uint8_t *);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

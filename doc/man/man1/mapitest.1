@@ -25,7 +25,7 @@
 .\" Process this file with
 .\" groff -man -Tascii mapitest.1
 .\"
-.TH MAPITEST 1 2010-02-23 "OpenChange libmapi 0.10" "OpenChange Users' Manual"
+.TH MAPITEST 1 2010-12-01 "OpenChange libmapi 0.10" "OpenChange Users' Manual"
 
 .SH NAME
 mapitest \- OpenChange torture test utility
@@ -101,6 +101,8 @@ as the argument to this option.
 Run a specific test. The name of the test must be specified as the argument
 to this option. See the --list-all option to obtain the name of the test.
 This can be specified more than once in order to run a subset of tests.
+This can also be used to run a "suite" of tests, by appending "-ALL" to
+the name of the suite.
 
 .TP
 .B --list-all
@@ -132,6 +134,11 @@ mapitest
 .B Only run two specific tests
 .nf
 mapitest --mapi-calls=NOSERVER-SROWSET --mapi-calls=OXCPRPT-GET-PROPS
+.fi
+
+.B Run all the NSPI tests
+.nf
+mapitest --mapi-calls=NSPI-ALL
 .fi
 
 .SH REMARKS

@@ -34,9 +34,6 @@ OpenChange developer howto
      [0x5c] Setting smb.conf
      [0x5d] Running the Server (EMSABP / EMSMDB / RFR)
      [0x5e] Solving problems     
-[0x6] SWIG BINDINGS
-     [0x6a] Installation
-     [0x6b] Sample applications
 +------------------------------------+
 
 
@@ -439,35 +436,3 @@ If you still have problems, please post a detailed message to the
 development mailing list (devel@lists.openchange.org) showing what
 commands you followed and what the results of each command were.
 
-
-########################
-[0x6] SWIG BINDINGS
-########################
-
-OpenChange has introduced SWIG bindings support for its MAPI
-Library. This development provides MAPI library support for different
-languages.
-
-[0x6a] Installation
-===================
-
-o Perl bindings support:
-  [*] run configure with --enable-swig-perl=yes
-  [*] make && make install
-
-Note: The compilation process requires quite some time due to the code
-generation for mapitags and mapicodes constants. If you intend to
-develop on libmapi bindings, you should comment out the following
-directives in mapi.i: 
-
-	   %include "swig_mapitags.h" 
-	   %include "swig_mapicodes.h"
-
-
-[0x6b] Sample applications
-==========================
-
-Tests applications are located in the tests directory of the 
-supported swig languages.
-
-Example: swig/perl/fetchmail.pl

@@ -30,7 +30,6 @@ libmapi/mapi_nameid_private.h
 Doxyfile
 libmapi/version.h
 config.mk
-swig/perl/Makefile
 libocpf/ocpf.tab.c
 libocpf/ocpf.tab.c
 libocpf/lex.yy.c
@@ -40,10 +39,6 @@ libocpf/proto_private.h
 libocpf/ocpf.tab.h
 autom4te.cache
 apidocs
-swig/perl/mapi.pm
-swig/perl/mapi_wrap.c
-swig/perl/swig_mapicodes.h
-swig/perl/swig_mapitags.h
 utils/mapitest/mapitest_proto.h
 utils/mapitest/proto.h
 samba4

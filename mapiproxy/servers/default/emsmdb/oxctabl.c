@@ -189,7 +189,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	if (retval) goto end;
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	retval = mapi_handles_get_private_data(parent, &data);
 	object = (struct emsmdbp_object *) data;
@@ -200,14 +200,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	}
 
 	table = object->object.table;
-	if (!table->folderID) {
-		goto end;
-	}
+	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* If parent folder has a mapistore context */
 	if (table->mapistore == true) {
 		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID, 
-						    table->ulType, table->folderID, request.restrictions, &status);
+						    table->folderID, table->ulType, request.restrictions, &status);
 		if (retval) {
 			mapi_repl->error_code = retval;
 			goto end;
@@ -620,9 +618,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 
 	switch (table->mapistore) {
 	case true:
+		row.length = 0;
 		/* Restrict rows to be fetched */
 		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
-						    table->ulType, table->folderID, request.res, &status);
+						    table->folderID,
+						    table->ulType,
+						    request.res, &status);
 		/* Then fetch rows */
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 		for (i = 0; table->numerator < table->denominator; i++) {
@@ -640,6 +641,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 
 				if (retval == MAPI_E_NOT_FOUND) {
 					flagged = 1;
+					row.length = 0;
 					libmapiserver_push_property(mem_ctx, 
 								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 								    0x0000000b, (const void *)&flagged,

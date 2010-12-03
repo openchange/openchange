@@ -404,7 +404,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 
 	if (retval == MAPI_E_SUCCESS) {
 		if (!mapistore_uri) {
-			DEBUG(0, ("This is not a mapistore container\n"));
+			DEBUG(0, ("This is not a mapistore container (folderID = %.16lx)\n", folderID));
 			object->object.folder->mapistore = false;
 		} else {
 			DEBUG(0, ("This is a mapistore container: uri = %s\n", mapistore_uri));

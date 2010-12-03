@@ -271,9 +271,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 						  uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
-	struct mapi_handles		*rec = NULL;
-	struct mapi_handles		*parent = NULL;
-	struct mapi_handles		*parent_handle = NULL;
+	struct mapi_handles		*context_handle = NULL;
+	struct mapi_handles		*folder_handle = NULL;
+	struct mapi_handles		*message_handle = NULL;
 	struct emsmdbp_object		*object = NULL;
 	uint32_t			handle;
 	uint64_t			folderID;
@@ -305,10 +305,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	folderID = mapi_req->u.mapi_CreateMessage.FolderId;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
-	parent_handle = emsmdbp_object_get_folder_handle_by_fid(emsmdbp_ctx->handles_ctx, folderID);
-	if (parent_handle) {
+	folder_handle = emsmdbp_object_get_folder_handle_by_fid(emsmdbp_ctx->handles_ctx, folderID);
+	if (folder_handle) {
+		DEBUG(0, ("folder_handle found, everything ok\n"));
+
 		/* CreateMessage can only be called for a mailbox/folder object */
-		mapi_handles_get_private_data(parent_handle, &data);
+		mapi_handles_get_private_data(folder_handle, &data);
 		object = (struct emsmdbp_object *)data;
 		if (!object) {
 			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
@@ -316,17 +318,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		}
 	}
 	else {
+		DEBUG(0, ("folder_handle NOT found, must instantiate one\n"));
+
 		handle = handles[mapi_req->handle_idx];
-		retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+		retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &context_handle);
 		OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
-		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &folder_handle);
 		object = emsmdbp_object_folder_init(emsmdbp_ctx, emsmdbp_ctx, folderID,
-						    parent);
+						    context_handle);
 		if (object) {
-			retval = mapi_handles_set_private_data(rec, object);
-			parent = rec;
-			handles[mapi_repl->handle_idx] = rec->handle;
+			retval = mapi_handles_set_private_data(folder_handle, object);
+			handles[mapi_repl->handle_idx] = folder_handle->handle;
 		}
 		else {
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
@@ -334,15 +337,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	contextID = emsmdbp_get_contextID(parent);
-	mapistore = emsmdbp_is_mapistore(parent);
+	contextID = emsmdbp_get_contextID(folder_handle);
+	mapistore = emsmdbp_is_mapistore(folder_handle);
 
-	switch (mapistore) {
-	case false:
-		/* system/special folder */
-		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
-		break;
-	case true:
+	if (mapistore) {
 		/* This should be handled differently here: temporary hack */
 		retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
 		if (retval) {
@@ -386,22 +384,25 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
 
 		mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, messageID, MAPISTORE_MESSAGE, &aRow);
-		break;
+	}
+	else {
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 	}
 
 	DEBUG(0, ("CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, 
-		  emsmdbp_is_mapistore(parent) == true ? "true" : "false"));
+		  emsmdbp_is_mapistore(folder_handle) == true ? "true" : "false"));
 
 	/* Initialize Message object */
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-	handles[mapi_repl->handle_idx] = rec->handle;
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &message_handle);
+	handles[mapi_repl->handle_idx] = message_handle->handle;
 
 	if (messageID) {
-		object = emsmdbp_object_message_init((TALLOC_CTX *)rec, emsmdbp_ctx, messageID, parent);
+		object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_handle);
 		if (object) {
 			/* Add default properties to message MS-OXCMSG 3.2.5.2 */
-			retval = mapi_handles_set_private_data(rec, object);
+			retval = mapi_handles_set_private_data(message_handle, object);
 		}
 	}
 

@@ -1152,7 +1152,7 @@ _PUBLIC_ int mapistore_set_restrictions(struct mapistore_context *mstore_ctx,
 					uint32_t context_id,
 					uint64_t fid,
 					uint8_t table_type,
-					struct mapi_SRestriction res,
+					struct mapi_SRestriction *res,
 					uint8_t *table_status)
 {
 	struct backend_context	*backend_ctx;

@@ -168,7 +168,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object_table	*table;
 	struct Restrict_req		request;
 	uint32_t			handle;
-	void				*data;
+	void				*data = NULL;
 	uint8_t				status;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCTABL] Restrict (0x14)\n"));
@@ -205,7 +205,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	/* If parent folder has a mapistore context */
 	if (table->mapistore == true) {
 		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID, 
-						    table->folderID, table->ulType, request.restrictions, &status);
+						    table->folderID, table->ulType, &request.restrictions, &status);
 		if (retval) {
 			mapi_repl->error_code = retval;
 			goto end;
@@ -572,7 +572,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
 	struct FindRow_req		request;
-	void				*data;
+	void				*data = NULL;
 	uint32_t			handle;
 	DATA_BLOB			row;
 	uint32_t			property;
@@ -623,7 +623,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
 						    table->folderID,
 						    table->ulType,
-						    request.res, &status);
+						    &request.res, &status);
 		/* Then fetch rows */
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 		for (i = 0; table->numerator < table->denominator; i++) {
@@ -680,6 +680,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 
 			table->numerator++;
 		}
+
+		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
+						    table->folderID,
+						    table->ulType,
+						    NULL, &status);
 
 	finish:
 		/* Adjust parameters */

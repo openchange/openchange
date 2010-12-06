@@ -48,7 +48,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceCopyTo(TALLOC_CTX *mem_ctx
 							     struct EcDoRpc_MAPI_REPL *mapi_repl,
 							     uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] FastTransferSourceCopyTo (0x4d) - unimplemented\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] FastTransferSourceCopyTo (0x4d) - unimplemented\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -89,7 +89,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 								struct EcDoRpc_MAPI_REPL *mapi_repl,
 								uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] FastTransferSourceGetBuffer (0x4e) - unimplemented\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] FastTransferSourceGetBuffer (0x4e) - unimplemented\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

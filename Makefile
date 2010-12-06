@@ -795,6 +795,7 @@ distclean:: libmapiserver-distclean
 mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiserver/libmapiserver_oxcstor.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcprpt.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcfold.po	\
+							mapiproxy/libmapiserver/libmapiserver_oxcfxics.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxctabl.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcmsg.po		\
 							mapiproxy/libmapiserver/libmapiserver_oxcnotif.po	\
@@ -1059,6 +1060,7 @@ mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/
 						mapiproxy/servers/default/emsmdb/oxcstor.po			\
 						mapiproxy/servers/default/emsmdb/oxcprpt.po			\
 						mapiproxy/servers/default/emsmdb/oxcfold.po			\
+						mapiproxy/servers/default/emsmdb/oxcfxics.po			\
 						mapiproxy/servers/default/emsmdb/oxctabl.po			\
 						mapiproxy/servers/default/emsmdb/oxcmsg.po			\
 						mapiproxy/servers/default/emsmdb/oxcnotif.po			\
@@ -1306,6 +1308,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/module.o				\
 		utils/mapitest/modules/module_oxcstor.o		\
 		utils/mapitest/modules/module_oxcfold.o		\
+		utils/mapitest/modules/module_oxcfxics.o	\
 		utils/mapitest/modules/module_oxomsg.o		\
 		utils/mapitest/modules/module_oxcmsg.o		\
 		utils/mapitest/modules/module_oxcprpt.o		\
@@ -1332,13 +1335,14 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/module.c				\
 	utils/mapitest/modules/module_oxcstor.c		\
 	utils/mapitest/modules/module_oxcfold.c		\
+	utils/mapitest/modules/module_oxcfxics.c	\
 	utils/mapitest/modules/module_oxomsg.c		\
 	utils/mapitest/modules/module_oxcmsg.c		\
 	utils/mapitest/modules/module_oxcprpt.c		\
+	utils/mapitest/modules/module_oxcfxics.c	\
 	utils/mapitest/modules/module_oxctable.c	\
 	utils/mapitest/modules/module_oxorule.c		\
 	utils/mapitest/modules/module_oxcnotif.c	\
-	utils/mapitest/modules/module_oxcfxics.c	\
 	utils/mapitest/modules/module_oxcperm.c		\
 	utils/mapitest/modules/module_nspi.c		\
 	utils/mapitest/modules/module_noserver.c	\

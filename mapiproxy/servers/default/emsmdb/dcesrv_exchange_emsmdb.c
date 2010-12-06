@@ -541,8 +541,18 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		/* op_MAPI_TransportSend: 0x4a */
 		/* op_MAPI_FastTransferSourceCopyMessages: 0x4b */
 		/* op_MAPI_FastTransferSourceCopyFolder: 0x4c */
-		/* op_MAPI_FastTransferSourceCopyTo: 0x4d */
-		/* op_MAPI_FastTransferSourceGetBuffer: 0x4e */
+		case op_MAPI_FastTransferSourceCopyTo: /* 0x4d */
+			retval = EcDoRpc_RopFastTransferSourceCopyTo(mem_ctx, emsmdbp_ctx, 
+								     &(mapi_request->mapi_req[i]),
+								     &(mapi_response->mapi_repl[idx]),
+								     mapi_response->handles, &size);
+			break;
+		case op_MAPI_FastTransferSourceGetBuffer: /* 0x4e */
+			retval = EcDoRpc_RopFastTransferSourceGetBuffer(mem_ctx, emsmdbp_ctx, 
+									&(mapi_request->mapi_req[i]),
+									&(mapi_response->mapi_repl[idx]),
+									mapi_response->handles, &size);
+			break;
 		case op_MAPI_FindRow: /* 0x4f */
 			retval = EcDoRpc_RopFindRow(mem_ctx, emsmdbp_ctx, 
 						    &(mapi_request->mapi_req[i]),

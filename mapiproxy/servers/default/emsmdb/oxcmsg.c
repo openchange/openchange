@@ -196,14 +196,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		if (mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID,
 					  folderID, messageID, &msg) == 0) {
 			/* Build the OpenMessage reply */
-			subject = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT_UNICODE);
-			
 			mapi_repl->u.mapi_OpenMessage.HasNamedProperties = false;
 			mapi_repl->u.mapi_OpenMessage.SubjectPrefix.StringType = StringType_EMPTY;
-			mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_UNICODE_REDUCED;
-			mapi_repl->u.mapi_OpenMessage.NormalizedSubject.String.lpszW_reduced = talloc_strdup(mem_ctx, subject);
-			mapi_repl->u.mapi_OpenMessage.RecipientCount = msg.recipients->cRows;
 
+			subject = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT_UNICODE);
+			if (subject) {
+				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_UNICODE_REDUCED;
+				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.String.lpszW_reduced = talloc_strdup(mem_ctx, subject);
+			}
+			else {
+				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_EMPTY;
+			}
+
+			mapi_repl->u.mapi_OpenMessage.RecipientCount = msg.recipients->cRows;
 			SPropTagArray = set_SPropTagArray(mem_ctx, 0x4,
 							  PR_DISPLAY_TYPE,
 							  PR_OBJECT_TYPE,

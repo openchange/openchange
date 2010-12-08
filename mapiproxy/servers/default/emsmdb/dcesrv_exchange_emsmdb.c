@@ -349,7 +349,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							  mapi_response->handles, &size);
 			break;
 		/* op_MAPI_SaveChangesMessage: 0xc */
-		/* op_MAPI_RemoveAllRecipients: 0xd */
+		case op_MAPI_RemoveAllRecipients: /* 0xd */
+			retval = EcDoRpc_RopRemoveAllRecipients(mem_ctx, emsmdbp_ctx,
+								&(mapi_request->mapi_req[i]),
+								&(mapi_response->mapi_repl[idx]),
+								mapi_response->handles, &size);
+			break;
 		case op_MAPI_ModifyRecipients: /* 0xe */
 			retval = EcDoRpc_RopModifyRecipients(mem_ctx, emsmdbp_ctx,
 							     &(mapi_request->mapi_req[i]),

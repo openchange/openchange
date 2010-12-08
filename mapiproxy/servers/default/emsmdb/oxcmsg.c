@@ -496,6 +496,82 @@ end:
 }
 
 /**
+   \details EcDoRpc RemoveAllRecipients (0x0d) Rop. This operation removes all
+   recipients from a message.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the RemoveAllRecipients EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the RemoveAllRecipients EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
+							struct emsmdbp_context *emsmdbp_ctx,
+							struct EcDoRpc_MAPI_REQ *mapi_req,
+							struct EcDoRpc_MAPI_REPL *mapi_repl,
+							uint32_t *handles, uint16_t *size)
+{
+	struct mapi_handles	*rec = NULL;
+	struct emsmdbp_object	*object;
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	void			*private_data;
+	bool			mapistore = false;
+	uint64_t		messageID;
+	uint32_t		contextID;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] RemoveAllRecipients (0x0d)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	handle = handles[mapi_repl->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+	object = (struct emsmdbp_object *)private_data;
+	if (!object || object->type != EMSMDBP_OBJECT_MESSAGE) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	mapistore = emsmdbp_is_mapistore(rec);
+	if (mapistore) {
+		messageID = object->object.message->messageID;
+		contextID = object->object.message->contextID;
+		mapistore_modifyrecipients(emsmdbp_ctx->mstore_ctx, contextID,
+					   messageID,
+					   NULL, 0);
+	}
+	else {
+		DEBUG(0, ("Not implement yet - shouldn't occur\n"));
+	}
+
+end:
+	*size += libmapiserver_RopRemoveAllRecipients_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details EcDoRpc ModifyRecipients (0x0e) Rop. This operation modifies an
    existing message to add recipients (TO, CC, BCC).
 

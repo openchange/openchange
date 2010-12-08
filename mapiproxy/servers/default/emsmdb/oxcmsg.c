@@ -111,14 +111,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		ret = mapistore_indexing_get_folder_list(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username,
 							 messageID, &flist);
 		if (ret || !flist || !flist->count) {
-			DEBUG(0, ("No parent folder found for 0x%.16"PRIx64"\n", messageID));
+			DEBUG(0, ("No parent folder found for 0x%.16"PRIx64" (dead message?)\n", messageID));
+			mapi_repl->error_code = MAPI_E_NOT_FOUND;
+			goto end;
 		}
-		/* If last element in the list doesn't match folderID, that's incorrect */
-		if (folderID != flist->folderID[flist->count - 1]) {
-			DEBUG(0, ("Last parent folder 0x%.16"PRIx64" doesn't match " \
-				  "with expected 0x%.16"PRIx64"\n", 
-				  flist->folderID[flist->count - 1], folderID));
-		}
+		/* /\* If last element in the list doesn't match folderID, that's incorrect *\/ */
+		/* if (folderID != flist->folderID[flist->count - 1]) { */
+		/* 	DEBUG(0, ("Last parent folder 0x%.16"PRIx64" doesn't match " \ */
+		/* 		  "with expected 0x%.16"PRIx64"\n",  */
+		/* 		  flist->folderID[flist->count - 1], folderID)); */
+		/* } */
 
 		/* Look if we have a parent folder already opened */
 		for (i = flist->count - 1 ; i >= 0; i--) {

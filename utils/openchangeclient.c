@@ -576,7 +576,7 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 	uint32_t		last;
 	struct SPropValue	SPropValue;
 
-	SRowSet->aRow = talloc_realloc(mem_ctx, SRowSet->aRow, struct SRow, SRowSet->cRows + 2);
+	SRowSet->aRow = talloc_realloc(mem_ctx, SRowSet->aRow, struct SRow, SRowSet->cRows + 1);
 	last = SRowSet->cRows;
 	SRowSet->aRow[last].cValues = 0;
 	SRowSet->aRow[last].lpProps = talloc_zero(mem_ctx, struct SPropValue);
@@ -592,27 +592,27 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_GIVEN_NAME */
-	SPropValue.ulPropTag = PR_GIVEN_NAME;
+	SPropValue.ulPropTag = PR_GIVEN_NAME_UNICODE;
 	SPropValue.value.lpszA = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_DISPLAY_NAME */
-	SPropValue.ulPropTag = PR_DISPLAY_NAME;
+	SPropValue.ulPropTag = PR_DISPLAY_NAME_UNICODE;
 	SPropValue.value.lpszA = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_7BIT_DISPLAY_NAME */
-	SPropValue.ulPropTag = PR_7BIT_DISPLAY_NAME;
+	SPropValue.ulPropTag = PR_7BIT_DISPLAY_NAME_UNICODE;
 	SPropValue.value.lpszA = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_SMTP_ADDRESS */
-	SPropValue.ulPropTag = PR_SMTP_ADDRESS;
+	SPropValue.ulPropTag = PR_SMTP_ADDRESS_UNICODE;
 	SPropValue.value.lpszA = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_ADDRTYPE */
-	SPropValue.ulPropTag = PR_ADDRTYPE;
+	SPropValue.ulPropTag = PR_ADDRTYPE_UNICODE;
 	SPropValue.value.lpszA = "SMTP";
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 

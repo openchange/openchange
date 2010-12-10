@@ -125,7 +125,7 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 		MAPI_RETVAL_IF(retval, GetLastError(), folder);
 
 		SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
-						  PR_DISPLAY_NAME,
+						  PR_DISPLAY_NAME_UNICODE,
 						  PR_FID);
 		retval = SetColumns(&obj_htable, SPropTagArray);
 		MAPIFreeBuffer(SPropTagArray);
@@ -135,7 +135,6 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 			for (index = 0; (index < SRowSet.cRows) && (found == false); index++) {
 				fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[index], PR_FID);
 				name = (const char *)find_SPropValue_data(&SRowSet.aRow[index], PR_DISPLAY_NAME_UNICODE);
-
 				if (name && fid && !strcmp(name, folder[i])) {
 					retval = OpenFolder(&obj_folder, *fid, obj_child);
 					MAPI_RETVAL_IF(retval, retval, folder);

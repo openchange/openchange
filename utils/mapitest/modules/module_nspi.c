@@ -933,13 +933,13 @@ _PUBLIC_ bool mapitest_nspi_GetIDsFromNames(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
-	struct nspi_context	*nspi_ctx;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SRowSet		*SRowSet = NULL;
-	struct SPropTagArray	*flaglist = NULL;
-	const char     		*username[2];
-	const char     		*username_err[2];
+	enum MAPISTATUS			retval;
+	struct nspi_context		*nspi_ctx;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct SRowSet			*SRowSet = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	const char     			*username[2];
+	const char     			*username_err[2];
 
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 

@@ -882,7 +882,7 @@ static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_ca
 	struct ldb_message		*ldb_msg_ab;
 	struct SPropTagArray		*pPropTags;
 	const char			*purportedSearch;
-	struct SPropTagArray		*pMIds = NULL;
+	struct PropertyTagArray_r	*pMIds = NULL;
 	struct SRowSet			*pRows = NULL;
 	struct WStringsArray_r		*paWStr;
 	uint32_t			i;
@@ -932,9 +932,9 @@ static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_ca
 
 	/* Allocate output MIds */
 	paWStr = r->in.paWStr;
-	pMIds = talloc(mem_ctx, struct SPropTagArray);
+	pMIds = talloc(mem_ctx, struct PropertyTagArray_r);
 	pMIds->cValues = paWStr->Count;
-	pMIds->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, pMIds->cValues);
+	pMIds->aulPropTag = talloc_array(mem_ctx, uint32_t, pMIds->cValues);
 	pRows = talloc(mem_ctx, struct SRowSet);
 	pRows->cRows = 0;
 	pRows->aRow = talloc_array(mem_ctx, struct SRow, pMIds->cValues);

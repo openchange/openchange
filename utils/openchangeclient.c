@@ -622,7 +622,7 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 }
 
 static bool set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
-					char **usernames, struct SPropTagArray *flaglist,
+					char **usernames, struct PropertyTagArray_r *flaglist,
 					enum ulRecipClass RecipClass)
 {
 	uint32_t	i;
@@ -740,20 +740,20 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 						 mapi_object_t *obj_store, 
 						 struct oclient *oclient)
 {
-	enum MAPISTATUS		retval;
-	struct SPropTagArray	*SPropTagArray;
-	struct SPropValue	SPropValue;
-	struct SRowSet		*SRowSet = NULL;
-	struct SPropTagArray   	*flaglist = NULL;
-	mapi_id_t		id_outbox;
-	mapi_object_t		obj_outbox;
-	mapi_object_t		obj_message;
-	mapi_object_t		obj_stream;
-	uint32_t		index = 0;
-	uint32_t		msgflag;
-	struct SPropValue	props[SETPROPS_COUNT];
-	uint32_t		prop_count = 0;
-	uint32_t		editor = 0;
+	enum MAPISTATUS			retval;
+	struct SPropTagArray		*SPropTagArray;
+	struct SPropValue		SPropValue;
+	struct SRowSet			*SRowSet = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	mapi_id_t			id_outbox;
+	mapi_object_t			obj_outbox;
+	mapi_object_t			obj_message;
+	mapi_object_t			obj_stream;
+	uint32_t			index = 0;
+	uint32_t			msgflag;
+	struct SPropValue		props[SETPROPS_COUNT];
+	uint32_t			prop_count = 0;
+	uint32_t			editor = 0;
 
 	mapi_object_init(&obj_outbox);
 	mapi_object_init(&obj_message);

@@ -243,6 +243,12 @@ System Attendant Private Interface
 		uint8 ab[16];
 	} FlatUID_r;
 
+	/* like a SPropTagArray, but without the "value is a an enum MAPITAGS" semantics */
+	typedef struct {
+		[range(0,100000)] uint32                        cValues;
+		[size_is(cValues+1), length_is(cValues)] uint32 aulPropTag[];
+	} PropertyTagArray_r;
+    
 	typedef struct {
 		FlatUID_r	*lpguid;
 		uint32		ulReserved;
@@ -675,7 +681,7 @@ System Attendant Private Interface
 		[in] STAT			*pStat,
 		[in,unique] SPropTagArray	*pPropTags,
  		[in] StringsArray_r		*paStr,
-		[out] SPropTagArray		**ppMIds,
+		[out] PropertyTagArray_r	**ppMIds,
 		[out] SRowSet			**ppRows
 	);
 
@@ -687,7 +693,7 @@ System Attendant Private Interface
 		[in] STAT			*pStat,
 		[in,unique] SPropTagArray      	*pPropTags,
 		[in] WStringsArray_r       	*paWStr,
-		[out] SPropTagArray		**ppMIds,
+		[out] PropertyTagArray_r	**ppMIds,
 		[out] SRowSet			**ppRows
 		);
 }

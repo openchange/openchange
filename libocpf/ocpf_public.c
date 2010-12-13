@@ -621,18 +621,18 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 					     uint32_t context_id,
 					     mapi_object_t *obj_message)
 {
-	enum MAPISTATUS		retval;
-	struct ocpf_context	*ctx;
-	struct ocpf_recipients	*element;
-	struct SPropTagArray	*SPropTagArray;
-	struct SPropValue	SPropValue;
-	struct SRowSet		*SRowSet = NULL;
-	struct SPropTagArray   	*flaglist = NULL;
-	char			**usernames = NULL;
-	int			*recipClass = NULL;
-	uint32_t		count;
-	uint32_t		counter;
-	uint32_t		i;
+	enum MAPISTATUS			retval;
+	struct ocpf_context		*ctx;
+	struct ocpf_recipients		*element;
+	struct SPropTagArray		*SPropTagArray;
+	struct SPropValue		SPropValue;
+	struct SRowSet			*SRowSet = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	char				**usernames = NULL;
+	int				*recipClass = NULL;
+	uint32_t			count;
+	uint32_t			counter;
+	uint32_t			i;
 
 	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);

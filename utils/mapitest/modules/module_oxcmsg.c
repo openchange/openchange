@@ -234,17 +234,17 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageReadFlag(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
-	mapi_object_t		obj_message;
-	mapi_id_t		id_folder;
-	char			**username = NULL;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SPropValue	SPropValue;
-	struct SRowSet		*SRowSet = NULL;
-	struct SPropTagArray   	*flaglist = NULL;
-	mapi_id_t		id_msgs[1];
+	enum MAPISTATUS			retval;
+	mapi_object_t			obj_store;
+	mapi_object_t			obj_folder;
+	mapi_object_t			obj_message;
+	mapi_id_t			id_folder;
+	char				**username = NULL;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct SPropValue		SPropValue;
+	struct SRowSet			*SRowSet = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	mapi_id_t			id_msgs[1];
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
@@ -381,18 +381,18 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
-	bool			ret = false;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
-	mapi_object_t		obj_message;
-	mapi_id_t		id_folder;
-	char			**username = NULL;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SPropValue	SPropValue;
-	struct SRowSet		*SRowSet = NULL;
-	struct SPropTagArray   	*flaglist = NULL;
-	mapi_id_t		id_msgs[1];
+	enum MAPISTATUS			retval;
+	bool				ret = false;
+	mapi_object_t			obj_store;
+	mapi_object_t			obj_folder;
+	mapi_object_t			obj_message;
+	mapi_id_t			id_folder;
+	char				**username = NULL;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct SPropValue		SPropValue;
+	struct SRowSet			*SRowSet = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	mapi_id_t			id_msgs[1];
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
@@ -546,20 +546,20 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
-	bool			ret = false;
-	mapi_object_t		obj_store;
-	mapi_object_t		obj_folder;
-	mapi_object_t		obj_message;
-	mapi_id_t		id_folder;
-	char			**username = NULL;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SPropValue	SPropValue;
-	struct SRowSet		*SRowSet = NULL;
-	struct SPropTagArray   	*flaglist = NULL;
-	struct ReadRecipientRow	*RecipientRows;
-	uint8_t			count;
-	mapi_id_t		id_msgs[1];
+	enum MAPISTATUS			retval;
+	bool				ret = false;
+	mapi_object_t			obj_store;
+	mapi_object_t			obj_folder;
+	mapi_object_t			obj_message;
+	mapi_id_t			id_folder;
+	char				**username = NULL;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct SPropValue		SPropValue;
+	struct SRowSet			*SRowSet = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	struct ReadRecipientRow		*RecipientRows;
+	uint8_t				count;
+	mapi_id_t			id_msgs[1];
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);

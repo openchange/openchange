@@ -108,8 +108,8 @@ enum MAPISTATUS		nspi_ModLinkAtt(struct nspi_context *, bool, uint32_t, uint32_t
 enum MAPISTATUS		nspi_QueryColumns(struct nspi_context *, TALLOC_CTX *, bool, struct SPropTagArray **);
 enum MAPISTATUS		nspi_GetNamesFromIDs(struct nspi_context *, TALLOC_CTX *, struct FlatUID_r *, struct SPropTagArray *, struct SPropTagArray **, struct PropertyNameSet_r **);
 enum MAPISTATUS		nspi_GetIDsFromNames(struct nspi_context *, TALLOC_CTX *, bool, uint32_t, struct PropertyName_r *, struct SPropTagArray **);
-enum MAPISTATUS		nspi_ResolveNames(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct SRowSet ***, struct SPropTagArray ***);
-enum MAPISTATUS		nspi_ResolveNamesW(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct SRowSet ***, struct SPropTagArray ***);
+enum MAPISTATUS		nspi_ResolveNames(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct SRowSet ***, struct PropertyTagArray_r ***);
+enum MAPISTATUS		nspi_ResolveNamesW(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct SRowSet ***, struct PropertyTagArray_r ***);
 
 /* The following public definitions come from libmapi/emsmdb.c */
 NTSTATUS		emsmdb_transaction_null(struct emsmdb_context *, struct mapi_response **);
@@ -271,7 +271,7 @@ struct GlobalObjectId	*get_GlobalObjectId(TALLOC_CTX *, struct Binary_r *);
 const char		*get_TypedString(struct TypedString *);
 
 /* The following public definitions come from libmapi/IABContainer.c */
-enum MAPISTATUS		ResolveNames(struct mapi_session *, const char **, struct SPropTagArray *, struct SRowSet **, struct SPropTagArray **, uint32_t);
+enum MAPISTATUS		ResolveNames(struct mapi_session *, const char **, struct SPropTagArray *, struct SRowSet **,  struct PropertyTagArray_r **, uint32_t);
 enum MAPISTATUS		GetGALTable(struct mapi_session *, struct SPropTagArray *, struct SRowSet **, uint32_t, uint8_t);
 enum MAPISTATUS		GetGALTableCount(struct mapi_session *, uint32_t *);
 enum MAPISTATUS		GetABRecipientInfo(struct mapi_session *, const char *, struct SPropTagArray *, struct SRowSet **);

@@ -1074,7 +1074,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 					   const char **usernames, 
 					   struct SPropTagArray *pPropTags, 
 					   struct SRowSet ***pppRows,
-					   struct SPropTagArray ***pppMIds)
+					   struct PropertyTagArray_r ***pppMIds)
 {
 	struct NspiResolveNames r;
 	struct StringsArray_r	*paStr;
@@ -1137,7 +1137,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 					    const char **usernames, 
 					    struct SPropTagArray *pPropTags, 
 					    struct SRowSet ***pppRows,
-					    struct SPropTagArray ***pppMIds)
+					    struct PropertyTagArray_r ***pppMIds)
 {
 	struct NspiResolveNamesW	r;
 	struct WStringsArray_r		*paWStr;

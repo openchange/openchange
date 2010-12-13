@@ -67,7 +67,7 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
 				      const char **usernames, 
 				      struct SPropTagArray *props, 
 				      struct SRowSet **rowset, 
-				      struct SPropTagArray **flaglist, 
+				      struct PropertyTagArray_r **flaglist, 
 				      uint32_t flags)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -275,17 +275,17 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 				       struct SPropTagArray *pPropTags,
 				       struct SRowSet **ppRowSet)
 {
-	enum MAPISTATUS		retval;
-	TALLOC_CTX		*mem_ctx;
-	struct nspi_context	*nspi_ctx;
-	struct SRowSet		*SRowSet;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SPropTagArray	*pMId = NULL;
-	struct SPropTagArray   	*flaglist = NULL;
-	struct StringsArray_r	pNames;
-	const char		*usernames[2];
-	char			*email = NULL;
-	bool			allocated = false;
+	enum MAPISTATUS			retval;
+	TALLOC_CTX			*mem_ctx;
+	struct nspi_context		*nspi_ctx;
+	struct SRowSet			*SRowSet;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct SPropTagArray		*pMId = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	struct StringsArray_r		pNames;
+	const char			*usernames[2];
+	char				*email = NULL;
+	bool				allocated = false;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);

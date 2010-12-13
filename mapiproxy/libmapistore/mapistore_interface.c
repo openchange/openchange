@@ -641,6 +641,7 @@ _PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
 _PUBLIC_ int mapistore_get_table_property(struct mapistore_context *mstore_ctx,
 					  uint32_t context_id,
 					  uint8_t table_type,
+					  enum table_query_type query_type,
 					  uint64_t fid,
 					  uint32_t proptag,
 					  uint32_t pos,
@@ -657,7 +658,7 @@ _PUBLIC_ int mapistore_get_table_property(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend readdir */
-	ret = mapistore_backend_get_table_property(backend_ctx, fid, table_type, pos, proptag, data);
+	ret = mapistore_backend_get_table_property(backend_ctx, fid, table_type, query_type, pos, proptag, data);
 
 	return ret;
 }
@@ -1046,8 +1047,7 @@ _PUBLIC_ int mapistore_get_child_fids(struct mapistore_context *mstore_ctx,
 	/* Step 3. Fill the array */
 	for (i = 0; i < *child_fid_count; ++i) {
 		// TODO: add error checking for this call
-		ret = mapistore_get_table_property(mstore_ctx, context_id, MAPISTORE_FOLDER_TABLE, fid,
-						   PR_FID, i, &data);
+		ret = mapistore_get_table_property(mstore_ctx, context_id, MAPISTORE_FOLDER_TABLE, MAPISTORE_PREFILTERED_QUERY, fid, PR_FID, i, &data);
 		(*child_fids)[i] = *((uint64_t*)(data));
 	}
 

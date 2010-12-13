@@ -473,10 +473,9 @@ int mapistore_backend_readdir_count(struct backend_context *bctx, uint64_t fid, 
 }
 
 
-int mapistore_backend_get_table_property(struct backend_context *bctx, uint64_t fid, uint8_t table_type,
-					 uint32_t pos, uint32_t proptag, void **data)
+int mapistore_backend_get_table_property(struct backend_context *bctx, uint64_t fid, uint8_t table_type, enum table_query_type query_type, uint32_t pos, uint32_t proptag, void **data)
 {
-	return bctx->backend->op_get_table_property(bctx->private_data, fid, table_type, pos, proptag, data);
+	return bctx->backend->op_get_table_property(bctx->private_data, fid, table_type, query_type, pos, proptag, data);
 }
 
 

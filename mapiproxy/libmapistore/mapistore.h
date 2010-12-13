@@ -70,6 +70,11 @@ struct indexing_folders_list {
 	uint32_t			count;
 };
 
+enum table_query_type {
+	MAPISTORE_PREFILTERED_QUERY,
+	MAPISTORE_LIVEFILTERED_QUERY,
+};
+
 struct mapistore_backend {
 	const char	*name;
 	const char	*description;
@@ -86,7 +91,7 @@ struct mapistore_backend {
 	int (*op_opendir)(void *, uint64_t, uint64_t);
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
-	int (*op_get_table_property)(void *, uint64_t, uint8_t, uint32_t, uint32_t, void **);
+	int (*op_get_table_property)(void *, uint64_t, uint8_t, enum table_query_type, uint32_t, uint32_t, void **);
 	/* message semantics */
 	int (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
 	int (*op_createmessage)(void *, uint64_t, uint64_t);
@@ -159,8 +164,7 @@ int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, st
 int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 int mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
-int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, uint64_t, 
-				 uint32_t, uint32_t, void **);
+int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, enum table_query_type, uint64_t, uint32_t, uint32_t, void **);
 int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
 int mapistore_createmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
 int mapistore_savechangesmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);

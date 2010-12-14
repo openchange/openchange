@@ -243,13 +243,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 					      struct EcDoRpc_MAPI_REPL *mapi_repl,
 					      uint32_t *handles, uint16_t *size)
 {
-	enum MAPISTATUS			retval;
 	struct mapi_handles		*parent;
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
 	struct QueryRows_req		request;
 	struct QueryRows_repl		response;
+	enum MAPISTATUS			retval;
 	void				*data;
+	enum MAPISTATUS			*retvals;
+	void				**data_pointers;
 	char				*table_filter = NULL;
 	uint32_t			handle;
 	uint32_t			count;
@@ -301,6 +303,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 		for (i = 0, count = 0; i < request.RowCount; i++, count++) {
 			flagged = 0;
+			data_pointers = talloc_array(mem_ctx, void *, table->prop_count);
+			retvals = talloc_array(mem_ctx, enum MAPISTATUS, table->prop_count);
 
 			/* Lookup for flagged property row */
 			for (j = 0; j < table->prop_count; j++) {
@@ -309,52 +313,51 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 								      MAPISTORE_PREFILTERED_QUERY,
 								      table->folderID, 
 								      table->properties[j],
-								      table->numerator, &data);
+								      table->numerator, data_pointers + j);
 				if (retval == MAPI_E_INVALID_OBJECT) {
 					DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
+					talloc_free(retvals);
+					talloc_free(data_pointers);
 					goto finish;
 				}
+				retvals[j] = retval;
 
 				if (retval == MAPI_E_NOT_FOUND) {
 					flagged = 1;
-					libmapiserver_push_property(mem_ctx, 
-								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-								    0x0000000b, (const void *)&flagged,
-								    &response.RowData, 0, 0);
-					break;
 				}
 			}
 
-			/* StandardPropertyRow hack */
-			if (!flagged) {
-				libmapiserver_push_property(mem_ctx, 
+			if (flagged) {
+				libmapiserver_push_property(mem_ctx,
+							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+							    0x0000000b, (const void *)&flagged,
+							    &response.RowData, 0, 0);
+			}
+			else {
+				libmapiserver_push_property(mem_ctx,
 							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 							    0x00000000, (const void *)&flagged,
 							    &response.RowData, 0, 1);
 			}
 
-			/* Push the properties */
 			for (j = 0; j < table->prop_count; j++) {
 				property = table->properties[j];
-				retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
-								      table->ulType,
-								      MAPISTORE_PREFILTERED_QUERY,
-								      table->folderID,
-								      table->properties[j],
-								      table->numerator, &data);
-				if (retval == MAPI_E_INVALID_OBJECT) {
-					goto finish;
-				}
+				retval = retvals[j];
 				if (retval == MAPI_E_NOT_FOUND) {
 					property = (property & 0xFFFF0000) + PT_ERROR;
-					data = (void *)&retval;
+					data = &retval;
+				}
+				else {
+					data = data_pointers[j];
 				}
 
 				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-							    property, (const void *)data, &response.RowData,
+							    property, data, &response.RowData,
 							    flagged?PT_ERROR:0, flagged);
 			}
 
+			talloc_free(retvals);
+			talloc_free(data_pointers);
 			table->numerator++;
 		}
 
@@ -364,28 +367,37 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 		for (i = 0, count = 0; i < request.RowCount; i++, count++) {
 			flagged = 0;
+			data_pointers = talloc_array(mem_ctx, void *, table->prop_count);
+			retvals = talloc_array(mem_ctx, enum MAPISTATUS, table->prop_count);
 
 			/* Lookup for flagged property row */
 			for (j = 0; j < table->prop_count; j++) {
 				retval = openchangedb_get_table_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
 									 emsmdbp_ctx->szDisplayName,
 									 table_filter, table->properties[j], 
-									 table->numerator, &data);
+									 table->numerator, data_pointers + j);
 				if (retval == MAPI_E_INVALID_OBJECT) {
+					count = 0;
+					DEBUG(5, ("%s: invalid object in non-mapistore folder, count set to 0\n", __location__));
+					talloc_free(retvals);
+					talloc_free(data_pointers);
 					goto finish;
 				}
+
+				retvals[j] = retval;
+
 				if (retval == MAPI_E_NOT_FOUND) {
 					flagged = 1;
-					libmapiserver_push_property(mem_ctx, 
-								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-								    0x0000000b, (const void *)&flagged, 
-								    &response.RowData, 0, 0);
-					break;
-				}			
+				}
 			}
 
-			/* SandardPropertyRow hack */
-			if (!flagged) {
+			if (flagged) {
+				libmapiserver_push_property(mem_ctx, 
+							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+							    0x0000000b, (const void *)&flagged, 
+							    &response.RowData, 0, 0);
+			}
+			else {
 				libmapiserver_push_property(mem_ctx, 
 							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 							    0x00000000, (const void *)&flagged,
@@ -395,26 +407,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			/* Push the property */
 			for (j = 0; j < table->prop_count; j++) {
 				property = table->properties[j];
-				retval = openchangedb_get_table_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
-									 emsmdbp_ctx->szDisplayName,
-									 table_filter, table->properties[j], 
-									 table->numerator, &data);
-				if (retval == MAPI_E_INVALID_OBJECT) {
-					count = 0;
-					DEBUG(5, ("%s: invalid object in non-mapistore folder, count set to 0\n", __location__));
-					goto finish;
-				}
+				retval = retvals[j];
 				if (retval == MAPI_E_NOT_FOUND) {
 					property = (property & 0xFFFF0000) + PT_ERROR;
-					data = (void *)&retval;
+					data = &retval;
 				}
-				
+				else {
+					data = data_pointers[j];
+				}
+
 				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-							    property, (const void *)data,
-							    &response.RowData, flagged?PT_ERROR:0, flagged);
-				
+							    property, data, &response.RowData,
+							    flagged?PT_ERROR:0, flagged);
 			}
 			
+			talloc_free(retvals);
+			talloc_free(data_pointers);
 			table->numerator++;
 		}
 	}
@@ -574,12 +582,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 					    struct EcDoRpc_MAPI_REPL *mapi_repl,
 					    uint32_t *handles, uint16_t *size)
 {
-	enum MAPISTATUS			retval;
 	struct mapi_handles		*parent;
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
 	struct FindRow_req		request;
-	void				*data = NULL;
+	enum MAPISTATUS			retval;
+	void				*data;
+	enum MAPISTATUS			*retvals;
+	void				**data_pointers;
 	uint32_t			handle;
 	DATA_BLOB			row;
 	uint32_t			property;
@@ -636,6 +646,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		/* Then fetch rows */
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 		for (i = 0; !found && table->numerator < table->denominator; i++) {
+			flagged = 0;
+
 			retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
 							      table->ulType,
 							      MAPISTORE_LIVEFILTERED_QUERY,
@@ -646,55 +658,60 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 				table->numerator++;
 			}
 			else {
+				data_pointers = talloc_array(mem_ctx, void *, table->prop_count);
+				retvals = talloc_array(mem_ctx, enum MAPISTATUS, table->prop_count);
+				data_pointers[0] = data;
+				retvals[0] = retval;
+
 				found = true;
 				flagged = 0;
 
 				/* Lookup for flagged property row */
-				for (j = 0; j < table->prop_count; j++) {
+				for (j = 1; j < table->prop_count; j++) {
 					retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
 									      table->ulType,
 									      MAPISTORE_LIVEFILTERED_QUERY,
 									      table->folderID, 
 									      table->properties[j],
-									      table->numerator, &data);
+									      table->numerator, data_pointers + j);
+					retvals[j] = retval;
 					if (retval == MAPI_E_NOT_FOUND) {
 						flagged = 1;
-						row.length = 0;
-						libmapiserver_push_property(mem_ctx, 
-									    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-									    0x0000000b, (const void *)&flagged,
-									    &row, 0, 0);
-						break;
 					}
 				}
 
-				/* StandardPropertyRow hack */
-				if (!flagged) {
+				if (flagged) {
+					libmapiserver_push_property(mem_ctx, 
+								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+								    0x0000000b, (const void *)&flagged,
+								    &row, 0, 0);
+				}
+				else {
 					libmapiserver_push_property(mem_ctx, 
 								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 								    0x00000000, (const void *)&flagged,
 								    &row, 0, 1);
 				}
-				
+
 				/* Push the properties */
 				for (j = 0; j < table->prop_count; j++) {
 					property = table->properties[j];
-					retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
-									      table->ulType,
-									      MAPISTORE_LIVEFILTERED_QUERY,
-									      table->folderID,
-									      table->properties[j],
-									      table->numerator, &data);
+					retval = retvals[j];
 					if (retval == MAPI_E_NOT_FOUND) {
 						property = (property & 0xFFFF0000) + PT_ERROR;
-						data = (void *)&retval;
+						data = &retval;
+					}
+					else {
+						data = data_pointers[j];
 					}
 
 					libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-								    property, (const void *)data, &row,
-								    flagged?PT_ERROR:0,
-								    flagged);
+								    property, data, &row,
+								    flagged?PT_ERROR:0, flagged);
 				}
+
+				talloc_free(retvals);
+				talloc_free(data_pointers);
 			}
 		}
 

@@ -9,6 +9,11 @@ AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 PKG_PROG_PKG_CONFIG([0.20])
 
+if test -z "$CFLAGS";
+then
+  CFLAGS="-O2 -g";
+fi
+
 CFLAGS="-I. $CFLAGS"
 
 dnl #################################################################

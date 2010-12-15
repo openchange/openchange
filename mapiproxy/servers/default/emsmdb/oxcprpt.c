@@ -890,9 +890,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 								mapi_req->u.mapi_GetIDsFromNames.count);
 
 	for (i = 0; i < mapi_req->u.mapi_GetIDsFromNames.count; i++) {
-		mapistore_namedprops_get_mapped_id(emsmdbp_ctx->mstore_ctx->nprops_ctx, 
+		if (mapistore_namedprops_get_mapped_id(emsmdbp_ctx->mstore_ctx->nprops_ctx, 
 						   mapi_req->u.mapi_GetIDsFromNames.nameid[i],
-						   &mapi_repl->u.mapi_GetIDsFromNames.propID[i]);
+						       &mapi_repl->u.mapi_GetIDsFromNames.propID[i])
+		    != MAPISTORE_SUCCESS) {
+			mapi_repl->error_code = MAPI_W_ERRORS_RETURNED;
+		}
+	}
+
+	if (mapi_repl->error_code == MAPI_W_ERRORS_RETURNED
+	    && mapi_req->u.mapi_GetIDsFromNames.ulFlags == 0x02) {
+		DEBUG(5, ("%s: property creation is not implemented\n", __FUNCTION__));
 	}
 
 	*size += libmapiserver_RopGetPropertyIdsFromNames_size(mapi_repl);

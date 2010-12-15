@@ -88,7 +88,6 @@ int mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
 			ldb_ldif_read_free(ldb_ctx, ldif);
 		}
 		fclose(f);
-
 	} else {
 		ldb_ctx = mapistore_ldb_wrap_connect(ldb_ctx, ev, database, 0);
 		talloc_free(database);
@@ -117,9 +116,10 @@ _PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx,
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
+	struct ldb_dn		*entrydn;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
-	char			*filter = NULL;
+	char			*textdn = NULL;
 	char			*guid;
 
 	/* Sanity checks */
@@ -132,24 +132,21 @@ _PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx,
 
 	switch (nameid.ulKind) {
 	case MNID_ID:
-		filter = talloc_asprintf(mem_ctx, "(&(objectClass=MNID_ID)(oleguid=%s)(cn=0x%.4x))",
-					 guid, nameid.kind.lid);
+		textdn = talloc_asprintf(mem_ctx, "CN=0x%.4x,CN=%s,CN=default", nameid.kind.lid, guid);
 		break;
 	case MNID_STRING:
-		filter = talloc_asprintf(mem_ctx, "(&(objectClass=MNID_STRING)(oleguid=%s)(cn=%s))",
-					 guid, nameid.kind.lpwstr.Name);
+		textdn = talloc_asprintf(mem_ctx, "CN=%s,CN=%s,CN=default", nameid.kind.lpwstr.Name, guid);
 		break;
 	}
 	talloc_free(guid);
 
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "%s", filter);
+	entrydn = ldb_dn_new(mem_ctx, ldb_ctx, textdn);
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, entrydn, LDB_SCOPE_BASE, attrs, NULL);
 	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERROR, mem_ctx);
 
 	*propID = ldb_msg_find_attr_as_uint(res->msgs[0], "mapped_id", 0);
 	MAPISTORE_RETVAL_IF(!*propID, MAPISTORE_ERROR, mem_ctx);
 
-	talloc_free(filter);
 	talloc_free(mem_ctx);
 
 	return MAPISTORE_SUCCESS;

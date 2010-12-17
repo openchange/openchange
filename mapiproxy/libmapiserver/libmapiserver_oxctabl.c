@@ -108,7 +108,9 @@ _PUBLIC_ uint16_t libmapiserver_RopQueryRows_size(struct EcDoRpc_MAPI_REPL *resp
 	}
 
 	size += SIZE_DFLT_ROPQUERYROWS;
-	size += response->u.mapi_QueryRows.RowData.length;
+	if (response->u.mapi_QueryRows.RowCount) {
+		size += response->u.mapi_QueryRows.RowData.length;
+	}
 
 	return size;
 }

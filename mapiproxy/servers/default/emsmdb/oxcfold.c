@@ -319,15 +319,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
-
 	/* Initialize default empty GetContentsTable reply */
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->u.mapi_GetContentsTable.handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		*size += libmapiserver_RopGetContentsTable_size(NULL);
+		return MAPI_E_SUCCESS;
+	}
 
 	/* GetContentsTable can only be called for folder objects */
 	mapi_handles_get_private_data(parent, &data);

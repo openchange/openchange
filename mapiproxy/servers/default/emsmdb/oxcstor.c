@@ -219,12 +219,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 	if (request.LogonFlags & LogonPrivate) {
 		retval = RopLogon_Mailbox(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl);
 		mapi_repl->error_code = retval;
-		*size = libmapiserver_RopLogon_size(mapi_req, mapi_repl);
+		*size += libmapiserver_RopLogon_size(mapi_req, mapi_repl);
 	} else {
 		retval = RopLogon_PublicFolder(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl);
 		mapi_repl->error_code = retval;
 		mailboxstore = false;
-		*size = libmapiserver_RopLogon_size(mapi_req, mapi_repl);
+		*size += libmapiserver_RopLogon_size(mapi_req, mapi_repl);
 	}
 
 	if (!mapi_repl->error_code) {
@@ -397,7 +397,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetReceiveFolder(TALLOC_CTX *mem_ctx,
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = retval;
 
-	*size = libmapiserver_RopSetReceiveFolder_size(mapi_repl);
+	*size += libmapiserver_RopSetReceiveFolder_size(mapi_repl);
 	
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
@@ -497,7 +497,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = retval;
 
-	*size = libmapiserver_RopGetReceiveFolder_size(mapi_repl);
+	*size += libmapiserver_RopGetReceiveFolder_size(mapi_repl);
 	
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
@@ -547,7 +547,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserLongTermIds(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_GetPerUserLongTermIds.LongTermIdCount = 0;
 	mapi_repl->u.mapi_GetPerUserLongTermIds.LongTermIds = NULL;
 
-	*size = libmapiserver_RopGetPerUserLongTermIds_size(mapi_repl);
+	*size += libmapiserver_RopGetPerUserLongTermIds_size(mapi_repl);
 
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
@@ -594,7 +594,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserGuid(TALLOC_CTX *mem_ctx,
 
 	/* TODO effective work here */
 
-	*size = libmapiserver_RopGetPerUserGuid_size(mapi_repl);
+	*size += libmapiserver_RopGetPerUserGuid_size(mapi_repl);
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
 	return MAPI_E_SUCCESS;
@@ -637,7 +637,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadPerUserInformation(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_ReadPerUserInformation.Data.length = 0x0;
 	mapi_repl->u.mapi_ReadPerUserInformation.Data.data = NULL;
 
-	*size = libmapiserver_RopReadPerUserInformation_size(mapi_repl);
+	*size += libmapiserver_RopReadPerUserInformation_size(mapi_repl);
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
 	return MAPI_E_SUCCESS;

@@ -696,7 +696,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 		handles[mapi_repl->handle_idx] = rec->handle;
 	}
 
-	*size = libmapiserver_RopOpenStream_size(mapi_repl);
+	*size += libmapiserver_RopOpenStream_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }
@@ -767,7 +767,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 								bufferSize);
 	}
 end:
-	*size = libmapiserver_RopReadStream_size(mapi_repl);
+	*size += libmapiserver_RopReadStream_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }
@@ -844,7 +844,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 	}
 
 end:
-	*size = libmapiserver_RopWriteStream_size(mapi_repl);
+	*size += libmapiserver_RopWriteStream_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }
@@ -888,10 +888,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_GetIDsFromNames.count = mapi_req->u.mapi_GetIDsFromNames.count;
 	mapi_repl->u.mapi_GetIDsFromNames.propID = talloc_array(mem_ctx, uint16_t, 
 								mapi_req->u.mapi_GetIDsFromNames.count);
-
+	
 	for (i = 0; i < mapi_req->u.mapi_GetIDsFromNames.count; i++) {
 		if (mapistore_namedprops_get_mapped_id(emsmdbp_ctx->mstore_ctx->nprops_ctx, 
-						   mapi_req->u.mapi_GetIDsFromNames.nameid[i],
+						       mapi_req->u.mapi_GetIDsFromNames.nameid[i],
 						       &mapi_repl->u.mapi_GetIDsFromNames.propID[i])
 		    != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_W_ERRORS_RETURNED;

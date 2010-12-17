@@ -181,7 +181,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		*size = libmapiserver_RopGetHierarchyTable_size(NULL);
+		*size += libmapiserver_RopGetHierarchyTable_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 

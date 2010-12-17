@@ -228,7 +228,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	object = (struct emsmdbp_object *)data;
 	if (!object) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		*size = libmapiserver_RopGetHierarchyTable_size(NULL);
+		*size += libmapiserver_RopGetHierarchyTable_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 
@@ -243,7 +243,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		*size = libmapiserver_RopGetHierarchyTable_size(NULL);
+		*size += libmapiserver_RopGetHierarchyTable_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 
@@ -334,7 +334,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	object = (struct emsmdbp_object *)data;
 	if (!object) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		*size = libmapiserver_RopGetContentsTable_size(NULL);
+		*size += libmapiserver_RopGetContentsTable_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 
@@ -345,7 +345,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
-		*size = libmapiserver_RopGetContentsTable_size(NULL);
+		*size += libmapiserver_RopGetContentsTable_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 

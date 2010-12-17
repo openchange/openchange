@@ -93,3 +93,66 @@ end:
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details EcDoRpc ModifyRules (0x41) Rop. This operation modifies
+   the rules associated with a folder
+
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the ModifyRules EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the ModifyRules EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRules(TALLOC_CTX *mem_ctx,
+						struct emsmdbp_context *emsmdbp_ctx,
+						struct EcDoRpc_MAPI_REQ *mapi_req,
+						struct EcDoRpc_MAPI_REPL *mapi_repl,
+						uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_handles	*parent;
+	struct emsmdbp_object	*object;
+	void			*data = NULL;
+	uint32_t		handle;
+
+	DEBUG(4, ("exchange_emsmdb: [OXORULE] ModifyRules (0x41)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Ensure parent handle references a folder object */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	/* Initialize default ModifyRules reply */
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	mapi_handles_get_private_data(parent, &data);
+	object = (struct emsmdbp_object *) data;
+	if (!object || object->type != EMSMDBP_OBJECT_FOLDER) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+end:
+	*size += libmapiserver_RopModifyRules_size();
+
+	return MAPI_E_SUCCESS;
+}

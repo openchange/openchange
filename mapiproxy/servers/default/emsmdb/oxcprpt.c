@@ -872,6 +872,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 							    uint32_t *handles, uint16_t *size)
 {
 	int		i;
+	struct GUID *lpguid;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertyIdsFromNames (0x56)\n"));
 
@@ -888,12 +889,27 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_GetIDsFromNames.count = mapi_req->u.mapi_GetIDsFromNames.count;
 	mapi_repl->u.mapi_GetIDsFromNames.propID = talloc_array(mem_ctx, uint16_t, 
 								mapi_req->u.mapi_GetIDsFromNames.count);
-	
+
 	for (i = 0; i < mapi_req->u.mapi_GetIDsFromNames.count; i++) {
 		if (mapistore_namedprops_get_mapped_id(emsmdbp_ctx->mstore_ctx->nprops_ctx, 
 						       mapi_req->u.mapi_GetIDsFromNames.nameid[i],
 						       &mapi_repl->u.mapi_GetIDsFromNames.propID[i])
 		    != MAPISTORE_SUCCESS) {
+			lpguid = &mapi_req->u.mapi_GetIDsFromNames.nameid[i].lpguid;
+			DEBUG(5, ("  no mapping for property %.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x:",
+				  lpguid->time_low, lpguid->time_mid, lpguid->time_hi_and_version,
+				  lpguid->clock_seq[0], lpguid->clock_seq[1],
+				  lpguid->node[0], lpguid->node[1],
+				  lpguid->node[2], lpguid->node[3],
+				  lpguid->node[4], lpguid->node[5]));
+				  
+			if (mapi_req->u.mapi_GetIDsFromNames.nameid[i].ulKind == MNID_ID)
+				DEBUG(5, ("%.4x\n", mapi_req->u.mapi_GetIDsFromNames.nameid[i].kind.lid));
+			else if (mapi_req->u.mapi_GetIDsFromNames.nameid[i].ulKind == MNID_STRING)
+				DEBUG(5, ("%s\n", mapi_req->u.mapi_GetIDsFromNames.nameid[i].kind.lpwstr.Name));
+			else
+				DEBUG(5, ("[invalid ulKind]"));
+
 			mapi_repl->error_code = MAPI_W_ERRORS_RETURNED;
 		}
 	}

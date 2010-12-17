@@ -112,7 +112,8 @@ my	%oleguid = (
     "PS_PUBLIC_STRINGS"		=>	"00020329-0000-0000-c000-000000000046",
     "PS_INTERNET_HEADERS"	=>	"00020386-0000-0000-c000-000000000046",
     "PS_MAPI"			=>	"00020328-0000-0000-c000-000000000046",
-    "PSETID_Remote"             =>      "00062014-0000-0000-c000-000000000046"
+    "PSETID_Remote"             =>      "00062014-0000-0000-c000-000000000046",
+    "PS_UNKNOWN_0006200b_0000_0000_c000_000000000046" => "0006200b-0000-0000-c000-000000000046"
 );
 
 # main program
@@ -174,6 +175,12 @@ sub mapitags_header($)
 	$line =~ s/^\#+.*$//;
 	if ($line) {
 	    @prop = split(/\s+/, $line);
+	    if (!defined($prop[6])) {
+		print "prop6 not defined for line: $line\n";
+	    }
+	    elsif (!defined($oleguid{$prop[6]})) {
+		print "entry not defined for guid: $prop[6]\n";
+	    }
 	    $prop_type = hex $prop[0];
 	    $prop_type &= 0xFFFF;
 	    $prop_value = hex $prop[0];

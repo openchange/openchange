@@ -544,7 +544,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
-	handle = handles[mapi_repl->handle_idx];
+	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
@@ -620,7 +620,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
-	handle = handles[mapi_repl->handle_idx];
+	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;

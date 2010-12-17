@@ -622,7 +622,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 		handles[mapi_repl->handle_idx] = rec->handle;
 	}
 
-	*size = libmapiserver_RopOpenStream_size(mapi_repl);
+	*size += libmapiserver_RopOpenStream_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }
@@ -682,7 +682,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 
 	/* TODO effective work goes here */
 end:
-	*size = libmapiserver_RopReadStream_size(mapi_repl);
+	*size += libmapiserver_RopReadStream_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }
@@ -741,7 +741,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 
 	/* TODO effective work goes here */
 end:
-	*size = libmapiserver_RopWriteStream_size(mapi_repl);
+	*size += libmapiserver_RopWriteStream_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

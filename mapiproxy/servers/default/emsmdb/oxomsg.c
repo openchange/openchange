@@ -248,7 +248,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAddressTypes(TALLOC_CTX *mem_ctx,
 		mapi_repl->u.mapi_AddressTypes.transport[j].lppszA = talloc_asprintf(mem_ctx, "%s", addr_type);
 		mapi_repl->u.mapi_AddressTypes.size += (strlen(mapi_repl->u.mapi_AddressTypes.transport[j].lppszA) + 1);
 	}
-	*size = libmapiserver_RopGetAddressTypes_size(mapi_repl);
+	*size += libmapiserver_RopGetAddressTypes_size(mapi_repl);
 
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
@@ -296,7 +296,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOptionsData(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_OptionsData.HelpFileSize = 0x0000;
 	mapi_repl->u.mapi_OptionsData.HelpFile = talloc_array(mem_ctx, uint8_t, mapi_repl->u.mapi_OptionsData.HelpFileSize);
 
-	*size = libmapiserver_RopOptionsData_size(mapi_repl);
+	*size += libmapiserver_RopOptionsData_size(mapi_repl);
 
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
@@ -339,7 +339,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetTransportFolder(TALLOC_CTX *mem_ctx,
 	/* TODO: find the real FID */
 	mapi_repl->u.mapi_GetTransportFolder.FolderId = 0x12345678;
 
-	*size = libmapiserver_RopGetTransportFolder_size(mapi_repl);
+	*size += libmapiserver_RopGetTransportFolder_size(mapi_repl);
 
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 

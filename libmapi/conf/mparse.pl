@@ -1214,7 +1214,7 @@ sub mapistore_namedprops($)
 	    } elsif ($prop[5] eq "MNID_STRING" && $prop[7]) {
 		mparse sprintf "dn: CN=%s,CN=%s,CN=default", $prop[3], $oleguid{$prop[6]};
 		mparse sprintf "objectClass: %s", $prop[5];
-		mparse sprintf "cn: %s", $prop[2];
+		mparse sprintf "cn: %s", $prop[3];
 		mparse sprintf "canonical: %s", $prop[0];
 		mparse sprintf "oleguid: %s", $oleguid{$prop[6]};
 		mparse sprintf "mapped_id: %s", $prop[7];

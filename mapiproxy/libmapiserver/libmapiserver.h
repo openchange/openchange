@@ -387,6 +387,7 @@ uint16_t libmapiserver_RopOptionsData_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxorule.c */
 uint16_t libmapiserver_RopGetRulesTable_size(void);
+uint16_t libmapiserver_RopModifyRules_size(void);
 
 /* definitions from libmapiserver_oxcperm.c */
 uint16_t libmapiserver_RopGetPermissionsTable_size(struct EcDoRpc_MAPI_REPL *);

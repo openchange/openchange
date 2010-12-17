@@ -38,3 +38,16 @@ _PUBLIC_ uint16_t libmapiserver_RopGetRulesTable_size(void)
 
 	return size;
 }
+
+
+/**
+   \details Calculate ModifyRules Rop size
+
+   \return Size of ModifyRules response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopModifyRules_size(void)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	return size;
+}

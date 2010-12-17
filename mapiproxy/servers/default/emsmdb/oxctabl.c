@@ -651,8 +651,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 			retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
 							      table->ulType,
 							      MAPISTORE_LIVEFILTERED_QUERY,
-							      table->folderID, 
-							      table->properties[0],
+							      table->folderID,
+							      (table->ulType == MAPISTORE_MESSAGE_TABLE) ? PR_MID : PR_FID,
 							      table->numerator, &data);
 			if (retval == MAPI_E_INVALID_OBJECT) {
 				table->numerator++;
@@ -660,14 +660,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 			else {
 				data_pointers = talloc_array(mem_ctx, void *, table->prop_count);
 				retvals = talloc_array(mem_ctx, enum MAPISTATUS, table->prop_count);
-				data_pointers[0] = data;
-				retvals[0] = retval;
 
 				found = true;
 				flagged = 0;
 
 				/* Lookup for flagged property row */
-				for (j = 1; j < table->prop_count; j++) {
+				for (j = 0; j < table->prop_count; j++) {
 					retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
 									      table->ulType,
 									      MAPISTORE_LIVEFILTERED_QUERY,

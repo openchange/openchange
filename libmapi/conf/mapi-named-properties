@@ -466,7 +466,8 @@ PidNameWordCount                                       NULL                     
 NULL                                                   NULL                          0x0000 urn:schemas:contacts:fileas   PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS
 NULL                                                   NULL                          0x0000 urn:schemas:calendar:sequence PT_LONG       MNID_STRING PS_PUBLIC_STRINGS
 NULL                                                   NULL                          0x0000 urn:schemas:calendar:version  PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS
-
+NULL						       NULL			     0x0000 urn:schemas-microsoft-com:office:outlook#storetypeprivate PT_BOOLEAN MNID_STRING PS_PUBLIC_STRINGS 0x80e7
+NULL						       NULL			     0x0000 urn:schemas-microsoft-com:office:outlook#noaclui PT_BOOLEAN MNID_STRING PS_PUBLIC_STRINGS 0x80e9
 
 ### PS_INTERNET_HEADERS
 PidNameAcceptLanguage                                  AcceptLanguage                0x0000 Accept-Language               PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS

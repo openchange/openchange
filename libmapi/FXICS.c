@@ -24,7 +24,7 @@
 /**
    \file FXICS.c
 
-   \brief Incremental Change Synchronization operations
+   \brief Fast Transfer and Incremental Change Synchronization operations
  */
 
 
@@ -908,6 +908,150 @@ _PUBLIC_ enum MAPISTATUS FXPutBuffer(mapi_object_t *obj_dest_context, DATA_BLOB 
 	reply = &(mapi_response->mapi_repl->u.mapi_FastTransferDestinationPutBuffer);
 	*usedSize = reply->BufferUsedCount;
 	/* we could pull more stuff here, but it doesn't seem useful */
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Prepare a server for ICS download
+
+   This function is used to configure a server for ICS (Incremental Change Synchronization)
+   download. You use the synchronization context handle for other ICS and Fast Transfer
+   operations.
+
+   \param obj the target object for the upload (folder)
+   \param sync_type the type of synchronization that will be performed (just
+		    folder contents, or whole folder hierachy)
+   \param send_options flags that change the format of the transfer (see FXCopyMessages)
+   \param sync_flags flags that change the behavior of the transfer (see below)
+   \param sync_extraflags additional flags that change the behavior of the transfer (see below)
+   \param restriction a Restriction structure to limit downloads (only for sync_type ==
+   SynchronizationType_Content)
+   \param property_tags the properties to exclude (or include, if
+   SynchronizationFlag_OnlySpecifiedProperties flag is set) in the download
+   \param obj_sync_context the resulting synchronization context handle
+
+   \a sync_flags can be zero or more of the following:
+   - SynchronizationFlag_Unicode to use Unicode format (must match in send_options)
+   - SynchronizationFlag_NoDeletions - whether to download changes about message deletion
+   - SynchronizationFlag_IgnoreNoLongerInScope - whether to download changes for messages that have
+   gone out of scope.
+   - SynchronizationFlag_ReadState - server to download changes to read state
+   - SynchronizationFlag_FAI server to download changes to FAI messages
+   - SynchronizationFlag_Normal - server to download changes to normal messages
+   - SynchronizationFlag_OnlySpecifiedProperties - set means to include only properties
+   that are listed in property_tags, not-set means to exclude properties that are listed
+   in property_tags
+   - SynchronizationFlag_NoForeignIdentifiers - ignore persisted values (usually want this set)
+   - SynchronizationFlag_BestBody - format for outputting message bodies (set means original format,
+   not-set means output in RTF)
+   - SynchronizationFlag_IgnoreSpecifiedOnFAI - ignore property_tags restrictions for FAI messages
+   - SynchronizationFlag_Progress - whether to output progress information.
+
+   \note SynchronizationFlag_IgnoreNoLongerInScope, SynchronizationFlag_ReadState,
+   SynchronizationFlag_FAI, SynchronizationFlag_Normal, SynchronizationFlag_OnlySpecifiedProperties,
+   SynchronizationFlag_BestBody and SynchronizationFlag_IgnoreSpecifiedOnFAI are only
+   valid if the synchronization type is SynchronizationType_Content.
+
+   \a sync_extraflags can be zero or more of the following:
+   - SynchronizationExtraFlag_Eid - whether the server includes the PR_FID / PR_MID in the download
+   - SynchronizationExtraFlag_MessageSize - whether the server includes the PR_MESSAGE_SIZE property
+   in the download (only for sync_type == SynchronizationType_Content)
+   - SynchronizationExtraFlag_Cn - whether the server includes the PR_CHANGE_NUM property in the
+   download.
+   - SynchronizationExtraFlag_OrderByDeliveryTime - whether the server sends messages sorted by
+   delivery time (only for sync_type == SynchronizationType_Content)
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+     invalid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+ */
+_PUBLIC_ enum MAPISTATUS ICSSyncConfigure(mapi_object_t *obj, enum SynchronizationType sync_type,
+					  uint8_t send_options, uint16_t sync_flags,
+					  uint32_t sync_extraflags, DATA_BLOB restriction,
+					  struct SPropTagArray *property_tags,
+					  mapi_object_t *obj_sync_context)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SyncConfigure_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	uint8_t 			logon_id = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_sync_context, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
+	mem_ctx = talloc_named(NULL, 0, "RopSynchronizationConfigure");
+	size = 0;
+
+	/* Fill the SyncConfigure operation */
+	request.handle_idx = 0x01;
+	size += sizeof(uint8_t);
+	request.SynchronizationType = sync_type;
+	size += sizeof(uint8_t);
+	request.SendOptions = send_options;
+	size += sizeof(uint8_t);
+	request.SynchronizationFlags = sync_flags;
+	size += sizeof(uint16_t);
+	request.RestrictionSize = restriction.length;
+	size += sizeof(uint16_t);
+	request.RestrictionData = restriction;
+	size += request.RestrictionSize; /* for the RestrictionData BLOB */
+	request.SynchronizationExtraFlags = sync_extraflags;
+	size += sizeof(uint32_t);
+	request.PropertyTags.cValues = property_tags->cValues;
+	size += sizeof(uint16_t);
+	request.PropertyTags.aulPropTag = property_tags->aulPropTag;
+	size += property_tags->cValues * sizeof(enum MAPITAGS);
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SyncConfigure;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SyncConfigure = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = mapi_object_get_handle(obj);
+	mapi_request->handles[1] = 0xFFFFFFFF;
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Set object session and handle */
+	mapi_object_set_session(obj_sync_context, session);
+	mapi_object_set_handle(obj_sync_context, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_sync_context, logon_id);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

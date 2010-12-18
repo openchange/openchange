@@ -3272,27 +3272,19 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x70 */
 	typedef [enum8bit] enum {
-		Contents	= 0x1,
-		Hierarchy	= 0x2
+		SynchronizationType_Contents	= 0x1,
+		SynchronizationType_Hierarchy	= 0x2
 	} SynchronizationType;
 
-	typedef [bitmap8bit] bitmap {
-		SendOptions_Unicode		= 0x1,
-		SendOptions_ForUpload		= 0x3,
-		SendOptions_RecoverMode		= 0x4,
-		SendOptions_ForceUnicode	= 0x8,
-		SendOptions_Partial		= 0x10
-	} SendOptions;
-
 	typedef [bitmap16bit] bitmap {
-		SynchronizationFlag_Unicode			= 0x1,
-		SynchronizationFlag_NoDeletions			= 0x2,
-		SynchronizationFlag_NoSoftDeletions		= 0x4,
-	       	SynchronizationFlag_ReadState			= 0x8,
-	       	SynchronizationFlag_FAI				= 0x10,
-	       	SynchronizationFlag_Normal			= 0x20,
-	       	SynchronizationFlag_OnlySpecifiedProperties	= 0x80,
-	       	SynchronizationFlag_NoForeignIdentifiers	= 0x100,
+		SynchronizationFlag_Unicode			= 0x0001,
+		SynchronizationFlag_NoDeletions			= 0x0002,
+		SynchronizationFlag_IgnoreNoLongerInScope	= 0x0004,
+	       	SynchronizationFlag_ReadState			= 0x0008,
+	       	SynchronizationFlag_FAI				= 0x0010,
+	       	SynchronizationFlag_Normal			= 0x0020,
+	       	SynchronizationFlag_OnlySpecifiedProperties	= 0x0080,
+	       	SynchronizationFlag_NoForeignIdentifiers	= 0x0100,
 	       	SynchronizationFlag_Reserved			= 0x1000,
 	       	SynchronizationFlag_BestBody			= 0x2000,
 	       	SynchronizationFlag_IgnoreSpecifiedOnFAI	= 0x4000,
@@ -3300,17 +3292,17 @@ System Attendant Private Interface
 	} SynchronizationFlag;
 
 	typedef [bitmap32bit] bitmap {
-		Eid			= 0x00000001,
-		MessageSize		= 0x00000002,
-		Cn			= 0x00000004,
-	        OrderByDeliveryTime	= 0x00000008
+		SynchronizationExtraFlag_Eid			= 0x00000001,
+		SynchronizationExtraFlag_MessageSize		= 0x00000002,
+		SynchronizationExtraFlag_Cn			= 0x00000004,
+	        SynchronizationExtraFlag_OrderByDeliveryTime	= 0x00000008
 	} SynchronizationExtraFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8					handle_idx;
 		SynchronizationType			SynchronizationType;
-		SendOptions				SendOptions;
-		SynchronizationFlag			SynchronizationFlag;
+		FastCopySendOptions			SendOptions;
+		SynchronizationFlag			SynchronizationFlags;
 		uint16					RestrictionSize;
  		[subcontext(0),subcontext_size(RestrictionSize),flag(NDR_REMAINING)] DATA_BLOB	RestrictionData;
 		SynchronizationExtraFlags		SynchronizationExtraFlags;

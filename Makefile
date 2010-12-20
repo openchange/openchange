@@ -817,7 +817,8 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$
 ################
 LIBMAPISTORE_SO_VERSION = 0
 
-libmapistore: 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
+		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 		setup/mapistore/mapistore_namedprops.ldif		\
 		$(OC_MAPISTORE)						\
 		$(MAPISTORE_TEST)
@@ -833,6 +834,7 @@ libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -d $(DESTDIR)$(includedir)/mapistore
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore.h $(DESTDIR)$(includedir)/mapistore/
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore_errors.h $(DESTDIR)$(includedir)/mapistore/
+	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore_nameid.h $(DESTDIR)$(includedir)/mapistore/
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver.pc $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/mapistore
 	$(INSTALL) -m 0644 setup/mapistore/*.ldif $(DESTDIR)$(datadir)/setup/mapistore/
@@ -844,6 +846,7 @@ libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 	rm -f setup/mapistore/mapistore_namedprops.ldif
+	rm -f mapiproxy/libmapistore/mapistore_nameid.h
 
 libmapistore-uninstall:	$(OC_MAPISTORE_UNINSTALL)
 	rm -f $(DESTDIR)$(libdir)/libmapistore.*

@@ -19,6 +19,7 @@
  */
 
 #include "libmapi/libmapi.h"
+#include "libmapi/mapi_nameid.h"
 #include "libmapi/libmapi_private.h"
 
 

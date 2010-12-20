@@ -21,6 +21,7 @@
 #define	__OCPF_API_H_
 
 #include "libmapi/libmapi.h"
+#include "libmapi/mapi_nameid.h"
 
 struct ocpf_var
 {

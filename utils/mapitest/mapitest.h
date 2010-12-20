@@ -23,6 +23,7 @@
 #define	__MAPITEST_H__
 
 #include "libmapi/libmapi.h"
+#include "libmapi/mapi_nameid.h"
 
 #include <errno.h>
 #include <err.h>

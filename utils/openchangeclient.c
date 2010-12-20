@@ -21,6 +21,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include "libmapi/mapi_nameid.h"
 #include "libocpf/ocpf.h"
 #include <samba/popt.h>
 #include <param.h>

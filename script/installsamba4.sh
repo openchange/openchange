@@ -250,7 +250,7 @@ packages() {
 	pushd samba4/$lib
 	error_check $? "$lib setup"
 
-	./autogen-waf.sh
+	./autogen.sh
 	error_check $? "$lib autogen"
 	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
 	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE

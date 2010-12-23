@@ -193,6 +193,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		break;
 	case true:
 		/* mapistore implementation goes here */
+		memset (&msg, 0, sizeof (msg));
 		if (mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID,
 					  folderID, messageID, &msg) == 0) {
 			/* Build the OpenMessage reply */
@@ -208,27 +209,33 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_EMPTY;
 			}
 
-			mapi_repl->u.mapi_OpenMessage.RecipientCount = msg.recipients->cRows;
 			SPropTagArray = set_SPropTagArray(mem_ctx, 0x4,
 							  PR_DISPLAY_TYPE,
 							  PR_OBJECT_TYPE,
 							  PR_7BIT_DISPLAY_NAME_UNICODE,
 							  PR_SMTP_ADDRESS_UNICODE);
 			mapi_repl->u.mapi_OpenMessage.RecipientColumns.cValues = SPropTagArray->cValues;
-			mapi_repl->u.mapi_OpenMessage.RecipientColumns.aulPropTag = SPropTagArray->aulPropTag;
-			mapi_repl->u.mapi_OpenMessage.RowCount = msg.recipients->cRows;
-			mapi_repl->u.mapi_OpenMessage.recipients = talloc_array(mem_ctx, 
-										struct OpenMessage_recipients, 
-										msg.recipients->cRows + 1);
-			for (i = 0; i < msg.recipients->cRows; i++) {
-				mapi_repl->u.mapi_OpenMessage.recipients[i].RecipClass = msg.recipients->aRow[i].lpProps[0].value.l;
-				mapi_repl->u.mapi_OpenMessage.recipients[i].codepage = CP_USASCII;
-				mapi_repl->u.mapi_OpenMessage.recipients[i].Reserved = 0;
-				emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx, 
-							  (char *)msg.recipients->aRow[i].lpProps[1].value.lpszA,
-							  &(mapi_repl->u.mapi_OpenMessage.RecipientColumns),
-							  &(mapi_repl->u.mapi_OpenMessage.recipients[i].RecipientRow));
+			mapi_repl->u.mapi_OpenMessage.RecipientColumns.aulPropTag
+							  = SPropTagArray->aulPropTag;
+			if (msg.recipients) {
+				mapi_repl->u.mapi_OpenMessage.RecipientCount = msg.recipients->cRows;
+				mapi_repl->u.mapi_OpenMessage.recipients = talloc_array(mem_ctx, 
+											struct OpenMessage_recipients, 
+											msg.recipients->cRows + 1);
+				for (i = 0; i < msg.recipients->cRows; i++) {
+					mapi_repl->u.mapi_OpenMessage.recipients[i].RecipClass = msg.recipients->aRow[i].lpProps[0].value.l;
+					mapi_repl->u.mapi_OpenMessage.recipients[i].codepage = CP_USASCII;
+					mapi_repl->u.mapi_OpenMessage.recipients[i].Reserved = 0;
+					emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx, 
+								  (char *)msg.recipients->aRow[i].lpProps[1].value.lpszA,
+								  &(mapi_repl->u.mapi_OpenMessage.RecipientColumns),
+								  &(mapi_repl->u.mapi_OpenMessage.recipients[i].RecipientRow));
+				}
 			}
+			else {
+				mapi_repl->u.mapi_OpenMessage.RecipientCount = 0;
+			}
+			mapi_repl->u.mapi_OpenMessage.RowCount = mapi_repl->u.mapi_OpenMessage.RecipientCount;
 		}
 		else {
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
@@ -314,7 +321,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	folder_handle = emsmdbp_object_get_folder_handle_by_fid(emsmdbp_ctx->handles_ctx, folderID);
 	if (folder_handle) {
-		DEBUG(0, ("folder_handle found, everything ok\n"));
+		DEBUG(5, ("  folder_handle found, everything ok\n"));
 
 		/* CreateMessage can only be called for a mailbox/folder object */
 		mapi_handles_get_private_data(folder_handle, &data);
@@ -325,7 +332,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		}
 	}
 	else {
-		DEBUG(0, ("folder_handle NOT found, must instantiate one\n"));
+		DEBUG(5, ("  folder_handle NOT found, instantiating one... "));
 
 		handle = handles[mapi_req->handle_idx];
 		retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &context_handle);
@@ -335,10 +342,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		object = emsmdbp_object_folder_init(emsmdbp_ctx, emsmdbp_ctx, folderID,
 						    context_handle);
 		if (object) {
+			DEBUG(5, ("  success\n"));
 			retval = mapi_handles_set_private_data(folder_handle, object);
 			handles[mapi_repl->handle_idx] = folder_handle->handle;
 		}
 		else {
+			DEBUG(5, ("  failure, returning MAPI_E_NOT_FOUND\n"));
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			goto end;
 		}
@@ -356,6 +365,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		}
 		mapi_repl->u.mapi_CreateMessage.HasMessageId = 1;
 		mapi_repl->u.mapi_CreateMessage.MessageId.MessageId = messageID;
+
 		mapistore_createmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID);
 
 		/* Set default properties for message: MS-OXCMSG 3.2.5.2 */

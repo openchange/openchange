@@ -98,7 +98,7 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 			DLIST_ADD(mapistore->parent_fids, element);
 		} else {
 			mapistore_createmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					        mapistore->parent_fids->fid, mapistore->current_id);
+					        mapistore->parent_fids->fid, mapistore->current_id, false);
 			mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id,
 					   mapistore->current_id, mapistore->current_output_type,
 					   mapistore->proplist);

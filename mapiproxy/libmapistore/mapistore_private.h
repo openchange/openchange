@@ -163,7 +163,7 @@ int mapistore_backend_readdir_count(struct backend_context *, uint64_t, uint8_t,
 int mapistore_backend_rmdir(struct backend_context *, uint64_t, uint64_t);
 int mapistore_backend_get_table_property(struct backend_context *, uint64_t, uint8_t, enum table_query_type, uint32_t, uint32_t, void **);
 int mapistore_backend_openmessage(struct backend_context *, uint64_t, uint64_t, struct mapistore_message *);
-int mapistore_backend_createmessage(struct backend_context *, uint64_t, uint64_t);
+int mapistore_backend_createmessage(struct backend_context *, uint64_t, uint64_t, uint8_t);
 int mapistore_backend_savechangesmessage(struct backend_context *, uint64_t, uint8_t);
 int mapistore_backend_submitmessage(struct backend_context *, uint64_t, uint8_t);
 int mapistore_backend_getprops(struct backend_context *, uint64_t, uint8_t, 

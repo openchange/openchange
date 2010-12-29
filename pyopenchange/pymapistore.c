@@ -265,7 +265,7 @@ static PyObject *py_MAPIStore_get_folder_count(PyMAPIStoreObject *self, PyObject
 		break;
 	case MAPISTORE_MESSAGE:
 		mapistore_get_message_count(self->mstore_ctx, context_id, 
-					    fid, &RowCount);
+					    fid, MAPISTORE_MESSAGE_TABLE, &RowCount);
 		break;
 	default:
 		RowCount = 0;

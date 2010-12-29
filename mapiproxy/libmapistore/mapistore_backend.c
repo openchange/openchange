@@ -486,9 +486,9 @@ int mapistore_backend_openmessage(struct backend_context *bctx, uint64_t parent_
 }
 
 
-int mapistore_backend_createmessage(struct backend_context *bctx, uint64_t parent_fid, uint64_t mid)
+int mapistore_backend_createmessage(struct backend_context *bctx, uint64_t parent_fid, uint64_t mid, uint8_t associated)
 {
-	return bctx->backend->op_createmessage(bctx->private_data, parent_fid, mid);
+	return bctx->backend->op_createmessage(bctx->private_data, parent_fid, mid, associated);
 }
 
 

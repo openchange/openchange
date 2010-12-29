@@ -53,6 +53,8 @@ typedef	int (*init_backend_fn) (void);
 
 #define	MAPISTORE_FOLDER_TABLE	1
 #define	MAPISTORE_MESSAGE_TABLE	2
+#define	MAPISTORE_FAI_TABLE	3
+#define	MAPISTORE_RULE_TABLE	4
 
 #define MAPISTORE_FOLDER	1
 #define	MAPISTORE_MESSAGE	2
@@ -94,7 +96,7 @@ struct mapistore_backend {
 	int (*op_get_table_property)(void *, uint64_t, uint8_t, enum table_query_type, uint32_t, uint32_t, void **);
 	/* message semantics */
 	int (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
-	int (*op_createmessage)(void *, uint64_t, uint64_t);
+	int (*op_createmessage)(void *, uint64_t, uint64_t, uint8_t);
 	int (*op_savechangesmessage)(void *, uint64_t, uint8_t);
 	int (*op_submitmessage)(void *, uint64_t, uint8_t);
 	int (*op_getprops)(void *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
@@ -163,10 +165,10 @@ int mapistore_closedir(struct mapistore_context *mstore_ctx, uint32_t, uint64_t)
 int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct SRow *);
 int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
-int mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
+int mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint8_t, uint32_t *);
 int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, enum table_query_type, uint64_t, uint32_t, uint32_t, void **);
 int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
-int mapistore_createmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
+int mapistore_createmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 int mapistore_savechangesmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_submitmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_getprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);

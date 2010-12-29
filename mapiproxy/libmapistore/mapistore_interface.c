@@ -284,7 +284,7 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
    \param fmid a folder or message identifier
-   \param type the type of fmid, either MAPISTORE_FOLDER or MAPISTORE_MESSAGE
+   \param type the type of fmid: MAPISTORE_FOLDER_TABLE, MAPISTORE_MESSAGE_TABLE, ....
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
@@ -606,6 +606,7 @@ _PUBLIC_ int mapistore_get_folder_count(struct mapistore_context *mstore_ctx,
 _PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
 					 uint32_t context_id,
 					 uint64_t fid,
+					 uint8_t table_type,
 					 uint32_t *RowCount)
 {
 	struct backend_context		*backend_ctx;
@@ -619,7 +620,7 @@ _PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend readdir_count */
-	ret = mapistore_backend_readdir_count(backend_ctx, fid, MAPISTORE_MESSAGE_TABLE, RowCount);
+	ret = mapistore_backend_readdir_count(backend_ctx, fid, table_type, RowCount);
 
 	return ret;
 }
@@ -630,7 +631,7 @@ _PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
 
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
-   \param table_type the type of table (folders or messges)
+   \param table_type the type of table (folders, messages, ...)
    \param fid the folder identifier where the search takes place
    \param proptag the MAPI property tag to retrieve value for
    \param pos the record position in search results
@@ -714,7 +715,8 @@ _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx,
 _PUBLIC_ int mapistore_createmessage(struct mapistore_context *mstore_ctx,
 				     uint32_t context_id,
 				     uint64_t parent_fid,
-				     uint64_t mid)
+				     uint64_t mid,
+				     uint8_t associated)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -727,7 +729,7 @@ _PUBLIC_ int mapistore_createmessage(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	
 	/* Step 2. Call backend createmessage */
-	ret = mapistore_backend_createmessage(backend_ctx, parent_fid, mid);
+	ret = mapistore_backend_createmessage(backend_ctx, parent_fid, mid, associated);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
@@ -945,7 +947,7 @@ _PUBLIC_ int mapistore_set_property_from_fd(struct mapistore_context *mstore_ctx
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend where the message to be located is stored
    \param fmid a folder or message identifier
-   \param type the type of fmid, either MAPISTORE_FOLDER or MAPISTORE_MESSAGE
+   \param type the type of fmid: MAPISTORE_FOLDER_TABLE, MAPISTORE_MESSAGE_TABLE, ....
    \param property the property tag
    \param fd the fd of the file object containing the attribute value
 

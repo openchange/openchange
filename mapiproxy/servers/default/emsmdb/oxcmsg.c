@@ -366,7 +366,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		mapi_repl->u.mapi_CreateMessage.HasMessageId = 1;
 		mapi_repl->u.mapi_CreateMessage.MessageId.MessageId = messageID;
 
-		mapistore_createmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID);
+		mapistore_createmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag);
 
 		/* Set default properties for message: MS-OXCMSG 3.2.5.2 */
 		aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
@@ -401,7 +401,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
 
 		/* TODO: some required properties are not set: PidTagSearchKey, PidTagCreatorName, ... */
-
 		mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, messageID, MAPISTORE_MESSAGE, &aRow);
 	}
 	else {

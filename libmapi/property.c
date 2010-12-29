@@ -236,9 +236,11 @@ _PUBLIC_ const void *find_SPropValue_data(struct SRow *aRow, uint32_t mapitag)
 {
 	uint32_t i;
 
-	for (i = 0; i < aRow->cValues; i++) {
-		if (aRow->lpProps[i].ulPropTag == mapitag) {
-			return get_SPropValue_data(&(aRow->lpProps[i]));
+	if (aRow) {
+		for (i = 0; i < aRow->cValues; i++) {
+			if (aRow->lpProps[i].ulPropTag == mapitag) {
+				return get_SPropValue_data(&(aRow->lpProps[i]));
+			}
 		}
 	}
 	return NULL;

@@ -23,6 +23,7 @@
 #define	__EXCHANGE2ICAL_H_
 
 #include "libmapi/libmapi.h"
+#include "libmapi/mapi_nameid.h"
 #include <gen_ndr/ndr_property.h>
 #include "utils/openchange-tools.h"
 

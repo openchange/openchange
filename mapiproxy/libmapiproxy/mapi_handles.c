@@ -464,7 +464,8 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_delete(struct mapi_handles_context *handle
 	OPENCHANGE_RETVAL_IF(!handles_ctx->tdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(handle == MAPI_HANDLES_RESERVED, MAPI_E_INVALID_PARAMETER, NULL);
 
-	DEBUG(4, ("[%s:%d]: Deleting MAPI handle 0x%x\n", __FUNCTION__, __LINE__, handle));
+	DEBUG(4, ("[%s:%d]: Deleting MAPI handle 0x%x (handles_ctx: %p, tdb_ctx: %p)\n", __FUNCTION__, __LINE__,
+		  handle, handles_ctx, handles_ctx->tdb_ctx));
 
 	mem_ctx = talloc_named(NULL, 0, "mapi_handles_delete");
 

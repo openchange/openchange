@@ -238,6 +238,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 			mapi_repl->u.mapi_OpenMessage.RowCount = mapi_repl->u.mapi_OpenMessage.RecipientCount;
 		}
 		else {
+			DEBUG(5, ("  failure opening %llx/%llx\n",\
+				  (long long unsigned int) folderID,
+				  (long long unsigned int) messageID));
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			goto end;
 		}

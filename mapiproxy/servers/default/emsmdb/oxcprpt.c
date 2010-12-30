@@ -507,13 +507,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 			aRow.cValues = mapi_req->u.mapi_SetProps.values.cValues;
 			aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, aRow.cValues + 2);
 			for (i = 0; i < mapi_req->u.mapi_SetProps.values.cValues; i++) {
-			  cast_SPropValue(aRow.lpProps, &(mapi_req->u.mapi_SetProps.values.lpProps[i]),
-					  &(aRow.lpProps[i]));
+				cast_SPropValue(aRow.lpProps, &(mapi_req->u.mapi_SetProps.values.lpProps[i]),
+						&(aRow.lpProps[i]));
 			}
 
 			mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, messageID, 
 					   MAPISTORE_MESSAGE, &aRow);
-		} 
+		}
+		else {
+			DEBUG(5, ("  object type %d not implemented\n", object->type));
+		}
 		break;
 	}
 	

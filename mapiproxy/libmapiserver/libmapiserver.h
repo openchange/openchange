@@ -390,6 +390,7 @@ uint16_t libmapiserver_RopQueryRows_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopQueryPosition_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSeekRow_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopFindRow_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopResetTable_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxomsg.c */
 uint16_t libmapiserver_RopSubmitMessage_size(struct EcDoRpc_MAPI_REPL *);

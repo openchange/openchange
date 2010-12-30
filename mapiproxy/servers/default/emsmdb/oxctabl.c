@@ -863,3 +863,104 @@ end:
 
 	return MAPI_E_SUCCESS;
 }
+
+/**
+   \details EcDoRpc ResetTable (0x81) Rop. This operation resets the
+   table as follows:
+     - Removes the existing column set, restriction, and sort order (ignored) from the table.
+     - Invalidates bookmarks. (ignored)
+     - Resets the cursor to the beginning of the table.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the SetColumns EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the SetColumns EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
+					       struct emsmdbp_context *emsmdbp_ctx,
+					       struct EcDoRpc_MAPI_REQ *mapi_req,
+					       struct EcDoRpc_MAPI_REPL *mapi_repl,
+					       uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*parent;
+	struct emsmdbp_object		*object;
+	struct emsmdbp_object_table	*table;
+	void				*data;
+	uint32_t			handle;
+	uint8_t				status; /* ignored */
+
+	DEBUG(4, ("exchange_emsmdb: [OXCTABL] ResetTable (0x81)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	/* Initialize default empty ResetTable reply */
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	*size += libmapiserver_RopResetTable_size(mapi_repl);
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+
+	object = (struct emsmdbp_object *) data;
+	/* Ensure referring object exists and is a table */
+	if (!object || (object->type != EMSMDBP_OBJECT_TABLE)) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  missing object or not table\n"));
+		goto end;
+	}
+
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	table = object->object.table;
+	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
+		DEBUG(5, ("  query on rules table are all faked right now\n"));
+	}
+	else {
+		/* 1.1. removes the existing column set */
+		if (table->properties) {
+			talloc_free(table->properties);
+			table->properties = NULL;
+			table->prop_count = 0;
+		}
+
+		/* 1.2. empty restrictions */
+		if (table->mapistore) {
+			retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID, 
+							    table->folderID, table->ulType, NULL, &status);
+		} else {
+			DEBUG(0, ("  mapistore Restrict: Not implemented yet\n"));
+			goto end;
+		}
+
+		/* 3. reset the cursor to the beginning of the table. */
+		table->numerator = 0;
+	}
+
+end:
+
+	return MAPI_E_SUCCESS;
+}

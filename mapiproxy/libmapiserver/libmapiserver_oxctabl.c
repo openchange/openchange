@@ -181,3 +181,16 @@ _PUBLIC_ uint16_t libmapiserver_RopFindRow_size(struct EcDoRpc_MAPI_REPL *respon
 
 	return size;
 }
+
+/**
+   \details Calculate ResetTable (0x81) Rop size
+
+   \param response pointer to the ResetTable EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of ResetTable response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopResetTable_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}

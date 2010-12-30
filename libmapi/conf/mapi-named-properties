@@ -293,6 +293,8 @@ PidLidNonSendBccTrackStatus                            NonSendBccTrackStatus    
 PidLidCurrentVersion                                   CurrentVersion                	    0x8552 NULL                   PT_LONG       MNID_ID     PSETID_Common	   0x919d
 PidLidCurrentVersionName                               CurrentVersionName            	    0x8554 NULL                   PT_UNICODE    MNID_ID     PSETID_Common	   0x919e
 PidLidReminderSignalTime                               ReminderNextTime              	    0x8560 NULL                   PT_SYSTIME    MNID_ID     PSETID_Common	   0x91eb
+PidLidImapDeleted                                      ImapDeleted                          0x8570 NULL                   PT_LONG       MNID_ID     PSETID_Common          0x94e5
+PidLidHeaderItem                                       HeaderItem                           0x8578 NULL                   PT_LONG       MNID_ID     PSETID_Common          0x94e6
 PidLidInternetAccountName                              InetAcctName                  	    0x8580 NULL                   PT_UNICODE    MNID_ID     PSETID_Common	   0x9225
 PidLidInternetAccountStamp                             InetAcctStamp                 	    0x8581 NULL                   PT_UNICODE    MNID_ID     PSETID_Common	   0x9226
 PidLidUseTnef                                          UseTNEF                       	    0x8582 NULL                   PT_BOOLEAN    MNID_ID     PSETID_Common	   0x9227
@@ -531,6 +533,10 @@ PidNameInstantMessagingAddress3			       NULL			     0x0000 IMAddress3			  PT_UN
 ### PSETID_Messaging
 PidNameOriginalSpamConfidenceLevel                     NULL                          0x0000 OriginalScl                   PT_LONG       MNID_STRING PSETID_Messaging
 
+### PSETID_Remote
+PidLidRemoteTransferSize                               RemoteTransferSize            0x8f05 NULL                          PT_LONG       MNID_ID     PSETID_Remote               0x94f6
+PidLidRemoteAttachment                                 RemoteAttachment              0x8f07 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Remote               0x94f7
+
 ### generated via append-prop.py
 PidLidUnknownProperty8550	LID_UNKNOWN_PROPERTY_8550	0x8550	NULL	PT_LONG		MNID_ID	PSETID_Common	0x94db
 PidLidUnknownProperty8551	LID_UNKNOWN_PROPERTY_8551	0x8551	NULL	PT_LONG		MNID_ID	PSETID_Common	0x94dc
@@ -540,8 +546,6 @@ PidLidUnknownProperty851b	LID_UNKNOWN_PROPERTY_851b	0x851b	NULL	PT_BINARY	MNID_I
 PidLidUnknownProperty8513	LID_UNKNOWN_PROPERTY_8513	0x8513	NULL	PT_BINARY	MNID_ID	PSETID_Common	0x94e1
 PidLidUnknownProperty8540	LID_UNKNOWN_PROPERTY_8540	0x8540	NULL	PT_BINARY	MNID_ID	PSETID_Common	0x94e2
 PidLidUnknownProperty8549	LID_UNKNOWN_PROPERTY_8549	0x8549	NULL	PT_SYSTIME	MNID_ID	PSETID_Common	0x94e4
-PidLidUnknownProperty8570	LID_UNKNOWN_PROPERTY_8570	0x8570	NULL	PT_LONG		MNID_ID	PSETID_Common	0x94e5
-PidLidUnknownProperty8578	LID_UNKNOWN_PROPERTY_8578	0x8578	NULL	PT_LONG		MNID_ID	PSETID_Common	0x94e6
 PidLidUnknownProperty8583	LID_UNKNOWN_PROPERTY_8583	0x8583	NULL	PT_UNICODE	MNID_ID	PSETID_Common	0x94e7
 PidLidUnknownProperty858c	LID_UNKNOWN_PROPERTY_858c	0x858c	NULL	PT_BOOLEAN	MNID_ID	PSETID_Common	0x94e8
 PidLidUnknownProperty858e	LID_UNKNOWN_PROPERTY_858e	0x858e	NULL	PT_UNICODE	MNID_ID	PSETID_Common	0x94e9
@@ -557,8 +561,6 @@ PidLidUnknownProperty859b	LID_UNKNOWN_PROPERTY_859b	0x859b	NULL	PT_BOOLEAN	MNID_
 PidLidUnknownProperty8808	LID_UNKNOWN_PROPERTY_8808	0x8808	NULL	PT_BOOLEAN	MNID_ID	PS_UNKNOWN_0006200b_0000_0000_c000_000000000046	0x94f3
 PidLidUnknownProperty8809	LID_UNKNOWN_PROPERTY_8809	0x8809	NULL	PT_LONG		MNID_ID	PS_UNKNOWN_0006200b_0000_0000_c000_000000000046	0x94f4
 PidLidUnknownProperty858d	LID_UNKNOWN_PROPERTY_858d	0x858d	NULL	PT_UNICODE	MNID_ID	PSETID_Common	0x94f5
-PidLidUnknownProperty8f05	LID_UNKNOWN_PROPERTY_8f05	0x8f05	NULL	PT_LONG		MNID_ID	PSETID_Remote	0x94f6
-PidLidUnknownProperty8f07	LID_UNKNOWN_PROPERTY_8f07	0x8f07	NULL	PT_BOOLEAN	MNID_ID	PSETID_Remote	0x94f7
 
 PidLidUnknownProperty850f	LID_UNKNOWN_PROPERTY_850f	0x850f	NULL	PT_NULL		MNID_ID	PSETID_Common	0x94df
 PidLidUnknownProperty8541	LID_UNKNOWN_PROPERTY_8541	0x8541	NULL	PT_NULL		MNID_ID	PSETID_Common	0x94e3

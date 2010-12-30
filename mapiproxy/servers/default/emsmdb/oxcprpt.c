@@ -459,7 +459,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 	void			*private_data = NULL;
 	bool			mapistore = false;
 	struct emsmdbp_object	*object;
-	uint64_t		messageID;
+	uint64_t		fmid;
 	uint32_t		contextID;
 	uint16_t		i;
 	struct SRow		aRow;
@@ -500,19 +500,24 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("SetProps on openchangedb not implemented yet\n"));
 		break;
 	case true:
+		aRow.cValues = mapi_req->u.mapi_SetProps.values.cValues;
+		aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, aRow.cValues + 2);
+		for (i = 0; i < mapi_req->u.mapi_SetProps.values.cValues; i++) {
+			cast_SPropValue(aRow.lpProps, &(mapi_req->u.mapi_SetProps.values.lpProps[i]),
+					&(aRow.lpProps[i]));
+		}
+
 		if (object->type == EMSMDBP_OBJECT_MESSAGE) {
-			messageID = object->object.message->messageID;
+			fmid = object->object.message->messageID;
 			contextID = object->object.message->contextID;
-
-			aRow.cValues = mapi_req->u.mapi_SetProps.values.cValues;
-			aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, aRow.cValues + 2);
-			for (i = 0; i < mapi_req->u.mapi_SetProps.values.cValues; i++) {
-				cast_SPropValue(aRow.lpProps, &(mapi_req->u.mapi_SetProps.values.lpProps[i]),
-						&(aRow.lpProps[i]));
-			}
-
-			mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, messageID, 
+			mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, 
 					   MAPISTORE_MESSAGE, &aRow);
+		}
+		else if (object->type == EMSMDBP_OBJECT_FOLDER) {
+			fmid = object->object.folder->folderID;
+			contextID = object->object.folder->contextID;
+			mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, 
+					   MAPISTORE_FOLDER, &aRow);
 		}
 		else {
 			DEBUG(5, ("  object type %d not implemented\n", object->type));

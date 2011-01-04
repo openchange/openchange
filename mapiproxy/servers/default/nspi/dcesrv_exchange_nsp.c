@@ -119,7 +119,7 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	r->out.result = MAPI_E_SUCCESS;
 
 	/* Search for an existing session and increment ref_count, otherwise create it */
-	for (session = nsp_session; session; session = session->next) {
+	for (session = nsp_session; !found && session; session = session->next) {
 		if ((mpm_session_cmp(session->session, dce_call) == true)) {
 			mpm_session_increment_ref_count(session->session);
 			found = true;
@@ -135,6 +135,8 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 		DEBUG(0, ("Creating new session\n"));
 		session->session = mpm_session_init((TALLOC_CTX *)nsp_session, dce_call);
 		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
+
+		DEBUG(0, ("  session is %p\n", session->session));
 
 		mpm_session_set_private_data(session->session, (void *) emsabp_ctx);
 		mpm_session_set_destructor(session->session, emsabp_destructor);
@@ -160,7 +162,7 @@ static enum MAPISTATUS dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 {
 	struct dcesrv_handle		*h;
 	struct exchange_nsp_session	*session;
-	bool				ret;
+	bool				ret, found;
 
 	DEBUG(5, ("exchange_nsp: NspiUnbind (0x1)\n"));
 
@@ -173,8 +175,10 @@ static enum MAPISTATUS dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 	/* Step 1. Retrieve handle and free if emsabp context and session are available */
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
 	if (h) {
-		for (session = nsp_session; session; session = session->next) {
-			if ((mpm_session_cmp(session->session, dce_call) == true)) {
+		found = false;
+		for (session = nsp_session; !found && session; session = session->next) {
+			found = mpm_session_cmp(session->session, dce_call);
+			if (found) {
 				ret = mpm_session_release(session->session);
 				if (ret == true) {
 					DLIST_REMOVE(nsp_session, session);
@@ -242,7 +246,7 @@ static enum MAPISTATUS dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	for (session = nsp_session; session; session = session->next) {
+	for (session = nsp_session; !found && session; session = session->next) {
 		if ((mpm_session_cmp(session->session, dce_call)) == true) {
 			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
 			found = true;
@@ -374,10 +378,10 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	for (session = nsp_session; session; session = session->next) {
-		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+	for (session = nsp_session; !found && session; session = session->next) {
+		found = mpm_session_cmp(session->session, dce_call);
+		if (found == true) {
 			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
-			found = true;
 		}
 	}
 
@@ -473,7 +477,9 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	for (session = nsp_session; session; session = session->next) {
+	for (session = nsp_session; !found && session; session = session->next) {
+		DEBUG(0, ("  comparing session %p with dce_call %p\n",
+			  session->session, dce_call));
 		if ((mpm_session_cmp(session->session, dce_call)) == true) {
 			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
 			found = true;
@@ -556,10 +562,10 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	for (session = nsp_session; session; session = session->next) {
-		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+	for (session = nsp_session; !found && session; session = session->next) {
+		found = mpm_session_cmp(session->session, dce_call);
+		if (found) {
 			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
-			found = true;
 		}
 	}
 
@@ -689,8 +695,9 @@ static enum MAPISTATUS dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	for (session = nsp_session; session; session = session->next) {
-		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+	for (session = nsp_session; !found && session; session = session->next) {
+		found = mpm_session_cmp(session->session, dce_call);
+		if (found == true) {
 			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
 			found = true;
 		}
@@ -900,8 +907,9 @@ static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_ca
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	for (session = nsp_session; session; session = session->next) {
-		if ((mpm_session_cmp(session->session, dce_call)) == true) {
+	for (session = nsp_session; !found && session; session = session->next) {
+		found = mpm_session_cmp(session->session, dce_call);
+		if (found == true) {
 			emsabp_ctx = (struct emsabp_context *)session->session->private_data;
 			found = true;
 		}
@@ -1001,6 +1009,8 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
 
+	DEBUG (0, ("dcesrv_exchange_nsp_dispatch\n"));
+
 	table = (const struct ndr_interface_table *) dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
 
@@ -1087,6 +1097,7 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
  */
 static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
 {
+	DEBUG (0, ("dcesrv_exchange_nsp_init\n"));
 	/* Initialize exchange_nsp session */
 	nsp_session = talloc_zero(dce_ctx, struct exchange_nsp_session);
 	if (!nsp_session) return NT_STATUS_NO_MEMORY;
@@ -1115,9 +1126,13 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
 static NTSTATUS dcesrv_exchange_nsp_unbind(struct server_id server_id, uint32_t context_id)
 {
 	struct exchange_nsp_session	*session;
+	bool				found = false;
 
-	for (session = nsp_session; session; session = session->next) {
-		if ((mpm_session_cmp_sub(session->session, server_id, context_id) == true)) {
+	DEBUG (0, ("dcesrv_exchange_nsp_unbind\n"));
+
+	for (session = nsp_session; !found && session; session = session->next) {
+		found = mpm_session_cmp_sub(session->session, server_id, context_id);
+		if (found == true) {
 			mpm_session_release(session->session);
 			DLIST_REMOVE(nsp_session, session);
 			DEBUG(6, ("[%s:%d]: Session found and released\n", __FUNCTION__, __LINE__));

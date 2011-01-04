@@ -170,15 +170,15 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	r->out.result = MAPI_E_SUCCESS;
 
 	/* Search for an existing session and increment ref_count, otherwise create it */
-	/* for (session = emsmdb_session; session; session = session->next) { */
-	/* 	if ((mpm_session_cmp(session->session, dce_call) == true)) { */
-	/* 		DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n",  */
-	/* 			  session->session->context_id)); */
-	/* 		mpm_session_increment_ref_count(session->session); */
-	/* 		found = true; */
-	/* 		break; */
-	/* 	} */
-	/* } */
+	for (session = emsmdb_session; session; session = session->next) {
+		if ((mpm_session_cmp(session->session, dce_call) == true)) {
+			DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n", 
+				  session->session->context_id));
+			mpm_session_increment_ref_count(session->session);
+			found = true;
+			break;
+		}
+	}
 
 	if (found == false) {
 		/* Step 7. Associate this emsmdbp context to the session */

@@ -114,7 +114,7 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_search(struct mapi_handles_context *handle
 	OPENCHANGE_RETVAL_IF(!dbuf.dsize, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Ensure this is not a free'd record */
-	OPENCHANGE_RETVAL_IF(!strncmp((char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize), 
+	OPENCHANGE_RETVAL_IF((dbuf.dsize == sizeof(MAPI_HANDLES_NULL) && !strncmp((char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize)),
 			     MAPI_E_NOT_FOUND, mem_ctx);
 	free(dbuf.dptr);
 
@@ -245,7 +245,7 @@ static int mapi_handles_traverse_null(TDB_CONTEXT *tdb_ctx,
 	uint32_t	*handle = (uint32_t *) state;
 	char		*handle_str = NULL;
 
-	if (dbuf.dptr && !strncmp((const char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize)) {
+	if (dbuf.dptr && dbuf.dsize == sizeof(MAPI_HANDLES_NULL) && !strncmp((const char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize)) {
 		mem_ctx = talloc_named(NULL, 0, "mapi_handles_traverse_null");
 		handle_str = talloc_strndup(mem_ctx, (char *)key.dptr, key.dsize);
 		*handle = strtol((const char *) handle_str, NULL, 16);
@@ -423,7 +423,7 @@ static int mapi_handles_traverse_delete(TDB_CONTEXT *tdb_ctx,
 	mem_ctx = talloc_named(NULL, 0, "mapi_handles_traverse_delete");
 	container_handle_str = talloc_asprintf(mem_ctx, "0x%x", handles_private->container_handle);
 
-	if (dbuf.dptr && !strncmp((const char *)dbuf.dptr, container_handle_str, dbuf.dsize)) {
+	if (dbuf.dptr && strlen(container_handle_str) == dbuf.dsize && !strncmp((const char *)dbuf.dptr, container_handle_str, dbuf.dsize)) {
 		handle_str = talloc_strndup(mem_ctx, (char *)key.dptr, key.dsize);
 		handle = strtol((const char *) handle_str, NULL, 16);
 		talloc_free(handle_str);

@@ -139,7 +139,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 					      struct EcDoRpc_MAPI_REPL *mapi_repl,
 					      uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCTABL] SortTable (0x13)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCTABL] SortTable (0x13) -- stub\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -232,23 +232,23 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 
 	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
+		goto end;
 	}
-	else {
-		/* If parent folder has a mapistore context */
-		if (table->mapistore) {
-			retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID, 
-							    table->folderID, table->ulType, &request.restrictions, &status);
-			if (retval) {
-				mapi_repl->error_code = retval;
-				goto end;
-			}
-			
-			mapi_repl->u.mapi_Restrict.TableStatus = status;
-			/* Parent folder doesn't have any mapistore context associated */
-		} else {
-			DEBUG(0, ("not mapistore Restrict: Not implemented yet\n"));
+
+	/* If parent folder has a mapistore context */
+	if (table->mapistore) {
+		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID, 
+						    table->folderID, table->ulType, &request.restrictions, &status);
+		if (retval) {
+			mapi_repl->error_code = retval;
 			goto end;
 		}
+		
+		mapi_repl->u.mapi_Restrict.TableStatus = status;
+		/* Parent folder doesn't have any mapistore context associated */
+	} else {
+		DEBUG(0, ("not mapistore Restrict: Not implemented yet\n"));
+		goto end;
 	}
 
 end:
@@ -337,10 +337,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	}
 
 	table = object->object.table;
-	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
-		DEBUG(5, ("  query on rules table\n"));
-	}
 	if (!table->folderID) {
+		goto end;
+	}
+	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
+		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto end;
 	}
 
@@ -746,6 +747,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 
 	/* Ensure object exists and is table type */
 	if (!object || (object->type != EMSMDBP_OBJECT_TABLE)) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		DEBUG(5, ("  no object or object is not a table\n"));
 		goto end;
 	}
@@ -756,6 +758,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	table = object->object.table;
 	if (!table->folderID) {
 		DEBUG(5, ("  no folderID\n"));
+		goto end;
+	}
+	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
+		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto end;
 	}
 

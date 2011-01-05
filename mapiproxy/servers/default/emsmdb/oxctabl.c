@@ -342,7 +342,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	}
 	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
-		goto end;
+		goto finish;
 	}
 
 	if ((request.RowCount + table->numerator) > table->denominator) {
@@ -488,7 +488,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	}
 
 finish:
-	talloc_free(table_filter);
+	if (table_filter) {
+		talloc_free(table_filter);
+	}
 
 	/* QueryRows reply parameters */
 	if (count) {

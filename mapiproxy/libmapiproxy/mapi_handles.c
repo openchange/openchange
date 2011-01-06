@@ -114,10 +114,10 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_search(struct mapi_handles_context *handle
 	OPENCHANGE_RETVAL_IF(!dbuf.dsize, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Ensure this is not a free'd record */
-	OPENCHANGE_RETVAL_IF((dbuf.dsize == sizeof(MAPI_HANDLES_NULL) && !strncmp((char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize)),
+	OPENCHANGE_RETVAL_IF(dbuf.dsize == (sizeof(MAPI_HANDLES_NULL) - 1) && !strncmp((char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize),
 			     MAPI_E_NOT_FOUND, mem_ctx);
-	free(dbuf.dptr);
 
+	talloc_free(mem_ctx);
 	/* Step 2. Return the record within the double chained list */
 	for (el = handles_ctx->handles; el; el = el->next) {
 		if (el->handle == handle) {
@@ -166,15 +166,12 @@ static enum MAPISTATUS mapi_handles_tdb_free(struct mapi_handles_context *handle
 	dbuf.dsize = strlen(MAPI_HANDLES_NULL);
 
 	ret = tdb_store(handles_ctx->tdb_ctx, key, dbuf, TDB_MODIFY);
+	talloc_free(mem_ctx);
 	if (ret == -1) {
 		DEBUG(3, ("[%s:%d]: Unable to create 0x%x record: %s\n", __FUNCTION__, __LINE__,
 			  handle, tdb_errorstr(handles_ctx->tdb_ctx)));
-
-		talloc_free(mem_ctx);
 		return MAPI_E_CORRUPT_STORE;
 	}
-
-	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }
@@ -212,15 +209,13 @@ static enum MAPISTATUS mapi_handles_tdb_update(struct mapi_handles_context *hand
 	dbuf.dsize = strlen((const char *)dbuf.dptr);
 
 	ret = tdb_store(handles_ctx->tdb_ctx, key, dbuf, TDB_MODIFY);
+	talloc_free(mem_ctx);
 	if (ret == -1) {
 		DEBUG(3, ("[%s:%d]: Unable to update 0x%x record: %s\n", __FUNCTION__, __LINE__,
 			  handle, tdb_errorstr(handles_ctx->tdb_ctx)));
 
-		talloc_free(mem_ctx);
 		return MAPI_E_CORRUPT_STORE;	
 	}
-
-	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }
@@ -245,11 +240,10 @@ static int mapi_handles_traverse_null(TDB_CONTEXT *tdb_ctx,
 	uint32_t	*handle = (uint32_t *) state;
 	char		*handle_str = NULL;
 
-	if (dbuf.dptr && dbuf.dsize == sizeof(MAPI_HANDLES_NULL) && !strncmp((const char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize)) {
+	if (dbuf.dptr && (dbuf.dsize == sizeof(MAPI_HANDLES_NULL) - 1) && !strncmp((const char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize)) {
 		mem_ctx = talloc_named(NULL, 0, "mapi_handles_traverse_null");
 		handle_str = talloc_strndup(mem_ctx, (char *)key.dptr, key.dsize);
 		*handle = strtol((const char *) handle_str, NULL, 16);
-		talloc_free(handle_str);
 		talloc_free(mem_ctx);
 
 		return 1;
@@ -307,6 +301,8 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *handles_c
 		el->private_data = NULL;
 		*rec = el;
 		DLIST_ADD_END(handles_ctx->handles, el, struct mapi_handles *);
+
+		talloc_free(mem_ctx);
 
 		return MAPI_E_SUCCESS;
 	}
@@ -426,11 +422,9 @@ static int mapi_handles_traverse_delete(TDB_CONTEXT *tdb_ctx,
 	if (dbuf.dptr && strlen(container_handle_str) == dbuf.dsize && !strncmp((const char *)dbuf.dptr, container_handle_str, dbuf.dsize)) {
 		handle_str = talloc_strndup(mem_ctx, (char *)key.dptr, key.dsize);
 		handle = strtol((const char *) handle_str, NULL, 16);
-		talloc_free(handle_str);
 		mapi_handles_delete(handles_private->handles_ctx, handle);
 	}
 
-	talloc_free(container_handle_str);
 	talloc_free(mem_ctx);
 
 	return 0;

@@ -263,6 +263,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 	handle = handles[request->handle_idx];
 	retval = mapi_handles_delete(emsmdbp_ctx->handles_ctx, handle);
 	OPENCHANGE_RETVAL_IF(retval && retval != MAPI_E_NOT_FOUND, retval, NULL);
+	handles[request->handle_idx] = 0xffffffff;
 
 	return MAPI_E_SUCCESS;
 }
@@ -444,11 +445,10 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	if (!MessageClass || !strcmp(MessageClass, "")) {
 		MessageClass="All";
 	}
-
 	if (! MessageClassIsValid(MessageClass) ) {
 		return MAPI_E_INVALID_PARAMETER;
 	}
-	
+
 	/* Step 3. Search for the specified MessageClass substring within user mailbox */
 	retval = openchangedb_get_ReceiveFolder(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_Name,
 						MessageClass, &mapi_repl->u.mapi_GetReceiveFolder.folder_id,

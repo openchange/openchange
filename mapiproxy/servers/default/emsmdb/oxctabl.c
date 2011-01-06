@@ -340,6 +340,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	if (!table->folderID) {
 		goto end;
 	}
+
+	count = 0;
 	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto finish;
@@ -353,7 +355,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	/* If parent folder has a mapistore context */
 	if (table->mapistore == true) {
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
-		for (i = 0, count = 0; i < request.RowCount; i++, count++) {
+		for (i = 0; i < request.RowCount; i++, count++) {
 			flagged = 0;
 			data_pointers = talloc_array(mem_ctx, void *, table->prop_count);
 			retvals = talloc_array(mem_ctx, enum MAPISTATUS, table->prop_count);
@@ -421,7 +423,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	} else {
 		table_filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=0x%.16"PRIx64")(PidTagFolderId=*))", table->folderID);
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
-		for (i = 0, count = 0; i < request.RowCount; i++, count++) {
+		for (i = 0; i < request.RowCount; i++, count++) {
 			flagged = 0;
 			data_pointers = talloc_array(mem_ctx, void *, table->prop_count);
 			retvals = talloc_array(mem_ctx, enum MAPISTATUS, table->prop_count);
@@ -584,7 +586,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryPosition(TALLOC_CTX *mem_ctx,
 	table = object->object.table;
 	if (!table->folderID) goto end;
 
-	mapi_repl->u.mapi_QueryPosition.Numerator = table->numerator;
+	if (table->numerator < table->denominator) {
+		mapi_repl->u.mapi_QueryPosition.Numerator = table->numerator;
+	}
+	else {
+		mapi_repl->u.mapi_QueryPosition.Numerator = 0xffffffff;
+	}
 	mapi_repl->u.mapi_QueryPosition.Denominator = table->denominator;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
@@ -665,9 +672,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekRow(TALLOC_CTX *mem_ctx,
 	table = object->object.table;
 	DEBUG(5, ("  handle_idx: %.8x, folder_id: %.16lx\n", mapi_req->handle_idx, table->folderID));
 	if (mapi_req->u.mapi_SeekRow.origin == BOOKMARK_BEGINNING) {
-		table->numerator = mapi_req->u.mapi_SeekRow.offset;
+		if ((mapi_req->u.mapi_SeekRow.offset >= table->denominator)) {
+			mapi_repl->error_code = MAPI_E_INVALID_BOOKMARK;
+		}
+		else {
+			table->numerator = mapi_req->u.mapi_SeekRow.offset;
+		}
 	}
 	else {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		DEBUG(5, ("  unhandled 'origin' type: %d\n", mapi_req->u.mapi_SeekRow.origin));
 	}
 end:
@@ -768,6 +781,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(5, ("  handle_idx: %.8x, folder_id: %.16lx\n", mapi_req->handle_idx, table->folderID));
+
+	if (mapi_req->u.mapi_FindRow.origin == BOOKMARK_BEGINNING) {
+		table->numerator = 0;
+	}
+	if (mapi_req->u.mapi_FindRow.ulFlags == DIR_BACKWARD) {
+		DEBUG(5, ("  only DIR_FORWARD is supported right now, using work-around\n"));
+		table->numerator = 0;
+	}
 
 	switch (table->mapistore) {
 	case true:

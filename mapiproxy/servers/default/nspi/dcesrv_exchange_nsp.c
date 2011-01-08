@@ -34,7 +34,7 @@ static TDB_CONTEXT			*emsabp_tdb_ctx = NULL;
 static bool dcesrv_uuid_matches(const struct GUID *uuid1, const struct GUID *uuid2)
 {
 	bool rc;
-	void *mem_ctx;
+	/* void *mem_ctx; */
 
 	rc = (uuid1 == uuid2
 	      || ((uuid1 != NULL) && (uuid2 != NULL)
@@ -1129,10 +1129,8 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
  */
 static NTSTATUS dcesrv_exchange_nsp_unbind(struct server_id server_id, uint32_t context_id)
 {
-	struct exchange_nsp_session	*session;
-	bool				found = false;
-
 	DEBUG (0, ("dcesrv_exchange_nsp_unbind\n"));
+	return NT_STATUS_OK;
 }
 
 

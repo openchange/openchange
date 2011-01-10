@@ -298,8 +298,34 @@ sub mapitags_interface($)
     mparse "}";
     mparse "";
 
+    mparse "_PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)";
+    mparse "{";
+    indent;
+    mparse "uint32_t idx;";
+    mparse "uint16_t current_type;";
+    mparse "";
+    mparse "for (idx = 0; mapitags[idx].proptag; idx++) {";
+    indent;
+    mparse "if ((mapitags[idx].proptag >> 16) == untypedtag) {";
+    indent;
+    mparse "current_type = mapitags[idx].proptag & 0xffff;";
+    mparse "if (current_type != PT_ERROR && current_type != PT_STRING8) {";
+    indent;
+    mparse "return current_type;";
+    deindent;
+    mparse "}";
+    deindent;
+    mparse "}";
+    deindent;
+    mparse "}";
+    mparse "";
+    mparse "DEBUG(5, (\"%s: type for property '%x' could not be deduced\\n\", __FUNCTION__, untypedtag));";
+    mparse "";
+    mparse "return 0;";
+    deindent;
+    mparse "}";
+
     return $ret;
-    
 }
 
 #####################################################################

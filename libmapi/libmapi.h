@@ -140,6 +140,7 @@ enum MAPISTATUS		GetBestBody(mapi_object_t *, uint8_t *);
 /* The following public definitions come from auto-generated libmapi/mapitags.c */
 const char		*get_proptag_name(uint32_t);
 uint32_t		get_proptag_value(const char *);
+uint16_t		get_property_type(uint16_t untypedtag);
 
 /* The following public definitions come from auto-generated libmapi/mapicode.c */
 void			mapi_errstr(const char *, uint32_t);

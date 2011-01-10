@@ -243,7 +243,8 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 					 const void *value, 
 					 DATA_BLOB *blob,
 					 uint8_t layout, 
-					 uint8_t flagged)
+					 uint8_t flagged,
+					 uint8_t untyped)
 {
 	struct ndr_push		*ndr;
 	
@@ -256,7 +257,12 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		ndr->offset = blob->length;
 	}
 
-	/* Step 1. Is the property flagged */
+	/* Step 1. Is the property typed */
+	if (untyped) {
+		ndr_push_uint16(ndr, NDR_SCALARS, property & 0xFFFF);
+	}
+
+	/* Step 2. Is the property flagged */
 	if (flagged) {
 		switch (property & 0xFFFF) {
 		case PT_ERROR:
@@ -274,7 +280,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 			break;
 		}
 	} else {
-		/* Step 2. Set the layout */
+		/* Step 3. Set the layout */
 		if (layout) {
 			switch (property & 0xFFFF) {
 			case PT_ERROR:
@@ -286,7 +292,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* Step 2. Push property data if supported */
+	/* Step 3. Push property data if supported */
 	switch (property & 0xFFFF) {
 	case PT_I2:
 		ndr_push_uint16(ndr, NDR_SCALARS, *(uint16_t *) value);
@@ -326,7 +332,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		break;
 	}
 end:
-	/* Step 3. Steal ndr context */
+	/* Step 4. Steal ndr context */
 	blob->data = ndr->data;
 	talloc_steal(mem_ctx, blob->data);
 	blob->length = ndr->offset;

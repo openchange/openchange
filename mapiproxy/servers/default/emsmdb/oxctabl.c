@@ -390,13 +390,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 				libmapiserver_push_property(mem_ctx,
 							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 							    0x0000000b, (const void *)&flagged,
-							    &response.RowData, 0, 0);
+							    &response.RowData, 0, 0, 0);
 			}
 			else {
 				libmapiserver_push_property(mem_ctx,
 							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 							    0x00000000, (const void *)&flagged,
-							    &response.RowData, 0, 1);
+							    &response.RowData, 0, 1, 0);
 			}
 
 			for (j = 0; j < table->prop_count; j++) {
@@ -412,7 +412,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 
 				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 							    property, data, &response.RowData,
-							    flagged?PT_ERROR:0, flagged);
+							    flagged?PT_ERROR:0, flagged, 0);
 			}
 
 			talloc_free(retvals);
@@ -458,13 +458,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 				libmapiserver_push_property(mem_ctx, 
 							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 							    0x0000000b, (const void *)&flagged, 
-							    &response.RowData, 0, 0);
+							    &response.RowData, 0, 0, 0);
 			}
 			else {
 				libmapiserver_push_property(mem_ctx, 
 							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 							    0x00000000, (const void *)&flagged,
-							    &response.RowData, 0, 1);
+							    &response.RowData, 0, 1, 0);
 			}
 
 			/* Push the property */
@@ -481,7 +481,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 
 				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 							    property, data, &response.RowData,
-							    flagged?PT_ERROR:0, flagged);
+							    flagged?PT_ERROR:0, flagged, 0);
 			}
 			
 			talloc_free(retvals);
@@ -839,13 +839,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 					libmapiserver_push_property(mem_ctx, 
 								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 								    0x0000000b, (const void *)&flagged,
-								    &row, 0, 0);
+								    &row, 0, 0, 0);
 				}
 				else {
 					libmapiserver_push_property(mem_ctx, 
 								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 								    0x00000000, (const void *)&flagged,
-								    &row, 0, 1);
+								    &row, 0, 1, 0);
 				}
 
 				/* Push the properties */
@@ -862,7 +862,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 
 					libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 								    property, data, &row,
-								    flagged?PT_ERROR:0, flagged);
+								    flagged?PT_ERROR:0, flagged, 0);
 				}
 
 				talloc_free(retvals);

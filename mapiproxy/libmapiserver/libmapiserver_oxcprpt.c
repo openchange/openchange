@@ -218,6 +218,31 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_M
 
 
 /**
+   \details Calculate DeletePropertiesNoReplicate Rop size
+
+   \param response pointer to the DeletePropertiesNoReplicate
+   EcDoRpc_MAPI_REPL structure
+
+   \return Size of DeletePropertiesNoReplicate response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPDELETEPROPERTIESNOREPLICATE;
+	size += (response->u.mapi_DeletePropertiesNoReplicate.PropertyProblemCount
+		 * (sizeof(uint16_t) /* PropertyProblem.Index */
+		    + sizeof(uint32_t) /* PropertyProblem.PropertyTag */
+		    + sizeof(uint32_t) /* PropertyProblem.ErrorCode */));
+
+	return size;
+}
+
+/**
    \details Add a property value to a DATA blob. This convenient
    function should be used when creating a GetPropertiesSpecific reply
    response blob.

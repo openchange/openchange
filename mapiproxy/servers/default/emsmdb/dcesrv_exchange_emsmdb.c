@@ -644,7 +644,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		/* op_MAPI_SyncUploadStateStreamEnd: 0x77 */
 		/* op_MAPI_SyncImportMessageMove: 0x78 */
 		/* op_MAPI_SetPropertiesNoReplicate: 0x79 */
-		/* op_MAPI_DeletePropertiesNoReplicate: 0x7a */
+		case op_MAPI_DeletePropertiesNoReplicate: /* 0x7a */
+			retval = EcDoRpc_RopDeletePropertiesNoReplicate(mem_ctx, emsmdbp_ctx,
+									&(mapi_request->mapi_req[i]),
+									&(mapi_response->mapi_repl[idx]),
+									mapi_response->handles, &size);
+			break;
 		/* op_MAPI_GetStoreState: 0x7b */
 		/* op_MAPI_SyncOpenCollector: 0x7e */
 		/* op_MAPI_GetLocalReplicaIds: 0x7f */

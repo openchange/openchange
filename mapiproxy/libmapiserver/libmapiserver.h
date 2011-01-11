@@ -243,6 +243,12 @@
 #define	SIZE_DFLT_ROPGETPROPERTYIDSFROMNAMES	2
 
 /**
+   \details GetPropertyIdsFromNames has fixed response size for:
+   -# PropertyProblemCount: uint16_t
+ */
+#define SIZE_DFLT_ROPDELETEPROPERTIESNOREPLICATE 2
+
+/**
    \details EmptyFolder has fixed response size for:
    -# PartialCompletion: uint8_t
  */
@@ -377,6 +383,7 @@ uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetStreamSize_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoRpc_MAPI_REPL *);
 int libmapiserver_push_property(TALLOC_CTX *, struct smb_iconv_convenience *, uint32_t, const void *, DATA_BLOB *, uint8_t, uint8_t, uint8_t);
 struct SRow *libmapiserver_ROP_request_to_properties(TALLOC_CTX *, void *, uint8_t);
 

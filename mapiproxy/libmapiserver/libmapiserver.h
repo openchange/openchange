@@ -332,14 +332,12 @@
 #define	SIZE_DFLT_LONGTERMID		24
 
 /**
-   \details FastTransferSourceGetBuffer:
+   \details FastTransferSourceGetBuffer has a fixed size for:
    -# TransferStatus: uint16_t
    -# InProgressCount: uint16_t
    -# TotalStepCount: uint16_t
    -# Reserved (1 byte): uint8_t
    -# TransferBufferSize (2 bytes): uint16_t
-   -# TransferBuffer (variable): conditional (ReturnValue != 0x480)
-   -# BackoffTime (4 bytes): conditional (ReturnValue == 0x480), uint32_t
  */
 #define SIZE_DFLT_ROPFASTTRANSFERSOURCEGETBUFFER 9
 
@@ -395,6 +393,7 @@ uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserLongTermIds_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopReadPerUserInformation_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetReceiveFolderTable_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxctabl.c */
 uint16_t libmapiserver_RopSetColumns_size(struct EcDoRpc_MAPI_REPL *);

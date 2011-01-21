@@ -119,7 +119,7 @@ _PUBLIC_ uint16_t libmapiserver_RopDeleteProperties_size(struct EcDoRpc_MAPI_REP
  */
 _PUBLIC_ uint16_t libmapiserver_RopOpenStream_size(struct EcDoRpc_MAPI_REPL *response)
 {
-  int16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
 	if (!response || response->error_code) {
 		return size;
@@ -141,7 +141,7 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenStream_size(struct EcDoRpc_MAPI_REPL *res
  */
 _PUBLIC_ uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *response)
 {
-  int16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
 	if (!response || response->error_code) {
 		return size;
@@ -167,7 +167,7 @@ _PUBLIC_ uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *res
  */
 _PUBLIC_ uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *response)
 {
-  int16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
 	if (!response || response->error_code) {
 		return size;
@@ -178,9 +178,18 @@ _PUBLIC_ uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *re
 	return size;
 }
 
+
+/**
+   \details Calculate GetStreamSize Rop size
+
+   \param response pointer to the GetStreamSize
+   EcDoRpc_MAPI_REPL structure
+
+   \return Size of GetStreamSize response
+ */
 _PUBLIC_ uint16_t libmapiserver_RopGetStreamSize_size(struct EcDoRpc_MAPI_REPL *response)
 {
-  int16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
 	if (!response || response->error_code) {
 		return size;
@@ -190,6 +199,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetStreamSize_size(struct EcDoRpc_MAPI_REPL *
 
 	return size;
 }
+
 
 /**
    \details Calculate GetPropertyIdsFromNames Rop size
@@ -241,6 +251,7 @@ _PUBLIC_ uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoR
 
 	return size;
 }
+
 
 /**
    \details Add a property value to a DATA blob. This convenient

@@ -802,6 +802,7 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiserver/
 							mapiproxy/libmapiserver/libmapiserver_oxorule.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcperm.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcdata.po	\
+							mapiproxy/libmapiserver/libmapiserver_oxcfxics.po	\
 							ndr_mapi.po				\
 							gen_ndr/ndr_exchange.po
 	@echo "Linking $@"

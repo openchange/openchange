@@ -115,6 +115,20 @@ _PUBLIC_ uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_R
 
 
 /**
+   \details Calculate RemoveAllRecipients (0xd) Rop size
+
+   \param response pointer to the RemoveAllRecipients EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of RemoveAllRecipients response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopRemoveAllRecipients_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+
+/**
    \details Calculate ModifyRecipients (0xe) Rop size
 
    \param response pointer to the ModifyRecipients EcDoRpc_MAPI_REPL

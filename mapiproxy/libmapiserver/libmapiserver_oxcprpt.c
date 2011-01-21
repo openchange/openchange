@@ -119,7 +119,7 @@ _PUBLIC_ uint16_t libmapiserver_RopDeleteProperties_size(struct EcDoRpc_MAPI_REP
  */
 _PUBLIC_ uint16_t libmapiserver_RopOpenStream_size(struct EcDoRpc_MAPI_REPL *response)
 {
-  int16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
 	if (!response || response->error_code) {
 		return size;
@@ -141,7 +141,7 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenStream_size(struct EcDoRpc_MAPI_REPL *res
  */
 _PUBLIC_ uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *response)
 {
-  int16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
 	if (!response || response->error_code) {
 		return size;
@@ -167,13 +167,35 @@ _PUBLIC_ uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *res
  */
 _PUBLIC_ uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *response)
 {
-  int16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
 	if (!response || response->error_code) {
 		return size;
 	}
 
 	size += SIZE_DFLT_ROPWRITESTREAM;
+
+	return size;
+}
+
+
+/**
+   \details Calculate GetStreamSize Rop size
+
+   \param response pointer to the GetStreamSize
+   EcDoRpc_MAPI_REPL structure
+
+   \return Size of GetStreamSize response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetStreamSize_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETSTREAMSIZE;
 
 	return size;
 }
@@ -200,6 +222,32 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_M
 	if (response->u.mapi_GetIDsFromNames.count) {
 		size += response->u.mapi_GetIDsFromNames.count * sizeof (uint16_t);
 	}
+
+	return size;
+}
+
+
+/**
+   \details Calculate DeletePropertiesNoReplicate Rop size
+
+   \param response pointer to the DeletePropertiesNoReplicate
+   EcDoRpc_MAPI_REPL structure
+
+   \return Size of DeletePropertiesNoReplicate response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPDELETEPROPERTIESNOREPLICATE;
+	size += (response->u.mapi_DeletePropertiesNoReplicate.PropertyProblemCount
+		 * (sizeof(uint16_t) /* PropertyProblem.Index */
+		    + sizeof(uint32_t) /* PropertyProblem.PropertyTag */
+		    + sizeof(uint32_t) /* PropertyProblem.ErrorCode */));
 
 	return size;
 }

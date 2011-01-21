@@ -165,3 +165,30 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL 
 
 	return size;
 }
+
+/**
+   \details Calculate GetReceiveFolderTable ROP size
+
+   \param response pointer to the GetReceiveFolderTable EcDoRpc_MAPI_REPL structure
+
+   \return Size of GetPerUserLongTermIds response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolderTable_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	int 		i = 0;
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += sizeof(uint32_t); /* cValues */
+	for (i = 0; i < response->u.mapi_GetReceiveFolderTable.cValues; ++i) {
+		size += sizeof(uint8_t); /* flag */
+		size += sizeof(uint64_t); /* fid */
+		size += strlen(response->u.mapi_GetReceiveFolderTable.entries[i].lpszMessageClass) + 1;
+		size += sizeof(struct FILETIME); /* modiftime */
+	}
+
+	return size;
+}

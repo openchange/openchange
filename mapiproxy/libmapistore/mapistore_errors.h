@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,96 +29,24 @@
 #ifndef	__MAPISTORE_ERRORS_H
 #define	__MAPISTORE_ERRORS_H
 
-/**
-   The function call succeeded.
- */
-#define	MAPISTORE_SUCCESS			0
-
-/**
-   The function call failed for some non-specific reason.
- */
-#define	MAPISTORE_ERROR				1
-
-/**
-   The function call failed because it was unable to allocate the
-   memory required by underlying operations.
- */
-#define	MAPISTORE_ERR_NO_MEMORY			2
-
-/**
-   The function call failed because underlying context has already
-   been initialized
- */
-#define	MAPISTORE_ERR_ALREADY_INITIALIZED	3
-
-/**
-   The function call failed because context has not been initialized.
- */
-#define	MAPISTORE_ERR_NOT_INITIALIZED		4
-
-/**
-   The function call failed because an internal mapistore storage
-   component has corrupted data.
- */
-#define	MAPISTORE_ERR_CORRUPTED			5
-
-/**
-   The function call failed because one of the function parameters is
-   invalid
- */
-#define	MAPISTORE_ERR_INVALID_PARAMETER		6
-
-/**
-   The function call failed because the directory doesn't exist
- */
-#define	MAPISTORE_ERR_NO_DIRECTORY		7
-
-/**
-   The function call failed because the underlying function couldn't
-   open a database.
- */
-#define	MAPISTORE_ERR_DATABASE_INIT		8
-
-/**
-   The function call failed because the underlying function didn't run
-   a database operation successfully.
- */
-#define	MAPISTORE_ERR_DATABASE_OPS		9
-
-/**
-   The function failed to register a storage backend
- */
-#define	MAPISTORE_ERR_BACKEND_REGISTER		10
-
-/**
-   One of more storage backend initialization functions failed to
-   complete successfully.
- */
-#define	MAPISTORE_ERR_BACKEND_INIT		11
-
-/**
-   The function failed because mapistore failed to create a context
- */
-#define	MAPISTORE_ERR_CONTEXT_FAILED		12
-
-/**
-   The function failed because the provided namespace is invalid
- */
-#define	MAPISTORE_ERR_INVALID_NAMESPACE		13
-
-/**
-   The function failed to find requested record/data
- */
-#define	MAPISTORE_ERR_NOT_FOUND			14
-
-/**
-   The function still has a reference count
- */
-#define	MAPISTORE_ERR_REF_COUNT			15
-
-/**
-   The function already have record/data for the searched element
- */
-#define	MAPISTORE_ERR_EXIST			16
+enum MAPISTORE_ERROR {
+	MAPISTORE_SUCCESS = 0, /*!< The function call succeeded. */
+	MAPISTORE_ERROR = 1,   /*!< The function call failed for some non-specific reason. */
+	MAPISTORE_ERR_NO_MEMORY = 2, /*!< The function call failed because it was unable to allocate the memory required by underlying operations. */
+	MAPISTORE_ERR_ALREADY_INITIALIZED = 3, /*!< The function call failed because underlying context has already been initialized. */
+	MAPISTORE_ERR_NOT_INITIALIZED = 4, /*!< The function call failed because context has not been initialized. */
+	MAPISTORE_ERR_CORRUPTED = 5, /*!< The function call failed because an internal mapistore storage component has corrupted data. */
+	MAPISTORE_ERR_INVALID_PARAMETER = 6, /*!< The function call failed because one of the function parameters is invalid. */
+	MAPISTORE_ERR_NO_DIRECTORY = 7, /*!< The function call failed because the directory doesn't exist. */
+	MAPISTORE_ERR_DATABASE_INIT = 8, /*!< The function call failed because the underlying function couldn't open a database. */
+	MAPISTORE_ERR_DATABASE_OPS = 9, /*!< The function call failed because the underlying function didn't run a database operation successfully. */
+	MAPISTORE_ERR_BACKEND_REGISTER = 10, /*!< The function failed to register a storage backend. */
+	MAPISTORE_ERR_BACKEND_INIT = 11, /*!< One or more storage backend initialization functions failed to complete successfully. */
+	MAPISTORE_ERR_CONTEXT_FAILED = 12, /*!< The function failed because mapistore failed to create a context. */
+	MAPISTORE_ERR_INVALID_NAMESPACE = 13, /*!< The function failed because the provided namespace is invalid. */
+	MAPISTORE_ERR_NOT_FOUND = 14, /*!< The function failed to find the requested record/data. */
+	MAPISTORE_ERR_REF_COUNT = 15, /*!<  The function still has a reference count. */
+	MAPISTORE_ERR_EXIST = 16 /*!< The function already has record/data for the searched element. */
+};
 
 #endif /* ! __MAPISTORE_ERRORS_H */

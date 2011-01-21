@@ -840,6 +840,7 @@ libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
+	rm -f mapiproxy/libmapistore/database/*.po mapiproxy/libmapistore/database/*.o
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 	rm -f setup/mapistore/mapistore_namedprops.ldif
@@ -855,13 +856,15 @@ libmapistore-distclean: libmapistore-clean
 
 distclean:: libmapistore-distclean
 
-mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mapistore_interface.po	\
-							mapiproxy/libmapistore/mapistore_processing.po	\
-							mapiproxy/libmapistore/mapistore_backend.po	\
-							mapiproxy/libmapistore/mapistore_tdb_wrap.po	\
-							mapiproxy/libmapistore/mapistore_ldb_wrap.po	\
-							mapiproxy/libmapistore/mapistore_indexing.po	\
-							mapiproxy/libmapistore/mapistore_namedprops.po	\
+mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mapistore_interface.po		\
+							mapiproxy/libmapistore/mapistore_processing.po		\
+							mapiproxy/libmapistore/mapistore_backend.po		\
+							mapiproxy/libmapistore/mapistore_tdb_wrap.po		\
+							mapiproxy/libmapistore/mapistore_ldb_wrap.po		\
+							mapiproxy/libmapistore/mapistore_indexing.po		\
+							mapiproxy/libmapistore/mapistore_namedprops.po		\
+							mapiproxy/libmapistore/database/mapistoredb.po		\
+							mapiproxy/libmapistore/database/mapistoredb_conf.po	\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
@@ -1509,9 +1512,10 @@ clean-python:
 
 clean:: clean-python
 
-pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)	\
-		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)	\
-		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
+pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)		\
+		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)		\
+		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)	\
+		$(pythonscriptdir)/openchange/mapistoredb.$(SHLIBEXT)
 
 $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
 						pyopenchange/pymapi_properties.c		\
@@ -1530,6 +1534,11 @@ $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/pymapistore.c
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
 
+$(pythonscriptdir)/openchange/mapistoredb.$(SHLIBEXT):	pyopenchange/pymapistoredb.c				\
+							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
+
 pyopenchange/pymapi_properties.c:		\
 	libmapi/conf/mapi-properties		\
 	libmapi/conf/mparse.pl		
@@ -1541,6 +1550,7 @@ pyopenchange-clean:
 	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
+	rm -f $(pythonscriptdir)/openchange/mapistoredb.$(SHLIBEXT)
 	rm -f pyopenchange/pymapi_properties.c
 
 clean:: pyopenchange-clean
@@ -1550,11 +1560,13 @@ pyopenchange-install:
 	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
 	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
 	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
+	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/mapistoredb.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
 
 pyopenchange-uninstall:
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapi.$(SHLIBEXT)
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/ocpf.$(SHLIBEXT)
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapistore.$(SHLIBEXT)
+	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapistoredb.$(SHLIBEXT)
 
 
 ###################

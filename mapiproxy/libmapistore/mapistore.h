@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009-2010
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,8 +44,6 @@
 #include <util/debug.h>
 
 #include "libmapi/libmapi.h"
-
-#define	MAPISTORE_SUCCESS	0
 
 typedef	int (*init_backend_fn) (void);
 
@@ -124,6 +122,9 @@ struct indexing_folders_list {
 	uint32_t			count;
 };
 
+/* Forward declaration */
+struct mapistoredb_context;
+
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
 #define __BEGIN_DECLS		extern "C" {
@@ -166,6 +167,7 @@ int mapistore_deletemessage(struct mapistore_context *, uint32_t, uint64_t, uint
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);
+enum MAPISTORE_ERROR	mapistore_set_database_path(const char *);
 
 /* definitions from mapistore_backend.c */
 extern int	mapistore_backend_register(const void *);
@@ -174,6 +176,20 @@ init_backend_fn	*mapistore_backend_load(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_lookup(struct backend_context_list *, uint32_t);
 struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *, const char *);
 bool		mapistore_backend_run_init(init_backend_fn *);
+
+/* definitions from mapistoredb.c */
+struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *, const char *);
+void mapistoredb_release(struct mapistoredb_context *);
+enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *);
+
+/* definitions from mapistoredb_conf.c */
+void				mapistoredb_dump_conf(struct mapistoredb_context *);
+enum MAPISTORE_ERROR		mapistoredb_set_netbiosname(struct mapistoredb_context *, const char *);
+enum MAPISTORE_ERROR		mapistoredb_set_firstorg(struct mapistoredb_context *, const char *);
+enum MAPISTORE_ERROR		mapistoredb_set_firstou(struct mapistoredb_context *, const char *);
+const char*			mapistoredb_get_netbiosname(struct mapistoredb_context *);
+const char*			mapistoredb_get_firstorg(struct mapistoredb_context *);
+const char*			mapistoredb_get_firstou(struct mapistoredb_context *);
 
 /* definitions from mapistore_indexing.c */
 int mapistore_indexing_add(struct mapistore_context *, const char *);

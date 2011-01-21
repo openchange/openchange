@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,7 +33,8 @@
 
 #include <tdb.h>
 
-char *mapping_path = NULL;
+char	*mapping_path = NULL;
+char	*mapistore_dbpath = NULL;
 
 /**
    \details Set the mapping path
@@ -93,6 +94,37 @@ _PUBLIC_ int mapistore_set_mapping_path(const char *path)
 const char *mapistore_get_mapping_path(void)
 {
 	return (!mapping_path) ? MAPISTORE_MAPPING_PATH : (const char *)mapping_path;
+}
+
+
+/**
+   \details Set the mapistore.ldb mapping path
+
+   \param dbname string pointer to the mapistore database path
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_set_database_path(const char *dbname)
+{
+	TALLOC_CTX	*mem_ctx;
+
+	if (!dbname) {
+		if (mapistore_dbpath) {
+			talloc_free(mapistore_dbpath);
+		}
+		mapistore_dbpath = NULL;
+		return MAPISTORE_SUCCESS;
+	}
+
+	if (mapistore_dbpath) {
+		talloc_free(mapistore_dbpath);
+		mapistore_dbpath = NULL;
+	}
+
+	mem_ctx = talloc_autofree_context();
+	mapistore_dbpath = talloc_strdup(mem_ctx, dbname);
+
+	return MAPISTORE_SUCCESS;
 }
 
 

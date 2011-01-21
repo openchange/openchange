@@ -3,7 +3,7 @@
 
    Python interface to mapistore
 
-   Copyright (C) Julien Kerihuel 2010.
+   Copyright (C) Julien Kerihuel 2010-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 
 #include <Python.h>
 #include "mapiproxy/libmapistore/mapistore.h"
+#include "mapiproxy/libmapistore/mapistore_errors.h"
 
 typedef struct {
 	PyObject_HEAD
@@ -31,6 +32,13 @@ typedef struct {
 	struct mapistore_context	*mstore_ctx;
 } PyMAPIStoreObject;
 
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	struct mapistoredb_context	*mdb_ctx;
+} PyMAPIStoreDBObject;
+
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreDB;
 
 #endif	/* ! __PYMAPISTORE_H_ */

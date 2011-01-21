@@ -77,6 +77,72 @@ struct ldb_wrap {
 	struct ldb_context		*ldb;
 };
 
+
+/**
+   mapistore database context.
+
+   This structure stores parameters for mapistore database
+   initialization and backend initialization.
+ */
+#define	DFLT_MDB_FIRSTORG	"First Organization"
+#define	DFLT_MDB_FIRSTOU	"First Organization Unit"
+#define	TMPL_MDB_SERVERDN	"CN=%s,%s"
+#define	TMPL_MDB_FIRSTORGDN	"CN=%s,CN=%s,%s"
+
+struct mapistoredb_conf {
+	char		*db_path;
+	char		*mstore_path;
+	char		*netbiosname;
+	char		*dnsdomain;
+	char		*domain;
+	char		*domaindn;
+	char		*serverdn;
+	char		*firstorg;
+	char		*firstou;
+	char		*firstorgdn;
+};
+
+struct mapistoredb_context {
+	struct ldb_context		*ldb_ctx;
+	struct loadparm_context		*lp_ctx;
+	struct tevent_context		*ev;
+	struct mapistoredb_conf		*param;
+	struct mapistore_context	*mstore_ctx;
+};
+
+#define	MDB_INIT_LDIF_TMPL		\
+	"dn: @OPTIONS\n"		\
+	"checkBaseOnSearch: TRUE\n\n"	\
+	"dn: @INDEXLIST\n"		\
+	"@IDXATTR: cn\n\n"		\
+	"dn: @ATTRIBUTES@\n"		\
+	"cn: CASE_INSENSITIVE\n"	\
+	"dn: CASE_INSENSITIVE\n\n"
+
+#define	MDB_ROOTDSE_LDIF_TMPL						\
+	"dn: @ROOTDSE\n"						\
+	"defaultNamingContext: CN=%s,%s,%s\n"				\
+	"rootDomainNamingContext: %s\n"					\
+	"vendorName: OpenChange Project (http://www.openchange.org)\n\n"
+
+#define	MDB_SERVER_LDIF_TMPL		\
+	"dn: %s\n"			\
+	"objectClass: top\n"		\
+	"objectClass: server\n"		\
+	"cn: %s\n"			\
+	"ReplicaID: 0x1\n\n"		\
+					\
+	"dn: CN=%s,%s\n"		\
+	"objectClass: top\n"		\
+	"objectClass: org\n"		\
+	"cn: %s\n\n"			\
+					\
+	"dn: CN=%s,CN=%s,%s\n"		\
+	"objectClass: top\n"		\
+	"objectClass: ou\n"		\
+	"cn: %s\n"
+
+
 /**
    Identifier mapping context.
 

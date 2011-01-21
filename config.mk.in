@@ -34,6 +34,7 @@ CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@ \
        -DMAPISTORE_LDIF=\"$(datadir)/setup/mapistore\"						\
        -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
        -DMAPISTORE_MAPPING_PATH=\"$(prefix)/private/mapistore\"					\
+       -DMAPISTORE_DBPATH=\"$(prefix)/private/mapistore/mapistore.ldb\"				\
        -DLZXPRESS_DATADIR=\"$(datadir)/mapitest/lzxpress\"					\
        -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"
 

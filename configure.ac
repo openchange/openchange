@@ -580,18 +580,8 @@ dnl libmapistore backends dependencies
 dnl ##########################################################################
 
 dnl --------------------------------------------------------------------------
-dnl Check for sqlite3
+dnl Check for libs
 dnl --------------------------------------------------------------------------
-PKG_CHECK_MODULES(SQLITE, sqlite3, SQLITEFOUND=yes, [SQLITEFOUND=no])
-AC_SUBST(SQLITE_CFLAGS)
-AC_SUBST(SQLITE_LIBS)
-
-if test x"$SQLITEFOUND" = x"yes"; then
-   OC_RULE_ADD(mapistore_sqlite3, MAPISTORE)
-else
-   enable_mapistore_sqlite3="no"
-fi
-
 
 dnl ##########################################################################
 dnl mapiproxy server
@@ -735,7 +725,7 @@ OpenChange Configuration (Please review)
 	     - mapiproxy:		$enable_mapiproxy
 
 	   * OpenChange mapistore backends:
-	     - sqlite3:			$enable_mapistore_sqlite3
+	     - backends dependencies goes here
 
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient

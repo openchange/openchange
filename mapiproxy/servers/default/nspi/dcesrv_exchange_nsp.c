@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -189,7 +189,7 @@ static enum MAPISTATUS dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	r->out.result = 1;
+	r->out.result = (enum MAPISTATUS) 1;
 
 	return MAPI_E_SUCCESS;
 }
@@ -491,7 +491,7 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 		/* Step 1. Check if the input legacyDN exists */
 	  retval = emsabp_search_legacyExchangeDN(emsabp_ctx, r->in.pNames->Strings[i], &msg, &pbUseConfPartition);
 		if (retval != MAPI_E_SUCCESS) {
-			r->out.ppMIds[0]->aulPropTag[i] = 0;
+		  r->out.ppMIds[0]->aulPropTag[i] = (enum MAPITAGS) 0;
 		} else {
 			TDB_CONTEXT *tdb_ctx = (pbUseConfPartition ? emsabp_ctx->tdb_ctx : emsabp_ctx->ttdb_ctx);
 			dn = ldb_msg_find_attr_as_string(msg, "distinguishedName", NULL);
@@ -500,7 +500,7 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 				retval = emsabp_tdb_insert(tdb_ctx, dn);
 				retval = emsabp_tdb_fetch_MId(tdb_ctx, dn, &MId);
 			}
-			r->out.ppMIds[0]->aulPropTag[i] = MId;
+			r->out.ppMIds[0]->aulPropTag[i] = (enum MAPITAGS) MId;
 		}
 	}
 
@@ -594,7 +594,7 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 				ulPropTag = r->in.pPropTags->aulPropTag[i];
 				ulPropTag = (ulPropTag & 0xFFFF0000) | PT_ERROR;
 
-				aRow->lpProps[i].ulPropTag = ulPropTag;
+				aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 				aRow->lpProps[i].dwAlignPad = 0x0;
 				set_SPropValue(&(aRow->lpProps[i]), NULL);
 			}

@@ -3,7 +3,7 @@
 
    EMSABP: Address Book Provider implementation
 
-   Copyright (C) Julien Kerihuel 2006-2009.
+   Copyright (C) Julien Kerihuel 2006-2011.
    Copyright (C) Pauline Khun 2006.
 
    This program is free software; you can redistribute it and/or modify
@@ -597,7 +597,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 			ulPropTag = (ulPropTag & 0xFFFF0000) | PT_ERROR;
 		}
 		
-		aRow->lpProps[i].ulPropTag = ulPropTag;
+		aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
 		set_SPropValue(&(aRow->lpProps[i]), data);
 	}
@@ -670,7 +670,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 			ulPropTag += PT_ERROR;
 		}
 
-		aRow->lpProps[i].ulPropTag = ulPropTag;
+		aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
 		set_SPropValue(&(aRow->lpProps[i]), data);
 	}
@@ -709,6 +709,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 	enum MAPISTATUS			retval;
 	struct SPropTagArray		*SPropTagArray;
 	struct SPropValue		lpProps;
+	int				proptag;
 	uint32_t			i;
 	uint32_t			containerID = 0;
 	const char			*dn = NULL;
@@ -820,15 +821,19 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 			case PR_DISPLAY_NAME:
 				lpProps.value.lpszA = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
 				if (!lpProps.value.lpszA) {
-					lpProps.ulPropTag &= 0xFFFF0000;
-					lpProps.ulPropTag += PT_ERROR;
+					proptag = (int) lpProps.ulPropTag;
+					proptag &= 0xFFFF0000;
+					proptag += PT_ERROR;
+					lpProps.ulPropTag = (enum MAPITAGS) proptag;
 				}
 				break;
 			case PR_DISPLAY_NAME_UNICODE:
 				lpProps.value.lpszW = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
 				if (!lpProps.value.lpszW) {
-					lpProps.ulPropTag &= 0xFFFF0000;
-					lpProps.ulPropTag += PT_ERROR;
+					proptag = (int) lpProps.ulPropTag;
+					proptag &= 0xFFFF0000;
+					proptag += PT_ERROR;
+					lpProps.ulPropTag = (enum MAPITAGS) proptag;
 				}
 				break;
 			case PR_EMS_AB_IS_MASTER:

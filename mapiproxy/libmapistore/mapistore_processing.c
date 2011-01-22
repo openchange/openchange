@@ -154,7 +154,7 @@ int mapistore_init_mapping_context(struct processing_context *pctx)
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_init_mapping_context");
 
-	/* Step 1. Open/Create the used ID database */
+	/* Open/Create the used ID database */
 	if (!pctx->mapping_ctx->used_ctx) {
 		dbpath = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), MAPISTORE_DB_NAME_USED_ID);
 		pctx->mapping_ctx->used_ctx = tdb_wrap_open(pctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
@@ -167,20 +167,7 @@ int mapistore_init_mapping_context(struct processing_context *pctx)
 		}
 	}
 
-	/* Step 2. Open/Create the free ID database */
-	if (!pctx->mapping_ctx->free_ctx) {
-		dbpath = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), MAPISTORE_DB_NAME_FREE_ID);
-		pctx->mapping_ctx->free_ctx = tdb_wrap_open(pctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
-		talloc_free(dbpath);
-		if (!pctx->mapping_ctx->free_ctx) {
-			DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
-			talloc_free(mem_ctx);
-			talloc_free(pctx->mapping_ctx);
-			return MAPISTORE_ERR_DATABASE_INIT;
-		}
-	}
-
-	/* Step 3. Retrieve the last ID value */
+	/* Retrieve the last ID value */
 	key.dptr = (unsigned char *) MAPISTORE_DB_LAST_ID_KEY;
 	key.dsize = strlen(MAPISTORE_DB_LAST_ID_KEY);
 

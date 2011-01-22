@@ -147,9 +147,8 @@ struct mapistoredb_context {
    Identifier mapping context.
 
    This structure stores PR_MID and PR_FID identifiers to backend
-   identifiers mapping. It points on 2 databases, one with "in use"
-   identifiers and another one with a list of "free identifiers" which
-   are added when an object is deleted, moved, etc.
+   identifiers mapping. It points to a database containing the used
+   identifiers.
 
    The last_id structure member references the last identifier value
    which got created. There is no identifier available with a value
@@ -157,7 +156,6 @@ struct mapistoredb_context {
  */
 struct id_mapping_context {
 	struct tdb_wrap		*used_ctx;
-	struct tdb_wrap		*free_ctx;
 	uint64_t		last_id;
 };
 
@@ -205,7 +203,6 @@ struct indexing_context_list {
 #define	MAPISTORE_DB_LAST_ID_VAL	0x15000
 
 #define	MAPISTORE_DB_NAME_USED_ID	"mapistore_id_mapping_used.tdb"
-#define	MAPISTORE_DB_NAME_FREE_ID	"mapistore_id_mapping_free.tdb"
 
 __BEGIN_DECLS
 

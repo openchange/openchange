@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -103,7 +103,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_add(struct mapi_nameid *mapi_nameid,
 
 			mapi_nameid->entries[count] = mapi_nameid_tags[i];
 
-			mapi_nameid->nameid[count].ulKind = mapi_nameid_tags[i].ulKind;
+			mapi_nameid->nameid[count].ulKind = (enum ulKind)mapi_nameid_tags[i].ulKind;
 			GUID_from_string(mapi_nameid_tags[i].OLEGUID,
 					 &(mapi_nameid->nameid[count].lpguid));
 			switch (mapi_nameid_tags[i].ulKind) {
@@ -168,7 +168,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
 
 			mapi_nameid->entries[count] = mapi_nameid_tags[i];
 
-			mapi_nameid->nameid[count].ulKind = mapi_nameid_tags[i].ulKind;
+			mapi_nameid->nameid[count].ulKind = (enum ulKind) mapi_nameid_tags[i].ulKind;
 			GUID_from_string(mapi_nameid_tags[i].OLEGUID,
 					 &(mapi_nameid->nameid[count].lpguid));
 			switch (mapi_nameid_tags[i].ulKind) {
@@ -235,7 +235,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
 
 			mapi_nameid->entries[count] = mapi_nameid_tags[i];
 
-			mapi_nameid->nameid[count].ulKind = mapi_nameid_tags[i].ulKind;
+			mapi_nameid->nameid[count].ulKind = (enum ulKind) mapi_nameid_tags[i].ulKind;
 			GUID_from_string(mapi_nameid_tags[i].OLEGUID,
 					 &(mapi_nameid->nameid[count].lpguid));
 			switch (mapi_nameid_tags[i].ulKind) {
@@ -399,7 +399,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_canonical_add(struct mapi_nameid *mapi_name
 
 			mapi_nameid->entries[count] = mapi_nameid_tags[i];
 
-			mapi_nameid->nameid[count].ulKind = mapi_nameid_tags[i].ulKind;
+			mapi_nameid->nameid[count].ulKind = (enum ulKind) mapi_nameid_tags[i].ulKind;
 			GUID_from_string(mapi_nameid_tags[i].OLEGUID,
 					 &(mapi_nameid->nameid[count].lpguid));
 			switch (mapi_nameid_tags[i].ulKind) {
@@ -581,8 +581,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_name
 
 	for (i = 0; i < mapi_nameid->count; i++) {
 		if (mapi_nameid->entries[i].propType) {
-			SPropTagArray->aulPropTag[i] = (SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
-				mapi_nameid->entries[i].propType;
+		  SPropTagArray->aulPropTag[i] = (enum MAPITAGS)(((int)SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
+								 mapi_nameid->entries[i].propType);
 		}
 	}
 	
@@ -623,9 +623,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_map_SPropTagArray(struct mapi_nameid *mapi_
 
 	for (i = 0; i < SPropTagArray->cValues; i++) {
 		for (j = 0; j < mapi_nameid->count; j++) {
-			if (mapi_nameid->entries[j].proptag == SPropTagArray->aulPropTag[i]) {
-				SPropTagArray->aulPropTag[i] = (SPropTagArray2->aulPropTag[j] & 0xFFFF0000) |
-					mapi_nameid->entries[j].propType;
+		  if ((enum MAPITAGS)mapi_nameid->entries[j].proptag == SPropTagArray->aulPropTag[i]) {
+			  SPropTagArray->aulPropTag[i] = (enum MAPITAGS)(((int)SPropTagArray2->aulPropTag[j] & 0xFFFF0000) |
+									  mapi_nameid->entries[j].propType);
 				mapi_nameid->entries[j].position = i;
 			}
 		}
@@ -663,7 +663,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_unmap_SPropTagArray(struct mapi_nameid *map
 	
 	for (i = 0; i < mapi_nameid->count; i++) {
 		if (mapi_nameid->entries[i].position <= SPropTagArray->cValues) {
-			SPropTagArray->aulPropTag[mapi_nameid->entries[i].position] = mapi_nameid->entries[i].proptag;
+		  SPropTagArray->aulPropTag[mapi_nameid->entries[i].position] = (enum MAPITAGS) mapi_nameid->entries[i].proptag;
 		}
 	}
 
@@ -707,9 +707,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_map_SPropValue(struct mapi_nameid *mapi_nam
 
 	for (i = 0; i < PropCount; i++) {
 		for (j = 0; j < mapi_nameid->count; j++) {
-			if (mapi_nameid->entries[j].proptag == lpProps[i].ulPropTag) {
-				lpProps[i].ulPropTag = (SPropTagArray->aulPropTag[j] & 0xFFFF0000) |
-					mapi_nameid->entries[j].propType;
+		  if ((enum MAPITAGS)mapi_nameid->entries[j].proptag == lpProps[i].ulPropTag) {
+			  lpProps[i].ulPropTag = (enum MAPITAGS)(((int)SPropTagArray->aulPropTag[j] & 0xFFFF0000) |
+								 mapi_nameid->entries[j].propType);
 				mapi_nameid->entries[j].position = i;
 			}
 		}
@@ -750,7 +750,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_unmap_SPropValue(struct mapi_nameid *mapi_n
 
 	for (i = 0; i < mapi_nameid->count; i++) {
 		if (mapi_nameid->entries[i].position <= PropCount) {
-			lpProps[mapi_nameid->entries[i].position].ulPropTag = mapi_nameid->entries[i].proptag;
+		  lpProps[mapi_nameid->entries[i].position].ulPropTag = (enum MAPITAGS) mapi_nameid->entries[i].proptag;
 		}
 	}
 
@@ -883,8 +883,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_GetIDsFromNames(struct mapi_nameid *mapi_na
 	OPENCHANGE_RETVAL_IF(retval, GetLastError(), NULL);
 
 	for (i = 0; i < SPropTagArray->cValues; i++) {
-		SPropTagArray->aulPropTag[i] = (SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
-			mapi_nameid->entries[i].propType;
+	  SPropTagArray->aulPropTag[i] = (enum MAPITAGS)(((int)SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
+							 mapi_nameid->entries[i].propType);
 	}
 
 	return MAPI_E_SUCCESS;

@@ -391,7 +391,7 @@ _PUBLIC_ struct fx_parser_context* fxparser_init(TALLOC_CTX *mem_ctx, void *priv
 	parser->data = data_blob_talloc_named(parser->mem_ctx, NULL, 0, "fast transfer parser");
 	parser->state = ParserState_Entry;
 	parser->idx = 0;
-	parser->lpProp.ulPropTag = 0;
+	parser->lpProp.ulPropTag = (enum MAPITAGS) 0;
 	parser->lpProp.dwAlignPad = 0;
 	parser->lpProp.value.l = 0;
 	parser->length = 0;
@@ -452,7 +452,7 @@ _PUBLIC_ void fxparser_parse(struct fx_parser_context *parser, DATA_BLOB *fxbuf)
 					default:
 					{
 						/* standard property thing */
-						parser->lpProp.ulPropTag = parser->tag;
+					  parser->lpProp.ulPropTag = (enum MAPITAGS) parser->tag;
 						parser->lpProp.dwAlignPad = 0;
 						if ((parser->lpProp.ulPropTag >> 16) & 0x8000) {
 							/* this is a named property */

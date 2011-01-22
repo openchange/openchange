@@ -1,7 +1,7 @@
 /*
    OpenChange NSPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2006.
+   Copyright (C) Julien Kerihuel 2005 - 2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ _PUBLIC_ char *x500_get_dn_element(TALLOC_CTX *mem_ctx, const char *dn, const ch
 	if ((dn == NULL) || (dn[0] == '\0') || !element) return NULL;
 
 	tmp_dn = talloc_strdup(mem_ctx, dn);
-	pdn = strcasestr((const char *)tmp_dn, element);
+	pdn = (char *) strcasestr((const char *)tmp_dn, element);
 	if (pdn == NULL) {
 		talloc_free(tmp_dn);
 		return NULL;
@@ -121,7 +121,7 @@ _PUBLIC_ char *x500_get_servername(const char *dn)
 		return NULL;
 	}
 
-	pdn = strcasestr(dn, SERVERNAME);
+	pdn = (char *) strcasestr(dn, SERVERNAME);
 	if (pdn == NULL) return NULL;
 
 	pdn += strlen(SERVERNAME);

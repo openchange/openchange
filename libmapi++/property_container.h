@@ -208,7 +208,7 @@ class property_container {
 			if (!m_property_tag_array) {
 				m_property_tag_array = set_SPropTagArray(m_memory_ctx, 1, property_tag);
 			} else {
-				if (SPropTagArray_add(m_memory_ctx, m_property_tag_array, property_tag) != MAPI_E_SUCCESS)
+				if (SPropTagArray_add(m_memory_ctx, m_property_tag_array, (enum MAPITAGS)property_tag) != MAPI_E_SUCCESS)
 					throw mapi_exception(GetLastError(), "property_container::operator<< : SPropTagArray_add");
 			}
 

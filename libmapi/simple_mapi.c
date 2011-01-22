@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -596,7 +596,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder,
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (flaglist->aulPropTag[0] == MAPI_RESOLVED) {
-		user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
+	  user = (const char *) find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
 	} else {
 		/* Special case: Not a AD user account but Default or
 		 * Anonymous. Since names are language specific, we
@@ -714,7 +714,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder,
 	/* Check if the username was found */
 	OPENCHANGE_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
 
-	user = find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
+	user = (const char *)find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
 
 	mapi_object_init(&obj_table);
 	retval = GetPermissionsTable(obj_folder, 0x00, &obj_table);

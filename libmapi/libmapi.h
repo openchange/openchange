@@ -2,7 +2,7 @@
    OpenChange MAPI implementation.
    libmapi public header file
 
-   Copyright (C) Julien Kerihuel 2007-2010.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -143,8 +143,8 @@ const char		*get_proptag_name(uint32_t);
 uint32_t		get_proptag_value(const char *);
 
 /* The following public definitions come from auto-generated libmapi/mapicode.c */
-void			mapi_errstr(const char *, uint32_t);
-const char		*mapi_get_errstr(uint32_t);
+void			mapi_errstr(const char *, enum MAPISTATUS);
+const char		*mapi_get_errstr(enum MAPISTATUS);
 
 /* The following public definitions come from libmapi/codepage_lcid.c */
 char			*mapi_get_system_locale(void);
@@ -241,7 +241,7 @@ enum MAPISTATUS		mapi_nameid_GetIDsFromNames(struct mapi_nameid *, mapi_object_t
 
 /* The following public definitions come from libmapi/property.c */
 struct SPropTagArray	*set_SPropTagArray(TALLOC_CTX *, uint32_t, ...);
-enum MAPISTATUS		SPropTagArray_add(TALLOC_CTX *, struct SPropTagArray *, uint32_t);
+enum MAPISTATUS		SPropTagArray_add(TALLOC_CTX *, struct SPropTagArray *, enum MAPITAGS);
 const void		*get_SPropValue(struct SPropValue *, uint32_t);
 struct SPropValue	*get_SPropValue_SRowSet(struct SRowSet *, uint32_t);
 const void		*get_SPropValue_SRowSet_data(struct SRowSet *, uint32_t);
@@ -252,7 +252,7 @@ const void		*find_SPropValue_data(struct SRow *, uint32_t);
 const void		*find_mapi_SPropValue_data(struct mapi_SPropValue_array *, uint32_t);
 const void		*get_mapi_SPropValue_data(struct mapi_SPropValue *);
 const void		*get_SPropValue_data(struct SPropValue *);
-bool			set_SPropValue_proptag(struct SPropValue *, uint32_t, const void *);
+bool			set_SPropValue_proptag(struct SPropValue *, enum MAPITAGS, const void *);
 struct SPropValue	*add_SPropValue(TALLOC_CTX *, struct SPropValue *, uint32_t *, uint32_t, const void *);
 bool			set_SPropValue(struct SPropValue *, const void *);
 uint32_t		get_mapi_property_size(struct mapi_SPropValue *);

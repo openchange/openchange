@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -817,7 +817,7 @@ _PUBLIC_ enum MAPISTATUS FXGetBuffer(mapi_object_t *obj_source_context, uint16_t
 	*progressStepCount = reply->InProgressCount;
 	*totalStepCount = reply->TotalStepCount;
 	blob->length = reply->TransferBufferSize;
-	blob->data = talloc_size((TALLOC_CTX *)session, blob->length);
+	blob->data = (uint8_t *)talloc_size((TALLOC_CTX *)session, blob->length);
 	memcpy(blob->data, reply->TransferBuffer.data, blob->length);
 
 	talloc_free(mapi_response);

@@ -4,7 +4,7 @@
    This work is based on libpst-0.5.2, and the author(s) of
    that code will also hold appropriate copyrights.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -182,7 +182,7 @@ static void initialise_output_state(TALLOC_CTX *mem_ctx, output_state *state, ui
 {
 	state->out_pos = 0;
 	state->out_size = rawSize + LZFU_HEADERLENGTH + 4;
-	output_blob->data = talloc_size(mem_ctx, state->out_size);
+	output_blob->data = (uint8_t *) talloc_size(mem_ctx, state->out_size);
 	output_blob->length = 0;
 	state->output_blob = output_blob;
 }
@@ -496,7 +496,7 @@ _PUBLIC_ enum MAPISTATUS compress_rtf(TALLOC_CTX *mem_ctx, const char *rtf, cons
 	size_t			dict_write_idx = 0;
 
 	/* as an upper bound, assume that the output is no larger than 9/8 of the input size, plus the header size */
-	*rtfcomp = talloc_size(mem_ctx, 9 * rtf_size / 8 + sizeof(lzfuheader));
+	*rtfcomp = (uint8_t *) talloc_size(mem_ctx, 9 * rtf_size / 8 + sizeof(lzfuheader));
 	control_byte_idx = sizeof(lzfuheader);
 	(*rtfcomp)[control_byte_idx] = 0x00;
 	output_idx = control_byte_idx + 1;
@@ -562,7 +562,7 @@ _PUBLIC_ enum MAPISTATUS compress_rtf(TALLOC_CTX *mem_ctx, const char *rtf, cons
 	header.dwCRC = calculateCRC(*rtfcomp, sizeof(lzfuheader), output_idx - sizeof(lzfuheader));
 	memcpy(*rtfcomp, &header, sizeof(lzfuheader));
 	*rtfcomp_size = output_idx;
-	*rtfcomp = talloc_realloc_size(mem_ctx, *rtfcomp, *rtfcomp_size);
+	*rtfcomp = (uint8_t *) talloc_realloc_size(mem_ctx, *rtfcomp, *rtfcomp_size);
 
 	return MAPI_E_SUCCESS;
 }

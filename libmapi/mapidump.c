@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		if (data && ((*(const uint16_t *)data) == 0x0000)) {
 			/* its an empty string */
 			printf("\n");
-		} else if (data && ((*(const uint32_t *)data) != MAPI_E_NOT_FOUND)) {
+		} else if (data && ((*(enum MAPISTATUS *)data) != MAPI_E_NOT_FOUND)) {
 			/* its a valid string */
 			printf(" %s\n", (const char *)data);
 		} else {
@@ -105,7 +105,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		break;
 	case PT_CLSID:
 	{
-		const uint8_t *ab = get_SPropValue_data(&lpProp);
+	  const uint8_t *ab = (const uint8_t *) get_SPropValue_data(&lpProp);
 		printf("%s%s: ", sep?sep:"", proptag);
 		for (i = 0; i < 15; ++i) {
 			printf("%02x ", ab[i]);
@@ -328,7 +328,7 @@ _PUBLIC_ void mapidump_message_summary(mapi_object_t *obj_message)
 	mapi_object_message_t		*msg;
 	int				*recipient_type;
 	const char			*recipient;
-	int				i;
+	uint32_t			i;
 
 	if (!obj_message) return;
 	if (!obj_message->private_data) return;
@@ -679,7 +679,7 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties, const char
 	const double			*complete = 0;
 	const uint32_t			*status;
 	const uint32_t			*importance;
-	const uint8_t			*private;
+	const uint8_t			*private_tag;
 	uint32_t       			i;
 
 	contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PidLidContacts);
@@ -688,7 +688,7 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties, const char
 	complete = (const double *)find_mapi_SPropValue_data(properties, PidLidPercentComplete);
 	status = (const uint32_t *)find_mapi_SPropValue_data(properties, PidLidTaskStatus);
 	importance = (const uint32_t *)find_mapi_SPropValue_data(properties, PR_IMPORTANCE);
-	private = (const uint8_t *)find_mapi_SPropValue_data(properties, PidLidPrivate);
+	private_tag = (const uint8_t *)find_mapi_SPropValue_data(properties, PidLidPrivate);
 
 	printf("|== %s ==| %s\n", subject?subject:"", id?id:"");
 	fflush(0);
@@ -717,8 +717,8 @@ _PUBLIC_ void mapidump_task(struct mapi_SPropValue_array *properties, const char
 	mapidump_date(properties, PidLidTaskDueDate,"Due Date");
 	mapidump_date(properties, PidLidTaskStartDate, "Start Date");
 
-	if (private) {
-		printf("\tPrivate: %s\n", (*private == true)?"True":"False");
+	if (private_tag) {
+		printf("\tPrivate: %s\n", (*private_tag == true)?"True":"False");
 		fflush(0);
 	} else {
 		printf("\tPrivate: false\n");

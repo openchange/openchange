@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,8 +25,11 @@
    \brief OpenChange Dispatcher database routines
  */
 
+#define __STDC_FORMAT_MACROS	1
+#include <inttypes.h>
+
 #include "mapiproxy/dcesrv_mapiproxy.h"
-#include "libmapiproxy.h"
+#include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 
@@ -34,18 +37,19 @@
    \details Retrieve the mailbox FolderID for given recipient from
    openchange dispatcher database
 
-   \param ldb_ctx pointer to the OpenChange LDB context
+   \param _ldb_ctx pointer to the OpenChange LDB context
    \param recipient the mailbox username
    \param SystemIdx the system folder index
    \param FolderId pointer to the folder identifier the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *_ldb_ctx,
 							 char *recipient, uint32_t SystemIdx,
 							 uint64_t *FolderId)
 {
 	TALLOC_CTX			*mem_ctx;
+	struct ldb_context		*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result		*res = NULL;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
@@ -98,17 +102,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 /**
    \details Retrieve the public folder FolderID (fid) for a given folder type
 
-   \param ldb_ctx pointer to the OpenChange LDB context
+   \param _ldb_ctx pointer to the OpenChange LDB context
    \param SystemIdx the system folder index
    \param FolderId pointer to the folder identifier the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(void *_ldb_ctx,
 							 uint32_t SystemIdx,
 							 uint64_t *FolderId)
 {
 	TALLOC_CTX			*mem_ctx;
+	struct ldb_context		*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result		*res = NULL;
 	const char * const		attrs[] = { "*", NULL };
 	int				ret;
@@ -139,7 +144,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(void *ldb_ctx,
    system folder.
 
    \param parent_ctx pointer to the parent memory context
-   \param ldb_ctx pointer to the openchange LDB context
+   \param _ldb_ctx pointer to the openchange LDB context
    \param fid the Folder identifier to search for
    \param distinguishedName pointer on pointer to the
    distinguishedName string the function returns
@@ -147,11 +152,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(void *ldb_ctx,
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *parent_ctx, 
-							    void *ldb_ctx, 
+							    void *_ldb_ctx, 
 							    uint64_t fid, 
 							    char **distinguishedName)
 {
 	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
@@ -175,17 +181,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *parent_c
    \details Retrieve the mailbox GUID for given recipient from
    openchange dispatcher database
 
-   \param ldb_ctx pointer to the OpenChange LDB context
+   \param _ldb_ctx pointer to the OpenChange LDB context
    \param recipient the mailbox username
    \param MailboxGUID pointer to the mailbox GUID the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxGuid(void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxGuid(void *_ldb_ctx,
 						      char *recipient,
 						      struct GUID *MailboxGUID)
 {
 	TALLOC_CTX			*mem_ctx;
+	struct ldb_context		*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result		*res = NULL;
 	const char			*guid;
 	const char * const		attrs[] = { "*", NULL };
@@ -219,18 +226,19 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxGuid(void *ldb_ctx,
    \details Retrieve the mailbox replica identifier and GUID for given
    recipient from openchange dispatcher database
 
-   \param ldb_ctx pointer to the OpenChange LDB context
+   \param _ldb_ctx pointer to the OpenChange LDB context
    \param recipient the mailbox username
    \param ReplID pointer to the replica identifier the function returns
    \param ReplGUID pointer to the replica GUID the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *_ldb_ctx,
 							 char *recipient, uint16_t *ReplID,
 							 struct GUID *ReplGUID)
 {
 	TALLOC_CTX			*mem_ctx;
+	struct ldb_context		*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result		*res = NULL;
 	const char			*guid;
 	const char * const		attrs[] = { "*", NULL };
@@ -268,17 +276,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
    \details Retrieve the public folder replica identifier and GUID
    from the openchange dispatcher database
 
-   \param ldb_ctx pointer to the OpenChange LDB context
+   \param _ldb_ctx pointer to the OpenChange LDB context
    \param ReplID pointer to the replica identifier the function returns
    \param ReplGUID pointer to the replica GUID the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *_ldb_ctx,
 							      uint16_t *ReplID,
 							      struct GUID *ReplGUID)
 {
 	TALLOC_CTX			*mem_ctx;
+	struct ldb_context		*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result		*res = NULL;
 	const char			*guid;
 	const char * const		attrs[] = { "*", NULL };
@@ -317,7 +326,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *ldb_ctx,
    folder.
 
    \param parent_ctx pointer to the memory context
-   \param ldb_ctx pointer to the openchange LDB context
+   \param _ldb_ctx pointer to the openchange LDB context
    \param fid the Folder identifier to search for
    \param mapistoreURL pointer on pointer to the mapistore URI the
    function returns
@@ -327,12 +336,13 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *ldb_ctx,
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
-						       void *ldb_ctx,
+						       void *_ldb_ctx,
 						       uint64_t fid,
 						       char **mapistoreURL,
 						       bool mailboxstore)
 {
 	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
@@ -362,7 +372,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
    associated to the MessageClass search pattern.
 
    \param parent_ctx pointer to the memory context
-   \param ldb_ctx pointer to the openchange LDB context
+   \param _ldb_ctx pointer to the openchange LDB context
    \param recipient pointer to the mailbox's username
    \param MessageClass substring to search for
    \param fid pointer to the folder identifier the function returns
@@ -372,13 +382,14 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
-							void *ldb_ctx,
+							void *_ldb_ctx,
 							const char *recipient,
 							const char *MessageClass,
 							uint64_t *fid,
 							const char **ExplicitMessageClass)
 {
 	TALLOC_CTX			*mem_ctx;
+	struct ldb_context		*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result		*res = NULL;
 	struct ldb_dn			*dn;
 	struct ldb_message_element	*ldb_element;
@@ -466,17 +477,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 /**
    \details Retrieve the number of sub folders for a given fid
 
-   \param ldb_ctx pointer to the openchange LDB context
+   \param _ldb_ctx pointer to the openchange LDB context
    \param fid the folder identifier to use for the search
    \param RowCount pointer to the returned number of results
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(void *_ldb_ctx,
 						       uint64_t fid,
 						       uint32_t *RowCount)
 {
 	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result	*res;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
@@ -502,17 +514,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(void *ldb_ctx,
    \details Check if a property exists within an openchange dispatcher
    database record
 
-   \param ldb_ctx pointer to the openchange LDB context
+   \param _ldb_ctx pointer to the openchange LDB context
    \param proptag the MAPI property tag to lookup
    \param fid the record folder identifier
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *ldb_ctx, 
+_PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *_ldb_ctx, 
 							     uint32_t proptag, 
 							     uint64_t fid)
 {
 	TALLOC_CTX	       	*mem_ctx;
+	struct ldb_context	*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result      	*res = NULL;
 	const char * const     	attrs[] = { "*", NULL };
 	const char	       	*PidTagAttr = NULL;
@@ -652,16 +665,17 @@ static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
 /**
    \details Return the next available FolderID
    
-   \param ldb_ctx pointer to the openchange LDB context
+   \param _ldb_ctx pointer to the openchange LDB context
    \param fid pointer to the fid value the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *_ldb_ctx,
 						       uint64_t *fid)
 {
 	TALLOC_CTX		*mem_ctx;
 	int			ret;
+	struct ldb_context	*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result	*res = NULL;
 	struct ldb_message	*msg;
 	const char * const	attrs[] = { "*", NULL };
@@ -697,7 +711,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *ldb_ctx,
    \details Retrieve a MAPI property value from a folder record
 
    \param parent_ctx pointer to the memory context
-   \param ldb_ctx pointer to the openchange LDB context
+   \param _ldb_ctx pointer to the openchange LDB context
    \param recipient the mailbox username
    \param proptag the MAPI property tag to retrieve value for
    \param fid the record folder identifier
@@ -706,13 +720,14 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *ldb_ctx,
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx, 
-							  void *ldb_ctx,
+							  void *_ldb_ctx,
 							  char *recipient,
 							  uint32_t proptag,
 							  uint64_t fid,
 							  void **data)
 {
 	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "*", NULL };
 	const char		*PidTagAttr = NULL;
@@ -750,7 +765,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
    \details Retrieve a MAPI property from a table (ldb search results)
 
    \param parent_ctx pointer to the memory context
-   \param ldb_ctx pointer to the openchange LDB context
+   \param _ldb_ctx pointer to the openchange LDB context
    \param recipient the mailbox username
    \param ldb_filter the ldb search string
    \param proptag the MAPI property tag to retrieve value for
@@ -760,7 +775,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
-							 void *ldb_ctx,
+							 void *_ldb_ctx,
 							 char *recipient,
 							 char *ldb_filter,
 							 uint32_t proptag,
@@ -768,6 +783,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 							 void **data)
 {
 	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "*", NULL };
 	const char		*PidTagAttr = NULL;
@@ -811,19 +827,20 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
    unique in the context of a parent folder, so the parent folder needs to
    be provided.
 
-   \param ldb_ctx pointer to the openchange LDB context
+   \param _ldb_ctx pointer to the openchange LDB context
    \param parent_fid the folder ID of the parent folder 
    \param foldername the name to look up
    \param fid the folder ID for the folder with the specified name (0 if not found)
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(void *_ldb_ctx,
 						      uint64_t parent_fid,
 						      const char* foldername,
 						      uint64_t *fid)
 {
 	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result	*res;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
@@ -853,7 +870,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(void *ldb_ctx,
    \details Set the receive folder for a specific message class.
 
    \param parent_ctx pointer to the memory context
-   \param ldb_ctx pointer to the openchange LDB context
+   \param _ldb_ctx pointer to the openchange LDB context
    \param recipient pointer to the mailbox's username
    \param MessageClass message class (e.g. IPM.whatever) to set
    \param fid folder identifier for the recipient folder for the message class
@@ -861,12 +878,13 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(void *ldb_ctx,
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
-							void *ldb_ctx,
+							void *_ldb_ctx,
 							const char *recipient,
 							const char *MessageClass,
 							uint64_t fid)
 {
 	TALLOC_CTX			*mem_ctx;
+	struct ldb_context		*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result		*res = NULL;
 	struct ldb_dn			*dn;
 	char				*dnstr;

@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -82,14 +82,14 @@ NTSTATUS mapiproxy_server_unbind(struct server_id server_id, uint32_t context_id
 
 extern NTSTATUS mapiproxy_server_register(const void *_server_module)
 {
-	const struct mapiproxy_module	*server_module = _server_module;
+	const struct mapiproxy_module	*server_module = (const struct mapiproxy_module *) _server_module;
 
 	server_modules = realloc_p(server_modules, struct server_module, num_server_modules + 1);
 	if (!server_modules) {
 		smb_panic("out of memory in mapiproxy_server_register");
 	}
 
-	server_modules[num_server_modules].server_module = smb_xmemdup(server_module, sizeof (*server_module));
+	server_modules[num_server_modules].server_module = (struct mapiproxy_module *) smb_xmemdup(server_module, sizeof (*server_module));
 	server_modules[num_server_modules].server_module->name = smb_xstrdup(server_module->name);
 
 	num_server_modules++;
@@ -359,7 +359,7 @@ _PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_
 	}
 
 	/* Step 1. Connect to the database */
-	ret = ldb_connect(openchange_ldb_ctx, ldb_path, 0, NULL);
+	ret = ldb_connect((struct ldb_context *)openchange_ldb_ctx, ldb_path, 0, NULL);
 	talloc_free(ldb_path);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
@@ -367,7 +367,7 @@ _PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_
 	}
 
 	/* Step 2. Search for the rootDSE record */
-	ret = ldb_search(openchange_ldb_ctx, mem_ctx, &res, NULL,
+	ret = ldb_search((struct ldb_context *)openchange_ldb_ctx, mem_ctx, &res, NULL,
 			 LDB_SCOPE_SUBTREE, attrs, "(distinguishedName=@ROOTDSE)");
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
@@ -380,13 +380,13 @@ _PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_
 	}
 
 	/* Step 3. Set opaque naming */
-	tmp_dn = ldb_msg_find_attr_as_dn(openchange_ldb_ctx, openchange_ldb_ctx,
+	tmp_dn = ldb_msg_find_attr_as_dn((struct ldb_context *)openchange_ldb_ctx, openchange_ldb_ctx,
 					 res->msgs[0], "rootDomainNamingContext");
-	ldb_set_opaque(openchange_ldb_ctx, "rootDomainNamingContext", tmp_dn);
+	ldb_set_opaque((struct ldb_context *)openchange_ldb_ctx, "rootDomainNamingContext", tmp_dn);
 
-	tmp_dn = ldb_msg_find_attr_as_dn(openchange_ldb_ctx, openchange_ldb_ctx,
+	tmp_dn = ldb_msg_find_attr_as_dn((struct ldb_context *)openchange_ldb_ctx, openchange_ldb_ctx,
 					 res->msgs[0], "defaultNamingContext");
-	ldb_set_opaque(openchange_ldb_ctx, "defaultNamingContext", tmp_dn);
+	ldb_set_opaque((struct ldb_context *)openchange_ldb_ctx, "defaultNamingContext", tmp_dn);
 
 	return openchange_ldb_ctx;
 }

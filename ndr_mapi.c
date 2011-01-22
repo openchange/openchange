@@ -1432,7 +1432,7 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 		ndr->depth--;
 
 		/* Put MAPI request blob into a ndr_pull structure */
-		rgbIn.data = talloc_memdup(mem_ctx, r->in.rgbIn, r->in.cbIn);
+		rgbIn.data = (uint8_t *)talloc_memdup(mem_ctx, r->in.rgbIn, r->in.cbIn);
 		rgbIn.length = r->in.cbIn;
 		dump_data(0, rgbIn.data, rgbIn.length);
 		ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
@@ -1476,7 +1476,7 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 
 		/* Put MAPI response blob into a ndr_pull structure */
 		if (*r->out.pcbOut) {
-			rgbOut.data = talloc_memdup(mem_ctx, r->out.rgbOut, *r->out.pcbOut);
+		  rgbOut.data = (uint8_t *)talloc_memdup(mem_ctx, r->out.rgbOut, *r->out.pcbOut);
 			rgbOut.length = *r->out.pcbOut;
 			ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
 			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);

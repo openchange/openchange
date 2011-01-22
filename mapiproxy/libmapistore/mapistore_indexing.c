@@ -19,10 +19,13 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define __STDC_FORMAT_MACROS	1
+#include <inttypes.h>
+
 #include <string.h>
 
-#include "mapistore.h"
 #include "mapistore_errors.h"
+#include "mapistore.h"
 #include "mapistore_private.h"
 #include <dlinklist.h>
 #include "libmapi/libmapi_private.h"
@@ -64,8 +67,8 @@ struct indexing_context_list *mapistore_indexing_search(struct mapistore_context
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_add(struct mapistore_context *mstore_ctx, 
-				    const char *username)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_add(struct mapistore_context *mstore_ctx, 
+						     const char *username)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct indexing_context_list	*ictx;
@@ -99,7 +102,7 @@ _PUBLIC_ int mapistore_indexing_add(struct mapistore_context *mstore_ctx,
 
 	talloc_free(mem_ctx);
 
-	return MAPI_E_SUCCESS;
+	return MAPISTORE_SUCCESS;
 }
 
 
@@ -143,7 +146,7 @@ _PUBLIC_ int mapistore_indexing_del(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-int mapistore_indexing_add_ref_count(struct indexing_context_list *ictx)
+enum MAPISTORE_ERROR mapistore_indexing_add_ref_count(struct indexing_context_list *ictx)
 {
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
@@ -160,7 +163,7 @@ int mapistore_indexing_add_ref_count(struct indexing_context_list *ictx)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-int mapistore_indexing_del_ref_count(struct indexing_context_list *ictx)
+enum MAPISTORE_ERROR mapistore_indexing_del_ref_count(struct indexing_context_list *ictx)
 {
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!ictx->ref_count, MAPISTORE_SUCCESS, NULL);
@@ -184,8 +187,8 @@ int mapistore_indexing_del_ref_count(struct indexing_context_list *ictx)
    \return MAPISTORE_SUCCESS if the folder/message ID doesn't exist,
    otherwise MAPISTORE_ERR_EXIST.
  */
-int mapistore_indexing_search_existing_fmid(struct indexing_context_list *ictx, 
-					    uint64_t fmid, bool *IsSoftDeleted)
+enum MAPISTORE_ERROR mapistore_indexing_search_existing_fmid(struct indexing_context_list *ictx, 
+							     uint64_t fmid, bool *IsSoftDeleted)
 {
 	int		ret;
 	TDB_DATA	key;
@@ -230,11 +233,12 @@ int mapistore_indexing_search_existing_fmid(struct indexing_context_list *ictx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
-				       uint32_t context_id,  uint64_t fmid, 
-				       uint8_t type)
+enum MAPISTORE_ERROR mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
+							uint32_t context_id,  uint64_t fmid, 
+							uint8_t type)
 {
-	int				ret;
+	enum MAPISTORE_ERROR		ret;
+	int				retval;
 	struct backend_context		*backend_ctx;
 	struct indexing_context_list	*ictx;
 	TDB_DATA			key;
@@ -269,12 +273,12 @@ int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
 	dbuf.dptr = (unsigned char *) talloc_strdup(mstore_ctx, mapistore_URI);
 	dbuf.dsize = strlen((const char *) dbuf.dptr);
 
-	ret = tdb_store(ictx->index_ctx->tdb, key, dbuf, TDB_INSERT);
+	retval = tdb_store(ictx->index_ctx->tdb, key, dbuf, TDB_INSERT);
 	talloc_free(key.dptr);
 	talloc_free(dbuf.dptr);
 	talloc_free(mapistore_URI);
 
-	if (ret == -1) {
+	if (retval == -1) {
 		DEBUG(3, ("[%s:%d]: Unable to create 0x%.16"PRIx64" record: %s\n", __FUNCTION__, __LINE__,
 			  fmid, mapistore_URI));
 		return MAPISTORE_ERR_DATABASE_OPS;
@@ -295,11 +299,12 @@ int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
-				       uint32_t context_id, uint64_t fmid,
-				       uint8_t flags)
+enum MAPISTORE_ERROR mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
+							uint32_t context_id, uint64_t fmid,
+							uint8_t flags)
 {
-	int				ret;
+	enum MAPISTORE_ERROR		ret;
+	int				retval;
 	struct backend_context		*backend_ctx;
 	struct indexing_context_list	*ictx;
 	TDB_DATA			key;
@@ -341,16 +346,16 @@ int mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
 		/* Retrieve previous value */
 		dbuf = tdb_fetch(ictx->index_ctx->tdb, key);
 		/* Add new record */
-		ret = tdb_store(ictx->index_ctx->tdb, newkey, dbuf, TDB_INSERT);
+		retval = tdb_store(ictx->index_ctx->tdb, newkey, dbuf, TDB_INSERT);
 		/* Delete previous record */
-		ret = tdb_delete(ictx->index_ctx->tdb, key);
+		retval = tdb_delete(ictx->index_ctx->tdb, key);
 		talloc_free(key.dptr);
 		talloc_free(newkey.dptr);
 		break;
 	case MAPISTORE_PERMANENT_DELETE:
-		ret = tdb_delete(ictx->index_ctx->tdb, key);
+		retval = tdb_delete(ictx->index_ctx->tdb, key);
 		talloc_free(key.dptr);
-		MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_OPS, NULL);
+		MAPISTORE_RETVAL_IF(retval, MAPISTORE_ERR_DATABASE_OPS, NULL);
 		break;
 	}
 	

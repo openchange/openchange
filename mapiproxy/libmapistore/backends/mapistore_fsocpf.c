@@ -33,7 +33,7 @@
 
    \return MAPISTORE_SUCCESS on success
  */
-static int fsocpf_init(void)
+static enum MAPISTORE_ERROR fsocpf_init(void)
 {
 	DEBUG(0, ("fsocpf backend initialized\n"));
 
@@ -201,7 +201,7 @@ static struct fsocpf_message_list *fsocpf_find_message_list_by_mid(struct fsocpf
    \param uri pointer to the fsocpf path
    \param private_data pointer to the private backend context 
  */
-static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **private_data)
+static enum MAPISTORE_ERROR fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **private_data)
 {
 	DIR				*top_dir;
 	struct fsocpf_context		*fsocpf_ctx;
@@ -271,7 +271,7 @@ static int fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **pr
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_delete_context(void *private_data)
+static enum MAPISTORE_ERROR fsocpf_delete_context(void *private_data)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
 
@@ -300,7 +300,7 @@ static int fsocpf_delete_context(void *private_data)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_release_record(void *private_data, uint64_t fmid, uint8_t type)
+static enum MAPISTORE_ERROR fsocpf_release_record(void *private_data, uint64_t fmid, uint8_t type)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_message_list	*message;
@@ -341,8 +341,8 @@ static int fsocpf_release_record(void *private_data, uint64_t fmid, uint8_t type
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-static int fsocpf_get_path(void *private_data, uint64_t fmid,
-			   uint8_t type, char **path)
+static enum MAPISTORE_ERROR fsocpf_get_path(void *private_data, uint64_t fmid,
+					    uint8_t type, char **path)
 {
 	struct fsocpf_folder	*folder;
 	struct fsocpf_message	*message;
@@ -383,7 +383,7 @@ static int fsocpf_get_path(void *private_data, uint64_t fmid,
 	return MAPISTORE_SUCCESS;
 }
 
-static int fsocpf_op_get_fid_by_name(void *private_data, uint64_t parent_fid, const char* foldername, uint64_t *fid)
+static enum MAPISTORE_ERROR fsocpf_op_get_fid_by_name(void *private_data, uint64_t parent_fid, const char* foldername, uint64_t *fid)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
@@ -394,7 +394,7 @@ static int fsocpf_op_get_fid_by_name(void *private_data, uint64_t parent_fid, co
 	struct SPropValue	*lpProps;
 	uint32_t		cValues = 0;
 	int			ret;
-	int			i;
+	uint32_t		i;
 
 	if (!fsocpf_ctx) {
 		return MAPISTORE_ERROR;
@@ -427,7 +427,7 @@ static int fsocpf_op_get_fid_by_name(void *private_data, uint64_t parent_fid, co
 			lpProps = ocpf_get_SPropValue(ocpf_context_id, &cValues);
 			for (i = 0; i < cValues; ++i) {
 				if (lpProps && lpProps[i].ulPropTag == PR_DISPLAY_NAME) {
-					const char * this_folder_display_name = get_SPropValue_data(&(lpProps[i]));
+				  const char * this_folder_display_name = (const char *)get_SPropValue_data(&(lpProps[i]));
 					DEBUG(6, ("looking at %s found in %s\n", this_folder_display_name, curdir->d_name));
 					if (strcmp(this_folder_display_name, foldername) == 0) {
 						DEBUG(4, ("folder name %s found in %s\n", this_folder_display_name, curdir->d_name));
@@ -492,8 +492,8 @@ static void fsocpf_set_folder_props(const char *path, uint64_t fid, struct SRow 
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid,
-			   struct SRow *aRow)
+static enum MAPISTORE_ERROR fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid,
+					    struct SRow *aRow)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
@@ -568,7 +568,7 @@ static int fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_op_rmdir(void *private_data, uint64_t parent_fid, uint64_t fid)
+static enum MAPISTORE_ERROR fsocpf_op_rmdir(void *private_data, uint64_t parent_fid, uint64_t fid)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_folder	*parent;
@@ -626,7 +626,7 @@ static int fsocpf_op_rmdir(void *private_data, uint64_t parent_fid, uint64_t fid
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t fid)
+static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t fid)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
@@ -711,7 +711,7 @@ static int fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t f
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_op_closedir(void *private_data)
+static enum MAPISTORE_ERROR fsocpf_op_closedir(void *private_data)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
 
@@ -730,10 +730,10 @@ static int fsocpf_op_closedir(void *private_data)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static int fsocpf_op_readdir_count(void *private_data, 
-				   uint64_t fid,
-				   uint8_t table_type,
-				   uint32_t *RowCount)
+static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data, 
+						    uint64_t fid,
+						    uint8_t table_type,
+						    uint32_t *RowCount)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_folder		*folder;
@@ -794,10 +794,10 @@ static int fsocpf_op_readdir_count(void *private_data,
 }
 
 
-static int fsocpf_get_property_from_folder_table(struct fsocpf_folder *folder,
-						 uint32_t pos,
-						 uint32_t proptag,
-						 void **data)
+static enum MAPISTORE_ERROR fsocpf_get_property_from_folder_table(struct fsocpf_folder *folder,
+								  uint32_t pos,
+								  uint32_t proptag,
+								  void **data)
 {
 	int			ret;
 	struct dirent		*curdir;
@@ -829,7 +829,7 @@ static int fsocpf_get_property_from_folder_table(struct fsocpf_folder *folder,
 	if (!curdir) {
 		DEBUG(0, ("curdir not found\n"));
 		*data = NULL;
-		return MAPI_E_NOT_FOUND;
+		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	/* If fid, return folder->fid */
@@ -840,7 +840,7 @@ static int fsocpf_get_property_from_folder_table(struct fsocpf_folder *folder,
 		*fid = strtoull(folderID, NULL, 16);
 		talloc_free(folderID);
 		*data = (uint64_t *)fid;
-		return MAPI_E_SUCCESS;
+		return MAPISTORE_SUCCESS;
 	} 
 
 	/* Otherwise opens .properties file with ocpf for fid entry */
@@ -872,18 +872,18 @@ static int fsocpf_get_property_from_folder_table(struct fsocpf_folder *folder,
 
 	if (*data == NULL) {
 		ret = ocpf_del_context(ocpf_context_id);
-		return MAPI_E_NOT_FOUND;
+		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	ret = ocpf_del_context(ocpf_context_id);
-	return MAPI_E_SUCCESS;
+	return MAPISTORE_SUCCESS;
 }
 
 
-static int fsocpf_get_property_from_message_table(struct fsocpf_folder *folder,
-						  uint32_t pos,
-						  uint32_t proptag,
-						  void **data)
+static enum MAPISTORE_ERROR fsocpf_get_property_from_message_table(struct fsocpf_folder *folder,
+								   uint32_t pos,
+								   uint32_t proptag,
+								   void **data)
 {
 	int			ret;
 	struct dirent		*curdir;
@@ -915,13 +915,13 @@ static int fsocpf_get_property_from_message_table(struct fsocpf_folder *folder,
 
 	if (!messageID) {
 		*data = NULL;
-		return MAPI_E_NOT_FOUND;
+		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	/* if fid, return folder fid */
 	if (proptag == PR_FID) {
 		*data = (uint64_t *)&folder->fid;
-		return MAPI_E_SUCCESS;
+		return MAPISTORE_SUCCESS;
 	  }
 
 	/* If mid, return curdir->d_name */
@@ -932,7 +932,7 @@ static int fsocpf_get_property_from_message_table(struct fsocpf_folder *folder,
 		*mid = strtoull(messageID, NULL, 16);
 		talloc_free(messageID);
 		*data = (uint64_t *)mid;
-		return MAPI_E_SUCCESS;
+		return MAPISTORE_SUCCESS;
 	}
 
 	/* Otherwise opens curdir->d_name file with ocpf */
@@ -964,25 +964,25 @@ static int fsocpf_get_property_from_message_table(struct fsocpf_folder *folder,
 
 	if (*data == NULL) {
 		ocpf_del_context(ocpf_context_id);
-		return MAPI_E_NOT_FOUND;
+		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	ocpf_del_context(ocpf_context_id);
-	return MAPI_E_SUCCESS;	
+	return MAPISTORE_SUCCESS;	
 }
 
 
-static int fsocpf_op_get_table_property(void *private_data,
-					uint64_t fid,
-					uint8_t table_type,
-					uint32_t pos,
-					uint32_t proptag,
-					void **data)
+static enum MAPISTORE_ERROR fsocpf_op_get_table_property(void *private_data,
+							 uint64_t fid,
+							 uint8_t table_type,
+							 uint32_t pos,
+							 uint32_t proptag,
+							 void **data)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_folder_list	*el;
 	struct fsocpf_folder		*folder;
-	int				retval = MAPI_E_SUCCESS;
+	enum MAPISTORE_ERROR		retval = MAPISTORE_SUCCESS;
 
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
@@ -1021,10 +1021,10 @@ static int fsocpf_op_get_table_property(void *private_data,
 }
 
 
-static int fsocpf_op_openmessage(void *private_data,
-				 uint64_t fid,
-				 uint64_t mid,
-				 struct mapistore_message *msg)
+static enum MAPISTORE_ERROR fsocpf_op_openmessage(void *private_data,
+						  uint64_t fid,
+						  uint64_t mid,
+						  struct mapistore_message *msg)
 {
 	TALLOC_CTX			*mem_ctx;
 	int				ret;
@@ -1046,7 +1046,7 @@ static int fsocpf_op_openmessage(void *private_data,
 		msg->recipients = ocpf_get_recipients(message, message->ocpf_context_id);
 		msg->properties->lpProps = ocpf_get_SPropValue(message->ocpf_context_id, 
 							       &msg->properties->cValues);
-		return MAPI_E_SUCCESS;
+		return MAPISTORE_SUCCESS;
 	}
 
 	/* Search for the fid fsocpf_folder entry */
@@ -1088,13 +1088,13 @@ static int fsocpf_op_openmessage(void *private_data,
 	talloc_free(propfile);
 	talloc_free(mem_ctx);
 
-	return MAPI_E_SUCCESS;
+	return MAPISTORE_SUCCESS;
 }
 
 
-static int fsocpf_op_createmessage(void *private_data,
-				   uint64_t fid,
-				   uint64_t mid)
+static enum MAPISTORE_ERROR fsocpf_op_createmessage(void *private_data,
+						    uint64_t fid,
+						    uint64_t mid)
 {
 	TALLOC_CTX			*mem_ctx;
 	int				ret;
@@ -1137,9 +1137,9 @@ static int fsocpf_op_createmessage(void *private_data,
 }
 
 
-static int fsocpf_op_savechangesmessage(void *private_data,
-					uint64_t mid,
-					uint8_t flags)
+static enum MAPISTORE_ERROR fsocpf_op_savechangesmessage(void *private_data,
+							 uint64_t mid,
+							 uint8_t flags)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_message		*message;
@@ -1157,9 +1157,9 @@ static int fsocpf_op_savechangesmessage(void *private_data,
 }
 
 
-static int fsocpf_op_submitmessage(void *private_data,
-				   uint64_t mid,
-				   uint8_t flags)
+static enum MAPISTORE_ERROR fsocpf_op_submitmessage(void *private_data,
+						    uint64_t mid,
+						    uint8_t flags)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_message		*message;
@@ -1175,13 +1175,13 @@ static int fsocpf_op_submitmessage(void *private_data,
 }
 
 
-static char *fsocpf_get_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, uint8_t class)
+static char *fsocpf_get_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet, uint8_t recipient_class)
 {
 	char		*recipient = NULL;
 	uint32_t	i;
 
 	for (i = 0; i < SRowSet->cRows; i++) {
-		if (SRowSet->aRow[i].lpProps[0].value.l == class) {
+		if (SRowSet->aRow[i].lpProps[0].value.l == recipient_class) {
 			if (!recipient) {
 				recipient = talloc_strdup(mem_ctx, SRowSet->aRow[i].lpProps[1].value.lpszA);
 			} else {
@@ -1194,11 +1194,11 @@ static char *fsocpf_get_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet,
 	return recipient;
 }
 
-static int fsocpf_op_getprops(void *private_data, 
-			      uint64_t fmid, 
-			      uint8_t type, 
-			      struct SPropTagArray *SPropTagArray,
-			      struct SRow *aRow)
+static enum MAPISTORE_ERROR fsocpf_op_getprops(void *private_data, 
+					       uint64_t fmid, 
+					       uint8_t type, 
+					       struct SPropTagArray *SPropTagArray,
+					       struct SRow *aRow)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_message	*message;
@@ -1262,14 +1262,14 @@ static int fsocpf_op_getprops(void *private_data,
 		}
 	}
 
-	return MAPI_E_SUCCESS;
+	return MAPISTORE_SUCCESS;
 }
 
 
-static int fsocpf_op_setprops(void *private_data,
-			      uint64_t fmid,
-			      uint8_t type,
-			      struct SRow *aRow)
+static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
+					       uint64_t fmid,
+					       uint8_t type,
+					       struct SRow *aRow)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *) private_data;
 	struct fsocpf_folder	*folder;
@@ -1305,9 +1305,9 @@ static int fsocpf_op_setprops(void *private_data,
 	return MAPISTORE_SUCCESS;
 }
 
-static int fsocpf_op_deletemessage(void *private_data,
-				   uint64_t mid,
-				   uint8_t flags)
+static enum MAPISTORE_ERROR fsocpf_op_deletemessage(void *private_data,
+						    uint64_t mid,
+						    uint8_t flags)
 {
 	int res;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
@@ -1344,7 +1344,7 @@ int mapistore_init_backend(void)
 	/* Fill in our name */
 	backend.name = "fsocpf";
 	backend.description = "mapistore filesystem + ocpf backend";
-	backend.namespace = "fsocpf://";
+	backend.uri_namespace = "fsocpf://";
 
 	/* Fill in all the operations */
 	backend.init = fsocpf_init;

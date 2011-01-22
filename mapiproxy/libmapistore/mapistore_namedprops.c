@@ -19,8 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mapistore.h"
 #include "mapistore_errors.h"
+#include "mapistore.h"
 #include "mapistore_private.h"
 #include "libmapi/libmapi_private.h"
 #include <ldb.h>
@@ -42,7 +42,7 @@ static const char *mapistore_namedprops_get_ldif_path(void)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
+enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
 {
 	int			ret;
 	struct stat		sb;
@@ -105,17 +105,18 @@ int mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
    \details return the mapped property ID matching the nameid
    structure passed in parameter.
 
-   \param ldb_ctx pointer to the namedprops ldb context
+   \param _ldb_ctx pointer to the namedprops ldb context
    \param nameid the MAPINAMEID structure to lookup
    \param propID pointer to the property ID the function returns
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-_PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx, 
+_PUBLIC_ int mapistore_namedprops_get_mapped_id(void *_ldb_ctx, 
 						struct MAPINAMEID nameid, 
 						uint16_t *propID)
 {
 	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx = (struct ldb_context *)_ldb_ctx;
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;

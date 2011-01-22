@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009-2010
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -65,15 +65,16 @@ struct tdb_wrap {
 	struct tdb_wrap		*next;
 };
 
+struct ldb_wrap_context {
+	const char		*url;
+	struct tevent_context	*ev;
+	unsigned int		flags;
+};
 
 struct ldb_wrap {
   struct ldb_wrap			*next;
 	struct ldb_wrap			*prev;
-	struct ldb_wrap_context {
-		const char		*url;
-		struct tevent_context	*ev;
-		unsigned int		flags;
-	} context;
+	struct ldb_wrap_context 	context;
 	struct ldb_context		*ldb;
 };
 
@@ -208,33 +209,33 @@ __BEGIN_DECLS
 
 /* definitions from mapistore_processing.c */
 const char *mapistore_get_mapping_path(void);
-int mapistore_init_mapping_context(struct processing_context *);
-int mapistore_get_context_id(struct processing_context *, uint32_t *);
-int mapistore_free_context_id(struct processing_context *, uint32_t);
+enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *);
+enum MAPISTORE_ERROR mapistore_get_context_id(struct processing_context *, uint32_t *);
+enum MAPISTORE_ERROR mapistore_free_context_id(struct processing_context *, uint32_t);
 
 
 /* definitions from mapistore_backend.c */
-int mapistore_backend_init(TALLOC_CTX *, const char *);
+enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *);
-int mapistore_backend_add_ref_count(struct backend_context *);
-int mapistore_backend_delete_context(struct backend_context *);
-int mapistore_backend_release_record(struct backend_context *, uint64_t, uint8_t);
-int mapistore_get_path(struct backend_context *, uint64_t, uint8_t, char **);
-int mapistore_backend_opendir(struct backend_context *, uint64_t, uint64_t);
-int mapistore_backend_mkdir(struct backend_context *, uint64_t, uint64_t, struct SRow *);
-int mapistore_backend_readdir_count(struct backend_context *, uint64_t, uint8_t, uint32_t *);
-int mapistore_backend_rmdir(struct backend_context *, uint64_t, uint64_t);
-int mapistore_backend_get_table_property(struct backend_context *, uint64_t, uint8_t, uint32_t, 
-					 uint32_t, void **);
-int mapistore_backend_openmessage(struct backend_context *, uint64_t, uint64_t, struct mapistore_message *);
-int mapistore_backend_createmessage(struct backend_context *, uint64_t, uint64_t);
-int mapistore_backend_savechangesmessage(struct backend_context *, uint64_t, uint8_t);
-int mapistore_backend_submitmessage(struct backend_context *, uint64_t, uint8_t);
-int mapistore_backend_getprops(struct backend_context *, uint64_t, uint8_t, 
-			       struct SPropTagArray *, struct SRow *);
-int mapistore_backend_setprops(struct backend_context *, uint64_t, uint8_t, struct SRow *);
-int mapistore_backend_get_fid_by_name(struct backend_context *, uint64_t, const char *, uint64_t *);
-int mapistore_backend_deletemessage(struct backend_context *, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_backend_add_ref_count(struct backend_context *);
+enum MAPISTORE_ERROR mapistore_backend_delete_context(struct backend_context *);
+enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *, uint64_t, uint8_t, char **);
+enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *, uint64_t, uint64_t);
+enum MAPISTORE_ERROR mapistore_backend_mkdir(struct backend_context *, uint64_t, uint64_t, struct SRow *);
+enum MAPISTORE_ERROR mapistore_backend_readdir_count(struct backend_context *, uint64_t, uint8_t, uint32_t *);
+enum MAPISTORE_ERROR mapistore_backend_rmdir(struct backend_context *, uint64_t, uint64_t);
+enum MAPISTORE_ERROR mapistore_backend_get_table_property(struct backend_context *, uint64_t, uint8_t, uint32_t, 
+							  uint32_t, void **);
+enum MAPISTORE_ERROR mapistore_backend_openmessage(struct backend_context *, uint64_t, uint64_t, struct mapistore_message *);
+enum MAPISTORE_ERROR mapistore_backend_createmessage(struct backend_context *, uint64_t, uint64_t);
+enum MAPISTORE_ERROR mapistore_backend_savechangesmessage(struct backend_context *, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_backend_submitmessage(struct backend_context *, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_backend_getprops(struct backend_context *, uint64_t, uint8_t, 
+						struct SPropTagArray *, struct SRow *);
+enum MAPISTORE_ERROR mapistore_backend_setprops(struct backend_context *, uint64_t, uint8_t, struct SRow *);
+enum MAPISTORE_ERROR mapistore_backend_get_fid_by_name(struct backend_context *, uint64_t, const char *, uint64_t *);
+enum MAPISTORE_ERROR mapistore_backend_deletemessage(struct backend_context *, uint64_t, uint8_t);
 
 /* definitions from mapistore_tdb_wrap.c */
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
@@ -244,14 +245,14 @@ struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_conte
 
 /* definitions from mapistore_indexing.c */
 struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
-int mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
-int mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
-int mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
-int mapistore_indexing_add_ref_count(struct indexing_context_list *);
-int mapistore_indexing_del_ref_count(struct indexing_context_list *);
+enum MAPISTORE_ERROR mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
+enum MAPISTORE_ERROR mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_indexing_add_ref_count(struct indexing_context_list *);
+enum MAPISTORE_ERROR mapistore_indexing_del_ref_count(struct indexing_context_list *);
 
 /* definitions from mapistore_namedprops.c */
-int mapistore_namedprops_init(TALLOC_CTX *, void **);
+enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *, void **);
 
 __END_DECLS
 

@@ -19,14 +19,19 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include <sys/types.h>
+
+#define __STDC_FORMAT_MACROS	1
+#include <inttypes.h>
+
 #include <dirent.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
 
-#include "mapistore.h"
 #include "mapistore_errors.h"
+#include "mapistore.h"
 #include "mapistore_private.h"
 #include <dlinklist.h>
 #include "libmapi/libmapi_private.h"
@@ -48,7 +53,7 @@ char	*mapistore_dbpath = NULL;
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_set_mapping_path(const char *path)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_set_mapping_path(const char *path)
 {
 	TALLOC_CTX	*mem_ctx;
 	DIR		*dir;
@@ -136,7 +141,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_set_database_path(const char *dbname)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_init_mapping_context(struct processing_context *pctx)
+enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *pctx)
 {
 	TDB_DATA	key;
 	TDB_DATA	dbuf;
@@ -214,7 +219,7 @@ int mapistore_init_mapping_context(struct processing_context *pctx)
 
    \return a non zero context identifier on success, otherwise 0.
  */
-int mapistore_get_context_id(struct processing_context *pctx, uint32_t *context_id)
+enum MAPISTORE_ERROR mapistore_get_context_id(struct processing_context *pctx, uint32_t *context_id)
 {
 	struct context_id_list	*el;
 
@@ -248,7 +253,7 @@ int mapistore_get_context_id(struct processing_context *pctx, uint32_t *context_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_free_context_id(struct processing_context *pctx, uint32_t context_id)
+enum MAPISTORE_ERROR mapistore_free_context_id(struct processing_context *pctx, uint32_t context_id)
 {
 	struct context_id_list	*el;
 

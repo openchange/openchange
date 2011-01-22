@@ -19,8 +19,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mapistore.h"
+
+#define __STDC_FORMAT_MACROS	1
+#include <inttypes.h>
+
 #include "mapistore_errors.h"
+#include "mapistore.h"
 #include "mapistore_private.h"
 #include <dlinklist.h>
 #include "libmapi/libmapi_private.h"
@@ -36,7 +40,7 @@
  */
 _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const char *path)
 {
-	int				retval;
+	enum MAPISTORE_ERROR		retval;
 	struct mapistore_context	*mstore_ctx;
 
 	mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
@@ -81,7 +85,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_release(struct mapistore_context *mstore_ctx)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_release(struct mapistore_context *mstore_ctx)
 {
 	if (!mstore_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
 
@@ -103,14 +107,14 @@ _PUBLIC_ int mapistore_release(struct mapistore_context *mstore_ctx)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx, 
-				   const char *uri, uint32_t *context_id)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *mstore_ctx, 
+						    const char *uri, uint32_t *context_id)
 {
 	TALLOC_CTX				*mem_ctx;
 	int					retval;
 	struct backend_context			*backend_ctx;
 	struct backend_context_list    		*backend_list;
-	char					*namespace;
+	char					*uri_namespace;
 	char					*namespace_start;
 	char					*backend_uri;
 
@@ -120,20 +124,20 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
 	}
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_add_context");
-	namespace = talloc_strdup(mem_ctx, uri);
-	namespace_start = namespace;
-	namespace = strchr(namespace, ':');
-	if (!namespace) {
+	uri_namespace = talloc_strdup(mem_ctx, uri);
+	namespace_start = uri_namespace;
+	uri_namespace= strchr(uri_namespace, ':');
+	if (!uri_namespace) {
 		DEBUG(0, ("[%s:%d]: Error - Invalid namespace '%s'\n", __FUNCTION__, __LINE__, namespace_start));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_NAMESPACE;
 	}
 
-	if (namespace[1] && namespace[1] == '/' &&
-	    namespace[2] && namespace[2] == '/' &&
-	    namespace[3]) {
-		backend_uri = talloc_strdup(mem_ctx, &namespace[3]);
-		namespace[3] = '\0';
+	if (uri_namespace[1] && uri_namespace[1] == '/' &&
+	    uri_namespace[2] && uri_namespace[2] == '/' &&
+	    uri_namespace[3]) {
+		backend_uri = talloc_strdup(mem_ctx, &uri_namespace[3]);
+		uri_namespace[3] = '\0';
 		backend_ctx = mapistore_backend_create_context((TALLOC_CTX *)mstore_ctx, namespace_start, backend_uri);
 		if (!backend_ctx) {
 			return MAPISTORE_ERR_CONTEXT_FAILED;
@@ -165,16 +169,16 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
    \details Increase the reference counter of an existing context
 
    \param mstore_ctx pointer to the mapistore context
-   \param contex_id the context identifier referencing the context to
+   \param context_id the context identifier referencing the context to
    update
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_add_context_ref_count(struct mapistore_context *mstore_ctx,
-					     uint32_t context_id)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context_ref_count(struct mapistore_context *mstore_ctx,
+							      uint32_t context_id)
 {
 	struct backend_context		*backend_ctx;
-	int				retval;
+	enum MAPISTORE_ERROR		retval;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -202,9 +206,9 @@ _PUBLIC_ int mapistore_add_context_ref_count(struct mapistore_context *mstore_ct
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_search_context_by_uri(struct mapistore_context *mstore_ctx,
-					     const char *uri,
-					     uint32_t *context_id)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_search_context_by_uri(struct mapistore_context *mstore_ctx,
+							      const char *uri,
+							      uint32_t *context_id)
 {
 	struct backend_context		*backend_ctx;
 
@@ -230,12 +234,12 @@ _PUBLIC_ int mapistore_search_context_by_uri(struct mapistore_context *mstore_ct
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx, 
-				   uint32_t context_id)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_del_context(struct mapistore_context *mstore_ctx, 
+						    uint32_t context_id)
 {
 	struct backend_context_list	*backend_list;
 	struct backend_context		*backend_ctx;
-	int				retval;
+	enum MAPISTORE_ERROR		retval;
 	bool				found = false;
 
 	/* Sanity checks */
@@ -288,10 +292,10 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_release_record(struct mapistore_context *mstore_ctx,
-				      uint32_t context_id,
-				      uint64_t fmid,
-				      uint8_t type)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_release_record(struct mapistore_context *mstore_ctx,
+						       uint32_t context_id,
+						       uint64_t fmid,
+						       uint8_t type)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -320,9 +324,9 @@ _PUBLIC_ int mapistore_release_record(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_add_context_indexing(struct mapistore_context *mstore_ctx,
-					    const char *username,
-					    uint32_t context_id)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context_indexing(struct mapistore_context *mstore_ctx,
+							     const char *username,
+							     uint32_t context_id)
 {
 	struct indexing_context_list	*indexing_ctx;
 	struct backend_context		*backend_ctx;
@@ -368,7 +372,7 @@ void mapistore_set_errno(int status)
 
    \return constant string
  */
-_PUBLIC_ const char *mapistore_errstr(int mapistore_err)
+_PUBLIC_ const char *mapistore_errstr(enum MAPISTORE_ERROR mapistore_err)
 {
 	switch (mapistore_err) {
 	case MAPISTORE_SUCCESS:
@@ -381,16 +385,30 @@ _PUBLIC_ const char *mapistore_errstr(int mapistore_err)
 		return "Already initialized";
 	case MAPISTORE_ERR_NOT_INITIALIZED:
 		return "Not initialized";
+	case MAPISTORE_ERR_CORRUPTED:
+		return "Corrupted";
+	case MAPISTORE_ERR_INVALID_PARAMETER:
+		return "Invalid parameter";
 	case MAPISTORE_ERR_NO_DIRECTORY:
 		return "No such file or directory";
 	case MAPISTORE_ERR_DATABASE_INIT:
 		return "Database initialization failed";
 	case MAPISTORE_ERR_DATABASE_OPS:
-		return "database operation failed";
+		return "Database operation failed";
 	case MAPISTORE_ERR_BACKEND_REGISTER:
-		return "storage backend registration failed";
+		return "Storage backend registration failed";
 	case MAPISTORE_ERR_BACKEND_INIT:
-		return "storage backend initialization failed";
+		return "Storage backend initialization failed";
+	case MAPISTORE_ERR_CONTEXT_FAILED:
+		return "Context creation failed";
+	case MAPISTORE_ERR_INVALID_NAMESPACE:
+		return "Invalid namespace";
+	case MAPISTORE_ERR_NOT_FOUND:
+		return "Record or data not found";
+	case MAPISTORE_ERR_REF_COUNT:
+		return "Reference count still exists";
+	case MAPISTORE_ERR_EXIST:
+		return "Already exists";
 	}
 
 	return "Unknown error";
@@ -408,10 +426,10 @@ _PUBLIC_ const char *mapistore_errstr(int mapistore_err)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_opendir(struct mapistore_context *mstore_ctx,
-			       uint32_t context_id,
-			       uint64_t parent_fid,
-			       uint64_t fid)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_opendir(struct mapistore_context *mstore_ctx,
+						uint32_t context_id,
+						uint64_t parent_fid,
+						uint64_t fid)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -440,9 +458,9 @@ _PUBLIC_ int mapistore_opendir(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_closedir(struct mapistore_context *mstore_ctx,
-				uint32_t context_id,
-				uint64_t fid)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_closedir(struct mapistore_context *mstore_ctx,
+						 uint32_t context_id,
+						 uint64_t fid)
 {
 	struct backend_context		*backend_ctx;
 
@@ -472,14 +490,14 @@ _PUBLIC_ int mapistore_closedir(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_mkdir(struct mapistore_context *mstore_ctx,
-			     uint32_t context_id,
-			     uint64_t parent_fid,
-			     uint64_t fid,
-			     struct SRow *aRow)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_mkdir(struct mapistore_context *mstore_ctx,
+					      uint32_t context_id,
+					      uint64_t parent_fid,
+					      uint64_t fid,
+					      struct SRow *aRow)
 {
 	struct backend_context		*backend_ctx;
-	int				ret;
+	enum MAPISTORE_ERROR		ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -506,11 +524,11 @@ _PUBLIC_ int mapistore_mkdir(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
-			     uint32_t context_id,
-			     uint64_t parent_fid,
-			     uint64_t fid,
-			     uint8_t flags)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *mstore_ctx,
+					      uint32_t context_id,
+					      uint64_t parent_fid,
+					      uint64_t fid,
+					      uint8_t flags)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -536,7 +554,7 @@ _PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
 		DEBUG(4, ("mapistore_rmdir fid: 0x%"PRIx64", child count: %d\n", fid, childFolderCount));
 		if (retval) {
 			DEBUG(4, ("mapistore_rmdir bad retval: 0x%x", retval));
-			return MAPI_E_NOT_FOUND;
+			return MAPISTORE_ERR_NOT_FOUND;
 		}
 
 		/* Delete each subfolder in mapistore */
@@ -546,7 +564,7 @@ _PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
 			if (retval) {
 				  DEBUG(4, ("mapistore_rmdir failed to delete fid 0x%"PRIx64" (0x%x)", childFolders[i], retval));
 				  talloc_free(childFolders);
-				  return MAPI_E_NOT_FOUND;
+				  return MAPISTORE_ERR_NOT_FOUND;
 			}
 		}
 
@@ -571,13 +589,13 @@ _PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_get_folder_count(struct mapistore_context *mstore_ctx,
-					uint32_t context_id,
-					uint64_t fid,
-					uint32_t *RowCount)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_get_folder_count(struct mapistore_context *mstore_ctx,
+							 uint32_t context_id,
+							 uint64_t fid,
+							 uint32_t *RowCount)
 {
 	struct backend_context		*backend_ctx;
-	int				ret;
+	enum MAPISTORE_ERROR		ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -603,13 +621,13 @@ _PUBLIC_ int mapistore_get_folder_count(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
-					 uint32_t context_id,
-					 uint64_t fid,
-					 uint32_t *RowCount)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_get_message_count(struct mapistore_context *mstore_ctx,
+							  uint32_t context_id,
+							  uint64_t fid,
+							  uint32_t *RowCount)
 {
 	struct backend_context		*backend_ctx;
-	int				ret;
+	enum MAPISTORE_ERROR		ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -638,16 +656,16 @@ _PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_get_table_property(struct mapistore_context *mstore_ctx,
-					  uint32_t context_id,
-					  uint8_t table_type,
-					  uint64_t fid,
-					  uint32_t proptag,
-					  uint32_t pos,
-					  void **data)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_get_table_property(struct mapistore_context *mstore_ctx,
+							   uint32_t context_id,
+							   uint8_t table_type,
+							   uint64_t fid,
+							   uint32_t proptag,
+							   uint32_t pos,
+							   void **data)
 {
 	struct backend_context		*backend_ctx;
-	int				ret;
+	enum MAPISTORE_ERROR		ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -675,11 +693,11 @@ _PUBLIC_ int mapistore_get_table_property(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx,
-				   uint32_t context_id,
-				   uint64_t parent_fid,
-				   uint64_t mid,
-				   struct mapistore_message *msg)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_openmessage(struct mapistore_context *mstore_ctx,
+						    uint32_t context_id,
+						    uint64_t parent_fid,
+						    uint64_t mid,
+						    struct mapistore_message *msg)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -710,10 +728,10 @@ _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_createmessage(struct mapistore_context *mstore_ctx,
-				     uint32_t context_id,
-				     uint64_t parent_fid,
-				     uint64_t mid)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_createmessage(struct mapistore_context *mstore_ctx,
+						      uint32_t context_id,
+						      uint64_t parent_fid,
+						      uint64_t mid)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -743,10 +761,10 @@ _PUBLIC_ int mapistore_createmessage(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_savechangesmessage(struct mapistore_context *mstore_ctx,
-					  uint32_t context_id,
-					  uint64_t mid,
-					  uint8_t flags)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_savechangesmessage(struct mapistore_context *mstore_ctx,
+							   uint32_t context_id,
+							   uint64_t mid,
+							   uint8_t flags)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -776,10 +794,10 @@ _PUBLIC_ int mapistore_savechangesmessage(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_submitmessage(struct mapistore_context *mstore_ctx,
-				     uint32_t context_id,
-				     uint64_t mid,
-				     uint8_t flags)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_submitmessage(struct mapistore_context *mstore_ctx,
+						      uint32_t context_id,
+						      uint64_t mid,
+						      uint8_t flags)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -811,12 +829,12 @@ _PUBLIC_ int mapistore_submitmessage(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_getprops(struct mapistore_context *mstore_ctx,
-				uint32_t context_id,
-				uint64_t fmid,
-				uint8_t type,
-				struct SPropTagArray *properties,
-				struct SRow *aRow)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_getprops(struct mapistore_context *mstore_ctx,
+						 uint32_t context_id,
+						 uint64_t fmid,
+						 uint8_t type,
+						 struct SPropTagArray *properties,
+						 struct SRow *aRow)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -846,14 +864,14 @@ _PUBLIC_ int mapistore_getprops(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_get_fid_by_name(struct mapistore_context *mstore_ctx,
-				       uint32_t context_id,
-				       uint64_t parent_fid,
-				       const char *name,
-				       uint64_t *fid)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_get_fid_by_name(struct mapistore_context *mstore_ctx,
+							uint32_t context_id,
+							uint64_t parent_fid,
+							const char *name,
+							uint64_t *fid)
 {
 	struct backend_context	*backend_ctx;
-	int			ret;
+	enum MAPISTORE_ERROR	ret;
 
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 	MAPISTORE_RETVAL_IF(!name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -881,11 +899,11 @@ _PUBLIC_ int mapistore_get_fid_by_name(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_setprops(struct mapistore_context *mstore_ctx,
-				uint32_t context_id,
-				uint64_t fmid,
-				uint8_t type,
-				struct SRow *aRow)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_setprops(struct mapistore_context *mstore_ctx,
+						 uint32_t context_id,
+						 uint64_t fmid,
+						 uint8_t type,
+						 struct SRow *aRow)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -919,11 +937,11 @@ _PUBLIC_ int mapistore_setprops(struct mapistore_context *mstore_ctx,
    
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_get_child_fids(struct mapistore_context *mstore_ctx,
-				      uint32_t context_id,
-				      uint64_t fid,
-				      uint64_t *child_fids[],
-				      uint32_t *child_fid_count)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_get_child_fids(struct mapistore_context *mstore_ctx,
+						       uint32_t context_id,
+						       uint64_t fid,
+						       uint64_t *child_fids[],
+						       uint32_t *child_fid_count)
 {
 	struct backend_context		*backend_ctx;
 	uint32_t			i;
@@ -967,10 +985,10 @@ _PUBLIC_ int mapistore_get_child_fids(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_deletemessage(struct mapistore_context *mstore_ctx,
-				     uint32_t context_id,
-				     uint64_t mid,
-				     uint8_t flags)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_deletemessage(struct mapistore_context *mstore_ctx,
+						      uint32_t context_id,
+						      uint64_t mid,
+						      uint8_t flags)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;

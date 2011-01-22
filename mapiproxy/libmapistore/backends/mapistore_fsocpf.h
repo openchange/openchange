@@ -23,12 +23,14 @@
 #ifndef	__MAPISTORE_FSOCPF_H
 #define	__MAPISTORE_FSOCPF_H
 
+#define __STDC_FORMAT_MACROS	1
+#include <inttypes.h>
+
 #include "libocpf/ocpf.h"
-#include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
+#include "mapiproxy/libmapistore/mapistore.h"
 #include <dlinklist.h>
 #include <dirent.h>
-#include <inttypes.h>
 
 struct fsocpf_folder {
 	uint64_t			fid;

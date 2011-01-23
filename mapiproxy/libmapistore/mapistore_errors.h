@@ -46,7 +46,8 @@ enum MAPISTORE_ERROR {
 	MAPISTORE_ERR_INVALID_NAMESPACE = 13, /*!< The function failed because the provided namespace is invalid. */
 	MAPISTORE_ERR_NOT_FOUND = 14, /*!< The function failed to find the requested record/data. */
 	MAPISTORE_ERR_REF_COUNT = 15, /*!<  The function still has a reference count. */
-	MAPISTORE_ERR_EXIST = 16 /*!< The function already has record/data for the searched element. */
+	MAPISTORE_ERR_EXIST = 16, /*!< The function already has record/data for the searched element. */
+	MAPISTORE_ERR_INVALID_OBJECT = 17 /*!< The specified object is invalid */
 };
 
 #endif /* ! __MAPISTORE_ERRORS_H */

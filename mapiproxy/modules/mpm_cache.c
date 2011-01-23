@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Julien Kerihuel 2008-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -979,7 +979,7 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 						mapi_response->mapi_repl[i].handle_idx = mapi_req[i].handle_idx;
 						mapi_response->mapi_repl[i].error_code = MAPI_E_SUCCESS;
 						mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length = 0;
-						mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data = talloc_size(mem_ctx, request.ByteCount);
+						mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data = (uint8_t *) talloc_size(mem_ctx, request.ByteCount);
 						mpm_cache_stream_read(stream, (size_t) request.ByteCount, 
 								      &mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length,
 								      &mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data);

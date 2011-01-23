@@ -98,7 +98,7 @@ _PUBLIC_ enum MAPISTATUS SPropTagArray_add(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_ const void *get_SPropValue(struct SPropValue *lpProps, 
-				    uint32_t ulPropTag)
+				    enum MAPITAGS ulPropTag)
 {
 	uint32_t	i;
 
@@ -142,7 +142,7 @@ _PUBLIC_ const void *get_SPropValue_SRowSet_data(struct SRowSet *RowSet,
 	return get_SPropValue(lpProp, ulPropTag);
 }
 
-_PUBLIC_ enum MAPISTATUS set_default_error_SPropValue_SRow(struct SRow *aRow, uint32_t ulPropTag, void *data)
+_PUBLIC_ enum MAPISTATUS set_default_error_SPropValue_SRow(struct SRow *aRow, enum MAPITAGS ulPropTag, void *data)
 {
 	uint32_t	i;
 
@@ -363,7 +363,11 @@ _PUBLIC_ bool set_SPropValue_proptag(struct SPropValue *lpProps, enum MAPITAGS a
 	return (set_SPropValue(lpProps, data));
 }
 
-_PUBLIC_ struct SPropValue *add_SPropValue(TALLOC_CTX *mem_ctx, struct SPropValue *lpProps, uint32_t *cValues, uint32_t aulPropTag, const void * data)
+_PUBLIC_ struct SPropValue *add_SPropValue(TALLOC_CTX *mem_ctx, 
+					   struct SPropValue *lpProps, 
+					   uint32_t *cValues, 
+					   enum MAPITAGS aulPropTag, 
+					   const void * data)
 {
 	lpProps = talloc_realloc(mem_ctx, lpProps, struct SPropValue, *cValues + 2);
 
@@ -934,7 +938,7 @@ _PUBLIC_ enum MAPISTATUS get_mapi_SPropValue_date_timeval(struct timeval *t,
 	return MAPI_E_SUCCESS;
 }
 
-_PUBLIC_ bool set_SPropValue_proptag_date_timeval(struct SPropValue *lpProps, uint32_t aulPropTag, const struct timeval *t) 
+_PUBLIC_ bool set_SPropValue_proptag_date_timeval(struct SPropValue *lpProps, enum MAPITAGS aulPropTag, const struct timeval *t) 
 {
 	struct FILETIME	filetime;
 	NTTIME		time;

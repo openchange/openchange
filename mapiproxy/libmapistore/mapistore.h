@@ -79,7 +79,7 @@ struct mapistore_backend {
 	enum MAPISTORE_ERROR (*op_opendir)(void *, uint64_t, uint64_t);
 	enum MAPISTORE_ERROR (*op_closedir)(void *);
 	enum MAPISTORE_ERROR (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
-	enum MAPISTORE_ERROR (*op_get_table_property)(void *, uint64_t, uint8_t, uint32_t, uint32_t, void **);
+	enum MAPISTORE_ERROR (*op_get_table_property)(void *, uint64_t, uint8_t, uint32_t, enum MAPITAGS, void **);
 	/* message semantics */
 	enum MAPISTORE_ERROR (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
 	enum MAPISTORE_ERROR (*op_createmessage)(void *, uint64_t, uint64_t);
@@ -154,7 +154,7 @@ enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *, uint32_t, uint6
 enum MAPISTORE_ERROR mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 enum MAPISTORE_ERROR mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 enum MAPISTORE_ERROR mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, uint64_t, 
-				 uint32_t, uint32_t, void **);
+						  enum MAPITAGS, uint32_t, void **);
 enum MAPISTORE_ERROR mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
 enum MAPISTORE_ERROR mapistore_createmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
 enum MAPISTORE_ERROR mapistore_savechangesmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
@@ -193,12 +193,12 @@ const char*			mapistoredb_get_firstou(struct mapistoredb_context *);
 
 /* definitions from mapistore_indexing.c */
 enum MAPISTORE_ERROR mapistore_indexing_add(struct mapistore_context *, const char *);
-int mapistore_indexing_del(struct mapistore_context *, const char *);
-int mapistore_indexing_get_folder_list(struct mapistore_context *, const char *, uint64_t, struct indexing_folders_list **);
-int mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, uint64_t);
-int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
-int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
-int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_indexing_del(struct mapistore_context *, const char *);
+enum MAPISTORE_ERROR mapistore_indexing_get_folder_list(struct mapistore_context *, const char *, uint64_t, struct indexing_folders_list **);
+enum MAPISTORE_ERROR mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, uint64_t);
+enum MAPISTORE_ERROR mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
+enum MAPISTORE_ERROR mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);

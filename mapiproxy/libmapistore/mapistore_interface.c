@@ -183,7 +183,8 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context_ref_count(struct mapistore_c
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
-	if (context_id == -1) return MAPISTORE_ERROR;
+	/* TODO: Fix context_id sign */
+	if ((int)context_id == -1) return MAPISTORE_ERROR;
 
 	/* Step 0. Ensure the context exists */
 	DEBUG(0, ("mapistore_add_context_ref_count: context_is to increment is %d\n", context_id));
@@ -245,7 +246,8 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_del_context(struct mapistore_context *ms
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
-	if (context_id == -1) return MAPISTORE_ERROR;
+	/* TODO: Fix context_id sign */
+	if ((int)context_id == -1) return MAPISTORE_ERROR;
 
 	/* Step 0. Ensure the context exists */
 	DEBUG(0, ("mapistore_del_context: context_id to del is %d\n", context_id));
@@ -334,7 +336,8 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context_indexing(struct mapistore_co
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(context_id == -1, MAPISTORE_ERROR, NULL);
+	/* TODO: Fix context_id sign */
+	MAPISTORE_RETVAL_IF((int)context_id == -1, MAPISTORE_ERROR, NULL);
 
 	/* Step 0. Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
@@ -409,6 +412,8 @@ _PUBLIC_ const char *mapistore_errstr(enum MAPISTORE_ERROR mapistore_err)
 		return "Reference count still exists";
 	case MAPISTORE_ERR_EXIST:
 		return "Already exists";
+	case MAPISTORE_ERR_INVALID_OBJECT:
+		return "Invalid object";
 	}
 
 	return "Unknown error";
@@ -660,7 +665,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_table_property(struct mapistore_cont
 							   uint32_t context_id,
 							   uint8_t table_type,
 							   uint64_t fid,
-							   uint32_t proptag,
+							   enum MAPITAGS proptag,
 							   uint32_t pos,
 							   void **data)
 {

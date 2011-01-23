@@ -60,7 +60,7 @@ int					num_backends;
 _PUBLIC_ extern enum MAPISTORE_ERROR mapistore_backend_register(const void *_backend)
 {
 	const struct mapistore_backend	*backend = (const struct mapistore_backend *) _backend;
-	uint32_t			i;
+	int				i;
 
 	/* Sanity checks */
 	if (!backend) {
@@ -483,7 +483,7 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 							   uint64_t fid, 
 							   uint8_t table_type,
 							   uint32_t pos, 
-							   uint32_t proptag, 
+							   enum MAPITAGS proptag, 
 							   void **data)
  {
 	 return bctx->backend->op_get_table_property(bctx->private_data, fid, table_type, pos, proptag, data);

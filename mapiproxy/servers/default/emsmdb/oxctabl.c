@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -91,8 +91,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *mem_ctx,
 		request = mapi_req->u.mapi_SetColumns;
 		if (request.prop_count) {
 			table->prop_count = request.prop_count;
-			table->properties = talloc_memdup(table, request.properties, 
-							  request.prop_count * sizeof (uint32_t));
+			table->properties = (uint32_t *) talloc_memdup(table, request.properties, 
+								       request.prop_count * sizeof (uint32_t));
 		}
 	}
 
@@ -200,7 +200,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 					      struct EcDoRpc_MAPI_REPL *mapi_repl,
 					      uint32_t *handles, uint16_t *size)
 {
-	enum MAPISTATUS			retval;
+	enum MAPISTORE_ERROR		retval;
+	enum MAPISTATUS			ret;
 	struct mapi_handles		*parent;
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
@@ -233,10 +234,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	response.RowData.length = 0;
 
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	if (retval) goto end;
+	ret = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (ret) goto end;
 
-	retval = mapi_handles_get_private_data(parent, &data);
+	ret = mapi_handles_get_private_data(parent, &data);
 	object = (struct emsmdbp_object *) data;
 
 	/* Ensure referring object exists and is a table */
@@ -263,13 +264,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			for (j = 0; j < table->prop_count; j++) {
 				retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
 								      table->ulType, table->folderID, 
-								      table->properties[j],
+								      (enum MAPITAGS) table->properties[j],
 								      table->numerator, &data);
-				if (retval == MAPI_E_INVALID_OBJECT) {
+				if (retval == MAPISTORE_ERR_INVALID_OBJECT) {
 					goto finish;
 				}
 
-				if (retval == MAPI_E_NOT_FOUND) {
+				if (retval == MAPISTORE_ERR_NOT_FOUND) {
 					flagged = 1;
 					libmapiserver_push_property(mem_ctx, 
 								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
@@ -292,12 +293,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 				property = table->properties[j];
 				retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
 								      table->ulType, table->folderID,
-								      table->properties[j],
+								      (enum MAPITAGS) table->properties[j],
 								      table->numerator, &data);
-				if (retval == MAPI_E_INVALID_OBJECT) {
+				if (retval == MAPISTORE_ERR_INVALID_OBJECT) {
 					goto finish;
 				}
-				if (retval == MAPI_E_NOT_FOUND) {
+				if (retval == MAPISTORE_ERR_NOT_FOUND) {
 					property = (property & 0xFFFF0000) + PT_ERROR;
 					data = (void *)&retval;
 				}
@@ -319,14 +320,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 
 			/* Lookup for flagged property row */
 			for (j = 0; j < table->prop_count; j++) {
-				retval = openchangedb_get_table_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
-									 emsmdbp_ctx->szDisplayName,
-									 table_filter, table->properties[j], 
-									 table->numerator, &data);
-				if (retval == MAPI_E_INVALID_OBJECT) {
+				ret = openchangedb_get_table_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
+								      emsmdbp_ctx->szDisplayName,
+								      table_filter, table->properties[j], 
+								      table->numerator, &data);
+				if (ret == MAPI_E_INVALID_OBJECT) {
 					goto finish;
 				}
-				if (retval == MAPI_E_NOT_FOUND) {
+				if (ret == MAPI_E_NOT_FOUND) {
 					flagged = 1;
 					libmapiserver_push_property(mem_ctx, 
 								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
@@ -347,15 +348,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			/* Push the property */
 			for (j = 0; j < table->prop_count; j++) {
 				property = table->properties[j];
-				retval = openchangedb_get_table_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
-									 emsmdbp_ctx->szDisplayName,
-									 table_filter, table->properties[j], 
-									 table->numerator, &data);
-				if (retval == MAPI_E_INVALID_OBJECT) {
+				ret = openchangedb_get_table_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
+								      emsmdbp_ctx->szDisplayName,
+								      table_filter, table->properties[j], 
+								      table->numerator, &data);
+				if (ret == MAPI_E_INVALID_OBJECT) {
 					count = 0;
 					goto finish;
 				}
-				if (retval == MAPI_E_NOT_FOUND) {
+				if (ret == MAPI_E_NOT_FOUND) {
 					property = (property & 0xFFFF0000) + PT_ERROR;
 					data = (void *)&retval;
 				}

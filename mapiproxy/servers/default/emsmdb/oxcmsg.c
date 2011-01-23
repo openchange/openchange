@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,8 +54,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 						struct EcDoRpc_MAPI_REPL *mapi_repl,
 						uint32_t *handles, uint16_t *size)
 {
-	int				ret;
-	enum MAPISTATUS			retval;
+	enum MAPISTORE_ERROR		retval;
+	enum MAPISTATUS			ret;
 	struct mapi_handles		*parent = NULL;
 	struct mapi_handles		*parent_handle = NULL;
 	struct mapi_handles		*rec = NULL;
@@ -71,7 +71,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	struct indexing_folders_list	*flist;
 	struct SPropTagArray		*SPropTagArray;
 	char				*subject = NULL;
-	int				i;
+	uint32_t			i;
 
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] OpenMessage (0x03)\n"));
@@ -84,8 +84,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	ret = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	OPENCHANGE_RETVAL_IF(ret, ret, NULL);
 
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
@@ -104,9 +104,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 
 	switch (object->type) {
 	case EMSMDBP_OBJECT_MAILBOX:
-		ret = mapistore_indexing_get_folder_list(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username,
-							 messageID, &flist);
-		if (ret || !flist->count) {
+		retval = mapistore_indexing_get_folder_list(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username,
+							    messageID, &flist);
+		if (retval || !flist->count) {
 			DEBUG(0, ("No parent folder found for 0x%.16"PRIx64"\n", messageID));
 		}
 		/* If last element in the list doesn't match folderID, that's incorrect */
@@ -142,18 +142,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 				object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx,
 								    flist->folderID[i], parent_handle);
 				if (object) {
-					retval = mapi_handles_set_private_data(rec, object);
+					ret = mapi_handles_set_private_data(rec, object);
 				}
 
 				parent_handle = rec;
 				
 			}
 		} else {
-			retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+			ret = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 			object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx,
 							    flist->folderID[0], parent);
 			if (object) {
-				retval = mapi_handles_set_private_data(rec, object);
+				ret = mapi_handles_set_private_data(rec, object);
 			}
 			parent_handle = rec;
 			i = 0;
@@ -210,7 +210,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 									struct OpenMessage_recipients, 
 									msg.recipients->cRows + 1);
 		for (i = 0; i < msg.recipients->cRows; i++) {
-			mapi_repl->u.mapi_OpenMessage.recipients[i].RecipClass = msg.recipients->aRow[i].lpProps[0].value.l;
+			mapi_repl->u.mapi_OpenMessage.recipients[i].RecipClass = (enum ulRecipClass) msg.recipients->aRow[i].lpProps[0].value.l;
 			mapi_repl->u.mapi_OpenMessage.recipients[i].codepage = CP_USASCII;
 			mapi_repl->u.mapi_OpenMessage.recipients[i].Reserved = 0;
 			emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx, 
@@ -224,13 +224,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 
 	/* Initialize Message object */
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	ret = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
 
 	if (messageID) {
 		object = emsmdbp_object_message_init((TALLOC_CTX *)rec, emsmdbp_ctx, messageID, parent_handle);
 		if (object) {
-			retval = mapi_handles_set_private_data(rec, object);
+			ret = mapi_handles_set_private_data(rec, object);
 		}
 	}
 
@@ -543,7 +543,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 	uint32_t			contextID;
 	struct SPropTagArray		*SPropTagArray;
 	char				*subject = NULL;
-	int				i;
+	uint32_t			i;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] ReloadCachedInformation (0x10)\n"));
 
@@ -607,7 +607,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 										       struct OpenRecipientRow, 
 										       msg.recipients->cRows + 1);
 		for (i = 0; i < msg.recipients->cRows; i++) {
-			mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientType = msg.recipients->aRow[i].lpProps[0].value.l;
+			mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientType = (enum ulRecipClass) msg.recipients->aRow[i].lpProps[0].value.l;
 			mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i].CodePageId = CP_USASCII;
 			mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i].Reserved = 0;
 			emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx, 

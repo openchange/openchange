@@ -120,7 +120,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	/* Step 5. Retrieve the dinstinguished name of the server */
 	cn = ldb_msg_find_attr_as_string(msg, "cn", NULL);
 	userDN = ldb_msg_find_attr_as_string(msg, "legacyExchangeDN", NULL);
-	dnprefix = strstr(userDN, cn);
+	dnprefix = (char *)strstr(userDN, cn);
 	if (!dnprefix) {
 		talloc_free(emsmdbp_ctx);
 		goto failure;
@@ -935,7 +935,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	/* Step 5. Retrieve the distinguished name of the server */
 	cn = ldb_msg_find_attr_as_string(msg, "cn", NULL);
 	userDN = ldb_msg_find_attr_as_string(msg, "legacyExchangeDN", NULL);
-	dnprefix = strstr(userDN, cn);
+	dnprefix = (char *) strstr(userDN, cn);
 	if (!dnprefix) {
 		talloc_free(emsmdbp_ctx);
 		goto failure;

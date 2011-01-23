@@ -545,7 +545,7 @@ static enum MAPISTATUS dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	struct exchange_nsp_session	*session;
 	struct emsabp_context		*emsabp_ctx = NULL;
 	uint32_t			MId;
-	int				i;
+	uint32_t			i;
 	bool				found = false;
 
 	DEBUG(3, ("exchange_nsp: NspiGetProps (0x9)\n"));
@@ -943,7 +943,7 @@ static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_ca
 	for (i = 0; i < paWStr->Count; i++) {
 		struct ldb_result	*ldb_res;
 		char			*filter = talloc_strdup(mem_ctx, "");
-		int			j;
+		uint32_t		j;
 
 		/* Build search filter */
 		for (j = 0; j < ARRAY_SIZE(search_attr); j++) {

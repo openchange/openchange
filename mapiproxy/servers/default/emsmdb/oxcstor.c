@@ -106,7 +106,7 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	response.LogonType.store_mailbox.LogonTime.Seconds = LogonTime->tm_sec;
 	response.LogonType.store_mailbox.LogonTime.Minutes = LogonTime->tm_min;
 	response.LogonType.store_mailbox.LogonTime.Hour = LogonTime->tm_hour;
-	response.LogonType.store_mailbox.LogonTime.DayOfWeek = LogonTime->tm_wday;
+	response.LogonType.store_mailbox.LogonTime.DayOfWeek = (enum DayOfWeek)LogonTime->tm_wday;
 	response.LogonType.store_mailbox.LogonTime.Day = LogonTime->tm_mday;
 	response.LogonType.store_mailbox.LogonTime.Month = LogonTime->tm_mon + 1;
 	response.LogonType.store_mailbox.LogonTime.Year = LogonTime->tm_year + 1900;
@@ -271,7 +271,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 static bool MessageClassIsValid(const char *MessageClass)
 {
 	size_t		len = strlen(MessageClass);
-	int		i;
+	uint32_t	i;
 	
 	if (len + 1 > 255) {
 		return false;

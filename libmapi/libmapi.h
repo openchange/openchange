@@ -242,10 +242,10 @@ enum MAPISTATUS		mapi_nameid_GetIDsFromNames(struct mapi_nameid *, mapi_object_t
 /* The following public definitions come from libmapi/property.c */
 struct SPropTagArray	*set_SPropTagArray(TALLOC_CTX *, uint32_t, ...);
 enum MAPISTATUS		SPropTagArray_add(TALLOC_CTX *, struct SPropTagArray *, enum MAPITAGS);
-const void		*get_SPropValue(struct SPropValue *, uint32_t);
+const void		*get_SPropValue(struct SPropValue *, enum MAPITAGS);
 struct SPropValue	*get_SPropValue_SRowSet(struct SRowSet *, uint32_t);
 const void		*get_SPropValue_SRowSet_data(struct SRowSet *, uint32_t);
-enum MAPISTATUS		set_default_error_SPropValue_SRow(struct SRow *, uint32_t, void *);
+enum MAPISTATUS		set_default_error_SPropValue_SRow(struct SRow *, enum MAPITAGS, void *);
 struct SPropValue	*get_SPropValue_SRow(struct SRow *, uint32_t);
 const void		*get_SPropValue_SRow_data(struct SRow *, uint32_t);
 const void		*find_SPropValue_data(struct SRow *, uint32_t);
@@ -253,7 +253,7 @@ const void		*find_mapi_SPropValue_data(struct mapi_SPropValue_array *, uint32_t)
 const void		*get_mapi_SPropValue_data(struct mapi_SPropValue *);
 const void		*get_SPropValue_data(struct SPropValue *);
 bool			set_SPropValue_proptag(struct SPropValue *, enum MAPITAGS, const void *);
-struct SPropValue	*add_SPropValue(TALLOC_CTX *, struct SPropValue *, uint32_t *, uint32_t, const void *);
+struct SPropValue	*add_SPropValue(TALLOC_CTX *, struct SPropValue *, uint32_t *, enum MAPITAGS, const void *);
 bool			set_SPropValue(struct SPropValue *, const void *);
 uint32_t		get_mapi_property_size(struct mapi_SPropValue *);
 uint32_t		cast_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, struct SPropValue *);
@@ -263,7 +263,7 @@ uint32_t		SRowSet_propcpy(TALLOC_CTX *, struct SRowSet *, struct SPropValue);
 void			mapi_SPropValue_array_named(mapi_object_t *, struct mapi_SPropValue_array *);
 enum MAPISTATUS		get_mapi_SPropValue_array_date_timeval(struct timeval *, struct mapi_SPropValue_array *, uint32_t);
 enum MAPISTATUS		get_mapi_SPropValue_date_timeval(struct timeval *t, struct SPropValue);
-bool			set_SPropValue_proptag_date_timeval(struct SPropValue *, uint32_t, const struct timeval *);
+bool			set_SPropValue_proptag_date_timeval(struct SPropValue *, enum MAPITAGS, const struct timeval *);
 struct RecurrencePattern *get_RecurrencePattern(TALLOC_CTX *, struct Binary_r *);
 struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, struct Binary_r *);
 struct TimeZoneStruct	*get_TimeZoneStruct(TALLOC_CTX *, struct Binary_r *);

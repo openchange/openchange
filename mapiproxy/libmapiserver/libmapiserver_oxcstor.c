@@ -175,7 +175,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL 
  */
 _PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolderTable_size(struct EcDoRpc_MAPI_REPL *response)
 {
-	int 		i = 0;
+	uint32_t	i = 0;
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
 	if (!response || response->error_code) {

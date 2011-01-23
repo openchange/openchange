@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009-2010
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -195,7 +195,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 						      struct EcDoRpc_MAPI_REPL *mapi_repl,
 						      uint32_t *handles, uint16_t *size)
 {
-	enum MAPISTATUS		retval;
+	enum MAPISTATUS		ret;
+	enum MAPISTORE_ERROR	retval;
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL;
@@ -215,8 +216,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	ret = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	OPENCHANGE_RETVAL_IF(ret, ret, NULL);
 
 	/* Initialize default empty GetHierarchyTable reply */
 	mapi_repl->opnum = mapi_req->opnum;
@@ -251,8 +252,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	switch (mapistore) {
 	case false:
 		/* system/special folder */
-		retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folderID, 
-						       &mapi_repl->u.mapi_GetHierarchyTable.RowCount);
+		ret = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folderID, 
+						    &mapi_repl->u.mapi_GetHierarchyTable.RowCount);
 		break;
 	case true:
 		/* handled by mapistore */
@@ -263,12 +264,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 
 	/* Initialize Table object */
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	ret = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
 
 	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent);
 	if (object) {
-		retval = mapi_handles_set_private_data(rec, object);
+		ret = mapi_handles_set_private_data(rec, object);
 		object->object.table->denominator = mapi_repl->u.mapi_GetHierarchyTable.RowCount;
 		object->object.table->ulType = EMSMDBP_TABLE_FOLDER_TYPE;
 	}
@@ -300,7 +301,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 						     struct EcDoRpc_MAPI_REPL *mapi_repl,
 						     uint32_t *handles, uint16_t *size)
 {
-	enum MAPISTATUS		retval;
+	enum MAPISTORE_ERROR	retval;
+	enum MAPISTATUS		ret;
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL;
@@ -326,8 +328,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
 
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	if (retval) {
+	ret = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (ret) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		*size += libmapiserver_RopGetContentsTable_size(NULL);
 		return MAPI_E_SUCCESS;
@@ -368,12 +370,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 
 	/* Initialize Table object */
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	ret = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
 
 	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent);
 	if (object) {
-		retval = mapi_handles_set_private_data(rec, object);
+		ret = mapi_handles_set_private_data(rec, object);
 		object->object.table->denominator = mapi_repl->u.mapi_GetHierarchyTable.RowCount;
 		object->object.table->ulType = EMSMDBP_TABLE_MESSAGE_TYPE;
 	}
@@ -438,7 +440,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_conte
 	/* Ensure dn is within user mailbox / prevent from creating
 	 * folders in other mailboxes: check dn vs emsmdbp_ctx->username */
 
-	basedn = ldb_dn_new(mem_ctx, emsmdbp_ctx->oc_ctx, dn);
+	basedn = ldb_dn_new(mem_ctx, (struct ldb_context *)emsmdbp_ctx->oc_ctx, dn);
 	talloc_free(dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, mem_ctx);
 	
@@ -473,7 +475,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_conte
 
 	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 
-	ret = ldb_add(emsmdbp_ctx->oc_ctx, msg);
+	ret = ldb_add((struct ldb_context *)emsmdbp_ctx->oc_ctx, msg);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
 
 	talloc_free(parentfid);
@@ -490,7 +492,8 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 						      struct CreateFolder_repl *response)
 {
 	TALLOC_CTX		*mem_ctx;
-	enum MAPISTATUS		retval;
+	enum MAPISTORE_ERROR	retval;
+	enum MAPISTATUS		retmapi;
 	int			ret;
 	struct ldb_result	*res = NULL;
 	struct ldb_message	*msg;
@@ -504,7 +507,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 	uint32_t		context_id;
 	char			*parentfid;
 	int			count;
-	int			i;
+	uint32_t		i;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateGenericFolder\n"));
 
@@ -527,7 +530,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 		/* Determine if the folder already exists */
 		retval = mapistore_get_fid_by_name(emsmdbp_ctx->mstore_ctx, context_id, parent_fid,
 						   new_folder_name, &folder_fid);
-		if (retval == MAPI_E_SUCCESS) {
+		if (retval == MAPISTORE_SUCCESS) {
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder Duplicate Folder at 0x%.16"PRIx64"\n", folder_fid));
 			/* Open the folder using folder_fid */
 			retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid, folder_fid);
@@ -539,8 +542,8 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 		}
 	}
 	/* Step 3. Retrieve the next available folderID */
-	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &response->folder_id);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	retmapi = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &response->folder_id);
+	OPENCHANGE_RETVAL_IF(retmapi, retmapi, NULL);
 
 	/* Step 4. Create folder in mapistore */
 	retval = mapistore_mkdir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid, response->folder_id, 
@@ -557,17 +560,18 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 		mem_ctx = talloc_named(NULL, 0, "RopCreateGenericFolder");
 
 		/* Retrieve previous value */
-		ret = ldb_search(emsmdbp_ctx->oc_ctx, mem_ctx, &res, ldb_get_default_basedn(emsmdbp_ctx->oc_ctx),
+		ret = ldb_search((struct ldb_context *)emsmdbp_ctx->oc_ctx, mem_ctx, &res, 
+				 ldb_get_default_basedn((struct ldb_context *)emsmdbp_ctx->oc_ctx),
 				 LDB_SCOPE_SUBTREE, attrs, "PidTagFolderId=0x%.16"PRIx64, parent_fid);
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 		count = ldb_msg_find_attr_as_int(res->msgs[0], "PidTagFolderChildCount", 0);
 		
 		/* Update record */
-		retval = openchangedb_get_distinguishedName(mem_ctx, emsmdbp_ctx->oc_ctx, parent_fid, &parentfid);
-		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+		retmapi = openchangedb_get_distinguishedName(mem_ctx, emsmdbp_ctx->oc_ctx, parent_fid, &parentfid);
+		OPENCHANGE_RETVAL_IF(retmapi, retmapi, mem_ctx);
 
-		ldb_dn = ldb_dn_new(mem_ctx, emsmdbp_ctx->oc_ctx, parentfid);
+		ldb_dn = ldb_dn_new(mem_ctx, (struct ldb_context *)emsmdbp_ctx->oc_ctx, parentfid);
 		OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_BAD_VALUE, mem_ctx);
 
 		msg = ldb_msg_new(mem_ctx);
@@ -577,7 +581,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 		msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 		msg->elements[1].flags = LDB_FLAG_MOD_REPLACE;
 
-		ret = ldb_modify(emsmdbp_ctx->oc_ctx, msg);
+		ret = ldb_modify((struct ldb_context *)emsmdbp_ctx->oc_ctx, msg);
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
 
 		talloc_free(mem_ctx);
@@ -741,11 +745,11 @@ static enum MAPISTATUS DoDeleteSystemFolder(struct emsmdbp_context *emsmdbp_ctx,
 	/* Create the folder dn record for openchange.ldb */
 	dn_str = talloc_asprintf(mem_ctx, "CN=0x%016"PRIx64",%s", fid, parentdn);
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder target DN: %s\n", dn_str));
-	dn = ldb_dn_new(mem_ctx, emsmdbp_ctx->oc_ctx, dn_str);
+	dn = ldb_dn_new(mem_ctx, (struct ldb_context *)emsmdbp_ctx->oc_ctx, dn_str);
 	talloc_free(dn_str);
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(dn), MAPI_E_BAD_VALUE, mem_ctx);
 
-	ret = ldb_delete(emsmdbp_ctx->oc_ctx, dn);
+	ret = ldb_delete((struct ldb_context *)emsmdbp_ctx->oc_ctx, dn);
 	if (ret != LDB_SUCCESS) {
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder failed ldb_delete, ret: 0x%x\n", ret));
 		talloc_free(mem_ctx);
@@ -777,7 +781,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 						 struct EcDoRpc_MAPI_REPL *mapi_repl,
 						 uint32_t *handles, uint16_t *size)
 {
-	enum MAPISTATUS		retval;
+	enum MAPISTORE_ERROR	retval;
+	enum MAPISTATUS		ret;
 	struct mapi_handles	*rec = NULL;
 	uint32_t		handle;
 	void			*handle_priv_data;
@@ -798,8 +803,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 	/* TODO: factor this out to be convenience API */
 	/* Convert the handle index into a handle, and then get the folder id */
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	ret = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	OPENCHANGE_RETVAL_IF(ret, ret, NULL);
 
 	mapi_handles_get_private_data(rec, &handle_priv_data);
 	handle_object = (struct emsmdbp_object *)handle_priv_data;
@@ -850,7 +855,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 
 	*size += libmapiserver_RopDeleteFolder_size(mapi_repl);
 
-	return retval;
+	return ret;
 }
 
 

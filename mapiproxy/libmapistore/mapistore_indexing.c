@@ -115,8 +115,8 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_add(struct mapistore_context *m
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_del(struct mapistore_context *mstore_ctx,
-				    const char *username)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_del(struct mapistore_context *mstore_ctx,
+						     const char *username)
 {
 	struct indexing_context_list	*ictx;
 	
@@ -388,9 +388,9 @@ enum MAPISTORE_ERROR mapistore_indexing_record_del_fmid(struct mapistore_context
 
    \sa mapistore_indexing_record_open_fmid
  */
-_PUBLIC_ int mapistore_indexing_get_folder_list(struct mapistore_context *mstore_ctx,
-						const char *username, uint64_t fmid,
-						struct indexing_folders_list **_flist)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_get_folder_list(struct mapistore_context *mstore_ctx,
+								 const char *username, uint64_t fmid,
+								 struct indexing_folders_list **_flist)
 {
 	int				ret;
 	struct indexing_context_list	*ictx;
@@ -477,8 +477,8 @@ _PUBLIC_ int mapistore_indexing_get_folder_list(struct mapistore_context *mstore
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, uint64_t fid)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
+								uint32_t context_id, uint64_t fid)
 {
 	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, fid, MAPISTORE_FOLDER);
 }
@@ -496,9 +496,9 @@ _PUBLIC_ int mapistore_indexing_record_add_fid(struct mapistore_context *mstore_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_record_del_fid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, uint64_t fid, 
-					       uint8_t flags)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_record_del_fid(struct mapistore_context *mstore_ctx,
+								uint32_t context_id, uint64_t fid, 
+								uint8_t flags)
 {
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, fid, flags);
 }
@@ -517,8 +517,8 @@ _PUBLIC_ int mapistore_indexing_record_del_fid(struct mapistore_context *mstore_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, uint64_t mid)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
+								uint32_t context_id, uint64_t mid)
 {
 	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, mid, MAPISTORE_MESSAGE);
 }
@@ -536,8 +536,8 @@ _PUBLIC_ int mapistore_indexing_record_add_mid(struct mapistore_context *mstore_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_record_del_mid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, uint64_t mid,
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_record_del_mid(struct mapistore_context *mstore_ctx,
+								uint32_t context_id, uint64_t mid,
 					       uint8_t flags)
 {
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, mid, flags);

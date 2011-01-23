@@ -173,7 +173,7 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 
 	username = dce_call->context->conn->auth_state.session_info->server_info->account_name;
 
-	mem_ctx = talloc_named(emsabp_ctx->mem_ctx, 0, __FUNCTION__);
+	mem_ctx = talloc_named(emsabp_ctx->mem_ctx, 0, "emsabp_verify_user");
 
 	ret = emsabp_get_account_info(mem_ctx, emsabp_ctx, username, &ldb_msg);
 	
@@ -569,7 +569,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 	const char	*dn;
 	void		*data;
 	uint32_t	ulPropTag;
-	int		i;
+	uint32_t	i;
 
 	/* Step 0. Create MId if necessary */
 	if (MId == 0) {
@@ -639,7 +639,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 	int			ret;
 	uint32_t		ulPropTag;
 	void			*data;
-	int			i;
+	uint32_t		i;
 
 	/* Step 0. Try to Retrieve the dn associated to the MId first from temp TDB (users) */
 	retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->ttdb_ctx, MId, &dn);

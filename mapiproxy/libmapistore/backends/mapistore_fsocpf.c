@@ -4,7 +4,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2010
+   Copyright (C) Julien Kerihuel 2010-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -796,7 +796,7 @@ static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data,
 
 static enum MAPISTORE_ERROR fsocpf_get_property_from_folder_table(struct fsocpf_folder *folder,
 								  uint32_t pos,
-								  uint32_t proptag,
+								  enum MAPITAGS proptag,
 								  void **data)
 {
 	int			ret;
@@ -863,9 +863,9 @@ static enum MAPISTORE_ERROR fsocpf_get_property_from_folder_table(struct fsocpf_
 	if (((proptag & 0xFFFF) == PT_STRING8) || ((proptag & 0xFFFF) == PT_UNICODE)) {
 		/* Hack around PT_STRING8 and PT_UNICODE */
 		if (*data == NULL && ((proptag & 0xFFFF) == PT_STRING8)) {
-			*data = (void *) get_SPropValue(lpProps, (proptag & 0xFFFF0000) + PT_UNICODE);
+		  *data = (void *) get_SPropValue(lpProps, (enum MAPITAGS)(((int)proptag & 0xFFFF0000) + PT_UNICODE));
 		} else if (*data == NULL && (proptag & 0xFFFF) == PT_UNICODE) {
-			*data = (void *) get_SPropValue(lpProps, (proptag & 0xFFFF0000) + PT_STRING8);
+		  *data = (void *) get_SPropValue(lpProps, (enum MAPITAGS)((int)(proptag & 0xFFFF0000) + PT_STRING8));
 		}
 		*data = talloc_strdup(folder, (char *)*data);
 	}
@@ -882,7 +882,7 @@ static enum MAPISTORE_ERROR fsocpf_get_property_from_folder_table(struct fsocpf_
 
 static enum MAPISTORE_ERROR fsocpf_get_property_from_message_table(struct fsocpf_folder *folder,
 								   uint32_t pos,
-								   uint32_t proptag,
+								   enum MAPITAGS proptag,
 								   void **data)
 {
 	int			ret;
@@ -955,9 +955,9 @@ static enum MAPISTORE_ERROR fsocpf_get_property_from_message_table(struct fsocpf
 	if (((proptag & 0xFFFF) == PT_STRING8) || ((proptag & 0xFFFF) == PT_UNICODE)) {
 		/* Hack around PT_STRING8 and PT_UNICODE */
 		if (*data == NULL && ((proptag & 0xFFFF) == PT_STRING8)) {
-			*data = (void *) get_SPropValue(lpProps, (proptag & 0xFFFF0000) + PT_UNICODE);
+		  *data = (void *) get_SPropValue(lpProps, (enum MAPITAGS)(((int)proptag & 0xFFFF0000) + PT_UNICODE));
 		} else if (*data == NULL && (proptag & 0xFFFF) == PT_UNICODE) {
-			*data = (void *) get_SPropValue(lpProps, (proptag & 0xFFFF0000) + PT_STRING8);
+		  *data = (void *) get_SPropValue(lpProps, (enum MAPITAGS)(((int)proptag & 0xFFFF0000) + PT_STRING8));
 		}
 		*data = talloc_strdup(folder, (char *)*data);
 	}
@@ -976,7 +976,7 @@ static enum MAPISTORE_ERROR fsocpf_op_get_table_property(void *private_data,
 							 uint64_t fid,
 							 uint8_t table_type,
 							 uint32_t pos,
-							 uint32_t proptag,
+							 enum MAPITAGS proptag,
 							 void **data)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
@@ -1274,7 +1274,7 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *) private_data;
 	struct fsocpf_folder	*folder;
 	struct fsocpf_message	*message;
-	int			i;
+	uint32_t		i;
 
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 

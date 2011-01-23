@@ -104,9 +104,7 @@ struct mapistoredb_conf {
 };
 
 struct mapistoredb_context {
-	struct ldb_context		*ldb_ctx;
 	struct loadparm_context		*lp_ctx;
-	struct tevent_context		*ev;
 	struct mapistoredb_conf		*param;
 	struct mapistore_context	*mstore_ctx;
 };
@@ -158,6 +156,10 @@ struct mapistoredb_context {
 struct id_mapping_context {
 	struct tdb_wrap		*used_ctx;
 	uint64_t		last_id;
+
+	/* MAPISTORE v2 */
+	struct tevent_context	*ev;
+	struct ldb_context	*ldb_ctx;
 };
 
 
@@ -223,6 +225,8 @@ __BEGIN_DECLS
 enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *);
 enum MAPISTORE_ERROR mapistore_get_context_id(struct processing_context *, uint32_t *);
 enum MAPISTORE_ERROR mapistore_free_context_id(struct processing_context *, uint32_t);
+/* mapistore_v2 */
+enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_context *, const char *);
 
 
 /* definitions from mapistore_backend.c */

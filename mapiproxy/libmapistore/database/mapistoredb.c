@@ -46,7 +46,6 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 {
 	struct mapistoredb_context	*mdb_ctx;
 	char				**domaindn;
-	char				*full_path;
 	struct stat			sb;
 	int				i;
 	int				ret;
@@ -75,20 +74,7 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 	mdb_ctx->lp_ctx = loadparm_init(mdb_ctx);
 	lpcfg_load_default(mdb_ctx->lp_ctx);
 
-	/* Step 3. Initialize tevent structure */
-	mdb_ctx->ev = tevent_context_init(mdb_ctx);
-
-	/* Step 4. Open a wrapped connection on the mapistore database */
-	full_path = talloc_asprintf(mem_ctx, "%s/mapistore.ldb", path);
-	mdb_ctx->ldb_ctx = mapistore_ldb_wrap_connect(mdb_ctx, mdb_ctx->ev, full_path, 0);
-	talloc_free(full_path);
-	if (!mdb_ctx->ldb_ctx) {
-		DEBUG(5, ("! [%s:%d][%s]: Failed to open wrapped connection over mapistore.ldb\n", __FILE__, __LINE__, __FUNCTION__));
-		talloc_free(mdb_ctx);
-		return NULL;
-	}
-
-	/* Step 5. Retrieve default values from smb.conf */
+	/* Step 3. Retrieve default values from smb.conf */
 	mdb_ctx->param->netbiosname = strlower_talloc(mdb_ctx->param, lpcfg_netbios_name(mdb_ctx->lp_ctx));
 	mdb_ctx->param->dnsdomain = strlower_talloc(mdb_ctx->param, lpcfg_realm(mdb_ctx->lp_ctx));
 	mdb_ctx->param->domain = strlower_talloc(mdb_ctx->param, lpcfg_sam_name(mdb_ctx->lp_ctx));
@@ -121,7 +107,7 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 	mdb_ctx->param->db_path = talloc_asprintf(mdb_ctx->param, "%s/mapistore.ldb", path);
 	mdb_ctx->param->mstore_path = talloc_asprintf(mdb_ctx->param, "%s/mapistore", path);
 
-	/* Step 6. Initialize mapistore */
+	/* Step 4. Initialize mapistore */
 	if (stat(mdb_ctx->param->mstore_path, &sb) == -1) {
 		ret = mkdir(mdb_ctx->param->mstore_path, 0700);
 		if (ret == -1) {
@@ -206,26 +192,12 @@ enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *m
 
 
 /** TODO: this is a copy of code in mapistore_mstoredb.c */
-static bool write_ldif_string_to_store(struct ldb_context *ldb_ctx, const char *ldif_string)
+static bool write_ldif_string_to_store(struct mapistoredb_context *mdb_ctx, const char *ldif_string)
 {
-	struct ldb_ldif *ldif;
-	int		ret;
-	
-	while ((ldif = ldb_ldif_read_string(ldb_ctx, (const char **)&ldif_string))) {
-		ret = ldb_msg_normalize(ldb_ctx, ldif, ldif->msg, &ldif->msg);
-		if (ret != LDB_SUCCESS) {
-			ldb_ldif_read_free(ldb_ctx, ldif);
-			return false;
-		}
-		ret = ldb_add(ldb_ctx, ldif->msg);
-		if (ret != LDB_SUCCESS) {
-			ldb_ldif_read_free(ldb_ctx, ldif);
-			return false;
-		}
-		ldb_ldif_read_free(ldb_ctx, ldif);
-	}
-	
-	return true;
+	enum MAPISTORE_ERROR	retval;
+
+	retval = mapistore_write_ldif_string_to_store(mdb_ctx->mstore_ctx->processing_ctx, ldif_string);
+	return (retval == MAPISTORE_SUCCESS) ? true : false;
 }
 
 
@@ -241,10 +213,10 @@ enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *mdb_ctx)
 	char	*ldif_str;
 
 	/* Sanity checks */
-	if (!mdb_ctx || !mdb_ctx->ldb_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	if (!mdb_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
 
 	/* Step 1. Add database schema */
-	if (write_ldif_string_to_store(mdb_ctx->ldb_ctx, MDB_INIT_LDIF_TMPL) == false) {
+	if (write_ldif_string_to_store(mdb_ctx, MDB_INIT_LDIF_TMPL) == false) {
 		DEBUG(5, ("! [%s:%d][%s]: Failed to add database schema\n", __FILE__, __LINE__, __FUNCTION__));
 		return MAPISTORE_ERR_DATABASE_OPS;
 	}
@@ -255,7 +227,7 @@ enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *mdb_ctx)
 				   mdb_ctx->param->firstorg,
 				   mdb_ctx->param->serverdn,
 				   mdb_ctx->param->serverdn);
-	if (write_ldif_string_to_store(mdb_ctx->ldb_ctx, ldif_str) == false) {
+	if (write_ldif_string_to_store(mdb_ctx, ldif_str) == false) {
 		DEBUG(5, ("! [%s:%d][%s]: Failed to add RootDSE schema\n", __FILE__, __LINE__, __FUNCTION__));
 		talloc_free(ldif_str);
 		return MAPISTORE_ERR_DATABASE_OPS;
@@ -274,7 +246,7 @@ enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *mdb_ctx)
 				   mdb_ctx->param->firstorg,
 				   mdb_ctx->param->serverdn,
 				   mdb_ctx->param->firstou);
-	if (write_ldif_string_to_store(mdb_ctx->ldb_ctx, ldif_str) == false) {
+	if (write_ldif_string_to_store(mdb_ctx, ldif_str) == false) {
 		DEBUG(5, ("! [%s:%d][%s]: Failed to provision server object\n", __FILE__, __LINE__, __FUNCTION__));
 		talloc_free(ldif_str);
 		return MAPISTORE_ERR_DATABASE_OPS;

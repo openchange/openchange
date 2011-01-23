@@ -190,6 +190,9 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *p
 	char		*tmp_buf;
 	int		ret;
 
+	/* mapistore_v2 */
+	const char	*db_path;
+
 	if (!pctx) return MAPISTORE_ERR_NOT_INITIALIZED;
 	if (pctx->mapping_ctx) return MAPISTORE_ERR_ALREADY_INITIALIZED;
 
@@ -197,6 +200,26 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *p
 	if (!pctx->mapping_ctx) return MAPISTORE_ERR_NO_MEMORY;
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_init_mapping_context");
+
+	/* Step 1. Retrieve the mapistore database path */
+	db_path = mapistore_get_database_path();
+	if (!db_path) {
+		DEBUG(5, ("! [%s:%d][%s]: Unable to retrieve the mapistore database path\n", __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(mem_ctx);
+		talloc_free(pctx->mapping_ctx);
+		return MAPISTORE_ERR_DATABASE_INIT;
+	}
+
+	/* Step 2. Initialize tevent structure */
+	pctx->mapping_ctx->ev = tevent_context_init(pctx);
+
+	/* Step 3. Open a wrapped connection to mapistore.ldb */
+	pctx->mapping_ctx->ldb_ctx = mapistore_ldb_wrap_connect(pctx, pctx->mapping_ctx->ev, db_path, 0);
+	if (!pctx->mapping_ctx->ldb_ctx) {
+		DEBUG(5, ("! [%s:%d][%s]: Failed to open wrapped connection over mapistore.ldb\n", __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(pctx->mapping_ctx);
+		return MAPISTORE_ERR_DATABASE_INIT;
+	}
 
 	/* Open/Create the used ID database */
 	if (!pctx->mapping_ctx->used_ctx) {
@@ -244,6 +267,38 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *p
 	pctx->mapping_ctx->last_id = last_id;
 
 	talloc_free(mem_ctx);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_context *pctx, const char *ldif_string)
+{
+	struct ldb_context	*ldb_ctx;
+	struct ldb_ldif		*ldif;
+	int			ret;
+
+	/* Sanity checks */
+	if (!pctx || !pctx->mapping_ctx || !pctx->mapping_ctx->ldb_ctx) return MAPISTORE_ERR_INVALID_PARAMETER;
+	if (!ldif_string) return MAPISTORE_ERR_INVALID_PARAMETER;
+
+	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
+
+	while ((ldif = ldb_ldif_read_string(ldb_ctx, (const char **)&ldif_string))) {
+		ret = ldb_msg_normalize(ldb_ctx, ldif, ldif->msg, &ldif->msg);
+		if (ret != LDB_SUCCESS) {
+			ldb_ldif_read_free(ldb_ctx, ldif);
+			DEBUG(5, ("! [%s:%d][%s]: Unable to normalize ldif\n", __FILE__, __LINE__, __FUNCTION__));
+			return MAPISTORE_ERROR;
+		}
+		ret = ldb_add(ldb_ctx, ldif->msg);
+		if (ret != LDB_SUCCESS) {
+			ldb_ldif_read_free(ldb_ctx, ldif);
+			DEBUG(5, ("! [%s:%d][%s]: Unable to add ldb msg\n", __FILE__, __LINE__, __FUNCTION__));
+			return MAPISTORE_ERROR;
+		}
+		ldb_ldif_read_free(ldb_ctx, ldif);
+	}
 
 	return MAPISTORE_SUCCESS;
 }

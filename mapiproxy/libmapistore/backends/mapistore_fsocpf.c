@@ -231,8 +231,9 @@ static struct fsocpf_message_list *fsocpf_find_message_list_by_mid(struct fsocpf
    \param uri pointer to the fsocpf path
    \param private_data pointer to the private backend context 
  */
-static enum MAPISTORE_ERROR fsocpf_create_context(TALLOC_CTX *mem_ctx, const char *uri, void **private_data)
+static enum MAPISTORE_ERROR fsocpf_create_context(struct mapistore_backend_context *mstoredb_ctx, const char *uri, void **private_data)
 {
+	TALLOC_CTX			*mem_ctx;
 	DIR				*top_dir;
 	struct fsocpf_context		*fsocpf_ctx;
 	struct fsocpf_folder_list	*el;
@@ -241,6 +242,8 @@ static enum MAPISTORE_ERROR fsocpf_create_context(TALLOC_CTX *mem_ctx, const cha
 
 	DEBUG(0, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 	DEBUG(4, ("[%s:%d]: fsocpf uri: %s\n", __FUNCTION__, __LINE__, uri));
+
+	mem_ctx = (TALLOC_CTX *) mstoredb_ctx;
 
 	/* Step 1. Try to open context directory */
 	top_dir = opendir(uri);

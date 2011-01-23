@@ -205,6 +205,18 @@ struct indexing_context_list {
 
 #define	MAPISTORE_DB_NAME_USED_ID	"mapistore_id_mapping_used.tdb"
 
+/**
+   Mapistore opaque context to pass down to backends
+
+   Semantically, encapsulating the mstore_ctx within a container's
+   structure help abstracting mapistore logic from backend's
+   perspective and write a specific API dealing exclusively with this
+   particular context.
+ */
+struct mapistore_backend_context {
+	struct mapistore_context	*mstore_ctx;
+};
+
 __BEGIN_DECLS
 
 /* definitions from mapistore_processing.c */

@@ -58,6 +58,10 @@ typedef	int (*init_backend_fn) (void);
 #define	MAPISTORE_SOFT_DELETE		1
 #define	MAPISTORE_PERMANENT_DELETE	2
 
+/* Forward declaration */
+struct mapistoredb_context;
+struct mapistore_backend_context;
+
 enum MAPISTORE_DFLT_FOLDERS {
 	MDB_ROOT_FOLDER		= 1,
 	MDB_DEFERRED_ACTIONS	= 2,
@@ -103,7 +107,7 @@ struct mapistore_backend {
 	const char	*uri_namespace;
 
 	enum MAPISTORE_ERROR (*init)(void);
-	enum MAPISTORE_ERROR (*create_context)(TALLOC_CTX *, const char *, void **);
+	enum MAPISTORE_ERROR (*create_context)(struct mapistore_backend_context *, const char *, void **);
 	enum MAPISTORE_ERROR (*delete_context)(void *);
 	enum MAPISTORE_ERROR (*create_uri)(TALLOC_CTX *, uint32_t, const char *, char **);
 	enum MAPISTORE_ERROR (*release_record)(void *, uint64_t, uint8_t);
@@ -156,9 +160,6 @@ struct indexing_folders_list {
 	uint64_t			*folderID;
 	uint32_t			count;
 };
-
-/* Forward declaration */
-struct mapistoredb_context;
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus

@@ -266,7 +266,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 								      table->ulType, table->folderID, 
 								      (enum MAPITAGS) table->properties[j],
 								      table->numerator, &data);
-				if (retval == MAPISTORE_ERR_INVALID_OBJECT) {
+				if (retval == MAPISTORE_ERR_INVALID_OBJECT || retval == MAPISTORE_ERROR) {
 					goto finish;
 				}
 
@@ -295,7 +295,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 								      table->ulType, table->folderID,
 								      (enum MAPITAGS) table->properties[j],
 								      table->numerator, &data);
-				if (retval == MAPISTORE_ERR_INVALID_OBJECT) {
+				if (retval == MAPISTORE_ERR_INVALID_OBJECT || retval == MAPISTORE_ERROR) {
 					goto finish;
 				}
 				if (retval == MAPISTORE_ERR_NOT_FOUND) {

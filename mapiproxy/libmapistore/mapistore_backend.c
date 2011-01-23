@@ -54,7 +54,7 @@ int					num_backends;
 /**
    \details Register mapistore backends
 
-   \param _backend pointer to the mapistore backend to register
+   \param backend pointer to the mapistore backend to register
 
    \return MAPISTORE_SUCCESS on success
  */

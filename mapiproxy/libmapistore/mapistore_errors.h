@@ -22,13 +22,16 @@
 /**
    \file mapistore_errors.h
 
-   \brief This header provides a set of result codes for MAPISTORE
-   function calls.
+   This header provides a set of result codes for MAPISTORE function calls.
+
  */
 
 #ifndef	__MAPISTORE_ERRORS_H
 #define	__MAPISTORE_ERRORS_H
 
+/**
+  The possible errors that may be returned from mapistore functions.
+ */
 enum MAPISTORE_ERROR {
 	MAPISTORE_SUCCESS = 0, /*!< The function call succeeded. */
 	MAPISTORE_ERROR = 1,   /*!< The function call failed for some non-specific reason. */

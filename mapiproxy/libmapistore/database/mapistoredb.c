@@ -167,9 +167,13 @@ void mapistoredb_release(struct mapistoredb_context *mdb_ctx)
    backend
 
    \param mdb_ctx pointer to the mapistore database context
+   \param index the special folder index
    \param username the username for which we want to retrieve the uri
-   \param uri the uri namespace to query
-   \param namespace_uri the namespace uri to return
+   \param uri the uri namespace for the backend we want to use
+   \param namespace_uri pointer to the resulting namespace uri (return value)
+
+   The special folder is specified by the \p index parameter. For example
+   to create the "inbox" folder, pass MDB_INBOX.
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */

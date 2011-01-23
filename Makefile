@@ -71,6 +71,7 @@ distclean:: clean
 	rm -f libocpf/Doxyfile
 	rm -f libmapi++/Doxyfile
 	rm -f mapiproxy/Doxyfile
+	rm -f mapiproxy/libmapistore/Doxyfile
 	rm -f config.status config.log
 	rm -f config.h
 	rm -f stamp-h1
@@ -1619,6 +1620,7 @@ doxygen:
 		$(DOXYGEN) libmapi++/Doxyfile;					\
 		$(DOXYGEN) mapiproxy/Doxyfile;					\
 		$(DOXYGEN) utils/mapitest/Doxyfile;				\
+		$(DOXYGEN) mapiproxy/libmapistore/Doxyfile;			\
 		cp -f doc/doxygen/index.html apidocs/html;			\
 		cp -f doc/doxygen/pictures/* apidocs/html/overview;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;		\
@@ -1627,6 +1629,7 @@ doxygen:
 		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy;		\
+		cp -f doc/doxygen/pictures/* apidocs/html/libmapistore;		\
 		cp -f mapiproxy/documentation/pictures/* apidocs/html/mapiproxy;\
 		rm -f apidocs/man/man3/todo.3;					\
 		rm -f apidocs/man/man3/bug.3;					\

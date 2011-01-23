@@ -109,6 +109,8 @@ const char *mapistoredb_get_firstorg(struct mapistoredb_context *mdb_ctx)
 enum MAPISTORE_ERROR mapistoredb_set_firstorg(struct mapistoredb_context *mdb_ctx,
 					      const char *firstorg)
 {
+	enum MAPISTORE_ERROR	retval;
+
 	/* Sanity checks */
 	if (!mdb_ctx || !mdb_ctx->param) return MAPISTORE_ERR_NOT_INITIALIZED;
 	if (!firstorg) return MAPISTORE_ERR_INVALID_PARAMETER;
@@ -128,7 +130,11 @@ enum MAPISTORE_ERROR mapistoredb_set_firstorg(struct mapistoredb_context *mdb_ct
 						     mdb_ctx->param->firstorg,
 						     mdb_ctx->param->serverdn);
 
-	return MAPISTORE_SUCCESS;
+	retval = mapistore_set_firstorgdn(mdb_ctx->param->firstou, 
+					  mdb_ctx->param->firstorg, 
+					  mdb_ctx->param->serverdn);
+
+	return retval;
 }
 
 /**
@@ -159,6 +165,8 @@ const char *mapistoredb_get_firstou(struct mapistoredb_context *mdb_ctx)
 enum MAPISTORE_ERROR mapistoredb_set_firstou(struct mapistoredb_context *mdb_ctx,
 					     const char *firstou)
 {
+	enum MAPISTORE_ERROR	retval;
+
 	/* Sanity checks */
 	if (!mdb_ctx || !mdb_ctx->param) return MAPISTORE_ERR_NOT_INITIALIZED;
 	if (!firstou) return MAPISTORE_ERR_INVALID_PARAMETER;
@@ -178,7 +186,11 @@ enum MAPISTORE_ERROR mapistoredb_set_firstou(struct mapistoredb_context *mdb_ctx
 						     mdb_ctx->param->firstorg,
 						     mdb_ctx->param->serverdn);
 
-	return MAPISTORE_SUCCESS;
+	retval = mapistore_set_firstorgdn(mdb_ctx->param->firstou, 
+					  mdb_ctx->param->firstorg, 
+					  mdb_ctx->param->serverdn);
+
+	return retval;
 }
 
 /**

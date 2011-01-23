@@ -130,6 +130,8 @@ enum MAPISTORE_ERROR mapistore_deletemessage(struct mapistore_context *, uint32_
 enum MAPISTORE_ERROR	mapistore_set_mapping_path(const char *);
 enum MAPISTORE_ERROR	mapistore_set_database_path(const char *);
 const char		*mapistore_get_database_path(void);
+enum MAPISTORE_ERROR	mapistore_set_firstorgdn(const char *, const char *, const char *);
+const char		*mapistore_get_firstorgdn(void);
 
 /* definitions from mapistore_backend.c */
 const char	*mapistore_backend_get_installdir(void);

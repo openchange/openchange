@@ -40,6 +40,7 @@
 
 char	*mapping_path = NULL;
 char	*mapistore_dbpath = NULL;
+char	*mapistore_firstorgdn = NULL;
 
 /**
    \details Set the mapping path
@@ -109,7 +110,7 @@ const char *mapistore_get_mapping_path(void)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum MAPISTORE_ERROR mapistore_set_database_path(const char *dbname)
+enum MAPISTORE_ERROR mapistore_set_database_path(const char *dbname)
 {
 	TALLOC_CTX	*mem_ctx;
 
@@ -133,6 +134,30 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_set_database_path(const char *dbname)
 }
 
 
+enum MAPISTORE_ERROR mapistore_set_firstorgdn(const char *firstou, const char *firstorg, const char *serverdn)
+{
+	TALLOC_CTX	*mem_ctx;
+
+	if (mapistore_firstorgdn) {
+		talloc_free(mapistore_firstorgdn);
+	}
+
+	mem_ctx = talloc_autofree_context();
+	mapistore_firstorgdn = talloc_asprintf(mem_ctx, TMPL_MDB_FIRSTORGDN, firstou, firstorg, serverdn);
+	if (!mapistore_firstorgdn) {
+		DEBUG(5, ("! [%s:%d][%s]: Unable to allocate memory to set firstorgdn\n", 
+			  __FILE__, __LINE__, __FUNCTION__));
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+const char *mapistore_get_firstorgdn(void)
+{
+	return mapistore_firstorgdn;
+}
+
 /**
    \details Return the current path to mapistore.ldb database
 
@@ -142,6 +167,9 @@ const char *mapistore_get_database_path(void)
 {
 	return (!mapistore_dbpath) ? MAPISTORE_DBPATH : (const char *) mapistore_dbpath;
 }
+
+
+
 
 
 /**

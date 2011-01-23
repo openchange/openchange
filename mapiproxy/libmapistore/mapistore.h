@@ -45,90 +45,14 @@
 
 #include "libmapi/libmapi.h"
 
+#include "mapistore_defs.h"
+
 typedef	int (*init_backend_fn) (void);
 
 #define	MAPISTORE_INIT_MODULE	"mapistore_init_backend"
 
-#define	MAPISTORE_FOLDER_TABLE	1
-#define	MAPISTORE_MESSAGE_TABLE	2
-
-#define MAPISTORE_FOLDER	1
-#define	MAPISTORE_MESSAGE	2
-
-#define	MAPISTORE_SOFT_DELETE		1
-#define	MAPISTORE_PERMANENT_DELETE	2
-
 /* Forward declaration */
 struct mapistoredb_context;
-struct mapistore_backend_context;
-
-enum MAPISTORE_DFLT_FOLDERS {
-	MDB_ROOT_FOLDER		= 1,
-	MDB_DEFERRED_ACTIONS	= 2,
-	MDB_SPOOLER_QUEUE	= 3,
-	MDB_TODO_SEARCH		= 4,
-	MDB_IPM_SUBTREE		= 5,
-	MDB_INBOX		= 6,
-	MDB_OUTBOX		= 7,
-	MDB_SENT_ITEMS		= 8,
-	MDB_DELETED_ITEMS	= 9,
-	MDB_COMMON_VIEWS	= 10,
-	MDB_SCHEDULE		= 11,
-	MDB_SEARCH		= 12,
-	MDB_VIEWS		= 13,
-	MDB_SHORTCUTS		= 14,
-	MDB_REMINDERS		= 15,
-	MDB_CALENDAR		= 16,
-	MDB_CONTACTS		= 17,
-	MDB_JOURNAL		= 18,
-	MDB_NOTES		= 19,
-	MDB_TASKS		= 20,
-	MDB_DRAFTS		= 21,
-	MDB_TRACKED_MAIL	= 22,
-	MDB_SYNC_ISSUES		= 23,
-	MDB_CONFLICTS		= 24,
-	MDB_LOCAL_FAILURES	= 25,
-	MDB_SERVER_FAILURES	= 26,
-	MDB_JUNK_EMAIL		= 27,
-	MDB_RSS_FEEDS		= 28,
-	MDB_CONVERSATION_ACT	= 29,
-	MDB_LAST_SPECIALFOLDER	= MDB_CONVERSATION_ACT,
-	MDB_CUSTOM		= 999
-};
-
-struct mapistore_message {
-	struct SRowSet			*recipients;
-	struct SRow			*properties;
-};
-
-struct mapistore_backend {
-	const char	*name;
-	const char	*description;
-	const char	*uri_namespace;
-
-	enum MAPISTORE_ERROR (*init)(void);
-	enum MAPISTORE_ERROR (*create_context)(struct mapistore_backend_context *, const char *, void **);
-	enum MAPISTORE_ERROR (*delete_context)(void *);
-	enum MAPISTORE_ERROR (*create_uri)(TALLOC_CTX *, uint32_t, const char *, char **);
-	enum MAPISTORE_ERROR (*release_record)(void *, uint64_t, uint8_t);
-	enum MAPISTORE_ERROR (*get_path)(void *, uint64_t, uint8_t, char **);
-	/* folders semantic */
-	enum MAPISTORE_ERROR (*op_mkdir)(void *, uint64_t, uint64_t, struct SRow *);
-	enum MAPISTORE_ERROR (*op_rmdir)(void *, uint64_t, uint64_t);
-	enum MAPISTORE_ERROR (*op_opendir)(void *, uint64_t, uint64_t);
-	enum MAPISTORE_ERROR (*op_closedir)(void *);
-	enum MAPISTORE_ERROR (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
-	enum MAPISTORE_ERROR (*op_get_table_property)(void *, uint64_t, uint8_t, uint32_t, enum MAPITAGS, void **);
-	/* message semantics */
-	enum MAPISTORE_ERROR (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
-	enum MAPISTORE_ERROR (*op_createmessage)(void *, uint64_t, uint64_t);
-	enum MAPISTORE_ERROR (*op_savechangesmessage)(void *, uint64_t, uint8_t);
-	enum MAPISTORE_ERROR (*op_submitmessage)(void *, uint64_t, uint8_t);
-	enum MAPISTORE_ERROR (*op_getprops)(void *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
-	enum MAPISTORE_ERROR (*op_get_fid_by_name)(void *, uint64_t, const char *, uint64_t *);
-	enum MAPISTORE_ERROR (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
-	enum MAPISTORE_ERROR (*op_deletemessage)(void *, uint64_t mid, uint8_t flags);
-};
 
 struct indexing_context_list;
 
@@ -203,13 +127,11 @@ enum MAPISTORE_ERROR mapistore_get_child_fids(struct mapistore_context *, uint32
 enum MAPISTORE_ERROR mapistore_deletemessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 
 /* definitions from mapistore_processing.c */
-const char		*mapistore_get_mapping_path(void);
 enum MAPISTORE_ERROR	mapistore_set_mapping_path(const char *);
 enum MAPISTORE_ERROR	mapistore_set_database_path(const char *);
 const char		*mapistore_get_database_path(void);
 
 /* definitions from mapistore_backend.c */
-extern enum MAPISTORE_ERROR	mapistore_backend_register(const void *);
 const char	*mapistore_backend_get_installdir(void);
 init_backend_fn	*mapistore_backend_load(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_lookup(struct backend_context_list *, uint32_t);

@@ -31,6 +31,7 @@
 #include "mapistore_errors.h"
 #include "mapistore.h"
 #include "mapistore_private.h"
+#include "mapistore_backend.h"
 #include <dlinklist.h>
 
 #include <util.h>
@@ -57,9 +58,8 @@ int					num_backends;
 
    \return MAPISTORE_SUCCESS on success
  */
-_PUBLIC_ extern enum MAPISTORE_ERROR mapistore_backend_register(const void *_backend)
+_PUBLIC_ extern enum MAPISTORE_ERROR mapistore_backend_register(const struct mapistore_backend *backend)
 {
-	const struct mapistore_backend	*backend = (const struct mapistore_backend *) _backend;
 	int				i;
 
 	/* Sanity checks */

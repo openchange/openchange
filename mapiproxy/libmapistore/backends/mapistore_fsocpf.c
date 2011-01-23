@@ -42,6 +42,7 @@ static enum MAPISTORE_ERROR fsocpf_init(void)
 	return MAPISTORE_SUCCESS;
 }
 
+
 /**
    \details Allocate / initialize the fsocpf_context structure
 
@@ -64,6 +65,35 @@ static struct fsocpf_context *fsocpf_context_init(TALLOC_CTX *mem_ctx,
 
 	return fsocpf_ctx;
 }
+
+/**
+   \details Generate a mapistore URI for root (system/special) folders
+
+   \param private_data pointer to the private data holding the fsocpf_context structure
+   \param index the folder index for which to create the mapistore URI
+   \param username the username for which to create the mapistore URI
+   \param mapistore_uri pointer on pointer to the string to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum MAPISTORE_ERROR fsocpf_create_mapistore_uri(TALLOC_CTX *mem_ctx,
+							uint32_t index,
+							const char *username,
+							char **mapistore_uri)
+{
+	uint32_t			i;
+
+	for (i = 0; dflt_folders[i].name; i++) {
+		if (dflt_folders[i].index == index) {
+			*mapistore_uri = talloc_asprintf(mem_ctx, "fsocpf://%s/%s/%s", mapistore_get_mapping_path(), username, dflt_folders[i].name);
+			DEBUG(5, ("* [%s:%d][%s]: URI = %s\n", __FILE__, __LINE__, __FUNCTION__, *mapistore_uri));
+			return MAPISTORE_SUCCESS;
+		}
+	}
+
+	return MAPISTORE_ERR_NOT_FOUND;
+}
+
 
 /**
    \details Allocate / initialize a fsocpf_folder_list element
@@ -1350,6 +1380,7 @@ int mapistore_init_backend(void)
 	backend.init = fsocpf_init;
 	backend.create_context = fsocpf_create_context;
 	backend.delete_context = fsocpf_delete_context;
+	backend.create_uri = fsocpf_create_mapistore_uri;
 	backend.release_record = fsocpf_release_record;
 	backend.get_path = fsocpf_get_path;
 	backend.op_mkdir = fsocpf_op_mkdir;

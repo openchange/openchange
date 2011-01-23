@@ -414,9 +414,49 @@ _PUBLIC_ const char *mapistore_errstr(enum MAPISTORE_ERROR mapistore_err)
 		return "Already exists";
 	case MAPISTORE_ERR_INVALID_OBJECT:
 		return "Invalid object";
+	case MAPISTORE_ERR_INVALID_CONTEXT:
+		return "Invalid mapistore context";
 	}
 
 	return "Unknown error";
+}
+
+
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_create_uri(struct mapistore_context *mstore_ctx,
+						   uint32_t index,
+						   const char *namespace_uri,
+						   const char *username,
+						   char **_uri)
+{
+	enum MAPISTORE_ERROR	ret;
+	char			*uri;
+	char			*ref_str;
+	char			*ns;
+
+	/* Sanity checks */
+	if (!namespace_uri || strlen(namespace_uri) < 4) {
+		return MAPISTORE_ERR_INVALID_NAMESPACE;
+	}
+
+	ref_str = (char *)namespace_uri;
+	ns = strchr(namespace_uri, ':');
+	if (!ns) {
+		DEBUG(0, ("! [%s:%d][%s]: Invalid namespace '%s'\n", __FILE__, __LINE__, __FUNCTION__, ref_str));
+		return MAPISTORE_ERR_INVALID_NAMESPACE;
+	}
+
+	if (ns[1] && ns[1] == '/' && ns[2] && ns[2] == '/') {
+		if (ns[3]) {
+			ns[3] = '\0';
+		}
+		ret = mapistore_backend_create_uri((TALLOC_CTX *)mstore_ctx, index, ref_str, username, &uri);
+		if (ret == MAPISTORE_SUCCESS) {
+			*_uri = uri;
+		}
+		return ret;
+	}
+
+	return MAPISTORE_ERR_NOT_FOUND;
 }
 
 

@@ -55,3 +55,11 @@ print "C. Testing First Organisation"
 print "-----------------------------"
 print "* First Organisation: %s" %MAPIStoreDB.firstorg
 print ""
+
+
+print "[Step 5]. Retrieve mapistore URI for fsocpf"
+print "============================================"
+print "* Inbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_INBOX, "jkerihuel", "fsocpf://")
+print "* Calendar: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_CALENDAR, "jkerihuel", "fsocpf://")
+print "* Outbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_OUTBOX, "jkerihuel", "fsocpf://")
+print "* Contacts: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_CONTACTS, "jkerihuel", "fsocpf://")

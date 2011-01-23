@@ -373,6 +373,31 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 	 return bctx->backend->release_record(bctx->private_data, fmid, type);
  }
 
+
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *mem_ctx, 
+							   enum MAPISTORE_DFLT_FOLDERS index, 
+							   const char *uri_namespace,
+							   const char *username, 
+							   char **uri)
+{
+	enum MAPISTORE_ERROR	retval;
+	char			*_uri = NULL;
+	int			i;
+
+	for (i = 0; i < num_backends; i++) {
+		if (backends[i].backend->uri_namespace &&
+		    !strcmp(uri_namespace, backends[i].backend->uri_namespace)) {
+			retval = backends[i].backend->create_uri(mem_ctx, index, username, &_uri);
+			if (retval == MAPISTORE_SUCCESS) {
+				*uri = _uri;
+				return retval;
+			}
+		}
+	}
+
+	return MAPISTORE_ERR_NOT_FOUND;
+}
+
  /**
     \details find the context matching given context identifier
 

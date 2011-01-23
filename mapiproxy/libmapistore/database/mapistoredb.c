@@ -162,6 +162,45 @@ void mapistoredb_release(struct mapistoredb_context *mdb_ctx)
 }
 
 
+/**
+   \details Get a mapistore URI for a system/special folder from
+   backend
+
+   \param mdb_ctx pointer to the mapistore database context
+   \param username the username for which we want to retrieve the uri
+   \param uri the uri namespace to query
+   \param namespace_uri the namespace uri to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *mdb_ctx,
+						   enum MAPISTORE_DFLT_FOLDERS index,
+						   const char *namespace_uri,
+						   const char *username,
+						   char **uri)
+{
+	enum MAPISTORE_ERROR	retval;
+	char			*_uri;
+
+	/* Sanity checks */
+	if (!mdb_ctx || !mdb_ctx->mstore_ctx) {
+		DEBUG(5, ("! [%s:%d][%s]: Invalid mapistore database context\n", __FILE__, __LINE__, __FUNCTION__));
+		return MAPISTORE_ERR_INVALID_CONTEXT;
+	}
+	if (!namespace_uri || !username) {
+		DEBUG(5, ("! [%s:%d][%s]: Invalid parameter\n", __FILE__, __LINE__, __FUNCTION__));
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	retval = mapistore_create_uri(mdb_ctx->mstore_ctx, index, namespace_uri, username, &_uri);
+	if (retval == MAPISTORE_SUCCESS) {
+		*uri = _uri;
+	}
+
+	return retval;
+}
+
+
 /** TODO: this is a copy of code in mapistore_mstoredb.c */
 static bool write_ldif_string_to_store(struct ldb_context *ldb_ctx, const char *ldif_string)
 {

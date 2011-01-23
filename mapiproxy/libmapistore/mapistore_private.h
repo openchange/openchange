@@ -208,7 +208,6 @@ struct indexing_context_list {
 __BEGIN_DECLS
 
 /* definitions from mapistore_processing.c */
-const char *mapistore_get_mapping_path(void);
 enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *);
 enum MAPISTORE_ERROR mapistore_get_context_id(struct processing_context *, uint32_t *);
 enum MAPISTORE_ERROR mapistore_free_context_id(struct processing_context *, uint32_t);
@@ -219,6 +218,7 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *);
 enum MAPISTORE_ERROR mapistore_backend_add_ref_count(struct backend_context *);
 enum MAPISTORE_ERROR mapistore_backend_delete_context(struct backend_context *);
+enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *, char **);
 enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *, uint64_t, uint8_t);
 enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *, uint64_t, uint8_t, char **);
 enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *, uint64_t, uint64_t);

@@ -66,6 +66,45 @@ struct fsocpf_context {
 	DIR				*dir;
 };
 
+
+struct fsocpf_dflt_folders {
+	enum MAPISTORE_DFLT_FOLDERS	index;
+	const char			*name;
+};
+
+const struct fsocpf_dflt_folders dflt_folders[] = {
+	{ MDB_ROOT_FOLDER,		"Root" },
+	{ MDB_DEFERRED_ACTIONS,		"Deferred Actions" },
+	{ MDB_SPOOLER_QUEUE,		"Spooler Queue" },
+	{ MDB_TODO_SEARCH,		"TODO Search" },
+	{ MDB_IPM_SUBTREE,		"IPM Subtree" },
+	{ MDB_INBOX,			"Inbox" },
+	{ MDB_OUTBOX,			"Outbox" },
+	{ MDB_SENT_ITEMS,		"Sent Items" },
+	{ MDB_DELETED_ITEMS,		"Deleted Items" },
+	{ MDB_COMMON_VIEWS,		"Common Views" },
+	{ MDB_SCHEDULE,			"Schedule" },
+	{ MDB_SEARCH,			"Search" },
+	{ MDB_VIEWS,			"Views" },
+	{ MDB_SHORTCUTS,		"Shortcuts" },
+	{ MDB_REMINDERS,		"Reminders" },
+	{ MDB_CALENDAR,			"Calendar" },
+	{ MDB_CONTACTS,			"Contacts" },
+	{ MDB_JOURNAL,			"Journal" },
+	{ MDB_NOTES,			"Notes" },
+	{ MDB_TASKS,			"Tasks" },
+	{ MDB_DRAFTS,			"Drafts" },
+	{ MDB_TRACKED_MAIL,		"Tracked Mail" },
+	{ MDB_SYNC_ISSUES,		"Synchronization Issues" },
+	{ MDB_CONFLICTS,		"Conflicts" },
+	{ MDB_LOCAL_FAILURES,		"Local Failures" },
+	{ MDB_SERVER_FAILURES,		"Server Failures" },
+	{ MDB_JUNK_EMAIL,		"Junk Email" },
+	{ MDB_RSS_FEEDS,		"RSS Feeds" },
+	{ MDB_CONVERSATION_ACT,		"Conversation Act" },
+	{ MDB_CUSTOM,			NULL }
+};
+
 __BEGIN_DECLS
 
 int	mapistore_init_backend(void);

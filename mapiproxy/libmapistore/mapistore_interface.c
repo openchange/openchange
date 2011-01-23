@@ -19,6 +19,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+   \file mapistore_interface.c
+
+   \brief MAPISTORE public user interface
+   
+   This file contains general functions, primarily for
+   users of the store (rather than storage providers).
+ */
 
 #define __STDC_FORMAT_MACROS	1
 #include <inttypes.h>
@@ -35,6 +43,7 @@
    \details Initialize the mapistore context
 
    \param mem_ctx pointer to the memory context
+   \param path the path to the location to load the backend providers from (NULL for default)
 
    \return allocate mapistore context on success, otherwise NULL
  */
@@ -103,7 +112,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_release(struct mapistore_context *mstore
 
    \param mstore_ctx pointer to the mapistore context
    \param uri the connection context URI
-   \param pointer to the context identifier the function returns
+   \param context_id pointer to the context identifier the function returns
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
@@ -529,7 +538,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_closedir(struct mapistore_context *mstor
    \param context_id the context identifier referencing the backend
    where the directory will be created
    \param parent_fid the parent folder identifier
-   \param new_fid the folder identifier for the new folder
+   \param fid the folder identifier for the new folder
    \param aRow pointer to MAPI data structures with properties to be
    added to the new folder
 
@@ -734,7 +743,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_table_property(struct mapistore_cont
    where the directory will be opened
    \param parent_fid the parent folder identifier
    \param mid the message identifier to open
-   \param pointer to the mapistore_message structure
+   \param msg pointer to the mapistore_message structure (result)
 
    \return MAPISTORE SUCCESS on success, otherwise MAPISTORE errors
  */
@@ -904,7 +913,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_getprops(struct mapistore_context *mstor
    \param context_id the context identifier referencing the backend
    where the folder will be searched for
    \param parent_fid the parent folder identifier
-   \param foldername the name of the folder to search for
+   \param name the name of the folder to search for
    \param fid the fid (result)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors

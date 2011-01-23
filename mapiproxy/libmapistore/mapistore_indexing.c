@@ -19,6 +19,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+   \file mapistore_indexing.c
+
+   \brief MAPISTORE internal indexing functions
+   
+   This file contains functionality to map between folder / message
+   identifiers and backend URI strings.
+ */
+
 #define __STDC_FORMAT_MACROS	1
 #include <inttypes.h>
 
@@ -295,7 +304,7 @@ enum MAPISTORE_ERROR mapistore_indexing_record_add_fmid(struct mapistore_context
    \param context_id the context identifier referencing the indexing
    database to update
    \param fmid the folder or message ID to delete
-   \flags the type of deletion MAPISTORE_SOFT_DELETE or MAPISTORE_PERMANENT_DELETE
+   \param flags the type of deletion MAPISTORE_SOFT_DELETE or MAPISTORE_PERMANENT_DELETE
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
@@ -371,9 +380,7 @@ enum MAPISTORE_ERROR mapistore_indexing_record_del_fmid(struct mapistore_context
    \param username the name of the account where to look for the
    indexing database
    \param fmid the folder/message ID to search
-   \param parents pointer to an array of elements that subsequently
-   leads to fmid returned by the function
-   \param count pointer to the number of parents the function returns
+   \param _flist the list of folders (result)
 
    \note This function is useful for the emsmdb provider when we are
    trying to open a folder/message using an InputHandleIdx referencing

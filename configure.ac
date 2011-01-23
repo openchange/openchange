@@ -337,6 +337,8 @@ PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server)
 PKG_CHECK_MODULES(TDB, tdb)
 PKG_CHECK_MODULES(LDB, ldb)
 
+OC_RULE_ADD(mapistore_mstoredb, MAPISTORE)
+
 dnl ---------------------------------------------------------------------------
 dnl Check a particular Samba4 git revision
 dnl ---------------------------------------------------------------------------
@@ -725,7 +727,8 @@ OpenChange Configuration (Please review)
 	     - mapiproxy:		$enable_mapiproxy
 
 	   * OpenChange mapistore backends:
-	     - backends dependencies goes here
+	     - mstoredb:		yes
+	     - fsocpf:			$enable_libocpf
 
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient

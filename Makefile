@@ -864,6 +864,7 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mapistore_ldb_wrap.po		\
 							mapiproxy/libmapistore/mapistore_indexing.po		\
 							mapiproxy/libmapistore/mapistore_namedprops.po		\
+							mapiproxy/libmapistore/mapistore_backend_public.po	\
 							mapiproxy/libmapistore/database/mapistoredb.po		\
 							mapiproxy/libmapistore/database/mapistoredb_conf.po	\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -910,6 +911,31 @@ mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT): mapiproxy/libmapis
 	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			\
 	-L. libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
+mapistore_mstoredb: mapiproxy/libmapistore/backends/mapistore_mstoredb.$(SHLIBEXT)
+
+mapistore_mstoredb-install:
+	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
+	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_mstoredb.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
+
+mapistore_mstoredb-uninstall:
+	rm -rf $(DESTDIR)$(libdir)/mapistore_backends
+
+mapistore_mstoredb-clean:
+	rm -f mapiproxy/libmapistore/backends/mapistore_mstoredb.o
+	rm -f mapiproxy/libmapistore/backends/mapistore_mstoredb.po
+	rm -f mapiproxy/libmapistore/backends/mapistore_mstoredb.gcno
+	rm -f mapiproxy/libmapistore/backends/mapistore_mstoredb.gcda
+	rm -f mapiproxy/libmapistore/backends/mapistore_mstoredb.so
+
+clean:: mapistore_mstoredb-clean
+
+mapistore_mstoredb-distclean: mapistore_mstoredb-clean
+
+distclean:: mapistore_mstoredb-distclean
+
+mapiproxy/libmapistore/backends/mapistore_mstoredb.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_mstoredb.po
+	@echo "Linking mapistore module $@"
+	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) 
 
 #######################
 # mapistore test tools

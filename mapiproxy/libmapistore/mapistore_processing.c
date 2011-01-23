@@ -134,6 +134,17 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_set_database_path(const char *dbname)
 
 
 /**
+   \details Return the current path to mapistore.ldb database
+
+   \return pointer to the mapistore database path
+ */
+const char *mapistore_get_database_path(void)
+{
+	return (!mapistore_dbpath) ? MAPISTORE_DBPATH : (const char *) mapistore_dbpath;
+}
+
+
+/**
    \details Initialize the ID mapping context or return the existing
    one if already initialized.
 

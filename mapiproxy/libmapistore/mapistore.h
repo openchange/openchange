@@ -206,6 +206,7 @@ enum MAPISTORE_ERROR mapistore_deletemessage(struct mapistore_context *, uint32_
 const char		*mapistore_get_mapping_path(void);
 enum MAPISTORE_ERROR	mapistore_set_mapping_path(const char *);
 enum MAPISTORE_ERROR	mapistore_set_database_path(const char *);
+const char		*mapistore_get_database_path(void);
 
 /* definitions from mapistore_backend.c */
 extern enum MAPISTORE_ERROR	mapistore_backend_register(const void *);

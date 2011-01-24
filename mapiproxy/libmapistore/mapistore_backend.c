@@ -578,7 +578,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *mem_ctx,
 
  enum MAPISTORE_ERROR mapistore_backend_deletemessage(struct backend_context *bctx, 
 						      uint64_t mid, 
-						      uint8_t flags)
+						      enum MAPISTORE_DELETION_TYPE deletion_type)
 {
-	return bctx->backend->op_deletemessage(bctx->private_data, mid, flags);
+	return bctx->backend->op_deletemessage(bctx->private_data, mid, deletion_type);
 }

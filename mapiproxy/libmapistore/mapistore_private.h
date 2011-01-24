@@ -260,7 +260,7 @@ enum MAPISTORE_ERROR mapistore_backend_getprops(struct backend_context *, uint64
 						struct SPropTagArray *, struct SRow *);
 enum MAPISTORE_ERROR mapistore_backend_setprops(struct backend_context *, uint64_t, uint8_t, struct SRow *);
 enum MAPISTORE_ERROR mapistore_backend_get_fid_by_name(struct backend_context *, uint64_t, const char *, uint64_t *);
-enum MAPISTORE_ERROR mapistore_backend_deletemessage(struct backend_context *, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_backend_deletemessage(struct backend_context *, uint64_t, enum MAPISTORE_DELETION_TYPE);
 
 /* definitions from mapistore_tdb_wrap.c */
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
@@ -272,7 +272,7 @@ struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_conte
 struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
 enum MAPISTORE_ERROR mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
 enum MAPISTORE_ERROR mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
-enum MAPISTORE_ERROR mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, enum MAPISTORE_DELETION_TYPE);
 enum MAPISTORE_ERROR mapistore_indexing_add_ref_count(struct indexing_context_list *);
 enum MAPISTORE_ERROR mapistore_indexing_del_ref_count(struct indexing_context_list *);
 

@@ -304,13 +304,13 @@ enum MAPISTORE_ERROR mapistore_indexing_record_add_fmid(struct mapistore_context
    \param context_id the context identifier referencing the indexing
    database to update
    \param fmid the folder or message ID to delete
-   \param flags the type of deletion MAPISTORE_SOFT_DELETE or MAPISTORE_PERMANENT_DELETE
+   \param deletion_type the type of deletion (MAPISTORE_SOFT_DELETE or MAPISTORE_PERMANENT_DELETE)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 enum MAPISTORE_ERROR mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
 							uint32_t context_id, uint64_t fmid,
-							uint8_t flags)
+							enum MAPISTORE_DELETION_TYPE deletion_type)
 {
 	enum MAPISTORE_ERROR		ret;
 	int				retval;
@@ -344,7 +344,7 @@ enum MAPISTORE_ERROR mapistore_indexing_record_del_fmid(struct mapistore_context
 	}
 	key.dsize = strlen((const char *) key.dptr);
 
-	switch (flags) {
+	switch (deletion_type) {
 	case MAPISTORE_SOFT_DELETE:
 		/* nothing to do if the record is already soft deleted */
 		MAPISTORE_RETVAL_IF(IsSoftDeleted == true, MAPISTORE_SUCCESS, NULL);
@@ -498,16 +498,16 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_record_add_fid(struct mapistore
    \param context_id the context identifier referencing the indexing
    database to update
    \param fid the fid to remove
-   \param flags the type of deletion MAPISTORE_SOFT_DELETE or
-   MAPISTORE_PERMANENT_DELETE
+   \param deletion_type the type of deletion (MAPISTORE_SOFT_DELETE or
+   MAPISTORE_PERMANENT_DELETE)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_record_del_fid(struct mapistore_context *mstore_ctx,
 								uint32_t context_id, uint64_t fid, 
-								uint8_t flags)
+								enum MAPISTORE_DELETION_TYPE deletion_type)
 {
-	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, fid, flags);
+	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, fid, deletion_type);
 }
 
 
@@ -538,14 +538,14 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_record_add_mid(struct mapistore
    \param context_id the context identifier referencing the indexing
    database to update
    \param mid the mid to remove
-   \param flags the type of deletion MAPISTORE_SOFT_DELETE or
-   MAPISTORE_PERMANENT_DELETE
+   \param deletion_type the type of deletion (MAPISTORE_SOFT_DELETE or
+   MAPISTORE_PERMANENT_DELETE)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_record_del_mid(struct mapistore_context *mstore_ctx,
 								uint32_t context_id, uint64_t mid,
-					       uint8_t flags)
+								enum MAPISTORE_DELETION_TYPE deletion_type)
 {
-	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, mid, flags);
+	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, mid, deletion_type);
 }

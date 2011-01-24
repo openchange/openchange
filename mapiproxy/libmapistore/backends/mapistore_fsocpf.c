@@ -1338,9 +1338,10 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 	return MAPISTORE_SUCCESS;
 }
 
+/* TODO: this looks like it probably does not handle soft deletion */
 static enum MAPISTORE_ERROR fsocpf_op_deletemessage(void *private_data,
 						    uint64_t mid,
-						    uint8_t flags)
+						    enum MAPISTORE_DELETION_TYPE deletion_type)
 {
 	int res;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;

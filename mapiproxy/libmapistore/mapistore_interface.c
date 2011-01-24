@@ -1034,15 +1034,14 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_child_fids(struct mapistore_context 
    \param context_id the context identifier referencing the backend
    where the message's to be located is stored
    \param mid the message identifier of the folder to delete
-   \param flags flags that control the behaviour of the operation (MAPISTORE_SOFT_DELETE
-   or MAPISTORE_PERMANENT_DELETE)
+   \param deletion_type the type of deletion (MAPISTORE_SOFT_DELETE or MAPISTORE_PERMANENT_DELETE)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ enum MAPISTORE_ERROR mapistore_deletemessage(struct mapistore_context *mstore_ctx,
 						      uint32_t context_id,
 						      uint64_t mid,
-						      uint8_t flags)
+						      enum MAPISTORE_DELETION_TYPE deletion_type)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1055,7 +1054,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_deletemessage(struct mapistore_context *
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_deletemessage(backend_ctx, mid, flags);
+	ret = mapistore_backend_deletemessage(backend_ctx, mid, deletion_type);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

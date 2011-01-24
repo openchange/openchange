@@ -95,8 +95,13 @@ enum MAPISTORE_TABLE_TYPE {
 #define	MAPISTORE_FOLDER		1
 #define	MAPISTORE_MESSAGE		2
 
-#define	MAPISTORE_SOFT_DELETE		1
-#define	MAPISTORE_PERMANENT_DELETE	2
+/**
+  Deletion types
+ */
+enum MAPISTORE_DELETION_TYPE {
+	MAPISTORE_SOFT_DELETE = 1,	/**< The item is "soft" deleted */
+	MAPISTORE_PERMANENT_DELETE = 2	/**< The item is hard deleted */
+};
 
 /* TODO: perhaps this should be in another header */
 const char		*mapistore_get_mapping_path(void);

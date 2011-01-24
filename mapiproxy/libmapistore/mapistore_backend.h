@@ -70,7 +70,7 @@ struct mapistore_backend {
 	enum MAPISTORE_ERROR (*op_getprops)(void *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 	enum MAPISTORE_ERROR (*op_get_fid_by_name)(void *, uint64_t, const char *, uint64_t *);
 	enum MAPISTORE_ERROR (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
-	enum MAPISTORE_ERROR (*op_deletemessage)(void *, uint64_t mid, uint8_t flags);
+	enum MAPISTORE_ERROR (*op_deletemessage)(void *, uint64_t mid, enum MAPISTORE_DELETION_TYPE deletion_type);
 };
 
 __BEGIN_DECLS

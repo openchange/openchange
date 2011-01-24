@@ -29,6 +29,26 @@
 #ifndef	__MAPISTORE_ERRORS_H
 #define	__MAPISTORE_ERRORS_H
 
+void mapistore_set_errno(int);
+
+#define	MAPISTORE_RETVAL_IF(x,e,c)	\
+do {					\
+	if (x) {			\
+		mapistore_set_errno(e);	\
+		if (c) {		\
+			talloc_free(c);	\
+		}			\
+		return (e);		\
+	}				\
+} while (0);
+
+#define	MAPISTORE_SANITY_CHECKS(x,c)						\
+MAPISTORE_RETVAL_IF(!x, MAPISTORE_ERR_NOT_INITIALIZED, c);			\
+MAPISTORE_RETVAL_IF(!x->processing_ctx, MAPISTORE_ERR_NOT_INITIALIZED, c);	\
+MAPISTORE_RETVAL_IF(!x->context_list, MAPISTORE_ERR_NOT_INITIALIZED, c);
+
+
+
 /**
   The possible errors that may be returned from mapistore functions.
  */

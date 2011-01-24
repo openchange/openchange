@@ -305,6 +305,146 @@ enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_cont
 
 
 /**
+   \details Retrieve the next available folder or message identifier
+
+   \param pctx pointer to the mapistore processing context
+   \param fmid pointer to the first available fmid within the range
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *pctx,
+					    uint64_t *fmid)
+{
+	int			ret;
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx;
+	struct ldb_result	*res = NULL;
+	struct ldb_message	*msg;
+	const char * const	attrs[] = { "*", NULL };
+	uint64_t		ReplicaID;
+	uint64_t		GlobalCount;
+	uint64_t		new_GlobalCount;
+
+	/* Sanity checks */
+	if (!pctx || !pctx->mapping_ctx || !pctx->mapping_ctx->ldb_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	if (!fmid) return MAPISTORE_ERR_INVALID_PARAMETER;
+
+	mem_ctx = talloc_named(NULL, 0, "mapistore_get_next_fmid");
+
+	/* Step 1. Retrieve the server object */
+	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
+
+	/* TODO: In the future, we may want to deal with different servers */
+	/* TODO: Use ldb_transaction to lock between get/set operations */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		talloc_free(mem_ctx);
+		DEBUG(5, ("! [%s:%d][%s]: Unable to find the server object\n", __FILE__, __LINE__, __FUNCTION__));
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
+	/* Step 2. Get the [48 GlobalCount][16 ReplicaID] */
+	GlobalCount = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
+	new_GlobalCount = GlobalCount + 1;
+
+	ReplicaID = ldb_msg_find_attr_as_uint64(res->msgs[0], "ReplicaID", 0);
+
+	/* Step 3. Update the GlobalCount */
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
+	ldb_msg_add_fmt(msg, "GlobalCount", "0x%"PRIx64, new_GlobalCount);
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(ldb_ctx, msg);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		DEBUG(5, ("! [%s:%d][%s]: Unable to update GlobalCount for server object\n", __FILE__, __LINE__, __FUNCTION__));
+		return MAPISTORE_ERROR;
+	}
+
+	/* Step 4. Set the fmid value */
+
+	talloc_free(mem_ctx);
+	*fmid = (GlobalCount << 16) + ReplicaID;
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Retrieve an allocation range
+
+   \param pctx pointer to the mapistore processing context
+   \param range the range to allocate
+   \param range_start pointer to the first allocation range fmid to return
+   \param range_end pointer to the last allocation range fmid to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_context *pctx,
+							uint64_t range,
+							uint64_t *range_start,
+							uint64_t *range_end)
+{
+	int			ret;
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx;
+	struct ldb_result	*res = NULL;
+	struct ldb_message	*msg;
+	const char * const	attrs[] = { "*", NULL };
+	uint64_t		ReplicaID;
+	uint64_t		GlobalCount;
+	uint64_t		new_GlobalCount;
+
+	/* Sanity checks */
+	if (!pctx || !pctx->mapping_ctx || !pctx->mapping_ctx->ldb_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	if (!range_start || !range_end) return MAPISTORE_ERR_INVALID_PARAMETER;
+
+	mem_ctx = talloc_named(NULL, 0, "mapistore_get_next_range");
+
+	/* Step 1. Retrieve the server object */
+	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		talloc_free(mem_ctx);
+		DEBUG(5, ("! [%s:%d][%s]: Unable to find the server object\n", __FILE__, __LINE__, __FUNCTION__));
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
+	/* Step 2. Get the current GlobalCount and set the new one */
+	GlobalCount = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
+	ReplicaID = ldb_msg_find_attr_as_uint64(res->msgs[0], "ReplicaID", 0);
+
+	*range_start = GlobalCount;
+
+	new_GlobalCount = GlobalCount + range -1;
+	*range_end = new_GlobalCount;
+
+	new_GlobalCount += 1;
+
+	/* Step 3. Update the GlobalCount */
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
+	ldb_msg_add_fmt(msg, "GlobalCount", "0x%"PRIx64, new_GlobalCount);
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(ldb_ctx, msg);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		DEBUG(5, ("! [%s:%d][%s]: Unable to update GlobalCount for server object\n", __FILE__, __LINE__, __FUNCTION__));
+		return MAPISTORE_ERROR;
+	}
+
+	/* Step 4. Set the fmid value ranges */
+	talloc_free(mem_ctx);
+	*range_start = (*range_start << 16) + ReplicaID;
+	*range_end = (*range_end << 16) + ReplicaID;
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Return an unused or new context identifier
 
    \param pctx pointer to the processing context

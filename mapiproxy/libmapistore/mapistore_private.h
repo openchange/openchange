@@ -135,6 +135,7 @@ struct mapistoredb_context {
 	"objectClass: top\n"		\
 	"objectClass: server\n"		\
 	"cn: %s\n"			\
+	"GlobalCount: 0x1\n"		\
 	"ReplicaID: 0x1\n\n"		\
 					\
 	"dn: CN=%s,%s\n"		\
@@ -229,11 +230,13 @@ __BEGIN_DECLS
 
 /* definitions from mapistore_processing.c */
 enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *);
+enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *, uint64_t *);
+enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_context *, uint64_t, uint64_t *, uint64_t *);
 enum MAPISTORE_ERROR mapistore_get_context_id(struct processing_context *, uint32_t *);
 enum MAPISTORE_ERROR mapistore_free_context_id(struct processing_context *, uint32_t);
 /* mapistore_v2 */
 enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_context *, const char *);
-
+enum MAPISTORE_ERROR mapistore_get_next_fmid(struct processing_context *, uint64_t, uint64_t *);
 
 /* definitions from mapistore_backend.c */
 enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *, const char *);

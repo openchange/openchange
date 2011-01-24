@@ -97,6 +97,40 @@ static PyObject *py_MAPIStoreDB_get_mapistore_uri(PyMAPIStoreDBObject *_self, Py
 }
 
 
+static PyObject *py_MAPIStoreDB_get_new_fid(PyMAPIStoreDBObject *_self, PyObject *args)
+{
+	PyMAPIStoreDBObject		*self = (PyMAPIStoreDBObject *) _self;
+	enum MAPISTORE_ERROR		retval;
+	uint64_t			fmid = 0;
+
+	retval = mapistoredb_get_new_fmid(self->mdb_ctx, &fmid);
+	if (retval == MAPISTORE_SUCCESS) {
+		return PyLong_FromUnsignedLongLong(fmid);
+	}
+
+	return NULL;
+}
+
+static PyObject *py_MAPIStoreDB_get_new_allocation_range(PyMAPIStoreDBObject *_self, PyObject *args)
+{
+	PyMAPIStoreDBObject		*self = (PyMAPIStoreDBObject *) _self;
+	enum MAPISTORE_ERROR		retval;
+	uint64_t			range;
+	uint64_t			range_start = 0;
+	uint64_t			range_end = 0;
+
+	if (!PyArg_ParseTuple(args, "K", &range)) {
+		return NULL;
+	}
+
+	retval = mapistoredb_get_new_allocation_range(self->mdb_ctx, range, &range_start, &range_end);
+	if (retval == MAPISTORE_SUCCESS) {
+		return Py_BuildValue("KK", range_start, range_end);
+	}
+
+	return NULL;
+}
+
 static int PyMAPIStoreDB_setParameter(PyObject *_self, PyObject *value, void *data)
 {
 	PyMAPIStoreDBObject	*self = (PyMAPIStoreDBObject *) _self;
@@ -140,6 +174,8 @@ static PyMethodDef mapistoredb_methods[] = {
 	{ "dump_configuration", (PyCFunction)py_MAPIStoreDB_dump_configuration, METH_VARARGS },
 	{ "provision", (PyCFunction)py_MAPIStoreDB_provision, METH_VARARGS },
 	{ "get_mapistore_uri", (PyCFunction)py_MAPIStoreDB_get_mapistore_uri, METH_VARARGS },
+	{ "get_new_fid", (PyCFunction)py_MAPIStoreDB_get_new_fid, METH_VARARGS },
+	{ "get_new_allocation_range", (PyCFunction)py_MAPIStoreDB_get_new_allocation_range, METH_VARARGS },
 	{ NULL },
 };
 

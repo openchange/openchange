@@ -191,6 +191,78 @@ enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *m
 }
 
 
+/**
+   \details Retrieve the next available folder or message identifier
+
+   This function is a wrapper over mapistore_get_new_fmid from
+   mapistore_processing.c
+
+   \param mdb_ctx pointer to the mapistore database context
+   \param range the range of IDs to allocate along with the next fmid
+   \param _fmid pointer on the next fmid available to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *mdb_ctx,
+					      uint64_t *_fmid)
+{
+	enum MAPISTORE_ERROR	retval;
+	uint64_t		fmid = 0;
+
+	/* Sanity checks */
+	if (!mdb_ctx || !mdb_ctx->mstore_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	if (!mdb_ctx->mstore_ctx->processing_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	if (!_fmid) return MAPISTORE_ERR_INVALID_PARAMETER;
+
+	retval = mapistore_get_new_fmid(mdb_ctx->mstore_ctx->processing_ctx, &fmid);
+	if (retval == MAPISTORE_SUCCESS) {
+		*_fmid = fmid;
+		return MAPISTORE_SUCCESS;
+	}
+	
+	return retval;
+}
+
+
+/**
+   \details Retrieve a new allocation range
+
+   This functions is a wrapper over mapistore_get_new_allocation_range
+   from mapistore_processing.c
+
+   \param mdb_ctx pointer to the mapistore database context
+   \param range the number of IDs to allocate
+   \param range_start pointer to the first ID of the range to return
+   \param range_end pointer to the last ID of the range to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistoredb_get_new_allocation_range(struct mapistoredb_context *mdb_ctx,
+							  uint64_t range,
+							  uint64_t *range_start,
+							  uint64_t *range_end)
+{
+	enum MAPISTORE_ERROR	retval;
+	uint64_t		_range_start = 0;
+	uint64_t		_range_end = 0;
+
+	/* Sanity checks */
+	if (!mdb_ctx || !mdb_ctx->mstore_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	if (!mdb_ctx->mstore_ctx->processing_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	if (!range_start || !range_end) return MAPISTORE_ERR_INVALID_PARAMETER;
+
+	retval = mapistore_get_new_allocation_range(mdb_ctx->mstore_ctx->processing_ctx, range, &_range_start, &_range_end);
+	if (retval == MAPISTORE_SUCCESS) {
+		*range_start = _range_start;
+		*range_end = _range_end;
+
+		return MAPISTORE_SUCCESS;
+	}
+
+	return retval;
+}
+
+
 /** TODO: this is a copy of code in mapistore_mstoredb.c */
 static bool write_ldif_string_to_store(struct mapistoredb_context *mdb_ctx, const char *ldif_string)
 {
@@ -235,7 +307,7 @@ enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *mdb_ctx)
 	talloc_free(ldif_str);
 
 	/* Step 3. Provision Server object responsible for maintaining
-	 * the Replica identifier */
+	 * the Replica and GlobalCount identifier */
 	ldif_str = talloc_asprintf(mdb_ctx, MDB_SERVER_LDIF_TMPL,
 				   mdb_ctx->param->serverdn,
 				   mdb_ctx->param->netbiosname,

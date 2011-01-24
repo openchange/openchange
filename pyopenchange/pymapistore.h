@@ -23,8 +23,8 @@
 #define	__PYMAPISTORE_H_
 
 #include <Python.h>
-#include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
+#include "mapiproxy/libmapistore/mapistore.h"
 
 typedef struct {
 	PyObject_HEAD

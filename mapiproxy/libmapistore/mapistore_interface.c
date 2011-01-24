@@ -74,10 +74,17 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	}
 
 	mstore_ctx->context_list = NULL;
+
+	/* MAPISTORE_v1 */
 	mstore_ctx->indexing_list = talloc_zero(mstore_ctx, struct indexing_context_list);
+	/* !MAPISTORE_v1 */
+
+	/* MAPISTORE_v2 */
+	mstore_ctx->mapistore_indexing_list = talloc_zero(mstore_ctx, struct mapistore_indexing_context_list);
+	/* MAPISTORE_v2 */
 
 	mstore_ctx->nprops_ctx = NULL;
-	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
+	/* retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx)); */
 
 	return mstore_ctx;
 }

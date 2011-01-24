@@ -84,14 +84,31 @@ print "\t* Mailbox Root: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROO
 print "\t* IPM SUbtree: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_IPM_SUBTREE, "jkerihuel", "mstoredb://")
 print "\t* Inbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_INBOX, "jkerihuel", "mstoredb://")
 
-print "[Step 6]. Retrieve a new FID"
+print ""
+print "[Step 6]. Create a new mailbox"
+print "=============================="
+uri = MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROOT_FOLDER, "jkerihuel", "mstoredb://")
+fid = MAPIStoreDB.get_new_fid()
+ret = MAPIStoreDB.new_mailbox("jkerihuel", fid, uri)
+print "\t* new_mailbox: ret = %d" % ret
+
+
+print ""
+print "[Step 7]. Retrieve a new FID"
+print "============================"
 fid = MAPIStoreDB.get_new_fid()
 print "\t* FID = 0x%.16x" % fid
-print "[Step 7]. Retrieve a new allocation range"
+
+print ""
+print "[Step 8]. Retrieve a new allocation range"
+print "========================================="
 (rstart,rend) = MAPIStoreDB.get_new_allocation_range(0x1000)
 print "\t* range_start = 0x%.16x" % rstart
 print "\t* range_end   = 0x%.16x" % rend
 
-print "[Step 8]. Retrieve a new FID"
+print ""
+print "[Step 9]. Retrieve a new FID"
+print "============================"
 new_fid = MAPIStoreDB.get_new_fid()
 print "\t* FID = 0x%.16x" % new_fid
+

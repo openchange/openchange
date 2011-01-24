@@ -874,8 +874,9 @@ libmapistore-distclean: libmapistore-clean
 
 distclean:: libmapistore-distclean
 
-mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mapistore_interface.po				\
-							mapiproxy/libmapistore/indexing/gen_ndr/ndr_mapistore_indexing_db.po	\
+mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/indexing/gen_ndr/ndr_mapistore_indexing_db.po	\
+							mapiproxy/libmapistore/indexing/mapistore_indexing.po			\
+							mapiproxy/libmapistore/mapistore_interface.po				\
 							mapiproxy/libmapistore/mapistore_processing.po				\
 							mapiproxy/libmapistore/mapistore_backend.po				\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po				\

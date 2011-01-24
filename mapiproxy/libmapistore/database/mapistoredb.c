@@ -22,6 +22,7 @@
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"
+#include "mapiproxy/libmapistore/mapistore_common.h"
 
 /**
    \file mapistoredb.c
@@ -267,7 +268,6 @@ enum MAPISTORE_ERROR mapistoredb_get_new_allocation_range(struct mapistoredb_con
 	return retval;
 }
 
-
 /** TODO: this is a copy of code in mapistore_mstoredb.c */
 static bool write_ldif_string_to_store(struct mapistoredb_context *mdb_ctx, const char *ldif_string)
 {
@@ -275,6 +275,104 @@ static bool write_ldif_string_to_store(struct mapistoredb_context *mdb_ctx, cons
 
 	retval = mapistore_write_ldif_string_to_store(mdb_ctx->mstore_ctx->processing_ctx, ldif_string);
 	return (retval == MAPISTORE_SUCCESS) ? true : false;
+}
+
+
+/**
+   \details Register a new folder in the mapistore database
+
+   This function is mainly used to encapsulate the creation of the
+   Root Mailbox folder. subfolders getting created through mstoredb
+   backend.
+
+   This function is a wrapper over the
+   mapistore_indexing_add_fmid_record function from
+   indexing/mapistore_indexing.c file.
+
+   \param mdb_ctx pointer to the mapistore database context
+   \param fid the folder identifier to register
+   \param mapistore_uri the mapistore URI to register
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+*/
+enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context *mdb_ctx,
+						      const char *username,
+						      uint64_t fid,
+						      const char *mapistore_uri)
+{
+	TALLOC_CTX				*mem_ctx;
+	enum MAPISTORE_ERROR			retval;
+	struct mapistore_indexing_context_list	*indexing_ctx;
+	const char				*firstorgdn;
+	char					*mailbox_ldif;
+	char					*dn;
+	struct GUID				guid;
+	char					*mailboxGUID;
+	char					*replicaGUID;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. We want to ensure the mapistore_uri is a mstoredb:// one */
+	if (strncmp("mstoredb://", mapistore_uri, strlen("mstoredb://"))) {
+		DEBUG(5, ("! [%s:%d][%s]: Invalid mapistore URI. MUST be mstoredb\n", __FILE__, __LINE__, __FUNCTION__));
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	/* Retrieve configuration parameters */
+	firstorgdn = mapistore_get_firstorgdn();
+	if (!firstorgdn) {
+		DEBUG(5, ("! [%s:%d][%s]: Invalid firstorgdn\n", __FILE__, __LINE__, __FUNCTION__));
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+
+
+	/* Step 2. Add an indexing context for user */
+	retval = mapistore_indexing_context_add(mdb_ctx->mstore_ctx, username, &indexing_ctx);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Register the mailbox root container */
+	retval = mapistore_indexing_add_fmid_record(indexing_ctx, fid, mapistore_uri, 0, MAPISTORE_INDEXING_FOLDER);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 4. Delete the indexing context */
+	retval = mapistore_indexing_context_del(mdb_ctx->mstore_ctx, username);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 5. Add the mailbox root container to mapistore.ldb */	
+	mem_ctx = talloc_named(NULL, 0, "mapistoredb_register_new_mailbox");
+
+	dn = (char *) &mapistore_uri[strlen("mstoredb://")];
+
+	guid = GUID_random();
+	mailboxGUID = GUID_string(mem_ctx, &guid);
+
+	guid = GUID_random();
+	replicaGUID = GUID_string(mem_ctx, &guid);
+
+	mailbox_ldif = talloc_asprintf(mem_ctx, MDB_MAILBOX_LDIF_TMPL,
+				       username, firstorgdn, dn, "Mailbox Root",
+				       mailboxGUID, replicaGUID,
+				       MDB_ROOT_FOLDER, mapistore_uri, dn);
+	if (write_ldif_string_to_store(mdb_ctx, mailbox_ldif) == false) {
+		DEBUG(0, ("! [%s:%d][%s]: Failed to add mailbox root container\n", __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(mem_ctx);
+
+		return MAPISTORE_ERR_DATABASE_OPS;
+	}
+
+	talloc_free(mailboxGUID);
+	talloc_free(replicaGUID);
+	talloc_free(mailbox_ldif);
+
+	talloc_free(mem_ctx);
+
+	return retval;
 }
 
 

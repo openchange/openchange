@@ -63,7 +63,13 @@ typedef	int (*init_backend_fn) (void);
 /* Forward declaration */
 struct mapistoredb_context;
 
+/* MAPISTORE_v1 */
 struct indexing_context_list;
+/* !MAPISTORE_v1 */
+
+/* MAPISTORE_v2 */
+struct mapistore_indexing_context_list;
+/* MAPISTORE_v2 */
 
 struct backend_context {
 	const struct mapistore_backend	*backend;
@@ -83,10 +89,17 @@ struct backend_context_list {
 struct processing_context;
 
 struct mapistore_context {
-	struct processing_context	*processing_ctx;
-	struct backend_context_list    	*context_list;
-	struct indexing_context_list	*indexing_list;
-	void				*nprops_ctx;
+	struct processing_context		*processing_ctx;
+	struct backend_context_list		*context_list;
+	/* MAPISTORE v1 */
+	struct indexing_context_list		*indexing_list;
+	/* !MAPISTORE_v1 */
+
+	/* MAPISTORE_v2 */
+	struct mapistore_indexing_context_list	*mapistore_indexing_list;
+	/* !MAPISTORE_v2 */
+
+	void					*nprops_ctx;
 };
 
 struct indexing_folders_list {
@@ -155,6 +168,7 @@ enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *);
 enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *, char **);
 enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *, uint64_t *);
 enum MAPISTORE_ERROR mapistoredb_get_new_allocation_range(struct mapistoredb_context *, uint64_t, uint64_t *, uint64_t *);
+enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context *, const char *, uint64_t, const char *);
 
 /* definitions from mapistoredb_conf.c */
 void				mapistoredb_dump_conf(struct mapistoredb_context *);
@@ -166,6 +180,8 @@ const char*			mapistoredb_get_firstorg(struct mapistoredb_context *);
 const char*			mapistoredb_get_firstou(struct mapistoredb_context *);
 
 /* definitions from mapistore_indexing.c */
+
+/* MAPISTORE_v1 */
 enum MAPISTORE_ERROR mapistore_indexing_add(struct mapistore_context *, const char *);
 enum MAPISTORE_ERROR mapistore_indexing_del(struct mapistore_context *, const char *);
 enum MAPISTORE_ERROR mapistore_indexing_get_folder_list(struct mapistore_context *, const char *, uint64_t, struct indexing_folders_list **);
@@ -173,6 +189,13 @@ enum MAPISTORE_ERROR mapistore_indexing_record_add_fid(struct mapistore_context 
 enum MAPISTORE_ERROR mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint64_t, enum MAPISTORE_DELETION_TYPE);
 enum MAPISTORE_ERROR mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
 enum MAPISTORE_ERROR mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, enum MAPISTORE_DELETION_TYPE);
+/* !MAPISTORE_v1 */
+
+/* MAPISTORE_v2 */
+enum MAPISTORE_ERROR mapistore_indexing_context_add(struct mapistore_context *, const char *, struct mapistore_indexing_context_list **);
+enum MAPISTORE_ERROR mapistore_indexing_context_del(struct mapistore_context *, const char *);
+enum MAPISTORE_ERROR mapistore_indexing_add_fmid_record(struct mapistore_indexing_context_list *, uint64_t, const char *, uint64_t, uint8_t);
+/* !MAPISTORE_v2 */
 
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);

@@ -131,6 +131,22 @@ static PyObject *py_MAPIStoreDB_get_new_allocation_range(PyMAPIStoreDBObject *_s
 	return NULL;
 }
 
+static PyObject *py_MAPIStoreDB_new_mailbox(PyMAPIStoreDBObject *_self, PyObject *args)
+{
+	PyMAPIStoreDBObject		*self = (PyMAPIStoreDBObject *) _self;
+	enum MAPISTORE_ERROR		retval;
+	uint64_t			fid;
+	char				*username;
+	char				*mapistore_uri;
+
+	if (!PyArg_ParseTuple(args, "sKs", &username, &fid, &mapistore_uri)) {
+		return NULL;
+	}
+
+	retval = mapistoredb_register_new_mailbox(self->mdb_ctx, username, fid, mapistore_uri);
+	return PyInt_FromLong(retval);
+}
+
 static int PyMAPIStoreDB_setParameter(PyObject *_self, PyObject *value, void *data)
 {
 	PyMAPIStoreDBObject	*self = (PyMAPIStoreDBObject *) _self;
@@ -176,6 +192,7 @@ static PyMethodDef mapistoredb_methods[] = {
 	{ "get_mapistore_uri", (PyCFunction)py_MAPIStoreDB_get_mapistore_uri, METH_VARARGS },
 	{ "get_new_fid", (PyCFunction)py_MAPIStoreDB_get_new_fid, METH_VARARGS },
 	{ "get_new_allocation_range", (PyCFunction)py_MAPIStoreDB_get_new_allocation_range, METH_VARARGS },
+	{ "new_mailbox", (PyCFunction)py_MAPIStoreDB_new_mailbox, METH_VARARGS },
 	{ NULL },
 };
 

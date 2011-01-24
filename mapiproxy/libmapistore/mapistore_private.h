@@ -28,6 +28,11 @@
 #ifndef	__MAPISTORE_PRIVATE_H__
 #define	__MAPISTORE_PRIVATE_H__
 
+#define	__STDC_FORMAT_MACROS	1
+#include <inttypes.h>
+
+#include "mapiproxy/libmapistore/indexing/gen_ndr/mapistore_indexing_db.h"
+
 #include <talloc.h>
 
 void mapistore_set_errno(int);
@@ -130,7 +135,7 @@ struct mapistoredb_context {
 	"rootDomainNamingContext: %s\n"					\
 	"vendorName: OpenChange Project (http://www.openchange.org)\n\n"
 
-#define	MDB_SERVER_LDIF_TMPL		\
+#define	MDB_SERVER_LDIF_TMPL	       	\
 	"dn: %s\n"			\
 	"objectClass: top\n"		\
 	"objectClass: server\n"		\
@@ -146,9 +151,25 @@ struct mapistoredb_context {
 	"dn: CN=%s,CN=%s,%s\n"		\
 	"objectClass: top\n"		\
 	"objectClass: ou\n"		\
-	"cn: %s\n"
-
-
+	"cn: %s\n"				
+						
+#define	MDB_MAILBOX_LDIF_TMPL		\
+	"dn: CN=Folders,CN=%s,%s\n"    	\
+	"objectClass: top\n"	       	\
+	"objectClass: container\n"     	\
+	"cn: Folders\n\n"	       	\
+					\
+	"dn: %s\n"			\
+	"cn: %s\n"			\
+	"objectClass: mailbox\n"	\
+	"objectClass: container\n"	\
+	"MailboxGUID: %s\n"		\
+	"ReplicaGUID: %s\n"		\
+	"ReplicaID: 1\n"		\
+	"SystemIdx: %d\n"		\
+	"mapistore_uri: %s\n"		\
+	"distinguishedName: %s\n"
+	
 /**
    Identifier mapping context.
 
@@ -161,8 +182,10 @@ struct mapistoredb_context {
    higher than last_id.
  */
 struct id_mapping_context {
+	/* MAPISTORE v1 */
 	struct tdb_wrap		*used_ctx;
 	uint64_t		last_id;
+	/* !MAPISTORE_v1 */
 
 	/* MAPISTORE v2 */
 	struct tevent_context	*ev;
@@ -201,6 +224,21 @@ struct indexing_context_list {
 	struct indexing_context_list	*prev;
 	struct indexing_context_list	*next;
 };
+
+/**
+   MAPIStore indexing context list
+ */
+struct mapistore_indexing_context_list {
+	struct tdb_wrap				*tdb_ctx;
+	const char				*username;
+	uint32_t				ref_count;
+	struct mapistore_indexing_context_list	*prev;
+	struct mapistore_indexing_context_list	*next;
+};
+
+#define	MAPISTORE_INDEXING_DBPATH_TMPL	"%s/mapistore_indexing_%s.tdb"
+#define	MAPISTORE_INDEXING_URI		"URI/%s"
+#define	MAPISTORE_INDEXING_FMID		"FMID/0x%.16"PRIx64
 
 #define	MAPISTORE_DB_NAMED		"named_properties.ldb"
 #define	MAPISTORE_DB_INDEXING		"indexing.tdb"
@@ -269,12 +307,19 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t
 struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_context *, const char *, unsigned int);
 
 /* definitions from mapistore_indexing.c */
+
+/* MAPISTORE_v1 */
 struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
 enum MAPISTORE_ERROR mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
 enum MAPISTORE_ERROR mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 enum MAPISTORE_ERROR mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, enum MAPISTORE_DELETION_TYPE);
 enum MAPISTORE_ERROR mapistore_indexing_add_ref_count(struct indexing_context_list *);
 enum MAPISTORE_ERROR mapistore_indexing_del_ref_count(struct indexing_context_list *);
+/* !MAPISTORE_v1 */
+
+/* MAPISTORE_v2 */
+enum MAPISTORE_ERROR mapistore_indexing_context_add_ref(struct mapistore_context *, const char *);
+/* !MAPISTORE_v2 */
 
 /* definitions from mapistore_namedprops.c */
 enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *, void **);

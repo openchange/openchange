@@ -103,7 +103,8 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
  */
 _PUBLIC_ enum MAPISTORE_ERROR mapistore_release(struct mapistore_context *mstore_ctx)
 {
-	if (!mstore_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	talloc_free(mstore_ctx->nprops_ctx);
 	talloc_free(mstore_ctx->processing_ctx);
@@ -135,9 +136,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *ms
 	char					*backend_uri;
 
 	/* Step 1. Perform Sanity Checks on URI */
-	if (!uri || strlen(uri) < 4) {
-		return MAPISTORE_ERR_INVALID_NAMESPACE;
-	}
+	MAPISTORE_RETVAL_IF(!uri || strlen(uri) < 4, MAPISTORE_ERR_INVALID_NAMESPACE, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_add_context");
 	uri_namespace = talloc_strdup(mem_ctx, uri);
@@ -200,7 +199,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context_ref_count(struct mapistore_c
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
 	/* TODO: Fix context_id sign */
-	if ((int)context_id == -1) return MAPISTORE_ERROR;
+	MAPISTORE_RETVAL_IF((int)context_id == -1, MAPISTORE_ERR_INVALID_CONTEXT, NULL);
 
 	/* Step 0. Ensure the context exists */
 	DEBUG(0, ("mapistore_add_context_ref_count: context_is to increment is %d\n", context_id));
@@ -231,8 +230,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_search_context_by_uri(struct mapistore_c
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	if (!uri) return MAPISTORE_ERROR;
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	backend_ctx = mapistore_backend_lookup_by_uri(mstore_ctx->context_list, uri);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_NOT_FOUND, NULL);
@@ -263,7 +261,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_del_context(struct mapistore_context *ms
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
 	/* TODO: Fix context_id sign */
-	if ((int)context_id == -1) return MAPISTORE_ERROR;
+	MAPISTORE_RETVAL_IF((int)context_id == -1, MAPISTORE_ERR_INVALID_CONTEXT, NULL);
 
 	/* Step 0. Ensure the context exists */
 	DEBUG(0, ("mapistore_del_context: context_id to del is %d\n", context_id));
@@ -450,9 +448,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_create_uri(struct mapistore_context *mst
 	char			*ns;
 
 	/* Sanity checks */
-	if (!namespace_uri || strlen(namespace_uri) < 4) {
-		return MAPISTORE_ERR_INVALID_NAMESPACE;
-	}
+	MAPISTORE_RETVAL_IF((!namespace_uri || strlen(namespace_uri) < 4), MAPISTORE_ERR_INVALID_NAMESPACE, NULL);
 
 	ref_str = (char *)namespace_uri;
 	ns = strchr(namespace_uri, ':');

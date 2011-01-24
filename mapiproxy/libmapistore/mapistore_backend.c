@@ -63,9 +63,7 @@ _PUBLIC_ extern enum MAPISTORE_ERROR mapistore_backend_register(const struct map
 	int				i;
 
 	/* Sanity checks */
-	if (!backend) {
-		return MAPISTORE_ERR_INVALID_PARAMETER;
-	}
+	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend && backend && 
@@ -329,9 +327,8 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
   */
  _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_add_ref_count(struct backend_context *bctx)
  {
-	 if (!bctx) {
-		 return MAPISTORE_ERROR;
-	 }
+	 /* Sanity checks */
+	 MAPISTORE_RETVAL_IF(!bctx, MAPISTORE_ERROR, NULL);
 
 	 bctx->ref_count += 1;
 
@@ -348,12 +345,13 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
   */
  _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_delete_context(struct backend_context *bctx)
  {
-	 enum MAPISTORE_ERROR	ret;
+	 enum MAPISTORE_ERROR	retval;
 
-	 if (!bctx->backend->delete_context) return MAPISTORE_ERROR;
+	 /* Sanity checks */
+	 MAPISTORE_RETVAL_IF(!bctx->backend->delete_context, MAPISTORE_ERROR, NULL);
 
 	 if (bctx->indexing) {
-		 mapistore_indexing_del_ref_count(bctx->indexing);
+		 retval = mapistore_indexing_del_ref_count(bctx->indexing);
 	 }
 
 	 if (bctx->ref_count) {
@@ -361,10 +359,10 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 		 return MAPISTORE_ERR_REF_COUNT;
 	 }
 
-	 ret = bctx->backend->delete_context(bctx->private_data);
+	 retval = bctx->backend->delete_context(bctx->private_data);
 	 talloc_set_destructor((void *)bctx, NULL);
 
-	 return ret;
+	 return retval;
  }
 
 

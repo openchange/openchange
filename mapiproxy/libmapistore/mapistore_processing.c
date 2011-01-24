@@ -194,11 +194,12 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *p
 	/* mapistore_v2 */
 	const char	*db_path;
 
-	if (!pctx) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (pctx->mapping_ctx) return MAPISTORE_ERR_ALREADY_INITIALIZED;
+	/* Sanity Checks */
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(pctx->mapping_ctx, MAPISTORE_ERR_ALREADY_INITIALIZED, NULL);
 
 	pctx->mapping_ctx = talloc_zero(pctx, struct id_mapping_context);
-	if (!pctx->mapping_ctx) return MAPISTORE_ERR_NO_MEMORY;
+	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_init_mapping_context");
 
@@ -280,8 +281,10 @@ enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_cont
 	int			ret;
 
 	/* Sanity checks */
-	if (!pctx || !pctx->mapping_ctx || !pctx->mapping_ctx->ldb_ctx) return MAPISTORE_ERR_INVALID_PARAMETER;
-	if (!ldif_string) return MAPISTORE_ERR_INVALID_PARAMETER;
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx->ldb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!ldif_string, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
 
@@ -327,8 +330,10 @@ enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *pctx,
 	uint64_t		new_GlobalCount;
 
 	/* Sanity checks */
-	if (!pctx || !pctx->mapping_ctx || !pctx->mapping_ctx->ldb_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!fmid) return MAPISTORE_ERR_INVALID_PARAMETER;
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx->ldb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_get_next_fmid");
 
@@ -398,8 +403,10 @@ enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_contex
 	uint64_t		new_GlobalCount;
 
 	/* Sanity checks */
-	if (!pctx || !pctx->mapping_ctx || !pctx->mapping_ctx->ldb_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!range_start || !range_end) return MAPISTORE_ERR_INVALID_PARAMETER;
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx->ldb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!range_start || !range_end, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_get_next_range");
 
@@ -459,7 +466,7 @@ enum MAPISTORE_ERROR mapistore_get_context_id(struct processing_context *pctx, u
 	struct context_id_list	*el;
 
 	/* Sanity checks */
-	if (!pctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	/* Step 1. The free context list doesn't exist yet */
 	if (!pctx->free_ctx) {
@@ -493,7 +500,7 @@ enum MAPISTORE_ERROR mapistore_free_context_id(struct processing_context *pctx, 
 	struct context_id_list	*el;
 
 	/* Sanity checks */
-	if (!pctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	/* Step 1. Ensure the list is not corrupted */
 	for (el = pctx->free_ctx; el; el = el->next) {

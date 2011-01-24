@@ -52,8 +52,9 @@ enum MAPISTORE_ERROR mapistoredb_set_netbiosname(struct mapistoredb_context *mdb
 						 const char *netbiosname)
 {
 	/* Sanity checks */
-	if (!mdb_ctx || !mdb_ctx->param) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!netbiosname) return MAPISTORE_ERR_INVALID_PARAMETER;
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->param, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!netbiosname, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	if (mdb_ctx->param->netbiosname) {
 		talloc_free(mdb_ctx->param->netbiosname);
@@ -112,8 +113,9 @@ enum MAPISTORE_ERROR mapistoredb_set_firstorg(struct mapistoredb_context *mdb_ct
 	enum MAPISTORE_ERROR	retval;
 
 	/* Sanity checks */
-	if (!mdb_ctx || !mdb_ctx->param) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!firstorg) return MAPISTORE_ERR_INVALID_PARAMETER;
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->param, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!firstorg, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	if (mdb_ctx->param->firstorg) {
 		talloc_free(mdb_ctx->param->firstorg);
@@ -168,8 +170,9 @@ enum MAPISTORE_ERROR mapistoredb_set_firstou(struct mapistoredb_context *mdb_ctx
 	enum MAPISTORE_ERROR	retval;
 
 	/* Sanity checks */
-	if (!mdb_ctx || !mdb_ctx->param) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!firstou) return MAPISTORE_ERR_INVALID_PARAMETER;
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->param, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!firstou, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	if (mdb_ctx->param->firstou) {
 		talloc_free(mdb_ctx->param->firstou);
@@ -203,6 +206,9 @@ enum MAPISTORE_ERROR mapistoredb_set_firstou(struct mapistoredb_context *mdb_ctx
  */
 void mapistoredb_dump_conf(struct mapistoredb_context *mdb_ctx)
 {
+	/* Sanity checks */
+	if (!mdb_ctx || !mdb_ctx->param) return;
+
 	DEBUG(0, ("Database Path:                %s\n", mdb_ctx->param->db_path));
 	DEBUG(0, ("Netbios Name:                 %s\n", mdb_ctx->param->netbiosname));
 	DEBUG(0, ("DNS Domain:                   %s\n", mdb_ctx->param->dnsdomain));

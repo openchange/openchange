@@ -212,9 +212,10 @@ enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *mdb_ct
 	uint64_t		fmid = 0;
 
 	/* Sanity checks */
-	if (!mdb_ctx || !mdb_ctx->mstore_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!mdb_ctx->mstore_ctx->processing_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!_fmid) return MAPISTORE_ERR_INVALID_PARAMETER;
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx->processing_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!_fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	retval = mapistore_get_new_fmid(mdb_ctx->mstore_ctx->processing_ctx, &fmid);
 	if (retval == MAPISTORE_SUCCESS) {
@@ -253,9 +254,10 @@ enum MAPISTORE_ERROR mapistoredb_get_new_allocation_range(struct mapistoredb_con
 	uint64_t		_range_end = 0;
 
 	/* Sanity checks */
-	if (!mdb_ctx || !mdb_ctx->mstore_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!mdb_ctx->mstore_ctx->processing_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (!range_start || !range_end) return MAPISTORE_ERR_INVALID_PARAMETER;
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx->processing_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!range_start || !range_end, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	retval = mapistore_get_new_allocation_range(mdb_ctx->mstore_ctx->processing_ctx, range, &_range_start, &_range_end);
 	if (retval == MAPISTORE_SUCCESS) {
@@ -388,7 +390,7 @@ enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *mdb_ctx)
 	char	*ldif_str;
 
 	/* Sanity checks */
-	if (!mdb_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	/* Step 1. Add database schema */
 	if (write_ldif_string_to_store(mdb_ctx, MDB_INIT_LDIF_TMPL) == false) {

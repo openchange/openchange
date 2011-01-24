@@ -94,7 +94,9 @@ static enum MAPISTORE_ERROR mstoredb_create_context(struct mapistore_backend_con
 	int			ret;
 
 	/* Sanity checks */
-	if (!ctx || !uri || !private_data) return MAPISTORE_ERR_INVALID_PARAMETER;
+	MAPISTORE_RETVAL_IF(!ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!private_data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	DEBUG(0, ("* [%s:%d][%s]: uri = %s\n", __FILE__, __LINE__, __FUNCTION__, uri));
 

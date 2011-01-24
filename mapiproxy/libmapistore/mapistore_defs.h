@@ -92,6 +92,7 @@ enum MAPISTORE_TABLE_TYPE {
 	MAPISTORE_MESSAGE_TABLE = 2	/**< This table is for a message */
 };
 
+/* TODO: convert this to an enum */
 #define	MAPISTORE_FOLDER		1
 #define	MAPISTORE_MESSAGE		2
 
@@ -102,8 +103,5 @@ enum MAPISTORE_DELETION_TYPE {
 	MAPISTORE_SOFT_DELETE = 1,	/**< The item is "soft" deleted */
 	MAPISTORE_PERMANENT_DELETE = 2	/**< The item is hard deleted */
 };
-
-/* TODO: perhaps this should be in another header */
-const char		*mapistore_get_mapping_path(void);
 
 #endif /* __MAPISTORE_DEFS_H */

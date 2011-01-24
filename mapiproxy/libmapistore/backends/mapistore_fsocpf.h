@@ -29,6 +29,7 @@
 #include "libocpf/ocpf.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/mapistore_defs.h"
+#include "mapiproxy/libmapistore/mapistore_common.h"
 #include "mapiproxy/libmapistore/mapistore_backend.h"
 #include <dlinklist.h>
 #include <dirent.h>
@@ -102,7 +103,7 @@ const struct fsocpf_dflt_folders dflt_folders[] = {
 	{ MDB_SERVER_FAILURES,		"Server Failures" },
 	{ MDB_JUNK_EMAIL,		"Junk Email" },
 	{ MDB_RSS_FEEDS,		"RSS Feeds" },
-	{ MDB_CONVERSATION_ACT,		"Conversation Act" },
+	{ MDB_CONVERSATION_ACT,		"Conversation Actions" },
 	{ MDB_CUSTOM,			NULL }
 };
 

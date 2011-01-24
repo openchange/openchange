@@ -32,10 +32,7 @@
 #ifndef	__MAPISTORE_BACKEND_H
 #define	__MAPISTORE_BACKEND_H
 
-#include <ldb.h>
-#include "libmapi/libmapi.h"
-
-struct mapistore_backend_context;
+#include <libmapi/libmapi.h>
 
 /**
   \brief Backend provider interface
@@ -106,9 +103,6 @@ __BEGIN_DECLS
   \endcode
  */
 extern enum MAPISTORE_ERROR	mapistore_backend_register(const struct mapistore_backend *);
-
-/* definition from mapistore_backend_public.c */
-struct ldb_context	*mapistore_public_ldb_connect(struct mapistore_backend_context *, const char *);
 
 __END_DECLS
 

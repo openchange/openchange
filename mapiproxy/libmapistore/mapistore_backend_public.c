@@ -33,6 +33,7 @@
 
 #include "mapistore_errors.h"
 #include "mapistore.h"
+#include "mapistore_common.h"
 #include "mapistore_private.h"
 #include "mapistore_backend.h"
 

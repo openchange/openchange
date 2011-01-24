@@ -29,8 +29,8 @@
 
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/mapistore_defs.h"
+#include "mapiproxy/libmapistore/mapistore_common.h"
 #include "mapiproxy/libmapistore/mapistore_backend.h"
-#include "mapiproxy/libmapistore/mapistore.h"
 
 struct mstoredb_context {
 	struct mapistore_backend_context	*mdb_ctx;

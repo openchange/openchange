@@ -39,11 +39,15 @@ struct mapistore_backend_context;
 
 /**
   \brief Backend provider interface
+  
+  This is the primary structure you need to create and register (using mapistore_backend_register()) to
+  create a backend storage provider.
+
  */
 struct mapistore_backend {
-	const char	*name;
-	const char	*description;
-	const char	*uri_namespace;
+	const char	*name;			/**< The short name of the provider */
+	const char	*description;		/**< A longer (but one line) description of the provider */
+	const char	*uri_namespace;		/**< The namespace that this backend provider will use (for example "my_name://") */
 
 	enum MAPISTORE_ERROR (*init)(void);
 	enum MAPISTORE_ERROR (*create_context)(struct mapistore_backend_context *ctx, const char *, void **);
@@ -56,8 +60,8 @@ struct mapistore_backend {
 	enum MAPISTORE_ERROR (*op_rmdir)(void *, uint64_t, uint64_t);
 	enum MAPISTORE_ERROR (*op_opendir)(void *, uint64_t, uint64_t);
 	enum MAPISTORE_ERROR (*op_closedir)(void *);
-	enum MAPISTORE_ERROR (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
-	enum MAPISTORE_ERROR (*op_get_table_property)(void *, uint64_t, uint8_t, uint32_t, enum MAPITAGS, void **);
+	enum MAPISTORE_ERROR (*op_readdir_count)(void *, uint64_t, enum MAPISTORE_TABLE_TYPE, uint32_t *);
+	enum MAPISTORE_ERROR (*op_get_table_property)(void *, uint64_t, enum MAPISTORE_TABLE_TYPE, uint32_t, enum MAPITAGS, void **);
 	/* message semantics */
 	enum MAPISTORE_ERROR (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
 	enum MAPISTORE_ERROR (*op_createmessage)(void *, uint64_t, uint64_t);
@@ -68,6 +72,8 @@ struct mapistore_backend {
 	enum MAPISTORE_ERROR (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
 	enum MAPISTORE_ERROR (*op_deletemessage)(void *, uint64_t mid, uint8_t flags);
 };
+
+__BEGIN_DECLS
 
 /*
   \brief Register a backend
@@ -99,12 +105,9 @@ struct mapistore_backend {
   }
   \endcode
  */
-
-__BEGIN_DECLS
-
 extern enum MAPISTORE_ERROR	mapistore_backend_register(const struct mapistore_backend *);
 
-/* definitions from mapistore_backend_public.c */
+/* definition from mapistore_backend_public.c */
 struct ldb_context	*mapistore_public_ldb_connect(struct mapistore_backend_context *, const char *);
 
 __END_DECLS

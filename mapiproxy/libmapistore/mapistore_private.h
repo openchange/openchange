@@ -19,6 +19,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+   \file mapistore_private.h
+
+   \brief internal / private API for mapistore.
+ */
+
 #ifndef	__MAPISTORE_PRIVATE_H__
 #define	__MAPISTORE_PRIVATE_H__
 
@@ -239,9 +245,9 @@ enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *, 
 enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *, uint64_t, uint8_t, char **);
 enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *, uint64_t, uint64_t);
 enum MAPISTORE_ERROR mapistore_backend_mkdir(struct backend_context *, uint64_t, uint64_t, struct SRow *);
-enum MAPISTORE_ERROR mapistore_backend_readdir_count(struct backend_context *, uint64_t, uint8_t, uint32_t *);
+enum MAPISTORE_ERROR mapistore_backend_readdir_count(struct backend_context *, uint64_t, enum MAPISTORE_TABLE_TYPE, uint32_t *);
 enum MAPISTORE_ERROR mapistore_backend_rmdir(struct backend_context *, uint64_t, uint64_t);
-enum MAPISTORE_ERROR mapistore_backend_get_table_property(struct backend_context *, uint64_t, uint8_t, uint32_t, 
+enum MAPISTORE_ERROR mapistore_backend_get_table_property(struct backend_context *, uint64_t, enum MAPISTORE_TABLE_TYPE, uint32_t, 
 							  enum MAPITAGS, void **);
 enum MAPISTORE_ERROR mapistore_backend_openmessage(struct backend_context *, uint64_t, uint64_t, struct mapistore_message *);
 enum MAPISTORE_ERROR mapistore_backend_createmessage(struct backend_context *, uint64_t, uint64_t);

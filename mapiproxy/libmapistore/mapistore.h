@@ -123,7 +123,7 @@ enum MAPISTORE_ERROR mapistore_mkdir(struct mapistore_context *, uint32_t, uint6
 enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 enum MAPISTORE_ERROR mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 enum MAPISTORE_ERROR mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
-enum MAPISTORE_ERROR mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, uint64_t, 
+enum MAPISTORE_ERROR mapistore_get_table_property(struct mapistore_context *, uint32_t, enum MAPISTORE_TABLE_TYPE, uint64_t, 
 						  enum MAPITAGS, uint32_t, void **);
 enum MAPISTORE_ERROR mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
 enum MAPISTORE_ERROR mapistore_createmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t);

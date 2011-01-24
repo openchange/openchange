@@ -38,46 +38,59 @@
   This list identifies each of the folder identifiers.
  */
 enum MAPISTORE_DFLT_FOLDERS {
-	MDB_ROOT_FOLDER		= 1,
-	MDB_DEFERRED_ACTIONS	= 2,
-	MDB_SPOOLER_QUEUE	= 3,
-	MDB_TODO_SEARCH		= 4,
-	MDB_IPM_SUBTREE		= 5,
-	MDB_INBOX		= 6,
-	MDB_OUTBOX		= 7,
-	MDB_SENT_ITEMS		= 8,
-	MDB_DELETED_ITEMS	= 9,
-	MDB_COMMON_VIEWS	= 10,
-	MDB_SCHEDULE		= 11,
-	MDB_SEARCH		= 12,
-	MDB_VIEWS		= 13,
-	MDB_SHORTCUTS		= 14,
-	MDB_REMINDERS		= 15,
-	MDB_CALENDAR		= 16,
-	MDB_CONTACTS		= 17,
-	MDB_JOURNAL		= 18,
-	MDB_NOTES		= 19,
-	MDB_TASKS		= 20,
-	MDB_DRAFTS		= 21,
-	MDB_TRACKED_MAIL	= 22,
-	MDB_SYNC_ISSUES		= 23,
-	MDB_CONFLICTS		= 24,
-	MDB_LOCAL_FAILURES	= 25,
-	MDB_SERVER_FAILURES	= 26,
-	MDB_JUNK_EMAIL		= 27,
-	MDB_RSS_FEEDS		= 28,
-	MDB_CONVERSATION_ACT	= 29, /**< Conversation Actions folder */
+	MDB_ROOT_FOLDER		= 1,	/**< The root folder */
+	MDB_DEFERRED_ACTIONS	= 2,	/**< Deferred actions special folder  */
+	MDB_SPOOLER_QUEUE	= 3,	/**< Mail spooler queue special folder */
+	MDB_TODO_SEARCH		= 4,	/**< Special folder for "todo" search */
+	MDB_IPM_SUBTREE		= 5,	/**< Root folder for inter-personal messages */
+	MDB_INBOX		= 6,	/**< Inbox special folder */
+	MDB_OUTBOX		= 7,	/**< Outbox (to be send) special folder */
+	MDB_SENT_ITEMS		= 8,	/**< Sent items (previously sent) special folder */
+	MDB_DELETED_ITEMS	= 9,	/**< Deleted items special folder */
+	MDB_COMMON_VIEWS	= 10,	/**< Special folder for common views metadata */
+	MDB_SCHEDULE		= 11,	/**< Schedule (Free/busy) special folder */
+	MDB_SEARCH		= 12,	/**< Search root folder */
+	MDB_VIEWS		= 13,	/**< Special folder for views metadata */
+	MDB_SHORTCUTS		= 14,	/**< Special folder for "shortcuts" action storage */
+	MDB_REMINDERS		= 15,	/**< Special folder for reminders */
+	MDB_CALENDAR		= 16,	/**< The user calendar */
+	MDB_CONTACTS		= 17,	/**< The user's private address book (contacts) */
+	MDB_JOURNAL		= 18,	/**< The user's journal */
+	MDB_NOTES		= 19,	/**< The user's short notes */
+	MDB_TASKS		= 20,	/**< The user's tasks ("todo list") */
+	MDB_DRAFTS		= 21,	/**< Special folder for draft messages */
+	MDB_TRACKED_MAIL	= 22,	/**< Special folder for tracked mail */
+	MDB_SYNC_ISSUES		= 23,	/**< Special folder to handle messages that failed synchronization */
+	MDB_CONFLICTS		= 24,	/**< Special folder for server-side conflicts (from synchronization)  */
+	MDB_LOCAL_FAILURES	= 25,	/**< Special folder for client side failures */
+	MDB_SERVER_FAILURES	= 26,	/**< Special folder for server side failures */
+	MDB_JUNK_EMAIL		= 27,	/**< Special folder for junk ("spam") email */
+	MDB_RSS_FEEDS		= 28,	/**< Special folder for RSS feeds */
+	MDB_CONVERSATION_ACT	= 29,	/**< Conversation Actions folder */
 	MDB_LAST_SPECIALFOLDER	= MDB_CONVERSATION_ACT, /**< the last identifier, used for iteration */
-	MDB_CUSTOM		= 999 /**< This is a custom (or generic) folder with no special meaning */
+	MDB_CUSTOM		= 999	/**< This is a custom (or generic) folder with no special meaning */
 };
 
+/**
+  A message object
+  
+  This is used to handle the contents of a message. Note that the body of the message
+  is just another property.
+  
+  Attachments are handled by a separate table, and are not available here.
+ */
 struct mapistore_message {
-	struct SRowSet			*recipients;
-	struct SRow			*properties;
+	struct SRowSet			*recipients; /**< the list of recipient rows */
+	struct SRow			*properties; /**< the properties of the message */
 };
 
-#define	MAPISTORE_FOLDER_TABLE		1
-#define	MAPISTORE_MESSAGE_TABLE		2
+/**
+  Table types
+ */
+enum MAPISTORE_TABLE_TYPE {
+	MAPISTORE_FOLDER_TABLE = 1,	/**< This table is for a folder */
+	MAPISTORE_MESSAGE_TABLE = 2	/**< This table is for a message */
+};
 
 #define	MAPISTORE_FOLDER		1
 #define	MAPISTORE_MESSAGE		2

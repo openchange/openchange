@@ -765,7 +765,7 @@ static enum MAPISTORE_ERROR fsocpf_op_closedir(void *private_data)
  */
 static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data, 
 						    uint64_t fid,
-						    uint8_t table_type,
+						    enum MAPISTORE_TABLE_TYPE table_type,
 						    uint32_t *RowCount)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
@@ -1007,7 +1007,7 @@ static enum MAPISTORE_ERROR fsocpf_get_property_from_message_table(struct fsocpf
 
 static enum MAPISTORE_ERROR fsocpf_op_get_table_property(void *private_data,
 							 uint64_t fid,
-							 uint8_t table_type,
+							 enum MAPISTORE_TABLE_TYPE table_type,
 							 uint32_t pos,
 							 enum MAPITAGS proptag,
 							 void **data)

@@ -491,7 +491,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *mem_ctx,
 
  enum MAPISTORE_ERROR mapistore_backend_readdir_count(struct backend_context *bctx, 
 						      uint64_t fid, 
-						      uint8_t table_type, 
+						      enum MAPISTORE_TABLE_TYPE table_type, 
 						      uint32_t *RowCount)
  {
 	 enum MAPISTORE_ERROR		ret;
@@ -506,7 +506,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *mem_ctx,
 
  enum MAPISTORE_ERROR mapistore_backend_get_table_property(struct backend_context *bctx, 
 							   uint64_t fid, 
-							   uint8_t table_type,
+							   enum MAPISTORE_TABLE_TYPE table_type,
 							   uint32_t pos, 
 							   enum MAPITAGS proptag, 
 							   void **data)

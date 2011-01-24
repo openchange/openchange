@@ -712,7 +712,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_message_count(struct mapistore_conte
  */
 _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_table_property(struct mapistore_context *mstore_ctx,
 							   uint32_t context_id,
-							   uint8_t table_type,
+							   enum MAPISTORE_TABLE_TYPE table_type,
 							   uint64_t fid,
 							   enum MAPITAGS proptag,
 							   uint32_t pos,

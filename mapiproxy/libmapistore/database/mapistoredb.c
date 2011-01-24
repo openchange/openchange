@@ -198,10 +198,11 @@ enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *m
    mapistore_processing.c
 
    \param mdb_ctx pointer to the mapistore database context
-   \param range the range of IDs to allocate along with the next fmid
    \param _fmid pointer on the next fmid available to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+   
+   \sa mapistoredb_get_new_allocation_range for an alternative function returning multiple identifiers
  */
 enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *mdb_ctx,
 					      uint64_t *_fmid)
@@ -227,7 +228,11 @@ enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *mdb_ct
 /**
    \details Retrieve a new allocation range
 
-   This functions is a wrapper over mapistore_get_new_allocation_range
+   This function obtains a range of folder / message identifiers. Conceptually
+   you specify how many identifiers you want, and are provided a contiguous block
+   of identiers (in terms of a start and end, which are inclusive).
+
+   This function is a wrapper over mapistore_get_new_allocation_range
    from mapistore_processing.c
 
    \param mdb_ctx pointer to the mapistore database context

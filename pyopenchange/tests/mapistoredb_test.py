@@ -13,62 +13,49 @@ from openchange import mapi
 
 os.mkdir("/tmp/mapistoredb");
 
-print "[Step 1]. Initializing mapistore database"
-print "========================================="
+def newTitle(title, separator):
+    print ""
+    print "%s" % title
+    print separator * len(title)
 
+newTitle("[Step 1]. Initializing mapistore database", '=')
 MAPIStoreDB = mapistoredb.mapistoredb("/tmp/mapistoredb")
-print ""
 
-print "[Step 2]. Provisioning mapistore database"
-print "========================================="
+newTitle("[Step 2]. Provisioning mapistore database", '=')
 ret = MAPIStoreDB.provision()
 if (ret == 0):
-    print "Provisioning: SUCCESS"
+    print "\t* Provisioning: SUCCESS"
 else:
-    print "Provisioning: FAILURE"
-print ""
+    print "\t* Provisioning: FAILURE"
 
-print "[Step 3]. Modify and dump configuration"
-print "======================================="
 
+newTitle("[Step 3]. Modify and dump configuration", '=')
 MAPIStoreDB.netbiosname = "server"
 MAPIStoreDB.firstorg = "OpenChange Project"
 MAPIStoreDB.firstou = "OpenChange Development Unit"
 
 MAPIStoreDB.dump_configuration()
-print ""
 
-print "[Step 4]. Testing API parts"
-print "==========================="
+newTitle("[Step 4]. Testing API parts", '=')
 
-print "A. Testing NetBIOS name"
-print "-----------------------"
+newTitle("A. Testing NetBIOS name", '-')
 print "* NetBIOS name: %s" %MAPIStoreDB.netbiosname
-print ""
 
-print "B. Testing First OU"
-print "-------------------"
+newTitle("B. Testing First OU", '-')
 print "* FirstOU: %s" %MAPIStoreDB.firstou
-print ""
 
-print "C. Testing First Organisation"
-print "-----------------------------"
+newTitle("C. Testing First Organisation", '-')
 print "* First Organisation: %s" %MAPIStoreDB.firstorg
-print ""
 
 
-print "[Step 5]. Retrieve mapistore URI for fsocpf"
-print "============================================"
-print "*fsocpf:"
-print "========"
+newTitle("[Step 5]. Retrieve mapistore URI for fsocpf", '=')
+newTitle("*fsocpf:", '=')
 print "\t* Inbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_INBOX, "jkerihuel", "fsocpf://")
 print "\t* Calendar: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_CALENDAR, "jkerihuel", "fsocpf://")
 print "\t* Outbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_OUTBOX, "jkerihuel", "fsocpf://")
 print "\t* Contacts: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_CONTACTS, "jkerihuel", "fsocpf://")
 
-print ""
-print "mstoredb:"
-print "========="
+newTitle("mstoredb:", '=')
 print "\t* Mailbox Root: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROOT_FOLDER, "jkerihuel", "mstoredb://")
 print "\t* IPM SUbtree: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_IPM_SUBTREE, "jkerihuel", "mstoredb://")
 print "\t* Inbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_INBOX, "jkerihuel", "mstoredb://")
@@ -77,38 +64,28 @@ MAPIStoreDB.netbiosname = "new_server"
 MAPIStoreDB.firstorg = "FirstOrg"
 MAPIStoreDB.firstou = "FirstOu"
 
-print ""
-print "mstoredb (new DN):"
-print "=================="
+newTitle("mstoredb (new DN):", '=')
 print "\t* Mailbox Root: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROOT_FOLDER, "jkerihuel", "mstoredb://")
 print "\t* IPM SUbtree: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_IPM_SUBTREE, "jkerihuel", "mstoredb://")
 print "\t* Inbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_INBOX, "jkerihuel", "mstoredb://")
 
-print ""
-print "[Step 6]. Create a new mailbox"
-print "=============================="
+newTitle("[Step 6]. Create a new mailbox", '=')
 uri = MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROOT_FOLDER, "jkerihuel", "mstoredb://")
 fid = MAPIStoreDB.get_new_fid()
 ret = MAPIStoreDB.new_mailbox("jkerihuel", fid, uri)
 print "\t* new_mailbox: ret = %d" % ret
 
 
-print ""
-print "[Step 7]. Retrieve a new FID"
-print "============================"
+newTitle("[Step 7]. Retrieve a new FID", '=')
 fid = MAPIStoreDB.get_new_fid()
 print "\t* FID = 0x%.16x" % fid
 
-print ""
-print "[Step 8]. Retrieve a new allocation range"
-print "========================================="
+newTitle("[Step 8]. Retrieve a new allocation range", '=')
 (rstart,rend) = MAPIStoreDB.get_new_allocation_range(0x1000)
 print "\t* range_start = 0x%.16x" % rstart
 print "\t* range_end   = 0x%.16x" % rend
 
-print ""
-print "[Step 9]. Retrieve a new FID"
-print "============================"
+newTitle("[Step 9]. Retrieve a new FID", '=')
 new_fid = MAPIStoreDB.get_new_fid()
 print "\t* FID = 0x%.16x" % new_fid
 

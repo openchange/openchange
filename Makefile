@@ -818,6 +818,20 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$
 ################
 LIBMAPISTORE_SO_VERSION = 0
 
+mapiproxy/libmapistore/indexing/mapistore_indexing_db.idl: mapiproxy/libmapistore/indexing/gen_ndr
+
+mapiproxy/libmapistore/indexing/gen_ndr/%.h: mapiproxy/libmapistore/indexing/mapistore_indexing_db.idl
+	@echo "Generating $@"
+	@$(PIDL) --outputdir=mapiproxy/libmapistore/indexing/gen_ndr --header -- $<
+
+mapiproxy/libmapistore/indexing/gen_ndr:
+	@echo "Creating the gen_ndr directory for libmapistore indexing IDL"
+	@mkdir -p mapiproxy/libmapistore/indexing/gen_ndr
+
+mapiproxy/libmapistore/indexing/gen_ndr/ndr_%.h mapiproxy/libmapistore/indexing/gen_ndr/ndr_%.c: mapiproxy/libmapistore/indexing/%.idl mapiproxy/libmapistore/indexing/gen_ndr/%.h
+	@echo "Generating $@"
+	@$(PIDL) --outputdir=mapiproxy/libmapistore/indexing/gen_ndr --ndr-parser -- $<
+
 libmapistore: 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 		setup/mapistore/mapistore_namedprops.ldif		\
 		$(OC_MAPISTORE)						\
@@ -843,9 +857,11 @@ libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore/database/*.po mapiproxy/libmapistore/database/*.o
+	rm -f mapiproxy/libmapistore/indexing/*.po mapiproxy/libmapistore/indexing/*.o
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 	rm -f setup/mapistore/mapistore_namedprops.ldif
+	rm -rf mapiproxy/libmapistore/indexing/gen_ndr
 
 libmapistore-uninstall:	$(OC_MAPISTORE_UNINSTALL)
 	rm -f $(DESTDIR)$(libdir)/libmapistore.*
@@ -858,16 +874,17 @@ libmapistore-distclean: libmapistore-clean
 
 distclean:: libmapistore-distclean
 
-mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mapistore_interface.po		\
-							mapiproxy/libmapistore/mapistore_processing.po		\
-							mapiproxy/libmapistore/mapistore_backend.po		\
-							mapiproxy/libmapistore/mapistore_tdb_wrap.po		\
-							mapiproxy/libmapistore/mapistore_ldb_wrap.po		\
-							mapiproxy/libmapistore/mapistore_indexing.po		\
-							mapiproxy/libmapistore/mapistore_namedprops.po		\
-							mapiproxy/libmapistore/mapistore_backend_public.po	\
-							mapiproxy/libmapistore/database/mapistoredb.po		\
-							mapiproxy/libmapistore/database/mapistoredb_conf.po	\
+mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mapistore_interface.po				\
+							mapiproxy/libmapistore/indexing/gen_ndr/ndr_mapistore_indexing_db.po	\
+							mapiproxy/libmapistore/mapistore_processing.po				\
+							mapiproxy/libmapistore/mapistore_backend.po				\
+							mapiproxy/libmapistore/mapistore_tdb_wrap.po				\
+							mapiproxy/libmapistore/mapistore_ldb_wrap.po				\
+							mapiproxy/libmapistore/mapistore_indexing.po				\
+							mapiproxy/libmapistore/mapistore_namedprops.po				\
+							mapiproxy/libmapistore/mapistore_backend_public.po			\
+							mapiproxy/libmapistore/database/mapistoredb.po				\
+							mapiproxy/libmapistore/database/mapistoredb_conf.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
@@ -1642,7 +1659,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h
+.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h mapiproxy/libmapistore/indexing/gen_ndr/ndr_mapistore_indexing_db.c mapiproxy/libmapistore/indexing/gen_ndr/mapistore_indexing_db.h
 
 test:: check
 

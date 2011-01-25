@@ -104,4 +104,9 @@ enum MAPISTORE_DELETION_TYPE {
 	MAPISTORE_PERMANENT_DELETE = 2	/**< The item is hard deleted */
 };
 
+/**
+   Default message ID allocation range
+ */
+#define	MAPISTORE_INDEXING_DFLT_ALLOC_RANGE_VAL	0x1000
+
 #endif /* __MAPISTORE_DEFS_H */

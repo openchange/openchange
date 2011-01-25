@@ -83,12 +83,14 @@ enum MAPISTORE_ERROR mapistore_exist(struct mapistore_backend_context *ctx,
 				     const char *mapistore_uri)
 {
 	enum MAPISTORE_ERROR		retval;
-	struct mapistore_context	*mstore_ctx = ctx->mstore_ctx;
+	struct mapistore_context	*mstore_ctx;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mstore_ctx = ctx->mstore_ctx;
 
 	/* Step 1. Create an indexing context */
 	retval = mapistore_indexing_context_add(mstore_ctx,
@@ -99,5 +101,82 @@ enum MAPISTORE_ERROR mapistore_exist(struct mapistore_backend_context *ctx,
 	/* Step 2. Search the URI */
 	retval = mapistore_indexing_record_search_uri(mstore_ctx->mapistore_indexing_list, mapistore_uri);
 
+	return retval;
+}
+
+/**
+   \details Let backends register a folder and index it within
+   mapistore indexing database
+
+   \param ctx pointer to the mapistore backend opaque context
+   \param username the username used to register the folder
+   \param parent_uri the mapistore URI of the parent folder
+   \param mapistore_uri the mapistore URI to register
+   \param range the number of message IDs we want to reserve for this
+   folder
+
+   \return MAPISTORE success on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_register_folder(struct mapistore_backend_context *ctx,
+					       const char *username,
+					       const char *parent_uri,
+					       const char *mapistore_uri,
+					       uint64_t range)
+{
+	enum MAPISTORE_ERROR		retval;
+	struct mapistore_context	*mstore_ctx;
+	uint64_t			parent_fid;
+	uint64_t			fid;
+	uint64_t			rstart;
+	uint64_t			rend;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	if (!range) {
+		range = MAPISTORE_INDEXING_DFLT_ALLOC_RANGE_VAL;
+	}
+
+	mstore_ctx = ctx->mstore_ctx;
+
+	/* Step 1. Ensure the URI doesn't exist */
+	retval = mapistore_exist(ctx, username, mapistore_uri);
+	MAPISTORE_RETVAL_IF(retval != MAPISTORE_ERR_NOT_FOUND, retval, NULL);
+
+	/* Step 2. Create or retrieve an indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Ensure the parent_fid URI exists and retrieve its
+	 * folder identifier value */
+	retval = mapistore_indexing_get_record_fmid_by_uri(mstore_ctx->mapistore_indexing_list, parent_uri, &parent_fid);
+	if (retval) goto finish;
+
+	/* Step 4. Ask for a new FID */
+	retval = mapistore_get_new_fmid(mstore_ctx->processing_ctx, &fid);
+	if (retval) goto finish;
+
+	/* Step 5. Register the folder within the indexing database */
+	retval = mapistore_indexing_add_fmid_record(mstore_ctx->mapistore_indexing_list, fid, 
+						    mapistore_uri, parent_fid, 
+						    MAPISTORE_INDEXING_FOLDER);
+	if (retval) goto finish;
+
+	/* Step 6. Request an allocation range for messages */
+	retval = mapistore_get_new_allocation_range(mstore_ctx->processing_ctx,
+						    range, &rstart, &rend);
+	if (retval) goto finish;
+
+	/* Step 7. Set the allocation range for the folder */
+	retval = mapistore_indexing_add_folder_record_allocation_range(mstore_ctx->mapistore_indexing_list,
+								       fid, rstart, rend);
+	if (retval) goto finish;
+
+	/* Step 8. Delete the indexing context */
+finish:
+	retval = mapistore_indexing_context_del(mstore_ctx, username);
 	return retval;
 }

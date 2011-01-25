@@ -348,6 +348,53 @@ enum MAPISTORE_ERROR mapistore_indexing_record_search_uri(struct mapistore_index
 
 
 /**
+   \details Return FMID associated to a mapistore URI for a given
+   folder or message
+
+   \param mictx pointer to the mapistore indexing context list
+   \param uri the mapistore URI to lookup
+   \param fmid the folder or message identifier to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_indexing_get_record_fmid_by_uri(struct mapistore_indexing_context_list *mictx,
+							       const char *uri,
+							       uint64_t *fmid)
+{
+	TDB_DATA	key;
+	TDB_DATA	value;
+	char		*tmp;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Lookup the mapistore URI in the mapistore indexing database */
+	key.dptr = (unsigned char *)talloc_asprintf(mictx, MAPISTORE_INDEXING_URI, uri);
+	key.dsize = strlen((const char *)key.dptr);
+
+	/* Step 2. Fetch and Format the TDB value */
+	value = tdb_fetch(mictx->tdb_ctx->tdb, key);
+	talloc_free(key.dptr);
+	MAPISTORE_RETVAL_IF(!value.dptr, MAPISTORE_ERR_NOT_FOUND, NULL);
+
+	if (strncmp((char *)value.dptr, "FMID/", strlen("FMID/"))) {
+		tmp = talloc_strndup(mictx, (const char *)value.dptr, value.dsize);
+		DEBUG(5, ("! [%s:%d][%s]: Unexpected TDB value, expected FMID/... got %s\n",
+			  __FILE__, __LINE__, __FUNCTION__, tmp));
+		talloc_free(tmp);
+		return MAPISTORE_ERR_INVALID_OBJECT;
+	}
+
+	tmp = talloc_strndup(mictx, (char *)(&value.dptr[strlen("FMID/")]), value.dsize - strlen("FMID/"));
+	*fmid = strtoull(tmp, NULL, 16);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Retrieve the mapistore indexing entry associated to a
    folder or message identifier
 

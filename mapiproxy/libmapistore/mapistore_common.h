@@ -45,6 +45,7 @@ const char		*mapistore_get_database_path(void);
 /* definition from mapistore_backend_public.c */
 struct ldb_context	*mapistore_public_ldb_connect(struct mapistore_backend_context *, const char *);
 enum MAPISTORE_ERROR	mapistore_exist(struct mapistore_backend_context *, const char *, const char *);
+enum MAPISTORE_ERROR mapistore_register_folder(struct mapistore_backend_context *, const char *, const char *, const char *, uint64_t);
 
 __END_DECLS
 

@@ -322,8 +322,8 @@ static enum MAPISTORE_ERROR mapistore_indexing_record_search_fmid(struct mapisto
    \return MAPISTORE_ERR_NOT_FOUND if the fmid was not found,
    MAPISTORE_ERR_EXIST if it was found, otherwise different MAPISTORE error
 */
-static enum MAPISTORE_ERROR mapistore_indexing_record_search_uri(struct mapistore_indexing_context_list *mictx,
-								 const char *uri)
+enum MAPISTORE_ERROR mapistore_indexing_record_search_uri(struct mapistore_indexing_context_list *mictx,
+							  const char *uri)
 {
 	int		ret;
 	TDB_DATA	key;

@@ -44,6 +44,9 @@
    This function is a wrapper to mapistore_ldb_wrap_connect which
    helps keeping mapistore_backend_context opaque to backends.
 
+   \param ctx pointer to the mapistore backend opaque context
+   \param path pointer to the mapistore.ldb path
+
    \return valid LDB context pointer on success, otherwise NULL
  */
 struct ldb_context *mapistore_public_ldb_connect(struct mapistore_backend_context *ctx,
@@ -61,4 +64,39 @@ struct ldb_context *mapistore_public_ldb_connect(struct mapistore_backend_contex
 	if (!ev) return NULL;
 
 	return mapistore_ldb_wrap_connect(mstore_ctx, ev, path, 0);
+}
+
+
+/**
+   \details Let a backend checks if a message of folder is already
+   indexed in mapistore.ldb
+
+   \param ctx pointer to the mapistore backend opaque context
+   \param mapistore_uri the mapistore URI to lookup
+
+   \return MAPISTORE_ERR_EXIST if the URI was found,
+   MAPISTORE_ERR_NOT_FOUND if it wasn't, other MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_exist(struct mapistore_backend_context *ctx,
+				     const char *username,
+				     const char *mapistore_uri)
+{
+	enum MAPISTORE_ERROR		retval;
+	struct mapistore_context	*mstore_ctx = (struct mapistore_context *)ctx;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Create an indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx,
+						username,
+						&(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 2. Search the URI */
+	retval = mapistore_indexing_record_search_uri(mstore_ctx->mapistore_indexing_list, mapistore_uri);
+
+	return retval;
 }

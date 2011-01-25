@@ -36,10 +36,16 @@
 
 struct mapistore_backend_context;
 
+__BEGIN_DECLS
+
 const char		*mapistore_get_mapping_path(void);
 const char		*mapistore_get_firstorgdn(void);
 const char		*mapistore_get_database_path(void);
+
 /* definition from mapistore_backend_public.c */
 struct ldb_context	*mapistore_public_ldb_connect(struct mapistore_backend_context *, const char *);
+enum MAPISTORE_ERROR	mapistore_exist(struct mapistore_backend_context *, const char *, const char *);
+
+__END_DECLS
 
 #endif /* __MAPISTORE_COMMON_H */

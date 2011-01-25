@@ -45,7 +45,7 @@
    helps keeping mapistore_backend_context opaque to backends.
 
    \param ctx pointer to the mapistore backend opaque context
-   \param path pointer to the mapistore.ldb path
+   \param path the path to the database (mapistore.ldb) to open
 
    \return valid LDB context pointer on success, otherwise NULL
  */

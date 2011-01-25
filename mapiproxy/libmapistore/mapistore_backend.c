@@ -4,7 +4,7 @@
    OpenChange Project
 
    Note: init and load functions have been copied from
-   samba4/source4/param/util.c initially wrote by Jelmer.
+   samba4/source4/param/util.c initially written by Jelmer.
 
    Copyright (C) Jelmer Vernooij 2005-2007
    Copyright (C) Julien Kerihuel 2009-2011

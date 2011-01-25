@@ -20,7 +20,7 @@
  */
 
 /**
-   \file mapistore_indexing.c
+   \file libmapistore/mapistore_indexing.c
 
    \brief MAPISTORE internal indexing functions
    

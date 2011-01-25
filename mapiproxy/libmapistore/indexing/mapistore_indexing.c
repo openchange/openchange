@@ -31,7 +31,7 @@
 #include <tdb.h>
 
 /**
-   \file mapistore_indexing.c
+   \file indexing/mapistore_indexing.c
 
    \brief Interface API to the mapistore indexing database
    
@@ -158,6 +158,8 @@ static struct mapistore_indexing_context_list *mapistore_indexing_context_search
    \param mstore_ctx pointer to the mapistore context
    \param username username of the indexing database owner
    \param indexing_ctx pointer on pointer to the inde3xing context to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise a non-zero MAPISTORE_ERROR value
  */
 enum MAPISTORE_ERROR mapistore_indexing_context_add(struct mapistore_context *mstore_ctx,
 						    const char *username,
@@ -566,7 +568,7 @@ enum MAPISTORE_ERROR mapistore_indexing_add_fmid_record(struct mapistore_indexin
 /**
    \details Add an allocation range for messages to a folder
 
-   \param struct mictx pointer to the mapistore indexing context
+   \param mictx pointer to the mapistore indexing context
    \param fid the folder identifier for which we want to setup the
    allocation range
    \param rstart the allocation range ID's start

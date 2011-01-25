@@ -246,6 +246,9 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 		}
 	}
 
+	r->out.handle->handle_type = 0;
+	r->out.handle->uuid = GUID_zero();
+
 	r->out.result = MAPI_E_SUCCESS;
 
 	return MAPI_E_SUCCESS;

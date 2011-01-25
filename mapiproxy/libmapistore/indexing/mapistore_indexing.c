@@ -38,6 +38,41 @@
    This database is used to map FID/MID to mapistore URI, plus additional parameters
  */
 
+static enum MAPISTORE_ERROR mapistore_indexing_dump_folder_v1(struct mapistore_indexing_entry *entry)
+{
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!entry, MAPISTORE_ERR_INVALID_OBJECT, NULL);
+
+	DEBUG(0, ("Folder:\n"));
+	DEBUG(0, ("=======\n"));
+	DEBUG(0, ("\t* mapistore_URI:\t%s\n", entry->info.mapistore_indexing_v1.mapistoreURI));
+	DEBUG(0, ("\t* ParentFolderID:\t0x%.16llx\n", entry->info.mapistore_indexing_v1.ParentFolderID));
+	DEBUG(0, ("\t* Allocation ID:\t0x%.16llx - 0x%.16llx\n", 
+		  entry->info.mapistore_indexing_v1.MessageRangeIDs.range.next_allocation_id,
+		  entry->info.mapistore_indexing_v1.MessageRangeIDs.range.last_allocation_id));
+	DEBUG(0, ("\t* ACLS: (%d)\n", entry->info.mapistore_indexing_v1.Acls.acls_folder.acl_number));
+
+	return MAPISTORE_SUCCESS;
+}
+
+enum MAPISTORE_ERROR mapistore_indexing_dump_object(struct mapistore_indexing_entry *entry)
+{
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!entry, MAPISTORE_ERR_INVALID_OBJECT, NULL);
+
+	switch (entry->info.mapistore_indexing_v1.Type) {
+	case MAPISTORE_INDEXING_FOLDER:
+		return mapistore_indexing_dump_folder_v1(entry);
+		break;
+	default:
+		DEBUG(0, ("Not implemented yet\n"));
+		return MAPISTORE_ERR_NOT_FOUND;
+		break;
+	}
+
+	return MAPISTORE_ERR_NOT_FOUND;
+}
+
 /**
    \details Increase the reference counter associated to a given
    mapistore indexing context
@@ -309,6 +344,113 @@ static enum MAPISTORE_ERROR mapistore_indexing_record_search_uri(struct mapistor
 	return MAPISTORE_ERR_NOT_FOUND;
 }
 
+
+/**
+   \details Retrieve the mapistore indexing entry associated to a
+   folder or message identifier
+
+   \param 
+ */
+static enum MAPISTORE_ERROR mapistore_indexing_get_entry(struct mapistore_indexing_context_list *mictx,
+							 uint64_t fmid,
+							 struct mapistore_indexing_entry *entry)
+{
+	TDB_DATA		key;
+	TDB_DATA		value;
+	DATA_BLOB		data;
+	enum ndr_err_code	ndr_err;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mictx->tdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mictx->tdb_ctx->tdb, MAPISTORE_ERR_DATABASE_INIT, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!entry, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Lookup the FID in mapistore indexing database */
+	key.dptr = (unsigned char *)talloc_asprintf(mictx, MAPISTORE_INDEXING_FMID, fmid);
+	key.dsize = strlen((const char *)key.dptr);
+
+	value = tdb_fetch(mictx->tdb_ctx->tdb, key);
+	talloc_free(key.dptr);
+	MAPISTORE_RETVAL_IF(!value.dptr, MAPISTORE_ERR_NOT_FOUND, NULL);
+
+	data.data = value.dptr;
+	data.length = value.dsize;
+
+	/* Step 2. Convert DATA_BLOB to mapistore_indexing entry */
+	ndr_err = ndr_pull_struct_blob(&data, mictx, entry, 
+				       (ndr_pull_flags_fn_t)ndr_pull_mapistore_indexing_entry);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(5, ("! [%s:%d][%s]: DATA_BLOB to mapistore indexing entry conversion failed!\n",
+			  __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(value.dptr);
+		return MAPISTORE_ERROR;
+	}
+
+	DEBUG(5, ("* [%s:%d][%s]: %s loaded correctly!\n", __FILE__, __LINE__, __FUNCTION__,
+		  entry->info.mapistore_indexing_v1.mapistoreURI));
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+static enum MAPISTORE_ERROR mapistore_indexing_update_entry(struct mapistore_indexing_context_list *mictx,
+							    uint64_t fmid,
+							    struct mapistore_indexing_entry *entry)
+{
+	TALLOC_CTX		*mem_ctx;
+	TDB_DATA		key;
+	TDB_DATA		dbuf;
+	DATA_BLOB		data;
+	int			ret;
+	enum ndr_err_code	ndr_err;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mictx->tdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mictx->tdb_ctx->tdb, MAPISTORE_ERR_DATABASE_INIT, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!entry, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_new(mictx);
+
+	/* Step 1. Make sure the FID exists */
+	key.dptr = (unsigned char *)talloc_asprintf(mem_ctx, MAPISTORE_INDEXING_FMID, fmid);
+	key.dsize = strlen((const char *)key.dptr);
+	
+	ret = tdb_exists(mictx->tdb_ctx->tdb, key);
+	MAPISTORE_RETVAL_IF(!ret, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+
+	/* Step 2. Pack the mapistore_indexing_entry into a DATA_BLOB */
+	ndr_err = ndr_push_struct_blob(&data, mem_ctx, entry, (ndr_push_flags_fn_t)ndr_push_mapistore_indexing_entry);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_indexing_entry into NDR blob\n", __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERROR;
+	}
+
+	dbuf.dptr = data.data;
+	dbuf.dsize = data.length;
+
+	/* Step 3. Update the record */
+	ret = tdb_store(mictx->tdb_ctx->tdb, key, dbuf, TDB_MODIFY);
+	if (ret == -1) {
+		DEBUG(0, ("[%s:%d][%s]: Unable to update record %s: %s\n", 
+			  __FILE__, __LINE__, __FUNCTION__, (char *)key.dptr,
+			  tdb_errorstr(mictx->tdb_ctx->tdb)));
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERROR;
+	}
+
+	DEBUG(5, ("* [%s:%d][%s]: Record %s updated successfully\n", __FILE__, __LINE__, __FUNCTION__, (char *)key.dptr));
+
+	talloc_free(mem_ctx);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
 /**
    \details Add a folder or message record to the indexing database
 
@@ -418,4 +560,52 @@ enum MAPISTORE_ERROR mapistore_indexing_add_fmid_record(struct mapistore_indexin
 	}
 
 	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Add an allocation range for messages to a folder
+
+   \param struct mictx pointer to the mapistore indexing context
+   \param fid the folder identifier for which we want to setup the
+   allocation range
+   \param rstart the allocation range ID's start
+   \param rend the allocation range ID's end
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_indexing_add_folder_record_allocation_range(struct mapistore_indexing_context_list *mictx,
+									   uint64_t fid,
+									   uint64_t rstart,
+									   uint64_t rend)
+{
+	enum MAPISTORE_ERROR		retval;
+	struct mapistore_indexing_entry	entry;
+	uint64_t			range_start;
+	uint64_t			range_end;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!rstart || !rend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(rstart > rend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Retrieve the mapistore_indexing entry associated to the fid */
+	retval = mapistore_indexing_get_entry(mictx, fid, &entry);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 2. Check if we already consumed the previous allocation range */
+	MAPISTORE_RETVAL_IF(entry.info.mapistore_indexing_v1.Type != MAPISTORE_INDEXING_FOLDER, MAPISTORE_ERR_INVALID_OBJECT, NULL);
+
+	range_start = entry.info.mapistore_indexing_v1.MessageRangeIDs.range.next_allocation_id;
+	range_end   = entry.info.mapistore_indexing_v1.MessageRangeIDs.range.last_allocation_id;
+	MAPISTORE_RETVAL_IF((range_start && range_end && range_start != range_end), MAPISTORE_ERROR, NULL);
+
+	/* Step 3. Update record with new allocation range */
+	entry.info.mapistore_indexing_v1.MessageRangeIDs.range.next_allocation_id = rstart;
+	entry.info.mapistore_indexing_v1.MessageRangeIDs.range.last_allocation_id = rend;
+
+	retval = mapistore_indexing_update_entry(mictx, fid, &entry);
+
+	return retval;
 }

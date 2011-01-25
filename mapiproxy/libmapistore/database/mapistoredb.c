@@ -292,6 +292,8 @@ static bool write_ldif_string_to_store(struct mapistoredb_context *mdb_ctx, cons
    indexing/mapistore_indexing.c file.
 
    \param mdb_ctx pointer to the mapistore database context
+   \param username the username for which we want to create the
+   mailbox container
    \param fid the folder identifier to register
    \param mapistore_uri the mapistore URI to register
 
@@ -332,8 +334,6 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
-
-
 	/* Step 2. Add an indexing context for user */
 	retval = mapistore_indexing_context_add(mdb_ctx->mstore_ctx, username, &indexing_ctx);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
@@ -373,6 +373,51 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
 	talloc_free(mailbox_ldif);
 
 	talloc_free(mem_ctx);
+
+	return retval;
+}
+
+
+/**
+   \details Add an allocation range for messages to the mailbox root
+   container within the mapistore database.
+
+   \param mdb_ctx pointer to the mapistore database context
+   \param username the username for which we want to add a new
+   allocation range to the mailbox container
+   \param fid the folder identifier to register
+   \param rstart the beginning of the allocation ID range
+   \param rend the end of the allocation ID range
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistoredb_register_new_mailbox_allocation_range(struct mapistoredb_context *mdb_ctx,
+								       const char *username,
+								       uint64_t fid,
+								       uint64_t rstart,
+								       uint64_t rend)
+{
+	enum MAPISTORE_ERROR			retval;
+	struct mapistore_indexing_context_list	*indexing_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!rstart || !rend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(rstart > rend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Add an indexing context for user */
+	retval = mapistore_indexing_context_add(mdb_ctx->mstore_ctx, username, &indexing_ctx);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 2. Update the allocation range for root container */
+	retval = mapistore_indexing_add_folder_record_allocation_range(indexing_ctx, fid, rstart, rend);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Delete the indexing context */
+	retval = mapistore_indexing_context_del(mdb_ctx->mstore_ctx, username);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
 	return retval;
 }

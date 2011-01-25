@@ -289,6 +289,7 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t
 struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_context *, const char *, unsigned int);
 
 /* definitions from mapistore_indexing.c */
+enum MAPISTORE_ERROR mapistore_indexing_dump_object(struct mapistore_indexing_entry *);
 
 /* MAPISTORE_v1 */
 struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);

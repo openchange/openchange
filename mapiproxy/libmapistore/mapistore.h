@@ -169,6 +169,7 @@ enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *,
 enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *, uint64_t *);
 enum MAPISTORE_ERROR mapistoredb_get_new_allocation_range(struct mapistoredb_context *, uint64_t, uint64_t *, uint64_t *);
 enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context *, const char *, uint64_t, const char *);
+enum MAPISTORE_ERROR mapistoredb_register_new_mailbox_allocation_range(struct mapistoredb_context *, const char *, uint64_t, uint64_t, uint64_t);
 
 /* definitions from mapistoredb_conf.c */
 void				mapistoredb_dump_conf(struct mapistoredb_context *);
@@ -195,6 +196,7 @@ enum MAPISTORE_ERROR mapistore_indexing_record_del_mid(struct mapistore_context 
 enum MAPISTORE_ERROR mapistore_indexing_context_add(struct mapistore_context *, const char *, struct mapistore_indexing_context_list **);
 enum MAPISTORE_ERROR mapistore_indexing_context_del(struct mapistore_context *, const char *);
 enum MAPISTORE_ERROR mapistore_indexing_add_fmid_record(struct mapistore_indexing_context_list *, uint64_t, const char *, uint64_t, uint8_t);
+enum MAPISTORE_ERROR mapistore_indexing_add_folder_record_allocation_range(struct mapistore_indexing_context_list *, uint64_t, uint64_t, uint64_t);
 /* !MAPISTORE_v2 */
 
 /* definitions from mapistore_namedprops.c */

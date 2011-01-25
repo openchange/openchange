@@ -147,6 +147,23 @@ static PyObject *py_MAPIStoreDB_new_mailbox(PyMAPIStoreDBObject *_self, PyObject
 	return PyInt_FromLong(retval);
 }
 
+static PyObject *py_MAPIStoreDB_new_mailbox_allocation_range(PyMAPIStoreDBObject *_self, PyObject *args)
+{
+	PyMAPIStoreDBObject		*self = (PyMAPIStoreDBObject *) _self;
+	enum MAPISTORE_ERROR		retval;
+	uint64_t			fid;
+	uint64_t			rstart;
+	uint64_t			rend;
+	char				*username;
+
+	if (!PyArg_ParseTuple(args, "sKKK", &username, &fid, &rstart, &rend)) {
+		return NULL;
+	}
+
+	retval = mapistoredb_register_new_mailbox_allocation_range(self->mdb_ctx, username, fid, rstart, rend);
+	return PyInt_FromLong(retval);
+}
+
 static int PyMAPIStoreDB_setParameter(PyObject *_self, PyObject *value, void *data)
 {
 	PyMAPIStoreDBObject	*self = (PyMAPIStoreDBObject *) _self;
@@ -193,6 +210,7 @@ static PyMethodDef mapistoredb_methods[] = {
 	{ "get_new_fid", (PyCFunction)py_MAPIStoreDB_get_new_fid, METH_VARARGS },
 	{ "get_new_allocation_range", (PyCFunction)py_MAPIStoreDB_get_new_allocation_range, METH_VARARGS },
 	{ "new_mailbox", (PyCFunction)py_MAPIStoreDB_new_mailbox, METH_VARARGS },
+	{ "new_mailbox_allocation_range", (PyCFunction)py_MAPIStoreDB_new_mailbox_allocation_range, METH_VARARGS },
 	{ NULL },
 };
 

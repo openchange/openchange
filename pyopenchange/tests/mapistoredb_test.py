@@ -75,6 +75,11 @@ fid = MAPIStoreDB.get_new_fid()
 ret = MAPIStoreDB.new_mailbox("jkerihuel", fid, uri)
 print "\t* new_mailbox: ret = %d" % ret
 
+newTitle("[Step 7]. Get and Set a new allocation range to the mailbox ", '=')
+(rstart,rend) = MAPIStoreDB.get_new_allocation_range(0x1000)
+ret = MAPIStoreDB.new_mailbox_allocation_range("jkerihuel", fid, rstart, rend)
+print "\t* allocation range on mailbox: %d" % ret
+
 
 newTitle("[Step 7]. Retrieve a new FID", '=')
 fid = MAPIStoreDB.get_new_fid()

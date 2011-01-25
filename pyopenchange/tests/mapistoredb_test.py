@@ -21,13 +21,10 @@ def newTitle(title, separator):
 newTitle("[Step 1]. Initializing mapistore database", '=')
 MAPIStoreDB = mapistoredb.mapistoredb("/tmp/mapistoredb")
 
-newTitle("[Step 2]. Modify and dump configuration", '=')
-MAPIStoreDB.netbiosname = "server"
-MAPIStoreDB.firstorg = "OpenChange Project"
-MAPIStoreDB.firstou = "OpenChange Development Unit"
-
-newTitle("[Step 3]. Provisioning mapistore database", '=')
-ret = MAPIStoreDB.provision()
+newTitle("[Step 2]. Provisioning mapistore database", '=')
+ret = MAPIStoreDB.provision(netbiosname = "server",
+                            firstorg = "OpenChange Project",
+                            firstou = "OpenChange Development Unit")
 if (ret == 0):
     print "\t* Provisioning: SUCCESS"
 else:
@@ -35,7 +32,7 @@ else:
 
 MAPIStoreDB.dump_configuration()
 
-newTitle("[Step 4]. Testing API parts", '=')
+newTitle("[Step 3]. Testing API parts", '=')
 
 newTitle("A. Testing NetBIOS name", '-')
 print "* NetBIOS name: %s" %MAPIStoreDB.netbiosname
@@ -47,7 +44,7 @@ newTitle("C. Testing First Organisation", '-')
 print "* First Organisation: %s" %MAPIStoreDB.firstorg
 
 
-newTitle("[Step 5]. Retrieve mapistore URI for fsocpf", '=')
+newTitle("[Step 4]. Retrieve mapistore URI for fsocpf", '=')
 newTitle("*fsocpf:", '=')
 print "\t* Inbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_INBOX, "jkerihuel", "fsocpf://")
 print "\t* Calendar: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_CALENDAR, "jkerihuel", "fsocpf://")
@@ -59,12 +56,12 @@ print "\t* Mailbox Root: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROO
 print "\t* IPM SUbtree: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_IPM_SUBTREE, "jkerihuel", "mstoredb://")
 print "\t* Inbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_INBOX, "jkerihuel", "mstoredb://")
 
-newTitle("[Step 6]. Create a new mailbox", '=')
+newTitle("[Step 5]. Create a new mailbox", '=')
 uri = MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROOT_FOLDER, "jkerihuel", "mstoredb://")
 ret = MAPIStoreDB.new_mailbox("jkerihuel", uri)
 print "\t* new_mailbox: ret = %d" % ret
 
-newTitle("[Step 7]. Get and Set a new allocation range to the mailbox ", '=')
+newTitle("[Step 6]. Get and Set a new allocation range to the mailbox ", '=')
 (retval,rstart,rend) = MAPIStoreDB.get_new_allocation_range("jkerihuel", 0x1000)
 if retval == 0:
     print "\t* range start = 0x%.16x" % rstart

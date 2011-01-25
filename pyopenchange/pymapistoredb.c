@@ -69,8 +69,21 @@ static PyObject *py_MAPIStoreDB_dump_configuration(PyMAPIStoreDBObject *self, Py
 	return PyInt_FromLong(0);
 }
 
-static PyObject *py_MAPIStoreDB_provision(PyMAPIStoreDBObject *self, PyObject *args)
+static PyObject *py_MAPIStoreDB_provision(PyMAPIStoreDBObject *self, PyObject *args, PyObject *kwargs)
 {
+	const char		*netbiosname;
+	const char		*firstorg;
+	const char		*firstou;
+	char			*kwnames[] = { "netbiosname", "firstorg", "firstou", NULL };
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sss", kwnames, &netbiosname, &firstorg, &firstou)) {
+		return NULL;
+	}
+
+	mapistoredb_set_netbiosname(self->mdb_ctx, netbiosname);
+	mapistoredb_set_firstorg(self->mdb_ctx, firstorg);
+	mapistoredb_set_firstou(self->mdb_ctx, firstou);
+
 	return PyInt_FromLong(mapistoredb_provision(self->mdb_ctx));
 }
 
@@ -168,29 +181,6 @@ static PyObject *py_MAPIStoreDB_set_mailbox_allocation_range(PyMAPIStoreDBObject
 	return PyInt_FromLong(retval);
 }
 
-static int PyMAPIStoreDB_setParameter(PyObject *_self, PyObject *value, void *data)
-{
-	PyMAPIStoreDBObject	*self = (PyMAPIStoreDBObject *) _self;
-	const char		*attr = (const char *) data;
-	const char		*str;
-
-	if (!self->mdb_ctx) return -1;
-
-	if (!PyArg_Parse(value, "s", &str)) {
-		return -1;
-	}
-
- 	if (!strcmp(attr, "netbiosname")) {
-		return mapistoredb_set_netbiosname(self->mdb_ctx, str);
-	} else if (!strcmp(attr, "firstorg")) {
-		return mapistoredb_set_firstorg(self->mdb_ctx, str);
-	} else if (!strcmp(attr, "firstou")) {
-		return mapistoredb_set_firstou(self->mdb_ctx, str);
-	}
-
-	return 0;
-}
-
 static PyObject *PyMAPIStoreDB_getParameter(PyObject *_self, void *data)
 {
 	PyMAPIStoreDBObject	*self = (PyMAPIStoreDBObject *) _self;
@@ -209,7 +199,7 @@ static PyObject *PyMAPIStoreDB_getParameter(PyObject *_self, void *data)
 
 static PyMethodDef mapistoredb_methods[] = {
 	{ "dump_configuration", (PyCFunction)py_MAPIStoreDB_dump_configuration, METH_VARARGS },
-	{ "provision", (PyCFunction)py_MAPIStoreDB_provision, METH_VARARGS },
+	{ "provision", (PyCFunction)py_MAPIStoreDB_provision, METH_KEYWORDS },
 	{ "get_mapistore_uri", (PyCFunction)py_MAPIStoreDB_get_mapistore_uri, METH_VARARGS },
 	{ "get_new_fid", (PyCFunction)py_MAPIStoreDB_get_new_fid, METH_VARARGS },
 	{ "get_new_allocation_range", (PyCFunction)py_MAPIStoreDB_get_new_allocation_range, METH_VARARGS },
@@ -220,11 +210,11 @@ static PyMethodDef mapistoredb_methods[] = {
 
 static PyGetSetDef mapistoredb_getsetters[] = {
 	{ "netbiosname", (getter)PyMAPIStoreDB_getParameter,
-	  (setter)PyMAPIStoreDB_setParameter, "netbiosname", "netbiosname"},
+	  (setter)NULL, "netbiosname", "netbiosname"},
 	{ "firstorg", (getter)PyMAPIStoreDB_getParameter,
-	  (setter)PyMAPIStoreDB_setParameter, "firstorg", "firstorg"},
+	  (setter)NULL, "firstorg", "firstorg"},
 	{ "firstou", (getter)PyMAPIStoreDB_getParameter,
-	  (setter)PyMAPIStoreDB_setParameter, "firstou", "firstou"},
+	  (setter)NULL, "firstou", "firstou"},
 	{ NULL },
 };
 

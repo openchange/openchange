@@ -84,7 +84,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	/* MAPISTORE_v2 */
 
 	mstore_ctx->nprops_ctx = NULL;
-	/* retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx)); */
+	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
 
 	return mstore_ctx;
 }

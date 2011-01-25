@@ -206,6 +206,7 @@ enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *m
    \sa mapistoredb_get_new_allocation_range for an alternative function returning multiple identifiers
  */
 enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *mdb_ctx,
+					      const char *username,
 					      uint64_t *_fmid)
 {
 	enum MAPISTORE_ERROR	retval;
@@ -217,7 +218,7 @@ enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *mdb_ct
 	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx->processing_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!_fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	retval = mapistore_get_new_fmid(mdb_ctx->mstore_ctx->processing_ctx, &fmid);
+	retval = mapistore_get_new_fmid(mdb_ctx->mstore_ctx->processing_ctx, username, &fmid);
 	if (retval == MAPISTORE_SUCCESS) {
 		*_fmid = fmid;
 		return MAPISTORE_SUCCESS;
@@ -238,6 +239,8 @@ enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *mdb_ct
    from mapistore_processing.c
 
    \param mdb_ctx pointer to the mapistore database context
+   \param username the user for which we want to retrieve an
+   allocation range
    \param range the number of IDs to allocate
    \param range_start pointer to the first ID of the range to return
    \param range_end pointer to the last ID of the range to return
@@ -245,6 +248,7 @@ enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *mdb_ct
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 enum MAPISTORE_ERROR mapistoredb_get_new_allocation_range(struct mapistoredb_context *mdb_ctx,
+							  const char *username,
 							  uint64_t range,
 							  uint64_t *range_start,
 							  uint64_t *range_end)
@@ -259,7 +263,7 @@ enum MAPISTORE_ERROR mapistoredb_get_new_allocation_range(struct mapistoredb_con
 	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx->processing_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!range_start || !range_end, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	retval = mapistore_get_new_allocation_range(mdb_ctx->mstore_ctx->processing_ctx, range, &_range_start, &_range_end);
+	retval = mapistore_get_new_allocation_range(mdb_ctx->mstore_ctx->processing_ctx, username, range, &_range_start, &_range_end);
 	if (retval == MAPISTORE_SUCCESS) {
 		*range_start = _range_start;
 		*range_end = _range_end;
@@ -284,8 +288,8 @@ static bool write_ldif_string_to_store(struct mapistoredb_context *mdb_ctx, cons
    \details Register a new folder in the mapistore database
 
    This function is mainly used to encapsulate the creation of the
-   Root Mailbox folder. subfolders getting created through mstoredb
-   backend.
+   User store container, root Mailbox folder. subfolders getting
+   created through mstoredb backend.
 
    This function is a wrapper over the
    mapistore_indexing_add_fmid_record function from
@@ -294,21 +298,21 @@ static bool write_ldif_string_to_store(struct mapistoredb_context *mdb_ctx, cons
    \param mdb_ctx pointer to the mapistore database context
    \param username the username for which we want to create the
    mailbox container
-   \param fid the folder identifier to register
    \param mapistore_uri the mapistore URI to register
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
 */
 enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context *mdb_ctx,
 						      const char *username,
-						      uint64_t fid,
 						      const char *mapistore_uri)
 {
 	TALLOC_CTX				*mem_ctx;
 	enum MAPISTORE_ERROR			retval;
 	struct mapistore_indexing_context_list	*indexing_ctx;
 	const char				*firstorgdn;
+	char					*user_store_ldif;
 	char					*mailbox_ldif;
+	uint64_t				fid;
 	char					*dn;
 	struct GUID				guid;
 	char					*mailboxGUID;
@@ -318,7 +322,6 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
 	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 1. We want to ensure the mapistore_uri is a mstoredb:// one */
@@ -334,20 +337,33 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
-	/* Step 2. Add an indexing context for user */
+	/* Step 2. Create the user store entry within the mapistore database */
+	mem_ctx = talloc_named(NULL, 0, "mapistoredb_register_new_mailbox");
+	user_store_ldif = talloc_asprintf(mem_ctx, MDB_USER_STORE_LDIF_TMPL,
+					  username, firstorgdn, username);
+	if (write_ldif_string_to_store(mdb_ctx, user_store_ldif) == false) {
+		DEBUG(0, ("! [%s:%d][%s]: Failed to add user store container\n", __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(mem_ctx);
+	}
+	talloc_free(user_store_ldif);
+
+	/* Step 3. Generate a fid for this mailbox root container */
+	retval = mapistore_get_new_fmid(mdb_ctx->mstore_ctx->processing_ctx, username, &fid);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Step 4. Add an indexing context for user */
 	retval = mapistore_indexing_context_add(mdb_ctx->mstore_ctx, username, &indexing_ctx);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	/* Step 3. Register the mailbox root container */
+	/* Step 5. Register the mailbox root container */
 	retval = mapistore_indexing_add_fmid_record(indexing_ctx, fid, mapistore_uri, 0, MAPISTORE_INDEXING_FOLDER);
-	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* Step 4. Delete the indexing context */
+	/* Step 6. Delete the indexing context */
 	retval = mapistore_indexing_context_del(mdb_ctx->mstore_ctx, username);
-	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* Step 5. Add the mailbox root container to mapistore.ldb */	
-	mem_ctx = talloc_named(NULL, 0, "mapistoredb_register_new_mailbox");
+	/* Step 7. Add the mailbox root container to mapistore.ldb */	
 
 	dn = (char *) &mapistore_uri[strlen("mstoredb://")];
 
@@ -385,7 +401,6 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
    \param mdb_ctx pointer to the mapistore database context
    \param username the username for which we want to add a new
    allocation range to the mailbox container
-   \param fid the folder identifier to register
    \param rstart the beginning of the allocation ID range
    \param rend the end of the allocation ID range
 
@@ -393,12 +408,13 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
  */
 enum MAPISTORE_ERROR mapistoredb_register_new_mailbox_allocation_range(struct mapistoredb_context *mdb_ctx,
 								       const char *username,
-								       uint64_t fid,
 								       uint64_t rstart,
 								       uint64_t rend)
 {
 	enum MAPISTORE_ERROR			retval;
 	struct mapistore_indexing_context_list	*indexing_ctx;
+	uint64_t				fid;
+	char					*mailbox_root;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -411,11 +427,19 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox_allocation_range(struct ma
 	retval = mapistore_indexing_context_add(mdb_ctx->mstore_ctx, username, &indexing_ctx);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	/* Step 2. Update the allocation range for root container */
+	/* Step 2. Retrieve the FID for the user mailbox root folder */
+	retval = mapistore_get_mailbox_uri(mdb_ctx->mstore_ctx->processing_ctx, username, &mailbox_root);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	retval = mapistore_indexing_get_record_fmid_by_uri(indexing_ctx, mailbox_root, &fid);
+	talloc_free(mailbox_root);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Update the allocation range for root container */
 	retval = mapistore_indexing_add_folder_record_allocation_range(indexing_ctx, fid, rstart, rend);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	/* Step 3. Delete the indexing context */
+	/* Step 4. Delete the indexing context */
 	retval = mapistore_indexing_context_del(mdb_ctx->mstore_ctx, username);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 

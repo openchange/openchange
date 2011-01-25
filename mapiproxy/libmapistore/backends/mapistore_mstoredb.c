@@ -77,7 +77,7 @@ static enum MAPISTORE_ERROR mstoredb_create_mapistore_uri(TALLOC_CTX *mem_ctx,
 }
 
 /**
-   \details Create a conneciton context to the mstoredb backend 
+   \details Create a connection context to the mstoredb backend 
 
    \param ctx pointer to the opaque mapistore backend context
    \param uri pointer to the mstoredb DN to open

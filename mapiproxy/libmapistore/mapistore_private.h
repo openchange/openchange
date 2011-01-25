@@ -82,6 +82,7 @@ struct ldb_wrap {
 #define	DFLT_MDB_FIRSTOU	"First Organization Unit"
 #define	TMPL_MDB_SERVERDN	"CN=%s,%s"
 #define	TMPL_MDB_FIRSTORGDN	"CN=%s,CN=%s,%s"
+#define	TMPL_MDB_USERSTORE	"CN=%s,%s"
 
 struct mapistoredb_conf {
 	char		*db_path;
@@ -106,7 +107,8 @@ struct mapistoredb_context {
 	"dn: @OPTIONS\n"		\
 	"checkBaseOnSearch: TRUE\n\n"	\
 	"dn: @INDEXLIST\n"		\
-	"@IDXATTR: cn\n\n"		\
+	"@IDXATTR: cn\n"		\
+	"@IDXATTR: objectClass\n\n"	\
 	"dn: @ATTRIBUTES@\n"		\
 	"cn: CASE_INSENSITIVE\n"	\
 	"dn: CASE_INSENSITIVE\n\n"
@@ -121,9 +123,7 @@ struct mapistoredb_context {
 	"dn: %s\n"			\
 	"objectClass: top\n"		\
 	"objectClass: server\n"		\
-	"cn: %s\n"			\
-	"GlobalCount: 0x1\n"		\
-	"ReplicaID: 0x1\n\n"		\
+	"cn: %s\n\n"			\
 					\
 	"dn: CN=%s,%s\n"		\
 	"objectClass: top\n"		\
@@ -134,7 +134,17 @@ struct mapistoredb_context {
 	"objectClass: top\n"		\
 	"objectClass: ou\n"		\
 	"cn: %s\n"				
-						
+
+#define	MDB_USER_STORE_LDIF_TMPL	\
+	"dn: CN=%s,%s\n"		\
+	"objectClass: top\n"		\
+	"objectClass: store\n"		\
+	"objectClass: container\n"	\
+	"cn: %s\n"			\
+	"GlobalCount: 0x1\n"		\
+	"ReplicaID: 0x1\n\n"		
+		
+				
 #define	MDB_MAILBOX_LDIF_TMPL		\
 	"dn: CN=Folders,CN=%s,%s\n"    	\
 	"objectClass: top\n"	       	\
@@ -151,7 +161,7 @@ struct mapistoredb_context {
 	"SystemIdx: %d\n"		\
 	"mapistore_uri: %s\n"		\
 	"distinguishedName: %s\n"
-	
+
 /**
    Identifier mapping context.
 
@@ -250,13 +260,13 @@ __BEGIN_DECLS
 
 /* definitions from mapistore_processing.c */
 enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *);
-enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *, uint64_t *);
-enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_context *, uint64_t, uint64_t *, uint64_t *);
 enum MAPISTORE_ERROR mapistore_get_context_id(struct processing_context *, uint32_t *);
 enum MAPISTORE_ERROR mapistore_free_context_id(struct processing_context *, uint32_t);
 /* mapistore_v2 */
 enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_context *, const char *);
-enum MAPISTORE_ERROR mapistore_get_next_fmid(struct processing_context *, uint64_t, uint64_t *);
+enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *, const char *, uint64_t *);
+enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_context *, const char *, uint64_t, uint64_t *, uint64_t *);
+enum MAPISTORE_ERROR mapistore_get_mailbox_uri(struct processing_context *, const char *, char **);
 
 /* definitions from mapistore_backend.c */
 enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *, const char *);

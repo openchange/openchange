@@ -166,10 +166,10 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *, const char *);
 void mapistoredb_release(struct mapistoredb_context *);
 enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *);
 enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *, char **);
-enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *, uint64_t *);
-enum MAPISTORE_ERROR mapistoredb_get_new_allocation_range(struct mapistoredb_context *, uint64_t, uint64_t *, uint64_t *);
-enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context *, const char *, uint64_t, const char *);
-enum MAPISTORE_ERROR mapistoredb_register_new_mailbox_allocation_range(struct mapistoredb_context *, const char *, uint64_t, uint64_t, uint64_t);
+enum MAPISTORE_ERROR mapistoredb_get_new_fmid(struct mapistoredb_context *, const char *, uint64_t *);
+enum MAPISTORE_ERROR mapistoredb_get_new_allocation_range(struct mapistoredb_context *, const char *, uint64_t, uint64_t *, uint64_t *);
+enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context *, const char *, const char *);
+enum MAPISTORE_ERROR mapistoredb_register_new_mailbox_allocation_range(struct mapistoredb_context *, const char *, uint64_t, uint64_t);
 
 /* definitions from mapistoredb_conf.c */
 void				mapistoredb_dump_conf(struct mapistoredb_context *);

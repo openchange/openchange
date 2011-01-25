@@ -21,18 +21,17 @@ def newTitle(title, separator):
 newTitle("[Step 1]. Initializing mapistore database", '=')
 MAPIStoreDB = mapistoredb.mapistoredb("/tmp/mapistoredb")
 
-newTitle("[Step 2]. Provisioning mapistore database", '=')
+newTitle("[Step 2]. Modify and dump configuration", '=')
+MAPIStoreDB.netbiosname = "server"
+MAPIStoreDB.firstorg = "OpenChange Project"
+MAPIStoreDB.firstou = "OpenChange Development Unit"
+
+newTitle("[Step 3]. Provisioning mapistore database", '=')
 ret = MAPIStoreDB.provision()
 if (ret == 0):
     print "\t* Provisioning: SUCCESS"
 else:
     print "\t* Provisioning: FAILURE"
-
-
-newTitle("[Step 3]. Modify and dump configuration", '=')
-MAPIStoreDB.netbiosname = "server"
-MAPIStoreDB.firstorg = "OpenChange Project"
-MAPIStoreDB.firstou = "OpenChange Development Unit"
 
 MAPIStoreDB.dump_configuration()
 
@@ -60,37 +59,31 @@ print "\t* Mailbox Root: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROO
 print "\t* IPM SUbtree: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_IPM_SUBTREE, "jkerihuel", "mstoredb://")
 print "\t* Inbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_INBOX, "jkerihuel", "mstoredb://")
 
-MAPIStoreDB.netbiosname = "new_server"
-MAPIStoreDB.firstorg = "FirstOrg"
-MAPIStoreDB.firstou = "FirstOu"
-
-newTitle("mstoredb (new DN):", '=')
-print "\t* Mailbox Root: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROOT_FOLDER, "jkerihuel", "mstoredb://")
-print "\t* IPM SUbtree: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_IPM_SUBTREE, "jkerihuel", "mstoredb://")
-print "\t* Inbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_INBOX, "jkerihuel", "mstoredb://")
-
 newTitle("[Step 6]. Create a new mailbox", '=')
 uri = MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROOT_FOLDER, "jkerihuel", "mstoredb://")
-fid = MAPIStoreDB.get_new_fid()
-ret = MAPIStoreDB.new_mailbox("jkerihuel", fid, uri)
+ret = MAPIStoreDB.new_mailbox("jkerihuel", uri)
 print "\t* new_mailbox: ret = %d" % ret
 
 newTitle("[Step 7]. Get and Set a new allocation range to the mailbox ", '=')
-(rstart,rend) = MAPIStoreDB.get_new_allocation_range(0x1000)
-ret = MAPIStoreDB.new_mailbox_allocation_range("jkerihuel", fid, rstart, rend)
-print "\t* allocation range on mailbox: %d" % ret
+(retval,rstart,rend) = MAPIStoreDB.get_new_allocation_range("jkerihuel", 0x1000)
+if retval == 0:
+    print "\t* range start = 0x%.16x" % rstart
+    print "\t* range end = 0x%.16x" % rend
+retval = MAPIStoreDB.set_mailbox_allocation_range("jkerihuel", rstart, rend)
+print "\t* allocation range on mailbox: %d" % retval
 
 
 newTitle("[Step 7]. Retrieve a new FID", '=')
-fid = MAPIStoreDB.get_new_fid()
+fid = MAPIStoreDB.get_new_fid("jkerihuel")
 print "\t* FID = 0x%.16x" % fid
 
 newTitle("[Step 8]. Retrieve a new allocation range", '=')
-(rstart,rend) = MAPIStoreDB.get_new_allocation_range(0x1000)
-print "\t* range_start = 0x%.16x" % rstart
-print "\t* range_end   = 0x%.16x" % rend
+(retval,rstart,rend) = MAPIStoreDB.get_new_allocation_range("jkerihuel", 0x1000)
+if retval == 0:
+    print "\t* range_start = 0x%.16x" % rstart
+    print "\t* range_end   = 0x%.16x" % rend
 
 newTitle("[Step 9]. Retrieve a new FID", '=')
-new_fid = MAPIStoreDB.get_new_fid()
+new_fid = MAPIStoreDB.get_new_fid("jkerihuel")
 print "\t* FID = 0x%.16x" % new_fid
 

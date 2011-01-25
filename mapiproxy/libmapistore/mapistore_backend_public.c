@@ -156,7 +156,7 @@ enum MAPISTORE_ERROR mapistore_register_folder(struct mapistore_backend_context 
 	if (retval) goto finish;
 
 	/* Step 4. Ask for a new FID */
-	retval = mapistore_get_new_fmid(mstore_ctx->processing_ctx, &fid);
+	retval = mapistore_get_new_fmid(mstore_ctx->processing_ctx, username, &fid);
 	if (retval) goto finish;
 
 	/* Step 5. Register the folder within the indexing database */
@@ -167,7 +167,7 @@ enum MAPISTORE_ERROR mapistore_register_folder(struct mapistore_backend_context 
 
 	/* Step 6. Request an allocation range for messages */
 	retval = mapistore_get_new_allocation_range(mstore_ctx->processing_ctx,
-						    range, &rstart, &rend);
+						    username, range, &rstart, &rend);
 	if (retval) goto finish;
 
 	/* Step 7. Set the allocation range for the folder */

@@ -312,11 +312,13 @@ enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_cont
    \details Retrieve the next available folder or message identifier
 
    \param pctx pointer to the mapistore processing context
+   \param username the username's mailbox to retrieve GlobalCount from
    \param fmid pointer to the first available fmid within the range
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *pctx,
+					    const char *username,
 					    uint64_t *fmid)
 {
 	int			ret;
@@ -333,9 +335,10 @@ enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *pctx,
 	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx->ldb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_get_next_fmid");
+	mem_ctx = talloc_named(NULL, 0, "mapistore_get_new_fmid");
 
 	/* Step 1. Retrieve the server object */
 	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
@@ -343,10 +346,10 @@ enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *pctx,
 	/* TODO: In the future, we may want to deal with different servers */
 	/* TODO: Use ldb_transaction to lock between get/set operations */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+			 LDB_SCOPE_SUBTREE, attrs, "(&(cn=%s)(objectClass=store))", username);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(mem_ctx);
-		DEBUG(5, ("! [%s:%d][%s]: Unable to find the server object\n", __FILE__, __LINE__, __FUNCTION__));
+		DEBUG(5, ("! [%s:%d][%s]: Unable to find the user store object\n", __FILE__, __LINE__, __FUNCTION__));
 		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
@@ -381,6 +384,7 @@ enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *pctx,
    \details Retrieve an allocation range
 
    \param pctx pointer to the mapistore processing context
+   \param username the user store from which to retrieve the new allocation range
    \param range the range to allocate
    \param range_start pointer to the first allocation range fmid to return
    \param range_end pointer to the last allocation range fmid to return
@@ -388,6 +392,7 @@ enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *pctx,
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_context *pctx,
+							const char *username,
 							uint64_t range,
 							uint64_t *range_start,
 							uint64_t *range_end)
@@ -410,13 +415,13 @@ enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_contex
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_get_next_range");
 
-	/* Step 1. Retrieve the server object */
+	/* Step 1. Retrieve the user store object */
 	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+			 LDB_SCOPE_SUBTREE, attrs, "(&(objectClass=store)(cn=%s))", username);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(mem_ctx);
-		DEBUG(5, ("! [%s:%d][%s]: Unable to find the server object\n", __FILE__, __LINE__, __FUNCTION__));
+		DEBUG(5, ("! [%s:%d][%s]: Unable to find the user store object\n", __FILE__, __LINE__, __FUNCTION__));
 		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
@@ -448,6 +453,53 @@ enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_contex
 	*range_start = (*range_start << 16) + ReplicaID;
 	*range_end = (*range_end << 16) + ReplicaID;
 
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Retrieve the mapistore URI for a given user mailbox
+
+   \param pctx pointer to the processing context
+   \param username pointer to the username to lookup
+   \param mapistore_uri pointer on pointer to the mapistore URI
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_get_mailbox_uri(struct processing_context *pctx,
+					       const char *username,
+					       char **mapistore_uri)
+{
+	int			ret;
+	TALLOC_CTX		*mem_ctx;
+	const char		*uri;
+	const char * const	attrs[] = { "*", NULL };
+	struct ldb_context	*ldb_ctx;
+	struct ldb_result	*res;
+	struct ldb_dn		*dn;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_new(pctx);
+	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
+
+	dn = ldb_dn_new_fmt(mem_ctx, ldb_ctx, TMPL_MDB_USERSTORE, username, mapistore_get_firstorgdn());
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, "(&(objectClass=mailbox)(objectClass=container))");
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		talloc_free(mem_ctx);
+		DEBUG(5, ("! [%s:%d][%s]: Unable to find the user mailbox root container\n", __FILE__, __LINE__, __FUNCTION__));
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
+	uri = ldb_msg_find_attr_as_string(res->msgs[0], "mapistore_uri", NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+
+	*mapistore_uri = talloc_strdup(pctx, (char *)uri);
+
+	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;
 }
 

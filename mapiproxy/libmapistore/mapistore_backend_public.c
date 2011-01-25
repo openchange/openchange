@@ -72,6 +72,7 @@ struct ldb_context *mapistore_public_ldb_connect(struct mapistore_backend_contex
    indexed in mapistore.ldb
 
    \param ctx pointer to the mapistore backend opaque context
+   \param username the username where to look for the URI
    \param mapistore_uri the mapistore URI to lookup
 
    \return MAPISTORE_ERR_EXIST if the URI was found,
@@ -82,7 +83,7 @@ enum MAPISTORE_ERROR mapistore_exist(struct mapistore_backend_context *ctx,
 				     const char *mapistore_uri)
 {
 	enum MAPISTORE_ERROR		retval;
-	struct mapistore_context	*mstore_ctx = (struct mapistore_context *)ctx;
+	struct mapistore_context	*mstore_ctx = ctx->mstore_ctx;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);

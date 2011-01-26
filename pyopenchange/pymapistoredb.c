@@ -181,6 +181,14 @@ static PyObject *py_MAPIStoreDB_set_mailbox_allocation_range(PyMAPIStoreDBObject
 	return PyInt_FromLong(retval);
 }
 
+static PyObject *py_MAPIStoreDB_release(PyMAPIStoreDBObject *_self, PyObject *args)
+{
+	PyMAPIStoreDBObject		*self = (PyMAPIStoreDBObject *) _self;
+
+	mapistoredb_release(self->mdb_ctx);
+	return PyInt_FromLong(MAPISTORE_SUCCESS);
+}
+
 static PyObject *PyMAPIStoreDB_getParameter(PyObject *_self, void *data)
 {
 	PyMAPIStoreDBObject	*self = (PyMAPIStoreDBObject *) _self;
@@ -205,6 +213,7 @@ static PyMethodDef mapistoredb_methods[] = {
 	{ "get_new_allocation_range", (PyCFunction)py_MAPIStoreDB_get_new_allocation_range, METH_VARARGS },
 	{ "new_mailbox", (PyCFunction)py_MAPIStoreDB_new_mailbox, METH_VARARGS },
 	{ "set_mailbox_allocation_range", (PyCFunction)py_MAPIStoreDB_set_mailbox_allocation_range, METH_VARARGS },
+	{ "release", (PyCFunction)py_MAPIStoreDB_release, METH_VARARGS },
 	{ NULL },
 };
 

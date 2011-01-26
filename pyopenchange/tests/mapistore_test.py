@@ -13,7 +13,7 @@ os.mkdir("/tmp/mapistore")
 
 mapistore.set_mapping_path("/tmp/mapistore")
 MAPIStore = mapistore.mapistore()
-ctx_id = MAPIStore.add_context("fsocpf:///tmp/mapistore/0x0000000000010001")
+ctx_id = MAPIStore.add_context("jkerihuel", "fsocpf:///tmp/mapistore/0x0000000000010001")
 
 SPropParent = mapi.SPropValue()
 SPropParent.add(mapi.PR_FID, 0x0000000000010001)

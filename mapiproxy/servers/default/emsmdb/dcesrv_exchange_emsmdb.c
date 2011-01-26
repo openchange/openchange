@@ -89,6 +89,8 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		return MAPI_E_LOGON_FAILED;
 	}
 
+	/* !!! WARNING: MAPISTORE_v2 asks you to change emsmdbp_ctx and deal properly with login_user and username !!!*/
+
 	/* Step 1. Initialize the emsmdbp context */
 	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx, 
 				   dce_call->context->conn->auth_state.session_info->server_info->account_name,

@@ -37,7 +37,8 @@ struct mstoredb_context {
 	void					*ldb_ctx;
 	const char				*dbpath;
 	char					*context_dn;
-	uint64_t				context_fid;
+	char					*login_user;
+	char					*username;
 	struct ldb_dn				*basedn;
 };
 

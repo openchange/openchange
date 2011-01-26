@@ -47,10 +47,14 @@ static enum MAPISTORE_ERROR fsocpf_init(void)
    \details Allocate / initialize the fsocpf_context structure
 
    \param mem_ctx pointer to the memory context
+   \param login_user the username used to authenticate
+   \param username the username we want to impersonate
    \param uri pointer to the fsocpf path
    \param dir pointer to the DIR structure associated with the uri
  */
-static struct fsocpf_context *fsocpf_context_init(TALLOC_CTX *mem_ctx, 
+static struct fsocpf_context *fsocpf_context_init(TALLOC_CTX *mem_ctx,
+						  const char *login_user,
+						  const char *username,
 						  const char *uri, 
 						  DIR *dir)
 {
@@ -58,6 +62,8 @@ static struct fsocpf_context *fsocpf_context_init(TALLOC_CTX *mem_ctx,
 
 	fsocpf_ctx = talloc_zero(mem_ctx, struct fsocpf_context);
 	fsocpf_ctx->private_data = NULL;
+	fsocpf_ctx->login_user = talloc_strdup(fsocpf_ctx, login_user);
+	fsocpf_ctx->username = talloc_strdup(fsocpf_ctx, username);
 	fsocpf_ctx->uri = talloc_strdup(fsocpf_ctx, uri);
 	fsocpf_ctx->dir = dir;
 	fsocpf_ctx->folders = NULL;
@@ -228,10 +234,14 @@ static struct fsocpf_message_list *fsocpf_find_message_list_by_mid(struct fsocpf
    \details Create a connection context to the fsocpf backend
 
    \param mem_ctx pointer to the memory context
+   \param login_user the username used for authentication
+   \param username the username we want to impersonate
    \param uri pointer to the fsocpf path
    \param private_data pointer to the private backend context 
  */
-static enum MAPISTORE_ERROR fsocpf_create_context(struct mapistore_backend_context *mstoredb_ctx, const char *uri, void **private_data)
+static enum MAPISTORE_ERROR fsocpf_create_context(struct mapistore_backend_context *mstoredb_ctx, 
+						  const char *login_user, const char *username,
+						  const char *uri, void **private_data)
 {
 	TALLOC_CTX			*mem_ctx;
 	DIR				*top_dir;
@@ -259,7 +269,9 @@ static enum MAPISTORE_ERROR fsocpf_create_context(struct mapistore_backend_conte
 	}
 
 	/* Step 2. Allocate / Initialize the fsocpf context structure */
-	fsocpf_ctx = fsocpf_context_init(mem_ctx, uri, top_dir);
+	fsocpf_ctx = fsocpf_context_init(mem_ctx, login_user, username, uri, top_dir);
+
+	/* !!! WARNING: MAPISTORE_V2 WANTS YOU TO CHANGE SOMETHING HERE !!! */
 
 	/* FIXME: Retrieve the fid from the URI */
 	len = strlen(uri);

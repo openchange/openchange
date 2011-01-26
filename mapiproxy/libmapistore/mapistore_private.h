@@ -270,7 +270,7 @@ enum MAPISTORE_ERROR mapistore_get_mailbox_uri(struct processing_context *, cons
 
 /* definitions from mapistore_backend.c */
 enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *, const char *);
-struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *);
+struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *, const char *, const char *);
 enum MAPISTORE_ERROR mapistore_backend_add_ref_count(struct backend_context *);
 enum MAPISTORE_ERROR mapistore_backend_delete_context(struct backend_context *);
 enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *, char **);

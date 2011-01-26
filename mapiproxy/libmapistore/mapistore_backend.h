@@ -47,7 +47,7 @@ struct mapistore_backend {
 	const char	*uri_namespace;		/**< The namespace that this backend provider will use (for example "my_name://") */
 
 	enum MAPISTORE_ERROR (*init)(void);
-	enum MAPISTORE_ERROR (*create_context)(struct mapistore_backend_context *ctx, const char *, void **);
+	enum MAPISTORE_ERROR (*create_context)(struct mapistore_backend_context *ctx, const char *, const char *, const char *, void **);
 	enum MAPISTORE_ERROR (*delete_context)(void *);
 	enum MAPISTORE_ERROR (*create_uri)(TALLOC_CTX *, uint32_t, const char *, char **);
 	enum MAPISTORE_ERROR (*release_record)(void *, uint64_t, uint8_t);

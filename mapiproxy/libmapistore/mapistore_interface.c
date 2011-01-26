@@ -84,7 +84,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	/* MAPISTORE_v2 */
 
 	mstore_ctx->nprops_ctx = NULL;
-	/* retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx)); */
+	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
 
 	return mstore_ctx;
 }
@@ -119,12 +119,15 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_release(struct mapistore_context *mstore
    \details Add a new connection context to mapistore
 
    \param mstore_ctx pointer to the mapistore context
+   \param login_user the username used for authentication
+   \param username the username we want to impersonate
    \param uri the connection context URI
    \param context_id pointer to the context identifier the function returns
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *mstore_ctx, 
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *mstore_ctx,
+						    const char *login_user, const char *username,
 						    const char *uri, uint32_t *context_id)
 {
 	TALLOC_CTX				*mem_ctx;
@@ -153,7 +156,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *ms
 	    uri_namespace[3]) {
 		backend_uri = talloc_strdup(mem_ctx, &uri_namespace[3]);
 		uri_namespace[3] = '\0';
-		backend_ctx = mapistore_backend_create_context((TALLOC_CTX *)mstore_ctx, namespace_start, backend_uri);
+		backend_ctx = mapistore_backend_create_context((TALLOC_CTX *)mstore_ctx, login_user, username, namespace_start, backend_uri);
 		if (!backend_ctx) {
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}

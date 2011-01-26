@@ -71,13 +71,15 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	int		ret;
 	uint32_t	context_id = 0;
 	const char	*uri;
+	const char	*username;
 
-	if (!PyArg_ParseTuple(args, "s", &uri)) {
+	if (!PyArg_ParseTuple(args, "ss", &username, &uri)) {
 		return NULL;
 	}
 
-	ret = mapistore_add_context(self->mstore_ctx, uri, &context_id);
+	ret = mapistore_add_context(self->mstore_ctx, username, username, uri, &context_id);
 	if (ret != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("ret = %d\n", ret));
 		return NULL;
 	}
 

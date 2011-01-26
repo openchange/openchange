@@ -61,6 +61,8 @@ struct fsocpf_message_list {
 
 struct fsocpf_context {
 	void				*private_data;
+	char				*login_user;
+	char				*username;
 	char				*uri;
 	struct fsocpf_folder_list	*folders;
 	struct fsocpf_message_list	*messages;

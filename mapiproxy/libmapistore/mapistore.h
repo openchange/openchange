@@ -122,7 +122,7 @@ __BEGIN_DECLS
 /* definitions from mapistore_interface.c */
 struct mapistore_context *mapistore_init(TALLOC_CTX *, const char *);
 enum MAPISTORE_ERROR mapistore_release(struct mapistore_context *);
-enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *, const char *, uint32_t *);
+enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *, const char *, const char *, const char *, uint32_t *);
 enum MAPISTORE_ERROR mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 enum MAPISTORE_ERROR mapistore_del_context(struct mapistore_context *, uint32_t);
 enum MAPISTORE_ERROR mapistore_create_uri(struct mapistore_context *, uint32_t, const char *, const char *, char **);

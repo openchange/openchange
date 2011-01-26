@@ -387,7 +387,8 @@ int main(int argc, const char *argv[])
 			exit (1);
 		}
 
-		retval = mapistore_add_context(output_ctx.mstore_ctx, root_folder, &(output_ctx.mapistore_context_id));
+		retval = mapistore_add_context(output_ctx.mstore_ctx, "check_fasttransfer", "check_fasttransfer",
+					       root_folder, &(output_ctx.mapistore_context_id));
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 			exit (1);

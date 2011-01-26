@@ -46,6 +46,7 @@ struct emsmdbp_context {
 	char				*szUserDN;
 	char				*szDisplayName;
 	uint32_t			userLanguage;
+	char				*login_user;
 	char				*username;
 	struct loadparm_context		*lp_ctx;
 	void				*oc_ctx;

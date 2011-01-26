@@ -80,31 +80,36 @@ static enum MAPISTORE_ERROR mstoredb_create_mapistore_uri(TALLOC_CTX *mem_ctx,
    \details Create a connection context to the mstoredb backend 
 
    \param ctx pointer to the opaque mapistore backend context
+   \param login_user the username used to authenticate
+   \param username the username we want to impersonate
    \param uri pointer to the mstoredb DN to open
    \param private_data pointer to the private backend context to return
  */
 static enum MAPISTORE_ERROR mstoredb_create_context(struct mapistore_backend_context *ctx,
+						    const char *login_user,
+						    const char *username,
 						    const char *uri,
 						    void **private_data)
 {
+	enum MAPISTORE_ERROR	retval;
 	TALLOC_CTX		*mem_ctx;
 	struct mstoredb_context	*mstoredb_ctx;
-	struct ldb_result	*res = NULL;
-	const char * const	recipient_attrs[] = { "*", NULL };
-	int			ret;
+	char			*new_uri;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!private_data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	DEBUG(0, ("* [%s:%d][%s]: uri = %s\n", __FILE__, __LINE__, __FUNCTION__, uri));
+	DEBUG(5, ("* [%s:%d][%s]: uri = %s\n", __FILE__, __LINE__, __FUNCTION__, uri));
 
 	mem_ctx = (TALLOC_CTX *) ctx;
 	
 	/* Step 1. Initialize mstoredb context */
 	mstoredb_ctx = talloc_zero(mem_ctx, struct mstoredb_context);
 	mstoredb_ctx->context_dn = talloc_strdup(mstoredb_ctx, uri);
+	mstoredb_ctx->login_user = talloc_strdup(mstoredb_ctx, username);
+	mstoredb_ctx->username = talloc_strdup(mstoredb_ctx, username);
 	mstoredb_ctx->mdb_ctx = ctx;
 
 	/* Step 2. Retrieve path to the mapistore database */
@@ -114,31 +119,30 @@ static enum MAPISTORE_ERROR mstoredb_create_context(struct mapistore_backend_con
 	/* Step 3. Open a wrapped connection to mapistore.ldb */
 	mstoredb_ctx->ldb_ctx = mapistore_public_ldb_connect(mstoredb_ctx->mdb_ctx, mstoredb_ctx->dbpath);
 	if (!mstoredb_ctx->ldb_ctx) {
-		DEBUG(5, ("! [%s:%d][%s]: Unable to open mapistore.ldb\n", __FILE__, __LINE__, __FUNCTION__));
+		DEBUG(0, ("! [%s:%d][%s]: Unable to open mapistore.ldb at %s\n", __FILE__, __LINE__, __FUNCTION__, mstoredb_ctx->dbpath));
 		talloc_free(mstoredb_ctx);
 		return MAPISTORE_ERR_DATABASE_INIT;
 	}
 
-	/* Step 4. Check if uri (DN) is correct */
-	ret = ldb_search((struct ldb_context *)mstoredb_ctx->ldb_ctx, mstoredb_ctx, &res,
-			 ldb_get_default_basedn((struct ldb_context *)mstoredb_ctx->ldb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, "(dn=%s)", uri);
-	if (ret != LDB_SUCCESS || !res || res->count != 1) {
+	/* Step 4. Retrieve the FID associated to this URI */
+	new_uri = talloc_asprintf(mem_ctx, "mstoredb://%s", uri);
+	retval = mapistore_exist(mstoredb_ctx->mdb_ctx, username, new_uri);
+	if (retval != MAPISTORE_ERR_EXIST) {
+		DEBUG(5, ("! [%s:%d][%s]: Indexing database failed to find a record for URI %s\n",
+			  __FILE__, __LINE__, __FUNCTION__, uri));
+		talloc_free(new_uri);
 		talloc_free(mstoredb_ctx);
-		return MAPISTORE_ERROR;
+		
+		return retval;
 	}
-
-	/* Step 5. Use the FID as the folder identifier for this context */
-	mstoredb_ctx->context_fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0);
-	DEBUG(5, ("* [%s:%d][%s]: Root folder identifier for this context is 0x%.16"PRIx64"\n",
-		  __FILE__, __LINE__, __FUNCTION__, mstoredb_ctx->context_fid));
+	talloc_free(new_uri);
 
 	mstoredb_ctx->basedn = ldb_dn_new(mstoredb_ctx, mstoredb_ctx->ldb_ctx, uri);
 	if (!mstoredb_ctx->basedn) {
 		DEBUG(5, ("! [%s:%d][%s]: Unable to create DN from URI\n",
 			  __FILE__, __LINE__, __FUNCTION__));
 		talloc_free(mstoredb_ctx);
-		return MAPISTORE_ERROR;
+		return MAPISTORE_ERROR;		
 	}
 
 	*private_data = (void *)mstoredb_ctx;

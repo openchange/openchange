@@ -275,12 +275,17 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
     \details Create backend context
 
     \param mem_ctx pointer to the memory context
+    \param login_user the username used for authentication
+    \param username the username we want to impersonate
     \param uri_namespace the backend namespace
     \param uri the backend parameters which can be passes inline
 
     \return a valid backend_context pointer on success, otherwise NULL
   */
- struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, const char *uri_namespace, 
+ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, 
+							  const char *login_user,
+							  const char *username,
+							  const char *uri_namespace, 
 							  const char *uri)
  {
 	 struct backend_context		*context;
@@ -289,13 +294,14 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 	 void				*private_data = NULL;
 	 int				i;
 
-	 DEBUG(0, ("namespace is %s and backend_uri is '%s'\n", uri_namespace, uri));
+	 DEBUG(5, ("* [%s:%d][%s] namespace is %s and backend_uri is '%s'\n", __FILE__, __LINE__, __FUNCTION__, uri_namespace, uri));
 	 for (i = 0; i < num_backends; i++) {
 		 if (backends[i].backend->uri_namespace && 
 		     !strcmp(uri_namespace, backends[i].backend->uri_namespace)) {
 			 found = true;
-			 retval = backends[i].backend->create_context(mem_ctx, uri, &private_data);
+			 retval = backends[i].backend->create_context(mem_ctx, login_user, username, uri, &private_data);
 			 if (retval != MAPISTORE_SUCCESS) {
+				 DEBUG(0, ("! [%s:%d][%s]: retval = %d\n", __FILE__, __LINE__, __FUNCTION__, retval));
 				 return NULL;
 			 }
 
@@ -303,7 +309,8 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 		 }
 	 }
 	 if (found == false) {
-		 DEBUG(0, ("MAPISTORE: no backend with namespace '%s' is available\n", uri_namespace));
+		 DEBUG(0, ("! [%s:%d][%s]: no backend with namespace '%s' is available\n", 
+			   __FILE__, __LINE__, __FUNCTION__, uri_namespace));
 		 return NULL;
 	 }
 

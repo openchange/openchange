@@ -300,6 +300,7 @@ struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_conte
 
 /* definitions from mapistore_indexing.c */
 enum MAPISTORE_ERROR mapistore_indexing_dump_object(struct mapistore_indexing_entry *);
+enum MAPISTORE_ERROR mapistore_indexing_dump_reverse_entry(struct mapistore_indexing_entry_r *);
 enum MAPISTORE_ERROR mapistore_indexing_record_search_uri(struct mapistore_indexing_context_list *, const char *);
 enum MAPISTORE_ERROR mapistore_indexing_get_record_fmid_by_uri(struct mapistore_indexing_context_list *, const char *, uint64_t *);
 

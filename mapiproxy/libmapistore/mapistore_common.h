@@ -47,29 +47,19 @@
 #define	MSTORE_DEBUG_FMT_SUCCESS	"* [%s:%d][%s]: "
 #define	MSTORE_DEBUG_FMT_INFO		"I [%s:%d][%s]: "
 #define	MSTORE_DEBUG_FMT_ERROR		"! [%s:%d][%s]: "
+#define	MSTORE_SINGLE_MSG		"%s\n"
 #define	MSTORE_DEBUG_FMT_PARAM		__FILE__, __LINE__, __FUNCTION__
 
-#define	__MSTORE_DEBUG(l, mstore_msg, msg)						\
-	if (msg) {									\
-		DEBUG(l, (mstore_msg "%s", MSTORE_DEBUG_FMT_PARAM, msg));		\
+#define	__MSTORE_DEBUG(l, mstore_msg, fmt, ...)						\
+	if (fmt) {									\
+		DEBUG(l, (mstore_msg fmt, MSTORE_DEBUG_FMT_PARAM, __VA_ARGS__));	\
 	} else {									\
 		DEBUG(l, (mstore_msg, MSTORE_DEBUG_FMT_PARAM));				\
 	}										
 
-#define	__MSTORE_DEBUG_FMT(l, mstore_msg, fmt, msg)					\
-	if (msg && fmt) {								\
-		DEBUG(l, (mstore_msg fmt, MSTORE_DEBUG_FMT_PARAM, msg));		\
-	} else {									\
-		DEBUG(l, (mstore_msg, MSTORE_DEBUG_FMT_PARAM));				\
-	}
-
-#define	MSTORE_DEBUG_INFO(l,msg)		__MSTORE_DEBUG(l, MSTORE_DEBUG_FMT_INFO, msg)
-#define	MSTORE_DEBUG_SUCCESS(l,msg)		__MSTORE_DEBUG(l, MSTORE_DEBUG_FMT_SUCCESS, msg)
-#define	MSTORE_DEBUG_ERROR(l,msg)		__MSTORE_DEBUG(l, MSTORE_DEBUG_FMT_ERROR, msg)
-
-#define	MSTORE_DEBUG_SUCCESS_FMT(l,fmt,msg)	__MSTORE_DEBUG_FMT(l, MSTORE_DEBUG_FMT_SUCCESS, fmt, msg)
-#define	MSTORE_DEBUG_INFO_FMT(l,fmt,msg)	__MSTORE_DEBUG_FMT(l, MSTORE_DEBUG_FMT_INFO, fmt, msg)
-#define	MSTORE_DEBUG_ERROR_FMT(l,fmt,msg)	__MSTORE_DEBUG_FMT(l, MSTORE_DEBUG_FMT_ERROR, fmt, msg)
+#define	MSTORE_DEBUG_INFO(l,fmt,...)		__MSTORE_DEBUG(l, MSTORE_DEBUG_FMT_INFO, fmt, __VA_ARGS__)
+#define	MSTORE_DEBUG_SUCCESS(l,fmt,...)		__MSTORE_DEBUG(l, MSTORE_DEBUG_FMT_SUCCESS, fmt, __VA_ARGS__)
+#define	MSTORE_DEBUG_ERROR(l,fmt,...)		__MSTORE_DEBUG(l, MSTORE_DEBUG_FMT_ERROR, fmt, __VA_ARGS__)
 
 struct mapistore_backend_context;
 

@@ -185,6 +185,7 @@ static enum MAPISTORE_ERROR mstoredb_op_db_mkdir(void *private_data,
 	char				*mapistore_root_folder = NULL;
 	int				i;
 	const char			*cn = NULL;
+	const char			*container_class = "IPF.Note";
 	const char			*uri;
 
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
@@ -207,6 +208,7 @@ static enum MAPISTORE_ERROR mstoredb_op_db_mkdir(void *private_data,
 				folder_name = dflt_folders[i].cn;
 			}
 			cn = dflt_folders[i].cn;
+			container_class = dflt_folders[i].container_class;
 			break;
 		}
 	}
@@ -222,7 +224,8 @@ static enum MAPISTORE_ERROR mstoredb_op_db_mkdir(void *private_data,
 	/* Step 3. Create the LDIF formated entry for the folder */
 	mem_ctx = talloc_new(NULL);
 	mapistore_root_folder = talloc_asprintf(mem_ctx, MDB_ROOTFOLDER_LDIF_TMPL,
-						uri, cn, folder_name, system_idx);
+						uri, cn, folder_name, container_class,
+						system_idx);
 
 	/* Step 3. Create folder entry within mapistore.ldb */
 	retval = mapistore_ldb_write_ldif_string_to_store(mstoredb_ctx->ldb_ctx, mapistore_root_folder);

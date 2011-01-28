@@ -274,20 +274,14 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *p
 	return MAPISTORE_SUCCESS;
 }
 
-
-enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_context *pctx, const char *ldif_string)
+enum MAPISTORE_ERROR mapistore_ldb_write_ldif_string_to_store(struct ldb_context *ldb_ctx, const char *ldif_string)
 {
-	struct ldb_context	*ldb_ctx;
-	struct ldb_ldif		*ldif;
 	int			ret;
+	struct ldb_ldif		*ldif;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx->ldb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!ldif_string, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
 
 	while ((ldif = ldb_ldif_read_string(ldb_ctx, (const char **)&ldif_string))) {
 		ret = ldb_msg_normalize(ldb_ctx, ldif, ldif->msg, &ldif->msg);
@@ -306,6 +300,22 @@ enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_cont
 	}
 
 	return MAPISTORE_SUCCESS;
+}
+
+
+enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_context *pctx, const char *ldif_string)
+{
+	struct ldb_context	*ldb_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx->ldb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!ldif_string, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
+
+	return mapistore_ldb_write_ldif_string_to_store(ldb_ctx, ldif_string);
 }
 
 

@@ -263,6 +263,7 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *)
 enum MAPISTORE_ERROR mapistore_get_context_id(struct processing_context *, uint32_t *);
 enum MAPISTORE_ERROR mapistore_free_context_id(struct processing_context *, uint32_t);
 /* mapistore_v2 */
+enum MAPISTORE_ERROR mapistore_ldb_write_ldif_string_to_store(struct ldb_context *, const char *);
 enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_context *, const char *);
 enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *, const char *, uint64_t *);
 enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_context *, const char *, uint64_t, uint64_t *, uint64_t *);
@@ -274,6 +275,7 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const cha
 enum MAPISTORE_ERROR mapistore_backend_add_ref_count(struct backend_context *);
 enum MAPISTORE_ERROR mapistore_backend_delete_context(struct backend_context *);
 enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *, char **);
+enum MAPISTORE_ERROR mapistore_backend_root_mkdir(struct backend_context *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *);
 enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *, uint64_t, uint8_t);
 enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *, uint64_t, uint8_t, char **);
 enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *, uint64_t, uint64_t);

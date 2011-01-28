@@ -31,6 +31,7 @@
 #include "mapiproxy/libmapistore/mapistore_defs.h"
 #include "mapiproxy/libmapistore/mapistore_common.h"
 #include "mapiproxy/libmapistore/mapistore_backend.h"
+#include "mapiproxy/libmapistore/mapistore_private.h"
 
 struct mstoredb_context {
 	struct mapistore_backend_context	*mdb_ctx;
@@ -44,42 +45,51 @@ struct mstoredb_context {
 
 #define	MAILBOX_BASE_URI	"CN=%s,%s"
 
+#define	MDB_ROOTFOLDER_LDIF_TMPL			\
+	"dn: %s\n"					\
+	"objectClass: container\n"			\
+	"cn: %s\n"					\
+	"PidTagDisplayName: %s\n"			\
+	"PidTagContainerClass: IPF.Note\n"		\
+	"SystemIdx: %d\n\n"
+
 struct mstoredb_dflt_folders {
 	enum MAPISTORE_DFLT_FOLDERS	index;
 	const char			*name;
+	const char			*cn;
 };
 
 const struct mstoredb_dflt_folders dflt_folders[] = {
-	{ MDB_ROOT_FOLDER,		"CN=Mailbox Root,CN=Folders" },
-	{ MDB_DEFERRED_ACTIONS,		"CN=Deferred Actions,CN=Mailbox Root,CN=Folders" },
-	{ MDB_SPOOLER_QUEUE,		"CN=Spooler Queue,CN=Mailbox Root,CN=Folders" },
-	{ MDB_TODO_SEARCH,		"CN=To-Do Search,CN=Mailbox Root,CN=Folders" },
-	{ MDB_IPM_SUBTREE,		"CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_INBOX,			"CN=Inbox,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_OUTBOX,			"CN=Outbox,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_SENT_ITEMS,		"CN=Sent Items,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_DELETED_ITEMS,		"CN=Deleted Items,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_COMMON_VIEWS,		"CN=Common Views,CN=Mailbox Root,CN=Folders" },
-	{ MDB_SCHEDULE,			"CN=Schedule,CN=Mailbox Root,CN=Folders" },
-	{ MDB_SEARCH,			"CN=Search,CN=Mailbox Root,CN=Folders" },
-	{ MDB_VIEWS,			"CN=Views,CN=Mailbox Root,CN=Folders" },
-	{ MDB_SHORTCUTS,		"CN=Shortcuts,CN=Mailbox Root,CN=Folders" },
-	{ MDB_REMINDERS,		"CN=Reminders,CN=Mailbox Root,CN=Folders" },
-	{ MDB_CALENDAR,			"CN=Calendar,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_CONTACTS,			"CN=Contacts,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_JOURNAL,			"CN=Journal,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_NOTES,			"CN=Notes,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_TASKS,			"CN=Tasks,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_DRAFTS,			"CN=Drafts,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_TRACKED_MAIL,		"CN=Tracked Mail,CN=Mailbox Root,CN=Folders" },
-	{ MDB_SYNC_ISSUES,		"CN=Sync Issues,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_CONFLICTS,		"CN=Conflicts,CN=Sync Issues,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_LOCAL_FAILURES,		"CN=Local Failures,CN=Sync Issues,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_SERVER_FAILURES,		"CN=Server Failures,CN=Sync Issues,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_JUNK_EMAIL,		"CN=Junk Emails,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_RSS_FEEDS,		"CN=RSS Feeds,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_CONVERSATION_ACT,		"CN=Conversation Actions,CN=IPM Subtree,CN=Mailbox Root,CN=Folders" },
-	{ MDB_CUSTOM,			NULL }
+	{ MDB_ROOT_FOLDER,		"CN=Mailbox Root,CN=Folders", "Mailbox Root" },
+	{ MDB_DEFERRED_ACTIONS,		"CN=Deferred Actions,CN=Mailbox Root,CN=Folders", "Deferred Actions" },
+	{ MDB_SPOOLER_QUEUE,		"CN=Spooler Queue,CN=Mailbox Root,CN=Folders",  "Spooler Queue" },
+	{ MDB_TODO_SEARCH,		"CN=To-Do Search,CN=Mailbox Root,CN=Folders", "To-Do Search" },
+	{ MDB_IPM_SUBTREE,		"CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "IPM SUbtree" },
+	{ MDB_INBOX,			"CN=Inbox,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Inbox" },
+	{ MDB_OUTBOX,			"CN=Outbox,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Outbox" },
+	{ MDB_SENT_ITEMS,		"CN=Sent Items,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Sent Items" },
+	{ MDB_DELETED_ITEMS,		"CN=Deleted Items,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Deleted Items" },
+	{ MDB_COMMON_VIEWS,		"CN=Common Views,CN=Mailbox Root,CN=Folders", "Common Views" },
+	{ MDB_SCHEDULE,			"CN=Schedule,CN=Mailbox Root,CN=Folders", "Schedule" },
+	{ MDB_SEARCH,			"CN=Search,CN=Mailbox Root,CN=Folders", "Search" },
+	{ MDB_VIEWS,			"CN=Views,CN=Mailbox Root,CN=Folders", "Views" },
+	{ MDB_SHORTCUTS,		"CN=Shortcuts,CN=Mailbox Root,CN=Folders", "Shortcuts" },
+	{ MDB_REMINDERS,		"CN=Reminders,CN=Mailbox Root,CN=Folders", "Reminders" },
+	{ MDB_CALENDAR,			"CN=Calendar,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Calendar" },
+	{ MDB_CONTACTS,			"CN=Contacts,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Contacts" },
+	{ MDB_JOURNAL,			"CN=Journal,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Journal" },
+	{ MDB_NOTES,			"CN=Notes,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Notes" },
+	{ MDB_TASKS,			"CN=Tasks,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Tasks" },
+	{ MDB_DRAFTS,			"CN=Drafts,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Drafts" },
+	{ MDB_TRACKED_MAIL,		"CN=Tracked Mail,CN=Mailbox Root,CN=Folders", "Tracked Mail" },
+	{ MDB_SYNC_ISSUES,		"CN=Sync Issues,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Sync Issues" },
+	{ MDB_CONFLICTS,		"CN=Conflicts,CN=Sync Issues,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Conflicts" },
+	{ MDB_LOCAL_FAILURES,		"CN=Local Failures,CN=Sync Issues,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Local Failures" },
+	{ MDB_SERVER_FAILURES,		"CN=Server Failures,CN=Sync Issues,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Server Failures" },
+	{ MDB_JUNK_EMAIL,		"CN=Junk Emails,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Junk Emails" },
+	{ MDB_RSS_FEEDS,		"CN=RSS Feeds,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "RSS Feeds" },
+	{ MDB_CONVERSATION_ACT,		"CN=Conversation Actions,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Conversation Actions" },
+	{ MDB_CUSTOM,			NULL, NULL }
 };
 
 __BEGIN_DECLS

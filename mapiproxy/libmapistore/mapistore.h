@@ -75,6 +75,7 @@ struct backend_context {
 	const struct mapistore_backend	*backend;
 	void				*private_data;
 	struct indexing_context_list	*indexing;
+	char				*username;
 	uint32_t			context_id;
 	uint32_t			ref_count;
 	char				*uri;
@@ -126,6 +127,8 @@ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *, const cha
 enum MAPISTORE_ERROR mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 enum MAPISTORE_ERROR mapistore_del_context(struct mapistore_context *, uint32_t);
 enum MAPISTORE_ERROR mapistore_create_uri(struct mapistore_context *, uint32_t, const char *, const char *, char **);
+enum MAPISTORE_ERROR mapistore_create_root_folder(struct mapistore_context *, uint32_t, enum MAPISTORE_DFLT_FOLDERS, 
+						  enum MAPISTORE_DFLT_FOLDERS, const char *);
 enum MAPISTORE_ERROR mapistore_release_record(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 enum MAPISTORE_ERROR mapistore_search_context_by_uri(struct mapistore_context *, const char *, uint32_t *);
 const char *mapistore_errstr(enum MAPISTORE_ERROR);

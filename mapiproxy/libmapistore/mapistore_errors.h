@@ -72,6 +72,7 @@ enum MAPISTORE_ERROR {
 	MAPISTORE_ERR_EXIST = 16, /*!< The function already has record/data for the searched element. */
 	MAPISTORE_ERR_INVALID_OBJECT = 17, /*!< The specified object is invalid */
 	MAPISTORE_ERR_INVALID_CONTEXT = 18, /*!< The specified context is invalid */
+	MAPISTORE_ERR_INVALID_URI = 19, /*!< The specified URI is invalid */
 };
 
 #endif /* ! __MAPISTORE_ERRORS_H */

@@ -403,6 +403,14 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *mem_ctx,
 	return MAPISTORE_ERR_NOT_FOUND;
 }
 
+
+enum MAPISTORE_ERROR mapistore_backend_root_mkdir(struct backend_context *bctx, enum MAPISTORE_DFLT_FOLDERS system_idx,
+						  const char *mapistore_uri, const char *folder_name)
+{
+	return bctx->backend->op_db_mkdir(bctx->private_data, system_idx, mapistore_uri, folder_name);
+}
+
+
  /**
     \details find the context matching given context identifier
 
@@ -472,6 +480,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *mem_ctx,
 
 	 return ret;
  }
+
 
  enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *bctx, uint64_t parent_fid, uint64_t fid)
  {

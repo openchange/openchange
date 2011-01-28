@@ -31,7 +31,7 @@
  */
 static enum MAPISTORE_ERROR mstoredb_init(void)
 {
-	DEBUG(0, ("* [%s:%d][%s]: mstoredb backend initialized\n", __FILE__, __LINE__, __FUNCTION__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_INFO, MSTORE_SINGLE_MSG, "mstoredb backend initialized\n");
 	return MAPISTORE_SUCCESS;
 }
 
@@ -55,20 +55,20 @@ static enum MAPISTORE_ERROR mstoredb_create_mapistore_uri(TALLOC_CTX *mem_ctx,
 
 	/* Sanity checks */
 	if (!username || !mapistore_uri) {
-		DEBUG(5, ("! [%s:%d][%s]: Invalid parameter\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_PEDANTIC, MSTORE_SINGLE_MSG, "Invalid parameter\n");
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
 	firstorgdn = mapistore_get_firstorgdn();
 	if (!firstorgdn) {
-		DEBUG(5, ("! [%s:%d][%s]: Invalid firstorgdn\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_PEDANTIC, MSTORE_SINGLE_MSG, "Invalid firstorgdn\n");
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
 	for (i = 0; dflt_folders[i].name; i++) {
 		if (dflt_folders[i].index == index) {
 			*mapistore_uri = talloc_asprintf(mem_ctx, "mstoredb://%s,CN=%s,%s", dflt_folders[i].name, username, firstorgdn);
-			DEBUG(5, ("* [%s:%d][%s]: URI = %s\n", __FILE__, __LINE__, __FUNCTION__, *mapistore_uri));
+			MSTORE_DEBUG_SUCCESS(MSTORE_LEVEL_DEBUG, "URI = %s\n", *mapistore_uri);
 			return MAPISTORE_SUCCESS;
 		}
 	}
@@ -101,7 +101,7 @@ static enum MAPISTORE_ERROR mstoredb_create_context(struct mapistore_backend_con
 	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!private_data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	DEBUG(5, ("* [%s:%d][%s]: uri = %s\n", __FILE__, __LINE__, __FUNCTION__, uri));
+	MSTORE_DEBUG_SUCCESS(MSTORE_LEVEL_PEDANTIC, "uri = %s\n", uri);
 
 	mem_ctx = (TALLOC_CTX *) ctx;
 	
@@ -114,12 +114,12 @@ static enum MAPISTORE_ERROR mstoredb_create_context(struct mapistore_backend_con
 
 	/* Step 2. Retrieve path to the mapistore database */
 	mstoredb_ctx->dbpath = mapistore_get_database_path();
-	DEBUG(5, ("* [%s:%d][%s]: database path = %s\n", __FILE__, __LINE__, __FUNCTION__, mstoredb_ctx->dbpath));
+	MSTORE_DEBUG_SUCCESS(MSTORE_LEVEL_PEDANTIC, "database path = %s\n", mstoredb_ctx->dbpath);
 
 	/* Step 3. Open a wrapped connection to mapistore.ldb */
 	mstoredb_ctx->ldb_ctx = mapistore_public_ldb_connect(mstoredb_ctx->mdb_ctx, mstoredb_ctx->dbpath);
 	if (!mstoredb_ctx->ldb_ctx) {
-		DEBUG(0, ("! [%s:%d][%s]: Unable to open mapistore.ldb at %s\n", __FILE__, __LINE__, __FUNCTION__, mstoredb_ctx->dbpath));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to open mapistore.ldb at %s\n", mstoredb_ctx->dbpath);
 		talloc_free(mstoredb_ctx);
 		return MAPISTORE_ERR_DATABASE_INIT;
 	}
@@ -128,8 +128,7 @@ static enum MAPISTORE_ERROR mstoredb_create_context(struct mapistore_backend_con
 	new_uri = talloc_asprintf(mem_ctx, "mstoredb://%s", uri);
 	retval = mapistore_exist(mstoredb_ctx->mdb_ctx, username, new_uri);
 	if (retval != MAPISTORE_ERR_EXIST) {
-		DEBUG(5, ("! [%s:%d][%s]: Indexing database failed to find a record for URI %s\n",
-			  __FILE__, __LINE__, __FUNCTION__, uri));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_DEBUG, "Indexing database failed to find a record for URI: %s\n", uri);
 		talloc_free(new_uri);
 		talloc_free(mstoredb_ctx);
 		
@@ -139,8 +138,7 @@ static enum MAPISTORE_ERROR mstoredb_create_context(struct mapistore_backend_con
 
 	mstoredb_ctx->basedn = ldb_dn_new(mstoredb_ctx, mstoredb_ctx->ldb_ctx, uri);
 	if (!mstoredb_ctx->basedn) {
-		DEBUG(5, ("! [%s:%d][%s]: Unable to create DN from URI\n",
-			  __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "Unable to create DN from URI");
 		talloc_free(mstoredb_ctx);
 		return MAPISTORE_ERROR;		
 	}
@@ -159,9 +157,114 @@ static enum MAPISTORE_ERROR mstoredb_create_context(struct mapistore_backend_con
  */
 static enum MAPISTORE_ERROR mstoredb_delete_context(void *private_data)
 {
-	DEBUG(5, ("* [%s:%d][%s]\n", __FILE__, __LINE__, __FUNCTION__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
+
 	return MAPISTORE_SUCCESS;
 }
+
+/**
+   \details Create a root default/system mailbox folder in the
+   mstoredb backend and store store common attributes for caching
+   purposes.
+
+   \param private_data pointer to the current mstoredb context
+   \param mapistore_uri pointer to the mapistore URI for the folder
+   \param folder_name the name of the folder to create
+   \param folder_desc the description for the folder
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum MAPISTORE_ERROR mstoredb_op_db_mkdir(void *private_data,
+						 enum MAPISTORE_DFLT_FOLDERS system_idx,
+						 const char *mapistore_uri,
+						 const char *folder_name)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct mstoredb_context		*mstoredb_ctx = (struct mstoredb_context *) private_data;
+	enum MAPISTORE_ERROR		retval;
+	char				*mapistore_root_folder = NULL;
+	int				i;
+	const char			*cn = NULL;
+	const char			*uri;
+
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstoredb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Ensure the mapistore URI doesn't already exist in the indexing database */
+	retval = mapistore_exist(mstoredb_ctx->mdb_ctx, mstoredb_ctx->username, mapistore_uri);
+	if (retval == MAPISTORE_ERR_EXIST) {
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_HIGH, "URI for %s already registered (%s)\n", mstoredb_ctx->username, mapistore_uri);
+		return retval;
+	}
+
+	/* Step 2. Retrieve the cn attribute's value from our dflt folder array */
+	for (i = 0; dflt_folders[i].name; i++) {
+		if (dflt_folders[i].index == system_idx) {
+			if (!folder_name) {
+				folder_name = dflt_folders[i].cn;
+			}
+			cn = dflt_folders[i].cn;
+			break;
+		}
+	}
+	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERR_INVALID_URI, NULL);
+
+	/* Step 3. Strip out the namespace from URI if required */
+	if (!strncmp("mstoredb://", mapistore_uri, strlen("mstoredb://"))) {
+		uri = &mapistore_uri[strlen("mstoredb://")];
+	} else {
+		uri = mapistore_uri;
+	}
+
+	/* Step 3. Create the LDIF formated entry for the folder */
+	mem_ctx = talloc_new(NULL);
+	mapistore_root_folder = talloc_asprintf(mem_ctx, MDB_ROOTFOLDER_LDIF_TMPL,
+						uri, cn, folder_name, system_idx);
+
+	/* Step 3. Create folder entry within mapistore.ldb */
+	retval = mapistore_ldb_write_ldif_string_to_store(mstoredb_ctx->ldb_ctx, mapistore_root_folder);
+	talloc_free(mapistore_root_folder);
+	talloc_free(mem_ctx);
+
+	return retval;
+}
+
+/**
+   \details Create a folder in the mstoredb backend
+
+   \param private_data pointer to the current mstoredb backend
+   \param parent_uri the parent folder mapistore URI
+   \param folder_name the folder name to be created
+   \param folder_desc the folder description for the folder 
+   \param folder_uri the folder URI to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum MAPISTORE_ERROR mstoredb_op_mkdir(void *private_data,
+					      const char *parent_uri,
+					      const char *folder_name,
+					      const char *folder_desc,
+					      char **folder_uri)
+{
+	/* struct mstoredb_context		*mstoredb_ctx = (struct mstoredb_context *) private_data; */
+
+	/* Sanity checks */
+	
+
+	/* Ensure the parent uri exists */
+
+	/* Generate the URI for the folder */
+
+	/* Do ACLs check on parent URI */
+	
+	/* Do folder creation */
+
+	return MAPISTORE_SUCCESS;
+}
+
 
 /**
    \details Entry point for mapistore MSTOREDB backend
@@ -183,6 +286,10 @@ enum MAPISTORE_ERROR mapistore_init_backend(void)
 	backend.create_context = mstoredb_create_context;
 	backend.delete_context = mstoredb_delete_context;
 	backend.create_uri = mstoredb_create_mapistore_uri;
+	backend.op_mkdir = mstoredb_op_mkdir;
+
+	/* Fill in mapistore db operations */
+	backend.op_db_mkdir = mstoredb_op_db_mkdir;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	retval = mapistore_backend_register(&backend);

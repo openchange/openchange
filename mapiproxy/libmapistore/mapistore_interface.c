@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 #include "mapistore_errors.h"
 #include "mapistore.h"
 #include "mapistore_private.h"
+#include "mapistore_backend.h"
 #include <dlinklist.h>
 #include "libmapi/libmapi_private.h"
 
@@ -160,6 +161,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *ms
 		if (!backend_ctx) {
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
+		backend_ctx->username = talloc_strdup((TALLOC_CTX *)backend_ctx, username);
 
 		backend_list = talloc_zero((TALLOC_CTX *) mstore_ctx, struct backend_context_list);
 		talloc_steal(backend_list, backend_ctx);
@@ -301,6 +303,97 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_del_context(struct mapistore_context *ms
 
 
 /**
+   \details Create a root default/system folder within the mailbox and
+   return the folder identifier
+
+   This operation is only meant to be called at mailbox provisioning
+   time.
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   \param parent_index the parent default system/special folder index
+   \param index the default system/special folder index
+   \param folder_name the folder name to set
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_create_root_folder(struct mapistore_context *mstore_ctx,
+							   uint32_t context_id,
+							   enum MAPISTORE_DFLT_FOLDERS parent_index,
+							   enum MAPISTORE_DFLT_FOLDERS index,
+							   const char *folder_name)
+{
+	enum MAPISTORE_ERROR		retval;
+	struct backend_context		*backend_ctx;
+	char				*mapistore_uri;
+	char				*parent_uri;
+	uint64_t			fid;
+	uint64_t			pfid;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Ensure the parent folder exists and retrieve its FID */
+	retval = mapistore_create_uri(mstore_ctx, parent_index, backend_ctx->backend->uri_namespace,
+				      backend_ctx->username, &parent_uri);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	retval = mapistore_indexing_record_search_uri(mstore_ctx->mapistore_indexing_list, parent_uri);
+	if (retval != MAPISTORE_ERR_EXIST) {
+		talloc_free(parent_uri);
+		goto error;
+	}
+
+	retval = mapistore_indexing_get_record_fmid_by_uri(mstore_ctx->mapistore_indexing_list, parent_uri, &pfid);
+	talloc_free(parent_uri);
+	if (retval) {
+		goto error;
+	}
+
+	/* Step 3. Generate the URI */
+	retval = mapistore_create_uri(mstore_ctx, index, backend_ctx->backend->uri_namespace,
+				      backend_ctx->username, &mapistore_uri);
+	if (retval) goto error;
+
+	/* Step 4. Call backend root_mkdir operation */
+	retval =  mapistore_backend_root_mkdir(backend_ctx, index, mapistore_uri, folder_name);
+	if (retval) {
+		talloc_free(mapistore_uri);
+		goto error;
+	}
+
+	/* Step 5. Get a new FID for the folder */
+	retval = mapistore_get_new_fmid(mstore_ctx->processing_ctx, backend_ctx->username, &fid);
+	if (retval) {
+		talloc_free(mapistore_uri);
+		goto error;
+	}
+	
+	/* Step 6. Register the folder within the indexing database */
+	retval = mapistore_indexing_add_fmid_record(mstore_ctx->mapistore_indexing_list, fid, 
+						    mapistore_uri, pfid, MAPISTORE_INDEXING_FOLDER);
+	talloc_free(mapistore_uri);
+	if (retval) goto error;
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	/* Step 7. Very unlikely to happen ... but still delete the folder */
+	/* if (retval) { */
+
+	/* } */
+
+	return retval;
+}
+
+/**
    \details Release private backend data associated a folder / message
    opened within the mapistore backend
 
@@ -433,6 +526,8 @@ _PUBLIC_ const char *mapistore_errstr(enum MAPISTORE_ERROR mapistore_err)
 		return "Invalid object";
 	case MAPISTORE_ERR_INVALID_CONTEXT:
 		return "Invalid mapistore context";
+	case MAPISTORE_ERR_INVALID_URI:
+		return "Invalid mapistore URI";
 	}
 
 	return "Unknown error";

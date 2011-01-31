@@ -213,7 +213,7 @@ static PyObject *PyMAPIStoreDB_getParameter(PyObject *_self, void *data)
 static PyMethodDef mapistoredb_methods[] = {
 	{ "dump_configuration", (PyCFunction)py_MAPIStoreDB_dump_configuration, METH_VARARGS },
 	{ "provision", (PyCFunction)py_MAPIStoreDB_provision, METH_KEYWORDS },
-	{ "get_mapistore_uri", py_MAPIStoreDB_get_mapistore_uri, METH_KEYWORDS },
+	{ "get_mapistore_uri", (PyCFunction)py_MAPIStoreDB_get_mapistore_uri, METH_KEYWORDS },
 	{ "get_new_fid", (PyCFunction)py_MAPIStoreDB_get_new_fid, METH_VARARGS },
 	{ "get_new_allocation_range", (PyCFunction)py_MAPIStoreDB_get_new_allocation_range, METH_VARARGS },
 	{ "new_mailbox", (PyCFunction)py_MAPIStoreDB_new_mailbox, METH_VARARGS },

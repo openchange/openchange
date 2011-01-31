@@ -84,7 +84,7 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 	case ROLE_DOMAIN_CONTROLLER:
 		domaindn = str_list_make(mdb_ctx->param, mdb_ctx->param->dnsdomain, ".");
 		strlower_m(domaindn[0]);
-		mdb_ctx->param->domaindn = talloc_asprintf(mdb_ctx->param, "DC_%s", domaindn[0]);
+		mdb_ctx->param->domaindn = talloc_asprintf(mdb_ctx->param, "DC=%s", domaindn[0]);
 		for (i = 1; domaindn[i]; i++) {
 			strlower_m(domaindn[i]);
 			mdb_ctx->param->domaindn = talloc_asprintf_append_buffer(mdb_ctx->param->domaindn, ",DC=%s", domaindn[i]);

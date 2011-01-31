@@ -99,7 +99,7 @@ static PyObject *py_MAPIStoreDB_get_mapistore_uri(PyObject *module, PyObject *ar
 	const char			*ns;
 	char				*uri;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "kss", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iss", 
 					 discard_const_p(char *, kwnames), 
 					 &dflt_folder, &username, &ns)) {
 		return NULL;

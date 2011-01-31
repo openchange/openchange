@@ -58,6 +58,7 @@ enum MAPISTORE_ERROR mapistoredb_set_netbiosname(struct mapistoredb_context *mdb
 
 	if (mdb_ctx->param->netbiosname) {
 		talloc_free(mdb_ctx->param->netbiosname);
+		mdb_ctx->param->netbiosname = NULL;
 	}
 
 	mdb_ctx->param->netbiosname = talloc_strdup(mdb_ctx->param, netbiosname);
@@ -65,6 +66,7 @@ enum MAPISTORE_ERROR mapistoredb_set_netbiosname(struct mapistoredb_context *mdb
 	/* Update serverdn */
 	if (mdb_ctx->param->serverdn) {
 		talloc_free(mdb_ctx->param->serverdn);
+		mdb_ctx->param->serverdn = NULL;
 	}
 	mdb_ctx->param->serverdn = talloc_asprintf(mdb_ctx->param, TMPL_MDB_SERVERDN,
 						   mdb_ctx->param->netbiosname,
@@ -73,6 +75,7 @@ enum MAPISTORE_ERROR mapistoredb_set_netbiosname(struct mapistoredb_context *mdb
 	/* Update firstorgdn */
 	if (mdb_ctx->param->firstorgdn) {
 		talloc_free(mdb_ctx->param->firstorgdn);
+		mdb_ctx->param->firstorgdn = NULL;
 	}
 	mdb_ctx->param->firstorgdn = talloc_asprintf(mdb_ctx->param, TMPL_MDB_FIRSTORGDN,
 						     mdb_ctx->param->firstou, 

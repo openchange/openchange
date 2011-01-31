@@ -95,16 +95,18 @@ static PyObject *py_MAPIStoreDB_get_mapistore_uri(PyObject *module, PyObject *ar
 	const char * const		kwnames[] = { "folder", "username", "namespace", NULL };
 	enum MAPISTORE_ERROR		retval;
 	enum MAPISTORE_DFLT_FOLDERS	dflt_folder;
+	uint32_t			folder_int;
 	const char			*username;
 	const char			*ns;
 	char				*uri;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iss", 
 					 discard_const_p(char *, kwnames), 
-					 &dflt_folder, &username, &ns)) {
+					 &folder_int, &username, &ns)) {
 		return NULL;
 	}
 
+	dflt_folder = (enum MAPISTORE_DFLT_FOLDERS)folder_int;
 	retval = mapistoredb_get_mapistore_uri(self->mdb_ctx, dflt_folder, ns, username, &uri);
 	if (retval == MAPISTORE_SUCCESS && uri != NULL) {
 		ret = PyString_FromString(uri);

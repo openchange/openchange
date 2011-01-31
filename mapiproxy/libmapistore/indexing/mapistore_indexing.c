@@ -303,7 +303,11 @@ enum MAPISTORE_ERROR mapistore_indexing_context_add_ref(struct mapistore_context
    \details Retrieve the mapistore indexing entry associated to a
    folder or message identifier
 
-   \param 
+   \param mictx pointer to the mapistore indexing context list
+   \param fmid the fmid to lookup
+   \param entry pointer to the mapistore indexing entry to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 static enum MAPISTORE_ERROR mapistore_indexing_get_entry(struct mapistore_indexing_context_list *mictx,
 							 uint64_t fmid,
@@ -554,6 +558,82 @@ static enum MAPISTORE_ERROR mapistore_indexing_update_entry(struct mapistore_ind
 }
 
 
+static enum MAPISTORE_ERROR mapistore_indexing_add_entry_r(struct mapistore_indexing_context_list *mictx,
+							   const char *mapistore_uri, uint64_t fmid)
+{
+	TALLOC_CTX				*mem_ctx;
+	int					ret;
+	TDB_DATA				key;
+	TDB_DATA				dbuf;
+	DATA_BLOB				data;
+	enum ndr_err_code			ndr_err;
+	struct mapistore_indexing_entry_r	entry_r;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Create the key/dbuf record */
+	mem_ctx = talloc_new(mictx);
+
+	key.dptr = (unsigned char *) talloc_asprintf(mem_ctx, MAPISTORE_INDEXING_URI, mapistore_uri);
+	key.dsize = strlen((const char *)key.dptr);
+
+	entry_r.indexing_key = (char *) talloc_asprintf(mem_ctx, MAPISTORE_INDEXING_FMID, fmid);
+	entry_r.FMID = fmid;
+
+	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &entry_r, (ndr_push_flags_fn_t)ndr_push_mapistore_indexing_entry_r);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(5, ("! [%s:%d][%s]: Failed to push mapistore_indexing_entry_r into NDR blob\n", __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERROR;
+	}
+
+	dbuf.dptr = data.data;
+	dbuf.dsize = data.length;
+
+	/* Step 2. Insert the FMID record */
+	ret = tdb_store(mictx->tdb_ctx->tdb, key, dbuf, TDB_INSERT);
+	talloc_free(mem_ctx);
+
+	if (ret == -1) {
+		DEBUG(3, ("[%s:%d][%s]: Unable to create " MAPISTORE_INDEXING_URI " record: " MAPISTORE_INDEXING_FMID "\n",
+			  __FILE__, __LINE__, __FUNCTION__, mapistore_uri, fmid));
+		return MAPISTORE_ERR_DATABASE_OPS;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+static enum MAPISTORE_ERROR mapistore_indexing_del_entry_r(struct mapistore_indexing_context_list *mictx,
+							   const char *mapistore_uri)
+{
+	TALLOC_CTX		*mem_ctx;
+	int			ret;
+	TDB_DATA		key;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+
+	key.dptr = (unsigned char *)talloc_asprintf(mem_ctx, MAPISTORE_INDEXING_URI, mapistore_uri);
+	key.dsize = strlen((const char *)key.dptr);
+
+	ret = tdb_delete(mictx->tdb_ctx->tdb, key);
+	if (ret == -1) {
+		DEBUG(3, ("! [%s:%d][%s]: Failed to delete mapistore reverse entry for %s\n", 
+			  __FILE__, __LINE__, __FUNCTION__, (char *)key.dptr));
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_DATABASE_OPS;
+	}
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
 /**
    \details Add a folder or message record to the indexing database
 
@@ -575,7 +655,6 @@ enum MAPISTORE_ERROR mapistore_indexing_add_fmid_record(struct mapistore_indexin
 	TALLOC_CTX				*mem_ctx;
 	int					ret;
 	struct mapistore_indexing_entry		entry;
-	struct mapistore_indexing_entry_r	rentry;
 	DATA_BLOB				data;
 	enum ndr_err_code			ndr_err;
 	TDB_DATA				key;
@@ -649,32 +728,9 @@ enum MAPISTORE_ERROR mapistore_indexing_add_fmid_record(struct mapistore_indexin
 	}
 
 	/* Step 5. Insert the reverse record URI/ indexing record */
-	key.dptr = (unsigned char *) talloc_asprintf(mem_ctx, MAPISTORE_INDEXING_URI, mapistore_uri);
-	key.dsize = strlen((const char *)key.dptr);
+	retval = mapistore_indexing_add_entry_r(mictx, mapistore_uri, fmid);
 
-	rentry.indexing_key = (char *)talloc_asprintf(mem_ctx, MAPISTORE_INDEXING_FMID, fmid);
-	rentry.FMID = fmid;
-
-	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &rentry, (ndr_push_flags_fn_t)ndr_push_mapistore_indexing_entry_r);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(5, ("! [%s:%d][%s]: Failed to push mapistore_indexing_entry_r into NDR blob\n", __FILE__, __LINE__, __FUNCTION__));
-		talloc_free(mem_ctx);
-		return MAPISTORE_ERROR;
-	}
-
-	dbuf.dptr = data.data;
-	dbuf.dsize = data.length;
-
-	ret = tdb_store(mictx->tdb_ctx->tdb, key, dbuf, TDB_INSERT);
-	talloc_free(mem_ctx);
-
-	if (ret == -1) {
-		DEBUG(3, ("[%s:%d][%s]: Unable to create " MAPISTORE_INDEXING_URI " record: " MAPISTORE_INDEXING_FMID "\n",
-			  __FILE__, __LINE__, __FUNCTION__, mapistore_uri, fmid));
-		return MAPISTORE_ERR_DATABASE_OPS;
-	}
-
-	return MAPISTORE_SUCCESS;
+	return retval;
 }
 
 
@@ -724,4 +780,58 @@ enum MAPISTORE_ERROR mapistore_indexing_add_folder_record_allocation_range(struc
 	retval = mapistore_indexing_update_entry(mictx, fid, &entry);
 
 	return retval;
+}
+
+
+/**
+   \details Update the mapistore URI for a given record within the
+   indexing database
+
+   \param mictx pointer to the mapistore indexing context
+   \param fmid the folder/message identifier for which we want to
+   update the URI
+   \param new_uri the new mapistore URI to set for this record
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_indexing_update_mapistore_uri(struct mapistore_indexing_context_list *mictx,
+							     uint64_t fmid, const char *new_uri)
+{
+	enum MAPISTORE_ERROR			retval;
+	TALLOC_CTX				*mem_ctx;
+	struct mapistore_indexing_entry		entry;
+	const char				*old_uri;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!new_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Ensure the new_uri is not already registered */
+	retval = mapistore_indexing_record_search_uri(mictx, new_uri);
+	MAPISTORE_RETVAL_IF(retval == MAPISTORE_ERR_EXIST, retval, NULL);
+
+	/* Step 2. Retrieve the mapistore_indexing entry associated to the fmid */
+	retval = mapistore_indexing_get_entry(mictx, fmid, &entry);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	old_uri = talloc_strdup(mem_ctx, entry.info.mapistore_indexing_v1.mapistoreURI);
+
+	/* Step 3. Replace the record with the new_uri */
+	entry.info.mapistore_indexing_v1.mapistoreURI = new_uri;
+	retval = mapistore_indexing_update_entry(mictx, fmid, &entry);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Step 4. Create the new reversed index entry */
+	retval = mapistore_indexing_add_entry_r(mictx, new_uri, fmid);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+	
+	/* Step 5. Delete the old reversed indexed entry */
+	retval = mapistore_indexing_del_entry_r(mictx, old_uri);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPISTORE_SUCCESS;
 }

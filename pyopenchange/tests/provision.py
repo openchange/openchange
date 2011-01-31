@@ -229,4 +229,14 @@ def start():
                                   folder_name="")
     TreeLeafStatus("Reminders", retval)
 
+    newTitle("[Step 9]. Setting mailbox folders to fsocpf", '=')
+    new_uri = MAPIStore.get_mapistore_uri(mapistoredb.MDB_INBOX,
+                                          username, 
+                                          "fsocpf://")
+    retval = MAPIStore.set_mapistore_uri(context_id, mapistore.MDB_INBOX, new_uri)
+    if retval == 0:
+        print "\t* Inbox [fsocpf]: [OK]"
+    else:
+        print "\t* Inbox [fsocpf]: [KO]"
+
 start()

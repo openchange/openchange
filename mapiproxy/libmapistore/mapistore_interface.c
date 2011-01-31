@@ -393,6 +393,49 @@ error:
 	return retval;
 }
 
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_set_mapistore_uri(struct mapistore_context *mstore_ctx,
+							  uint32_t context_id,
+							  enum MAPISTORE_DFLT_FOLDERS index,
+							  const char *mapistore_uri)
+{
+	enum MAPISTORE_ERROR		retval;
+	struct backend_context		*backend_ctx;
+	char				*old_uri;
+	uint64_t			fmid;
+	
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	
+	/* Step 2. Retrieve the URI associated to this system/default folder */
+	retval = mapistore_create_uri(mstore_ctx, index, backend_ctx->backend->uri_namespace,
+				      backend_ctx->username, &old_uri);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+	
+	/* Step 3. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+	
+	/* Step 4. Retrieve its FMID from the indexing database */
+	retval = mapistore_indexing_get_record_fmid_by_uri(mstore_ctx->mapistore_indexing_list, old_uri, &fmid);
+	if (retval) goto end;
+	
+	/* Step 5. Update the URI within the indexing database */
+	retval = mapistore_indexing_update_mapistore_uri(mstore_ctx->mapistore_indexing_list, fmid, mapistore_uri);
+	if (retval) goto end;
+	
+end:
+	/* Step 6. Delete the indexing context */
+	retval = mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+	
+	return retval;
+}
+
+
 /**
    \details Release private backend data associated a folder / message
    opened within the mapistore backend

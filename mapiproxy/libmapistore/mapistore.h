@@ -127,6 +127,7 @@ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *, const cha
 enum MAPISTORE_ERROR mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 enum MAPISTORE_ERROR mapistore_del_context(struct mapistore_context *, uint32_t);
 enum MAPISTORE_ERROR mapistore_create_uri(struct mapistore_context *, uint32_t, const char *, const char *, char **);
+enum MAPISTORE_ERROR mapistore_set_mapistore_uri(struct mapistore_context *, uint32_t, enum MAPISTORE_DFLT_FOLDERS, const char *);
 enum MAPISTORE_ERROR mapistore_create_root_folder(struct mapistore_context *, uint32_t, enum MAPISTORE_DFLT_FOLDERS, 
 						  enum MAPISTORE_DFLT_FOLDERS, const char *);
 enum MAPISTORE_ERROR mapistore_release_record(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
@@ -134,7 +135,7 @@ enum MAPISTORE_ERROR mapistore_search_context_by_uri(struct mapistore_context *,
 const char *mapistore_errstr(enum MAPISTORE_ERROR);
 enum MAPISTORE_ERROR mapistore_add_context_indexing(struct mapistore_context *, const char *, uint32_t);
 enum MAPISTORE_ERROR mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
-enum MAPISTORE_ERROR mapistore_closedir(struct mapistore_context *mstore_ctx, uint32_t, uint64_t);
+enum MAPISTORE_ERROR mapistore_closedir(struct mapistore_context *, uint32_t, uint64_t);
 enum MAPISTORE_ERROR mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct SRow *);
 enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 enum MAPISTORE_ERROR mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
@@ -200,6 +201,7 @@ enum MAPISTORE_ERROR mapistore_indexing_context_add(struct mapistore_context *, 
 enum MAPISTORE_ERROR mapistore_indexing_context_del(struct mapistore_context *, const char *);
 enum MAPISTORE_ERROR mapistore_indexing_add_fmid_record(struct mapistore_indexing_context_list *, uint64_t, const char *, uint64_t, uint8_t);
 enum MAPISTORE_ERROR mapistore_indexing_add_folder_record_allocation_range(struct mapistore_indexing_context_list *, uint64_t, uint64_t, uint64_t);
+enum MAPISTORE_ERROR mapistore_indexing_update_mapistore_uri(struct mapistore_indexing_context_list *, uint64_t, const char *);
 /* !MAPISTORE_v2 */
 
 /* definitions from mapistore_namedprops.c */

@@ -3,7 +3,7 @@
 
    Python interface to mapistore
 
-   Copyright (C) Julien Kerihuel 2010.
+   Copyright (C) Julien Kerihuel 2010-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -121,6 +121,41 @@ static PyObject *py_MAPIStore_root_mkdir(PyObject *module, PyObject *args, PyObj
 	retval = mapistore_create_root_folder(self->mstore_ctx, context_id, 
 					      parent_index, index, folder_name);
 	return PyInt_FromLong(retval);
+}
+
+static PyObject *py_MAPIStore_get_mapistore_uri(PyMAPIStoreObject *self, PyObject *args)
+{
+	enum MAPISTORE_ERROR		retval;
+	enum MAPISTORE_DFLT_FOLDERS	dflt_folder;
+	uint32_t			index;
+	const char			*username;
+	const char			*ns;
+	char				*uri;
+
+	if (!PyArg_ParseTuple(args, "iss", &index, &username, &ns)) {
+		return NULL;
+	}
+
+	dflt_folder = (enum MAPISTORE_DFLT_FOLDERS)index;
+	retval = mapistore_create_uri(self->mstore_ctx, dflt_folder, ns, username, &uri);
+	if (retval) {
+		return NULL;
+	}
+
+	return PyString_FromString(uri);
+}
+
+static PyObject *py_MAPIStore_set_mapistore_uri(PyMAPIStoreObject *self, PyObject *args)
+{
+	uint32_t		context_id = 0;
+	uint32_t		index;
+	const char		*mapistore_uri;
+
+	if (!PyArg_ParseTuple(args, "iis", &context_id, &index, &mapistore_uri)) {
+		return NULL;
+	}
+
+	return PyInt_FromLong(mapistore_set_mapistore_uri(self->mstore_ctx, context_id, index, mapistore_uri));
 }
 
 static PyObject *py_MAPIStore_add_context_indexing(PyMAPIStoreObject *self, PyObject *args)
@@ -279,6 +314,8 @@ static PyMethodDef mapistore_methods[] = {
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	{ "del_context", (PyCFunction)py_MAPIStore_del_context, METH_VARARGS },
 	{ "root_mkdir", (PyCFunction)py_MAPIStore_root_mkdir, METH_KEYWORDS },
+	{ "get_mapistore_uri", (PyCFunction)py_MAPIStore_get_mapistore_uri, METH_VARARGS },
+	{ "set_mapistore_uri", (PyCFunction)py_MAPIStore_set_mapistore_uri, METH_VARARGS },
 	{ "add_context_idexing", (PyCFunction)py_MAPIStore_add_context_indexing, METH_VARARGS },
 	{ "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS },
 	{ "add_context_ref_count", (PyCFunction)py_MAPIStore_add_context_ref_count, METH_VARARGS },

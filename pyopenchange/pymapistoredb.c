@@ -88,22 +88,27 @@ static PyObject *py_MAPIStoreDB_provision(PyMAPIStoreDBObject *self, PyObject *a
 }
 
 
-static PyObject *py_MAPIStoreDB_get_mapistore_uri(PyMAPIStoreDBObject *_self, PyObject *args)
+static PyObject *py_MAPIStoreDB_get_mapistore_uri(PyObject *module, PyObject *args, PyObject *kwargs)
 {
-	PyMAPIStoreDBObject		*self = (PyMAPIStoreDBObject *) _self;
+	PyObject			*ret;
+	PyMAPIStoreDBObject		*self = (PyMAPIStoreDBObject *) module;
+	const char * const		kwnames[] = { "folder", "username", "namespace", NULL };
 	enum MAPISTORE_ERROR		retval;
 	enum MAPISTORE_DFLT_FOLDERS	dflt_folder;
 	const char			*username;
 	const char			*ns;
 	char				*uri;
 
-	if (!PyArg_ParseTuple(args, "kss", &dflt_folder, &username, &ns)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "kss", 
+					 discard_const_p(char *, kwnames), 
+					 &dflt_folder, &username, &ns)) {
 		return NULL;
 	}
 
 	retval = mapistoredb_get_mapistore_uri(self->mdb_ctx, dflt_folder, ns, username, &uri);
-	if (retval == MAPISTORE_SUCCESS) {
-		return PyString_FromString(uri);
+	if (retval == MAPISTORE_SUCCESS && uri != NULL) {
+		ret = PyString_FromString(uri);
+		return ret;
 	}
 
 	return NULL;
@@ -208,7 +213,7 @@ static PyObject *PyMAPIStoreDB_getParameter(PyObject *_self, void *data)
 static PyMethodDef mapistoredb_methods[] = {
 	{ "dump_configuration", (PyCFunction)py_MAPIStoreDB_dump_configuration, METH_VARARGS },
 	{ "provision", (PyCFunction)py_MAPIStoreDB_provision, METH_KEYWORDS },
-	{ "get_mapistore_uri", (PyCFunction)py_MAPIStoreDB_get_mapistore_uri, METH_VARARGS },
+	{ "get_mapistore_uri", py_MAPIStoreDB_get_mapistore_uri, METH_KEYWORDS },
 	{ "get_new_fid", (PyCFunction)py_MAPIStoreDB_get_new_fid, METH_VARARGS },
 	{ "get_new_allocation_range", (PyCFunction)py_MAPIStoreDB_get_new_allocation_range, METH_VARARGS },
 	{ "new_mailbox", (PyCFunction)py_MAPIStoreDB_new_mailbox, METH_VARARGS },
@@ -291,5 +296,6 @@ void initmapistoredb(void)
 	PyModule_AddObject(m, "MDB_CUSTOM", PyInt_FromLong((int)MDB_CUSTOM));
 	
 
+	Py_INCREF(&PyMAPIStoreDB);
 	PyModule_AddObject(m, "mapistoredb", (PyObject *)&PyMAPIStoreDB);
 }

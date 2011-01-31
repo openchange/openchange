@@ -39,7 +39,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	mem_ctx = talloc_new(NULL);
+	mem_ctx = talloc_named(NULL, 0, "py_MAPIStore_new");
 	if (mem_ctx == NULL) {
 		PyErr_NoMemory();
 		return NULL;
@@ -79,7 +79,6 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 
 	ret = mapistore_add_context(self->mstore_ctx, username, username, uri, &context_id);
 	if (ret != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("ret = %d\n", ret));
 		return NULL;
 	}
 
@@ -90,21 +89,28 @@ static PyObject *py_MAPIStore_del_context(PyMAPIStoreObject *self, PyObject *arg
 {
 	uint32_t	context_id = 0;
 
-	if (!PyArg_ParseTuple(args, "k", &context_id)) {
+	if (!PyArg_ParseTuple(args, "i", &context_id)) {
 		return NULL;
 	}
 
 	return PyInt_FromLong(mapistore_del_context(self->mstore_ctx, context_id));
 }
 
-static PyObject *py_MAPIStore_root_mkdir(PyMAPIStoreObject *self, PyObject *args)
+static PyObject *py_MAPIStore_root_mkdir(PyObject *module, PyObject *args, PyObject *kwargs)
 {
-	uint32_t		context_id = 0;
+	enum MAPISTORE_ERROR	retval;
+	PyMAPIStoreObject	*self = (PyMAPIStoreObject *) module;
+	const char * const	kwnames[] = { "context_id", "parent_index",
+					      "index", "folder_name", NULL };
+	uint32_t		context_id;
 	uint32_t		index;
 	uint32_t		parent_index;
 	const char		*folder_name;
 
-	if (!PyArg_ParseTuple(args, "kkks", &context_id, &parent_index, &index, &folder_name)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iii|s", 
+					 discard_const_p(char *, kwnames),
+					 &context_id, &parent_index, 
+					 &index, &folder_name)) {
 		return NULL;
 	}
 
@@ -112,7 +118,9 @@ static PyObject *py_MAPIStore_root_mkdir(PyMAPIStoreObject *self, PyObject *args
 		folder_name = NULL;
 	}
 
-	return PyInt_FromLong(mapistore_create_root_folder(self->mstore_ctx, context_id, parent_index, index, folder_name));
+	retval = mapistore_create_root_folder(self->mstore_ctx, context_id, 
+					      parent_index, index, folder_name);
+	return PyInt_FromLong(retval);
 }
 
 static PyObject *py_MAPIStore_add_context_indexing(PyMAPIStoreObject *self, PyObject *args)
@@ -120,7 +128,7 @@ static PyObject *py_MAPIStore_add_context_indexing(PyMAPIStoreObject *self, PyOb
 	uint32_t	context_id;
 	const char	*username;
 
-	if (!PyArg_ParseTuple(args, "sk", &username, &context_id)) {
+	if (!PyArg_ParseTuple(args, "si", &username, &context_id)) {
 		return NULL;
 	}
 
@@ -162,7 +170,7 @@ static PyObject *py_MAPIStore_opendir(PyMAPIStoreObject *self, PyObject *args)
 	uint64_t	parent_fid;
 	uint64_t	fid;
 
-	if (!PyArg_ParseTuple(args, "kKK", &context_id, &parent_fid, &fid)) {
+	if (!PyArg_ParseTuple(args, "iKK", &context_id, &parent_fid, &fid)) {
 		return NULL;
 	}
 
@@ -174,7 +182,7 @@ static PyObject *py_MAPIStore_closedir(PyMAPIStoreObject *self, PyObject *args)
 	uint32_t	context_id;
 	uint64_t	fid;
 
-	if (!PyArg_ParseTuple(args, "kK", &context_id, &fid)) {
+	if (!PyArg_ParseTuple(args, "iK", &context_id, &fid)) {
 		return NULL;
 	}
 
@@ -201,7 +209,7 @@ static PyObject *py_MAPIStore_mkdir(PyMAPIStoreObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (!PyArg_ParseTuple(args, "kKKO", &context_id, &parent_fid, &fid, &pySPropValue)) {
+	if (!PyArg_ParseTuple(args, "iKKO", &context_id, &parent_fid, &fid, &pySPropValue)) {
 		return NULL;
 	}
 
@@ -224,7 +232,7 @@ static PyObject *py_MAPIStore_rmdir(PyMAPIStoreObject *self, PyObject *args)
 	uint64_t	fid;
 	uint8_t		flags;
 
-	if (!PyArg_ParseTuple(args, "kKKH", &context_id, &parent_fid, &fid, &flags)) {
+	if (!PyArg_ParseTuple(args, "iKKH", &context_id, &parent_fid, &fid, &flags)) {
 		return NULL;
 	}
 
@@ -251,7 +259,7 @@ static PyObject *py_MAPIStore_setprops(PyMAPIStoreObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (!PyArg_ParseTuple(args, "kKbO", &context_id, &fid, &object_type, &pySPropValue)) {
+	if (!PyArg_ParseTuple(args, "iKbO", &context_id, &fid, &object_type, &pySPropValue)) {
 		return NULL;
 	}
 
@@ -270,7 +278,7 @@ static PyObject *py_MAPIStore_setprops(PyMAPIStoreObject *self, PyObject *args)
 static PyMethodDef mapistore_methods[] = {
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	{ "del_context", (PyCFunction)py_MAPIStore_del_context, METH_VARARGS },
-	{ "root_mkdir", (PyCFunction)py_MAPIStore_root_mkdir, METH_VARARGS },
+	{ "root_mkdir", (PyCFunction)py_MAPIStore_root_mkdir, METH_KEYWORDS },
 	{ "add_context_idexing", (PyCFunction)py_MAPIStore_add_context_indexing, METH_VARARGS },
 	{ "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS },
 	{ "add_context_ref_count", (PyCFunction)py_MAPIStore_add_context_ref_count, METH_VARARGS },
@@ -380,6 +388,5 @@ void initmapistore(void)
 	PyModule_AddObject(m, "MAPISTORE_MESSAGE", PyInt_FromLong(MAPISTORE_MESSAGE));
 
 	Py_INCREF(&PyMAPIStore);
-
 	PyModule_AddObject(m, "mapistore", (PyObject *)&PyMAPIStore);
 }

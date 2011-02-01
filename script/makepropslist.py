@@ -346,8 +346,8 @@ def make_properties_list(propsfilename):
 			propertyinfo["CanonicalName"] = canonicalname
 
 		if line.strip().startswith("Property name:"):
-			propertyname = line.strip().split(":")[1].strip()
-			propertyinfo["PropertyName"] = propertyname
+			propertyname = line.split(":", 1)
+			propertyinfo["PropertyName"] = propertyname[1].strip()
 
 		if line.strip().startswith("Description:"):
 			description = line.strip().split(":")[1].strip()

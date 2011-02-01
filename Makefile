@@ -123,7 +123,7 @@ re:: clean install
 
 idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h
 
-exchange.idl: mapitags_enum.h mapicodes_enum.h
+exchange.idl: properties_enum.h mapicodes_enum.h
 
 gen_ndr:
 	@echo "Creating the gen_ndr directory"
@@ -172,11 +172,9 @@ libmapi-clean::
 	rm -f libmapi/version.h
 ifneq ($(SNAPSHOT), no)
 	rm -f libmapi/mapicode.c
-	rm -f libmapi/mapitags.c libmapi/mapitags.h
 	rm -f libmapi/codepage_lcid.c
 	rm -f libmapi/mapi_nameid.h libmapi/mapi_nameid_private.h
 	rm -f mapicodes_enum.h
-	rm -f mapitags_enum.h
 endif
 	rm -f gen_ndr/ndr_exchange*
 	rm -f gen_ndr/exchange.h
@@ -229,6 +227,8 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 libmapi/mapidefs.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/version.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/property_tags.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/property_altnames.h $(DESTIDR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
 	$(INSTALL) -m 0644 gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	$(INSTALL) -m 0644 gen_ndr/property.h $(DESTDIR)$(includedir)/gen_ndr/
@@ -280,7 +280,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/lzfu.po					\
 	libmapi/mapi_object.po				\
 	libmapi/mapi_id_array.po			\
-	libmapi/mapitags.po				\
+	libmapi/property_tags.po			\
 	libmapi/mapidump.po				\
 	libmapi/mapicode.po 				\
 	libmapi/codepage_lcid.po			\
@@ -310,7 +310,7 @@ libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
 libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
-libmapi/mapitags.c libmapi/mapicode.c libmapi/codepage_lcid.c mapitags_enum.h mapicodes_enum.h: \
+libmapi/mapicode.c libmapi/codepage_lcid.c mapicodes_enum.h: \
 	libmapi/conf/mapi-properties								\
 	libmapi/conf/mapi-codes									\
 	libmapi/conf/mapi-named-properties							\
@@ -729,9 +729,6 @@ libmapiproxy-install:
 libmapiproxy-clean:
 	rm -f mapiproxy/libmapiproxy/*.po mapiproxy/libmapiproxy/*.o
 	rm -f mapiproxy/libmapiproxy/*.gcno mapiproxy/libmapiproxy/*.gcda
-ifneq ($(SNAPSHOT), no)
-	rm -f mapiproxy/libmapiproxy/openchangedb_property.c
-endif
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
 
@@ -744,10 +741,6 @@ libmapiproxy-distclean:
 	rm -f mapiproxy/libmapiproxy.pc
 
 distclean::libmapiproxy-distclean
-
-mapiproxy/libmapiproxy/openchangedb_property.c: libmapi/conf/mapi-properties libmapi/conf/mparse.pl
-	@./libmapi/conf/mparse.pl --parser=openchangedb_property --outputdir=mapiproxy/libmapiproxy/ \
-				  libmapi/conf/mapi-properties
 
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dcesrv_mapiproxy_module.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_server.po	\

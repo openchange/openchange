@@ -116,8 +116,8 @@ enum icalproperty_method get_ical_method(const char *msgclass)
 	/* Sanity check */
 	if (!msgclass) return ICAL_METHOD_NONE;
 
-	for (i = 0; ical_method[i].PidTagMessageClass; i++) {
-		if (!strcmp(msgclass, ical_method[i].PidTagMessageClass)) {
+	for (i = 0; ical_method[i].messageclass; i++) {
+		if (!strcmp(msgclass, ical_method[i].messageclass)) {
 			return ical_method[i].method;
 		}
 	}
@@ -181,8 +181,8 @@ enum icalparameter_partstat get_ical_partstat(const char *msgclass)
 	/* Sanity check */
 	if (!msgclass) return ICAL_PARTSTAT_NONE;
 
-	for (i = 0; ical_method[i].PidTagMessageClass; i++) {
-		if (!strcmp(msgclass, ical_method[i].PidTagMessageClass)) {
+	for (i = 0; ical_method[i].messageclass; i++) {
+		if (!strcmp(msgclass, ical_method[i].messageclass)) {
 			return ical_method[i].partstat;
 		}
 	}

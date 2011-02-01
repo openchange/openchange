@@ -1117,7 +1117,7 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	valarray.lpProps[5].value.bin.lpb[1] = 0x00;
 	valarray.lpProps[5].value.bin.lpb[2] = 0x20;
 	valarray.lpProps[5].value.bin.lpb[3] = 0x00;
-	valarray.lpProps[6].ulPropTag = PR_FREEBUSY_BUSY_MONTHS;
+	valarray.lpProps[6].ulPropTag = PidTagScheduleInfoMonthsBusy;
 	valarray.lpProps[6].value.MVl.cValues = 2;
 	valarray.lpProps[6].value.MVl.lpl = talloc_array(mt->mem_ctx, uint32_t, 2);
 	valarray.lpProps[6].value.MVl.lpl[0] = 32130;
@@ -1189,7 +1189,7 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_BINARY");
 
 
-	mvi4get = find_mapi_SPropValue_data(&valarray, PR_FREEBUSY_BUSY_MONTHS);
+	mvi4get = find_mapi_SPropValue_data(&valarray, PidTagScheduleInfoMonthsBusy);
 	if (!mvi4get || (mvi4get->cValues != 2 ) || (mvi4get->lpl[0] != 32130) || (mvi4get->lpl[1] != 32131)) {
 		/* failure */
 		mapitest_print(mt, "* %-40s: [FAILURE]\n", "mapi_SPropValue find with PT_MV_LONG");
@@ -1230,21 +1230,21 @@ _PUBLIC_ bool mapitest_noserver_proptagvalue(struct mapitest *mt)
 {
 	uint32_t proptag;
 	
-	proptag = get_proptag_value("PR_ACKNOWLEDGEMENT_MODE");
-	if (proptag != PR_ACKNOWLEDGEMENT_MODE) {
-		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with PR_ACKNOWLEDGEMENT_MODE");
+	proptag = get_proptag_value("PidTagTemplateData");
+	if (proptag != PidTagTemplateData) {
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with PidTagTemplateData");
 		return false;
 	}
 
-	proptag = get_proptag_value("PR_PROFILE_OPEN_FLAGS");
-	if (proptag != PR_PROFILE_OPEN_FLAGS) {
-		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with PR_PROFILE_OPEN_FLAGS");
+	proptag = get_proptag_value("PidTagDelegatedByRule");
+	if (proptag != PidTagDelegatedByRule) {
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with PidTagDelegatedByRule");
 		return false;
 	}
 
-	proptag = get_proptag_value("PR_EMS_AB_SERVER");
-	if (proptag != PR_EMS_AB_SERVER) {
-		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with PR_EMS_AB_SERVER_ERROR");
+	proptag = get_proptag_value("PidTagAddressBookContainerId_Error");
+	if (proptag != PidTagAddressBookContainerId_Error) {
+		mapitest_print(mt, "* %-40s: [FAILURE]\n", "get_proptag_value with PidTagAddressBookContainerId_Error");
 		return false;
 	}
 

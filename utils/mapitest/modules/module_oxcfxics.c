@@ -476,7 +476,7 @@ _PUBLIC_ bool mapitest_oxcfxics_CopyProperties(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	props = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_FOLDER_TYPE, PR_NTSD_MODIFICATION_TIME);
+	props = set_SPropTagArray(mt->mem_ctx, 0x3, PR_DISPLAY_NAME, PR_FOLDER_TYPE, PidTagLastModificationTime);
 	retval = FXCopyProperties(&(context->obj_test_folder), 0 /* level */, 0 /*copyflags */, FastTransfer_Unicode, props, &obj_context);
 	mapitest_print_retval_clean(mt, "FXCopyProperties", retval);
 	if (retval != MAPI_E_SUCCESS) {

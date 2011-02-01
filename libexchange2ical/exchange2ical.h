@@ -129,7 +129,7 @@ struct exchange2ical {
 struct	ical_method {
 	enum icalproperty_method	method;
 	enum icalparameter_partstat	partstat;
-	const char			*PidTagMessageClass;
+	const char			*messageclass;
 };
 
 struct ical_calendartype {

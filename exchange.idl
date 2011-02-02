@@ -1513,7 +1513,8 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8				handle_idx;
 		MSGFLAG_READ			flags;
-		[flag(NDR_REMAINING)] DATA_BLOB	clientdata;
+	        /* TEMP HACK for editing notes without crashing Outlook:
+		   [flag(NDR_REMAINING)] DATA_BLOB	clientdata; */
 	} SetMessageReadFlag_req;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
@@ -1529,7 +1530,9 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		boolean8							ReadStatusChanged;
 		[switch_is(ReadStatusChanged)] SetMessageReadFlag_LogonId	LogonId;
-		[switch_is(ReadStatusChanged)] SetMessageReadFlag_ClientData	ClientData;
+	        /* TEMP HACK for editing notes without crashing Outlook:
+		   [switch_is(ReadStatusChanged)]
+		   SetMessageReadFlag_ClientData	ClientData; */
 	} SetMessageReadFlag_repl;
 
 	/*************************/

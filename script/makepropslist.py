@@ -1096,7 +1096,7 @@ def make_mapi_named_properties_file():
 			 "dn: CN=External,CN=Server\n"	\
 			 "objectClass: container\n"	\
 			 "objectClass: top\n"		\
-			 "cn: Common\n"			\
+			 "cn: External\n"			\
 			 "mapping_index: 0x%.4x\n" % increment
 	start_content += attributes + "\n"
 	start_content += "dn: CN=Users,CN=Server\n"	\

@@ -13,7 +13,7 @@ mapping_index: 0x0000
 dn: CN=External,CN=Server
 objectClass: container
 objectClass: top
-cn: Common
+cn: External
 mapping_index: 0x8255
 reserved_tags: 0x8c61
 reserved_tags: 0x8c6a

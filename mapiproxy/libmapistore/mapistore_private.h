@@ -173,7 +173,7 @@ int mapistore_backend_set_property_from_fd(struct backend_context *, uint64_t, u
 int mapistore_backend_get_property_into_fd(struct backend_context *, uint64_t, uint8_t, uint32_t, int);
 int mapistore_backend_modifyrecipients(struct backend_context *, uint64_t, struct ModifyRecipientRow *, uint16_t);
 int mapistore_backend_get_fid_by_name(struct backend_context *, uint64_t, const char *, uint64_t *);
-int mapistore_backend_deletemessage(struct backend_context *, uint64_t, uint8_t);
+int mapistore_backend_deletemessage(struct backend_context *, uint64_t, uint64_t, uint8_t);
 int mapistore_backend_get_folders_list(struct backend_context *, uint64_t, struct indexing_folders_list **);
 int mapistore_backend_set_restrictions(struct backend_context *, uint64_t, uint8_t, struct mapi_SRestriction *, uint8_t *);
 

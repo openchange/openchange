@@ -547,9 +547,9 @@ int mapistore_backend_modifyrecipients(struct backend_context *bctx, uint64_t mi
 	return bctx->backend->op_modifyrecipients(bctx->private_data, mid, rows, count);
 }
 
-int mapistore_backend_deletemessage(struct backend_context *bctx, uint64_t mid, uint8_t flags)
+int mapistore_backend_deletemessage(struct backend_context *bctx, uint64_t fid, uint64_t mid, uint8_t flags)
 {
-	return bctx->backend->op_deletemessage(bctx->private_data, mid, flags);
+        return bctx->backend->op_deletemessage(bctx->private_data, fid, mid, flags);
 }
 
 int mapistore_backend_get_folders_list(struct backend_context *bctx, uint64_t fmid, struct indexing_folders_list **folders_list)

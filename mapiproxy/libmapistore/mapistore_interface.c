@@ -1070,7 +1070,7 @@ _PUBLIC_ int mapistore_get_child_fids(struct mapistore_context *mstore_ctx,
  */
 _PUBLIC_ int mapistore_deletemessage(struct mapistore_context *mstore_ctx,
 				     uint32_t context_id,
-				     uint64_t mid,
+				     uint64_t fid, uint64_t mid,
 				     uint8_t flags)
 {
 	struct backend_context	*backend_ctx;
@@ -1084,7 +1084,7 @@ _PUBLIC_ int mapistore_deletemessage(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_deletemessage(backend_ctx, mid, flags);
+	ret = mapistore_backend_deletemessage(backend_ctx, fid, mid, flags);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

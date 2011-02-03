@@ -99,9 +99,6 @@ struct mapistore_context {
 	/* MAPISTORE_v2 */
 	struct mapistore_indexing_context_list	*mapistore_indexing_list;
 	struct ldb_context			*mapistore_nprops_ctx;
-	/* !MAPISTORE_v2 */
-
-	void					*nprops_ctx;
 };
 
 struct indexing_folders_list {

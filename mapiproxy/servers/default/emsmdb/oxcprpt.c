@@ -788,7 +788,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 								mapi_req->u.mapi_GetIDsFromNames.count);
 
 	for (i = 0; i < mapi_req->u.mapi_GetIDsFromNames.count; i++) {
-		mapistore_namedprops_get_mapped_id(emsmdbp_ctx->mstore_ctx->nprops_ctx, 
+		mapistore_namedprops_get_mapped_id(emsmdbp_ctx->mstore_ctx->mapistore_nprops_ctx, 
 						   mapi_req->u.mapi_GetIDsFromNames.nameid[i],
 						   &mapi_repl->u.mapi_GetIDsFromNames.propID[i]);
 	}

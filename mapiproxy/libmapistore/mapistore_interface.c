@@ -96,9 +96,6 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	}
 	/* MAPISTORE_v2 */
 
-	/* mstore_ctx->nprops_ctx = NULL; */
-	/* retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx)); */
-
 	return mstore_ctx;
 }
 
@@ -119,7 +116,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_release(struct mapistore_context *mstore
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
-	talloc_free(mstore_ctx->nprops_ctx);
+	talloc_free(mstore_ctx->mapistore_nprops_ctx);
 	talloc_free(mstore_ctx->processing_ctx);
 	talloc_free(mstore_ctx->context_list);
 	talloc_free(mstore_ctx);

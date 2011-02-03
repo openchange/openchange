@@ -29,13 +29,14 @@ pythondir=@pythondir@
 sambaprefix=@sambaprefix@
 
 DSOOPT=-shared -fPIC
-CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@ \
-       -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"						\
-       -DMAPISTORE_LDIF=\"$(datadir)/setup/mapistore\"						\
-       -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
-       -DMAPISTORE_MAPPING_PATH=\"$(prefix)/private/mapistore\"					\
-       -DMAPISTORE_DBPATH=\"$(prefix)/private/mapistore/mapistore.ldb\"				\
-       -DLZXPRESS_DATADIR=\"$(datadir)/mapitest/lzxpress\"					\
+CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@				\
+       -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"							\
+       -DMAPISTORE_LDIF=\"$(datadir)/setup/mapistore\"							\
+       -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"					\
+       -DMAPISTORE_MAPPING_PATH=\"$(prefix)/private/mapistore\"						\
+       -DMAPISTORE_DBPATH=\"$(prefix)/private/mapistore/mapistore.ldb\"					\
+       -DMAPISTORE_DB_NAMEDPROPS_PATH=\"$(prefix)/private/mapistore/mapistore_named_properties.ldb\"	\
+       -DLZXPRESS_DATADIR=\"$(datadir)/mapitest/lzxpress\"						\
        -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"
 
 # This value should be determined by configure at some point

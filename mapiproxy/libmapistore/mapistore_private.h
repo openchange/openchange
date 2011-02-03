@@ -163,6 +163,25 @@ struct mapistoredb_context {
 	"mapistore_uri: %s\n"		\
 	"distinguishedName: %s\n"
 
+/** Named properties database ldif */
+#define	MDB_NPROPS_INIT_LDIF_TMPL		\
+	"dn: @OPTIONS\n"			\
+	"checkBaseOnSearch: TRUE\n\n"		\
+	"dn: @INDEXLIST\n"			\
+	"@IDXATTR: cn\n"			\
+	"@IDXATTR: objectClass\n"		\
+	"@IDXATTR: mapped_id\n\n"		\
+	"dn: @ATTRIBUTES@\n"			\
+	"cn: CASE_INSENSITIVE\n"		\
+	"dn: CASE_INSENSITIVE\n\n"
+
+#define	MDB_NPROPS_ROOTDSE_LDIF_TMPL					\
+	"dn: @ROOTDSE\n"						\
+	"defaultNamingContext: DC=server\n"				\
+	"rootDomainNamingContext: DC=server\n"				\
+	"vendorName: OpenChange Project (http://www.openchange.org)\n\n"
+
+
 /**
    Identifier mapping context.
 
@@ -236,6 +255,7 @@ struct mapistore_indexing_context_list {
 #define	MAPISTORE_DB_NAMED		"named_properties.ldb"
 
 #define	MAPISTORE_DB_NAMED_V2		"mapistore_named_properties.ldb"
+#define	MAPISTORE_DB_NAMED_V2_LDIF	"mapistore_namedprops_v2.ldif"
 
 #define	MAPISTORE_DB_INDEXING		"indexing.tdb"
 #define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
@@ -269,6 +289,7 @@ enum MAPISTORE_ERROR mapistore_free_context_id(struct processing_context *, uint
 /* mapistore_v2 */
 enum MAPISTORE_ERROR mapistore_ldb_write_ldif_string_to_store(struct ldb_context *, const char *);
 enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_context *, const char *);
+enum MAPISTORE_ERROR mapistore_ldb_write_ldif_file_to_store(struct ldb_context *, const char *);
 enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *, const char *, uint64_t *);
 enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_context *, const char *, uint64_t, uint64_t *, uint64_t *);
 enum MAPISTORE_ERROR mapistore_get_mailbox_uri(struct processing_context *, const char *, char **);
@@ -324,7 +345,7 @@ enum MAPISTORE_ERROR mapistore_indexing_context_add_ref(struct mapistore_context
 /* !MAPISTORE_v2 */
 
 /* definitions from mapistore_namedprops.c */
-enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *, void **);
+enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *, struct ldb_context **);
 
 __END_DECLS
 

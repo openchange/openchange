@@ -878,6 +878,7 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/i
 							mapiproxy/libmapistore/mapistore_backend_public.po			\
 							mapiproxy/libmapistore/database/mapistoredb.po				\
 							mapiproxy/libmapistore/database/mapistoredb_conf.po			\
+							mapiproxy/libmapistore/database/mapistoredb_namedprops.po		\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)

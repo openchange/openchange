@@ -87,6 +87,10 @@ static PyObject *py_MAPIStoreDB_provision(PyMAPIStoreDBObject *self, PyObject *a
 	return PyInt_FromLong(mapistoredb_provision(self->mdb_ctx));
 }
 
+static PyObject *py_MAPIStoreDB_provision_named_properties(PyMAPIStoreDBObject *self, PyObject *args)
+{
+	return PyInt_FromLong(mapistoredb_namedprops_provision(self->mdb_ctx));
+}
 
 static PyObject *py_MAPIStoreDB_get_mapistore_uri(PyObject *module, PyObject *args, PyObject *kwargs)
 {
@@ -215,6 +219,7 @@ static PyObject *PyMAPIStoreDB_getParameter(PyObject *_self, void *data)
 static PyMethodDef mapistoredb_methods[] = {
 	{ "dump_configuration", (PyCFunction)py_MAPIStoreDB_dump_configuration, METH_VARARGS },
 	{ "provision", (PyCFunction)py_MAPIStoreDB_provision, METH_KEYWORDS },
+	{ "provision_named_properties", (PyCFunction)py_MAPIStoreDB_provision_named_properties, METH_VARARGS },
 	{ "get_mapistore_uri", (PyCFunction)py_MAPIStoreDB_get_mapistore_uri, METH_KEYWORDS },
 	{ "get_new_fid", (PyCFunction)py_MAPIStoreDB_get_new_fid, METH_VARARGS },
 	{ "get_new_allocation_range", (PyCFunction)py_MAPIStoreDB_get_new_allocation_range, METH_VARARGS },

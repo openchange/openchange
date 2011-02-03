@@ -28,11 +28,6 @@
 
 #include <sys/stat.h>
 
-static const char *mapistore_namedprops_get_ldif_path(void)
-{
-	return MAPISTORE_LDIF;
-}
-
 /**
    \details Initialize the named properties database or return pointer
    to the existing one if already initialized/opened.
@@ -43,14 +38,10 @@ static const char *mapistore_namedprops_get_ldif_path(void)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
+enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_context **_ldb_ctx)
 {
-	int			ret;
 	struct stat		sb;
 	struct ldb_context	*ldb_ctx = NULL;
-	struct ldb_ldif		*ldif;
-	char			*filename;
-	FILE			*f;
 	struct tevent_context	*ev;
 	char			*database;
 
@@ -61,40 +52,13 @@ enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_
 	ev = tevent_context_init(mem_ctx);
 	MAPISTORE_RETVAL_IF(!ev, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	database = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), MAPISTORE_DB_NAMED);
-	DEBUG(0, ("database = %s\n", database));
+	database = talloc_strdup(mem_ctx, mapistore_get_named_properties_database_path());
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Full path to mapistore named properties database is: %s\n",
+			  database);
 
-	/* Step 1. Stat the database and populate it if it doesn't exist */
-	if (stat(database, &sb) == -1) {
-		ldb_ctx = mapistore_ldb_wrap_connect(ldb_ctx, ev, database, 0);
-		talloc_free(database);
-		MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
-
-		filename = talloc_asprintf(mem_ctx, "%s/mapistore_namedprops.ldif", 
-					   mapistore_namedprops_get_ldif_path());
-		f = fopen(filename, "r");
-		talloc_free(filename);
-		MAPISTORE_RETVAL_IF(!f, MAPISTORE_ERROR, NULL);
-
-		while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
-			struct ldb_message *normalized_msg;
-			ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &normalized_msg);
-			MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);
-			ret = ldb_add(ldb_ctx, normalized_msg);
-			talloc_free(normalized_msg);
-			if (ret != LDB_SUCCESS) {
-				fclose(f);
-				MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);
-			}
-			ldb_ldif_read_free(ldb_ctx, ldif);
-		}
-		fclose(f);
-
-	} else {
-		ldb_ctx = mapistore_ldb_wrap_connect(ldb_ctx, ev, database, 0);
-		talloc_free(database);
-		MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
-	}
+	ldb_ctx = mapistore_ldb_wrap_connect(ldb_ctx, ev, database, 0);
+	talloc_free(database);
+	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
 	*_ldb_ctx = ldb_ctx;
 

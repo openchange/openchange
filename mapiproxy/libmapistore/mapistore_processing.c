@@ -187,7 +187,7 @@ enum MAPISTORE_ERROR mapistore_set_named_properties_database_path(const char *db
  */
 const char *mapistore_get_named_properties_database_path(void)
 {
-	return (!mapistore_nprops_dbpath) ? NULL : mapistore_nprops_dbpath;
+	return (!mapistore_nprops_dbpath) ? MAPISTORE_DB_NAMEDPROPS_PATH : mapistore_nprops_dbpath;
 }
 
 
@@ -358,6 +358,43 @@ enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_cont
 	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
 
 	return mapistore_ldb_write_ldif_string_to_store(ldb_ctx, ldif_string);
+}
+
+
+enum MAPISTORE_ERROR mapistore_ldb_write_ldif_file_to_store(struct ldb_context *ldb_ctx, const char *ldif_path)
+{
+	int			ret;
+	FILE			*f;
+	struct ldb_ldif		*ldif;
+	TALLOC_CTX		*mem_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!ldif_path, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	f = fopen(ldif_path, "r");
+	MAPISTORE_RETVAL_IF(!f, MAPISTORE_ERR_DATABASE_INIT, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "mapistore_ldb_write_ldif_file_to_store");
+
+	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
+		struct ldb_message	*normalized_msg;
+
+		ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &normalized_msg);
+		MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+		ret = ldb_add(ldb_ctx, normalized_msg);
+		if (ret != LDB_SUCCESS) {
+			fclose(f);
+			MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+		}
+		ldb_ldif_read_free(ldb_ctx, ldif);
+		talloc_free(normalized_msg);
+	}
+
+	fclose(f);
+	talloc_free(mem_ctx);
+
+	return MAPISTORE_SUCCESS;
 }
 
 

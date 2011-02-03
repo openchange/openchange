@@ -12,13 +12,17 @@ import string
 
 username = "jkerihuel"
 indent = 1
+title_nb = 1
 
 os.mkdir("/tmp/mapistoredb");
 
 def newTitle(title, separator):
+    global title_nb
+    ftitle = "[Step %d]. %s" % (title_nb, title)
     print ""
-    print "%s" % title
-    print separator * len(title)
+    print ftitle
+    print separator * len(ftitle)
+    title_nb += 1
 
 def TreeRoot(name):
     print ""
@@ -43,26 +47,33 @@ def TreeDeIndent():
     indent -= 1
 
 def start():
-    newTitle("[Step 1]. Initializing mapistore database", '=')
+    newTitle("Initializing mapistore database", '=')
     MAPIStoreDB = mapistoredb.mapistoredb("/tmp/mapistoredb")
 
-    newTitle("[Step 2]. Provisioning mapistore database", '=')
+    newTitle("Provisioning mapistore database", '=')
     ret = MAPIStoreDB.provision(netbiosname = "server",
                                 firstorg = "OpenChange Project",
                                 firstou = "OpenChange Development Unit")
     if (ret == 0):
         print "\t* Provisioning: SUCCESS"
     else:
-        print "\t* Provisioning: FAILURE"
+        print "\t* Provisioning: FAILURE (ret = %d)" % ret
 
-    newTitle("[Step 3]. Create a new mailbox", '=')
+    newTitle("Create mapistore named properties database", '=')
+    ret = MAPIStoreDB.provision_named_properties()
+    if (ret == 0):
+        print "\t* Provisioning: SUCCESS"
+    else:
+        print "\t* Provisioning: FAILURE (ret = %d)" % ret
+
+    newTitle("Create a new mailbox", '=')
     mailbox_root = MAPIStoreDB.get_mapistore_uri(folder=mapistoredb.MDB_ROOT_FOLDER,
                                                  username=username, 
                                                  namespace="mstoredb://")
     retval = MAPIStoreDB.new_mailbox(username, mailbox_root)
     print "\t* Mailbox Root: %s" % mailbox_root
     
-    newTitle("[Step 4]. Get and Set a new allocation range to the mailbox", '=')
+    newTitle("Get and Set a new allocation range to the mailbox", '=')
     (retval, rstart,rend) = MAPIStoreDB.get_new_allocation_range(username,
                                                                  0x1000);
     if retval == 0:
@@ -76,18 +87,18 @@ def start():
         else:
             print "\t * Error while setting allocation range to the mailbox"
             
-    newTitle("[Step 5]. Uninitializing mapistore database context", '=')
+    newTitle("Uninitializing mapistore database context", '=')
     MAPIStoreDB.release()
                 
-    newTitle("[Step 6]. Initializing mapistore context", '=')
+    newTitle("Initializing mapistore context", '=')
     mapistore.set_mapping_path("/tmp/mapistoredb/mapistore")
     MAPIStore = mapistore.mapistore()
     
-    newTitle("[Step 7]. Adding a context over Mailbox Root Folder", '=')
+    newTitle("Adding a context over Mailbox Root Folder", '=')
     context_id = MAPIStore.add_context(username, mailbox_root)
     print "\t* context_id = %s" % context_id
 
-    newTitle("[Step 8]. Create the mailbox hierarchy", '=')
+    newTitle("Create the mailbox hierarchy", '=')
     
     TreeRoot("Mailbox Root Folder")
     
@@ -229,7 +240,7 @@ def start():
                                   folder_name="")
     TreeLeafStatus("Reminders", retval)
 
-    newTitle("[Step 9]. Setting mailbox folders to fsocpf", '=')
+    newTitle("Setting mailbox folders to fsocpf", '=')
     new_uri = MAPIStore.get_mapistore_uri(mapistoredb.MDB_INBOX,
                                           username, 
                                           "fsocpf://")

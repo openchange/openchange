@@ -98,6 +98,7 @@ struct mapistore_context {
 
 	/* MAPISTORE_v2 */
 	struct mapistore_indexing_context_list	*mapistore_indexing_list;
+	struct ldb_context			*mapistore_nprops_ctx;
 	/* !MAPISTORE_v2 */
 
 	void					*nprops_ctx;
@@ -184,6 +185,14 @@ enum MAPISTORE_ERROR		mapistoredb_set_firstou(struct mapistoredb_context *, cons
 const char*			mapistoredb_get_netbiosname(struct mapistoredb_context *);
 const char*			mapistoredb_get_firstorg(struct mapistoredb_context *);
 const char*			mapistoredb_get_firstou(struct mapistoredb_context *);
+
+/* definitions from mapistoredb_namedprops.c */
+enum MAPISTORE_ERROR		mapistoredb_namedprops_provision(struct mapistoredb_context *);
+enum MAPISTORE_ERROR		mapistoredb_namedprops_provision_user(struct mapistoredb_context *, const char *);
+enum MAPISTORE_ERROR		mapistoredb_namedprops_register_application(struct mapistoredb_context *, const char *,
+									    const char *, const char *, const char *);
+enum MAPISTORE_ERROR		mapistoredb_namedprops_unregister_application(struct mapistoredb_context *, const char *,
+									      const char *, const char *, const char *);
 
 /* definitions from mapistore_indexing.c */
 

@@ -123,6 +123,7 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 
 	mapistore_set_database_path(mdb_ctx->param->db_path);
 	mapistore_set_mapping_path(mdb_ctx->param->mstore_path);
+	mapistore_set_named_properties_database_path(mdb_ctx->param->db_named_path);
 	mdb_ctx->mstore_ctx = mapistore_init(mdb_ctx, NULL);
 	if (!mdb_ctx->mstore_ctx) {
 		DEBUG(5, ("! [%s:%d][%s]: Failed to initialize mapistore context\n", __FILE__, __LINE__, __FUNCTION__));

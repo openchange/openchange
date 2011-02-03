@@ -35,6 +35,7 @@
 #include "mapistore.h"
 #include "mapistore_private.h"
 #include "mapistore_backend.h"
+#include "mapistore_common.h"
 #include <dlinklist.h>
 #include "libmapi/libmapi_private.h"
 
@@ -62,14 +63,15 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 
 	retval = mapistore_init_mapping_context(mstore_ctx->processing_ctx);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(5, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "mapistore mapping context init failed: %s\n",
+				   mapistore_errstr(retval));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
 
 	retval = mapistore_backend_init(mstore_ctx, path);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(5, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "mapistore backend init failed: %s\n", mapistore_errstr(retval));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
@@ -82,10 +84,20 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 
 	/* MAPISTORE_v2 */
 	mstore_ctx->mapistore_indexing_list = talloc_zero(mstore_ctx, struct mapistore_indexing_context_list);
+
+	mstore_ctx->mapistore_nprops_ctx = NULL;
+	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->mapistore_nprops_ctx));
+	if (retval != MAPISTORE_SUCCESS) {
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, 
+				   "mapistore named properties database init failed: %s\n", 
+				   mapistore_errstr(retval));
+		talloc_free(mstore_ctx);
+		return NULL;
+	}
 	/* MAPISTORE_v2 */
 
-	mstore_ctx->nprops_ctx = NULL;
-	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
+	/* mstore_ctx->nprops_ctx = NULL; */
+	/* retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx)); */
 
 	return mstore_ctx;
 }
@@ -571,6 +583,8 @@ _PUBLIC_ const char *mapistore_errstr(enum MAPISTORE_ERROR mapistore_err)
 		return "Invalid mapistore context";
 	case MAPISTORE_ERR_INVALID_URI:
 		return "Invalid mapistore URI";
+	case MAPISTORE_ERR_NOT_IMPLEMENTED:
+		return "Not implemented";
 	}
 
 	return "Unknown error";

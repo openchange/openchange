@@ -200,6 +200,25 @@ static PyObject *py_MAPIStoreDB_release(PyMAPIStoreDBObject *_self, PyObject *ar
 	return PyInt_FromLong(MAPISTORE_SUCCESS);
 }
 
+static PyObject *py_MAPIStoreDB_namedprops_get_default_id(PyMAPIStoreDBObject *_self, PyObject *args, PyObject *kwargs)
+{
+	enum MAPISTORE_ERROR		retval;
+	PyMAPIStoreDBObject		*self = (PyMAPIStoreDBObject *) _self;
+	const char * const		kwnames[] = { "type", NULL };
+	int				type;
+	enum MAPISTORE_NAMEDPROPS_TYPE	ntype;
+	uint32_t			dflt_id;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", 
+					 discard_const_p(char *, kwnames),
+					 &type));
+
+	ntype = (enum MAPISTORE_NAMEDPROPS_TYPE) type;
+	retval = mapistore_namedprops_get_default_id(self->mdb_ctx->mstore_ctx, ntype, &dflt_id);
+
+	return Py_BuildValue("ii", retval, dflt_id);	
+}
+
 static PyObject *PyMAPIStoreDB_getParameter(PyObject *_self, void *data)
 {
 	PyMAPIStoreDBObject	*self = (PyMAPIStoreDBObject *) _self;
@@ -226,6 +245,8 @@ static PyMethodDef mapistoredb_methods[] = {
 	{ "new_mailbox", (PyCFunction)py_MAPIStoreDB_new_mailbox, METH_VARARGS },
 	{ "set_mailbox_allocation_range", (PyCFunction)py_MAPIStoreDB_set_mailbox_allocation_range, METH_VARARGS },
 	{ "release", (PyCFunction)py_MAPIStoreDB_release, METH_VARARGS },
+	/* named properties functions */
+	{ "namedprops_get_default_id", (PyCFunction)py_MAPIStoreDB_namedprops_get_default_id, METH_KEYWORDS },
 	{ NULL },
 };
 
@@ -302,6 +323,8 @@ void initmapistoredb(void)
 	PyModule_AddObject(m, "MDB_LAST_SPECIALFOLDER", PyInt_FromLong((int)MDB_LAST_SPECIALFOLDER));
 	PyModule_AddObject(m, "MDB_CUSTOM", PyInt_FromLong((int)MDB_CUSTOM));
 	
+	PyModule_AddObject(m, "MAPISTORE_NAMEDPROPS_INTERNAL", PyInt_FromLong((int)MAPISTORE_NAMEDPROPS_INTERNAL));
+	PyModule_AddObject(m, "MAPISTORE_NAMEDPROPS_EXTERNAL", PyInt_FromLong((int)MAPISTORE_NAMEDPROPS_EXTERNAL));
 
 	Py_INCREF(&PyMAPIStoreDB);
 	PyModule_AddObject(m, "mapistoredb", (PyObject *)&PyMAPIStoreDB);

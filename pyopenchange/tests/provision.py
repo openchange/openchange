@@ -63,6 +63,10 @@ def start():
     ret = MAPIStoreDB.provision_named_properties()
     if (ret == 0):
         print "\t* Provisioning: SUCCESS"
+        (retval,npid) = MAPIStoreDB.namedprops_get_default_id(mapistoredb.MAPISTORE_NAMEDPROPS_EXTERNAL)
+        print "\t\t* Last External Index: 0x%.4x" % (npid)
+        (retval,npid) = MAPIStoreDB.namedprops_get_default_id(mapistoredb.MAPISTORE_NAMEDPROPS_INTERNAL)
+        print "\t\t* Last Internal Index: 0x%.4x" % (npid)
     else:
         print "\t* Provisioning: FAILURE (ret = %d)" % ret
 

@@ -181,6 +181,10 @@ struct mapistoredb_context {
 	"rootDomainNamingContext: DC=server\n"				\
 	"vendorName: OpenChange Project (http://www.openchange.org)\n\n"
 
+enum MAPISTORE_NAMEDPROPS_TYPE {
+	MAPISTORE_NAMEDPROPS_INTERNAL = 0,
+	MAPISTORE_NAMEDPROPS_EXTERNAL = 1
+};
 
 /**
    Identifier mapping context.

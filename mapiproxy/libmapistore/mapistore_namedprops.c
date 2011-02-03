@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2010
+   Copyright (C) Julien Kerihuel 2010-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,8 +29,8 @@
 #include <sys/stat.h>
 
 /**
-   \details Initialize the named properties database or return pointer
-   to the existing one if already initialized/opened.
+   \details Return pointer to the existing mapistore name properties
+   database.
 
    \param mem_ctx pointer to the memory context
    \param ldb_ctx pointer on pointer to the ldb context the function
@@ -40,7 +40,6 @@
  */
 enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_context **_ldb_ctx)
 {
-	struct stat		sb;
 	struct ldb_context	*ldb_ctx = NULL;
 	struct tevent_context	*ev;
 	char			*database;
@@ -61,6 +60,57 @@ enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_c
 	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
 	*_ldb_ctx = ldb_ctx;
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Retrieve the default and first available ID from the
+   mapistore named properties database for internal or external
+   purposes
+
+   \param mstore_ctx pointer to the mapistore context
+   \param ntype the type of mapping index to return (internal or external)
+   \param last_id pointer to the default ID to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_namedprops_get_default_id(struct mapistore_context *mstore_ctx, 
+							 enum MAPISTORE_NAMEDPROPS_TYPE ntype,
+							 uint32_t *dflt_id)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "*", NULL };
+	const char		*stype = NULL;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->mapistore_nprops_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!dflt_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	ldb_ctx = mstore_ctx->mapistore_nprops_ctx;
+	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_get_default_id");
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Step 1. Search for CN=External,CN=Server record and retrieve its attributes */
+	switch (ntype) {
+	case MAPISTORE_NAMEDPROPS_INTERNAL:
+		stype = "Internal";
+		break;
+	case MAPISTORE_NAMEDPROPS_EXTERNAL:
+		stype = "External";
+		break;
+	}
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(&(objectClass=container)(cn=%s))", stype);
+	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+
+	/* Step 2. Retrieve and return the mapping_index attribute */
+	*dflt_id = ldb_msg_find_attr_as_int(res->msgs[0], "mapping_index", 0);
+	MAPISTORE_RETVAL_IF(!*dflt_id, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
 
 	return MAPISTORE_SUCCESS;
 }

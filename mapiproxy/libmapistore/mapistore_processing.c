@@ -41,6 +41,7 @@
 
 char	*mapping_path = NULL;
 char	*mapistore_dbpath = NULL;
+char	*mapistore_nprops_dbpath = NULL;
 char	*mapistore_firstorgdn = NULL;
 
 /**
@@ -136,6 +137,60 @@ enum MAPISTORE_ERROR mapistore_set_database_path(const char *dbname)
 }
 
 
+/**
+   \details Return the current path to mapistore.ldb database
+
+   \return pointer to the mapistore database path
+ */
+const char *mapistore_get_database_path(void)
+{
+	return (!mapistore_dbpath) ? MAPISTORE_DBPATH : (const char *) mapistore_dbpath;
+}
+
+
+/**
+   \details Set the mapistore_named_properties.ldb mapping path
+
+   \param dbname string pointer to the mapistore named properties database path
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_set_named_properties_database_path(const char *dbname)
+{
+	TALLOC_CTX	*mem_ctx;
+
+	if (!dbname) {
+		if (mapistore_nprops_dbpath) {
+			talloc_free(mapistore_nprops_dbpath);
+		}
+		mapistore_nprops_dbpath = NULL;
+		return MAPISTORE_SUCCESS;
+	}
+
+	if (mapistore_nprops_dbpath) {
+		talloc_free(mapistore_nprops_dbpath);
+		mapistore_nprops_dbpath = NULL;
+	}
+
+	mem_ctx = talloc_autofree_context();
+	mapistore_nprops_dbpath = talloc_strdup(mem_ctx, dbname);
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Return the current path to mapistore_named_properties.ldb
+   database
+
+   \return pointer to the mapistore named properties database path on
+   success, otherwise NULL
+ */
+const char *mapistore_get_named_properties_database_path(void)
+{
+	return (!mapistore_nprops_dbpath) ? NULL : mapistore_nprops_dbpath;
+}
+
+
 enum MAPISTORE_ERROR mapistore_set_firstorgdn(const char *firstou, const char *firstorg, const char *serverdn)
 {
 	TALLOC_CTX	*mem_ctx;
@@ -159,19 +214,6 @@ const char *mapistore_get_firstorgdn(void)
 {
 	return mapistore_firstorgdn;
 }
-
-/**
-   \details Return the current path to mapistore.ldb database
-
-   \return pointer to the mapistore database path
- */
-const char *mapistore_get_database_path(void)
-{
-	return (!mapistore_dbpath) ? MAPISTORE_DBPATH : (const char *) mapistore_dbpath;
-}
-
-
-
 
 
 /**

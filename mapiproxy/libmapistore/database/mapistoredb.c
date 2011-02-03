@@ -107,6 +107,9 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 						     mdb_ctx->param->serverdn);
 	mdb_ctx->param->db_path = talloc_asprintf(mdb_ctx->param, "%s/mapistore.ldb", path);
 	mdb_ctx->param->mstore_path = talloc_asprintf(mdb_ctx->param, "%s/mapistore", path);
+	mdb_ctx->param->db_named_path = talloc_asprintf(mdb_ctx->param, "%s/%s", 
+							mdb_ctx->param->mstore_path,
+							MAPISTORE_DB_NAMED_V2);
 
 	/* Step 4. Initialize mapistore */
 	if (stat(mdb_ctx->param->mstore_path, &sb) == -1) {

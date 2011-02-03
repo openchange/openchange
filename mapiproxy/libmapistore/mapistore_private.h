@@ -86,6 +86,7 @@ struct ldb_wrap {
 
 struct mapistoredb_conf {
 	char		*db_path;
+	char		*db_named_path;
 	char		*mstore_path;
 	char		*netbiosname;
 	char		*dnsdomain;
@@ -233,6 +234,9 @@ struct mapistore_indexing_context_list {
 #define	MAPISTORE_INDEXING_FMID		"FMID/0x%.16"PRIx64
 
 #define	MAPISTORE_DB_NAMED		"named_properties.ldb"
+
+#define	MAPISTORE_DB_NAMED_V2		"mapistore_named_properties.ldb"
+
 #define	MAPISTORE_DB_INDEXING		"indexing.tdb"
 #define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
 

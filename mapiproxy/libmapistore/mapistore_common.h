@@ -68,6 +68,7 @@ __BEGIN_DECLS
 const char		*mapistore_get_mapping_path(void);
 const char		*mapistore_get_firstorgdn(void);
 const char		*mapistore_get_database_path(void);
+const char		*mapistore_get_named_properties_database_path(void);
 
 /* definition from mapistore_backend_public.c */
 struct ldb_context	*mapistore_public_ldb_connect(struct mapistore_backend_context *, const char *);

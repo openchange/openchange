@@ -155,6 +155,7 @@ enum MAPISTORE_ERROR mapistore_deletemessage(struct mapistore_context *, uint32_
 /* definitions from mapistore_processing.c */
 enum MAPISTORE_ERROR	mapistore_set_mapping_path(const char *);
 enum MAPISTORE_ERROR	mapistore_set_database_path(const char *);
+enum MAPISTORE_ERROR	mapistore_set_named_properties_database_path(const char *);
 enum MAPISTORE_ERROR	mapistore_set_firstorgdn(const char *, const char *, const char *);
 
 

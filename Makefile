@@ -173,7 +173,6 @@ libmapi-clean::
 ifneq ($(SNAPSHOT), no)
 	rm -f libmapi/mapicode.c
 	rm -f libmapi/codepage_lcid.c
-	rm -f libmapi/mapi_nameid.h libmapi/mapi_nameid_private.h
 	rm -f mapicodes_enum.h
 endif
 	rm -f gen_ndr/ndr_exchange*

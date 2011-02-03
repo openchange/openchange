@@ -941,8 +941,31 @@ def check_properties_list():
 	check_areas()
 	check_references()
 
+def next_available_id(knownprops, increment):
+	try:
+	       	knownprops.index(increment)
+	       	knownprops.remove(increment)
+	       	increment += 1
+	       	return next_available_id(knownprops, increment)
+       	except ValueError:
+		return increment
+
+
+def find_key(dic, val):
+	"""return the key of dictionary dic given the value"""
+	try:
+		for k,v in dic.iteritems():
+			if v == val:
+				return k
+	except ValueError:
+		print "Value %s not found" % val
+
 def make_mapi_named_properties_file():
+	content = ""
+	attributes = ""
+	start_content = ""
 	namedprops = []
+	knownprops = []
 	for entry in properties:
 		if (entry.has_key("CanonicalName") == False):
 			print "Section", entry["OXPROPS_Sect"], "has no canonical name entry"
@@ -956,16 +979,17 @@ def make_mapi_named_properties_file():
 			proptype = entry["DataTypeName"]
 			if entry.has_key("PropertyLid"):
 				proplid = "0x" + format(entry["PropertyLid"], "04x")
-				kind = "MNID_ID    "
+				kind = "MNID_ID"
 				OOM = "NULL" # use as default
 				propname = "NULL"
 				if entry.has_key("PropertyName"):
-					OOM = entry["PropertyName"]
+					OOM = entry["PropertyName"].strip()
 				elif entry.has_key("AlternateNames"):
-					for altname in entry["AlternateNames"]:
-						altname = altname.strip()
-						if altname.startswith("dispid"):
-							OOM = altname[6:]
+					altname = entry["AlternateNames"].strip()
+					if altname.startswith("dispid"):
+						OOM = altname[6:]
+					else:
+						OOM = altname
 				else:
 					pass
 			else:
@@ -974,7 +998,7 @@ def make_mapi_named_properties_file():
 				OOM = "NULL"
 				propname = "NULL" # use as default
 				if entry.has_key("PropertyName"):
-					propname = entry["PropertyName"]
+					propname = entry["PropertyName"].strip()
 				elif entry.has_key("AlternateNames"):
 					for altname in entry["AlternateNames"]:
 						altname = altname.strip()
@@ -984,16 +1008,177 @@ def make_mapi_named_properties_file():
 				guid = entry["PropertySet"]
 			else:
 				guid = "[No PropSet]"
-			namedprop = (string.ljust(name, 54), string.ljust(OOM, 29), proplid, string.ljust(propname, 29), string.ljust(datatypemap[proptype], 14), kind, guid)
+			namedprop = (name, OOM, proplid, propname, knowndatatypes[proptype], kind, guid)
 			namedprops.append(namedprop)
-	print "### Canonical name                                     OOM	                     propID propName			  propType	Kind        OLEGUID                Mapped Property ID"
-	print
-	print "### Meeting Properties"
-	#      PidLidAttendeeCriticalChange                           LID_ATTENDEE_CRITICAL_CHANGE  0x0001 NULL                          PT_SYSTIME    MNID_ID     PSETID_Meeting         0x8192
-	sortednameprops = sorted(namedprops, key=lambda namedprops: namedprops[6])   # sort by guid
-	for line in sortednameprops:
-		print line[0], line[1], line[2], line[3], line[4], line[5], line[6]
-                                              
+		else:
+			# It's not a named property
+			# Store conflicting properties with propid > 0x8000
+			propid = entry["PropertyId"]
+			if propid >= 0x8000:
+				try:
+					knownprops.index(propid)
+				except ValueError:
+					knownprops.append(propid)
+
+	# Create the default GUID containers
+	for key in sorted(knownpropsets):
+		cn = knownpropsets[key].strip('{}').lower()
+		oleguid_ldif = "CN=%s,CN=External,CN=Server\n"	\
+			       "cn: %s\n"			\
+			       "name: %s\n"			\
+			       "oleguid: %s\n\n" % (cn, cn, str(key), cn)
+		content += oleguid_ldif
+
+	# Write named properties
+	sortednamedprops = sorted(namedprops, key=lambda namedprops: namedprops[6]) # sort by guid
+	increment = next_available_id(knownprops, 0x8000)
+
+	for line in sortednamedprops:
+		oleguid = knownpropsets[line[6]].strip('{}').lower()
+		if line[5] == "MNID_STRING":
+			named_props_ldif = "CN=%s,CN=MNID_STRING,CN=%s,CN=External,CN=Server\n"	\
+					   "objectClass: MNID_STRING\n"				\
+					   "cn: %s\n"						\
+					   "canonical: %s\n"					\
+					   "oleguid: %s\n"					\
+					   "mapped_id: 0x%.4x\n"				\
+					   "prop_id: %s\n"					\
+					   "prop_type: %s\n"					\
+					   "prop_name: %s\n\n" % (
+				line[3], oleguid, line[3], line[0], oleguid, increment,
+				line[2], line[4], line[3])
+		else:
+			named_props_ldif = "CN=%s,CN=MNID_ID,CN=%s,CN=External,CN=Server\n"	\
+					   "objectClass: MNID_ID\n"				\
+					   "cn: %s\n"						\
+					   "canonical: %s\n"					\
+					   "oleguid: %s\n"					\
+					   "mapped_id: 0x%.4x\n"				\
+					   "prop_id: %s\n"					\
+					   "prop_type: %s\n"					\
+					   "oom: %s\n\n" % (
+				line[2], oleguid, line[2], line[0], oleguid, increment,
+				line[2], line[4], line[1])
+		
+		content += named_props_ldif
+
+		increment += 1
+		increment = next_available_id(knownprops, increment)
+
+	# Store remaining reserved named properties IDs in attributes
+	for ids in sorted(knownprops):
+		attributes += "reserved_tags: 0x%.4x\n" % ids
+
+	start_content =  "# LDIF file automatically auto-generated by script/makepropslist.py. Do not edit\n\n"
+	start_content += "dn: CN=Server\n"		\
+			 "objectClass: top\n"		\
+			 "cn: Server\n\n"		\
+							\
+			 "dn: CN=Internal,CN=Server\n"	\
+			 "objectClass: container\n"	\
+			 "objectClass: top\n"		\
+			 "cn: Internal\n"		\
+			 "mapping_index: 0x0000\n\n"	\
+							\
+			 "dn: CN=External,CN=Server\n"	\
+			 "objectClass: container\n"	\
+			 "objectClass: top\n"		\
+			 "cn: Common\n"			\
+			 "mapping_index: 0x%.4x\n" % increment
+	start_content += attributes + "\n"
+	start_content += "dn: CN=Users,CN=Server\n"	\
+			 "objectClass: container\n"	\
+			 "objectClass: top\n"		\
+			 "cn: Users\n\n"
+
+	content = start_content + content
+
+	# wite named properties buffered file out to LDIF file
+	f = open('setup/mapistore/mapistore_namedprops_v2.ldif', 'w')
+	f.write(content)
+	f.close()
+
+	# write named properties defines and structure
+	f = open('libmapi/mapi_nameid.h', 'w')
+	f.write("""
+/* Automatically generated by script/makepropslist.py. Do not edit */
+#ifndef	__MAPI_NAMEID_H__
+#define	__MAPI_NAMEID_H__
+
+/* NOTE TO DEVELOPERS: If this is a MNID_STRING named property, then
+ * we use the arbitrary 0xa000-0xafff property ID range for internal
+ * mapping purpose only.
+ */
+
+struct mapi_nameid_tags {
+	uint32_t		proptag;
+	const char		*OOM;
+	uint16_t		lid;
+	const char		*Name;
+	uint32_t		propType;
+	uint8_t			ulKind;
+	const char		*OLEGUID;
+	uint32_t		position;
+};
+
+struct mapi_nameid {
+	struct MAPINAMEID	*nameid;
+	uint16_t		count;
+	struct mapi_nameid_tags	*entries;
+};
+
+/* MNID_ID named properties */
+""")
+
+	for line in sortednamedprops:
+		if line[5] == "MNID_ID":
+			proptag = "0x%.8x" % (int(line[2], 16) << 16 | int(line[4], 16))
+			propline = "#define %s %s\n" % (string.ljust(line[0], 60), string.ljust(proptag, 20))
+			f.write(propline)
+
+	f.write("\n/* MNID_STRING named properties (internal mapping) */\n")
+	mnstring_id = 0xa000
+	for line in sortednamedprops:
+		if line[5] == "MNID_STRING":
+			proptag = "0x%.8x" % ((mnstring_id << 16) | int(line[4], 16))
+			propline = "#define %s %s\n" % (string.ljust(line[0], 60), string.ljust(proptag, 20))
+			mnstring_id += 1
+			f.write(propline)
+
+	f.write("#endif /* ! MAPI_NAMEID_H__ */")
+	f.close()
+
+	# write named properties internal mapping
+	f = open('libmapi/mapi_nameid_private.h', 'w')
+	f.write("""
+/* Automatically generated by script/makepropslist.py. Do not edit */
+#ifndef	__MAPI_NAMEID_PRIVATE_H__
+#define	__MAPI_NAMEID_PRIVATE_H__
+
+static struct mapi_nameid_tags mapi_nameid_tags[] = {
+""")
+
+	for line in sortednamedprops:
+		if line[5] == "MNID_ID":
+			OOM = "\"%s\"" % line[1]
+			key = find_key(knowndatatypes, line[4])
+			datatype = datatypemap[key]
+			propline = "{ %s, %s, %s, %s, %s, %s, %s, %s },\n" % (
+				string.ljust(line[0], 60), string.ljust(OOM, 65), line[2], line[3], 
+				string.ljust(datatype, 15), "MNID_ID", line[6], "0x0")
+			f.write(propline)
+
+	propline = "{ %s, %s, %s, %s, %s, %s, %s, %s }\n" % (
+		string.ljust("0x00000000", 60), string.ljust("NULL", 65), "0x0000", "NULL",
+		string.ljust("PT_UNSPECIFIED", 15), "0x0", "NULL", "0x0")
+	f.write(propline)
+	f.write("""
+};
+
+#endif /* !MAPI_NAMEID_PRIVATE_H__ */
+""")
+	f.close()
+
 def dump_areas_count():
 	areas = {}
 	for area in knownareas:
@@ -1018,6 +1203,8 @@ def fix_problems(propsfilename):
 				   "-e", "s/.Propety long ID (LID): 0x000080A3/Property long ID (LID): 0x000080A3/",
 				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_SUBMIT_PERMS/Alternate names: PR_EMS_AB_DL_MEM_SUBMIT_PERMS_BL_O/",
 				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_REJECT_PERMS//",
+				   "-e", "s/.Property set: PSTID_Sharing {00062040-0000-0000-C000-000000000046}/Property set: PSETID_Sharing {00062040-0000-0000-C000-000000000046}/",
+				   "-e", "s/.Property set: PSETID_Address{00062004-0000-0000-C000-000000000046}/Property set: PSETID_Address {00062004-0000-0000-C000-000000000046}/",
 				    propsfilename])
 	if retcode != 0:
 		print "Could not fix problem:", retcode
@@ -1045,7 +1232,7 @@ def main():
 		# dump_areas_count()
 	if args.sanitycheckonly == False:
 		make_mapi_properties_file()
-		# make_mapi_named_properties_file()
+		make_mapi_named_properties_file()
 	
 if __name__ == "__main__":
     main()

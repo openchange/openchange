@@ -976,6 +976,10 @@ def make_mapi_named_properties_file():
 			print "Section", entry["OXPROPS_Sect"], "has no data type entry"
 			continue
 		if (entry.has_key("PropertyId") == False):
+			if entry.has_key("PropertySet"):
+				guid = entry["PropertySet"]
+			else:
+				guid = "[No PropSet]"
 			# Its a named property
 			name = entry["CanonicalName"]
 			proptype = entry["DataTypeName"]
@@ -1011,14 +1015,12 @@ def make_mapi_named_properties_file():
 						altname = altname.strip()
 						if altname.startswith("dispid"):
 							propname = altname[6:]
-				if propname in previous_ldif_name:
+				search_dup = "%s/%s" % (propname, guid)
+				if search_dup in previous_ldif_name:
 					print "Skipping output for named properties MNID_STRING", name, "(duplicate)"
 					continue;
-				previous_ldif_name.append(propname)
-			if entry.has_key("PropertySet"):
-				guid = entry["PropertySet"]
-			else:
-				guid = "[No PropSet]"
+				previous_ldif_name.append(search_dup)
+
 			namedprop = (name, OOM, proplid, propname, knowndatatypes[proptype], kind, guid)
 			namedprops.append(namedprop)
 		else:

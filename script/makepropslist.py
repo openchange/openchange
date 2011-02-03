@@ -966,6 +966,8 @@ def make_mapi_named_properties_file():
 	start_content = ""
 	namedprops = []
 	knownprops = []
+	previous_ldif_lid = []
+	previous_ldif_name = []
 	for entry in properties:
 		if (entry.has_key("CanonicalName") == False):
 			print "Section", entry["OXPROPS_Sect"], "has no canonical name entry"
@@ -979,6 +981,9 @@ def make_mapi_named_properties_file():
 			proptype = entry["DataTypeName"]
 			if entry.has_key("PropertyLid"):
 				proplid = "0x" + format(entry["PropertyLid"], "04x")
+				if proplid in previous_ldif_lid:
+					print "Skipping output for named properties MNID_ID", name, "(duplicate)"
+					continue;
 				kind = "MNID_ID"
 				OOM = "NULL" # use as default
 				propname = "NULL"
@@ -992,6 +997,8 @@ def make_mapi_named_properties_file():
 						OOM = altname
 				else:
 					pass
+				previous_ldif_lid.append(proplid)
+
 			else:
 				proplid = "0x0000"
 				kind = "MNID_STRING"
@@ -1004,6 +1011,10 @@ def make_mapi_named_properties_file():
 						altname = altname.strip()
 						if altname.startswith("dispid"):
 							propname = altname[6:]
+				if propname in previous_ldif_name:
+					print "Skipping output for named properties MNID_STRING", name, "(duplicate)"
+					continue;
+				previous_ldif_name.append(propname)
 			if entry.has_key("PropertySet"):
 				guid = entry["PropertySet"]
 			else:
@@ -1023,9 +1034,9 @@ def make_mapi_named_properties_file():
 	# Create the default GUID containers
 	for key in sorted(knownpropsets):
 		cn = knownpropsets[key].strip('{}').lower()
-		oleguid_ldif = "CN=%s,CN=External,CN=Server\n"	\
-			       "cn: %s\n"			\
-			       "name: %s\n"			\
+		oleguid_ldif = "dn: CN=%s,CN=External,CN=Server\n"	\
+			       "cn: %s\n"				\
+			       "name: %s\n"				\
 			       "oleguid: %s\n\n" % (cn, cn, str(key), cn)
 		content += oleguid_ldif
 
@@ -1036,26 +1047,26 @@ def make_mapi_named_properties_file():
 	for line in sortednamedprops:
 		oleguid = knownpropsets[line[6]].strip('{}').lower()
 		if line[5] == "MNID_STRING":
-			named_props_ldif = "CN=%s,CN=MNID_STRING,CN=%s,CN=External,CN=Server\n"	\
-					   "objectClass: MNID_STRING\n"				\
-					   "cn: %s\n"						\
-					   "canonical: %s\n"					\
-					   "oleguid: %s\n"					\
-					   "mapped_id: 0x%.4x\n"				\
-					   "prop_id: %s\n"					\
-					   "prop_type: %s\n"					\
+			named_props_ldif = "dn: CN=%s,CN=MNID_STRING,CN=%s,CN=External,CN=Server\n"	\
+					   "objectClass: MNID_STRING\n"					\
+					   "cn: %s\n"							\
+					   "canonical: %s\n"						\
+					   "oleguid: %s\n"						\
+					   "mapped_id: 0x%.4x\n"					\
+					   "prop_id: %s\n"						\
+					   "prop_type: %s\n"						\
 					   "prop_name: %s\n\n" % (
 				line[3], oleguid, line[3], line[0], oleguid, increment,
 				line[2], line[4], line[3])
 		else:
-			named_props_ldif = "CN=%s,CN=MNID_ID,CN=%s,CN=External,CN=Server\n"	\
-					   "objectClass: MNID_ID\n"				\
-					   "cn: %s\n"						\
-					   "canonical: %s\n"					\
-					   "oleguid: %s\n"					\
-					   "mapped_id: 0x%.4x\n"				\
-					   "prop_id: %s\n"					\
-					   "prop_type: %s\n"					\
+			named_props_ldif = "dn: CN=%s,CN=MNID_ID,CN=%s,CN=External,CN=Server\n"		\
+					   "objectClass: MNID_ID\n"					\
+					   "cn: %s\n"							\
+					   "canonical: %s\n"						\
+					   "oleguid: %s\n"						\
+					   "mapped_id: 0x%.4x\n"					\
+					   "prop_id: %s\n"						\
+					   "prop_type: %s\n"						\
 					   "oom: %s\n\n" % (
 				line[2], oleguid, line[2], line[0], oleguid, increment,
 				line[2], line[4], line[1])

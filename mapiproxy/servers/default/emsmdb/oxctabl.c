@@ -429,16 +429,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			data_pointers = talloc_array(mem_ctx, void *, table->prop_count);
 			retvals = talloc_array(mem_ctx, enum MAPISTATUS, table->prop_count);
 
-			DEBUG(5, ("  row %d, property statuses(%d):", count, table->prop_count));
 			/* Lookup for flagged property row */
 			for (j = 0; j < table->prop_count; j++) {
 				retval = openchangedb_get_table_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
 									 emsmdbp_ctx->szDisplayName,
 									 table_filter, table->properties[j], 
 									 table->numerator, data_pointers + j);
-				DEBUG(5, ("  %.8x: %d", table->properties[j], retval));
+				/* DEBUG(5, ("  %.8x: %d", table->properties[j], retval)); */
 				if (retval == MAPI_E_INVALID_OBJECT) {
-					DEBUG(5, ("\n"));
 					count = 0;
 					DEBUG(5, ("%s: invalid object in non-mapistore folder, count set to 0\n", __location__));
 					talloc_free(retvals);
@@ -452,7 +450,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 					flagged = 1;
 				}
 			}
-			DEBUG(5, ("\n"));
 
 			if (flagged) {
 				libmapiserver_push_property(mem_ctx, 
@@ -673,12 +670,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekRow(TALLOC_CTX *mem_ctx,
 	table = object->object.table;
 	DEBUG(5, ("  handle_idx: %.8x, folder_id: %.16lx\n", mapi_req->handle_idx, table->folderID));
 	if (mapi_req->u.mapi_SeekRow.origin == BOOKMARK_BEGINNING) {
-		if ((mapi_req->u.mapi_SeekRow.offset >= table->denominator)) {
-			mapi_repl->error_code = MAPI_E_INVALID_BOOKMARK;
-		}
-		else {
-			table->numerator = mapi_req->u.mapi_SeekRow.offset;
-		}
+          table->numerator = mapi_req->u.mapi_SeekRow.offset;
 	}
 	else {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
@@ -878,6 +870,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		/* Adjust parameters */
 		if (row.length) {
 			mapi_repl->u.mapi_FindRow.HasRowData = 1;
+		}
+		else {
+                        mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		}
 
 		mapi_repl->u.mapi_FindRow.row.length = row.length;

@@ -200,6 +200,19 @@ static PyObject *py_MAPIStoreDB_release(PyMAPIStoreDBObject *_self, PyObject *ar
 	return PyInt_FromLong(MAPISTORE_SUCCESS);
 }
 
+static PyObject *py_MAPIStoreDB_errstr(PyMAPIStoreDBObject *_self, PyObject *args)
+{
+	enum MAPISTORE_ERROR		retval;
+	int				ret;
+
+	if (!PyArg_ParseTuple(args, "i", &ret)) {
+		return NULL;
+	}
+
+	retval = (enum MAPISTORE_ERROR) ret;
+	return PyString_FromString(mapistore_errstr(retval));
+}
+
 static PyObject *py_MAPIStoreDB_namedprops_get_default_id(PyMAPIStoreDBObject *_self, PyObject *args, PyObject *kwargs)
 {
 	enum MAPISTORE_ERROR		retval;
@@ -211,12 +224,32 @@ static PyObject *py_MAPIStoreDB_namedprops_get_default_id(PyMAPIStoreDBObject *_
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", 
 					 discard_const_p(char *, kwnames),
-					 &type));
+					 &type)) {
+		return NULL;
+	}
 
 	ntype = (enum MAPISTORE_NAMEDPROPS_TYPE) type;
 	retval = mapistore_namedprops_get_default_id(self->mdb_ctx->mstore_ctx, ntype, &dflt_id);
 
 	return Py_BuildValue("ii", retval, dflt_id);	
+}
+
+static PyObject *py_MAPIStoreDB_namedprops_provision_user(PyMAPIStoreDBObject *_self, PyObject *args, PyObject *kwargs)
+{
+	enum MAPISTORE_ERROR		retval;
+	PyMAPIStoreDBObject		*self = (PyMAPIStoreDBObject *) _self;
+	const char * const		kwnames[] = { "username", NULL };
+	char				*username;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", 
+					 discard_const_p(char *, kwnames),
+					 &username)) {
+		return NULL;
+	}
+
+	retval = mapistoredb_namedprops_provision_user(self->mdb_ctx, username);
+
+	return PyInt_FromLong(retval);
 }
 
 static PyObject *PyMAPIStoreDB_getParameter(PyObject *_self, void *data)
@@ -238,15 +271,17 @@ static PyObject *PyMAPIStoreDB_getParameter(PyObject *_self, void *data)
 static PyMethodDef mapistoredb_methods[] = {
 	{ "dump_configuration", (PyCFunction)py_MAPIStoreDB_dump_configuration, METH_VARARGS },
 	{ "provision", (PyCFunction)py_MAPIStoreDB_provision, METH_KEYWORDS },
-	{ "provision_named_properties", (PyCFunction)py_MAPIStoreDB_provision_named_properties, METH_VARARGS },
 	{ "get_mapistore_uri", (PyCFunction)py_MAPIStoreDB_get_mapistore_uri, METH_KEYWORDS },
 	{ "get_new_fid", (PyCFunction)py_MAPIStoreDB_get_new_fid, METH_VARARGS },
 	{ "get_new_allocation_range", (PyCFunction)py_MAPIStoreDB_get_new_allocation_range, METH_VARARGS },
 	{ "new_mailbox", (PyCFunction)py_MAPIStoreDB_new_mailbox, METH_VARARGS },
 	{ "set_mailbox_allocation_range", (PyCFunction)py_MAPIStoreDB_set_mailbox_allocation_range, METH_VARARGS },
 	{ "release", (PyCFunction)py_MAPIStoreDB_release, METH_VARARGS },
+	{ "errstr", (PyCFunction)py_MAPIStoreDB_errstr, METH_VARARGS },
 	/* named properties functions */
+	{ "provision_named_properties", (PyCFunction)py_MAPIStoreDB_provision_named_properties, METH_VARARGS },
 	{ "namedprops_get_default_id", (PyCFunction)py_MAPIStoreDB_namedprops_get_default_id, METH_KEYWORDS },
+	{ "namedprops_provision_user", (PyCFunction)py_MAPIStoreDB_namedprops_provision_user, METH_KEYWORDS },
 	{ NULL },
 };
 

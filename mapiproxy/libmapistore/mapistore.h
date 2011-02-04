@@ -214,6 +214,7 @@ enum MAPISTORE_ERROR mapistore_indexing_update_mapistore_uri(struct mapistore_in
 
 /* definitions from mapistore_namedprops.c */
 enum MAPISTORE_ERROR mapistore_namedprops_get_default_id(struct mapistore_context *, enum MAPISTORE_NAMEDPROPS_TYPE, uint32_t *);
+enum MAPISTORE_ERROR mapistore_namedprops_user_exist(struct mapistore_context *, const char *);
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);
 
 __END_DECLS

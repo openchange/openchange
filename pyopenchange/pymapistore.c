@@ -310,6 +310,19 @@ static PyObject *py_MAPIStore_setprops(PyMAPIStoreObject *self, PyObject *args)
 	return PyInt_FromLong(mapistore_setprops(self->mstore_ctx, context_id, fid, object_type, &aRow));
 }
 
+static PyObject *py_MAPIStore_errstr(PyMAPIStoreObject *self, PyObject *args)
+{
+	enum MAPISTORE_ERROR	retval;
+	int			ret;
+
+	if (!PyArg_ParseTuple(args, "i", &ret)) {
+		return NULL;
+	}
+
+	retval = (enum MAPISTORE_ERROR) ret;
+	return PyString_FromString(mapistore_errstr(retval));
+}
+
 static PyMethodDef mapistore_methods[] = {
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	{ "del_context", (PyCFunction)py_MAPIStore_del_context, METH_VARARGS },
@@ -324,6 +337,7 @@ static PyMethodDef mapistore_methods[] = {
 	{ "mkdir", (PyCFunction)py_MAPIStore_mkdir, METH_VARARGS },
 	{ "rmdir", (PyCFunction)py_MAPIStore_rmdir, METH_VARARGS },
 	{ "setprops", (PyCFunction)py_MAPIStore_setprops, METH_VARARGS },
+	{ "errstr", (PyCFunction)py_MAPIStore_errstr, METH_VARARGS },
 	{ NULL },
 };
 

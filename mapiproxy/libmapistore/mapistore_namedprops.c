@@ -120,6 +120,9 @@ enum MAPISTORE_ERROR mapistore_namedprops_get_default_id(struct mapistore_contex
    \details return the mapped property ID matching the nameid
    structure passed in parameter.
 
+   TODO: This function should take a username parameter so we can
+   fetch custom added properties within user namespace
+
    \param _ldb_ctx pointer to the namedprops ldb context
    \param nameid the MAPINAMEID structure to lookup
    \param propID pointer to the property ID the function returns
@@ -169,4 +172,40 @@ _PUBLIC_ int mapistore_namedprops_get_mapped_id(void *_ldb_ctx,
 	talloc_free(mem_ctx);
 
 	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Check if a user exists in the named properties database
+
+   \param mstore_ctx pointer to the mapistore context
+   \param username the username to lookup
+   
+   \return MAPISTORE_ERR_EXIST if the user exists and
+   MAPISTORE_ERR_NOT_FOUND if it doesn't, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_namedprops_user_exist(struct mapistore_context *mstore_ctx,
+						     const char *username)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->mapistore_nprops_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_user_exist");
+	ldb_ctx = mstore_ctx->mapistore_nprops_ctx;
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(&(objectClass=user)(cn=%s))", username);
+	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+	MAPISTORE_RETVAL_IF(!res->count, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_ERR_EXIST;
 }

@@ -88,7 +88,9 @@ enum MAPISTORE_ERROR mapistoredb_namedprops_provision(struct mapistoredb_context
 }
 
 /**
-   Add an entry for the user within the named properties database
+   \details Add an entry for the user within the named properties
+   database and retrieve the default mapped index that can be used for
+   custom named properties
 
    \param mdb_ctx pointer to the mapistore database context
    \param username pointer to the username entry to create
@@ -98,6 +100,39 @@ enum MAPISTORE_ERROR mapistoredb_namedprops_provision(struct mapistoredb_context
 enum MAPISTORE_ERROR mapistoredb_namedprops_provision_user(struct mapistoredb_context *mdb_ctx,
 							   const char *username)
 {
+	enum MAPISTORE_ERROR	retval;
+	TALLOC_CTX		*mem_ctx;
+	char			*ldif;
+	uint32_t		mapped_index;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx->mapistore_nprops_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Check if the username already exists */
+	retval = mapistore_namedprops_user_exist(mdb_ctx->mstore_ctx, username);
+	MAPISTORE_RETVAL_IF(retval == MAPISTORE_ERR_EXIST, retval, NULL);
+
+	/* Step 2. Retrieve the first default available id */
+	retval = mapistore_namedprops_get_default_id(mdb_ctx->mstore_ctx, MAPISTORE_NAMEDPROPS_EXTERNAL, &mapped_index);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Create the LDIF */
+	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_provision_user");
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	ldif = talloc_asprintf(mem_ctx, MDB_NPROPS_USER_LDIF, username, mapped_index, username);
+	MAPISTORE_RETVAL_IF(!ldif, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	/* Step 4. Commit the LDIF */
+	retval = mapistore_ldb_write_ldif_string_to_store(mdb_ctx->mstore_ctx->mapistore_nprops_ctx, ldif);
+	talloc_free(ldif);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mem_ctx);
+
 	return MAPISTORE_SUCCESS;
 }
 

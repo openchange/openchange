@@ -181,6 +181,13 @@ struct mapistoredb_context {
 	"rootDomainNamingContext: DC=server\n"				\
 	"vendorName: OpenChange Project (http://www.openchange.org)\n\n"
 
+#define	MDB_NPROPS_USER_LDIF				\
+	"dn: CN=%s,CN=Users,CN=Server\n"		\
+	"objectClass: user\n"				\
+	"objectClass: container\n"			\
+	"mapping_index: 0x%.4x\n"			\
+	"cn: %s\n\n"					\
+
 enum MAPISTORE_NAMEDPROPS_TYPE {
 	MAPISTORE_NAMEDPROPS_INTERNAL = 0,
 	MAPISTORE_NAMEDPROPS_EXTERNAL = 1

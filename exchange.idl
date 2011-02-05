@@ -1571,8 +1571,12 @@ System Attendant Private Interface
 	
         typedef [enum8bit, flag(NDR_PAHEX)] enum {
                 TABLE_SORT_ASCEND = 0x0,
+                TABLE_SORT_DESCEND = 0x1,
+                TABLE_SORT_MAXIMUM_CATEGORY = 0x4
+                /* old values :
                 TABLE_SORT_COMBINE = 0x1,
                 TABLE_SORT_DESCEND = 0x2
+                */
         } TABLE_SORT;
 
         typedef [public, flag(NDR_NOALIGN)] struct _SSortOrder{

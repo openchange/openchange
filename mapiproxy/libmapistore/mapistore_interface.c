@@ -1172,3 +1172,31 @@ _PUBLIC_ int mapistore_set_restrictions(struct mapistore_context *mstore_ctx,
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
+
+/**
+   \details Sort a mapistore table
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend where the 
+ */
+_PUBLIC_ int mapistore_set_sort_order(struct mapistore_context *mstore_ctx,
+                                      uint32_t context_id,
+                                      uint64_t fid, uint8_t type,
+                                      struct SSortOrderSet *set,
+                                      uint8_t *table_status)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_set_sort_order(backend_ctx, fid, type, set, table_status);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}

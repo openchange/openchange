@@ -139,7 +139,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 					      struct EcDoRpc_MAPI_REPL *mapi_repl,
 					      uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCTABL] SortTable (0x13) -- stub\n"));
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*parent;
+	struct emsmdbp_object		*object;
+	struct emsmdbp_object_table	*table;
+	struct SortTable_req		request;
+	uint32_t			handle;
+	void				*data = NULL;
+	uint8_t				status;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCTABL] SortTable (0x13)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -153,6 +162,69 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->u.mapi_SortTable.TableStatus = TBLSTAT_COMPLETE;
 
+	if ((mapi_req->u.mapi_SortTable.SortTableFlags & TBL_ASYNC)) {
+                DEBUG(5, ("  requested async operation -> failure\n"));
+                mapi_repl->error_code = MAPI_E_UNKNOWN_FLAGS;
+                goto end;
+        }
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+	object = (struct emsmdbp_object *) data;
+
+	/* Ensure referring object exists and is a table */
+	if (!object || (object->type != EMSMDBP_OBJECT_TABLE)) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  missing object or not table\n"));
+		goto end;
+	}
+
+	table = object->object.table;
+	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if (table->ulType != EMSMDBP_TABLE_MESSAGE_TYPE
+            && table->ulType != EMSMDBP_TABLE_FAI_TYPE) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		DEBUG(5, ("  query performed on non contents table\n"));
+		goto end;
+	}
+
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+
+        /* we reset the cursor to the beginning of the table */
+        table->numerator = 0;
+
+        /* TODO: we should invalidate current bookmarks on the table */
+
+	/* If parent folder has a mapistore context */
+	if (table->mapistore) {
+		status = TBLSTAT_COMPLETE;
+		retval = mapistore_set_sort_order(emsmdbp_ctx->mstore_ctx, table->contextID, 
+                                                  table->folderID, table->ulType, &request.lpSortCriteria, &status);
+		if (retval) {
+			mapi_repl->error_code = retval;
+			goto end;
+		}
+		mapi_repl->u.mapi_SortTable.TableStatus = status;
+	} else {
+		/* Parent folder doesn't have any mapistore context associated */
+		DEBUG(0, ("not mapistore Restrict: Not implemented yet\n"));
+		goto end;
+	}
+        
+end:
 	*size += libmapiserver_RopSortTable_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

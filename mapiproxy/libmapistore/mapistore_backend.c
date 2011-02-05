@@ -558,8 +558,14 @@ int mapistore_backend_get_folders_list(struct backend_context *bctx, uint64_t fm
 }
 
 
-int mapistore_backend_set_restrictions(struct backend_context *bctx, uint64_t fmid, uint8_t type, 
+int mapistore_backend_set_restrictions(struct backend_context *bctx, uint64_t fmid, uint8_t type,
 				       struct mapi_SRestriction *res, uint8_t *table_status)
 {
 	return bctx->backend->op_set_restrictions(bctx->private_data, fmid, type, res, table_status);
+}
+
+int mapistore_backend_set_sort_order(struct backend_context *bctx, uint64_t fid, uint8_t type,
+                                     struct SSortOrderSet *set, uint8_t *table_status)
+{
+        return bctx->backend->op_set_sort_order(bctx->private_data, fid, type, set, table_status);
 }

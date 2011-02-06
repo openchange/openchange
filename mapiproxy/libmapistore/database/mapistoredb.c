@@ -203,6 +203,7 @@ enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *m
    mapistore_processing.c
 
    \param mdb_ctx pointer to the mapistore database context
+   \param username the user to get the folder or message identifier for (i.e. identifier scope)
    \param _fmid pointer on the next fmid available to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error

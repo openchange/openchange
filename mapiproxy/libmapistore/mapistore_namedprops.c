@@ -71,7 +71,7 @@ enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_c
 
    \param mstore_ctx pointer to the mapistore context
    \param ntype the type of mapping index to return (internal or external)
-   \param last_id pointer to the default ID to return
+   \param dflt_id pointer to the default ID to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */

@@ -211,6 +211,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 	/* If parent folder has a mapistore context */
 	if (table->mapistore) {
 		status = TBLSTAT_COMPLETE;
+                request = mapi_req->u.mapi_SortTable;
 		retval = mapistore_set_sort_order(emsmdbp_ctx->mstore_ctx, table->contextID, 
                                                   table->folderID, table->ulType, &request.lpSortCriteria, &status);
 		if (retval) {

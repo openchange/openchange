@@ -5,12 +5,14 @@ objectClass: top
 cn: Server
 
 dn: CN=Internal,CN=Server
+objectClass: Internal
 objectClass: container
 objectClass: top
 cn: Internal
 mapping_index: 0x0000
 
 dn: CN=External,CN=Server
+objectClass: External
 objectClass: container
 objectClass: top
 cn: External
@@ -53,91 +55,109 @@ objectClass: top
 cn: Users
 
 dn: CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 00062004-0000-0000-c000-000000000046
 name: PSETID_Address
 oleguid: 00062004-0000-0000-c000-000000000046
 
 dn: CN=71035549-0739-4dcb-9163-00f0580dbbdf,CN=External,CN=Server
+objectClass: External
 cn: 71035549-0739-4dcb-9163-00f0580dbbdf
 name: PSETID_AirSync
 oleguid: 71035549-0739-4dcb-9163-00f0580dbbdf
 
 dn: CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 00062002-0000-0000-c000-000000000046
 name: PSETID_Appointment
 oleguid: 00062002-0000-0000-c000-000000000046
 
 dn: CN=96357f7f-59e1-47d0-99a7-46515c183b54,CN=External,CN=Server
+objectClass: External
 cn: 96357f7f-59e1-47d0-99a7-46515c183b54
 name: PSETID_Attachment
 oleguid: 96357f7f-59e1-47d0-99a7-46515c183b54
 
 dn: CN=11000e07-b51b-40d6-af21-caa85edab1d0,CN=External,CN=Server
+objectClass: External
 cn: 11000e07-b51b-40d6-af21-caa85edab1d0
 name: PSETID_CalendarAssistant
 oleguid: 11000e07-b51b-40d6-af21-caa85edab1d0
 
 dn: CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 00062008-0000-0000-c000-000000000046
 name: PSETID_Common
 oleguid: 00062008-0000-0000-c000-000000000046
 
 dn: CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 0006200a-0000-0000-c000-000000000046
 name: PSETID_Log
 oleguid: 0006200a-0000-0000-c000-000000000046
 
 dn: CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 cn: 6ed8da90-450b-101b-98da-00aa003f1305
 name: PSETID_Meeting
 oleguid: 6ed8da90-450b-101b-98da-00aa003f1305
 
 dn: CN=41f28f13-83f4-4114-a584-eedb5a6b0bff,CN=External,CN=Server
+objectClass: External
 cn: 41f28f13-83f4-4114-a584-eedb5a6b0bff
 name: PSETID_Messaging
 oleguid: 41f28f13-83f4-4114-a584-eedb5a6b0bff
 
 dn: CN=0006200e-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 0006200e-0000-0000-c000-000000000046
 name: PSETID_Note
 oleguid: 0006200e-0000-0000-c000-000000000046
 
 dn: CN=00062041-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 00062041-0000-0000-c000-000000000046
 name: PSETID_PostRss
 oleguid: 00062041-0000-0000-c000-000000000046
 
 dn: CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 00062040-0000-0000-c000-000000000046
 name: PSETID_Sharing
 oleguid: 00062040-0000-0000-c000-000000000046
 
 dn: CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 00062003-0000-0000-c000-000000000046
 name: PSETID_Task
 oleguid: 00062003-0000-0000-c000-000000000046
 
 dn: CN=4442858e-a9e3-4e80-b900-317a210cc15b,CN=External,CN=Server
+objectClass: External
 cn: 4442858e-a9e3-4e80-b900-317a210cc15b
 name: PSETID_UnifiedMessaging
 oleguid: 4442858e-a9e3-4e80-b900-317a210cc15b
 
 dn: CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 00020386-0000-0000-c000-000000000046
 name: PS_INTERNET_HEADERS
 oleguid: 00020386-0000-0000-c000-000000000046
 
 dn: CN=00020328-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 00020328-0000-0000-c000-000000000046
 name: PS_MAPI
 oleguid: 00020328-0000-0000-c000-000000000046
 
 dn: CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 cn: 00020329-0000-0000-c000-000000000046
 name: PS_PUBLIC_STRINGS
 oleguid: 00020329-0000-0000-c000-000000000046
 
 dn: CN=0x8029,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8029
 canonical: PidLidAddressBookProviderArrayType
@@ -148,6 +168,7 @@ prop_type: 0x0003
 oom: ABPArrayType
 
 dn: CN=0x8028,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8028
 canonical: PidLidAddressBookProviderEmailList
@@ -158,6 +179,7 @@ prop_type: 0x1003
 oom: ABPEmailList
 
 dn: CN=0x80dd,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80dd
 canonical: PidLidAddressCountryCode
@@ -168,6 +190,7 @@ prop_type: 0x001F
 oom: AddressCountryCode
 
 dn: CN=0x804e,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x804e
 canonical: PidLidAnniversaryEventEntryId
@@ -178,6 +201,7 @@ prop_type: 0x0102
 oom: AnniversaryEventEID
 
 dn: CN=0x8025,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8025
 canonical: PidLidAutoLog
@@ -188,6 +212,7 @@ prop_type: 0x000B
 oom: AutoLog
 
 dn: CN=0x804d,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x804d
 canonical: PidLidBirthdayEventEntryId
@@ -198,6 +223,7 @@ prop_type: 0x0102
 oom: BirthdayEventEID
 
 dn: CN=0x80de,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80de
 canonical: PidLidBirthdayLocal
@@ -208,6 +234,7 @@ prop_type: 0x0040
 oom: ApptBirthdayLocal
 
 dn: CN=0x8041,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8041
 canonical: PidLidBusinessCardCardPicture
@@ -218,6 +245,7 @@ prop_type: 0x0102
 oom: BCCardPicture
 
 dn: CN=0x8040,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8040
 canonical: PidLidBusinessCardDisplayDefinition
@@ -228,6 +256,7 @@ prop_type: 0x0102
 oom: BCDisplayDefinition
 
 dn: CN=0x8023,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8023
 canonical: PidLidContactCharacterSet
@@ -238,6 +267,7 @@ prop_type: 0x0003
 oom: ContactCharSet
 
 dn: CN=0x8007,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8007
 canonical: PidLidContactItemData
@@ -248,6 +278,7 @@ prop_type: 0x1003
 oom: ContactItemData
 
 dn: CN=0x804f,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x804f
 canonical: PidLidContactUserField1
@@ -258,6 +289,7 @@ prop_type: 0x001F
 oom: ContactUserField1
 
 dn: CN=0x8050,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8050
 canonical: PidLidContactUserField2
@@ -268,6 +300,7 @@ prop_type: 0x001F
 oom: ContactUserField2
 
 dn: CN=0x8051,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8051
 canonical: PidLidContactUserField3
@@ -278,6 +311,7 @@ prop_type: 0x001F
 oom: ContactUserField3
 
 dn: CN=0x8052,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8052
 canonical: PidLidContactUserField4
@@ -288,6 +322,7 @@ prop_type: 0x001F
 oom: ContactUserField4
 
 dn: CN=0x8010,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8010
 canonical: PidLidDepartment
@@ -298,6 +333,7 @@ prop_type: 0x001F
 oom: Department
 
 dn: CN=0x804c,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x804c
 canonical: PidLidDistributionListChecksum
@@ -308,6 +344,7 @@ prop_type: 0x0003
 oom: DLChecksum
 
 dn: CN=0x8055,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8055
 canonical: PidLidDistributionListMembers
@@ -318,6 +355,7 @@ prop_type: 0x1102
 oom: DLMembers
 
 dn: CN=0x8053,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8053
 canonical: PidLidDistributionListName
@@ -328,6 +366,7 @@ prop_type: 0x001F
 oom: DLName
 
 dn: CN=0x8054,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8054
 canonical: PidLidDistributionListOneOffMembers
@@ -338,6 +377,7 @@ prop_type: 0x1102
 oom: DLOneOffMembers
 
 dn: CN=0x8064,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8064
 canonical: PidLidDistributionListStream
@@ -348,6 +388,7 @@ prop_type: 0x0102
 oom: DLStream
 
 dn: CN=0x8082,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8082
 canonical: PidLidEmail1AddressType
@@ -358,6 +399,7 @@ prop_type: 0x001F
 oom: Email1AddrType
 
 dn: CN=0x8080,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8080
 canonical: PidLidEmail1DisplayName
@@ -368,6 +410,7 @@ prop_type: 0x001F
 oom: Email1DisplayName
 
 dn: CN=0x8083,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8083
 canonical: PidLidEmail1EmailAddress
@@ -378,6 +421,7 @@ prop_type: 0x001F
 oom: Email1EmailAddress
 
 dn: CN=0x8084,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8084
 canonical: PidLidEmail1OriginalDisplayName
@@ -388,6 +432,7 @@ prop_type: 0x001F
 oom: Email1OriginalDisplayName
 
 dn: CN=0x8085,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8085
 canonical: PidLidEmail1OriginalEntryId
@@ -398,6 +443,7 @@ prop_type: 0x0102
 oom: Email1OriginalEntryID
 
 dn: CN=0x8086,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8086
 canonical: PidLidEmail1RichTextFormat
@@ -408,6 +454,7 @@ prop_type: 0x000B
 oom: Email1RTF
 
 dn: CN=0x8092,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8092
 canonical: PidLidEmail2AddressType
@@ -418,6 +465,7 @@ prop_type: 0x001F
 oom: Email2AddrType
 
 dn: CN=0x8090,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8090
 canonical: PidLidEmail2DisplayName
@@ -428,6 +476,7 @@ prop_type: 0x001F
 oom: Email2DisplayName
 
 dn: CN=0x8093,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8093
 canonical: PidLidEmail2EmailAddress
@@ -438,6 +487,7 @@ prop_type: 0x001F
 oom: Email2EmailAddress
 
 dn: CN=0x8094,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8094
 canonical: PidLidEmail2OriginalDisplayName
@@ -448,6 +498,7 @@ prop_type: 0x001F
 oom: Email2OriginalDisplayName
 
 dn: CN=0x8095,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8095
 canonical: PidLidEmail2OriginalEntryId
@@ -458,6 +509,7 @@ prop_type: 0x0102
 oom: Email2OriginalEntryID
 
 dn: CN=0x8096,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8096
 canonical: PidLidEmail2RichTextFormat
@@ -468,6 +520,7 @@ prop_type: 0x000B
 oom: Email1RTF
 
 dn: CN=0x80a2,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80a2
 canonical: PidLidEmail3AddressType
@@ -478,6 +531,7 @@ prop_type: 0x001F
 oom: Email3AddrType
 
 dn: CN=0x80a0,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80a0
 canonical: PidLidEmail3DisplayName
@@ -488,6 +542,7 @@ prop_type: 0x001F
 oom: Email3DisplayName
 
 dn: CN=0x80a3,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80a3
 canonical: PidLidEmail3EmailAddress
@@ -498,6 +553,7 @@ prop_type: 0x001F
 oom: Email3EmailAddress
 
 dn: CN=0x80a4,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80a4
 canonical: PidLidEmail3OriginalDisplayName
@@ -508,6 +564,7 @@ prop_type: 0x001F
 oom: Email3OriginalDisplayName
 
 dn: CN=0x80a5,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80a5
 canonical: PidLidEmail3OriginalEntryId
@@ -518,6 +575,7 @@ prop_type: 0x0102
 oom: Email3OriginalEntryID
 
 dn: CN=0x80a6,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80a6
 canonical: PidLidEmail3RichTextFormat
@@ -528,6 +586,7 @@ prop_type: 0x000B
 oom: Email1RTF
 
 dn: CN=0x8027,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8027
 canonical: PidLidEmailList
@@ -538,6 +597,7 @@ prop_type: 0x1003
 oom: EmailList
 
 dn: CN=0x80b2,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80b2
 canonical: PidLidFax1AddressType
@@ -548,6 +608,7 @@ prop_type: 0x001F
 oom: Fax1AddrType
 
 dn: CN=0x80b3,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80b3
 canonical: PidLidFax1EmailAddress
@@ -558,6 +619,7 @@ prop_type: 0x001F
 oom: Fax1EmailAddress
 
 dn: CN=0x80b4,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80b4
 canonical: PidLidFax1OriginalDisplayName
@@ -568,6 +630,7 @@ prop_type: 0x001F
 oom: Fax1OriginalDisplayName
 
 dn: CN=0x80b5,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80b5
 canonical: PidLidFax1OriginalEntryId
@@ -578,6 +641,7 @@ prop_type: 0x0102
 oom: Fax1OriginalEntryID
 
 dn: CN=0x80c2,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80c2
 canonical: PidLidFax2AddressType
@@ -588,6 +652,7 @@ prop_type: 0x001F
 oom: Fax2AddrType
 
 dn: CN=0x80c3,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80c3
 canonical: PidLidFax2EmailAddress
@@ -598,6 +663,7 @@ prop_type: 0x001F
 oom: Fax2EmailAddress
 
 dn: CN=0x80c4,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80c4
 canonical: PidLidFax2OriginalDisplayName
@@ -608,6 +674,7 @@ prop_type: 0x001F
 oom: Fax2OriginalDisplayName
 
 dn: CN=0x80c5,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80c5
 canonical: PidLidFax2OriginalEntryId
@@ -618,6 +685,7 @@ prop_type: 0x0102
 oom: Fax2OriginalEntryID
 
 dn: CN=0x80d2,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80d2
 canonical: PidLidFax3AddressType
@@ -628,6 +696,7 @@ prop_type: 0x001F
 oom: Fax3AddrType
 
 dn: CN=0x80d3,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80d3
 canonical: PidLidFax3EmailAddress
@@ -638,6 +707,7 @@ prop_type: 0x001F
 oom: Fax3EmailAddress
 
 dn: CN=0x80d4,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80d4
 canonical: PidLidFax3OriginalDisplayName
@@ -648,6 +718,7 @@ prop_type: 0x001F
 oom: Fax3OriginalDisplayName
 
 dn: CN=0x80d5,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80d5
 canonical: PidLidFax3OriginalEntryId
@@ -658,6 +729,7 @@ prop_type: 0x0102
 oom: Fax3OriginalEntryID
 
 dn: CN=0x8005,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8005
 canonical: PidLidFileUnder
@@ -668,6 +740,7 @@ prop_type: 0x001F
 oom: FileUnder
 
 dn: CN=0x8006,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8006
 canonical: PidLidFileUnderId
@@ -678,6 +751,7 @@ prop_type: 0x0003
 oom: FileUnderId
 
 dn: CN=0x8026,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8026
 canonical: PidLidFileUnderList
@@ -688,6 +762,7 @@ prop_type: 0x1003
 oom: FileUnderList
 
 dn: CN=0x80d8,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80d8
 canonical: PidLidFreeBusyLocation
@@ -698,6 +773,7 @@ prop_type: 0x001F
 oom: FreeBusyLocation
 
 dn: CN=0x8015,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8015
 canonical: PidLidHasPicture
@@ -708,6 +784,7 @@ prop_type: 0x000B
 oom: HasPicture
 
 dn: CN=0x801a,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x801a
 canonical: PidLidHomeAddress
@@ -718,6 +795,7 @@ prop_type: 0x001F
 oom: HomeAddress
 
 dn: CN=0x80da,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80da
 canonical: PidLidHomeAddressCountryCode
@@ -728,6 +806,7 @@ prop_type: 0x001F
 oom: HomeAddressCountryCode
 
 dn: CN=0x802b,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x802b
 canonical: PidLidHtml
@@ -738,6 +817,7 @@ prop_type: 0x001F
 oom: HTML
 
 dn: CN=0x8062,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8062
 canonical: PidLidInstantMessagingAddress
@@ -748,6 +828,7 @@ prop_type: 0x001F
 oom: InstMsg
 
 dn: CN=0x801c,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x801c
 canonical: PidLidOtherAddress
@@ -758,6 +839,7 @@ prop_type: 0x001F
 oom: OtherAddress
 
 dn: CN=0x80dc,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80dc
 canonical: PidLidOtherAddressCountryCode
@@ -768,6 +850,7 @@ prop_type: 0x001F
 oom: OtherAddressCountryCode
 
 dn: CN=0x8022,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8022
 canonical: PidLidPostalAddressId
@@ -778,6 +861,7 @@ prop_type: 0x0003
 oom: PostalAddressId
 
 dn: CN=0x800e,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x800e
 canonical: PidLidReferredBy
@@ -788,6 +872,7 @@ prop_type: 0x001F
 oom: ReferredBy
 
 dn: CN=0x80df,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80df
 canonical: PidLidWeddingAnniversaryLocal
@@ -798,6 +883,7 @@ prop_type: 0x0040
 oom: ApptAnniversaryLocal
 
 dn: CN=0x801b,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x801b
 canonical: PidLidWorkAddress
@@ -808,6 +894,7 @@ prop_type: 0x001F
 oom: WorkAddress
 
 dn: CN=0x8046,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8046
 canonical: PidLidWorkAddressCity
@@ -818,6 +905,7 @@ prop_type: 0x001F
 oom: WorkAddressCity
 
 dn: CN=0x8049,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8049
 canonical: PidLidWorkAddressCountry
@@ -828,6 +916,7 @@ prop_type: 0x001F
 oom: WorkAddressCountry
 
 dn: CN=0x80db,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x80db
 canonical: PidLidWorkAddressCountryCode
@@ -838,6 +927,7 @@ prop_type: 0x001F
 oom: WorkAddressCountryCode
 
 dn: CN=0x8048,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8048
 canonical: PidLidWorkAddressPostalCode
@@ -848,6 +938,7 @@ prop_type: 0x001F
 oom: WorkAddressPostalCode
 
 dn: CN=0x804a,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x804a
 canonical: PidLidWorkAddressPostOfficeBox
@@ -858,6 +949,7 @@ prop_type: 0x001F
 oom: WorkAddressPostOfficeBox
 
 dn: CN=0x8047,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8047
 canonical: PidLidWorkAddressState
@@ -868,6 +960,7 @@ prop_type: 0x001F
 oom: WorkAddressState
 
 dn: CN=0x802e,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x802e
 canonical: PidLidYomiCompanyName
@@ -878,6 +971,7 @@ prop_type: 0x001F
 oom: YomiCompanyName
 
 dn: CN=0x802c,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x802c
 canonical: PidLidYomiFirstName
@@ -888,6 +982,7 @@ prop_type: 0x001F
 oom: YomiFirstName
 
 dn: CN=0x802d,CN=MNID_ID,CN=00062004-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x802d
 canonical: PidLidYomiLastName
@@ -898,6 +993,7 @@ prop_type: 0x001F
 oom: YomiLastName
 
 dn: CN=IMAddress2,CN=MNID_STRING,CN=71035549-0739-4dcb-9163-00f0580dbbdf,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: IMAddress2
 canonical: PidNameInstantMessagingAddress2
@@ -908,6 +1004,7 @@ prop_type: 0x001F
 prop_name: IMAddress2
 
 dn: CN=IMAddress3,CN=MNID_STRING,CN=71035549-0739-4dcb-9163-00f0580dbbdf,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: IMAddress3
 canonical: PidNameInstantMessagingAddress3
@@ -918,6 +1015,7 @@ prop_type: 0x001F
 prop_name: IMAddress3
 
 dn: CN=0x8238,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8238
 canonical: PidLidAllAttendeesString
@@ -928,6 +1026,7 @@ prop_type: 0x001F
 oom: AllAttendeesString
 
 dn: CN=0x8246,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8246
 canonical: PidLidAllowExternalCheck
@@ -938,6 +1037,7 @@ prop_type: 0x000B
 oom: AllowExternCheck
 
 dn: CN=0x8207,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8207
 canonical: PidLidAppointmentAuxiliaryFlags
@@ -948,6 +1048,7 @@ prop_type: 0x0003
 oom: ApptAuxFlags
 
 dn: CN=0x8214,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8214
 canonical: PidLidAppointmentColor
@@ -958,6 +1059,7 @@ prop_type: 0x0003
 oom: ApptColor
 
 dn: CN=0x8257,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8257
 canonical: PidLidAppointmentCounterProposal
@@ -968,6 +1070,7 @@ prop_type: 0x000B
 oom: ApptCounterProposal
 
 dn: CN=0x8213,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8213
 canonical: PidLidAppointmentDuration
@@ -978,6 +1081,7 @@ prop_type: 0x0003
 oom: ApptDuration
 
 dn: CN=0x8211,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8211
 canonical: PidLidAppointmentEndDate
@@ -988,6 +1092,7 @@ prop_type: 0x0040
 oom: ApptEndDate
 
 dn: CN=0x8210,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8210
 canonical: PidLidAppointmentEndTime
@@ -998,6 +1103,7 @@ prop_type: 0x0040
 oom: ApptEndTime
 
 dn: CN=0x820e,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x820e
 canonical: PidLidAppointmentEndWhole
@@ -1008,6 +1114,7 @@ prop_type: 0x0040
 oom: ApptEndWhole
 
 dn: CN=0x8203,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8203
 canonical: PidLidAppointmentLastSequence
@@ -1018,6 +1125,7 @@ prop_type: 0x0003
 oom: ApptLastSequence
 
 dn: CN=0x825a,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x825a
 canonical: PidLidAppointmentNotAllowPropose
@@ -1028,6 +1136,7 @@ prop_type: 0x000B
 oom: ApptNotAllowPropose
 
 dn: CN=0x8259,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8259
 canonical: PidLidAppointmentProposalNumber
@@ -1038,6 +1147,7 @@ prop_type: 0x0003
 oom: ApptProposalNum
 
 dn: CN=0x8256,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8256
 canonical: PidLidAppointmentProposedDuration
@@ -1048,6 +1158,7 @@ prop_type: 0x0003
 oom: ApptProposedDuration
 
 dn: CN=0x8251,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8251
 canonical: PidLidAppointmentProposedEndWhole
@@ -1058,6 +1169,7 @@ prop_type: 0x0040
 oom: ApptProposedEndWhole
 
 dn: CN=0x8250,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8250
 canonical: PidLidAppointmentProposedStartWhole
@@ -1068,6 +1180,7 @@ prop_type: 0x0040
 oom: ApptProposedStartWhole
 
 dn: CN=0x8216,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8216
 canonical: PidLidAppointmentRecur
@@ -1078,6 +1191,7 @@ prop_type: 0x0102
 oom: ApptRecur
 
 dn: CN=0x8230,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8230
 canonical: PidLidAppointmentReplyName
@@ -1088,6 +1202,7 @@ prop_type: 0x001F
 oom: ApptReplyName, http://schemas.microsoft.com/mapi/apptreplyname
 
 dn: CN=0x8220,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8220
 canonical: PidLidAppointmentReplyTime
@@ -1098,6 +1213,7 @@ prop_type: 0x0040
 oom: ApptReplyTime
 
 dn: CN=0x8201,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8201
 canonical: PidLidAppointmentSequence
@@ -1108,6 +1224,7 @@ prop_type: 0x0003
 oom: ApptSequence
 
 dn: CN=0x8202,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8202
 canonical: PidLidAppointmentSequenceTime
@@ -1118,6 +1235,7 @@ prop_type: 0x0040
 oom: ApptSeqTime
 
 dn: CN=0x8212,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8212
 canonical: PidLidAppointmentStartDate
@@ -1128,6 +1246,7 @@ prop_type: 0x0040
 oom: ApptStartDate
 
 dn: CN=0x820f,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x820f
 canonical: PidLidAppointmentStartTime
@@ -1138,6 +1257,7 @@ prop_type: 0x0040
 oom: ApptStartTime
 
 dn: CN=0x820d,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x820d
 canonical: PidLidAppointmentStartWhole
@@ -1148,6 +1268,7 @@ prop_type: 0x0040
 oom: ApptStartWhole
 
 dn: CN=0x8217,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8217
 canonical: PidLidAppointmentStateFlags
@@ -1158,6 +1279,7 @@ prop_type: 0x0003
 oom: ApptStateFlags
 
 dn: CN=0x8215,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8215
 canonical: PidLidAppointmentSubType
@@ -1168,6 +1290,7 @@ prop_type: 0x000B
 oom: ApptSubType
 
 dn: CN=0x825f,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x825f
 canonical: PidLidAppointmentTimeZoneDefinitionEndDisplay
@@ -1178,6 +1301,7 @@ prop_type: 0x0102
 oom: ApptTZDefEndDisplay
 
 dn: CN=0x8260,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8260
 canonical: PidLidAppointmentTimeZoneDefinitionRecur
@@ -1188,6 +1312,7 @@ prop_type: 0x0102
 oom: ApptTZDefRecur
 
 dn: CN=0x825e,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x825e
 canonical: PidLidAppointmentTimeZoneDefinitionStartDisplay
@@ -1198,6 +1323,7 @@ prop_type: 0x0102
 oom: ApptTZDefStartDisplay
 
 dn: CN=0x825d,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x825d
 canonical: PidLidAppointmentUnsendableRecipients
@@ -1208,6 +1334,7 @@ prop_type: 0x0102
 oom: ApptUnsendableRecips
 
 dn: CN=0x8226,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8226
 canonical: PidLidAppointmentUpdateTime
@@ -1218,6 +1345,7 @@ prop_type: 0x0040
 oom: ApptUpdateTime
 
 dn: CN=0x823a,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x823a
 canonical: PidLidAutoFillLocation
@@ -1228,6 +1356,7 @@ prop_type: 0x000B
 oom: AutoFillLocation
 
 dn: CN=0x8244,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8244
 canonical: PidLidAutoStartCheck
@@ -1238,6 +1367,7 @@ prop_type: 0x000B
 oom: AutoStartCheck
 
 dn: CN=0x8205,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8205
 canonical: PidLidBusyStatus
@@ -1248,6 +1378,7 @@ prop_type: 0x0003
 oom: BusyStatus
 
 dn: CN=0x823c,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x823c
 canonical: PidLidCcAttendeesString
@@ -1258,6 +1389,7 @@ prop_type: 0x001F
 oom: CCAttendeesString
 
 dn: CN=0x8204,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8204
 canonical: PidLidChangeHighlight
@@ -1268,6 +1400,7 @@ prop_type: 0x0003
 oom: ChangeHighlight
 
 dn: CN=0x8236,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8236
 canonical: PidLidClipEnd
@@ -1278,6 +1411,7 @@ prop_type: 0x0040
 oom: ClipEnd
 
 dn: CN=0x8235,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8235
 canonical: PidLidClipStart
@@ -1288,6 +1422,7 @@ prop_type: 0x0040
 oom: ClipStart
 
 dn: CN=0x8247,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8247
 canonical: PidLidCollaborateDoc
@@ -1298,6 +1433,7 @@ prop_type: 0x001F
 oom: CollaborateDoc
 
 dn: CN=0x8240,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8240
 canonical: PidLidConferencingCheck
@@ -1308,6 +1444,7 @@ prop_type: 0x000B
 oom: ConfCheck
 
 dn: CN=0x8241,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8241
 canonical: PidLidConferencingType
@@ -1318,6 +1455,7 @@ prop_type: 0x0003
 oom: ConfType
 
 dn: CN=0x8242,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8242
 canonical: PidLidDirectory
@@ -1328,6 +1466,7 @@ prop_type: 0x001F
 oom: Directory
 
 dn: CN=0x8228,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8228
 canonical: PidLidExceptionReplaceTime
@@ -1338,6 +1477,7 @@ prop_type: 0x0040
 oom: ExceptionReplaceTime
 
 dn: CN=0x822b,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x822b
 canonical: PidLidFExceptionalAttendees
@@ -1348,6 +1488,7 @@ prop_type: 0x000B
 oom: FExceptionalAttendees
 
 dn: CN=0x8206,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8206
 canonical: PidLidFExceptionalBody
@@ -1358,6 +1499,7 @@ prop_type: 0x000B
 oom: FExceptionalBody
 
 dn: CN=0x8229,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8229
 canonical: PidLidFInvited
@@ -1368,6 +1510,7 @@ prop_type: 0x000B
 oom: FInvited
 
 dn: CN=0x820a,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x820a
 canonical: PidLidForwardInstance
@@ -1378,6 +1521,7 @@ prop_type: 0x000B
 oom: FwrdInstance
 
 dn: CN=0x8261,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8261
 canonical: PidLidForwardNotificationRecipients
@@ -1388,6 +1532,7 @@ prop_type: 0x0102
 oom: ForwardNotificationRecipients
 
 dn: CN=0x822f,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x822f
 canonical: PidLidFOthersAppointment
@@ -1398,6 +1543,7 @@ prop_type: 0x000B
 oom: FOthersAppt, http://schemas.microsoft.com/mapi/fothersappt
 
 dn: CN=0x827a,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x827a
 canonical: PidLidInboundICalStream
@@ -1408,6 +1554,7 @@ prop_type: 0x0102
 oom: InboundICalStream, dispidInboundICalStream
 
 dn: CN=0x8224,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8224
 canonical: PidLidIntendedBusyStatus
@@ -1418,6 +1565,7 @@ prop_type: 0x0003
 oom: IntendedBusyStatus
 
 dn: CN=0x820c,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x820c
 canonical: PidLidLinkedTaskItems
@@ -1428,6 +1576,7 @@ prop_type: 0x1102
 oom: LinkedTaskItems
 
 dn: CN=0x8208,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8208
 canonical: PidLidLocation
@@ -1438,6 +1587,7 @@ prop_type: 0x001F
 oom: Location
 
 dn: CN=0x8209,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8209
 canonical: PidLidMeetingWorkspaceUrl
@@ -1448,6 +1598,7 @@ prop_type: 0x001F
 oom: MWSURL
 
 dn: CN=0x8248,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8248
 canonical: PidLidNetShowUrl
@@ -1458,6 +1609,7 @@ prop_type: 0x001F
 oom: NetShowURL
 
 dn: CN=0x8249,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8249
 canonical: PidLidOnlinePassword
@@ -1468,6 +1620,7 @@ prop_type: 0x001F
 oom: OnlinePassword
 
 dn: CN=0x8243,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8243
 canonical: PidLidOrganizerAlias
@@ -1478,6 +1631,7 @@ prop_type: 0x001F
 oom: OrgAlias
 
 dn: CN=0x8237,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8237
 canonical: PidLidOriginalStoreEntryId
@@ -1488,6 +1642,7 @@ prop_type: 0x0102
 oom: OrigStoreEid, http://schemas.microsoft.com/mapi/origstoreeid
 
 dn: CN=0x822e,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x822e
 canonical: PidLidOwnerName
@@ -1498,6 +1653,7 @@ prop_type: 0x001F
 oom: OwnerName
 
 dn: CN=0x8232,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8232
 canonical: PidLidRecurrencePattern
@@ -1508,6 +1664,7 @@ prop_type: 0x001F
 oom: RecurPattern
 
 dn: CN=0x8231,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8231
 canonical: PidLidRecurrenceType
@@ -1518,6 +1675,7 @@ prop_type: 0x0003
 oom: RecurType
 
 dn: CN=0x8223,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8223
 canonical: PidLidRecurring
@@ -1528,6 +1686,7 @@ prop_type: 0x000B
 oom: Recurring
 
 dn: CN=0x8218,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8218
 canonical: PidLidResponseStatus
@@ -1538,6 +1697,7 @@ prop_type: 0x0003
 oom: ResponseStatus
 
 dn: CN=0x827b,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x827b
 canonical: PidLidSingleBodyICal
@@ -1548,6 +1708,7 @@ prop_type: 0x000B
 oom: IsSingleBodyICal, dispidIsSingleBodyICal
 
 dn: CN=0x8234,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8234
 canonical: PidLidTimeZoneDescription
@@ -1558,6 +1719,7 @@ prop_type: 0x001F
 oom: TimeZoneDesc
 
 dn: CN=0x8233,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8233
 canonical: PidLidTimeZoneStruct
@@ -1568,6 +1730,7 @@ prop_type: 0x0102
 oom: TimeZoneStruct
 
 dn: CN=0x823b,CN=MNID_ID,CN=00062002-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x823b
 canonical: PidLidToAttendeesString
@@ -1578,6 +1741,7 @@ prop_type: 0x001F
 oom: ToAttendeesString
 
 dn: CN=AttachmentMacContentType,CN=MNID_STRING,CN=96357f7f-59e1-47d0-99a7-46515c183b54,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: AttachmentMacContentType
 canonical: PidNameAttachmentMacContentType
@@ -1588,6 +1752,7 @@ prop_type: 0x001F
 prop_name: AttachmentMacContentType
 
 dn: CN=AttachmentMacInfo,CN=MNID_STRING,CN=96357f7f-59e1-47d0-99a7-46515c183b54,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: AttachmentMacInfo
 canonical: PidNameAttachmentMacInfo
@@ -1598,6 +1763,7 @@ prop_type: 0x0102
 prop_name: AttachmentMacInfo
 
 dn: CN=0x0015,CN=MNID_ID,CN=11000e07-b51b-40d6-af21-caa85edab1d0,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0015
 canonical: PidLidClientIntent
@@ -1608,6 +1774,7 @@ prop_type: 0x0003
 oom: ClientIntent
 
 dn: CN=0x85cc,CN=MNID_ID,CN=11000e07-b51b-40d6-af21-caa85edab1d0,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85cc
 canonical: PidLidServerProcessed
@@ -1618,6 +1785,7 @@ prop_type: 0x000B
 oom: ExchangeProcessed
 
 dn: CN=0x85cd,CN=MNID_ID,CN=11000e07-b51b-40d6-af21-caa85edab1d0,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85cd
 canonical: PidLidServerProcessingActions
@@ -1628,6 +1796,7 @@ prop_type: 0x0003
 oom: ExchangeProcessingAction
 
 dn: CN=0x850e,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x850e
 canonical: PidLidAgingDontAgeMe
@@ -1638,6 +1807,7 @@ prop_type: 0x000B
 oom: AgingDontAgeMe
 
 dn: CN=0x851a,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x851a
 canonical: PidLidAutoProcessState
@@ -1648,6 +1818,7 @@ prop_type: 0x0003
 oom: SniffState
 
 dn: CN=0x8535,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8535
 canonical: PidLidBilling
@@ -1658,6 +1829,7 @@ prop_type: 0x001F
 oom: Billing
 
 dn: CN=0x85b6,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85b6
 canonical: PidLidClassification
@@ -1668,6 +1840,7 @@ prop_type: 0x001F
 oom: Classification
 
 dn: CN=0x85b7,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85b7
 canonical: PidLidClassificationDescription
@@ -1678,6 +1851,7 @@ prop_type: 0x001F
 oom: ClassDesc
 
 dn: CN=0x85b8,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85b8
 canonical: PidLidClassificationGuid
@@ -1688,6 +1862,7 @@ prop_type: 0x001F
 oom: ClassGuid
 
 dn: CN=0x85ba,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85ba
 canonical: PidLidClassificationKeep
@@ -1698,6 +1873,7 @@ prop_type: 0x000B
 oom: ClassKeep
 
 dn: CN=0x85b5,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85b5
 canonical: PidLidClassified
@@ -1708,6 +1884,7 @@ prop_type: 0x000B
 oom: Classified
 
 dn: CN=0x8517,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8517
 canonical: PidLidCommonEnd
@@ -1718,6 +1895,7 @@ prop_type: 0x0040
 oom: CommonEnd
 
 dn: CN=0x8516,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8516
 canonical: PidLidCommonStart
@@ -1728,6 +1906,7 @@ prop_type: 0x0040
 oom: CommonStart
 
 dn: CN=0x8539,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8539
 canonical: PidLidCompanies
@@ -1738,6 +1917,7 @@ prop_type: 0x101F
 oom: Companies, http://schemas.microsoft.com/exchange/companies
 
 dn: CN=0x8585,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8585
 canonical: PidLidContactLinkEntry
@@ -1748,6 +1928,7 @@ prop_type: 0x0102
 oom: ContactLinkEntry
 
 dn: CN=0x8586,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8586
 canonical: PidLidContactLinkName
@@ -1758,6 +1939,7 @@ prop_type: 0x001F
 oom: ContactLinkName
 
 dn: CN=0x8584,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8584
 canonical: PidLidContactLinkSearchKey
@@ -1768,6 +1950,7 @@ prop_type: 0x0102
 oom: ContactLinkSearchKey
 
 dn: CN=0x853a,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x853a
 canonical: PidLidContacts
@@ -1778,6 +1961,7 @@ prop_type: 0x101F
 oom: Contacts
 
 dn: CN=0x85ca,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85ca
 canonical: PidLidConversationActionLastAppliedTime
@@ -1788,6 +1972,7 @@ prop_type: 0x0040
 oom: ConvActionLastAppliedTime
 
 dn: CN=0x85c8,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85c8
 canonical: PidLidConversationActionMaxDeliveryTime
@@ -1798,6 +1983,7 @@ prop_type: 0x0040
 oom: ConvActionMaxDeliveryTime
 
 dn: CN=0x85c6,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85c6
 canonical: PidLidConversationActionMoveFolderEid
@@ -1808,6 +1994,7 @@ prop_type: 0x0102
 oom: ConvActionMoveFolderEid
 
 dn: CN=0x85c7,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85c7
 canonical: PidLidConversationActionMoveStoreEid
@@ -1818,6 +2005,7 @@ prop_type: 0x0102
 oom: ConvActionMoveStoreEid
 
 dn: CN=0x85cb,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85cb
 canonical: PidLidConversationActionVersion
@@ -1828,6 +2016,7 @@ prop_type: 0x0003
 oom: ConvActionVersion
 
 dn: CN=0x85c9,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85c9
 canonical: PidLidConversationProcessed
@@ -1838,6 +2027,7 @@ prop_type: 0x0003
 oom: ConvExLegacyProcessedRand
 
 dn: CN=0x8552,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8552
 canonical: PidLidCurrentVersion
@@ -1848,6 +2038,7 @@ prop_type: 0x0003
 oom: CurrentVersion
 
 dn: CN=0x8554,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8554
 canonical: PidLidCurrentVersionName
@@ -1858,6 +2049,7 @@ prop_type: 0x001F
 oom: CurrentVersionName
 
 dn: CN=0x1000,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x1000
 canonical: PidLidDayOfMonth
@@ -1868,6 +2060,7 @@ prop_type: 0x0003
 oom: NULL
 
 dn: CN=0x8530,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8530
 canonical: PidLidFlagRequest
@@ -1878,6 +2071,7 @@ prop_type: 0x001F
 oom: Request
 
 dn: CN=0x85c0,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85c0
 canonical: PidLidFlagString
@@ -1888,6 +2082,7 @@ prop_type: 0x0003
 oom: FlagStringEnum
 
 dn: CN=0x1001,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x1001
 canonical: PidLidICalendarDayOfWeekMask
@@ -1898,6 +2093,7 @@ prop_type: 0x0003
 oom: http://schemas.microsoft.com/mapi/dayofweekmask
 
 dn: CN=0x85b1,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85b1
 canonical: PidLidInfoPathFormName
@@ -1908,6 +2104,7 @@ prop_type: 0x001F
 oom: NULL
 
 dn: CN=0x8580,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8580
 canonical: PidLidInternetAccountName
@@ -1918,6 +2115,7 @@ prop_type: 0x001F
 oom: InetAcctName
 
 dn: CN=0x8581,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8581
 canonical: PidLidInternetAccountStamp
@@ -1928,6 +2126,7 @@ prop_type: 0x001F
 oom: InetAcctStamp
 
 dn: CN=0x1006,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x1006
 canonical: PidLidMonthOfYear
@@ -1938,6 +2137,7 @@ prop_type: 0x0003
 oom: NULL
 
 dn: CN=0x100b,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x100b
 canonical: PidLidNoEndDateFlag
@@ -1948,6 +2148,7 @@ prop_type: 0x000B
 oom: http://schemas.microsoft.com/mapi/fnoenddate
 
 dn: CN=0x8538,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8538
 canonical: PidLidNonSendableBcc
@@ -1958,6 +2159,7 @@ prop_type: 0x001F
 oom: NonSendableBCC
 
 dn: CN=0x8537,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8537
 canonical: PidLidNonSendableCc
@@ -1968,6 +2170,7 @@ prop_type: 0x001F
 oom: NonSendableCC
 
 dn: CN=0x8536,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8536
 canonical: PidLidNonSendableTo
@@ -1978,6 +2181,7 @@ prop_type: 0x001F
 oom: NonSendableTo
 
 dn: CN=0x8545,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8545
 canonical: PidLidNonSendBccTrackStatus
@@ -1988,6 +2192,7 @@ prop_type: 0x1003
 oom: NonSendBccTrackStatus
 
 dn: CN=0x8544,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8544
 canonical: PidLidNonSendCcTrackStatus
@@ -1998,6 +2203,7 @@ prop_type: 0x1003
 oom: NonSendCcTrackStatus
 
 dn: CN=0x8543,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8543
 canonical: PidLidNonSendToTrackStatus
@@ -2008,6 +2214,7 @@ prop_type: 0x1003
 oom: NonSendToTrackStatus
 
 dn: CN=0x1005,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x1005
 canonical: PidLidOccurrences
@@ -2018,6 +2225,7 @@ prop_type: 0x0003
 oom: NULL
 
 dn: CN=0x8506,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8506
 canonical: PidLidPrivate
@@ -2028,6 +2236,7 @@ prop_type: 0x000B
 oom: Private
 
 dn: CN=0x8045,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8045
 canonical: PidLidPromptSendUpdate
@@ -2038,6 +2247,7 @@ prop_type: 0x000B
 oom: PromptSendUpdate
 
 dn: CN=0x100d,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x100d
 canonical: PidLidRecurrenceDuration
@@ -2048,6 +2258,7 @@ prop_type: 0x0003
 oom: NULL
 
 dn: CN=0x85bd,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85bd
 canonical: PidLidReferenceEntryId
@@ -2058,6 +2269,7 @@ prop_type: 0x0102
 oom: ReferenceEID
 
 dn: CN=0x8501,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8501
 canonical: PidLidReminderDelta
@@ -2068,6 +2280,7 @@ prop_type: 0x0003
 oom: ReminderDelta, http://schemas.microsoft.com/mapi/reminderdelta
 
 dn: CN=0x851f,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x851f
 canonical: PidLidReminderFileParameter
@@ -2078,6 +2291,7 @@ prop_type: 0x001F
 oom: ReminderFileParam
 
 dn: CN=0x851c,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x851c
 canonical: PidLidReminderOverride
@@ -2088,6 +2302,7 @@ prop_type: 0x000B
 oom: ReminderOverride
 
 dn: CN=0x851e,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x851e
 canonical: PidLidReminderPlaySound
@@ -2098,6 +2313,7 @@ prop_type: 0x000B
 oom: ReminderPlaySound
 
 dn: CN=0x8503,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8503
 canonical: PidLidReminderSet
@@ -2108,6 +2324,7 @@ prop_type: 0x000B
 oom: ReminderSet
 
 dn: CN=0x8560,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8560
 canonical: PidLidReminderSignalTime
@@ -2118,6 +2335,7 @@ prop_type: 0x0040
 oom: ReminderNextTime
 
 dn: CN=0x8502,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8502
 canonical: PidLidReminderTime
@@ -2128,6 +2346,7 @@ prop_type: 0x0040
 oom: ReminderTime
 
 dn: CN=0x8505,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8505
 canonical: PidLidReminderTimeDate
@@ -2138,6 +2357,7 @@ prop_type: 0x0040
 oom: ReminderTimeDate
 
 dn: CN=0x8504,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8504
 canonical: PidLidReminderTimeTime
@@ -2148,6 +2368,7 @@ prop_type: 0x0040
 oom: ReminderTimeTime
 
 dn: CN=0x851d,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x851d
 canonical: PidLidReminderType
@@ -2158,6 +2379,7 @@ prop_type: 0x0003
 oom: ReminderType, http://schemas.microsoft.com/mapi/remindertype
 
 dn: CN=0x8511,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8511
 canonical: PidLidRemoteStatus
@@ -2168,6 +2390,7 @@ prop_type: 0x0003
 oom: RemoteStatus
 
 dn: CN=0x8510,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8510
 canonical: PidLidSideEffects
@@ -2178,6 +2401,7 @@ prop_type: 0x0003
 oom: SideEffects
 
 dn: CN=0x8514,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8514
 canonical: PidLidSmartNoAttach
@@ -2188,6 +2412,7 @@ prop_type: 0x000B
 oom: SmartNoAttach
 
 dn: CN=0x859c,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x859c
 canonical: PidLidSpamOriginalFolder
@@ -2198,6 +2423,7 @@ prop_type: 0x0102
 oom: SpamOriginalFolder
 
 dn: CN=0x8519,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8519
 canonical: PidLidTaskGlobalId
@@ -2208,6 +2434,7 @@ prop_type: 0x0102
 oom: TaskGlobalObjId
 
 dn: CN=0x8518,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8518
 canonical: PidLidTaskMode
@@ -2218,6 +2445,7 @@ prop_type: 0x0003
 oom: TaskMode
 
 dn: CN=0x85a0,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85a0
 canonical: PidLidToDoOrdinalDate
@@ -2228,6 +2456,7 @@ prop_type: 0x0040
 oom: ToDoOrdinalDate
 
 dn: CN=0x85a1,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85a1
 canonical: PidLidToDoSubOrdinal
@@ -2238,6 +2467,7 @@ prop_type: 0x001F
 oom: ToDoSubOrdinal
 
 dn: CN=0x85a4,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85a4
 canonical: PidLidToDoTitle
@@ -2248,6 +2478,7 @@ prop_type: 0x001F
 oom: ToDoTitle
 
 dn: CN=0x8582,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8582
 canonical: PidLidUseTnef
@@ -2258,6 +2489,7 @@ prop_type: 0x000B
 oom: UseTNEF
 
 dn: CN=0x85bf,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x85bf
 canonical: PidLidValidFlagStringProof
@@ -2268,6 +2500,7 @@ prop_type: 0x0040
 oom: ValidFlagStringProof
 
 dn: CN=0x8524,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8524
 canonical: PidLidVerbResponse
@@ -2278,6 +2511,7 @@ prop_type: 0x001F
 oom: VerbResponse
 
 dn: CN=0x8520,CN=MNID_ID,CN=00062008-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8520
 canonical: PidLidVerbStream
@@ -2288,6 +2522,7 @@ prop_type: 0x0102
 oom: VerbStream
 
 dn: CN=0x8711,CN=MNID_ID,CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8711
 canonical: PidLidLogDocumentPosted
@@ -2298,6 +2533,7 @@ prop_type: 0x000B
 oom: LogDocPosted
 
 dn: CN=0x870e,CN=MNID_ID,CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x870e
 canonical: PidLidLogDocumentPrinted
@@ -2308,6 +2544,7 @@ prop_type: 0x000B
 oom: LogDocPrinted
 
 dn: CN=0x8710,CN=MNID_ID,CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8710
 canonical: PidLidLogDocumentRouted
@@ -2318,6 +2555,7 @@ prop_type: 0x000B
 oom: LogDocRouted
 
 dn: CN=0x870f,CN=MNID_ID,CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x870f
 canonical: PidLidLogDocumentSaved
@@ -2328,6 +2566,7 @@ prop_type: 0x000B
 oom: LogDocSaved
 
 dn: CN=0x8707,CN=MNID_ID,CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8707
 canonical: PidLidLogDuration
@@ -2338,6 +2577,7 @@ prop_type: 0x0003
 oom: LogDuration
 
 dn: CN=0x8708,CN=MNID_ID,CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8708
 canonical: PidLidLogEnd
@@ -2348,6 +2588,7 @@ prop_type: 0x0040
 oom: LogEnd
 
 dn: CN=0x870c,CN=MNID_ID,CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x870c
 canonical: PidLidLogFlags
@@ -2358,6 +2599,7 @@ prop_type: 0x0003
 oom: LogFlags
 
 dn: CN=0x8706,CN=MNID_ID,CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8706
 canonical: PidLidLogStart
@@ -2368,6 +2610,7 @@ prop_type: 0x0040
 oom: LogStart
 
 dn: CN=0x8700,CN=MNID_ID,CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8700
 canonical: PidLidLogType
@@ -2378,6 +2621,7 @@ prop_type: 0x001F
 oom: LogType
 
 dn: CN=0x8712,CN=MNID_ID,CN=0006200a-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8712
 canonical: PidLidLogTypeDesc
@@ -2388,6 +2632,7 @@ prop_type: 0x001F
 oom: LogTypeDesc
 
 dn: CN=0x0024,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0024
 canonical: PidLidAppointmentMessageClass
@@ -2398,6 +2643,7 @@ prop_type: 0x001F
 oom: ApptMessageClass
 
 dn: CN=0x0001,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0001
 canonical: PidLidAttendeeCriticalChange
@@ -2408,6 +2654,7 @@ prop_type: 0x0040
 oom: LID_ATTENDEE_CRITICAL_CHANGE
 
 dn: CN=0x001c,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x001c
 canonical: PidLidCalendarType
@@ -2418,6 +2665,7 @@ prop_type: 0x0003
 oom: LID_CALENDAR_TYPE
 
 dn: CN=0x0023,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0023
 canonical: PidLidCleanGlobalObjectId
@@ -2428,6 +2676,7 @@ prop_type: 0x0102
 oom: CleanGlobalObjId
 
 dn: CN=0x0011,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0011
 canonical: PidLidDayInterval
@@ -2438,6 +2687,7 @@ prop_type: 0x0002
 oom: LID_DAY_INTERVAL
 
 dn: CN=0x0009,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0009
 canonical: PidLidDelegateMail
@@ -2448,6 +2698,7 @@ prop_type: 0x000B
 oom: LID_DELEGATE_MAIL
 
 dn: CN=0x000f,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x000f
 canonical: PidLidEndRecurrenceDate
@@ -2458,6 +2709,7 @@ prop_type: 0x0003
 oom: LID_END_RECUR_DATE
 
 dn: CN=0x0010,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0010
 canonical: PidLidEndRecurrenceTime
@@ -2468,6 +2720,7 @@ prop_type: 0x0003
 oom: LID_END_RECUR_TIME
 
 dn: CN=0x0003,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0003
 canonical: PidLidGlobalObjectId
@@ -2478,6 +2731,7 @@ prop_type: 0x0102
 oom: LID_GLOBAL_OBJID
 
 dn: CN=0x000a,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x000a
 canonical: PidLidIsException
@@ -2488,6 +2742,7 @@ prop_type: 0x000B
 oom: LID_IS_EXCEPTION
 
 dn: CN=0x0005,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0005
 canonical: PidLidIsRecurring
@@ -2498,6 +2753,7 @@ prop_type: 0x000B
 oom: LID_IS_RECURRING
 
 dn: CN=0x0004,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0004
 canonical: PidLidIsSilent
@@ -2508,6 +2764,7 @@ prop_type: 0x000B
 oom: LID_IS_SILENT
 
 dn: CN=0x0026,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0026
 canonical: PidLidMeetingType
@@ -2518,6 +2775,7 @@ prop_type: 0x0003
 oom: MeetingType
 
 dn: CN=0x0013,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0013
 canonical: PidLidMonthInterval
@@ -2528,6 +2786,7 @@ prop_type: 0x0002
 oom: LID_MONTH_INTERVAL
 
 dn: CN=0x0017,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0017
 canonical: PidLidMonthOfYearMask
@@ -2538,6 +2797,7 @@ prop_type: 0x0003
 oom: LID_MOY_MASK
 
 dn: CN=0x0028,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0028
 canonical: PidLidOldLocation
@@ -2548,6 +2808,7 @@ prop_type: 0x001F
 oom: OldLocation
 
 dn: CN=0x0018,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0018
 canonical: PidLidOldRecurrenceType
@@ -2558,6 +2819,7 @@ prop_type: 0x0002
 oom: LID_RECUR_TYPE
 
 dn: CN=0x002a,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x002a
 canonical: PidLidOldWhenEndWhole
@@ -2568,6 +2830,7 @@ prop_type: 0x0040
 oom: OldWhenEndWhole
 
 dn: CN=0x0029,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0029
 canonical: PidLidOldWhenStartWhole
@@ -2578,6 +2841,7 @@ prop_type: 0x0040
 oom: OldWhenStartWhole
 
 dn: CN=0x0007,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0007
 canonical: PidLidOptionalAttendees
@@ -2588,6 +2852,7 @@ prop_type: 0x001F
 oom: LID_OPTIONAL_ATTENDEES
 
 dn: CN=0x001a,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x001a
 canonical: PidLidOwnerCriticalChange
@@ -2598,6 +2863,7 @@ prop_type: 0x0040
 oom: LID_OWNER_CRITICAL_CHANGE
 
 dn: CN=0x0006,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0006
 canonical: PidLidRequiredAttendees
@@ -2608,6 +2874,7 @@ prop_type: 0x001F
 oom: LID_REQUIRED_ATTENDEES
 
 dn: CN=0x0008,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0008
 canonical: PidLidResourceAttendees
@@ -2618,6 +2885,7 @@ prop_type: 0x001F
 oom: LID_RESOURCE_ATTENDEES
 
 dn: CN=0x000d,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x000d
 canonical: PidLidStartRecurrenceDate
@@ -2628,6 +2896,7 @@ prop_type: 0x0003
 oom: LID_START_RECUR_DATE
 
 dn: CN=0x000e,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x000e
 canonical: PidLidStartRecurrenceTime
@@ -2638,6 +2907,7 @@ prop_type: 0x0003
 oom: LID_START_RECUR_TIME
 
 dn: CN=0x000c,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x000c
 canonical: PidLidTimeZone
@@ -2648,6 +2918,7 @@ prop_type: 0x0003
 oom: LID_TIME_ZONE
 
 dn: CN=0x0012,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0012
 canonical: PidLidWeekInterval
@@ -2658,6 +2929,7 @@ prop_type: 0x0002
 oom: LID_WEEK_INTERVAL
 
 dn: CN=0x0002,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0002
 canonical: PidLidWhere
@@ -2668,6 +2940,7 @@ prop_type: 0x001F
 oom: LID_WHERE
 
 dn: CN=0x0014,CN=MNID_ID,CN=6ed8da90-450b-101b-98da-00aa003f1305,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x0014
 canonical: PidLidYearInterval
@@ -2678,6 +2951,7 @@ prop_type: 0x0002
 oom: LID_YEAR_INTERVAL
 
 dn: CN=OriginalScl,CN=MNID_STRING,CN=41f28f13-83f4-4114-a584-eedb5a6b0bff,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: OriginalScl
 canonical: PidNameOriginalSpamConfidenceLevel
@@ -2688,6 +2962,7 @@ prop_type: 0x0003
 prop_name: OriginalScl
 
 dn: CN=0x8b00,CN=MNID_ID,CN=0006200e-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8b00
 canonical: PidLidNoteColor
@@ -2698,6 +2973,7 @@ prop_type: 0x0003
 oom: NoteColor
 
 dn: CN=0x8b03,CN=MNID_ID,CN=0006200e-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8b03
 canonical: PidLidNoteHeight
@@ -2708,6 +2984,7 @@ prop_type: 0x0003
 oom: NoteHeight
 
 dn: CN=0x8b02,CN=MNID_ID,CN=0006200e-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8b02
 canonical: PidLidNoteWidth
@@ -2718,6 +2995,7 @@ prop_type: 0x0003
 oom: NoteWidth
 
 dn: CN=0x8b04,CN=MNID_ID,CN=0006200e-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8b04
 canonical: PidLidNoteX
@@ -2728,6 +3006,7 @@ prop_type: 0x0003
 oom: NoteX
 
 dn: CN=0x8b05,CN=MNID_ID,CN=0006200e-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8b05
 canonical: PidLidNoteY
@@ -2738,6 +3017,7 @@ prop_type: 0x0003
 oom: NoteY
 
 dn: CN=0x8904,CN=MNID_ID,CN=00062041-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8904
 canonical: PidLidPostRssChannel
@@ -2748,6 +3028,7 @@ prop_type: 0x001F
 oom: PostRssChannel
 
 dn: CN=0x8900,CN=MNID_ID,CN=00062041-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8900
 canonical: PidLidPostRssChannelLink
@@ -2758,6 +3039,7 @@ prop_type: 0x001F
 oom: PostRssChannelLink
 
 dn: CN=0x8903,CN=MNID_ID,CN=00062041-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8903
 canonical: PidLidPostRssItemGuid
@@ -2768,6 +3050,7 @@ prop_type: 0x001F
 oom: PostRssItemGuid
 
 dn: CN=0x8902,CN=MNID_ID,CN=00062041-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8902
 canonical: PidLidPostRssItemHash
@@ -2778,6 +3061,7 @@ prop_type: 0x0003
 oom: PostRssItemHash
 
 dn: CN=0x8901,CN=MNID_ID,CN=00062041-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8901
 canonical: PidLidPostRssItemLink
@@ -2788,6 +3072,7 @@ prop_type: 0x001F
 oom: PostRssItemLink
 
 dn: CN=0x8905,CN=MNID_ID,CN=00062041-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8905
 canonical: PidLidPostRssItemXml
@@ -2798,6 +3083,7 @@ prop_type: 0x001F
 oom: PostRssItemXml
 
 dn: CN=0x8906,CN=MNID_ID,CN=00062041-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8906
 canonical: PidLidPostRssSubscription
@@ -2808,6 +3094,7 @@ prop_type: 0x001F
 oom: PostRssSubscription
 
 dn: CN=0x8a19,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a19
 canonical: PidLidSharingAnonymity
@@ -2818,6 +3105,7 @@ prop_type: 0x0003
 oom: SharingAnonymity
 
 dn: CN=0x8a2d,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a2d
 canonical: PidLidSharingBindingEntryId
@@ -2828,6 +3116,7 @@ prop_type: 0x0102
 oom: SharingBindingEid
 
 dn: CN=0x8a51,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a51
 canonical: PidLidSharingBrowseUrl
@@ -2838,6 +3127,7 @@ prop_type: 0x001F
 oom: SharingBrowseUrl
 
 dn: CN=0x8a17,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a17
 canonical: PidLidSharingCapabilities
@@ -2848,6 +3138,7 @@ prop_type: 0x0003
 oom: SharingCaps
 
 dn: CN=0x8a24,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a24
 canonical: PidLidSharingConfigurationUrl
@@ -2858,6 +3149,7 @@ prop_type: 0x001F
 oom: SharingConfigUrl
 
 dn: CN=0x8a45,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a45
 canonical: PidLidSharingDataRangeEnd
@@ -2868,6 +3160,7 @@ prop_type: 0x0040
 oom: SharingDataRangeEnd
 
 dn: CN=0x8a44,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a44
 canonical: PidLidSharingDataRangeStart
@@ -2878,6 +3171,7 @@ prop_type: 0x0040
 oom: SharingDataRangeStart
 
 dn: CN=0x8a2b,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a2b
 canonical: PidLidSharingDetail
@@ -2888,6 +3182,7 @@ prop_type: 0x0003
 oom: SharingDetail
 
 dn: CN=0x8a21,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a21
 canonical: PidLidSharingExtensionXml
@@ -2898,6 +3193,7 @@ prop_type: 0x001F
 oom: SharingExtXml
 
 dn: CN=0x8a13,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a13
 canonical: PidLidSharingFilter
@@ -2908,6 +3204,7 @@ prop_type: 0x0102
 oom: SharingFilter
 
 dn: CN=0x8a0a,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a0a
 canonical: PidLidSharingFlags
@@ -2918,6 +3215,7 @@ prop_type: 0x0003
 oom: SharingFlags
 
 dn: CN=0x8a18,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a18
 canonical: PidLidSharingFlavor
@@ -2928,6 +3226,7 @@ prop_type: 0x0003
 oom: SharingFlavor
 
 dn: CN=0x8a15,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a15
 canonical: PidLidSharingFolderEntryId
@@ -2938,6 +3237,7 @@ prop_type: 0x0102
 oom: SharingFolderEid
 
 dn: CN=0x8a2e,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a2e
 canonical: PidLidSharingIndexEntryId
@@ -2948,6 +3248,7 @@ prop_type: 0x0102
 oom: SharingIndexEid
 
 dn: CN=0x8a09,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a09
 canonical: PidLidSharingInitiatorEntryId
@@ -2958,6 +3259,7 @@ prop_type: 0x0102
 oom: SharingInitiatorEid
 
 dn: CN=0x8a07,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a07
 canonical: PidLidSharingInitiatorName
@@ -2968,6 +3270,7 @@ prop_type: 0x001F
 oom: SharingInitiatorName
 
 dn: CN=0x8a08,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a08
 canonical: PidLidSharingInitiatorSmtp
@@ -2978,6 +3281,7 @@ prop_type: 0x001F
 oom: SharingInitiatorSmtp
 
 dn: CN=0x8a1c,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a1c
 canonical: PidLidSharingInstanceGuid
@@ -2988,6 +3292,7 @@ prop_type: 0x0102
 oom: SharingInstanceGuid
 
 dn: CN=0x8a55,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a55
 canonical: PidLidSharingLastAutoSyncTime
@@ -2998,6 +3303,7 @@ prop_type: 0x0040
 oom: SharingLastAutoSync
 
 dn: CN=0x8a1f,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a1f
 canonical: PidLidSharingLastSyncTime
@@ -3008,6 +3314,7 @@ prop_type: 0x0040
 oom: SharingLastSync
 
 dn: CN=0x8a4d,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a4d
 canonical: PidLidSharingLocalComment
@@ -3018,6 +3325,7 @@ prop_type: 0x001F
 oom: SharingLocalComment
 
 dn: CN=0x8a23,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a23
 canonical: PidLidSharingLocalLastModificationTime
@@ -3028,6 +3336,7 @@ prop_type: 0x0040
 oom: SharingLocalLastMod
 
 dn: CN=0x8a0f,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a0f
 canonical: PidLidSharingLocalName
@@ -3038,6 +3347,7 @@ prop_type: 0x001F
 oom: SharingLocalName
 
 dn: CN=0x8a0e,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a0e
 canonical: PidLidSharingLocalPath
@@ -3048,6 +3358,7 @@ prop_type: 0x001F
 oom: SharingLocalPath
 
 dn: CN=0x8a49,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a49
 canonical: PidLidSharingLocalStoreUid
@@ -3058,6 +3369,7 @@ prop_type: 0x001F
 oom: SharingLocalStoreUid
 
 dn: CN=0x8a14,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a14
 canonical: PidLidSharingLocalType
@@ -3068,6 +3380,7 @@ prop_type: 0x001F
 oom: SharingLocalType
 
 dn: CN=0x8a10,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a10
 canonical: PidLidSharingLocalUid
@@ -3078,6 +3391,7 @@ prop_type: 0x001F
 oom: SharingLocalUid
 
 dn: CN=0x8a29,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a29
 canonical: PidLidSharingOriginalMessageEntryId
@@ -3088,6 +3402,7 @@ prop_type: 0x0102
 oom: SharingOriginalMessageEid
 
 dn: CN=0x8a5c,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a5c
 canonical: PidLidSharingParentBindingEntryId
@@ -3098,6 +3413,7 @@ prop_type: 0x0102
 oom: SharingParentBindingEid
 
 dn: CN=0x8a1e,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a1e
 canonical: PidLidSharingParticipants
@@ -3108,6 +3424,7 @@ prop_type: 0x001F
 oom: SharingParticipants
 
 dn: CN=0x8a1b,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a1b
 canonical: PidLidSharingPermissions
@@ -3118,6 +3435,7 @@ prop_type: 0x0003
 oom: SharingPermissions
 
 dn: CN=0x8a0b,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a0b
 canonical: PidLidSharingProviderExtension
@@ -3128,6 +3446,7 @@ prop_type: 0x001F
 oom: SharingProviderExtension
 
 dn: CN=0x8a01,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a01
 canonical: PidLidSharingProviderGuid
@@ -3138,6 +3457,7 @@ prop_type: 0x0102
 oom: SharingProviderGuid
 
 dn: CN=0x8a02,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a02
 canonical: PidLidSharingProviderName
@@ -3148,6 +3468,7 @@ prop_type: 0x001F
 oom: SharingProviderName
 
 dn: CN=0x8a03,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a03
 canonical: PidLidSharingProviderUrl
@@ -3158,6 +3479,7 @@ prop_type: 0x001F
 oom: SharingProviderUrl
 
 dn: CN=0x8a47,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a47
 canonical: PidLidSharingRangeEnd
@@ -3168,6 +3490,7 @@ prop_type: 0x0003
 oom: SharingRangeEnd
 
 dn: CN=0x8a46,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a46
 canonical: PidLidSharingRangeStart
@@ -3178,6 +3501,7 @@ prop_type: 0x0003
 oom: SharingRangeStart
 
 dn: CN=0x8a1a,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a1a
 canonical: PidLidSharingReciprocation
@@ -3188,6 +3512,7 @@ prop_type: 0x0003
 oom: SharingReciprocation
 
 dn: CN=0x8a4b,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a4b
 canonical: PidLidSharingRemoteByteSize
@@ -3198,6 +3523,7 @@ prop_type: 0x0003
 oom: SharingRemoteByteSize
 
 dn: CN=0x8a2f,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a2f
 canonical: PidLidSharingRemoteComment
@@ -3208,6 +3534,7 @@ prop_type: 0x001F
 oom: SharingRemoteComment
 
 dn: CN=0x8a4c,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a4c
 canonical: PidLidSharingRemoteCrc
@@ -3218,6 +3545,7 @@ prop_type: 0x0003
 oom: SharingRemoteCrc
 
 dn: CN=0x8a22,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a22
 canonical: PidLidSharingRemoteLastModificationTime
@@ -3228,6 +3556,7 @@ prop_type: 0x0040
 oom: SharingRemoteLastMod
 
 dn: CN=0x8a4f,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a4f
 canonical: PidLidSharingRemoteMessageCount
@@ -3238,6 +3567,7 @@ prop_type: 0x0003
 oom: SharingRemoteMsgCount
 
 dn: CN=0x8a05,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a05
 canonical: PidLidSharingRemoteName
@@ -3248,6 +3578,7 @@ prop_type: 0x001F
 oom: SharingRemoteName
 
 dn: CN=0x8a0d,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a0d
 canonical: PidLidSharingRemotePass
@@ -3258,6 +3589,7 @@ prop_type: 0x001F
 oom: SharingRemotePass
 
 dn: CN=0x8a04,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a04
 canonical: PidLidSharingRemotePath
@@ -3268,6 +3600,7 @@ prop_type: 0x001F
 oom: SharingRemotePath
 
 dn: CN=0x8a48,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a48
 canonical: PidLidSharingRemoteStoreUid
@@ -3278,6 +3611,7 @@ prop_type: 0x001F
 oom: SharingRemoteStoreUid
 
 dn: CN=0x8a1d,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a1d
 canonical: PidLidSharingRemoteType
@@ -3288,6 +3622,7 @@ prop_type: 0x001F
 oom: SharingRemoteType
 
 dn: CN=0x8a06,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a06
 canonical: PidLidSharingRemoteUid
@@ -3298,6 +3633,7 @@ prop_type: 0x001F
 oom: SharingRemoteUid
 
 dn: CN=0x8a0c,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a0c
 canonical: PidLidSharingRemoteUser
@@ -3308,6 +3644,7 @@ prop_type: 0x001F
 oom: SharingRemoteUser
 
 dn: CN=0x8a5b,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a5b
 canonical: PidLidSharingRemoteVersion
@@ -3318,6 +3655,7 @@ prop_type: 0x001F
 oom: SharingRemoteVersion
 
 dn: CN=0x8a28,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a28
 canonical: PidLidSharingResponseTime
@@ -3328,6 +3666,7 @@ prop_type: 0x0040
 oom: SharingResponseTime
 
 dn: CN=0x8a27,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a27
 canonical: PidLidSharingResponseType
@@ -3338,6 +3677,7 @@ prop_type: 0x0003
 oom: SharingResponseType
 
 dn: CN=0x8a4e,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a4e
 canonical: PidLidSharingRoamLog
@@ -3348,6 +3688,7 @@ prop_type: 0x0003
 oom: SharingRoamLog
 
 dn: CN=0x8a25,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a25
 canonical: PidLidSharingStart
@@ -3358,6 +3699,7 @@ prop_type: 0x0040
 oom: SharingStart
 
 dn: CN=0x8a00,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a00
 canonical: PidLidSharingStatus
@@ -3368,6 +3710,7 @@ prop_type: 0x0003
 oom: SharingStatus
 
 dn: CN=0x8a26,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a26
 canonical: PidLidSharingStop
@@ -3378,6 +3721,7 @@ prop_type: 0x0040
 oom: SharingStop
 
 dn: CN=0x8a60,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a60
 canonical: PidLidSharingSyncFlags
@@ -3388,6 +3732,7 @@ prop_type: 0x0003
 oom: SharingSyncFlags
 
 dn: CN=0x8a2a,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a2a
 canonical: PidLidSharingSyncInterval
@@ -3398,6 +3743,7 @@ prop_type: 0x0003
 oom: SharingSyncInterval
 
 dn: CN=0x8a2c,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a2c
 canonical: PidLidSharingTimeToLive
@@ -3408,6 +3754,7 @@ prop_type: 0x0003
 oom: SharingTimeToLive
 
 dn: CN=0x8a56,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a56
 canonical: PidLidSharingTimeToLiveAuto
@@ -3418,6 +3765,7 @@ prop_type: 0x0003
 oom: SharingTimeToLiveAuto
 
 dn: CN=0x8a42,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a42
 canonical: PidLidSharingWorkingHoursDays
@@ -3428,6 +3776,7 @@ prop_type: 0x0003
 oom: SharingWorkingHoursDays
 
 dn: CN=0x8a41,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a41
 canonical: PidLidSharingWorkingHoursEnd
@@ -3438,6 +3787,7 @@ prop_type: 0x0040
 oom: SharingWorkingHoursEnd
 
 dn: CN=0x8a40,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a40
 canonical: PidLidSharingWorkingHoursStart
@@ -3448,6 +3798,7 @@ prop_type: 0x0040
 oom: SharingWorkingHoursStart
 
 dn: CN=0x8a43,CN=MNID_ID,CN=00062040-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8a43
 canonical: PidLidSharingWorkingHoursTimeZone
@@ -3458,6 +3809,7 @@ prop_type: 0x0102
 oom: SharingWorkingHoursTZ
 
 dn: CN=0x8102,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8102
 canonical: PidLidPercentComplete
@@ -3468,6 +3820,7 @@ prop_type: 0x0005
 oom: PercentComplete
 
 dn: CN=0x812a,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x812a
 canonical: PidLidTaskAcceptanceState
@@ -3478,6 +3831,7 @@ prop_type: 0x0003
 oom: TaskDelegValue
 
 dn: CN=0x8108,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8108
 canonical: PidLidTaskAccepted
@@ -3488,6 +3842,7 @@ prop_type: 0x000B
 oom: TaskAccepted
 
 dn: CN=0x8110,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8110
 canonical: PidLidTaskActualEffort
@@ -3498,6 +3853,7 @@ prop_type: 0x0003
 oom: TaskActualEffort
 
 dn: CN=0x8121,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8121
 canonical: PidLidTaskAssigner
@@ -3508,6 +3864,7 @@ prop_type: 0x001F
 oom: TaskDelegator
 
 dn: CN=0x8117,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8117
 canonical: PidLidTaskAssigners
@@ -3518,6 +3875,7 @@ prop_type: 0x0102
 oom: TaskMyDelegators
 
 dn: CN=0x811c,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x811c
 canonical: PidLidTaskComplete
@@ -3528,6 +3886,7 @@ prop_type: 0x000B
 oom: TaskComplete
 
 dn: CN=0x8139,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8139
 canonical: PidLidTaskCustomFlags
@@ -3538,6 +3897,7 @@ prop_type: 0x0003
 oom: TaskActualEffort
 
 dn: CN=0x810f,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x810f
 canonical: PidLidTaskDateCompleted
@@ -3548,6 +3908,7 @@ prop_type: 0x0040
 oom: TaskDateCompleted
 
 dn: CN=0x8109,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8109
 canonical: PidLidTaskDeadOccurrence
@@ -3558,6 +3919,7 @@ prop_type: 0x000B
 oom: TaskDeadOccur
 
 dn: CN=0x8105,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8105
 canonical: PidLidTaskDueDate
@@ -3568,6 +3930,7 @@ prop_type: 0x0040
 oom: TaskDueDate
 
 dn: CN=0x8111,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8111
 canonical: PidLidTaskEstimatedEffort
@@ -3578,6 +3941,7 @@ prop_type: 0x0003
 oom: TaskEstimatedEffort
 
 dn: CN=0x811e,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x811e
 canonical: PidLidTaskFCreator
@@ -3588,6 +3952,7 @@ prop_type: 0x000B
 oom: TaskFCreator
 
 dn: CN=0x812c,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x812c
 canonical: PidLidTaskFFixOffline
@@ -3598,6 +3963,7 @@ prop_type: 0x000B
 oom: TaskFFixOffline
 
 dn: CN=0x8126,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8126
 canonical: PidLidTaskFRecurring
@@ -3608,6 +3974,7 @@ prop_type: 0x000B
 oom: TaskFRecur
 
 dn: CN=0x811a,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x811a
 canonical: PidLidTaskHistory
@@ -3618,6 +3985,7 @@ prop_type: 0x0003
 oom: TaskHistory
 
 dn: CN=0x8125,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8125
 canonical: PidLidTaskLastDelegate
@@ -3628,6 +3996,7 @@ prop_type: 0x001F
 oom: TaskLastDelegate
 
 dn: CN=0x8115,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8115
 canonical: PidLidTaskLastUpdate
@@ -3638,6 +4007,7 @@ prop_type: 0x0040
 oom: TaskLastUpdate
 
 dn: CN=0x8122,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8122
 canonical: PidLidTaskLastUser
@@ -3648,6 +4018,7 @@ prop_type: 0x001F
 oom: TaskLastUser
 
 dn: CN=0x8120,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8120
 canonical: PidLidTaskMultipleRecipients
@@ -3658,6 +4029,7 @@ prop_type: 0x0003
 oom: TaskMultRecips
 
 dn: CN=0x8124,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8124
 canonical: PidLidTaskNoCompute
@@ -3668,6 +4040,7 @@ prop_type: 0x000B
 oom: TaskNoCompute
 
 dn: CN=0x8123,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8123
 canonical: PidLidTaskOrdinal
@@ -3678,6 +4051,7 @@ prop_type: 0x0003
 oom: TaskOrdinal
 
 dn: CN=0x811f,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x811f
 canonical: PidLidTaskOwner
@@ -3688,6 +4062,7 @@ prop_type: 0x001F
 oom: TaskOwner
 
 dn: CN=0x8129,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8129
 canonical: PidLidTaskOwnership
@@ -3698,6 +4073,7 @@ prop_type: 0x0003
 oom: TaskOwnership
 
 dn: CN=0x8116,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8116
 canonical: PidLidTaskRecurrence
@@ -3708,6 +4084,7 @@ prop_type: 0x0102
 oom: TaskRecur
 
 dn: CN=0x8107,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8107
 canonical: PidLidTaskResetReminder
@@ -3718,6 +4095,7 @@ prop_type: 0x000B
 oom: TaskResetReminder
 
 dn: CN=0x8127,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8127
 canonical: PidLidTaskRole
@@ -3728,6 +4106,7 @@ prop_type: 0x001F
 oom: TaskRole
 
 dn: CN=0x8104,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8104
 canonical: PidLidTaskStartDate
@@ -3738,6 +4117,7 @@ prop_type: 0x0040
 oom: TaskStartDate
 
 dn: CN=0x8113,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8113
 canonical: PidLidTaskState
@@ -3748,6 +4128,7 @@ prop_type: 0x0003
 oom: TaskState
 
 dn: CN=0x8101,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8101
 canonical: PidLidTaskStatus
@@ -3758,6 +4139,7 @@ prop_type: 0x0003
 oom: TaskStatus
 
 dn: CN=0x8119,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8119
 canonical: PidLidTaskStatusOnComplete
@@ -3768,6 +4150,7 @@ prop_type: 0x000B
 oom: TaskSOC
 
 dn: CN=0x811b,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x811b
 canonical: PidLidTaskUpdates
@@ -3778,6 +4161,7 @@ prop_type: 0x000B
 oom: TaskUpdates
 
 dn: CN=0x8112,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8112
 canonical: PidLidTaskVersion
@@ -3788,6 +4172,7 @@ prop_type: 0x0003
 oom: TaskVersion
 
 dn: CN=0x8103,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x8103
 canonical: PidLidTeamTask
@@ -3798,6 +4183,7 @@ prop_type: 0x000B
 oom: TeamTask
 
 dn: CN=0x823e,CN=MNID_ID,CN=00062003-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x823e
 canonical: PidLidTrustRecipientHighlights
@@ -3808,6 +4194,7 @@ prop_type: 0x000B
 oom: TrustRecipHighlights
 
 dn: CN=UMAudioNotes,CN=MNID_STRING,CN=4442858e-a9e3-4e80-b900-317a210cc15b,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: UMAudioNotes
 canonical: PidNameAudioNotes
@@ -3818,6 +4205,7 @@ prop_type: 0x001F
 prop_name: UMAudioNotes
 
 dn: CN=AsrData,CN=MNID_STRING,CN=4442858e-a9e3-4e80-b900-317a210cc15b,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: AsrData
 canonical: PidNameAutomaticSpeechRecognitionData
@@ -3828,6 +4216,7 @@ prop_type: 0x0102
 prop_name: AsrData
 
 dn: CN=X-MS-Exchange-Organization-Outlook-Protection-Rule-Config-Timestamp,CN=MNID_STRING,CN=4442858e-a9e3-4e80-b900-317a210cc15b,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-Organization-Outlook-Protection-Rule-Config-Timestamp
 canonical: PidNameOutlookProtectionRuleTimestamp
@@ -3838,6 +4227,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-Organization-Outlook-Protection-Rule-Config-Timestamp
 
 dn: CN=X-MS-Exchange-UM-PartnerAssignedID,CN=MNID_STRING,CN=4442858e-a9e3-4e80-b900-317a210cc15b,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-UM-PartnerAssignedID
 canonical: PidNameXUnifiedMessagingPartnerAssignedId
@@ -3848,6 +4238,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-UM-PartnerAssignedID
 
 dn: CN=X-MS-Exchange-UM-PartnerContent,CN=MNID_STRING,CN=4442858e-a9e3-4e80-b900-317a210cc15b,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-UM-PartnerContent
 canonical: PidNameXUnifiedMessagingPartnerContent
@@ -3858,6 +4249,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-UM-PartnerContent
 
 dn: CN=X-MS-Exchange-UM-PartnerContext,CN=MNID_STRING,CN=4442858e-a9e3-4e80-b900-317a210cc15b,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-UM-PartnerContext
 canonical: PidNameXUnifiedMessagingPartnerContext
@@ -3868,6 +4260,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-UM-PartnerContext
 
 dn: CN=X-MS-Exchange-UM-PartnerStatus,CN=MNID_STRING,CN=4442858e-a9e3-4e80-b900-317a210cc15b,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-UM-PartnerStatus
 canonical: PidNameXUnifiedMessagingPartnerStatus
@@ -3878,6 +4271,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-UM-PartnerStatus
 
 dn: CN=Accept-Language,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Accept-Language
 canonical: PidNameAcceptLanguage
@@ -3888,6 +4282,7 @@ prop_type: 0x001F
 prop_name: Accept-Language
 
 dn: CN=X-MS-Exchange-Organization-Approval-Allowed-Decision-Makers,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-Organization-Approval-Allowed-Decision-Makers
 canonical: PidNameApprovalAllowedDecisionMakers
@@ -3898,6 +4293,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-Organization-Approval-Allowed-Decision-Makers
 
 dn: CN=X-MS-Exchange-Organization-Approval-Requestor,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-Organization-Approval-Requestor
 canonical: PidNameApprovalRequestor
@@ -3908,6 +4304,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-Organization-Approval-Requestor
 
 dn: CN=Approved,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Approved
 canonical: PidNameApproved
@@ -3918,6 +4315,7 @@ prop_type: 0x001F
 prop_name: Approved
 
 dn: CN=X-MS-Exchange-Organization-AuthAs,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-Organization-AuthAs
 canonical: PidNameAuthenticatedAs
@@ -3928,6 +4326,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-Organization-AuthAs
 
 dn: CN=X-MS-Exchange-Organization-AuthDomain,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-Organization-AuthDomain
 canonical: PidNameAuthenticatedDomain
@@ -3938,6 +4337,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-Organization-AuthDomain
 
 dn: CN=X-MS-Exchange-Organization-AuthMechanism,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-Organization-AuthMechanism
 canonical: PidNameAuthenticatedMechanism
@@ -3948,6 +4348,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-Organization-AuthMechanism
 
 dn: CN=X-MS-Exchange-Organization-AuthSource,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-Organization-AuthSource
 canonical: PidNameAuthenticatedSource
@@ -3958,6 +4359,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-Organization-AuthSource
 
 dn: CN=Bcc,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Bcc
 canonical: PidNameBcc
@@ -3968,6 +4370,7 @@ prop_type: 0x001F
 prop_name: Bcc
 
 dn: CN=Cc,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Cc
 canonical: PidNameCc
@@ -3978,6 +4381,7 @@ prop_type: 0x001F
 prop_name: Cc
 
 dn: CN=Content-Base,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Content-Base
 canonical: PidNameContentBase
@@ -3988,6 +4392,7 @@ prop_type: 0x001F
 prop_name: Content-Base
 
 dn: CN=Content-Class,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Content-Class
 canonical: PidNameContentClass
@@ -3998,6 +4403,7 @@ prop_type: 0x001F
 prop_name: Content-Class
 
 dn: CN=Content-Disposition,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Content-Disposition
 canonical: PidNameContentDisposition
@@ -4008,6 +4414,7 @@ prop_type: 0x001F
 prop_name: Content-Disposition
 
 dn: CN=Content-ID,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Content-ID
 canonical: PidNameContentID
@@ -4018,6 +4425,7 @@ prop_type: 0x001F
 prop_name: Content-ID
 
 dn: CN=Content-Language,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Content-Language
 canonical: PidNameContentLanguage
@@ -4028,6 +4436,7 @@ prop_type: 0x001F
 prop_name: Content-Language
 
 dn: CN=Content-Location,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Content-Location
 canonical: PidNameContentLocation
@@ -4038,6 +4447,7 @@ prop_type: 0x001F
 prop_name: Content-Location
 
 dn: CN=Content-Transfer-Encoding,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Content-Transfer-Encoding
 canonical: PidNameContentTransferEncoding
@@ -4048,6 +4458,7 @@ prop_type: 0x001F
 prop_name: Content-Transfer-Encoding
 
 dn: CN=Content-Type,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Content-Type
 canonical: PidNameContentType
@@ -4058,6 +4469,7 @@ prop_type: 0x001F
 prop_name: Content-Type
 
 dn: CN=Control,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Control
 canonical: PidNameControl
@@ -4068,6 +4480,7 @@ prop_type: 0x001F
 prop_name: Control
 
 dn: CN=Xref,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Xref
 canonical: PidNameCrossReference
@@ -4078,6 +4491,7 @@ prop_type: 0x001F
 prop_name: Xref
 
 dn: CN=Disposition,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Disposition
 canonical: PidNameDisposition
@@ -4088,6 +4502,7 @@ prop_type: 0x001F
 prop_name: Disposition
 
 dn: CN=Disposition-Notification-To,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Disposition-Notification-To
 canonical: PidNameDispositionNotificationTo
@@ -4098,6 +4513,7 @@ prop_type: 0x001F
 prop_name: Disposition-Notification-To
 
 dn: CN=Distribution,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Distribution
 canonical: PidNameDistribution
@@ -4108,6 +4524,7 @@ prop_type: 0x001F
 prop_name: Distribution
 
 dn: CN=Expires,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Expires
 canonical: PidNameExpires
@@ -4118,6 +4535,7 @@ prop_type: 0x001F
 prop_name: Expires
 
 dn: CN=Expiry-Date,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Expiry-Date
 canonical: PidNameExpiryDate
@@ -4128,6 +4546,7 @@ prop_type: 0x001F
 prop_name: Expiry-Date
 
 dn: CN=Followup-To,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Followup-To
 canonical: PidNameFollowupTo
@@ -4138,6 +4557,7 @@ prop_type: 0x001F
 prop_name: Followup-To
 
 dn: CN=From,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: From
 canonical: PidNameFrom
@@ -4148,6 +4568,7 @@ prop_type: 0x001F
 prop_name: From
 
 dn: CN=Importance,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Importance
 canonical: PidNameImportance
@@ -4158,6 +4579,7 @@ prop_type: 0x001F
 prop_name: Importance
 
 dn: CN=In-Reply-To,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: In-Reply-To
 canonical: PidNameInReplyTo
@@ -4168,6 +4590,7 @@ prop_type: 0x001F
 prop_name: In-Reply-To
 
 dn: CN=Comment,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Comment
 canonical: PidNameInternetComment
@@ -4178,6 +4601,7 @@ prop_type: 0x001F
 prop_name: Comment
 
 dn: CN=Keywords,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Keywords
 canonical: PidNameInternetKeywords
@@ -4188,6 +4612,7 @@ prop_type: 0x001F
 prop_name: Keywords
 
 dn: CN=Subject,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Subject
 canonical: PidNameInternetSubject
@@ -4198,6 +4623,7 @@ prop_type: 0x001F
 prop_name: Subject
 
 dn: CN=Lines,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Lines
 canonical: PidNameLines
@@ -4208,6 +4634,7 @@ prop_type: 0x001F
 prop_name: Lines
 
 dn: CN=Message-ID,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Message-ID
 canonical: PidNameMessageId
@@ -4218,6 +4645,7 @@ prop_type: 0x001F
 prop_name: Message-ID
 
 dn: CN=Mime-Version,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Mime-Version
 canonical: PidNameMimeVersion
@@ -4228,6 +4656,7 @@ prop_type: 0x001F
 prop_name: Mime-Version
 
 dn: CN=Newsgroups,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Newsgroups
 canonical: PidNameNewsgroups
@@ -4238,6 +4667,7 @@ prop_type: 0x001F
 prop_name: Newsgroups
 
 dn: CN=NNTP-Posting-Host,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: NNTP-Posting-Host
 canonical: PidNameNntpPostingHost
@@ -4248,6 +4678,7 @@ prop_type: 0x001F
 prop_name: NNTP-Posting-Host
 
 dn: CN=Organization,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Organization
 canonical: PidNameOrganization
@@ -4258,6 +4689,7 @@ prop_type: 0x001F
 prop_name: Organization
 
 dn: CN=Original-Recipient,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Original-Recipient
 canonical: PidNameOriginalRecipient
@@ -4268,6 +4700,7 @@ prop_type: 0x001F
 prop_name: Original-Recipient
 
 dn: CN=X-MS-Exchange-Organization-Outlook-Protection-Rule-Overridden,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-Organization-Outlook-Protection-Rule-Overridden
 canonical: PidNameOutlookProtectionRuleOverridden
@@ -4278,6 +4711,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-Organization-Outlook-Protection-Rule-Overridden
 
 dn: CN=X-MS-Exchange-Organization-Outlook-Protection-Rule-Addin-Version,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-Organization-Outlook-Protection-Rule-Addin-Version
 canonical: PidNameOutlookProtectionRuleVersion
@@ -4288,6 +4722,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-Organization-Outlook-Protection-Rule-Addin-Version
 
 dn: CN=Path,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Path
 canonical: PidNamePath
@@ -4298,6 +4733,7 @@ prop_type: 0x001F
 prop_name: Path
 
 dn: CN=Posting-Version,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Posting-Version
 canonical: PidNamePostingVersion
@@ -4308,6 +4744,7 @@ prop_type: 0x001F
 prop_name: Posting-Version
 
 dn: CN=Priority,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Priority
 canonical: PidNamePriority
@@ -4318,6 +4755,7 @@ prop_type: 0x001F
 prop_name: Priority
 
 dn: CN=Received,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Received
 canonical: PidNameReceived
@@ -4328,6 +4766,7 @@ prop_type: 0x001F
 prop_name: Received
 
 dn: CN=References,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: References
 canonical: PidNameReferences
@@ -4338,6 +4777,7 @@ prop_type: 0x001F
 prop_name: References
 
 dn: CN=Relay-Version,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Relay-Version
 canonical: PidNameRelayVersion
@@ -4348,6 +4788,7 @@ prop_type: 0x001F
 prop_name: Relay-Version
 
 dn: CN=Reply-By,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Reply-By
 canonical: PidNameReplyBy
@@ -4358,6 +4799,7 @@ prop_type: 0x001F
 prop_name: Reply-By
 
 dn: CN=Reply-To,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Reply-To
 canonical: PidNameReplyTo
@@ -4368,6 +4810,7 @@ prop_type: 0x001F
 prop_name: Reply-To
 
 dn: CN=Return-Path,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Return-Path
 canonical: PidNameReturnPath
@@ -4378,6 +4821,7 @@ prop_type: 0x001F
 prop_name: Return-Path
 
 dn: CN=Return-Receipt-To,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Return-Receipt-To
 canonical: PidNameReturnReceiptTo
@@ -4388,6 +4832,7 @@ prop_type: 0x001F
 prop_name: Return-Receipt-To
 
 dn: CN=X-MS-Exchange-Organization-RightsProtectMessage,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-MS-Exchange-Organization-RightsProtectMessage
 canonical: PidNameRightsProtectMessage
@@ -4398,6 +4843,7 @@ prop_type: 0x001F
 prop_name: X-MS-Exchange-Organization-RightsProtectMessage
 
 dn: CN=Sender,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Sender
 canonical: PidNameSender
@@ -4408,6 +4854,7 @@ prop_type: 0x001F
 prop_name: Sender
 
 dn: CN=Sensitivity,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Sensitivity
 canonical: PidNameSensitivity
@@ -4418,6 +4865,7 @@ prop_type: 0x001F
 prop_name: Sensitivity
 
 dn: CN=Summary,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Summary
 canonical: PidNameSummary
@@ -4428,6 +4876,7 @@ prop_type: 0x001F
 prop_name: Summary
 
 dn: CN=Thread-Index,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Thread-Index
 canonical: PidNameThreadIndex
@@ -4438,6 +4887,7 @@ prop_type: 0x001F
 prop_name: Thread-Index
 
 dn: CN=Thread-Topic,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Thread-Topic
 canonical: PidNameThreadTopic
@@ -4448,6 +4898,7 @@ prop_type: 0x001F
 prop_name: Thread-Topic
 
 dn: CN=To,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: To
 canonical: PidNameTo
@@ -4458,6 +4909,7 @@ prop_type: 0x001F
 prop_name: To
 
 dn: CN=X-CallID,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-CallID
 canonical: PidNameXCallId
@@ -4468,6 +4920,7 @@ prop_type: 0x001F
 prop_name: X-CallID
 
 dn: CN=X-FaxNumberOfPages,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-FaxNumberOfPages
 canonical: PidNameXFaxNumberOfPages
@@ -4478,6 +4931,7 @@ prop_type: 0x0002
 prop_name: X-FaxNumberOfPages
 
 dn: CN=X-Mailer,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Mailer
 canonical: PidNameXMailer
@@ -4488,6 +4942,7 @@ prop_type: 0x001F
 prop_name: X-Mailer
 
 dn: CN=X-Message-Completed,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Message-Completed
 canonical: PidNameXMessageCompleted
@@ -4498,6 +4953,7 @@ prop_type: 0x001F
 prop_name: X-Message-Completed
 
 dn: CN=X-Message-Flag,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Message-Flag
 canonical: PidNameXMessageFlag
@@ -4508,6 +4964,7 @@ prop_type: 0x001F
 prop_name: X-Message-Flag
 
 dn: CN=X-RequireProtectedPlayOnPhone,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-RequireProtectedPlayOnPhone
 canonical: PidNameXRequireProtectedPlayOnPhone
@@ -4518,6 +4975,7 @@ prop_type: 0x000B
 prop_name: X-RequireProtectedPlayOnPhone
 
 dn: CN=X-CallingTelephoneNumber,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-CallingTelephoneNumber
 canonical: PidNameXSenderTelephoneNumber
@@ -4528,6 +4986,7 @@ prop_type: 0x001F
 prop_name: X-CallingTelephoneNumber
 
 dn: CN=X-Sharing-Browse-Url,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Browse-Url
 canonical: PidNameXSharingBrowseUrl
@@ -4538,6 +4997,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Browse-Url
 
 dn: CN=X-Sharing-Capabilities,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Capabilities
 canonical: PidNameXSharingCapabilities
@@ -4548,6 +5008,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Capabilities
 
 dn: CN=X-Sharing-Config-Url,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Config-Url
 canonical: PidNameXSharingConfigUrl
@@ -4558,6 +5019,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Config-Url
 
 dn: CN=X-Sharing-Exended-Caps,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Exended-Caps
 canonical: PidNameXSharingExendedCaps
@@ -4568,6 +5030,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Exended-Caps
 
 dn: CN=X-Sharing-Flavor,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Flavor
 canonical: PidNameXSharingFlavor
@@ -4578,6 +5041,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Flavor
 
 dn: CN=X-Sharing-Instance-Guid,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Instance-Guid
 canonical: PidNameXSharingInstanceGuid
@@ -4588,6 +5052,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Instance-Guid
 
 dn: CN=X-Sharing-Local-Type,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Local-Type
 canonical: PidNameXSharingLocalType
@@ -4598,6 +5063,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Local-Type
 
 dn: CN=X-Sharing-Provider-Guid,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Provider-Guid
 canonical: PidNameXSharingProviderGuid
@@ -4608,6 +5074,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Provider-Guid
 
 dn: CN=X-Sharing-Provider-Name,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Provider-Name
 canonical: PidNameXSharingProviderName
@@ -4618,6 +5085,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Provider-Name
 
 dn: CN=X-Sharing-Provider-Url,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Provider-Url
 canonical: PidNameXSharingProviderUrl
@@ -4628,6 +5096,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Provider-Url
 
 dn: CN=X-Sharing-Remote-Name,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Remote-Name
 canonical: PidNameXSharingRemoteName
@@ -4638,6 +5107,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Remote-Name
 
 dn: CN=X-Sharing-Remote-Path,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Remote-Path
 canonical: PidNameXSharingRemotePath
@@ -4648,6 +5118,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Remote-Path
 
 dn: CN=X-Sharing-Remote-Store-Uid,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Remote-Store-Uid
 canonical: PidNameXSharingRemoteStoreUid
@@ -4658,6 +5129,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Remote-Store-Uid
 
 dn: CN=X-Sharing-Remote-Type,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Remote-Type
 canonical: PidNameXSharingRemoteType
@@ -4668,6 +5140,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Remote-Type
 
 dn: CN=X-Sharing-Remote-Uid,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Sharing-Remote-Uid
 canonical: PidNameXSharingRemoteUid
@@ -4678,6 +5151,7 @@ prop_type: 0x001F
 prop_name: X-Sharing-Remote-Uid
 
 dn: CN=X-Unsent,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-Unsent
 canonical: PidNameXUnsent
@@ -4688,6 +5162,7 @@ prop_type: 0x001F
 prop_name: X-Unsent
 
 dn: CN=X-AttachmentOrder,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-AttachmentOrder
 canonical: PidNameXVoiceMessageAttachmentOrder
@@ -4698,6 +5173,7 @@ prop_type: 0x001F
 prop_name: X-AttachmentOrder
 
 dn: CN=X-VoiceMessageDuration,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-VoiceMessageDuration
 canonical: PidNameXVoiceMessageDuration
@@ -4708,6 +5184,7 @@ prop_type: 0x0002
 prop_name: X-VoiceMessageDuration
 
 dn: CN=X-VoiceMessageSenderName,CN=MNID_STRING,CN=00020386-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: X-VoiceMessageSenderName
 canonical: PidNameXVoiceMessageSenderName
@@ -4718,6 +5195,7 @@ prop_type: 0x001F
 prop_name: X-VoiceMessageSenderName
 
 dn: CN=0x9000,CN=MNID_ID,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_ID
 cn: 0x9000
 canonical: PidLidCategories
@@ -4728,6 +5206,7 @@ prop_type: 0x101F
 oom: Categories
 
 dn: CN=AppName,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: AppName
 canonical: PidNameApplicationName
@@ -4738,6 +5217,7 @@ prop_type: 0x001F
 prop_name: AppName
 
 dn: CN=Author,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Author
 canonical: PidNameAuthor
@@ -4748,6 +5228,7 @@ prop_type: 0x001F
 prop_name: Author
 
 dn: CN=ByteCount,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: ByteCount
 canonical: PidNameByteCount
@@ -4758,6 +5239,7 @@ prop_type: 0x0003
 prop_name: ByteCount
 
 dn: CN=urn:schemas:calendar:attendeerole,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:attendeerole
 canonical: PidNameCalendarAttendeeRole
@@ -4768,6 +5250,7 @@ prop_type: 0x0003
 prop_name: urn:schemas:calendar:attendeerole
 
 dn: CN=urn:schemas:calendar:busystatus,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:busystatus
 canonical: PidNameCalendarBusystatus
@@ -4778,6 +5261,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:busystatus
 
 dn: CN=urn:schemas:calendar:contact,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:contact
 canonical: PidNameCalendarContact
@@ -4788,6 +5272,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:contact
 
 dn: CN=urn:schemas:calendar:contacturl,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:contacturl
 canonical: PidNameCalendarContactUrl
@@ -4798,6 +5283,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:contacturl
 
 dn: CN=urn:schemas:calendar:created,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:created
 canonical: PidNameCalendarCreated
@@ -4808,6 +5294,7 @@ prop_type: 0x0040
 prop_name: urn:schemas:calendar:created
 
 dn: CN=urn:schemas:calendar:descriptionurl,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:descriptionurl
 canonical: PidNameCalendarDescriptionUrl
@@ -4818,6 +5305,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:descriptionurl
 
 dn: CN=urn:schemas:calendar:duration,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:duration
 canonical: PidNameCalendarDuration
@@ -4828,6 +5316,7 @@ prop_type: 0x0003
 prop_name: urn:schemas:calendar:duration
 
 dn: CN=urn:schemas:calendar:exdate,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:exdate
 canonical: PidNameCalendarExceptionDate
@@ -4838,6 +5327,7 @@ prop_type: 0x1040
 prop_name: urn:schemas:calendar:exdate
 
 dn: CN=urn:schemas:calendar:exrule,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:exrule
 canonical: PidNameCalendarExceptionRule
@@ -4848,6 +5338,7 @@ prop_type: 0x101F
 prop_name: urn:schemas:calendar:exrule
 
 dn: CN=urn:schemas:calendar:geolatitude,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:geolatitude
 canonical: PidNameCalendarGeoLatitude
@@ -4858,6 +5349,7 @@ prop_type: 0x0005
 prop_name: urn:schemas:calendar:geolatitude
 
 dn: CN=urn:schemas:calendar:geolongitude,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:geolongitude
 canonical: PidNameCalendarGeoLongitude
@@ -4868,6 +5360,7 @@ prop_type: 0x0005
 prop_name: urn:schemas:calendar:geolongitude
 
 dn: CN=urn:schemas:calendar:instancetype,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:instancetype
 canonical: PidNameCalendarInstanceType
@@ -4878,6 +5371,7 @@ prop_type: 0x0003
 prop_name: urn:schemas:calendar:instancetype
 
 dn: CN=urn:schemas:calendar:isorganizer,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:isorganizer
 canonical: PidNameCalendarIsOrganizer
@@ -4888,6 +5382,7 @@ prop_type: 0x000B
 prop_name: urn:schemas:calendar:isorganizer
 
 dn: CN=urn:schemas:calendar:lastmodified,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:lastmodified
 canonical: PidNameCalendarLastModified
@@ -4898,6 +5393,7 @@ prop_type: 0x0040
 prop_name: urn:schemas:calendar:lastmodified
 
 dn: CN=urn:schemas:calendar:locationurl,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:locationurl
 canonical: PidNameCalendarLocationUrl
@@ -4908,6 +5404,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:locationurl
 
 dn: CN=urn:schemas:calendar:meetingstatus,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:meetingstatus
 canonical: PidNameCalendarMeetingStatus
@@ -4918,6 +5415,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:meetingstatus
 
 dn: CN=urn:schemas:calendar:method,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:method
 canonical: PidNameCalendarMethod
@@ -4928,6 +5426,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:method
 
 dn: CN=urn:schemas:calendar:prodid,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:prodid
 canonical: PidNameCalendarProductId
@@ -4938,6 +5437,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:prodid
 
 dn: CN=urn:schemas:calendar:recurrenceidrange,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:recurrenceidrange
 canonical: PidNameCalendarRecurrenceIdRange
@@ -4948,6 +5448,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:recurrenceidrange
 
 dn: CN=urn:schemas:calendar:reminderoffset,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:reminderoffset
 canonical: PidNameCalendarReminderOffset
@@ -4958,6 +5459,7 @@ prop_type: 0x0003
 prop_name: urn:schemas:calendar:reminderoffset
 
 dn: CN=urn:schemas:calendar:resources,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:resources
 canonical: PidNameCalendarResources
@@ -4968,6 +5470,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:resources
 
 dn: CN=urn:schemas:calendar:rsvp,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:rsvp
 canonical: PidNameCalendarRsvp
@@ -4978,6 +5481,7 @@ prop_type: 0x000B
 prop_name: urn:schemas:calendar:rsvp
 
 dn: CN=urn:schemas:calendar:sequence,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:sequence
 canonical: PidNameCalendarSequence
@@ -4988,6 +5492,7 @@ prop_type: 0x0003
 prop_name: urn:schemas:calendar:sequence
 
 dn: CN=urn:schemas:calendar:timezone,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:timezone
 canonical: PidNameCalendarTimeZone
@@ -4998,6 +5503,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:timezone
 
 dn: CN=urn:schemas:calendar:timezoneid,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:timezoneid
 canonical: PidNameCalendarTimeZoneId
@@ -5008,6 +5514,7 @@ prop_type: 0x0003
 prop_name: urn:schemas:calendar:timezoneid
 
 dn: CN=urn:schemas:calendar:transparent,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:transparent
 canonical: PidNameCalendarTransparent
@@ -5018,6 +5525,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:transparent
 
 dn: CN=urn:schemas:calendar:uid,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:uid
 canonical: PidNameCalendarUid
@@ -5028,6 +5536,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:uid
 
 dn: CN=urn:schemas:calendar:version,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:version
 canonical: PidNameCalendarVersion
@@ -5038,6 +5547,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:calendar:version
 
 dn: CN=Category,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Category
 canonical: PidNameCategory
@@ -5048,6 +5558,7 @@ prop_type: 0x001F
 prop_name: Category
 
 dn: CN=CharCount,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: CharCount
 canonical: PidNameCharacterCount
@@ -5058,6 +5569,7 @@ prop_type: 0x0003
 prop_name: CharCount
 
 dn: CN=Comments,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Comments
 canonical: PidNameComments
@@ -5068,6 +5580,7 @@ prop_type: 0x001F
 prop_name: Comments
 
 dn: CN=Company,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Company
 canonical: PidNameCompany
@@ -5078,6 +5591,7 @@ prop_type: 0x001F
 prop_name: Company
 
 dn: CN=urn:schemas:contacts:alternaterecipient,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:alternaterecipient
 canonical: PidNameContactsAlternateRecipient
@@ -5088,6 +5602,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:alternaterecipient
 
 dn: CN=urn:schemas:contacts:c,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:c
 canonical: PidNameContactsCountry
@@ -5098,6 +5613,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:c
 
 dn: CN=urn:schemas:contacts:email1,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:email1
 canonical: PidNameContactsEmail1
@@ -5108,6 +5624,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:email1
 
 dn: CN=urn:schemas:contacts:email2,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:email2
 canonical: PidNameContactsEmail2
@@ -5118,6 +5635,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:email2
 
 dn: CN=urn:schemas:contacts:email3,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:email3
 canonical: PidNameContactsEmail3
@@ -5128,6 +5646,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:email3
 
 dn: CN=urn:schemas:contacts:fileas,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:fileas
 canonical: PidNameContactsFileAs
@@ -5138,6 +5657,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:fileas
 
 dn: CN=urn:schemas:contacts:fileasid,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:fileasid
 canonical: PidNameContactsFileasId
@@ -5148,6 +5668,7 @@ prop_type: 0x0003
 prop_name: urn:schemas:contacts:fileasid
 
 dn: CN=urn:schemas:contacts:homelatitude,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:homelatitude
 canonical: PidNameContactsHomeLatitude
@@ -5158,6 +5679,7 @@ prop_type: 0x0005
 prop_name: urn:schemas:contacts:homelatitude
 
 dn: CN=urn:schemas:contacts:homelongitude,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:homelongitude
 canonical: PidNameContactsHomeLongitude
@@ -5168,6 +5690,7 @@ prop_type: 0x0005
 prop_name: urn:schemas:contacts:homelongitude
 
 dn: CN=urn:schemas:contacts:hometimezone,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:hometimezone
 canonical: PidNameContactsHomeTimeZone
@@ -5178,6 +5701,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:hometimezone
 
 dn: CN=urn:schemas:contacts:mapurl,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:mapurl
 canonical: PidNameContactsMapUrl
@@ -5188,6 +5712,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:mapurl
 
 dn: CN=urn:schemas:contacts:othercountrycode,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:othercountrycode
 canonical: PidNameContactsOtherCountryCode
@@ -5198,6 +5723,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:othercountrycode
 
 dn: CN=urn:schemas:contacts:otherpager,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:otherpager
 canonical: PidNameContactsOtherPager
@@ -5208,6 +5734,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:otherpager
 
 dn: CN=urn:schemas:contacts:othertimezone,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:othertimezone
 canonical: PidNameContactsOtherTimeZone
@@ -5218,6 +5745,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:othertimezone
 
 dn: CN=urn:schemas:contacts:proxyaddresses,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:proxyaddresses
 canonical: PidNameContactsProxyAddresses
@@ -5228,6 +5756,7 @@ prop_type: 0x101F
 prop_name: urn:schemas:contacts:proxyaddresses
 
 dn: CN=urn:schemas:contacts:secretaryurl,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:secretaryurl
 canonical: PidNameContactsSecretaryUrl
@@ -5238,6 +5767,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:secretaryurl
 
 dn: CN=urn:schemas:contacts:sourceurl,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:contacts:sourceurl
 canonical: PidNameContactsSourceUrl
@@ -5248,6 +5778,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:contacts:sourceurl
 
 dn: CN=CreateDtmRo,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: CreateDtmRo
 canonical: PidNameCreateDateTimeReadOnly
@@ -5258,6 +5789,7 @@ prop_type: 0x0040
 prop_name: CreateDtmRo
 
 dn: CN=DAV:getcontenttype,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DAV:getcontenttype
 canonical: PidNameDavGetContentType
@@ -5268,6 +5800,7 @@ prop_type: 0x001F
 prop_name: DAV:getcontenttype
 
 dn: CN=DAV:id,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DAV:id
 canonical: PidNameDavId
@@ -5278,6 +5811,7 @@ prop_type: 0x001F
 prop_name: DAV:id
 
 dn: CN=DAV:iscollection,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DAV:iscollection
 canonical: PidNameDavIsCollection
@@ -5288,6 +5822,7 @@ prop_type: 0x000B
 prop_name: DAV:iscollection
 
 dn: CN=DAV:isstructureddocument,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DAV:isstructureddocument
 canonical: PidNameDavIsStructuredDocument
@@ -5298,6 +5833,7 @@ prop_type: 0x000B
 prop_name: DAV:isstructureddocument
 
 dn: CN=DAV:parentname,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DAV:parentname
 canonical: PidNameDavParentName
@@ -5308,6 +5844,7 @@ prop_type: 0x001F
 prop_name: DAV:parentname
 
 dn: CN=DAV:resourcetype,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DAV:resourcetype
 canonical: PidNameDavResourceType
@@ -5318,6 +5855,7 @@ prop_type: 0x001F
 prop_name: DAV:resourcetype
 
 dn: CN=DAV:searchrequest,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DAV:searchrequest
 canonical: PidNameDavSearchRequest
@@ -5328,6 +5866,7 @@ prop_type: 0x001F
 prop_name: DAV:searchrequest
 
 dn: CN=DAV:searchtype,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DAV:searchtype
 canonical: PidNameDavSearchType
@@ -5338,6 +5877,7 @@ prop_type: 0x001F
 prop_name: DAV:searchtype
 
 dn: CN=DAV:uid,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DAV:uid
 canonical: PidNameDavUid
@@ -5348,6 +5888,7 @@ prop_type: 0x001F
 prop_name: DAV:uid
 
 dn: CN=DocParts,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DocParts
 canonical: PidNameDocumentParts
@@ -5358,6 +5899,7 @@ prop_type: 0x101F
 prop_name: DocParts
 
 dn: CN=EditTime,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: EditTime
 canonical: PidNameEditTime
@@ -5368,6 +5910,7 @@ prop_type: 0x001F
 prop_name: EditTime
 
 dn: CN=http://schemas.microsoft.com/exchange/intendedbusystatus,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/intendedbusystatus
 canonical: PidNameExchangeIntendedBusyStatus
@@ -5378,6 +5921,7 @@ prop_type: 0x001F
 prop_name: http://schemas.microsoft.com/exchange/intendedbusystatus
 
 dn: CN=http://schemas.microsoft.com/exchange/junkemailmovestamp,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/junkemailmovestamp
 canonical: PidNameExchangeJunkEmailMoveStamp
@@ -5388,6 +5932,7 @@ prop_type: 0x0003
 prop_name: http://schemas.microsoft.com/exchange/junkemailmovestamp
 
 dn: CN=http://schemas.microsoft.com/exchange/modifyexceptionstruct,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/modifyexceptionstruct
 canonical: PidNameExchangeModifyExceptionStructure
@@ -5398,6 +5943,7 @@ prop_type: 0x0102
 prop_name: http://schemas.microsoft.com/exchange/modifyexceptionstruct
 
 dn: CN=http://schemas.microsoft.com/exchange/msexchembdefaultmailfolder,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/msexchembdefaultmailfolder
 canonical: PidNameExchangeMsexchembdefaultmailfolder
@@ -5408,6 +5954,7 @@ prop_type: 0x001F
 prop_name: http://schemas.microsoft.com/exchange/msexchembdefaultmailfolder
 
 dn: CN=http://schemas.microsoft.com/exchange/msexchembdefaultmailfoldertype,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/msexchembdefaultmailfoldertype
 canonical: PidNameExchangeMsexchembdefaultmailfoldertype
@@ -5418,6 +5965,7 @@ prop_type: 0x001F
 prop_name: http://schemas.microsoft.com/exchange/msexchembdefaultmailfoldertype
 
 dn: CN=http://schemas.microsoft.com/exchange/nomodifyexceptions,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/nomodifyexceptions
 canonical: PidNameExchangeNoModifyExceptions
@@ -5428,6 +5976,7 @@ prop_type: 0x000B
 prop_name: http://schemas.microsoft.com/exchange/nomodifyexceptions
 
 dn: CN=http://schemas.microsoft.com/exchange/patternend,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/patternend
 canonical: PidNameExchangePatternEnd
@@ -5438,6 +5987,7 @@ prop_type: 0x0040
 prop_name: http://schemas.microsoft.com/exchange/patternend
 
 dn: CN=http://schemas.microsoft.com/exchange/patternstart,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/patternstart
 canonical: PidNameExchangePatternStart
@@ -5448,6 +5998,7 @@ prop_type: 0x0040
 prop_name: http://schemas.microsoft.com/exchange/patternstart
 
 dn: CN=http://schemas.microsoft.com/exchange/publicfolderemailaddress,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/publicfolderemailaddress
 canonical: PidNameExchangePublicFolderEmailAddress
@@ -5458,6 +6009,7 @@ prop_type: 0x001F
 prop_name: http://schemas.microsoft.com/exchange/publicfolderemailaddress
 
 dn: CN=http://schemas.microsoft.com/exchange/reminderinterval,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/reminderinterval
 canonical: PidNameExchangeReminderInterval
@@ -5468,6 +6020,7 @@ prop_type: 0x0003
 prop_name: http://schemas.microsoft.com/exchange/reminderinterval
 
 dn: CN=urn:schemas-microsoft-com:exch-data:baseschema,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas-microsoft-com:exch-data:baseschema
 canonical: PidNameExchDatabaseSchema
@@ -5478,6 +6031,7 @@ prop_type: 0x101F
 prop_name: urn:schemas-microsoft-com:exch-data:baseschema
 
 dn: CN=urn:schemas-microsoft-com:exch-data:expected-content-class,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas-microsoft-com:exch-data:expected-content-class
 canonical: PidNameExchDataExpectedContentClass
@@ -5488,6 +6042,7 @@ prop_type: 0x101F
 prop_name: urn:schemas-microsoft-com:exch-data:expected-content-class
 
 dn: CN=urn:schemas-microsoft-com:exch-data:schema-collection-ref,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas-microsoft-com:exch-data:schema-collection-ref
 canonical: PidNameExchDataSchemaCollectionReference
@@ -5498,6 +6053,7 @@ prop_type: 0x001F
 prop_name: urn:schemas-microsoft-com:exch-data:schema-collection-ref
 
 dn: CN=HeadingPairs,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: HeadingPairs
 canonical: PidNameHeadingPairs
@@ -5508,6 +6064,7 @@ prop_type: 0x0102
 prop_name: HeadingPairs
 
 dn: CN=HiddenCount,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: HiddenCount
 canonical: PidNameHiddenCount
@@ -5518,6 +6075,7 @@ prop_type: 0x0003
 prop_name: HiddenCount
 
 dn: CN=urn:schemas:httpmail:calendar,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:calendar
 canonical: PidNameHttpmailCalendar
@@ -5528,6 +6086,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:httpmail:calendar
 
 dn: CN=urn:schemas:httpmail:cc,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:cc
 canonical: PidNameHttpmailCc
@@ -5538,6 +6097,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:httpmail:cc
 
 dn: CN=urn:schemas:httpmail:contacts,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:contacts
 canonical: PidNameHttpmailContacts
@@ -5548,6 +6108,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:httpmail:contacts
 
 dn: CN=urn:schemas:httpmail:content-media-type,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:content-media-type
 canonical: PidNameHttpmailContentMediaType
@@ -5558,6 +6119,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:httpmail:content-media-type
 
 dn: CN=urn:schemas:httpmail:from,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:from
 canonical: PidNameHttpmailFrom
@@ -5568,6 +6130,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:httpmail:from
 
 dn: CN=urn:schemas:httpmail:fromemail,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:fromemail
 canonical: PidNameHttpmailFromEmail
@@ -5578,6 +6141,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:httpmail:fromemail
 
 dn: CN=urn:schemas:httpmail:htmldescription,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:htmldescription
 canonical: PidNameHttpmailHtmlDescription
@@ -5588,6 +6152,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:httpmail:htmldescription
 
 dn: CN=urn:schemas:httpmail:outbox,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:outbox
 canonical: PidNameHttpmailOutbox
@@ -5598,6 +6163,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:httpmail:outbox
 
 dn: CN=urn:schemas:httpmail:sendmsg,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:sendmsg
 canonical: PidNameHttpmailSendMessage
@@ -5608,6 +6174,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:httpmail:sendmsg
 
 dn: CN=urn:schemas:httpmail:submitted,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:submitted
 canonical: PidNameHttpmailSubmitted
@@ -5618,6 +6185,7 @@ prop_type: 0x000B
 prop_name: urn:schemas:httpmail:submitted
 
 dn: CN=urn:schemas:httpmail:to,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:httpmail:to
 canonical: PidNameHttpmailTo
@@ -5628,6 +6196,7 @@ prop_type: 0x001F
 prop_name: urn:schemas:httpmail:to
 
 dn: CN=urn:schemas:calendar:rdate,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:rdate
 canonical: PidNameICalendarRecurrenceDate
@@ -5638,6 +6207,7 @@ prop_type: 0x1040
 prop_name: urn:schemas:calendar:rdate
 
 dn: CN=urn:schemas:calendar:rrule,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: urn:schemas:calendar:rrule
 canonical: PidNameICalendarRecurrenceRule
@@ -5648,6 +6218,7 @@ prop_type: 0x101F
 prop_name: urn:schemas:calendar:rrule
 
 dn: CN=Keywords,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Keywords
 canonical: PidNameKeywords
@@ -5658,6 +6229,7 @@ prop_type: 0x101F
 prop_name: Keywords
 
 dn: CN=LastAuthor,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: LastAuthor
 canonical: PidNameLastAuthor
@@ -5668,6 +6240,7 @@ prop_type: 0x001F
 prop_name: LastAuthor
 
 dn: CN=LastPrinted,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: LastPrinted
 canonical: PidNameLastPrinted
@@ -5678,6 +6251,7 @@ prop_type: 0x0040
 prop_name: LastPrinted
 
 dn: CN=LastSaveDtm,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: LastSaveDtm
 canonical: PidNameLastSaveDateTime
@@ -5688,6 +6262,7 @@ prop_type: 0x0040
 prop_name: LastSaveDtm
 
 dn: CN=LineCount,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: LineCount
 canonical: PidNameLineCount
@@ -5698,6 +6273,7 @@ prop_type: 0x0003
 prop_name: LineCount
 
 dn: CN=LinksDirty,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: LinksDirty
 canonical: PidNameLinksDirty
@@ -5708,6 +6284,7 @@ prop_type: 0x000B
 prop_name: LinksDirty
 
 dn: CN=MAIL:submissionuri,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: MAIL:submissionuri
 canonical: PidNameMailSubmissionUri
@@ -5718,6 +6295,7 @@ prop_type: 0x001F
 prop_name: MAIL:submissionuri
 
 dn: CN=Manager,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Manager
 canonical: PidNameManager
@@ -5728,6 +6306,7 @@ prop_type: 0x001F
 prop_name: Manager
 
 dn: CN=MMClipCount,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: MMClipCount
 canonical: PidNameMultimediaClipCount
@@ -5738,6 +6317,7 @@ prop_type: 0x0003
 prop_name: MMClipCount
 
 dn: CN=NoteCount,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: NoteCount
 canonical: PidNameNoteCount
@@ -5748,6 +6328,7 @@ prop_type: 0x0003
 prop_name: NoteCount
 
 dn: CN=OMSAccountGuid,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: OMSAccountGuid
 canonical: PidNameOMSAccountGuid
@@ -5758,6 +6339,7 @@ prop_type: 0x001F
 prop_name: OMSAccountGuid
 
 dn: CN=OMSMobileModel,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: OMSMobileModel
 canonical: PidNameOMSMobileModel
@@ -5768,6 +6350,7 @@ prop_type: 0x001F
 prop_name: OMSMobileModel
 
 dn: CN=OMSScheduleTime,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: OMSScheduleTime
 canonical: PidNameOMSScheduleTime
@@ -5778,6 +6361,7 @@ prop_type: 0x0040
 prop_name: OMSScheduleTime
 
 dn: CN=OMSServiceType,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: OMSServiceType
 canonical: PidNameOMSServiceType
@@ -5788,6 +6372,7 @@ prop_type: 0x0003
 prop_name: OMSServiceType
 
 dn: CN=OMSSourceType,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: OMSSourceType
 canonical: PidNameOMSSourceType
@@ -5798,6 +6383,7 @@ prop_type: 0x0003
 prop_name: OMSSourceType
 
 dn: CN=PageCount,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: PageCount
 canonical: PidNamePageCount
@@ -5808,6 +6394,7 @@ prop_type: 0x0003
 prop_name: PageCount
 
 dn: CN=ParCount,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: ParCount
 canonical: PidNameParagraphCount
@@ -5818,6 +6405,7 @@ prop_type: 0x0003
 prop_name: ParCount
 
 dn: CN=http://schemas.microsoft.com/outlook/phishingstamp,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/outlook/phishingstamp
 canonical: PidNamePhishingStamp
@@ -5828,6 +6416,7 @@ prop_type: 0x0003
 prop_name: http://schemas.microsoft.com/outlook/phishingstamp
 
 dn: CN=PresFormat,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: PresFormat
 canonical: PidNamePresentationFormat
@@ -5838,6 +6427,7 @@ prop_type: 0x001F
 prop_name: PresFormat
 
 dn: CN=quarantine-original-sender,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: quarantine-original-sender
 canonical: PidNameQuarantineOriginalSender
@@ -5848,6 +6438,7 @@ prop_type: 0x001F
 prop_name: quarantine-original-sender
 
 dn: CN=RevNumber,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: RevNumber
 canonical: PidNameRevisionNumber
@@ -5858,6 +6449,7 @@ prop_type: 0x001F
 prop_name: RevNumber
 
 dn: CN=DRMLicense,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: DRMLicense
 canonical: PidNameRightsManagementLicense
@@ -5868,6 +6460,7 @@ prop_type: 0x1102
 prop_name: DRMLicense
 
 dn: CN=Scale,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Scale
 canonical: PidNameScale
@@ -5878,6 +6471,7 @@ prop_type: 0x000B
 prop_name: Scale
 
 dn: CN=Security,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Security
 canonical: PidNameSecurity
@@ -5888,6 +6482,7 @@ prop_type: 0x0003
 prop_name: Security
 
 dn: CN=SlideCount,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: SlideCount
 canonical: PidNameSlideCount
@@ -5898,6 +6493,7 @@ prop_type: 0x0003
 prop_name: SlideCount
 
 dn: CN=Subject,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Subject
 canonical: PidNameSubject
@@ -5908,6 +6504,7 @@ prop_type: 0x001F
 prop_name: Subject
 
 dn: CN=Template,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Template
 canonical: PidNameTemplate
@@ -5918,6 +6515,7 @@ prop_type: 0x001F
 prop_name: Template
 
 dn: CN=Thumbnail,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Thumbnail
 canonical: PidNameThumbnail
@@ -5928,6 +6526,7 @@ prop_type: 0x0102
 prop_name: Thumbnail
 
 dn: CN=Title,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: Title
 canonical: PidNameTitle
@@ -5938,6 +6537,7 @@ prop_type: 0x001F
 prop_name: Title
 
 dn: CN=WordCount,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
+objectClass: External
 objectClass: MNID_STRING
 cn: WordCount
 canonical: PidNameWordCount

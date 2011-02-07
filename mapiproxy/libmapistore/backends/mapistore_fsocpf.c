@@ -72,6 +72,13 @@ static struct fsocpf_context *fsocpf_context_init(TALLOC_CTX *mem_ctx,
 	return fsocpf_ctx;
 }
 
+static enum MAPISTORE_ERROR fsocpf_provision_namedprops(TALLOC_CTX *mem_ctx,
+							char **ldif,
+							enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE *ntype)
+{
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
 /**
    \details Generate a mapistore URI for root (system/special) folders
 
@@ -1396,7 +1403,6 @@ int mapistore_init_backend(void)
 	backend.init = fsocpf_init;
 	backend.create_context = fsocpf_create_context;
 	backend.delete_context = fsocpf_delete_context;
-	backend.create_uri = fsocpf_create_mapistore_uri;
 	backend.release_record = fsocpf_release_record;
 	backend.get_path = fsocpf_get_path;
 	backend.op_mkdir = fsocpf_op_mkdir;
@@ -1413,6 +1419,10 @@ int mapistore_init_backend(void)
 	backend.op_get_fid_by_name = fsocpf_op_get_fid_by_name;
 	backend.op_setprops = fsocpf_op_setprops;
 	backend.op_deletemessage = fsocpf_op_deletemessage;
+
+	/* Fill in admin operations on mapistore database/store */
+	backend.op_db_create_uri = fsocpf_create_mapistore_uri;
+	backend.op_db_provision_namedprops = fsocpf_provision_namedprops;
 
 	/* Register ourselves with the MAPISTORE subsystem */
 	ret = mapistore_backend_register(&backend);

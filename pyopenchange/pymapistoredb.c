@@ -234,6 +234,15 @@ static PyObject *py_MAPIStoreDB_namedprops_get_default_id(PyMAPIStoreDBObject *_
 	return Py_BuildValue("ii", retval, dflt_id);	
 }
 
+static PyObject *py_MAPIStoreDB_namedprops_provision_backends(PyMAPIStoreDBObject *_self, PyObject *args)
+{
+	enum MAPISTORE_ERROR		retval;
+	PyMAPIStoreDBObject		*self = (PyMAPIStoreDBObject *) _self;
+
+	retval = mapistoredb_namedprops_provision_backends(self->mdb_ctx);
+	return PyInt_FromLong(retval);
+}
+
 static PyObject *py_MAPIStoreDB_namedprops_provision_user(PyMAPIStoreDBObject *_self, PyObject *args, PyObject *kwargs)
 {
 	enum MAPISTORE_ERROR		retval;
@@ -282,6 +291,7 @@ static PyMethodDef mapistoredb_methods[] = {
 	{ "provision_named_properties", (PyCFunction)py_MAPIStoreDB_provision_named_properties, METH_VARARGS },
 	{ "namedprops_get_default_id", (PyCFunction)py_MAPIStoreDB_namedprops_get_default_id, METH_KEYWORDS },
 	{ "namedprops_provision_user", (PyCFunction)py_MAPIStoreDB_namedprops_provision_user, METH_KEYWORDS },
+	{ "namedprops_provision_backends", (PyCFunction)py_MAPIStoreDB_namedprops_provision_backends, METH_VARARGS },
 	{ NULL },
 };
 

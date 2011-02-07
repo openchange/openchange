@@ -77,6 +77,26 @@ static enum MAPISTORE_ERROR mstoredb_create_mapistore_uri(TALLOC_CTX *mem_ctx,
 }
 
 /**
+   \details Provides a LDIF file or buffer to upper mapistore layers
+   to provision mstoredb:// Internal namespace
+
+   \param mem_ctx pointer to the memory context
+   \param ldif pointer on pointer to the LDIF filename or buffer to return
+   \param type pointer to the type of LDIF content to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum MAPISTORE_ERROR mstoredb_provision_namedprops(TALLOC_CTX *mem_ctx,
+							  char **ldif,
+							  enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE *ntype)
+{
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ldif, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+/**
    \details Create a connection context to the mstoredb backend 
 
    \param ctx pointer to the opaque mapistore backend context
@@ -288,10 +308,11 @@ enum MAPISTORE_ERROR mapistore_init_backend(void)
 	backend.init = mstoredb_init;
 	backend.create_context = mstoredb_create_context;
 	backend.delete_context = mstoredb_delete_context;
-	backend.create_uri = mstoredb_create_mapistore_uri;
 	backend.op_mkdir = mstoredb_op_mkdir;
 
 	/* Fill in mapistore db operations */
+	backend.op_db_create_uri = mstoredb_create_mapistore_uri;
+	backend.op_db_provision_namedprops = mstoredb_provision_namedprops;
 	backend.op_db_mkdir = mstoredb_op_db_mkdir;
 
 	/* Register ourselves with the MAPISTORE subsystem */

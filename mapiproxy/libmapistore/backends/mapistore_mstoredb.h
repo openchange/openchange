@@ -53,6 +53,8 @@ struct mstoredb_context {
 	"PidTagContainerClass: %s\n"			\
 	"SystemIdx: %d\n\n"
 
+#define	MDB_LDIF_FILENAME	"namedprops_mstoredb.ldif"
+
 struct mstoredb_dflt_folders {
 	enum MAPISTORE_DFLT_FOLDERS	index;
 	const char			*name;

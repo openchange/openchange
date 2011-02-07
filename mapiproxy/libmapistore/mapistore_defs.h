@@ -71,6 +71,19 @@ enum MAPISTORE_DFLT_FOLDERS {
 	MDB_CUSTOM		= 999	/**< This is a custom (or generic) folder with no special meaning */
 };
 
+
+/**
+   \brief Named properties provisioning types
+
+   This list identifies the different provisioning types a backend can
+   use for Internal named properties provisioning purposes
+ */
+enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE {
+	MAPISTORE_NAMEDPROPS_PROVISION_NONE	= 0, /** < No LDIF data associated */
+	MAPISTORE_NAMEDPROPS_PROVISION_FILE	= 1, /** < LDIF information are retrieved from a file */
+	MAPISTORE_NAMEDPROPS_PROVISION_BUFFER	= 2  /** < LDIF information are retrieved from a buffer */
+};
+
 /**
   A message object
   

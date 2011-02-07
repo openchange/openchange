@@ -147,6 +147,16 @@ const char *mapistore_get_database_path(void)
 	return (!mapistore_dbpath) ? MAPISTORE_DBPATH : (const char *) mapistore_dbpath;
 }
 
+/**
+   \details Return the current path to mapistore named properties LDIF
+   files
+
+   \return pointer to the mapistore named properties LDIF path
+ */
+const char *mapistore_get_named_properties_ldif_path(void)
+{
+	return MAPISTORE_LDIF;
+}
 
 /**
    \details Set the mapistore_named_properties.ldb mapping path

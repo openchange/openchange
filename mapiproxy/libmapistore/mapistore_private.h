@@ -188,6 +188,12 @@ struct mapistoredb_context {
 	"mapping_index: 0x%.4x\n"			\
 	"cn: %s\n\n"					\
 
+#define	MDB_NPROPS_MAPPED_INDEX_CHANGE_LDIF		\
+	"dn: CN=%s,CN=Server\n"				\
+	"changetype: modify\n"				\
+	"replace: mapping_index\n"			\
+	"mapping_index: 0x%.4x\n\n"
+
 enum MAPISTORE_NAMEDPROPS_TYPE {
 	MAPISTORE_NAMEDPROPS_INTERNAL = 0,
 	MAPISTORE_NAMEDPROPS_EXTERNAL = 1
@@ -307,6 +313,8 @@ enum MAPISTORE_ERROR mapistore_get_mailbox_uri(struct processing_context *, cons
 
 /* definitions from mapistore_backend.c */
 enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *, const char *);
+enum MAPISTORE_ERROR mapistore_backend_get_next_backend(const char **, const char **, const char **, uint32_t *);
+enum MAPISTORE_ERROR mapistore_backend_get_namedprops_ldif(TALLOC_CTX *, const char *, char **, enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE *);
 struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *, const char *, const char *);
 enum MAPISTORE_ERROR mapistore_backend_add_ref_count(struct backend_context *);
 enum MAPISTORE_ERROR mapistore_backend_delete_context(struct backend_context *);

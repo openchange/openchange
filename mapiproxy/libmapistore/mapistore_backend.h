@@ -49,7 +49,6 @@ struct mapistore_backend {
 	enum MAPISTORE_ERROR (*init)(void);
 	enum MAPISTORE_ERROR (*create_context)(struct mapistore_backend_context *ctx, const char *, const char *, const char *, void **);
 	enum MAPISTORE_ERROR (*delete_context)(void *);
-	enum MAPISTORE_ERROR (*create_uri)(TALLOC_CTX *, uint32_t, const char *, char **);
 	enum MAPISTORE_ERROR (*release_record)(void *, uint64_t, uint8_t);
 	enum MAPISTORE_ERROR (*get_path)(void *, uint64_t, uint8_t, char **);
 	/* folders semantic */
@@ -68,8 +67,11 @@ struct mapistore_backend {
 	enum MAPISTORE_ERROR (*op_get_fid_by_name)(void *, uint64_t, const char *, uint64_t *);
 	enum MAPISTORE_ERROR (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
 	enum MAPISTORE_ERROR (*op_deletemessage)(void *, uint64_t mid, enum MAPISTORE_DELETION_TYPE deletion_type);
-	/* mapistoredb semantics */
+	/* mapistoredb/store semantics */
+	enum MAPISTORE_ERROR (*op_db_create_uri)(TALLOC_CTX *, uint32_t, const char *, char **);
+	enum MAPISTORE_ERROR (*op_db_provision_namedprops)(TALLOC_CTX *, char **, enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE *);
 	enum MAPISTORE_ERROR (*op_db_mkdir)(void *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *);
+  
 };
 
 __BEGIN_DECLS

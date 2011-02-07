@@ -127,6 +127,8 @@ enum MAPISTORE_ERROR mapistore_add_context_ref_count(struct mapistore_context *,
 enum MAPISTORE_ERROR mapistore_del_context(struct mapistore_context *, uint32_t);
 enum MAPISTORE_ERROR mapistore_create_uri(struct mapistore_context *, uint32_t, const char *, const char *, char **);
 enum MAPISTORE_ERROR mapistore_set_mapistore_uri(struct mapistore_context *, uint32_t, enum MAPISTORE_DFLT_FOLDERS, const char *);
+enum MAPISTORE_ERROR mapistore_get_next_backend(const char **, const char **, const char **, uint32_t *);
+enum MAPISTORE_ERROR mapistore_get_backend_ldif(struct mapistore_context *, const char *, char **,enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE *);
 enum MAPISTORE_ERROR mapistore_create_root_folder(struct mapistore_context *, uint32_t, enum MAPISTORE_DFLT_FOLDERS, 
 						  enum MAPISTORE_DFLT_FOLDERS, const char *);
 enum MAPISTORE_ERROR mapistore_release_record(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
@@ -214,7 +216,9 @@ enum MAPISTORE_ERROR mapistore_indexing_update_mapistore_uri(struct mapistore_in
 
 /* definitions from mapistore_namedprops.c */
 enum MAPISTORE_ERROR mapistore_namedprops_get_default_id(struct mapistore_context *, enum MAPISTORE_NAMEDPROPS_TYPE, uint32_t *);
+enum MAPISTORE_ERROR mapistore_namedprops_check_id(struct mapistore_context *, enum MAPISTORE_NAMEDPROPS_TYPE, uint32_t);
 enum MAPISTORE_ERROR mapistore_namedprops_user_exist(struct mapistore_context *, const char *);
+enum MAPISTORE_ERROR mapistoredb_namedprops_provision_backends(struct mapistoredb_context *);
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);
 
 __END_DECLS

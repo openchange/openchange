@@ -74,6 +74,7 @@ enum MAPISTORE_ERROR {
 	MAPISTORE_ERR_INVALID_CONTEXT = 18, /*!< The specified context is invalid */
 	MAPISTORE_ERR_INVALID_URI = 19, /*!< The specified URI is invalid */
 	MAPISTORE_ERR_NOT_IMPLEMENTED = 20, /*!< The function is not implemented */
+	MAPISTORE_ERR_RESERVED = 21, /* !< The function call failed because the specified data is reserved */
 };
 
 #endif /* ! __MAPISTORE_ERRORS_H */

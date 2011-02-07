@@ -70,6 +70,9 @@ def start():
     else:
         print "\t* Provisioning: FAILURE (ret = %s)" % MAPIStoreDB.errstr(retval)
 
+    newTitle("Provision named properties namespace for backends", "=")
+    retval = MAPIStoreDB.namedprops_provision_backends()
+
     newTitle("Provision named properties namespace for user", "=")
     retval = MAPIStoreDB.namedprops_provision_user("jkerihuel")
     "\t* Return status: %s" % MAPIStoreDB.errstr(retval)

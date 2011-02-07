@@ -65,6 +65,52 @@ enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_c
 }
 
 /**
+   \details Return the CN=External or CN=Internal record for further
+   processing.
+
+   \param mem_ctx pointer to the memory context
+   \param ldb_ctx pointer to the namedprops LDB context
+   \param ntype the type of record to return
+   \param res pointer on pointer to the LDB result to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum MAPISTORE_ERROR mapistore_namedprops_get_intext_record(TALLOC_CTX *mem_ctx,
+								   struct ldb_context *ldb_ctx,
+								   enum MAPISTORE_NAMEDPROPS_TYPE ntype,
+								   struct ldb_result **res)
+{
+	struct ldb_result	*_res = NULL;
+	const char * const	attrs[] = { "*", NULL };
+	const char		*stype = NULL;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!res, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Turn ntype into string value */
+	switch (ntype) {
+	case MAPISTORE_NAMEDPROPS_INTERNAL:
+		stype = "Internal";
+		break;
+	case MAPISTORE_NAMEDPROPS_EXTERNAL:
+		stype = "External";
+		break;
+	default:
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &_res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(&(objectClass=container)(cn=%s))", stype);
+	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !_res->count, MAPISTORE_ERR_DATABASE_OPS, NULL);
+
+	*res = _res;
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
    \details Retrieve the default and first available ID from the
    mapistore named properties database for internal or external
    purposes
@@ -79,12 +125,10 @@ enum MAPISTORE_ERROR mapistore_namedprops_get_default_id(struct mapistore_contex
 							 enum MAPISTORE_NAMEDPROPS_TYPE ntype,
 							 uint32_t *dflt_id)
 {
+	enum MAPISTORE_ERROR	retval;
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_context	*ldb_ctx;
 	struct ldb_result	*res = NULL;
-	const char * const	attrs[] = { "*", NULL };
-	const char		*stype = NULL;
-	int			ret;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -95,22 +139,72 @@ enum MAPISTORE_ERROR mapistore_namedprops_get_default_id(struct mapistore_contex
 	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_get_default_id");
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	/* Step 1. Search for CN=External,CN=Server record and retrieve its attributes */
-	switch (ntype) {
-	case MAPISTORE_NAMEDPROPS_INTERNAL:
-		stype = "Internal";
-		break;
-	case MAPISTORE_NAMEDPROPS_EXTERNAL:
-		stype = "External";
-		break;
-	}
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(&(objectClass=container)(cn=%s))", stype);
-	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+	/* Step 1. Retrieve the internal/external record */
+	retval = mapistore_namedprops_get_intext_record(mem_ctx, ldb_ctx, ntype, &res);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Step 2. Retrieve and return the mapping_index attribute */
-	*dflt_id = ldb_msg_find_attr_as_int(res->msgs[0], "mapping_index", 0);
-	MAPISTORE_RETVAL_IF(!*dflt_id, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+	*dflt_id = ldb_msg_find_attr_as_uint(res->msgs[0], "mapping_index", 0);
+	MAPISTORE_RETVAL_IF(!*dflt_id && ntype == MAPISTORE_NAMEDPROPS_EXTERNAL, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Check if the specified ID is already mapped or not and
+   whether it is a reserved ID or not.
+
+   \param mstore_ctx pointer to the mapistore context
+   \param ntype the type of mapping index to check (internal or external)
+   \param identifier the ID to check
+
+   \return MAPISTORE_SUCCESS if the id is available,
+   MAPISTORE_ERR_RESERVED if the id is reserved, MAPISTORE_ERR_EXIST
+   if it already exists, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_namedprops_check_id(struct mapistore_context *mstore_ctx,
+						   enum MAPISTORE_NAMEDPROPS_TYPE ntype,
+						   uint32_t identifier)
+{
+	enum MAPISTORE_ERROR		retval;
+	TALLOC_CTX			*mem_ctx;
+	struct ldb_context		*ldb_ctx;
+	struct ldb_result		*res = NULL;
+	struct ldb_message_element	*ldb_element;
+	uint32_t			index;
+	int				i;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->mapistore_nprops_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+
+	ldb_ctx = mstore_ctx->mapistore_nprops_ctx;
+	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_check_id");
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Step 1. Retrieve the internal/external record */
+	retval = mapistore_namedprops_get_intext_record(mem_ctx, ldb_ctx, ntype, &res);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Step 2. Retrieve the mapping_index attribute */
+	index = ldb_msg_find_attr_as_int(res->msgs[0], "mapped_index", 0);
+	MAPISTORE_RETVAL_IF(identifier < index, MAPISTORE_ERR_EXIST, mem_ctx);
+
+	/* Step 3. Check ensure the identifier is not reserved */
+	ldb_element = ldb_msg_find_element(res->msgs[0], "reserved_tags");
+	MAPISTORE_RETVAL_IF(!ldb_element, MAPISTORE_SUCCESS, mem_ctx);
+
+	for (i = 0; i < ldb_element->num_values; i++) {
+		if (ldb_element->values[i].length) {
+			index = strtoul((char *)ldb_element->values[i].data, NULL, 16);
+			MAPISTORE_RETVAL_IF(identifier == index, MAPISTORE_ERR_EXIST, mem_ctx);
+		}
+	}
+
+	talloc_free(mem_ctx);
 
 	return MAPISTORE_SUCCESS;
 }

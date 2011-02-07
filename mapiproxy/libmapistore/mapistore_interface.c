@@ -444,6 +444,102 @@ end:
 	return retval;
 }
 
+/**
+   \details Retrieve the next backend available in the list
+
+   \param backend_name pointer to the backend name to return
+   \param backend_namespace pointer to the backend namespace to return
+   \param backend_description pointer to the backend description to
+   return
+   \param backend_index pointer to the backend index in the the
+   backend's list to return
+
+   \note backend_index must be initialized to 0 prior any calls to
+   mapistore_get_next_backend.
+
+   \return MAPISTORE_SUCCESS on success, MAPISTORE_ERR_NOT_FOUND if
+   the end of the list is reached, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_get_next_backend(const char **backend_name,
+						const char **backend_namespace,
+						const char **backend_description,
+						uint32_t *backend_index)
+{
+	enum MAPISTORE_ERROR		retval;
+	const char			*_backend_name;
+	const char			*_backend_namespace;
+	const char			*_backend_description;
+	uint32_t			_backend_index;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!backend_name && !backend_namespace && !backend_description, 
+			    MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!backend_index, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	_backend_index = *backend_index;
+	retval = mapistore_backend_get_next_backend(&_backend_name, 
+						    &_backend_namespace,
+						    &_backend_description,
+						    &_backend_index);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	if (backend_name) {
+		*backend_name = _backend_name;
+	}
+
+	if (backend_namespace) {
+		*backend_namespace = _backend_namespace;
+	}
+	
+	if (backend_description) {
+		*backend_description = _backend_description;
+	}
+
+	*backend_index = _backend_index;
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Retrieve the LDIF data associated to registered backends
+   by sequentially calling op_db_provision_namedprops operation.
+
+   \param mstore_ctx pointer to the mapistore context
+   \param backend_name pointer on pointer to the backend name to return
+   \param ldif pointer on pointer to the LDIF data to return
+   \param ntype pointer to the type of LDIF data to return
+
+   \note It is also up to the caller application to free memory
+   associated to ldif data.
+
+   \return MAPISTORE_SUCCESS on success, or MAPISTORE_ERR_NOT_FOUND if
+   there is no more available backends, otherwise MAPISTORE_ERROR
+ */
+enum MAPISTORE_ERROR mapistore_get_backend_ldif(struct mapistore_context *mstore_ctx,
+						const char *backend_name,
+						char **ldif,
+						enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE *ntype)
+{
+	enum MAPISTORE_ERROR				retval;
+	enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE	_ntype;
+	char						*_ldif;
+	
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!backend_name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!ldif, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!ntype, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	retval = mapistore_backend_get_namedprops_ldif((TALLOC_CTX *) mstore_ctx, backend_name, &_ldif, &_ntype);
+
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	*ldif = _ldif;
+	*ntype = _ntype;
+
+	return MAPISTORE_SUCCESS;
+}
+
 
 /**
    \details Release private backend data associated a folder / message
@@ -582,6 +678,8 @@ _PUBLIC_ const char *mapistore_errstr(enum MAPISTORE_ERROR mapistore_err)
 		return "Invalid mapistore URI";
 	case MAPISTORE_ERR_NOT_IMPLEMENTED:
 		return "Not implemented";
+	case MAPISTORE_ERR_RESERVED:
+		return "Record or data reserved";
 	}
 
 	return "Unknown error";

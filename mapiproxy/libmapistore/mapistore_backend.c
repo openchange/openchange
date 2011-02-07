@@ -227,7 +227,6 @@ _PUBLIC_ bool mapistore_backend_run_init(init_backend_fn *fns)
 	return ret;
 }
 
-
 /**
    \details Initialize mapistore backends
 
@@ -262,7 +261,84 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 	 return (status != true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_BACKEND_INIT;
  }
 
- static enum MAPISTORE_ERROR delete_context(void *data)
+
+enum MAPISTORE_ERROR mapistore_backend_get_next_backend(const char **backend_name,
+							const char **backend_namespace,
+							const char **backend_description,
+							uint32_t *backend_index)
+{
+	int	i;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!backend_name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!backend_namespace, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!backend_description, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!backend_index, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	i = *backend_index;
+	MAPISTORE_RETVAL_IF((i >= num_backends), MAPISTORE_ERR_NOT_FOUND, NULL);
+	MAPISTORE_RETVAL_IF(!backends[i].backend, MAPISTORE_ERR_NOT_FOUND, NULL);
+
+	*backend_name = backends[i].backend->name;
+	*backend_namespace = backends[i].backend->uri_namespace;
+	*backend_description = backends[i].backend->description;
+	*backend_index += 1;
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Return the LDIF data associated to a mapistore backend
+
+   \param mem_ctx pointer to the mapistore context
+   \param backend_name pointer to the backend name to retrieve LDIF data from
+   \param ldif pointer on pointer to the LDIF data to return
+   \param ntype pointer to the LDIF provision data type to return
+
+   \return MAPISTORE_SUCCESS on success, MAPISTORE_ERR_NOT_FOUND if
+   the specified backend name was not found,
+   MAPSITORE_ERR_NOT_IMPLEMENTED if the backend doesn't handle the
+   ldif op, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_backend_get_namedprops_ldif(TALLOC_CTX *mem_ctx,
+							   const char *backend_name,
+							   char **ldif,
+							   enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE *ntype)
+{
+	enum MAPISTORE_ERROR				retval;
+	enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE	_ntype;
+	char						*_ldif;
+	int						i;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ldif, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!backend_name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!ntype, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < num_backends; i++) {
+		if (backends[i].backend && backends[i].backend->name && 
+		    !strncmp(backends[i].backend->name, backend_name, strlen(backends[i].backend->name))) {
+			break;
+		}
+	}
+
+	if (i >= num_backends) return MAPISTORE_ERR_NOT_FOUND;
+
+	retval = backends[i].backend->op_db_provision_namedprops(mem_ctx, &_ldif, &_ntype);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	if (_ldif && _ntype != MAPISTORE_NAMEDPROPS_PROVISION_NONE) {
+		*ldif = talloc_strdup(mem_ctx, _ldif);
+		talloc_free(_ldif);
+	}
+
+	*ntype = _ntype;
+	
+	return retval;
+}
+
+
+static enum MAPISTORE_ERROR delete_context(void *data)
  {
 	 struct backend_context		*context = (struct backend_context *) data;
 
@@ -392,7 +468,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend->uri_namespace &&
 		    !strcmp(uri_namespace, backends[i].backend->uri_namespace)) {
-			retval = backends[i].backend->create_uri(mem_ctx, index, username, &_uri);
+			retval = backends[i].backend->op_db_create_uri(mem_ctx, index, username, &_uri);
 			if (retval == MAPISTORE_SUCCESS) {
 				*uri = _uri;
 				return retval;

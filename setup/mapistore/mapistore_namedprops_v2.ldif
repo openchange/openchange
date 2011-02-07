@@ -9,7 +9,7 @@ objectClass: Internal
 objectClass: container
 objectClass: top
 cn: Internal
-mapping_index: 0x0000
+mapping_index: 0x0001
 
 dn: CN=External,CN=Server
 objectClass: External

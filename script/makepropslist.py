@@ -1139,7 +1139,7 @@ def make_mapi_named_properties_file():
 			 "objectClass: container\n"	\
 			 "objectClass: top\n"		\
 			 "cn: Internal\n"		\
-			 "mapping_index: 0x0000\n\n"	\
+			 "mapping_index: 0x0001\n\n"	\
 							\
 			 "dn: CN=External,CN=Server\n"	\
 			 "objectClass: External\n"	\

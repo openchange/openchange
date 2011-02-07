@@ -56,7 +56,7 @@ _PUBLIC_ uint16_t libmapiserver_TypedString_size(struct TypedString typedstring)
 		break;
 	case StringType_UNICODE:
 		if (typedstring.String.lpszW) {
-			size += strlen(typedstring.String.lpszW) * 2 + 2;
+                        size += strlen_m_ext(typedstring.String.lpszW, CH_UTF8, CH_UTF16BE) * 2 + 2;
 		}
 		break;
 	}

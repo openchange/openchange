@@ -70,7 +70,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	bool				mapistore = false;
 	struct indexing_folders_list	*flist;
 	struct SPropTagArray		*SPropTagArray;
-	char				*subject = NULL;
+	char				*subject = NULL, *subject_prefix = NULL;
 	int				i;
 
 
@@ -198,12 +198,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 					  folderID, messageID, &msg) == 0) {
 			/* Build the OpenMessage reply */
 			mapi_repl->u.mapi_OpenMessage.HasNamedProperties = false;
-			mapi_repl->u.mapi_OpenMessage.SubjectPrefix.StringType = StringType_EMPTY;
 
-			subject = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT_UNICODE);
-			if (subject) {
-				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_UNICODE_REDUCED;
-				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.String.lpszW_reduced = talloc_strdup(mem_ctx, subject);
+			subject_prefix = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT_PREFIX_UNICODE);
+			if (subject_prefix && strlen(subject_prefix) > 0) {
+				mapi_repl->u.mapi_OpenMessage.SubjectPrefix.StringType = StringType_UNICODE;
+				mapi_repl->u.mapi_OpenMessage.SubjectPrefix.String.lpszW = talloc_strdup(mem_ctx, subject_prefix);
+			}
+			else {
+				mapi_repl->u.mapi_OpenMessage.SubjectPrefix.StringType = StringType_EMPTY;
+			}
+
+			subject = (char *) find_SPropValue_data(msg.properties, PR_NORMALIZED_SUBJECT_UNICODE);
+			if (subject && strlen(subject) > 0) {
+				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_UNICODE;
+				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.String.lpszW = talloc_strdup(mem_ctx, subject);
 			}
 			else {
 				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_EMPTY;
@@ -749,8 +757,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 		mapi_repl->u.mapi_ReloadCachedInformation.HasNamedProperties = false;
 		mapi_repl->u.mapi_ReloadCachedInformation.SubjectPrefix.StringType = StringType_EMPTY;
 		if (subject) {
-			mapi_repl->u.mapi_ReloadCachedInformation.NormalizedSubject.StringType = StringType_UNICODE_REDUCED;
-			mapi_repl->u.mapi_ReloadCachedInformation.NormalizedSubject.String.lpszW_reduced = talloc_strdup(mem_ctx, subject);
+			mapi_repl->u.mapi_ReloadCachedInformation.NormalizedSubject.StringType = StringType_UNICODE;
+			mapi_repl->u.mapi_ReloadCachedInformation.NormalizedSubject.String.lpszW = talloc_strdup(mem_ctx, subject);
 		} else {
 			mapi_repl->u.mapi_ReloadCachedInformation.NormalizedSubject.StringType = StringType_EMPTY;
 		}

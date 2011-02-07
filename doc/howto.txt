@@ -339,16 +339,17 @@ In order to run the openchange server, you need to setup Samba4
 correctly. If you have not already installed Samba4, please refer to
 section 2 for further information.
 
-Under your root account, provision the server from the Samba4 source
+Under your root account, provision the server from the samba4/source
 directory:
 
 # cd samba4/source4
 # ./setup/provision --domain=OPENCHANGE --realm=OPENCHANGE.LOCAL \
 		    --adminpass=0Chas7secret --server-role='domain controller'
 
-If you need to add a user, run the following command from Samba4 source
-directory (replacing <username> and <password> with appropriate entries):
+If you need to add a user, run the following command from the samba4 directory
+ (replacing <username> and <password> with appropriate entries):
 
+# cd ..
 # ./bin/samba-tool newuser <username> <password>
 
 If you are using a Samba4 alpha13 or earlier release, use:

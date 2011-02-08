@@ -299,6 +299,10 @@ enum MAPISTORE_ERROR mapistore_init_backend(void)
 	struct mapistore_backend	backend;
 	enum MAPISTORE_ERROR		retval;
 
+	/* Initialize backend with defaults */
+	retval = mapistore_backend_init_defaults(&backend);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
 	/* Fill in our name */
 	backend.name = "mstoredb";
 	backend.description = "mapistore database backend";
@@ -318,7 +322,7 @@ enum MAPISTORE_ERROR mapistore_init_backend(void)
 	/* Register ourselves with the MAPISTORE subsystem */
 	retval = mapistore_backend_register(&backend);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(5, ("Failed to register the '%s' mapistore backend!\n", backend.name));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to register the '%s' mapistore backend!\n", backend.name);
 	}
 
 	return retval;

@@ -86,10 +86,14 @@ __BEGIN_DECLS
   and function pointers, and then call mapistore_backend_register().
  
   \code
-  int mapistore_init_backend(void)
+  enum MAPISTORE_ERROR mapistore_init_backend(void)
   {
-    struct mapistore_backend demo_backend;
-    
+    enum MAPISTORE_ERROR	retval;
+    struct mapistore_backend	demo_backend;
+
+    retval = mapistore_backend_init_defaults(&demo_backend);
+    MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
     demo_backend.name = "demo";
     demo_backend.description = "this is just a demostration of the mapistore backend API";
     demo_backend.uri_namespace = "demo://";
@@ -97,9 +101,9 @@ __BEGIN_DECLS
     ... // more function pointers here.
     
     mapistore_backend_register(&demo_backend);
-    if (ret != MAPISTORE_SUCCESS) {
-        DEBUG(0, ("Failed to register the '%s' mapistore backend\n", demo_backend.name));
-        return ret;
+    if (retval != MAPISTORE_SUCCESS) {
+	MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to register the '%s' mapistore backend\n", demo_backend.name);
+        return retval;
     }
 
     return MAPISTORE_SUCCESS;
@@ -107,6 +111,7 @@ __BEGIN_DECLS
   \endcode
  */
 extern enum MAPISTORE_ERROR	mapistore_backend_register(const struct mapistore_backend *);
+extern enum MAPISTORE_ERROR	mapistore_backend_init_defaults(struct mapistore_backend *);
 
 __END_DECLS
 

@@ -212,8 +212,7 @@ enum MAPISTORE_ERROR mapistore_set_firstorgdn(const char *firstou, const char *f
 	mem_ctx = talloc_autofree_context();
 	mapistore_firstorgdn = talloc_asprintf(mem_ctx, TMPL_MDB_FIRSTORGDN, firstou, firstorg, serverdn);
 	if (!mapistore_firstorgdn) {
-		DEBUG(5, ("! [%s:%d][%s]: Unable to allocate memory to set firstorgdn\n", 
-			  __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to allocate memory to set %s\n", "firstorgdn");
 		return MAPISTORE_ERR_NO_MEMORY;
 	}
 
@@ -259,7 +258,7 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *p
 	/* Step 1. Retrieve the mapistore database path */
 	db_path = mapistore_get_database_path();
 	if (!db_path) {
-		DEBUG(5, ("! [%s:%d][%s]: Unable to retrieve the mapistore database path\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to retrieve the mapistore database %s\n", "path");
 		talloc_free(mem_ctx);
 		talloc_free(pctx->mapping_ctx);
 		return MAPISTORE_ERR_DATABASE_INIT;
@@ -271,7 +270,7 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *p
 	/* Step 3. Open a wrapped connection to mapistore.ldb */
 	pctx->mapping_ctx->ldb_ctx = mapistore_ldb_wrap_connect(pctx, pctx->mapping_ctx->ev, db_path, 0);
 	if (!pctx->mapping_ctx->ldb_ctx) {
-		DEBUG(5, ("! [%s:%d][%s]: Failed to open wrapped connection over mapistore.ldb\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to open wrapped connection over %s\n", "mapistore.ldb");
 		talloc_free(pctx->mapping_ctx);
 		return MAPISTORE_ERR_DATABASE_INIT;
 	}
@@ -282,7 +281,7 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *p
 		pctx->mapping_ctx->used_ctx = tdb_wrap_open(pctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
 		talloc_free(dbpath);
 		if (!pctx->mapping_ctx->used_ctx) {
-			DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
+			MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to create/open used ID database: %s\n", strerror(errno));
 			talloc_free(mem_ctx);
 			talloc_free(pctx->mapping_ctx);
 			return MAPISTORE_ERR_DATABASE_INIT;
@@ -304,8 +303,8 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *p
 		ret = tdb_store(pctx->mapping_ctx->used_ctx->tdb, key, dbuf, TDB_INSERT);
 		talloc_free(dbuf.dptr);
 		if (ret == -1) {
-			DEBUG(3, ("[%s:%d]: Unable to create %s record: %s\n", __FUNCTION__, __LINE__,
-				  MAPISTORE_DB_LAST_ID_KEY, tdb_errorstr(pctx->mapping_ctx->used_ctx->tdb)));
+			MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to create %s record: %s\n",
+					   MAPISTORE_DB_LAST_ID_KEY, tdb_errorstr(pctx->mapping_ctx->used_ctx->tdb));
 			talloc_free(mem_ctx);
 			talloc_free(pctx->mapping_ctx);
 
@@ -339,13 +338,13 @@ enum MAPISTORE_ERROR mapistore_ldb_write_ldif_string_to_store(struct ldb_context
 		ret = ldb_msg_normalize(ldb_ctx, ldif, ldif->msg, &ldif->msg);
 		if (ret != LDB_SUCCESS) {
 			ldb_ldif_read_free(ldb_ctx, ldif);
-			DEBUG(5, ("! [%s:%d][%s]: Unable to normalize ldif\n", __FILE__, __LINE__, __FUNCTION__));
+			MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Unable to normalize %s\n", "ldif");
 			return MAPISTORE_ERROR;
 		}
 		ret = ldb_add(ldb_ctx, ldif->msg);
 		if (ret != LDB_SUCCESS) {
 			ldb_ldif_read_free(ldb_ctx, ldif);
-			DEBUG(5, ("! [%s:%d][%s]: Unable to add ldb msg\n", __FILE__, __LINE__, __FUNCTION__));
+			MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Unable to add ldb %s\n", "msg");
 			return MAPISTORE_ERROR;
 		}
 		ldb_ldif_read_free(ldb_ctx, ldif);
@@ -449,7 +448,7 @@ enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *pctx,
 			 LDB_SCOPE_SUBTREE, attrs, "(&(cn=%s)(objectClass=store))", username);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(mem_ctx);
-		DEBUG(5, ("! [%s:%d][%s]: Unable to find the user store object\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Unable to find the user store %s\n", "object");
 		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
@@ -467,7 +466,7 @@ enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *pctx,
 	ret = ldb_modify(ldb_ctx, msg);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
-		DEBUG(5, ("! [%s:%d][%s]: Unable to update GlobalCount for server object\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Unable to update GlobalCount for server %s\n", "object");
 		return MAPISTORE_ERROR;
 	}
 
@@ -521,7 +520,7 @@ enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_contex
 			 LDB_SCOPE_SUBTREE, attrs, "(&(objectClass=store)(cn=%s))", username);
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(mem_ctx);
-		DEBUG(5, ("! [%s:%d][%s]: Unable to find the user store object\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Unable to find the user store %s\n", "object");
 		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
@@ -544,7 +543,7 @@ enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_contex
 	ret = ldb_modify(ldb_ctx, msg);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
-		DEBUG(5, ("! [%s:%d][%s]: Unable to update GlobalCount for server object\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Unable to update GlobalCount for server %s\n", "object");
 		return MAPISTORE_ERROR;
 	}
 
@@ -590,7 +589,7 @@ enum MAPISTORE_ERROR mapistore_get_mailbox_uri(struct processing_context *pctx,
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, "(&(objectClass=mailbox)(objectClass=container))");
 	if (ret != LDB_SUCCESS || res->count != 1) {
 		talloc_free(mem_ctx);
-		DEBUG(5, ("! [%s:%d][%s]: Unable to find the user mailbox root container\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Unable to find the user mailbox root %s\n", "container");
 		return MAPISTORE_ERR_NOT_FOUND;
 	}
 

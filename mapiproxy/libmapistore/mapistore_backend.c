@@ -32,6 +32,7 @@
 #include "mapistore.h"
 #include "mapistore_private.h"
 #include "mapistore_backend.h"
+#include "mapistore_common.h"
 #include <dlinklist.h>
 
 #include <util.h>
@@ -69,7 +70,7 @@ _PUBLIC_ extern enum MAPISTORE_ERROR mapistore_backend_register(const struct map
 		if (backends[i].backend && backend && 
 		    backend->name && backends[i].backend->name &&
 		    !strcmp(backends[i].backend->name, backend->name)) {
-			DEBUG(3, ("MAPISTORE backend '%s' already registered\n", backend->name));
+			MSTORE_DEBUG_INFO(MSTORE_LEVEL_NORMAL, "MAPISTORE backend '%s' already registered\n", backend->name);
 			return MAPISTORE_SUCCESS;
 		}
 	}
@@ -84,7 +85,7 @@ _PUBLIC_ extern enum MAPISTORE_ERROR mapistore_backend_register(const struct map
 
 	num_backends++;
 
-	DEBUG(3, ("MAPISTORE backend '%s' registered\n", backend->name));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_NORMAL, "MAPISTORE backend '%s' registered\n", backend->name);
 
 	return MAPISTORE_SUCCESS;
 }
@@ -118,16 +119,16 @@ static init_backend_fn load_backend(const char *path)
 
 	handle = dlopen(path, RTLD_NOW);
 	if (handle == NULL) {
-		DEBUG(0, ("Unable to open %s: %s\n", path, dlerror()));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to open %s: %s\n", path, dlerror())
 		return NULL;
 	}
 
 	init_fn = dlsym(handle, MAPISTORE_INIT_MODULE);
 
 	if (init_fn == NULL) {
-		DEBUG(0, ("Unable to find %s() in %s: %s\n",
-			  MAPISTORE_INIT_MODULE, path, dlerror()));
-		DEBUG(1, ("Loading mapistore backend '%s' failed\n", path));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to find %s() in %s: %s\n",
+				   MAPISTORE_INIT_MODULE, path, dlerror());
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_HIGH, "Loading mapistore backend '%s' failed\n", path);
 		dlclose(handle);
 		return NULL;
 	}
@@ -250,7 +251,7 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend) {
-			DEBUG(3, ("MAPISTORE backend '%s' loaded\n", backends[i].backend->name));
+			MSTORE_DEBUG_INFO(MSTORE_LEVEL_NORMAL, "MAPISTORE backend '%s' loaded\n", backends[i].backend->name);
 			retval = backends[i].backend->init();
 			if (retval != MAPISTORE_SUCCESS) {
 				 return retval;
@@ -370,14 +371,15 @@ static enum MAPISTORE_ERROR delete_context(void *data)
 	 void				*private_data = NULL;
 	 int				i;
 
-	 DEBUG(5, ("* [%s:%d][%s] namespace is %s and backend_uri is '%s'\n", __FILE__, __LINE__, __FUNCTION__, uri_namespace, uri));
+	 MSTORE_DEBUG_INFO(MSTORE_LEVEL_INFO, "namespace is %s and backend URI is %s\n", uri_namespace, uri);
 	 for (i = 0; i < num_backends; i++) {
 		 if (backends[i].backend->uri_namespace && 
 		     !strcmp(uri_namespace, backends[i].backend->uri_namespace)) {
 			 found = true;
 			 retval = backends[i].backend->create_context(mem_ctx, login_user, username, uri, &private_data);
 			 if (retval != MAPISTORE_SUCCESS) {
-				 DEBUG(0, ("! [%s:%d][%s]: retval = %d\n", __FILE__, __LINE__, __FUNCTION__, retval));
+				 MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to create context for backend '%s': %s\n",
+						    backends[i].backend->name, mapistore_errstr(retval));
 				 return NULL;
 			 }
 
@@ -385,8 +387,7 @@ static enum MAPISTORE_ERROR delete_context(void *data)
 		 }
 	 }
 	 if (found == false) {
-		 DEBUG(0, ("! [%s:%d][%s]: no backend with namespace '%s' is available\n", 
-			   __FILE__, __LINE__, __FUNCTION__, uri_namespace));
+		 MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "No backend with namespace '%s' is available\n", uri_namespace);
 		 return NULL;
 	 }
 

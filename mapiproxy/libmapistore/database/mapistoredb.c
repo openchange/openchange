@@ -66,7 +66,7 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 	mdb_ctx = talloc_zero(mem_ctx, struct mapistoredb_context);
 	mdb_ctx->param = talloc_zero(mem_ctx, struct mapistoredb_conf);
 	if (!mdb_ctx->param) {
-		DEBUG(5, ("! [%s:%d][%s]: Failed to allocate memory for mdb_ctx->param", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Failed to allocate memory for %s\n", "mdb_ctx->param");
 		talloc_free(mdb_ctx);
 		return NULL;
 	}
@@ -126,7 +126,7 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 	mapistore_set_named_properties_database_path(mdb_ctx->param->db_named_path);
 	mdb_ctx->mstore_ctx = mapistore_init(mdb_ctx, NULL);
 	if (!mdb_ctx->mstore_ctx) {
-		DEBUG(5, ("! [%s:%d][%s]: Failed to initialize mapistore context\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Failed to initialize mapistore %s\n", "context");
 		talloc_free(mdb_ctx);
 		return NULL;
 	}
@@ -143,7 +143,7 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 void mapistoredb_release(struct mapistoredb_context *mdb_ctx)
 {
 	if (!mdb_ctx) {
-		DEBUG(5, ("! [%s:%d][%s]: Invalid mapistore database context\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Invalid mapistore database %s\n", "context");
 		return;
 	}
 
@@ -179,11 +179,11 @@ enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *m
 
 	/* Sanity checks */
 	if (!mdb_ctx || !mdb_ctx->mstore_ctx) {
-		DEBUG(5, ("! [%s:%d][%s]: Invalid mapistore database context\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Invalid mapistore database %s\n", "context");
 		return MAPISTORE_ERR_INVALID_CONTEXT;
 	}
 	if (!namespace_uri || !username) {
-		DEBUG(5, ("! [%s:%d][%s]: Invalid parameter\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Invalid  %s\n", "parameter");
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
@@ -331,14 +331,14 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
 
 	/* Step 1. We want to ensure the mapistore_uri is a mstoredb:// one */
 	if (strncmp("mstoredb://", mapistore_uri, strlen("mstoredb://"))) {
-		DEBUG(5, ("! [%s:%d][%s]: Invalid mapistore URI. MUST be mstoredb\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Invalid mapistore URI. MUST be %s\n", "mstoredb");
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
 	/* Retrieve configuration parameters */
 	firstorgdn = mapistore_get_firstorgdn();
 	if (!firstorgdn) {
-		DEBUG(5, ("! [%s:%d][%s]: Invalid firstorgdn\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Invalid  %s\n", "firstorgdn");
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
@@ -347,7 +347,7 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
 	user_store_ldif = talloc_asprintf(mem_ctx, MDB_USER_STORE_LDIF_TMPL,
 					  username, firstorgdn, username);
 	if (write_ldif_string_to_store(mdb_ctx, user_store_ldif) == false) {
-		DEBUG(0, ("! [%s:%d][%s]: Failed to add user store container\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Failed to add user store %s\n", "container");
 		talloc_free(mem_ctx);
 	}
 	talloc_free(user_store_ldif);
@@ -383,7 +383,7 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
 				       mailboxGUID, replicaGUID,
 				       MDB_ROOT_FOLDER, mapistore_uri, dn);
 	if (write_ldif_string_to_store(mdb_ctx, mailbox_ldif) == false) {
-		DEBUG(0, ("! [%s:%d][%s]: Failed to add mailbox root container\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to add mailbox root %s\n", "container");
 		talloc_free(mem_ctx);
 
 		return MAPISTORE_ERR_DATABASE_OPS;
@@ -468,7 +468,7 @@ enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *mdb_ctx)
 
 	/* Step 1. Add database schema */
 	if (write_ldif_string_to_store(mdb_ctx, MDB_INIT_LDIF_TMPL) == false) {
-		DEBUG(5, ("! [%s:%d][%s]: Failed to add database schema\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Failed to add database %s\n", "schema");
 		return MAPISTORE_ERR_DATABASE_OPS;
 	}
 
@@ -479,7 +479,7 @@ enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *mdb_ctx)
 				   mdb_ctx->param->serverdn,
 				   mdb_ctx->param->serverdn);
 	if (write_ldif_string_to_store(mdb_ctx, ldif_str) == false) {
-		DEBUG(5, ("! [%s:%d][%s]: Failed to add RootDSE schema\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Failed to add RootDSE %s\n", "schema");
 		talloc_free(ldif_str);
 		return MAPISTORE_ERR_DATABASE_OPS;
 	}
@@ -498,7 +498,7 @@ enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *mdb_ctx)
 				   mdb_ctx->param->serverdn,
 				   mdb_ctx->param->firstou);
 	if (write_ldif_string_to_store(mdb_ctx, ldif_str) == false) {
-		DEBUG(5, ("! [%s:%d][%s]: Failed to provision server object\n", __FILE__, __LINE__, __FUNCTION__));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Failed to provision server %s\n", "object");
 		talloc_free(ldif_str);
 		return MAPISTORE_ERR_DATABASE_OPS;
 	}

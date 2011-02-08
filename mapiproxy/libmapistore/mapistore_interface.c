@@ -156,7 +156,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *ms
 	namespace_start = uri_namespace;
 	uri_namespace= strchr(uri_namespace, ':');
 	if (!uri_namespace) {
-		DEBUG(0, ("[%s:%d]: Error - Invalid namespace '%s'\n", __FUNCTION__, __LINE__, namespace_start));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Invalid namespace '%s'\n", namespace_start);
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_NAMESPACE;
 	}
@@ -184,7 +184,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *ms
 		DLIST_ADD_END(mstore_ctx->context_list, backend_list, struct backend_context_list *);
 
 	} else {
-		DEBUG(0, ("[%s:%d]: Error - Invalid URI '%s'\n", __FUNCTION__, __LINE__, uri));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Invalid URI '%s'\n", uri);
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_NAMESPACE;
 	}
@@ -216,7 +216,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context_ref_count(struct mapistore_c
 	MAPISTORE_RETVAL_IF((int)context_id == -1, MAPISTORE_ERR_INVALID_CONTEXT, NULL);
 
 	/* Step 0. Ensure the context exists */
-	DEBUG(0, ("mapistore_add_context_ref_count: context_is to increment is %d\n", context_id));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "contest to increment is %d\n", context_id);
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
@@ -278,7 +278,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_del_context(struct mapistore_context *ms
 	MAPISTORE_RETVAL_IF((int)context_id == -1, MAPISTORE_ERR_INVALID_CONTEXT, NULL);
 
 	/* Step 0. Ensure the context exists */
-	DEBUG(0, ("mapistore_del_context: context_id to del is %d\n", context_id));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "context_id to delete is %d\n", context_id);
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
@@ -613,8 +613,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context_indexing(struct mapistore_co
 	/* Step 3. Increment the indexing ref counter */
 	mapistore_indexing_add_ref_count(indexing_ctx);
 
-	DEBUG(0, ("mapistore_add_context_indexing username: %s\n", backend_ctx->indexing->username));
-
+	MSTORE_DEBUG_SUCCESS(MSTORE_LEVEL_DEBUG, "Add content indexing for username: %s\n", backend_ctx->indexing->username);
 	return MAPISTORE_SUCCESS;
 }
 
@@ -703,7 +702,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_create_uri(struct mapistore_context *mst
 	ref_str = (char *)namespace_uri;
 	ns = strchr(namespace_uri, ':');
 	if (!ns) {
-		DEBUG(0, ("! [%s:%d][%s]: Invalid namespace '%s'\n", __FILE__, __LINE__, __FUNCTION__, ref_str));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Invalid namespace '%s'\n", ref_str);
 		return MAPISTORE_ERR_INVALID_NAMESPACE;
 	}
 
@@ -842,7 +841,6 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *mstore_c
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-	DEBUG(4, ("mapistore_rmdir interface, fid 0x%"PRIx64" from parent 0x%"PRIx64"\n", fid, parent_fid));
 
 	/* Step 1. Find the backend context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
@@ -858,18 +856,14 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *mstore_c
 		/* Get subfolders list */
 		retval = mapistore_get_child_fids(mstore_ctx, context_id, fid,
 						  &childFolders, &childFolderCount);
-		DEBUG(4, ("mapistore_rmdir fid: 0x%"PRIx64", child count: %d\n", fid, childFolderCount));
 		if (retval) {
-			DEBUG(4, ("mapistore_rmdir bad retval: 0x%x", retval));
 			return MAPISTORE_ERR_NOT_FOUND;
 		}
 
 		/* Delete each subfolder in mapistore */
 		for (i = 0; i < childFolderCount; ++i) {
-			DEBUG(4, ("mapistore_rmdir child: %d, FID: 0x%"PRIx64", parent: 0x%"PRIx64"\n", i, childFolders[i], fid));
 			retval = mapistore_rmdir(mstore_ctx, context_id, fid, childFolders[i], flags);
 			if (retval) {
-				  DEBUG(4, ("mapistore_rmdir failed to delete fid 0x%"PRIx64" (0x%x)", childFolders[i], retval));
 				  talloc_free(childFolders);
 				  return MAPISTORE_ERR_NOT_FOUND;
 			}
@@ -878,7 +872,6 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *mstore_c
 	}
 	
 	/* Step 3. Call backend rmdir */
-	DEBUG(4, ("mapistore_rmdir backend delete of fid 0x%"PRIx64" from parent 0x%"PRIx64"\n", fid, parent_fid));
 	ret = mapistore_backend_rmdir(backend_ctx, parent_fid, fid);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;

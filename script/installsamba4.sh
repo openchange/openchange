@@ -278,7 +278,7 @@ packages() {
 #
 compile() {
     echo "Step1: Preparing Samba4 system"
-    pushd samba4/source4
+    pushd samba4
     error_check $? "samba4 setup"
 
     ./configure.developer -C --prefix=$SAMBA_PREFIX
@@ -337,7 +337,7 @@ typedef int (*comparison_fn_t)(const void *, const void *);\\
 install() {
     echo "Step1: Installing Samba"
     echo "===> we are in $PWD"
-    pushd samba4/source4
+    pushd samba4
     error_check $? "samba4 setup"
 
     if test -w `dirname $SAMBA_PREFIX`; then

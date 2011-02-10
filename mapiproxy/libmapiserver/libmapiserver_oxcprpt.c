@@ -386,6 +386,11 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 	case PT_SYSTIME:
 		ndr_push_FILETIME(ndr, NDR_SCALARS, (struct FILETIME *) value);
 		break;
+
+	case PT_MV_UNICODE:
+                ndr_push_mapi_SPLSTRArrayW(ndr, NDR_SCALARS, (struct mapi_SPLSTRArrayW *) value);
+		break;
+
 	default:
 		break;
 	}

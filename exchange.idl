@@ -934,11 +934,11 @@ System Attendant Private Interface
 		mapi_LPSTR strings[cValues]; 
 	} mapi_SLPSTRArray;
 
-	typedef struct {
+	typedef [public] struct {
 		[flag(STR_NULLTERM)] string lppszW;
 	} mapi_LPWSTR;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32 cValues;
 		mapi_LPWSTR strings[cValues];
 	} mapi_SPLSTRArrayW;
@@ -948,7 +948,7 @@ System Attendant Private Interface
 		SBinary_short	bin[cValues];
 	} mapi_SBinaryArray;
 
-	typedef struct {
+	typedef [public] struct {
 		uint32		cValues;
 		GUID		lpguid[cValues];
 	} mapi_SGuidArray;

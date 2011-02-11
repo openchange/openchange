@@ -171,7 +171,7 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 	const char		*username = NULL;
 	struct ldb_message	*ldb_msg = NULL;
 
-	username = dce_call->context->conn->auth_state.session_info->server_info->account_name;
+	username = dce_call->context->conn->auth_state.session_info->info->account_name;
 
 	mem_ctx = talloc_named(emsabp_ctx->mem_ctx, 0, "emsabp_verify_user");
 

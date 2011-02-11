@@ -150,7 +150,7 @@ static const uint8_t GUID_NSPI[] = {
 #define	OPENCHANGE_LDB_NAME	"openchange.ldb"
 
 #define	NTLM_AUTH_IS_OK(dce_call) \
-(dce_call->conn->auth_state.session_info->server_info->authenticated == true)
+(dce_call->conn->auth_state.session_info->info->authenticated == true)
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus

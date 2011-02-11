@@ -698,6 +698,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekRow(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
 	void				*data;
+        int32_t                         next_position;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCTABL] SeekRow (0x18)\n"));
 
@@ -743,12 +744,37 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekRow(TALLOC_CTX *mem_ctx,
 	table = object->object.table;
 	DEBUG(5, ("  handle_idx: %.8x, folder_id: %.16lx\n", mapi_req->handle_idx, table->folderID));
 	if (mapi_req->u.mapi_SeekRow.origin == BOOKMARK_BEGINNING) {
-          table->numerator = mapi_req->u.mapi_SeekRow.offset;
+                next_position = mapi_req->u.mapi_SeekRow.offset;
+	}
+	else if (mapi_req->u.mapi_SeekRow.origin == BOOKMARK_CURRENT) {
+                next_position = table->numerator + mapi_req->u.mapi_SeekRow.offset;
+	}
+	else if (mapi_req->u.mapi_SeekRow.origin == BOOKMARK_END) {
+                next_position = table->denominator - 1 + mapi_req->u.mapi_SeekRow.offset;
 	}
 	else {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		DEBUG(5, ("  unhandled 'origin' type: %d\n", mapi_req->u.mapi_SeekRow.origin));
 	}
+
+        if (mapi_repl->error_code == MAPI_E_SUCCESS) {
+                if (next_position < 0) {
+                        next_position = 0;
+                        mapi_repl->u.mapi_SeekRow.HasSoughtLess = 1;
+                }
+                else if (next_position >= table->denominator) {
+                        next_position = table->denominator - 1;
+                        mapi_repl->u.mapi_SeekRow.HasSoughtLess = 1;
+                }
+                if (mapi_req->u.mapi_SeekRow.WantRowMovedCount) {
+                        mapi_repl->u.mapi_SeekRow.RowsSought = (next_position - table->numerator);
+                }
+                else {
+                        mapi_repl->u.mapi_SeekRow.RowsSought = 0;
+                }
+                table->numerator = next_position;
+        }
+
 end:
 	*size += libmapiserver_RopSeekRow_size(mapi_repl);
 

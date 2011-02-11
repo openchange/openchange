@@ -1796,7 +1796,7 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		boolean8	HasSoughtLess;
-		uint32		RowsSought;
+		int32		RowsSought;
 	} SeekRow_repl;
 
 	/**************************/

@@ -113,18 +113,21 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 		}
 		
 		for (i = 0; i < request.prop_count; i++) {
-			data = find_SPropValue_data(aRow, SPropTagArray.aulPropTag[i]);
+                        propTag = SPropTagArray.aulPropTag[i];
+                        data = find_SPropValue_data(aRow, propTag);
 			if (data == NULL) {
-				propTag = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
-				retval = MAPI_E_NOT_FOUND;
-				data = (void *)&retval;
-			}
-			else {
-				propTag = SPropTagArray.aulPropTag[i];
+                                propTag = (propTag & 0xFFFF0000) + PT_ERROR;
+                                data = find_SPropValue_data(aRow, propTag);
+                                if (data == NULL) {
+                                        retval = MAPI_E_NOT_FOUND;
+                                        data = (void *)&retval;
+                                }
 			}
 			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 						    propTag, data,
-						    &response->prop_data, response->layout, 0, untyped_status[i]);
+						    &response->prop_data,
+                                                    response->layout ? PT_ERROR : 0,
+                                                    response->layout, untyped_status[i]);
 		}
 	} else {
 		response->layout = 0x1;
@@ -614,6 +617,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	uint8_t				objectType;
 	int				fd;
 	char				*filename;
+	struct stat			stream_file_stat;
 	void				*data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] OpenStream (0x2b)\n"));
@@ -696,7 +700,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 											       objectType,
 											       mapi_req->u.mapi_OpenStream.PropertyTag,
 											       fd);
-					
+					mapi_repl->u.mapi_OpenStream.StreamSize = lseek(fd, 0, SEEK_END);
 					lseek(object->object.stream->fd, SEEK_SET, 0);
 				}
 			}

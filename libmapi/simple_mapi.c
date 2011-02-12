@@ -808,7 +808,7 @@ _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message,
 
 	/* Step 1. Retrieve properties needed by the BestBody algorithm */
 	SPropTagArray = set_SPropTagArray(mapi_ctx->mem_ctx, 0x4,
-					  PR_BODY,
+					  PR_BODY_UNICODE,
 					  PR_RTF_COMPRESSED,
 					  PR_HTML,
 					  PR_RTF_IN_SYNC);

@@ -453,7 +453,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 				}
 				retvals[j] = retval;
 
-				if (retval == MAPI_E_NOT_FOUND) {
+				if (retval != MAPI_E_SUCCESS) {
 					flagged = 1;
 				}
 			}
@@ -475,7 +475,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			for (j = 0; j < table->prop_count; j++) {
 				property = table->properties[j];
 				retval = retvals[j];
-				if (retval == MAPI_E_NOT_FOUND) {
+				if (retval != MAPI_E_SUCCESS) {
 					property = (property & 0xFFFF0000) + PT_ERROR;
 					data = &retval;
 				}

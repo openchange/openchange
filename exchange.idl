@@ -4284,13 +4284,18 @@ System Attendant Private Interface
 
 	/*************************/
 	/* AUX_HEADER case (0xB) */
+	typedef [nodiscriminant] union {
+		[case(0x0)];
+		[default] nstring	ProcessName;
+	} ProcessNameString;
+
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		ProcessID;
 		uint16		Reserved1;
 		GUID		ProcessGuid;
 		uint16		ProcessNameOffset;
 		uint16		Reserved2;
-		nstring		ProcessName;
+		[switch_is(ProcessNameOffset)] ProcessNameString ProcessName;
 	} AUX_PERF_PROCESSINFO;
 
 	/**************************/

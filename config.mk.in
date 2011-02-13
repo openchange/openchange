@@ -37,7 +37,8 @@ CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@				\
        -DMAPISTORE_DBPATH=\"$(prefix)/private/mapistore/mapistore.ldb\"					\
        -DMAPISTORE_DB_NAMEDPROPS_PATH=\"$(prefix)/private/mapistore/mapistore_named_properties.ldb\"	\
        -DLZXPRESS_DATADIR=\"$(datadir)/mapitest/lzxpress\"						\
-       -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"
+       -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"							\
+       -DHAVE_ICAL_0_46=@have_libical_0_46@
 
 # This value should be determined by configure at some point
 SHLIBEXT=so

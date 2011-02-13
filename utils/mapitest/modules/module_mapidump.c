@@ -757,10 +757,10 @@ _PUBLIC_ bool mapitest_mapidump_freebusy(struct mapitest *mt)
 */ 
 _PUBLIC_ bool mapitest_mapidump_recipients(struct mapitest *mt)
 {
-	const char 		**userlist;
-	struct SRowSet 		resolved;
-	struct SPropTagArray 	*flaglist;
-	struct SPropValue	SPropValue;
+	const char 			**userlist;
+	struct SRowSet 			resolved;
+	struct PropertyTagArray_r	flaglist;
+	struct SPropValue		SPropValue;
 
 	userlist = talloc_array(mt->mem_ctx, const char*, 3);
 	userlist[0] = "Mr. Unresolved";
@@ -779,9 +779,15 @@ _PUBLIC_ bool mapitest_mapidump_recipients(struct mapitest *mt)
 	SPropValue.value.lpszA = "gname";
 	SRow_addprop(&(resolved.aRow[0]), SPropValue);
 
-	flaglist = set_SPropTagArray(mt->mem_ctx, 3, MAPI_UNRESOLVED, MAPI_AMBIGUOUS, MAPI_RESOLVED);
+	flaglist.cValues = 3;
+	flaglist.aulPropTag = talloc_zero_array(mt->mem_ctx, uint32_t, flaglist.cValues);
+	flaglist.aulPropTag[0] = MAPI_UNRESOLVED;
+	flaglist.aulPropTag[1] = MAPI_AMBIGUOUS;
+	flaglist.aulPropTag[2] = MAPI_RESOLVED;
 	
-	mapidump_Recipients(userlist, &resolved, flaglist);
+	mapidump_Recipients(userlist, &resolved, &flaglist);
+
+	talloc_free(flaglist.aulPropTag);
 
 	return true;
 }

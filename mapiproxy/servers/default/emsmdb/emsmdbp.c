@@ -109,7 +109,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	emsmdbp_ctx->lp_ctx = lp_ctx;
 
 	/* return an opaque context pointer on samDB database */
-	emsmdbp_ctx->samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx));
+	emsmdbp_ctx->samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
 	if (!emsmdbp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
 		DEBUG(0, ("[%s:%d]: Connection to \"sam.ldb\" failed\n", __FUNCTION__, __LINE__));

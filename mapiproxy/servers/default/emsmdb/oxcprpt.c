@@ -85,6 +85,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 	}
 
 	if (contextID != -1) {
+		response->layout = 0x0; /* Standard or Flagged property row */
 		untyped_status = talloc_array(mem_ctx, uint8_t, request.prop_count);
 
 		SPropTagArray.cValues = request.prop_count;
@@ -93,6 +94,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 			if ((request.properties[i] & 0xffff) == 0) {
 				SPropTagArray.aulPropTag[i] = (request.properties[i] | get_property_type(request.properties[i] >> 16));
 				untyped_status[i] = 1;
+                                response->layout = 1;
 			}
 			else {
 				SPropTagArray.aulPropTag[i] = request.properties[i];
@@ -105,14 +107,15 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 		mapistore_getprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, type, &SPropTagArray, aRow);
 
 		/* Check if we need the layout */
-		response->layout = 0x0;
-		for (i = 0; i < request.prop_count; i++) {
-			data = find_SPropValue_data(aRow, SPropTagArray.aulPropTag[i]);
-			if (data == NULL) { 
-				response->layout = 0x1;
-				break;
-			}
-		}
+                if (!response->layout) {
+                        for (i = 0; i < request.prop_count; i++) {
+                                data = find_SPropValue_data(aRow, SPropTagArray.aulPropTag[i]);
+                                if (data == NULL) { 
+                                        response->layout = 0x1;
+                                        break;
+                                }
+                        }
+                }
 		
 		for (i = 0; i < request.prop_count; i++) {
                         propTag = SPropTagArray.aulPropTag[i];
@@ -797,8 +800,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 		}
 		mapi_repl->u.mapi_ReadStream.data.data = talloc_array(object, uint8_t, bufferSize);
 		mapi_repl->u.mapi_ReadStream.data.length = read(object->object.stream->fd,
-								mapi_repl->u.mapi_ReadStream.data.data,
-								bufferSize);
+                                                                mapi_repl->u.mapi_ReadStream.data.data,
+                                                                bufferSize);
 	}
 end:
 	*size += libmapiserver_RopReadStream_size(mapi_repl);

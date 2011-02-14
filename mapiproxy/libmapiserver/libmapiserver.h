@@ -209,6 +209,12 @@
 #define	SIZE_DFLT_ROPGETSTREAMSIZE		4
 
 /**
+   \details SeekStream has fixed response size for:
+   -# NewPosition: uint64_t
+ */
+#define	SIZE_DFLT_ROPSEEKSTREAM 		8
+
+/**
    \details GetReceiveFolder has fixed response size for:
    -# folder_id: uint64_t
  */
@@ -386,6 +392,7 @@ uint16_t libmapiserver_RopOpenStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetStreamSize_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSeekStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCopyTo_size(struct EcDoRpc_MAPI_REPL *);

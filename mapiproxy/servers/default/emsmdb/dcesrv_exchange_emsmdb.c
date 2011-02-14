@@ -482,7 +482,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							&(mapi_response->mapi_repl[idx]),
 							mapi_response->handles, &size);
 			break;
-		/* op_MAPI_SeekStream: 0x2e */
+                case op_MAPI_SeekStream: /* 0x2e */
+			retval = EcDoRpc_RopSeekStream(mem_ctx, emsmdbp_ctx,
+                                                       &(mapi_request->mapi_req[i]),
+                                                       &(mapi_response->mapi_repl[idx]),
+                                                       mapi_response->handles, &size);
+			break;
 		/* op_MAPI_SetStreamSize: 0x2f */
 		case op_MAPI_SetSearchCriteria: /* 0x30 */
 			retval = EcDoRpc_RopSetSearchCriteria(mem_ctx, emsmdbp_ctx,

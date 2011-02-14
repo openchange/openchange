@@ -26,6 +26,8 @@
  */
 
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
@@ -622,7 +624,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	uint8_t				objectType;
 	int				fd;
 	char				*filename;
-	struct stat			stream_file_stat;
 	void				*data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] OpenStream (0x2b)\n"));
@@ -724,6 +725,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 		handles[mapi_repl->handle_idx] = rec->handle;
 	}
 
+end:
 	*size += libmapiserver_RopOpenStream_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
@@ -947,6 +949,94 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetStreamSize(TALLOC_CTX *mem_ctx,
 		}
 		else {
 			mapi_repl->u.mapi_GetStreamSize.StreamSize = stream_file_stat.st_size;
+		}
+	}
+
+end:
+	*size += libmapiserver_RopGetStreamSize_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details EcDoRpc SeekStream (0x2e) Rop. This operation positions the cursor
+   in the stream.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the WriteStream EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the WriteStream EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekStream(TALLOC_CTX *mem_ctx,
+                                               struct emsmdbp_context *emsmdbp_ctx,
+                                               struct EcDoRpc_MAPI_REQ *mapi_req,
+                                               struct EcDoRpc_MAPI_REPL *mapi_repl,
+                                               uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*parent = NULL;
+	void				*private_data;
+	struct emsmdbp_object		*object = NULL;
+	uint32_t			handle;
+        int                             whence;
+        off_t                           offset;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] SeekStream (0x2e)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	/* Step 1. Retrieve parent handle in the hierarchy */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(parent, &private_data);
+	object = (struct emsmdbp_object *) private_data;
+	if (!object || object->type != EMSMDBP_OBJECT_STREAM
+	    || object->object.stream->fd == -1) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+	}
+	else {
+                switch (mapi_req->u.mapi_SeekStream.Origin) {
+                case 0:
+                        whence = SEEK_SET;
+                        break;
+                case 1:
+                        whence = SEEK_CUR;
+                        break;
+                case 2:
+                        whence = SEEK_END;
+                        break;
+                default:
+                        mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+                        goto end;
+                }
+
+                offset = lseek(object->object.stream->fd, mapi_req->u.mapi_SeekStream.Offset, whence);
+                if (offset == (off_t) -1) {
+			mapi_repl->error_code = MAPI_E_DISK_ERROR;
+		}
+		else {
+			mapi_repl->u.mapi_SeekStream.NewPosition = offset;
 		}
 	}
 

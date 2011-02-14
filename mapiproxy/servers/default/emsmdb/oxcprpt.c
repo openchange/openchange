@@ -392,7 +392,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
-	if (retval) goto end;
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
 
 	retval = mapi_handles_get_private_data(rec, &private_data);
 
@@ -493,7 +497,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
-		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		goto end;
 	}
 
@@ -637,7 +642,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
 
 	mapi_handles_get_private_data(parent, &data);
 	parent_object = (struct emsmdbp_object *) data;
@@ -766,7 +775,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
-	if (retval) goto end;
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
 
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *) private_data;
@@ -837,7 +850,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	if (retval) goto end;
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
 
 	retval = mapi_handles_get_private_data(parent, &private_data);
 	object = (struct emsmdbp_object *) private_data;
@@ -912,7 +929,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetStreamSize(TALLOC_CTX *mem_ctx,
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	if (retval) goto end;
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
 
 	retval = mapi_handles_get_private_data(parent, &private_data);
 	object = (struct emsmdbp_object *) private_data;
@@ -934,6 +955,7 @@ end:
 
 	return MAPI_E_SUCCESS;
 }
+
 /**
    \details EcDoRpc GetPropertyIdsFromNames (0x56) Rop. This operation
    gets property IDs for specified property names.

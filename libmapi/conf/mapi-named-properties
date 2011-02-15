@@ -506,7 +506,8 @@ PidNameXSharingRemotePath                              NULL                     
 PidNameXSharingRemoteStoreUid                          NULL                          0x0000 X-Sharing-Remote-Store-Uid    PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS		0x9460
 PidNameXSharingRemoteType                              NULL                          0x0000 X-Sharing-Remote-Type         PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS		0x9461
 PidNameXSharingRemoteUid                               NULL                          0x0000 X-Sharing-Remote-Uid          PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS         0x845f
-
+PidNameXSieve                                          NULL                          0x0000 X-Sieve                       PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS         0x9513
+PidNameXVirusScanned                                   NULL                          0x0000 X-Virus-Scanned               PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS         0x9514
 
 ### PSETID_CalendarAssistant
 #PidLidClientIntent				       ClientIntent		     0x0015 ClientIntent		  PT_LONG       MNID_STRING PSETID_CalendarAssistant

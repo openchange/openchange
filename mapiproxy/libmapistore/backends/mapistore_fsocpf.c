@@ -61,6 +61,8 @@ static struct fsocpf_context *fsocpf_context_init(TALLOC_CTX *mem_ctx,
 	struct fsocpf_context	*fsocpf_ctx;
 
 	fsocpf_ctx = talloc_zero(mem_ctx, struct fsocpf_context);
+	if (!fsocpf_ctx) return NULL;
+
 	fsocpf_ctx->private_data = NULL;
 	fsocpf_ctx->login_user = talloc_strdup(fsocpf_ctx, login_user);
 	fsocpf_ctx->username = talloc_strdup(fsocpf_ctx, username);
@@ -115,45 +117,53 @@ static enum MAPISTORE_ERROR fsocpf_create_mapistore_uri(TALLOC_CTX *mem_ctx,
    by the caller
 
    \param mem_ctx pointer to the memory context
-   \param fid the folder id for the folder
    \param uri pointer to the fsocpf path for the folder
    \param dir pointer to the DIR structure associated with the fid / uri
  */
 static struct fsocpf_folder_list *fsocpf_folder_list_element_init(TALLOC_CTX *mem_ctx, 
-								  uint64_t fid, 
 								  const char *uri, 
 								  DIR *dir)
 {
 	struct fsocpf_folder_list *el;
 
 	el = talloc_zero(mem_ctx, struct fsocpf_folder_list);
+	if (!el) return NULL;
+
 	el->folder = talloc_zero((TALLOC_CTX *)el, struct fsocpf_folder);
-	el->folder->fid = fid;
-	el->folder->path = talloc_strdup((TALLOC_CTX *)el, uri);
+	if (!el->folder) {
+		talloc_free(el);
+		return NULL;
+	}
+
+	el->folder->uri = talloc_strdup((TALLOC_CTX *)el, uri);
 	el->folder->dir = dir;
 
 	return el;
 }
 
-
 /**
-  \details search for the fsocpf_folder for a given folder ID
+   \details Search for the fsocpf_folder for a given folder URI
 
-  \param fsocpf_ctx the store context
-  \param fid the folder ID of the fsocpf_folder to search for
+   \param fsocpf_ctx the fsocpf context
+   \param uri the folder uri
 
-  \return folder on success, or NULL if the folder was not found
-*/
-static struct fsocpf_folder *fsocpf_find_folder_by_fid(struct fsocpf_context *fsocpf_ctx, 
-						       uint64_t fid)
+   \return folder on success or NULL if the folder was not found
+ */
+static struct fsocpf_folder *fsocpf_find_folder(struct fsocpf_context *fsocpf_ctx,
+						const char *uri)
 {
 	struct fsocpf_folder_list	*el;
 
+	/* Sanity checks */
+	if (!fsocpf_ctx) return NULL;
+	if (!uri) return NULL;
+
 	for (el = fsocpf_ctx->folders; el; el = el->next) {
-		if (el->folder && el->folder->fid == fid) {
+		if (el->folder && el->folder->uri && !strcmp(uri, el->folder->uri)) {
 			return el->folder;
 		}
 	}
+
 	return NULL;
 }
 
@@ -165,24 +175,32 @@ static struct fsocpf_folder *fsocpf_find_folder_by_fid(struct fsocpf_context *fs
    added to the list by the caller
 
    \param mem_ctx pointer to the memory context
-   \param fid the folder id for the message
-   \param mid the message id for the message
+   \param folder_uri the folder uri for the message
    \param uri pointer to the fsocpf path for the message
    \param context_id the ocpf context identifier
+
+   \return Pointer to allocated folder list on success, otherwise NULL
  */
 static struct fsocpf_message_list *fsocpf_message_list_element_init(TALLOC_CTX *mem_ctx,
-								    uint64_t fid,
-								    uint64_t mid,
+								    const char *folder_uri,
 								    const char *uri,
 								    uint32_t context_id)
 {
 	struct fsocpf_message_list	*el;
 
+	/* Sanity checks */
+	if (!folder_uri) return NULL;
+	if (!uri) return NULL;
+	if (!context_id) return NULL;
+
 	el = talloc_zero(mem_ctx, struct fsocpf_message_list);
+	if (!el) return NULL;
+
 	el->message = talloc_zero((TALLOC_CTX *)el, struct fsocpf_message);
-	el->message->fid = fid;
-	el->message->mid = mid;
-	el->message->path = talloc_strdup((TALLOC_CTX *)el, uri);
+	if (!el->message) return NULL;
+
+	el->message->folder_uri = talloc_strdup(el->message, uri);
+	el->message->uri = talloc_strdup((TALLOC_CTX *)el->message, uri);
 	el->message->ocpf_context_id = context_id;
 
 	return el;
@@ -190,49 +208,56 @@ static struct fsocpf_message_list *fsocpf_message_list_element_init(TALLOC_CTX *
 
 
 /**
-   \details search for the fsocpf_message for a given message ID
+   \details search for the fsocpf_message for a given message URI
 
    \param fsocpf_ctx the store context
-   \param mid the message ID of the fsocpf_message to search for
+   \param uri the message URI of the fsocpf_message to search for
 
    \return message on success, or NULL if the message was not found
  */
-static struct fsocpf_message *fsocpf_find_message_by_mid(struct fsocpf_context *fsocpf_ctx,
-							 uint64_t mid)
+static struct fsocpf_message *fsocpf_find_message(struct fsocpf_context *fsocpf_ctx,
+						  const char *uri)
 {
 	struct fsocpf_message_list	*el;
 
+	/* Sanity checks */
+	if (!fsocpf_ctx) return NULL;
+	if (!uri) return NULL;
+
 	for (el = fsocpf_ctx->messages; el; el = el->next) {
-		if (el->message && el->message->mid == mid) {
+		if (el->message && el->message->uri && !strcmp(el->message->uri, uri)) {
 			return el->message;
 		}
 	}
+
 	return NULL;
 }
 
 
 /**
-   \details search for the fsocpf_message_list for a given message ID
+   \details search for the fsocpf_message_list for a given message URI
 
    \param fsocpf_ctx the store context
-   \param mid the message ID of the fsocpf_message to search for
+   \param uri the message URI of the fsocpf_message to search for
 
    \return point to message list on success, or NULL if the message was not found
  */
-static struct fsocpf_message_list *fsocpf_find_message_list_by_mid(struct fsocpf_context *fsocpf_ctx,
-								   uint64_t mid)
+static struct fsocpf_message_list *fsocpf_find_message_list(struct fsocpf_context *fsocpf_ctx,
+							    const char *uri)
 {
 	struct fsocpf_message_list	*el;
 
-	if (!fsocpf_ctx || !fsocpf_ctx->messages) {
-		return NULL;
-	}
+	/* Sanity checks */
+	if (!fsocpf_ctx) return NULL;
+	if (!fsocpf_ctx->messages) return NULL;
+	if (!uri) return NULL;
 
 	for (el = fsocpf_ctx->messages; el; el = el->next) {
-		if (el->message && el->message->mid == mid) {
+		if (el->message && el->message->uri && !strcmp(el->message->uri, uri)) {
 			return el;
 		}
 	}
+
 	return NULL;
 }
 
@@ -247,56 +272,76 @@ static struct fsocpf_message_list *fsocpf_find_message_list_by_mid(struct fsocpf
    \param private_data pointer to the private backend context 
  */
 static enum MAPISTORE_ERROR fsocpf_create_context(struct mapistore_backend_context *mstoredb_ctx, 
-						  const char *login_user, const char *username,
-						  const char *uri, void **private_data)
+						  const char *login_user, 
+						  const char *username,
+						  const char *uri, 
+						  void **private_data)
 {
 	TALLOC_CTX			*mem_ctx;
 	DIR				*top_dir;
+	DIR				*root_dir;
+	char				*root_uri;
+	char				*tmp;
 	struct fsocpf_context		*fsocpf_ctx;
 	struct fsocpf_folder_list	*el;
-	int				len;
-	int				i;
 
-	DEBUG(0, ("[%s:%d]\n", __FUNCTION__, __LINE__));
-	DEBUG(4, ("[%s:%d]: fsocpf uri: %s\n", __FUNCTION__, __LINE__, uri));
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstoredb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!login_user, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!private_data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Creating context for URI: %s\n", uri);
 
 	mem_ctx = (TALLOC_CTX *) mstoredb_ctx;
+
+	/* Step 1. Try to open root context directory (username based) */
+	tmp = strstr(uri, username);
+	MAPISTORE_RETVAL_IF(!tmp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	
+	root_uri = talloc_strndup(mem_ctx, uri, strlen(uri) - strlen(tmp) + strlen(username));
+	MAPISTORE_RETVAL_IF(!root_uri, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	root_dir = opendir(root_uri);
+	if (!root_dir) {
+		/* If it doesn't exist, try to create it */
+		if (mkdir(root_uri, S_IRWXU) != 0) {
+			MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to create mapistore root folder: %s (%s)\n",
+					   root_uri, strerror(errno));
+			talloc_free(root_uri);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+	} else {
+		closedir(root_dir);
+	}
+	talloc_free(root_uri);
 
 	/* Step 1. Try to open context directory */
 	top_dir = opendir(uri);
 	if (!top_dir) {
 		/* If it doesn't exist, try to create it */
 		if (mkdir(uri, S_IRWXU) != 0 ) {
+			MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to create fsocpf folder: %s\n", strerror(errno));
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
 		top_dir = opendir(uri);
 		if (!top_dir) {
+			MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to open folder: %s\n", strerror(errno));
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
 	}
 
 	/* Step 2. Allocate / Initialize the fsocpf context structure */
 	fsocpf_ctx = fsocpf_context_init(mem_ctx, login_user, username, uri, top_dir);
-
-	/* !!! WARNING: MAPISTORE_V2 WANTS YOU TO CHANGE SOMETHING HERE !!! */
-
-	/* FIXME: Retrieve the fid from the URI */
-	len = strlen(uri);
-	for (i = len; i > 0; i--) {
-		if (uri[i] == '/' && i != len) {
-			char *tmp;
-
-			tmp = talloc_strdup(mem_ctx, uri + i + 1);
-			fsocpf_ctx->fid = strtoull(tmp, NULL, 16);
-			talloc_free(tmp);
-			break;
-		}
-	}
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	/* Create the entry in the list for top mapistore folders */
-	el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->fid, uri, top_dir);
+	el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, uri, top_dir);
+	MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 	DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
-	DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->folder->fid));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Folder added to the list: %s\n", el->folder->uri);
 
 	/* Step 3. Store fsocpf context within the opaque private_data pointer */
 	*private_data = (void *)fsocpf_ctx;
@@ -327,7 +372,7 @@ static enum MAPISTORE_ERROR fsocpf_delete_context(void *private_data)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
 	if (!fsocpf_ctx) {
 		return MAPISTORE_SUCCESS;
@@ -349,25 +394,27 @@ static enum MAPISTORE_ERROR fsocpf_delete_context(void *private_data)
    \details Delete data associated to a given folder or message
 
    \param private_data pointer to the current fsocpf context
+   \param uri the URI to lookup for release
+   \param type the type of the element to release
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static enum MAPISTORE_ERROR fsocpf_release_record(void *private_data, uint64_t fmid, uint8_t type)
+static enum MAPISTORE_ERROR fsocpf_release_record(void *private_data, const char *uri, uint8_t type)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_message_list	*message;
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
-	if (!fsocpf_ctx) {
-		return MAPISTORE_SUCCESS;
-	}
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	switch (type) {
 	case MAPISTORE_FOLDER:
 		break;
 	case MAPISTORE_MESSAGE:
-		message = fsocpf_find_message_list_by_mid(fsocpf_ctx, fmid);
+		message = fsocpf_find_message_list(fsocpf_ctx, uri);
 		if (message && message->message) {
 			if (message->message->ocpf_context_id) {
 				ocpf_del_context(message->message->ocpf_context_id);
@@ -387,13 +434,13 @@ static enum MAPISTORE_ERROR fsocpf_release_record(void *private_data, uint64_t f
    folder ID
 
    \param private_data pointer to the current fsocpf context
-   \param fmid the folder/message ID to lookup
+   \param uri the folder/message URI to lookup
    \param type whether it is a folder or message
    \param path pointer on pointer to the path to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-static enum MAPISTORE_ERROR fsocpf_get_path(void *private_data, uint64_t fmid,
+static enum MAPISTORE_ERROR fsocpf_get_path(void *private_data, const char *uri,
 					    uint8_t type, char **path)
 {
 	struct fsocpf_folder	*folder;
@@ -408,24 +455,24 @@ static enum MAPISTORE_ERROR fsocpf_get_path(void *private_data, uint64_t fmid,
 
 	switch (type) {
 	case MAPISTORE_FOLDER:
-		folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fmid);
+		folder = fsocpf_find_folder(fsocpf_ctx, uri);
 		if (!folder) {
 			DEBUG(0, ("folder doesn't exist ...\n"));
 			*path = NULL;
 			return MAPISTORE_ERROR;
 		}
-		DEBUG(0, ("folder->path is %s\n", folder->path));
-		*path = folder->path;
+		DEBUG(0, ("folder->path is %s\n", folder->uri));
+		*path = folder->uri;
 		break;
 	case MAPISTORE_MESSAGE:
-		message = fsocpf_find_message_by_mid(fsocpf_ctx, fmid);
+		message = fsocpf_find_message(fsocpf_ctx, uri);
 		if (!message) {
 			DEBUG(0, ("message doesn't exist ...\n"));
 			*path = NULL;
 			return MAPISTORE_ERROR;
 		}
-		DEBUG(0, ("message->path is %s\n", message->path));
-		*path = message->path;
+		DEBUG(0, ("message->uri is %s\n", message->uri));
+		*path = message->uri;
 		break;
 	default:
 		DEBUG(0, ("[%s]: Invalid type %d\n", __FUNCTION__, type));
@@ -435,7 +482,10 @@ static enum MAPISTORE_ERROR fsocpf_get_path(void *private_data, uint64_t fmid,
 	return MAPISTORE_SUCCESS;
 }
 
-static enum MAPISTORE_ERROR fsocpf_op_get_fid_by_name(void *private_data, uint64_t parent_fid, const char* foldername, uint64_t *fid)
+static enum MAPISTORE_ERROR fsocpf_op_get_fid_by_name(void *private_data, 
+						      const char *parent_uri, 
+						      const char *foldername, 
+						      char **uri)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
@@ -448,12 +498,14 @@ static enum MAPISTORE_ERROR fsocpf_op_get_fid_by_name(void *private_data, uint64
 	int			ret;
 	uint32_t		i;
 
-	if (!fsocpf_ctx) {
-		return MAPISTORE_ERROR;
-	}
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!parent_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!foldername, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 1. Search for the parent folder by fid */
-	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, parent_fid);
+	folder = fsocpf_find_folder(fsocpf_ctx, parent_uri);
 	if (!folder) {
 		return MAPISTORE_ERROR;
 	}
@@ -466,7 +518,7 @@ static enum MAPISTORE_ERROR fsocpf_op_get_fid_by_name(void *private_data, uint64
 		if ((curdir->d_type == DT_DIR) && (strncmp(curdir->d_name, "0x", 2) == 0)) {
 			// open the .properties file for this sub-directory
 			propfile = talloc_asprintf(mem_ctx, "%s/%s/.properties",
-						   folder->path, curdir->d_name);
+						   folder->uri, curdir->d_name);
 			DEBUG(6, ("propfile: %s\n", propfile));
 			ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
 
@@ -485,7 +537,8 @@ static enum MAPISTORE_ERROR fsocpf_op_get_fid_by_name(void *private_data, uint64
 						DEBUG(4, ("folder name %s found in %s\n", this_folder_display_name, curdir->d_name));
 						talloc_free(mem_ctx);
 						ocpf_del_context(ocpf_context_id);
-						*fid = strtoul(curdir->d_name, NULL, 16);
+						*uri = talloc_asprintf((TALLOC_CTX *)fsocpf_ctx, "%s/%s", 
+								       folder->uri, curdir->d_name);
 						return MAPISTORE_SUCCESS;
 					}
 				}
@@ -500,11 +553,11 @@ static enum MAPISTORE_ERROR fsocpf_op_get_fid_by_name(void *private_data, uint64
 /**
   \details Set the properties for a folder
   
-  \param path the path to the folder
-  \param fid the folder ID of the folder
+  \param folder_uri the folder full patch
   \param aRow the properties to set on the folder
 */
-static void fsocpf_set_folder_props(const char *path, uint64_t fid, struct SRow *aRow)
+/* FIXME: We can't use FID anymore in ocpf_write_init */
+static void fsocpf_set_folder_props(const char *folder_uri, struct SRow *aRow)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct mapi_SPropValue_array	mapi_lpProps;
@@ -524,11 +577,12 @@ static void fsocpf_set_folder_props(const char *path, uint64_t fid, struct SRow 
 	}
 
 	/* Create the .properties file */
-	propfile = talloc_asprintf(mem_ctx, "%s/.properties", path);
+	propfile = talloc_asprintf(mem_ctx, "%s/.properties", folder_uri);
 
 	ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_CREATE);
 
-	ocpf_write_init(ocpf_context_id, fid);
+	/* ocpf_write_init(ocpf_context_id, fid); */
+	ocpf_write_init(ocpf_context_id, 0xdeadbeef);
 	DEBUG(0, ("Writing %s\n", propfile));
 	ocpf_write_auto(ocpf_context_id, NULL, &mapi_lpProps);
 	ocpf_write_commit(ocpf_context_id);
@@ -544,67 +598,93 @@ static void fsocpf_set_folder_props(const char *path, uint64_t fid, struct SRow 
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static enum MAPISTORE_ERROR fsocpf_op_mkdir(void *private_data, uint64_t parent_fid, uint64_t fid,
-					    struct SRow *aRow)
+static enum MAPISTORE_ERROR fsocpf_op_mkdir(void *private_data,
+					    const char *_parent_uri,
+					    const char *folder_name,
+					    const char *folder_desc,
+					    enum FOLDER_TYPE folder_type,
+					    char **folder_uri)
 {
+	enum MAPISTORE_ERROR		retval;
+	struct SRow			aRow;
 	TALLOC_CTX			*mem_ctx;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_folder		*folder;
+	char				*parent_uri;
 	char				*newfolder;
-	const char			*new_folder_name = NULL;
-	uint64_t			dummy_fid;
+	char				*dummy_uri;
 	struct fsocpf_folder_list	*newel;
 	DIR				*dir;
 	int				ret;
-	uint32_t			i;
 
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!_parent_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder_name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
-
-	if (!fsocpf_ctx) {
-		DEBUG(0, ("No fsocpf context found :-(\n"));
-		return MAPISTORE_ERROR;
-	}
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
 	/* Step 0. Check if it already exists */
-	for (i = 0; i < aRow->cValues; ++i) {
-		if (aRow->lpProps[i].ulPropTag == PR_DISPLAY_NAME) {
-			new_folder_name = aRow->lpProps[i].value.lpszA;
-		}
-	}
-	if (fsocpf_op_get_fid_by_name(private_data, parent_fid, new_folder_name, &dummy_fid) == MAPISTORE_SUCCESS) {
+	retval = mapistore_strip_ns_from_uri(_parent_uri, &parent_uri);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	if (fsocpf_op_get_fid_by_name(private_data, parent_uri, folder_name, &dummy_uri) == MAPISTORE_SUCCESS) {
 		/* already exists */
+		talloc_free(dummy_uri);
 		return MAPISTORE_ERR_EXIST;
 	}
 
 	/* Step 1. Search for the parent fid */
-	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, parent_fid);
-
-	if (! folder) {
-		DEBUG(0, ("parent context for folder 0x%.16"PRIx64" not found\n", parent_fid));
+	folder = fsocpf_find_folder(fsocpf_ctx, parent_uri);
+	if (!folder) {
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Parent context not found for folder '%s'\n", parent_uri);
 		return MAPISTORE_ERR_NO_DIRECTORY;
 	}
 
 	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_mkdir");
 
 	/* Step 2. Stringify fid and create directory */
-	newfolder = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, folder->path, fid);
-	DEBUG(0, ("newfolder = %s\n", newfolder));
+	newfolder = talloc_asprintf(mem_ctx, "%s/%s", folder->uri, folder_name);
 	ret = mkdir(newfolder, 0700);
 	if (ret) {
-		DEBUG(0, ("mkdir failed with ret = %d\n", ret));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "mkdir failed: %s\n", strerror(errno));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERROR;
 	}
 	dir = opendir(newfolder);
 	
-	/* add this folder to the list of ones we know about */
-	newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, newfolder, dir);
-	DLIST_ADD_END(fsocpf_ctx->folders, newel, struct fsocpf_folder_list *);
-	DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", fid));
+	/* Step 3. Add this folder to the list of ones we know about */
+	newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, newfolder, dir);
+	MAPISTORE_RETVAL_IF(!newel, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
-	fsocpf_set_folder_props(newfolder, fid, aRow);
-	
+	DLIST_ADD_END(fsocpf_ctx->folders, newel, struct fsocpf_folder_list *);
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Element added to the list '%s'\n", folder_name);
+
+	/* Step 4. Set the properties on the folder */
+
+	if (folder_desc) {
+		aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 3);
+		aRow.cValues = 2;
+		aRow.lpProps[0].ulPropTag = PidTagDisplayName;
+		aRow.lpProps[0].value.lpszW = folder_name;
+		aRow.lpProps[1].ulPropTag = PidTagComment;
+		aRow.lpProps[1].value.lpszW = folder_desc;
+
+	} else {
+		aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+		aRow.cValues = 1;
+		aRow.lpProps[0].ulPropTag = PidTagDisplayName;
+		aRow.lpProps[0].value.lpszW = folder_name;
+	}
+
+	fsocpf_set_folder_props(newfolder, &aRow);
+
+	/* Step 5. Generate the URI for the new created folder */
+	*folder_uri = talloc_asprintf((TALLOC_CTX *)fsocpf_ctx, "fsocpf://%s", newfolder);
+
+	talloc_free(aRow.lpProps);
+	talloc_free(newfolder);
 	talloc_free(mem_ctx);
 
 	return MAPISTORE_SUCCESS;
@@ -615,52 +695,49 @@ static enum MAPISTORE_ERROR fsocpf_op_mkdir(void *private_data, uint64_t parent_
    \details Delete a folder from the fsocpf backend
 
    \param private_data pointer to the current fsocpf context
-   \param parent_fid the FID for the parent of the folder to delete
-   \param fid the FID for the folder to delete
+   \param parent_uri the URI for the parent of the folder to delete
+   \param folder_uri the URI for the folder to delete
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static enum MAPISTORE_ERROR fsocpf_op_rmdir(void *private_data, uint64_t parent_fid, uint64_t fid)
+/* FIXME: there's no check to ensure parent_uri is the folder_uri parent ... */
+static enum MAPISTORE_ERROR fsocpf_op_rmdir(void *private_data, const char *parent_uri, const char *folder_uri)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_folder	*parent;
-	char			*folderpath;
+	struct fsocpf_folder	*el;
 	char			*propertiespath;
 	TALLOC_CTX		*mem_ctx;
 	int			ret;
-	
-	if (!fsocpf_ctx) {
-		DEBUG(0, ("No fsocpf context found for op_rmdir :-(\n"));
-		return MAPISTORE_ERROR;
-	}
-	DEBUG(4, ("FSOCPF would delete FID 0x%"PRIx64" from 0x%"PRIx64"\n", fid, parent_fid));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!parent_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_LOW, "Deleting %s from %s\n", folder_uri, parent_uri);
 
 	/* Step 1. Search for the parent fid */
-	parent = fsocpf_find_folder_by_fid(fsocpf_ctx, parent_fid);
+	parent = fsocpf_find_folder(fsocpf_ctx, parent_uri);
+	MAPISTORE_RETVAL_IF(!parent, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
-	if (! parent) {
-		DEBUG(0, ("parent context for folder 0x%.16"PRIx64" not found\n", parent_fid));
-		return MAPISTORE_ERR_NO_DIRECTORY;
-	}
+	/* Step 2. Search for the folder element */
+	el = fsocpf_find_folder(fsocpf_ctx, folder_uri);
+	MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_mkdir");
 
-	/* Step 2. Stringify fid */
-	folderpath = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, parent->path, fid);
-	DEBUG(5, ("folder to delete = %s\n", folderpath));
-
 	/* Step 3. Remove .properties file */
-	propertiespath = talloc_asprintf(mem_ctx, "%s/.properties", folderpath);
+	propertiespath = talloc_asprintf(mem_ctx, "%s/.properties", folder_uri);
 	ret = unlink(propertiespath);
 	if (ret) {
-		DEBUG(0, ("unlink failed with ret = %d (%s)\n", ret, strerror(errno)));
-		/* this could happen if we have no .properties file, so lets still try to delete */
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unlink failed with error '%s'\n", strerror(errno));
 	}
 
 	/* Step 4. Delete directory */
-	ret = rmdir(folderpath);
+	ret = rmdir(folder_uri);
 	if (ret) {
-		DEBUG(0, ("rmdir failed with ret = %d (%s)\n", ret, strerror(errno)));
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "rmdir failed with error '%s'\n", strerror(errno));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERROR;
 	}
@@ -673,12 +750,13 @@ static enum MAPISTORE_ERROR fsocpf_op_rmdir(void *private_data, uint64_t parent_
    \details Open a folder from the fsocpf backend
 
    \param private_data pointer to the current fsocpf context
-   \param parent_fid the parent folder identifier
-   \param fid the identifier of the colder to open
+   \param parent_uri the parent folder URI
+   \param folder_uri the URI of the folder to open
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, uint64_t parent_fid, uint64_t fid)
+/* FIXME: folder_uri is not valid (fsocpf:// prefixed) and curdir->d_name is NOT the full path */
+static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, const char *parent_uri, const char *folder_uri)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
@@ -686,68 +764,63 @@ static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, uint64_t paren
 	struct fsocpf_folder_list	*el;
 	struct fsocpf_folder_list	*newel;
 	struct dirent			*curdir;
-	char				*searchdir;
-	char				*newpath;
 	DIR				*dir;
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
-	if (!fsocpf_ctx) {
-		return MAPISTORE_ERROR;
-	}
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!parent_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 0. If fid equals top folder fid, it is already open */
-	if (fsocpf_ctx->fid == fid) {
+	if (!strcmp(fsocpf_ctx->root_uri, folder_uri)) {
 		/* If we access it for the first time, just add an entry to the folder list */
 		if (!fsocpf_ctx->folders) {
-			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
+			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->uri, fsocpf_ctx->dir);
+			MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
-			DEBUG(0, ("Element added to the list 0x%16"PRIx64"\n", el->folder->fid));
+			MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Folder added to the list '%s'\n", el->folder->uri);
 		}
 
-		folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
+		folder = fsocpf_find_folder(fsocpf_ctx, folder_uri);
+		MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
-		return (! folder) ? MAPISTORE_ERR_NO_DIRECTORY : MAPISTORE_SUCCESS;
+		return MAPISTORE_SUCCESS;
 	} else {
 		/* Step 1. Search for the parent fid */
-		folder = fsocpf_find_folder_by_fid(fsocpf_ctx, parent_fid);
-		if (! folder) {
-			return MAPISTORE_ERR_NO_DIRECTORY;
-		}
+		folder = fsocpf_find_folder(fsocpf_ctx, parent_uri);
+		MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 	}
 
 	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_opendir");
 
-	/* Step 2. stringify fid */
-	searchdir = talloc_asprintf(mem_ctx, "0x%.16"PRIx64, fid);
-	DEBUG(0, ("Looking for %s\n", searchdir));
-
 	/* Read the directory and search for the fid to open */
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Looking for '%s'\n", folder_uri);
 	rewinddir(folder->dir);
 	errno = 0;
 	{
 		int i = 0;
 		while ((curdir = readdir(folder->dir)) != NULL) {
-			DEBUG(0, ("%d: readdir: %s\n", i, curdir->d_name));
+			MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "[%d]: readdir: %s\n", i, curdir->d_name);
 			i++;
-			if (curdir->d_name && !strcmp(curdir->d_name, searchdir)) {
+			if (curdir->d_name && !strcmp(curdir->d_name, folder_uri)) {
+				dir = opendir(folder_uri);
+				MAPISTORE_RETVAL_IF(!dir, MAPISTORE_ERR_CONTEXT_FAILED, mem_ctx);
 
-				newpath = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, folder->path, fid);
-				dir = opendir(newpath);
-				if (!dir) {
-					talloc_free(mem_ctx);
-					return MAPISTORE_ERR_CONTEXT_FAILED;
-				}
-				DEBUG(0, ("FOUND\n"));
+				MSTORE_DEBUG_INFO(MSTORE_LEVEL_PEDANTIC, "%s\n", "Folder found");
 
-				newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, newpath, dir);
+				newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, folder_uri, dir);
+				MAPISTORE_RETVAL_IF(!newel, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
 				DLIST_ADD_END(fsocpf_ctx->folders, newel, struct fsocpf_folder_list *);
-				DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", fid));
+				MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Element added to the list: %s\n", folder_uri);
 			}
 		}
 	}
 
-	DEBUG(0, ("errno = %d\n", errno));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_PEDANTIC, "errno = %d\n", errno);
 
 	rewinddir(folder->dir);
 	talloc_free(mem_ctx);
@@ -779,39 +852,43 @@ static enum MAPISTORE_ERROR fsocpf_op_closedir(void *private_data)
    \details Read directory content from the fsocpf backend
 
    \param private_data pointer to the current fsocpf context
+   \param folder_uri pointer to the URI of the folder
+   \param table_type the type of table to read
+   \param RowCount pointer to the number of rows to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
 static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data, 
-						    uint64_t fid,
+						    const char *folder_uri,
 						    enum MAPISTORE_TABLE_TYPE table_type,
 						    uint32_t *RowCount)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_folder		*folder;
+	struct fsocpf_folder_list	*el;
 	struct dirent			*curdir;
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
-	if (!fsocpf_ctx || !RowCount) {
-		return MAPISTORE_ERROR;
-	}
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!RowCount, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	if (fsocpf_ctx->fid == fid) {
+	if (!strcmp(fsocpf_ctx->root_uri, folder_uri)) {
 		/* If we access it for the first time, just add an entry to the folder list */
 		if (!fsocpf_ctx->folders) {
-			struct fsocpf_folder_list *el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
+			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->root_uri, fsocpf_ctx->dir);
+			MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
-			DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->folder->fid));
+			MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Element added to the list '%s'\n", el->folder->uri);
 		}
 	}
 
 	/* Search for the fid fsocpf_folder entry */
-	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
-	if (! folder) {
-		*RowCount = 0;
-		return MAPISTORE_ERR_NO_DIRECTORY;
-	}
+	folder = fsocpf_find_folder(fsocpf_ctx, folder_uri);
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
 	switch (table_type) {
 	case MAPISTORE_FOLDER_TABLE:
@@ -821,7 +898,7 @@ static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data,
 		while ((curdir = readdir(folder->dir)) != NULL) {
 			if (curdir->d_name && curdir->d_type == DT_DIR &&
 			    strcmp(curdir->d_name, ".") && strcmp(curdir->d_name, "..")) {
-				DEBUG(0, ("Adding %s to the RowCount\n", curdir->d_name));
+				MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Adding folder entry to RowCount: '%s'\n", curdir->d_name);
 				*RowCount += 1;
 			}
 		}
@@ -833,7 +910,7 @@ static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data,
 		while ((curdir = readdir(folder->dir)) != NULL) {
 			if (curdir->d_name && curdir->d_type == DT_REG &&
 			    strcmp(curdir->d_name, ".properties")) {
-				DEBUG(0, ("Adding %s to the RowCount\n", curdir->d_name));
+				MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Adding message entry to RowCount: '%s'\n", curdir->d_name);
 				*RowCount += 1;
 			}
 		}
@@ -846,6 +923,7 @@ static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data,
 }
 
 
+/* FIXME: We don't use FID anymore, nor do backends should know about them */
 static enum MAPISTORE_ERROR fsocpf_get_property_from_folder_table(struct fsocpf_folder *folder,
 								  uint32_t pos,
 								  enum MAPITAGS proptag,
@@ -854,13 +932,17 @@ static enum MAPISTORE_ERROR fsocpf_get_property_from_folder_table(struct fsocpf_
 	int			ret;
 	struct dirent		*curdir;
 	uint32_t		counter = 0;
-	char			*folderID;
+	char			*folderID = NULL;
 	char			*propfile;
 	uint32_t		cValues = 0;
 	struct SPropValue	*lpProps;
 	uint32_t		ocpf_context_id;
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Set dir listing to current position */
 	rewinddir(folder->dir);
@@ -878,25 +960,10 @@ static enum MAPISTORE_ERROR fsocpf_get_property_from_folder_table(struct fsocpf_
 		}
 	}
 
-	if (!curdir) {
-		DEBUG(0, ("curdir not found\n"));
-		*data = NULL;
-		return MAPISTORE_ERR_NOT_FOUND;
-	}
-
-	/* If fid, return folder->fid */
-	if (proptag == PR_FID) {
-		uint64_t	*fid;
-
-		fid = talloc_zero(folder, uint64_t);
-		*fid = strtoull(folderID, NULL, 16);
-		talloc_free(folderID);
-		*data = (uint64_t *)fid;
-		return MAPISTORE_SUCCESS;
-	} 
+	MAPISTORE_RETVAL_IF(!folderID, MAPISTORE_ERR_NOT_FOUND, NULL);
 
 	/* Otherwise opens .properties file with ocpf for fid entry */
-	propfile = talloc_asprintf(folder, "%s/%s/.properties", folder->path, folderID);
+	propfile = talloc_asprintf(folder, "%s/%s/.properties", folder->uri, folderID);
 	talloc_free(folderID);
 
 	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
@@ -946,7 +1013,11 @@ static enum MAPISTORE_ERROR fsocpf_get_property_from_message_table(struct fsocpf
 	struct SPropValue	*lpProps;
 	uint32_t		ocpf_context_id;
 
-	DEBUG(5, ("[%s:%d\n]", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Set dir listing to current position */
 	rewinddir(folder->dir);
@@ -965,30 +1036,27 @@ static enum MAPISTORE_ERROR fsocpf_get_property_from_message_table(struct fsocpf
 		}
 	}
 
-	if (!messageID) {
-		*data = NULL;
-		return MAPISTORE_ERR_NOT_FOUND;
-	}
+	MAPISTORE_RETVAL_IF(!messageID, MAPISTORE_ERR_NOT_FOUND, NULL);
 
 	/* if fid, return folder fid */
-	if (proptag == PR_FID) {
-		*data = (uint64_t *)&folder->fid;
-		return MAPISTORE_SUCCESS;
-	  }
+	/* if (proptag == PR_FID) { */
+	/* 	*data = (uint64_t *)&folder->fid; */
+	/* 	return MAPISTORE_SUCCESS; */
+	/*   } */
 
 	/* If mid, return curdir->d_name */
-	if (proptag == PR_MID) {
-		uint64_t	*mid;
+	/* if (proptag == PR_MID) { */
+	/* 	uint64_t	*mid; */
 
-		mid = talloc_zero(folder, uint64_t);
-		*mid = strtoull(messageID, NULL, 16);
-		talloc_free(messageID);
-		*data = (uint64_t *)mid;
-		return MAPISTORE_SUCCESS;
-	}
+	/* 	mid = talloc_zero(folder, uint64_t); */
+	/* 	*mid = strtoull(messageID, NULL, 16); */
+	/* 	talloc_free(messageID); */
+	/* 	*data = (uint64_t *)mid; */
+	/* 	return MAPISTORE_SUCCESS; */
+	/* } */
 
 	/* Otherwise opens curdir->d_name file with ocpf */
-	propfile = talloc_asprintf(folder, "%s/%s", folder->path, messageID);
+	propfile = talloc_asprintf(folder, "%s/%s", folder->uri, messageID);
 	talloc_free(messageID);
 
 	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
@@ -1025,7 +1093,7 @@ static enum MAPISTORE_ERROR fsocpf_get_property_from_message_table(struct fsocpf
 
 
 static enum MAPISTORE_ERROR fsocpf_op_get_table_property(void *private_data,
-							 uint64_t fid,
+							 const char *folder_uri,
 							 enum MAPISTORE_TABLE_TYPE table_type,
 							 uint32_t pos,
 							 enum MAPITAGS proptag,
@@ -1036,27 +1104,27 @@ static enum MAPISTORE_ERROR fsocpf_op_get_table_property(void *private_data,
 	struct fsocpf_folder		*folder;
 	enum MAPISTORE_ERROR		retval = MAPISTORE_SUCCESS;
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
-	if (!fsocpf_ctx || !data) {
-		return MAPISTORE_ERROR;
-	}
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	if (fsocpf_ctx->fid == fid) {
+	if (!strcmp(fsocpf_ctx->root_uri, folder_uri)) {
 		/* If we access it for the first time, just add an entry to the folder list */
 		if (!fsocpf_ctx->folders || !fsocpf_ctx->folders->folder) {
-			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, fsocpf_ctx->uri, fsocpf_ctx->dir);
+			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->root_uri, fsocpf_ctx->dir);
+			MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
-			DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", el->folder->fid));
+			MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Element added to the list '%s'\n", el->folder->uri);
 		}
 	}
 
 	/* Search for the fid fsocpf_folder entry */
-	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
-	if (! folder) {
-		*data = NULL;
-		return MAPISTORE_ERR_NO_DIRECTORY;
-	}
+	folder = fsocpf_find_folder(fsocpf_ctx, folder_uri);
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
 	switch (table_type) {
 	case MAPISTORE_FOLDER_TABLE:
@@ -1074,11 +1142,10 @@ static enum MAPISTORE_ERROR fsocpf_op_get_table_property(void *private_data,
 
 
 static enum MAPISTORE_ERROR fsocpf_op_openmessage(void *private_data,
-						  uint64_t fid,
-						  uint64_t mid,
+						  const char *folder_uri,
+						  const char *message_uri,
 						  struct mapistore_message *msg)
 {
-	TALLOC_CTX			*mem_ctx;
 	int				ret;
 	enum MAPISTATUS			retval;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
@@ -1086,15 +1153,22 @@ static enum MAPISTORE_ERROR fsocpf_op_openmessage(void *private_data,
 	struct fsocpf_message		*message;
 	struct fsocpf_folder		*folder;
 	uint32_t			ocpf_context_id;
-	char				*propfile;
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!message_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!msg, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Search for the mid fsocpf_message entry */
-	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
+	message = fsocpf_find_message(fsocpf_ctx, message_uri);
 	if (message) {
-		DEBUG(0, ("Message was already opened\n"));
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Message already %s\n", "opened");
 		msg->properties = talloc_zero(fsocpf_ctx, struct SRow);
+		MAPISTORE_RETVAL_IF(!msg->properties, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 		msg->recipients = ocpf_get_recipients(message, message->ocpf_context_id);
 		msg->properties->lpProps = ocpf_get_SPropValue(message->ocpf_context_id, 
 							       &msg->properties->cValues);
@@ -1102,125 +1176,132 @@ static enum MAPISTORE_ERROR fsocpf_op_openmessage(void *private_data,
 	}
 
 	/* Search for the fid fsocpf_folder entry */
-	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
-	if (!folder) {
-		DEBUG(0, ("fsocpf_op_openmessage: folder not found\n"));
-		return MAPISTORE_ERR_NOT_FOUND;
-	}
+	folder = fsocpf_find_folder(fsocpf_ctx, folder_uri);
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NOT_FOUND, NULL);
 
-	DEBUG(0, ("Message: 0x%.16"PRIx64" is inside %s\n", mid, folder->path));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_INFO, "Message %s is stored within %s\n", message_uri, folder->uri);
 
 	/* Trying to open and map the file with OCPF */
-	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_openmessage");
-	propfile = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, folder->path, mid);
-
-	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_READ);
+	ret = ocpf_new_context(message_uri, &ocpf_context_id, OCPF_FLAGS_READ);
 	ret = ocpf_parse(ocpf_context_id);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
-	if (!ret) {
-		el = fsocpf_message_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, mid, 
-						      propfile, ocpf_context_id);
-		DLIST_ADD_END(fsocpf_ctx->messages, el, struct fsocpf_message_list *);
-		DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", mid));
+	el = fsocpf_message_list_element_init((TALLOC_CTX *)fsocpf_ctx, folder_uri, message_uri, ocpf_context_id);
+	MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-		/* Retrieve recipients from the message */
-		msg->recipients = ocpf_get_recipients(el, ocpf_context_id);
+	DLIST_ADD_END(fsocpf_ctx->messages, el, struct fsocpf_message_list *);
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Element added to the list '%s'\n", message_uri);
 
-		/* Retrieve properties from the message */
-		msg->properties = talloc_zero(el, struct SRow);
-		retval = ocpf_server_set_SPropValue(el, ocpf_context_id);
-		msg->properties->lpProps = ocpf_get_SPropValue(ocpf_context_id, &msg->properties->cValues);
-	} else {
-		DEBUG(0, ("An error occured while processing %s\n", propfile));
-		talloc_free(propfile);
-		talloc_free(mem_ctx);
-		return MAPISTORE_ERR_CONTEXT_FAILED;
-	}
+	/* Retrieve recipients from the message */
+	msg->recipients = ocpf_get_recipients(el, ocpf_context_id);
 
-	talloc_free(propfile);
-	talloc_free(mem_ctx);
+	/* Retrieve properties from the message */
+	msg->properties = talloc_zero(el, struct SRow);
+	MAPISTORE_RETVAL_IF(!msg->properties, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	retval = ocpf_server_set_SPropValue(el, ocpf_context_id);
+	msg->properties->lpProps = ocpf_get_SPropValue(ocpf_context_id, &msg->properties->cValues);
 
 	return MAPISTORE_SUCCESS;
 }
 
 
+/* FIXME: the backend should be responsible for setting the message URI / unique ID */
+/* When creating the message, the URI doesn't exist yet, this should be returned by the function */
+
+/* Some backends will only be able to get the URI once they commit the
+ * message, we should offer the possibility for backends to register
+ * the indexing URI later and deal with a temporary URI until they
+ * come to commit/save operations 
+*/
+
 static enum MAPISTORE_ERROR fsocpf_op_createmessage(void *private_data,
-						    uint64_t fid,
-						    uint64_t mid)
+						    const char *folder_uri,
+						    char **_message_uri,
+						    bool *uri_register)
 {
-	TALLOC_CTX			*mem_ctx;
 	int				ret;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_message_list	*el;
 	struct fsocpf_folder		*folder;
+	char				*message_uri = NULL;
 	uint32_t			ocpf_context_id;
-	char				*propfile;
-	
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!message_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	
 	/* Search for the fid fsocpf_folder entry */
-	folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fid);
-	if (!folder) {
-		DEBUG(0, ("fsocpf_op_createmessage: folder not found\n"));
-		return MAPISTORE_ERR_NOT_FOUND;
-	}
+	folder = fsocpf_find_folder(fsocpf_ctx, folder_uri);
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NOT_FOUND, NULL);
 
-	DEBUG(0, ("Message: 0x%.16"PRIx64" will be created inside %s\n", mid, folder->path));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Message %s will be created within %s\n", message_uri, folder->uri);
 	
-	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_createmessage");
-	propfile = talloc_asprintf(mem_ctx, "%s/0x%.16"PRIx64, folder->path, mid);
+	ret = ocpf_new_context(message_uri, &ocpf_context_id, OCPF_FLAGS_CREATE);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
-	ret = ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_CREATE);
-	if (!ret) {
-		el = fsocpf_message_list_element_init((TALLOC_CTX *)fsocpf_ctx, fid, mid,
-						      propfile, ocpf_context_id);
-		DLIST_ADD_END(fsocpf_ctx->messages, el, struct fsocpf_message_list *);
-		DEBUG(0, ("Element added to the list 0x%.16"PRIx64"\n", mid));
-	} else {
-		DEBUG(0, ("An error occured while creating %s\n", propfile));
-		talloc_free(propfile);
-		talloc_free(mem_ctx);
-		return MAPISTORE_ERR_CONTEXT_FAILED;
-	}
+	el = fsocpf_message_list_element_init((TALLOC_CTX *)fsocpf_ctx, folder_uri, message_uri, ocpf_context_id);
+	MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	talloc_free(propfile);
-	talloc_free(mem_ctx);
+	DLIST_ADD_END(fsocpf_ctx->messages, el, struct fsocpf_message_list *);
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Element added to the list '%s'\n", message_uri);
+	
+	*_message_uri = message_uri;
+	*uri_register = true;
+
 	return MAPISTORE_SUCCESS;
 }
 
 
+/* FIXME: ocpf is using the fid to create the filename, we MUST offer a different mechanism
+   OR we could let backends register the message on their own. To be decided */
 static enum MAPISTORE_ERROR fsocpf_op_savechangesmessage(void *private_data,
-							 uint64_t mid,
+							 const char *message_uri,
 							 uint8_t flags)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_message		*message;
 	
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
-	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!message_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	message = fsocpf_find_message(fsocpf_ctx, message_uri);
 	if (!message || !message->ocpf_context_id) {
 		return MAPISTORE_ERR_NOT_FOUND;
 	}
-	ocpf_write_init(message->ocpf_context_id, message->fid);
+
+	ocpf_write_init(message->ocpf_context_id, 0xdeadbeef);
+	/* ocpf_write_init(message->ocpf_context_id, message->fid); */
 	ocpf_write_commit(message->ocpf_context_id);
 
 	return MAPISTORE_SUCCESS;
 }
 
-
+/* FIXME: See savechangesmessage comments */
 static enum MAPISTORE_ERROR fsocpf_op_submitmessage(void *private_data,
-						    uint64_t mid,
+						    const char *message_uri,
 						    uint8_t flags)
 {
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_message		*message;
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!message_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* This implementation is incorrect but should fit for immediate purposes */
-	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
-	ocpf_write_init(message->ocpf_context_id, message->fid);
+	message = fsocpf_find_message(fsocpf_ctx, message_uri);
+
+	ocpf_write_init(message->ocpf_context_id, 0xdeadbeef);
+	/* ocpf_write_init(message->ocpf_context_id, message->fid); */
 	ocpf_write_commit(message->ocpf_context_id);
 
 	return MAPISTORE_SUCCESS;
@@ -1247,7 +1328,7 @@ static char *fsocpf_get_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet,
 }
 
 static enum MAPISTORE_ERROR fsocpf_op_getprops(void *private_data, 
-					       uint64_t fmid, 
+					       const char *uri,
 					       uint8_t type, 
 					       struct SPropTagArray *SPropTagArray,
 					       struct SRow *aRow)
@@ -1262,14 +1343,19 @@ static enum MAPISTORE_ERROR fsocpf_op_getprops(void *private_data,
 	uint32_t		j;
 	char			*recip_str = NULL;
 
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!SPropTagArray, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!aRow, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	switch (type) {
 	case MAPISTORE_FOLDER:
 		break;
 	case MAPISTORE_MESSAGE:
-		message = fsocpf_find_message_by_mid(fsocpf_ctx, fmid);
+		message = fsocpf_find_message(fsocpf_ctx, uri);
 		ocpf_server_set_SPropValue(fsocpf_ctx, message->ocpf_context_id);
 		lpProps = ocpf_get_SPropValue(message->ocpf_context_id, &cValues);
 		SRowSet = ocpf_get_recipients(fsocpf_ctx, message->ocpf_context_id);
@@ -1319,7 +1405,7 @@ static enum MAPISTORE_ERROR fsocpf_op_getprops(void *private_data,
 
 
 static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
-					       uint64_t fmid,
+					       const char *uri,
 					       uint8_t type,
 					       struct SRow *aRow)
 {
@@ -1328,21 +1414,22 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 	struct fsocpf_message	*message;
 	uint32_t		i;
 
-	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!aRow, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	switch (type) {
 	case MAPISTORE_FOLDER:
-		folder = fsocpf_find_folder_by_fid(fsocpf_ctx, fmid);
-		if (!folder) {
-			return MAPISTORE_ERR_NOT_FOUND;
-		}
-		fsocpf_set_folder_props(folder->path, folder->fid, aRow);
+		folder = fsocpf_find_folder(fsocpf_ctx, uri);
+		MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NOT_FOUND, NULL);
+		fsocpf_set_folder_props(folder->uri, aRow);
 		break;
 	case MAPISTORE_MESSAGE:
-		message = fsocpf_find_message_by_mid(fsocpf_ctx, fmid);
-		if (!message || !message->ocpf_context_id) {
-			return MAPISTORE_ERR_NOT_FOUND;
-		}
+		message = fsocpf_find_message(fsocpf_ctx, uri);
+		MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_NOT_FOUND, NULL);
 		for (i = 0; i < aRow->cValues; i++) {
 			if (aRow->lpProps[i].ulPropTag == PR_MESSAGE_CLASS) {
 				ocpf_server_set_type(message->ocpf_context_id, aRow->lpProps[i].value.lpszA);
@@ -1359,29 +1446,22 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 
 /* TODO: this looks like it probably does not handle soft deletion */
 static enum MAPISTORE_ERROR fsocpf_op_deletemessage(void *private_data,
-						    uint64_t mid,
+						    const char *message_uri,
 						    enum MAPISTORE_DELETION_TYPE deletion_type)
 {
-	int res;
+	int				ret;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_message		*message;
 	
 	DEBUG(5, ("[%s:%d]\n", __FUNCTION__, __LINE__));
 
-	message = fsocpf_find_message_by_mid(fsocpf_ctx, mid);
+	message = fsocpf_find_message(fsocpf_ctx, message_uri);
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_NOT_FOUND, NULL);
 
-	if (!message || !message->path) {
-		return MAPISTORE_ERR_NOT_FOUND;
-	}
+	ret = unlink(message->uri);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
 
-	res = unlink(message->path);
-
-	if (res == 0) {
-		return MAPISTORE_SUCCESS;
-	} else {
-		DEBUG(1, ("%s, could not unlink: %s\n", __FUNCTION__, strerror(errno)));
-		return MAPISTORE_ERROR;
-	}
+	return MAPISTORE_SUCCESS;
 }
 
 /**

@@ -262,6 +262,7 @@ static enum MAPISTORE_ERROR mstoredb_op_db_mkdir(void *private_data,
    \param parent_uri the parent folder mapistore URI
    \param folder_name the folder name to be created
    \param folder_desc the folder description for the folder 
+   \param folder_type the type of folder
    \param folder_uri the folder URI to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
@@ -270,20 +271,97 @@ static enum MAPISTORE_ERROR mstoredb_op_mkdir(void *private_data,
 					      const char *parent_uri,
 					      const char *folder_name,
 					      const char *folder_desc,
+					      enum FOLDER_TYPE folder_type,
 					      char **folder_uri)
 {
-	/* struct mstoredb_context		*mstoredb_ctx = (struct mstoredb_context *) private_data; */
+	TALLOC_CTX			*mem_ctx;
+	enum MAPISTORE_ERROR		retval = MAPISTORE_SUCCESS;
+	char				*stripped_uri;
+	struct mstoredb_context		*mstoredb_ctx = (struct mstoredb_context *) private_data;
+	char				*ldif;
+	char				*folder_dn;
+
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
 	/* Sanity checks */
-	
+	MAPISTORE_RETVAL_IF(!mstoredb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!parent_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder_name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Ensure the parent uri exists */
+	*folder_uri = NULL;
 
-	/* Generate the URI for the folder */
+	/* Step 1. Ensure the parent uri exists */
+	retval = mapistore_exist(mstoredb_ctx->mdb_ctx, mstoredb_ctx->username, parent_uri);
+	if (retval != MAPISTORE_ERR_EXIST) {
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_HIGH, "Failed to find parent folder: %s\n", parent_uri);
+		return retval;
+	}
+
+	mem_ctx = talloc_named(NULL, 0, "mstoredb_op_mkdir");
+
+	/* Step 2. Generate the URI for the folder */
+	retval = mapistore_strip_ns_from_uri(parent_uri, &stripped_uri);
+
+	*folder_uri = talloc_asprintf((TALLOC_CTX *)mstoredb_ctx, "mstoredb://CN=%s,%s", folder_name, stripped_uri);
+	MAPISTORE_RETVAL_IF(!*folder_uri, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_CRITICAL, "Generated URI: '%s'\n", *folder_uri);
+
+	retval = mapistore_strip_ns_from_uri(*folder_uri, &folder_dn);
+	if (retval) {
+		talloc_free(*folder_uri);
+		*folder_uri = NULL;
+		goto error;
+	}
+
+	/* Ensure the folder doesn't exist */
+	retval = mapistore_exist(mstoredb_ctx->mdb_ctx, mstoredb_ctx->username, (const char *)*folder_uri);
+	if (retval == MAPISTORE_ERR_EXIST) {
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_HIGH, "URI already exists!: %s\n", *folder_uri);
+		talloc_free(*folder_uri);
+		*folder_uri = NULL;
+		goto error;
+	}
 
 	/* Do ACLs check on parent URI */
 	
 	/* Do folder creation */
+	if (folder_desc) {
+		ldif = talloc_asprintf(mem_ctx, MDB_FOLDER_WITH_COMMENT_LDIF_TMPL,
+				       folder_dn, folder_name, (uint32_t)folder_type,
+				       folder_name, folder_desc);
+		if (!ldif) {
+			retval = MAPISTORE_ERR_NO_MEMORY;
+			goto error;
+		}
+	} else {
+		ldif = talloc_asprintf(mem_ctx, MDB_FOLDER_WITH_NAME_LDIF_TMPL,
+				       folder_dn, folder_name, (uint32_t)folder_type,
+				       folder_name);
+	}
+
+	retval = mapistore_ldb_write_ldif_string_to_store(mstoredb_ctx->ldb_ctx, ldif);
+	talloc_free(ldif);
+
+error:
+	talloc_free(mem_ctx);
+	return retval;
+}
+
+
+static enum MAPISTORE_ERROR mstoredb_op_opendir(void *private_data,
+						const char *parent_uri,
+						const char *folder_uri)
+{
+	struct mstoredb_context	*mstoredb_ctx = (struct mstoredb_context *) private_data;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstoredb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!parent_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* TODO: This is just a stub implementation */
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Opening: %s\n", folder_uri);
 
 	return MAPISTORE_SUCCESS;
 }
@@ -308,13 +386,16 @@ enum MAPISTORE_ERROR mapistore_init_backend(void)
 	backend.description = "mapistore database backend";
 	backend.uri_namespace = "mstoredb://";
 	
-	/* Fill in all the operations */
+	/* Fill in backend operations */
 	backend.init = mstoredb_init;
 	backend.create_context = mstoredb_create_context;
 	backend.delete_context = mstoredb_delete_context;
-	backend.op_mkdir = mstoredb_op_mkdir;
 
-	/* Fill in mapistore db operations */
+	/* Fill in folder operations */
+	backend.op_mkdir = mstoredb_op_mkdir;
+	backend.op_opendir = mstoredb_op_opendir;
+
+	/* Fill in MAPIStoreDB/store operations */
 	backend.op_db_create_uri = mstoredb_create_mapistore_uri;
 	backend.op_db_provision_namedprops = mstoredb_provision_namedprops;
 	backend.op_db_mkdir = mstoredb_op_db_mkdir;

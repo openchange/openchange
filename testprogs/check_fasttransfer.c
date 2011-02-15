@@ -81,24 +81,24 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 		printf("\n");
 		if (mapistore->current_id == mapistore->root_fid) {
 			/* This is the top level folder */
-			mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					   mapistore->root_fid, mapistore->current_output_type,
-					   mapistore->proplist);
+			/* mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 		   mapistore->root_fid, mapistore->current_output_type, */
+			/* 		   mapistore->proplist); */
 		} else if (mapistore->current_output_type == MAPISTORE_FOLDER) {
                         struct parent_fid *element = talloc_zero(mapistore->mstore_ctx, struct parent_fid);
-			mapistore_mkdir(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					mapistore->parent_fids->fid, mapistore->current_id,
-					mapistore->proplist);
-                        element->fid = mapistore->current_id;
-			DLIST_ADD(mapistore->parent_fids, element);
+			/* mapistore_mkdir(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 		mapistore->parent_fids->fid, mapistore->current_id, */
+			/* 		mapistore->proplist); */
+                        /* element->fid = mapistore->current_id; */
+			/* DLIST_ADD(mapistore->parent_fids, element); */
 		} else {
-			mapistore_createmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					        mapistore->parent_fids->fid, mapistore->current_id);
-			mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					   mapistore->current_id, mapistore->current_output_type,
-					   mapistore->proplist);
-			mapistore_savechangesmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-						     mapistore->current_id, 0);
+			/* mapistore_createmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 		        mapistore->parent_fids->fid, mapistore->current_id); */
+			/* mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 		   mapistore->current_id, mapistore->current_output_type, */
+			/* 		   mapistore->proplist); */
+			/* mapistore_savechangesmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 			     mapistore->current_id, 0); */
 		}
 		talloc_free(mapistore->proplist);
 		mapistore->proplist = 0;

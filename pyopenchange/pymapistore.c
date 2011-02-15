@@ -66,23 +66,36 @@ static void py_MAPIStore_dealloc(PyObject *_self)
 	PyObject_Del(_self);
 }
 
-static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *args)
+static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *args, PyObject *kwargs)
 {
-	int		ret;
-	uint32_t	context_id = 0;
-	const char	*uri;
-	const char	*username;
+	enum MAPISTORE_ERROR	retval;
+	uint32_t		context_id = 0;
+	const char * const	kwnames[] = { "username", "uri", NULL };
+	const char		*uri;
+	const char		*username;
+	uint64_t		folderID;
 
-	if (!PyArg_ParseTuple(args, "ss", &username, &uri)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "ss", 
+					 discard_const_p(char *, kwnames),
+					 &username, &uri)) {
 		return NULL;
 	}
 
-	ret = mapistore_add_context(self->mstore_ctx, username, username, uri, &context_id);
-	if (ret != MAPISTORE_SUCCESS) {
+	/* Step 1. Add a mapistore context */
+	retval = mapistore_add_context(self->mstore_ctx, username, username, uri, &context_id);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to create mapistore context");
 		return NULL;
 	}
 
-	return PyInt_FromLong(context_id);
+	/* Step 2. Retrieve the URI associated to the context URI */
+	retval = mapistore_get_folder_identifier_from_uri(self->mstore_ctx, context_id, uri, &folderID);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetString(PyExc_KeyError, "Missing folder identifier");
+		return NULL;
+	}
+
+	return Py_BuildValue("iK", context_id, folderID);
 }
 
 static PyObject *py_MAPIStore_del_context(PyMAPIStoreObject *self, PyObject *args)
@@ -158,6 +171,54 @@ static PyObject *py_MAPIStore_set_mapistore_uri(PyMAPIStoreObject *self, PyObjec
 	return PyInt_FromLong(mapistore_set_mapistore_uri(self->mstore_ctx, context_id, index, mapistore_uri));
 }
 
+
+static PyObject *py_MAPIStore_get_folder_identifier(PyMAPIStoreObject *self, PyObject *args, PyObject *kwargs)
+{
+	enum MAPISTORE_ERROR		retval;
+	const char * const		kwnames[] = { "context_id", "index", "uri", NULL };
+	char				*uri;
+	enum MAPISTORE_DFLT_FOLDERS	index;
+	uint32_t			_index;
+	uint32_t			context_id;
+	uint64_t			folderID;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iiz",
+					 discard_const_p(char *, kwnames),
+					 &context_id, &_index, 
+					 discard_const_p(char *, &uri))) {
+		return NULL;
+	}
+
+	index = (enum MAPISTORE_DFLT_FOLDERS) _index;
+
+	if (index < 1 && !uri) {
+		PyErr_SetString(PyExc_TypeError, "Expected a valid MDB default folder index");
+		return NULL;
+	}
+
+	if ((uri && index) || (!uri && !index)) {
+		PyErr_SetString(PyExc_TypeError, "Expected either a MDB folder index or an uri");
+		return NULL;
+	}
+
+	if (index) {
+		retval = mapistore_create_context_uri(self->mstore_ctx, context_id, index, &uri);
+		if (retval != MAPISTORE_SUCCESS) {
+			PyErr_SetString(PyExc_TypeError, "Unable to retrieve URI for specified index");
+			return NULL;
+		}
+	}
+
+	retval = mapistore_get_folder_identifier_from_uri(self->mstore_ctx, context_id, uri, &folderID);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetString(PyExc_TypeError, "Unable to retrieve folder identifier for specified index/URI");
+		return NULL;
+	}
+
+	return Py_BuildValue("K", folderID);
+}
+
+
 static PyObject *py_MAPIStore_add_context_indexing(PyMAPIStoreObject *self, PyObject *args)
 {
 	uint32_t	context_id;
@@ -199,17 +260,27 @@ static PyObject *py_MAPIStore_add_context_ref_count(PyMAPIStoreObject *self, PyO
 	return PyInt_FromLong(mapistore_add_context_ref_count(self->mstore_ctx, context_id));
 }
 
-static PyObject *py_MAPIStore_opendir(PyMAPIStoreObject *self, PyObject *args)
+static PyObject *py_MAPIStore_opendir(PyMAPIStoreObject *self, PyObject *args, PyObject *kwargs)
 {
-	uint32_t	context_id;
-	uint64_t	parent_fid;
-	uint64_t	fid;
+	enum MAPISTORE_ERROR	retval;
+	uint32_t		context_id;
+	uint64_t		parent_fid;
+	uint64_t		fid;
+	char			*kwnames[] = { "context_id", "parent_fid", "fid", NULL };
 
-	if (!PyArg_ParseTuple(args, "iKK", &context_id, &parent_fid, &fid)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iKK", 
+					 discard_const_p(char *, kwnames),
+					 &context_id, &parent_fid, &fid)) {
 		return NULL;
 	}
 
-	return PyInt_FromLong(mapistore_opendir(self->mstore_ctx, context_id, parent_fid, fid));
+	retval = mapistore_opendir(self->mstore_ctx, context_id, parent_fid, fid);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetString(PyExc_RuntimeError, "Failed to open folder");
+		return NULL;
+	}
+
+	return PyInt_FromLong(retval);
 }
 
 static PyObject *py_MAPIStore_closedir(PyMAPIStoreObject *self, PyObject *args)
@@ -224,40 +295,29 @@ static PyObject *py_MAPIStore_closedir(PyMAPIStoreObject *self, PyObject *args)
 	return PyInt_FromLong(mapistore_closedir(self->mstore_ctx, context_id, fid));
 }
 
-static PyObject *py_MAPIStore_mkdir(PyMAPIStoreObject *self, PyObject *args)
+static PyObject *py_MAPIStore_mkdir(PyMAPIStoreObject *self, PyObject *args, PyObject *kwargs)
 {
+	enum MAPISTORE_ERROR	retval;
 	uint32_t		context_id;
 	uint64_t		parent_fid;
-	uint64_t		fid;
-	PyObject		*mod_mapi;
-	PyObject		*pySPropValue;
-	PySPropValueObject	*SPropValue;
-	struct SRow		aRow;
+	uint64_t		folder_fid = 0;
+	const char		*folder_name = NULL;
+	const char		*folder_desc = NULL;
+	uint32_t		folder_type;
+	char			*kwnames[] = { "context_id", "parent_fid", "name", "description", "type", NULL };
 
-	mod_mapi = PyImport_ImportModule("openchange.mapi");
-	if (mod_mapi == NULL) {
-		printf("Can't load module\n");
-		return NULL;
-	}
-	SPropValue_Type = (PyTypeObject *)PyObject_GetAttrString(mod_mapi, "SPropValue");
-	if (SPropValue_Type == NULL) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "iKszi", kwnames, &context_id, 
+					 &parent_fid, &folder_name, &folder_desc, &folder_type)) {
 		return NULL;
 	}
 
-	if (!PyArg_ParseTuple(args, "iKKO", &context_id, &parent_fid, &fid, &pySPropValue)) {
+	retval = mapistore_mkdir(self->mstore_ctx, context_id, parent_fid, folder_name, folder_desc, folder_type, &folder_fid);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetString(PyExc_TypeError, "Failed to create folder");
 		return NULL;
 	}
 
-	if (!PyObject_TypeCheck(pySPropValue, SPropValue_Type)) {
-		PyErr_SetString(PyExc_TypeError, "Function require SPropValue object");
-		return NULL;
-	}
-
-	SPropValue = (PySPropValueObject *)pySPropValue;
-	aRow.cValues = SPropValue->cValues;
-	aRow.lpProps = SPropValue->SPropValue;
-
-	return PyInt_FromLong(mapistore_mkdir(self->mstore_ctx, context_id, parent_fid, fid, &aRow));
+	return Py_BuildValue("K", folder_fid);
 }
 
 static PyObject *py_MAPIStore_rmdir(PyMAPIStoreObject *self, PyObject *args)
@@ -323,18 +383,44 @@ static PyObject *py_MAPIStore_errstr(PyMAPIStoreObject *self, PyObject *args)
 	return PyString_FromString(mapistore_errstr(retval));
 }
 
+static PyObject *py_MAPIStore_get_debuglevel(PyMAPIStoreObject *self, void *py_data)
+{
+	return PyInt_FromLong(0);
+}
+
+static int py_MAPIStore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value, void *py_data)
+{
+	enum MAPISTORE_ERROR	retval;
+
+	if (value == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Cannot set debuglevel");
+		return -1;
+	}
+	
+	if (!PyInt_Check(value)) {
+		PyErr_SetString(PyExc_TypeError, "The attribute must be an integer");
+		return -1;
+	}
+
+	retval = mapistore_set_debuglevel(self->mstore_ctx, *((uint32_t *)value));
+	if (retval) return -1;
+
+	return 0;
+}
+
 static PyMethodDef mapistore_methods[] = {
-	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
+	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_KEYWORDS },
 	{ "del_context", (PyCFunction)py_MAPIStore_del_context, METH_VARARGS },
 	{ "root_mkdir", (PyCFunction)py_MAPIStore_root_mkdir, METH_KEYWORDS },
 	{ "get_mapistore_uri", (PyCFunction)py_MAPIStore_get_mapistore_uri, METH_VARARGS },
 	{ "set_mapistore_uri", (PyCFunction)py_MAPIStore_set_mapistore_uri, METH_VARARGS },
+	{ "get_folder_identifier", (PyCFunction)py_MAPIStore_get_folder_identifier, METH_KEYWORDS },
 	{ "add_context_idexing", (PyCFunction)py_MAPIStore_add_context_indexing, METH_VARARGS },
 	{ "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS },
 	{ "add_context_ref_count", (PyCFunction)py_MAPIStore_add_context_ref_count, METH_VARARGS },
-	{ "opendir", (PyCFunction)py_MAPIStore_opendir, METH_VARARGS },
+	{ "opendir", (PyCFunction)py_MAPIStore_opendir, METH_KEYWORDS },
 	{ "closedir", (PyCFunction)py_MAPIStore_closedir, METH_VARARGS },
-	{ "mkdir", (PyCFunction)py_MAPIStore_mkdir, METH_VARARGS },
+	{ "mkdir", (PyCFunction)py_MAPIStore_mkdir, METH_KEYWORDS },
 	{ "rmdir", (PyCFunction)py_MAPIStore_rmdir, METH_VARARGS },
 	{ "setprops", (PyCFunction)py_MAPIStore_setprops, METH_VARARGS },
 	{ "errstr", (PyCFunction)py_MAPIStore_errstr, METH_VARARGS },
@@ -342,6 +428,7 @@ static PyMethodDef mapistore_methods[] = {
 };
 
 static PyGetSetDef mapistore_getsetters[] = {
+	{ "debuglevel", (getter)py_MAPIStore_get_debuglevel, (setter)py_MAPIStore_set_debuglevel, "Debug Level", NULL },
 	{ NULL }
 };
 
@@ -437,6 +524,9 @@ void initmapistore(void)
 
 	PyModule_AddObject(m, "MAPISTORE_FOLDER", PyInt_FromLong(MAPISTORE_FOLDER));
 	PyModule_AddObject(m, "MAPISTORE_MESSAGE", PyInt_FromLong(MAPISTORE_MESSAGE));
+
+	PyModule_AddObject(m, "FOLDER_GENERIC", PyInt_FromLong(FOLDER_GENERIC));
+	PyModule_AddObject(m, "FOLDER_SEARCH", PyInt_FromLong(FOLDER_SEARCH));
 
 	Py_INCREF(&PyMAPIStore);
 	PyModule_AddObject(m, "mapistore", (PyObject *)&PyMAPIStore);

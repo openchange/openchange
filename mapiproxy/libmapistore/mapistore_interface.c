@@ -41,6 +41,10 @@
 
 #include <string.h>
 
+/* FIXME: we can use backend_ctx->mapistore_indexing_list instead of
+ * initializing/uninitializing it each time. This also suppose we get
+ * finally ride of libmapistore/mapistore_indexing.c */
+
 /**
    \details Initialize the mapistore context
 
@@ -96,6 +100,9 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	}
 	/* MAPISTORE_v2 */
 
+	mstore_ctx->lp_ctx = loadparm_init(mstore_ctx);
+	lpcfg_load_default(mstore_ctx->lp_ctx);
+
 	return mstore_ctx;
 }
 
@@ -122,6 +129,31 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_release(struct mapistore_context *mstore
 	talloc_free(mstore_ctx);
 
 	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Set the mapistore debug level
+
+   \param mstore_ctx pointer to the mapistore context
+   \param level the debug level to set
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_set_debuglevel(struct mapistore_context *mstore_ctx, uint32_t level)
+{
+	char	*debuglevel;
+	bool	ret;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->lp_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+
+	debuglevel = talloc_asprintf(talloc_autofree_context(), "%u", level);
+	ret = lpcfg_set_cmdline(mstore_ctx->lp_ctx, "log level", debuglevel);
+	talloc_free(debuglevel);
+
+	return (ret == true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_INVALID_PARAMETER;
 }
 
 
@@ -557,20 +589,39 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_release_record(struct mapistore_context 
 						       uint64_t fmid,
 						       uint8_t type)
 {
+	enum MAPISTORE_ERROR		retval;
 	struct backend_context		*backend_ctx;
-	int				ret;
+	char				*uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 1. Search the context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend release_record */
-	ret = mapistore_backend_release_record(backend_ctx, fmid, type);
+	/* Step 2. Add an indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	/* Step 3. Search the URI matching the specified FMID within the username indexing database */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fmid, &uri);
+	if (retval) {
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_NORMAL, 
+				   "Failed to find URI matching the following FMID for user %s: 0x%.16"PRIx64"\n",
+				   backend_ctx->username, fmid);
+		goto error;
+	}
+
+	/* Step 4. Call backend release_record */
+	retval = mapistore_backend_release_record(backend_ctx, (const char *)uri, type);
+
+error:
+	/* Step 5. Delete indexing context */
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+	return retval;
 }
 
 
@@ -720,6 +771,94 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_create_uri(struct mapistore_context *mst
 	return MAPISTORE_ERR_NOT_FOUND;
 }
 
+/**
+   \details Return the URI for a default folder within a given context
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier
+   \param index the mapistore default folder to search
+   \param _uri pointer on pointer to the mapistore URI to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_create_context_uri(struct mapistore_context *mstore_ctx,
+						  uint32_t context_id, 
+						  enum MAPISTORE_DFLT_FOLDERS index,
+						  char **_uri)
+{
+	enum MAPISTORE_ERROR		retval;
+	struct backend_context		*backend_ctx;
+	char				*uri;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERR_INVALID_CONTEXT, NULL);
+	MAPISTORE_RETVAL_IF(!index, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	retval = mapistore_create_uri(mstore_ctx, index, backend_ctx->backend->uri_namespace, backend_ctx->username, &uri);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	*_uri = uri;
+	
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Return the folder identifier associated to a mapistore URI
+   relative to a context identifier. 
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the mapistore context identifier
+   \param uri the mapistore URI to lookup
+   \param folderID pointer to the folder identifier to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_get_folder_identifier_from_uri(struct mapistore_context *mstore_ctx,
+							      uint32_t context_id,
+							      const char *uri,
+							      uint64_t *folderID)
+{
+	enum MAPISTORE_ERROR	retval;
+	struct backend_context	*backend_ctx;
+	uint64_t		fid;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERR_INVALID_CONTEXT, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folderID, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Add an indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Search for the FID matching the specified URI within the username indexing database */
+	retval = mapistore_indexing_get_record_fmid_by_uri(mstore_ctx->mapistore_indexing_list, uri, &fid);
+	if (retval) {
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_NORMAL, "Failed to find FID matcthing the following URI for user %s: %s\n",
+				   backend_ctx->username, uri);
+		goto error;
+	}
+
+	/* Step 4. Copy parameter */
+	*folderID = fid;
+
+error:
+	/* Step 5. Delete indexing context */
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+	return retval;
+}
+
 
 /**
    \details Open a directory in mapistore
@@ -737,8 +876,10 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_opendir(struct mapistore_context *mstore
 						uint64_t parent_fid,
 						uint64_t fid)
 {
+	enum MAPISTORE_ERROR		retval;
 	struct backend_context		*backend_ctx;
-	int				ret;
+	char				*parent_uri;
+	char				*folder_uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -747,10 +888,26 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_opendir(struct mapistore_context *mstore
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend opendir */
-	ret = mapistore_backend_opendir(backend_ctx, parent_fid, fid);
+	/* Step 2. Create an indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	/* Step 2. Turn parent folder identifier into URI */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, parent_fid, &parent_uri);
+	if (retval) goto error;
+
+	/* Step 3. Turn folder identifier into URI */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fid, &folder_uri);
+	if (retval) goto error;
+
+	/* Step 4. Call backend opendir */
+	retval = mapistore_backend_opendir(backend_ctx, parent_uri, folder_uri);
+
+	/* Add a reference count? */
+	
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+	return !retval ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
 
@@ -799,23 +956,59 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_closedir(struct mapistore_context *mstor
 _PUBLIC_ enum MAPISTORE_ERROR mapistore_mkdir(struct mapistore_context *mstore_ctx,
 					      uint32_t context_id,
 					      uint64_t parent_fid,
-					      uint64_t fid,
-					      struct SRow *aRow)
+					      const char *folder_name,
+					      const char *folder_desc,
+					      enum FOLDER_TYPE folder_type,
+					      uint64_t *fid)
 {
 	struct backend_context		*backend_ctx;
-	enum MAPISTORE_ERROR		ret;
+	enum MAPISTORE_ERROR		retval;
+	char				*parent_uri;
+	uint64_t			folder_fid;
+	char				*folder_uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!folder_name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(folder_type != FOLDER_GENERIC && folder_type != FOLDER_SEARCH, 
+			    MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 1. Search the context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);	
-	
-	/* Step 2. Call backend mkdir */
-	ret = mapistore_backend_mkdir(backend_ctx, parent_fid, fid, aRow);
 
-	return ret;
+	/* Step 2. Create an indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 2. Turn parent folder identifier into URI */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, parent_fid, &parent_uri);
+	if (retval) goto error;
+
+	/* Step 3. Call backend mkdir */
+	retval = mapistore_backend_mkdir(backend_ctx, parent_uri, folder_name, folder_desc, folder_type, &folder_uri);
+	if (retval) goto error;
+
+	/* Step 4. Get a new FID for the folder */
+	retval = mapistore_get_new_fmid(mstore_ctx->processing_ctx, backend_ctx->username, &folder_fid);
+	if (retval) goto error;
+
+	/* Step 5. Register the folder within the indexing database */
+	retval = mapistore_indexing_add_fmid_record(mstore_ctx->mapistore_indexing_list, folder_fid,
+						    folder_uri, parent_fid, MAPISTORE_INDEXING_FOLDER);
+
+	*fid = folder_fid;
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	if (folder_uri) {
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_CRITICAL, "folder_uri = %s\n", folder_uri);
+		talloc_free(folder_uri);
+	}
+
+	return retval;
 }
 
 
@@ -837,7 +1030,9 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *mstore_c
 					      uint8_t flags)
 {
 	struct backend_context		*backend_ctx;
-	int				ret;
+	enum MAPISTORE_ERROR		retval;
+	char				*parent_uri;
+	char				*folder_uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -845,6 +1040,17 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *mstore_c
 	/* Step 1. Find the backend context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);	
+
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Retrieve URI associated to parent and folder ID */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, parent_fid, &parent_uri);
+	if (retval) goto error;
+
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fid, &folder_uri);
+	if (retval) goto error;
 
 	/* Step 2. Handle deletion of child folders / messages */
 	if (flags | DEL_FOLDERS) {
@@ -857,7 +1063,8 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *mstore_c
 		retval = mapistore_get_child_fids(mstore_ctx, context_id, fid,
 						  &childFolders, &childFolderCount);
 		if (retval) {
-			return MAPISTORE_ERR_NOT_FOUND;
+			retval = MAPISTORE_ERR_NOT_FOUND;
+			goto error;
 		}
 
 		/* Delete each subfolder in mapistore */
@@ -865,16 +1072,20 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *mstore_c
 			retval = mapistore_rmdir(mstore_ctx, context_id, fid, childFolders[i], flags);
 			if (retval) {
 				  talloc_free(childFolders);
-				  return MAPISTORE_ERR_NOT_FOUND;
+				  retval = MAPISTORE_ERR_NOT_FOUND;
+				  goto error;
 			}
 		}
 
 	}
 	
 	/* Step 3. Call backend rmdir */
-	ret = mapistore_backend_rmdir(backend_ctx, parent_fid, fid);
+	retval = mapistore_backend_rmdir(backend_ctx, parent_uri, folder_uri);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	return retval;
 }
 
 
@@ -895,19 +1106,32 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_folder_count(struct mapistore_contex
 							 uint32_t *RowCount)
 {
 	struct backend_context		*backend_ctx;
-	enum MAPISTORE_ERROR		ret;
+	enum MAPISTORE_ERROR		retval;
+	char				*folder_uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!RowCount, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 0. Ensure the context exists */
+	/* Step 1. Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 1. Call backend readdir */
-	ret = mapistore_backend_readdir_count(backend_ctx, fid, MAPISTORE_FOLDER_TABLE, RowCount);
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	return ret;
+	/* Step 3. Retrieve the folder URI from the indexing database */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fid, &folder_uri);
+	if (retval) goto error;
+
+	/* Step 4. Call backend readdir */
+	retval = mapistore_backend_readdir_count(backend_ctx, (const char *)folder_uri, MAPISTORE_FOLDER_TABLE, RowCount);
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	return retval;
 }
 
 
@@ -927,19 +1151,32 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_message_count(struct mapistore_conte
 							  uint32_t *RowCount)
 {
 	struct backend_context		*backend_ctx;
-	enum MAPISTORE_ERROR		ret;
+	enum MAPISTORE_ERROR		retval;
+	char				*folder_uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!RowCount, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 0. Ensure the context exists */
+	/* Step 1. Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Retrieve the folder URI from the indexing database */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fid, &folder_uri);
+	if (retval) goto error;
 
 	/* Step 2. Call backend readdir_count */
-	ret = mapistore_backend_readdir_count(backend_ctx, fid, MAPISTORE_MESSAGE_TABLE, RowCount);
+	retval = mapistore_backend_readdir_count(backend_ctx, (const char *)folder_uri, MAPISTORE_MESSAGE_TABLE, RowCount);
 
-	return ret;
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	return retval;
 }
 
 
@@ -965,19 +1202,32 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_table_property(struct mapistore_cont
 							   void **data)
 {
 	struct backend_context		*backend_ctx;
-	enum MAPISTORE_ERROR		ret;
+	enum MAPISTORE_ERROR		retval;
+	char				*folder_uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 1. Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend readdir */
-	ret = mapistore_backend_get_table_property(backend_ctx, fid, table_type, pos, proptag, data);
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	return ret;
+	/* Step 3. Retrieve the URI for the folder */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fid, &folder_uri);
+	if (retval) goto error;
+
+	/* Step 2. Call backend readdir */
+	retval = mapistore_backend_get_table_property(backend_ctx, (const char *)folder_uri, table_type, pos, proptag, data);
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	return retval;
 }
 
 
@@ -999,20 +1249,37 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_openmessage(struct mapistore_context *ms
 						    uint64_t mid,
 						    struct mapistore_message *msg)
 {
+	enum MAPISTORE_ERROR		retval;
 	struct backend_context		*backend_ctx;
-	int				ret;
+	char				*parent_uri;
+	char				*message_uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!msg, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 1. Search the context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend openmessage */
-	ret = mapistore_backend_openmessage(backend_ctx, parent_fid, mid, msg);
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	/* Step 3. Retrieve the URI for parent folder and message */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, parent_fid, &parent_uri);
+	if (retval) goto error;
+
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, mid, &message_uri);
+	if (retval) goto error;
+
+	/* Step 4. Call backend openmessage */
+	retval = mapistore_backend_openmessage(backend_ctx, parent_uri, message_uri, msg);
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	return retval;
 }
 
 
@@ -1030,11 +1297,13 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_openmessage(struct mapistore_context *ms
  */
 _PUBLIC_ enum MAPISTORE_ERROR mapistore_createmessage(struct mapistore_context *mstore_ctx,
 						      uint32_t context_id,
-						      uint64_t parent_fid,
-						      uint64_t mid)
+						      uint64_t parent_fid)
 {
+	enum MAPISTORE_ERROR		retval;
 	struct backend_context		*backend_ctx;
-	int				ret;
+	char				*parent_uri;
+	char				*message_uri = NULL;
+	bool				uri_register = false;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -1042,11 +1311,25 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_createmessage(struct mapistore_context *
 	/* Step 1. Search the context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	
-	/* Step 2. Call backend createmessage */
-	ret = mapistore_backend_createmessage(backend_ctx, parent_fid, mid);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Retrieve the URI for parent folder */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, parent_fid, &parent_uri);
+	if (retval) goto error;
+
+	/* Step 4. Call backend createmessage */
+	retval = mapistore_backend_createmessage(backend_ctx, parent_uri, &message_uri, &uri_register);
+	if (retval) goto error;
+	
+	/* Step 5. FIXME: Do appropriate mapistore work depending on uri_register value */
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	return retval;
 }
 
 
@@ -1056,18 +1339,19 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_createmessage(struct mapistore_context *
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
    where the message's changes will be saved
-   \param mid the message identifier to save
+   \param mid the message identifier to return or save
    \param flags flags associated to the commit operation
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ enum MAPISTORE_ERROR mapistore_savechangesmessage(struct mapistore_context *mstore_ctx,
 							   uint32_t context_id,
-							   uint64_t mid,
+							   uint64_t *mid,
 							   uint8_t flags)
 {
+	enum MAPISTORE_ERROR	retval;
 	struct backend_context	*backend_ctx;
-	int			ret;
+	char			*message_uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -1076,10 +1360,25 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_savechangesmessage(struct mapistore_cont
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend savechangesmessage */
-	ret = mapistore_backend_savechangesmessage(backend_ctx, mid, flags);
+	/* FIXME: It's either a temporary (not committed mid) or an
+	 * existing message. Take appropriate action depending on
+	 * mid value */
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Retrieve the URI for parent folder */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, *mid, &message_uri);
+	if (retval) goto error;
+
+	/* Step 4. Call backend savechangesmessage */
+	retval = mapistore_backend_savechangesmessage(backend_ctx, message_uri, flags);
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	return retval;
 }
 
 
@@ -1096,11 +1395,12 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_savechangesmessage(struct mapistore_cont
  */
 _PUBLIC_ enum MAPISTORE_ERROR mapistore_submitmessage(struct mapistore_context *mstore_ctx,
 						      uint32_t context_id,
-						      uint64_t mid,
+						      uint64_t *mid,
 						      uint8_t flags)
 {
+	enum MAPISTORE_ERROR	retval;
 	struct backend_context	*backend_ctx;
-	int			ret;
+	char			*message_uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -1109,10 +1409,25 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_submitmessage(struct mapistore_context *
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend submitmessage */
-	ret = mapistore_backend_submitmessage(backend_ctx, mid, flags);
+	/* FIXME: It's either a temporary (not committed mid) or an
+	 * existing message. Take appropriate action depending on
+	 * mid value */
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Retrieve the URI for the message */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, *mid, &message_uri);
+	if (retval) goto error;
+
+	/* Step 2. Call backend submitmessage */
+	retval = mapistore_backend_submitmessage(backend_ctx, message_uri, flags);
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+	
+	return retval;
 }
 
 
@@ -1136,8 +1451,9 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_getprops(struct mapistore_context *mstor
 						 struct SPropTagArray *properties,
 						 struct SRow *aRow)
 {
+	enum MAPISTORE_ERROR	retval;
 	struct backend_context	*backend_ctx;
-	int			ret;
+	char			*uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -1146,10 +1462,21 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_getprops(struct mapistore_context *mstor
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend getprops */
-	ret = mapistore_backend_getprops(backend_ctx, fmid, type, properties, aRow);
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	/* Step 3. Retrieve the uri for the fmid from the indexing database */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fmid, &uri);
+	if (retval) goto error;
+
+	/* Step 4. Call backend getprops */
+	retval = mapistore_backend_getprops(backend_ctx, uri, type, properties, aRow);
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	return retval;
 }
 
 /**
@@ -1170,8 +1497,10 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_fid_by_name(struct mapistore_context
 							const char *name,
 							uint64_t *fid)
 {
+	enum MAPISTORE_ERROR	retval;
 	struct backend_context	*backend_ctx;
-	enum MAPISTORE_ERROR	ret;
+	char			*uri;
+	char			*parent_uri;
 
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 	MAPISTORE_RETVAL_IF(!name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -1181,10 +1510,25 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_fid_by_name(struct mapistore_context
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend getprops */
-	ret = mapistore_backend_get_fid_by_name(backend_ctx, parent_fid, name, fid);
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	return ret;
+	/* Step 3. Retrieve the folder URI from the indexing database */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, parent_fid, &parent_uri);
+	if (retval) goto error;
+
+	/* Step 2. Call backend getprops */
+	retval = mapistore_backend_get_fid_by_name(backend_ctx, parent_uri, name, &uri);
+	if (retval) goto error;
+
+	/* Step 3. Retrieve the FID associated to this uri*/
+	retval = mapistore_indexing_get_record_fmid_by_uri(mstore_ctx->mapistore_indexing_list, uri, fid);
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	return retval;
 }
 
 /**
@@ -1205,8 +1549,9 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_setprops(struct mapistore_context *mstor
 						 uint8_t type,
 						 struct SRow *aRow)
 {
+	enum MAPISTORE_ERROR	retval;
 	struct backend_context	*backend_ctx;
-	int			ret;
+	char			*uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -1215,10 +1560,21 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_setprops(struct mapistore_context *mstor
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend setprops */
-	ret = mapistore_backend_setprops(backend_ctx, fmid, type, aRow);
+	/* Step 2. Create mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	/* Step 3. Retrieve the uri for the fmid from the indexing database */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fmid, &uri);
+	if (retval) goto error;
+
+	/* Step 4. Call backend setprops */
+	retval = mapistore_backend_setprops(backend_ctx, uri, type, aRow);
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+	
+	return retval;
 }
 
 
@@ -1243,34 +1599,54 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_child_fids(struct mapistore_context 
 						       uint64_t *child_fids[],
 						       uint32_t *child_fid_count)
 {
+	enum MAPISTORE_ERROR		retval;
 	struct backend_context		*backend_ctx;
+	char				*folder_uri;
 	uint32_t			i;
 	void				*data;
-	int				ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
-	/* Step 0. Ensure the context exists */
+	/* Step 1. Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Retrieve the folder URI from the indexing database */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fid, &folder_uri);
+	if (retval) {
+		mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+		return retval;
+	}
+
 	/* Step 1. Call backend readdir to get the folder count */
-	ret = mapistore_backend_readdir_count(backend_ctx, fid, MAPISTORE_FOLDER_TABLE, child_fid_count);
-	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_NO_DIRECTORY, NULL);
-	
+	retval = mapistore_backend_readdir_count(backend_ctx, folder_uri, MAPISTORE_FOLDER_TABLE, child_fid_count);
+	if (retval) {
+		mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+		return retval;
+	}
+
+	retval = mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
 	/* Step 2. Create a suitable sized array for the fids */
 	*child_fids = talloc_zero_array((TALLOC_CTX *)mstore_ctx, uint64_t, *child_fid_count);
+	MAPISTORE_RETVAL_IF(!*child_fids, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	/* Step 3. Fill the array */
 	for (i = 0; i < *child_fid_count; ++i) {
 		// TODO: add error checking for this call
-		ret = mapistore_get_table_property(mstore_ctx, context_id, MAPISTORE_FOLDER_TABLE, fid,
-						   PR_FID, i, &data);
+		retval = mapistore_get_table_property(mstore_ctx, context_id, MAPISTORE_FOLDER_TABLE, 
+						      fid, PR_FID, i, &data);
+		MAPISTORE_RETVAL_IF(retval, retval, *child_fids);
 		(*child_fids)[i] = *((uint64_t*)(data));
 	}
 
-	return MAPISTORE_SUCCESS;
+	return retval;
 }
 
 /**
@@ -1289,8 +1665,9 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_deletemessage(struct mapistore_context *
 						      uint64_t mid,
 						      enum MAPISTORE_DELETION_TYPE deletion_type)
 {
+	enum MAPISTORE_ERROR	retval;
 	struct backend_context	*backend_ctx;
-	int			ret;
+	char			*message_uri;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -1299,8 +1676,19 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_deletemessage(struct mapistore_context *
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend operation */
-	ret = mapistore_backend_deletemessage(backend_ctx, mid, deletion_type);
+	/* Step 2. Create the mapistore_indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	/* Step 3. Retrieve the message URI from the indexing database */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, mid, &message_uri);
+	if (retval) goto error;
+
+	/* Step 4. Call backend operation */
+	retval = mapistore_backend_deletemessage(backend_ctx, message_uri, deletion_type);
+
+error:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+
+	return retval;
 }

@@ -72,6 +72,8 @@ struct ldb_wrap {
 };
 
 
+#define	MAPISTORE_NAMESPACE_COMMON	"://"
+
 /**
    mapistore database context.
 
@@ -320,23 +322,23 @@ enum MAPISTORE_ERROR mapistore_backend_add_ref_count(struct backend_context *);
 enum MAPISTORE_ERROR mapistore_backend_delete_context(struct backend_context *);
 enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *, char **);
 enum MAPISTORE_ERROR mapistore_backend_root_mkdir(struct backend_context *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *);
-enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *, uint64_t, uint8_t);
-enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *, uint64_t, uint8_t, char **);
-enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *, uint64_t, uint64_t);
-enum MAPISTORE_ERROR mapistore_backend_mkdir(struct backend_context *, uint64_t, uint64_t, struct SRow *);
-enum MAPISTORE_ERROR mapistore_backend_readdir_count(struct backend_context *, uint64_t, enum MAPISTORE_TABLE_TYPE, uint32_t *);
-enum MAPISTORE_ERROR mapistore_backend_rmdir(struct backend_context *, uint64_t, uint64_t);
-enum MAPISTORE_ERROR mapistore_backend_get_table_property(struct backend_context *, uint64_t, enum MAPISTORE_TABLE_TYPE, uint32_t, 
-							  enum MAPITAGS, void **);
-enum MAPISTORE_ERROR mapistore_backend_openmessage(struct backend_context *, uint64_t, uint64_t, struct mapistore_message *);
-enum MAPISTORE_ERROR mapistore_backend_createmessage(struct backend_context *, uint64_t, uint64_t);
-enum MAPISTORE_ERROR mapistore_backend_savechangesmessage(struct backend_context *, uint64_t, uint8_t);
-enum MAPISTORE_ERROR mapistore_backend_submitmessage(struct backend_context *, uint64_t, uint8_t);
-enum MAPISTORE_ERROR mapistore_backend_getprops(struct backend_context *, uint64_t, uint8_t, 
+enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *, const char *, uint8_t);
+enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *, const char *, uint8_t, char **);
+enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *, const char *, const char *);
+enum MAPISTORE_ERROR mapistore_backend_mkdir(struct backend_context *, char *, const char *, const char *, enum FOLDER_TYPE, char **);
+enum MAPISTORE_ERROR mapistore_backend_readdir_count(struct backend_context *, const char *, enum MAPISTORE_TABLE_TYPE, uint32_t *);
+enum MAPISTORE_ERROR mapistore_backend_rmdir(struct backend_context *, const char *, const char *);
+enum MAPISTORE_ERROR mapistore_backend_get_table_property(struct backend_context *, const char *, 
+							  enum MAPISTORE_TABLE_TYPE, uint32_t, enum MAPITAGS, void **);
+enum MAPISTORE_ERROR mapistore_backend_openmessage(struct backend_context *, const char *, const char *, struct mapistore_message *);
+enum MAPISTORE_ERROR mapistore_backend_createmessage(struct backend_context *, const char *, char **, bool *);
+enum MAPISTORE_ERROR mapistore_backend_savechangesmessage(struct backend_context *, const char *, uint8_t);
+enum MAPISTORE_ERROR mapistore_backend_submitmessage(struct backend_context *, const char *, uint8_t);
+enum MAPISTORE_ERROR mapistore_backend_getprops(struct backend_context *, const char *, uint8_t, 
 						struct SPropTagArray *, struct SRow *);
-enum MAPISTORE_ERROR mapistore_backend_setprops(struct backend_context *, uint64_t, uint8_t, struct SRow *);
-enum MAPISTORE_ERROR mapistore_backend_get_fid_by_name(struct backend_context *, uint64_t, const char *, uint64_t *);
-enum MAPISTORE_ERROR mapistore_backend_deletemessage(struct backend_context *, uint64_t, enum MAPISTORE_DELETION_TYPE);
+enum MAPISTORE_ERROR mapistore_backend_setprops(struct backend_context *, const char *, uint8_t, struct SRow *);
+enum MAPISTORE_ERROR mapistore_backend_get_fid_by_name(struct backend_context *, const char *, const char *, char **);
+enum MAPISTORE_ERROR mapistore_backend_deletemessage(struct backend_context *, const char *, enum MAPISTORE_DELETION_TYPE);
 
 /* definitions from mapistore_tdb_wrap.c */
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
@@ -349,6 +351,7 @@ enum MAPISTORE_ERROR mapistore_indexing_dump_object(struct mapistore_indexing_en
 enum MAPISTORE_ERROR mapistore_indexing_dump_reverse_entry(struct mapistore_indexing_entry_r *);
 enum MAPISTORE_ERROR mapistore_indexing_record_search_uri(struct mapistore_indexing_context_list *, const char *);
 enum MAPISTORE_ERROR mapistore_indexing_get_record_fmid_by_uri(struct mapistore_indexing_context_list *, const char *, uint64_t *);
+enum MAPISTORE_ERROR mapistore_indexing_get_record_uri_by_fmid(struct mapistore_indexing_context_list *, uint64_t, char **);
 
 /* MAPISTORE_v1 */
 struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);

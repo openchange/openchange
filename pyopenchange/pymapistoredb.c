@@ -33,7 +33,7 @@ static PyObject *py_MAPIStoreDB_new(PyTypeObject *type, PyObject *args, PyObject
 	const char			*path = NULL;
 
 	/* Path is optional */
-	PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwnames, &path);
+	PyArg_ParseTupleAndKeywords(args, kwargs, "z", kwnames, &path);
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {

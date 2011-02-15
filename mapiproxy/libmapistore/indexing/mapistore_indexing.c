@@ -502,6 +502,37 @@ enum MAPISTORE_ERROR mapistore_indexing_get_record_fmid_by_uri(struct mapistore_
 }
 
 
+/**
+   \details Return the URI associated to a mapistore FMID for a given
+   folder or message
+
+   \param mictx pointer to the mapistore indexing context list
+   \param fmid the folder or message identifier to lookup
+   \param uri pointer on pointer to the mapistore URI to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_indexing_get_record_uri_by_fmid(struct mapistore_indexing_context_list *mictx,
+							       uint64_t fmid,
+							       char **uri)
+{
+	enum MAPISTORE_ERROR			retval;
+	struct mapistore_indexing_entry		entry;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	retval = mapistore_indexing_get_entry(mictx, fmid, &entry);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	*uri = (char *)entry.info.mapistore_indexing_v1.mapistoreURI;
+
+	return MAPISTORE_SUCCESS;
+}
+
+
 static enum MAPISTORE_ERROR mapistore_indexing_update_entry(struct mapistore_indexing_context_list *mictx,
 							    uint64_t fmid,
 							    struct mapistore_indexing_entry *entry)

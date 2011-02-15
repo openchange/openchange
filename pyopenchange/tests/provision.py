@@ -106,8 +106,9 @@ def start():
     MAPIStore = mapistore.mapistore()
     
     newTitle("Adding a context over Mailbox Root Folder", '=')
-    context_id = MAPIStore.add_context(username, mailbox_root)
-    print "\t* context_id = %s" % context_id
+    (context_id, mailbox_fid) = MAPIStore.add_context(username, mailbox_root)
+    print "\t* context_id  = %s" % context_id
+    print "\t* mailbox FID = 0x%.16x" % mailbox_fid
 
     newTitle("Create the mailbox hierarchy", '=')
     
@@ -206,7 +207,29 @@ def start():
                                   index=mapistore.MDB_DRAFTS, 
                                   folder_name="")
     TreeLeafStatus("Drafts", retval, MAPIStore.errstr(retval))
-    
+
+    # MDB_SYNC_ISSUES
+    retval = MAPIStore.root_mkdir(context_id=context_id,
+                                  parent_index=mapistore.MDB_IPM_SUBTREE,
+                                  index=mapistore.MDB_SYNC_ISSUES,
+                                  folder_name="")
+    TreeLeafStatus("Sync Issues", retval, MAPIStore.errstr(retval))
+
+    TreeIndent()
+
+    # MDB_SYNC_ISSUES > MDB_CONFLICTS
+    ipm_subtree = MAPIStore.get_folder_identifier(context_id=context_id,
+                                                  index=mapistore.MDB_IPM_SUBTREE,
+                                                  uri=None)
+    sync_fid = MAPIStore.get_folder_identifier(context_id=context_id,
+                                               index=mapistore.MDB_SYNC_ISSUES,
+                                               uri=None)
+    print "IPM Subtree           FID: 0x%.16x" % ipm_subtree
+    print "Synchronization Issue FID: 0x%.16x" % sync_fid
+    MAPIStore.opendir(context_id=context_id, parent_fid=ipm_subtree, fid=sync_fid)
+    conflicts_fid = MAPIStore.mkdir(context_id, sync_fid, "Conflicts", None, mapistore.FOLDER_GENERIC)
+    print "Conflicts             FID: 0x%.16x" % conflicts_fid
+
     TreeDeIndent()
     
     # MDB_COMMON_VIEWS
@@ -251,8 +274,9 @@ def start():
                                   folder_name="")
     TreeLeafStatus("Reminders", retval, MAPIStore.errstr(retval))
 
+
     newTitle("Setting mailbox folders to fsocpf", '=')
-    new_uri = MAPIStore.get_mapistore_uri(mapistoredb.MDB_INBOX,
+    new_uri = MAPIStore.get_mapistore_uri(mapistore.MDB_INBOX,
                                           username, 
                                           "fsocpf://")
     retval = MAPIStore.set_mapistore_uri(context_id, mapistore.MDB_INBOX, new_uri)

@@ -95,7 +95,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 		messageID = object->object.message->messageID;
 		contextID = object->object.message->contextID;
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
-		mapistore_submitmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags);
+		/* mapistore_submitmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags); */
 		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
 		break;
 	}

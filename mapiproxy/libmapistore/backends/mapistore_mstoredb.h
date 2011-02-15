@@ -55,6 +55,21 @@ struct mstoredb_context {
 
 #define	MDB_LDIF_FILENAME	"namedprops_mstoredb.ldif"
 
+#define	MDB_FOLDER_SIMPLE_LDIF_TMPL			\
+	"dn: %s\n"					\
+	"objectClass: container\n"			\
+	"cn: %s\n"					\
+	"PidTagFolderType: %d\n"			\
+	"PidTagDisplayName: %s\n"			
+
+#define	MDB_FOLDER_WITH_NAME_LDIF_TMPL			\
+	MDB_FOLDER_SIMPLE_LDIF_TMPL			\
+	"\n"
+
+#define	MDB_FOLDER_WITH_COMMENT_LDIF_TMPL		\
+	MDB_FOLDER_SIMPLE_LDIF_TMPL			\
+	"PidTagComment: %s\n\n"				
+
 struct mstoredb_dflt_folders {
 	enum MAPISTORE_DFLT_FOLDERS	index;
 	const char			*name;

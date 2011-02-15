@@ -35,9 +35,8 @@
 #include <dirent.h>
 
 struct fsocpf_folder {
-	uint64_t			fid;
 	DIR				*dir;
-	char				*path;
+	char				*uri;
 };
 
 struct fsocpf_folder_list {
@@ -47,8 +46,8 @@ struct fsocpf_folder_list {
 };
 
 struct fsocpf_message {
-	uint64_t			mid;
-	uint64_t			fid;
+	char				*uri;
+	char				*folder_uri;
 	uint32_t			ocpf_context_id;
 	char				*path;
 };
@@ -66,7 +65,7 @@ struct fsocpf_context {
 	char				*uri;
 	struct fsocpf_folder_list	*folders;
 	struct fsocpf_message_list	*messages;
-	uint64_t			fid;
+	char				*root_uri;
 	DIR				*dir;
 };
 

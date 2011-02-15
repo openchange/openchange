@@ -101,7 +101,37 @@ enum MAPISTORE_ERROR mapistore_exist(struct mapistore_backend_context *ctx,
 	/* Step 2. Search the URI */
 	retval = mapistore_indexing_record_search_uri(mstore_ctx->mapistore_indexing_list, mapistore_uri);
 
+	/* Step 3. Delete indexing context */
+	mapistore_indexing_context_del(mstore_ctx, username);
+
 	return retval;
+}
+
+
+/**
+   \details Return a mapistore URI stripped from its namespace
+
+   \param uri the URI to strip
+   \param stripped_uri pointer on pointer to the stripped URI to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_strip_ns_from_uri(const char *uri, char **stripped_uri)
+{
+	char		*tmp;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!stripped_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Search for :// which terminates any valid namespace */
+	tmp = strstr(uri, MAPISTORE_NAMESPACE_COMMON);
+	MAPISTORE_RETVAL_IF(!tmp, MAPISTORE_ERR_NOT_FOUND, NULL);
+	MAPISTORE_RETVAL_IF(!tmp[strlen(MAPISTORE_NAMESPACE_COMMON)+1], MAPISTORE_ERR_INVALID_NAMESPACE, NULL);
+
+	*stripped_uri = &tmp[strlen(MAPISTORE_NAMESPACE_COMMON)];
+
+	return MAPISTORE_SUCCESS;
 }
 
 /**

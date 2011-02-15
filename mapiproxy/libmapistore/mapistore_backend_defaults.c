@@ -39,8 +39,10 @@ static enum MAPISTORE_ERROR mapistore_op_defaults_init(void)
 
 
 static enum MAPISTORE_ERROR mapistore_op_defaults_create_context(struct mapistore_backend_context *mstoredb_ctx, 
-								 const char *login_user, const char *username,
-								 const char *uri, void **private_data)
+								 const char *login_user, 
+								 const char *username,
+								 const char *uri, 
+								 void **private_data)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
@@ -52,32 +54,45 @@ static enum MAPISTORE_ERROR mapistore_op_defaults_delete_context(void *private_d
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_release_record(void *private_data, uint64_t fmid, uint8_t type)
+static enum MAPISTORE_ERROR mapistore_op_defaults_release_record(void *private_data, 
+								 const char *uri, 
+								 uint8_t type)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_get_path(void *private_data, uint64_t fmid, uint8_t type, char **path)
+static enum MAPISTORE_ERROR mapistore_op_defaults_get_path(void *private_data, 
+							   const char *uri,  
+							   uint8_t type, 
+							   char **path)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_mkdir(void *private_data, uint64_t parent_fid, 
-							uint64_t fid, struct SRow *aRow)
+static enum MAPISTORE_ERROR mapistore_op_defaults_mkdir(void *private_data,
+							const char *parent_uri,
+							const char *folder_name,
+							const char *folder_desc,
+							enum FOLDER_TYPE folder_type,
+							char **folder_uri)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_rmdir(void *private_data, uint64_t parent_fid, uint64_t fid)
+static enum MAPISTORE_ERROR mapistore_op_defaults_rmdir(void *private_data, 
+							const char *parent_uri, 
+							const char *folder_uri)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_opendir(void *private_data, uint64_t parent_fid, uint64_t fid)
+static enum MAPISTORE_ERROR mapistore_op_defaults_opendir(void *private_data, 
+							  const char *parent_uri, 
+							  const char *folder_uri)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
@@ -89,7 +104,8 @@ static enum MAPISTORE_ERROR mapistore_op_defaults_closedir(void *private_data)
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_readdir_count(void *private_data, uint64_t fid,
+static enum MAPISTORE_ERROR mapistore_op_defaults_readdir_count(void *private_data, 
+								const char *folder_uri,
 								enum MAPISTORE_TABLE_TYPE table_type,
 								uint32_t *RowCount)
 {
@@ -97,7 +113,8 @@ static enum MAPISTORE_ERROR mapistore_op_defaults_readdir_count(void *private_da
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_get_table_property(void *private_data, uint64_t fid,
+static enum MAPISTORE_ERROR mapistore_op_defaults_get_table_property(void *private_data, 
+								     const char *folder_uri,
 								     enum MAPISTORE_TABLE_TYPE table_type, 
 								     uint32_t pos,
 								     enum MAPITAGS proptag,
@@ -107,63 +124,79 @@ static enum MAPISTORE_ERROR mapistore_op_defaults_get_table_property(void *priva
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_openmessage(void *private_data, uint64_t fid,
-							      uint64_t mid,
+static enum MAPISTORE_ERROR mapistore_op_defaults_openmessage(void *private_data,
+							      const char *folder_uri,
+							      const char *message_uri,
 							      struct mapistore_message *msg)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_createmessage(void *private_data, uint64_t fid,
-								uint64_t mid)
+static enum MAPISTORE_ERROR mapistore_op_defaults_createmessage(void *private_data, 
+								const char *folder_uri,
+								char **message_uri,
+								bool *uri_register)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_savechangesmessage(void *private_data, uint64_t mid,
+static enum MAPISTORE_ERROR mapistore_op_defaults_savechangesmessage(void *private_data, 
+								     const char *message_uri,
 								     uint8_t flags)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_submitmessage(void *private_data, uint64_t mid, uint8_t flags)
+static enum MAPISTORE_ERROR mapistore_op_defaults_submitmessage(void *private_data, 
+								const char *message_uri,
+								uint8_t flags)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_deletemessage(void *private_data, uint64_t mid, 
+static enum MAPISTORE_ERROR mapistore_op_defaults_deletemessage(void *private_data, 
+								const char *message_uri, 
 								enum MAPISTORE_DELETION_TYPE deletion_type)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_get_fid_by_name(void *private_data, uint64_t parent_fid,
-								  const char *foldername, uint64_t *fid)
+static enum MAPISTORE_ERROR mapistore_op_defaults_get_fid_by_name(void *private_data, 
+								  const char *parent_uri,
+								  const char *foldername, 
+								  char **fid)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_getprops(void *private_data, uint64_t fmid, uint8_t type,
-							   struct SPropTagArray *SPropTagArray, struct SRow *aRow)
-{
-	return MAPISTORE_ERR_NOT_IMPLEMENTED;
-}
-
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_setprops(void *private_data, uint64_t fmid, uint8_t type,
+static enum MAPISTORE_ERROR mapistore_op_defaults_getprops(void *private_data, 
+							   const char *uri, 
+							   uint8_t type,
+							   struct SPropTagArray *SPropTagArray, 
 							   struct SRow *aRow)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_db_create_uri(TALLOC_CTX *mem_ctx, uint32_t index, const char *username,
+static enum MAPISTORE_ERROR mapistore_op_defaults_setprops(void *private_data, 
+							   const char *uri,
+							   uint8_t type,
+							   struct SRow *aRow)
+{
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+
+static enum MAPISTORE_ERROR mapistore_op_defaults_db_create_uri(TALLOC_CTX *mem_ctx, 
+								uint32_t index, 
+								const char *username,
 								char **mapistore_uri)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;

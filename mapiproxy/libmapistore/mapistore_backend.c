@@ -450,9 +450,9 @@ static enum MAPISTORE_ERROR delete_context(void *data)
  }
 
 
- _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *bctx, uint64_t fmid, uint8_t type)
+ _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *bctx, const char *uri, uint8_t type)
  {
-	 return bctx->backend->release_record(bctx->private_data, fmid, type);
+	 return bctx->backend->release_record(bctx->private_data, uri, type);
  }
 
 
@@ -542,12 +542,17 @@ enum MAPISTORE_ERROR mapistore_backend_root_mkdir(struct backend_context *bctx, 
 	 return NULL;
  }
 
- enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *bctx, uint64_t fmid, uint8_t type, char **path)
+ enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *bctx, const char *uri, uint8_t type, char **path)
  {
 	 enum MAPISTORE_ERROR	ret;
 	 char			*bpath = NULL;
 
-	 ret = bctx->backend->get_path(bctx->private_data, fmid, type, &bpath);
+	 /* Sanity checks */
+	 MAPISTORE_RETVAL_IF(!bctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	 MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	 MAPISTORE_RETVAL_IF(!path, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	 ret = bctx->backend->get_path(bctx->private_data, uri, type, &bpath);
 
 	 if (!ret) {
 		 *path = talloc_asprintf(bctx, "%s%s", bctx->backend->uri_namespace, bpath);
@@ -559,117 +564,133 @@ enum MAPISTORE_ERROR mapistore_backend_root_mkdir(struct backend_context *bctx, 
  }
 
 
- enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *bctx, uint64_t parent_fid, uint64_t fid)
- {
-	 return bctx->backend->op_opendir(bctx->private_data, parent_fid, fid);
- }
+ /* enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *bctx, uint64_t parent_fid, uint64_t fid) */
+ /* { */
+ /* 	 return bctx->backend->op_opendir(bctx->private_data, parent_fid, fid); */
+ /* } */
+
+enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *bctx, 
+					       const char *parent_uri, 
+					       const char *folder_uri)
+{
+	return bctx->backend->op_opendir(bctx->private_data, parent_uri, folder_uri);
+}
 
 
- enum MAPISTORE_ERROR mapistore_backend_mkdir(struct backend_context *bctx, 
-					      uint64_t parent_fid, 
-					      uint64_t fid,
-					      struct SRow *aRow)
- {
-	 return bctx->backend->op_mkdir(bctx->private_data, parent_fid, fid, aRow);
- }
+enum MAPISTORE_ERROR mapistore_backend_mkdir(struct backend_context *bctx,
+					     char *parent_uri,
+					     const char *folder_name,
+					     const char *folder_desc,
+					     enum FOLDER_TYPE folder_type,
+					     char **folder_uri)
+{
+	enum MAPISTORE_ERROR	retval;
+
+	retval = bctx->backend->op_mkdir(bctx->private_data, parent_uri, folder_name, folder_desc, folder_type, folder_uri);
+
+	return retval;
+}
+
 
  enum MAPISTORE_ERROR mapistore_backend_rmdir(struct backend_context *bctx,
-					      uint64_t parent_fid,
-					      uint64_t fid)
+					      const char *parent_uri,
+					      const char *folder_uri)
  {
-	 return bctx->backend->op_rmdir(bctx->private_data, parent_fid, fid);
+	 return bctx->backend->op_rmdir(bctx->private_data, parent_uri, folder_uri);
  }
 
+
  enum MAPISTORE_ERROR mapistore_backend_readdir_count(struct backend_context *bctx, 
-						      uint64_t fid, 
+						      const char *folder_uri,
 						      enum MAPISTORE_TABLE_TYPE table_type, 
 						      uint32_t *RowCount)
  {
-	 enum MAPISTORE_ERROR		ret;
+	 enum MAPISTORE_ERROR		retval;
 	 uint32_t			count = 0;
 
-	 ret = bctx->backend->op_readdir_count(bctx->private_data, fid, table_type, &count);
+	 retval = bctx->backend->op_readdir_count(bctx->private_data, folder_uri, table_type, &count);
 	 *RowCount = count;
 
-	 return ret;
+	 return retval;
  }
 
 
  enum MAPISTORE_ERROR mapistore_backend_get_table_property(struct backend_context *bctx, 
-							   uint64_t fid, 
+							   const char * folder_uri,
 							   enum MAPISTORE_TABLE_TYPE table_type,
 							   uint32_t pos, 
 							   enum MAPITAGS proptag, 
 							   void **data)
  {
-	 return bctx->backend->op_get_table_property(bctx->private_data, fid, table_type, pos, proptag, data);
+	 return bctx->backend->op_get_table_property(bctx->private_data, folder_uri, table_type, pos, proptag, data);
  }
 
 
  enum MAPISTORE_ERROR mapistore_backend_openmessage(struct backend_context *bctx, 
-						    uint64_t parent_fid, 
-						    uint64_t mid, 
+						    const char *parent_uri,
+						    const char *message_uri,
 						    struct mapistore_message *msg)
  {
-	 return bctx->backend->op_openmessage(bctx->private_data, parent_fid, mid, msg);
+	 return bctx->backend->op_openmessage(bctx->private_data, parent_uri, message_uri, msg);
  }
 
 
  enum MAPISTORE_ERROR mapistore_backend_createmessage(struct backend_context *bctx, 
-						      uint64_t parent_fid, 
-						      uint64_t mid)
+						      const char *parent_uri,
+						      char **message_uri, 
+						      bool *uri_register)
  {
-	 return bctx->backend->op_createmessage(bctx->private_data, parent_fid, mid);
+	 return bctx->backend->op_createmessage(bctx->private_data, parent_uri, message_uri, uri_register);
  }
 
 
  enum MAPISTORE_ERROR mapistore_backend_savechangesmessage(struct backend_context *bctx, 
-							   uint64_t mid, 
+							   const char *message_uri, 
 							   uint8_t flags)
  {
-	 return bctx->backend->op_savechangesmessage(bctx->private_data, mid, flags);
+	 return bctx->backend->op_savechangesmessage(bctx->private_data, message_uri, flags);
  }
 
 
  enum MAPISTORE_ERROR mapistore_backend_submitmessage(struct backend_context *bctx, 
-						      uint64_t mid, 
+						      const char *message_uri, 
 						      uint8_t flags)
  {
-	 return bctx->backend->op_submitmessage(bctx->private_data, mid, flags);
+	 return bctx->backend->op_submitmessage(bctx->private_data, message_uri, flags);
  }
 
 
  enum MAPISTORE_ERROR mapistore_backend_getprops(struct backend_context *bctx, 
-						 uint64_t fmid, 
+						 const char *uri,
 						 uint8_t type, 
 						 struct SPropTagArray *SPropTagArray, 
 						 struct SRow *aRow)
  {
-	 return bctx->backend->op_getprops(bctx->private_data, fmid, type, SPropTagArray, aRow);
+	 return bctx->backend->op_getprops(bctx->private_data, uri, type, SPropTagArray, aRow);
  }
 
 
  enum MAPISTORE_ERROR mapistore_backend_get_fid_by_name(struct backend_context *bctx,
-							uint64_t parent_fid,
+							const char *parent_uri,
 							const char *name,
-							uint64_t *fid)
+							char **uri)
  {
-	 return bctx->backend->op_get_fid_by_name(bctx->private_data, parent_fid, name, fid);
+	 return bctx->backend->op_get_fid_by_name(bctx->private_data, parent_uri, name, uri);
  }
 
 
 
  enum MAPISTORE_ERROR mapistore_backend_setprops(struct backend_context *bctx, 
-						 uint64_t fmid, 
+						 const char *uri, 
 						 uint8_t type, 
 						 struct SRow *aRow)
  {
-	 return bctx->backend->op_setprops(bctx->private_data, fmid, type, aRow);
+	 return bctx->backend->op_setprops(bctx->private_data, uri, type, aRow);
  }
 
  enum MAPISTORE_ERROR mapistore_backend_deletemessage(struct backend_context *bctx, 
-						      uint64_t mid, 
+						      const char *message_uri, 
 						      enum MAPISTORE_DELETION_TYPE deletion_type)
 {
-	return bctx->backend->op_deletemessage(bctx->private_data, mid, deletion_type);
+	return bctx->backend->op_deletemessage(bctx->private_data, message_uri, deletion_type);
 }

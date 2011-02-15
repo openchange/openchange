@@ -546,8 +546,9 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 	OPENCHANGE_RETVAL_IF(retmapi, retmapi, NULL);
 
 	/* Step 4. Create folder in mapistore */
-	retval = mapistore_mkdir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid, response->folder_id, 
-				 aRow);
+	/* FIXME: THIS IS MAPISTORE V1 CODE TO BE CHANGED */
+	/* retval = mapistore_mkdir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid, response->folder_id,  */
+	/* 			 aRow); */
 	if (retval == MAPISTORE_ERR_EXIST) {
 		/* folder with this name already exists */
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder Duplicate Folder error\n"));

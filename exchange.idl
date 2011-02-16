@@ -2346,7 +2346,7 @@ System Attendant Private Interface
 		[switch_is(ByteCount)]	MaximumByteCount	MaximumByteCount;
 	} ReadStream_req;
 
-	typedef [flag(NDR_ALIGN2)] struct {
+	typedef [flag(NDR_NOALIGN)] struct {
 		[subcontext(2), flag(NDR_REMAINING)] DATA_BLOB data;
 	} ReadStream_repl;
 

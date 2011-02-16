@@ -1291,11 +1291,9 @@ error:
    \details Create a message in mapistore
 
    \param mstore_ctx pointer to the mapistore context
-
    \param context_id the context identifier referencing the backend
-   where the messagewill be created
+   where the message will be created
    \param parent_fid the parent folder identifier
-   \param mid the message identifier to create
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */

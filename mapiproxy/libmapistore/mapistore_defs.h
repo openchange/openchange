@@ -79,9 +79,9 @@ enum MAPISTORE_DFLT_FOLDERS {
    use for Internal named properties provisioning purposes
  */
 enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE {
-	MAPISTORE_NAMEDPROPS_PROVISION_NONE	= 0, /** < No LDIF data associated */
-	MAPISTORE_NAMEDPROPS_PROVISION_FILE	= 1, /** < LDIF information are retrieved from a file */
-	MAPISTORE_NAMEDPROPS_PROVISION_BUFFER	= 2  /** < LDIF information are retrieved from a buffer */
+	MAPISTORE_NAMEDPROPS_PROVISION_NONE	= 0, /**< No LDIF data associated */
+	MAPISTORE_NAMEDPROPS_PROVISION_FILE	= 1, /**< LDIF information are retrieved from a file */
+	MAPISTORE_NAMEDPROPS_PROVISION_BUFFER	= 2  /**< LDIF information are retrieved from a buffer */
 };
 
 /**

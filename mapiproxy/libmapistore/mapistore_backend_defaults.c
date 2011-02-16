@@ -216,8 +216,19 @@ static enum MAPISTORE_ERROR mapistore_op_defaults_db_mkdir(void *private_data, e
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
+/**
+ \brief Set default implementations for all the backend methods
+ 
+ The default implementations just fail (returning MAPISTORE_ERR_NOT_IMPLEMENTED), but
+ that is a lot better than forgetting to implement one and having the backend crash. You should
+ call this function before setting any of your own values.
+ 
+ \param backend the backend to set the defaults on
+ 
+ \return MAPISTORE_SUCCESS on success, otherwise a MAPISTORE_ERROR value
+*/
 
-extern enum MAPISTORE_ERROR mapistore_backend_init_defaults(struct mapistore_backend *backend)
+enum MAPISTORE_ERROR mapistore_backend_init_defaults(struct mapistore_backend *backend)
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -250,11 +261,9 @@ extern enum MAPISTORE_ERROR mapistore_backend_init_defaults(struct mapistore_bac
 	backend->op_submitmessage = mapistore_op_defaults_submitmessage;
 	backend->op_deletemessage = mapistore_op_defaults_deletemessage;
 
-	
 	/* Common semantics */
 	backend->op_getprops = mapistore_op_defaults_getprops;
 	backend->op_setprops = mapistore_op_defaults_setprops;
-
 
 	/* MAPIStoreDB/Store semantics */
 	backend->op_db_create_uri = mapistore_op_defaults_db_create_uri;

@@ -51,15 +51,45 @@ static struct mstore_backend {
 
 int					num_backends;
 
-
 /**
-   \details Register mapistore backends
+  \brief Register a backend
+ 
+  This function registers a backend with mapistore.
 
-   \param backend pointer to the mapistore backend to register
+  The general approach is to create a mapistore_backend object within the 
+  mapistore_init_backend() entry point, fill in the various structure elements
+  and function pointers, and then call mapistore_backend_register().
+ 
+  \code
+  enum MAPISTORE_ERROR mapistore_init_backend(void)
+  {
+    enum MAPISTORE_ERROR	retval;
+    struct mapistore_backend	demo_backend;
 
-   \return MAPISTORE_SUCCESS on success
+    retval = mapistore_backend_init_defaults(&demo_backend);
+    MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+    demo_backend.name = "demo";
+    demo_backend.description = "this is just a demostration of the mapistore backend API";
+    demo_backend.uri_namespace = "demo://";
+    demo.init = demo_init; // calls demo_init() on startup
+    ... // more function pointers here.
+    
+    mapistore_backend_register(&demo_backend);
+    if (retval != MAPISTORE_SUCCESS) {
+	MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to register the '%s' mapistore backend\n", demo_backend.name);
+        return retval;
+    }
+
+    return MAPISTORE_SUCCESS;
+  }
+  \endcode
+
+  \param backend pointer to the mapistore backend to register
+
+  \return MAPISTORE_SUCCESS on success
  */
-_PUBLIC_ extern enum MAPISTORE_ERROR mapistore_backend_register(const struct mapistore_backend *backend)
+_PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_register(const struct mapistore_backend *backend)
 {
 	int				i;
 

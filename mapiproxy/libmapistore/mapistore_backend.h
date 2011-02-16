@@ -76,42 +76,14 @@ struct mapistore_backend {
 
 __BEGIN_DECLS
 
-/*
-  \brief Register a backend
- 
-  This function registers a backend with mapistore.
 
-  The general approach is to create a mapistore_backend object within the 
-  mapistore_init_backend() entry point, fill in the various structure elements
-  and function pointers, and then call mapistore_backend_register().
- 
-  \code
-  enum MAPISTORE_ERROR mapistore_init_backend(void)
-  {
-    enum MAPISTORE_ERROR	retval;
-    struct mapistore_backend	demo_backend;
-
-    retval = mapistore_backend_init_defaults(&demo_backend);
-    MAPISTORE_RETVAL_IF(retval, retval, NULL);
-
-    demo_backend.name = "demo";
-    demo_backend.description = "this is just a demostration of the mapistore backend API";
-    demo_backend.uri_namespace = "demo://";
-    demo.init = demo_init; // calls demo_init() on startup
-    ... // more function pointers here.
-    
-    mapistore_backend_register(&demo_backend);
-    if (retval != MAPISTORE_SUCCESS) {
-	MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to register the '%s' mapistore backend\n", demo_backend.name);
-        return retval;
-    }
-
-    return MAPISTORE_SUCCESS;
-  }
-  \endcode
- */
-extern enum MAPISTORE_ERROR	mapistore_backend_register(const struct mapistore_backend *);
-extern enum MAPISTORE_ERROR	mapistore_backend_init_defaults(struct mapistore_backend *);
+enum MAPISTORE_ERROR	mapistore_backend_register(const struct mapistore_backend *);
+enum MAPISTORE_ERROR	mapistore_backend_init_defaults(struct mapistore_backend *);
+enum MAPISTORE_ERROR	mapistore_strip_ns_from_uri(const char *, char **);
+struct ldb_context	*mapistore_public_ldb_connect(struct mapistore_backend_context *, const char *);
+enum MAPISTORE_ERROR	mapistore_exist(struct mapistore_backend_context *, const char *, const char *);
+enum MAPISTORE_ERROR	mapistore_register_folder(struct mapistore_backend_context *, const char *, const char *, 
+						  const char *, uint64_t);
 
 __END_DECLS
 

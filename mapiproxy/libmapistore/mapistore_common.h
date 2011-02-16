@@ -71,13 +71,6 @@ const char		*mapistore_get_database_path(void);
 const char		*mapistore_get_named_properties_database_path(void);
 const char		*mapistore_get_named_properties_ldif_path(void);
 
-/* definition from mapistore_backend_public.c */
-struct ldb_context	*mapistore_public_ldb_connect(struct mapistore_backend_context *, const char *);
-enum MAPISTORE_ERROR	mapistore_exist(struct mapistore_backend_context *, const char *, const char *);
-enum MAPISTORE_ERROR	mapistore_register_folder(struct mapistore_backend_context *, const char *, const char *, 
-						  const char *, uint64_t);
-enum MAPISTORE_ERROR	mapistore_strip_ns_from_uri(const char *, char **);
-
 __END_DECLS
 
 #endif /* __MAPISTORE_COMMON_H */

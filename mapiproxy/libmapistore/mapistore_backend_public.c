@@ -134,6 +134,7 @@ enum MAPISTORE_ERROR mapistore_strip_ns_from_uri(const char *uri, char **strippe
 	return MAPISTORE_SUCCESS;
 }
 
+
 /**
    \details Let backends register a folder and index it within
    mapistore indexing database

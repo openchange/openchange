@@ -92,7 +92,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_add(struct mapistore_context *m
 	ictx = mapistore_indexing_search(mstore_ctx, username);
 	MAPISTORE_RETVAL_IF(ictx, MAPISTORE_SUCCESS, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_indexing_init");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	ictx = talloc_zero(mstore_ctx->indexing_list, struct indexing_context_list);
 
 	/* Step 1. Open/Create the indexing database */

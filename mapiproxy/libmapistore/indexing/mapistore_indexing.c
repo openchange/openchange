@@ -200,7 +200,7 @@ enum MAPISTORE_ERROR mapistore_indexing_context_add(struct mapistore_context *ms
 	}
 	
 	/* Step 2. Otherwise create a new context */
-	mem_ctx = talloc_named(NULL, 0, "mapistore_indexing_context_add");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	mictx = talloc_zero(mstore_ctx->mapistore_indexing_list, struct mapistore_indexing_context_list);
 
 	dbpath = talloc_asprintf(mem_ctx, MAPISTORE_INDEXING_DBPATH_TMPL,

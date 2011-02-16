@@ -53,7 +53,7 @@ enum MAPISTORE_ERROR mapistoredb_namedprops_provision(struct mapistoredb_context
 	ret = stat(mapistore_get_named_properties_database_path(), &sb);
 	MAPISTORE_RETVAL_IF(ret == -1, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistoredb_namedprops_provision");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	/* Step 1. Retrieve the path to the LDIF file */
@@ -375,7 +375,7 @@ static enum MAPISTORE_ERROR mapistoredb_namedprops_provision_backend(struct mapi
 	retval = mapistore_namedprops_get_default_id(mdb_ctx->mstore_ctx, MAPISTORE_NAMEDPROPS_EXTERNAL, &ext_index);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistoredb_namedprops_provision_backend");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	/* Step 2. Process and retrieved updated LDIF data */
@@ -528,7 +528,7 @@ enum MAPISTORE_ERROR mapistoredb_namedprops_provision_user(struct mapistoredb_co
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 3. Create the LDIF */
-	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_provision_user");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	ldif = talloc_asprintf(mem_ctx, MDB_NPROPS_USER_LDIF, username, mapped_index, username);

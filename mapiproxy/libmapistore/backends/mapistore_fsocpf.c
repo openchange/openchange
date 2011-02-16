@@ -510,7 +510,7 @@ static enum MAPISTORE_ERROR fsocpf_op_get_fid_by_name(void *private_data,
 		return MAPISTORE_ERROR;
 	}
 	
-	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_get_fid_by_name");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	/* Step 2. Iterate over the contents of the parent folder, searching for a matching name */
 	rewinddir(folder->dir);
@@ -565,7 +565,7 @@ static void fsocpf_set_folder_props(const char *folder_uri, struct SRow *aRow)
 	char				*propfile;
 	uint32_t			i;
 
-	mem_ctx = talloc_named(NULL, 0, "fsocpf_set_folder_props");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	
 	/* Create the array of mapi properties */
 	mapi_lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, aRow->cValues);
@@ -642,7 +642,7 @@ static enum MAPISTORE_ERROR fsocpf_op_mkdir(void *private_data,
 		return MAPISTORE_ERR_NO_DIRECTORY;
 	}
 
-	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_mkdir");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	/* Step 2. Stringify fid and create directory */
 	newfolder = talloc_asprintf(mem_ctx, "%s/%s", folder->uri, folder_name);
@@ -725,7 +725,7 @@ static enum MAPISTORE_ERROR fsocpf_op_rmdir(void *private_data, const char *pare
 	el = fsocpf_find_folder(fsocpf_ctx, folder_uri);
 	MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_mkdir");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	/* Step 3. Remove .properties file */
 	propertiespath = talloc_asprintf(mem_ctx, "%s/.properties", folder_uri);
@@ -794,7 +794,7 @@ static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, const char *pa
 		MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 	}
 
-	mem_ctx = talloc_named(NULL, 0, "fsocpf_op_opendir");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	/* Read the directory and search for the fid to open */
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Looking for '%s'\n", folder_uri);

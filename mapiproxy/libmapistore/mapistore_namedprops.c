@@ -136,7 +136,7 @@ enum MAPISTORE_ERROR mapistore_namedprops_get_default_id(struct mapistore_contex
 	MAPISTORE_RETVAL_IF(!dflt_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	ldb_ctx = mstore_ctx->mapistore_nprops_ctx;
-	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_get_default_id");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	/* Step 1. Retrieve the internal/external record */
@@ -182,7 +182,7 @@ enum MAPISTORE_ERROR mapistore_namedprops_check_id(struct mapistore_context *mst
 	MAPISTORE_RETVAL_IF(!mstore_ctx->mapistore_nprops_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	ldb_ctx = mstore_ctx->mapistore_nprops_ctx;
-	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_check_id");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	/* Step 1. Retrieve the internal/external record */
@@ -240,7 +240,7 @@ _PUBLIC_ int mapistore_namedprops_get_mapped_id(void *_ldb_ctx,
 	MAPISTORE_RETVAL_IF(!propID, MAPISTORE_ERROR, NULL);
 
 	*propID = 0;
-	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_get_mapped_propID");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	guid = GUID_string(mem_ctx, (const struct GUID *)&nameid.lpguid);
 
 	switch (nameid.ulKind) {
@@ -292,7 +292,7 @@ enum MAPISTORE_ERROR mapistore_namedprops_user_exist(struct mapistore_context *m
 	MAPISTORE_RETVAL_IF(!mstore_ctx->mapistore_nprops_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_user_exist");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	ldb_ctx = mstore_ctx->mapistore_nprops_ctx;
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),

@@ -343,7 +343,7 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
 	}
 
 	/* Step 2. Create the user store entry within the mapistore database */
-	mem_ctx = talloc_named(NULL, 0, "mapistoredb_register_new_mailbox");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	user_store_ldif = talloc_asprintf(mem_ctx, MDB_USER_STORE_LDIF_TMPL,
 					  username, firstorgdn, username);
 	if (write_ldif_string_to_store(mdb_ctx, user_store_ldif) == false) {

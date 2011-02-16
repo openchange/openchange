@@ -183,7 +183,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context(struct mapistore_context *ms
 	/* Step 1. Perform Sanity Checks on URI */
 	MAPISTORE_RETVAL_IF(!uri || strlen(uri) < 4, MAPISTORE_ERR_INVALID_NAMESPACE, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_add_context");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	uri_namespace = talloc_strdup(mem_ctx, uri);
 	namespace_start = uri_namespace;
 	uri_namespace= strchr(uri_namespace, ':');

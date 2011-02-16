@@ -253,7 +253,7 @@ enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *p
 	pctx->mapping_ctx = talloc_zero(pctx, struct id_mapping_context);
 	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_init_mapping_context");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	/* Step 1. Retrieve the mapistore database path */
 	db_path = mapistore_get_database_path();
@@ -384,7 +384,7 @@ enum MAPISTORE_ERROR mapistore_ldb_write_ldif_file_to_store(struct ldb_context *
 	f = fopen(ldif_path, "r");
 	MAPISTORE_RETVAL_IF(!f, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_ldb_write_ldif_file_to_store");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
 		struct ldb_message	*normalized_msg;
@@ -437,7 +437,7 @@ enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *pctx,
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_get_new_fmid");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	/* Step 1. Retrieve the server object */
 	ldb_ctx = pctx->mapping_ctx->ldb_ctx;
@@ -512,7 +512,7 @@ enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_contex
 	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx->ldb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!range_start || !range_end, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_get_next_range");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	/* Step 1. Retrieve the user store object */
 	ldb_ctx = pctx->mapping_ctx->ldb_ctx;

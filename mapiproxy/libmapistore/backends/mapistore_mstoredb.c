@@ -298,7 +298,7 @@ static enum MAPISTORE_ERROR mstoredb_op_mkdir(void *private_data,
 		return retval;
 	}
 
-	mem_ctx = talloc_named(NULL, 0, "mstoredb_op_mkdir");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	/* Step 2. Generate the URI for the folder */
 	retval = mapistore_strip_ns_from_uri(parent_uri, &stripped_uri);

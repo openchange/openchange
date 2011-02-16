@@ -11,7 +11,11 @@ from openchange import mapi
 
 os.mkdir("/tmp/mapistore")
 
+mapistore.debuglevel = 9
 mapistore.set_mapping_path("/tmp/mapistore")
+mapistore.set_database_path("/tmp/mapistore/db.ldb")
+mapistore.set_named_properties_database_path("/tmp/mapistore/named_props.ldb")
+
 MAPIStore = mapistore.mapistore()
 ctx_id = MAPIStore.add_context("jkerihuel", "fsocpf:///tmp/mapistore/0x0000000000010001")
 

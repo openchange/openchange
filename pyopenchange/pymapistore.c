@@ -455,6 +455,28 @@ static PyObject *py_mapistore_set_mapping_path(PyObject *mod, PyObject *args)
 	return PyInt_FromLong(mapistore_set_mapping_path(mapping_path));
 }
 
+static PyObject *py_mapistore_set_database_path(PyObject *mod, PyObject *args)
+{
+	const char	*db_path;
+	
+	if (!PyArg_ParseTuple(args, "s", &db_path)) {
+		return NULL;
+	}
+
+	return PyInt_FromLong(mapistore_set_database_path(db_path));
+}
+
+static PyObject *py_mapistore_set_named_properties_database_path(PyObject *mod, PyObject *args)
+{
+	const char	*db_path;
+	
+	if (!PyArg_ParseTuple(args, "s", &db_path)) {
+		return NULL;
+	}
+
+	return PyInt_FromLong(mapistore_set_named_properties_database_path(db_path));
+}
+
 static PyObject *py_mapistore_errstr(PyObject *mod, PyObject *args)
 {
 	int		ret;
@@ -468,6 +490,8 @@ static PyObject *py_mapistore_errstr(PyObject *mod, PyObject *args)
 
 static PyMethodDef py_mapistore_global_methods[] = {
 	{ "set_mapping_path", (PyCFunction)py_mapistore_set_mapping_path, METH_VARARGS },
+	{ "set_database_path", (PyCFunction)py_mapistore_set_database_path, METH_VARARGS },
+	{ "set_named_properties_database_path", (PyCFunction)py_mapistore_set_named_properties_database_path, METH_VARARGS },
 	{ "errstr", (PyCFunction)py_mapistore_errstr, METH_VARARGS },
 	{ NULL },
 };

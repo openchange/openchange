@@ -541,25 +541,9 @@ IMAGE_PATH             = doc/doxygen/pictures/
 # ignored.
 
 INPUT_FILTER           = "sed \
-		         -e '20,40s/.*\<libmapi\/proto_private.h\>//'	\
-			 -e '20,40s/.*\<gen_ndr\/ndr_exchange.h\>//'		\
-			 -e '20,40s/.*\<param.h\>//'				\
-			 -e '20,40s/.*\<core\/error.h\>//'			\
-			 -e '20,40s/.*\<credentials.h\>//'			\
-			 -e '20,40s/.*\<ldb.h\>//'				\
-			 -e '20,40s/.*\<ldb_errors.h\>//'			\
-			 -e '20,40s/.*\<libmapi\/dlinklist.h\>//'		\
-			 -e '20,40s/.*\<libmapi\/defs_private.h\>//'		\
-			 -e '20,40s/.*\<libmapi\/mapi_nameid.h\>//'		\
-			 -e '20,40s/.*\<libmapi\/mapi_nameid_private.h\>//'	\
-			 -e '20,40s/.*\<libocpf\/proto_private.h\>//'	\
-			 -e '20,40s/.*\<libocpf\/ocpf_api.h\>//'		\
-			 -e '20,40s/.*\<libocpf\/ocpf.tab.h\>//'		\
-			 -e '20,40s/.*\<libocpf\/ocpf_dump.h\>//'		\
-			 -e '20,40s/.*\<libgen.h\>//'			\
-			 -e '20,40s/.*\<time.h\>//'				\
-			 -e '20,40s/.*\<sys\/*\>//'				\
-                         -e 's/_PUBLIC_//'"
+			 -e '20,60s/#include .*//'	\
+			 -e 's/_PUBLIC_//'"		\
+			 -e 's/__BEGIN_DECLS//'"
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern 
 # basis.  Doxygen will compare the file name with each pattern and apply the 

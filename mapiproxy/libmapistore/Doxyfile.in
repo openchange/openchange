@@ -559,7 +559,7 @@ INPUT_FILTER           = "sed \
 			 -e '20,40s/.*\<libgen.h\>//'			\
 			 -e '20,40s/.*\<time.h\>//'				\
 			 -e '20,40s/.*\<sys\/*\>//'				\
-                         -e '20,40s/_PUBLIC_//'"
+                         -e 's/_PUBLIC_//'"
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern 
 # basis.  Doxygen will compare the file name with each pattern and apply the 

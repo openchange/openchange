@@ -248,7 +248,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_add_context_ref_count(struct mapistore_c
 	MAPISTORE_RETVAL_IF((int)context_id == -1, MAPISTORE_ERR_INVALID_CONTEXT, NULL);
 
 	/* Step 0. Ensure the context exists */
-	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "contest to increment is %d\n", context_id);
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "context to increment is %d\n", context_id);
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 

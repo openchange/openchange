@@ -141,7 +141,6 @@ const char *mapistore_errstr(enum MAPISTORE_ERROR);
 enum MAPISTORE_ERROR mapistore_add_context_indexing(struct mapistore_context *, const char *, uint32_t);
 enum MAPISTORE_ERROR mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
 enum MAPISTORE_ERROR mapistore_closedir(struct mapistore_context *, uint32_t, uint64_t);
-/* enum MAPISTORE_ERROR mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct SRow *); */
 enum MAPISTORE_ERROR mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, const char *, const char *, enum FOLDER_TYPE, uint64_t *);
 enum MAPISTORE_ERROR mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 enum MAPISTORE_ERROR mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);

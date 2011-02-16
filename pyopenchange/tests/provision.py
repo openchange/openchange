@@ -14,7 +14,7 @@ username = "jkerihuel"
 indent = 1
 title_nb = 1
 
-os.mkdir("/tmp/mapistoredb");
+os.mkdir("/tmp/mapistoredb")
 
 def newTitle(title, separator):
     global title_nb
@@ -86,7 +86,7 @@ def start():
     
     newTitle("Get and Set a new allocation range to the mailbox", '=')
     (retval, rstart,rend) = MAPIStoreDB.get_new_allocation_range(username,
-                                                                 0x1000);
+                                                                 0x1000)
     if retval == 0:
         print "\t* Allocation range received:"
         print "\t\t* [start]: 0x%.16x" % rstart
@@ -118,14 +118,14 @@ def start():
     retval = MAPIStore.root_mkdir(context_id=context_id,
                                   parent_index=mapistore.MDB_ROOT_FOLDER, 
                                   index=mapistore.MDB_DEFERRED_ACTIONS, 
-                                  folder_name="");
+                                  folder_name="")
     TreeLeafStatus("Deferred Actions", retval, MAPIStore.errstr(retval))
     
     # MDB_SPOOLER_QUEUE
     retval = MAPIStore.root_mkdir(context_id=context_id, 
                                   parent_index=mapistore.MDB_ROOT_FOLDER, 
                                   index=mapistore.MDB_SPOOLER_QUEUE, 
-                                  folder_name="");
+                                  folder_name="")
     TreeLeafStatus("Spooler Queue", retval, MAPIStore.errstr(retval))
     
     # MDB_IPM_SUBTREE

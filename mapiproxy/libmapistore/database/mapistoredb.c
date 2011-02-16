@@ -19,10 +19,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mapiproxy/libmapistore/mapistore_errors.h"
-#include "mapiproxy/libmapistore/mapistore.h"
-#include "mapiproxy/libmapistore/mapistore_private.h"
-#include "mapiproxy/libmapistore/mapistore_common.h"
+#include <string.h>
+
+#include "mapistore_errors.h"
+#include "mapistore.h"
+#include "mapistore_private.h"
+#include "mapistore_common.h"
+
+#include <param.h>
 
 /**
    \file mapistoredb.c

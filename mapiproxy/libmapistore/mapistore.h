@@ -52,7 +52,8 @@
 #include <talloc.h>
 #include <util/debug.h>
 
-#include "libmapi/libmapi.h"
+/* #include "libmapi/libmapi.h" */
+#include "gen_ndr/exchange.h"
 
 #include "mapistore_defs.h"
 

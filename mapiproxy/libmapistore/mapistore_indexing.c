@@ -31,6 +31,10 @@
 #define __STDC_FORMAT_MACROS	1
 #include <inttypes.h>
 
+#include <errno.h>
+#include <fcntl.h>
+
+#define _GNU_SOURCE	1
 #include <string.h>
 
 #include "mapistore_errors.h"
@@ -38,9 +42,10 @@
 #include "mapistore_common.h"
 #include "mapistore_private.h"
 #include <dlinklist.h>
-#include "libmapi/libmapi_private.h"
 
 #include <tdb.h>
+
+char *strcasestr(const char *, const char *);
 
 /**
    \details Search the indexing record matching the username
@@ -453,7 +458,7 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_indexing_get_folder_list(struct mapistor
 	flist->count = 0;
 	
 	tmp_uri = uri;
-	while ((substr = strcasestr(uri, "0x")) != NULL) {
+	while ((substr = (char *)strcasestr((const char *) uri, "0x")) != NULL) {
 		folder = talloc_strndup(mstore_ctx, substr, 18);
 		flist->folderID[flist->count] = strtoull(folder, NULL, 16);
 		if (flist->folderID[flist->count] != fmid) {

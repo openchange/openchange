@@ -1,0 +1,104 @@
+from waflib.Task import Task
+from waflib.TaskGen import extension
+import os
+
+APPNAME = 'mapistore'
+VERSION = '2.0'
+
+top = '.'
+out = 'build'
+
+def options(ctx):
+    ctx.load('compiler_c')
+    ctx.add_option('--datadir',type='string',default='',dest='datadir',help='read-only application data')
+
+def configure(conf):
+    conf.load('compiler_c')
+
+    conf.env.CPPFLAGS = ['-Wall', '-Werror', '-g3', '-fstrict-aliasing', '-Wp,-D_FORTIFY_SOURCE=2', 
+                         '-Wmissing-prototypes', '-Wstrict-prototypes']
+
+    prefix = conf.options.prefix
+    libdir = os.path.join(prefix, "lib")
+    mapistore_path = os.path.join(prefix, 'private/mapistore')
+
+    def getstr(varname):
+        return getattr(conf.options,varname,'')
+    
+    datadir=getstr('datadir')
+    if not datadir:datadir=os.path.join(prefix,'share')
+
+    conf.define('MAPISTORE_MAPPING_PATH', mapistore_path)
+    conf.define('MAPISTORE_DBPATH', os.path.join(mapistore_path, "mapistore.ldb"))
+    conf.define('MAPISTORE_LDIF', datadir)
+    conf.define('MAPISTORE_BACKEND_INSTALLDIR', os.path.join(libdir, "mapistore_backends"))
+    conf.define('MAPISTORE_DB_NAMEDPROPS_PATH', os.path.join(mapistore_path, "mapistore_named_properties.ldb"))
+
+    conf.check_cfg(atleast_pkgconfig_version='0.20')
+
+    conf.check_cfg(package='tdb',
+		   args=['tdb >= 0.25', '--cflags', '--libs'],
+		   uselib_store='TDB',
+		   msg="Checking for 'tdb 0.25'")
+
+    conf.check_cfg(package='talloc',
+                   args=['talloc >= 0.25', '--cflags', '--libs'],
+                   uselib_store='TALLOC',
+                   msg="Checking for 'talloc 0.25'")
+
+    conf.check_cfg(package='samba-hostconfig',
+                   args=['--cflags', '--libs'],
+                   uselib_store='SAMBA-HOSTCONFIG',
+                   msg="Checking for 'samba-hostconfig 0.25'")
+
+    try:
+	conf.find_program('pidl', var='PIDL')
+    except ctx.errors.ConfigurationError:
+	self.fatal("PIDL compiler not found")
+
+    print("prefix is " + conf.options.prefix)
+
+def post(ctx):
+        if ctx.cmd == 'install':
+            ctx.exec_command('/sbin/ldconfig')
+
+class idl(Task):
+    run_str = '${PIDL} --outputdir=indexing --header --ndr-parser -- ${SRC}'
+    color   = 'BLUE'
+    ext_out = ['.h', '.c']
+
+@extension('.idl')
+def process_idl(self, node):
+    ndr_node = node.change_ext('.c')
+
+    try:
+        ndr_node.name.index("ndr_")
+    except ValueError:
+        ndr_node.name = "ndr_" + ndr_node.name
+    h_node = node.change_ext('.h')
+    self.create_task('idl', node, [ndr_node, h_node])
+    self.source.append(ndr_node)
+
+def build(bld):
+    bld.shlib(
+        source = [
+            'indexing/mapistore_indexing_db.idl',
+            'mapistore_interface.c',
+            'mapistore_processing.c', 
+            'mapistore_backend.c',
+            'mapistore_backend_defaults.c',
+            'mapistore_backend_public.c', 
+            'mapistore_tdb_wrap.c',
+            'mapistore_ldb_wrap.c',
+            'mapistore_namedprops.c',
+            'mapistore_indexing.c',
+            'database/mapistoredb.c',
+            'database/mapistoredb_conf.c',
+            'database/mapistoredb_namedprops.c',
+            'indexing/mapistore_indexing.c',
+            ],
+        target = 'mapistore',
+        includes     = ['.', '../../', 'build/indexing'],
+        use    = ['TDB', 'TALLOC', 'SAMBA-HOSTCONFIG'])
+
+    bld.add_post_fun(post)

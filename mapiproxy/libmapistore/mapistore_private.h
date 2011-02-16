@@ -30,10 +30,9 @@
 
 #define	__STDC_FORMAT_MACROS	1
 #include <inttypes.h>
-
-#include "mapiproxy/libmapistore/indexing/gen_ndr/mapistore_indexing_db.h"
-
 #include <talloc.h>
+
+#include "mapistore_indexing_db.h"
 
 #ifndef	ISDOT
 #define ISDOT(path) ( \

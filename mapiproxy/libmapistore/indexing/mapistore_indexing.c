@@ -19,13 +19,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <errno.h>
+#include <fcntl.h>
 #include <string.h>
 
-#include "mapiproxy/libmapistore/mapistore_errors.h"
-#include "mapiproxy/libmapistore/mapistore.h"
-#include "mapiproxy/libmapistore/mapistore_common.h"
-#include "mapiproxy/libmapistore/mapistore_private.h"
-#include "gen_ndr/ndr_mapistore_indexing_db.h"
+#include "mapistore_errors.h"
+#include "mapistore.h"
+#include "mapistore_common.h"
+#include "mapistore_private.h"
+#include "ndr_mapistore_indexing_db.h"
 
 #include <dlinklist.h>
 #include <tdb.h>
@@ -648,6 +650,8 @@ static enum MAPISTORE_ERROR mapistore_indexing_del_entry_r(struct mapistore_inde
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	key.dptr = (unsigned char *)talloc_asprintf(mem_ctx, MAPISTORE_INDEXING_URI, mapistore_uri);
 	key.dsize = strlen((const char *)key.dptr);

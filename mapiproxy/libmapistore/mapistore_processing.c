@@ -35,7 +35,6 @@
 #include "mapistore_common.h"
 #include "mapistore_private.h"
 #include <dlinklist.h>
-#include "libmapi/libmapi_private.h"
 
 #include <tdb.h>
 

@@ -37,7 +37,6 @@
 #include "mapistore_backend.h"
 #include "mapistore_common.h"
 #include <dlinklist.h>
-#include "libmapi/libmapi_private.h"
 
 #include <string.h>
 

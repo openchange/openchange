@@ -40,6 +40,8 @@ CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@				\
        -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"							\
        -DHAVE_ICAL_0_46=@have_libical_0_46@
 
+WAF_BUILD_INC=-Imapiproxy/libmapistore -Imapiproxy/libmapistore/indexing/gen_ndr
+
 # This value should be determined by configure at some point
 SHLIBEXT=so
 PACKAGE_VERSION=@PACKAGE_VERSION@

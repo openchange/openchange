@@ -101,4 +101,11 @@ def build(bld):
         includes     = ['.', '../../', 'build/indexing'],
         use    = ['TDB', 'TALLOC', 'SAMBA-HOSTCONFIG'])
 
+    bld.install_files('${PREFIX}/include/mapistore',
+                      ['mapistore.h', 
+                       'mapistore_errors.h',
+                       'mapistore_defs.h', 
+                       'mapistore_backend.h',
+                       'mapistore_common.h'])
+
     bld.add_post_fun(post)

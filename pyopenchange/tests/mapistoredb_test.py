@@ -11,7 +11,7 @@ import openchange.mapistoredb as mapistoredb
 import openchange.mapistore as mapistore
 from openchange import mapi
 
-os.mkdir("/tmp/mapistoredb");
+os.mkdir("/tmp/mapistoredb")
 
 def newTitle(title, separator):
     print ""
@@ -53,7 +53,7 @@ print "\t* Contacts: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_CONTACT
 
 newTitle("mstoredb:", '=')
 print "\t* Mailbox Root: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_ROOT_FOLDER, "jkerihuel", "mstoredb://")
-print "\t* IPM SUbtree: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_IPM_SUBTREE, "jkerihuel", "mstoredb://")
+print "\t* IPM Subtree: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_IPM_SUBTREE, "jkerihuel", "mstoredb://")
 print "\t* Inbox: %s" % MAPIStoreDB.get_mapistore_uri(mapistoredb.MDB_INBOX, "jkerihuel", "mstoredb://")
 
 newTitle("[Step 5]. Create a new mailbox", '=')

@@ -947,9 +947,12 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_closedir(struct mapistore_context *mstor
    \param context_id the context identifier referencing the backend
    where the directory will be created
    \param parent_fid the parent folder identifier
-   \param fid the folder identifier for the new folder
-   \param aRow pointer to MAPI data structures with properties to be
-   added to the new folder
+   \param folder_name the name for the new folder, must not be null
+   \param folder_desc the description (comment) for the new folder, can be null
+   \param folder_type the type of folder (FOLDER_GENERIC or FOLDER_SEARCH)
+   \param fid the folder ID for the folder that has been created (return value)
+
+   Note that fid is only valid on success
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
@@ -961,11 +964,11 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_mkdir(struct mapistore_context *mstore_c
 					      enum FOLDER_TYPE folder_type,
 					      uint64_t *fid)
 {
-	struct backend_context		*backend_ctx;
+	struct backend_context		*backend_ctx = NULL;
 	enum MAPISTORE_ERROR		retval;
-	char				*parent_uri;
-	uint64_t			folder_fid;
-	char				*folder_uri;
+	char				*parent_uri = NULL;
+	uint64_t			folder_fid = 0;
+	char				*folder_uri = NULL;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -974,37 +977,38 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_mkdir(struct mapistore_context *mstore_c
 	MAPISTORE_RETVAL_IF(folder_type != FOLDER_GENERIC && folder_type != FOLDER_SEARCH, 
 			    MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 1. Search the context */
+	/* Find the backend context to work within */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);	
 
-	/* Step 2. Create an indexing context */
+	/* Create an indexing context */
 	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	/* Step 2. Turn parent folder identifier into URI */
+	/* Turn parent folder identifier into URI */
 	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, parent_fid, &parent_uri);
-	if (retval) goto error;
+	if (retval) goto cleanup;
 
-	/* Step 3. Call backend mkdir */
+	/* Call backend mkdir */
 	retval = mapistore_backend_mkdir(backend_ctx, parent_uri, folder_name, folder_desc, folder_type, &folder_uri);
-	if (retval) goto error;
+	if (retval) goto cleanup;
 
-	/* Step 4. Get a new FID for the folder */
+	/* Get a new FID for the folder */
 	retval = mapistore_get_new_fmid(mstore_ctx->processing_ctx, backend_ctx->username, &folder_fid);
-	if (retval) goto error;
+	if (retval) goto cleanup;
 
-	/* Step 5. Register the folder within the indexing database */
+	/* Register the folder within the indexing database */
 	retval = mapistore_indexing_add_fmid_record(mstore_ctx->mapistore_indexing_list, folder_fid,
 						    folder_uri, parent_fid, MAPISTORE_INDEXING_FOLDER);
 
+	/* Return that folder ID to the caller for future use */
 	*fid = folder_fid;
 
-error:
+cleanup:
 	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
 
 	if (folder_uri) {
-		MSTORE_DEBUG_INFO(MSTORE_LEVEL_CRITICAL, "folder_uri = %s\n", folder_uri);
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_INFO, "folder_uri = %s\n", folder_uri);
 		talloc_free(folder_uri);
 	}
 

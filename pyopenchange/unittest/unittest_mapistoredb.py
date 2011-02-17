@@ -5,6 +5,7 @@ import os
 import openchange
 import openchange.mapistoredb as mapistoredb
 import openchange.mapistore as mapistore
+import openchange.mapi as mapi
 import unittest
 import shutil
 import tempfile
@@ -104,12 +105,18 @@ class TestMAPIStoreDB(unittest.TestCase):
 		inbox_uri = self.MAPIStore.get_mapistore_uri(mapistore.MDB_INBOX, self.username, "fsocpf://")
 		retval = self.MAPIStore.set_mapistore_uri(context_id, mapistore.MDB_INBOX, inbox_uri)
 		self.assertEqual(retval, 0)
-		self.MAPIStore.debuglevel = 6
 		(inbox_context_id, inbox_fid) = self.MAPIStore.add_context(self.username, inbox_uri)
 		self.assertNotEqual(inbox_context_id, 0)
 		self.assertNotEqual(inbox_fid, 0)
 		test_subfolder_fid = self.MAPIStore.mkdir(inbox_context_id, inbox_fid, "Test Folder", "This is a test folder", mapistore.FOLDER_GENERIC)
 		self.assertNotEqual(test_subfolder_fid, 0)
+		self.debuglevel = 9
+		retval = self.MAPIStore.opendir(context_id = inbox_context_id, parent_fid = inbox_fid, fid = test_subfolder_fid)
+		self.assertEqual(retval, 0)
+		SPropValue = mapi.SPropValue()
+		SPropValue.add(mapi.PidTagComment, "different comment")
+		retval = self.MAPIStore.setprops(inbox_context_id, inbox_fid, mapistore.MAPISTORE_FOLDER, SPropValue)
+		self.assertEqual(retval, 0, self.MAPIStoreDB.errstr(retval))
 
 	def test_errstr(self):
 		self.assertEqual(self.MAPIStoreDB.errstr(0), "Success")
@@ -119,7 +126,7 @@ class TestMAPIStoreDB(unittest.TestCase):
 
 	def tearDown(self):
 		self.MAPIStoreDB.release()
-		shutil.rmtree(self.working_directory)
+		# shutil.rmtree(self.working_directory)
 
 if __name__ == '__main__':
 	unittest.main()

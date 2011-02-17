@@ -849,7 +849,9 @@ libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore/database/*.po mapiproxy/libmapistore/database/*.o
+	rm -f mapiproxy/libmapistore/database/*.gcno mapiproxy/libmapistore/database/*.gcda
 	rm -f mapiproxy/libmapistore/indexing/*.po mapiproxy/libmapistore/indexing/*.o
+	rm -f mapiproxy/libmapistore/indexing/*.gcno mapiproxy/libmapistore/indexing/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 	rm -f setup/mapistore/mapistore_namedprops.ldif

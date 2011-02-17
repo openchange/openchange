@@ -832,7 +832,7 @@ libmapistore: 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 libmapistore-installpc:
 	@echo "[*] install: libmapistore pc files"
 	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
-	$(INSTALL) -m 0644 mapiproxy/libmapistore.pc $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 mapiproxy/libmapistore/libmapistore.pc $(DESTDIR)$(libdir)/pkgconfig
 
 libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -m 0755 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
@@ -864,7 +864,7 @@ libmapistore-uninstall:	$(OC_MAPISTORE_UNINSTALL)
 	rm -rf $(DESTDIR)$(datadir)/setup/mapistore
 
 libmapistore-distclean: libmapistore-clean
-	rm -f mapiproxy/libmapistore.pc
+	rm -f mapiproxy/libmapistore/libmapistore.pc
 
 distclean:: libmapistore-distclean
 

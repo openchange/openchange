@@ -101,9 +101,15 @@ class TestMAPIStoreDB(unittest.TestCase):
 		self.assertEqual(retval, 0)
 		conflicts_fid = self.MAPIStore.mkdir(context_id, sync_fid, "Conflicts", None, mapistore.FOLDER_GENERIC)
 		self.assertNotEqual(conflicts_fid, 0)
-		new_uri = self.MAPIStore.get_mapistore_uri(mapistore.MDB_INBOX, self.username, "fsocpf://")
-		retval = self.MAPIStore.set_mapistore_uri(context_id, mapistore.MDB_INBOX, new_uri)
+		inbox_uri = self.MAPIStore.get_mapistore_uri(mapistore.MDB_INBOX, self.username, "fsocpf://")
+		retval = self.MAPIStore.set_mapistore_uri(context_id, mapistore.MDB_INBOX, inbox_uri)
 		self.assertEqual(retval, 0)
+		self.MAPIStore.debuglevel = 6
+		(inbox_context_id, inbox_fid) = self.MAPIStore.add_context(self.username, inbox_uri)
+		self.assertNotEqual(inbox_context_id, 0)
+		self.assertNotEqual(inbox_fid, 0)
+		test_subfolder_fid = self.MAPIStore.mkdir(inbox_context_id, inbox_fid, "Test Folder", "This is a test folder", mapistore.FOLDER_GENERIC)
+		self.assertNotEqual(test_subfolder_fid, 0)
 
 	def test_errstr(self):
 		self.assertEqual(self.MAPIStoreDB.errstr(0), "Success")

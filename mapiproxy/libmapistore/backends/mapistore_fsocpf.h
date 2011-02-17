@@ -65,7 +65,7 @@ struct fsocpf_context {
 	char				*uri;
 	struct fsocpf_folder_list	*folders;
 	struct fsocpf_message_list	*messages;
-	char				*root_uri;
+	// char				*root_uri;
 	DIR				*dir;
 };
 

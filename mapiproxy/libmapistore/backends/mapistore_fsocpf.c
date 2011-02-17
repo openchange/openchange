@@ -755,7 +755,7 @@ static enum MAPISTORE_ERROR fsocpf_op_rmdir(void *private_data, const char *pare
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-/* FIXME: folder_uri is not valid (fsocpf:// prefixed) and curdir->d_name is NOT the full path */
+/* FIXME: curdir->d_name is NOT the full path */
 static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, const char *parent_uri, const char *folder_uri)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -765,6 +765,8 @@ static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, const char *pa
 	struct fsocpf_folder_list	*newel;
 	struct dirent			*curdir;
 	DIR				*dir;
+	char				*folder_path = NULL;
+	char				*parent_folder_path = NULL;
 
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
@@ -773,8 +775,18 @@ static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, const char *pa
 	MAPISTORE_RETVAL_IF(!parent_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
+	if (mapistore_strip_ns_from_uri(folder_uri, &folder_path) != MAPISTORE_SUCCESS) {
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_CRITICAL, "misformed folder_uri: %s\n", folder_uri);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+	if (mapistore_strip_ns_from_uri(parent_uri, &parent_folder_path) != MAPISTORE_SUCCESS) {
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_CRITICAL, "misformed parent_uri: %s\n", folder_uri);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
 	/* Step 0. If fid equals top folder fid, it is already open */
-	if (!strcmp(fsocpf_ctx->root_uri, folder_uri)) {
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Have context uri %s, looking for %s\n", fsocpf_ctx->uri, folder_path);
+	if (!strcmp(fsocpf_ctx->uri, folder_path)) {
 		/* If we access it for the first time, just add an entry to the folder list */
 		if (!fsocpf_ctx->folders) {
 			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->uri, fsocpf_ctx->dir);
@@ -784,20 +796,20 @@ static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, const char *pa
 			MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Folder added to the list '%s'\n", el->folder->uri);
 		}
 
-		folder = fsocpf_find_folder(fsocpf_ctx, folder_uri);
+		folder = fsocpf_find_folder(fsocpf_ctx, folder_path);
 		MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
 		return MAPISTORE_SUCCESS;
 	} else {
 		/* Step 1. Search for the parent fid */
-		folder = fsocpf_find_folder(fsocpf_ctx, parent_uri);
+		folder = fsocpf_find_folder(fsocpf_ctx, parent_folder_path);
 		MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 	}
 
 	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	/* Read the directory and search for the fid to open */
-	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Looking for '%s'\n", folder_uri);
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Looking for '%s'\n", folder_path);
 	rewinddir(folder->dir);
 	errno = 0;
 	{
@@ -805,17 +817,17 @@ static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, const char *pa
 		while ((curdir = readdir(folder->dir)) != NULL) {
 			MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "[%d]: readdir: %s\n", i, curdir->d_name);
 			i++;
-			if (curdir->d_name && !strcmp(curdir->d_name, folder_uri)) {
-				dir = opendir(folder_uri);
+			if (curdir->d_name && !strcmp(curdir->d_name, folder_path)) {
+				dir = opendir(folder_path);
 				MAPISTORE_RETVAL_IF(!dir, MAPISTORE_ERR_CONTEXT_FAILED, mem_ctx);
 
 				MSTORE_DEBUG_INFO(MSTORE_LEVEL_PEDANTIC, "%s\n", "Folder found");
 
-				newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, folder_uri, dir);
+				newel = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, folder_path, dir);
 				MAPISTORE_RETVAL_IF(!newel, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 				DLIST_ADD_END(fsocpf_ctx->folders, newel, struct fsocpf_folder_list *);
-				MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Element added to the list: %s\n", folder_uri);
+				MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Element added to the list: %s\n", folder_path);
 			}
 		}
 	}
@@ -875,10 +887,10 @@ static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data,
 	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!RowCount, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	if (!strcmp(fsocpf_ctx->root_uri, folder_uri)) {
+	if (!strcmp(fsocpf_ctx->uri, folder_uri)) {
 		/* If we access it for the first time, just add an entry to the folder list */
 		if (!fsocpf_ctx->folders) {
-			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->root_uri, fsocpf_ctx->dir);
+			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->uri, fsocpf_ctx->dir);
 			MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
@@ -1111,10 +1123,10 @@ static enum MAPISTORE_ERROR fsocpf_op_get_table_property(void *private_data,
 	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	if (!strcmp(fsocpf_ctx->root_uri, folder_uri)) {
+	if (!strcmp(fsocpf_ctx->uri, folder_uri)) {
 		/* If we access it for the first time, just add an entry to the folder list */
 		if (!fsocpf_ctx->folders || !fsocpf_ctx->folders->folder) {
-			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->root_uri, fsocpf_ctx->dir);
+			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->uri, fsocpf_ctx->dir);
 			MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 			DLIST_ADD_END(fsocpf_ctx->folders, el, struct fsocpf_folder_list *);
@@ -1413,6 +1425,7 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 	struct fsocpf_folder	*folder;
 	struct fsocpf_message	*message;
 	uint32_t		i;
+	char			*path;
 
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
@@ -1421,14 +1434,20 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!aRow, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
+	if (mapistore_strip_ns_from_uri(uri, &path) != MAPISTORE_SUCCESS) {
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_CRITICAL, "misformed uri: %s\n", uri);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "uri: %s, path: %s\n", uri, path);
+
 	switch (type) {
 	case MAPISTORE_FOLDER:
-		folder = fsocpf_find_folder(fsocpf_ctx, uri);
+		folder = fsocpf_find_folder(fsocpf_ctx, path);
 		MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NOT_FOUND, NULL);
 		fsocpf_set_folder_props(folder->uri, aRow);
 		break;
 	case MAPISTORE_MESSAGE:
-		message = fsocpf_find_message(fsocpf_ctx, uri);
+		message = fsocpf_find_message(fsocpf_ctx, path);
 		MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_NOT_FOUND, NULL);
 		for (i = 0; i < aRow->cValues; i++) {
 			if (aRow->lpProps[i].ulPropTag == PR_MESSAGE_CLASS) {

@@ -305,7 +305,7 @@ static enum MAPISTORE_ERROR mstoredb_op_mkdir(void *private_data,
 
 	*folder_uri = talloc_asprintf((TALLOC_CTX *)mstoredb_ctx, "mstoredb://CN=%s,%s", folder_name, stripped_uri);
 	MAPISTORE_RETVAL_IF(!*folder_uri, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
-	MSTORE_DEBUG_INFO(MSTORE_LEVEL_CRITICAL, "Generated URI: '%s'\n", *folder_uri);
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Generated URI: '%s'\n", *folder_uri);
 
 	retval = mapistore_strip_ns_from_uri(*folder_uri, &folder_dn);
 	if (retval) {

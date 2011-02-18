@@ -555,18 +555,24 @@ static enum MAPISTORE_ERROR fsocpf_op_get_fid_by_name(void *private_data,
   
   \param folder_uri the folder full patch
   \param aRow the properties to set on the folder
+  
+  \return MAPISTORE_SUCCESS on success, otherwise a MAPISTORE_ERROR value.
 */
 /* FIXME: We can't use FID anymore in ocpf_write_init */
-static void fsocpf_set_folder_props(const char *folder_uri, struct SRow *aRow)
+static enum MAPISTORE_ERROR fsocpf_set_folder_props(const char *folder_uri, struct SRow *aRow)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct mapi_SPropValue_array	mapi_lpProps;
 	uint32_t			ocpf_context_id;
 	char				*propfile;
 	uint32_t			i;
+	struct stat             	sb;
 
 	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 	
+	/* Create the .properties file */
+	propfile = talloc_asprintf(mem_ctx, "%s/.properties", folder_uri);
+
 	/* Create the array of mapi properties */
 	mapi_lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, aRow->cValues);
 	mapi_lpProps.cValues = aRow->cValues;
@@ -576,10 +582,25 @@ static void fsocpf_set_folder_props(const char *folder_uri, struct SRow *aRow)
 				     &(mapi_lpProps.lpProps[i]), &(aRow->lpProps[i]));
 	}
 
-	/* Create the .properties file */
-	propfile = talloc_asprintf(mem_ctx, "%s/.properties", folder_uri);
+	if (stat(propfile, &sb) == -1) {
+		ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_CREATE);
+	} else {
+		uint32_t num_props = 0;
+		struct SPropValue *props;
+		int i = 0;
+		DEBUG(0, ("Need to update %s, but thats not implemented yet\n", propfile));
+		ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_RDWR);
+		/* get all the old folder properties */
+		ocpf_parse(ocpf_context_id); /* TODO: check return type */
+		ocpf_server_set_SPropValue(mem_ctx, ocpf_context_id);
+		ocpf_dump_property(ocpf_context_id);
+		props = ocpf_get_SPropValue(ocpf_context_id, &num_props);
+		for (i = 0; i < num_props; ++i) {
+			mapidump_SPropValue(props[i], "[=]");
+		}
+	}
 
-	ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_CREATE);
+
 
 	/* ocpf_write_init(ocpf_context_id, fid); */
 	ocpf_write_init(ocpf_context_id, 0xdeadbeef);
@@ -589,6 +610,8 @@ static void fsocpf_set_folder_props(const char *folder_uri, struct SRow *aRow)
 	ocpf_del_context(ocpf_context_id);
 	
 	talloc_free(mem_ctx);
+
+	return MAPISTORE_SUCCESS;
 }
 
 /**
@@ -678,7 +701,7 @@ static enum MAPISTORE_ERROR fsocpf_op_mkdir(void *private_data,
 		aRow.lpProps[0].value.lpszW = folder_name;
 	}
 
-	fsocpf_set_folder_props(newfolder, &aRow);
+	retval = fsocpf_set_folder_props(newfolder, &aRow);
 
 	/* Step 5. Generate the URI for the new created folder */
 	*folder_uri = talloc_asprintf((TALLOC_CTX *)fsocpf_ctx, "fsocpf://%s", newfolder);
@@ -687,7 +710,7 @@ static enum MAPISTORE_ERROR fsocpf_op_mkdir(void *private_data,
 	talloc_free(newfolder);
 	talloc_free(mem_ctx);
 
-	return MAPISTORE_SUCCESS;
+	return retval;
 }
 
 
@@ -1426,6 +1449,7 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 	struct fsocpf_message	*message;
 	uint32_t		i;
 	char			*path;
+	enum MAPISTORE_ERROR	retval = MAPISTORE_SUCCESS;
 
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
@@ -1444,7 +1468,7 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 	case MAPISTORE_FOLDER:
 		folder = fsocpf_find_folder(fsocpf_ctx, path);
 		MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NOT_FOUND, NULL);
-		fsocpf_set_folder_props(folder->uri, aRow);
+		retval = fsocpf_set_folder_props(folder->uri, aRow);
 		break;
 	case MAPISTORE_MESSAGE:
 		message = fsocpf_find_message(fsocpf_ctx, path);
@@ -1460,7 +1484,7 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 		break;
 	}
 
-	return MAPISTORE_SUCCESS;
+	return retval;
 }
 
 /* TODO: this looks like it probably does not handle soft deletion */

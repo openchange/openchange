@@ -415,6 +415,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 
    \sa ocpf_set_SPropValue
  */
+/* TODO: this should return a success/error code, with lpProps as a return parameter */
 _PUBLIC_ struct SPropValue *ocpf_get_SPropValue(uint32_t context_id, uint32_t *cValues)
 {
 	struct ocpf_context	*ctx;

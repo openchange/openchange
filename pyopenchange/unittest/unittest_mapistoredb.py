@@ -110,13 +110,19 @@ class TestMAPIStoreDB(unittest.TestCase):
 		self.assertNotEqual(inbox_fid, 0)
 		test_subfolder_fid = self.MAPIStore.mkdir(inbox_context_id, inbox_fid, "Test Folder", "This is a test folder", mapistore.FOLDER_GENERIC)
 		self.assertNotEqual(test_subfolder_fid, 0)
+		# TODO: remove this 
 		self.debuglevel = 9
 		retval = self.MAPIStore.opendir(context_id = inbox_context_id, parent_fid = inbox_fid, fid = test_subfolder_fid)
 		self.assertEqual(retval, 0)
+		# TODO: add getprops support, and check return values.
 		SPropValue = mapi.SPropValue()
-		# SPropValue.add(mapi.PidTagComment, "different comment")
+		SPropValue.add(mapi.PidTagComment, "different comment")
 		SPropValue.add(mapi.PidTagGeneration, "doesn't already exist")
 		retval = self.MAPIStore.setprops(inbox_context_id, test_subfolder_fid, mapistore.MAPISTORE_FOLDER, SPropValue)
+		self.assertEqual(retval, 0, self.MAPIStoreDB.errstr(retval))
+		SPropValue = mapi.SPropValue()
+		SPropValue.add(mapi.PidTagGeneration, "the first")
+		retval = self.MAPIStore.setprops(inbox_context_id, inbox_fid, mapistore.MAPISTORE_FOLDER, SPropValue)
 		self.assertEqual(retval, 0, self.MAPIStoreDB.errstr(retval))
 		SPropValue = mapi.SPropValue()
 		SPropValue.add(mapi.PidTagComment, "Inbox comment")

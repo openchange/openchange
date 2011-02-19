@@ -572,39 +572,53 @@ static enum MAPISTORE_ERROR fsocpf_set_folder_props(const char *folder_uri, stru
 	
 	/* Create the .properties file */
 	propfile = talloc_asprintf(mem_ctx, "%s/.properties", folder_uri);
-
-	/* Create the array of mapi properties */
-	mapi_lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, aRow->cValues);
-	mapi_lpProps.cValues = aRow->cValues;
-	mapidump_SRow(aRow, "[+]");
-	for (i = 0; i < aRow->cValues; i++) {
-		cast_mapi_SPropValue((TALLOC_CTX *)mapi_lpProps.lpProps,
-				     &(mapi_lpProps.lpProps[i]), &(aRow->lpProps[i]));
-	}
-
 	if (stat(propfile, &sb) == -1) {
 		ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_CREATE);
+		/* Create the array of mapi properties */
+		mapi_lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, aRow->cValues);
+		mapi_lpProps.cValues = aRow->cValues;
+		for (i = 0; i < aRow->cValues; i++) {
+			cast_mapi_SPropValue((TALLOC_CTX *)mapi_lpProps.lpProps,
+					      &(mapi_lpProps.lpProps[i]), &(aRow->lpProps[i]));
+		}
 	} else {
 		uint32_t num_props = 0;
-		struct SPropValue *props;
+		struct SPropValue *original_props;
 		int i = 0;
-		DEBUG(0, ("Need to update %s, but thats not implemented yet\n", propfile));
 		ocpf_new_context(propfile, &ocpf_context_id, OCPF_FLAGS_RDWR);
 		/* get all the old folder properties */
 		ocpf_parse(ocpf_context_id); /* TODO: check return type */
 		ocpf_server_set_SPropValue(mem_ctx, ocpf_context_id);
-		ocpf_dump_property(ocpf_context_id);
-		props = ocpf_get_SPropValue(ocpf_context_id, &num_props);
-		for (i = 0; i < num_props; ++i) {
-			mapidump_SPropValue(props[i], "[=]");
+		original_props = ocpf_get_SPropValue(ocpf_context_id, &num_props);
+		/* add new and update existing properties */
+		for (i = 0; i < aRow->cValues; ++i) {
+			int j = 0;
+			bool found = false;
+			for (j = 0; j < num_props; ++j) {
+				if (aRow->lpProps[i].ulPropTag == original_props[j].ulPropTag) {
+					original_props[j].value = aRow->lpProps[i].value;
+					found = true;
+				}
+			}
+			if ( ! found) {
+				num_props += 1;
+				original_props = talloc_realloc(NULL, original_props, struct SPropValue, num_props);
+				original_props[num_props -1].ulPropTag = aRow->lpProps[i].ulPropTag;
+				original_props[num_props -1].value = aRow->lpProps[i].value;
+			}
+		}
+		/* convert the output to the right format */
+		mapi_lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, num_props);
+		mapi_lpProps.cValues = num_props;
+		for (i = 0; i < num_props; i++) {
+			cast_mapi_SPropValue((TALLOC_CTX *)mapi_lpProps.lpProps,
+					      &(mapi_lpProps.lpProps[i]), &(original_props[i]));
 		}
 	}
 
-
-
 	/* ocpf_write_init(ocpf_context_id, fid); */
+	ocpf_clear_props(ocpf_context_id);
 	ocpf_write_init(ocpf_context_id, 0xdeadbeef);
-	DEBUG(0, ("Writing %s\n", propfile));
 	ocpf_write_auto(ocpf_context_id, NULL, &mapi_lpProps);
 	ocpf_write_commit(ocpf_context_id);
 	ocpf_del_context(ocpf_context_id);

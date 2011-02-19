@@ -400,6 +400,31 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+/**
+  \details Clear the known properties from the OCPF entity
+  
+  \param context_id identifier of the context to clear properties from
+  
+  \return MAPI_E_SUCCESS on success, otherwise a non-zero error code
+*/
+enum MAPISTATUS ocpf_clear_props (uint32_t context_id)
+{
+	struct ocpf_context	*ctx;
+
+	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!ocpf->mem_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	/* Search the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	MAPI_RETVAL_IF(!ctx, MAPI_E_NOT_FOUND, NULL);
+
+	if (ctx->props) {
+		talloc_free(ctx->props);
+	}
+	ctx->props = talloc_zero(ctx, struct ocpf_property);
+
+	return MAPI_E_SUCCESS;
+}
 
 /**
    \details Get the OCPF SPropValue array

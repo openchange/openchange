@@ -69,6 +69,7 @@ enum MAPISTATUS	ocpf_set_SPropValue(TALLOC_CTX *, uint32_t, mapi_object_t *, map
 struct SPropValue *ocpf_get_SPropValue(uint32_t, uint32_t *);
 enum MAPISTATUS ocpf_OpenFolder(uint32_t, mapi_object_t *, mapi_object_t *);
 enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *, uint32_t, mapi_object_t *);
+enum MAPISTATUS ocpf_clear_props (uint32_t context_id);
 
 /* The following public definitions come from libocpf/ocpf_server.c */
 enum MAPISTATUS ocpf_server_set_type(uint32_t, const char *);

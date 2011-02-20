@@ -129,6 +129,8 @@ class TestMAPIStoreDB(unittest.TestCase):
 		SPropValue.add(mapi.PidTagGeneration, "the second")
 		retval = self.MAPIStore.setprops(inbox_context_id, inbox_fid, mapistore.MAPISTORE_FOLDER, SPropValue)
 		self.assertEqual(retval, 0, self.MAPIStoreDB.errstr(retval))
+		retval = self.MAPIStore.closedir(inbox_context_id, test_subfolder_fid)
+		self.assertEqual(retval, 0, self.MAPIStoreDB.errstr(retval))
 
 	def test_errstr(self):
 		self.assertEqual(self.MAPIStoreDB.errstr(0), "Success")

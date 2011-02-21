@@ -276,10 +276,10 @@ static enum MAPISTORE_ERROR mstoredb_op_mkdir(void *private_data,
 {
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTORE_ERROR		retval = MAPISTORE_SUCCESS;
-	char				*stripped_uri;
+	const char			*stripped_uri;
 	struct mstoredb_context		*mstoredb_ctx = (struct mstoredb_context *) private_data;
 	char				*ldif;
-	char				*folder_dn;
+	const char			*folder_dn;
 
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 

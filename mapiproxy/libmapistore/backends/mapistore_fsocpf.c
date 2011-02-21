@@ -153,16 +153,25 @@ static struct fsocpf_folder *fsocpf_find_folder(struct fsocpf_context *fsocpf_ct
 						const char *uri)
 {
 	struct fsocpf_folder_list	*el;
+	const char			*path = NULL;
 
 	/* Sanity checks */
 	if (!fsocpf_ctx) return NULL;
 	if (!uri) return NULL;
 
+	if (mapistore_strip_ns_from_uri(uri, &path) != MAPISTORE_SUCCESS) {
+		/* assume its already stripped */
+		path = uri;
+	}
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "finding %s\n", path);
 	for (el = fsocpf_ctx->folders; el; el = el->next) {
-		if (el->folder && el->folder->uri && !strcmp(uri, el->folder->uri)) {
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "el->folder->uri: %s\n", el->folder->uri);
+		if (el->folder && el->folder->uri && !strcmp(path, el->folder->uri)) {
 			return el->folder;
 		}
 	}
+
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "%s not found\n", path);
 
 	return NULL;
 }
@@ -647,7 +656,7 @@ static enum MAPISTORE_ERROR fsocpf_op_mkdir(void *private_data,
 	TALLOC_CTX			*mem_ctx;
 	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
 	struct fsocpf_folder		*folder;
-	char				*parent_uri;
+	const char			*parent_uri;
 	char				*newfolder;
 	char				*dummy_uri;
 	struct fsocpf_folder_list	*newel;
@@ -740,45 +749,58 @@ static enum MAPISTORE_ERROR fsocpf_op_mkdir(void *private_data,
 /* FIXME: there's no check to ensure parent_uri is the folder_uri parent ... */
 static enum MAPISTORE_ERROR fsocpf_op_rmdir(void *private_data, const char *parent_uri, const char *folder_uri)
 {
-	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
-	struct fsocpf_folder	*parent;
-	struct fsocpf_folder	*el;
-	char			*propertiespath;
-	TALLOC_CTX		*mem_ctx;
-	int			ret;
+	struct fsocpf_context		*fsocpf_ctx = (struct fsocpf_context *)private_data;
+	struct fsocpf_folder		*parent;
+	struct fsocpf_folder		*folder;
+	const char 			*folder_path = NULL;
+	char				*propertiespath;
+	TALLOC_CTX			*mem_ctx;
+	int				ret;
+	struct fsocpf_folder_list	*el;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!parent_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	MSTORE_DEBUG_INFO(MSTORE_LEVEL_LOW, "Deleting %s from %s\n", folder_uri, parent_uri);
+	if (mapistore_strip_ns_from_uri(folder_uri, &folder_path) != MAPISTORE_SUCCESS) {
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_CRITICAL, "misformed folder_uri: %s\n", folder_uri);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_LOW, "Deleting %s from %s\n", folder_path, parent_uri);
 
 	/* Step 1. Search for the parent fid */
 	parent = fsocpf_find_folder(fsocpf_ctx, parent_uri);
 	MAPISTORE_RETVAL_IF(!parent, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
 	/* Step 2. Search for the folder element */
-	el = fsocpf_find_folder(fsocpf_ctx, folder_uri);
-	MAPISTORE_RETVAL_IF(!el, MAPISTORE_ERR_NO_DIRECTORY, NULL);
+	folder = fsocpf_find_folder(fsocpf_ctx, folder_path);
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	/* Step 3. Remove .properties file */
-	propertiespath = talloc_asprintf(mem_ctx, "%s/.properties", folder_uri);
+	propertiespath = talloc_asprintf(mem_ctx, "%s/.properties", folder_path);
 	ret = unlink(propertiespath);
 	if (ret) {
 		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unlink failed with error '%s'\n", strerror(errno));
 	}
 
 	/* Step 4. Delete directory */
-	ret = rmdir(folder_uri);
+	ret = rmdir(folder_path);
 	if (ret) {
 		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "rmdir failed with error '%s'\n", strerror(errno));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERROR;
 	}
-
+	for (el = fsocpf_ctx->folders; el; el = el->next) {
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "el->folder->uri: %s\n", el->folder->uri);
+		if (el->folder && el->folder->uri && !strcmp(folder_path, el->folder->uri)) {
+			MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "removing: %s\n", el->folder->uri);
+			DLIST_REMOVE(fsocpf_ctx->folders, el);
+		}
+	}
+	 
 	return MAPISTORE_SUCCESS;
 }
 
@@ -802,8 +824,8 @@ static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, const char *pa
 	struct fsocpf_folder_list	*newel;
 	struct dirent			*curdir;
 	DIR				*dir;
-	char				*folder_path = NULL;
-	char				*parent_folder_path = NULL;
+	const char			*folder_path = NULL;
+	const char			*parent_folder_path = NULL;
 
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
@@ -916,6 +938,7 @@ static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data,
 	struct fsocpf_folder		*folder;
 	struct fsocpf_folder_list	*el;
 	struct dirent			*curdir;
+	const char			*folder_path = NULL;
 
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");
 
@@ -924,7 +947,12 @@ static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data,
 	MAPISTORE_RETVAL_IF(!folder_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!RowCount, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	if (!strcmp(fsocpf_ctx->uri, folder_uri)) {
+	if (mapistore_strip_ns_from_uri(folder_uri, &folder_path) != MAPISTORE_SUCCESS) {
+		/* assume its already stripped */
+		folder_path = folder_uri;
+	}
+
+	if (!strcmp(fsocpf_ctx->uri, folder_path)) {
 		/* If we access it for the first time, just add an entry to the folder list */
 		if (!fsocpf_ctx->folders) {
 			el = fsocpf_folder_list_element_init((TALLOC_CTX *)fsocpf_ctx, fsocpf_ctx->uri, fsocpf_ctx->dir);
@@ -936,7 +964,7 @@ static enum MAPISTORE_ERROR fsocpf_op_readdir_count(void *private_data,
 	}
 
 	/* Search for the fid fsocpf_folder entry */
-	folder = fsocpf_find_folder(fsocpf_ctx, folder_uri);
+	folder = fsocpf_find_folder(fsocpf_ctx, folder_path);
 	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
 	switch (table_type) {
@@ -1462,7 +1490,7 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 	struct fsocpf_folder	*folder;
 	struct fsocpf_message	*message;
 	uint32_t		i;
-	char			*path;
+	const char		*path;
 	enum MAPISTORE_ERROR	retval = MAPISTORE_SUCCESS;
 
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, MSTORE_SINGLE_MSG, "");

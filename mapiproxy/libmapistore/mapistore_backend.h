@@ -79,7 +79,7 @@ __BEGIN_DECLS
 
 enum MAPISTORE_ERROR	mapistore_backend_register(const struct mapistore_backend *);
 enum MAPISTORE_ERROR	mapistore_backend_init_defaults(struct mapistore_backend *);
-enum MAPISTORE_ERROR	mapistore_strip_ns_from_uri(const char *, char **);
+enum MAPISTORE_ERROR	mapistore_strip_ns_from_uri(const char *, const char **);
 struct ldb_context	*mapistore_public_ldb_connect(struct mapistore_backend_context *, const char *);
 enum MAPISTORE_ERROR	mapistore_exist(struct mapistore_backend_context *, const char *, const char *);
 enum MAPISTORE_ERROR	mapistore_register_folder(struct mapistore_backend_context *, const char *, const char *, 

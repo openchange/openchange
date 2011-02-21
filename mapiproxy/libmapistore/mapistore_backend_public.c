@@ -116,7 +116,7 @@ enum MAPISTORE_ERROR mapistore_exist(struct mapistore_backend_context *ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-enum MAPISTORE_ERROR mapistore_strip_ns_from_uri(const char *uri, char **stripped_uri)
+enum MAPISTORE_ERROR mapistore_strip_ns_from_uri(const char *uri, const char **stripped_uri)
 {
 	char		*tmp;
 

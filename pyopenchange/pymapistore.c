@@ -406,12 +406,21 @@ static PyObject *py_MAPIStore_errstr(PyMAPIStoreObject *self, PyObject *args)
 
 static PyObject *py_MAPIStore_get_debuglevel(PyMAPIStoreObject *self, void *py_data)
 {
-	return PyInt_FromLong(0);
+	enum MAPISTORE_ERROR	retval;
+	uint32_t		value = 0;
+
+	retval = mapistore_get_debuglevel(self->mstore_ctx, &value);
+	if (retval) {
+		return PyInt_FromLong(0);
+	}
+
+	return PyInt_FromLong(value);
 }
 
 static int py_MAPIStore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value, void *py_data)
 {
 	enum MAPISTORE_ERROR	retval;
+	uint32_t		debuglevel;
 
 	if (value == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Cannot set debuglevel");
@@ -423,7 +432,8 @@ static int py_MAPIStore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value,
 		return -1;
 	}
 
-	retval = mapistore_set_debuglevel(self->mstore_ctx, *((uint32_t *)value));
+	debuglevel = PyInt_AsLong(value);
+	retval = mapistore_set_debuglevel(self->mstore_ctx, debuglevel);
 	if (retval) return -1;
 
 	return 0;

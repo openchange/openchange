@@ -157,6 +157,27 @@ enum MAPISTORE_ERROR mapistore_set_debuglevel(struct mapistore_context *mstore_c
 
 
 /**
+   \details Get the mapistore debug level
+
+   \param mstore_ctx pointer to the mapistore context
+   \param level pointer to the debug level to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_get_debuglevel(struct mapistore_context *mstore_ctx, uint32_t *level)
+{
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->lp_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!level, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	*level = DEBUGLEVEL;
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Add a new connection context to mapistore
 
    \param mstore_ctx pointer to the mapistore context

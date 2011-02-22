@@ -13,8 +13,8 @@ import string
 username = "jkerihuel"
 indent = 1
 title_nb = 1
-
-os.mkdir("/tmp/mapistoredb")
+provisioning_root_dir = "/tmp/test_mapistore"
+os.mkdir(provisioning_root_dir)
 
 def newTitle(title, separator):
     global title_nb
@@ -48,7 +48,7 @@ def TreeDeIndent():
 
 def start():
     newTitle("Initializing mapistore database", '=')
-    MAPIStoreDB = mapistoredb.mapistoredb("/tmp/mapistoredb")
+    MAPIStoreDB = mapistoredb.mapistoredb(provisioning_root_dir)
 
     newTitle("Provisioning mapistore database", '=')
     retval = MAPIStoreDB.provision(netbiosname = "server",
@@ -74,7 +74,7 @@ def start():
     retval = MAPIStoreDB.namedprops_provision_backends()
 
     newTitle("Provision named properties namespace for user", "=")
-    retval = MAPIStoreDB.namedprops_provision_user("jkerihuel")
+    retval = MAPIStoreDB.namedprops_provision_user(username)
     "\t* Return status: %s" % MAPIStoreDB.errstr(retval)
 
     newTitle("Create a new mailbox", '=')
@@ -102,7 +102,7 @@ def start():
     MAPIStoreDB.release()
                 
     newTitle("Initializing mapistore context", '=')
-    mapistore.set_mapping_path("/tmp/mapistoredb/mapistore")
+    mapistore.set_mapping_path(os.path.join(provisioning_root_dir, "mapistore"))
     MAPIStore = mapistore.mapistore()
     
     newTitle("Adding a context over Mailbox Root Folder", '=')
@@ -276,13 +276,17 @@ def start():
 
 
     newTitle("Setting mailbox folders to fsocpf", '=')
-    new_uri = MAPIStore.get_mapistore_uri(mapistore.MDB_INBOX,
-                                          username, 
-                                          "fsocpf://")
-    retval = MAPIStore.set_mapistore_uri(context_id, mapistore.MDB_INBOX, new_uri)
+    inbox_uri = MAPIStore.get_mapistore_uri(mapistore.MDB_INBOX, username, "fsocpf://")
+    retval = MAPIStore.set_mapistore_uri(context_id, mapistore.MDB_INBOX, inbox_uri)
     if retval == 0:
-        print "\t* Inbox [fsocpf]: [OK]"
+        print "\t* Inbox [fsocpf]: [OK] - " + inbox_uri
     else:
         print "\t* Inbox [fsocpf]: [KO] (%s)" % MAPIStore.errstr(retval)
+
+
+    newTitle("Creating mailbox folder", "=")
+    (inbox_context_id, inbox_fid) = MAPIStore.add_context(username, inbox_uri)
+
+    print "\t* Inbox FID: 0x%x" % inbox_fid
 
 start()

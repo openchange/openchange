@@ -8,14 +8,18 @@ VERSION = '2.0'
 top = '.'
 out = 'build'
 
-def options(ctx):
-    ctx.load('compiler_c')
-    ctx.add_option('--datadir',type='string',default='',dest='datadir',help='read-only application data')
+def options(opt):
+    opt.load('python')
+    opt.load('compiler_c')
+    opt.add_option('--datadir',type='string',default='',dest='datadir',help='read-only application data')
 
 def configure(conf):
     conf.load('compiler_c')
+    conf.load('python')
+    conf.check_python_version((2,4,2))
+    conf.check_python_headers()
 
-    conf.env.CPPFLAGS = ['-Wall', '-Werror', '-g3', '-fstrict-aliasing', '-Wp,-D_FORTIFY_SOURCE=2', 
+    conf.env.CPPFLAGS = ['-Wall', '-Werror', '-g3', '-Wp,-D_FORTIFY_SOURCE=2', 
                          '-Wmissing-prototypes', '-Wstrict-prototypes']
 
     prefix = conf.options.prefix
@@ -117,6 +121,7 @@ def build(bld):
             ],
         target = 'mapistore',
         includes     = ['.', '../../', 'build/indexing'],
+#        cflags = ['-fstrict-aliasing'],
         use    = ['NDR', 'LDB', 'TDB', 'TALLOC', 'SAMBA-HOSTCONFIG'])
 
     bld.shlib(
@@ -134,20 +139,38 @@ def build(bld):
         use             = ['mapistore', 'LDB'])
 
     bld(
+        features = 'c cshlib pyext',
+        source   = '../../pyopenchange/pymapi.c python/pymapistore.c',
+        target   = 'pymapistore',
+        includes = ['.', '../', '../../', '../../../', '../../../pyopenchange', 'build/indexing'],
+        use = ['mapistore'])
+
+    bld(
+        features = 'c cshlib pyext',
+        source   = 'python/pymapistoredb.c',
+        target   = 'pymapistoredb',
+        includes = ['.', '../', '../../', '../../../', 'build/indexing'],
+        use = ['mapistore'])
+
+    bld(
         features='subst',
         source='libmapistore.pc.in',
         target='libmapistore.pc',
         install_path='${LIBDIR}/pkgconfig',
         PACKAGE_VERSION = VERSION,
-        exec_prefix= bld.options.prefix,
-        datadir = bld.env.datadir,
-        includedir = bld.env.includedir,
+        exec_prefix= '${prefix}',
+        includedir = '${prefix}/include',
+        datadir = '${datarootdir}',
         LIBS = '-ltalloc -ltdb -lsamba-hostconfig')
 
 
-    bld.symlink_as('${PREFIX}/lib/libmapistore.so.0', 'libmapistore.so')
+    bld.symlink_as('${PREFIX}/lib/libmapistore.so.0', 'build/libmapistore.so')
+    bld.symlink_as('${PREFIX}/lib/libmapistore.so' + VERSION, 'build/libmapistore.so')
     bld.install_as('${PREFIX}/lib/mapistore_backends/mapistore_mstoredb.so', 'libmapistore_mstoredb.so')
     bld.install_as('${PREFIX}/lib/mapistore_backends/mapistore_fsocpf.so', 'libmapistore_fsocpf.so')
+    bld.install_as('${PREFIX}/lib/python2.6/site-packages/openchange/mapistore.so', 'pymapistore.so')    
+    bld.install_as('${PREFIX}/lib/python2.6/site-packages/openchange/mapistoredb.so', 'pymapistoredb.so')
+
     bld.install_files('${PREFIX}/include/mapistore',
                       ['mapistore.h', 
                        'mapistore_errors.h',

@@ -40,7 +40,7 @@ CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@				\
        -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"							\
        -DHAVE_ICAL_0_46=@have_libical_0_46@
 
-WAF_BUILD_INC=-Imapiproxy/libmapistore -Imapiproxy/libmapistore/indexing/gen_ndr
+WAF_BUILD_INC=-Imapiproxy/libmapistore -Imapiproxy/libmapistore/indexing/gen_ndr -Ipyopenchange
 
 # This value should be determined by configure at some point
 SHLIBEXT=so

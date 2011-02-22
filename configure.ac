@@ -685,7 +685,7 @@ AC_SUBST(OPENCHANGE_QT4)
 dnl ***********************
 dnl Makefiles 
 dnl ***********************
-AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc libocpf.pc mapiproxy/libmapiproxy.pc
+AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc libocpf/libocpf.pc mapiproxy/libmapiproxy.pc
 		 mapiproxy/libmapiserver.pc mapiproxy/libmapistore/libmapistore.pc libmapi++.pc
 		 Doxyfile libmapi++/Doxyfile libocpf/Doxyfile libmapiadmin/Doxyfile
 		 libmapi/Doxyfile mapiproxy/Doxyfile utils/mapitest/Doxyfile

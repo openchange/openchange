@@ -21,7 +21,7 @@
 #ifndef __LIBMAPI_PRIVATE_H__
 #define __LIBMAPI_PRIVATE_H__
 
-#include "config.h"
+/* #include "config.h" */
 
 #define __STDC_FORMAT_MACROS	1
 #include <inttypes.h>

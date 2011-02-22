@@ -20,21 +20,21 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 
-#ifndef HAVE_STRCASESTR
-static char *strcasestr(const char *haystack, const char *needle)
-{
-       const char *s;
-       size_t nlen = strlen(needle);
+/* #ifndef HAVE_STRCASESTR */
+/* static char *strcasestr(const char *haystack, const char *needle) */
+/* { */
+/*        const char *s; */
+/*        size_t nlen = strlen(needle); */
 
-       for (s=haystack;*s;s++) {
-               if (toupper(*needle) == toupper(*s) &&
-                               strncasecmp(s, needle, nlen) == 0) {
-                       return (char *)((uintptr_t)s);
-               }
-       }
-       return NULL;
-}
-#endif
+/*        for (s=haystack;*s;s++) { */
+/*                if (toupper(*needle) == toupper(*s) && */
+/*                                strncasecmp(s, needle, nlen) == 0) { */
+/*                        return (char *)((uintptr_t)s); */
+/*                } */
+/*        } */
+/*        return NULL; */
+/* } */
+/* #endif */
 
 
 /**

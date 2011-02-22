@@ -1,0 +1,62 @@
+import os
+
+APPNAME = 'ocpf'
+VERSION = '1.0.0'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+    opt.load('compiler_c')
+
+def configure(conf):
+    conf.load('compiler_c flex bison')
+
+    conf.env.CPPFLAGS = ['-Wall', '-Werror', '-g3', 
+                         '-Wp,-D_FORTIFY_SOURCE=2', 
+                         '-Wmissing-prototypes', 
+                         '-Wstrict-prototypes',
+                         '-fstrict-aliasing']
+
+    conf.check_cfg(atleast_pkgconfig_version='0.20')
+    conf.check_cfg(package='talloc',
+                   args=['talloc >= 2.0.5', '--cflags', '--libs'],
+                   uselib_store='TALLOC',
+                   msg="Checking for 'talloc 2.0.5'")
+
+    conf.check_cfg(package='libmapi',
+                   args=['libmapi >= 0.11', '--cflags', '--libs'],
+                   uselib_store='MAPI',
+                   msg="Checking for 'libmapi 0.11'")
+
+def build(bld):
+    tg = bld(
+        features = 'c cshlib',
+        source = [
+            'ocpf.y',
+            'lex.l',
+            'ocpf_context.c',
+            'ocpf_public.c',
+            'ocpf_server.c',
+            'ocpf_dump.c',
+            'ocpf_api.c',
+            'ocpf_write.c'],
+        target = 'ocpf',
+        includes = ['.', '../../', 'build'],
+        use = ['MAPI', 'TALLOC'])
+
+    bld(
+        features='subst',
+        source='libocpf.pc.in',
+        target='libocpf.pc',
+        install_path='${LIBDIR}/pkgconfig',
+        PACKAGE_VERSION = VERSION,
+        exec_prefix= '${prefix}',
+        includedir = '${prefix}/include',
+        datadir='${datarootdir}'
+        )
+
+    bld.symlink_as('${PREFIX}/lib/libocpf.so.0', 'libocpf.so')
+    bld.symlink_as('${PREFIX}/lib/libocpf.so.' + VERSION, 'libocpf.so')
+    bld.install_files('${PREFIX}/include/mapistore', 'ocpf.h')
+    bld.install_files('${PREFIX}/lib/pkgconfig', 'libocpf.pc')

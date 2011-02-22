@@ -592,14 +592,14 @@ endif
 clean:: libocpf-clean
 
 libocpf-distclean::
-	rm -f libocpf.pc
+	rm -f libocpf/libocpf.pc
 
 distclean:: libocpf-distclean
 
 libocpf-installpc:
 	@echo "[*] install: libocpf pc files"
 	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
-	$(INSTALL) -m 0644 libocpf.pc $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 libocpf/libocpf.pc $(DESTDIR)$(libdir)/pkgconfig
 
 libocpf-installlib:
 	@echo "[*] install: libocpf library"
@@ -1543,12 +1543,12 @@ $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
 
-$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/pymapistore.c				\
+$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	mapiproxy/libmapistore/python/pymapistore.c	\
 							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(WAF_BUILD_INC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
 
-$(pythonscriptdir)/openchange/mapistoredb.$(SHLIBEXT):	pyopenchange/pymapistoredb.c				\
+$(pythonscriptdir)/openchange/mapistoredb.$(SHLIBEXT):	mapiproxy/libmapistore/python/pymapistoredb.c	\
 							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(WAF_BUILD_INC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)

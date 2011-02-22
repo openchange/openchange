@@ -25,7 +25,7 @@
 
 #include "libocpf/ocpf.h"
 #include "libocpf/ocpf_api.h"
-#include "libocpf/ocpf.tab.h"
+#include "ocpf.tab.h"
 #include "libocpf/lex.h"
 
 #define	YY_EXTRA_TYPE	struct ocpf_context *

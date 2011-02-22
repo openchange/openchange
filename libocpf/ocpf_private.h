@@ -20,7 +20,6 @@
 #ifndef	__OCPF_PRIVATE_H_
 #define	__OCPF_PRIVATE_H_
 
-#include "config.h"
 #include <stdlib.h>
 
 #ifndef HAVE_COMPARISON_FN_T

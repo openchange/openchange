@@ -1,0 +1,142 @@
+from waflib.Task import Task
+from waflib.TaskGen import extension
+import os
+
+APPNAME = 'mapi'
+VERSION = '0.11'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+    opt.load('compiler_c')
+    opt.add_option('--datadir', type='string', default='', dest='datadir', help='read-only application data')
+
+def configure(conf):
+    conf.load('compiler_c')
+
+    conf.env.CPPFLAGS = ['-Wall', '-Werror', '-g3', 
+                         '-Wp,-D_FORTIFY_SOURCE=2', 
+                         '-Wmissing-prototypes', 
+                         '-Wstrict-prototypes',
+                         '-fstrict-aliasing']
+
+    def getstr(varname):
+        return getattr(conf.options,varname,'')
+    
+    datadir=getstr('datadir')
+    if not datadir:datadir=os.path.join(conf.options.prefix,'share')
+    conf.env.datadir = datadir
+    conf.define('DEFAULT_LDIF', os.path.join(conf.env.datadir, 'setup/profiles'))
+
+    conf.check_cfg(atleast_pkgconfig_version='0.20')
+
+    conf.check_cfg(package='talloc',
+                   args=['talloc >= 2.0.5', '--cflags', '--libs'],
+                   uselib_store='TALLOC',
+                   msg="Checking for 'talloc 2.0.5'")
+
+    conf.check_cfg(package='ndr',
+                   args=['ndr >= 0.0.1', '--cflags', '--libs'],
+                   uselib_store='NDR',
+                   msg="Checking for 'ndr 0.0.1'")
+
+    conf.check_cfg(package='ldb',
+                   args=['ldb >= 1.0.1', '--cflags', '--libs'],
+                   uselib_store='LDB',
+                   msg="Checking for 'ldb 1.0.1'")
+
+    conf.check_cfg(package='samba-hostconfig',
+                   args=['--cflags', '--libs'],
+                   uselib_store='SAMBA-HOSTCONFIG',
+                   msg="Checking for 'samba-hostconfig 0.0.1'")
+
+    try:
+        conf.find_program('pidl', var='PIDL')
+    except ctx.errors.ConfigurationError:
+        self.fatal("PIDL compiler not found")
+
+def pre(ctx):
+    ctx.exec_command('rm version.h;../script/mkversion.sh ../VERSION version.h ' + VERSION )
+    ctx.exec_command('./conf/mparse.pl --parser=mapicodes --outputdir=. conf/mapi-codes')
+    ctx.exec_command('./conf/mparse.pl --parser=codepage_lcid --outputdir=. conf/codepage-lcid')
+    ctx.exec_command('mv mapicodes_enum.h ../')
+    ctx.exec_command('ln -s ' + os.path.join(ctx.path.abspath(), 'build') + ' ' 
+                     + os.path.join(ctx.path.abspath(), 'build/gen_ndr'))
+
+def post(ctx):
+    if ctx.cmd == 'install':
+        ctx.exec_command('/sbin/ldconfig')
+
+class idl(Task):
+    run_str = '${PIDL} --outputdir=. --header --ndr-parser --client -- ${SRC}'
+    color = 'BLUE'
+    ext_out = ['.h', '.c']
+
+@extension('.idl')
+def process_idl(self, node):
+    ndr_node = node.change_ext('.c')
+    
+    try:
+        ndr_node.name.index("libmapi/build/ndr_")
+    except ValueError:
+        ndr_node.name = "libmapi/build/ndr_" + ndr_node.name
+
+    h_node = node.change_ext('.h')
+    try:
+        h_node.name.index("libmapi/build")
+    except ValueError:
+        h_node.name = "libmapi/build/" + h_node.name
+
+    self.create_task('idl', node, [ndr_node, h_node])
+    self.source.append(ndr_node)
+
+def build(bld):
+    tg = bld.shlib(
+        features = 'c cshlib',
+        source = [
+            '../exchange.idl',
+            '../property.idl',
+            '../ndr_mapi.c',
+            'emsmdb.c',
+            'async_emsmdb.c',
+            'IABContainer.c',
+            'IProfAdmin.c',
+            'IMAPIContainer.c',
+            'IMAPIFolder.c',
+            'IMAPIProp.c',
+            'IMAPISession.c',
+            'IMAPISupport.c',
+            'IStream.c',
+            'IMAPITable.c',
+            'IMessage.c',
+            'IMsgStore.c',
+            'IStoreFolder.c',
+            'IUnknown.c',
+            'IMSProvider.c',
+            'IXPLogon.c',
+            'FXICS.c',
+            'utils.c',
+            'property.c',
+            'cdo_mapi.c',
+            'lzfu.c',
+            'mapi_object.c',
+            'mapi_id_array.c',
+            'property_tags.c',
+            'mapidump.c',
+            'mapicode.c',
+            'codepage_lcid.c',
+            'mapi_nameid.c',
+            'nspi.c',
+            'simple_mapi.c',
+            'freebusy.c',
+            'x500.c',
+            'fxparser.c',
+            'socket/interface.c',
+            'socket/netif.c'],
+        target = 'mapi',
+        includes = ['.', '../', '../../', 'build'],
+        use = ['NDR', 'LDB', 'TALLOC', 'SAMBA-HOSTCONFIG', 'DEFAULT_LDIF'])
+
+    bld.add_pre_fun(pre)
+    bld.add_post_fun(post)

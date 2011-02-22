@@ -20,7 +20,7 @@
 */
 
 #include <Python.h>
-#include "pyopenchange/pymapistore.h"
+#include "pymapistore.h"
 
 void initmapistoredb(void);
 

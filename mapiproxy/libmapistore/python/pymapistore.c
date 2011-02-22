@@ -20,8 +20,8 @@
 */
 
 #include <Python.h>
-#include "pyopenchange/pymapistore.h"
-#include "pyopenchange/pymapi.h"
+#include "pymapistore.h"
+#include "pymapi.h"
 
 static PyTypeObject *SPropValue_Type;
 

@@ -175,7 +175,7 @@ static struct mapistore_indexing_context_list *mapistore_indexing_context_search
 
    \param mstore_ctx pointer to the mapistore context
    \param username username of the indexing database owner
-   \param indexing_ctx pointer on pointer to the inde3xing context to return
+   \param indexing_ctx pointer on pointer to the indexing context to return
 
    \return MAPISTORE_SUCCESS on success, otherwise a non-zero MAPISTORE_ERROR value
  */

@@ -26,6 +26,7 @@
 #include "mapistore_errors.h"
 #include "mapistore.h"
 #include "mapistore_private.h"
+#include "mapistore_common.h"
 
 typedef struct {
 	PyObject_HEAD

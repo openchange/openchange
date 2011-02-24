@@ -48,7 +48,8 @@ def TreeDeIndent():
 
 def start():
     newTitle("Initializing mapistore database", '=')
-    MAPIStoreDB = mapistoredb.mapistoredb(provisioning_root_dir)
+    MAPIStoreDB = mapistoredb.mapistoredb()
+    MAPIStoreDB.initialize(provisioning_root_dir)
 
     newTitle("Provisioning mapistore database", '=')
     retval = MAPIStoreDB.provision(netbiosname = "server",

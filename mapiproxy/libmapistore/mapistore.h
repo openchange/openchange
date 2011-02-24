@@ -174,7 +174,8 @@ struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_l
 bool		mapistore_backend_run_init(init_backend_fn *);
 
 /* definitions from mapistoredb.c */
-struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *, const char *);
+struct mapistoredb_context *mapistoredb_new(TALLOC_CTX *);
+enum MAPISTORE_ERROR mapistoredb_init(struct mapistoredb_context *, const char *);
 void mapistoredb_release(struct mapistoredb_context *);
 enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *);
 enum MAPISTORE_ERROR mapistoredb_get_mapistore_uri(struct mapistoredb_context *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *, char **);
@@ -185,6 +186,9 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox_allocation_range(struct ma
 
 /* definitions from mapistoredb_conf.c */
 void				mapistoredb_dump_conf(struct mapistoredb_context *);
+enum MAPISTORE_ERROR		mapistoredb_set_database_path(struct mapistoredb_context *, const char *);
+enum MAPISTORE_ERROR		mapistoredb_set_mapping_path(struct mapistoredb_context *, const char *);
+enum MAPISTORE_ERROR		mapistoredb_set_named_properties_database_path(struct mapistoredb_context *, const char *);
 enum MAPISTORE_ERROR		mapistoredb_set_netbiosname(struct mapistoredb_context *, const char *);
 enum MAPISTORE_ERROR		mapistoredb_set_firstorg(struct mapistoredb_context *, const char *);
 enum MAPISTORE_ERROR		mapistoredb_set_firstou(struct mapistoredb_context *, const char *);

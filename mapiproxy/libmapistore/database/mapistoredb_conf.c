@@ -199,6 +199,106 @@ enum MAPISTORE_ERROR mapistoredb_set_firstou(struct mapistoredb_context *mdb_ctx
 	return retval;
 }
 
+
+/**
+   \details Accessor for database path
+
+   \param dbpath pointer to the database path to set
+
+   \return MAPISTORE_SUCCESS on success, otherwise a non-zero
+   MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistoredb_set_database_path(struct mapistoredb_context *mdb_ctx, 
+						   const char *dbpath)
+{
+	enum MAPISTORE_ERROR	retval;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->param, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!dbpath, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	retval = mapistore_set_database_path(dbpath);
+
+	if (retval == MAPISTORE_SUCCESS) {
+		if (mdb_ctx->param->db_path) {
+			talloc_free(mdb_ctx->param->db_path);
+			mdb_ctx->param->db_path = NULL;
+		}
+
+		mdb_ctx->param->db_path = talloc_strdup(mdb_ctx->param, dbpath);
+	}
+
+	return retval;
+}
+
+
+/**
+   \details Accessor for mapping_path
+
+   \param mapping_path pointer to the mapping path to set
+
+   \return MAPISTORE_SUCCESS on success, otherwise a non-zero
+   MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistoredb_set_mapping_path(struct mapistoredb_context *mdb_ctx, 
+						  const char *mapping_path)
+{
+	enum MAPISTORE_ERROR	retval;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->param, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mapping_path, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	retval = mapistore_set_mapping_path(mapping_path);
+
+	if (retval == MAPISTORE_SUCCESS) {
+		if (mdb_ctx->param->mstore_path) {
+			talloc_free(mdb_ctx->param->mstore_path);
+			mdb_ctx->param->mstore_path = NULL;
+		}
+
+		mdb_ctx->param->mstore_path = talloc_strdup(mdb_ctx->param, mapping_path);
+	}
+
+	return retval;
+}
+
+
+/**
+   \details Accessor for named properties database path
+
+   \param nprops_dbpath pointer to the mapistore named properties
+   database path to set
+
+   \return MAPISTORE_SUCCESS on success, otherwise a non-zero
+   MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistoredb_set_named_properties_database_path(struct mapistoredb_context *mdb_ctx, 
+								    const char *nprops_dbpath)
+{
+	enum MAPISTORE_ERROR	retval;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->param, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!nprops_dbpath, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	retval = mapistore_set_named_properties_database_path(nprops_dbpath);
+
+	if (retval == MAPISTORE_SUCCESS) {
+		if (mdb_ctx->param->db_named_path) {
+			talloc_free(mdb_ctx->param->db_named_path);
+			mdb_ctx->param->db_named_path = NULL;
+		}
+
+		mdb_ctx->param->db_named_path = talloc_strdup(mdb_ctx->param, nprops_dbpath);
+	}
+
+	return retval;
+}
+
 /**
    \details Helper function, dumps current mapistore_context
    configuration parameters

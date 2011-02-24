@@ -29,11 +29,6 @@ static PyObject *py_MAPIStoreDB_new(PyTypeObject *type, PyObject *args, PyObject
 	TALLOC_CTX			*mem_ctx;
 	struct mapistoredb_context	*mdb_ctx;
 	PyMAPIStoreDBObject		*mdbobj;
-	char				*kwnames[] = { "path", NULL };
-	const char			*path = NULL;
-
-	/* Path is optional */
-	PyArg_ParseTupleAndKeywords(args, kwargs, "z", kwnames, &path);
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -41,9 +36,9 @@ static PyObject *py_MAPIStoreDB_new(PyTypeObject *type, PyObject *args, PyObject
 		return NULL;
 	}
 
-	mdb_ctx = mapistoredb_init(mem_ctx, path);
+	mdb_ctx = mapistoredb_new(mem_ctx);
 	if (mdb_ctx == NULL) {
-		DEBUG(0, ("mapistoredb_init returned NULL\n"));
+		PyErr_SetString(PyExc_TypeError, "mapistoredb initialization failed");
 		return NULL;
 	}
 
@@ -67,6 +62,25 @@ static PyObject *py_MAPIStoreDB_dump_configuration(PyMAPIStoreDBObject *self, Py
 {
 	mapistoredb_dump_conf(self->mdb_ctx);
 	return PyInt_FromLong(0);
+}
+
+static PyObject *py_MAPIStoreDB_initialize(PyMAPIStoreDBObject *self, PyObject *args, PyObject *kwargs)
+{
+	enum MAPISTORE_ERROR	retval;
+	const char		*mpath = NULL;
+	char			*kwnames[] = { "path", NULL };
+
+	/* Path is optional */
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "z", kwnames, &mpath)) {
+		PyErr_SetString(PyExc_TypeError, "Invalid parameter");
+		return NULL;
+	}
+
+	retval = mapistoredb_init(self->mdb_ctx, mpath);
+	if (retval) {
+		PyErr_SetString(PyExc_TypeError, "mapistoredb initialization failed");
+	}
+	return PyInt_FromLong(retval);
 }
 
 static PyObject *py_MAPIStoreDB_provision(PyMAPIStoreDBObject *self, PyObject *args, PyObject *kwargs)
@@ -272,12 +286,93 @@ static PyObject *PyMAPIStoreDB_getParameter(PyObject *_self, void *data)
 		return PyString_FromString(mapistoredb_get_firstorg(self->mdb_ctx));
 	} else if (!strcmp(attr, "firstou")) {
 		return PyString_FromString(mapistoredb_get_firstou(self->mdb_ctx));
+	} else if (!strcmp(attr, "mapping_path")) {
+		return PyString_FromString(mapistore_get_mapping_path());
+	} else if (!strcmp(attr, "database_path")) {
+		return PyString_FromString(mapistore_get_database_path());
+	} else if (!strcmp(attr, "nprops_database_path")) {
+		return PyString_FromString(mapistore_get_named_properties_database_path());
 	}
 
+	PyErr_SetString(PyExc_TypeError, "Invalid parameter");
 	return NULL;
 }
 
+
+static int PyMAPIStoreDB_set_dbpath(PyMAPIStoreDBObject *self, PyObject *value, void *py_data)
+{
+	enum MAPISTORE_ERROR	retval;
+	char			*dbpath;
+
+	if (self->mdb_ctx->mstore_ctx) {
+		PyErr_SetString(PyExc_AssertionError, "Already initialized");
+		return -1;
+	}
+
+	if (!PyString_Check(value)) {
+		PyErr_SetString(PyExc_ValueError, "The attribute must be a string");
+		return -1;
+	}
+
+	dbpath = PyString_AsString(value);
+
+	retval = mapistoredb_set_database_path(self->mdb_ctx, dbpath);
+	if (retval) return -1;
+
+	return 0;
+}
+
+
+static int PyMAPIStoreDB_set_mapping_path(PyMAPIStoreDBObject *self, PyObject *value, void *py_data)
+{
+	enum MAPISTORE_ERROR	retval;
+	char			*mapping_path;
+
+	if (self->mdb_ctx->mstore_ctx) {
+		PyErr_SetString(PyExc_AssertionError, "Already initialized");
+		return -1;
+	}
+
+	if (!PyString_Check(value)) {
+		PyErr_SetString(PyExc_ValueError, "The attribute must be a string");
+		return -1;
+	}
+
+	mapping_path = PyString_AsString(value);
+
+	retval = mapistoredb_set_mapping_path(self->mdb_ctx, mapping_path);
+	if (retval) return -1;
+
+	return 0;
+}
+
+
+static int PyMAPIStoreDB_set_nprops_dbpath(PyMAPIStoreDBObject *self, PyObject *value, void *py_data)
+{
+	enum MAPISTORE_ERROR	retval;
+	char			*nprops_dbpath;
+
+	if (self->mdb_ctx->mstore_ctx) {
+		PyErr_SetString(PyExc_AssertionError, "Already initialized");
+		return -1;
+	}
+
+	if (!PyString_Check(value)) {
+		PyErr_SetString(PyExc_ValueError, "The attribute must be a string");
+		return -1;
+	}
+
+	nprops_dbpath = PyString_AsString(value);
+
+	retval = mapistoredb_set_named_properties_database_path(self->mdb_ctx, nprops_dbpath);
+	if (retval) return -1;
+
+	return 0;
+}
+
+
 static PyMethodDef mapistoredb_methods[] = {
+	{ "initialize", (PyCFunction)py_MAPIStoreDB_initialize, METH_KEYWORDS },
 	{ "dump_configuration", (PyCFunction)py_MAPIStoreDB_dump_configuration, METH_VARARGS },
 	{ "provision", (PyCFunction)py_MAPIStoreDB_provision, METH_KEYWORDS },
 	{ "get_mapistore_uri", (PyCFunction)py_MAPIStoreDB_get_mapistore_uri, METH_KEYWORDS },
@@ -302,6 +397,12 @@ static PyGetSetDef mapistoredb_getsetters[] = {
 	  (setter)NULL, "firstorg", "firstorg"},
 	{ "firstou", (getter)PyMAPIStoreDB_getParameter,
 	  (setter)NULL, "firstou", "firstou"},
+	{ "mapping_path", (getter)PyMAPIStoreDB_getParameter, 
+	  (setter)PyMAPIStoreDB_set_mapping_path, "mapping_path", "mapping_path" },
+	{ "database_path", (getter)PyMAPIStoreDB_getParameter, 
+	  (setter)PyMAPIStoreDB_set_dbpath, "database_path", "database_path" },
+	{ "namedprops_database_path", (getter)PyMAPIStoreDB_getParameter, 
+	  (setter)PyMAPIStoreDB_set_nprops_dbpath, "namedprops_database_path", "namedprops_database_path" },
 	{ NULL },
 };
 

@@ -37,40 +37,29 @@
 int lpcfg_server_role(struct loadparm_context *lp_ctx);
 
 /**
-   \details Initialize the mapistore database context
+   \details Create a new mapistore database context
 
    \param mem_ctx pointer to the memory context
-   \param path string pointer to the mapistore database location
 
-   If path if NULL use the default mapistore database path instead.
-
-   \return Allocated mapistore database context on success, otherwise NULL
+   \return Allocated mapistore database context on success, otherwise
+   NULL
  */
-struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
-					     const char *path)
+struct mapistoredb_context *mapistoredb_new(TALLOC_CTX *mem_ctx)
 {
 	struct mapistoredb_context	*mdb_ctx;
 	char				**domaindn;
-	struct stat			sb;
 	int				i;
-	int				ret;
-
-	/* Sanity checks */
-	if (path == NULL) {
-		path = MAPISTORE_DBPATH;
-	}
-
-	/* Ensure the path is valid */
-	if (stat(path, &sb) == -1) {
-		perror(path);
-		return NULL;
-	}
 
 	/* Step 1. Initialize mapistoredb context */
 	mdb_ctx = talloc_zero(mem_ctx, struct mapistoredb_context);
+	if (!mdb_ctx) {
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to allocated memory for %s\n", "mdb_ctx");
+		return NULL;
+	}
+
 	mdb_ctx->param = talloc_zero(mem_ctx, struct mapistoredb_conf);
 	if (!mdb_ctx->param) {
-		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Failed to allocate memory for %s\n", "mdb_ctx->param");
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to allocate memory for %s\n", "mdb_ctx->param");
 		talloc_free(mdb_ctx);
 		return NULL;
 	}
@@ -109,19 +98,56 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 						     mdb_ctx->param->firstou,
 						     mdb_ctx->param->firstorg,
 						     mdb_ctx->param->serverdn);
-	mdb_ctx->param->db_path = talloc_asprintf(mdb_ctx->param, "%s/mapistore.ldb", path);
-	mdb_ctx->param->mstore_path = talloc_asprintf(mdb_ctx->param, "%s/mapistore", path);
-	mdb_ctx->param->db_named_path = talloc_asprintf(mdb_ctx->param, "%s/%s", 
-							mdb_ctx->param->mstore_path,
-							MAPISTORE_DB_NAMED_V2);
+	mdb_ctx->param->db_path = NULL;
+	mdb_ctx->param->mstore_path = NULL;
+	mdb_ctx->param->db_named_path = NULL;
+
+	mdb_ctx->mstore_ctx = NULL;
+
+	return mdb_ctx;
+}
+
+/**
+   \details Initialize the mapistore database context
+
+   \param mem_ctx pointer to the memory context
+   \param path string pointer to the mapistore database location
+
+   If path if NULL use the default mapistore database path instead.
+
+   \return Allocated mapistore database context on success, otherwise NULL
+ */
+enum MAPISTORE_ERROR mapistoredb_init(struct mapistoredb_context *mdb_ctx,
+					     const char *path)
+{
+	struct stat			sb;
+	int				ret;
+
+	/* Sanity checks */
+	if (path == NULL) {
+		path = MAPISTORE_DBPATH;
+	}
+
+	if (!mdb_ctx->param->db_path)
+	{
+		mdb_ctx->param->db_path = talloc_asprintf(mdb_ctx->param, "%s/mapistore.ldb", path);
+		/* Ensure the path is valid */
+		ret = stat(path, &sb);
+		MAPISTORE_RETVAL_IF(ret == -1, MAPISTORE_ERR_NO_DIRECTORY, NULL);
+	}
+	if (!mdb_ctx->param->mstore_path)
+		mdb_ctx->param->mstore_path = talloc_asprintf(mdb_ctx->param, "%s/mapistore", path);
+	if (!mdb_ctx->param->db_named_path)
+		mdb_ctx->param->db_named_path = talloc_asprintf(mdb_ctx->param, "%s/%s", 
+								mdb_ctx->param->mstore_path,
+								MAPISTORE_DB_NAMED_V2);
 
 	/* Step 4. Initialize mapistore */
 	if (stat(mdb_ctx->param->mstore_path, &sb) == -1) {
 		ret = mkdir(mdb_ctx->param->mstore_path, 0700);
 		if (ret == -1) {
 			perror(mdb_ctx->param->mstore_path);
-			talloc_free(mdb_ctx);
-			return NULL;
+			return MAPISTORE_ERR_NO_DIRECTORY;
 		}
 	}
 
@@ -132,10 +158,10 @@ struct mapistoredb_context *mapistoredb_init(TALLOC_CTX *mem_ctx,
 	if (!mdb_ctx->mstore_ctx) {
 		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Failed to initialize mapistore %s\n", "context");
 		talloc_free(mdb_ctx);
-		return NULL;
+		return MAPISTORE_ERR_NOT_INITIALIZED;
 	}
 
-	return mdb_ctx;
+	return MAPISTORE_SUCCESS;
 }
 
 
@@ -353,6 +379,7 @@ enum MAPISTORE_ERROR mapistoredb_register_new_mailbox(struct mapistoredb_context
 	if (write_ldif_string_to_store(mdb_ctx, user_store_ldif) == false) {
 		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "Failed to add user store %s\n", "container");
 		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_DATABASE_OPS;
 	}
 	talloc_free(user_store_ldif);
 

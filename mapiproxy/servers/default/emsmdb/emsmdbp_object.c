@@ -193,7 +193,7 @@ static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct em
 	int rc;
         void *poc_backend_object;
         void *stream_data;
-        uint8_t *stream_buffer;
+        uint8_t *stream_buffer, *utf8_buffer;
         struct Binary_r *binary_data;
         struct SRow aRow;
         off_t stream_size;
@@ -218,8 +218,18 @@ static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct em
                                         stream_data = binary_data;
                                 }
                                 else {
+                                        utf8_buffer = talloc_array(stream_buffer, uint8_t, stream_size);
+                                        memset(utf8_buffer, 0, stream_size);
+                                        size_t convert_string(charset_t from, charset_t to,
+                                                              void const *src, size_t srclen, 
+                                                              void *dest, size_t destlen, bool allow_badcharcnv);
+
+                                        convert_string(CH_UTF16BE, CH_UTF8,
+                                                       stream_buffer, stream_size,
+                                                       utf8_buffer, stream_size,
+                                                       false);
                                         DEBUG(4, ("%s: no unicode conversion performed yet\n", __PRETTY_FUNCTION__));
-                                        stream_data = stream_buffer;
+                                        stream_data = utf8_buffer;
                                 }
                                 set_SPropValue_proptag (aRow.lpProps, stream->property, stream_data);
                                 poc_backend_object = stream->parent_poc_backend_object;

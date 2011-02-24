@@ -110,10 +110,12 @@ struct mapistoredb_context *mapistoredb_new(TALLOC_CTX *mem_ctx)
 /**
    \details Initialize the mapistore database context
 
-   \param mem_ctx pointer to the memory context
+   \param mdb_ctx pointer to the mapistoredb context
    \param path string pointer to the mapistore database location
 
-   If path if NULL use the default mapistore database path instead.
+   If path is NULL, then the default mapistore database path will be used instead.
+   
+   mdb_ctx is expected to have been created using mapistoredb_new
 
    \return Allocated mapistore database context on success, otherwise NULL
  */
@@ -168,7 +170,7 @@ enum MAPISTORE_ERROR mapistoredb_init(struct mapistoredb_context *mdb_ctx,
 /**
    \details Free a mapistore database context
 
-   \param mdb_ctx the context to free (from mapistoredb_init())
+   \param mdb_ctx the context to free (from mapistoredb_new())
  */
 void mapistoredb_release(struct mapistoredb_context *mdb_ctx)
 {

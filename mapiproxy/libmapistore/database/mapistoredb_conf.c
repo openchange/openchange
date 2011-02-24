@@ -203,6 +203,7 @@ enum MAPISTORE_ERROR mapistoredb_set_firstou(struct mapistoredb_context *mdb_ctx
 /**
    \details Accessor for database path
 
+   \param mdb_ctx pointer to the mapistore database context
    \param dbpath pointer to the database path to set
 
    \return MAPISTORE_SUCCESS on success, otherwise a non-zero
@@ -236,6 +237,7 @@ enum MAPISTORE_ERROR mapistoredb_set_database_path(struct mapistoredb_context *m
 /**
    \details Accessor for mapping_path
 
+   \param mdb_ctx pointer to the mapistore database context
    \param mapping_path pointer to the mapping path to set
 
    \return MAPISTORE_SUCCESS on success, otherwise a non-zero
@@ -269,6 +271,7 @@ enum MAPISTORE_ERROR mapistoredb_set_mapping_path(struct mapistoredb_context *md
 /**
    \details Accessor for named properties database path
 
+   \param mdb_ctx pointer to the mapistore database context
    \param nprops_dbpath pointer to the mapistore named properties
    database path to set
 

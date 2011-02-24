@@ -498,6 +498,7 @@ enum MAPISTORE_ERROR mapistoredb_provision(struct mapistoredb_context *mdb_ctx)
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mdb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mdb_ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	/* Step 1. Add database schema */
 	if (write_ldif_string_to_store(mdb_ctx, MDB_INIT_LDIF_TMPL) == false) {

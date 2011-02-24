@@ -37,8 +37,10 @@ class TestMAPIStoreDB(unittest.TestCase):
 	def setUp(self):
 		self.username = "jkerihuel"
 		self.working_directory = tempfile.mkdtemp(prefix="TestMAPIStoreDB")
-		self.MAPIStoreDB = mapistoredb.mapistoredb(self.working_directory)
+		self.MAPIStoreDB = mapistoredb.mapistoredb()
 		self.assert_(self.MAPIStoreDB)
+		retval = self.MAPIStoreDB.initialize(self.working_directory)
+		self.assertEqual(retval, 0)
 		retval = self.MAPIStoreDB.provision(netbiosname = "server", firstorg = "OpenChange Project", firstou = "OpenChange Development Unit")
 		self.assertEqual(retval, 0)
 		retval = self.MAPIStoreDB.provision_named_properties()

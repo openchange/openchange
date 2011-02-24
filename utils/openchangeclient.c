@@ -432,7 +432,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 					  PR_MID,
 					  PR_INST_ID,
 					  PR_INSTANCE_NUM,
-					  PR_SUBJECT);
+					  PR_SUBJECT_UNICODE);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -995,7 +995,7 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 					  PR_MID,
 					  PR_INST_ID,
 					  PR_INSTANCE_NUM,
-					  PR_SUBJECT);
+					  PR_SUBJECT_UNICODE);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
@@ -1129,7 +1129,7 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!oclient->update) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Appointment");
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.Appointment");
 
 		flag = 1;
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_FLAGS, (const void *)&flag);
@@ -1264,7 +1264,7 @@ static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidEmail1EmailAddress, (const void *)oclient->email);
 	}
 	if (!oclient->update) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Contact");
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.Contact");
 	}
 	retval = SetProps(obj_message, lpProps, cValues);
 	MAPIFreeBuffer(SPropTagArray);
@@ -1372,7 +1372,7 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!oclient->update) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Task");
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.Task");
 		oclient->importance = (oclient->importance == -1) ? 1 : oclient->importance;
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_IMPORTANCE, (const void *)&oclient->importance);
 		oclient->taskstatus = (oclient->taskstatus == -1) ? 0 : oclient->taskstatus;
@@ -1462,7 +1462,7 @@ static enum MAPISTATUS note_SetProps(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!oclient->update) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.StickyNote");
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.StickyNote");
 
 		value = 1;
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_FLAGS, (const void *)&value);
@@ -1801,8 +1801,8 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 					  PR_MID,
 					  PR_INST_ID,
 					  PR_INSTANCE_NUM,
-					  PR_SUBJECT,
-					  PR_MESSAGE_CLASS,
+					  PR_SUBJECT_UNICODE,
+					  PR_MESSAGE_CLASS_UNICODE,
 					  PR_RULE_MSG_PROVIDER,
 					  PR_RULE_MSG_NAME);
 	retval = SetColumns(&obj_table, SPropTagArray);

@@ -243,6 +243,18 @@ _PUBLIC_ uint16_t libmapiserver_RopSeekStream_size(struct EcDoRpc_MAPI_REPL *res
 }
 
 /**
+   \details Calculate SetStreamSize Rop size
+
+   \param response pointer to the SetStreamSize EcDoRpc_MAPI_REPL structure
+
+   \return Size of SeekStream response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSetStreamSize_size(struct EcDoRpc_MAPI_REPL *response)
+{
+        return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
    \details Calculate GetPropertyIdsFromNames Rop size
 
    \param response pointer to the GetPropertyIdsFromNames

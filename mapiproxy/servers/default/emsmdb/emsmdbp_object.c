@@ -82,6 +82,8 @@ bool emsmdbp_is_mapistore(struct mapi_handles *handles)
 		return object->object.message->mapistore;
 	case EMSMDBP_OBJECT_STREAM:
 		return object->object.stream->mapistore;
+	case EMSMDBP_OBJECT_ATTACHMENT:
+		return object->object.attachment->mapistore;
 	default:
 		return false;
 	}
@@ -147,6 +149,8 @@ uint32_t emsmdbp_get_contextID(struct mapi_handles *handles)
 		return object->object.message->contextID;
 	case EMSMDBP_OBJECT_STREAM:
 		return object->object.stream->contextID;
+	case EMSMDBP_OBJECT_ATTACHMENT:
+		return object->object.attachment->contextID;
 	default:
 		return -1;
 	}
@@ -187,17 +191,50 @@ struct mapi_handles *emsmdbp_object_get_folder_handle_by_fid(struct mapi_handles
 static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct emsmdbp_object_stream *stream)
 {
 	int rc;
+        void *poc_backend_object;
+        void *stream_data;
+        uint8_t *stream_buffer;
+        struct Binary_r *binary_data;
+        struct SRow aRow;
+        off_t stream_size;
 
 	rc = MAPISTORE_SUCCESS;
 	if (stream->fd > -1) {
 		if ((stream->flags & OpenStream_Create)) {
-			lseek(stream->fd, SEEK_SET, 0);
-			rc = mapistore_set_property_from_fd(mstore_ctx,
-							    stream->contextID,
-							    stream->objectID,
-							    stream->objectType,
-							    stream->property,
-							    stream->fd);
+                        stream_size = lseek(stream->fd, 0, SEEK_END);
+			lseek(stream->fd, 0, SEEK_SET);
+                        if (stream->parent_poc_api) {
+                                aRow.cValues = 1;
+                                aRow.lpProps = talloc_zero(NULL, struct SPropValue);
+
+                                stream_buffer = talloc_array(aRow.lpProps, uint8_t, stream_size + 1);
+                                *(stream_buffer + stream_size) = 0;
+                                read(stream->fd, stream_buffer, stream_size);
+
+                                if ((stream->property & PT_BINARY) == PT_BINARY) {
+                                        binary_data = talloc(aRow.lpProps, struct Binary_r);
+                                        binary_data->cb = stream_size;
+                                        binary_data->lpb = stream_buffer;
+                                        stream_data = binary_data;
+                                }
+                                else {
+                                        DEBUG(4, ("%s: no unicode conversion performed yet\n", __PRETTY_FUNCTION__));
+                                        stream_data = stream_buffer;
+                                }
+                                set_SPropValue_proptag (aRow.lpProps, stream->property, stream_data);
+                                poc_backend_object = stream->parent_poc_backend_object;
+                                rc =  mapistore_pocop_set_properties(mstore_ctx,
+                                                                     stream->contextID, poc_backend_object, &aRow);
+                                talloc_free(aRow.lpProps);
+                        }
+                        else {
+                                rc = mapistore_set_property_from_fd(mstore_ctx,
+                                                                    stream->contextID,
+                                                                    stream->objectID,
+                                                                    stream->objectType,
+                                                                    stream->property,
+                                                                    stream->fd);
+                        }
 		}
 		close (stream->fd);
 		stream->fd = -1;
@@ -229,20 +266,49 @@ static int emsmdbp_object_destructor(void *data)
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FOLDER:
 		ret = mapistore_del_context(object->mstore_ctx, object->object.folder->contextID);
+                if (object->poc_api) {
+                                mapistore_pocop_release(object->mstore_ctx, object->object.folder->contextID,
+                                                        object->poc_backend_object);
+                }
 		DEBUG(4, ("[%s:%d] mapistore folder context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
 	case EMSMDBP_OBJECT_MESSAGE:
 		ret = mapistore_release_record(object->mstore_ctx, object->object.message->contextID,
 					       object->object.message->messageID, MAPISTORE_MESSAGE);
+                if (object->poc_api) {
+                                mapistore_pocop_release(object->mstore_ctx, object->object.message->contextID,
+                                                        object->poc_backend_object);
+                }
+		ret = mapistore_del_context(object->mstore_ctx, object->object.message->contextID);
+		DEBUG(4, ("[%s:%d] mapistore message context retval = %d\n", __FUNCTION__, __LINE__, ret));
+		break;
+	case EMSMDBP_OBJECT_TABLE:
+                if (object->poc_api) {
+                                mapistore_pocop_release(object->mstore_ctx, object->object.table->contextID,
+                                                        object->poc_backend_object);
+                }
 		ret = mapistore_del_context(object->mstore_ctx, object->object.message->contextID);
 		DEBUG(4, ("[%s:%d] mapistore message context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
 	case EMSMDBP_OBJECT_STREAM:
 		ret = emsmdbp_commit_stream(object->mstore_ctx, object->object.stream);
+                if (object->poc_api) {
+                                mapistore_pocop_release(object->mstore_ctx, object->object.message->contextID,
+                                                        object->poc_backend_object);
+                }
 		ret = mapistore_del_context(object->mstore_ctx, object->object.stream->contextID);
 		DEBUG(4, ("[%s:%d] mapistore stream context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
+	case EMSMDBP_OBJECT_ATTACHMENT:
+                if (object->poc_api) {
+                                mapistore_pocop_release(object->mstore_ctx, object->object.attachment->contextID,
+                                                        object->poc_backend_object);
+                }
+		ret = mapistore_del_context(object->mstore_ctx, object->object.attachment->contextID);
+		DEBUG(4, ("[%s:%d] mapistore stream context retval = %d\n", __FUNCTION__, __LINE__, ret));
+		break;
 	default:
+		DEBUG(4, ("[%s:%d] destroying unhandled object type: %d\n", __FUNCTION__, __LINE__, object->type));
 		break;
 	}
 
@@ -275,6 +341,10 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
 	object->object.message = NULL;
 	object->object.stream = NULL;
 	object->private_data = NULL;
+
+        /* proof of concept */
+	object->poc_api = false;
+	object->poc_backend_object = NULL;
 
 	return object;
 }
@@ -575,7 +645,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
 							   struct mapi_handles *parent)
 {
 	enum MAPISTATUS		retval;
-	struct emsmdbp_object	*object;
+	struct emsmdbp_object	*object, *parent_object;
 	void			*data;
 	bool			mapistore = false;
 
@@ -585,6 +655,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
 	/* Retrieve parent object */
 	retval = mapi_handles_get_private_data(parent, &data);
 	if (retval) return NULL;
+        parent_object = data;
 	
 	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
 	if (!object) return NULL;
@@ -606,6 +677,59 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
 		object->object.stream->fd = -1;
 		object->object.stream->objectID = -1;
 		object->object.stream->objectType = -1;
+                if (parent_object->poc_api) {
+                        object->object.stream->parent_poc_api = true;
+                        object->object.stream->parent_poc_backend_object = parent_object->poc_backend_object;
+                }
+	}
+
+	return object;
+}
+
+
+/**
+   \details Initialize a attachment object
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider cotnext
+   \param folderID the folder identifier
+   \param messageID the message identifier
+   \param parent pointer to the parent MAPI handle
+ */
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *mem_ctx,
+                                                               struct emsmdbp_context *emsmdbp_ctx,
+                                                               uint64_t messageID,
+                                                               struct mapi_handles *parent)
+{
+	enum MAPISTATUS		retval;
+	struct emsmdbp_object	*object;
+	void			*data;
+	bool			mapistore = false;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+
+	/* Retrieve parent object */
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) return NULL;
+	
+	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
+	if (!object) return NULL;
+
+	object->object.attachment = talloc_zero(object, struct emsmdbp_object_attachment);
+	if (!object->object.attachment) {
+		talloc_free(object);
+		return NULL;
+	}
+
+	object->type = EMSMDBP_OBJECT_ATTACHMENT;
+	object->object.attachment->messageID = messageID;
+	object->object.attachment->attachmentID = -1;
+
+	mapistore = emsmdbp_is_mapistore(parent);
+	if (mapistore == true) {
+		object->object.attachment->mapistore = true;
+		object->object.attachment->contextID = emsmdbp_get_contextID(parent);
 	}
 
 	return object;

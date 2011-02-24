@@ -132,6 +132,12 @@
 #define	SIZE_DFLT_ROPSETMESSAGEREADFLAG		1
 
 /**
+   \details: CreateAttachRop has fixed response size for:
+   -# AttachmentId: uint32_t
+ */
+#define	SIZE_DFLT_ROPCREATEATTACH		4
+
+/**
    \details SetColumnsRop has fixed response size for:
    -# TableStatus: uint8_t
  */
@@ -375,6 +381,9 @@ uint16_t libmapiserver_RopModifyRecipients_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopReloadCachedInformation_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSetMessageReadFlag_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetAttachmentTable_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopOpenAttach_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopCreateAttach_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSaveChangesAttachment_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcnotif.c */
 uint16_t libmapiserver_RopRegisterNotification_size(void);
@@ -393,6 +402,7 @@ uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetStreamSize_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSeekStream_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSetStreamSize_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCopyTo_size(struct EcDoRpc_MAPI_REPL *);

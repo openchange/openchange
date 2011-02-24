@@ -69,7 +69,8 @@ enum emsmdbp_object_type {
 	EMSMDBP_OBJECT_FOLDER		= 0x2,
 	EMSMDBP_OBJECT_MESSAGE		= 0x3,
 	EMSMDBP_OBJECT_TABLE		= 0x4,
-	EMSMDBP_OBJECT_STREAM		= 0x5
+	EMSMDBP_OBJECT_STREAM		= 0x5,
+	EMSMDBP_OBJECT_ATTACHMENT	= 0x6
 };
 
 struct emsmdbp_object_mailbox {
@@ -116,6 +117,15 @@ struct emsmdbp_object_stream {
 	uint32_t			flags;
 	int				fd;
 	bool				mapistore;
+        bool                            parent_poc_api;
+        void                            *parent_poc_backend_object;
+};
+
+struct emsmdbp_object_attachment {
+	uint64_t			messageID;
+	uint32_t			attachmentID;
+	uint32_t			contextID;
+	bool				mapistore;
 };
 
 union emsmdbp_objects {
@@ -124,6 +134,7 @@ union emsmdbp_objects {
 	struct emsmdbp_object_message	*message;
 	struct emsmdbp_object_table	*table;
 	struct emsmdbp_object_stream	*stream;
+	struct emsmdbp_object_attachment *attachment;
 };
 
 struct emsmdbp_object {
@@ -131,6 +142,8 @@ struct emsmdbp_object {
 	union emsmdbp_objects		object;
 	struct mapistore_context	*mstore_ctx;
 	void				*private_data;
+        bool                            poc_api;
+        void                            *poc_backend_object; /* private_data ? */
 };
 
 
@@ -168,6 +181,7 @@ struct emsmdbp_object {
 #define	EMSMDBP_TABLE_MESSAGE_TYPE	0x2
 #define	EMSMDBP_TABLE_FAI_TYPE		0x3
 #define	EMSMDBP_TABLE_RULE_TYPE		0x4
+#define	EMSMDBP_TABLE_ATTACHMENT_TYPE	0x5
 
 __BEGIN_DECLS
 
@@ -194,6 +208,7 @@ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_c
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct mapi_handles *);
 struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct mapi_handles *);
 struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *, struct emsmdbp_context *, uint32_t, enum OpenStream_OpenModeFlags, struct mapi_handles *);
+struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct mapi_handles *);
 
 /* definitions from oxcfold.c */
 enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
@@ -215,6 +230,9 @@ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *, struct emsmdbp_context
 enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopGetAttachmentTable(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopSaveChangesAttachment(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 
 /* definitions from oxcnotif.c */
 enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
@@ -228,6 +246,7 @@ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *, struct emsmdbp_context *, st
 enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopGetStreamSize(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopSeekStream(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopSetStreamSize(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopDeletePropertiesNoReplicate(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);

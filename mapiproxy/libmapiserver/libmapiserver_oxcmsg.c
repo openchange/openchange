@@ -224,3 +224,48 @@ _PUBLIC_ uint16_t libmapiserver_RopGetAttachmentTable_size(struct EcDoRpc_MAPI_R
 {
 	return SIZE_DFLT_MAPI_RESPONSE;
 }
+
+
+/**
+   \details Calculate OpenAttach (0x22) Rop size
+
+   \param response pointer to the OpenAttach EcDoRpc_MAPI_REPL
+
+   \return Size of OpenAttach response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopOpenAttach_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate CreateAttach (0x23) Rop size
+
+   \param response pointer to the CreateAttach EcDoRpc_MAPI_REPL
+
+   \return Size of CreateAttach response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopCreateAttach_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPCREATEATTACH;
+
+        return size;
+}
+
+/**
+   \details Calculate SaveChangesAttachment (0x25) Rop size
+
+   \param response pointer to the SaveChangesAttachment EcDoRpc_MAPI_REPL
+
+   \return Size of SaveChangesAttachment response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSaveChangesAttachment_size(struct EcDoRpc_MAPI_REPL *response)
+{
+        return SIZE_DFLT_MAPI_RESPONSE;
+}

@@ -65,19 +65,27 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 	int			i;
 	uint8_t			type;
 	uint8_t			*untyped_status;
+        struct mapistore_property_data *properties;
 
 	object = (struct emsmdbp_object *) private_data;
 	if (object) {
 		switch (object->type) {
 		case EMSMDBP_OBJECT_FOLDER:
-			/* contextID = object->object.folder->contextID; */
-			/* fmid = object->object.folder->folderID; */
-			/* type = MAPISTORE_FOLDER; */
+			contextID = object->object.folder->contextID;
+                        if (!object->poc_api) {
+                                fmid = object->object.folder->folderID;
+                                type = MAPISTORE_FOLDER;
+                        }
 			break;
 		case EMSMDBP_OBJECT_MESSAGE:
 			contextID = object->object.message->contextID;
-			fmid = object->object.message->messageID;
-			type = MAPISTORE_MESSAGE;
+                        if (!object->poc_api) {
+                                fmid = object->object.message->messageID;
+                                type = MAPISTORE_MESSAGE;
+                        }
+			break;
+		case EMSMDBP_OBJECT_ATTACHMENT:
+			contextID = object->object.attachment->contextID;
 			break;
 		default:
 			break;
@@ -104,7 +112,53 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 
 		aRow = talloc_zero(mem_ctx, struct SRow);
 		aRow->cValues = 0;
-		mapistore_getprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, type, &SPropTagArray, aRow);
+
+                if (object->poc_api) {
+                        aRow->lpProps = talloc_array(aRow, struct SPropValue, SPropTagArray.cValues);
+                        aRow->cValues = SPropTagArray.cValues;
+
+                        properties = talloc_array(mem_ctx, struct mapistore_property_data, request.prop_count);
+                        memset(properties, 0, sizeof(struct mapistore_property_data) * request.prop_count);
+                        mapistore_pocop_get_properties(emsmdbp_ctx->mstore_ctx, contextID,
+                                                       object->poc_backend_object,
+                                                       SPropTagArray.cValues,
+                                                       SPropTagArray.aulPropTag,
+                                                       properties);
+                        for (i = 0; i < request.prop_count; i++) {
+                                retval = MAPI_E_SUCCESS;
+                                if (properties[i].error) {
+                                        if (properties[i].error == MAPISTORE_ERR_NOT_FOUND)
+                                                retval = MAPI_E_NOT_FOUND;
+                                        else if (properties[i].error == MAPISTORE_ERR_NO_MEMORY)
+                                                retval = MAPI_E_NOT_ENOUGH_MEMORY;
+                                        else {
+                                                DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[i].error));
+                                        }
+                                }
+                                else {
+                                        if (properties[i].data == NULL)
+                                                retval = MAPISTORE_ERR_NOT_FOUND;
+                                        else
+                                                talloc_steal(properties, properties[0].data);
+                                }
+
+                                propTag = SPropTagArray.aulPropTag[i];
+                                if (retval) {
+                                        /* we translate mapistore error into a mapi error */
+                                        propTag = (propTag & 0xffff0000) | PT_ERROR;
+                                        retval = MAPI_E_NOT_FOUND;
+                                        data = &retval;
+                                }
+                                else {
+                                        data = properties[i].data;
+                                }
+                                set_SPropValue_proptag (aRow->lpProps + i, propTag, data);
+                        }
+                        talloc_free(properties);
+                }
+                else {
+                        mapistore_getprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, type, &SPropTagArray, aRow);
+                }
 
 		/* Check if we need the layout */
                 if (!response->layout) {
@@ -527,21 +581,39 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 					&(aRow.lpProps[i]));
 		}
 
-		if (object->type == EMSMDBP_OBJECT_MESSAGE) {
-			fmid = object->object.message->messageID;
-			contextID = object->object.message->contextID;
-			mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, 
-					   MAPISTORE_MESSAGE, &aRow);
-		}
-		else if (object->type == EMSMDBP_OBJECT_FOLDER) {
-			fmid = object->object.folder->folderID;
-			contextID = object->object.folder->contextID;
-			mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, 
-					   MAPISTORE_FOLDER, &aRow);
-		}
-		else {
-			DEBUG(5, ("  object type %d not implemented\n", object->type));
-		}
+                if (object->type == EMSMDBP_OBJECT_MESSAGE) {
+                        contextID = object->object.message->contextID;
+                }
+                else if (object->type == EMSMDBP_OBJECT_FOLDER) {
+                        contextID = object->object.folder->contextID;
+                }
+                else if (object->type == EMSMDBP_OBJECT_ATTACHMENT) {
+                        contextID = object->object.attachment->contextID;
+                }
+                else {
+                        DEBUG(5, ("  object type %d not implemented\n", object->type));
+                }
+
+                if (object->poc_api) {
+                        mapistore_pocop_set_properties(emsmdbp_ctx->mstore_ctx, contextID,
+                                                       object->poc_backend_object,
+                                                       &aRow);
+                }
+                else {
+                        if (object->type == EMSMDBP_OBJECT_MESSAGE) {
+                                fmid = object->object.message->messageID;
+                                mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, 
+                                                   MAPISTORE_MESSAGE, &aRow);
+                        }
+                        else if (object->type == EMSMDBP_OBJECT_FOLDER) {
+                                fmid = object->object.folder->folderID;
+                                mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, 
+                                                   MAPISTORE_FOLDER, &aRow);
+                        }
+                        else {
+                                DEBUG(5, ("  object type %d not implemented\n", object->type));
+                        }
+                }
 		break;
 	}
 	
@@ -628,6 +700,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	int				fd;
 	char				*filename;
 	void				*data;
+        struct mapistore_property_data  *properties;
+        struct SBinary_short            *binary_data;
+        
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] OpenStream (0x2b)\n"));
 
@@ -640,7 +715,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
+        mapi_repl->handle_idx = mapi_req->u.mapi_OpenStream.handle_idx;
 	mapi_repl->u.mapi_OpenStream.StreamSize = 0;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
@@ -655,14 +730,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	mapi_handles_get_private_data(parent, &data);
 	parent_object = (struct emsmdbp_object *) data;
 	if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
+                contextID = parent_object->object.folder->contextID;
 		objectID = parent_object->object.folder->folderID;
 		objectType = MAPISTORE_FOLDER;
 	}
 	else if (parent_object->type == EMSMDBP_OBJECT_MESSAGE) {
-		objectID = parent_object->object.message->messageID;
+                contextID = parent_object->object.message->contextID;
+                objectID = parent_object->object.message->messageID;
 		objectType = MAPISTORE_MESSAGE;
 	}
-	else {
+	else if (parent_object->type == EMSMDBP_OBJECT_ATTACHMENT) {
+                contextID = parent_object->object.attachment->contextID;
+		objectType = MAPISTORE_ATTACHMENT; // useless with poc
+        }
+        else {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 	}
 
@@ -680,14 +761,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	*/
 
 	if (!mapi_repl->error_code) {
-		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+                retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 		object = emsmdbp_object_stream_init((TALLOC_CTX *)rec, emsmdbp_ctx,
 						    mapi_req->u.mapi_OpenStream.PropertyTag,
 						    mapi_req->u.mapi_OpenStream.OpenModeFlags,
 						    parent);
-		
 		if (object) {
-			retval = mapi_handles_set_private_data(rec, object);
+                        handles[mapi_repl->handle_idx] = rec->handle;
+
+			mapi_handles_set_private_data(rec, object);
+
 			filename = talloc_asprintf(mem_ctx, "/tmp/openchange-stream-XXXXXX");
 			fd = mkstemp(filename);
 			if (fd > -1) {
@@ -701,18 +784,37 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 
 				if (object->object.stream->flags == OpenStream_ReadOnly
 				    || object->object.stream->flags == OpenStream_ReadWrite) {
-					if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
-						contextID = parent_object->object.folder->contextID;
-					}
-					else {
-						contextID = parent_object->object.message->contextID;
-					}
-					mapi_repl->error_code = mapistore_get_property_into_fd(parent_object->mstore_ctx,
-											       contextID,
-											       objectID,
-											       objectType,
-											       mapi_req->u.mapi_OpenStream.PropertyTag,
-											       fd);
+                                        if (parent_object->poc_api) {
+                                                properties = talloc_array(mem_ctx, struct mapistore_property_data, 1);
+                                                mapistore_pocop_get_properties(emsmdbp_ctx->mstore_ctx, contextID,
+                                                                               parent_object->poc_backend_object,
+                                                                               1,
+                                                                               &mapi_req->u.mapi_OpenStream.PropertyTag,
+                                                                               properties);
+                                                if (!properties[0].error) {
+                                                        talloc_steal(properties, properties[0].data);
+                                                        if ((mapi_req->u.mapi_OpenStream.PropertyTag & PT_BINARY) == PT_BINARY) {
+                                                                binary_data = properties[0].data;
+                                                                write(fd, binary_data->lpb, binary_data->cb);
+                                                        }
+                                                        else {
+                                                                DEBUG(5, ("  type of property tag is not handled: %.8x",
+                                                                          mapi_req->u.mapi_OpenStream.PropertyTag));
+                                                        }
+                                                }
+                                                else {
+                                                        mapi_repl->error_code = MAPI_E_NOT_FOUND;
+                                                }
+                                                talloc_free(properties);
+                                        }
+                                        else {
+                                                mapi_repl->error_code = mapistore_get_property_into_fd(parent_object->mstore_ctx,
+                                                                                                       contextID,
+                                                                                                       objectID,
+                                                                                                       objectType,
+                                                                                                       mapi_req->u.mapi_OpenStream.PropertyTag,
+                                                                                                       fd);
+                                        }
 					mapi_repl->u.mapi_OpenStream.StreamSize = lseek(fd, 0, SEEK_END);
 					lseek(object->object.stream->fd, SEEK_SET, 0);
 				}
@@ -723,9 +825,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 
 			talloc_free(filename);
 		}
-
-		mapi_repl->handle_idx = mapi_req->u.mapi_OpenStream.handle_idx;
-		handles[mapi_repl->handle_idx] = rec->handle;
 	}
 
 end:
@@ -1045,6 +1144,46 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekStream(TALLOC_CTX *mem_ctx,
 
 end:
 	*size += libmapiserver_RopGetStreamSize_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details EcDoRpc SetStreamSize (0x2f) Rop. This operation
+   copy messages from one folder to another.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the DeleteProperties EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the DeleteProperties EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetStreamSize(TALLOC_CTX *mem_ctx,
+                                           struct emsmdbp_context *emsmdbp_ctx,
+                                           struct EcDoRpc_MAPI_REQ *mapi_req,
+                                           struct EcDoRpc_MAPI_REPL *mapi_repl,
+                                           uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] SetStreamSize (0x2f) -- stub\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	
+	*size += libmapiserver_RopSetStreamSize_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

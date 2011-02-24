@@ -145,7 +145,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 				retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, contextID, folderID,
 							   flist->folderID[i]);
 				mapi_handles_add(emsmdbp_ctx->handles_ctx, parent_handle->handle, &rec);
-				object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx,
+				object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx,
 								    flist->folderID[i], parent_handle);
 				if (object) {
 					retval = mapi_handles_set_private_data(rec, object);
@@ -156,7 +156,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 			}
 		} else {
 			retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-			object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx,
+			object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx,
 							    flist->folderID[0], parent);
 			if (object) {
 				retval = mapi_handles_set_private_data(rec, object);
@@ -350,7 +350,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &folder_handle);
-		object = emsmdbp_object_folder_init(emsmdbp_ctx, emsmdbp_ctx, folderID,
+		object = emsmdbp_object_folder_init(folder_handle, emsmdbp_ctx, folderID,
 						    context_handle);
 		if (object) {
 			DEBUG(5, ("  success\n"));
@@ -816,7 +816,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *mem_ctx,
 						       struct EcDoRpc_MAPI_REPL *mapi_repl,
 						       uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SetMessageReadFlag (0x11)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SetMessageReadFlag (0x11) -- stub\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -860,8 +860,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAttachmentTable(TALLOC_CTX *mem_ctx,
 						       uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
-	struct mapi_handles	*rec = NULL;
 	uint32_t		handle;
+	uint32_t		contextID;
+	uint32_t		row_count;
+	uint64_t		messageID;
+	struct mapi_handles		*rec = NULL;
+	struct mapi_handles		*table_rec = NULL;
+	struct emsmdbp_object		*message_object = NULL;
+	struct emsmdbp_object		*table_object = NULL;
+	void				*data;
+	void				*backend_attachment_table = NULL;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] GetAttachmentTable (0x21)\n"));
 
@@ -874,14 +882,311 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAttachmentTable(TALLOC_CTX *mem_ctx,
 
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-
-	/* TODO: actually implement this */
-
-	*size += libmapiserver_RopGetAttachmentTable_size(mapi_repl);
+	mapi_repl->handle_idx = mapi_req->u.mapi_GetAttachmentTable.handle_idx;
 
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-	handles[mapi_repl->handle_idx] = rec->handle;
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+
+	message_object = (struct emsmdbp_object *) data;
+	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
+		DEBUG(5, ("  no object or object is not a message\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	switch (emsmdbp_is_mapistore(rec)) {
+	case false:
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		break;
+	case true:
+                messageID = message_object->object.message->messageID;
+                contextID = message_object->object.message->contextID;
+
+                retval = mapistore_pocop_get_attachment_table(emsmdbp_ctx->mstore_ctx,
+                                                              contextID, messageID,
+                                                              &backend_attachment_table,
+                                                              &row_count);
+                if (retval) {
+                        mapi_repl->error_code = MAPI_E_NOT_FOUND;
+                }
+                else {
+                        retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &table_rec);
+                        handles[mapi_repl->handle_idx] = table_rec->handle;
+
+                        table_object = emsmdbp_object_table_init((TALLOC_CTX *)table_rec, emsmdbp_ctx, rec);
+                        if (table_object) {
+                                retval = mapi_handles_set_private_data(table_rec, table_object);
+                                table_object->poc_api = true;
+                                table_object->poc_backend_object = backend_attachment_table;
+                                table_object->object.table->denominator = row_count;
+                                table_object->object.table->ulType = EMSMDBP_TABLE_ATTACHMENT_TYPE;
+                                table_object->object.table->contextID = contextID;
+                        }
+                }
+        }
+
+ end:
+	*size += libmapiserver_RopGetAttachmentTable_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;	
+}
+
+/**
+   \details EcDoRpc OpenAttach (0x22) Rop. This operation open an attachment
+   from the message handle.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the OpenAttach EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the OpenAttach
+   EcDoRpc_MAPI_REPL structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
+                                               struct emsmdbp_context *emsmdbp_ctx,
+                                               struct EcDoRpc_MAPI_REQ *mapi_req,
+                                               struct EcDoRpc_MAPI_REPL *mapi_repl,
+                                               uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	uint32_t		attachmentID;
+	uint32_t		contextID;
+	uint64_t		messageID;
+	struct mapi_handles		*rec = NULL;
+	struct mapi_handles		*attachment_rec = NULL;
+	struct emsmdbp_object		*message_object = NULL;
+	struct emsmdbp_object		*attachment_object = NULL;
+	void				*data;
+	void				*backend_attachment_object = NULL;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] OpenAttach (0x22)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->u.mapi_OpenAttach.handle_idx;
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+
+	message_object = (struct emsmdbp_object *) data;
+	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
+		DEBUG(5, ("  no object or object is not a message\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	switch (emsmdbp_is_mapistore(rec)) {
+	case false:
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		break;
+	case true:
+                messageID = message_object->object.message->messageID;
+                contextID = message_object->object.message->contextID;
+                attachmentID = mapi_req->u.mapi_OpenAttach.AttachmentID;
+
+                retval = mapistore_pocop_get_attachment(emsmdbp_ctx->mstore_ctx, contextID,
+                                                        messageID, attachmentID,
+                                                        &backend_attachment_object);
+                if (retval) {
+                        mapi_repl->error_code = MAPI_E_NOT_FOUND;
+                }
+                else {
+                        retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &attachment_rec);
+                        handles[mapi_repl->handle_idx] = attachment_rec->handle;
+
+                        attachment_object = emsmdbp_object_attachment_init((TALLOC_CTX *)attachment_rec, emsmdbp_ctx,
+                                                                           messageID, rec);
+                        if (attachment_object) {
+                                retval = mapi_handles_set_private_data(attachment_rec, attachment_object);
+                                attachment_object->poc_api = true;
+                                attachment_object->poc_backend_object = backend_attachment_object;
+                        }
+                }
+        }
+
+ end:
+	*size += libmapiserver_RopOpenAttach_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;	
+}
+
+/**
+   \details EcDoRpc CreateAttach (0x23) Rop. This operation open an attachment
+   from the message handle.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the CreateAttach EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the CreateAttach
+   EcDoRpc_MAPI_REPL structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
+                                                 struct emsmdbp_context *emsmdbp_ctx,
+                                                 struct EcDoRpc_MAPI_REQ *mapi_req,
+                                                 struct EcDoRpc_MAPI_REPL *mapi_repl,
+                                                 uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	uint32_t		attachmentID;
+	uint32_t		contextID;
+	uint64_t		messageID;
+	struct mapi_handles		*rec = NULL;
+	struct mapi_handles		*attachment_rec = NULL;
+	struct emsmdbp_object		*message_object = NULL;
+	struct emsmdbp_object		*attachment_object = NULL;
+	void				*data;
+	void				*backend_attachment_object = NULL;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] CreateAttach (0x23)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->u.mapi_CreateAttach.handle_idx;
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+
+	message_object = (struct emsmdbp_object *) data;
+	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
+		DEBUG(5, ("  no object or object is not a message\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	switch (emsmdbp_is_mapistore(rec)) {
+	case false:
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		break;
+	case true:
+                messageID = message_object->object.message->messageID;
+                contextID = message_object->object.message->contextID;
+
+                retval = mapistore_pocop_create_attachment(emsmdbp_ctx->mstore_ctx, contextID,
+                                                           messageID, &attachmentID,
+                                                           &backend_attachment_object);
+                if (retval) {
+                        mapi_repl->error_code = MAPI_E_NOT_FOUND;
+                }
+                else {
+                        mapi_repl->u.mapi_CreateAttach.AttachmentID = attachmentID;
+                        retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &attachment_rec);
+                        handles[mapi_repl->handle_idx] = attachment_rec->handle;
+
+                        attachment_object = emsmdbp_object_attachment_init((TALLOC_CTX *)attachment_rec, emsmdbp_ctx,
+                                                                           messageID, rec);
+                        if (attachment_object) {
+                                retval = mapi_handles_set_private_data(attachment_rec, attachment_object);
+                                attachment_object->poc_api = true;
+                                attachment_object->poc_backend_object = backend_attachment_object;
+                        }
+                }
+        }
+
+ end:
+	*size += libmapiserver_RopCreateAttach_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;	
+}
+
+/**
+   \details EcDoRpc SaveChangesAttachment (0x25) Rop. This operation open an attachment
+   from the message handle.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the SaveChangesAttachment EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the SaveChangesAttachment
+   EcDoRpc_MAPI_REPL structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesAttachment(TALLOC_CTX *mem_ctx,
+                                                          struct emsmdbp_context *emsmdbp_ctx,
+                                                          struct EcDoRpc_MAPI_REQ *mapi_req,
+                                                          struct EcDoRpc_MAPI_REPL *mapi_repl,
+                                                          uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesAttachment (0x25) -- stub\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->u.mapi_SaveChangesAttachment.handle_idx;
+
+	*size += libmapiserver_RopSaveChangesAttachment_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;	
 }

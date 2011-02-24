@@ -82,7 +82,7 @@ const struct mstoredb_dflt_folders dflt_folders[] = {
 	{ MDB_DEFERRED_ACTIONS,		"CN=Deferred Actions,CN=Mailbox Root,CN=Folders", "Deferred Actions", "IPF.Note" },
 	{ MDB_SPOOLER_QUEUE,		"CN=Spooler Queue,CN=Mailbox Root,CN=Folders",  "Spooler Queue", "IPF.Note" },
 	{ MDB_TODO_SEARCH,		"CN=To-Do Search,CN=Mailbox Root,CN=Folders", "To-Do Search", "IPF.Note" },
-	{ MDB_IPM_SUBTREE,		"CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "IPM SUbtree", "IPF.Note" },
+	{ MDB_IPM_SUBTREE,		"CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "IPM Subtree", "IPF.Note" },
 	{ MDB_INBOX,			"CN=Inbox,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Inbox", "IPF.Note" },
 	{ MDB_OUTBOX,			"CN=Outbox,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Outbox", "IPF.Note" },
 	{ MDB_SENT_ITEMS,		"CN=Sent Items,CN=IPM Subtree,CN=Mailbox Root,CN=Folders", "Sent Items", "IPF.Note" },
@@ -112,7 +112,7 @@ const struct mstoredb_dflt_folders dflt_folders[] = {
 
 __BEGIN_DECLS
 
-/* CN=Inbox,CN=IPM SUbtree,CN=Mailbox Root,CN=Folders,CN=jkerihuel,CN=First Adminsitrative Group, ... */ 
+/* CN=Inbox,CN=IPM Subtree,CN=Mailbox Root,CN=Folders,CN=jkerihuel,CN=First Adminsitrative Group, ... */ 
 
 enum MAPISTORE_ERROR mapistore_init_backend(void);
 

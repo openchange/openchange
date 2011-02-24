@@ -569,3 +569,54 @@ int mapistore_backend_set_sort_order(struct backend_context *bctx, uint64_t fid,
 {
         return bctx->backend->op_set_sort_order(bctx->private_data, fid, type, set, table_status);
 }
+
+
+/* proof of concept */
+int mapistore_backend_pocop_get_attachment_table(struct backend_context *bctx, uint64_t mid,
+                                                 void **table, uint32_t *row_count)
+{
+        return bctx->backend->message.get_attachment_table(bctx->private_data, mid, table, row_count);
+}
+
+int mapistore_backend_pocop_get_attachment(struct backend_context *bctx, uint64_t mid, uint32_t aid, void **attachment)
+{
+        return bctx->backend->message.get_attachment(bctx->private_data, mid, aid, attachment);
+}
+
+int mapistore_backend_pocop_create_attachment(struct backend_context *bctx, uint64_t mid, uint32_t *aid, void **attachment)
+{
+        return bctx->backend->message.create_attachment(bctx->private_data, mid, aid, attachment);
+}
+
+int mapistore_backend_pocop_set_table_columns(struct backend_context *bctx, void *table,
+                                              uint16_t count, enum MAPITAGS *properties)
+{
+        return bctx->backend->table.set_columns(table, count, properties);
+}
+
+int mapistore_backend_pocop_get_table_row(struct backend_context *bctx, void *table,
+                                          enum table_query_type query_type, uint32_t rowid,
+                                          struct mapistore_property_data *data)
+{
+        return bctx->backend->table.get_row(table, query_type, rowid, data);
+}
+
+int mapistore_backend_pocop_get_properties(struct backend_context *bctx,
+                                           void *object,
+                                           uint16_t count, enum MAPITAGS
+                                           *properties,
+                                           struct mapistore_property_data *data)
+{
+        return bctx->backend->properties.get_properties(object, count, properties, data);
+}
+
+int mapistore_backend_pocop_set_properties(struct backend_context *bctx,
+                                           void *object, struct SRow *aRow)
+{
+        return bctx->backend->properties.set_properties(object, aRow);
+}
+
+int mapistore_backend_pocop_release(struct backend_context *bctx, void *object)
+{
+        return bctx->backend->store.release(object);
+}

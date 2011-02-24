@@ -1200,3 +1200,164 @@ _PUBLIC_ int mapistore_set_sort_order(struct mapistore_context *mstore_ctx,
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
+
+
+/* proof of concept */
+_PUBLIC_ int mapistore_pocop_get_attachment_table(struct mapistore_context *mstore_ctx, uint32_t context_id, uint64_t mid,
+                                                  void **table, uint32_t *row_count)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_get_attachment_table(backend_ctx, mid, table, row_count);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_get_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
+                                            uint64_t mid, uint32_t aid,
+                                            void **attachment)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_get_attachment(backend_ctx, mid, aid, attachment);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_create_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
+                                               uint64_t mid,
+                                               uint32_t *aid, void **attachment)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_create_attachment(backend_ctx, mid, aid, attachment);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_set_table_columns(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, uint16_t count, enum MAPITAGS *properties)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_set_table_columns(backend_ctx, table, count, properties);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_get_table_row(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table,
+                                           enum table_query_type query_type, uint32_t rowid, struct mapistore_property_data *data)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_get_table_row(backend_ctx, table, query_type, rowid, data);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_get_properties(struct mapistore_context
+                                            *mstore_ctx, uint32_t context_id,
+                                            void *object,
+                                            uint16_t count, enum MAPITAGS *properties,
+                                            struct mapistore_property_data *data)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_get_properties(backend_ctx, object, count, properties, data);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_set_properties(struct mapistore_context
+                                            *mstore_ctx, uint32_t context_id,
+                                            void *object,
+                                            struct SRow *aRow)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_set_properties(backend_ctx, object, aRow);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_release(struct mapistore_context
+                                     *mstore_ctx, uint32_t context_id,
+                                     void *object)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_release(backend_ctx, object);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}

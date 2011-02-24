@@ -1742,6 +1742,13 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x15  */
+	typedef [v1_enum] enum {
+                TBL_LEAF_ROW            = 0x1,
+                TBL_EMPTY_CATEGORY      = 0x2,
+                TBL_EXPANDED_CATEGORY   = 0x3,
+                TBL_COLLAPSED_CATEGORY  = 0x4
+        } RowType;
+
 	typedef [enum8bit] enum {
 		TBL_ADVANCE		= 0x0,
 		TBL_NOADVANCE		= 0x1,

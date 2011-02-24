@@ -344,11 +344,10 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 			break;
 		case op_MAPI_SaveChangesMessage: /* 0x0c */
 			retval = EcDoRpc_RopSaveChangesMessage(mem_ctx, emsmdbp_ctx,
-							  &(mapi_request->mapi_req[i]),
-							  &(mapi_response->mapi_repl[idx]),
-							  mapi_response->handles, &size);
+                                                               &(mapi_request->mapi_req[i]),
+                                                               &(mapi_response->mapi_repl[idx]),
+                                                               mapi_response->handles, &size);
 			break;
-		/* op_MAPI_SaveChangesMessage: 0xc */
 		case op_MAPI_RemoveAllRecipients: /* 0xd */
 			retval = EcDoRpc_RopRemoveAllRecipients(mem_ctx, emsmdbp_ctx,
 								&(mapi_request->mapi_req[i]),
@@ -441,10 +440,25 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							       &(mapi_response->mapi_repl[idx]),
 							       mapi_response->handles, &size);
 			break;
-		/* op_MAPI_OpenAttach: 0x22 */
-		/* op_MAPI_CreateAttach: 0x23 */
+                case op_MAPI_OpenAttach: /* 0x22 */
+			retval = EcDoRpc_RopOpenAttach(mem_ctx, emsmdbp_ctx,
+                                                       &(mapi_request->mapi_req[i]),
+                                                       &(mapi_response->mapi_repl[idx]),
+                                                       mapi_response->handles, &size);
+			break;
+                case op_MAPI_CreateAttach: /* 0x23 */
+			retval = EcDoRpc_RopCreateAttach(mem_ctx, emsmdbp_ctx,
+                                                         &(mapi_request->mapi_req[i]),
+                                                         &(mapi_response->mapi_repl[idx]),
+                                                         mapi_response->handles, &size);
+			break;
 		/* op_MAPI_DeleteAttach: 0x24 */
-		/* op_MAPI_SaveChangesAttachment: 0x25 */
+		case op_MAPI_SaveChangesAttachment: /* 0x25 */
+			retval = EcDoRpc_RopSaveChangesAttachment(mem_ctx, emsmdbp_ctx,
+                                                                  &(mapi_request->mapi_req[i]),
+                                                                  &(mapi_response->mapi_repl[idx]),
+                                                                  mapi_response->handles, &size);
+			break;
 		case op_MAPI_SetReceiveFolder: /* 0x26 */
 			retval = EcDoRpc_RopSetReceiveFolder(mem_ctx, emsmdbp_ctx,
 							     &(mapi_request->mapi_req[i]),
@@ -488,7 +502,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
                                                        &(mapi_response->mapi_repl[idx]),
                                                        mapi_response->handles, &size);
 			break;
-		/* op_MAPI_SetStreamSize: 0x2f */
+                case op_MAPI_SetStreamSize: /* 0x2f */
+			retval = EcDoRpc_RopSetStreamSize(mem_ctx, emsmdbp_ctx,
+                                                          &(mapi_request->mapi_req[i]),
+                                                          &(mapi_response->mapi_repl[idx]),
+                                                          mapi_response->handles, &size);
+			break;
 		case op_MAPI_SetSearchCriteria: /* 0x30 */
 			retval = EcDoRpc_RopSetSearchCriteria(mem_ctx, emsmdbp_ctx,
 							      &(mapi_request->mapi_req[i]),

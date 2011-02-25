@@ -542,7 +542,7 @@ IMAGE_PATH             = doc/doxygen/pictures/
 
 INPUT_FILTER           = "sed \
 			 -e '20,60s/#include .*//'	\
-			 -e 's/_PUBLIC_//'"		\
+			 -e 's/_PUBLIC_//'		\
 			 -e 's/__BEGIN_DECLS//'"
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern 

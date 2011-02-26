@@ -324,6 +324,7 @@ enum MAPISTORE_ERROR mapistore_backend_root_mkdir(struct backend_context *, enum
 enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *, const char *, uint8_t);
 enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *, const char *, uint8_t, char **);
 enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *, const char *, const char *);
+enum MAPISTORE_ERROR mapistore_backend_closedir(struct backend_context *, const char *folder_uri);
 enum MAPISTORE_ERROR mapistore_backend_mkdir(struct backend_context *, char *, const char *, const char *, enum FOLDER_TYPE, char **);
 enum MAPISTORE_ERROR mapistore_backend_readdir_count(struct backend_context *, const char *, enum MAPISTORE_TABLE_TYPE, uint32_t *);
 enum MAPISTORE_ERROR mapistore_backend_rmdir(struct backend_context *, const char *, const char *);

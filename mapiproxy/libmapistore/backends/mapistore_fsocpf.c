@@ -904,16 +904,18 @@ static enum MAPISTORE_ERROR fsocpf_op_opendir(void *private_data, const char *pa
    \details Close a folder from the fsocpf backend
 
    \param private_data pointer to the current fsocpf context
+   \param folder_uri the URI of the folder to close
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-static enum MAPISTORE_ERROR fsocpf_op_closedir(void *private_data)
+static enum MAPISTORE_ERROR fsocpf_op_closedir(void *private_data, const char *folder_uri)
 {
 	struct fsocpf_context	*fsocpf_ctx = (struct fsocpf_context *)private_data;
 
 	if (!fsocpf_ctx) {
 		return MAPISTORE_ERROR;
 	}
+	/* TODO: this probably should be implemented */
 
 	return MAPISTORE_SUCCESS;
 }

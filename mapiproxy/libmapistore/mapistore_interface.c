@@ -949,17 +949,30 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_closedir(struct mapistore_context *mstor
 						 uint64_t fid)
 {
 	struct backend_context		*backend_ctx;
+	char				*folder_uri;
+	enum MAPISTORE_ERROR		retval = MAPISTORE_SUCCESS;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
-	/* Step 0. Search the context */
+	/* Search the context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* mapistore_backend_closedir() */
+	/* Create an indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	return MAPISTORE_SUCCESS;
+	/* Turn folder identifier into URI */
+	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fid, &folder_uri);
+	if (retval) goto cleanup;
+
+	/* Call backend closedir */
+	retval = mapistore_backend_closedir(backend_ctx, folder_uri);
+
+cleanup:
+	mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
+	return retval;
 }
 
 

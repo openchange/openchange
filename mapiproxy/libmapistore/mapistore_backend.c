@@ -621,6 +621,11 @@ enum MAPISTORE_ERROR mapistore_backend_mkdir(struct backend_context *bctx,
 	return retval;
 }
 
+enum MAPISTORE_ERROR mapistore_backend_closedir(struct backend_context *bctx, 
+					       const char *folder_uri)
+{
+	return bctx->backend->op_closedir(bctx->private_data, folder_uri);
+}
 
  enum MAPISTORE_ERROR mapistore_backend_rmdir(struct backend_context *bctx,
 					      const char *parent_uri,

@@ -98,7 +98,8 @@ static enum MAPISTORE_ERROR mapistore_op_defaults_opendir(void *private_data,
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_closedir(void *private_data)
+static enum MAPISTORE_ERROR mapistore_op_defaults_closedir(void *private_data,
+							   const char *folder_uri)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }

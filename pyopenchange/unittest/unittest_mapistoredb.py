@@ -112,6 +112,7 @@ class TestMAPIStoreDB(unittest.TestCase):
 		self.assertNotEqual(inbox_fid, 0)
 		num_folders = self.MAPIStore.get_folder_count(inbox_context_id, inbox_fid)
 		self.assertEqual(num_folders, 0);
+		# TODO: remove this - insane level debugging.
 		self.MAPIStore.debuglevel = 99
 		test_subfolder_fid = self.MAPIStore.mkdir(inbox_context_id, inbox_fid, "Test Folder", "This is a test folder", mapistore.FOLDER_GENERIC)
 		self.assertNotEqual(test_subfolder_fid, 0)
@@ -138,6 +139,11 @@ class TestMAPIStoreDB(unittest.TestCase):
 		self.assertEqual(retval, 0, self.MAPIStoreDB.errstr(retval))
 		retval = self.MAPIStore.closedir(inbox_context_id, test_subfolder_fid)
 		self.assertEqual(retval, 0, self.MAPIStoreDB.errstr(retval))
+		dbg_level = self.MAPIStore.debuglevel
+		self.MAPIStore.debuglevel = dbg_level + 1
+		self.assertEqual(dbg_level + 1, self.MAPIStore.debuglevel)
+		self.MAPIStore.debuglevel = dbg_level
+		self.assertEqual(dbg_level, self.MAPIStore.debuglevel)
 		retval = self.MAPIStore.rmdir(inbox_context_id, inbox_fid, test_subfolder_fid, mapistore.DEL_FOLDERS)
 		self.assertEqual(retval, 0, self.MAPIStoreDB.errstr(retval))
 

@@ -134,6 +134,9 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_release(struct mapistore_context *mstore
 /**
    \details Set the mapistore debug level
 
+   This function sets the debug level at a "global" level. That is, changing
+   things here will affect everything that uses the same loadparm context.
+
    \param mstore_ctx pointer to the mapistore context
    \param level the debug level to set
 

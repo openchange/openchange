@@ -391,6 +391,27 @@ static PyObject *py_MAPIStore_get_folder_count(PyMAPIStoreObject *self, PyObject
 	return PyInt_FromLong(folder_count);
 }
 
+static PyObject *py_MAPIStore_get_message_count(PyMAPIStoreObject *self, PyObject *args)
+{
+	uint32_t		context_id;
+	uint64_t		fid;
+	uint32_t		message_count;
+	enum MAPISTORE_ERROR	retval;
+
+	if (!PyArg_ParseTuple(args, "iK", &context_id, &fid)) {
+		return NULL;
+	}
+
+	retval = mapistore_get_message_count(self->mstore_ctx, context_id, fid, &message_count);
+
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetString(PyExc_RuntimeError, mapistore_errstr(retval));
+		return NULL;
+	}
+	
+	return PyInt_FromLong(message_count);
+}
+
 static PyObject *py_MAPIStore_errstr(PyMAPIStoreObject *self, PyObject *args)
 {
 	enum MAPISTORE_ERROR	retval;
@@ -455,6 +476,7 @@ static PyMethodDef mapistore_methods[] = {
 	{ "rmdir", (PyCFunction)py_MAPIStore_rmdir, METH_VARARGS },
 	{ "setprops", (PyCFunction)py_MAPIStore_setprops, METH_VARARGS },
 	{ "get_folder_count", (PyCFunction)py_MAPIStore_get_folder_count, METH_VARARGS },
+	{ "get_message_count", (PyCFunction)py_MAPIStore_get_message_count, METH_VARARGS },
 	{ "errstr", (PyCFunction)py_MAPIStore_errstr, METH_VARARGS },
 	{ NULL },
 };

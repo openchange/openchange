@@ -111,13 +111,17 @@ class TestMAPIStoreDB(unittest.TestCase):
 		self.assertNotEqual(inbox_context_id, 0)
 		self.assertNotEqual(inbox_fid, 0)
 		num_folders = self.MAPIStore.get_folder_count(inbox_context_id, inbox_fid)
-		self.assertEqual(num_folders, 0);
+		self.assertEqual(num_folders, 0)
 		test_subfolder_fid = self.MAPIStore.mkdir(inbox_context_id, inbox_fid, "Test Folder", "This is a test folder", mapistore.FOLDER_GENERIC)
 		self.assertNotEqual(test_subfolder_fid, 0)
 		num_folders = self.MAPIStore.get_folder_count(inbox_context_id, inbox_fid)
-		self.assertEqual(num_folders, 1);
+		self.assertEqual(num_folders, 1)
 		num_folders = self.MAPIStore.get_folder_count(inbox_context_id, test_subfolder_fid)
-		self.assertEqual(num_folders, 0);
+		self.assertEqual(num_folders, 0)
+		num_messages = self.MAPIStore.get_message_count(inbox_context_id, inbox_fid)
+		self.assertEqual(num_messages, 0)
+		num_messages = self.MAPIStore.get_message_count(inbox_context_id, test_subfolder_fid)
+		self.assertEqual(num_messages, 0)
 		retval = self.MAPIStore.opendir(context_id = inbox_context_id, parent_fid = inbox_fid, fid = test_subfolder_fid)
 		self.assertEqual(retval, 0)
 		# TODO: add getprops support, and check return values.

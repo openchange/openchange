@@ -1198,19 +1198,19 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_message_count(struct mapistore_conte
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 	MAPISTORE_RETVAL_IF(!RowCount, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 1. Ensure the context exists */
+	/* Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	
-	/* Step 2. Create the mapistore_indexing context */
+	/* Create the mapistore_indexing context */
 	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	/* Step 3. Retrieve the folder URI from the indexing database */
+	/* Retrieve the folder URI from the indexing database */
 	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fid, &folder_uri);
 	if (retval) goto error;
 
-	/* Step 2. Call backend readdir_count */
+	/* Call backend readdir_count */
 	retval = mapistore_backend_readdir_count(backend_ctx, (const char *)folder_uri, MAPISTORE_MESSAGE_TABLE, RowCount);
 
 error:
@@ -1249,19 +1249,19 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_table_property(struct mapistore_cont
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 1. Ensure the context exists */
+	/* Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Create the mapistore_indexing context */
+	/* Create the mapistore_indexing context */
 	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	/* Step 3. Retrieve the URI for the folder */
+	/* Retrieve the URI for the folder */
 	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fid, &folder_uri);
 	if (retval) goto error;
 
-	/* Step 2. Call backend readdir */
+	/* Call backend readdir */
 	retval = mapistore_backend_get_table_property(backend_ctx, (const char *)folder_uri, table_type, pos, proptag, data);
 
 error:
@@ -1646,22 +1646,22 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_child_fids(struct mapistore_context 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 
-	/* Step 1. Ensure the context exists */
+	/* Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Create the mapistore_indexing context */
+	/* Create the mapistore_indexing context */
 	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	/* Step 3. Retrieve the folder URI from the indexing database */
+	/* Retrieve the folder URI from the indexing database */
 	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, fid, &folder_uri);
 	if (retval) {
 		mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
 		return retval;
 	}
 
-	/* Step 1. Call backend readdir to get the folder count */
+	/* Call backend readdir to get the folder count */
 	retval = mapistore_backend_readdir_count(backend_ctx, folder_uri, MAPISTORE_FOLDER_TABLE, child_fid_count);
 	if (retval) {
 		mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
@@ -1671,11 +1671,11 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_child_fids(struct mapistore_context 
 	retval = mapistore_indexing_context_del(mstore_ctx, backend_ctx->username);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	/* Step 2. Create a suitable sized array for the fids */
+	/* Create a suitable sized array for the fids */
 	*child_fids = talloc_zero_array((TALLOC_CTX *)mstore_ctx, uint64_t, *child_fid_count);
 	MAPISTORE_RETVAL_IF(!*child_fids, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	/* Step 3. Fill the array */
+	/* Fill the array */
 	for (i = 0; i < *child_fid_count; ++i) {
 		// TODO: add error checking for this call
 		retval = mapistore_get_table_property(mstore_ctx, context_id, MAPISTORE_FOLDER_TABLE, 
@@ -1692,8 +1692,8 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_child_fids(struct mapistore_context 
 
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
-   where the message's to be located is stored
-   \param mid the message identifier of the folder to delete
+   where the message to be deleted is stored
+   \param mid the message identifier of the message to delete
    \param deletion_type the type of deletion (MAPISTORE_SOFT_DELETE or MAPISTORE_PERMANENT_DELETE)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors

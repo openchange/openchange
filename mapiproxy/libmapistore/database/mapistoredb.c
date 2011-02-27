@@ -34,8 +34,6 @@
    \brief MAPIStore database provisioning interface
  */
 
-int lpcfg_server_role(struct loadparm_context *lp_ctx);
-
 /**
    \details Create a new mapistore database context
 

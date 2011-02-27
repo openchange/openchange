@@ -337,7 +337,7 @@ enum MAPISTORE_ERROR mapistore_backend_submitmessage(struct backend_context *, c
 enum MAPISTORE_ERROR mapistore_backend_getprops(struct backend_context *, const char *, uint8_t, 
 						struct SPropTagArray *, struct SRow *);
 enum MAPISTORE_ERROR mapistore_backend_setprops(struct backend_context *, const char *, uint8_t, struct SRow *);
-enum MAPISTORE_ERROR mapistore_backend_get_fid_by_name(struct backend_context *, const char *, const char *, char **);
+enum MAPISTORE_ERROR mapistore_backend_get_uri_by_name(struct backend_context *, const char *, const char *, char **);
 enum MAPISTORE_ERROR mapistore_backend_deletemessage(struct backend_context *, const char *, enum MAPISTORE_DELETION_TYPE);
 
 /* definitions from mapistore_tdb_wrap.c */

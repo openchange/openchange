@@ -1544,23 +1544,23 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_get_fid_by_name(struct mapistore_context
 	MAPISTORE_RETVAL_IF(!name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 1. Search the context */
+	/* Find the context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Create the mapistore_indexing context */
+	/* Create the mapistore_indexing context */
 	retval = mapistore_indexing_context_add(mstore_ctx, backend_ctx->username, &(mstore_ctx->mapistore_indexing_list));
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
-	/* Step 3. Retrieve the folder URI from the indexing database */
+	/* Retrieve the parent folder URI from the indexing database */
 	retval = mapistore_indexing_get_record_uri_by_fmid(mstore_ctx->mapistore_indexing_list, parent_fid, &parent_uri);
 	if (retval) goto error;
 
-	/* Step 2. Call backend getprops */
-	retval = mapistore_backend_get_fid_by_name(backend_ctx, parent_uri, name, &uri);
+	/* Get the uri for the name */
+	retval = mapistore_backend_get_uri_by_name(backend_ctx, parent_uri, name, &uri);
 	if (retval) goto error;
 
-	/* Step 3. Retrieve the FID associated to this uri*/
+	/* Retrieve the FID associated to this uri*/
 	retval = mapistore_indexing_get_record_fmid_by_uri(mstore_ctx->mapistore_indexing_list, uri, fid);
 
 error:

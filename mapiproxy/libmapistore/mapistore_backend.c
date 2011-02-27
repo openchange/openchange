@@ -705,12 +705,12 @@ enum MAPISTORE_ERROR mapistore_backend_closedir(struct backend_context *bctx,
  }
 
 
- enum MAPISTORE_ERROR mapistore_backend_get_fid_by_name(struct backend_context *bctx,
+ enum MAPISTORE_ERROR mapistore_backend_get_uri_by_name(struct backend_context *bctx,
 							const char *parent_uri,
 							const char *name,
 							char **uri)
  {
-	 return bctx->backend->op_get_fid_by_name(bctx->private_data, parent_uri, name, uri);
+	 return bctx->backend->op_get_uri_by_name(bctx->private_data, parent_uri, name, uri);
  }
 
 

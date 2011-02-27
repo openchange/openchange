@@ -58,7 +58,7 @@ struct mapistore_backend {
 	enum MAPISTORE_ERROR (*op_closedir)(void *, const char *folder_uri);
 	enum MAPISTORE_ERROR (*op_readdir_count)(void *, const char *, enum MAPISTORE_TABLE_TYPE, uint32_t *);
 	enum MAPISTORE_ERROR (*op_get_table_property)(void *, const char *, enum MAPISTORE_TABLE_TYPE, uint32_t, enum MAPITAGS, void **);
-	enum MAPISTORE_ERROR (*op_get_fid_by_name)(void *, const char *, const char *, char **);
+	enum MAPISTORE_ERROR (*op_get_uri_by_name)(void *, const char *parent_uri, const char *folder_name, char **uri);
 	/* message semantics */
 	enum MAPISTORE_ERROR (*op_openmessage)(void *, const char *, const char *, struct mapistore_message *);
 	enum MAPISTORE_ERROR (*op_createmessage)(void *, const char *, char **, bool *);

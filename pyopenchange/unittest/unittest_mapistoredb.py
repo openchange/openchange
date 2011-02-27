@@ -155,6 +155,29 @@ class TestMAPIStoreDB(unittest.TestCase):
 		retval = self.MAPIStore.rmdir(inbox_context_id, inbox_fid, test_subfolder_fid, mapistore.DEL_FOLDERS)
 		self.assertEqual(retval, 0, self.MAPIStoreDB.errstr(retval))
 
+	def test_duplicate_folders(self):
+		mapistore.set_mapping_path(os.path.join(self.working_directory, "mapistore"))
+		self.MAPIStore = mapistore.mapistore()
+		retval = self.MAPIStoreDB.new_mailbox(self.username, self.mailbox_root)
+		self.assertEqual(retval, 0) # success
+		(context_id, mailbox_fid) = self.MAPIStore.add_context(self.username, self.mailbox_root)
+		self.assertNotEqual(context_id, 0)
+		self.assertNotEqual(mailbox_fid, 0)
+		for (parent, index) in folder_list:
+			retval = self.MAPIStore.root_mkdir(context_id=context_id, parent_index=parent, index=index, folder_name="")
+			self.assertEqual(retval, 0, mapistore.errstr(retval))
+		inbox_uri = self.MAPIStore.get_mapistore_uri(mapistore.MDB_INBOX, self.username, "fsocpf://")
+		retval = self.MAPIStore.set_mapistore_uri(context_id, mapistore.MDB_INBOX, inbox_uri)
+		self.assertEqual(retval, 0)
+		(inbox_context_id, inbox_fid) = self.MAPIStore.add_context(self.username, inbox_uri)
+		self.assertNotEqual(inbox_context_id, 0)
+		self.assertNotEqual(inbox_fid, 0)
+		test_subfolder_fid = self.MAPIStore.mkdir(inbox_context_id, inbox_fid, "Test Folder", "This is a test folder", mapistore.FOLDER_GENERIC)
+		self.assertNotEqual(test_subfolder_fid, 0)
+		self.assertRaises(TypeError, self.MAPIStore.mkdir, inbox_context_id, inbox_fid, "Test Folder", None, mapistore.FOLDER_GENERIC)
+		num_folders = self.MAPIStore.get_folder_count(inbox_context_id, inbox_fid)
+		self.assertEqual(num_folders, 1)
+
 	def test_errstr(self):
 		self.assertEqual(self.MAPIStoreDB.errstr(0), "Success")
 		self.assertEqual(self.MAPIStoreDB.errstr(1), "Non-specific error")

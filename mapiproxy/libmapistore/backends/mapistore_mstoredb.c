@@ -317,7 +317,7 @@ static enum MAPISTORE_ERROR mstoredb_op_mkdir(void *private_data,
 	/* Ensure the folder doesn't exist */
 	retval = mapistore_exist(mstoredb_ctx->mdb_ctx, mstoredb_ctx->username, (const char *)*folder_uri);
 	if (retval == MAPISTORE_ERR_EXIST) {
-		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_HIGH, "URI already exists!: %s\n", *folder_uri);
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_INFO, "URI already exists!: %s\n", *folder_uri);
 		talloc_free(*folder_uri);
 		*folder_uri = NULL;
 		goto error;

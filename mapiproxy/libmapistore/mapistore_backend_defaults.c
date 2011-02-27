@@ -167,10 +167,10 @@ static enum MAPISTORE_ERROR mapistore_op_defaults_deletemessage(void *private_da
 }
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_get_fid_by_name(void *private_data, 
+static enum MAPISTORE_ERROR mapistore_op_defaults_get_uri_by_name(void *private_data, 
 								  const char *parent_uri,
 								  const char *foldername, 
-								  char **fid)
+								  char **uri)
 {
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
@@ -253,7 +253,7 @@ enum MAPISTORE_ERROR mapistore_backend_init_defaults(struct mapistore_backend *b
 	backend->op_closedir = mapistore_op_defaults_closedir;
 	backend->op_readdir_count = mapistore_op_defaults_readdir_count;
 	backend->op_get_table_property = mapistore_op_defaults_get_table_property;
-	backend->op_get_fid_by_name = mapistore_op_defaults_get_fid_by_name;
+	backend->op_get_uri_by_name = mapistore_op_defaults_get_uri_by_name;
 
 	/* Message semantics */
 	backend->op_openmessage = mapistore_op_defaults_openmessage;

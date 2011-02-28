@@ -22,6 +22,7 @@
 
 #include "config.h"
 #include <stdlib.h>
+#include <libocpf/ocpf.tab.h>
 
 #ifndef HAVE_COMPARISON_FN_T
 #define HAVE_COMPARISON_FN_T
@@ -49,11 +50,13 @@ __BEGIN_DECLS
 
 /* The following private definitions from from libocpf/ocpf_api.c */
 void ocpf_do_debug(struct ocpf_context *, const char *, ...);
-int ocpf_propvalue_var(struct ocpf_context *, const char *, uint32_t, const char *, bool);
+int ocpf_propvalue_var(struct ocpf_context *, const char *, uint32_t, const char *, bool, int);
 int ocpf_set_propvalue(TALLOC_CTX *, struct ocpf_context *, const void **, uint16_t, uint16_t, union SPropValue_CTR, bool);
 int ocpf_propvalue_free(union SPropValue_CTR, uint16_t);
-int ocpf_propvalue(struct ocpf_context *, uint32_t, union SPropValue_CTR, uint16_t, bool);
-void ocpf_propvalue_s(struct ocpf_context *, const char *, union SPropValue_CTR, uint16_t, bool);
+int ocpf_propvalue(struct ocpf_context *, uint32_t, union SPropValue_CTR, uint16_t, bool, int);
+void ocpf_propvalue_s(struct ocpf_context *, const char *, union SPropValue_CTR, uint16_t, bool, int);
+int ocpf_new_recipient(struct ocpf_context *);
+int ocpf_recipient_set_class(struct ocpf_context *, enum ulRecipClass);
 int ocpf_nproperty_add(struct ocpf_context *, struct ocpf_nprop *, union SPropValue_CTR, const char *, uint16_t, bool);
 int ocpf_type_add(struct ocpf_context *, const char *);
 int ocpf_folder_add(struct ocpf_context *, const char *, uint64_t, const char *);
@@ -62,7 +65,6 @@ int ocpf_oleguid_check(struct ocpf_context *, const char *, const char **);
 int ocpf_add_filetime(const char *, struct FILETIME *);
 int ocpf_variable_add(struct ocpf_context *, const char *, union SPropValue_CTR, uint16_t, bool);
 int ocpf_binary_add(struct ocpf_context *, const char *, struct Binary_r *);
-int ocpf_recipient_add(struct ocpf_context *, uint8_t, char *);
 
 /* The following private definitions come from libocpf/ocpf_write.c */
 char *ocpf_write_unescape_string(TALLOC_CTX *, const char *);

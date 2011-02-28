@@ -27,7 +27,7 @@ OLEGUID	PSETID_Appointment	"00062002-0000-0000-c000-000000000046"
 OLEGUID	PSETID_Common		"00062008-0000-0000-c000-000000000046"
 OLEGUID	PS_PUBLIC_STRINGS	"00020329-0000-0000-c000-000000000046"
 
-SET $subject = "[OCPF] Julien Kerihuel Birthday"
+SET $subject = W"[OCPF] Julien Kerihuel Birthday"
 SET $start_date = T2008-03-06 22:00:00
 SET $end_date = T2008-03-06 23:45:00
 SET $reminder = 45
@@ -36,12 +36,12 @@ SET $private = B"true"
 SET $wrong = 0
 
 PROPERTY {
-	 PR_CONVERSATION_TOPIC = $subject
-	 PR_NORMALIZED_SUBJECT = $subject
-	 PR_BODY = "Another year, another pleasure"	 
-	 PR_START_DATE = $start_date
-	 PR_END_DATE = $end_date
-	 PR_SENSITIVITY = 2
+	 PidTagConversationTopic = $subject
+	 PidTagNormalizedSubject = $subject
+	 PidTagBody = W"Another year, another pleasure"	 
+	 PidTagStartDate = $start_date
+	 PidTagEndDate = $end_date
+	 PidTagSensitivity = 2
 };
 
 NPROPERTY {
@@ -63,5 +63,5 @@ NPROPERTY {
 	  MNID_ID:0x8501:PT_LONG:PSETID_Common = $reminder
 
 	  /* Add categories */
-	  MNID_STRING:"Keywords":PS_PUBLIC_STRINGS = $keywords
+	  MNID_STRING:"Categories":PS_PUBLIC_STRINGS = $keywords
 };

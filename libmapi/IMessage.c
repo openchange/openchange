@@ -499,7 +499,7 @@ _PUBLIC_ enum MAPISTATUS SetRecipientType(struct SRow *aRow, enum ulRecipClass R
 	enum MAPISTATUS		retval;
 	struct SPropValue	lpProp;
 
-	lpProp.ulPropTag = PR_RECIPIENT_TYPE;
+	lpProp.ulPropTag = PidTagRecipientType;
 	lpProp.value.l = RecipClass;
 
 	retval = SRow_addprop(aRow, lpProp);

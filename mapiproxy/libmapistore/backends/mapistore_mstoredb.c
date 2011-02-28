@@ -366,6 +366,83 @@ static enum MAPISTORE_ERROR mstoredb_op_opendir(void *private_data,
 	return MAPISTORE_SUCCESS;
 }
 
+static enum MAPISTORE_ERROR mstoredb_op_setprops(void *private_data,
+						 const char *uri,
+						 uint8_t type,
+						 struct SRow *aRow)
+{
+	struct mstoredb_context         *mstoredb_ctx = (struct mstoredb_context *) private_data;
+	const char                      *dn = NULL;
+	enum MAPISTORE_ERROR            retval;
+	struct ldb_message              *msg = NULL;
+	TALLOC_CTX                      *mem_ctx = NULL;
+	int                             i = 0;
+	int                             ret;
+
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Setting properties on %s\n", uri);
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstoredb_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!aRow, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	retval = mapistore_strip_ns_from_uri(uri, &dn);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Setting props on dn: '%s'\n", dn);
+
+	/* TODO: ensure the uri exists */
+
+	/* TODO: check ACLs on folder */
+
+	/* build the ldb_msg */
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_new(msg, mstoredb_ctx->ldb_ctx, dn);
+	for (i = 0; i < aRow->cValues; ++i) {
+		char *property_tag = talloc_strdup(mem_ctx, get_proptag_name(aRow->lpProps[i].ulPropTag));
+		if (!property_tag) {
+			property_tag = talloc_asprintf(mem_ctx, "0x%"PRIx32, aRow->lpProps[i].ulPropTag);
+		}
+		switch (aRow->lpProps[i].ulPropTag & 0xFFFF) {
+		case PT_I2:
+			ldb_msg_add_fmt(msg, property_tag , "%"PRIi16, aRow->lpProps[i].value.i);
+			break;
+		case PT_LONG:
+			ldb_msg_add_fmt(msg, property_tag, "%"PRIi32, aRow->lpProps[i].value.l);
+			break;
+		case PT_BOOLEAN:
+			ldb_msg_add_fmt(msg, property_tag, aRow->lpProps[i].value.b?"True":"False");
+			break;
+		case PT_DOUBLE:
+			ldb_msg_add_fmt(msg, property_tag, "%g", aRow->lpProps[i].value.dbl);
+			break;
+		case PT_I8:
+			ldb_msg_add_fmt(msg, property_tag, "0x%"PRIx64, aRow->lpProps[i].value.d);
+			break;
+		case PT_STRING8:
+			ldb_msg_add_fmt(msg, property_tag, "%s", aRow->lpProps[i].value.lpszA);
+			break;
+		case PT_UNICODE:
+			ldb_msg_add_fmt(msg, property_tag, "%s", aRow->lpProps[i].value.lpszW);
+			break;
+		default:
+			MSTORE_DEBUG_INFO(MSTORE_LEVEL_CRITICAL, "Unsupported property type: 0x%x\n", aRow->lpProps[i].ulPropTag & 0xFFFF);
+		}
+		msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+      
+	/* Write properties to store */
+	ret = ldb_modify(mstoredb_ctx->ldb_ctx, msg);
+	if (ret != LDB_SUCCESS) {
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_CRITICAL, "Failed to set properties on %s: %s\n", uri, ldb_strerror(ret));;
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_DATABASE_OPS;
+	}
+	talloc_free(mem_ctx);
+
+	return MAPISTORE_SUCCESS;
+}
 
 /**
    \details Entry point for mapistore MSTOREDB backend
@@ -394,6 +471,7 @@ enum MAPISTORE_ERROR mapistore_init_backend(void)
 	/* Fill in folder operations */
 	backend.op_mkdir = mstoredb_op_mkdir;
 	backend.op_opendir = mstoredb_op_opendir;
+	backend.op_setprops = mstoredb_op_setprops;
 
 	/* Fill in MAPIStoreDB/store operations */
 	backend.op_db_create_uri = mstoredb_create_mapistore_uri;

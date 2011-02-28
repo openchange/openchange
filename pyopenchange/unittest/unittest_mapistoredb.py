@@ -178,6 +178,27 @@ class TestMAPIStoreDB(unittest.TestCase):
 		num_folders = self.MAPIStore.get_folder_count(inbox_context_id, inbox_fid)
 		self.assertEqual(num_folders, 1)
 
+	def test_folder_props(self):
+		mapistore.set_mapping_path(os.path.join(self.working_directory, "mapistore"))
+		self.MAPIStore = mapistore.mapistore()
+		retval = self.MAPIStoreDB.new_mailbox(self.username, self.mailbox_root)
+		self.assertEqual(retval, 0) # success
+		(context_id, mailbox_fid) = self.MAPIStore.add_context(self.username, self.mailbox_root)
+		self.assertNotEqual(context_id, 0)
+		self.assertNotEqual(mailbox_fid, 0)
+		self.MAPIStore.debuglevel = 9
+		SPropValue = mapi.SPropValue()
+		SPropValue.add(mapi.PidTagAttachMethod, 1)
+		SPropValue.add(mapi.PidTagGender, 2)
+		SPropValue.add(mapi.PidTagInstID, 0x12345678L)
+		SPropValue.add(0x8F010005, 3.1415) # PT_DOUBLE
+		SPropValue.add(mapi.PidTagProcessed, True)
+		SPropValue.add(mapi.PidTagRecipientProposed, False)
+		SPropValue.add(mapi.PidTagAddressBookHierarchicalRootDepartment, "Development")
+		SPropValue.add(mapi.PidTagReplyRecipientNames, "Joe,Virginia")
+		retval = self.MAPIStore.setprops(context_id, mailbox_fid, mapistore.MAPISTORE_FOLDER, SPropValue)
+		self.assertEqual(retval, 0) # success
+
 	def test_errstr(self):
 		self.assertEqual(self.MAPIStoreDB.errstr(0), "Success")
 		self.assertEqual(self.MAPIStoreDB.errstr(1), "Non-specific error")

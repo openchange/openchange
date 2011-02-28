@@ -297,7 +297,10 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 	retval = ResolveNames(mapi_object_get_session(&obj_message), 
 			      (const char **)username, SPropTagArray, 
 			      &SRowSet, &flaglist, MAPI_UNICODE);
-	mapitest_print_retval(mt, "ResolveNames");
+	mapitest_print_retval_clean(mt, "ResolveNames", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
 
 	if (!SRowSet) {
 		mapitest_print(mt, "Null SRowSet\n");
@@ -317,7 +320,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_TO");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
 		return false;
@@ -327,7 +330,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_CC");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
 		return false;
@@ -338,7 +341,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_BCC");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
 		return false;
@@ -348,7 +351,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ModifyRecipients(struct mapitest *mt)
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
 	mapitest_print_retval(mt, "DeleteMessage");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
 		return false;
@@ -443,8 +446,10 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 	retval = ResolveNames(mapi_object_get_session(&obj_message),
 			      (const char **)username, SPropTagArray, 
 			      &SRowSet, &flaglist, MAPI_UNICODE);
-	mapitest_print_retval(mt, "ResolveNames");
-
+	mapitest_print_retval_clean(mt, "ResolveNames", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
 	if (!SRowSet) {
 		mapitest_print(mt, "Null SRowSet\n");
 		return false;
@@ -610,8 +615,10 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	retval = ResolveNames(mapi_object_get_session(&obj_message),
 			      (const char **)username, SPropTagArray, 
 			      &SRowSet, &flaglist, MAPI_UNICODE);
-	mapitest_print_retval(mt, "ResolveNames");
-
+	mapitest_print_retval_clean(mt, "ResolveNames", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
 	if (!SRowSet) {
 		mapitest_print(mt, "Null SRowSet\n");
 		return false;
@@ -627,10 +634,15 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	SRowSet_propcpy(mt->mem_ctx, SRowSet, SPropValue);
 
 	retval = SetRecipientType(&(SRowSet->aRow[0]), MAPI_TO);
-	mapitest_print_retval(mt, "SetRecipientType");
+	mapitest_print_retval_clean(mt, "SetRecipientType", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(SRowSet);
+		MAPIFreeBuffer(flaglist);
+		return false;
+	}
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_TO");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
 		return false;
@@ -640,7 +652,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_CC");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
 		return false;
@@ -651,7 +663,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	mapitest_print_retval(mt, "SetRecipientType");
 	retval = ModifyRecipients(&obj_message, SRowSet);
 	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_BCC");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
 		return false;
@@ -662,7 +674,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	/* Step 4. Save the message */
 	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
 		return false;
@@ -673,7 +685,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	retval = ReadRecipients(&obj_message, 0, &count, &RecipientRows);
 	mapitest_print_retval(mt, "ReadRecipients");
 	MAPIFreeBuffer(RecipientRows);
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
 		ret = false;
@@ -684,7 +696,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	id_msgs[0] = mapi_object_get_id(&obj_message);
 	retval = DeleteMessage(&obj_folder, id_msgs, 1);
 	mapitest_print_retval(mt, "DeleteMessage");
-	if (GetLastError() != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
 		ret = false;

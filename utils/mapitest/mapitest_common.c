@@ -263,7 +263,6 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "(Common) ResolveNames");
 		talloc_free(SRowSet);
-		talloc_free(SPropTagArray);
 		talloc_free(flaglist);
 		return false;
 	}

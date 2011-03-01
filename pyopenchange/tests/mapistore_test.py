@@ -24,8 +24,6 @@ if (retval):
     print "%s" % MAPIStoreDB.errstr(retval)
     exit
 
-MAPIStoreDB.mapping_path = "/tmp/mapistore2"
-
 retval = MAPIStoreDB.provision(netbiosname = "server", 
                                firstorg = "First Organization",
                                firstou = "First Organization Unit")
@@ -50,7 +48,8 @@ retval = MAPIStore.set_mapistore_uri(context_id, mapistore.MDB_ROOT_FOLDER, root
 (ctx_id,mailbox_fid) = MAPIStore.add_context(username, root_uri)
 
 SPropParent = mapi.SPropValue()
-SPropParent.add(mapi.PidTagFolderId, mailbox_fid)
+SPropParent.add(mapi.PidTagMessageClass, "IPM.Note")
+#SPropParent.add(mapi.PidTagFolderId, mailbox_fid)
 SPropParent.add(mapi.PidTagDisplayName, "Parent")
 SPropParent.add(mapi.PidTagComment, "Test comment")
 SPropParent.add(mapi.PidTagFolderType, 1)

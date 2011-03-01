@@ -592,7 +592,7 @@ static enum MAPISTORE_ERROR fsocpf_set_folder_props(const char *folder_uri, stru
 
 	/* ocpf_write_init(ocpf_context_id, fid); */
 	ocpf_clear_props(ocpf_context_id);
-	ocpf_write_init(ocpf_context_id, 0xdeadbeef);
+	ocpf_write_init(ocpf_context_id, 0);
 	ocpf_write_auto(ocpf_context_id, NULL, &mapi_lpProps);
 	ocpf_write_commit(ocpf_context_id);
 	ocpf_del_context(ocpf_context_id);
@@ -1322,8 +1322,7 @@ static enum MAPISTORE_ERROR fsocpf_op_savechangesmessage(void *private_data,
 		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
-	ocpf_write_init(message->ocpf_context_id, 0xdeadbeef);
-	/* ocpf_write_init(message->ocpf_context_id, message->fid); */
+	ocpf_write_init(message->ocpf_context_id, 0);
 	ocpf_write_commit(message->ocpf_context_id);
 
 	return MAPISTORE_SUCCESS;
@@ -1346,8 +1345,7 @@ static enum MAPISTORE_ERROR fsocpf_op_submitmessage(void *private_data,
 	/* This implementation is incorrect but should fit for immediate purposes */
 	message = fsocpf_find_message(fsocpf_ctx, message_uri);
 
-	ocpf_write_init(message->ocpf_context_id, 0xdeadbeef);
-	/* ocpf_write_init(message->ocpf_context_id, message->fid); */
+	ocpf_write_init(message->ocpf_context_id, 0);
 	ocpf_write_commit(message->ocpf_context_id);
 
 	return MAPISTORE_SUCCESS;
@@ -1485,9 +1483,7 @@ static enum MAPISTORE_ERROR fsocpf_op_setprops(void *private_data,
 		message = fsocpf_find_message(fsocpf_ctx, path);
 		MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_NOT_FOUND, NULL);
 		for (i = 0; i < aRow->cValues; i++) {
-			if (aRow->lpProps[i].ulPropTag == PR_MESSAGE_CLASS) {
-				ocpf_server_set_type(message->ocpf_context_id, aRow->lpProps[i].value.lpszA);
-			} else if (aRow->lpProps[i].ulPropTag == PR_MESSAGE_CLASS_UNICODE) {
+			if (aRow->lpProps[i].ulPropTag == PidTagMessageClass) {
 				ocpf_server_set_type(message->ocpf_context_id, aRow->lpProps[i].value.lpszW);
 			}
 			ocpf_server_add_SPropValue(message->ocpf_context_id, &aRow->lpProps[i]);

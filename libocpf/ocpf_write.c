@@ -505,7 +505,7 @@ _PUBLIC_ int ocpf_write_init(uint32_t context_id,
 {
 	struct ocpf_context	*ctx;
 
-	OCPF_RETVAL_IF(!folder_id, NULL, OCPF_WRITE_NOT_INITIALIZED, NULL);
+	/* Sanity checks */
 	OCPF_RETVAL_IF(!ocpf || !ocpf->mem_ctx, NULL, OCPF_NOT_INITIALIZED, NULL);
 
 	/* Search the context */
@@ -541,6 +541,7 @@ _PUBLIC_ int ocpf_write_auto(uint32_t context_id,
 			     struct mapi_SPropValue_array *mapi_lpProps)
 {
 	enum MAPISTATUS		retval;
+	int			ret;
 	struct ocpf_context	*ctx;
 	uint32_t		i;
 	uint16_t		propID;
@@ -562,12 +563,17 @@ _PUBLIC_ int ocpf_write_auto(uint32_t context_id,
 	OCPF_RETVAL_IF(!ctx->filename, ctx, OCPF_WRITE_NOT_INITIALIZED, NULL);
 
 	/* store message type */
-	type = (const char *) find_mapi_SPropValue_data(mapi_lpProps, PR_MESSAGE_CLASS);
-	ocpf_type_add(ctx, type);
+	type = (const char *) find_mapi_SPropValue_data(mapi_lpProps, PidTagMessageClass);
+	if (type) {
+		ret = ocpf_type_add(ctx, type);
+		if (ret) return ret;
+	}
 
 	/* store recipients */
-	retval = GetRecipientTable(obj_message, ctx->recipients, &SPropTagArray);
-	OCPF_RETVAL_IF(retval, ctx, OCPF_INVALID_RECIPIENTS, NULL);
+	if (obj_message) {
+		retval = GetRecipientTable(obj_message, ctx->recipients, &SPropTagArray);
+		OCPF_RETVAL_IF(retval, ctx, OCPF_INVALID_RECIPIENTS, NULL);
+	}
 
 	/* store properties and OLEGUID in OCPF context */
 	for (i = 0; i < mapi_lpProps->cValues; i++) {
@@ -664,9 +670,11 @@ _PUBLIC_ int ocpf_write_commit(uint32_t context_id)
 	talloc_free(line);
 
 	/* folder id */
-	line = talloc_asprintf(ctx, "FOLDER D0x%.16"PRIx64"\n\n", ctx->folder);
-	len = fwrite(line, strlen(line), 1, fp);
-	talloc_free(line);
+	if (ctx->folder) {
+		line = talloc_asprintf(ctx, "FOLDER D0x%.16"PRIx64"\n\n", ctx->folder);
+		len = fwrite(line, strlen(line), 1, fp);
+		talloc_free(line);
+	}
 
 	/* OLEGUID */
 	for (nguid = ctx->oleguid; nguid->next; nguid = nguid->next) {
@@ -677,13 +685,15 @@ _PUBLIC_ int ocpf_write_commit(uint32_t context_id)
 	len = fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
 
 	/* RECIPIENT */
-	len = fwrite(OCPF_RECIPIENT_BEGIN, strlen(OCPF_RECIPIENT_BEGIN), 1, fp);
-	ocpf_write_recipients(ctx, fp, MAPI_TO);
-	ocpf_write_recipients(ctx, fp, MAPI_CC);
-	ocpf_write_recipients(ctx, fp, MAPI_BCC);
+	if (ctx->recipients && ctx->recipients->cRows) {
+		len = fwrite(OCPF_RECIPIENT_BEGIN, strlen(OCPF_RECIPIENT_BEGIN), 1, fp);
+		ocpf_write_recipients(ctx, fp, MAPI_TO);
+		ocpf_write_recipients(ctx, fp, MAPI_CC);
+		ocpf_write_recipients(ctx, fp, MAPI_BCC);
 
-	len = fwrite(OCPF_END, strlen(OCPF_END), 1, fp);
-	len = fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+		len = fwrite(OCPF_END, strlen(OCPF_END), 1, fp);
+		len = fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+	}
 
 	/* known properties */
 	len = fwrite(OCPF_PROPERTY_BEGIN, strlen(OCPF_PROPERTY_BEGIN), 1, fp);

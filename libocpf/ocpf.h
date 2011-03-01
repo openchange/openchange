@@ -64,7 +64,7 @@ int ocpf_release(void);
 int ocpf_new_context(const char *, uint32_t *, uint8_t);
 int ocpf_del_context(uint32_t);
 int ocpf_parse(uint32_t);
-struct SRowSet *ocpf_get_recipients(TALLOC_CTX *, uint32_t);
+enum MAPISTATUS ocpf_get_recipients(TALLOC_CTX *, uint32_t, struct SRowSet **);
 enum MAPISTATUS	ocpf_set_SPropValue(TALLOC_CTX *, uint32_t, mapi_object_t *, mapi_object_t *);
 struct SPropValue *ocpf_get_SPropValue(uint32_t, uint32_t *);
 enum MAPISTATUS ocpf_OpenFolder(uint32_t, mapi_object_t *, mapi_object_t *);

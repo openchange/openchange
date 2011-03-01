@@ -672,3 +672,38 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Get the message recipients from ocpf context
+
+   This function gets the recipient (To, Cc, Bcc) from the ocpf
+   context and information stored.
+
+   \param mem_ctx the memory context to use for memory allocation
+   \param context_id identifier to the context to set recipients for
+   \param _SRowSet pointer on pointer to the set of recipients to return
+
+   \return MAPI_E_SUCCESS on success, otherwise NULL
+
+   \sa ocpf
+ */
+_PUBLIC_ enum MAPISTATUS ocpf_get_recipients(TALLOC_CTX *mem_ctx,
+					     uint32_t context_id,
+					     struct SRowSet **SRowSet)
+{
+	struct ocpf_context	*ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!SRowSet, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Search for the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	MAPI_RETVAL_IF(!ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ctx->recipients->cRows, MAPI_E_NOT_FOUND, NULL);
+
+	*SRowSet = ctx->recipients;
+
+	return MAPI_E_SUCCESS;
+}

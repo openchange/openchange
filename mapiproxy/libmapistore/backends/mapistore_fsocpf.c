@@ -1214,7 +1214,7 @@ static enum MAPISTORE_ERROR fsocpf_op_openmessage(void *private_data,
 		msg->properties = talloc_zero(fsocpf_ctx, struct SRow);
 		MAPISTORE_RETVAL_IF(!msg->properties, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-		msg->recipients = ocpf_get_recipients(message, message->ocpf_context_id);
+		retval = ocpf_get_recipients(message, message->ocpf_context_id, &msg->recipients);
 		msg->properties->lpProps = ocpf_get_SPropValue(message->ocpf_context_id, 
 							       &msg->properties->cValues);
 		return MAPISTORE_SUCCESS;
@@ -1238,7 +1238,8 @@ static enum MAPISTORE_ERROR fsocpf_op_openmessage(void *private_data,
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "Element added to the list '%s'\n", message_uri);
 
 	/* Retrieve recipients from the message */
-	msg->recipients = ocpf_get_recipients(el, ocpf_context_id);
+	retval = ocpf_get_recipients(el, ocpf_context_id, &msg->recipients);
+	MAPISTORE_RETVAL_IF(retval, MAPISTORE_ERR_NOT_FOUND, NULL);
 
 	/* Retrieve properties from the message */
 	msg->properties = talloc_zero(el, struct SRow);
@@ -1403,7 +1404,7 @@ static enum MAPISTORE_ERROR fsocpf_op_getprops(void *private_data,
 		message = fsocpf_find_message(fsocpf_ctx, uri);
 		ocpf_server_set_SPropValue(fsocpf_ctx, message->ocpf_context_id);
 		lpProps = ocpf_get_SPropValue(message->ocpf_context_id, &cValues);
-		SRowSet = ocpf_get_recipients(fsocpf_ctx, message->ocpf_context_id);
+		ocpf_get_recipients(fsocpf_ctx, message->ocpf_context_id, &SRowSet);
 
 		ocpf_dump(message->ocpf_context_id);
 		for (i = 0; i != SPropTagArray->cValues; i++) {

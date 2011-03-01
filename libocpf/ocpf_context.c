@@ -94,7 +94,7 @@ struct ocpf_context *ocpf_context_init(TALLOC_CTX *mem_ctx,
 	ctx->typeset = 0;
 	ctx->folderset = false;
 	ctx->recip_type = 0;
-	ctx->type = 0;
+	ctx->type = NULL;
 
 	switch (flags) {
 	case OCPF_FLAGS_RDWR:

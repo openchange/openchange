@@ -341,7 +341,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 	/* Step 6. Add message class */
 	if (ctx->type) {
 		ctx->lpProps = add_SPropValue(mem_ctx, ctx->lpProps, &ctx->cValues,
-					       PR_MESSAGE_CLASS, (const void *)ctx->type);
+					       PidTagMessageClass, (const void *)ctx->type);
 	}
 
 	return MAPI_E_SUCCESS;

@@ -665,9 +665,11 @@ _PUBLIC_ int ocpf_write_commit(uint32_t context_id)
 	OCPF_RETVAL_IF(!fp, ctx, OCPF_INVALID_FILEHANDLE, NULL);
 
 	/* message type */
-	line = talloc_asprintf(ctx, "TYPE   \"%s\"\n\n", ctx->type);
-	len = fwrite(line, strlen(line), 1, fp);
-	talloc_free(line);
+	if (ctx->type) {
+		line = talloc_asprintf(ctx, "TYPE   \"%s\"\n\n", ctx->type);
+		len = fwrite(line, strlen(line), 1, fp);
+		talloc_free(line);
+	}
 
 	/* folder id */
 	if (ctx->folder) {

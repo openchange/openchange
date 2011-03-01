@@ -532,7 +532,6 @@ static enum MAPISTORE_ERROR fsocpf_op_get_uri_by_name(void *private_data,
   
   \return MAPISTORE_SUCCESS on success, otherwise a MAPISTORE_ERROR value.
 */
-/* FIXME: We can't use FID anymore in ocpf_write_init */
 static enum MAPISTORE_ERROR fsocpf_set_folder_props(const char *folder_uri, struct SRow *aRow)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -574,7 +573,7 @@ static enum MAPISTORE_ERROR fsocpf_set_folder_props(const char *folder_uri, stru
 					found = true;
 				}
 			}
-			if ( ! found) {
+			if (!found) {
 				num_props += 1;
 				original_props = talloc_realloc(NULL, original_props, struct SPropValue, num_props);
 				original_props[num_props -1].ulPropTag = aRow->lpProps[i].ulPropTag;
@@ -682,7 +681,6 @@ static enum MAPISTORE_ERROR fsocpf_op_mkdir(void *private_data,
 		aRow.lpProps[0].value.lpszW = folder_name;
 		aRow.lpProps[1].ulPropTag = PidTagComment;
 		aRow.lpProps[1].value.lpszW = folder_desc;
-
 	} else {
 		aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
 		aRow.cValues = 1;

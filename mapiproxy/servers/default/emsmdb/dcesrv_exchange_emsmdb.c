@@ -75,8 +75,8 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		*r->out.pcmsPollsMax = 0;
 		*r->out.pcRetry = 0;
 		*r->out.pcmsRetryDelay = 0;
-		r->out.szDisplayName = NULL;
-		r->out.szDNPrefix = NULL;
+		*r->out.szDisplayName = NULL;
+		*r->out.szDNPrefix = NULL;
 		r->out.rgwServerVersion[0] = 0;
 		r->out.rgwServerVersion[1] = 0;
 		r->out.rgwServerVersion[2] = 0;
@@ -937,8 +937,8 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	*r->out.pcRetry = 0;
 	*r->out.pcmsRetryDelay = 0;
 	*r->out.picxr = 0;
-	r->out.szDNPrefix = NULL;
-	r->out.szDisplayName = NULL;
+	*r->out.szDNPrefix = NULL;
+	*r->out.szDisplayName = NULL;
 	r->out.rgwServerVersion[0] = 0;
 	r->out.rgwServerVersion[1] = 0;
 	r->out.rgwServerVersion[2] = 0;

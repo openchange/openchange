@@ -261,7 +261,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	handles[mapi_repl->handle_idx] = rec->handle;
 
 	if (messageID) {
-		object = emsmdbp_object_message_init((TALLOC_CTX *)rec, emsmdbp_ctx, messageID, parent_handle);
+		object = emsmdbp_object_message_init((TALLOC_CTX *)rec, emsmdbp_ctx, messageID, parent);
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
 		}

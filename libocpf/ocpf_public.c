@@ -682,7 +682,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 
    \param mem_ctx the memory context to use for memory allocation
    \param context_id identifier to the context to set recipients for
-   \param _SRowSet pointer on pointer to the set of recipients to return
+   \param SRowSet pointer on pointer to the set of recipients to return
 
    \return MAPI_E_SUCCESS on success, otherwise NULL
 

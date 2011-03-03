@@ -47,7 +47,9 @@ SHLIBEXT=so
 PACKAGE_VERSION=@PACKAGE_VERSION@
 
 SAMBA_CFLAGS=@SAMBA_CFLAGS@
-SAMBA_LIBS=@SAMBA_LIBS@
+# SAMBA_LIBS=@SAMBA_LIBS@
+# FIXME: linking to private samba libs is just a hack until we get this fixed in samba
+SAMBA_LIBS=@SAMBA_LIBS@  -L@sambaprefix@/lib/samba -lsamba-util-common
 
 LDB_CFLAGS=@LDB_CFLAGS@
 LDB_LIBS=@LDB_LIBS@

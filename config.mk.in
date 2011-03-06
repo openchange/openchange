@@ -47,9 +47,10 @@ SHLIBEXT=so
 PACKAGE_VERSION=@PACKAGE_VERSION@
 
 SAMBA_CFLAGS=@SAMBA_CFLAGS@
-# SAMBA_LIBS=@SAMBA_LIBS@
-# FIXME: linking to private samba libs is just a hack until we get this fixed in samba
-SAMBA_LIBS=@SAMBA_LIBS@  -L@sambaprefix@/lib/samba -lsamba-util-common
+SAMBA_LIBS=@SAMBA_LIBS@
+# If you have problems linking to samba-util-common (Fedora 13/14), try this instead.
+# You'll also need to fix your LD_LIBRARY_PATH
+# SAMBA_LIBS=@SAMBA_LIBS@  -L@sambaprefix@/lib/samba -lsamba-util-common
 
 LDB_CFLAGS=@LDB_CFLAGS@
 LDB_LIBS=@LDB_LIBS@

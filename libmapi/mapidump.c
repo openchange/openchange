@@ -824,7 +824,7 @@ _PUBLIC_ void mapidump_foldercreated(struct FolderCreatedNotification *data, con
 	fflush(0);
 	printf("%sFolder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->FID);
 	fflush(0);
-	mapidump_tags (data->Tags, data->TagCount, sep);
+	mapidump_tags (data->NotificationTags.Tags, data->TagCount, sep);
 }
 
 _PUBLIC_ void mapidump_folderdeleted(struct FolderDeletedNotification *data, const char *sep)
@@ -878,7 +878,9 @@ _PUBLIC_ void mapidump_messagecreated(struct MessageCreatedNotification *data, c
 	fflush(0);
 	printf("%sMessage Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->MID);
 	fflush(0);
-	mapidump_tags (data->Tags, data->TagCount, sep);
+        if (data->TagCount != 0xffff) {
+                mapidump_tags (data->NotificationTags.Tags, data->TagCount, sep);
+        }
 }
 
 _PUBLIC_ void mapidump_messagemodified(struct MessageModifiedNotification *data, const char *sep)

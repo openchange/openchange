@@ -2092,6 +2092,12 @@ System Attendant Private Interface
 		TABLE_RESTRICT_DONE	=	0x7
 	} RichTableNotificationType;
 
+        typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x0)];
+		[case(0xffff)];
+		[default] MAPITAGS              Tags[level];
+	} NotificationTags;
+
 	/* NewMailNotification: case 0x2 and 0x8002 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper					FID;
@@ -2106,7 +2112,7 @@ System Attendant Private Interface
 		hyper					FID;
 		hyper					ParentFID;
 		uint16					TagCount;
-		MAPITAGS				Tags[TagCount];
+                [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} FolderCreatedNotification;
 
 	/* FolderDeletedNotification: case 0x8 */
@@ -2119,7 +2125,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper			FID;
 		uint16			TagCount;
-		MAPITAGS		Tags[TagCount];
+                [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} FolderModifiedNotification_10;
 
 	/* FolderMoveCopyNotification: case 0x20 and 0x40 */
@@ -2175,7 +2181,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper			FID;
 		uint16			TagCount;
-		MAPITAGS		Tags[TagCount];
+                [switch_is(TagCount)] NotificationTags  NotificationTags;
 		uint32			TotalMessageCount;
 	} FolderModifiedNotification_1010;
 
@@ -2183,7 +2189,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper			FID;
 		uint16			TagCount;
-		MAPITAGS		Tags[TagCount];
+                [switch_is(TagCount)] NotificationTags  NotificationTags;
 		uint32			UnreadMessageCount;
 	} FolderModifiedNotification_2010;
 
@@ -2191,7 +2197,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper			FID;
 		uint16			TagCount;
-		MAPITAGS		Tags[TagCount];
+                [switch_is(TagCount)] NotificationTags  NotificationTags;
 		uint32			TotalMessageCount;
 		uint32			UnreadMessageCount;
 	} FolderModifiedNotification_3010;
@@ -2201,7 +2207,7 @@ System Attendant Private Interface
 		hyper					FID;
 		hyper					MID;
 		uint16					TagCount;
-		MAPITAGS				Tags[TagCount];
+                [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} MessageCreatedNotification;
 
 	/* MessageDeletedNotification: case 0x8008 */
@@ -2215,7 +2221,7 @@ System Attendant Private Interface
 		hyper					FID;
 		hyper					MID;
 		uint16					TagCount;
-		MAPITAGS				Tags[TagCount];
+                [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} MessageModifiedNotification;
 
 	/* MessageMoveCopyNotification: case 0x8020 and 0x8040 */
@@ -2271,7 +2277,7 @@ System Attendant Private Interface
 		hyper					MID;
 		hyper					SearchFID;
 		uint16					TagCount;
-		MAPITAGS				Tags[TagCount];
+                [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} SearchMessageCreatedNotification;
 
 	/* SearchMessageRemovedNotification: case 0xc008 */
@@ -2286,7 +2292,7 @@ System Attendant Private Interface
 		hyper					FID;
 		hyper					MID;
 		uint16					TagCount;
-		MAPITAGS				Tags[TagCount];
+                [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} SearchMessageModifiedNotification;
 
 	typedef [nodiscriminant] union {

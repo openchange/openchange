@@ -183,6 +183,8 @@ struct mapistore_context {
 	struct processing_context	*processing_ctx;
 	struct backend_context_list    	*context_list;
 	struct indexing_context_list	*indexing_list;
+        struct mapistore_subscription_list *subscriptions;
+	struct mapistore_notification_list *notifications;
 	void				*nprops_ctx;
 };
 
@@ -270,6 +272,84 @@ int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint
 
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);
+
+/* definitions from mapistore_notifications.c (proof-of-concept) */
+
+/* notifications subscriptions */
+struct mapistore_subscription_list {
+        struct mapistore_subscription *subscription;
+        struct mapistore_subscription_list *next;
+        struct mapistore_subscription_list *prev;
+};
+
+struct mapistore_table_subscription_parameters {
+        uint8_t table_type;
+        uint64_t folder_id; /* the parent folder id */
+};
+
+struct mapistore_object_subscription_parameters {
+        bool whole_store;
+        uint64_t folder_id;
+        uint64_t object_id;
+};
+
+struct mapistore_subscription {
+        uint32_t        handle;
+        uint16_t        notification_types;
+        union {
+                struct mapistore_table_subscription_parameters table_parameters;
+                struct mapistore_object_subscription_parameters object_parameters;
+        } parameters;
+};
+
+struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *, uint32_t, uint16_t, void *);
+
+/* notifications (implementation) */
+
+struct mapistore_notification_list {
+        struct mapistore_notification *notification;
+        struct mapistore_notification_list *next;
+        struct mapistore_notification_list *prev;
+};
+
+enum mapistore_notification_type {
+        MAPISTORE_OBJECT_CREATED = 1,
+        MAPISTORE_OBJECT_MODIFIED = 2,
+        MAPISTORE_OBJECT_DELETED = 3
+};
+
+struct mapistore_table_notification_parameters {
+        uint8_t table_type;
+        uint32_t row_id;
+
+        uint32_t handle;
+        uint64_t folder_id; /* the parent folder id */
+        uint64_t object_id; /* the folder/message id */
+        uint32_t instance_id;
+};
+
+struct mapistore_object_notification_parameters {
+        uint64_t folder_id; /* the parent folder id */
+        uint64_t object_id; /* the folder/message id */
+        uint16_t tag_count;
+	enum MAPITAGS *tags;
+        bool new_message_count;
+        uint32_t message_count;
+};
+
+struct mapistore_notification {
+        uint32_t object_type;
+        enum mapistore_notification_type event;
+        union {
+                struct mapistore_table_notification_parameters table_parameters;
+                struct mapistore_object_notification_parameters object_parameters;
+        } parameters;
+};
+
+void mapistore_notification_set_context(struct mapistore_context *);
+struct mapistore_subscription_list *mapistore_find_matching_subscriptions(struct mapistore_context *, struct mapistore_notification *);
+
+void mapistore_push_notification(uint8_t, enum mapistore_notification_type, void *);
 
 __END_DECLS
 

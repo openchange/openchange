@@ -62,6 +62,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 
 	mstore_ctx->context_list = NULL;
 	mstore_ctx->indexing_list = talloc_zero(mstore_ctx, struct indexing_context_list);
+	mstore_ctx->subscriptions = NULL;
 
 	mstore_ctx->nprops_ctx = NULL;
 	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));

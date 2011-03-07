@@ -204,6 +204,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL;
+        struct mapistore_subscription_list *subscription_list;
+        struct mapistore_subscription *subscription;
+        struct mapistore_table_subscription_parameters subscription_parameters;
 	void			*data;
 	uint64_t		folderID;
 	uint32_t		contextID;
@@ -280,6 +283,24 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		retval = mapi_handles_set_private_data(rec, object);
 		object->object.table->denominator = mapi_repl->u.mapi_GetHierarchyTable.RowCount;
 		object->object.table->ulType = EMSMDBP_TABLE_FOLDER_TYPE;
+
+                /* notifications */
+                if ((mapi_req->u.mapi_GetHierarchyTable.TableFlags & TableFlags_NoNotifications)) {
+                        DEBUG(5, ("  notifications skipped\n"));
+                }
+                else {
+                        /* we attach the subscription to the session object */
+                        subscription_list = talloc_zero(object, struct mapistore_subscription_list);
+                        DLIST_ADD(emsmdbp_ctx->mstore_ctx->subscriptions, subscription_list);
+
+                        subscription_parameters.table_type = MAPISTORE_FOLDER_TABLE;
+                        subscription_parameters.folder_id = folderID;
+
+                        /* note that a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
+                        subscription = mapistore_new_subscription(subscription_list, rec->handle, fnevTableModified, &subscription_parameters);
+                        subscription_list->subscription = subscription;
+                        object->object.table->subscription_list = subscription_list;
+                }
 	}
 
 	*size += libmapiserver_RopGetHierarchyTable_size(mapi_repl);
@@ -313,6 +334,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL;
+        struct mapistore_subscription_list *subscription_list;
+        struct mapistore_subscription *subscription;
+        struct mapistore_table_subscription_parameters subscription_parameters;
 	void			*data;
 	uint64_t		folderID;
 	uint32_t		contextID;
@@ -389,7 +413,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent);
 	if (object) {
 		retval = mapi_handles_set_private_data(rec, object);
-
                 mapistore = emsmdbp_is_mapistore(parent);
                 switch (mapistore) {
                 case false:
@@ -405,7 +428,30 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 
 		object->object.table->denominator = mapi_repl->u.mapi_GetHierarchyTable.RowCount;
 		object->object.table->ulType = table_type;
-	}
+
+                /* notifications */
+                if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_NoNotifications)) {
+                        DEBUG(5, ("  notifications skipped\n"));
+                }
+                else {
+                        /* we attach the subscription to the session object */
+                        subscription_list = talloc_zero(object, struct mapistore_subscription_list);
+                        DLIST_ADD(emsmdbp_ctx->mstore_ctx->subscriptions, subscription_list);
+
+                        if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_Associated)) {
+                                subscription_parameters.table_type = MAPISTORE_FAI_TABLE;
+                        }
+                        else {
+                                subscription_parameters.table_type = MAPISTORE_MESSAGE_TABLE;
+                        }
+                        subscription_parameters.folder_id = folderID; 
+                 
+                        /* note that a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
+                        subscription = mapistore_new_subscription(subscription_list, rec->handle, fnevTableModified, &subscription_parameters);
+                        subscription_list->subscription = subscription;
+                        object->object.table->subscription_list = subscription_list;
+                }
+        }
 	
 	*size += libmapiserver_RopGetContentsTable_size(mapi_repl);
 

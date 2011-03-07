@@ -25,7 +25,9 @@
    \brief OXCNOTIF ROP Response size calculations
  */
 
+
 #include "libmapiserver.h"
+#include <util/debug.h>
 
 /**
    \details Calculate RegisterNotification Rop size
@@ -35,4 +37,156 @@
 _PUBLIC_ uint16_t libmapiserver_RopRegisterNotification_size(void)
 {
 	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate Notify Rop size
+
+   \return Size of Notify response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *response)
+{
+        union NotificationData *NotificationData;
+
+        uint16_t size = SIZE_DFLT_ROPNOTIFY;
+
+        /* TODO: to be completed... */
+
+        NotificationData = &response->u.mapi_Notify.NotificationData;
+        switch (response->u.mapi_Notify.NotificationType) {
+                /* Folders */
+        case 0x3010: /* different forms of folder modifications */
+                size += sizeof (uint32_t);
+        case 0x1010:
+        case 0x2010:
+                size += sizeof (uint32_t);
+        case 0x0010: /* folder modified */
+                size += sizeof(uint64_t) + sizeof(uint16_t);
+                if (NotificationData->FolderModifiedNotification_10.TagCount != 0xffff) {
+                        size += sizeof(enum MAPITAGS) * NotificationData->FolderModifiedNotification_10.TagCount;
+                }
+                break;
+
+        case 0x0004: /* folder created */
+        case 0x8004: /* message created */ 
+        case 0x8010: /* message modified */
+                size += sizeof(uint16_t);
+                if (NotificationData->MessageCreatedNotification.TagCount != 0xffff) {
+                        size += sizeof(enum MAPITAGS) * NotificationData->MessageCreatedNotification.TagCount;
+                }
+        case 0x8008: /* message deleted */
+        case 0x0008: /* folder deleted */
+                size += 2 * sizeof(uint64_t);
+                break;
+
+                /* Tables */
+        case 0x0100: /* hierarchy table changed */
+                size += sizeof(uint16_t); /* TableEventType */
+                switch (NotificationData->HierarchyTableChange.TableEvent) {
+                case TABLE_ROW_ADDED:
+                        size += 2 * sizeof(uint64_t); /* FID and InsertAfterFID */
+                        size += sizeof(uint16_t) + NotificationData->HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowAddedNotification.Columns.length; /* blob length */
+                        break;
+                case TABLE_ROW_DELETED:
+                        size += sizeof(uint64_t); /* FID */
+                        break;
+                case TABLE_ROW_MODIFIED:
+                        size += 2 * sizeof(uint64_t); /* FID and InsertAfterFID */
+                        size += sizeof(uint16_t) + NotificationData->HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowModifiedNotification.Columns.length; /* blob length */
+                        break;
+                default: /* TABLE_CHANGED and TABLE_RESTRICT_DONE */
+                        size += 0;
+                }
+                break;
+        case 0x8100: /* contents table changed */
+                size += sizeof(uint16_t); /* TableEventType */
+                switch (NotificationData->ContentsTableChange.TableEvent) {
+                case TABLE_ROW_ADDED:
+                        size += 2 * (2 * sizeof(uint64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
+                        size += sizeof(uint16_t) + NotificationData->ContentsTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.Columns.length; /* blob length */
+                        break;
+                case TABLE_ROW_DELETED:
+                        size += 2 * sizeof(uint64_t) + sizeof(uint32_t); /* FID, MID, Instance */
+                        break;
+                case TABLE_ROW_MODIFIED:
+                        size += 2 * (2 * sizeof(uint64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
+                        size += sizeof(uint16_t) + NotificationData->ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.Columns.length;
+                        break;
+                default: /* TABLE_CHANGED and TABLE_RESTRICT_DONE */
+                        size += 0;
+                }
+                break;
+        case 0xc100: /* search table changed */
+                size += sizeof(uint16_t); /* TableEventType */
+                switch (NotificationData->SearchTableChange.TableEvent) {
+                case TABLE_ROW_ADDED:
+                        size += 2 * (2 * sizeof(uint64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
+                        size += sizeof(uint16_t) + NotificationData->SearchTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.Columns.length; /* blob length */
+                        break;
+                case TABLE_ROW_DELETED:
+                        size += 2 * sizeof(uint64_t) + sizeof(uint32_t); /* FID, MID, Instance */
+                        break;
+                case TABLE_ROW_MODIFIED:
+                        size += 2 * (2 * sizeof(uint64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
+                        size += sizeof(uint16_t) + NotificationData->SearchTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.Columns.length;
+                        break;
+                default: /* TABLE_CHANGED and TABLE_RESTRICT_DONE */
+                        size += 0;
+                }
+                break;
+
+        /* case 0x0002: */
+        /* case 0x8002: */
+        /*         size += sizeof(struct NewMailNotification); */
+        /*         if (response->u.mapi_Notify.NewMailNotification.UnicodeFlag) { */
+        /*                 size += strlen_m_ext(response->u.mapi_Notify.NewMailNotification.MessageClass.lpszW, CH_UTF8, CH_UTF16BE) * 2 + 2; */
+        /*         } */
+        /*         else { */
+        /*                 size += strlen(response->u.mapi_Notify.NewMailNotification.MessageClass.lpszA) + 1; */
+        /*         } */
+        /*         break; */
+        /* case 0x0020: */
+        /* case 0x0040: */
+        /*         size += sizeof(struct FolderMoveCopyNotification); */
+        /*         break; */
+        /* case 0x0080: */
+        /*         size += sizeof(struct SearchCompleteNotification); */
+        /*         break; */
+        /* case 0x0100: */
+        /*         size += sizeof(struct HierarchyTableChange); */
+        /*         break; */
+        /* case 0x0200: */
+        /*         size += sizeof(struct IcsNotification); */
+        /*         break; */
+        /* case 0x1010: */
+        /*         size += sizeof(struct FolderModifiedNotification_1010); */
+        /*         break; */
+        /* case 0x2010: */
+        /*         size += sizeof(struct FolderModifiedNotification_2010); */
+        /*         break; */
+        /* case 0x3010: */
+        /*         size += sizeof(struct FolderModifiedNotification_3010); */
+        /*         break; */
+        /* case 0x8020: */
+        /* case 0x8040: */
+        /*         size += sizeof(struct MessageMoveCopyNotification); */
+        /*         break; */
+        /* case 0x8100: */
+        /* case 0xc100: */
+        /*         size += sizeof(struct ContentsTableChange); */
+        /*         break; */
+        /* case 0xc004: */
+        /*         size += sizeof(struct SearchMessageCreatedNotification); */
+        /*         break; */
+        /* case 0xc008: */
+        /*         size += sizeof(struct SearchMessageRemovedNotification); */
+        /*         break; */
+        /* case 0xc010: */
+        /*         size += sizeof(struct SearchMessageModifiedNotification); */
+        /*         break; */
+        default:
+                DEBUG(5, ("unhandled size case %.4x, expect buffer errors soon\n", response->u.mapi_Notify.NotificationType));
+        }
+
+        return size;
 }

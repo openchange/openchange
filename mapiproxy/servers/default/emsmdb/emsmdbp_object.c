@@ -44,6 +44,8 @@ const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 		return "table";
 	case EMSMDBP_OBJECT_STREAM:
 		return "stream";
+	case EMSMDBP_OBJECT_SUBSCRIPTION:
+		return "subscription";
 	default:
 		return "unknown";
 	}
@@ -151,6 +153,8 @@ uint32_t emsmdbp_get_contextID(struct mapi_handles *handles)
 		return object->object.stream->contextID;
 	case EMSMDBP_OBJECT_ATTACHMENT:
 		return object->object.attachment->contextID;
+	case EMSMDBP_OBJECT_SUBSCRIPTION:
+		return object->object.subscription->contextID;
 	default:
 		return -1;
 	}
@@ -209,7 +213,7 @@ static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct em
 
                                 stream_buffer = talloc_array(aRow.lpProps, uint8_t, stream_size + 1);
                                 *(stream_buffer + stream_size) = 0;
-                                read(stream->fd, stream_buffer, stream_size);
+                                stream_size = read(stream->fd, stream_buffer, stream_size);
 
                                 if ((stream->property & PT_BINARY) == PT_BINARY) {
                                         binary_data = talloc(aRow.lpProps, struct Binary_r);
@@ -297,6 +301,10 @@ static int emsmdbp_object_destructor(void *data)
                                 mapistore_pocop_release(object->mstore_ctx, object->object.table->contextID,
                                                         object->poc_backend_object);
                 }
+                if (object->object.table->subscription_list) {
+                        DEBUG(5, ("  list object: removing subscription from context list\n"));
+                        DLIST_REMOVE(object->mstore_ctx->subscriptions, object->object.table->subscription_list);
+                }
 		ret = mapistore_del_context(object->mstore_ctx, object->object.message->contextID);
 		DEBUG(4, ("[%s:%d] mapistore message context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
@@ -316,6 +324,14 @@ static int emsmdbp_object_destructor(void *data)
                 }
 		ret = mapistore_del_context(object->mstore_ctx, object->object.attachment->contextID);
 		DEBUG(4, ("[%s:%d] mapistore stream context retval = %d\n", __FUNCTION__, __LINE__, ret));
+		break;
+        case EMSMDBP_OBJECT_SUBSCRIPTION:
+                if (object->object.subscription->subscription_list) {
+                        DEBUG(5, ("  subscription object: removing subscription from context list\n"));
+                        DLIST_REMOVE(object->mstore_ctx->subscriptions, object->object.subscription->subscription_list);
+                }
+		ret = mapistore_del_context(object->mstore_ctx, object->object.folder->contextID);
+		DEBUG(4, ("[%s:%d] mapistore subscription context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
 	default:
 		DEBUG(4, ("[%s:%d] destroying unhandled object type: %d\n", __FUNCTION__, __LINE__, object->type));
@@ -571,6 +587,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->ulType = 0;
 	object->object.table->mapistore = false;
 	object->object.table->contextID = -1;
+	object->object.table->subscription_list = NULL;
 
 	mapistore = emsmdbp_is_mapistore(parent);
 	if (mapistore == true) {
@@ -741,6 +758,56 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *mem_c
 		object->object.attachment->mapistore = true;
 		object->object.attachment->contextID = emsmdbp_get_contextID(parent);
 	}
+
+	return object;
+}
+
+/**
+   \details Initialize a notification subscription object
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider cotnext
+   \param whole_store whether the subscription applies to the specified change on the entire store or stricly on the specified folder/message
+   \param folderID the folder identifier
+   \param messageID the message identifier
+   \param parent pointer to the parent MAPI handle
+ */
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem_ctx,
+                                                                 struct emsmdbp_context *emsmdbp_ctx,
+                                                                 struct mapi_handles *parent)
+{
+	enum MAPISTATUS		retval;
+	struct emsmdbp_object	*object;
+	void			*data;
+	bool			mapistore = false;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+
+	/* Retrieve parent object */
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) return NULL;
+	
+	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
+	if (!object) return NULL;
+
+	object->object.subscription = talloc_zero(object, struct emsmdbp_object_subscription);
+	if (!object->object.subscription) {
+		talloc_free(object);
+		return NULL;
+	}
+
+	object->type = EMSMDBP_OBJECT_SUBSCRIPTION;
+        object->object.subscription->subscription_list = NULL;
+
+	mapistore = emsmdbp_is_mapistore(parent);
+	if (mapistore == true) {
+		object->object.subscription->mapistore = true;
+		object->object.subscription->contextID = emsmdbp_get_contextID(parent);
+	}
+        else {
+		object->object.subscription->contextID = -1;
+        }
 
 	return object;
 }

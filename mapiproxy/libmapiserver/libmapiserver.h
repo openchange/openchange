@@ -278,6 +278,14 @@
  */
 #define	SIZE_DFLT_ROPDELETEMESSAGE		1
 
+/**
+   \details Notify Rop has non-default fixed response size for:
+   -# RopId: uint8_t
+   -# NotificationHandle: uint32_t
+   -# LogonId: uint8_t
+   -# NotificationType: uint16_t
+ */
+#define	SIZE_DFLT_ROPNOTIFY                     8
 
 /**
    \details GetSearchCriteria Rop has fixed response size for:
@@ -387,6 +395,7 @@ uint16_t libmapiserver_RopSaveChangesAttachment_size(struct EcDoRpc_MAPI_REPL *)
 
 /* definitions from libmapiserver_oxcnotif.c */
 uint16_t libmapiserver_RopRegisterNotification_size(void);
+uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcdata.c */
 uint16_t libmapiserver_TypedString_size(struct TypedString);

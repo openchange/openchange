@@ -26,6 +26,7 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
 struct exchange_emsmdb_session		*emsmdb_session = NULL;
@@ -250,6 +251,442 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 	return MAPI_E_SUCCESS;
 }
 
+#warning 'emsmdbp_get_table_object_props' is a dup from the code found in oxctabl:RopQueryRows
+static void **emsmdbp_get_table_object_props(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, uint32_t row_id, uint32_t **retvalsp)
+{
+        void **data_pointers;
+        enum MAPISTATUS retval;
+        uint32_t *retvals;
+        struct emsmdbp_object_table *table;
+        struct mapistore_property_data *properties;
+        uint32_t i, num_props;
+
+        table = table_object->object.table;
+        num_props = table_object->object.table->prop_count;
+
+        data_pointers = talloc_array(table_object, void *, num_props);
+        memset(data_pointers, 0, sizeof(void *) * num_props);
+        retvals = talloc_array(table_object, uint32_t, num_props);
+        memset(retvals, 0, sizeof(uint32_t) * num_props);
+
+        if (table_object->poc_api) {
+                properties = talloc_array(NULL, struct mapistore_property_data, num_props);
+                memset(properties, 0, sizeof(struct mapistore_property_data) * num_props);
+                retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                       table_object->poc_backend_object,
+                                                       MAPISTORE_PREFILTERED_QUERY, row_id, properties);
+                if (retval == MAPI_E_SUCCESS) {
+                        for (i = 0; i < num_props; i++) {
+                                data_pointers[i] = properties[i].data;
+
+                                if (properties[i].error) {
+                                        if (properties[i].error == MAPISTORE_ERR_NOT_FOUND)
+                                                retvals[i] = MAPI_E_NOT_FOUND;
+                                        else if (properties[i].error == MAPISTORE_ERR_NO_MEMORY)
+                                                retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
+                                        else {
+                                                DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[i].error));
+                                        }
+                                }
+                                else {
+                                        if (properties[i].data == NULL)
+                                                retvals[i] = MAPI_E_NOT_FOUND;
+                                        else
+                                                talloc_steal(data_pointers, properties[i].data);
+                                }
+                        }
+                }
+                else {
+                        DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
+                        talloc_free(retvals);
+                        retvals = NULL;
+                        talloc_free(data_pointers);
+                        data_pointers = NULL;
+                }
+                talloc_free(properties);
+        }
+        else {
+                retval = MAPI_E_SUCCESS;
+                for (i = 0; retval != MAPI_E_INVALID_OBJECT && i < num_props; i++) {
+                        retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                              table->ulType,
+                                                              MAPISTORE_PREFILTERED_QUERY,
+                                                              table->folderID, 
+                                                              table->properties[i],
+                                                              row_id, data_pointers + i);
+                        if (retval == MAPI_E_INVALID_OBJECT) {
+                                DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
+                                talloc_free(retvals);
+                                retvals = NULL;
+                                talloc_free(data_pointers);
+                                data_pointers = NULL;
+                        }
+                        else {
+                                retvals[i] = retval;
+                        }
+                }
+        }
+
+        if (retvalsp)
+                *retvalsp = retvals;
+
+        return data_pointers;
+}
+
+#warning 'emsmdbp_fill_table_row' is a dup from the code found in oxctabl:RopQueryRows
+static void emsmdbp_fill_table_row(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
+                                   DATA_BLOB *table_row, uint16_t num_props,
+                                   enum MAPITAGS *properties,
+                                   void **data_pointers, uint32_t *retvals)
+{
+        uint16_t i;
+        uint8_t flagged;
+        enum MAPITAGS property;
+        void *data;
+        uint32_t retval;
+
+        flagged = 0;
+
+        for (i = 0; !flagged && i < num_props; i++) {
+                if (retvals[i] != MAPI_E_SUCCESS) {
+                        flagged = 1;
+                }
+        }
+
+        if (flagged) {
+                libmapiserver_push_property(mem_ctx,
+                                            lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                            0x0000000b, (const void *)&flagged,
+                                            table_row, 0, 0, 0);
+        }
+        else {
+                libmapiserver_push_property(mem_ctx,
+                                            lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                            0x00000000, (const void *)&flagged,
+                                            table_row, 0, 1, 0);
+        }
+
+        for (i = 0; i < num_props; i++) {
+                property = properties[i];
+                retval = retvals[i];
+                if (retval != MAPI_E_SUCCESS) {
+                        property = (property & 0xFFFF0000) + PT_ERROR;
+                        data = &retval;
+                }
+                else {
+                        data = data_pointers[i];
+                }
+
+                libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                            property, data, table_row,
+                                            flagged?PT_ERROR:0, flagged, 0);
+        }
+}
+
+static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx, 
+                                      struct emsmdbp_context *emsmdbp_ctx,
+                                      struct EcDoRpc_MAPI_REPL *mapi_repl,
+                                      struct mapistore_subscription *subscription,
+                                      struct mapistore_notification *notification,
+                                      uint16_t *sizep)
+{
+        struct Notify_repl      *reply;
+        struct emsmdbp_object   *handle_object;
+        struct emsmdbp_object_table *table;
+	struct mapi_handles     *handle_object_handle;
+	enum MAPISTATUS         retval;
+        void                    **data_pointers;
+        DATA_BLOB               *table_row;
+        uint32_t                *retvals;
+        uint32_t                *previous_row_properties;
+        uint32_t                saved_prop_count, *saved_properties;
+        uint64_t                prev_fid, prev_mid;
+        uint32_t                prev_instance;
+
+        mapi_repl->opnum = op_MAPI_Notify;
+        reply = &mapi_repl->u.mapi_Notify;
+        reply->LogonId = 0; /* TODO: seems to be always 0 ? */
+
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, subscription->handle, &handle_object_handle);
+        if (retval) {
+                reply->NotificationType = fnevCriticalError;
+                DEBUG(5, ("notification handle not found\n"));
+                goto end;
+        }
+	retval = mapi_handles_get_private_data(handle_object_handle, (void **) &handle_object);
+	if (retval) {
+                reply->NotificationType = fnevCriticalError;
+                DEBUG(5, ("object not found for notification handle\n"));
+                goto end;
+        }
+
+        reply->NotificationHandle = subscription->handle;
+        switch (notification->object_type) {
+        case MAPISTORE_MESSAGE:
+                reply->NotificationType = fnevMbit;
+                break;
+        case MAPISTORE_FOLDER:
+                if (notification->parameters.object_parameters.new_message_count) {
+                  reply->NotificationType = fnevTbit;
+                }
+                else {
+                  reply->NotificationType = 0;
+                }
+                break;
+        case MAPISTORE_TABLE:
+                reply->NotificationType = fnevTableModified;
+                if (notification->parameters.table_parameters.table_type != MAPISTORE_FOLDER_TABLE) {
+                        reply->NotificationType |= (fnevMbit | fnevSbit);
+                }
+                break;
+        default:
+                reply->NotificationType = fnevCriticalError;
+                DEBUG(5, ("unknown value for notification object type: %d\n", notification->object_type));
+                goto end;
+        }
+
+        if (notification->object_type == MAPISTORE_TABLE) {
+                table = handle_object->object.table;
+
+                /* FIXME: here is a hack to update table counters and which would not be needed if the backend had access to the table structure... */
+                if (notification->event == MAPISTORE_OBJECT_CREATED) {
+                        table->denominator++;
+                }
+                else if (notification->event == MAPISTORE_OBJECT_DELETED) {
+                        table->denominator--;
+                        if (table->numerator >= table->denominator) {
+                                table->numerator = table->denominator;
+                        }
+                }
+
+                if (notification->parameters.table_parameters.table_type == MAPISTORE_FOLDER_TABLE) {
+                        if (notification->event == MAPISTORE_OBJECT_CREATED || notification->event == MAPISTORE_OBJECT_MODIFIED) {
+                                if (notification->parameters.table_parameters.row_id > 0) {
+                                        /* FIXME: this hack enables the fetching of some properties from the previous row */
+                                        saved_prop_count = table->prop_count;
+                                        saved_properties = table->properties;
+                                        previous_row_properties = talloc_array(NULL, uint32_t, 1);
+                                        previous_row_properties[0] = PR_FID;
+                                        table->properties = previous_row_properties;
+                                        table->prop_count = 1;
+                                        if (handle_object->poc_api) {
+                                                mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, table->contextID, handle_object->poc_backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
+                                        }
+                                        data_pointers = emsmdbp_get_table_object_props(emsmdbp_ctx, handle_object,
+                                                                                       notification->parameters.table_parameters.row_id - 1,
+                                                                                       &retvals);
+                                        if (data_pointers) {
+                                                prev_fid = *(uint32_t *) data_pointers[0];
+                                                talloc_free(data_pointers);
+                                        }
+                                        else {
+                                                prev_fid = -1;
+                                        }
+
+                                        table->prop_count = saved_prop_count;
+                                        table->properties = saved_properties;
+                                        talloc_free(previous_row_properties);
+                                        if (handle_object->poc_api) {
+                                                mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, table->contextID, handle_object->poc_backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
+                                        }
+                                }
+                                else {
+                                        prev_fid = 0;
+                                }
+
+                                table_row = talloc_zero(mem_ctx, DATA_BLOB);
+                                data_pointers = emsmdbp_get_table_object_props(emsmdbp_ctx, handle_object,
+                                                                               notification->parameters.table_parameters.row_id,
+                                                                               &retvals);
+                                emsmdbp_fill_table_row(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
+                                talloc_free(data_pointers);
+                                talloc_free(retvals);
+                        }
+
+                        /* FIXME: for some reason, TABLE_ROW_MODIFIED and TABLE_ROW_DELETED do not work... */
+                        reply->NotificationData.SearchTableChange.TableEvent = TABLE_CHANGED;
+                        switch (notification->event) {
+                        case MAPISTORE_OBJECT_CREATED:
+                        /* case MAPISTORE_OBJECT_MODIFIED: */
+                                reply->NotificationData.HierarchyTableChange.TableEvent = (notification->event == MAPISTORE_OBJECT_CREATED ? TABLE_ROW_ADDED : TABLE_ROW_MODIFIED);
+                                reply->NotificationData.HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowAddedNotification.FID = notification->parameters.table_parameters.object_id;
+                                reply->NotificationData.HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowAddedNotification.InsertAfterFID = prev_fid;
+                                reply->NotificationData.HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowAddedNotification.Columns = *table_row;
+                                break;
+                        /* case MAPISTORE_OBJECT_DELETED: */
+                        /*         reply->NotificationData.HierarchyTableChange.TableEvent = TABLE_ROW_DELETED; */
+                        /*         reply->NotificationData.HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowDeletedNotification.FID = notification->parameters.table_parameters.object_id; */
+                        /*         break; */
+                        /* default: */
+                        /*         reply->NotificationType = fnevCriticalError; */
+                        /*         DEBUG(5, ("unknown value for notification event: %d\n", notification->event)); */
+                        /*         goto end; */
+                        }
+                }
+                else {
+                        if (notification->event == MAPISTORE_OBJECT_CREATED || notification->event == MAPISTORE_OBJECT_MODIFIED) {
+                                if (notification->parameters.table_parameters.row_id > 0) {
+                                        /* FIXME: this hack enables the fetching of some properties from the previous row */
+                                        saved_prop_count = table->prop_count;
+                                        saved_properties = table->properties;
+                                        previous_row_properties = talloc_array(NULL, uint32_t, 3);
+                                        previous_row_properties[0] = PR_FID;
+                                        previous_row_properties[1] = PR_MID;
+                                        previous_row_properties[2] = PR_INSTANCE_NUM;
+                                        table->properties = previous_row_properties;
+                                        table->prop_count = 3;
+                                        if (handle_object->poc_api) {
+                                                mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, table->contextID, handle_object->poc_backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
+                                        }
+                                        data_pointers = emsmdbp_get_table_object_props(emsmdbp_ctx, handle_object, notification->parameters.table_parameters.row_id - 1, NULL);
+                                        if (data_pointers) {
+                                                prev_fid = *(uint64_t *) data_pointers[0];
+                                                prev_mid = *(uint64_t *) data_pointers[1];
+                                                prev_instance = *(uint32_t *) data_pointers[2];
+                                                talloc_free(data_pointers);
+                                        }
+                                        else {
+                                                prev_fid = -1;
+                                                prev_mid = -1;
+                                                prev_instance = -1;
+                                        }
+
+                                        table->prop_count = saved_prop_count;
+                                        table->properties = saved_properties;
+                                        talloc_free(previous_row_properties);
+                                        if (handle_object->poc_api) {
+                                                mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, table->contextID, handle_object->poc_backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
+                                        }
+                                }
+                                else {
+                                        prev_fid = 0;
+                                        prev_mid = 0;
+                                        prev_instance = 0;
+                                }
+
+                                table_row = talloc_zero(mem_ctx, DATA_BLOB);
+                                data_pointers = emsmdbp_get_table_object_props(emsmdbp_ctx, handle_object,
+                                                                               notification->parameters.table_parameters.row_id,
+                                                                               &retvals);
+                                emsmdbp_fill_table_row(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
+                                talloc_free(data_pointers);
+                                talloc_free(retvals);
+                        }
+
+                        /* FIXME: for some reason, TABLE_ROW_MODIFIED and TABLE_ROW_DELETED do not work... */
+                        reply->NotificationData.SearchTableChange.TableEvent = TABLE_CHANGED;
+                        switch (notification->event) {
+                        case MAPISTORE_OBJECT_CREATED:
+                        /* case MAPISTORE_OBJECT_MODIFIED: */
+                                reply->NotificationData.SearchTableChange.TableEvent = (notification->event == MAPISTORE_OBJECT_CREATED ? TABLE_ROW_ADDED : TABLE_ROW_MODIFIED);
+                                reply->NotificationData.SearchTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.FID = notification->parameters.table_parameters.folder_id;
+                                reply->NotificationData.SearchTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.MID = notification->parameters.table_parameters.object_id;
+                                reply->NotificationData.SearchTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.Instance = notification->parameters.table_parameters.instance_id;
+                                reply->NotificationData.SearchTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.InsertAfterFID = prev_fid;
+                                reply->NotificationData.SearchTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.InsertAfterMID = prev_mid;
+                                reply->NotificationData.SearchTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.InsertAfterInstance = prev_instance;
+                                reply->NotificationData.SearchTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.Columns = *table_row;
+                                break;
+                        /* case MAPISTORE_OBJECT_DELETED: */
+                        /*         reply->NotificationData.SearchTableChange.TableEvent = TABLE_ROW_DELETED; */
+                        /*         reply->NotificationData.SearchTableChange.ContentsTableChangeUnion.ContentsRowDeletedNotification.FID = notification->parameters.table_parameters.folder_id; */
+                        /*         reply->NotificationData.SearchTableChange.ContentsTableChangeUnion.ContentsRowDeletedNotification.MID = notification->parameters.table_parameters.object_id; */
+                        /*         reply->NotificationData.SearchTableChange.ContentsTableChangeUnion.ContentsRowDeletedNotification.Instance = notification->parameters.table_parameters.instance_id; */
+                        /*         break; */
+                        /* default: */
+                        /*         reply->NotificationType = fnevCriticalError; */
+                        /*         DEBUG(5, ("unknown value for notification event: %d\n", notification->event)); */
+                        /*         goto end; */
+                        }
+                }
+        }
+        else {
+                switch (notification->event) {
+                case MAPISTORE_OBJECT_CREATED:
+                        reply->NotificationType |= fnevObjectCreated;
+                        break;
+                case MAPISTORE_OBJECT_DELETED:
+                        reply->NotificationType |= fnevObjectDeleted;
+                        break;
+                case MAPISTORE_OBJECT_MODIFIED:
+                        reply->NotificationType |= fnevObjectModified;
+                        break;
+                default:
+                        reply->NotificationType = fnevCriticalError;
+                        DEBUG(5, ("unknown value for notification event: %d\n", notification->event));
+                        goto end;
+                }
+                if (notification->object_type == MAPISTORE_MESSAGE) {
+                        switch (notification->event) {
+                        case MAPISTORE_OBJECT_CREATED:
+                                reply->NotificationData.MessageCreatedNotification.FID = notification->parameters.object_parameters.folder_id;
+                                reply->NotificationData.MessageCreatedNotification.MID = notification->parameters.object_parameters.object_id;
+                                reply->NotificationData.MessageCreatedNotification.TagCount = notification->parameters.object_parameters.tag_count;
+                                if (notification->parameters.object_parameters.tag_count
+                                    && notification->parameters.object_parameters.tag_count != 0xffff) {
+                                        reply->NotificationData.MessageCreatedNotification.NotificationTags.Tags = talloc_memdup(mem_ctx, notification->parameters.object_parameters.tags, notification->parameters.object_parameters.tag_count * sizeof(enum MAPITAGS));
+                                }
+                                else {
+                                        reply->NotificationData.MessageCreatedNotification.NotificationTags.Tags = NULL;
+                                }
+                                break;
+                        case MAPISTORE_OBJECT_MODIFIED:
+                                reply->NotificationData.MessageModifiedNotification.FID = notification->parameters.object_parameters.folder_id;
+                                reply->NotificationData.MessageModifiedNotification.MID = notification->parameters.object_parameters.object_id;
+                                reply->NotificationData.MessageModifiedNotification.TagCount = notification->parameters.object_parameters.tag_count;
+                                if (notification->parameters.object_parameters.tag_count
+                                    && notification->parameters.object_parameters.tag_count != 0xffff) {
+                                        reply->NotificationData.MessageModifiedNotification.NotificationTags.Tags = talloc_memdup(mem_ctx, notification->parameters.object_parameters.tags, notification->parameters.object_parameters.tag_count * sizeof(enum MAPITAGS));
+                                }
+                                else {
+                                        reply->NotificationData.MessageModifiedNotification.NotificationTags.Tags = NULL;
+                                }
+                                break;
+                        default: /* MAPISTORE_OBJECT_DELETED */
+                                reply->NotificationData.MessageDeletedNotification.FID = notification->parameters.object_parameters.folder_id;
+                                reply->NotificationData.MessageDeletedNotification.MID = notification->parameters.object_parameters.object_id;
+                        }
+                }
+                else { /* MAPISTORE_FOLDER */
+                        switch (notification->event) {
+                        case MAPISTORE_OBJECT_CREATED:
+                                reply->NotificationData.FolderCreatedNotification.ParentFID = notification->parameters.object_parameters.folder_id;
+                                reply->NotificationData.FolderCreatedNotification.FID = notification->parameters.object_parameters.object_id;
+                                reply->NotificationData.FolderCreatedNotification.TagCount = notification->parameters.object_parameters.tag_count;
+                                if (notification->parameters.object_parameters.tag_count
+                                    && notification->parameters.object_parameters.tag_count != 0xffff) {
+                                        reply->NotificationData.FolderCreatedNotification.NotificationTags.Tags = talloc_memdup(mem_ctx, notification->parameters.object_parameters.tags, notification->parameters.object_parameters.tag_count * sizeof(enum MAPITAGS));
+                                }
+                                else {
+                                        reply->NotificationData.FolderCreatedNotification.NotificationTags.Tags = NULL;
+                                }
+                                break;
+                        case MAPISTORE_OBJECT_MODIFIED:
+                                reply->NotificationData.FolderModifiedNotification_10.FID = notification->parameters.object_parameters.object_id;
+                                reply->NotificationData.FolderModifiedNotification_10.TagCount = notification->parameters.object_parameters.tag_count;
+                                if (notification->parameters.object_parameters.tag_count
+                                    && notification->parameters.object_parameters.tag_count != 0xffff) {
+                                        reply->NotificationData.FolderModifiedNotification_10.NotificationTags.Tags = talloc_memdup(mem_ctx, notification->parameters.object_parameters.tags, notification->parameters.object_parameters.tag_count * sizeof(enum MAPITAGS));
+                                }
+                                else {
+                                        reply->NotificationData.FolderModifiedNotification_10.NotificationTags.Tags = NULL;
+                                }
+
+                                if (notification->parameters.object_parameters.new_message_count) {
+                                        reply->NotificationData.FolderModifiedNotification_1010.TotalMessageCount = notification->parameters.object_parameters.message_count;
+                                }
+
+                                break;
+                        default: /* MAPISTORE_OBJECT_DELETED */
+                                reply->NotificationData.FolderDeletedNotification.ParentFID = notification->parameters.object_parameters.folder_id;
+                                reply->NotificationData.FolderDeletedNotification.FID = notification->parameters.object_parameters.object_id;
+                        }
+                }
+        }
+
+end:
+        *sizep += libmapiserver_RopNotify_size(mapi_repl);
+}
 
 static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx, 
 							 struct emsmdbp_context *emsmdbp_ctx,
@@ -257,6 +694,8 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		retval;
 	struct mapi_response	*mapi_response;
+        struct mapistore_notification_list *notification_holder;
+        struct mapistore_subscription_list *subscription_list, *subscription_holder;
 	uint32_t		handles_length;
 	uint16_t		size = 0;
 	uint32_t		i;
@@ -275,7 +714,10 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		mapi_response->mapi_len = 2;
 		return mapi_response;
 	}
-	
+
+        /* prepare notification context (TODO: will not work with multi-threading) */
+        mapistore_notification_set_context(emsmdbp_ctx->mstore_ctx);
+
 	/* Step 2. Process serialized MAPI requests */
 	mapi_response->mapi_repl = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REPL);
 	for (i = 0, idx = 0, size = 0; mapi_request->mapi_req[i].opnum != 0; i++) {
@@ -710,11 +1152,25 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {
 			idx++;
 		}
-
 	}
 
 	/* Step 3. Notifications/Pending calls should be processed here */
-	mapi_response->mapi_repl[idx].opnum = 0;
+        while ((notification_holder = emsmdbp_ctx->mstore_ctx->notifications)) {
+                subscription_list = mapistore_find_matching_subscriptions(emsmdbp_ctx->mstore_ctx, notification_holder->notification);
+                while ((subscription_holder = subscription_list)) {
+                        mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, struct EcDoRpc_MAPI_REPL, idx + 2);
+                        emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, &(mapi_response->mapi_repl[idx]), subscription_holder->subscription, notification_holder->notification, &size);
+                        DLIST_REMOVE(subscription_list, subscription_holder);
+                        talloc_free(subscription_holder);
+                        idx++;
+                }
+                
+                DLIST_REMOVE(emsmdbp_ctx->mstore_ctx->notifications, notification_holder);
+                talloc_free(notification_holder);
+        }
+        mapistore_notification_set_context(NULL);
+
+        mapi_response->mapi_repl[idx].opnum = 0;
 
 	/* Step 4. Fill mapi_response structure */
 	handles_length = mapi_request->mapi_len - mapi_request->length;

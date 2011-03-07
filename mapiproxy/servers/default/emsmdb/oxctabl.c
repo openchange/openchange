@@ -465,14 +465,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
                                                                        MAPISTORE_PREFILTERED_QUERY,
                                                                        table->numerator,
                                                                        properties);
-                                if (retval == MAPI_E_INVALID_OBJECT) {
-                                        DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
-                                }
-                                else if (retval) {
-                                        DEBUG(5, ("%s: unhandled error\n", __location__));
-                                }
-
                                 if (retval) {
+                                        DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
                                         talloc_free(retvals);
                                         talloc_free(data_pointers);
                                         talloc_free(properties);
@@ -979,7 +973,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
                                                                        MAPISTORE_PREFILTERED_QUERY,
                                                                        table->numerator,
                                                                        properties);
-                                if (retval == MAPI_E_INVALID_OBJECT) {
+                                if (retval) {
                                         table->numerator++;
                                         continue;
                                 }

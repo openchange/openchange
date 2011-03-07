@@ -179,11 +179,15 @@ int mapistore_backend_set_restrictions(struct backend_context *, uint64_t, uint8
 int mapistore_backend_set_sort_order(struct backend_context *, uint64_t, uint8_t, struct SSortOrderSet *, uint8_t *);
 
 /* proof of concept */
+int mapistore_backend_pocop_open_table(struct backend_context *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
+
 int mapistore_backend_pocop_get_attachment_table(struct backend_context *, uint64_t, void **, uint32_t *);
 int mapistore_backend_pocop_get_attachment(struct backend_context *, uint64_t, uint32_t, void **);
 int mapistore_backend_pocop_create_attachment(struct backend_context *, uint64_t, uint32_t *, void **);
 
 int mapistore_backend_pocop_set_table_columns(struct backend_context *, void *, uint16_t, enum MAPITAGS *);
+int mapistore_backend_pocop_set_table_restrictions(struct backend_context *, void *, struct mapi_SRestriction *, uint8_t *);
+int mapistore_backend_pocop_set_table_sort_order(struct backend_context *, void *, struct SSortOrderSet *, uint8_t *);
 int mapistore_backend_pocop_get_table_row(struct backend_context *, void *, enum table_query_type, uint32_t, struct mapistore_property_data *);
 
 int mapistore_backend_pocop_get_properties(struct backend_context *, void *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);

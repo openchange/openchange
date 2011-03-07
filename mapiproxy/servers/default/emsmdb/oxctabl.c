@@ -220,9 +220,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 	if (table->mapistore) {
 		status = TBLSTAT_COMPLETE;
                 request = mapi_req->u.mapi_SortTable;
-		retval = mapistore_set_sort_order(emsmdbp_ctx->mstore_ctx, table->contextID, 
-                                                  table->folderID, table->ulType, &request.lpSortCriteria, &status);
-		if (retval) {
+                if (object->poc_api) {
+                        retval = mapistore_pocop_set_sort_order(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                                object->poc_backend_object, &request.lpSortCriteria, &status);
+                }
+                else {
+                        retval = mapistore_set_sort_order(emsmdbp_ctx->mstore_ctx, table->contextID, 
+                                                          table->folderID, table->ulType, &request.lpSortCriteria, &status);
+                }
+                if (retval) {
 			mapi_repl->error_code = retval;
 			goto end;
 		}
@@ -319,10 +325,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	/* If parent folder has a mapistore context */
 	if (table->mapistore) {
 		status = TBLSTAT_COMPLETE;
-		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID, 
-						    table->folderID, table->ulType, &request.restrictions, &status);
-		if (retval) {
-			mapi_repl->error_code = retval;
+                if (object->poc_api) {
+                        retval = mapistore_pocop_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                                  object->poc_backend_object, &request.restrictions, &status);
+                }
+                else {
+                        retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID, 
+                                                            table->folderID, table->ulType, &request.restrictions, &status);
+                }
+                if (retval) {
+                        mapi_repl->error_code = retval;
 			goto end;
 		}
 		
@@ -475,7 +487,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
                                                 else if (properties[j].error == MAPISTORE_ERR_NO_MEMORY)
                                                         retvals[j] = MAPI_E_NOT_ENOUGH_MEMORY;
                                                 else {
-                                                        DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[i].error));
+                                                        DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[j].error));
                                                 }
                                         }
                                         else {
@@ -490,6 +502,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
                                                 flagged = 1;
                                         }
                                 }
+                                talloc_free(properties);
                         }
                         else {
                                 for (j = 0; j < table->prop_count; j++) {
@@ -711,12 +724,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryPosition(TALLOC_CTX *mem_ctx,
 	table = object->object.table;
 	if (!table->folderID) goto end;
 
-	if (table->numerator < table->denominator) {
-		mapi_repl->u.mapi_QueryPosition.Numerator = table->numerator;
-	}
-	else {
-		mapi_repl->u.mapi_QueryPosition.Numerator = 0xffffffff;
-	}
+        mapi_repl->u.mapi_QueryPosition.Numerator = table->numerator;
 	mapi_repl->u.mapi_QueryPosition.Denominator = table->denominator;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
@@ -807,6 +815,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekRow(TALLOC_CTX *mem_ctx,
                 next_position = table->denominator - 1 + mapi_req->u.mapi_SeekRow.offset;
 	}
 	else {
+                next_position = 0;
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		DEBUG(5, ("  unhandled 'origin' type: %d\n", mapi_req->u.mapi_SeekRow.origin));
 	}
@@ -863,6 +872,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	void				*data = NULL;
 	enum MAPISTATUS			*retvals;
 	void				**data_pointers;
+        struct                          mapistore_property_data *properties;
 	uint32_t			handle;
 	DATA_BLOB			row;
 	uint32_t			property;
@@ -941,84 +951,141 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		memset (&row, 0, sizeof(DATA_BLOB));
 
 		/* Restrict rows to be fetched */
-		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
-						    table->folderID,
-						    table->ulType,
-						    &request.res, &status);
+                if (object->poc_api) {
+                        retval = mapistore_pocop_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                                  object->poc_backend_object, &request.res, &status);
+                }
+                else {
+                        retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                            table->folderID,
+                                                            table->ulType,
+                                                            &request.res, &status);
+                }
 		/* Then fetch rows */
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
+                data_pointers = talloc_array(mem_ctx, void *, table->prop_count);
+                retvals = talloc_array(mem_ctx, enum MAPISTATUS, table->prop_count);
+                memset(data_pointers, 0, sizeof(void *) * table->prop_count);
+                memset(retvals, 0, sizeof(uint32_t) * table->prop_count);
+                properties = talloc_array(mem_ctx, struct mapistore_property_data, table->prop_count);
+
 		for (i = 0; !found && table->numerator < table->denominator; i++) {
-			flagged = 0;
+                        flagged = 0;
 
-			retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
-							      table->ulType,
-							      MAPISTORE_LIVEFILTERED_QUERY,
-							      table->folderID,
-							      (table->ulType == MAPISTORE_MESSAGE_TABLE) ? PR_MID : PR_FID,
-							      table->numerator, &data);
-			if (retval == MAPI_E_INVALID_OBJECT) {
-				table->numerator++;
-			}
-			else {
-				data_pointers = talloc_array(mem_ctx, void *, table->prop_count);
-				retvals = talloc_array(mem_ctx, enum MAPISTATUS, table->prop_count);
+                        if (object->poc_api) {
+                                memset(properties, 0, sizeof(struct mapistore_property_data) * table->prop_count);
+                                retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                                       object->poc_backend_object,
+                                                                       MAPISTORE_PREFILTERED_QUERY,
+                                                                       table->numerator,
+                                                                       properties);
+                                if (retval == MAPI_E_INVALID_OBJECT) {
+                                        table->numerator++;
+                                        continue;
+                                }
+                                else {
+                                        found = true;
+                                        for (j = 0; j < table->prop_count; j++) {
+                                                retvals[j] = MAPI_E_SUCCESS;
+                                                if (properties[j].error) {
+                                                        if (properties[j].error == MAPISTORE_ERR_NOT_FOUND)
+                                                                retvals[j] = MAPI_E_NOT_FOUND;
+                                                        else if (properties[j].error == MAPISTORE_ERR_NO_MEMORY)
+                                                                retvals[j] = MAPI_E_NOT_ENOUGH_MEMORY;
+                                                        else {
+                                                                DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[j].error));
+                                                        }
+                                                }
+                                                else {
+                                                        if (properties[j].data == NULL)
+                                                                retvals[j] = MAPI_E_NOT_FOUND;
+                                                        else
+                                                                talloc_steal(data_pointers, properties[j].data);
+                                                }
+                                                
+                                                *(data_pointers + j) = properties[j].data;
+                                                if (retvals[j] != MAPI_E_SUCCESS) {
+                                                        flagged = 1;
+                                                }
+                                        }
+                                }
+                        }
+                        else {
+                                retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                                      table->ulType,
+                                                                      MAPISTORE_LIVEFILTERED_QUERY,
+                                                                      table->folderID,
+                                                                      (table->ulType == MAPISTORE_MESSAGE_TABLE) ? PR_MID : PR_FID,
+                                                                      table->numerator, &data);
 
-				found = true;
-				flagged = 0;
+                                if (retval == MAPI_E_INVALID_OBJECT) {
+                                        table->numerator++;
+                                        continue;
+                                }
+                                else {
+                                        found = true;
+                                        flagged = 0;
+                                        
+                                        for (j = 0; j < table->prop_count; j++) {
+                                                retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                                                      table->ulType,
+                                                                                      MAPISTORE_LIVEFILTERED_QUERY,
+                                                                                      table->folderID, 
+                                                                                      table->properties[j],
+                                                                                      table->numerator, data_pointers + j);
+                                                retvals[j] = retval;
+                                                if (retval == MAPI_E_NOT_FOUND) {
+                                                        flagged = 1;
+                                                }
+                                        }
+                                }
+                        }
 
-				/* Lookup for flagged property row */
-				for (j = 0; j < table->prop_count; j++) {
-					retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
-									      table->ulType,
-									      MAPISTORE_LIVEFILTERED_QUERY,
-									      table->folderID, 
-									      table->properties[j],
-									      table->numerator, data_pointers + j);
-					retvals[j] = retval;
-					if (retval == MAPI_E_NOT_FOUND) {
-						flagged = 1;
-					}
-				}
-
-				if (flagged) {
-					libmapiserver_push_property(mem_ctx, 
-								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-								    0x0000000b, (const void *)&flagged,
-								    &row, 0, 0, 0);
-				}
-				else {
-					libmapiserver_push_property(mem_ctx, 
-								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-								    0x00000000, (const void *)&flagged,
-								    &row, 0, 1, 0);
-				}
-
-				/* Push the properties */
-				for (j = 0; j < table->prop_count; j++) {
-					property = table->properties[j];
-					retval = retvals[j];
-					if (retval == MAPI_E_NOT_FOUND) {
-						property = (property & 0xFFFF0000) + PT_ERROR;
-						data = &retval;
-					}
-					else {
-						data = data_pointers[j];
-					}
-
-					libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-								    property, data, &row,
-								    flagged?PT_ERROR:0, flagged, 0);
-				}
-
-				talloc_free(retvals);
-				talloc_free(data_pointers);
+                        if (flagged) {
+                                libmapiserver_push_property(mem_ctx, 
+                                                            lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                                            0x0000000b, (const void *)&flagged,
+                                                            &row, 0, 0, 0);
+                        }
+                        else {
+                                libmapiserver_push_property(mem_ctx, 
+                                                            lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                                            0x00000000, (const void *)&flagged,
+                                                            &row, 0, 1, 0);
+                        }
+                                
+                        /* Push the properties */
+                        for (j = 0; j < table->prop_count; j++) {
+                                property = table->properties[j];
+                                retval = retvals[j];
+                                if (retval == MAPI_E_NOT_FOUND) {
+                                        property = (property & 0xFFFF0000) + PT_ERROR;
+                                        data = &retval;
+                                }
+                                else {
+                                        data = data_pointers[j];
+                                }
+                                
+                                libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                                            property, data, &row,
+                                                            flagged?PT_ERROR:0, flagged, 0);
 			}
 		}
 
-		retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
-						    table->folderID,
-						    table->ulType,
-						    NULL, &status);
+                talloc_free(retvals);
+                talloc_free(data_pointers);
+                talloc_free(properties);
+
+                if (object->poc_api) {
+                        retval = mapistore_pocop_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                                  object->poc_backend_object, NULL, &status);
+                }
+                else {
+                        retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                            table->folderID,
+                                                            table->ulType,
+                                                            NULL, &status);
+                }
 
 		/* Adjust parameters */
 		if (row.length) {

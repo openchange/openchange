@@ -1203,6 +1203,25 @@ _PUBLIC_ int mapistore_set_sort_order(struct mapistore_context *mstore_ctx,
 
 
 /* proof of concept */
+int mapistore_pocop_open_table(struct mapistore_context *mstore_ctx, uint32_t context_id, uint64_t folder_id,
+                               uint8_t table_type, uint32_t handle_id, void **table, uint32_t *row_count)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_open_table(backend_ctx, folder_id, table_type, handle_id, table, row_count);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
 _PUBLIC_ int mapistore_pocop_get_attachment_table(struct mapistore_context *mstore_ctx, uint32_t context_id, uint64_t mid,
                                                   void **table, uint32_t *row_count)
 {
@@ -1276,6 +1295,42 @@ _PUBLIC_ int mapistore_pocop_set_table_columns(struct mapistore_context *mstore_
 
 	/* Step 2. Call backend operation */
 	ret = mapistore_backend_pocop_set_table_columns(backend_ctx, table, count, properties);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_set_restrictions(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, struct mapi_SRestriction *restrictions, uint8_t *table_status)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_set_table_restrictions(backend_ctx, table, restrictions, table_status);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_set_sort_order(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, struct SSortOrderSet *sort_order, uint8_t *table_status)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_set_table_sort_order(backend_ctx, table, sort_order, table_status);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

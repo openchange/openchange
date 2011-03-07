@@ -572,6 +572,12 @@ int mapistore_backend_set_sort_order(struct backend_context *bctx, uint64_t fid,
 
 
 /* proof of concept */
+int mapistore_backend_pocop_open_table(struct backend_context *bctx, uint64_t fid, uint8_t table_type,
+                                       uint32_t handle_id, void **table, uint32_t *row_count)
+{
+        return bctx->backend->folder.open_table(bctx->private_data, fid, table_type, handle_id, table, row_count);
+}
+
 int mapistore_backend_pocop_get_attachment_table(struct backend_context *bctx, uint64_t mid,
                                                  void **table, uint32_t *row_count)
 {
@@ -592,6 +598,18 @@ int mapistore_backend_pocop_set_table_columns(struct backend_context *bctx, void
                                               uint16_t count, enum MAPITAGS *properties)
 {
         return bctx->backend->table.set_columns(table, count, properties);
+}
+
+int mapistore_backend_pocop_set_table_restrictions(struct backend_context *bctx, void *table,
+                                                   struct mapi_SRestriction *restrictions, uint8_t *table_status)
+{
+        return bctx->backend->table.set_restrictions(table, restrictions, table_status);
+}
+
+int mapistore_backend_pocop_set_table_sort_order(struct backend_context *bctx, void *table,
+                                                 struct SSortOrderSet *sort_order, uint8_t *table_status)
+{
+        return bctx->backend->table.set_sort_order(table, sort_order, table_status);
 }
 
 int mapistore_backend_pocop_get_table_row(struct backend_context *bctx, void *table,

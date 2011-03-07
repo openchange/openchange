@@ -51,14 +51,16 @@ typedef	int (*init_backend_fn) (void);
 
 #define	MAPISTORE_INIT_MODULE	"mapistore_init_backend"
 
-#define	MAPISTORE_FOLDER_TABLE	1
-#define	MAPISTORE_MESSAGE_TABLE	2
-#define	MAPISTORE_FAI_TABLE	3
-#define	MAPISTORE_RULE_TABLE	4
+#define	MAPISTORE_FOLDER_TABLE  	1
+#define	MAPISTORE_MESSAGE_TABLE 	2
+#define	MAPISTORE_FAI_TABLE             3
+#define	MAPISTORE_RULE_TABLE            4
+#define	MAPISTORE_ATTACHMENT_TABLE      5
 
-#define MAPISTORE_FOLDER	1
+#define MAPISTORE_FOLDER        1
 #define	MAPISTORE_MESSAGE	2
 #define	MAPISTORE_ATTACHMENT	3
+#define	MAPISTORE_TABLE 	4
 
 #define	MAPISTORE_SOFT_DELETE		1
 #define	MAPISTORE_PERMANENT_DELETE	2
@@ -124,12 +126,17 @@ struct mapistore_backend {
             proof of concept
         */
 
-        /** oxcmsg operations */
         /** oxcstor operations */
         struct {
                 int (*release)(void *);
         } store;
 
+        /** oxcfold operations */
+        struct {
+                int (*open_table)(void *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
+        } folder;
+
+        /** oxcmsg operations */
         /* note: the mid parameter will be replaced with a message object here once we have a "pocop_open_message"... */
         struct {
                 int (*get_attachment_table)(void *, uint64_t, void **, uint32_t *);
@@ -140,7 +147,10 @@ struct mapistore_backend {
         /** oxctabl operations */
         struct {
                 int (*set_columns)(void *, uint16_t, enum MAPITAGS *);
+                int (*set_restrictions)(void *, struct mapi_SRestriction *, uint8_t *);
+                int (*set_sort_order)(void *, struct SSortOrderSet *, uint8_t *);
                 int (*get_row)(void *, enum table_query_type, uint32_t, struct mapistore_property_data *);
+                int (*get_row_count)(void *, uint32_t *);
         } table;
 
         /** oxcprpt operations */
@@ -222,11 +232,15 @@ int mapistore_set_restrictions(struct mapistore_context *, uint32_t, uint64_t, u
 int mapistore_set_sort_order(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SSortOrderSet *, uint8_t *);
 
 /* proof of concept */
+int mapistore_pocop_open_table(struct mapistore_context *, uint32_t, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
+
 int mapistore_pocop_get_attachment_table(struct mapistore_context *, uint32_t, uint64_t mid, void **, uint32_t *);
 int mapistore_pocop_get_attachment(struct mapistore_context *, uint32_t, uint64_t mid, uint32_t, void **);
 int mapistore_pocop_create_attachment(struct mapistore_context *, uint32_t, uint64_t mid, uint32_t *, void **);
 
 int mapistore_pocop_set_table_columns(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *);
+int mapistore_pocop_set_restrictions(struct mapistore_context *, uint32_t, void *, struct mapi_SRestriction *, uint8_t *);
+int mapistore_pocop_set_sort_order(struct mapistore_context *, uint32_t, void *, struct SSortOrderSet *, uint8_t *);
 int mapistore_pocop_get_table_row(struct mapistore_context *, uint32_t, void *, enum table_query_type, uint32_t, struct mapistore_property_data *);
 
 int mapistore_pocop_get_properties(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);

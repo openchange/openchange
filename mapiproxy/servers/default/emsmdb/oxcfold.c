@@ -345,7 +345,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	}
 
 	/* GetContentsTable can only be called for folder objects */
-	mapi_handles_get_private_data(parent, &data);
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		*size += libmapiserver_RopGetContentsTable_size(NULL);
+		return MAPI_E_SUCCESS;
+	}
+
 	object = (struct emsmdbp_object *)data;
 	if (!object) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
@@ -374,19 +381,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 		table_type = EMSMDBP_TABLE_MESSAGE_TYPE;
 	}
 
-	mapistore = emsmdbp_is_mapistore(parent);
-	switch (mapistore) {
-	case false:
-		/* system/special folder */
-		mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
-		break;
-	case true:
-		/* handled by mapistore */
-		retval = mapistore_get_message_count(emsmdbp_ctx->mstore_ctx, contextID, folderID, table_type,
-						     &mapi_repl->u.mapi_GetContentsTable.RowCount);
-		break;
-	}
-
 	/* Initialize Table object */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
@@ -395,6 +389,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent);
 	if (object) {
 		retval = mapi_handles_set_private_data(rec, object);
+
+                mapistore = emsmdbp_is_mapistore(parent);
+                switch (mapistore) {
+                case false:
+                        /* system/special folder */
+                        mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
+                        break;
+                case true:
+                        object->poc_api = true;
+                        retval = mapistore_pocop_open_table(emsmdbp_ctx->mstore_ctx, contextID, folderID, table_type, rec->handle,
+                                                            &object->poc_backend_object, &mapi_repl->u.mapi_GetContentsTable.RowCount);
+                        break;
+                }
+
 		object->object.table->denominator = mapi_repl->u.mapi_GetHierarchyTable.RowCount;
 		object->object.table->ulType = table_type;
 	}

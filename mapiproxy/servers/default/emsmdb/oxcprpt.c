@@ -362,6 +362,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_SystemSpecialFolder(TALLOC_CTX *
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_folder	*folder;
 	void				*data;
+        uint32_t                        count = 0;
 	int				i;
 
 	/* Sanity checks */
@@ -372,27 +373,37 @@ static enum MAPISTATUS RopGetPropertiesSpecific_SystemSpecialFolder(TALLOC_CTX *
 
 	/* Step 1. Lookup properties and set layout */
 	response->layout = 0x0;
-	for (i = 0; i < request.prop_count; i++) {
-		if (openchangedb_lookup_folder_property(emsmdbp_ctx->oc_ctx, request.properties[i], 
-							folder->folderID)) {
-			response->layout = 0x1;
-			break;
-		}
-	}
 
-	/* Step 2. Fetch properties values */
-	for (i = 0; i < request.prop_count; i++) {
-		retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
-							  emsmdbp_ctx->szDisplayName, request.properties[i],
-							  folder->folderID, (void **)&data);
-		if (retval) {
-			request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
-			data = (void *)&retval;
-		}
-		libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-					    request.properties[i], (const void *)data,
-					    &response->prop_data, response->layout, 0, 0);
-	}
+        for (i = 0; i < request.prop_count; i++) {
+                if (request.properties[i] != PR_CONTENT_COUNT
+                    && openchangedb_lookup_folder_property(emsmdbp_ctx->oc_ctx, request.properties[i], 
+                                                           folder->folderID)) {
+                        response->layout = 0x1;
+                        break;
+                }
+        }
+
+        /* Step 2. Fetch properties values */
+        for (i = 0; i < request.prop_count; i++) {
+                if (request.properties[i] == PR_CONTENT_COUNT) {
+                        /* a hack to avoid fetching dynamic fields from openchange.tdb */
+                        retval = mapistore_get_message_count(emsmdbp_ctx->mstore_ctx, folder->contextID, folder->folderID,
+                                                             MAPISTORE_MESSAGE_TABLE, &count);
+                        data = &count;
+                }
+                else {
+                        retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
+                                                                  emsmdbp_ctx->szDisplayName, request.properties[i],
+                                                                  folder->folderID, (void **)&data);
+                }
+                if (retval) {
+                        request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
+                        data = (void *)&retval;
+                }
+                libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                            request.properties[i], (const void *)data,
+                                            &response->prop_data, response->layout, 0, 0);
+        }
 
 	return MAPI_E_SUCCESS;
 }
@@ -592,6 +603,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
                 }
                 else {
                         DEBUG(5, ("  object type %d not implemented\n", object->type));
+                        mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                        goto end;
                 }
 
                 if (object->poc_api) {
@@ -702,6 +715,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	void				*data;
         struct mapistore_property_data  *properties;
         struct SBinary_short            *binary_data;
+        ssize_t                         write_code;
         
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] OpenStream (0x2b)\n"));
@@ -741,6 +755,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	}
 	else if (parent_object->type == EMSMDBP_OBJECT_ATTACHMENT) {
                 contextID = parent_object->object.attachment->contextID;
+                objectID = parent_object->object.attachment->attachmentID;
 		objectType = MAPISTORE_ATTACHMENT; // useless with poc
         }
         else {
@@ -795,7 +810,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
                                                         talloc_steal(properties, properties[0].data);
                                                         if ((mapi_req->u.mapi_OpenStream.PropertyTag & PT_BINARY) == PT_BINARY) {
                                                                 binary_data = properties[0].data;
-                                                                write(fd, binary_data->lpb, binary_data->cb);
+                                                                write_code = write(fd, binary_data->lpb, binary_data->cb);
                                                         }
                                                         else {
                                                                 DEBUG(5, ("  type of property tag is not handled: %.8x",

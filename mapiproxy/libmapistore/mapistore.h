@@ -150,7 +150,6 @@ struct mapistore_backend {
                 int (*set_restrictions)(void *, struct mapi_SRestriction *, uint8_t *);
                 int (*set_sort_order)(void *, struct SSortOrderSet *, uint8_t *);
                 int (*get_row)(void *, enum table_query_type, uint32_t, struct mapistore_property_data *);
-                int (*get_row_count)(void *, uint32_t *);
         } table;
 
         /** oxcprpt operations */

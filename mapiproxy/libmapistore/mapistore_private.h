@@ -152,7 +152,7 @@ int mapistore_free_context_id(struct processing_context *, uint32_t);
 
 /* definitions from mapistore_backend.c */
 int mapistore_backend_init(TALLOC_CTX *, const char *);
-struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *);
+struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *, uint64_t);
 int mapistore_backend_add_ref_count(struct backend_context *);
 int mapistore_backend_delete_context(struct backend_context *);
 int mapistore_backend_release_record(struct backend_context *, uint64_t, uint8_t);

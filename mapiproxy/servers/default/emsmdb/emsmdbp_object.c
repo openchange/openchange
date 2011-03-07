@@ -496,7 +496,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 	 */
 	retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx,
 					       object->object.folder->folderID, 
-					       &mapistore_uri, object->object.folder->mailboxstore);
+					       &mapistore_uri,
+                                               object->object.folder->mailboxstore);
 
 	if (retval == MAPI_E_SUCCESS) {
 		if (!mapistore_uri) {
@@ -511,7 +512,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 			if (ret == MAPISTORE_SUCCESS) {
 				ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, context_id);
 			} else {
-				ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, mapistore_uri, &context_id);
+                          ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, mapistore_uri, object->object.folder->folderID, &context_id);
 				DEBUG(0, ("context id: %d (%s)\n", context_id, mapistore_uri));
 				if (ret != MAPISTORE_SUCCESS) {
 					talloc_free(object);

@@ -1,7 +1,8 @@
 all:	fetchappointment	\
 	fetchmail		\
 	mapi_sample1		\
-	multiple_notif
+	multiple_notif		\
+	fetch_addressbook
 
 clean:
 	rm -f fetchappointment fetchmail mapi_sample1 multiple_notif
@@ -17,3 +18,6 @@ mapi_sample1:
 
 multiple_notif:
 		gcc multiple_notif.c -o multiple_notif `pkg-config libmapi --cflags --libs` -lpthread -lpopt
+
+fetch_addressbook: fetch_addressbook.c
+		gcc fetch_addressbook.c -o fetch_addressbook `pkg-config libmapi --cflags --libs`

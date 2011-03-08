@@ -103,7 +103,7 @@ _PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *parent_ctx,
 		return NULL;
 	}
 
-	mem_ctx = talloc_named(NULL, 0, "nspi_bind");
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 
 	r.in.dwFlags = 0;
 
@@ -1117,7 +1117,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 
 /**
    \details Takes a set of string values in the Unicode character set
-   and performs ANR on those strings
+   and performs ambiguous name resolution (ANR) on those strings
 
    \param nspi_ctx pointer on the NSPI connection context
    \param mem_ctx pointer to the memory context

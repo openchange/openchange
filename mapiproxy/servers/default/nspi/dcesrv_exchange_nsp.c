@@ -36,7 +36,7 @@ static struct exchange_nsp_session *dcesrv_find_nsp_session(struct GUID *uuid)
 	struct exchange_nsp_session	*session, *found_session = NULL;
 
 	for (session = nsp_session; !found_session && session; session = session->next) {
-		if (mpm_uuid_cmp(uuid, &session->uuid)) {
+		if (GUID_equal(uuid, &session->uuid)) {
 			found_session = session;
 		}
 	}

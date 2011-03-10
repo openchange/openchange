@@ -37,7 +37,7 @@ static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session(struct GUID *u
 	struct exchange_emsmdb_session	*session, *found_session = NULL;
 
 	for (session = emsmdb_session; !found_session && session; session = session->next) {
-		if (mpm_uuid_cmp(uuid, &session->uuid)) {
+		if (GUID_equal(uuid, &session->uuid)) {
 			found_session = session;
 		}
 	}

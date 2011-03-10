@@ -198,7 +198,6 @@ bool mpm_session_set_private_data(struct mpm_session *, void *);
 bool mpm_session_release(struct mpm_session *);
 bool mpm_session_cmp_sub(struct mpm_session *, struct server_id, uint32_t);
 bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
-bool mpm_uuid_cmp(const struct GUID *, const struct GUID *);
 
 /* definitions from openchangedb.c */
 enum MAPISTATUS openchangedb_get_new_folderID(void *, uint64_t *);

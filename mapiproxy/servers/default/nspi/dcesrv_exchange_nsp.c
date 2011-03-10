@@ -31,34 +31,12 @@
 static struct exchange_nsp_session	*nsp_session = NULL;
 static TDB_CONTEXT			*emsabp_tdb_ctx = NULL;
 
-static bool dcesrv_uuid_matches(const struct GUID *uuid1, const struct GUID *uuid2)
-{
-	bool rc;
-	/* void *mem_ctx; */
-
-	rc = (uuid1 == uuid2
-	      || ((uuid1 != NULL) && (uuid2 != NULL)
-		  && (uuid1->time_low == uuid2->time_low)
-		  && (uuid1->time_mid == uuid2->time_mid)
-		  && (uuid1->time_hi_and_version == uuid2->time_hi_and_version)
-		  && (strncmp((const char *) uuid1->clock_seq, (const char *) uuid2->clock_seq, 2) == 0)
-		  && (strncmp((const char *) uuid1->node, (const char *) uuid2->node, 6) == 0)));
-
-	/* mem_ctx = talloc_zero_size(NULL, 0); */
-	/* DEBUG(5, ("dcesrv_uuid_matches: uuids %s and %s %s\n", */
-	/* 	  GUID_string(mem_ctx, uuid1), GUID_string(mem_ctx, uuid2), */
-	/* 	  rc ? "match" : "do not match")); */
-	/* talloc_free(mem_ctx); */
-	
-	return rc;
-}
-
 static struct exchange_nsp_session *dcesrv_find_nsp_session(struct GUID *uuid)
 {
 	struct exchange_nsp_session	*session, *found_session = NULL;
 
 	for (session = nsp_session; !found_session && session; session = session->next) {
-		if (dcesrv_uuid_matches(uuid, &session->uuid)) {
+		if (mpm_uuid_cmp(uuid, &session->uuid)) {
 			found_session = session;
 		}
 	}

@@ -215,3 +215,26 @@ bool mpm_session_cmp(struct mpm_session *session,
 	return mpm_session_cmp_sub(session, dce_call->conn->server_id, 
 				   dce_call->context->context_id);
 }
+
+/**
+   \details Helper to compare two session unique identifiers
+
+   \param uuid1 a uuid
+   \param uuid2 another uuid
+
+   \return true on success, otherwise false
+ */
+bool mpm_uuid_cmp(const struct GUID *uuid1, const struct GUID *uuid2)
+{
+        bool rc;
+
+        rc = (uuid1 == uuid2
+              || ((uuid1 != NULL) && (uuid2 != NULL)
+                  && (uuid1->time_low == uuid2->time_low)
+                  && (uuid1->time_mid == uuid2->time_mid)
+                  && (uuid1->time_hi_and_version == uuid2->time_hi_and_version)
+                  && (memcmp(uuid1->clock_seq, uuid2->clock_seq, 2) == 0)
+                  && (memcmp(uuid1->node, uuid2->node, 6) == 0)));
+
+        return rc;
+}

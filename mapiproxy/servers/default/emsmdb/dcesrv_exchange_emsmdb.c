@@ -32,6 +32,19 @@
 struct exchange_emsmdb_session		*emsmdb_session = NULL;
 void					*openchange_ldb_ctx = NULL;
 
+static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session(struct GUID *uuid)
+{
+	struct exchange_emsmdb_session	*session, *found_session = NULL;
+
+	for (session = emsmdb_session; !found_session && session; session = session->next) {
+		if (mpm_uuid_cmp(uuid, &session->uuid)) {
+			found_session = session;
+		}
+	}
+
+	return found_session;
+}
+
 /**
    \details exchange_emsmdb EcDoConnect (0x0) function
 
@@ -171,15 +184,13 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	r->out.result = MAPI_E_SUCCESS;
 
 	/* Search for an existing session and increment ref_count, otherwise create it */
-	for (session = emsmdb_session; session; session = session->next) {
-		if ((mpm_session_cmp(session->session, dce_call) == true)) {
-			DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n", 
-				  session->session->context_id));
-			mpm_session_increment_ref_count(session->session);
-			found = true;
-			break;
-		}
-	}
+        session = dcesrv_find_emsmdb_session(&handle->wire_handle.uuid);
+        if (session) {
+                DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n", 
+                          session->session->context_id));
+                mpm_session_increment_ref_count(session->session);
+                found = true;
+        }
 
 	if (found == false) {
 		/* Step 7. Associate this emsmdbp context to the session */
@@ -189,6 +200,8 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		session->pullTimeStamp = *r->out.pullTimeStamp;
 		session->session = mpm_session_init((TALLOC_CTX *)emsmdb_session, dce_call);
 		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
+
+                session->uuid = handle->wire_handle.uuid;
 
 		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
 		mpm_session_set_destructor(session->session, emsmdbp_destructor);
@@ -230,20 +243,21 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 	/* Step 1. Retrieve handle and free if emsmdbp context and session are available */
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
 	if (h) {
-		for (session = emsmdb_session; session; session = session->next) {
-			if ((mpm_session_cmp(session->session, dce_call) == true)) {
-				ret = mpm_session_release(session->session);
-				if (ret == true) {
-					DLIST_REMOVE(emsmdb_session, session);
-					DEBUG(5, ("[%s:%d]: Session found and released\n", 
-						  __FUNCTION__, __LINE__));
-				} else {
-					DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n",
-						  __FUNCTION__, __LINE__));
-				}
-				break;
-			}
+                session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
+                if (session) {
+                        ret = mpm_session_release(session->session);
+                        if (ret == true) {
+                                DLIST_REMOVE(emsmdb_session, session);
+                                DEBUG(5, ("[%s:%d]: Session found and released\n", 
+                                          __FUNCTION__, __LINE__));
+                        } else {
+                                DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n",
+                                          __FUNCTION__, __LINE__));
+                        }
 		}
+                else {
+                        DEBUG(5, ("  emsmdb_session NOT found\n"));
+                }
 	}
 
 	r->out.result = MAPI_E_SUCCESS;
@@ -1209,11 +1223,10 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Retrieve the emsmdbp_context from the session management system */
-	for (session = emsmdb_session; session; session = session->next) {
-		if ((mpm_session_cmp(session->session, dce_call)) == true) {
-			emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
-			found = true;
-		}
+        session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
+        if (session) {
+                emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
+                found = true;
 	}
 	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 
@@ -1444,11 +1457,10 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Retrieve the emsmdbp_context from the session management system */
-	for (session = emsmdb_session; session; session = session->next) {
-		if ((mpm_session_cmp(session->session, dce_call)) == true) {
-			emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
-			found = true;
-		}
+        session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
+        if (session) {
+                emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
+                found = true;
 	}
 	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 
@@ -1672,17 +1684,7 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
  */
 static NTSTATUS dcesrv_exchange_emsmdb_unbind(struct server_id server_id, uint32_t context_id)
 {
-	struct exchange_emsmdb_session	*session;
-
-	for (session = emsmdb_session; session; session = session->next) {
-		if ((mpm_session_cmp_sub(session->session, server_id, context_id) == true)) {
-			mpm_session_release(session->session);
-			DLIST_REMOVE(emsmdb_session, session);
-			DEBUG(6, ("[%s:%d]: Session found and released\n", __FUNCTION__, __LINE__));
-			return NT_STATUS_OK;
-		}
-	}
-
+	DEBUG (0, ("dcesrv_exchange_emsmdb_unbind\n"));
 	return NT_STATUS_OK;
 }
 

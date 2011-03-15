@@ -200,7 +200,7 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 	struct ldb_result	*res = NULL;
 	const char * const	recipient_attrs[] = { "msExchUserAccountControl", NULL };
 
-	username = dce_call->context->conn->auth_state.session_info->info->account_name;
+	username = dcesrv_call_account_name(dce_call);
 
 	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),

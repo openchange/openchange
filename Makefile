@@ -1543,7 +1543,8 @@ $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
 
-$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/pymapistore.c				\
+$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/pymapistore_module.c				\
+							pyopenchange/pymapistore_object.c				\
 							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(WAF_BUILD_INC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)

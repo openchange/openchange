@@ -47,7 +47,7 @@ struct mapistore_backend {
 	const char	*uri_namespace;		/**< The namespace that this backend provider will use (for example "my_name://") */
 
 	enum MAPISTORE_ERROR (*init)(void);
-	enum MAPISTORE_ERROR (*create_context)(struct mapistore_backend_context *ctx, const char *, const char *, const char *, void **);
+	enum MAPISTORE_ERROR (*create_context)(struct mapistore_backend_context *, const char *, const char *, const char *, void **);
 	enum MAPISTORE_ERROR (*delete_context)(void *);
 	enum MAPISTORE_ERROR (*release_record)(void *, const char *, uint8_t);
 	enum MAPISTORE_ERROR (*get_path)(void *, const char *, uint8_t, char **);
@@ -55,10 +55,10 @@ struct mapistore_backend {
 	enum MAPISTORE_ERROR (*op_mkdir)(void *, const char *, const char *, const char *, enum FOLDER_TYPE, char **);
 	enum MAPISTORE_ERROR (*op_rmdir)(void *, const char *, const char *);
 	enum MAPISTORE_ERROR (*op_opendir)(void *, const char *, const char *);
-	enum MAPISTORE_ERROR (*op_closedir)(void *, const char *folder_uri);
+	enum MAPISTORE_ERROR (*op_closedir)(void *, const char *);
 	enum MAPISTORE_ERROR (*op_readdir_count)(void *, const char *, enum MAPISTORE_TABLE_TYPE, uint32_t *);
 	enum MAPISTORE_ERROR (*op_get_table_property)(void *, const char *, enum MAPISTORE_TABLE_TYPE, uint32_t, enum MAPITAGS, void **);
-	enum MAPISTORE_ERROR (*op_get_uri_by_name)(void *, const char *parent_uri, const char *folder_name, char **uri);
+	enum MAPISTORE_ERROR (*op_get_uri_by_name)(void *, const char *, const char *, char **);
 	/* message semantics */
 	enum MAPISTORE_ERROR (*op_openmessage)(void *, const char *, const char *, struct mapistore_message *);
 	enum MAPISTORE_ERROR (*op_createmessage)(void *, const char *, char **, bool *);

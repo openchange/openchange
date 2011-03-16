@@ -211,3 +211,54 @@ finish:
 	retval = mapistore_indexing_context_del(mstore_ctx, username);
 	return retval;
 }
+
+
+/**
+   \details Retrieve the folder or message identifier matching the
+   mapistore_uri within mapistore indexing database
+
+   \param ctx pointer to the mapistore backend opaque context
+   \param username the username used to register the folder
+   \param mapistore_uri the mapistore URI to lookup
+   \param fmid pointer to the folder or message identifier to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum MAPISTORE_ERROR mapistore_get_identifier(struct mapistore_backend_context *ctx,
+					      const char *username,
+					      const char *mapistore_uri,
+					      uint64_t *fmid)
+{
+	enum MAPISTORE_ERROR		retval;
+	struct mapistore_context	*mstore_ctx;
+	uint64_t			_fmid = 0;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mstore_ctx = ctx->mstore_ctx;
+
+	/* Step 1. Ensure the URI exists */
+	retval = mapistore_exist(ctx, username, mapistore_uri);
+	MAPISTORE_RETVAL_IF(retval != MAPISTORE_ERR_EXIST, retval, NULL);
+
+	/* Step 2. Create or retrieve an indexing context */
+	retval = mapistore_indexing_context_add(mstore_ctx, username, &(mstore_ctx->mapistore_indexing_list));
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Step 3. Retrieve the folder or message identifier
+	 * associated to the URI */
+	retval = mapistore_indexing_get_record_fmid_by_uri(mstore_ctx->mapistore_indexing_list, mapistore_uri, &_fmid);
+	if (retval) goto finish;
+
+	*fmid = _fmid;
+
+	/* Step 4. Delete the indexing context */
+finish:
+	retval = mapistore_indexing_context_del(mstore_ctx, username);
+	return retval;
+}

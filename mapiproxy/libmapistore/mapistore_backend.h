@@ -84,6 +84,8 @@ struct ldb_context	*mapistore_public_ldb_connect(struct mapistore_backend_contex
 enum MAPISTORE_ERROR	mapistore_exist(struct mapistore_backend_context *, const char *, const char *);
 enum MAPISTORE_ERROR	mapistore_register_folder(struct mapistore_backend_context *, const char *, const char *, 
 						  const char *, uint64_t);
+enum MAPISTORE_ERROR	mapistore_get_identifier(struct mapistore_backend_context *, const char *, const char *,
+						 uint64_t *);
 
 __END_DECLS
 

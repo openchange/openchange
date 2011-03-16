@@ -37,10 +37,37 @@ typedef struct {
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX			*mem_ctx;
+	struct mapistore_context	*mstore_ctx;
+	PyObject			*parent_object;
+	uint32_t			context_id;
+	uint64_t			fid;
+} PyMAPIStoreFolderObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
 	struct mapistoredb_context	*mdb_ctx;
 } PyMAPIStoreDBObject;
 
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreDB;
+
+#ifndef __BEGIN_DECLS
+#ifdef __cplusplus
+#define __BEGIN_DECLS		extern "C" {
+#define __END_DECLS		}
+#else
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+#endif
+
+__BEGIN_DECLS
+
+/* These definitions come from pymapistore_folder.c */
+PyObject *pymapistore_folder_new(TALLOC_CTX *, struct mapistore_context *, PyObject *, uint32_t, uint64_t);
+
+__END_DECLS
 
 #endif	/* ! __PYMAPISTORE_H_ */

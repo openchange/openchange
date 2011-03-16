@@ -85,6 +85,10 @@ void initmapistore(void)
 		return;
 	}
 
+	if (PyType_Ready(&PyMAPIStoreFolder) < 0) {
+		return;
+	}
+
 	m = Py_InitModule3("mapistore", py_mapistore_global_methods,
 			   "An interface to OpenChange MAPIStore");
 	if (m == NULL) {
@@ -135,4 +139,7 @@ void initmapistore(void)
 
 	Py_INCREF(&PyMAPIStore);
 	PyModule_AddObject(m, "mapistore", (PyObject *)&PyMAPIStore);
+
+	Py_INCREF((PyObject *)&PyMAPIStoreFolder);
+	PyModule_AddObject(m, "Folder", (PyObject *)&PyMAPIStoreFolder);
 }

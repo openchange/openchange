@@ -47,12 +47,14 @@ static enum MAPISTORE_ERROR fsocpf_init(void)
    \details Allocate / initialize the fsocpf_context structure
 
    \param mem_ctx pointer to the memory context
+   \param mstoredb_ctx pointer to the mapistore backend opaque context
    \param login_user the username used to authenticate
    \param username the username we want to impersonate
    \param uri pointer to the fsocpf path
    \param dir pointer to the DIR structure associated with the uri
  */
 static struct fsocpf_context *fsocpf_context_init(TALLOC_CTX *mem_ctx,
+						  struct mapistore_backend_context *mstoredb_ctx,
 						  const char *login_user,
 						  const char *username,
 						  const char *uri, 
@@ -60,10 +62,14 @@ static struct fsocpf_context *fsocpf_context_init(TALLOC_CTX *mem_ctx,
 {
 	struct fsocpf_context	*fsocpf_ctx;
 
+	/* Sanity checks */
+	if (!mstoredb_ctx) return NULL;
+
 	fsocpf_ctx = talloc_zero(mem_ctx, struct fsocpf_context);
 	if (!fsocpf_ctx) return NULL;
 
 	fsocpf_ctx->private_data = NULL;
+	fsocpf_ctx->mstoredb_ctx = mstoredb_ctx;
 	fsocpf_ctx->login_user = talloc_strdup(fsocpf_ctx, login_user);
 	fsocpf_ctx->username = talloc_strdup(fsocpf_ctx, username);
 	fsocpf_ctx->uri = talloc_strdup(fsocpf_ctx, uri);
@@ -160,7 +166,7 @@ static struct fsocpf_folder *fsocpf_find_folder(struct fsocpf_context *fsocpf_ct
 	if (!uri) return NULL;
 
 	if (mapistore_strip_ns_from_uri(uri, &path) != MAPISTORE_SUCCESS) {
-		/* assume its already stripped */
+		/* assume it's already stripped */
 		path = uri;
 	}
 	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "finding %s\n", path);
@@ -176,6 +182,36 @@ static struct fsocpf_folder *fsocpf_find_folder(struct fsocpf_context *fsocpf_ct
 	return NULL;
 }
 
+
+static struct fsocpf_folder_list *fsocpf_find_folder_list(struct fsocpf_context *fsocpf_ctx,
+							  const char *uri)
+{
+	struct fsocpf_folder_list	*el;
+	const char			*path = NULL;
+
+	/* Sanity checks */
+	if (!fsocpf_ctx) return NULL;
+	if (!fsocpf_ctx->folders) return NULL;
+	if (!uri) return NULL;
+
+	if (mapistore_strip_ns_from_uri(uri, &path) != MAPISTORE_SUCCESS) {
+		/* assume it's already stripped */
+		path = uri;
+	}
+
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "finding %s\n", path);
+
+	for (el = fsocpf_ctx->folders; el; el = el->next) {
+		MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "el->folder->uri: %s\n", el->folder->uri);
+		if (el->folder && el->folder->uri && !strcmp(path, el->folder->uri)) {
+			return el;
+		}
+	}
+
+	MSTORE_DEBUG_INFO(MSTORE_LEVEL_DEBUG, "%s not found\n", path);
+
+	return NULL;
+}
 
 /**
    \details Allocate / initialize a fsocpf_message_list element
@@ -342,7 +378,7 @@ static enum MAPISTORE_ERROR fsocpf_create_context(struct mapistore_backend_conte
 	}
 
 	/* Step 2. Allocate / Initialize the fsocpf context structure */
-	fsocpf_ctx = fsocpf_context_init(mem_ctx, login_user, username, uri, top_dir);
+	fsocpf_ctx = fsocpf_context_init(mstoredb_ctx, mem_ctx, login_user, username, uri, top_dir);
 	MAPISTORE_RETVAL_IF(!fsocpf_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	/* Create the entry in the list for top mapistore folders */

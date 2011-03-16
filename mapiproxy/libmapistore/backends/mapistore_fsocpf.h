@@ -59,14 +59,15 @@ struct fsocpf_message_list {
 };
 
 struct fsocpf_context {
-	void				*private_data;
-	char				*login_user;
-	char				*username;
-	char				*uri;
-	struct fsocpf_folder_list	*folders;
-	struct fsocpf_message_list	*messages;
-	// char				*root_uri;
-	DIR				*dir;
+	void					*private_data;
+	struct mapistore_backend_context	*mstoredb_ctx;
+	char					*login_user;
+	char					*username;
+	char					*uri;
+	struct fsocpf_folder_list		*folders;
+	struct fsocpf_message_list		*messages;
+	// char					*root_uri;
+	DIR					*dir;
 };
 
 

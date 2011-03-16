@@ -879,6 +879,7 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/i
 							mapiproxy/libmapistore/mapistore_indexing.po				\
 							mapiproxy/libmapistore/mapistore_namedprops.po				\
 							mapiproxy/libmapistore/mapistore_backend_public.po			\
+							mapiproxy/libmapistore/mapistore_util.po				\
 							mapiproxy/libmapistore/database/mapistoredb.po				\
 							mapiproxy/libmapistore/database/mapistoredb_conf.po			\
 							mapiproxy/libmapistore/database/mapistoredb_namedprops.po		\

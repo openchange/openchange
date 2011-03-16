@@ -71,6 +71,13 @@ const char		*mapistore_get_database_path(void);
 const char		*mapistore_get_named_properties_database_path(void);
 const char		*mapistore_get_named_properties_ldif_path(void);
 
+/* These definitions come from mapistore_util.c */
+char			*mapistore_util_rfc1738_escape(TALLOC_CTX *, const char *);
+char			*mapistore_util_rfc1738_escape_unescaped(TALLOC_CTX *, const char *);
+char			*mapistore_util_rfc1738_escape_part(TALLOC_CTX *, const char *);
+char			*mapistore_util_unix_name_escape(TALLOC_CTX *, const char *);
+void			mapistore_util_string_unescape(char *);
+
 __END_DECLS
 
 #endif /* __MAPISTORE_COMMON_H */

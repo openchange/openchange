@@ -280,7 +280,7 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 	struct nspi_context		*nspi_ctx;
 	struct SRowSet			*SRowSet;
 	struct SPropTagArray		*SPropTagArray = NULL;
-	struct SPropTagArray		*pMId = NULL;
+	struct PropertyTagArray_r	*pMId = NULL;
 	struct PropertyTagArray_r	*flaglist = NULL;
 	struct StringsArray_r		pNames;
 	const char			*usernames[2];
@@ -330,7 +330,7 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 	pNames.Count = 0x1;
 	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
 	pNames.Strings[0] = email;
-	pMId = talloc_zero(mem_ctx, struct SPropTagArray);
+	pMId = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_DNToMId(nspi_ctx, mem_ctx, &pNames, &pMId);
 	MAPIFreeBuffer((char *)pNames.Strings[0]);
 	MAPIFreeBuffer((char **)pNames.Strings);

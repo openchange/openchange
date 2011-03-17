@@ -1003,7 +1003,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_CreationTemplatesTable(TALLOC_CTX *mem_ctx, 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-				       struct SPropTagArray *MIds, struct Restriction_r *restriction,
+				       struct PropertyTagArray_r *MIds, struct Restriction_r *restriction,
 				       struct STAT *pStat, uint32_t limit)
 {
 	enum MAPISTATUS			retval;
@@ -1071,7 +1071,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		return MAPI_E_TABLE_TOO_BIG;
 	}
 
-	MIds->aulPropTag = (enum MAPITAGS *) talloc_array(emsabp_ctx->mem_ctx, uint32_t, res->count);
+	MIds->aulPropTag = talloc_array(emsabp_ctx->mem_ctx, uint32_t, res->count);
 	MIds->cValues = res->count;
 
 	/* Step 2. Create session MId for all fetched records */

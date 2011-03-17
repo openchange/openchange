@@ -499,48 +499,48 @@ System Attendant Private Interface
 	/*****************/
 	/* Function 0x04 */
 	MAPISTATUS NspiSeekEntries(
-		[in]		policy_handle	*handle,
-		[in]		uint32		Reserved,
-		[in,out]	STAT		*pStat,
-		[in]		SPropValue     	*pTarget,
-		[in,unique]	SPropTagArray	*lpETable,
-		[in,unique]	SPropTagArray	*pPropTags,
-		[out]		SRowSet		**pRows
+		[in]		policy_handle		*handle,
+		[in]		uint32			Reserved,
+		[in,out]	STAT			*pStat,
+		[in]		SPropValue     		*pTarget,
+		[in,unique]	PropertyTagArray_r	*lpETable,
+		[in,unique]	SPropTagArray		*pPropTags,
+		[out]		SRowSet			**pRows
 		);
 
 	/*****************/
 	/* Function 0x05 */
 	MAPISTATUS NspiGetMatches(
-		[in]		policy_handle	*handle,
-		[in]		uint32		Reserved,
-		[in,out]	STAT		*pStat,
-		[in][unique]	SPropTagArray	*pReserved,
-		[in]		uint32	       	Reserved2,
-		[in][unique]	Restriction_r	*Filter,
- 		[in][unique]	PropertyName_r	*lpPropName,
-		[in]		uint32		ulRequested,
-		[out]		SPropTagArray	**ppOutMIds,
-		[in][unique]	SPropTagArray	*pPropTags,
-		[out]      	SRowSet		**ppRows
+		[in]		policy_handle		*handle,
+		[in]		uint32			Reserved,
+		[in,out]	STAT			*pStat,
+		[in][unique]	SPropTagArray		*pReserved,
+		[in]		uint32			Reserved2,
+		[in][unique]	Restriction_r		*Filter,
+ 		[in][unique]	PropertyName_r		*lpPropName,
+		[in]		uint32			ulRequested,
+		[out]		PropertyTagArray_r	**ppOutMIds,
+		[in][unique]	SPropTagArray		*pPropTags,
+		[out]      	SRowSet			**ppRows
 		);
 
 	/*****************/
 	/* Function 0x06 */
 	MAPISTATUS NspiResortRestriction(
-		[in] policy_handle	*handle,
-		[in] uint32		Reserved,
-		[in,out] STAT		*pStat,
-		[in] SPropTagArray	*pInMIds,
-		[in,out] SPropTagArray	**ppMIds
+		[in] policy_handle		*handle,
+		[in] uint32			Reserved,
+		[in,out] STAT			*pStat,
+		[in] PropertyTagArray_r		*pInMIds,
+		[in,out] PropertyTagArray_r	**ppMIds
 		);
 
 	/*****************/
 	/* Function 0x07 */
 	MAPISTATUS NspiDNToMId(
-		[in] policy_handle	*handle,
-		[in] uint32		Reserved,
-		[in] StringsArray_r	*pNames,
-		[out] SPropTagArray	**ppMIds
+		[in] policy_handle		*handle,
+		[in] uint32			Reserved,
+		[in] StringsArray_r		*pNames,
+		[out] PropertyTagArray_r	**ppMIds
 		);
 
 	/*****************/

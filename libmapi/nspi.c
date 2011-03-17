@@ -240,7 +240,7 @@ _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx, 
 					TALLOC_CTX *mem_ctx,
 					struct SPropTagArray *pPropTags,
-					struct SPropTagArray *MIds, 
+					struct PropertyTagArray_r *MIds, 
 					uint32_t count,
 					struct SRowSet **ppRows)
 {
@@ -326,7 +326,7 @@ _PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
 					  enum TableSortOrders SortType,
 					  struct SPropValue *pTarget,
 					  struct SPropTagArray *pPropTags,
-					  struct SPropTagArray *pMIds,
+					  struct PropertyTagArray_r *pMIds,
 					  struct SRowSet **pRows)
 {
 	struct NspiSeekEntries		r;
@@ -402,7 +402,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
 					 struct SPropTagArray *pPropTags,
 					 struct Restriction_r *Filter,
 					 struct SRowSet **ppRows,
-					 struct SPropTagArray **ppOutMIds)
+					 struct PropertyTagArray_r **ppOutMIds)
 {
 	struct NspiGetMatches		r;
 	NTSTATUS			status;
@@ -467,13 +467,13 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_ResortRestriction(struct nspi_context *nspi_ctx,
 						TALLOC_CTX *mem_ctx,
 						enum TableSortOrders SortType,
-						struct SPropTagArray *pInMIds,
-						struct SPropTagArray **ppMIds)
+						struct PropertyTagArray_r *pInMIds,
+						struct PropertyTagArray_r **ppMIds)
 {
 	struct NspiResortRestriction	r;
 	enum MAPISTATUS			retval;
 	NTSTATUS			status;
-	struct SPropTagArray		*ppInMIds = NULL;
+	struct PropertyTagArray_r		*ppInMIds = NULL;
 	struct STAT			*pStat = NULL;
 
 	/* Sanity checks */
@@ -520,7 +520,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResortRestriction(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_DNToMId(struct nspi_context *nspi_ctx, 
 				      TALLOC_CTX *mem_ctx,
 				      struct StringsArray_r *pNames,
-				      struct SPropTagArray **ppMIds)
+				      struct PropertyTagArray_r **ppMIds)
 {
 	struct NspiDNToMId	r;
 	NTSTATUS		status;
@@ -610,7 +610,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetPropList(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi_ctx, 
 				       TALLOC_CTX *mem_ctx,
 				       struct SPropTagArray *pPropTags, 
-				       struct SPropTagArray *MId,
+				       struct PropertyTagArray_r *MId,
 				       struct SRowSet **SRowSet)
 
 {

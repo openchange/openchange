@@ -361,7 +361,7 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	enum MAPISTATUS			retval;
 	struct exchange_nsp_session	*session;
 	struct emsabp_context		*emsabp_ctx = NULL;
-	struct SPropTagArray		*ppOutMIds = NULL;
+	struct PropertyTagArray_r	*ppOutMIds = NULL;
 	uint32_t			i;
 	bool				found = false;
 	
@@ -384,7 +384,7 @@ static enum MAPISTATUS dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 
 	/* Step 1. Retrieve MIds array given search criterias */
-	ppOutMIds = talloc_zero(mem_ctx, struct SPropTagArray);
+	ppOutMIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	ppOutMIds->cValues = 0;
 	ppOutMIds->aulPropTag = NULL;
 
@@ -482,10 +482,10 @@ static enum MAPISTATUS dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 
 	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
 	
-	r->out.ppMIds = talloc_array(mem_ctx, struct SPropTagArray *, 2);
-	r->out.ppMIds[0] = talloc_zero(mem_ctx, struct SPropTagArray);
+	r->out.ppMIds = talloc_array(mem_ctx, struct PropertyTagArray_r *, 2);
+	r->out.ppMIds[0] = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	r->out.ppMIds[0]->cValues = r->in.pNames->Count;
-	r->out.ppMIds[0]->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, r->in.pNames->Count);
+	r->out.ppMIds[0]->aulPropTag = talloc_array(mem_ctx, uint32_t, r->in.pNames->Count);
 
 	for (i = 0; i < r->in.pNames->Count; i++) {
 		/* Step 1. Check if the input legacyDN exists */

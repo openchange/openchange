@@ -259,7 +259,6 @@ _PUBLIC_ uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoR
    response blob.
 
    \param mem_ctx pointer to the memory context
-   \param iconv_convenience pointer to the iconv_convenience context
    \param property the property tag which value is meant to be
    appended to the blob
    \param value generic pointer on the property value
@@ -274,7 +273,6 @@ _PUBLIC_ uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoR
    \return 0 on success;
  */
 _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
-					 struct smb_iconv_convenience *iconv_convenience,
 					 uint32_t property, 
 					 const void *value, 
 					 DATA_BLOB *blob,

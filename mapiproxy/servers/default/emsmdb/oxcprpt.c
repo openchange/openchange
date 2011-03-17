@@ -110,7 +110,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 				retval = MAPI_E_NOT_FOUND;
 				data = (void *)&retval;
 			} 
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+			libmapiserver_push_property(mem_ctx,
 						    request.properties[i], (const void *)data,
 						    &response->prop_data, response->layout, 0);
 		}
@@ -122,7 +122,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
 			retval = MAPI_E_NOT_FOUND;
 			response->layout = 0x1;
 			data = (void *)&retval;
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+			libmapiserver_push_property(mem_ctx,
 						    request.properties[i], (const void *)data,
 						    &response->prop_data, response->layout, 0);
 		}
@@ -204,13 +204,13 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 		case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
 			error = MAPI_E_NO_ACCESS;
 			request.properties[i] = (enum MAPITAGS)((int)(request.properties[i] & 0xFFFF0000) + PT_ERROR);
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+			libmapiserver_push_property(mem_ctx,
 						    request.properties[i], (const void *)&error, 
 						    &response->prop_data, response->layout, 0);
 			break;
 		case PR_USER_ENTRYID:
 			retval = entryid_set_AB_EntryID(mem_ctx, object->object.mailbox->szUserDN, &bin);
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+			libmapiserver_push_property(mem_ctx,
 						    request.properties[i], (const void *)&bin,
 						    &response->prop_data, response->layout, 0);
 			talloc_free(bin.lpb);
@@ -219,13 +219,13 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 			if (object->object.mailbox->mailboxstore == false) {
 				error = MAPI_E_NO_ACCESS;
 				request.properties[i] = (enum MAPITAGS)((int)(request.properties[i] & 0xFFFF0000) + PT_ERROR);
-				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+				libmapiserver_push_property(mem_ctx,
 							    request.properties[i], (const void *)&error,
 							    &response->prop_data, response->layout, 0);
 			} else {
 				retval = entryid_set_AB_EntryID(mem_ctx, object->object.mailbox->owner_EssDN,
 								&bin);
-				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+				libmapiserver_push_property(mem_ctx,
 							    request.properties[i], (const void *)&bin,
 							    &response->prop_data, response->layout, 0);
 				talloc_free(bin.lpb);
@@ -236,11 +236,11 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 			if (object->object.mailbox->mailboxstore == false) {
 				error = MAPI_E_NO_ACCESS;
 				request.properties[i] = (enum MAPITAGS)((int)(request.properties[i] & 0xFFFF0000) + PT_ERROR);
- 				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+ 				libmapiserver_push_property(mem_ctx,
 							    request.properties[i], (const void *)&error,
 							    &response->prop_data, response->layout, 0);
 			} else {
-				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+				libmapiserver_push_property(mem_ctx,
 							    request.properties[i], 
 							    (const void *)object->object.mailbox->owner_Name,
 							    &response->prop_data, response->layout, 0);
@@ -254,7 +254,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
 				request.properties[i] = (enum MAPITAGS)((int)(request.properties[i] & 0xFFFF0000) + PT_ERROR);
 				data = (void *)&retval;
 			}
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+			libmapiserver_push_property(mem_ctx,
 						    request.properties[i], (const void *)data, 
 						    &response->prop_data, response->layout, 0);
 			break;
@@ -316,7 +316,7 @@ static enum MAPISTATUS RopGetPropertiesSpecific_SystemSpecialFolder(TALLOC_CTX *
 			request.properties[i] = (enum MAPITAGS)((int)(request.properties[i] & 0xFFFF0000) + PT_ERROR);
 			data = (void *)&retval;
 		}
-		libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+		libmapiserver_push_property(mem_ctx,
 					    request.properties[i], (const void *)data,
 					    &response->prop_data, response->layout, 0);
 	}

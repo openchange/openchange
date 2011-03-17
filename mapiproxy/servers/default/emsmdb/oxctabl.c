@@ -273,7 +273,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 				if (retval == MAPISTORE_ERR_NOT_FOUND) {
 					flagged = 1;
 					libmapiserver_push_property(mem_ctx, 
-								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 								    0x0000000b, (const void *)&flagged,
 								    &response.RowData, 0, 0);
 					break;
@@ -283,7 +282,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			/* StandardPropertyRow hack */
 			if (!flagged) {
 				libmapiserver_push_property(mem_ctx, 
-							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 							    0x00000000, (const void *)&flagged,
 							    &response.RowData, 0, 1);
 			}
@@ -303,7 +301,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 					data = (void *)&retval;
 				}
 
-				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+				libmapiserver_push_property(mem_ctx,
 							    property, (const void *)data, &response.RowData,
 							    flagged?PT_ERROR:0, flagged);
 			}
@@ -330,7 +328,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 				if (ret == MAPI_E_NOT_FOUND) {
 					flagged = 1;
 					libmapiserver_push_property(mem_ctx, 
-								    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 								    0x0000000b, (const void *)&flagged, 
 								    &response.RowData, 0, 0);
 					break;
@@ -340,7 +337,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			/* SandardPropertyRow hack */
 			if (!flagged) {
 				libmapiserver_push_property(mem_ctx, 
-							    lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
 							    0x00000000, (const void *)&flagged,
 							    &response.RowData, 0, 1);
 			}
@@ -361,7 +357,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 					data = (void *)&retval;
 				}
 				
-				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+				libmapiserver_push_property(mem_ctx,
 							    property, (const void *)data,
 							    &response.RowData, flagged?PT_ERROR:0, flagged);
 				

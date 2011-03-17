@@ -353,7 +353,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 				break;
 			}
 
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+			libmapiserver_push_property(mem_ctx,
 						    property, (const void *)data, &row->prop_values, 
 						    row->layout, 0);
 		}
@@ -429,7 +429,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 			data = (void *)&retval;
 			break;
 		}
-		libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+		libmapiserver_push_property(mem_ctx,
 					    property, (const void *)data, &row->prop_values, 
 					    row->layout, 0);
 	}

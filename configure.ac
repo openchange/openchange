@@ -36,7 +36,7 @@ AC_SUBST(MANUALLY_CREATE_SYMLINKS)
 AC_DEFUN([OC_CHECK_SAMBA_PATH],
 [
 	old_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
-	PKG_CONFIG_PATH="$1/lib/pkgconfig"
+	PKG_CONFIG_PATH="$1/lib64/pkgconfig:$1/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 	export PKG_CONFIG_PATH
 	PKG_CHECK_EXISTS([samba-hostconfig], [found=1], [found=0])
 	PKG_CONFIG_PATH="$old_PKG_CONFIG_PATH"
@@ -56,7 +56,10 @@ AC_ARG_WITH(samba,
 ],[
  for p in "$prefix" /usr/local/samba /usr/local /usr
  do
-	 OC_CHECK_SAMBA_PATH($p, [sambaprefix="$p"])
+	OC_CHECK_SAMBA_PATH($p, [sambaprefix="$p"])
+	if test -n "${sambaprefix:-}"; then
+	break
+	fi
  done
 ])
 AC_SUBST(sambaprefix)

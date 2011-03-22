@@ -993,6 +993,64 @@ _PUBLIC_ struct RecurrencePattern *get_RecurrencePattern(TALLOC_CTX *mem_ctx,
 
         return RecurrencePattern;
 }
+
+_PUBLIC_ size_t set_RecurrencePattern_size(const struct RecurrencePattern *rp)
+{
+        size_t size = SIZE_DFLT_RECURRENCEPATTERN;
+
+        switch (rp->PatternType) {
+        case PatternType_MonthNth:
+        case PatternType_HjMonthNth:
+                size += sizeof(uint32_t);
+        case PatternType_Week:
+        case PatternType_Month:
+        case PatternType_MonthEnd:
+        case PatternType_HjMonth:
+        case PatternType_HjMonthEnd:
+                size += sizeof(uint32_t);
+        case PatternType_Day:
+                break;
+        default:
+                DEBUG(0, ("%s: unrecognized pattern type: %d", __PRETTY_FUNCTION__, rp->PatternType));
+        }
+
+        size += rp->DeletedInstanceCount * sizeof(uint32_t);
+        size += rp->ModifiedInstanceCount * sizeof(uint32_t);
+
+        return size;
+}
+
+_PUBLIC_ struct Binary_r *set_RecurrencePattern(TALLOC_CTX *mem_ctx, const struct RecurrencePattern *rp)
+{
+        struct Binary_r                 *bin = NULL;
+        struct ndr_push			*ndr;
+        enum ndr_err_code		ndr_err_code;
+        size_t                          bin_size;
+	
+        /* SANITY CHECKS */
+        if (!rp) return NULL;
+
+        bin_size = set_RecurrencePattern_size(rp);
+        bin = talloc_zero(mem_ctx, struct Binary_r);
+        bin->cb = bin_size;
+        bin->lpb = talloc_array(bin, uint8_t, bin_size);
+
+        ndr = talloc_zero(mem_ctx, struct ndr_push);
+        ndr->offset = 0;
+        ndr->data = bin->lpb;
+
+        ndr_err_code = ndr_push_RecurrencePattern(ndr, NDR_SCALARS, rp);
+
+        talloc_free(ndr);
+
+        if (ndr_err_code != NDR_ERR_SUCCESS) {
+                talloc_free(bin);
+                return NULL;
+        }
+
+        return bin;
+}
+
 _PUBLIC_ struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, 
 							 struct Binary_r *bin)
 {
@@ -1036,12 +1094,100 @@ _PUBLIC_ struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(T
 	arp->RecurrencePattern.DeletedInstanceDates = talloc_reference(arp,arp->RecurrencePattern.DeletedInstanceDates);
 	arp->RecurrencePattern.ModifiedInstanceDates = talloc_reference(arp, arp->RecurrencePattern.ModifiedInstanceDates);
 	
-
-	
-
         return arp;
 }
 
+_PUBLIC_ size_t set_AppointmentRecurrencePattern_size(const struct AppointmentRecurrencePattern *arp)
+{
+        size_t size = SIZE_DFLT_APPOINTMENTRECURRENCEPATTERN;
+        uint16_t i;
+
+        size += set_RecurrencePattern_size(&arp->RecurrencePattern);
+        for (i = 0; i < arp->ExceptionCount; i++) {
+                size += set_ExceptionInfo_size(arp->ExceptionInfo + i);
+                /* size += set_ExtendedException_size(arp->ExtendedException +
+                   i); */
+        }
+        size += arp->ReservedBlock1Size * sizeof(uint32_t);
+        /* size += arp->ReservedBlock2Size * sizeof(uint32_t); */
+
+        return size;
+}
+
+_PUBLIC_ struct Binary_r *set_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, const struct AppointmentRecurrencePattern *arp)
+{
+        struct Binary_r                 *bin = NULL;
+        struct ndr_push			*ndr;
+        enum ndr_err_code		ndr_err_code;
+        size_t                          bin_size;
+	
+        /* SANITY CHECKS */
+        if (!arp) return NULL;
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	ndr->offset = 0;
+        bin_size = set_AppointmentRecurrencePattern_size(arp);
+        talloc_free(ndr->data);
+        ndr->data = talloc_array(ndr, uint8_t, bin_size);
+
+        ndr_err_code = ndr_push_AppointmentRecurrencePattern(ndr, NDR_SCALARS, arp);
+        if (ndr_err_code != NDR_ERR_SUCCESS) {
+                return NULL;
+        }
+
+        bin = talloc_zero(mem_ctx, struct Binary_r);
+        bin->cb = bin_size;
+        bin->lpb = ndr->data;
+        talloc_steal(bin, bin->lpb);
+
+        talloc_free(ndr);
+
+        return bin;
+}
+
+_PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
+{
+        size_t size = SIZE_DFLT_EXCEPTIONINFO;
+
+        if ((exc_info->OverrideFlags & ARO_SUBJECT)) {
+                size += 3 * sizeof(uint16_t); /* SubjectLength + SubjectLength2 + Subject */
+        }
+        if ((exc_info->OverrideFlags & ARO_MEETINGTYPE)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_REMINDERDELTA)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_REMINDER)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_LOCATION)) {
+                size += 2 * sizeof(uint16_t); /* LocationLength + LocationLength2 */
+                size += sizeof(uint32_t); /* Location */
+        }
+        if ((exc_info->OverrideFlags & ARO_BUSYSTATUS)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_ATTACHMENT)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_SUBTYPE)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_APPTCOLOR)) {
+                size += sizeof(uint32_t);
+        }
+
+        return size;
+}
+
+/* _PUBLIC_ size_t set_ExtendedException_size(const struct ExtendedException *ext_exc) */
+/* { */
+/*         size_t size = SIZE_DFLT_EXTENDEDEXCEPTION; */
+
+/*         return size; */
+/* } */
 
 /**
    \details Retrieve a TimeZoneStruct structure from a binary blob

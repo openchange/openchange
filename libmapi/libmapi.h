@@ -266,6 +266,8 @@ enum MAPISTATUS		get_mapi_SPropValue_date_timeval(struct timeval *t, struct SPro
 bool			set_SPropValue_proptag_date_timeval(struct SPropValue *, uint32_t, const struct timeval *);
 struct RecurrencePattern *get_RecurrencePattern(TALLOC_CTX *, struct Binary_r *);
 struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, struct Binary_r *);
+struct Binary_r *set_RecurrencePattern(TALLOC_CTX *, const struct RecurrencePattern *);
+struct Binary_r *set_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, const struct AppointmentRecurrencePattern *);
 struct TimeZoneStruct	*get_TimeZoneStruct(TALLOC_CTX *, struct Binary_r *);
 struct GlobalObjectId	*get_GlobalObjectId(TALLOC_CTX *, struct Binary_r *);
 const char		*get_TypedString(struct TypedString *);
@@ -487,6 +489,60 @@ void 			 fxparser_set_delprop_callback(struct fx_parser_context *, fxparser_delp
 void 			 fxparser_set_namedprop_callback(struct fx_parser_context *, fxparser_namedprop_callback_t);
 void 			 fxparser_set_property_callback(struct fx_parser_context *, fxparser_property_callback_t);
 void			 fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
+
+/* Size functions */
+
+/**
+   \details struct RecurrencePattern has fixed response size for:
+   -# ReaderVersion: uint16_t
+   -# WriterVersion: uint16_t
+   -# RecurFrequency: uint16_t
+   -# PatternType: uint16_t
+   -# CalendarType: uint16_t
+   -# FirstDateTime: uint32_t
+   -# Period: uint32_t
+   -# SlidingFlag: uint32_t
+   -# EndType: uint32_t
+   -# OccurrenceCount: uint32_t
+   -# FirstDOW: uint32_t
+   -# DeletedInstanceCount: uint32_t
+   -# ModifiedInstanceCount: uint32_t
+   -# StartDate: uint32_t
+   -# EndDate: uint32_t
+ */
+#define	SIZE_DFLT_RECURRENCEPATTERN 50
+size_t set_RecurrencePattern_size(const struct RecurrencePattern *);
+
+/**
+   \details struct AppointmentRecurrencePattern has fixed response size for:
+   -# ReaderVersion2: uint32_t
+   -# WriterVersion2: uint32_t
+   -# StartTimeOffset: uint32_t
+   -# EndTimeOffset: uint32_t
+   -# ExceptionCount: uint16_t
+   -# ReservedBlock1Size: uint32_t
+   -# ReservedBlock2Size: uint32_t
+ */
+#define	SIZE_DFLT_APPOINTMENTRECURRENCEPATTERN 26
+size_t set_AppointmentRecurrencePattern_size(const struct AppointmentRecurrencePattern *);
+
+/**
+   \details struct ExceptionInfo has fixed response size for:
+   -# StartDateTime: uint32_t
+   -# EndDateTime: uint32_t
+   -# OriginalStartDate: uint32_t
+   -# OverrideFlags: uint16_t
+ */
+#define	SIZE_DFLT_EXCEPTIONINFO 14
+size_t set_ExceptionInfo_size(const struct ExceptionInfo *);
+
+/**
+   \details struct ExtendedException has fixed response size for:
+   -# ReservedBlockEE1Size: uint32_t
+   -# ReservedBlockEE2Size: uint32_t
+ */
+// #define	SIZE_DFLT_EXTENDEDEXCEPTION 8
+// size_t set_ExtendedException_size(const struct ExtendedException *);
 
 __END_DECLS
 

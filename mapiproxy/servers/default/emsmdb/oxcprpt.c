@@ -776,70 +776,74 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	*/
 
 	if (!mapi_repl->error_code) {
-                retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-		object = emsmdbp_object_stream_init((TALLOC_CTX *)rec, emsmdbp_ctx,
-						    mapi_req->u.mapi_OpenStream.PropertyTag,
-						    mapi_req->u.mapi_OpenStream.OpenModeFlags,
-						    parent);
-		if (object) {
-                        handles[mapi_repl->handle_idx] = rec->handle;
+                filename = talloc_asprintf(mem_ctx, "/tmp/openchange-stream-XXXXXX");
+                fd = mkstemp(filename);
+                if (fd > -1) {
+                        object = emsmdbp_object_stream_init((TALLOC_CTX *)rec, emsmdbp_ctx,
+                                                            mapi_req->u.mapi_OpenStream.PropertyTag,
+                                                            mapi_req->u.mapi_OpenStream.OpenModeFlags,
+                                                            parent);
+                        object->object.stream->fd = fd;
+                        object->object.stream->objectID = objectID;
+                        object->object.stream->objectType = objectType;
 
-			mapi_handles_set_private_data(rec, object);
+                        /* We unlink the file immediately as we will
+                           only use its fd from now on... */
+                        unlink(filename);
 
-			filename = talloc_asprintf(mem_ctx, "/tmp/openchange-stream-XXXXXX");
-			fd = mkstemp(filename);
-			if (fd > -1) {
-				object->object.stream->fd = fd;
-				object->object.stream->objectID = objectID;
-				object->object.stream->objectType = objectType;
-
-				/* We unlink the file immediately as we will
-				   only use its fd from now on... */
-				unlink(filename);
-
-				if (object->object.stream->flags == OpenStream_ReadOnly
-				    || object->object.stream->flags == OpenStream_ReadWrite) {
-                                        if (parent_object->poc_api) {
-                                                properties = talloc_array(mem_ctx, struct mapistore_property_data, 1);
-                                                mapistore_pocop_get_properties(emsmdbp_ctx->mstore_ctx, contextID,
-                                                                               parent_object->poc_backend_object,
-                                                                               1,
-                                                                               &mapi_req->u.mapi_OpenStream.PropertyTag,
-                                                                               properties);
-                                                if (!properties[0].error) {
-                                                        talloc_steal(properties, properties[0].data);
-                                                        if ((mapi_req->u.mapi_OpenStream.PropertyTag & PT_BINARY) == PT_BINARY) {
-                                                                binary_data = properties[0].data;
-                                                                write_code = write(fd, binary_data->lpb, binary_data->cb);
-                                                        }
-                                                        else {
-                                                                DEBUG(5, ("  type of property tag is not handled: %.8x",
-                                                                          mapi_req->u.mapi_OpenStream.PropertyTag));
-                                                        }
+                        if (object->object.stream->flags == OpenStream_ReadOnly
+                            || object->object.stream->flags == OpenStream_ReadWrite) {
+                                if (parent_object->poc_api) {
+                                        properties = talloc_array(mem_ctx, struct mapistore_property_data, 1);
+                                        mapistore_pocop_get_properties(emsmdbp_ctx->mstore_ctx, contextID,
+                                                                       parent_object->poc_backend_object,
+                                                                       1,
+                                                                       &mapi_req->u.mapi_OpenStream.PropertyTag,
+                                                                       properties);
+                                        if (!properties[0].error) {
+                                                talloc_steal(properties, properties[0].data);
+                                                if ((mapi_req->u.mapi_OpenStream.PropertyTag & PT_BINARY) == PT_BINARY) {
+                                                        binary_data = properties[0].data;
+                                                        write_code = write(fd, binary_data->lpb, binary_data->cb);
                                                 }
                                                 else {
-                                                        mapi_repl->error_code = MAPI_E_NOT_FOUND;
+                                                        DEBUG(5, ("  type of property tag is not handled: %.8x",
+                                                                  mapi_req->u.mapi_OpenStream.PropertyTag));
                                                 }
-                                                talloc_free(properties);
                                         }
                                         else {
-                                                mapi_repl->error_code = mapistore_get_property_into_fd(parent_object->mstore_ctx,
-                                                                                                       contextID,
-                                                                                                       objectID,
-                                                                                                       objectType,
-                                                                                                       mapi_req->u.mapi_OpenStream.PropertyTag,
-                                                                                                       fd);
+                                                mapi_repl->error_code = MAPI_E_NOT_FOUND;
                                         }
-					mapi_repl->u.mapi_OpenStream.StreamSize = lseek(fd, 0, SEEK_END);
-					lseek(object->object.stream->fd, SEEK_SET, 0);
-				}
-			}
-			else {
-				mapi_repl->error_code = MAPI_E_DISK_ERROR;
-			}
+                                        talloc_free(properties);
+                                }
+                                else {
+                                        if (mapistore_get_property_into_fd(parent_object->mstore_ctx,
+                                                                           contextID,
+                                                                           objectID,
+                                                                           objectType,
+                                                                           mapi_req->u.mapi_OpenStream.PropertyTag,
+                                                                           fd) != MAPISTORE_SUCCESS) {
+                                                mapi_repl->error_code = MAPI_E_NOT_FOUND;
+                                        }
+                                }
+                                if (mapi_repl->error_code == MAPI_E_SUCCESS) {
+                                        retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+                                        handles[mapi_repl->handle_idx] = rec->handle;
+                                        mapi_handles_set_private_data(rec, object);
 
-			talloc_free(filename);
-		}
+                                        mapi_repl->u.mapi_OpenStream.StreamSize = lseek(fd, 0, SEEK_END);
+                                        lseek(object->object.stream->fd, SEEK_SET, 0);
+                                }
+                                else {
+                                        talloc_free(object);
+                                }
+                        }
+                }
+                else {
+                        mapi_repl->error_code = MAPI_E_DISK_ERROR;
+                }
+
+                talloc_free(filename);
 	}
 
 end:

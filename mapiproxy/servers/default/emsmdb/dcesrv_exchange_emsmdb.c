@@ -1019,7 +1019,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		/* op_MAPI_LongTermIdFromId: 0x43 */
 		/* op_MAPI_IdFromLongTermId: 0x44 */
 		/* op_MAPI_PublicFolderIsGhosted: 0x45 */
-		/* op_MAPI_OpenEmbeddedMessage: 0x46 */
+		case op_MAPI_OpenEmbeddedMessage: /* 0x46 */
+			retval = EcDoRpc_RopOpenEmbeddedMessage(mem_ctx, emsmdbp_ctx,
+                                                                &(mapi_request->mapi_req[i]),
+                                                                &(mapi_response->mapi_repl[idx]),
+                                                                mapi_response->handles, &size);
+                        break;
 		case op_MAPI_SetSpooler: /* 0x47 */
 			retval = EcDoRpc_RopSetSpooler(mem_ctx, emsmdbp_ctx,
 						       &(mapi_request->mapi_req[i]),

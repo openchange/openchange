@@ -594,6 +594,11 @@ int mapistore_backend_pocop_create_attachment(struct backend_context *bctx, uint
         return bctx->backend->message.create_attachment(bctx->private_data, mid, aid, attachment);
 }
 
+int mapistore_backend_pocop_open_embedded_message(struct backend_context *bctx, void *object, uint64_t *mid, enum OpenEmbeddedMessage_OpenModeFlags flags, struct mapistore_message *msg, void **message)
+{
+        return bctx->backend->message.open_embedded_message(object, mid, flags, msg, message);
+}
+
 int mapistore_backend_pocop_set_table_columns(struct backend_context *bctx, void *table,
                                               uint16_t count, enum MAPITAGS *properties)
 {

@@ -138,6 +138,17 @@
 #define	SIZE_DFLT_ROPCREATEATTACH		4
 
 /**
+   \details: OpenEmbeddedMessage has fixed response size for:
+   -# Reserved: uint8_t
+   -# MessageId: uint64_t
+   -# HasNamedProperties: uint8_t
+   -# RecipientCount: uint16_t
+   -# RecipientColumns.cValues: uint16_t
+   -# RowCount: uint8_t
+ */
+#define SIZE_DFLT_ROPOPENEMBEDDEDMESSAGE        15
+
+/**
    \details SetColumnsRop has fixed response size for:
    -# TableStatus: uint8_t
  */
@@ -381,6 +392,7 @@ uint16_t libmapiserver_RopGetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopEmptyFolder_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcmsg.c */
+uint16_t libmapiserver_OpenRecipientRow_size(struct OpenRecipientRow *);
 uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_REPL *);
@@ -392,6 +404,7 @@ uint16_t libmapiserver_RopGetAttachmentTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOpenAttach_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCreateAttach_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSaveChangesAttachment_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_REPL *response);
 
 /* definitions from libmapiserver_oxcnotif.c */
 uint16_t libmapiserver_RopRegisterNotification_size(void);

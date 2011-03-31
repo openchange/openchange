@@ -1686,8 +1686,8 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	message->SRowSet.cRows = reply->RowCount;
 	message->SRowSet.aRow = talloc_array((TALLOC_CTX *)message, struct SRow, reply->RowCount + 1);
 
-	message->SPropTagArray.cValues = reply->RecipientCount;
-	message->SPropTagArray.aulPropTag = talloc_steal(message, reply->RecipientColumns);
+	message->SPropTagArray.cValues = reply->RecipientColumns.cValues;
+	message->SPropTagArray.aulPropTag = talloc_steal(message, reply->RecipientColumns.aulPropTag);
 
 	for (i = 0; i < reply->RowCount; i++) {
 		emsmdb_get_SRow((TALLOC_CTX *)message, mapi_ctx->lp_ctx,

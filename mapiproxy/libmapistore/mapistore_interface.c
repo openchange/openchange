@@ -1283,6 +1283,24 @@ _PUBLIC_ int mapistore_pocop_create_attachment(struct mapistore_context *mstore_
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
+_PUBLIC_ int mapistore_pocop_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, uint64_t *mid, enum OpenEmbeddedMessage_OpenModeFlags flags, struct mapistore_message *msg, void **message)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_open_embedded_message(backend_ctx, object, mid, flags, msg, message);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
 _PUBLIC_ int mapistore_pocop_set_table_columns(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, uint16_t count, enum MAPITAGS *properties)
 {
 	struct backend_context	*backend_ctx;

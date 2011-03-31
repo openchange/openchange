@@ -120,7 +120,7 @@ struct mapistore_backend {
         /* sort order */
 	int (*op_set_sort_order)(void *, uint64_t, uint8_t, struct SSortOrderSet *, uint8_t *);
 
-	int (*op_get_folders_list)(void *, uint64_t fmid, struct indexing_folders_list **folders_list);
+	int (*op_get_folders_list)(void *, uint64_t, struct indexing_folders_list **folders_list);
 
         /***
             proof of concept
@@ -142,6 +142,7 @@ struct mapistore_backend {
                 int (*get_attachment_table)(void *, uint64_t, void **, uint32_t *);
                 int (*get_attachment)(void *, uint64_t, uint32_t, void **);
                 int (*create_attachment)(void *, uint64_t, uint32_t *, void **);
+                int (*open_embedded_message)(void *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *, void **);
         } message;
 
         /** oxctabl operations */
@@ -235,9 +236,10 @@ int mapistore_set_sort_order(struct mapistore_context *, uint32_t, uint64_t, uin
 /* proof of concept */
 int mapistore_pocop_open_table(struct mapistore_context *, uint32_t, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
 
-int mapistore_pocop_get_attachment_table(struct mapistore_context *, uint32_t, uint64_t mid, void **, uint32_t *);
-int mapistore_pocop_get_attachment(struct mapistore_context *, uint32_t, uint64_t mid, uint32_t, void **);
-int mapistore_pocop_create_attachment(struct mapistore_context *, uint32_t, uint64_t mid, uint32_t *, void **);
+int mapistore_pocop_get_attachment_table(struct mapistore_context *, uint32_t, uint64_t, void **, uint32_t *);
+int mapistore_pocop_get_attachment(struct mapistore_context *, uint32_t, uint64_t, uint32_t, void **);
+int mapistore_pocop_create_attachment(struct mapistore_context *, uint32_t, uint64_t, uint32_t *, void **);
+int mapistore_pocop_open_embedded_message(struct mapistore_context *, uint32_t, void *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *msg, void **);
 
 int mapistore_pocop_set_table_columns(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *);
 int mapistore_pocop_set_restrictions(struct mapistore_context *, uint32_t, void *, struct mapi_SRestriction *, uint8_t *);

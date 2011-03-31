@@ -28,6 +28,22 @@
 #include "libmapiserver.h"
 
 /**
+   \details Calculate OpenRecipientRow struct size
+
+   \param row pointer to the OpenRecipientRow structure
+
+   \return Size of the struct
+ */
+_PUBLIC_ uint16_t libmapiserver_OpenRecipientRow_size(struct OpenRecipientRow *row)
+{
+        uint16_t        size = 7;
+
+        size += row->RecipientRowSize;
+
+        return size;
+}
+
+/**
    \details Calculate OpenMessage (0x3) Rop size
 
    \param response pointer to the OpenMessage EcDoRpc_MAPI_REPL
@@ -268,4 +284,41 @@ _PUBLIC_ uint16_t libmapiserver_RopCreateAttach_size(struct EcDoRpc_MAPI_REPL *r
 _PUBLIC_ uint16_t libmapiserver_RopSaveChangesAttachment_size(struct EcDoRpc_MAPI_REPL *response)
 {
         return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate OpenEmbeddedMessage (0x46) Rop size
+
+   \param response pointer to the OpenEmbeddedMessage EcDoRpc_MAPI_REPL
+
+   \return Size of OpenEmbeddedMessage response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_REPL *response)
+{
+        uint16_t        size = SIZE_DFLT_MAPI_RESPONSE;
+        uint8_t         i;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPOPENEMBEDDEDMESSAGE;
+
+	/* SubjectPrefix */
+	size += libmapiserver_TypedString_size(response->u.mapi_OpenMessage.SubjectPrefix);
+
+	/* NormalizedSubject */
+	size += libmapiserver_TypedString_size(response->u.mapi_OpenMessage.NormalizedSubject);
+
+	/* RecipientColumns */
+	size += response->u.mapi_OpenEmbeddedMessage.RecipientColumns.cValues * sizeof (uint32_t);
+
+	for (i = 0; i < response->u.mapi_OpenEmbeddedMessage.RowCount; i++) {
+		size += sizeof (uint8_t);
+		size += sizeof (uint16_t);
+		size += sizeof (uint16_t);
+		size += libmapiserver_OpenRecipientRow_size(response->u.mapi_OpenEmbeddedMessage.RecipientRows + i);
+	}
+        
+        return size;
 }

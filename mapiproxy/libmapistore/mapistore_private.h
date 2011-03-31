@@ -184,6 +184,7 @@ int mapistore_backend_pocop_open_table(struct backend_context *, uint64_t, uint8
 int mapistore_backend_pocop_get_attachment_table(struct backend_context *, uint64_t, void **, uint32_t *);
 int mapistore_backend_pocop_get_attachment(struct backend_context *, uint64_t, uint32_t, void **);
 int mapistore_backend_pocop_create_attachment(struct backend_context *, uint64_t, uint32_t *, void **);
+int mapistore_backend_pocop_open_embedded_message(struct backend_context *, void *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *msg, void **);
 
 int mapistore_backend_pocop_set_table_columns(struct backend_context *, void *, uint16_t, enum MAPITAGS *);
 int mapistore_backend_pocop_set_table_restrictions(struct backend_context *, void *, struct mapi_SRestriction *, uint8_t *);

@@ -825,7 +825,7 @@ sub process_file($)
 
 	print "Generating mapicodes_enum.h\n";
 	$ret = '';
-	my $enum_parser = ("$outputdir/mapicodes_enum.h");
+	my $enum_parser = ("mapicodes_enum.h");
 	FileSave($enum_parser, mapicodes_enum($contents));
     }
 

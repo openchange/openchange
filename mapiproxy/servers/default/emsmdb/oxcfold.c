@@ -596,6 +596,9 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 		if (aRow->lpProps[i].ulPropTag == PR_DISPLAY_NAME) {
 			new_folder_name = aRow->lpProps[i].value.lpszA;
 		}
+		else if (aRow->lpProps[i].ulPropTag == PR_DISPLAY_NAME_UNICODE) {
+			new_folder_name = aRow->lpProps[i].value.lpszW;
+		}
 	}
 	DEBUG(4, ("target folder name: %s\n", new_folder_name));
 	if (folderFlags & OPEN_IF_EXISTS) {

@@ -64,6 +64,7 @@ dist:: distclean
 	./autogen.sh
 
 distclean:: clean
+	rm -f aclocal.m4
 	rm -rf autom4te.cache
 	rm -f Doxyfile
 	rm -f libmapi/Doxyfile
@@ -184,7 +185,7 @@ endif
 	rm -f *~
 	rm -f */*~
 	rm -f */*/*~
-	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION) \
+	rm -f libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).* \
 		  libmapi.$(SHLIBEXT)
 
 clean:: libmapi-clean
@@ -303,7 +304,7 @@ libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION): libmapi.$(SHLIBEXT).$(PACKAGE_VERSION
 	ln -fs $< $@
 
 libmapi/version.h: VERSION
-	@./script/mkversion.sh 	VERSION libmapi/version.h $(PACKAGE_VERSION) $(top_builddir)/
+	@./script/mkversion.sh VERSION libmapi/version.h $(PACKAGE_VERSION) $(top_builddir)/
 
 libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
@@ -515,7 +516,7 @@ libmapiadmin-uninstall:	libmapiadmin-uninstallpc	\
 libmapiadmin-clean::
 	rm -f libmapiadmin/*.o libmapiadmin/*.po
 	rm -f libmapiadmin/*.gcno libmapiadmin/*.gcda
-	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) libmapiadmin.$(SHLIBEXT).$(LIBMAPIADMIN_SO_VERSION) \
+	rm -f libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION) libmapiadmin.$(SHLIBEXT).* \
 		  libmapiadmin.$(SHLIBEXT)
 
 clean:: libmapiadmin-clean
@@ -586,7 +587,7 @@ ifneq ($(SNAPSHOT), no)
 	rm -f libocpf/lex.yy.c
 	rm -f libocpf/ocpf.tab.c libocpf/ocpf.tab.h
 endif
-	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) \
+	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).* \
 		  libocpf.$(SHLIBEXT)
 
 clean:: libocpf-clean
@@ -728,8 +729,7 @@ libmapiproxy-install:
 libmapiproxy-clean:
 	rm -f mapiproxy/libmapiproxy/*.po mapiproxy/libmapiproxy/*.o
 	rm -f mapiproxy/libmapiproxy/*.gcno mapiproxy/libmapiproxy/*.gcda
-	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
-	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
+	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).*
 
 libmapiproxy-uninstall:
 	rm -f $(DESTDIR)$(libdir)/libmapiproxy.*
@@ -772,8 +772,7 @@ libmapiserver-install:
 libmapiserver-clean:
 	rm -f mapiproxy/libmapiserver/*.po mapiproxy/libmapiserver/*.o
 	rm -f mapiproxy/libmapiserver/*.gcno mapiproxy/libmapiserver/*.gcda
-	rm -f mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)
-	rm -f mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION)
+	rm -f mapiproxy/libmapiserver.$(SHLIBEXT).*
 
 libmapiserver-uninstall:
 	rm -f $(DESTDIR)$(libdir)/libmapiserver.*
@@ -852,8 +851,7 @@ libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/database/*.gcno mapiproxy/libmapistore/database/*.gcda
 	rm -f mapiproxy/libmapistore/indexing/*.po mapiproxy/libmapistore/indexing/*.o
 	rm -f mapiproxy/libmapistore/indexing/*.gcno mapiproxy/libmapistore/indexing/*.gcda
-	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
-	rm -f mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
+	rm -f mapiproxy/libmapistore.$(SHLIBEXT).*
 	rm -f setup/mapistore/mapistore_namedprops.ldif
 	rm -rf mapiproxy/libmapistore/indexing/gen_ndr
 

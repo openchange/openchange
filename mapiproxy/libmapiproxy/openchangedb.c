@@ -239,8 +239,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!ReplID, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!ReplGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "get_MailboxReplica");
 
@@ -251,13 +249,16 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 2. Retrieve ReplicaID attribute's value */
-	*ReplID = ldb_msg_find_attr_as_int(res->msgs[0], "ReplicaID", 0);
+        if (ReplID) {
+		*ReplID = ldb_msg_find_attr_as_int(res->msgs[0], "ReplicaID", 0);
+	}
 
 	/* Step 3/ Retrieve ReplicaGUID attribute's value */
-	guid = ldb_msg_find_attr_as_string(res->msgs[0], "ReplicaGUID", 0);
-	OPENCHANGE_RETVAL_IF(!guid, MAPI_E_CORRUPT_STORE, mem_ctx);
-
-	GUID_from_string(guid, ReplGUID);
+	if (ReplGUID) {
+		guid = ldb_msg_find_attr_as_string(res->msgs[0], "ReplicaGUID", 0);
+		OPENCHANGE_RETVAL_IF(!guid, MAPI_E_CORRUPT_STORE, mem_ctx);
+		GUID_from_string(guid, ReplGUID);
+	}
 
 	talloc_free(mem_ctx);
 

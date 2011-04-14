@@ -1,6 +1,12 @@
 # # Makefile for OpenChange
 # Written by Jelmer Vernooij <jelmer@openchange.org>, 2005.
 
+ifneq ($(MAKECMDGOALS), samba)
+ifneq ($(MAKECMDGOALS), samba-git)
+include config.mk
+endif
+endif
+
 default: all
 
 # Until we add proper dependencies for all the C files:
@@ -10,10 +16,17 @@ config.mk: config.status config.mk.in
 	./config.status
 
 config.status: configure
-	./configure
+	@if test x"$(prefix)" != x""; \
+	then \
+	  echo "Running configure with prefix '$(prefix)'..."; \
+	  ./configure --prefix=$(prefix); \
+	else \
+	  echo "Running configure withut prefix"; \
+	  ./configure; \
+	fi
 
 configure: configure.ac
-	./autogen.sh
+	PREFIX=$(prefix) ./autogen.sh
 
 samba:
 	./script/installsamba4.sh all
@@ -23,12 +36,6 @@ samba-git:
 
 samba-git-update:
 	./script/installsamba4.sh git-update
-
-ifneq ($(MAKECMDGOALS), samba)
-ifneq ($(MAKECMDGOALS), samba-git)
-include config.mk
-endif
-endif
 
 #################################################################
 # top level compilation rules

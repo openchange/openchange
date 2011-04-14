@@ -537,7 +537,7 @@ if test x"$enable_libpopt" = x"yes"; then
 
 	if test x"$enable_libocpf" = x"yes"; then
 	   OC_RULE_ADD(openchangeclient, TOOLS)
-	   OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
+           #	   OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
 	fi
 
 	if test x"$have_libical" = x"yes"; then

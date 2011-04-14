@@ -54,24 +54,18 @@ const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 
 /**
    \details Convenient function to determine whether specified
-   mapi_handles refers to object using mapistore or not
+   object is using mapistore or not
 
-   \param handles pointer to the MAPI handle to lookup
+   \param object pointer to the emsmdp object
 
    \return true if parent is using mapistore, otherwise false
  */
-bool emsmdbp_is_mapistore(struct mapi_handles *handles)
+bool emsmdbp_is_mapistore(struct emsmdbp_object *object)
 {
-	void			*data;
-	struct emsmdbp_object	*object;
-
 	/* Sanity checks - probably pointless */
-	if (!handles) {
+	if (!object) {
 		return false;
 	}
-
-	mapi_handles_get_private_data(handles, &data);
-	object = (struct emsmdbp_object *)data;
 
 	switch (object->type) {
 	case EMSMDBP_OBJECT_MAILBOX:
@@ -99,20 +93,12 @@ bool emsmdbp_is_mapistore(struct mapi_handles *handles)
    mapi_handles refers to object within mailbox or public folders
    store.
 
-   \param handles pointer to the MAPI handle to lookup
+   \param object pointer to the emsmdp object
 
    \return true if parent is within mailbox store, otherwise false
  */
-bool emsmdbp_is_mailboxstore(struct mapi_handles *handles)
+bool emsmdbp_is_mailboxstore(struct emsmdbp_object *object)
 {
-	void			*data;
-	struct emsmdbp_object	*object;
-
-	/* Sanity checks - irrelevant */
-
-	mapi_handles_get_private_data(handles, &data);
-	object = (struct emsmdbp_object *)data;
-
 	switch (object->type) {
 	case EMSMDBP_OBJECT_MAILBOX:
 		return  object->object.mailbox->mailboxstore;
@@ -130,18 +116,12 @@ bool emsmdbp_is_mailboxstore(struct mapi_handles *handles)
 /**
    \details Return the contextID associated to a handle
 
-   \param handles pointer to the MAPI handle to lookup
+   \param object pointer to the emsmdp object
 
    \return contextID value on success, otherwise -1
  */
-uint32_t emsmdbp_get_contextID(struct mapi_handles *handles)
+uint32_t emsmdbp_get_contextID(struct emsmdbp_object *object)
 {
-	void			*data;
-	struct emsmdbp_object	*object;
-
-	mapi_handles_get_private_data(handles, &data);
-	object = (struct emsmdbp_object *) data;
-
 	switch (object->type) {
 	case EMSMDBP_OBJECT_MAILBOX:
 		return -1;
@@ -458,14 +438,14 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
    \param folderID the folder identifier
-   \param parent handle to the parent folder for this folder
+   \param parent emsmdbp object of the parent folder for this folder
 
    \return Allocated emsmdbp object on success, otherwise NULL
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 							   struct emsmdbp_context *emsmdbp_ctx,
 							   uint64_t folderID,
-							   struct mapi_handles *parent)
+							   struct emsmdbp_object *parent)
 {
 	enum MAPISTATUS			retval;
 	struct emsmdbp_object		*object;
@@ -546,28 +526,22 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
-   \param parent pointer to the parent MAPI handle
+   \param parent emsmdbp object of the parent
 
    \return Allocated emsmdbp object on success, otherwise NULL
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 							  struct emsmdbp_context *emsmdbp_ctx,
-							  struct mapi_handles *parent)
+							  struct emsmdbp_object *parent)
 {
-	enum MAPISTATUS		retval;
 	struct emsmdbp_object	*object;
-	struct emsmdbp_object	*folder;
-	void			*data = NULL;
 	bool			mapistore = false;
 	int			ret;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
-
-	/* Retrieve parent object */
-	retval = mapi_handles_get_private_data(parent, &data);
-	if (retval) return NULL;
-	folder = (struct emsmdbp_object *) data;
+	if (!parent) return NULL;
+        if (parent->type != EMSMDBP_OBJECT_FOLDER) return NULL;
 
 	/* Initialize table object */
 	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
@@ -580,7 +554,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	}
 
 	object->type = EMSMDBP_OBJECT_TABLE;
-	object->object.table->folderID = folder->object.folder->folderID;
+	object->object.table->folderID = parent->object.folder->folderID;
 	object->object.table->prop_count = 0;
 	object->object.table->properties = NULL;
 	object->object.table->numerator = 0;
@@ -593,9 +567,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(parent);
 	if (mapistore == true) {
 		object->object.table->mapistore = true;
-		object->object.table->contextID = folder->object.folder->contextID;		
+		object->object.table->contextID = parent->object.folder->contextID;		
 		ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, 
-						      folder->object.folder->contextID);
+						      parent->object.folder->contextID);
 	}
 
 	return object;
@@ -608,29 +582,23 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
    \param messageID the message identifier
-   \param parent pointer to the parent MAPI handle
+   \param parent emsmdbp object of the parent
 
    \return Allocated emsmdbp object on success, otherwise NULL
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 							    struct emsmdbp_context *emsmdbp_ctx,
 							    uint64_t messageID,
-							    struct mapi_handles *parent)
+							    struct emsmdbp_object *parent)
 {
-	enum MAPISTATUS		retval;
 	struct emsmdbp_object	*object;
-	struct emsmdbp_object	*folder;
-	void			*data = NULL;
 	bool			mapistore = false;
 	int			ret;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
-
-	/* Retrieve parent object */
-	retval = mapi_handles_get_private_data(parent, &data);
-	if (retval) return NULL;
-	folder = (struct emsmdbp_object *) data;
+	if (!parent) return NULL;
+        if (parent->type != EMSMDBP_OBJECT_FOLDER) return NULL;
 
 	/* Initialize message object */
 	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
@@ -643,16 +611,16 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	}
 
 	object->type = EMSMDBP_OBJECT_MESSAGE;
-	object->object.message->folderID = folder->object.folder->folderID;
+	object->object.message->folderID = parent->object.folder->folderID;
 	object->object.message->messageID = messageID;
 
 	mapistore = emsmdbp_is_mapistore(parent);
 	if (mapistore == true) {
 		object->object.message->mapistore = true;
-		object->object.message->contextID = folder->object.folder->contextID;		
+		object->object.message->contextID = parent->object.folder->contextID;		
 		ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, 
-						      folder->object.folder->contextID);
-	} 
+						      parent->object.folder->contextID);
+	}
 
 	return object;	
 }
@@ -664,27 +632,21 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider cotnext
    \param property the stream property identifier
-   \param parent pointer to the parent MAPI handle
+   \param parent emsmdbp object of the parent
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
 							   struct emsmdbp_context *emsmdbp_ctx,
 							   uint32_t property,
 							   enum OpenStream_OpenModeFlags flags,
-							   struct mapi_handles *parent)
+							   struct emsmdbp_object *parent)
 {
-	enum MAPISTATUS		retval;
-	struct emsmdbp_object	*object, *parent_object;
-	void			*data;
+	struct emsmdbp_object	*object;
 	bool			mapistore = false;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
+        if (!parent) return NULL;
 
-	/* Retrieve parent object */
-	retval = mapi_handles_get_private_data(parent, &data);
-	if (retval) return NULL;
-        parent_object = data;
-	
 	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
 	if (!object) return NULL;
 
@@ -705,9 +667,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
 		object->object.stream->fd = -1;
 		object->object.stream->objectID = -1;
 		object->object.stream->objectType = -1;
-                if (parent_object->poc_api) {
+                if (parent->poc_api) {
                         object->object.stream->parent_poc_api = true;
-                        object->object.stream->parent_poc_backend_object = parent_object->poc_backend_object;
+                        object->object.stream->parent_poc_backend_object = parent->poc_backend_object;
                 }
 	}
 
@@ -722,25 +684,20 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
    \param emsmdbp_ctx pointer to the emsmdb provider cotnext
    \param folderID the folder identifier
    \param messageID the message identifier
-   \param parent pointer to the parent MAPI handle
+   \param parent emsmdbp object of the parent 
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *mem_ctx,
                                                                struct emsmdbp_context *emsmdbp_ctx,
                                                                uint64_t messageID,
-                                                               struct mapi_handles *parent)
+                                                               struct emsmdbp_object *parent)
 {
-	enum MAPISTATUS		retval;
 	struct emsmdbp_object	*object;
-	void			*data;
 	bool			mapistore = false;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
+        if (!parent) return NULL;
 
-	/* Retrieve parent object */
-	retval = mapi_handles_get_private_data(parent, &data);
-	if (retval) return NULL;
-	
 	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
 	if (!object) return NULL;
 
@@ -771,24 +728,19 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *mem_c
    \param whole_store whether the subscription applies to the specified change on the entire store or stricly on the specified folder/message
    \param folderID the folder identifier
    \param messageID the message identifier
-   \param parent pointer to the parent MAPI handle
+   \param parent emsmdbp object of the parent
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem_ctx,
                                                                  struct emsmdbp_context *emsmdbp_ctx,
-                                                                 struct mapi_handles *parent)
+                                                                 struct emsmdbp_object *parent)
 {
-	enum MAPISTATUS		retval;
 	struct emsmdbp_object	*object;
-	void			*data;
 	bool			mapistore = false;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
+	if (!parent) return NULL;
 
-	/* Retrieve parent object */
-	retval = mapi_handles_get_private_data(parent, &data);
-	if (retval) return NULL;
-	
 	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
 	if (!object) return NULL;
 
@@ -807,7 +759,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 		object->object.subscription->contextID = emsmdbp_get_contextID(parent);
 	}
         else {
-		object->object.subscription->contextID = -1;
+                DEBUG(0, ("Subscriptions only supported on mapistore objects.\n"));
+		talloc_free(object);
+		return NULL;
         }
 
 	return object;

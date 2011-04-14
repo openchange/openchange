@@ -470,7 +470,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 
 	retval = mapi_handles_get_private_data(rec, &private_data);
 
-	mapistore = emsmdbp_is_mapistore(rec);
+	mapistore = emsmdbp_is_mapistore(private_data);
 	/* Nasty hack */
 	if (!private_data) {
 		mapistore = true;
@@ -579,7 +579,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	mapistore = emsmdbp_is_mapistore(rec);
+	mapistore = emsmdbp_is_mapistore(private_data);
 	switch (mapistore) {
 	case false:
 		DEBUG(0, ("SetProps on openchangedb not implemented yet\n"));
@@ -782,7 +782,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
                         object = emsmdbp_object_stream_init((TALLOC_CTX *)rec, emsmdbp_ctx,
                                                             mapi_req->u.mapi_OpenStream.PropertyTag,
                                                             mapi_req->u.mapi_OpenStream.OpenModeFlags,
-                                                            parent);
+                                                            parent_object);
                         object->object.stream->fd = fd;
                         object->object.stream->objectID = objectID;
                         object->object.stream->objectType = objectType;

@@ -101,7 +101,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetRulesTable(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
 
-	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent);
+	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, object);
 	if (object) {
 		retval = mapi_handles_set_private_data(rec, object);
 		/* rules tables are stub objects for now */

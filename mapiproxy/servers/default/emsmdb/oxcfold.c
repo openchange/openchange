@@ -112,7 +112,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS			retval;
 	struct mapi_handles		*parent = NULL;
 	struct mapi_handles		*rec = NULL;
-	struct emsmdbp_object		*object;
+        void                            *private_data;
+	struct emsmdbp_object		*object, *parent_object;
 	uint32_t			handle;
 	bool				mapistore = false;
 
@@ -139,7 +140,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	mapistore = emsmdbp_is_mapistore(parent);
+	mapi_handles_get_private_data(parent, &private_data);
+        parent_object = private_data;
+	mapistore = emsmdbp_is_mapistore(parent_object);
 	switch (mapistore) {
 	case false:
 		/* system/special folder */
@@ -167,7 +170,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 
 		object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx, 
-						    mapi_req->u.mapi_OpenFolder.folder_id, parent);
+						    mapi_req->u.mapi_OpenFolder.folder_id, private_data);
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
 		}
@@ -203,7 +206,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS		retval;
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
-	struct emsmdbp_object	*object = NULL;
+	struct emsmdbp_object	*object = NULL, *parent_object;
         struct mapistore_subscription_list *subscription_list;
         struct mapistore_subscription *subscription;
         struct mapistore_table_subscription_parameters subscription_parameters;
@@ -225,6 +228,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+        mapi_handles_get_private_data(parent, (void**) &parent_object);
 
 	/* Initialize default empty GetHierarchyTable reply */
 	mapi_repl->opnum = mapi_req->opnum;
@@ -259,7 +263,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 
 	DEBUG(5, ("  folderID: %.16lx\n", folderID));
 
-	mapistore = emsmdbp_is_mapistore(parent);
+	mapistore = emsmdbp_is_mapistore(parent_object);
 	switch (mapistore) {
 	case false:
 		/* system/special folder */
@@ -278,7 +282,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
 
-	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent);
+	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent_object);
 	if (object) {
 		retval = mapi_handles_set_private_data(rec, object);
 		object->object.table->denominator = mapi_repl->u.mapi_GetHierarchyTable.RowCount;
@@ -333,7 +337,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS		retval;
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
-	struct emsmdbp_object	*object = NULL;
+	struct emsmdbp_object	*object = NULL, *parent_object;
         struct mapistore_subscription_list *subscription_list;
         struct mapistore_subscription *subscription;
         struct mapistore_table_subscription_parameters subscription_parameters;
@@ -377,18 +381,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 		return MAPI_E_SUCCESS;
 	}
 
-	object = (struct emsmdbp_object *)data;
-	if (!object) {
+	parent_object = (struct emsmdbp_object *)data;
+	if (!parent_object) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
 		*size += libmapiserver_RopGetContentsTable_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 
-	switch (object->type) {
+	switch (parent_object->type) {
 	case EMSMDBP_OBJECT_FOLDER:
-		folderID = object->object.folder->folderID;
-		contextID = object->object.folder->contextID;
+		folderID = parent_object->object.folder->folderID;
+		contextID = parent_object->object.folder->contextID;
 		break;
 	default:
 		mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
@@ -410,10 +414,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
 
-	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent);
+	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent_object);
 	if (object) {
 		retval = mapi_handles_set_private_data(rec, object);
-                mapistore = emsmdbp_is_mapistore(parent);
+                mapistore = emsmdbp_is_mapistore(parent_object);
                 switch (mapistore) {
                 case false:
                         /* system/special folder */
@@ -740,7 +744,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues), PR_PARENT_FID, (void *)(&parent_fid));
 
 	/* Step 4. Do effective work here */
-	mapistore = emsmdbp_is_mapistore(parent);
+	mapistore = emsmdbp_is_mapistore(parent_object);
 	switch (mapistore) {
 	case false:
 		switch (mapi_req->u.mapi_CreateFolder.ulFolderType) {
@@ -775,7 +779,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	if (!mapi_repl->error_code) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 		object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx, 
-						    mapi_repl->u.mapi_CreateFolder.folder_id, parent);
+						    mapi_repl->u.mapi_CreateFolder.folder_id, parent_object);
 		if (object) {
 			retval = mapi_handles_set_private_data(rec, object);
 		}
@@ -900,7 +904,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->u.mapi_DeleteFolder.PartialCompletion = false;
 
-	mapistore = emsmdbp_is_mapistore(rec);
+	mapistore = emsmdbp_is_mapistore(handle_object);
 	switch (mapistore) {
 	case false:
 		/* system/special folder */
@@ -989,7 +993,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 		goto delete_message_response;
 	}
 
-	if (! emsmdbp_is_mapistore(parent_folder) ) {
+	if (! emsmdbp_is_mapistore(parent_object) ) {
 		DEBUG(0, ("Got parent folder not in mapistore\n"));
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto delete_message_response;
@@ -1188,6 +1192,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopEmptyFolder(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS                 retval;
 	struct mapi_handles             *folder = NULL;
+        struct emsmdbp_object           *folder_object;
+        void                            *private_data;
 	bool                            mapistore = false;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder (0x58)\n"));
@@ -1206,8 +1212,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopEmptyFolder(TALLOC_CTX *mem_ctx,
 	/* Step 1. Retrieve folder handle */
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handles[mapi_req->handle_idx], &folder);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	mapi_handles_get_private_data(folder, &private_data);
+        folder_object = private_data;
 
-	mapistore = emsmdbp_is_mapistore(folder);
+	mapistore = emsmdbp_is_mapistore(folder_object);
 	switch (mapistore) {
 	case false:
 		/* system/special folder */

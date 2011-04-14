@@ -101,7 +101,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 	handles[mapi_repl->handle_idx] = subscription_rec->handle;
 
         /* emsmdb_object */
-        subscription_object = emsmdbp_object_subscription_init(subscription_rec, emsmdbp_ctx, parent_rec);
+        subscription_object = emsmdbp_object_subscription_init(subscription_rec, emsmdbp_ctx, parent_object);
         mapi_handles_set_private_data(subscription_rec, subscription_object);
 
         /* we attach the subscription to the session object.

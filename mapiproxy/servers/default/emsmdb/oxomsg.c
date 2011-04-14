@@ -86,7 +86,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	mapistore = emsmdbp_is_mapistore(rec);
+	mapistore = emsmdbp_is_mapistore(object);
 	switch (mapistore) {
 	case false:
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));

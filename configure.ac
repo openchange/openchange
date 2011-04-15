@@ -587,16 +587,24 @@ dnl ##########################################################################
 dnl --------------------------------------------------------------------------
 dnl Check for sqlite3
 dnl --------------------------------------------------------------------------
-PKG_CHECK_MODULES(SQLITE, sqlite3, SQLITEFOUND=yes, [SQLITEFOUND=no])
-AC_SUBST(SQLITE_CFLAGS)
-AC_SUBST(SQLITE_LIBS)
+dnl PKG_CHECK_MODULES(SQLITE, sqlite3, SQLITEFOUND=yes, [SQLITEFOUND=no])
+dnl AC_SUBST(SQLITE_CFLAGS)
+dnl AC_SUBST(SQLITE_LIBS)
 
-if test x"$SQLITEFOUND" = x"yes"; then
-   OC_RULE_ADD(mapistore_sqlite3, MAPISTORE)
-else
-   enable_mapistore_sqlite3="no"
-fi
-
+dnl if test x"$SQLITEFOUND" = x"yes"; then
+dnl    OC_RULE_ADD(mapistore_sqlite3, MAPISTORE)
+dnl else
+dnl    enable_mapistore_sqlite3="no"
+dnl fi
+enable_mapistore_sqlite3="no"
+OC_MAPISTORE=
+OC_MAPISTORE_CLEAN=
+OC_MAPISTORE_INSTALL=
+OC_MAPISTORE_UNINSTALL=
+AC_SUBST(OC_MAPISTORE)
+AC_SUBST(OC_MAPISTORE_CLEAN)
+AC_SUBST(OC_MAPISTORE_INSTALL)
+AC_SUBST(OC_MAPISTORE_UNINSTALL)
 
 dnl ##########################################################################
 dnl mapiproxy server

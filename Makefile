@@ -21,7 +21,7 @@ config.status: configure
 	  echo "Running configure with prefix '$(prefix)'..."; \
 	  ./configure --prefix=$(prefix); \
 	else \
-	  echo "Running configure withut prefix"; \
+	  echo "Running configure without prefix"; \
 	  ./configure; \
 	fi
 

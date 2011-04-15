@@ -2079,10 +2079,26 @@ System Attendant Private Interface
 		[case(0x1)][flag(STR_NULLTERM)] string	lpszW;
 	} MessageClass;
 
-	typedef [flag(NDR_NOALIGN)] struct {
-		GUID		DatabaseGUID;
-		uint8		GlobalCounter[6];
+	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+		[case(0x1)] uint8	bytes[6];
+		[default] dlong		value;
+	} GLOBCNT;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		GUID			GUID;
+		[switch_is(1)] GLOBCNT	GLOBCNT;
 	} GID;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint16			ReplID;
+		[switch_is(1)] GLOBCNT	GLOBCNT;
+	} ShortTermID; /* MID, FID, CN */
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		GUID			GUID;
+		uint8			Size;
+		uint8			Data[Size];
+	} XID;
 
 	typedef [enum16bit] enum {
 		TABLE_CHANGED		=	0x1,

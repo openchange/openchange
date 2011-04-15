@@ -599,6 +599,11 @@ int mapistore_backend_pocop_open_embedded_message(struct backend_context *bctx, 
         return bctx->backend->message.open_embedded_message(object, mid, flags, msg, message);
 }
 
+int mapistore_backend_pocop_get_available_table_properties(struct backend_context *bctx, void *table, struct SPropTagArray *properties)
+{
+        return bctx->backend->table.get_available_properties(table, properties);
+}
+
 int mapistore_backend_pocop_set_table_columns(struct backend_context *bctx, void *table,
                                               uint16_t count, enum MAPITAGS *properties)
 {
@@ -622,6 +627,11 @@ int mapistore_backend_pocop_get_table_row(struct backend_context *bctx, void *ta
                                           struct mapistore_property_data *data)
 {
         return bctx->backend->table.get_row(table, query_type, rowid, data);
+}
+
+int mapistore_backend_pocop_get_available_properties(struct backend_context *bctx, void *object, struct SPropTagArray *properties)
+{
+        return bctx->backend->properties.get_available_properties(object, properties);
 }
 
 int mapistore_backend_pocop_get_properties(struct backend_context *bctx,

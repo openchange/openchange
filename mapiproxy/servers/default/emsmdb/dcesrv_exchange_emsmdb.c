@@ -265,138 +265,6 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 	return MAPI_E_SUCCESS;
 }
 
-#warning 'emsmdbp_get_table_object_props' is a dup from the code found in oxctabl:RopQueryRows
-static void **emsmdbp_get_table_object_props(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, uint32_t row_id, uint32_t **retvalsp)
-{
-        void **data_pointers;
-        enum MAPISTATUS retval;
-        uint32_t *retvals;
-        struct emsmdbp_object_table *table;
-        struct mapistore_property_data *properties;
-        uint32_t i, num_props;
-
-        table = table_object->object.table;
-        num_props = table_object->object.table->prop_count;
-
-        data_pointers = talloc_array(table_object, void *, num_props);
-        memset(data_pointers, 0, sizeof(void *) * num_props);
-        retvals = talloc_array(table_object, uint32_t, num_props);
-        memset(retvals, 0, sizeof(uint32_t) * num_props);
-
-        if (table_object->poc_api) {
-                properties = talloc_array(NULL, struct mapistore_property_data, num_props);
-                memset(properties, 0, sizeof(struct mapistore_property_data) * num_props);
-                retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, table->contextID,
-                                                       table_object->poc_backend_object,
-                                                       MAPISTORE_PREFILTERED_QUERY, row_id, properties);
-                if (retval == MAPI_E_SUCCESS) {
-                        for (i = 0; i < num_props; i++) {
-                                data_pointers[i] = properties[i].data;
-
-                                if (properties[i].error) {
-                                        if (properties[i].error == MAPISTORE_ERR_NOT_FOUND)
-                                                retvals[i] = MAPI_E_NOT_FOUND;
-                                        else if (properties[i].error == MAPISTORE_ERR_NO_MEMORY)
-                                                retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
-                                        else {
-                                                DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[i].error));
-                                        }
-                                }
-                                else {
-                                        if (properties[i].data == NULL)
-                                                retvals[i] = MAPI_E_NOT_FOUND;
-                                        else
-                                                talloc_steal(data_pointers, properties[i].data);
-                                }
-                        }
-                }
-                else {
-                        DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
-                        talloc_free(retvals);
-                        retvals = NULL;
-                        talloc_free(data_pointers);
-                        data_pointers = NULL;
-                }
-                talloc_free(properties);
-        }
-        else {
-                retval = MAPI_E_SUCCESS;
-                for (i = 0; retval != MAPI_E_INVALID_OBJECT && i < num_props; i++) {
-                        retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
-                                                              table->ulType,
-                                                              MAPISTORE_PREFILTERED_QUERY,
-                                                              table->folderID, 
-                                                              table->properties[i],
-                                                              row_id, data_pointers + i);
-                        if (retval == MAPI_E_INVALID_OBJECT) {
-                                DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
-                                talloc_free(retvals);
-                                retvals = NULL;
-                                talloc_free(data_pointers);
-                                data_pointers = NULL;
-                        }
-                        else {
-                                retvals[i] = retval;
-                        }
-                }
-        }
-
-        if (retvalsp)
-                *retvalsp = retvals;
-
-        return data_pointers;
-}
-
-#warning 'emsmdbp_fill_table_row' is a dup from the code found in oxctabl:RopQueryRows
-static void emsmdbp_fill_table_row(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
-                                   DATA_BLOB *table_row, uint16_t num_props,
-                                   enum MAPITAGS *properties,
-                                   void **data_pointers, uint32_t *retvals)
-{
-        uint16_t i;
-        uint8_t flagged;
-        enum MAPITAGS property;
-        void *data;
-        uint32_t retval;
-
-        flagged = 0;
-
-        for (i = 0; !flagged && i < num_props; i++) {
-                if (retvals[i] != MAPI_E_SUCCESS) {
-                        flagged = 1;
-                }
-        }
-
-        if (flagged) {
-                libmapiserver_push_property(mem_ctx,
-                                            lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-                                            0x0000000b, (const void *)&flagged,
-                                            table_row, 0, 0, 0);
-        }
-        else {
-                libmapiserver_push_property(mem_ctx,
-                                            lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-                                            0x00000000, (const void *)&flagged,
-                                            table_row, 0, 1, 0);
-        }
-
-        for (i = 0; i < num_props; i++) {
-                property = properties[i];
-                retval = retvals[i];
-                if (retval != MAPI_E_SUCCESS) {
-                        property = (property & 0xFFFF0000) + PT_ERROR;
-                        data = &retval;
-                }
-                else {
-                        data = data_pointers[i];
-                }
-
-                libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-                                            property, data, table_row,
-                                            flagged?PT_ERROR:0, flagged, 0);
-        }
-}
-
 static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx, 
                                       struct emsmdbp_context *emsmdbp_ctx,
                                       struct EcDoRpc_MAPI_REPL *mapi_repl,
@@ -412,8 +280,8 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
         void                    **data_pointers;
         DATA_BLOB               *table_row;
         uint32_t                *retvals;
-        uint32_t                *previous_row_properties;
-        uint32_t                saved_prop_count, *saved_properties;
+        uint32_t                saved_prop_count;
+        enum MAPITAGS           *saved_properties, *previous_row_properties;
         uint64_t                prev_fid, prev_mid;
         uint32_t                prev_instance;
 
@@ -479,16 +347,16 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                         /* FIXME: this hack enables the fetching of some properties from the previous row */
                                         saved_prop_count = table->prop_count;
                                         saved_properties = table->properties;
-                                        previous_row_properties = talloc_array(NULL, uint32_t, 1);
+                                        previous_row_properties = talloc_array(NULL, enum MAPITAGS, 1);
                                         previous_row_properties[0] = PR_FID;
                                         table->properties = previous_row_properties;
                                         table->prop_count = 1;
                                         if (handle_object->poc_api) {
                                                 mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, table->contextID, handle_object->poc_backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
                                         }
-                                        data_pointers = emsmdbp_get_table_object_props(emsmdbp_ctx, handle_object,
-                                                                                       notification->parameters.table_parameters.row_id - 1,
-                                                                                       &retvals);
+                                        data_pointers = emsmdbp_object_table_get_row_props(emsmdbp_ctx, handle_object,
+                                                                                           notification->parameters.table_parameters.row_id - 1,
+                                                                                           &retvals);
                                         if (data_pointers) {
                                                 prev_fid = *(uint32_t *) data_pointers[0];
                                                 talloc_free(data_pointers);
@@ -509,10 +377,10 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                 }
 
                                 table_row = talloc_zero(mem_ctx, DATA_BLOB);
-                                data_pointers = emsmdbp_get_table_object_props(emsmdbp_ctx, handle_object,
-                                                                               notification->parameters.table_parameters.row_id,
-                                                                               &retvals);
-                                emsmdbp_fill_table_row(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
+                                data_pointers = emsmdbp_object_table_get_row_props(emsmdbp_ctx, handle_object,
+                                                                                   notification->parameters.table_parameters.row_id,
+                                                                                   &retvals);
+                                emsmdbp_object_table_fill_row_blob(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
                                 talloc_free(data_pointers);
                                 talloc_free(retvals);
                         }
@@ -543,7 +411,7 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                         /* FIXME: this hack enables the fetching of some properties from the previous row */
                                         saved_prop_count = table->prop_count;
                                         saved_properties = table->properties;
-                                        previous_row_properties = talloc_array(NULL, uint32_t, 3);
+                                        previous_row_properties = talloc_array(NULL, enum MAPITAGS, 3);
                                         previous_row_properties[0] = PR_FID;
                                         previous_row_properties[1] = PR_MID;
                                         previous_row_properties[2] = PR_INSTANCE_NUM;
@@ -552,7 +420,7 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                         if (handle_object->poc_api) {
                                                 mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, table->contextID, handle_object->poc_backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
                                         }
-                                        data_pointers = emsmdbp_get_table_object_props(emsmdbp_ctx, handle_object, notification->parameters.table_parameters.row_id - 1, NULL);
+                                        data_pointers = emsmdbp_object_table_get_row_props(emsmdbp_ctx, handle_object, notification->parameters.table_parameters.row_id - 1, NULL);
                                         if (data_pointers) {
                                                 prev_fid = *(uint64_t *) data_pointers[0];
                                                 prev_mid = *(uint64_t *) data_pointers[1];
@@ -579,10 +447,10 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                 }
 
                                 table_row = talloc_zero(mem_ctx, DATA_BLOB);
-                                data_pointers = emsmdbp_get_table_object_props(emsmdbp_ctx, handle_object,
-                                                                               notification->parameters.table_parameters.row_id,
-                                                                               &retvals);
-                                emsmdbp_fill_table_row(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
+                                data_pointers = emsmdbp_object_table_get_row_props(emsmdbp_ctx, handle_object,
+                                                                                   notification->parameters.table_parameters.row_id,
+                                                                                   &retvals);
+                                emsmdbp_object_table_fill_row_blob(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
                                 talloc_free(data_pointers);
                                 talloc_free(retvals);
                         }

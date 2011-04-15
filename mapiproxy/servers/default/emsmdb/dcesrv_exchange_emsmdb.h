@@ -105,7 +105,7 @@ struct emsmdbp_object_table {
 	uint32_t			contextID;
 	bool				IsSystemTable;
 	uint16_t			prop_count;
-	uint32_t			*properties;
+	enum MAPITAGS			*properties;
 	uint32_t			numerator;
 	uint32_t			denominator;
 	bool				mapistore;
@@ -217,6 +217,8 @@ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context 
 struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, bool);
 struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
+void **emsmdbp_object_table_get_row_props(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, uint32_t **);
+void emsmdbp_object_table_fill_row_blob(TALLOC_CTX *, struct emsmdbp_context *, DATA_BLOB *, uint16_t, enum MAPITAGS *, void **, uint32_t *);
 struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *, struct emsmdbp_context *, uint32_t, enum OpenStream_OpenModeFlags, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);

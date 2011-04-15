@@ -27,6 +27,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
+#include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
 const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
@@ -575,6 +576,162 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	return object;
 }
 
+_PUBLIC_ void **emsmdbp_object_table_get_row_props(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, uint32_t row_id, uint32_t **retvalsp)
+{
+        void **data_pointers;
+        enum MAPISTATUS retval;
+        uint32_t *retvals;
+        struct emsmdbp_object_table *table;
+        struct mapistore_property_data *properties;
+        uint32_t i, num_props;
+	char *table_filter;
+
+        table = table_object->object.table;
+        num_props = table_object->object.table->prop_count;
+
+        data_pointers = talloc_array(table_object, void *, num_props);
+        memset(data_pointers, 0, sizeof(void *) * num_props);
+        retvals = talloc_array(table_object, uint32_t, num_props);
+        memset(retvals, 0, sizeof(uint32_t) * num_props);
+
+	if (emsmdbp_is_mapistore(table_object)) {
+		if (table_object->poc_api) {
+			properties = talloc_array(NULL, struct mapistore_property_data, num_props);
+			memset(properties, 0, sizeof(struct mapistore_property_data) * num_props);
+			retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, table->contextID,
+							       table_object->poc_backend_object,
+							       MAPISTORE_PREFILTERED_QUERY, row_id, properties);
+			if (retval == MAPI_E_SUCCESS) {
+				for (i = 0; i < num_props; i++) {
+					data_pointers[i] = properties[i].data;
+                                        
+					if (properties[i].error) {
+						if (properties[i].error == MAPISTORE_ERR_NOT_FOUND)
+							retvals[i] = MAPI_E_NOT_FOUND;
+						else if (properties[i].error == MAPISTORE_ERR_NO_MEMORY)
+							retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
+						else {
+							DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[i].error));
+						}
+					}
+					else {
+						if (properties[i].data == NULL)
+							retvals[i] = MAPI_E_NOT_FOUND;
+						else
+							talloc_steal(data_pointers, properties[i].data);
+					}
+				}
+			}
+			else {
+				DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
+				talloc_free(retvals);
+				retvals = NULL;
+				talloc_free(data_pointers);
+				data_pointers = NULL;
+			}
+			talloc_free(properties);
+		}
+		else {
+			retval = MAPI_E_SUCCESS;
+			for (i = 0; retval != MAPI_E_INVALID_OBJECT && i < num_props; i++) {
+				retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
+								      table->ulType,
+								      MAPISTORE_PREFILTERED_QUERY,
+								      table->folderID, 
+								      table->properties[i],
+								      row_id, data_pointers + i);
+				if (retval == MAPI_E_INVALID_OBJECT) {
+					DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
+					talloc_free(retvals);
+					retvals = NULL;
+					talloc_free(data_pointers);
+					data_pointers = NULL;
+				}
+				else {
+					retvals[i] = retval;
+				}
+			}
+		}
+	}
+	else {
+		table_filter = talloc_asprintf(NULL, "(&(PidTagParentFolderId=0x%.16"PRIx64")(PidTagFolderId=*))", table->folderID);
+
+		/* Lookup for flagged property row */
+		for (i = 0; retval != MAPI_E_INVALID_OBJECT && i < num_props; i++) {
+			retval = openchangedb_get_table_property(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->oc_ctx, 
+								 emsmdbp_ctx->szDisplayName,
+								 table_filter, table->properties[i], 
+								 table->numerator, data_pointers + i);
+			/* DEBUG(5, ("  %.8x: %d", table->properties[j], retval)); */
+			if (retval == MAPI_E_INVALID_OBJECT) {
+				DEBUG(5, ("%s: invalid object in non-mapistore folder, count set to 0\n", __location__));
+				talloc_free(retvals);
+				retvals = NULL;
+				talloc_free(data_pointers);
+				data_pointers = NULL;
+			}
+			else {
+				retvals[i] = retval;
+			}
+		}
+		talloc_free(table_filter);
+	}
+
+        if (retvalsp) {
+                *retvalsp = retvals;
+	}
+
+        return data_pointers;
+}
+
+_PUBLIC_ void emsmdbp_object_table_fill_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
+						 DATA_BLOB *table_row, uint16_t num_props,
+						 enum MAPITAGS *properties,
+						 void **data_pointers, uint32_t *retvals)
+{
+        uint16_t i;
+        uint8_t flagged;
+        enum MAPITAGS property;
+        void *data;
+        uint32_t retval;
+
+        flagged = 0;
+
+        for (i = 0; !flagged && i < num_props; i++) {
+                if (retvals[i] != MAPI_E_SUCCESS) {
+                        flagged = 1;
+                }
+        }
+
+        if (flagged) {
+                libmapiserver_push_property(mem_ctx,
+                                            lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                            0x0000000b, (const void *)&flagged,
+                                            table_row, 0, 0, 0);
+        }
+        else {
+                libmapiserver_push_property(mem_ctx,
+                                            lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                            0x00000000, (const void *)&flagged,
+                                            table_row, 0, 1, 0);
+        }
+
+        for (i = 0; i < num_props; i++) {
+                property = properties[i];
+                retval = retvals[i];
+                if (retval != MAPI_E_SUCCESS) {
+                        property = (property & 0xFFFF0000) + PT_ERROR;
+                        data = &retval;
+                }
+                else {
+                        data = data_pointers[i];
+                }
+
+                libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                            property, data, table_row,
+                                            flagged?PT_ERROR:0, flagged, 0);
+        }
+}
 
 /**
    \details Initialize a message object

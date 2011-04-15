@@ -64,3 +64,110 @@ _PUBLIC_ uint16_t libmapiserver_RopFastTransferSourceGetBuffer_size(struct EcDoR
 
 	return size;
 }
+
+/**
+   \details Calculate SyncConfigure (0x70) Rop size
+
+   \param response pointer to the SyncConfigure EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncConfigure response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncConfigure_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate SyncImportHierarchyChange (0x73) Rop size
+
+   \param response pointer to the SyncImportHierarchyChange EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncImportHierarchyChange response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncImportHierarchyChange_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPSYNCIMPORTHIERARCHYCHANGE;
+
+	return size;
+}
+
+/**
+   \details Calculate SyncUploadStateStreamBegin (0x75) Rop size
+
+   \param response pointer to the SyncUploadStateStreamBegin EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncUploadStateStreamBegin response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncUploadStateStreamBegin_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate SyncUploadStateStreamEnd (0x77) Rop size
+
+   \param response pointer to the SyncUploadStateStreamEnd EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncUploadStateStreamEnd response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncUploadStateStreamEnd_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate SyncOpenCollector (0x7e) Rop size
+
+   \param response pointer to the SyncOpenCollector EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncOpenCollector response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncOpenCollector_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate GetLocalReplicaIds (0x7f) Rop size
+
+   \param response pointer to the GetLocalReplicaIds EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of GetLocalReplicaIds response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetLocalReplicaIds_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETLOCALREPLICAIDS;
+
+	return size;
+}
+
+/**
+   \details Calculate SyncGetTransferState (0x82) Rop size
+
+   \param response pointer to the SyncGetTransferState EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncGetTransferState response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncGetTransferState_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}

@@ -378,6 +378,19 @@
  */
 #define SIZE_DFLT_ROPFASTTRANSFERSOURCEGETBUFFER 9
 
+/**
+   \details SyncImportHierarchyChange has a fixed size for:
+   -# FolderId: uint64_t
+*/
+#define SIZE_DFLT_ROPSYNCIMPORTHIERARCHYCHANGE 8
+
+/**
+   \details GetLocalReplicaIds has a fixed size for:
+   -# ReplGuid: sizeof (struct GUID)
+   -# GlobalCount: uint8_t * 6
+ */
+#define SIZE_DFLT_ROPGETLOCALREPLICAIDS 22
+
 __BEGIN_DECLS
 
 /* definitions from libmapiserver_oxcfold.c */
@@ -468,6 +481,13 @@ uint16_t libmapiserver_RopGetPermissionsTable_size(struct EcDoRpc_MAPI_REPL *);
 /* definitions from libmapiserver_oxcfxics.c */
 uint16_t libmapiserver_RopFastTransferSourceCopyTo_size(struct EcDoRpc_MAPI_REPL *response);
 uint16_t libmapiserver_RopFastTransferSourceGetBuffer_size(struct EcDoRpc_MAPI_REPL *response);
+uint16_t libmapiserver_RopSyncConfigure_size(struct EcDoRpc_MAPI_REPL *response);
+uint16_t libmapiserver_RopSyncImportHierarchyChange_size(struct EcDoRpc_MAPI_REPL *response);
+uint16_t libmapiserver_RopSyncUploadStateStreamBegin_size(struct EcDoRpc_MAPI_REPL *response);
+uint16_t libmapiserver_RopSyncUploadStateStreamEnd_size(struct EcDoRpc_MAPI_REPL *response);
+uint16_t libmapiserver_RopSyncOpenCollector_size(struct EcDoRpc_MAPI_REPL *response);
+uint16_t libmapiserver_RopGetLocalReplicaIds_size(struct EcDoRpc_MAPI_REPL *response);
+uint16_t libmapiserver_RopSyncGetTransferState_size(struct EcDoRpc_MAPI_REPL *response);
 
 __END_DECLS
 

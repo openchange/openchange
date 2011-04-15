@@ -993,13 +993,33 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							&(mapi_response->mapi_repl[idx]),
 							mapi_response->handles, &size);
 			break;
-		/* op_MAPI_SyncConfigure: 0x70 */
+                case op_MAPI_SyncConfigure: /* 0x70 */
+			retval = EcDoRpc_RopSyncConfigure(mem_ctx, emsmdbp_ctx,
+							  &(mapi_request->mapi_req[i]),
+							  &(mapi_response->mapi_repl[idx]),
+							  mapi_response->handles, &size);
+			break;
 		/* op_MAPI_SyncImportMessageChange: 0x72 */
-		/* op_MAPI_SyncImportHierarchyChange: 0x73 */
+		case op_MAPI_SyncImportHierarchyChange: /* 0x73 */
+			retval = EcDoRpc_RopSyncImportHierarchyChange(mem_ctx, emsmdbp_ctx,
+								      &(mapi_request->mapi_req[i]),
+								      &(mapi_response->mapi_repl[idx]),
+								      mapi_response->handles, &size);
+			break;
 		/* op_MAPI_SyncImportDeletes: 0x74 */
-		/* op_MAPI_SyncUploadStateStreamBegin: 0x75 */
+                case op_MAPI_SyncUploadStateStreamBegin: /* 0x75 */
+			retval = EcDoRpc_RopSyncUploadStateStreamBegin(mem_ctx, emsmdbp_ctx,
+								       &(mapi_request->mapi_req[i]),
+								       &(mapi_response->mapi_repl[idx]),
+								       mapi_response->handles, &size);
+			break;
 		/* op_MAPI_SyncUploadStateStreamContinue: 0x76 */
-		/* op_MAPI_SyncUploadStateStreamEnd: 0x77 */
+		case  op_MAPI_SyncUploadStateStreamEnd: /* 0x77 */
+			retval = EcDoRpc_RopSyncUploadStateStreamEnd(mem_ctx, emsmdbp_ctx,
+								     &(mapi_request->mapi_req[i]),
+								     &(mapi_response->mapi_repl[idx]),
+								     mapi_response->handles, &size);
+			break;
 		/* op_MAPI_SyncImportMessageMove: 0x78 */
 		/* op_MAPI_SetPropertiesNoReplicate: 0x79 */
 		case op_MAPI_DeletePropertiesNoReplicate: /* 0x7a */
@@ -1009,8 +1029,18 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 									mapi_response->handles, &size);
 			break;
 		/* op_MAPI_GetStoreState: 0x7b */
-		/* op_MAPI_SyncOpenCollector: 0x7e */
-		/* op_MAPI_GetLocalReplicaIds: 0x7f */
+		case op_MAPI_SyncOpenCollector: /* 0x7e */
+			retval = EcDoRpc_RopSyncOpenCollector(mem_ctx, emsmdbp_ctx,
+							      &(mapi_request->mapi_req[i]),
+							      &(mapi_response->mapi_repl[idx]),
+							      mapi_response->handles, &size);
+			break;
+		case op_MAPI_GetLocalReplicaIds: /* 0x7f */
+			retval = EcDoRpc_RopGetLocalReplicaIds(mem_ctx, emsmdbp_ctx,
+                                                               &(mapi_request->mapi_req[i]),
+                                                               &(mapi_response->mapi_repl[idx]),
+                                                               mapi_response->handles, &size);
+			break;
 		/* op_MAPI_SyncImportReadStateChanges: 0x80 */
 		case op_MAPI_ResetTable: /* 0x81 */
 			retval = EcDoRpc_RopResetTable(mem_ctx, emsmdbp_ctx,
@@ -1018,7 +1048,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 						       &(mapi_response->mapi_repl[idx]),
 						       mapi_response->handles, &size);
 			break;
-		/* op_MAPI_SyncGetTransferState: 0x82 */
+		case op_MAPI_SyncGetTransferState: /* 0x82 */
+			retval = EcDoRpc_RopSyncGetTransferState(mem_ctx, emsmdbp_ctx,
+								 &(mapi_request->mapi_req[i]),
+								 &(mapi_response->mapi_repl[idx]),
+								 mapi_response->handles, &size);
+			break;
 		/* op_MAPI_OpenPublicFolderByName: 0x87 */
 		/* op_MAPI_SetSyncNotificationGuid: 0x88 */
 		/* op_MAPI_FreeBookmark: 0x89 */

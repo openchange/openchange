@@ -918,8 +918,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 	}
         else {
                 DEBUG(0, ("Subscriptions only supported on mapistore objects.\n"));
-		talloc_free(object);
-		return NULL;
         }
 
 	return object;

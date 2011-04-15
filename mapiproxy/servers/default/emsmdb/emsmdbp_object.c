@@ -657,6 +657,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(struct emsmdbp_context *emsmd
 		table_filter = talloc_asprintf(NULL, "(&(PidTagParentFolderId=0x%.16"PRIx64")(PidTagFolderId=*))", table->folderID);
 
 		/* Lookup for flagged property row */
+                retval = MAPI_E_SUCCESS;
 		for (i = 0; retval != MAPI_E_INVALID_OBJECT && i < num_props; i++) {
 			retval = openchangedb_get_table_property(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->oc_ctx, 
 								 emsmdbp_ctx->szDisplayName,

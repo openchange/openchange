@@ -10,10 +10,16 @@ config.mk: config.status config.mk.in
 	./config.status
 
 config.status: configure
-	./configure
-
+	@if test x"$(prefix)" != x""; then \
+		echo "Running configure with prefix '$(prefix)'..."; \
+		./configure --prefix=$(prefix); \
+	else \
+		echo "Running configure without prefix"; \
+		./configure; \
+	fi
+ 
 configure: configure.ac
-	./autogen.sh
+	PREFIX=$(prefix) ./autogen.sh
 
 samba:
 	./script/installsamba4.sh all

@@ -353,6 +353,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
 	object->poc_api = false;
 	object->poc_backend_object = NULL;
 
+	object->stream_data = NULL;
+
 	return object;
 }
 
@@ -1190,4 +1192,46 @@ _PUBLIC_ void emsmdbp_object_fill_row_blob(TALLOC_CTX *mem_ctx,
                                             property, data, property_row,
                                             flagged ? PT_ERROR : 0, flagged, untyped_status[i]);
         }
+}
+
+_PUBLIC_ void emsdbp_object_attach_stream_data(struct emsmdbp_object *object, enum MAPITAGS prop_tag, uint8_t *stream_data, uint32_t stream_size)
+{
+        struct emsmdbp_stream_data *data;
+
+	DEBUG(5, ("[%s]: attaching stream data for tag %.8x\n", __FUNCTION__, prop_tag));
+
+        data = talloc_zero (object, struct emsmdbp_stream_data);
+        data->prop_tag = prop_tag;
+        data->data.data = talloc_memdup(data, stream_data, stream_size);
+        data->data.length = stream_size;
+
+        switch (object->type) {
+        case EMSMDBP_OBJECT_FOLDER:
+        case EMSMDBP_OBJECT_MESSAGE:
+        case EMSMDBP_OBJECT_ATTACHMENT:
+                DLIST_ADD(object->stream_data, data);
+		break;
+	default:
+		talloc_free(data);
+		DEBUG(5, ("[%s:%d] erroneous attempt to attach stream data to an unsupported object\n",
+			  __FUNCTION__, __LINE__));
+        };
+}
+
+_PUBLIC_ struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *object, enum MAPITAGS prop_tag)
+{
+        struct emsmdbp_stream_data *current_data, *found_data = NULL;
+
+	current_data = object->stream_data;
+	while (!found_data && current_data) {
+		if (current_data->prop_tag == prop_tag) {
+			DEBUG(5, ("[%s]: found data for tag %.8x\n", __FUNCTION__, prop_tag));
+			found_data = current_data;
+		}
+		else {
+			current_data = current_data->next;
+		}
+	}
+
+	return found_data;
 }

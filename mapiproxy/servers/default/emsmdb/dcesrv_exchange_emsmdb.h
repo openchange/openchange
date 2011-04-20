@@ -124,6 +124,13 @@ struct emsmdbp_object_stream {
         void                            *parent_poc_backend_object;
 };
 
+struct emsmdbp_stream_data {
+	enum MAPITAGS			prop_tag;
+	DATA_BLOB			data;
+	struct emsmdbp_stream_data	*next;
+	struct emsmdbp_stream_data	*prev;
+};
+
 struct emsmdbp_object_attachment {
 	uint64_t			messageID;
 	uint32_t			attachmentID;
@@ -155,8 +162,8 @@ struct emsmdbp_object {
 	void				*private_data;
         bool                            poc_api;
         void                            *poc_backend_object; /* private_data ? */
+	struct emsmdbp_stream_data      *stream_data;
 };
-
 
 #define	EMSMDB_PCMSPOLLMAX		60000
 #define	EMSMDB_PCRETRY			6
@@ -225,6 +232,8 @@ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmd
 struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 void **emsmdbp_object_get_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray *, enum MAPISTATUS **);
 void emsmdbp_object_fill_row_blob(TALLOC_CTX *, struct emsmdbp_context *, uint8_t *, DATA_BLOB *,struct SPropTagArray *, void **, enum MAPISTATUS *, bool *);
+void emsdbp_object_attach_stream_data(struct emsmdbp_object *, enum MAPITAGS, uint8_t *stream_data, uint32_t stream_size);
+struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *, enum MAPITAGS);
 
 /* definitions from oxcfold.c */
 enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);

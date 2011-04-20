@@ -135,6 +135,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 					stream_size = 0;
 				}
 				if (stream_size > 8192) {
+					DEBUG(5, ("%s: attaching stream data for property %.8x\n", __FUNCTION__, properties->aulPropTag[i]));
+					emsdbp_object_attach_stream_data(object, properties->aulPropTag[i], stream_data, stream_size);
 					/* This will trigger the opening of a property stream from the client. */
 					retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
 				}

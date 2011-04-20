@@ -35,381 +35,6 @@
 #include "dcesrv_exchange_emsmdb.h"
 
 /**
-   \details Retrieve properties on a mapistore object
-   
-   \param mem_ctx pointer to the memory context
-   \param emsmdbp_ctx pointer to the emsmdb provider context
-   \param request GetProps request
-   \param response pointer to the GetProps reply
-   \param private_data pointer tot eh private data stored for this
-   object
-
-   \note We do not handle anything yet. This is just a skeleton.
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error
- */
-static enum MAPISTATUS RopGetPropertiesSpecific_mapistore(TALLOC_CTX *mem_ctx,
-							  struct emsmdbp_context *emsmdbp_ctx,
-							  struct GetProps_req request,
-							  struct GetProps_repl *response,
-							  void *private_data)
-{
-	enum MAPISTATUS		retval;
-	struct emsmdbp_object	*object;
-	uint32_t		contextID = -1;
-	uint64_t		fmid = 0;
-	const void			*data;
-	enum MAPITAGS		propTag;
-	struct SPropTagArray	SPropTagArray;
-	struct SRow		*aRow;
-	int			i;
-	uint8_t			type;
-	uint8_t			*untyped_status;
-        struct mapistore_property_data *properties;
-
-	object = (struct emsmdbp_object *) private_data;
-	if (object) {
-		switch (object->type) {
-		case EMSMDBP_OBJECT_FOLDER:
-			contextID = object->object.folder->contextID;
-                        if (!object->poc_api) {
-                                fmid = object->object.folder->folderID;
-                                type = MAPISTORE_FOLDER;
-                        }
-			break;
-		case EMSMDBP_OBJECT_MESSAGE:
-			contextID = object->object.message->contextID;
-                        if (!object->poc_api) {
-                                fmid = object->object.message->messageID;
-                                type = MAPISTORE_MESSAGE;
-                        }
-			break;
-		case EMSMDBP_OBJECT_ATTACHMENT:
-			contextID = object->object.attachment->contextID;
-			break;
-		default:
-			break;
-		}
-	}
-
-	if (contextID != -1) {
-		response->layout = 0x0; /* Standard or Flagged property row */
-		untyped_status = talloc_array(mem_ctx, uint8_t, request.prop_count);
-
-		SPropTagArray.cValues = request.prop_count;
-		SPropTagArray.aulPropTag = talloc_array(mem_ctx, enum MAPITAGS, request.prop_count);
-		for (i = 0; i < request.prop_count; i++) {
-			if ((request.properties[i] & 0xffff) == 0) {
-				SPropTagArray.aulPropTag[i] = (request.properties[i] | get_property_type(request.properties[i] >> 16));
-				untyped_status[i] = 1;
-                                response->layout = 1;
-			}
-			else {
-				SPropTagArray.aulPropTag[i] = request.properties[i];
-				untyped_status[i] = 0;
-			}
-		}
-
-		aRow = talloc_zero(mem_ctx, struct SRow);
-		aRow->cValues = 0;
-
-                if (object->poc_api) {
-                        aRow->lpProps = talloc_array(aRow, struct SPropValue, SPropTagArray.cValues);
-                        aRow->cValues = SPropTagArray.cValues;
-
-                        properties = talloc_array(mem_ctx, struct mapistore_property_data, request.prop_count);
-                        memset(properties, 0, sizeof(struct mapistore_property_data) * request.prop_count);
-                        mapistore_pocop_get_properties(emsmdbp_ctx->mstore_ctx, contextID,
-                                                       object->poc_backend_object,
-                                                       SPropTagArray.cValues,
-                                                       SPropTagArray.aulPropTag,
-                                                       properties);
-                        for (i = 0; i < request.prop_count; i++) {
-                                retval = MAPI_E_SUCCESS;
-                                if (properties[i].error) {
-                                        if (properties[i].error == MAPISTORE_ERR_NOT_FOUND)
-                                                retval = MAPI_E_NOT_FOUND;
-                                        else if (properties[i].error == MAPISTORE_ERR_NO_MEMORY)
-                                                retval = MAPI_E_NOT_ENOUGH_MEMORY;
-                                        else {
-                                                DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[i].error));
-                                        }
-                                }
-                                else {
-                                        if (properties[i].data == NULL)
-                                                retval = MAPISTORE_ERR_NOT_FOUND;
-                                        else
-                                                talloc_steal(properties, properties[0].data);
-                                }
-
-                                propTag = SPropTagArray.aulPropTag[i];
-                                if (retval) {
-                                        /* we translate mapistore error into a mapi error */
-                                        propTag = (propTag & 0xffff0000) | PT_ERROR;
-                                        retval = MAPI_E_NOT_FOUND;
-                                        data = &retval;
-                                }
-                                else {
-                                        data = properties[i].data;
-                                }
-                                set_SPropValue_proptag (aRow->lpProps + i, propTag, data);
-                        }
-                        talloc_free(properties);
-                }
-                else {
-                        mapistore_getprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, type, &SPropTagArray, aRow);
-                }
-
-		/* Check if we need the layout */
-                if (!response->layout) {
-                        for (i = 0; i < request.prop_count; i++) {
-                                data = find_SPropValue_data(aRow, SPropTagArray.aulPropTag[i]);
-                                if (data == NULL) { 
-                                        response->layout = 0x1;
-                                        break;
-                                }
-                        }
-                }
-		
-		for (i = 0; i < request.prop_count; i++) {
-                        propTag = SPropTagArray.aulPropTag[i];
-                        data = find_SPropValue_data(aRow, propTag);
-			if (data == NULL) {
-                                propTag = (propTag & 0xFFFF0000) + PT_ERROR;
-                                data = find_SPropValue_data(aRow, propTag);
-                                if (data == NULL) {
-                                        retval = MAPI_E_NOT_FOUND;
-                                        data = (void *)&retval;
-                                }
-			}
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-						    propTag, data,
-						    &response->prop_data,
-                                                    response->layout ? PT_ERROR : 0,
-                                                    response->layout, untyped_status[i]);
-		}
-	} else {
-		response->layout = 0x1;
-		for (i = 0; i < request.prop_count; i++) {
-			request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
-			retval = MAPI_E_NOT_FOUND;
-			response->layout = 0x1;
-			data = (void *)&retval;
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-						    request.properties[i], (const void *)data,
-						    &response->prop_data, response->layout, 0, 0);
-		}
-	}
-
-	return MAPI_E_SUCCESS;
-}
-
-
-/**
-   \details Retrieve properties on a mailbox object.
-
-   \param mem_ctx pointer to the memory context
-   \param emsmdbp_ctx pointer to the emsmdb provider context
-   \param request GetProps request
-   \param response pointer to the GetProps reply
-   \param private_data pointer to the private data stored for this
-   object
-
-   \note Mailbox objects have a limited set of supported properties.
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error
- */
-static enum MAPISTATUS RopGetPropertiesSpecific_Mailbox(TALLOC_CTX *mem_ctx,
-							struct emsmdbp_context *emsmdbp_ctx,
-							struct GetProps_req request,
-							struct GetProps_repl *response,
-							void *private_data)
-{
-	enum MAPISTATUS			retval;
-	struct emsmdbp_object		*object;
-	void				*data;
-	struct SBinary_short		bin;
-	uint32_t			i;
-	uint32_t			error = 0;
-
-	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!private_data, MAPI_E_INVALID_PARAMETER, NULL);
-
-	object = (struct emsmdbp_object *) private_data;
-
-	/* Step 1. Check if we need a layout */
-	response->layout = 0;
-	for (i = 0; i < request.prop_count; i++) {
-		switch (request.properties[i]) {
-		case PR_MAPPING_SIGNATURE:
-		case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
-			response->layout = 0x1;
-			break;
-		case PR_USER_ENTRYID:
-			break;
-		case PR_MAILBOX_OWNER_ENTRYID:
-		case PR_MAILBOX_OWNER_NAME:
-		case PR_MAILBOX_OWNER_NAME_UNICODE:
-			if (object->object.mailbox->mailboxstore == false) {
-				response->layout = 0x1;
-			}
-			break;
-		default:
-			retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx,
-								  emsmdbp_ctx->szDisplayName, 
-								  request.properties[i],
-								  object->object.mailbox->folderID, 
-								  (void **)&data);
-			if (retval) {
-				response->layout = 0x1;
-			}
-			break;
-		}
-		if (response->layout == 1) {
-			break;
-		}
-	}
-
-	/* Step 2. Fill the GetProps blob */
-	for (i = 0; i < request.prop_count; i++) {
-		switch (request.properties[i]) {
-		case PR_MAPPING_SIGNATURE:
-		case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
-			error = MAPI_E_NO_ACCESS;
-			request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-						    request.properties[i], (const void *)&error, 
-						    &response->prop_data, response->layout, 0, 0);
-			break;
-		case PR_USER_ENTRYID:
-			retval = entryid_set_AB_EntryID(mem_ctx, object->object.mailbox->szUserDN, &bin);
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-						    request.properties[i], (const void *)&bin,
-						    &response->prop_data, response->layout, 0, 0);
-			talloc_free(bin.lpb);
-			break;
-		case PR_MAILBOX_OWNER_ENTRYID:
-			if (object->object.mailbox->mailboxstore == false) {
-				error = MAPI_E_NO_ACCESS;
-				request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
-				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-							    request.properties[i], (const void *)&error,
-							    &response->prop_data, response->layout, 0, 0);
-			} else {
-				retval = entryid_set_AB_EntryID(mem_ctx, object->object.mailbox->owner_EssDN,
-								&bin);
-				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-							    request.properties[i], (const void *)&bin,
-							    &response->prop_data, response->layout, 0, 0);
-				talloc_free(bin.lpb);
-			}
-			break;
-		case PR_MAILBOX_OWNER_NAME:
-		case PR_MAILBOX_OWNER_NAME_UNICODE:
-			if (object->object.mailbox->mailboxstore == false) {
-				error = MAPI_E_NO_ACCESS;
-				request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
- 				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-							    request.properties[i], (const void *)&error,
-							    &response->prop_data, response->layout, 0, 0);
-			} else {
-				libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-							    request.properties[i], 
-							    (const void *)object->object.mailbox->owner_Name,
-							    &response->prop_data, response->layout, 0, 0);
-			}
-			break;
-		default:
-			retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx,
-								  emsmdbp_ctx->szDisplayName, request.properties[i],
-								  object->object.mailbox->folderID, (void **)&data);
-			if (retval) {
-				request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
-				data = (void *)&retval;
-			}
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-						    request.properties[i], (const void *)data, 
-						    &response->prop_data, response->layout, 0, 0);
-			break;
-		}
-	}
-
-	return MAPI_E_SUCCESS;
-}
-
-
-/**
-   \details Retrieve properties on a systemfolder object.
-
-   \param mem_ctx pointer to the memory context
-   \param emsmdbp_ctx pointer to the emsmdb provider context
-   \param request GetProps request
-   \param response pointer to the GetProps reply
-   \param private_data pointer to the private data stored for this
-   object
-   \param private_data pointer to the private data stored for this
-   object
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error
- */
-static enum MAPISTATUS RopGetPropertiesSpecific_SystemSpecialFolder(TALLOC_CTX *mem_ctx,
-								    struct emsmdbp_context *emsmdbp_ctx,
-								    struct GetProps_req request,
-								    struct GetProps_repl *response,
-								    void *private_data)
-{
-	enum MAPISTATUS			retval;
-	struct emsmdbp_object		*object;
-	struct emsmdbp_object_folder	*folder;
-	void				*data;
-        uint32_t                        count = 0;
-	int				i;
-
-	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!private_data, MAPI_E_INVALID_PARAMETER, NULL);
-
-	object = (struct emsmdbp_object *) private_data;
-	folder = (struct emsmdbp_object_folder *) object->object.folder;
-
-	/* Step 1. Lookup properties and set layout */
-	response->layout = 0x0;
-
-        for (i = 0; i < request.prop_count; i++) {
-                if (request.properties[i] != PR_CONTENT_COUNT
-                    && openchangedb_lookup_folder_property(emsmdbp_ctx->oc_ctx, request.properties[i], 
-                                                           folder->folderID)) {
-                        response->layout = 0x1;
-                        break;
-                }
-        }
-
-        /* Step 2. Fetch properties values */
-        for (i = 0; i < request.prop_count; i++) {
-                if (request.properties[i] == PR_CONTENT_COUNT) {
-                        /* a hack to avoid fetching dynamic fields from openchange.tdb */
-                        retval = mapistore_get_message_count(emsmdbp_ctx->mstore_ctx, folder->contextID, folder->folderID,
-                                                             MAPISTORE_MESSAGE_TABLE, &count);
-                        data = &count;
-                }
-                else {
-                        retval = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, 
-                                                                  emsmdbp_ctx->szDisplayName, request.properties[i],
-                                                                  folder->folderID, (void **)&data);
-                }
-                if (retval) {
-                        request.properties[i] = (request.properties[i] & 0xFFFF0000) + PT_ERROR;
-                        data = (void *)&retval;
-                }
-                libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
-                                            request.properties[i], (const void *)data,
-                                            &response->prop_data, response->layout, 0, 0);
-        }
-
-	return MAPI_E_SUCCESS;
-}
-
-
-/**
    \details EcDoRpc GetPropertiesSpecific (0x07) Rop. This operation
    retrieves from properties data from specified object.
 
@@ -431,13 +56,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 							  uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
-	struct GetProps_req	request;
-	struct GetProps_repl	response;
+	struct GetProps_req	*request;
+	struct GetProps_repl	*response;
 	uint32_t		handle;
 	struct mapi_handles	*rec = NULL;
 	void			*private_data = NULL;
-	bool			mapistore = false;
 	struct emsmdbp_object	*object;
+        struct SPropTagArray    *properties;
+        void                    **data_pointers;
+        enum MAPISTATUS         *retvals = NULL;
+        bool                    *untyped_status;
+        uint16_t                i, propType;
+	uint32_t		stream_size;
+	uint8_t			*stream_data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesSpecific (0x07)\n"));
 
@@ -448,12 +79,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	request = mapi_req->u.mapi_GetProps;
-	response = mapi_repl->u.mapi_GetProps;
+	request = &mapi_req->u.mapi_GetProps;
+	response = &mapi_repl->u.mapi_GetProps;
 
 	/* Initialize GetProps response blob */
-	response.prop_data.length = 0;
-	response.prop_data.data = NULL;
+	response->prop_data.length = 0;
+	response->prop_data.data = NULL;
 
 	/* Fill EcDoRpc_MAPI_REPL reply */
 	mapi_repl->opnum = mapi_req->opnum;
@@ -469,45 +100,59 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	}
 
 	retval = mapi_handles_get_private_data(rec, &private_data);
+        object = private_data;
 
-	mapistore = emsmdbp_is_mapistore(private_data);
-	/* Nasty hack */
-	if (!private_data) {
-		mapistore = true;
-	}
+        properties = talloc_zero(NULL, struct SPropTagArray);
+        properties->cValues = request->prop_count;
+        properties->aulPropTag = talloc_array(properties, enum MAPITAGS, request->prop_count);
+        untyped_status = talloc_array(NULL, bool, request->prop_count);
 
-	/* Temporary hack: If this is a mapistore root container
-	 * (e.g. Inbox, Calendar etc.), directly stored under
-	 * IPM.Subtree, then fetch properties from openchange
-	 * dispatcher db, not mapistore */
-	object = (struct emsmdbp_object *) private_data;
-	if (object && object->type == EMSMDBP_OBJECT_FOLDER &&
-	    object->object.folder->mapistore_root == true) {
-		retval = RopGetPropertiesSpecific_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, 
-								      request, &response, private_data);
-	} else {
-		switch (mapistore) {
-		case false:
-			switch (object->type) {
-			case EMSMDBP_OBJECT_MAILBOX:
-				retval = RopGetPropertiesSpecific_Mailbox(mem_ctx, emsmdbp_ctx, request, &response, private_data);
-				break;
-			case EMSMDBP_OBJECT_FOLDER:
-				retval = RopGetPropertiesSpecific_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, request, &response, private_data);
-				break;
-			default:
-				break;
+        for (i = 0; i < request->prop_count; i++) {
+                properties->aulPropTag[i] = request->properties[i];
+                if ((request->properties[i] & 0xffff) == 0) {
+                        properties->aulPropTag[i] |= get_property_type(request->properties[i] >> 16);
+                        untyped_status[i] = true;
+                }
+                else {
+                        untyped_status[i] = false;
+                }
+        }
+
+        data_pointers = emsmdbp_object_get_properties(emsmdbp_ctx, object, properties, &retvals);
+        if (data_pointers) {
+		for (i = 0; i < request->prop_count; i++) {
+			if (retvals[i] == MAPI_E_SUCCESS) {
+				propType = properties->aulPropTag[i] & 0xffff;
+				if (propType == PT_STRING8 || propType == PT_UNICODE) {
+					stream_data = data_pointers[i];
+					stream_size = strlen((const char *) stream_data);
+				}
+				else if (propType == PT_BINARY) {
+					stream_size = ((struct SBinary_short *) data_pointers[i])->cb;
+					stream_data = data_pointers[i];
+				}
+				else {
+					stream_size = 0;
+				}
+				if (stream_size > 8192) {
+					/* This will trigger the opening of a property stream from the client. */
+					retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
+				}
 			}
-			break;
-		case true:
-			/* folder or messages handled by mapistore */
-			retval = RopGetPropertiesSpecific_mapistore(mem_ctx, emsmdbp_ctx, request, &response, private_data);
-			break;
 		}
-	}
-
-	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->u.mapi_GetProps = response;
+                mapi_repl->error_code = MAPI_E_SUCCESS;
+                emsmdbp_object_fill_row_blob(mem_ctx,
+                                             emsmdbp_ctx,
+                                             &response->layout,
+                                             &response->prop_data,
+                                             properties,
+                                             data_pointers,
+                                             retvals,
+                                             untyped_status);
+                talloc_free(data_pointers);
+        }
+        talloc_free(properties);
+        talloc_free(retvals);
 
  end:
 	*size += libmapiserver_RopGetPropertiesSpecific_size(mapi_req, mapi_repl);

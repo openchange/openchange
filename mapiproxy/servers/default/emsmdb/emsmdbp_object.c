@@ -922,3 +922,272 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 
 	return object;
 }
+
+static void emsmdbp_object_get_properties_systemspecialfolder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
+{
+	enum MAPISTATUS			retval;
+	struct emsmdbp_object_folder	*folder;
+	int				i;
+        uint32_t                        *msg_count;
+
+        DEBUG(5, ("%s\n", __PRETTY_FUNCTION__));
+
+	folder = (struct emsmdbp_object_folder *) object->object.folder;
+        for (i = 0; i < properties->cValues; i++) {
+                if (properties->aulPropTag[i] == PR_CONTENT_COUNT) {
+                        /* a hack to avoid fetching dynamic fields from openchange.tdb */
+                        msg_count = talloc_zero(data_pointers, uint32_t);
+                        retval = mapistore_get_message_count(emsmdbp_ctx->mstore_ctx, folder->contextID, folder->folderID,
+                                                             MAPISTORE_MESSAGE_TABLE, msg_count);
+                        data_pointers[i] = msg_count;
+                }
+                else {
+			if (openchangedb_lookup_folder_property(emsmdbp_ctx->oc_ctx, properties->aulPropTag[i], 
+								folder->folderID)) {
+				retval = MAPI_E_NOT_FOUND;
+			}
+			else {
+				retval = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, 
+									  emsmdbp_ctx->szDisplayName, properties->aulPropTag[i],
+									  folder->folderID, data_pointers + i);
+			}
+                }
+		retvals[i] = retval;
+        }
+}
+
+static void emsmdbp_object_get_properties_mailbox(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
+{
+	uint32_t			i;
+	struct SBinary_short		*bin;
+
+        DEBUG(5, ("%s\n", __PRETTY_FUNCTION__));
+
+	for (i = 0; i < properties->cValues; i++) {
+		switch (properties->aulPropTag[i]) {
+		case PR_MAPPING_SIGNATURE:
+		case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
+			retvals[i] = MAPI_E_NO_ACCESS;
+			break;
+		case PR_USER_ENTRYID:
+			bin = talloc_zero(data_pointers, struct SBinary_short);
+			retvals[i] = entryid_set_AB_EntryID(data_pointers, object->object.mailbox->szUserDN, bin);
+			data_pointers[i] = bin;
+			break;
+		case PR_MAILBOX_OWNER_ENTRYID:
+			if (object->object.mailbox->mailboxstore == false) {
+				retvals[i] = MAPI_E_NO_ACCESS;
+			} else {
+				bin = talloc_zero(data_pointers, struct SBinary_short);
+				retvals[i] = entryid_set_AB_EntryID(data_pointers, object->object.mailbox->owner_EssDN,
+								    bin);
+				data_pointers[i] = bin;
+			}
+			break;
+		case PR_MAILBOX_OWNER_NAME:
+		case PR_MAILBOX_OWNER_NAME_UNICODE:
+			if (object->object.mailbox->mailboxstore == false) {
+				retvals[i] = MAPI_E_NO_ACCESS;
+			} else {
+				retvals[i] = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx,
+									      emsmdbp_ctx->szDisplayName, 
+									      properties->aulPropTag[i],
+									      object->object.mailbox->folderID, 
+									      data_pointers + i);
+			}
+			break;
+		default:
+			retvals[i] = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx,
+								      emsmdbp_ctx->szDisplayName, properties->aulPropTag[i],
+								      object->object.mailbox->folderID, data_pointers + i);
+		}
+	}
+}
+
+static void emsmdbp_object_get_properties_mapistore(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
+{
+	uint32_t		contextID = -1;
+	uint64_t		fmid = 0;
+	struct SRow             *aRow;
+	struct mapistore_property_data  *prop_data;
+	int			i;
+	uint8_t			type;
+	uint16_t		propType;
+
+        DEBUG(5, ("%s\n", __PRETTY_FUNCTION__));
+
+	switch (object->type) {
+	case EMSMDBP_OBJECT_FOLDER:
+		contextID = object->object.folder->contextID;
+		if (!object->poc_api) {
+			fmid = object->object.folder->folderID;
+			type = MAPISTORE_FOLDER;
+		}
+		break;
+	case EMSMDBP_OBJECT_MESSAGE:
+		contextID = object->object.message->contextID;
+		if (!object->poc_api) {
+			fmid = object->object.message->messageID;
+			type = MAPISTORE_MESSAGE;
+		}
+		break;
+	case EMSMDBP_OBJECT_ATTACHMENT:
+		contextID = object->object.attachment->contextID;
+		break;
+	default:
+		break;
+	}
+
+	if (contextID != -1) {
+                if (object->poc_api) {
+                        prop_data = talloc_array(NULL, struct mapistore_property_data, properties->cValues);
+                        memset(prop_data, 0, sizeof(struct mapistore_property_data) * properties->cValues);
+
+                        mapistore_pocop_get_properties(emsmdbp_ctx->mstore_ctx, contextID,
+                                                       object->poc_backend_object,
+                                                       properties->cValues,
+                                                       properties->aulPropTag,
+                                                       prop_data);
+                        for (i = 0; i < properties->cValues; i++) {
+                                if (prop_data[i].error) {
+                                        if (prop_data[i].error == MAPISTORE_ERR_NOT_FOUND) {
+                                                retvals[i] = MAPI_E_NOT_FOUND;
+					}
+                                        else {
+                                                retvals[i] = MAPI_E_NO_SUPPORT;
+                                                DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, prop_data[i].error));
+                                        }
+                                }
+                                else {
+                                        if (prop_data[i].data == NULL) {
+                                                retvals[i] = MAPI_E_NOT_FOUND;
+					}
+                                        else {
+						data_pointers[i] = prop_data[i].data;
+                                                talloc_steal(data_pointers, prop_data[i].data);
+					}
+                                }
+                        }
+                        talloc_free(prop_data);
+                }
+                else {
+			aRow = talloc_zero(NULL, struct SRow);
+                        mapistore_getprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, type, properties, aRow);
+			talloc_steal(data_pointers, aRow->lpProps);
+                        for (i = 0; i < properties->cValues; i++) {
+				propType = aRow->lpProps[i].ulPropTag & 0xffff;
+				if (propType == PT_ERROR) {
+					retvals[i] = aRow->lpProps[i].value.err;
+				}
+				else {
+					if (((propType == PT_STRING8
+					      || propType == PT_UNICODE)
+					     && aRow->lpProps[i].value.lpszW == NULL)
+					    || (propType == PT_BINARY
+						&& aRow->lpProps[i].value.bin.lpb == NULL)) {
+						retvals[i] = MAPI_E_NOT_FOUND;
+					}
+					else {
+						data_pointers[i] = (void *) get_SPropValue_data(&aRow->lpProps[i]);
+					}
+				}
+			}
+			talloc_free(aRow);
+                }
+	} else {
+		memset(retvals, MAPI_E_INVALID_OBJECT, sizeof(enum MAPITAGS) * properties->cValues);
+	}
+}
+
+_PUBLIC_ void **emsmdbp_object_get_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, enum MAPISTATUS **retvalsp)
+{
+        void **data_pointers;
+        enum MAPISTATUS *retvals;
+	bool mapistore;
+
+        data_pointers = talloc_array(object, void *, properties->cValues);
+        memset(data_pointers, 0, sizeof(void *) * properties->cValues);
+
+        retvals = talloc_array(object, enum MAPISTATUS, properties->cValues);
+        memset(retvals, 0, sizeof(enum MAPISTATUS) * properties->cValues);
+
+	/* Temporary hack: If this is a mapistore root container
+	 * (e.g. Inbox, Calendar etc.), directly stored under
+	 * IPM.Subtree, then fetch properties from openchange
+	 * dispatcher db, not mapistore */
+	if (object && object->type == EMSMDBP_OBJECT_FOLDER &&
+	    object->object.folder->mapistore_root == true) {
+		emsmdbp_object_get_properties_systemspecialfolder(emsmdbp_ctx, object, properties, data_pointers, retvals);
+	} else {
+		mapistore = emsmdbp_is_mapistore(object);
+		/* Nasty hack */
+		if (!object) {
+			mapistore = true;
+		}
+
+		switch (mapistore) {
+		case false:
+			switch (object->type) {
+			case EMSMDBP_OBJECT_MAILBOX:
+				emsmdbp_object_get_properties_mailbox(emsmdbp_ctx, object, properties, data_pointers, retvals);
+				break;
+			case EMSMDBP_OBJECT_FOLDER:
+				emsmdbp_object_get_properties_systemspecialfolder(emsmdbp_ctx, object, properties, data_pointers, retvals);
+				break;
+			default:
+				break;
+			}
+			break;
+		case true:
+			/* folder or messages handled by mapistore */
+			emsmdbp_object_get_properties_mapistore(emsmdbp_ctx, object, properties, data_pointers, retvals);
+			break;
+		}
+	}
+
+	if (retvalsp) {
+		*retvalsp = retvals;
+	}
+
+        return data_pointers;
+}
+
+_PUBLIC_ void emsmdbp_object_fill_row_blob(TALLOC_CTX *mem_ctx,
+                                           struct emsmdbp_context *emsmdbp_ctx,
+                                           uint8_t *layout,
+					   DATA_BLOB *property_row,
+                                           struct SPropTagArray *properties,
+					   void **data_pointers,
+                                           enum MAPISTATUS *retvals,
+					   bool *untyped_status)
+{
+        uint16_t i;
+        uint8_t flagged;
+        enum MAPITAGS property;
+        void *data;
+        uint32_t retval;
+
+        DEBUG(5, ("%s\n", __PRETTY_FUNCTION__));
+        flagged = 0;
+        for (i = 0; !flagged && i < properties->cValues; i++) {
+                if (retvals[i] != MAPI_E_SUCCESS || untyped_status[i] || !data_pointers[i]) {
+                        flagged = 1;
+                }
+        }
+	*layout = flagged;
+
+        for (i = 0; i < properties->cValues; i++) {
+                retval = retvals[i];
+                if (retval != MAPI_E_SUCCESS) {
+                        property = (properties->aulPropTag[i] & 0xFFFF0000) + PT_ERROR;
+                        data = &retval;
+                }
+                else {
+                        property = properties->aulPropTag[i];
+                        data = data_pointers[i];
+                }
+                libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                                            property, data, property_row,
+                                            flagged ? PT_ERROR : 0, flagged, untyped_status[i]);
+        }
+}

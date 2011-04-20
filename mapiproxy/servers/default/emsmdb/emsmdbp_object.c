@@ -30,6 +30,10 @@
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
+extern size_t convert_string(charset_t from, charset_t to,
+			     void const *src, size_t srclen, 
+			     void *dest, size_t destlen, bool allow_badcharcnv);
+
 const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 {
 	switch (object->type) {
@@ -201,13 +205,9 @@ static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct em
 		}
 		else {
 			/* PT_UNICODE */
-			string_size = strlen_m_ext((char *) stream->buffer.data, CH_UTF16LE, CH_UTF8);
+			string_size = strlen_m_ext((char *) stream->buffer.data, CH_UTF16LE, CH_UTF8) / 2;
 			utf8_buffer = talloc_array(aRow.lpProps, uint8_t, string_size + 1);
 			memset(utf8_buffer, 0, string_size);
-			size_t convert_string(charset_t from, charset_t to,
-					      void const *src, size_t srclen, 
-					      void *dest, size_t destlen, bool allow_badcharcnv);
-				
 			convert_string(CH_UTF16LE, CH_UTF8,
 				       stream->buffer.data, stream->buffer.length,
 				       utf8_buffer, string_size,
@@ -1192,44 +1192,53 @@ _PUBLIC_ void emsmdbp_object_fill_row_blob(TALLOC_CTX *mem_ctx,
         }
 }
 
-_PUBLIC_ void emsdbp_object_attach_stream_data(struct emsmdbp_object *object, enum MAPITAGS prop_tag, uint8_t *stream_data, uint32_t stream_size)
+_PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *mem_ctx, enum MAPITAGS prop_tag, void *value)
 {
-        struct emsmdbp_stream_data *data;
+	uint16_t prop_type;
+	struct emsmdbp_stream_data *stream_data;
 
-	DEBUG(5, ("[%s]: attaching stream data for tag %.8x\n", __FUNCTION__, prop_tag));
+	stream_data = talloc_zero(mem_ctx, struct emsmdbp_stream_data);
+        stream_data->prop_tag = prop_tag;
+	prop_type = prop_tag & 0xffff;
+	if (prop_type == PT_STRING8) {
+		stream_data->data.length = strlen((const char *) stream_data) + 1;
+		stream_data->data.data = value;
+                talloc_reference(stream_data, stream_data->data.data);
+	}
+	else if (prop_type == PT_UNICODE) {
+		stream_data->data.length = strlen_m_ext((char *) value, CH_UTF8, CH_UTF16LE) * 2 + 2;
+		stream_data->data.data = talloc_array(mem_ctx, uint8_t, stream_data->data.length);
+		convert_string(CH_UTF8, CH_UTF16LE,
+			       value, strlen(value),
+			       stream_data->data.data, stream_data->data.length,
+			       false);
+		memset(stream_data->data.data + stream_data->data.length - 2, 0, 2 * sizeof(uint8_t));
+	}
+	else if (prop_type == PT_BINARY) {
+		stream_data->data.length = ((struct Binary_r *) value)->cb;
+		stream_data->data.data = ((struct Binary_r *) value)->lpb;
+                talloc_reference(stream_data, stream_data->data.data);
+	}
+	else {
+		talloc_free(stream_data);
+		return NULL;
+	}
 
-        data = talloc_zero (object, struct emsmdbp_stream_data);
-        data->prop_tag = prop_tag;
-        data->data.data = talloc_memdup(data, stream_data, stream_size);
-        data->data.length = stream_size;
-
-        switch (object->type) {
-        case EMSMDBP_OBJECT_FOLDER:
-        case EMSMDBP_OBJECT_MESSAGE:
-        case EMSMDBP_OBJECT_ATTACHMENT:
-                DLIST_ADD(object->stream_data, data);
-		break;
-	default:
-		talloc_free(data);
-		DEBUG(5, ("[%s:%d] erroneous attempt to attach stream data to an unsupported object\n",
-			  __FUNCTION__, __LINE__));
-        };
+	return stream_data;
 }
 
 _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *object, enum MAPITAGS prop_tag)
 {
-        struct emsmdbp_stream_data *current_data, *found_data = NULL;
+        struct emsmdbp_stream_data *current_data;
 
-	current_data = object->stream_data;
-	while (!found_data && current_data) {
+	for (current_data = object->stream_data; current_data; current_data = current_data->next) {
 		if (current_data->prop_tag == prop_tag) {
 			DEBUG(5, ("[%s]: found data for tag %.8x\n", __FUNCTION__, prop_tag));
-			found_data = current_data;
-		}
-		else {
-			current_data = current_data->next;
+			return current_data;
 		}
 	}
 
-	return found_data;
+	DEBUG(5, ("[%s]: found no data for tag %.8x\n", __FUNCTION__, prop_tag));
+
+	return NULL;
 }

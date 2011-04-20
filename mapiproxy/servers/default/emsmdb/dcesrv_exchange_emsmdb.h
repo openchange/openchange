@@ -233,7 +233,7 @@ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmd
 struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 void **emsmdbp_object_get_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray *, enum MAPISTATUS **);
 void emsmdbp_object_fill_row_blob(TALLOC_CTX *, struct emsmdbp_context *, uint8_t *, DATA_BLOB *,struct SPropTagArray *, void **, enum MAPISTATUS *, bool *);
-void emsdbp_object_attach_stream_data(struct emsmdbp_object *, enum MAPITAGS, uint8_t *stream_data, uint32_t stream_size);
+struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *, enum MAPITAGS, void *value);
 struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *, enum MAPITAGS);
 
 /* definitions from oxcfold.c */

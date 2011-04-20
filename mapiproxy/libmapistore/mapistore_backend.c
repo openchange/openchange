@@ -522,24 +522,6 @@ int mapistore_backend_setprops(struct backend_context *bctx, uint64_t fmid, uint
 	return bctx->backend->op_setprops(bctx->private_data, fmid, type, aRow);
 }
 
-int mapistore_backend_set_property_from_fd(struct backend_context *bctx,
-					   uint64_t fmid,
-					   uint8_t type,
-					   uint32_t property,
-					   int fd)
-{
-	return bctx->backend->op_set_property_from_fd(bctx->private_data, fmid, type, property, fd);
-}
-
-int mapistore_backend_get_property_into_fd(struct backend_context *bctx,
-					   uint64_t fmid,
-					   uint8_t type,
-					   uint32_t property,
-					   int fd)
-{
-	return bctx->backend->op_get_property_into_fd(bctx->private_data, fmid, type, property, fd);
-}
-
 int mapistore_backend_modifyrecipients(struct backend_context *bctx, uint64_t mid, struct ModifyRecipientRow *rows, uint16_t count)
 {
 	return bctx->backend->op_modifyrecipients(bctx->private_data, mid, rows, count);

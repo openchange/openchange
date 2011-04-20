@@ -464,10 +464,8 @@ int mapistore_backend_readdir_count(struct backend_context *bctx, uint64_t fid, 
 				    uint32_t *RowCount)
 {
 	int		ret;
-	uint32_t	count = 0;
 
-	ret = bctx->backend->op_readdir_count(bctx->private_data, fid, table_type, &count);
-	*RowCount = count;
+	ret = bctx->backend->op_readdir_count(bctx->private_data, fid, table_type, RowCount);
 
 	return ret;
 }

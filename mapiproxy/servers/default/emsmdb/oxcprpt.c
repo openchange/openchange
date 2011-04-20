@@ -68,7 +68,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
         bool                    *untyped_status;
         uint16_t                i, propType;
 	uint32_t		stream_size;
-	uint8_t			*stream_data;
+	struct emsmdbp_stream_data *stream_data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesSpecific (0x07)\n"));
 
@@ -123,20 +123,24 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 		for (i = 0; i < request->prop_count; i++) {
 			if (retvals[i] == MAPI_E_SUCCESS) {
 				propType = properties->aulPropTag[i] & 0xffff;
-				if (propType == PT_STRING8 || propType == PT_UNICODE) {
-					stream_data = data_pointers[i];
-					stream_size = strlen((const char *) stream_data);
+				if (propType == PT_STRING8) {
+					stream_size = strlen((const char *) stream_data) + 1;
+				}
+				else if (propType == PT_UNICODE) {
+					stream_size = strlen_m_ext((char *) data_pointers[i], CH_UTF8, CH_UTF16LE) * 2 + 2;
 				}
 				else if (propType == PT_BINARY) {
-					stream_size = ((struct SBinary_short *) data_pointers[i])->cb;
-					stream_data = data_pointers[i];
+					stream_size = ((struct Binary_r *) data_pointers[i])->cb;
 				}
 				else {
 					stream_size = 0;
 				}
 				if (stream_size > 8192) {
 					DEBUG(5, ("%s: attaching stream data for property %.8x\n", __FUNCTION__, properties->aulPropTag[i]));
-					emsdbp_object_attach_stream_data(object, properties->aulPropTag[i], stream_data, stream_size);
+					stream_data = emsmdbp_stream_data_from_value(object, properties->aulPropTag[i], data_pointers[i]);
+					if (stream_data) {
+						DLIST_ADD(object->stream_data, stream_data);
+					}
 					/* This will trigger the opening of a property stream from the client. */
 					retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
 				}
@@ -354,16 +358,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*rec = NULL;
 	struct emsmdbp_object		*object = NULL;
 	struct emsmdbp_object		*parent_object = NULL;
+	struct OpenStream_req		*request;
+	struct OpenStream_repl		*response;
 	uint32_t			handle, contextID;
 	uint64_t			objectID;
 	uint8_t				objectType;
-	int				fd;
-	char				*filename;
 	void				*data;
-        struct mapistore_property_data  *properties;
-        struct SBinary_short            *binary_data;
-        ssize_t                         write_code;
-        
+        struct SPropTagArray		properties;
+	void				**data_pointers;
+	enum MAPISTATUS			*retvals;
+	struct emsmdbp_stream_data	*stream_data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] OpenStream (0x2b)\n"));
 
@@ -407,90 +411,63 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
         }
         else {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                goto end;
 	}
 
+	request = &mapi_req->u.mapi_OpenStream;
+	response = &mapi_repl->u.mapi_OpenStream;
+
 	/* TODO: implementation status:
-	   - message:
-	     - OpenStream_ReadOnly (supported)
-	     - OpenStream_ReadWrite
-	     - OpenStream_Create (supported)
-	     - OpenStream_BestAccess
-	   - folder:
-	     - OpenStream_ReadOnly
-	     - OpenStream_ReadWrite
-	     - OpenStream_Create
-	     - OpenStream_BestAccess
+	   - OpenStream_ReadOnly (supported)
+	   - OpenStream_ReadWrite
+	   - OpenStream_Create (supported)
+	   - OpenStream_BestAccess
 	*/
 
-	if (!mapi_repl->error_code) {
-                filename = talloc_asprintf(mem_ctx, "/tmp/openchange-stream-XXXXXX");
-                fd = mkstemp(filename);
-                if (fd > -1) {
-                        object = emsmdbp_object_stream_init((TALLOC_CTX *)rec, emsmdbp_ctx,
-                                                            mapi_req->u.mapi_OpenStream.PropertyTag,
-                                                            mapi_req->u.mapi_OpenStream.OpenModeFlags,
-                                                            parent_object);
-                        object->object.stream->fd = fd;
-                        object->object.stream->objectID = objectID;
-                        object->object.stream->objectType = objectType;
+	object = emsmdbp_object_stream_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent_object);
+	object->object.stream->objectID = objectID;
+	object->object.stream->objectType = objectType;
+	object->object.stream->flags = request->OpenModeFlags;
+	object->object.stream->property = request->PropertyTag;
 
-                        /* We unlink the file immediately as we will
-                           only use its fd from now on... */
-                        unlink(filename);
+	if (object->object.stream->flags == OpenStream_ReadOnly || object->object.stream->flags == OpenStream_ReadWrite) {
+		object->object.stream->buffer_pos = 0;
 
-                        if (object->object.stream->flags == OpenStream_ReadOnly
-                            || object->object.stream->flags == OpenStream_ReadWrite) {
-                                if (parent_object->poc_api) {
-                                        properties = talloc_array(mem_ctx, struct mapistore_property_data, 1);
-                                        mapistore_pocop_get_properties(emsmdbp_ctx->mstore_ctx, contextID,
-                                                                       parent_object->poc_backend_object,
-                                                                       1,
-                                                                       &mapi_req->u.mapi_OpenStream.PropertyTag,
-                                                                       properties);
-                                        if (!properties[0].error) {
-                                                talloc_steal(properties, properties[0].data);
-                                                if ((mapi_req->u.mapi_OpenStream.PropertyTag & PT_BINARY) == PT_BINARY) {
-                                                        binary_data = properties[0].data;
-                                                        write_code = write(fd, binary_data->lpb, binary_data->cb);
-                                                }
-                                                else {
-                                                        DEBUG(5, ("  type of property tag is not handled: %.8x",
-                                                                  mapi_req->u.mapi_OpenStream.PropertyTag));
-                                                }
-                                        }
-                                        else {
-                                                mapi_repl->error_code = MAPI_E_NOT_FOUND;
-                                        }
-                                        talloc_free(properties);
-                                }
-                                else {
-                                        if (mapistore_get_property_into_fd(parent_object->mstore_ctx,
-                                                                           contextID,
-                                                                           objectID,
-                                                                           objectType,
-                                                                           mapi_req->u.mapi_OpenStream.PropertyTag,
-                                                                           fd) != MAPISTORE_SUCCESS) {
-                                                mapi_repl->error_code = MAPI_E_NOT_FOUND;
-                                        }
-                                }
-                                if (mapi_repl->error_code == MAPI_E_SUCCESS) {
-                                        retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-                                        handles[mapi_repl->handle_idx] = rec->handle;
-                                        mapi_handles_set_private_data(rec, object);
+		stream_data = emsmdbp_object_get_stream_data(parent_object, object->object.stream->property);
+		if (stream_data) {
+			talloc_steal(object, stream_data);
+			DLIST_REMOVE(parent_object->stream_data, stream_data);
+		}
+		else {
+			properties.cValues = 1;
+			properties.aulPropTag = &request->PropertyTag;
 
-                                        mapi_repl->u.mapi_OpenStream.StreamSize = lseek(fd, 0, SEEK_END);
-                                        lseek(object->object.stream->fd, SEEK_SET, 0);
-                                }
-                                else {
-                                        talloc_free(object);
-                                }
-                        }
-                }
-                else {
-                        mapi_repl->error_code = MAPI_E_DISK_ERROR;
-                }
+			data_pointers = emsmdbp_object_get_properties(emsmdbp_ctx, parent_object, &properties, &retvals);
+			if (data_pointers == NULL) {
+				mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+				talloc_free(object);
+				goto end;
+			}
+			if (retvals[0] != MAPI_E_SUCCESS) {
+				mapi_repl->error_code = retvals[0];
+				talloc_free(object);
+				talloc_free(data_pointers);
+				talloc_free(retvals);
+				goto end;
+			}
+			stream_data = emsmdbp_stream_data_from_value(object, request->PropertyTag, data_pointers[0]);
+		}
 
-                talloc_free(filename);
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+		handles[mapi_repl->handle_idx] = rec->handle;
+		mapi_handles_set_private_data(rec, object);
+
+		object->object.stream->buffer = stream_data->data;
+		mapi_repl->u.mapi_OpenStream.StreamSize = object->object.stream->buffer.length;
+	}
+	else { /* OpenStream_Create */
+		object->object.stream->buffer.data = talloc_zero(object->object.stream, uint8_t);
+		object->object.stream->buffer.length = 0;
 	}
 
 end:
@@ -524,8 +501,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS			retval;
 	struct mapi_handles		*rec = NULL;
 	void				*private_data;
-	struct emsmdbp_object		*object = NULL;
-	uint32_t			handle, bufferSize;
+	struct emsmdbp_object		*object;
+	struct emsmdbp_object_stream	*stream;
+	uint32_t			handle, buffer_size;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] ReadStream (0x2c)\n"));
 
@@ -551,23 +529,29 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* Step 2. Retrieve the stream object */
 	retval = mapi_handles_get_private_data(rec, &private_data);
 	object = (struct emsmdbp_object *) private_data;
-	if (!object || object->type != EMSMDBP_OBJECT_STREAM
-	    || object->object.stream->fd == -1) {
-		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  invalid object\n"));
+		goto end;
 	}
-	else {
-		bufferSize = mapi_req->u.mapi_ReadStream.ByteCount;
-		/* careful here, let's switch to idiot mode */
-		if (bufferSize == 0xBABE) {
-			bufferSize = mapi_req->u.mapi_ReadStream.MaximumByteCount.value;
-		}
-		mapi_repl->u.mapi_ReadStream.data.data = talloc_array(object, uint8_t, bufferSize);
-		mapi_repl->u.mapi_ReadStream.data.length = read(object->object.stream->fd,
-                                                                mapi_repl->u.mapi_ReadStream.data.data,
-                                                                bufferSize);
+
+	/* Step 3. Return the data and update the position in the stream */
+	buffer_size = mapi_req->u.mapi_ReadStream.ByteCount;
+	/* careful here, let's switch to idiot mode */
+	if (buffer_size == 0xBABE) {
+		buffer_size = mapi_req->u.mapi_ReadStream.MaximumByteCount.value;
 	}
+	stream = object->object.stream;
+	if (buffer_size + stream->buffer_pos > stream->buffer.length) {
+		buffer_size = stream->buffer.length - stream->buffer_pos;
+	}
+	mapi_repl->u.mapi_ReadStream.data.data = stream->buffer.data + stream->buffer_pos;
+	mapi_repl->u.mapi_ReadStream.data.length = buffer_size;
+	stream->buffer_pos += buffer_size;
+
 end:
 	*size += libmapiserver_RopReadStream_size(mapi_repl);
 
@@ -600,8 +584,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*parent = NULL;
 	void				*private_data;
 	struct emsmdbp_object		*object = NULL;
-	uint32_t			handle;
-	ssize_t				written;
+	struct emsmdbp_object_stream	*stream;
+	uint32_t			handle, buffer_size;
+	struct WriteStream_req		*request;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] WriteStream (0x2d)\n"));
 
@@ -628,25 +613,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 
 	retval = mapi_handles_get_private_data(parent, &private_data);
 	object = (struct emsmdbp_object *) private_data;
-	if (!object || object->type != EMSMDBP_OBJECT_STREAM
-	    || object->object.stream->fd == -1) {
-		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  invalid object\n"));
+		goto end;
 	}
-	else {
-		if (mapi_req->u.mapi_WriteStream.data.length > 0) {
-			written = write(object->object.stream->fd,
-					mapi_req->u.mapi_WriteStream.data.data,
-					mapi_req->u.mapi_WriteStream.data.length);
-			if (written < 0) {
-				DEBUG (5, ("%s: write failed (%d): %s\n",
-					   __PRETTY_FUNCTION__, errno,
-					   strerror(errno)));
-				mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
-			}
-			else {
-				mapi_repl->u.mapi_WriteStream.WrittenSize = written;
-			}
+
+	request = &mapi_req->u.mapi_WriteStream;
+	if (request->data.length > 0) {
+		stream = object->object.stream;
+		buffer_size = stream->buffer_pos + request->data.length;
+		if (buffer_size > stream->buffer.length) {
+			stream->buffer.data = talloc_realloc(stream, stream->buffer.data, uint8_t, buffer_size);
 		}
+		memcpy(request->data.data, stream->buffer.data, request->data.length);
+		stream->buffer_pos += request->data.length;
+		mapi_repl->u.mapi_WriteStream.WrittenSize = request->data.length;
 	}
 
 end:
@@ -681,7 +663,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetStreamSize(TALLOC_CTX *mem_ctx,
 	void				*private_data;
 	struct emsmdbp_object		*object = NULL;
 	uint32_t			handle;
-	struct stat			stream_file_stat;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetStreamSize (0x5e)\n"));
 
@@ -707,18 +688,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetStreamSize(TALLOC_CTX *mem_ctx,
 
 	retval = mapi_handles_get_private_data(parent, &private_data);
 	object = (struct emsmdbp_object *) private_data;
-	if (!object || object->type != EMSMDBP_OBJECT_STREAM
-	    || object->object.stream->fd == -1) {
+	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  invalid object\n"));
+		goto end;
 	}
-	else {
-		if (fstat(object->object.stream->fd, &stream_file_stat) == 0) {
-			mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		}
-		else {
-			mapi_repl->u.mapi_GetStreamSize.StreamSize = stream_file_stat.st_size;
-		}
-	}
+
+	mapi_repl->u.mapi_GetStreamSize.StreamSize = object->object.stream->buffer.length;
 
 end:
 	*size += libmapiserver_RopGetStreamSize_size(mapi_repl);
@@ -751,9 +727,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekStream(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*parent = NULL;
 	void				*private_data;
 	struct emsmdbp_object		*object = NULL;
-	uint32_t			handle;
-        int                             whence;
-        off_t                           offset;
+	uint32_t			handle, new_position;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] SeekStream (0x2e)\n"));
 
@@ -779,33 +753,34 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekStream(TALLOC_CTX *mem_ctx,
 
 	retval = mapi_handles_get_private_data(parent, &private_data);
 	object = (struct emsmdbp_object *) private_data;
-	if (!object || object->type != EMSMDBP_OBJECT_STREAM
-	    || object->object.stream->fd == -1) {
+	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  invalid object\n"));
+		goto end;
+	}
+
+	switch (mapi_req->u.mapi_SeekStream.Origin) {
+	case 0: /* beginning */
+		new_position = 0;
+		break;
+	case 1: /* current */
+		new_position = object->object.stream->buffer_pos;
+		break;
+	case 2: /* end */
+		new_position = object->object.stream->buffer.length;
+		break;
+	default:
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
+
+	new_position += mapi_req->u.mapi_SeekStream.Offset;
+	if (new_position < object->object.stream->buffer.length + 1) {
+		object->object.stream->buffer_pos = new_position;
+		mapi_repl->u.mapi_SeekStream.NewPosition = new_position;
 	}
 	else {
-                switch (mapi_req->u.mapi_SeekStream.Origin) {
-                case 0:
-                        whence = SEEK_SET;
-                        break;
-                case 1:
-                        whence = SEEK_CUR;
-                        break;
-                case 2:
-                        whence = SEEK_END;
-                        break;
-                default:
-                        mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
-                        goto end;
-                }
-
-                offset = lseek(object->object.stream->fd, mapi_req->u.mapi_SeekStream.Offset, whence);
-                if (offset == (off_t) -1) {
-			mapi_repl->error_code = MAPI_E_DISK_ERROR;
-		}
-		else {
-			mapi_repl->u.mapi_SeekStream.NewPosition = offset;
-		}
+		mapi_repl->error_code = MAPI_E_DISK_ERROR;
 	}
 
 end:

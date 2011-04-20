@@ -178,66 +178,62 @@ static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct em
 	int rc;
         void *poc_backend_object;
         void *stream_data;
-        uint8_t *stream_buffer, *utf8_buffer;
+        uint8_t *utf8_buffer;
         struct Binary_r *binary_data;
         struct SRow aRow;
-        off_t stream_size;
+        uint32_t string_size;
+	uint16_t propType;
 
 	rc = MAPISTORE_SUCCESS;
-	if (stream->fd > -1) {
-		if ((stream->flags & OpenStream_Create)) {
-                        stream_size = lseek(stream->fd, 0, SEEK_END);
-			lseek(stream->fd, 0, SEEK_SET);
-                        if (stream->parent_poc_api) {
-                                aRow.cValues = 1;
-                                aRow.lpProps = talloc_zero(NULL, struct SPropValue);
+	if ((stream->flags & OpenStream_Create)) {
+		aRow.cValues = 1;
+		aRow.lpProps = talloc_zero(NULL, struct SPropValue);
 
-                                stream_buffer = talloc_array(aRow.lpProps, uint8_t, stream_size + 1);
-                                *(stream_buffer + stream_size) = 0;
-                                stream_size = read(stream->fd, stream_buffer, stream_size);
-
-                                if ((stream->property & PT_BINARY) == PT_BINARY) {
-                                        binary_data = talloc(aRow.lpProps, struct Binary_r);
-                                        binary_data->cb = stream_size;
-                                        binary_data->lpb = stream_buffer;
-                                        stream_data = binary_data;
-                                }
-                                else {
-                                        utf8_buffer = talloc_array(stream_buffer, uint8_t, stream_size);
-                                        memset(utf8_buffer, 0, stream_size);
-                                        size_t convert_string(charset_t from, charset_t to,
-                                                              void const *src, size_t srclen, 
-                                                              void *dest, size_t destlen, bool allow_badcharcnv);
-
-                                        convert_string(CH_UTF16BE, CH_UTF8,
-                                                       stream_buffer, stream_size,
-                                                       utf8_buffer, stream_size,
-                                                       false);
-                                        DEBUG(4, ("%s: no unicode conversion performed yet\n", __PRETTY_FUNCTION__));
-                                        stream_data = utf8_buffer;
-                                }
-                                set_SPropValue_proptag (aRow.lpProps, stream->property, stream_data);
-                                poc_backend_object = stream->parent_poc_backend_object;
-                                rc =  mapistore_pocop_set_properties(mstore_ctx,
-                                                                     stream->contextID, poc_backend_object, &aRow);
-                                talloc_free(aRow.lpProps);
-                        }
-                        else {
-                                rc = mapistore_set_property_from_fd(mstore_ctx,
-                                                                    stream->contextID,
-                                                                    stream->objectID,
-                                                                    stream->objectType,
-                                                                    stream->property,
-                                                                    stream->fd);
-                        }
+		propType = stream->property & 0xffff;
+		if (propType == PT_BINARY) {
+			binary_data = talloc(aRow.lpProps, struct Binary_r);
+			binary_data->cb = stream->buffer.length;
+			binary_data->lpb = stream->buffer.data;
+			stream_data = binary_data;
 		}
-		close (stream->fd);
-		stream->fd = -1;
+		else if (propType == PT_STRING8) {
+			stream_data = stream->buffer.data;
+		}
+		else {
+			/* PT_UNICODE */
+			string_size = strlen_m_ext((char *) stream->buffer.data, CH_UTF16LE, CH_UTF8);
+			utf8_buffer = talloc_array(aRow.lpProps, uint8_t, string_size + 1);
+			memset(utf8_buffer, 0, string_size);
+			size_t convert_string(charset_t from, charset_t to,
+					      void const *src, size_t srclen, 
+					      void *dest, size_t destlen, bool allow_badcharcnv);
+				
+			convert_string(CH_UTF16LE, CH_UTF8,
+				       stream->buffer.data, stream->buffer.length,
+				       utf8_buffer, string_size,
+				       false);
+			stream_data = utf8_buffer;
+		}
+		set_SPropValue_proptag(aRow.lpProps, stream->property, stream_data);
+		if (stream->parent_poc_api) {
+			poc_backend_object = stream->parent_poc_backend_object;
+			rc = mapistore_pocop_set_properties(mstore_ctx,
+							    stream->contextID, poc_backend_object, &aRow);
+		}
+		else {
+			mapistore_setprops(mstore_ctx, stream->contextID, stream->objectID, 
+					   stream->objectType, &aRow);
+
+			/* rc = mapistore_set_property_from_fd(mstore_ctx, */
+			/* 				    stream->contextID, */
+			/* 				    stream->objectID, */
+			/* 				    stream->objectType, */
+			/* 				    stream->property, */
+			/* 				    stream->fd); */
+		}
+		talloc_free(aRow.lpProps);
 	}
-	else {
-		rc = MAPISTORE_ERROR;
-	}
-	
+
 	return rc;
 }
 
@@ -544,7 +540,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
 	if (!parent) return NULL;
-        if (parent->type != EMSMDBP_OBJECT_FOLDER) return NULL;
+        if (parent->type != EMSMDBP_OBJECT_FOLDER && parent->type != EMSMDBP_OBJECT_MESSAGE) return NULL;
 
 	/* Initialize table object */
 	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
@@ -617,10 +613,12 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(struct emsmdbp_context *emsmd
 						}
 					}
 					else {
-						if (properties[i].data == NULL)
+						if (properties[i].data == NULL) {
 							retvals[i] = MAPI_E_NOT_FOUND;
-						else
+						}
+						else {
 							talloc_steal(data_pointers, properties[i].data);
+						}
 					}
 				}
 			}
@@ -796,8 +794,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
 							   struct emsmdbp_context *emsmdbp_ctx,
-							   uint32_t property,
-							   enum OpenStream_OpenModeFlags flags,
 							   struct emsmdbp_object *parent)
 {
 	struct emsmdbp_object	*object;
@@ -817,20 +813,22 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
 	}
 
 	object->type = EMSMDBP_OBJECT_STREAM;
-	object->object.stream->property = property;
-	object->object.stream->flags = flags;
+	object->object.stream->property = 0;
+	object->object.stream->flags = 0;
 
 	mapistore = emsmdbp_is_mapistore(parent);
 	if (mapistore == true) {
 		object->object.stream->mapistore = true;
 		object->object.stream->contextID = emsmdbp_get_contextID(parent);
-		object->object.stream->fd = -1;
 		object->object.stream->objectID = -1;
 		object->object.stream->objectType = -1;
                 if (parent->poc_api) {
                         object->object.stream->parent_poc_api = true;
                         object->object.stream->parent_poc_backend_object = parent->poc_backend_object;
                 }
+		object->object.stream->buffer.data = NULL;
+		object->object.stream->buffer.length = 0;
+		object->object.stream->buffer_pos = 0;
 	}
 
 	return object;

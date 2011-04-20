@@ -113,15 +113,16 @@ struct emsmdbp_object_table {
 };
 
 struct emsmdbp_object_stream {
-	uint32_t			property;
 	uint32_t			contextID;
 	uint64_t			objectID;
 	uint8_t				objectType;
 	uint32_t			flags;
-	int				fd;
 	bool				mapistore;
         bool                            parent_poc_api;
         void                            *parent_poc_backend_object;
+	enum MAPITAGS			property;
+	uint32_t			buffer_pos;
+	DATA_BLOB			buffer;
 };
 
 struct emsmdbp_stream_data {
@@ -227,7 +228,7 @@ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_co
 void **emsmdbp_object_table_get_row_props(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, uint32_t **);
 void emsmdbp_object_table_fill_row_blob(TALLOC_CTX *, struct emsmdbp_context *, DATA_BLOB *, uint16_t, enum MAPITAGS *, void **, uint32_t *);
 struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
-struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *, struct emsmdbp_context *, uint32_t, enum OpenStream_OpenModeFlags, struct emsmdbp_object *);
+struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 void **emsmdbp_object_get_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray *, enum MAPISTATUS **);

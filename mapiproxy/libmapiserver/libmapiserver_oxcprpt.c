@@ -336,6 +336,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 					 uint8_t untyped)
 {
 	struct ndr_push		*ndr;
+        struct SBinary_short    bin;
 	
 	ndr = ndr_push_init_ctx(mem_ctx);
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
@@ -350,6 +351,8 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 	if (untyped) {
 		ndr_push_uint16(ndr, NDR_SCALARS, property & 0xFFFF);
 	}
+
+
 
 	/* Step 2. Is the property flagged */
 	if (flagged) {
@@ -409,7 +412,10 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		ndr_push_string(ndr, NDR_SCALARS, (char *) value);
 		break;
 	case PT_BINARY:
-		ndr_push_SBinary_short(ndr, NDR_SCALARS, (struct SBinary_short *) value);
+                /* PropertyRow expect a 16 bit header for BLOB in RopQueryRows and RopGetPropertiesSpecific */
+		bin.cb = ((struct Binary_r *) value)->cb;
+		bin.lpb = ((struct Binary_r *) value)->lpb;
+		ndr_push_SBinary_short(ndr, NDR_SCALARS, &bin);
 		break;
 	case PT_CLSID:
 		ndr_push_GUID(ndr, NDR_SCALARS, (struct GUID *) value);

@@ -48,7 +48,21 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceCopyTo(TALLOC_CTX *mem_ctx
 							     struct EcDoRpc_MAPI_REPL *mapi_repl,
 							     uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] FastTransferSourceCopyTo (0x4d) - stub\n"));
+	enum MAPISTATUS				retval;
+	enum MAPISTATUS				*retvals;
+	struct mapi_handles			*parent_object_handle = NULL, *object_handle;
+	struct emsmdbp_object			*parent_object = NULL, *object;
+	struct FastTransferSourceCopyTo_req	 *request;
+	struct FastTransferSourceCopyTo_repl	 *response;
+	uint32_t				parent_handle_id, contextID, i;
+	void					*data;
+	uint64_t				objectID;
+	uint8_t					objectType;
+	struct SPropTagArray			needed_properties;
+	void					*data_pointers;
+	DATA_BLOB				*ftbuffer;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] FastTransferSourceCopyTo (0x4d)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -61,9 +75,78 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceCopyTo(TALLOC_CTX *mem_ctx
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 
-	/* TODO: actually implement this */
-	mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+	/* Step 1. Retrieve object handle */
+	parent_handle_id = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, parent_handle_id, &parent_object_handle);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", parent_handle_id, mapi_req->handle_idx));
+		goto end;
+	}
 
+	/* Step 2. Check whether the parent object supports fetching properties */
+	mapi_handles_get_private_data(parent_object_handle, &data);
+	parent_object = (struct emsmdbp_object *) data;
+	if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
+                contextID = parent_object->object.folder->contextID;
+		objectID = parent_object->object.folder->folderID;
+		objectType = MAPISTORE_FOLDER;
+                goto end;
+	}
+	else if (parent_object->type == EMSMDBP_OBJECT_MESSAGE) {
+                contextID = parent_object->object.message->contextID;
+                objectID = parent_object->object.message->messageID;
+		objectType = MAPISTORE_MESSAGE;
+	}
+	else if (parent_object->type == EMSMDBP_OBJECT_ATTACHMENT) {
+                contextID = parent_object->object.attachment->contextID;
+                objectID = parent_object->object.attachment->attachmentID;
+		objectType = MAPISTORE_ATTACHMENT; // useless with poc
+        }
+        else {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                goto end;
+	}
+
+	request = &mapi_req->u.mapi_FastTransferSourceCopyTo;
+	response = &mapi_repl->u.mapi_FastTransferSourceCopyTo;
+
+	if (request->Level > 0) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		DEBUG(5, ("  no support for levels > 0\n"));
+                goto end;
+	}
+
+	emsmdbp_object_get_available_properties(emsmdbp_ctx, parent_object, &needed_properties);
+	if (needed_properties.cValues > 0) {
+		for (i = 0; i < request->PropertyTags.cValues; i++) {
+			SPropTagArray_delete(mem_ctx, &needed_properties, request->PropertyTags.aulPropTag[i]);
+		}
+
+		data_pointers = emsmdbp_object_get_properties(emsmdbp_ctx, parent_object, &needed_properties, &retvals);
+		if (data_pointers == NULL) {
+			mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+			DEBUG(5, ("  unexpected error\n"));
+			goto end;
+		}
+
+		object = emsmdbp_object_ftcontext_init(mem_ctx, emsmdbp_ctx, parent_object);
+		if (object == NULL) {
+			mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+			DEBUG(5, ("  context object not created\n"));
+			goto end;
+		}
+
+		ftbuffer = &object->object.ftcontext->stream.buffer;
+		emsmdbp_fill_ftbuffer_blob(object->object.ftcontext, emsmdbp_ctx, ftbuffer, &needed_properties, data_pointers, retvals);
+
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, parent_handle_id, &object_handle);
+		mapi_handles_set_private_data(object_handle, object);
+                mapi_repl->handle_idx = request->handle_idx;
+		handles[mapi_repl->handle_idx] = object_handle->handle;
+        }
+
+end:
 	*size += libmapiserver_RopFastTransferSourceCopyTo_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

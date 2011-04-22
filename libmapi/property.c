@@ -97,6 +97,47 @@ _PUBLIC_ enum MAPISTATUS SPropTagArray_add(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+/**
+   \details Delete a property tag from an existing properties array
+
+   \param mem_ctx talloc memory context to use for allocation
+   \param SPropTagArray existing properties array to remove from
+   \param aulPropTag the property tag to remove
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: SPropTagArray parameter is not correctly set
+*/
+_PUBLIC_ enum MAPISTATUS SPropTagArray_delete(TALLOC_CTX *mem_ctx,
+					      struct SPropTagArray *SPropTagArray,
+					      uint32_t aulPropTag)
+{
+	uint32_t i, removed = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray->cValues, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < SPropTagArray->cValues; i++) {
+		if (SPropTagArray->aulPropTag[i] == aulPropTag) {
+			removed++;
+		}
+		else if (removed > 0) {
+			SPropTagArray->aulPropTag[i-removed] = SPropTagArray->aulPropTag[i];
+		}
+	}
+
+	SPropTagArray->cValues -= removed;
+	SPropTagArray->aulPropTag = (enum MAPITAGS *) talloc_realloc(mem_ctx, SPropTagArray->aulPropTag,
+								     uint32_t, SPropTagArray->cValues + 1);
+	SPropTagArray->aulPropTag[SPropTagArray->cValues] = 0;
+
+	return MAPI_E_SUCCESS;
+}
+
 _PUBLIC_ const void *get_SPropValue(struct SPropValue *lpProps, 
 				    uint32_t ulPropTag)
 {

@@ -126,8 +126,7 @@ struct emsmdbp_object_stream {
         bool                            parent_poc_api;
         void                            *parent_poc_backend_object;
 	enum MAPITAGS			property;
-	uint32_t			buffer_pos;
-	DATA_BLOB			buffer;
+	struct emsmdbp_stream		stream;
 };
 
 struct emsmdbp_stream_data {

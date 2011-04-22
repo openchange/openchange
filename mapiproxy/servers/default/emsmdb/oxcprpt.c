@@ -431,7 +431,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	object->object.stream->property = request->PropertyTag;
 
 	if (object->object.stream->flags == OpenStream_ReadOnly || object->object.stream->flags == OpenStream_ReadWrite) {
-		object->object.stream->buffer_pos = 0;
+		object->object.stream->stream.position = 0;
 
 		stream_data = emsmdbp_object_get_stream_data(parent_object, object->object.stream->property);
 		if (stream_data) {
@@ -462,12 +462,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 		handles[mapi_repl->handle_idx] = rec->handle;
 		mapi_handles_set_private_data(rec, object);
 
-		object->object.stream->buffer = stream_data->data;
-		mapi_repl->u.mapi_OpenStream.StreamSize = object->object.stream->buffer.length;
+		object->object.stream->stream.buffer = stream_data->data;
+		mapi_repl->u.mapi_OpenStream.StreamSize = object->object.stream->stream.buffer.length;
 	}
 	else { /* OpenStream_Create */
-		object->object.stream->buffer.data = talloc_zero(object->object.stream, uint8_t);
-		object->object.stream->buffer.length = 0;
+		object->object.stream->stream.buffer.data = talloc_zero(object->object.stream, uint8_t);
+		object->object.stream->stream.buffer.length = 0;
 	}
 
 end:
@@ -502,7 +502,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*rec = NULL;
 	void				*private_data;
 	struct emsmdbp_object		*object;
-	struct emsmdbp_object_stream	*stream;
 	uint32_t			handle, buffer_size;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] ReadStream (0x2c)\n"));
@@ -544,13 +543,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 	if (buffer_size == 0xBABE) {
 		buffer_size = mapi_req->u.mapi_ReadStream.MaximumByteCount.value;
 	}
-	stream = object->object.stream;
-	if (buffer_size + stream->buffer_pos > stream->buffer.length) {
-		buffer_size = stream->buffer.length - stream->buffer_pos;
-	}
-	mapi_repl->u.mapi_ReadStream.data.data = stream->buffer.data + stream->buffer_pos;
-	mapi_repl->u.mapi_ReadStream.data.length = buffer_size;
-	stream->buffer_pos += buffer_size;
+
+        mapi_repl->u.mapi_ReadStream.data = emsmdbp_stream_read_buffer(&object->object.stream->stream, buffer_size);
 
 end:
 	*size += libmapiserver_RopReadStream_size(mapi_repl);
@@ -585,7 +579,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 	void				*private_data;
 	struct emsmdbp_object		*object = NULL;
 	struct emsmdbp_object_stream	*stream;
-	uint32_t			handle, buffer_size;
+	uint32_t			handle;
 	struct WriteStream_req		*request;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] WriteStream (0x2d)\n"));
@@ -622,12 +616,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 	request = &mapi_req->u.mapi_WriteStream;
 	if (request->data.length > 0) {
 		stream = object->object.stream;
-		buffer_size = stream->buffer_pos + request->data.length;
-		if (buffer_size > stream->buffer.length) {
-			stream->buffer.data = talloc_realloc(stream, stream->buffer.data, uint8_t, buffer_size);
-		}
-		memcpy(request->data.data, stream->buffer.data, request->data.length);
-		stream->buffer_pos += request->data.length;
+                emsmdbp_stream_write_buffer(stream, &stream->stream, request->data);
 		mapi_repl->u.mapi_WriteStream.WrittenSize = request->data.length;
 	}
 
@@ -694,7 +683,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetStreamSize(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	mapi_repl->u.mapi_GetStreamSize.StreamSize = object->object.stream->buffer.length;
+	mapi_repl->u.mapi_GetStreamSize.StreamSize = object->object.stream->stream.buffer.length;
 
 end:
 	*size += libmapiserver_RopGetStreamSize_size(mapi_repl);
@@ -764,10 +753,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekStream(TALLOC_CTX *mem_ctx,
 		new_position = 0;
 		break;
 	case 1: /* current */
-		new_position = object->object.stream->buffer_pos;
+		new_position = object->object.stream->stream.position;
 		break;
 	case 2: /* end */
-		new_position = object->object.stream->buffer.length;
+		new_position = object->object.stream->stream.buffer.length;
 		break;
 	default:
 		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
@@ -775,8 +764,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekStream(TALLOC_CTX *mem_ctx,
 	}
 
 	new_position += mapi_req->u.mapi_SeekStream.Offset;
-	if (new_position < object->object.stream->buffer.length + 1) {
-		object->object.stream->buffer_pos = new_position;
+	if (new_position < object->object.stream->stream.buffer.length + 1) {
+		object->object.stream->stream.position = new_position;
 		mapi_repl->u.mapi_SeekStream.NewPosition = new_position;
 	}
 	else {

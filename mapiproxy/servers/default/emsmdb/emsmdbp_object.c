@@ -923,6 +923,43 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 	return object;
 }
 
+_PUBLIC_ void emsmdbp_object_get_available_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties)
+{
+	uint32_t contextID;
+	uint8_t table_type;
+
+	switch (object->type) {
+	case EMSMDBP_OBJECT_FOLDER:
+		contextID = object->object.folder->contextID;
+		table_type = MAPISTORE_FOLDER_TABLE;
+		break;
+	case EMSMDBP_OBJECT_MESSAGE:
+		contextID = object->object.message->contextID;
+		/* FIXME: the assumption here is wrong because we don't test the nature of the message */
+		table_type = MAPISTORE_MESSAGE_TABLE;
+		break;
+	case EMSMDBP_OBJECT_ATTACHMENT:
+		contextID = object->object.attachment->contextID;
+		table_type = MAPISTORE_ATTACHMENT_TABLE;
+		break;
+	default:
+		abort();
+	}
+
+	if (emsmdbp_is_mapistore(object)) {
+		if (object->poc_api) {
+			mapistore_pocop_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object, properties);
+		}
+		else {
+			mapistore_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, table_type, properties);
+		}
+	}
+	else {
+		DEBUG(5, ("only mapistore is supported at this time\n"));
+		abort();
+	}
+}
+
 static void emsmdbp_object_get_properties_systemspecialfolder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
 	enum MAPISTATUS			retval;

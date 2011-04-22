@@ -132,12 +132,15 @@ struct mapistore_backend {
 
         /** oxcfold operations */
         struct {
+		/* constructor: open_folder */
                 int (*open_table)(void *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
         } folder;
 
         /** oxcmsg operations */
         /* note: the mid parameter will be replaced with a message object here once we have a "pocop_open_message"... */
         struct {
+		/* constructor: open_message */
+		/* constructor: create_message */
                 int (*get_attachment_table)(void *, uint64_t, void **, uint32_t *);
                 int (*get_attachment)(void *, uint64_t, uint32_t, void **);
                 int (*create_attachment)(void *, uint64_t, uint32_t *, void **);

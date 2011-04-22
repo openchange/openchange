@@ -1308,3 +1308,37 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmd
 
 	return NULL;
 }
+
+/**
+   \details Initialize a ftcontext object
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider cotnext
+   \param whole_store whether the subscription applies to the specified change on the entire store or stricly on the specified folder/message
+   \param folderID the folder identifier
+   \param messageID the message identifier
+   \param parent emsmdbp object of the parent
+ */
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_ftcontext_init(TALLOC_CTX *mem_ctx,
+							      struct emsmdbp_context *emsmdbp_ctx,
+							      struct emsmdbp_object *parent)
+{
+	struct emsmdbp_object	*object;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+	if (!parent) return NULL;
+
+	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
+	if (!object) return NULL;
+
+	object->object.ftcontext = talloc_zero(object, struct emsmdbp_object_ftcontext);
+	if (!object->object.ftcontext) {
+		talloc_free(object);
+		return NULL;
+	}
+
+	object->type = EMSMDBP_OBJECT_FTCONTEXT;
+
+	return object;
+}

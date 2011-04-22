@@ -77,7 +77,8 @@ enum emsmdbp_object_type {
 	EMSMDBP_OBJECT_TABLE		= 0x4,
 	EMSMDBP_OBJECT_STREAM		= 0x5,
 	EMSMDBP_OBJECT_ATTACHMENT	= 0x6,
-        EMSMDBP_OBJECT_SUBSCRIPTION     = 0x7
+        EMSMDBP_OBJECT_SUBSCRIPTION     = 0x7,
+	EMSMDBP_OBJECT_FTCONTEXT	= 0x8 /* Fast Transfer */
 };
 
 struct emsmdbp_object_mailbox {
@@ -150,6 +151,12 @@ struct emsmdbp_object_subscription {
 	bool				mapistore;
 };
 
+struct emsmdbp_object_ftcontext {
+	struct emsmdbp_stream	stream;
+	uint16_t		steps;
+	uint16_t		total_steps;
+};
+
 union emsmdbp_objects {
 	struct emsmdbp_object_mailbox	*mailbox;
 	struct emsmdbp_object_folder	*folder;
@@ -158,6 +165,7 @@ union emsmdbp_objects {
 	struct emsmdbp_object_stream	*stream;
 	struct emsmdbp_object_attachment *attachment;
 	struct emsmdbp_object_subscription *subscription;
+	struct emsmdbp_object_ftcontext *ftcontext;
 };
 
 struct emsmdbp_object {
@@ -236,6 +244,7 @@ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmd
 struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 void emsmdbp_object_get_available_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray *);
 void **emsmdbp_object_get_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray *, enum MAPISTATUS **);
+struct emsmdbp_object *emsmdbp_object_ftcontext_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *, enum MAPITAGS, void *value);
 struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *, enum MAPITAGS);
 void emsmdbp_fill_table_row_blob(TALLOC_CTX *, struct emsmdbp_context *, DATA_BLOB *, uint16_t, enum MAPITAGS *, void **, uint32_t *);

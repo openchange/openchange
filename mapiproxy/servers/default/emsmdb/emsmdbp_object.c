@@ -229,13 +229,6 @@ static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct em
 		else {
 			mapistore_setprops(mstore_ctx, stream->contextID, stream->objectID, 
 					   stream->objectType, &aRow);
-
-			/* rc = mapistore_set_property_from_fd(mstore_ctx, */
-			/* 				    stream->contextID, */
-			/* 				    stream->objectID, */
-			/* 				    stream->objectType, */
-			/* 				    stream->property, */
-			/* 				    stream->fd); */
 		}
 		talloc_free(aRow.lpProps);
 	}

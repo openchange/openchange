@@ -172,7 +172,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 								struct EcDoRpc_MAPI_REPL *mapi_repl,
 								uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] FastTransferSourceGetBuffer (0x4e) - stub\n"));
+	enum MAPISTATUS				retval;
+	uint32_t				handle_id;
+	struct mapi_handles			*object_handle = NULL;
+	struct emsmdbp_object			*object = NULL;
+	struct FastTransferSourceGetBuffer_req	 *request;
+	struct FastTransferSourceGetBuffer_repl	 *response;
+	uint16_t				buffer_size;
+	void					*data;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] FastTransferSourceGetBuffer (0x4e)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -185,9 +194,60 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 
-	/* TODO: actually implement this */
-	mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+	/* Step 1. Retrieve object handle */
+	handle_id = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle_id, &object_handle);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle_id, mapi_req->handle_idx));
+		goto end;
+	}
 
+	/* Step 2. Check whether the parent object supports fetching properties */
+	mapi_handles_get_private_data(object_handle, &data);
+	object = (struct emsmdbp_object *) data;
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		DEBUG(5, ("  object not found\n"));
+                goto end;
+	}
+
+	if (object->type != EMSMDBP_OBJECT_FTCONTEXT) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		DEBUG(5, ("  object type %d not supported\n", object->type));
+                goto end;
+	}
+
+	/* Step 3. Perform the read operation */
+	request = &mapi_req->u.mapi_FastTransferSourceGetBuffer;
+	response = &mapi_repl->u.mapi_FastTransferSourceGetBuffer;
+
+	buffer_size = request->BufferSize;
+	if (buffer_size == 0xBABE) {
+		buffer_size = request->MaximumBufferSize.MaximumBufferSize;
+	}
+
+	if (object->object.ftcontext->stream.position == 0) {
+		object->object.ftcontext->steps = 0;
+		object->object.ftcontext->total_steps = (object->object.ftcontext->stream.buffer.length / buffer_size) + 1;
+	}
+	object->object.ftcontext->steps += 1;
+	response->TransferBuffer = emsmdbp_stream_read_buffer(&object->object.ftcontext->stream, buffer_size);
+
+	/* Step 4. Finalize the response variables */
+	response->TotalStepCount = object->object.ftcontext->total_steps;
+	response->TransferBufferSize = response->TransferBuffer.length;
+	if (response->TransferBuffer.length < buffer_size) {
+		response->TransferStatus = TransferStatus_Done;
+		response->InProgressCount = response->TotalStepCount;
+	}
+	else {
+		response->TransferStatus = TransferStatus_Partial;
+		response->InProgressCount = object->object.ftcontext->steps;
+	}
+	response->Reserved = 0;
+
+end:
 	*size += libmapiserver_RopFastTransferSourceGetBuffer_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

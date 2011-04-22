@@ -476,6 +476,10 @@ int mapistore_backend_get_table_property(struct backend_context *bctx, uint64_t 
 	return bctx->backend->op_get_table_property(bctx->private_data, fid, table_type, query_type, pos, proptag, data);
 }
 
+int mapistore_backend_get_available_table_properties(struct backend_context *bctx, uint8_t table_type, struct SPropTagArray *properties)
+{
+	return bctx->backend->op_get_available_table_properties(bctx->private_data, table_type, properties);
+}
 
 int mapistore_backend_openmessage(struct backend_context *bctx, uint64_t parent_fid, uint64_t mid, 
 				  struct mapistore_message *msg)

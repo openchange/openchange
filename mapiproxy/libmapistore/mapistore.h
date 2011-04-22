@@ -103,6 +103,7 @@ struct mapistore_backend {
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
 	int (*op_get_table_property)(void *, uint64_t, uint8_t, enum table_query_type, uint32_t, uint32_t, void **);
+        int (*op_get_available_table_properties)(void *, uint8_t, struct SPropTagArray *);
 	/* message semantics */
 	int (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
 	int (*op_createmessage)(void *, uint64_t, uint64_t, uint8_t);
@@ -217,6 +218,7 @@ int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, ui
 int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 int mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint8_t, uint32_t *);
 int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, enum table_query_type, uint64_t, uint32_t, uint32_t, void **);
+int mapistore_get_available_table_properties(struct mapistore_context *, uint32_t, uint8_t, struct SPropTagArray *);
 int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
 int mapistore_createmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 int mapistore_savechangesmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);

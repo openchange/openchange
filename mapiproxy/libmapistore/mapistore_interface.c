@@ -666,6 +666,23 @@ _PUBLIC_ int mapistore_get_table_property(struct mapistore_context *mstore_ctx,
 	return ret;
 }
 
+_PUBLIC_ int mapistore_get_available_table_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, uint8_t table_type, struct SPropTagArray *properties)
+{
+	struct backend_context		*backend_ctx;
+	int				ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend readdir */
+	ret = mapistore_backend_get_available_table_properties(backend_ctx, table_type, properties);
+
+	return ret;
+}
 
 /**
    \details Open a message in mapistore

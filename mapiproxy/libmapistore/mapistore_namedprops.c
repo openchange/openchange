@@ -154,3 +154,65 @@ _PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx,
 
 	return MAPISTORE_SUCCESS;
 }
+
+/**
+   \details return the nameid structture matching the mapped property ID
+   passed in parameter.
+
+   \param ldb_ctx pointer to the namedprops ldb context
+   \param propID the property ID to lookup
+   \param nameid pointer to the MAPINAMEID structure the function returns
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+_PUBLIC_ int mapistore_namedprops_get_nameid(TALLOC_CTX *mem_ctx,
+					     void *ldb_ctx, 
+					     uint16_t propID,
+					     struct MAPINAMEID **nameidp)
+{
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+	const char		*guid, *oClass, *cn;
+        struct MAPINAMEID       *nameid;
+	int			rc = MAPISTORE_SUCCESS;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!nameidp, MAPISTORE_ERROR, NULL);
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(&(cn=*)(mappedId=0x%.4x))", propID);
+	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERROR, NULL);
+
+	guid = ldb_msg_find_attr_as_string(res->msgs[0], "oleguid", 0);
+	MAPISTORE_RETVAL_IF(!guid, MAPISTORE_ERROR, NULL);
+
+	cn = ldb_msg_find_attr_as_string(res->msgs[0], "cn", 0);
+	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERROR, NULL);
+
+	oClass = ldb_msg_find_attr_as_string(res->msgs[0], "objectClass", 0);
+	MAPISTORE_RETVAL_IF(!propID, MAPISTORE_ERROR, NULL);
+
+	nameid = talloc_zero(mem_ctx, struct MAPINAMEID);
+	GUID_from_string(guid, &nameid->lpguid);
+	if (strcmp(oClass, "MNID_ID") == 0) {
+		nameid->ulKind = MNID_ID;
+		nameid->kind.lid = strtol(cn, NULL, 16);
+	}
+	else if (strcmp(oClass, "MNID_STRING") == 0) {
+		nameid->ulKind = MNID_STRING;
+		nameid->kind.lpwstr.NameSize = strlen(cn);
+		nameid->kind.lpwstr.Name = talloc_strdup(nameid, cn);
+	}
+	else {
+		talloc_free(nameid);
+		nameid = NULL;
+		rc = MAPISTORE_ERROR;
+	}
+
+	*nameidp = nameid;
+
+	return rc;
+}

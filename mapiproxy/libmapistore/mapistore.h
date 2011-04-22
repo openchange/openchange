@@ -273,6 +273,7 @@ int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint
 
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);
+int mapistore_namedprops_get_nameid(TALLOC_CTX *, void *, uint16_t, struct MAPINAMEID **);
 
 /* definitions from mapistore_notifications.c (proof-of-concept) */
 

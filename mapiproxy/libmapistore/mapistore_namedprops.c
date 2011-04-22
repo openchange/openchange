@@ -146,7 +146,7 @@ _PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx,
 			 LDB_SCOPE_SUBTREE, attrs, "%s", filter);
 	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERROR, mem_ctx);
 
-	*propID = ldb_msg_find_attr_as_uint(res->msgs[0], "mapped_id", 0);
+	*propID = ldb_msg_find_attr_as_uint(res->msgs[0], "mappedId", 0);
 	MAPISTORE_RETVAL_IF(!*propID, MAPISTORE_ERROR, mem_ctx);
 
 	talloc_free(filter);

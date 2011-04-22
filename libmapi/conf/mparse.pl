@@ -1316,9 +1316,9 @@ sub mapistore_namedprops($)
 		mparse sprintf "cn: %s", $prop[2];
 		mparse sprintf "canonical: %s", $prop[0];
 		mparse sprintf "oleguid: %s", $oleguid{$prop[6]};
-		mparse sprintf "mapped_id: %s", $prop[7];
-		mparse sprintf "prop_id: %s", $prop[2];
-		mparse sprintf "prop_type: %s", $prop_names{$prop[4]};
+		mparse sprintf "mappedId: %s", $prop[7];
+		mparse sprintf "propId: %s", $prop[2];
+		mparse sprintf "propType: %s", $prop_names{$prop[4]};
 		mparse sprintf "oom: %s", $prop[1];
 		mparse sprintf "";
 	    } elsif ($prop[5] eq "MNID_STRING" && $prop[7]) {
@@ -1327,10 +1327,10 @@ sub mapistore_namedprops($)
 		mparse sprintf "cn: %s", $prop[3];
 		mparse sprintf "canonical: %s", $prop[0];
 		mparse sprintf "oleguid: %s", $oleguid{$prop[6]};
-		mparse sprintf "mapped_id: %s", $prop[7];
-		mparse sprintf "prop_id: 0x0";
-		mparse sprintf "prop_type: %s", $prop[4];
-		mparse sprintf "prop_name: %s", $prop[3];
+		mparse sprintf "mappedId: %s", $prop[7];
+		mparse sprintf "propId: 0x0";
+		mparse sprintf "propType: %s", $prop[4];
+		mparse sprintf "propName: %s", $prop[3];
 		mparse sprintf "";
 	    }
 	}

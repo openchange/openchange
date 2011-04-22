@@ -64,6 +64,11 @@ struct exchange_emsmdb_session {
 	struct exchange_emsmdb_session	*next;
 };
 
+struct emsmdbp_stream {
+	size_t			position;
+	DATA_BLOB		buffer;
+};
+
 enum emsmdbp_object_type {
 	EMSMDBP_OBJECT_UNDEF		= 0x0,
 	EMSMDBP_OBJECT_MAILBOX		= 0x1,
@@ -235,6 +240,8 @@ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *, enum MA
 struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *, enum MAPITAGS);
 void emsmdbp_fill_table_row_blob(TALLOC_CTX *, struct emsmdbp_context *, DATA_BLOB *, uint16_t, enum MAPITAGS *, void **, uint32_t *);
 void emsmdbp_fill_row_blob(TALLOC_CTX *, struct emsmdbp_context *, uint8_t *, DATA_BLOB *,struct SPropTagArray *, void **, enum MAPISTATUS *, bool *);
+DATA_BLOB emsmdbp_stream_read_buffer(struct emsmdbp_stream *, uint32_t);
+void emsmdbp_stream_write_buffer(TALLOC_CTX *, struct emsmdbp_stream *, DATA_BLOB);
 
 /* definitions from oxcfold.c */
 enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);

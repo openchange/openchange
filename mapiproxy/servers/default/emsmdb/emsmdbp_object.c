@@ -1227,6 +1227,35 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *
 	return stream_data;
 }
 
+_PUBLIC_ DATA_BLOB emsmdbp_stream_read_buffer(struct emsmdbp_stream *stream, uint32_t length)
+{
+	DATA_BLOB buffer;
+	uint32_t real_length;
+
+	real_length = length;
+	if (real_length + stream->position > stream->buffer.length) {
+		real_length = stream->buffer.length - stream->position;
+	}
+	buffer.length = real_length;
+	buffer.data = stream->buffer.data + stream->position;
+	stream->position += real_length;
+
+	return buffer;
+}
+
+_PUBLIC_ void emsmdbp_stream_write_buffer(TALLOC_CTX *mem_ctx, struct emsmdbp_stream *stream, DATA_BLOB new_buffer)
+{
+	uint32_t new_position;
+
+	new_position = stream->position + new_buffer.length;
+	if (new_position >= stream->buffer.length) {
+		stream->buffer.length = new_position + 1;
+		stream->buffer.data = talloc_realloc(mem_ctx, stream->buffer.data, uint8_t, stream->buffer.length);
+	}
+	memcpy(new_buffer.data, stream->buffer.data + stream->position, new_buffer.length);
+	stream->position = new_position;
+}
+
 _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *object, enum MAPITAGS prop_tag)
 {
         struct emsmdbp_stream_data *current_data;

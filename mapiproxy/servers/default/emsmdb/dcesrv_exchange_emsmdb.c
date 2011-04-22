@@ -380,7 +380,7 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                 data_pointers = emsmdbp_object_table_get_row_props(emsmdbp_ctx, handle_object,
                                                                                    notification->parameters.table_parameters.row_id,
                                                                                    &retvals);
-                                emsmdbp_object_table_fill_row_blob(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
+                                emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
                                 talloc_free(data_pointers);
                                 talloc_free(retvals);
                         }
@@ -450,7 +450,7 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                 data_pointers = emsmdbp_object_table_get_row_props(emsmdbp_ctx, handle_object,
                                                                                    notification->parameters.table_parameters.row_id,
                                                                                    &retvals);
-                                emsmdbp_object_table_fill_row_blob(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
+                                emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
                                 talloc_free(data_pointers);
                                 talloc_free(retvals);
                         }

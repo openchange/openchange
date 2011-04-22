@@ -448,9 +448,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
         for (i = 0; i < request.RowCount; i++, count++) {
 		data_pointers = emsmdbp_object_table_get_row_props(emsmdbp_ctx, object, i, &mapistore_retvals);
 		if (data_pointers) {
-			emsmdbp_object_table_fill_row_blob(mem_ctx, emsmdbp_ctx,
-							   &response.RowData, table->prop_count,
-							   table->properties, data_pointers, mapistore_retvals);
+			emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx,
+						    &response.RowData, table->prop_count,
+						    table->properties, data_pointers, mapistore_retvals);
 			talloc_free(mapistore_retvals);
 			talloc_free(data_pointers);
 			table->numerator++;

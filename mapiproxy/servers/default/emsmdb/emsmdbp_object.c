@@ -685,10 +685,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(struct emsmdbp_context *emsmd
         return data_pointers;
 }
 
-_PUBLIC_ void emsmdbp_object_table_fill_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
-						 DATA_BLOB *table_row, uint16_t num_props,
-						 enum MAPITAGS *properties,
-						 void **data_pointers, uint32_t *retvals)
+_PUBLIC_ void emsmdbp_fill_table_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
+					  DATA_BLOB *table_row, uint16_t num_props,
+					  enum MAPITAGS *properties,
+					  void **data_pointers, uint32_t *retvals)
 {
         uint16_t i;
         uint8_t flagged;
@@ -1152,14 +1152,14 @@ _PUBLIC_ void **emsmdbp_object_get_properties(struct emsmdbp_context *emsmdbp_ct
         return data_pointers;
 }
 
-_PUBLIC_ void emsmdbp_object_fill_row_blob(TALLOC_CTX *mem_ctx,
-                                           struct emsmdbp_context *emsmdbp_ctx,
-                                           uint8_t *layout,
-					   DATA_BLOB *property_row,
-                                           struct SPropTagArray *properties,
-					   void **data_pointers,
-                                           enum MAPISTATUS *retvals,
-					   bool *untyped_status)
+_PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
+				    struct emsmdbp_context *emsmdbp_ctx,
+				    uint8_t *layout,
+				    DATA_BLOB *property_row,
+				    struct SPropTagArray *properties,
+				    void **data_pointers,
+				    enum MAPISTATUS *retvals,
+				    bool *untyped_status)
 {
         uint16_t i;
         uint8_t flagged;

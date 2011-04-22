@@ -147,14 +147,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 			}
 		}
                 mapi_repl->error_code = MAPI_E_SUCCESS;
-                emsmdbp_object_fill_row_blob(mem_ctx,
-                                             emsmdbp_ctx,
-                                             &response->layout,
-                                             &response->prop_data,
-                                             properties,
-                                             data_pointers,
-                                             retvals,
-                                             untyped_status);
+		emsmdbp_fill_row_blob(mem_ctx,
+				      emsmdbp_ctx,
+				      &response->layout,
+				      &response->prop_data,
+				      properties,
+				      data_pointers,
+				      retvals,
+				      untyped_status);
                 talloc_free(data_pointers);
         }
         talloc_free(properties);

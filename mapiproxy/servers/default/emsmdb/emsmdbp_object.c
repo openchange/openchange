@@ -30,6 +30,12 @@
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
+/* a private struct used to map array for properties with MV_FLAG set in a type-agnostic way */
+struct DataArray_r {
+	uint32_t cValues;
+	const void *values;
+};
+
 extern size_t convert_string(charset_t from, charset_t to,
 			     void const *src, size_t srclen, 
 			     void *dest, size_t destlen, bool allow_badcharcnv);
@@ -1227,6 +1233,139 @@ _PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
                                             property, data, property_row,
                                             flagged ? PT_ERROR : 0, flagged, untyped_status[i]);
         }
+}
+
+static void emsmdbp_ndr_push_simple_data(struct ndr_push *ndr, uint16_t data_type, const void *value)
+{
+	uint32_t		string_len;
+
+	switch (data_type) {
+	case PT_I2:
+		ndr_push_uint16(ndr, NDR_SCALARS, *(uint16_t *) value);
+		break;
+	case PT_LONG:
+	case PT_ERROR:
+	case PT_OBJECT:
+		ndr_push_uint32(ndr, NDR_SCALARS, *(uint32_t *) value);
+		break;
+	case PT_DOUBLE:
+		ndr_push_double(ndr, NDR_SCALARS, *(double *) value);
+		break;
+	case PT_I8:
+		ndr_push_dlong(ndr, NDR_SCALARS, *(uint64_t *) value);
+		break;
+	case PT_BOOLEAN:
+		if (*(uint8_t *) value) {
+			ndr_push_uint16(ndr, NDR_SCALARS, 1);
+		}
+		else {
+			ndr_push_uint16(ndr, NDR_SCALARS, 0);
+		}
+		break;
+	case PT_STRING8:
+		string_len = strlen(value) + 1;
+		ndr_push_uint32(ndr, NDR_SCALARS, string_len);
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_STR_ASCII);
+		ndr_push_string(ndr, NDR_SCALARS, (char *) value);
+		break;
+	case PT_UNICODE:
+		string_len = strlen_m_ext((char *) value, CH_UTF8, CH_UTF16LE) * 2 + 2;
+		ndr_push_uint32(ndr, NDR_SCALARS, string_len);
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+		ndr_push_string(ndr, NDR_SCALARS, (char *) value);
+		break;
+	case PT_SVREID:
+	case PT_BINARY:
+		ndr_push_Binary_r(ndr, NDR_BUFFERS, (struct Binary_r *) value);
+		break;
+	case PT_CLSID:
+		ndr_push_GUID(ndr, NDR_SCALARS, (struct GUID *) value);
+		break;
+	case PT_SYSTIME:
+		ndr_push_FILETIME(ndr, NDR_SCALARS, (struct FILETIME *) value);
+		break;
+	default:
+		DEBUG(5, ("%s: unsupported property type: %.4x\n", __FUNCTION__, data_type));
+		abort();
+	}
+}
+
+_PUBLIC_ void emsmdbp_fill_ftbuffer_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, DATA_BLOB *blob, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
+{
+	struct ndr_push		*ndr;
+	uint32_t		i, j;
+	enum MAPITAGS		property;
+	void			*value;
+        struct MAPINAMEID       *nameid;
+	struct DataArray_r	*array;
+	uint16_t		prop_type, propID;
+        int                     retval;
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	ndr->offset = 0;
+	if (blob->length) {
+		talloc_free(ndr->data);
+		ndr->data = blob->data;
+		ndr->offset = blob->length;
+	}
+
+        for (i = 0; i < properties->cValues; i++) {
+                if (retvals[i] == MAPI_E_SUCCESS) {
+                        property = properties->aulPropTag[i];
+			if ((property & 0x1000) == 0) {
+				if (property > 0x80000000) {
+					propID = (property & 0xffff0000) >> 16;
+					retval = mapistore_namedprops_get_nameid(mem_ctx,
+										 emsmdbp_ctx->mstore_ctx->nprops_ctx,
+										 propID,
+										 &nameid);
+					if (retval != MAPISTORE_SUCCESS) {
+						continue;
+					}
+					ndr_push_uint32(ndr, NDR_SCALARS, property);
+					ndr_push_GUID(ndr, NDR_SCALARS, &nameid->lpguid);
+					switch (nameid->ulKind) {
+					case MNID_ID:
+						ndr_push_uint8(ndr, NDR_SCALARS, 0);
+						ndr_push_uint32(ndr, NDR_SCALARS, nameid->kind.lid);
+						break;
+					case MNID_STRING:
+						ndr_push_uint8(ndr, NDR_SCALARS, 1);
+						ndr_push_uint32(ndr, NDR_SCALARS, nameid->kind.lpwstr.NameSize);
+						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
+						ndr_push_string(ndr, NDR_SCALARS, nameid->kind.lpwstr.Name);
+						break;
+					}
+					talloc_free(nameid);
+				} else {
+					ndr_push_uint32(ndr, NDR_SCALARS, property);
+				}
+
+				prop_type = property & 0xffff;
+				if ((prop_type & MV_FLAG)) {
+					array = data_pointers[i];
+					ndr_push_uint16(ndr, NDR_SCALARS, array->cValues);
+					prop_type &= 0x0fff;
+					for (j = 0; j < array->cValues; j++) {
+						emsmdbp_ndr_push_simple_data(ndr, prop_type, array->values + j);
+					}
+				}
+				else {
+					emsmdbp_ndr_push_simple_data(ndr, prop_type, data_pointers[i]);
+				}
+			}
+
+			value = data_pointers[i];
+                }
+        }
+
+	/* Step 4. Steal ndr context */
+	blob->data = ndr->data;
+	talloc_steal(mem_ctx, blob->data);
+	blob->length = ndr->offset;
+
+	talloc_free(ndr);
 }
 
 _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *mem_ctx, enum MAPITAGS prop_tag, void *value)

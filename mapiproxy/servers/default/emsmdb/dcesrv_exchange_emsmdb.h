@@ -249,6 +249,7 @@ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *, enum MA
 struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *, enum MAPITAGS);
 void emsmdbp_fill_table_row_blob(TALLOC_CTX *, struct emsmdbp_context *, DATA_BLOB *, uint16_t, enum MAPITAGS *, void **, uint32_t *);
 void emsmdbp_fill_row_blob(TALLOC_CTX *, struct emsmdbp_context *, uint8_t *, DATA_BLOB *,struct SPropTagArray *, void **, enum MAPISTATUS *, bool *);
+void emsmdbp_fill_ftbuffer_blob(TALLOC_CTX *, struct emsmdbp_context *, DATA_BLOB *, struct SPropTagArray *, void **, enum MAPISTATUS *);
 DATA_BLOB emsmdbp_stream_read_buffer(struct emsmdbp_stream *, uint32_t);
 void emsmdbp_stream_write_buffer(TALLOC_CTX *, struct emsmdbp_stream *, DATA_BLOB);
 

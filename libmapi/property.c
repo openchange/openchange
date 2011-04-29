@@ -138,6 +138,38 @@ _PUBLIC_ enum MAPISTATUS SPropTagArray_delete(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+/**
+   \details Return the index of a property tag in an existing properties array
+
+   \param SPropTagArray existing properties array to remove from
+   \param aulPropTag the property tag to find
+   \param propIdx the index of the found property (undefined when MAPI_E_NOT_FOUND is returned)
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: SPropTagArray parameter is not correctly set
+*/
+_PUBLIC_ enum MAPISTATUS SPropTagArray_find(struct SPropTagArray SPropTagArray,
+					    enum MAPITAGS aulPropTag, 
+					    uint32_t *propIdx)
+{
+	uint32_t i;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!propIdx, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < SPropTagArray.cValues; i++) {
+		if (SPropTagArray.aulPropTag[i] == aulPropTag) {
+			*propIdx = i;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	return MAPI_E_NOT_FOUND;
+}
+
 _PUBLIC_ const void *get_SPropValue(struct SPropValue *lpProps, 
 				    uint32_t ulPropTag)
 {

@@ -243,6 +243,7 @@ enum MAPISTATUS		mapi_nameid_GetIDsFromNames(struct mapi_nameid *, mapi_object_t
 struct SPropTagArray	*set_SPropTagArray(TALLOC_CTX *, uint32_t, ...);
 enum MAPISTATUS		SPropTagArray_add(TALLOC_CTX *, struct SPropTagArray *, uint32_t);
 enum MAPISTATUS		SPropTagArray_delete(TALLOC_CTX *, struct SPropTagArray *, uint32_t);
+enum MAPISTATUS		SPropTagArray_find(struct SPropTagArray, enum MAPITAGS, uint32_t *);
 const void		*get_SPropValue(struct SPropValue *, uint32_t);
 struct SPropValue	*get_SPropValue_SRowSet(struct SRowSet *, uint32_t);
 const void		*get_SPropValue_SRowSet_data(struct SRowSet *, uint32_t);

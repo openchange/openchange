@@ -101,6 +101,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 
 	retval = mapi_handles_get_private_data(rec, &private_data);
         object = private_data;
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
 
         properties = talloc_zero(NULL, struct SPropTagArray);
         properties->cValues = request->prop_count;

@@ -69,6 +69,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	struct GetProps_req	request;
 	struct mapi_session	*session;
 	struct mapi_nameid	*nameid;
+	struct SPropTagArray	properties;
 	struct SPropTagArray	*SPropTagArray2 = NULL;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
@@ -119,7 +120,9 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	size += sizeof (uint16_t);
 	request.prop_count = (uint16_t) SPropTagArray->cValues;
 	size += sizeof (uint16_t);
-	request.properties = SPropTagArray->aulPropTag;
+	properties.cValues = SPropTagArray->cValues;
+	properties.aulPropTag = talloc_memdup(mem_ctx, SPropTagArray->aulPropTag, SPropTagArray->cValues * sizeof(enum MAPITAGS));
+	request.properties = properties.aulPropTag;
 	size += request.prop_count * sizeof(uint32_t);
 
 	/* Fill the MAPI_REQ request */
@@ -157,7 +160,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)session,
 					   mapi_ctx->lp_ctx,
 					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
-					   SPropTagArray, lpProps, PropCount, 
+					   &properties, lpProps, PropCount, 
 					   mapi_response->mapi_repl->u.mapi_GetProps.layout);
 	OPENCHANGE_RETVAL_IF(!mapistatus && (retval == MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
 	

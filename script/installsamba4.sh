@@ -280,7 +280,7 @@ compile() {
     pushd samba4
     error_check $? "samba4 setup"
 
-    ./configure.developer -C --prefix=$SAMBA_PREFIX
+    ./configure.developer -C --prefix=$SAMBA_PREFIX --disable-s3build
     error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"

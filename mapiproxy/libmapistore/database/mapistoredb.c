@@ -73,15 +73,20 @@ struct mapistoredb_context *mapistoredb_new(TALLOC_CTX *mem_ctx)
 
 	switch (lpcfg_server_role(mdb_ctx->lp_ctx)) {
 	case ROLE_DOMAIN_CONTROLLER:
+	{
+		char *el_lower;
 		domaindn = str_list_make(mdb_ctx->param, mdb_ctx->param->dnsdomain, ".");
-		strlower_m(domaindn[0]);
-		mdb_ctx->param->domaindn = talloc_asprintf(mdb_ctx->param, "DC=%s", domaindn[0]);
+		el_lower = strlower_talloc(mem_ctx, domaindn[0]);
+		mdb_ctx->param->domaindn = talloc_asprintf(mdb_ctx->param, "DC=%s", el_lower);
+		talloc_free(el_lower);
 		for (i = 1; domaindn[i]; i++) {
-			strlower_m(domaindn[i]);
-			mdb_ctx->param->domaindn = talloc_asprintf_append_buffer(mdb_ctx->param->domaindn, ",DC=%s", domaindn[i]);
+			el_lower = strlower_talloc(mem_ctx, domaindn[i]);
+			mdb_ctx->param->domaindn = talloc_asprintf_append_buffer(mdb_ctx->param->domaindn, ",DC=%s", el_lower);
+			talloc_free(el_lower);
 		}
 		talloc_free(domaindn);
 		break;
+	}
 	default:
 		mdb_ctx->param->domaindn = talloc_asprintf(mdb_ctx->param, "CN=%s", mdb_ctx->param->domain);
 		break;

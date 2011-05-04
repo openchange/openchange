@@ -222,7 +222,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	bool					server_mode;
 
 	DEBUG(5, ("mapiproxy::mapiproxy_op_bind: [session = 0x%x] [session server id = 0x%"PRIx64" 0x%x 0x%x]\n", dce_call->context->context_id,
-		  dce_call->conn->server_id.id, dce_call->conn->server_id.id2, dce_call->conn->server_id.node));
+		  dce_call->conn->server_id.pid, dce_call->conn->server_id.id2, dce_call->conn->server_id.vnn));
 
 	/* Retrieve server mode parametric option */
 	server_mode = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", false);

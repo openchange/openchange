@@ -51,9 +51,9 @@ struct mpm_session *mpm_session_new(TALLOC_CTX *mem_ctx,
 	session = talloc_zero(mem_ctx, struct mpm_session);
 	if (!session) return NULL;
 
-	session->server_id.id = serverid.id;
+	session->server_id.pid = serverid.pid;
 	session->server_id.id2 = serverid.id2;
-	session->server_id.node = serverid.node;
+	session->server_id.vnn = serverid.vnn;
 	session->context_id = context_id;
 	session->ref_count = 0;
 	session->destructor = NULL;
@@ -183,9 +183,9 @@ bool mpm_session_cmp_sub(struct mpm_session *session,
 {
 	if (!session) return false;
 
-	if ((session->server_id.id   == sid.id) &&
-	    (session->server_id.id2  == sid.id2) &&
-	    (session->server_id.node == sid.node) &&
+	if ((session->server_id.pid == sid.pid) &&
+	    (session->server_id.id2 == sid.id2) &&
+	    (session->server_id.vnn == sid.vnn) &&
 	    (session->context_id == context_id)) {
 		return true;
 	}

@@ -268,7 +268,7 @@ _PUBLIC_ uint32_t module_oxcnotif_init(struct mapitest *mt)
 
 	suite = mapitest_suite_init(mt, "OXCNOTIF", "Core Notification Protocol", true);
 
-	mapitest_suite_add_test(suite, "REGISTER-NOTIFICATION", "Subscribe to notifications", mapitest_oxcnotif_RegisterNotification);
+	// mapitest_suite_add_test(suite, "REGISTER-NOTIFICATION", "Subscribe to notifications", mapitest_oxcnotif_RegisterNotification);
 
 	mapitest_suite_register(mt, suite);
 
@@ -296,6 +296,7 @@ _PUBLIC_ uint32_t module_oxcfxics_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "COPYPROPS", "Test CopyProperties operation", mapitest_oxcfxics_CopyProperties);
 	mapitest_suite_add_test(suite, "DEST-CONFIGURE", "Test Destination Configure operation", mapitest_oxcfxics_DestConfigure);
 	mapitest_suite_add_test(suite, "SYNC-CONFIGURE", "Configure ICS context for download", mapitest_oxcfxics_SyncConfigure);
+	mapitest_suite_add_test(suite, "SET-LOCAL-REPLICA-MIDSET-DELETED", "Reserve a range of local replica IDs", mapitest_oxcfxics_SetLocalReplicaMidsetDeleted);
 
 	mapitest_suite_register(mt, suite);
 

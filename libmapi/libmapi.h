@@ -455,6 +455,7 @@ enum MAPISTATUS		ICSSyncConfigure(mapi_object_t *, enum SynchronizationType, uin
 enum MAPISTATUS		ICSSyncUploadStateBegin(mapi_object_t *, enum StateProperty, uint32_t);
 enum MAPISTATUS		ICSSyncUploadStateContinue(mapi_object_t *, DATA_BLOB);
 enum MAPISTATUS		ICSSyncUploadStateEnd(mapi_object_t *);
+enum MAPISTATUS		SetLocalReplicaMidsetDeleted(mapi_object_t *, const struct GUID, const uint8_t GlobalCountLow[6], const uint8_t GlobalCountHigh[6]);
 
 /* The following public definitions come from libmapi/freebusy.c */
 enum MAPISTATUS		GetUserFreeBusyData(mapi_object_t *, const char *, struct SRow *);

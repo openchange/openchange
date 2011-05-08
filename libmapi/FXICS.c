@@ -2,6 +2,7 @@
    OpenChange MAPI implementation.
 
    Copyright (C) Julien Kerihuel 2007-2011.
+   Copyright (C) Brad Hards <bradh@openchange.org> 2010-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1286,6 +1287,116 @@ _PUBLIC_ enum MAPISTATUS ICSSyncUploadStateEnd(mapi_object_t *obj_sync_context)
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Mark a range of Message Ids as deleted / unused
+
+   This function allows the client to specify that a specific range
+   of message identifiers will never be used on a particular folder.
+   This allows the server to make optimisations for message identifier
+   sets during incremental change synchronisation operations.
+   
+   \param obj_folder pointer to the folder MAPI object
+   \param ReplGuid the GUID for the MIDSET
+   \param GlobalCountLow lower end of the range to be marked as deleted
+   \param GlobalCountHigh upper end of the range to be marked as deleted
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+     invalid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+ */
+_PUBLIC_ enum MAPISTATUS SetLocalReplicaMidsetDeleted(mapi_object_t *obj_folder, 
+						      const struct GUID ReplGuid,
+						      const uint8_t GlobalCountLow[6],
+						      const uint8_t GlobalCountHigh[6])
+{
+	struct mapi_request				*mapi_request;
+	struct mapi_response				*mapi_response;
+	struct EcDoRpc_MAPI_REQ				*mapi_req;
+	struct SetLocalReplicaMidsetDeleted_req		request;
+	struct mapi_session				*session;
+	NTSTATUS					status;
+	enum MAPISTATUS					retval;
+	uint32_t					size = 0;
+	TALLOC_CTX					*mem_ctx;
+	uint8_t 					logon_id = 0;
+	uint32_t					i = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj_folder);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS) {
+		return retval;
+	}
+
+	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
+	size = 0;
+
+	/* Fill the SetLocalReplicaMidsetDeleted operation */
+	request.DataSize = 0;
+	size += sizeof(uint16_t);
+	request.LongTermIdRangeCount = 1; /* this version only handles a single range */
+	request.DataSize += sizeof(uint32_t); /* the size of the LongTermIdRangeCount */
+	request.LongTermIdRanges = talloc_array(mem_ctx, struct LongTermIdRange, request.LongTermIdRangeCount);
+	for (i = 0; i < request.LongTermIdRangeCount; ++i) {
+		request.LongTermIdRanges[i].MinLongTermId.DatabaseGuid = ReplGuid;
+		request.DataSize += sizeof(struct GUID);
+
+		memcpy(request.LongTermIdRanges[i].MinLongTermId.GlobalCounter, GlobalCountLow, 6);
+		request.DataSize += 6;
+
+		request.LongTermIdRanges[i].MinLongTermId.padding = 0x0000;
+		request.DataSize += sizeof(uint16_t);
+
+		request.LongTermIdRanges[i].MaxLongTermId.DatabaseGuid = ReplGuid;
+		request.DataSize += sizeof(struct GUID);
+
+		memcpy(request.LongTermIdRanges[i].MaxLongTermId.GlobalCounter, GlobalCountHigh, 6);
+		request.DataSize += 6;
+
+		request.LongTermIdRanges[i].MaxLongTermId.padding = 0x0000;
+		request.DataSize += sizeof(uint16_t);
+	}
+	size += request.DataSize; /* add that datasize to the overall length */
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetLocalReplicaMidsetDeleted;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SetLocalReplicaMidsetDeleted = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_folder);
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

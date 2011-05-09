@@ -479,7 +479,7 @@ struct Binary_r		*generate_recipient_entryid(TALLOC_CTX *, const char *);
 enum MAPISTATUS		GetFIDFromEntryID(uint16_t, uint8_t *, uint64_t, uint64_t *);
 
 /* The following public definitions come from libmapi/socket/netif.c */
-int			get_interfaces(struct iface_struct *, int);
+int			get_interfaces_oc(struct iface_struct *, int);
 
 /* The following public definitions come from libmapi/fxparser.c */
 struct fx_parser_context;

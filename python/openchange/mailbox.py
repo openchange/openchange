@@ -20,9 +20,10 @@
 
 import os
 import samba
-from samba import Ldb
+from samba import Ldb, unix2nttime
 import ldb
 import uuid
+import time
 from openchange.urlutils import *
 
 __docformat__ = 'restructuredText'
@@ -39,6 +40,7 @@ class OpenChangeDB(object):
     def __init__(self, url):
         self.url = url
         self.ldb = Ldb(self.url)
+	self.nttime = samba.unix2nttime(int(time.time()))
 
     def reopen(self):
         self.ldb = Ldb(self.url)
@@ -83,6 +85,8 @@ dn: CASE_INSENSITIVE
                       "cn": fid,
                       "PidTagFolderId": fid,
                       "PidTagDisplayName": "Public Folder Root",
+                      "PidTagCreationTime": "0x%.16x" % self.nttime,
+                      "PidTagLastModificationTime": "0x%.16x" % self.nttime,
                       "PidTagSubFolders": "TRUE" if (childcount != 0) else "FALSE",
                       "PidTagFolderChildCount": str(childcount),
                       "SystemIdx": str(SystemIdx)})
@@ -95,7 +99,11 @@ dn: CASE_INSENSITIVE
                       "PidTagParentFolderId": parentfid,
                       "PidTagFolderId": fid,
                       "PidTagDisplayName": name,
-                      "PidTagAttrHidden": str(0),
+                      "PidTagCreationTime": "0x%.16x" % self.nttime,
+                      "PidTagLastModificationTime": "0x%.16x" % self.nttime,
+                      "PidTagAttributeHidden": str(0),
+                      "PidTagAttributeReadOnly": str(0),
+                      "PidTagAttributeSystem": str(0),
                       "PidTagContainerClass": "IPF.Note (check this)", 
                       "PidTagSubFolders": "TRUE" if (childcount != 0) else "FALSE",
                       "PidTagFolderChildCount": str(childcount),
@@ -242,6 +250,8 @@ GlobalCount: 0x%x
         self.ldb.add({"dn": retdn,
                   "objectClass": ["mailbox", "container"],
                   "PidTagDisplayName": "OpenChange Mailbox: %s" % (username),
+                  "PidTagCreationTime": "0x%.16x" % self.nttime,
+                  "PidTagLastModificationTime": "0x%.16x" % self.nttime,
                   "PidTagParentFolderId": "0x0000000000000000",
                   "PidTagSubFolders": "TRUE",
                   "cn": username,
@@ -321,9 +331,13 @@ GlobalCount: 0x%x
                           "PidTagParentFolderId": parentfolder,
                           "PidTagFolderId": FID,
                           "PidTagDisplayName": foldername,
-                          "PidTagAttrHidden": str(0),
+                          "PidTagCreationTime": "0x%.16x" % self.nttime,
+                          "PidTagLastModificationTime": "0x%.16x" % self.nttime,
+                          "PidTagAttributeHidden": str(0),
+                          "PidTagAttributeReadOnly": str(0),
+                          "PidTagAttributeSystem": str(0),
                           "PidTagContainerClass": "IPF.Note",
-                           "PidTagSubFolders": "TRUE",
+                          "PidTagSubFolders": "TRUE",
                           "FolderType": str(1),
                           "SystemIdx": str(SystemIdx)})           
         elif (foldername == "To-Do Search"):
@@ -333,7 +347,11 @@ GlobalCount: 0x%x
                           "PidTagParentFolderId": parentfolder,
                           "PidTagFolderId": FID,
                           "PidTagDisplayName": foldername,
-                          "PidTagAttrHidden": str(0),
+                          "PidTagCreationTime": "0x%.16x" % self.nttime,
+                          "PidTagLastModificationTime": "0x%.16x" % self.nttime,
+                          "PidTagAttributeHidden": str(0),
+                          "PidTagAttributeReadOnly": str(0),
+                          "PidTagAttributeSystem": str(0),
                           "PidTagContainerClass": "IPF.Note",
                           "PidTagSubFolders": "FALSE",
                           "FolderType": str(1),
@@ -345,7 +363,11 @@ GlobalCount: 0x%x
                           "PidTagParentFolderId": parentfolder,
                           "PidTagFolderId": FID,
                           "PidTagDisplayName": foldername,
-                          "PidTagAttrHidden": str(0),
+                          "PidTagCreationTime": "0x%.16x" % self.nttime,
+                          "PidTagLastModificationTime": "0x%.16x" % self.nttime,
+                          "PidTagAttributeHidden": str(0),
+                          "PidTagAttributeReadOnly": str(0),
+                          "PidTagAttributeSystem": str(0),
                           "PidTagContainerClass": "IPF.Note",
                           "PidTagSubFolders": "TRUE",
                           "PidTagFolderChildCount": str(0),
@@ -388,10 +410,14 @@ GlobalCount: 0x%x
                       "PidTagParentFolderId": parentfolder,
                       "PidTagFolderId": FID,
                       "PidTagDisplayName": foldername,
+                      "PidTagCreationTime": "0x%.16x" % self.nttime,
+                      "PidTagLastModificationTime": "0x%.16x" % self.nttime,
                       "PidTagContainerClass": containerclass,
                       "mapistore_uri": "sogo://%s:%s@%s/" % (username, username, foldername.replace(" ", "-").lower()),
                       "PidTagContentCount": str(0),
-                      "PidTagAttrHidden": str(0),
+                      "PidTagAttributeHidden": str(0),
+                      "PidTagAttributeReadOnly": str(0),
+                      "PidTagAttributeSystem": str(0),
                       "PidTagAccess": str(63),
                       "PidTagRights":str(2043),
                       "PidTagContentUnreadCount": str(0),

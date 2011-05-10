@@ -337,6 +337,8 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 {
 	struct ndr_push		*ndr;
         struct SBinary_short    bin;
+        struct BinaryArray_r    *bin_array;
+	uint32_t		i;
 	
 	ndr = ndr_push_init_ctx(mem_ctx);
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
@@ -428,6 +430,15 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
                 ndr_push_mapi_SPLSTRArrayW(ndr, NDR_SCALARS, (struct mapi_SPLSTRArrayW *) value);
 		break;
 
+	case PT_MV_BINARY:
+		bin_array = (struct BinaryArray_r *) value;
+		ndr_push_uint32(ndr, NDR_SCALARS, bin_array->cValues);
+		for (i = 0; i < bin_array->cValues; i++) {
+			bin.cb = bin_array->lpbin[i].cb;
+			bin.lpb = bin_array->lpbin[i].lpb;
+			ndr_push_SBinary_short(ndr, NDR_SCALARS, &bin);
+		}
+		break;
 	default:
 		break;
 	}

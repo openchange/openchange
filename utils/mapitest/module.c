@@ -297,6 +297,7 @@ _PUBLIC_ uint32_t module_oxcfxics_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "DEST-CONFIGURE", "Test Destination Configure operation", mapitest_oxcfxics_DestConfigure);
 	mapitest_suite_add_test(suite, "SYNC-CONFIGURE", "Configure ICS context for download", mapitest_oxcfxics_SyncConfigure);
 	mapitest_suite_add_test(suite, "SET-LOCAL-REPLICA-MIDSET-DELETED", "Reserve a range of local replica IDs", mapitest_oxcfxics_SetLocalReplicaMidsetDeleted);
+	mapitest_suite_add_test(suite, "SYNC-OPEN-COLLECTOR", "Test opening ICS upload collector", mapitest_oxcfxics_SyncOpenCollector);
 
 	mapitest_suite_register(mt, suite);
 

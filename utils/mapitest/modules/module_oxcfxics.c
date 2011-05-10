@@ -682,3 +682,69 @@ cleanup:
 
 	return ret;
 }
+
+/**
+   \details Test the RopSynchronizationOpenCollector (0x7e),
+   operation.
+
+   This function:
+   -# Log on private message store
+   -# Creates a test folder
+   -# Opens a sync collector context for content
+   -# Opens a sync collector context for hierachy
+   -# cleans up.
+ */
+_PUBLIC_ bool mapitest_oxcfxics_SyncOpenCollector(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	struct mt_common_tf_ctx	*context;
+	mapi_object_t		obj_htable;
+	mapi_object_t		obj_sync_collector;
+	mapi_object_t		obj_sync_hierachy_collector;
+	mapi_object_t		collector_folder;
+	bool			ret = true;
+
+	/* Logon */
+	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
+		return false;
+	}
+
+	context = mt->priv;
+
+	/* Create destfolder */
+	mapi_object_init(&collector_folder);
+	mapi_object_init(&obj_sync_collector);
+	mapi_object_init(&obj_sync_hierachy_collector);
+	retval = CreateFolder(&(context->obj_test_folder), FOLDER_GENERIC,
+			      "ICSSyncCollector", NULL /*folder comment*/,
+			      OPEN_IF_EXISTS, &collector_folder);
+	mapitest_print_retval_clean(mt, "Create ICS SyncCollector Folder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = ICSSyncOpenCollector(&collector_folder, true, &obj_sync_collector);
+	mapitest_print_retval_clean(mt, "ICSSyncOpenCollector - Contents", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = ICSSyncOpenCollector(&collector_folder, false, &obj_sync_hierachy_collector);
+	mapitest_print_retval_clean(mt, "ICSSyncOpenCollector - Hierachy", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+cleanup:
+	/* Cleanup and release */
+	mapi_object_release(&obj_sync_hierachy_collector);
+	mapi_object_release(&obj_sync_collector);
+	mapi_object_release(&collector_folder);
+	mapi_object_release(&obj_htable);
+	mapitest_common_cleanup(mt);
+
+	return ret;
+}

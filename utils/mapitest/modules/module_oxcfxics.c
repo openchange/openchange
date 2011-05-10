@@ -518,8 +518,9 @@ cleanup:
 /**
    \details Test the RopSynchronizationConfigure (0x70),
    RopSynchronizationUploadStateStreamBegin (0x75),
-   RopSynchronizationUploadStateStreamContinue (0x76) and
-   RopSynchronizationUploadStateStreamEnd (0x77) operations
+   RopSynchronizationUploadStateStreamContinue (0x76),
+   RopSynchronizationUploadStateStreamEnd (0x77) and
+   RopSynchronizationGetTransferState (0x82) operations
 
    This function:
    -# Log on private message store
@@ -535,6 +536,7 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
 	mapi_object_t		obj_htable;
 	mapi_object_t		obj_sync_context;
 	mapi_object_t		download_folder;
+	mapi_object_t		obj_transfer_state;
 	DATA_BLOB		restriction;
 	DATA_BLOB		ics_state;
 	struct SPropTagArray	*property_tags;
@@ -550,6 +552,7 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
 	/* Create destfolder */
 	mapi_object_init(&download_folder);
 	mapi_object_init(&obj_sync_context);
+	mapi_object_init(&obj_transfer_state);
 	retval = CreateFolder(&(context->obj_test_folder), FOLDER_GENERIC,
 			      "ICSDownloadFolder", NULL /*folder comment*/,
 			      OPEN_IF_EXISTS, &download_folder);
@@ -595,9 +598,17 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
 		ret = false;
 		goto cleanup;
 	}
-	      
+
+	retval = ICSSyncGetTransferState(&obj_sync_context, &obj_transfer_state);
+	mapitest_print_retval_clean(mt, "ICSSyncGetTransferState", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
 cleanup:
 	/* Cleanup and release */
+	mapi_object_release(&obj_transfer_state);
 	mapi_object_release(&obj_sync_context);
 	mapi_object_release(&download_folder);
 	mapi_object_release(&obj_htable);
@@ -748,3 +759,4 @@ cleanup:
 
 	return ret;
 }
+

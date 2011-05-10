@@ -280,17 +280,8 @@ compile() {
     pushd samba4
     error_check $? "samba4 setup"
 
-    # this is a temporary hack while we try to support both git and samba
-    # alpha 15 tarball. the tarball doesn't know --disable-s3build and
-    # samba git won't currently build without --disable-s3build because of
-    # https://bugzilla.samba.org/show_bug.cgi?id=8113
-    if test -z "$TARPATH"; then
-        ./configure.developer -C --prefix=$SAMBA_PREFIX --disable-s3build
-        error_check $? "samba4 git configure"
-    else
-        ./configure.developer -C --prefix=$SAMBA_PREFIX
-        error_check $? "samba4 configure"
-    fi
+    ./configure.developer -C --prefix=$SAMBA_PREFIX
+    error_check $? "samba4 git configure"
 
     echo "Step2: Compile Samba4 (Source)"
     $MAKE -j

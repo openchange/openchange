@@ -16,7 +16,7 @@ objectClass: External
 objectClass: container
 objectClass: top
 cn: External
-mapping_index: 0x8255
+mapping_index: 0x8253
 reserved_tags: 0x8c61
 reserved_tags: 0x8c6a
 reserved_tags: 0x8c6d
@@ -5942,35 +5942,13 @@ prop_id: 0x0000
 prop_type: 0x0102
 prop_name: http://schemas.microsoft.com/exchange/modifyexceptionstruct
 
-dn: CN=http://schemas.microsoft.com/exchange/msexchembdefaultmailfolder,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
-objectClass: External
-objectClass: MNID_STRING
-cn: http://schemas.microsoft.com/exchange/msexchembdefaultmailfolder
-canonical: PidNameExchangeMsexchembdefaultmailfolder
-oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x821e
-prop_id: 0x0000
-prop_type: 0x001F
-prop_name: http://schemas.microsoft.com/exchange/msexchembdefaultmailfolder
-
-dn: CN=http://schemas.microsoft.com/exchange/msexchembdefaultmailfoldertype,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
-objectClass: External
-objectClass: MNID_STRING
-cn: http://schemas.microsoft.com/exchange/msexchembdefaultmailfoldertype
-canonical: PidNameExchangeMsexchembdefaultmailfoldertype
-oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x821f
-prop_id: 0x0000
-prop_type: 0x001F
-prop_name: http://schemas.microsoft.com/exchange/msexchembdefaultmailfoldertype
-
 dn: CN=http://schemas.microsoft.com/exchange/nomodifyexceptions,CN=MNID_STRING,CN=00020329-0000-0000-c000-000000000046,CN=External,CN=Server
 objectClass: External
 objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/nomodifyexceptions
 canonical: PidNameExchangeNoModifyExceptions
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8220
+mapped_id: 0x821e
 prop_id: 0x0000
 prop_type: 0x000B
 prop_name: http://schemas.microsoft.com/exchange/nomodifyexceptions
@@ -5981,7 +5959,7 @@ objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/patternend
 canonical: PidNameExchangePatternEnd
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8221
+mapped_id: 0x821f
 prop_id: 0x0000
 prop_type: 0x0040
 prop_name: http://schemas.microsoft.com/exchange/patternend
@@ -5992,7 +5970,7 @@ objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/patternstart
 canonical: PidNameExchangePatternStart
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8222
+mapped_id: 0x8220
 prop_id: 0x0000
 prop_type: 0x0040
 prop_name: http://schemas.microsoft.com/exchange/patternstart
@@ -6003,7 +5981,7 @@ objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/publicfolderemailaddress
 canonical: PidNameExchangePublicFolderEmailAddress
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8223
+mapped_id: 0x8221
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: http://schemas.microsoft.com/exchange/publicfolderemailaddress
@@ -6014,7 +5992,7 @@ objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/exchange/reminderinterval
 canonical: PidNameExchangeReminderInterval
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8224
+mapped_id: 0x8222
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: http://schemas.microsoft.com/exchange/reminderinterval
@@ -6025,7 +6003,7 @@ objectClass: MNID_STRING
 cn: urn:schemas-microsoft-com:exch-data:baseschema
 canonical: PidNameExchDatabaseSchema
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8225
+mapped_id: 0x8223
 prop_id: 0x0000
 prop_type: 0x101F
 prop_name: urn:schemas-microsoft-com:exch-data:baseschema
@@ -6036,7 +6014,7 @@ objectClass: MNID_STRING
 cn: urn:schemas-microsoft-com:exch-data:expected-content-class
 canonical: PidNameExchDataExpectedContentClass
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8226
+mapped_id: 0x8224
 prop_id: 0x0000
 prop_type: 0x101F
 prop_name: urn:schemas-microsoft-com:exch-data:expected-content-class
@@ -6047,7 +6025,7 @@ objectClass: MNID_STRING
 cn: urn:schemas-microsoft-com:exch-data:schema-collection-ref
 canonical: PidNameExchDataSchemaCollectionReference
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8227
+mapped_id: 0x8225
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas-microsoft-com:exch-data:schema-collection-ref
@@ -6058,7 +6036,7 @@ objectClass: MNID_STRING
 cn: HeadingPairs
 canonical: PidNameHeadingPairs
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8228
+mapped_id: 0x8226
 prop_id: 0x0000
 prop_type: 0x0102
 prop_name: HeadingPairs
@@ -6069,7 +6047,7 @@ objectClass: MNID_STRING
 cn: HiddenCount
 canonical: PidNameHiddenCount
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8229
+mapped_id: 0x8227
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: HiddenCount
@@ -6080,7 +6058,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:calendar
 canonical: PidNameHttpmailCalendar
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x822a
+mapped_id: 0x8228
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas:httpmail:calendar
@@ -6091,7 +6069,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:cc
 canonical: PidNameHttpmailCc
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x822b
+mapped_id: 0x8229
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas:httpmail:cc
@@ -6102,7 +6080,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:contacts
 canonical: PidNameHttpmailContacts
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x822c
+mapped_id: 0x822a
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas:httpmail:contacts
@@ -6113,7 +6091,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:content-media-type
 canonical: PidNameHttpmailContentMediaType
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x822d
+mapped_id: 0x822b
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas:httpmail:content-media-type
@@ -6124,7 +6102,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:from
 canonical: PidNameHttpmailFrom
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x822e
+mapped_id: 0x822c
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas:httpmail:from
@@ -6135,7 +6113,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:fromemail
 canonical: PidNameHttpmailFromEmail
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x822f
+mapped_id: 0x822d
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas:httpmail:fromemail
@@ -6146,7 +6124,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:htmldescription
 canonical: PidNameHttpmailHtmlDescription
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8230
+mapped_id: 0x822e
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas:httpmail:htmldescription
@@ -6157,7 +6135,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:outbox
 canonical: PidNameHttpmailOutbox
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8231
+mapped_id: 0x822f
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas:httpmail:outbox
@@ -6168,7 +6146,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:sendmsg
 canonical: PidNameHttpmailSendMessage
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8232
+mapped_id: 0x8230
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas:httpmail:sendmsg
@@ -6179,7 +6157,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:submitted
 canonical: PidNameHttpmailSubmitted
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8233
+mapped_id: 0x8231
 prop_id: 0x0000
 prop_type: 0x000B
 prop_name: urn:schemas:httpmail:submitted
@@ -6190,7 +6168,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:httpmail:to
 canonical: PidNameHttpmailTo
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8234
+mapped_id: 0x8232
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: urn:schemas:httpmail:to
@@ -6201,7 +6179,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:calendar:rdate
 canonical: PidNameICalendarRecurrenceDate
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8235
+mapped_id: 0x8233
 prop_id: 0x0000
 prop_type: 0x1040
 prop_name: urn:schemas:calendar:rdate
@@ -6212,7 +6190,7 @@ objectClass: MNID_STRING
 cn: urn:schemas:calendar:rrule
 canonical: PidNameICalendarRecurrenceRule
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8236
+mapped_id: 0x8234
 prop_id: 0x0000
 prop_type: 0x101F
 prop_name: urn:schemas:calendar:rrule
@@ -6223,7 +6201,7 @@ objectClass: MNID_STRING
 cn: Keywords
 canonical: PidNameKeywords
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8237
+mapped_id: 0x8235
 prop_id: 0x0000
 prop_type: 0x101F
 prop_name: Keywords
@@ -6234,7 +6212,7 @@ objectClass: MNID_STRING
 cn: LastAuthor
 canonical: PidNameLastAuthor
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8238
+mapped_id: 0x8236
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: LastAuthor
@@ -6245,7 +6223,7 @@ objectClass: MNID_STRING
 cn: LastPrinted
 canonical: PidNameLastPrinted
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8239
+mapped_id: 0x8237
 prop_id: 0x0000
 prop_type: 0x0040
 prop_name: LastPrinted
@@ -6256,7 +6234,7 @@ objectClass: MNID_STRING
 cn: LastSaveDtm
 canonical: PidNameLastSaveDateTime
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x823a
+mapped_id: 0x8238
 prop_id: 0x0000
 prop_type: 0x0040
 prop_name: LastSaveDtm
@@ -6267,7 +6245,7 @@ objectClass: MNID_STRING
 cn: LineCount
 canonical: PidNameLineCount
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x823b
+mapped_id: 0x8239
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: LineCount
@@ -6278,7 +6256,7 @@ objectClass: MNID_STRING
 cn: LinksDirty
 canonical: PidNameLinksDirty
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x823c
+mapped_id: 0x823a
 prop_id: 0x0000
 prop_type: 0x000B
 prop_name: LinksDirty
@@ -6289,7 +6267,7 @@ objectClass: MNID_STRING
 cn: MAIL:submissionuri
 canonical: PidNameMailSubmissionUri
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x823d
+mapped_id: 0x823b
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: MAIL:submissionuri
@@ -6300,7 +6278,7 @@ objectClass: MNID_STRING
 cn: Manager
 canonical: PidNameManager
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x823e
+mapped_id: 0x823c
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: Manager
@@ -6311,7 +6289,7 @@ objectClass: MNID_STRING
 cn: MMClipCount
 canonical: PidNameMultimediaClipCount
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x823f
+mapped_id: 0x823d
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: MMClipCount
@@ -6322,7 +6300,7 @@ objectClass: MNID_STRING
 cn: NoteCount
 canonical: PidNameNoteCount
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8240
+mapped_id: 0x823e
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: NoteCount
@@ -6333,7 +6311,7 @@ objectClass: MNID_STRING
 cn: OMSAccountGuid
 canonical: PidNameOMSAccountGuid
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8241
+mapped_id: 0x823f
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: OMSAccountGuid
@@ -6344,7 +6322,7 @@ objectClass: MNID_STRING
 cn: OMSMobileModel
 canonical: PidNameOMSMobileModel
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8242
+mapped_id: 0x8240
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: OMSMobileModel
@@ -6355,7 +6333,7 @@ objectClass: MNID_STRING
 cn: OMSScheduleTime
 canonical: PidNameOMSScheduleTime
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8243
+mapped_id: 0x8241
 prop_id: 0x0000
 prop_type: 0x0040
 prop_name: OMSScheduleTime
@@ -6366,7 +6344,7 @@ objectClass: MNID_STRING
 cn: OMSServiceType
 canonical: PidNameOMSServiceType
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8244
+mapped_id: 0x8242
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: OMSServiceType
@@ -6377,7 +6355,7 @@ objectClass: MNID_STRING
 cn: OMSSourceType
 canonical: PidNameOMSSourceType
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8245
+mapped_id: 0x8243
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: OMSSourceType
@@ -6388,7 +6366,7 @@ objectClass: MNID_STRING
 cn: PageCount
 canonical: PidNamePageCount
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8246
+mapped_id: 0x8244
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: PageCount
@@ -6399,7 +6377,7 @@ objectClass: MNID_STRING
 cn: ParCount
 canonical: PidNameParagraphCount
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8247
+mapped_id: 0x8245
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: ParCount
@@ -6410,7 +6388,7 @@ objectClass: MNID_STRING
 cn: http://schemas.microsoft.com/outlook/phishingstamp
 canonical: PidNamePhishingStamp
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8248
+mapped_id: 0x8246
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: http://schemas.microsoft.com/outlook/phishingstamp
@@ -6421,7 +6399,7 @@ objectClass: MNID_STRING
 cn: PresFormat
 canonical: PidNamePresentationFormat
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8249
+mapped_id: 0x8247
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: PresFormat
@@ -6432,7 +6410,7 @@ objectClass: MNID_STRING
 cn: quarantine-original-sender
 canonical: PidNameQuarantineOriginalSender
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x824a
+mapped_id: 0x8248
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: quarantine-original-sender
@@ -6443,7 +6421,7 @@ objectClass: MNID_STRING
 cn: RevNumber
 canonical: PidNameRevisionNumber
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x824b
+mapped_id: 0x8249
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: RevNumber
@@ -6454,7 +6432,7 @@ objectClass: MNID_STRING
 cn: DRMLicense
 canonical: PidNameRightsManagementLicense
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x824c
+mapped_id: 0x824a
 prop_id: 0x0000
 prop_type: 0x1102
 prop_name: DRMLicense
@@ -6465,7 +6443,7 @@ objectClass: MNID_STRING
 cn: Scale
 canonical: PidNameScale
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x824d
+mapped_id: 0x824b
 prop_id: 0x0000
 prop_type: 0x000B
 prop_name: Scale
@@ -6476,7 +6454,7 @@ objectClass: MNID_STRING
 cn: Security
 canonical: PidNameSecurity
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x824e
+mapped_id: 0x824c
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: Security
@@ -6487,7 +6465,7 @@ objectClass: MNID_STRING
 cn: SlideCount
 canonical: PidNameSlideCount
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x824f
+mapped_id: 0x824d
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: SlideCount
@@ -6498,7 +6476,7 @@ objectClass: MNID_STRING
 cn: Subject
 canonical: PidNameSubject
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8250
+mapped_id: 0x824e
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: Subject
@@ -6509,7 +6487,7 @@ objectClass: MNID_STRING
 cn: Template
 canonical: PidNameTemplate
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8251
+mapped_id: 0x824f
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: Template
@@ -6520,7 +6498,7 @@ objectClass: MNID_STRING
 cn: Thumbnail
 canonical: PidNameThumbnail
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8252
+mapped_id: 0x8250
 prop_id: 0x0000
 prop_type: 0x0102
 prop_name: Thumbnail
@@ -6531,7 +6509,7 @@ objectClass: MNID_STRING
 cn: Title
 canonical: PidNameTitle
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8253
+mapped_id: 0x8251
 prop_id: 0x0000
 prop_type: 0x001F
 prop_name: Title
@@ -6542,7 +6520,7 @@ objectClass: MNID_STRING
 cn: WordCount
 canonical: PidNameWordCount
 oleguid: 00020329-0000-0000-c000-000000000046
-mapped_id: 0x8254
+mapped_id: 0x8252
 prop_id: 0x0000
 prop_type: 0x0003
 prop_name: WordCount

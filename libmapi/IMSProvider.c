@@ -25,6 +25,8 @@
 #include <core/error.h>
 #include <param.h>
 
+#define TEVENT_DEPRECATED 1
+#include <tevent.h>
 
 /**
    \file IMSProvider.c
@@ -36,6 +38,7 @@
  * Log MAPI to one instance of a message store provider
  */
 
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx, 
 					struct dcerpc_pipe **p, 
 					const char *binding,
@@ -52,6 +55,7 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 	}
 
 	ev = tevent_context_init(talloc_autofree_context());
+	tevent_loop_allow_nesting(ev);
 
 	status = dcerpc_pipe_connect(parent_ctx, 
 				     p, binding, table,
@@ -66,6 +70,7 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 	errno = 0;
 	return status;
 }
+#pragma GCC diagnostic warning "-Wdeprecated-declarations"
 
 
 /**

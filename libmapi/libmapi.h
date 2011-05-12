@@ -48,7 +48,6 @@
 #include <talloc.h>
 #include <dcerpc.h>
 #include <util/debug.h>
-#include <tevent.h>
 #include <param.h>
 #include <dlinklist.h>
 

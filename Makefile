@@ -1074,7 +1074,7 @@ mapiproxy/servers/exchange_nsp.$(SHLIBEXT):	mapiproxy/servers/default/nspi/dcesr
 						mapiproxy/servers/default/nspi/emsabp_tdb.po		\
 						mapiproxy/servers/default/nspi/emsabp_property.po	
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(SAMBASERVER_LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(TDB_LIBS) $(SAMBASERVER_LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/dcesrv_exchange_emsmdb.po	\
 						mapiproxy/servers/default/emsmdb/emsmdbp.po			\

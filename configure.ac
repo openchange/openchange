@@ -336,7 +336,7 @@ dnl Samba4 modules
 dnl ---------------------------------------------------------------------------
 PKG_CHECK_MODULES(TALLOC, talloc)
 PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig samba-util tevent)
-PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server)
+PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server samdb)
 PKG_CHECK_MODULES(TDB, tdb)
 PKG_CHECK_MODULES(LDB, ldb)
 
@@ -498,7 +498,7 @@ PKG_CHECK_EXISTS([ dcerpc_samr ],
 		])
 
 if test x"$enable_libmapiadmin" = x"yes"; then
-   	PKG_CHECK_MODULES(SAMR, dcerpc_samr)
+   	PKG_CHECK_MODULES(SAMR, dcerpc_samr ndr_standard)
 	OC_RULE_ADD(libmapiadmin, LIBS)
 fi
 

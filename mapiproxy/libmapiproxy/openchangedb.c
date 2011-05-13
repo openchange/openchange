@@ -595,6 +595,52 @@ static void *openchangedb_get_folder_special_property(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
+static struct BinaryArray_r *decode_mv_binary(TALLOC_CTX *mem_ctx, const char *str)
+{
+	const char *start;
+	char *tmp;
+	size_t i, current, len;
+	uint32_t j;
+	struct BinaryArray_r *bin_array;
+
+	bin_array = talloc_zero(mem_ctx, struct BinaryArray_r);
+
+	start = str;
+	len = strlen(str);
+	i = 0;
+	while (i < len && start[i] != ';') {
+		i++;
+	}
+	if (i < len) {
+		tmp = talloc_memdup(NULL, start, i + 1);
+		tmp[i] = 0;
+		bin_array->cValues = strtol(tmp, NULL, 16);
+		bin_array->lpbin = talloc_array(bin_array, struct Binary_r, bin_array->cValues);
+		talloc_free(tmp);
+
+		i++;
+		for (j = 0; j < bin_array->cValues; j++) {
+			current = i;
+			while (i < len && start[i] != ';') {
+				i++;
+			}
+
+			tmp = talloc_memdup(bin_array, start + current, i - current + 1);
+			tmp[i - current] = 0;
+			i++;
+
+			bin_array->lpbin[j].lpb = (uint8_t *) tmp;
+			if (*tmp) {
+				bin_array->lpbin[j].cb = ldb_base64_decode((char *) bin_array->lpbin[j].lpb);
+			}
+			else {
+				bin_array->lpbin[j].cb = 0;
+			}
+		}
+	}
+
+	return bin_array;
+}
 
 /**
    \details Retrieve a MAPI property from a OpenChange LDB message
@@ -618,6 +664,9 @@ static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
 	uint64_t		*d;
 	uint32_t		*l;
 	int			*b;
+	struct FILETIME		*ft;
+	struct Binary_r		*bin;
+	struct BinaryArray_r	*bin_array;
 
 	switch (proptag & 0xFFFF) {
 	case PT_BOOLEAN:
@@ -641,8 +690,30 @@ static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
 		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, NULL);
 		data = (char *) talloc_strdup(mem_ctx, str);
 		break;
+	case PT_SYSTIME:
+		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, 0x0);
+		ft = talloc_zero(mem_ctx, struct FILETIME);
+		d = talloc_zero(NULL, uint64_t);
+		*d = strtoull(str, NULL, 16);
+		ft->dwLowDateTime = (*d & 0xffffffff);
+		ft->dwHighDateTime = *d >> 32;
+		data = (void *)ft;
+		talloc_free(d);
+		break;
+	case PT_BINARY:
+		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, 0x0);
+		bin = talloc_zero(mem_ctx, struct Binary_r);
+		bin->lpb = (uint8_t *) talloc_strdup(mem_ctx, str);
+		bin->cb = ldb_base64_decode((char *) bin->lpb);
+		data = (void *)bin;
+		break;
+	case PT_MV_BINARY:
+		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, 0x0);
+		bin_array = decode_mv_binary(mem_ctx, str);
+		data = (void *)bin_array;
+		break;
+
 	default:
-		talloc_free(mem_ctx);
 		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (proptag & 0xFFFF)));
 		return NULL;
 	}

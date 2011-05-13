@@ -559,33 +559,9 @@ static void *openchangedb_get_folder_special_property(TALLOC_CTX *mem_ctx,
 						      uint32_t proptag,
 						      const char *PidTagAttr)
 {
-	enum MAPISTATUS		retval;
-	struct GUID		MailboxGUID;
-	struct GUID		ReplGUID;
-	uint16_t		ReplID;
-	struct Binary_r		*bin;
-	uint16_t		FolderType;
-	uint64_t		FolderId;
-	const char		*tmp;
 	uint32_t		*l;
 
 	switch (proptag) {
-	case PR_IPM_APPOINTMENT_ENTRYID:
-	case PR_IPM_CONTACT_ENTRYID:
-	case PR_IPM_JOURNAL_ENTRYID:
-	case PR_IPM_NOTE_ENTRYID:
-	case PR_IPM_TASK_ENTRYID:
-	case PR_REMINDERS_ONLINE_ENTRYID:
-	case PR_IPM_DRAFTS_ENTRYID:
-		retval = openchangedb_get_MailboxGuid(ldb_ctx, recipient, &MailboxGUID);
-		retval = openchangedb_get_MailboxReplica(ldb_ctx, recipient, &ReplID, &ReplGUID);
-		FolderType = (uint16_t) ldb_msg_find_attr_as_int(res->msgs[0], "FolderType", 0x1);
-
-		tmp = ldb_msg_find_attr_as_string(res->msgs[0], PidTagAttr, NULL);
-		FolderId = strtoul(tmp, NULL, 16);
-		retval = entryid_set_folder_EntryID(mem_ctx, &MailboxGUID, &ReplGUID, FolderType, FolderId, &bin);
-		return (void *)bin;
-		break;
 	case PR_DEPTH:
 		l = talloc_zero(mem_ctx, uint32_t);
 		*l = 0;

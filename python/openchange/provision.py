@@ -20,6 +20,7 @@
 
 from base64 import b64encode
 import os
+import struct
 import samba
 from openchange import mailbox
 from samba import Ldb
@@ -252,6 +253,33 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     print "[SUCCESS] Done!"
 
 def newmailbox(lp, username, firstorg, firstou, backend):
+    def guid_to_binary(guid):
+        # "31c32976-efda-4d3c-81fb-63dd2ab9f780"
+	time_low = int(guid[0:8], 16)
+        time_mid = int(guid[9:13], 16)
+        time_hi_and_version = int(guid[14:18], 16)
+        clock_seq = ""
+        for x in xrange(2):
+            idx = 19 + x * 2
+            clock_seq = clock_seq + chr(int(guid[idx:idx+2], 16))
+        node = ""
+        for x in xrange(6):
+            idx = 24 + x * 2
+            node = node + chr(int(guid[idx:idx+2], 16))
+
+        binguid = struct.pack("<LHH", time_low, time_mid, time_hi_and_version) + clock_seq + node
+
+        return binguid
+
+    def make_folder_entryid(provider_uid, folder_type, database_guid, counter):
+        entryid = (4 * chr(0)  #flags
+                   + provider_uid
+                   + struct.pack("<H", folder_type)
+                   + database_guid
+                   + struct.pack("<HL", (counter & 0xffff), (counter >> 16)))
+
+        return entryid
+
     names = guess_names_from_smbconf(lp, firstorg, firstou)
 
     db = mailbox.OpenChangeDB(openchangedb_url(lp))
@@ -336,6 +364,10 @@ def newmailbox(lp, username, firstorg, firstou, backend):
     fid_inbox = fids[("Mailbox Root", "IPM Subtree", "Inbox")]
     fid_reminders = fids[("Mailbox Root", "Reminders")]
     fid_mailbox = fids[("Mailbox Root",)]
+
+    mailbox_guid = guid_to_binary(db.get_user_MailboxGUID(names.netbiosname, username)[0])
+    replica_guid = guid_to_binary(db.get_user_ReplicaGUID(names.netbiosname, username)[0])
+
     for path, foldername, containerclass, pidtag in special_folders:
         GlobalCount = db.get_message_GlobalCount(names.netbiosname)
         ReplicaID = db.get_message_ReplicaID(names.netbiosname)
@@ -343,8 +375,9 @@ def newmailbox(lp, username, firstorg, firstou, backend):
         fid = db.add_mailbox_special_folder(username, fids[path], fid_inbox, foldername, 
                                             containerclass, GlobalCount, ReplicaID, 
                                             url, openchangedb_suffix_for_mapistore_url(url))
-        db.add_folder_property(fid_inbox, pidtag, fid)
-        db.add_folder_property(fid_mailbox, pidtag, fid)
+        entryid = make_folder_entryid(mailbox_guid, 1, replica_guid, GlobalCount)
+        db.add_folder_property(fid_inbox, pidtag, entryid.encode("base64").strip())
+        db.add_folder_property(fid_mailbox, pidtag, entryid.encode("base64").strip())
         GlobalCount += 1
         db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
         print "\t* %-40s: %s (%s)" % (foldername, fid, containerclass)
@@ -372,9 +405,10 @@ def newmailbox(lp, username, firstorg, firstou, backend):
 
     print "* Adding additional default properties to Reminders"
     db.add_folder_property(fid_reminders, "PidTagContainerClass", "Outlook.Reminder");
-    db.add_folder_property(fid_inbox, "PidTagRemindersOnlineEntryId", fid_reminders);
-    db.add_folder_property(fid_mailbox, "PidTagRemindersOnlineEntryId", fid_reminders);
 
+    entryid = make_folder_entryid(mailbox_guid, 1, replica_guid, int(fid_reminders, 16))
+    db.add_folder_property(fid_inbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
+    db.add_folder_property(fid_mailbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
     print "* GlobalCount (0x%x)" % GlobalCount
 

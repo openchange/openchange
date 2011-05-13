@@ -721,6 +721,72 @@ static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
 	return data;
 }
 
+/**
+   \details Build a MAPI property suitable for a OpenChange LDB message
+
+   \param mem_ctx pointer to the memory context
+   \param value the MAPI property
+
+   \return valid string pointer on success, otherwise NULL
+ */
+static char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx, struct SPropValue *value)
+{
+	char			*data, *subdata;
+	struct SPropValue	*subvalue;
+	NTTIME			nt_time;
+	uint32_t		i;
+	size_t		        data_len, subdata_len;
+	struct BinaryArray_r	*bin_array;
+
+	switch (value->ulPropTag & 0xFFFF) {
+	case PT_BOOLEAN:
+		data = talloc_strdup(mem_ctx, value->value.b ? "TRUE" : "FALSE");
+		break;
+	case PT_LONG:
+		data = talloc_asprintf(mem_ctx, "%d", value->value.l);
+		break;
+	case PT_I8:
+		data = talloc_asprintf(mem_ctx, "0x%.16"PRIx64, value->value.d);
+		break;
+	case PT_STRING8:
+		data = ldb_binary_encode_string(mem_ctx, value->value.lpszA);
+		break;
+	case PT_UNICODE:
+		data = ldb_binary_encode_string(mem_ctx, value->value.lpszW);
+		break;
+	case PT_SYSTIME:
+		nt_time = ((uint64_t) value->value.ft.dwHighDateTime << 32) | value->value.ft.dwLowDateTime;
+		data = talloc_asprintf(mem_ctx, "0x%.16"PRIx64, nt_time);
+		break;
+	case PT_BINARY:
+		data = ldb_base64_encode(mem_ctx, (char *) value->value.bin.lpb, value->value.bin.cb);
+		break;
+	case PT_MV_BINARY:
+		bin_array = &value->value.MVbin;
+		data = talloc_asprintf(mem_ctx, "0x%.8x", bin_array->cValues);
+		data_len = strlen(data);
+		for (i = 0; i < bin_array->cValues; i++) {
+			subvalue = talloc_zero(NULL, struct SPropValue);
+			subvalue->ulPropTag = (value->ulPropTag & 0xffff0fff);
+			subvalue->value.bin = bin_array->lpbin[i];
+			subdata = openchangedb_set_folder_property_data(subvalue, subvalue);
+			subdata_len = strlen(subdata);
+			data = talloc_realloc(mem_ctx, data, char, data_len + subdata_len + 2);
+			*(data + data_len) = ';';
+			memcpy(data + data_len + 1, subdata, subdata_len);
+			data_len += subdata_len + 1;
+			talloc_free(subvalue);
+		}
+		*(data + data_len) = 0;
+		break;
+	default:
+		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (value->ulPropTag & 0xFFFF)));
+		data = NULL;
+	}
+
+	return data;
+}
+
 
 /**
    \details Return the next available FolderID
@@ -816,6 +882,83 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	talloc_free(mem_ctx);
 
 	return MAPI_E_NOT_FOUND;
+}
+
+_PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(TALLOC_CTX *parent_ctx, void *ldb_ctx, uint64_t fid, struct SRow *row)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	char			*PidTagAttr = NULL;
+	struct SPropValue	*value;
+	const char * const	attrs[] = { "*", NULL };
+	struct ldb_message	*msg;
+	char			*str_value;
+	time_t			unix_time;
+	NTTIME			nt_time;
+	uint32_t		i;
+	int			ret;
+
+	unix_time = time(NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "set_folder_property");
+
+	/* Step 1. Find PidTagFolderId record */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* Step 2. Update GlobalCount value */
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
+
+	for (i = 0; i < row->cValues; i++) {
+		value = row->lpProps + i;
+
+		switch (value->ulPropTag) {
+		case PR_DEPTH:
+		case PR_SOURCE_KEY:
+		case PR_PARENT_SOURCE_KEY:
+		case PR_CHANGE_KEY:
+		case PR_CREATION_TIME:
+		case PR_LAST_MODIFICATION_TIME:
+			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", value->ulPropTag));
+			break;
+		default:
+			/* Step 2. Convert proptag into PidTag attribute */
+			PidTagAttr = (char *) openchangedb_property_get_attribute(value->ulPropTag);
+			if (!PidTagAttr) {
+				PidTagAttr = talloc_asprintf(mem_ctx, "%.8x", value->ulPropTag);
+			}
+
+			str_value = openchangedb_set_folder_property_data(mem_ctx, value);
+			if (!str_value) {
+				DEBUG(5, ("Ignored property of unhandled type %.4x\n", (value->ulPropTag & 0xffff)));
+				continue;
+			}
+
+			ldb_msg_add_string(msg, PidTagAttr, str_value);
+			msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_REPLACE;
+		}
+	}
+
+	/* We set the last modification time */
+	unix_to_nt_time(&nt_time, unix_time);
+	value = talloc_zero(NULL, struct SPropValue);
+	value->ulPropTag = PR_LAST_MODIFICATION_TIME;
+	value->value.ft.dwLowDateTime = nt_time & 0xffffffff;
+	value->value.ft.dwHighDateTime = nt_time >> 32;
+	str_value = openchangedb_set_folder_property_data(mem_ctx, value);
+	talloc_free(value);
+
+	ldb_msg_add_string(msg, "PidTagLastModificationTime", str_value);
+	msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_REPLACE;
+
+	ret = ldb_modify(ldb_ctx, msg);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
 }
 
 

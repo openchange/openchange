@@ -210,6 +210,7 @@ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *, uint16_t *, struct 
 enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, void *, uint64_t, char **, bool);
 enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *, void *, const char *, const char *, uint64_t *, const char **);
 enum MAPISTATUS openchangedb_lookup_folder_property(void *, uint32_t, uint64_t);
+enum MAPISTATUS openchangedb_set_folder_properties(TALLOC_CTX *parent_ctx, void *ldb_ctx, uint64_t fid, struct SRow *row);
 enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *, void *, char *, uint32_t, uint64_t, void **);
 enum MAPISTATUS openchangedb_get_folder_count(void *, uint64_t, uint32_t *);
 enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *, void *, char *, char *, uint32_t, uint32_t, void **);

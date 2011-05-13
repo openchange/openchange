@@ -170,7 +170,7 @@ dn: CASE_INSENSITIVE
             raise NoSuchServer(cn)
         return res[0]
 
-    def lookup_mailbox_user(self, server, username):
+    def lookup_mailbox_user(self, server, username, attributes=[]):
         """Check if a user already exists in openchange database.
 
         :param server: Server object name
@@ -182,7 +182,7 @@ dn: CASE_INSENSITIVE
         # Step 2. Search User object
         filter = "(&(objectClass=mailbox)(cn=%s))" % (username)
         return self.ldb.search(server_dn, scope=ldb.SCOPE_SUBTREE,
-                           expression=filter, attrs=[])
+                           expression=filter, attrs=attributes)
 
     def user_exists(self, server, username):
         """Check whether a user exists.
@@ -234,6 +234,20 @@ GlobalCount: 0x%x
             self.ldb.modify_ldif(newGlobalCount)
         finally:
             self.ldb.transaction_commit()
+
+    def get_user_attribute(self, server, username, attribute):
+        """Retrieve attribute value from given mailbox (server, username).
+
+        :param server: Server object name
+        :param username: User name
+        """
+        return self.lookup_mailbox_user(server, username, [attribute])[0][attribute]
+
+    def get_user_MailboxGUID(self, server, username):
+        return self.get_user_attribute(server, username, "MailboxGUID")
+
+    def get_user_ReplicaGUID(self, server, username):
+        return self.get_user_attribute(server, username, "ReplicaGUID")
 
     def add_mailbox_user(self, basedn, username):
         """Add a user record in openchange database.

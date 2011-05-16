@@ -372,7 +372,7 @@ def newmailbox(lp, username, firstorg, firstou, backend):
         GlobalCount = db.get_message_GlobalCount(names.netbiosname)
         ReplicaID = db.get_message_ReplicaID(names.netbiosname)
         url = openchangedb_mapistore_url(lp, backend)
-        fid = db.add_mailbox_special_folder(username, fids[path], fid_inbox, foldername, 
+        fid = db.add_mailbox_special_folder(username, fids[path], foldername, 
                                             containerclass, GlobalCount, ReplicaID, 
                                             url, openchangedb_suffix_for_mapistore_url(url))
         entryid = make_folder_entryid(mailbox_guid, 1, replica_guid, GlobalCount)

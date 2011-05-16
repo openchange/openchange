@@ -394,14 +394,13 @@ GlobalCount: 0x%x
 
         return FID
 
-    def add_mailbox_special_folder(self, username, parentfolder, ref_fid, 
+    def add_mailbox_special_folder(self, username, parentfolder, 
                                    foldername, containerclass, GlobalCount, ReplicaID, 
                                    mapistoreURL, mapistoreSuffix):
         """Add a special folder to the user mailbox
 
         :param username: Username object
         :param parent_folder: Folder identifier where record should be added
-        :param ref_fid: Folder Identifier referring special folder
         :param foldername: Folder name
         :param containerclass: Folder container class
         :param GlobalCount: current global counter for message database

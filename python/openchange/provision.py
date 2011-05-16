@@ -276,7 +276,8 @@ def newmailbox(lp, username, firstorg, firstou, backend):
                    + provider_uid
                    + struct.pack("<H", folder_type)
                    + database_guid
-                   + struct.pack("<HL", (counter & 0xffff), (counter >> 16)))
+                   + struct.pack("<HL", (counter & 0xffff), (counter >> 16))
+                   + 2 * chr(0)) # padding
 
         return entryid
 

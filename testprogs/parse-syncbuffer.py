@@ -233,10 +233,12 @@ class SyncBufferParser:
         self.lines = lines
         self.state = PARSER_START
         self.pos = pos
-        self.buffer = None
         self.lastBlock = False
+        self.buffer = None
+        self.bufferLines = None
 
     def run(self):
+        self.bufferLines = []
         state_methods = { PARSER_START: self._doParserStart,
                           PARSER_PRERESPONSE: self._doParserPreResponse,
                           PARSER_RESPONSE: self._doParserResponse }
@@ -245,7 +247,9 @@ class SyncBufferParser:
             state_methods[self.state](self.lines[self.pos])
             self.pos = self.pos + 1
 
-        if self.state != PARSER_DONE:
+        if self.state == PARSER_DONE:
+            self.buffer = ''.join(self.bufferLines)
+        else:
             self.pos = -1
 
         return self.pos
@@ -260,7 +264,6 @@ class SyncBufferParser:
                 self.lastBlock = True
         elif line.find("DATA_BLOB") > -1:
             self.state = PARSER_RESPONSE
-            self.buffer = ""
 
     def _doParserResponse(self, line):
         if line.find("[") == 0:
@@ -276,6 +279,7 @@ class SyncBufferParser:
         pos = 6;
         maxLength = 56
         done = False
+        parsed = []
         while not done:
             it = 0
             while it < 8 and not done:
@@ -284,10 +288,11 @@ class SyncBufferParser:
                     done = True
                 else:
                     charValue = chr(int(responseByte, 16))
-                    self.buffer = self.buffer + charValue
+                    parsed.append(charValue)
                     it = it + 1
                     pos = pos + 3
             pos = pos + 2
+        self.bufferLines.append(''.join(parsed))
 
 class SyncBufferPrinter:
     def __init__(self, data):
@@ -313,6 +318,7 @@ class SyncBufferPrinter:
             consumed = self._printIDSet(pos)
         else:
             colType = tag & 0x0fff
+            # print "  pos: %d, length: %d, TAG: %.8x, " % (pos, len(self.data), tag)
             prefix = "  %.8x (" % tag
             if Properties.has_key(tag):
                 prefix = prefix + "%s, " % Properties[tag]
@@ -390,7 +396,7 @@ class SyncBufferPrinter:
             print " ",
         elif namedPropType == 0x01:
             print "    name:",
-            consumed = consumed + self._printValue(pos + consumed, 0x001f)
+            consumed = consumed + self._printNamedPropName(pos + consumed)
             print " ",
         else:
             raise Exception, "Invalid named prop type: %d" % namedPropType
@@ -398,6 +404,21 @@ class SyncBufferPrinter:
         consumed = consumed + self._printValue(pos + consumed, colType)
 
         return consumed
+
+    def _printNamedPropName(self, pos):
+        length = 0
+        byteValue = ""
+        while (ord(self.data[pos + length]) != 0
+               or ord(self.data[pos + 1 + length]) != 0):
+            byteValue = (byteValue
+                         + self.data[pos + length]
+                         + self.data[pos + length + 1])
+            length = length + 2
+        stringValue = byteValue.decode("utf-16")
+        stringLength = len(stringValue)
+        print "(%d chars): \"%s\"" % (stringLength, stringValue)
+
+        return length + 2
 
     def _printValue(self, pos, colType):
         base_methods = { 0x0002: self._printShort,

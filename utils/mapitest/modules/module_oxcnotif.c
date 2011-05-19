@@ -3,7 +3,7 @@
 
    OpenChange Project - Core Notifications Protocol operation tests
 
-   Copyright (C) Brad Hards 2009
+   Copyright (C) Brad Hards 2009 - 2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -97,4 +97,50 @@ _PUBLIC_ bool mapitest_oxcnotif_RegisterNotification(struct mapitest *mt)
 	mapi_object_release(&obj_store);
 
 	return true;
+}
+
+/**
+   \details Test the SyncOpenAdvisor (0x83) operation
+
+   This function:
+   -# logs on
+   -# creates a notification advisor
+   -# cleans up
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_oxcnotif_SyncOpenAdvisor(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	bool			ret = true;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_notifier;
+
+	mapi_object_init(&obj_store);
+	mapi_object_init(&obj_notifier);
+
+	/* Logon */
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval_clean(mt, "OpenMsgStore", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Create advisor */
+	retval = SyncOpenAdvisor(&obj_store, &obj_notifier);
+	mapitest_print_retval_clean(mt, "SyncOpenAdvisor", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Cleanup */
+cleanup:
+	mapi_object_release(&obj_notifier);
+	mapi_object_release(&obj_store);
+
+	return ret;
 }

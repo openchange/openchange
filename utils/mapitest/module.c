@@ -269,6 +269,7 @@ _PUBLIC_ uint32_t module_oxcnotif_init(struct mapitest *mt)
 	suite = mapitest_suite_init(mt, "OXCNOTIF", "Core Notification Protocol", true);
 
 	// mapitest_suite_add_test(suite, "REGISTER-NOTIFICATION", "Subscribe to notifications", mapitest_oxcnotif_RegisterNotification);
+	mapitest_suite_add_test_flagged(suite, "SYNC-OPEN-ADVISOR", "Test the SyncOpenAdvisor ROP", mapitest_oxcnotif_SyncOpenAdvisor, NotInExchange2010);
 
 	mapitest_suite_register(mt, suite);
 

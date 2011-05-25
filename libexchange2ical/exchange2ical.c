@@ -354,7 +354,7 @@ static uint8_t exchange2ical_exception_from_ExceptionInfo(struct exchange2ical *
 		
 		/*summary from Subject if subject is set*/
 		if (exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->OverrideFlags & 0x0001) {
-			exchange2ical->Subject=(const char *) &exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->Subject.subject;
+			exchange2ical->Subject=(const char *) &exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->Subject.subjectMsg.msg;
 			ical_property_SUMMARY(exchange2ical);
 		}
 		
@@ -374,7 +374,7 @@ static uint8_t exchange2ical_exception_from_ExceptionInfo(struct exchange2ical *
 
 		/*Location*/
 		if(exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->OverrideFlags & 0x0010){
-			exchange2ical->Location=(const char *) &exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->Location.location;
+			exchange2ical->Location=(const char *) &exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->Location.locationMsg.msg;
 			ical_property_LOCATION(exchange2ical);
 		}
 		

@@ -570,8 +570,6 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	int body_count = 0;
 
 	has_attach = (const uint8_t *) octool_get_propval(aRow, PR_HASATTACH);
-	if (from == NULL)
-		from = "unknown";
 	to = (const char *) octool_get_propval(aRow, PR_DISPLAY_TO);
 	cc = (const char *) octool_get_propval(aRow, PR_DISPLAY_CC);
 	bcc = (const char *) octool_get_propval(aRow, PR_DISPLAY_BCC);
@@ -583,8 +581,11 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 		date = "None";
 	}
 
-
 	from = (const char *) octool_get_propval(aRow, PR_SENT_REPRESENTING_NAME);
+	if (from == NULL) {
+		from = "unknown";
+	}
+
 	subject_prefix = (const char *) octool_get_propval(aRow, PR_SUBJECT_PREFIX);
 	normalizedsubject = (const char *) octool_get_propval(aRow, PR_NORMALIZED_SUBJECT);
 	subject = (const char*) octool_get_propval(aRow, PR_SUBJECT);
@@ -600,7 +601,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 		char *f, *p;
 		f = talloc_strdup(mem_ctx, from);
 		/* strip out all '"'s, ugly but works */
-		for (p = f; *p; ) {
+		for (p = f; p && *p; ) {
 			if (*p == '"') {
 				memmove(p, p+1, strlen(p)); /* gets NUL */
 				continue;

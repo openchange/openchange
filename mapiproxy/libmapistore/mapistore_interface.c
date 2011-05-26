@@ -1048,40 +1048,66 @@ _PUBLIC_ int mapistore_deletemessage(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_get_folders_list(struct mapistore_context *mstore_ctx,
-                                        uint64_t fmid,
-                                        struct indexing_folders_list **folders_list)
+_PUBLIC_ struct backend_context *mapistore_find_container_backend(struct mapistore_context *mstore_ctx,
+								  uint64_t fmid)
 {
-	int			ret;
         char                    *path;
 	struct backend_context_list *el;
+	struct backend_context	*bctx = NULL;
         
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	/* SANITY checks */
+	if (!mstore_ctx) return NULL;
 
-        DEBUG(5, ("[%s:%d] SEARCH START", __FUNCTION__, __LINE__));
-                
 	/* Step 1. Search the context */
         path = NULL;
         if (!mstore_ctx->context_list)
-                return MAPISTORE_ERROR;
+                return NULL;
 	for (el = mstore_ctx->context_list; el; el = el->next) {
 		if (el->ctx && el->ctx->uri) {
                         if ((mapistore_get_path (el->ctx, fmid, MAPISTORE_MESSAGE, &path)
                              == MAPISTORE_SUCCESS)
                             || (mapistore_get_path (el->ctx, fmid, MAPISTORE_FOLDER, &path)
-                                == MAPISTORE_SUCCESS))
-                            break;
+                                == MAPISTORE_SUCCESS)) {
+				bctx = el->ctx;
+				talloc_free(path);
+				return bctx;
+				break;
+			}
 		}
 	}
 
-        if (!el || !path) {
-		DEBUG(5, ("[%s:%d] %lld NOT FOUND\n", __FUNCTION__, __LINE__, (unsigned long long) fmid));
-                return MAPISTORE_ERROR;
-        }
+	DEBUG(5, ("[%s:%d] %lld NOT FOUND\n", __FUNCTION__, __LINE__, (unsigned long long) fmid));
 
+	return NULL;
+}
+
+/**
+   \details Does something
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where the message's to be located is stored
+   \param fmid the folder/message identifier at the end of the list
+   \param folder_list the destination of the list
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_get_folders_list(struct mapistore_context *mstore_ctx,
+                                        uint64_t fmid,
+                                        struct indexing_folders_list **folders_list)
+{
+	int			ret;
+	struct backend_context	*bctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	bctx = mapistore_find_container_backend(mstore_ctx, fmid);
+	if (!bctx) return MAPISTORE_ERROR;
+	
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_get_folders_list(el->ctx, fmid, folders_list);
+	ret = mapistore_backend_get_folders_list(bctx, fmid, folders_list);
         if ((*folders_list)->count == 0) {
                 DEBUG(5, ("[%s:%d] list empty\n", __FUNCTION__, __LINE__));
                 return MAPISTORE_ERROR;

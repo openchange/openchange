@@ -232,6 +232,7 @@ int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, 
 int mapistore_modifyrecipients(struct mapistore_context *, uint32_t, uint64_t, struct ModifyRecipientRow*, uint16_t);
 int mapistore_get_child_fids(struct mapistore_context *, uint32_t, uint64_t, uint64_t **, uint32_t *);
 int mapistore_deletemessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
+struct backend_context *mapistore_find_container_backend(struct mapistore_context *, uint64_t);
 int mapistore_get_folders_list(struct mapistore_context *, uint64_t, struct indexing_folders_list **);
 int mapistore_set_restrictions(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct mapi_SRestriction *, uint8_t *);
 int mapistore_set_sort_order(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SSortOrderSet *, uint8_t *);

@@ -62,7 +62,6 @@ static enum MAPISTATUS RopOpenFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 {
 	struct emsmdbp_object	*parent_object = NULL;
 	void			*data;
-	uint64_t		parent_fid;
 	int			retval;
 	uint32_t		context_id;
 
@@ -78,11 +77,10 @@ static enum MAPISTATUS RopOpenFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] OpenFolder wrong object type: 0x%x\n", parent_object->type));
 		return MAPI_E_NO_SUPPORT;
 	}
-	parent_fid = parent_object->object.folder->folderID;
 	context_id = parent_object->object.folder->contextID;
 
 	/* Step 2. Open folder from mapistore */
-	retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid, request.folder_id);
+	retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, context_id, request.folder_id);
 	if (retval) return MAPI_E_NOT_FOUND;
 
 	return MAPI_E_SUCCESS;
@@ -599,7 +597,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 		if (retval == MAPI_E_SUCCESS) {
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder Duplicate Folder at 0x%.16"PRIx64"\n", folder_fid));
 			/* Open the folder using folder_fid */
-			retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid, folder_fid);
+			retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, context_id, folder_fid);
 			if (retval != MAPISTORE_SUCCESS) {
 				return MAPI_E_NOT_FOUND; /* shouldn't happen */
 			}

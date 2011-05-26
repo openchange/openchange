@@ -139,14 +139,13 @@ static PyObject *py_MAPIStore_add_context_ref_count(PyMAPIStoreObject *self, PyO
 static PyObject *py_MAPIStore_opendir(PyMAPIStoreObject *self, PyObject *args)
 {
 	uint32_t	context_id;
-	uint64_t	parent_fid;
 	uint64_t	fid;
 
-	if (!PyArg_ParseTuple(args, "kKK", &context_id, &parent_fid, &fid)) {
+	if (!PyArg_ParseTuple(args, "kK", &context_id, &fid)) {
 		return NULL;
 	}
 
-	return PyInt_FromLong(mapistore_opendir(self->mstore_ctx, context_id, parent_fid, fid));
+	return PyInt_FromLong(mapistore_opendir(self->mstore_ctx, context_id, fid));
 }
 
 static PyObject *py_MAPIStore_closedir(PyMAPIStoreObject *self, PyObject *args)

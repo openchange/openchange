@@ -439,9 +439,9 @@ int mapistore_get_path(struct backend_context *bctx, uint64_t fmid, uint8_t type
 	return ret;
 }
 
-int mapistore_backend_opendir(struct backend_context *bctx, uint64_t parent_fid, uint64_t fid)
+int mapistore_backend_opendir(struct backend_context *bctx, uint64_t fid)
 {
-	return bctx->backend->op_opendir(bctx->private_data, parent_fid, fid);
+	return bctx->backend->op_opendir(bctx->private_data, fid);
 }
 
 

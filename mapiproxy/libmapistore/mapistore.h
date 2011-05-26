@@ -99,7 +99,7 @@ struct mapistore_backend {
 	/* folders semantic */
 	int (*op_mkdir)(void *, uint64_t, uint64_t, struct SRow *);
 	int (*op_rmdir)(void *, uint64_t, uint64_t);
-	int (*op_opendir)(void *, uint64_t, uint64_t);
+	int (*op_opendir)(void *, uint64_t);
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
 	int (*op_get_table_property)(void *, uint64_t, uint8_t, enum table_query_type, uint32_t, uint32_t, void **);
@@ -214,7 +214,7 @@ int mapistore_release_record(struct mapistore_context *, uint32_t, uint64_t, uin
 int mapistore_search_context_by_uri(struct mapistore_context *, const char *, uint32_t *);
 const char *mapistore_errstr(int);
 int mapistore_add_context_indexing(struct mapistore_context *, const char *, uint32_t);
-int mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t, uint64_t);
+int mapistore_opendir(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_closedir(struct mapistore_context *mstore_ctx, uint32_t, uint64_t);
 int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct SRow *);
 int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);

@@ -412,7 +412,6 @@ _PUBLIC_ const char *mapistore_errstr(int mapistore_err)
  */
 _PUBLIC_ int mapistore_opendir(struct mapistore_context *mstore_ctx,
 			       uint32_t context_id,
-			       uint64_t parent_fid,
 			       uint64_t fid)
 {
 	struct backend_context		*backend_ctx;
@@ -426,7 +425,7 @@ _PUBLIC_ int mapistore_opendir(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend opendir */
-	ret = mapistore_backend_opendir(backend_ctx, parent_fid, fid);
+	ret = mapistore_backend_opendir(backend_ctx, fid);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

@@ -140,9 +140,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 			for (i = i + 1; i < flist->count; i++) {
 				mapi_handles_get_private_data(parent_handle, &data);
 				parent_object = (struct emsmdbp_object *) data;
-				folderID = parent_object->object.folder->folderID;
 				contextID = parent_object->object.folder->contextID;
-				retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, contextID, folderID,
+				retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, contextID,
 							   flist->folderID[i]);
 				mapi_handles_add(emsmdbp_ctx->handles_ctx, parent_handle->handle, &rec);
 				object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx,

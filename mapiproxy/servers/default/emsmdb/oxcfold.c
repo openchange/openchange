@@ -400,6 +400,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_conte
 	char				*displayName;
 	char				*comment;
 	uint32_t			*folderType;
+	NTTIME				nt_time;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateSystemSpecialFolder\n"));
 
@@ -449,7 +450,9 @@ static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_conte
 	ldb_msg_add_string(msg, "PidTagContentUnreadCount", "0");
 	ldb_msg_add_string(msg, "PidTagContentCount", "0");
 	ldb_msg_add_string(msg, "PidTagContainerClass", "IPF.Note");
-	ldb_msg_add_string(msg, "PidTagAttrHidden", "0");
+	ldb_msg_add_string(msg, "PidTagAttributeHidden", "0");
+	ldb_msg_add_string(msg, "PidTagAttributeSystem", "0");
+	ldb_msg_add_string(msg, "PidTagAttributeReadOnly", "0");
 	ldb_msg_add_string(msg, "PidTagAccess", "63");
 	ldb_msg_add_string(msg, "PidTagRights", "2043");
 	ldb_msg_add_string(msg, "PidTagDisplayName", displayName);
@@ -465,9 +468,15 @@ static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_conte
 
 	ldb_msg_add_fmt(msg, "PidTagParentFolderId", "0x%.16"PRIx64, parentFolder);
 	ldb_msg_add_fmt(msg, "PidTagFolderId", "0x%.16"PRIx64, response->folder_id);
-	ldb_msg_add_fmt(msg, "mapistore_uri", "fsocpf:///usr/local/samba/private/mapistore/%s/0x%.16"PRIx64, 
-			emsmdbp_ctx->username, response->folder_id);
+	ldb_msg_add_fmt(msg, "mapistore_uri", "sogo://%s:%s@fallback/0x%.16"PRIx64, 
+			emsmdbp_ctx->username, emsmdbp_ctx->username, response->folder_id);
 	ldb_msg_add_string(msg, "PidTagSubFolders", "0");
+
+	unix_to_nt_time(&nt_time, time(NULL));
+	ldb_msg_add_fmt(msg, "PidTagCreationTime", "0x%.16"PRIx64, nt_time);
+	ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "0x%.16"PRIx64, nt_time);
+	ldb_msg_add_fmt(msg, "PidTagLastModificationTime", "0x%.16"PRIx64, nt_time);
+
 	ldb_msg_add_string(msg, "FolderType", "1");
 	ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
 
@@ -708,6 +717,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		handles[mapi_repl->handle_idx] = rec->handle;
 	}
 
+end:
 	*size += libmapiserver_RopCreateFolder_size(mapi_repl);
 
 	if (aRow) {

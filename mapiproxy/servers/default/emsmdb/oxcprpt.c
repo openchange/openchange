@@ -432,10 +432,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	object = emsmdbp_object_stream_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent_object);
 	object->object.stream->objectID = objectID;
 	object->object.stream->objectType = objectType;
-	object->object.stream->flags = request->OpenModeFlags;
 	object->object.stream->property = request->PropertyTag;
 
-	if (object->object.stream->flags == OpenStream_ReadOnly || object->object.stream->flags == OpenStream_ReadWrite) {
+	if (request->OpenModeFlags == OpenStream_ReadOnly || request->OpenModeFlags == OpenStream_ReadWrite) {
 		object->object.stream->stream.position = 0;
 
 		stream_data = emsmdbp_object_get_stream_data(parent_object, object->object.stream->property);
@@ -625,6 +624,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 		mapi_repl->u.mapi_WriteStream.WrittenSize = request->data.length;
 	}
 
+	object->object.stream->needs_commit = true;
 end:
 	*size += libmapiserver_RopWriteStream_size(mapi_repl);
 

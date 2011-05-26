@@ -182,11 +182,11 @@ struct mapi_handles *emsmdbp_object_get_folder_handle_by_fid(struct mapi_handles
 	return NULL;
 }
 
-#warning 'emsmdbp_commit_stream' is a tmp function to be moved somewhere...
-static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct emsmdbp_object_stream *stream)
+_PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 {
 	int rc;
         void *poc_backend_object;
+	struct emsmdbp_object_stream *stream;
         void *stream_data;
         uint8_t *utf8_buffer;
         struct Binary_r *binary_data;
@@ -194,8 +194,13 @@ static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct em
         uint32_t string_size;
 	uint16_t propType;
 
+	if (!stream_object || stream_object->type != EMSMDBP_OBJECT_STREAM) return MAPISTORE_ERROR;
+
+	stream = stream_object->object.stream;
+
 	rc = MAPISTORE_SUCCESS;
-	if ((stream->flags & OpenStream_Create)) {
+	if (stream->needs_commit) {
+		stream->needs_commit = false;
 		aRow.cValues = 1;
 		aRow.lpProps = talloc_zero(NULL, struct SPropValue);
 
@@ -223,11 +228,11 @@ static int emsmdbp_commit_stream(struct mapistore_context *mstore_ctx, struct em
 		set_SPropValue_proptag(aRow.lpProps, stream->property, stream_data);
 		if (stream->parent_poc_api) {
 			poc_backend_object = stream->parent_poc_backend_object;
-			rc = mapistore_pocop_set_properties(mstore_ctx,
+			rc = mapistore_pocop_set_properties(stream_object->mstore_ctx,
 							    stream->contextID, poc_backend_object, &aRow);
 		}
 		else {
-			mapistore_setprops(mstore_ctx, stream->contextID, stream->objectID, 
+			mapistore_setprops(stream_object->mstore_ctx, stream->contextID, stream->objectID, 
 					   stream->objectType, &aRow);
 		}
 		talloc_free(aRow.lpProps);
@@ -285,7 +290,7 @@ static int emsmdbp_object_destructor(void *data)
 		DEBUG(4, ("[%s:%d] mapistore message context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
 	case EMSMDBP_OBJECT_STREAM:
-		ret = emsmdbp_commit_stream(object->mstore_ctx, object->object.stream);
+		emsmdbp_object_stream_commit(object);
                 if (object->poc_api) {
                                 mapistore_pocop_release(object->mstore_ctx, object->object.message->contextID,
                                                         object->poc_backend_object);
@@ -813,7 +818,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
 
 	object->type = EMSMDBP_OBJECT_STREAM;
 	object->object.stream->property = 0;
-	object->object.stream->flags = 0;
+	object->object.stream->needs_commit = false;
 
 	mapistore = emsmdbp_is_mapistore(parent);
 	if (mapistore == true) {

@@ -68,6 +68,7 @@
 #include "libmapi/mapidefs.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/socket/netif.h"
+#include "libmapi/idset.h"
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
@@ -484,6 +485,18 @@ typedef enum MAPISTATUS (*fxparser_marker_callback_t)(uint32_t, void *);
 typedef enum MAPISTATUS (*fxparser_delprop_callback_t)(uint32_t, void *);
 typedef enum MAPISTATUS (*fxparser_namedprop_callback_t)(uint32_t, struct MAPINAMEID, void *);
 typedef enum MAPISTATUS (*fxparser_property_callback_t)(struct SPropValue, void *);
+
+/* The following public definitions come from libmapi/idset.c */
+struct globset_range *GLOBSET_parse(TALLOC_CTX *, DATA_BLOB, uint32_t *);
+struct idset *IDSET_parse(TALLOC_CTX *, DATA_BLOB);
+struct idset *IDSET_make(TALLOC_CTX *, struct GUID *, const uint64_t *, uint32_t, bool);
+void IDSET_reorder(struct idset *);
+void IDSET_compact(struct idset *, bool);
+struct idset *IDSET_clone(TALLOC_CTX *, struct idset *);
+struct idset *IDSET_merge_idsets(TALLOC_CTX *, struct idset *, struct idset *);
+struct Binary_r *IDSET_serialize(TALLOC_CTX *, struct idset *);
+bool IDSET_includes_id(struct idset *, struct GUID *, uint64_t);
+void IDSET_dump(struct idset *, const char *);
 
 struct fx_parser_context *fxparser_init(TALLOC_CTX *, void *);
 void 			 fxparser_set_marker_callback(struct fx_parser_context *, fxparser_marker_callback_t);

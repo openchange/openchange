@@ -417,7 +417,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
                         break;
                 }
 
-		object->object.table->denominator = mapi_repl->u.mapi_GetHierarchyTable.RowCount;
+		object->object.table->denominator = mapi_repl->u.mapi_GetContentsTable.RowCount;
 		object->object.table->ulType = table_type;
 
                 /* notifications */

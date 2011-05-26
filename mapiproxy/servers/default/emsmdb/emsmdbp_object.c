@@ -450,11 +450,12 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 							   uint64_t folderID,
 							   struct emsmdbp_object *parent)
 {
-	enum MAPISTATUS			retval;
-	struct emsmdbp_object		*object;
-	char				*mapistore_uri = NULL;
-	uint32_t			context_id;
-	int				ret;
+	enum MAPISTATUS				retval;
+	struct emsmdbp_object			*object;
+	struct mapistore_connection_info	*conn_info;
+	char					*mapistore_uri = NULL;
+	uint32_t				context_id;
+	int					ret;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
@@ -495,7 +496,12 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 			if (ret == MAPISTORE_SUCCESS) {
 				ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, context_id);
 			} else {
-                          ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, mapistore_uri, object->object.folder->folderID, &context_id);
+				conn_info = talloc_zero(emsmdbp_ctx, struct mapistore_connection_info);
+				conn_info->username = emsmdbp_ctx->username;
+				openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &conn_info->repl_id, &conn_info->replica_guid);
+				conn_info->indexing = mapistore_indexing_get_tdb_wrap(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username);
+
+				ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, conn_info, mapistore_uri, object->object.folder->folderID, &context_id);
 				DEBUG(0, ("context id: %d (%s)\n", context_id, mapistore_uri));
 				if (ret != MAPISTORE_SUCCESS) {
 					talloc_free(object);

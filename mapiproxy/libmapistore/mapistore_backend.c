@@ -279,7 +279,7 @@ static int delete_context(void *data)
 
    \return a valid backend_context pointer on success, otherwise NULL
  */
-struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, const char *namespace, 
+struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struct mapistore_connection_info *conn_info, const char *namespace, 
 							 const char *uri, uint64_t fid)
 {
 	struct backend_context		*context;
@@ -293,7 +293,7 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, co
 		if (backends[i].backend->namespace && 
 		    !strcmp(namespace, backends[i].backend->namespace)) {
 			found = true;
-			retval = backends[i].backend->create_context(mem_ctx, uri, fid, &private_data);
+			retval = backends[i].backend->create_context(mem_ctx, conn_info, uri, fid, &private_data);
 			if (retval != MAPISTORE_SUCCESS) {
 				return NULL;
 			}

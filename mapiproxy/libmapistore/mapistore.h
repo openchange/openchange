@@ -86,13 +86,20 @@ struct mapistore_property_data {
         int error; /* basically MAPISTORE_SUCCESS or MAPISTORE_ERR_NOT_FOUND */
 };
 
+struct mapistore_connection_info {
+	char *username;
+	struct GUID replica_guid;
+	uint16_t repl_id;
+	struct tdb_wrap *indexing;
+};
+
 struct mapistore_backend {
 	const char	*name;
 	const char	*description;
 	const char	*namespace;
 
 	int (*init)(void);
-        int (*create_context)(TALLOC_CTX *, const char *, uint64_t, void **);
+        int (*create_context)(TALLOC_CTX *, struct mapistore_connection_info *, const char *, uint64_t, void **);
 	int (*delete_context)(void *);
 	int (*release_record)(void *, uint64_t, uint8_t);
 	int (*get_path)(void *, uint64_t, uint8_t, char **);
@@ -207,7 +214,7 @@ __BEGIN_DECLS
 /* definitions from mapistore_interface.c */
 struct mapistore_context *mapistore_init(TALLOC_CTX *, const char *);
 int mapistore_release(struct mapistore_context *);
-int mapistore_add_context(struct mapistore_context *, const char *, uint64_t, uint32_t *);
+int mapistore_add_context(struct mapistore_context *, struct mapistore_connection_info *, const char *, uint64_t, uint32_t *);
 int mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
 int mapistore_release_record(struct mapistore_context *, uint32_t, uint64_t, uint8_t);

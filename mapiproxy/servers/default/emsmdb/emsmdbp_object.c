@@ -524,6 +524,24 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 }
 
 
+int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, uint32_t *row_countp)
+{
+	int retval;
+
+	if (emsmdbp_is_mapistore(folder)) {
+		retval = mapistore_get_folder_count(emsmdbp_ctx->mstore_ctx,
+						    folder->object.folder->contextID,
+						    folder->object.folder->folderID,
+						    row_countp);
+	}
+	else {
+		retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folder->object.folder->folderID, row_countp);
+	}
+
+	return retval;
+}
+
+
 /**
    \details Initialize a table object
 

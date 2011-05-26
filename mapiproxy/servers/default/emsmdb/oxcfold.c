@@ -214,7 +214,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	uint64_t		folderID;
 	uint32_t		contextID;
 	uint32_t		handle;
-	bool			mapistore = false;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] GetHierarchyTable (0x04)\n"));
 
@@ -263,19 +262,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 
 	DEBUG(5, ("  folderID: %.16lx\n", folderID));
 
-	mapistore = emsmdbp_is_mapistore(parent_object);
-	switch (mapistore) {
-	case false:
-		/* system/special folder */
-		retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folderID, 
-						       &mapi_repl->u.mapi_GetHierarchyTable.RowCount);
-		break;
-	case true:
-		/* handled by mapistore */
-		retval = mapistore_get_folder_count(emsmdbp_ctx->mstore_ctx, contextID, folderID, 
-						    &mapi_repl->u.mapi_GetHierarchyTable.RowCount);
-		break;
-	}
+	retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, object, &mapi_repl->u.mapi_GetHierarchyTable.RowCount);
 
 	/* Initialize Table object */
 	handle = handles[mapi_req->handle_idx];

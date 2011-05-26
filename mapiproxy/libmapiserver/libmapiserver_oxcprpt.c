@@ -200,6 +200,19 @@ _PUBLIC_ uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *re
 	return size;
 }
 
+/**
+   \details Calculate CommitStream Rop size
+
+   \param response pointer to the CommitStream
+   EcDoRpc_MAPI_REPL structure
+
+   \return Size of CommitStream response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopCommitStream_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
 
 /**
    \details Calculate GetStreamSize Rop size

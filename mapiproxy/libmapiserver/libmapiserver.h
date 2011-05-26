@@ -449,6 +449,7 @@ uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAPI_REQ *, 
 uint16_t libmapiserver_RopOpenStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopCommitStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetStreamSize_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSeekStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSetStreamSize_size(struct EcDoRpc_MAPI_REPL *);

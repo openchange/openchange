@@ -953,7 +953,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		/* op_MAPI_CollapseRow: 0x5a */
 		/* op_MAPI_LockRegionStream: 0x5b */
 		/* op_MAPI_UnlockRegionStream: 0x5c */
-		/* op_MAPI_CommitStream: 0x5d */
+		case op_MAPI_CommitStream: /* 0x5d */
+			retval = EcDoRpc_RopCommitStream(mem_ctx, emsmdbp_ctx,
+							 &(mapi_request->mapi_req[i]),
+							 &(mapi_response->mapi_repl[idx]),
+							 mapi_response->handles, &size);
+			break;
 		case op_MAPI_GetStreamSize: /* 0x5e */
 			retval = EcDoRpc_RopGetStreamSize(mem_ctx, emsmdbp_ctx,
 							  &(mapi_request->mapi_req[i]),

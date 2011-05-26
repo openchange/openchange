@@ -632,6 +632,71 @@ end:
 }
 
 /**
+   \details EcDoRpc CommitStream (0x5d) Rop.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the DeleteProperties EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the DeleteProperties EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopCommitStream(TALLOC_CTX *mem_ctx,
+						 struct emsmdbp_context *emsmdbp_ctx,
+						 struct EcDoRpc_MAPI_REQ *mapi_req,
+						 struct EcDoRpc_MAPI_REPL *mapi_repl,
+						 uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*rec = NULL;
+	struct emsmdbp_object		*object = NULL;
+	uint32_t			handle;
+	void				*private_data;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] CommitStream (0x5d)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+
+	/* Step 1. Retrieve parent handle in the hierarchy */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+	object = (struct emsmdbp_object *) private_data;
+	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  invalid object\n"));
+		goto end;
+	}
+
+	emsmdbp_object_stream_commit(object);
+
+end:
+	*size += libmapiserver_RopCommitStream_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details EcDoRpc GetStreamSize (0x5e) Rop. This operation returns the
    number of bytes in a stream.
 

@@ -477,7 +477,7 @@ PidNameApproved					       Approved			     0x0000 Approved			  PT_UNICODE	MNID_S
 PidNameApprovalAllowedDescisionMakers		       NULL			     0x0000 X-MS-Exchange-Organization-Approval-Allowed-Decision-Makers PT_UNICODE MNID_STRING PS_INTERNET_HEADERS
 PidNameApprovalRequestor			       NULL			     0x0000 X-MS-Exchange-Organization-Approval-Requestor PT_UNICODE	MNID_STRING PS_INTERNET_HEADERS
 PidNameAuthenticatedAs				       NULL			     0x0000 X-MS-Exchange-Organization-AuthAs PT_UNICODE	MNID_STRING PS_INTERNET_HEADERS
-PidNameAuthenticatedDomain			       NULL			     0x0000 X-MS-Exchange-Organization-AuthDomain PT_UNICODE	MNID_STRING PS_INTERNET_HEADERS 0x90f7
+PidNameAuthenticatedDomain			       NULL			     0x0000 X-MS-Exchange-Organization-AuthDomain PT_UNICODE	MNID_STRING PS_INTERNET_HEADERS
 PidNameAuthenticatedMechanism			       NULL			     0x0000 X-MS-Exchange-Organization-AuthMechanism PT_UNICODE	MNID_STRING PS_INTERNET_HEADERS	
 PidNameAuthenticatedSource			       NULL			     0x0000 X-MS-Exchange-Organization-AuthSource PT_UNICODE	MNID_STRING PS_INTERNET_HEADERS
 PidNameBcc					       NULL			     0x0000 Bcc				  PT_UNICODE	MNID_STRING PS_INTERNET_HEADERS         0x9057
@@ -592,7 +592,8 @@ PidLidUnknownProperty8057	LID_UNKNOWN_PROPERTY_8057	0x8057	NULL	PT_NULL		MNID_ID
 PidLidUnknownProperty8058	LID_UNKNOWN_PROPERTY_8058	0x8058	NULL	PT_NULL		MNID_ID	PSETID_Address	0x9510
 PidLidUnknownProperty80d9	LID_UNKNOWN_PROPERTY_80d9	0x80d9	NULL	PT_NULL		MNID_ID	PSETID_Address	0x9511
 PidLidUnknownProperty804b	LID_UNKNOWN_PROPERTY_804b	0x804b	NULL	PT_NULL		MNID_ID	PSETID_Address	0x9512
-PidLidUnknownProperty8f01	LID_UNKNOWN_PROPERTY_8f01	0x8f01	NULL	PT_NULL	MNID_ID	PSETID_Remote	0x9515
-PidLidUnknownProperty8f06	LID_UNKNOWN_PROPERTY_8f06	0x8f06	NULL	PT_NULL	MNID_ID	PSETID_Remote	0x9516
-PidLidUnknownProperty8f03	LID_UNKNOWN_PROPERTY_8f03	0x8f03	NULL	PT_NULL	MNID_ID	PSETID_Remote	0x9517
-PidLidUnknownProperty8f04       LID_UNKNOWN_PROPERTY_8f04       0x8f04  NULL    PT_NULL MNID_ID PSETID_Remote   0x9518
+PidLidUnknownProperty8f01	LID_UNKNOWN_PROPERTY_8f01	0x8f01	NULL	PT_NULL 	MNID_ID	PSETID_Remote	0x9515
+PidLidUnknownProperty8f06	LID_UNKNOWN_PROPERTY_8f06	0x8f06	NULL	PT_NULL 	MNID_ID	PSETID_Remote	0x9516
+PidLidUnknownProperty8f03	LID_UNKNOWN_PROPERTY_8f03	0x8f03	NULL	PT_NULL 	MNID_ID	PSETID_Remote	0x9517
+PidLidUnknownProperty8f04       LID_UNKNOWN_PROPERTY_8f04       0x8f04  NULL    PT_NULL 	MNID_ID PSETID_Remote   0x9518
+PidLidUnknownProperty85a8	LID_UNKNOWN_PROPERTY_85a8	0x85a8	NULL	PT_NULL 	MNID_ID	PSETID_Common	0x9519

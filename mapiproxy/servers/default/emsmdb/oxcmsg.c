@@ -54,25 +54,26 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 						struct EcDoRpc_MAPI_REPL *mapi_repl,
 						uint32_t *handles, uint16_t *size)
 {
-	int				ret;
+	struct OpenMessage_req		*request;
+	struct OpenMessage_repl		*response;
+	/* int				ret; */
 	enum MAPISTATUS			retval;
-	struct mapi_handles		*parent = NULL;
-	struct mapi_handles		*parent_handle = NULL;
-	struct mapi_handles		*rec = NULL;
+	uint32_t			parent_handle_id;
+	struct mapi_handles		*object_handle = NULL;
+	struct mapi_handles		*parent_object_handle = NULL;
 	struct emsmdbp_object		*object = NULL;
 	struct emsmdbp_object		*parent_object = NULL;
 	struct mapistore_message	msg;
 	void				*data;
 	uint64_t			folderID;
 	uint64_t			messageID = 0;
-	uint32_t			contextID;
+	/* uint32_t			contextID; */
 	uint32_t			handle;
-	bool				mapistore = false;
-	struct indexing_folders_list	*flist;
+	/* bool				mapistore = false; */
+	/* struct indexing_folders_list	*flist; */
 	struct SPropTagArray		*SPropTagArray;
 	char				*subject = NULL, *subject_prefix = NULL;
 	int				i;
-
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] OpenMessage (0x03)\n"));
 
@@ -83,188 +84,93 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
-
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->u.mapi_OpenMessage.handle_idx;
-	messageID = mapi_req->u.mapi_OpenMessage.MessageId;
-	folderID = mapi_req->u.mapi_OpenMessage.FolderId;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
 
-	/* OpenMessage can only be called for mailbox/folder objects */
-	mapi_handles_get_private_data(parent, &data);
-	object = (struct emsmdbp_object *)data;
-	if (!object) {
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+	parent_handle_id = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, parent_handle_id, &parent_object_handle);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	mapi_handles_get_private_data(parent_object_handle, &data);
+	parent_object = (struct emsmdbp_object *)data;
+	if (!parent_object) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		*size += libmapiserver_RopOpenMessage_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 
-	switch (object->type) {
-	case EMSMDBP_OBJECT_MAILBOX:
-		folderID = object->object.folder->folderID;
-		contextID = object->object.folder->contextID;
-
-                flist = NULL;
-		ret = mapistore_indexing_get_folder_list(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username,
-							 messageID, &flist);
-		if (ret || !flist || !flist->count) {
-			DEBUG(0, ("No parent folder found for 0x%.16"PRIx64" (dead message?)\n", messageID));
-			mapi_repl->error_code = MAPI_E_NOT_FOUND;
-			goto end;
-		}
-		/* /\* If last element in the list doesn't match folderID, that's incorrect *\/ */
-		/* if (folderID != flist->folderID[flist->count - 1]) { */
-		/* 	DEBUG(0, ("Last parent folder 0x%.16"PRIx64" doesn't match " \ */
-		/* 		  "with expected 0x%.16"PRIx64"\n",  */
-		/* 		  flist->folderID[flist->count - 1], folderID)); */
-		/* } */
-
-		/* Look if we have a parent folder already opened */
-		for (i = flist->count - 1 ; i >= 0; i--) {
-			parent_handle = emsmdbp_object_get_folder_handle_by_fid(emsmdbp_ctx->handles_ctx, 
-										flist->folderID[i]);
-			if (parent_handle) {
-				break; 
-			}
-			
-		}
-
-		/* If we have a parent handle, we have a context_id
-		 * and we can call subsequent OpenFolder - this will
-		 * increment ref_count whereas needed */
-		if (parent_handle) {
-		recursive_open:
-			for (i = i + 1; i < flist->count; i++) {
-				mapi_handles_get_private_data(parent_handle, &data);
-				parent_object = (struct emsmdbp_object *) data;
-				contextID = parent_object->object.folder->contextID;
-				retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, contextID,
-							   flist->folderID[i]);
-				mapi_handles_add(emsmdbp_ctx->handles_ctx, parent_handle->handle, &rec);
-				object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx,
-								    flist->folderID[i], parent_object);
-				if (object) {
-					retval = mapi_handles_set_private_data(rec, object);
-				}
-
-				parent_handle = rec;
-				
-			}
-		} else {
-			retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-			object = emsmdbp_object_folder_init((TALLOC_CTX *)rec, emsmdbp_ctx,
-							    flist->folderID[0], parent_object);
-			if (object) {
-				retval = mapi_handles_set_private_data(rec, object);
-			}
-			parent_handle = rec;
-			i = 0;
-			/* now we have a context_id, we can use code above to open subfolders subsequently */
-			goto recursive_open;
-		}
-
-		/* Add this stage our new parent_handle should point to the message */
-
-		mapi_handles_get_private_data(parent_handle, &data);
-		parent_object = (struct emsmdbp_object *) data;
-		folderID = parent_object->object.folder->folderID;
-		contextID = parent_object->object.folder->contextID;
-		parent = parent_handle;
-		break;
-	case EMSMDBP_OBJECT_FOLDER:
-		folderID = object->object.folder->folderID;
-		contextID = object->object.folder->contextID;
-		break;
-	default:
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		*size += libmapiserver_RopGetHierarchyTable_size(NULL);
+	/* OpenMessage can only be called for mailbox/folder objects */
+	if (!(parent_object->type == EMSMDBP_OBJECT_MAILBOX || parent_object->type == EMSMDBP_OBJECT_FOLDER)) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		*size += libmapiserver_RopOpenMessage_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 
-	mapistore = emsmdbp_is_mapistore(parent_object);
-	switch (mapistore) {
-	case false:
-		/* system/special folder */
-		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
-		break;
-	case true:
-		/* mapistore implementation goes here */
-		memset (&msg, 0, sizeof (msg));
-		if (mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID,
-					  folderID, messageID, &msg) == 0) {
-			/* Build the OpenMessage reply */
-			mapi_repl->u.mapi_OpenMessage.HasNamedProperties = false;
+	request = &mapi_req->u.mapi_OpenMessage;
+	response = &mapi_repl->u.mapi_OpenMessage;
 
-			subject_prefix = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT_PREFIX_UNICODE);
-			if (subject_prefix && strlen(subject_prefix) > 0) {
-				mapi_repl->u.mapi_OpenMessage.SubjectPrefix.StringType = StringType_UNICODE;
-				mapi_repl->u.mapi_OpenMessage.SubjectPrefix.String.lpszW = talloc_strdup(mem_ctx, subject_prefix);
-			}
-			else {
-				mapi_repl->u.mapi_OpenMessage.SubjectPrefix.StringType = StringType_EMPTY;
-			}
+	mapi_repl->handle_idx = request->handle_idx;
 
-			subject = (char *) find_SPropValue_data(msg.properties, PR_NORMALIZED_SUBJECT_UNICODE);
-			if (subject && strlen(subject) > 0) {
-				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_UNICODE;
-				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.String.lpszW = talloc_strdup(mem_ctx, subject);
-			}
-			else {
-				mapi_repl->u.mapi_OpenMessage.NormalizedSubject.StringType = StringType_EMPTY;
-			}
-
-			SPropTagArray = set_SPropTagArray(mem_ctx, 0x4,
-							  PR_DISPLAY_TYPE,
-							  PR_OBJECT_TYPE,
-							  PR_7BIT_DISPLAY_NAME_UNICODE,
-							  PR_SMTP_ADDRESS_UNICODE);
-			mapi_repl->u.mapi_OpenMessage.RecipientColumns.cValues = SPropTagArray->cValues;
-			mapi_repl->u.mapi_OpenMessage.RecipientColumns.aulPropTag
-							  = SPropTagArray->aulPropTag;
-			if (msg.recipients) {
-				mapi_repl->u.mapi_OpenMessage.RecipientCount = msg.recipients->cRows;
-				mapi_repl->u.mapi_OpenMessage.recipients = talloc_array(mem_ctx, 
-											struct OpenMessage_recipients, 
-											msg.recipients->cRows + 1);
-				for (i = 0; i < msg.recipients->cRows; i++) {
-					mapi_repl->u.mapi_OpenMessage.recipients[i].RecipClass = msg.recipients->aRow[i].lpProps[0].value.l;
-					mapi_repl->u.mapi_OpenMessage.recipients[i].codepage = CP_USASCII;
-					mapi_repl->u.mapi_OpenMessage.recipients[i].Reserved = 0;
-					emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx, 
-								  (char *)msg.recipients->aRow[i].lpProps[1].value.lpszA,
-								  &(mapi_repl->u.mapi_OpenMessage.RecipientColumns),
-								  &(mapi_repl->u.mapi_OpenMessage.recipients[i].RecipientRow));
-				}
-			}
-			else {
-				mapi_repl->u.mapi_OpenMessage.RecipientCount = 0;
-			}
-			mapi_repl->u.mapi_OpenMessage.RowCount = mapi_repl->u.mapi_OpenMessage.RecipientCount;
-		}
-		else {
-			DEBUG(5, ("  failure opening %llx/%llx\n",\
-				  (long long unsigned int) folderID,
-				  (long long unsigned int) messageID));
-			mapi_repl->error_code = MAPI_E_NOT_FOUND;
-			goto end;
-		}
-		break;
-	}
+	messageID = request->MessageId;
+	folderID = request->FolderId;
 
 	/* Initialize Message object */
-	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-	handles[mapi_repl->handle_idx] = rec->handle;
+	memset (&msg, 0, sizeof (msg));
 
-	if (messageID) {
-		object = emsmdbp_object_message_init((TALLOC_CTX *)rec, emsmdbp_ctx, messageID, parent_object);
-		if (object) {
-			retval = mapi_handles_set_private_data(rec, object);
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &object_handle);
+	object = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, parent_object, folderID, messageID, &msg);
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+	handles[mapi_repl->handle_idx] = object_handle->handle;
+	retval = mapi_handles_set_private_data(object_handle, object);
+
+	/* Build the OpenMessage reply */
+	response->HasNamedProperties = false;
+				
+	subject_prefix = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT_PREFIX_UNICODE);
+	if (subject_prefix && strlen(subject_prefix) > 0) {
+		response->SubjectPrefix.StringType = StringType_UNICODE;
+		response->SubjectPrefix.String.lpszW = talloc_strdup(mem_ctx, subject_prefix);
+	}
+	else {
+		response->SubjectPrefix.StringType = StringType_EMPTY;
+	}
+	
+	subject = (char *) find_SPropValue_data(msg.properties, PR_NORMALIZED_SUBJECT_UNICODE);
+	if (subject && strlen(subject) > 0) {
+		response->NormalizedSubject.StringType = StringType_UNICODE;
+		response->NormalizedSubject.String.lpszW = talloc_strdup(mem_ctx, subject);
+	}
+	else {
+		response->NormalizedSubject.StringType = StringType_EMPTY;
+	}
+				
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x4, PR_DISPLAY_TYPE, PR_OBJECT_TYPE, PR_7BIT_DISPLAY_NAME_UNICODE, PR_SMTP_ADDRESS_UNICODE);
+	response->RecipientColumns.cValues = SPropTagArray->cValues;
+	response->RecipientColumns.aulPropTag = SPropTagArray->aulPropTag;
+	if (msg.recipients) {
+		response->RecipientCount = msg.recipients->cRows;
+		response->recipients = talloc_array(mem_ctx,
+						    struct OpenMessage_recipients,
+						    msg.recipients->cRows + 1);
+		for (i = 0; i < msg.recipients->cRows; i++) {
+			response->recipients[i].RecipClass = msg.recipients->aRow[i].lpProps[0].value.l;
+			response->recipients[i].codepage = CP_USASCII;
+			response->recipients[i].Reserved = 0;
+			emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx,
+						  (char *)msg.recipients->aRow[i].lpProps[1].value.lpszA,
+						  &(response->RecipientColumns),
+						  &(response->recipients[i].RecipientRow));
 		}
 	}
+	else {
+		response->RecipientCount = 0;
+	}
+	response->RowCount = response->RecipientCount;
 
 end:
 	*size += libmapiserver_RopOpenMessage_size(mapi_repl);

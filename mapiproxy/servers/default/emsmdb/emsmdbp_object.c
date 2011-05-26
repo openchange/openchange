@@ -838,9 +838,45 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 						      parent->object.folder->contextID);
 	}
 
-	return object;	
+	return object;
 }
 
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_object, uint64_t folderID, uint64_t messageID, struct mapistore_message *msgp)
+{
+	struct emsmdbp_object *folder_object, *message_object;
+	bool mapistore;
+
+	if (!parent_object) return NULL;
+
+	if (parent_object->type == EMSMDBP_OBJECT_FOLDER && parent_object->object.folder->folderID == folderID) {
+		folder_object = parent_object;
+	}
+	else {
+		folder_object = emsmdbp_object_folder_open(mem_ctx, emsmdbp_ctx, parent_object, folderID);
+	}
+	if (!folder_object) return NULL;
+
+	mapistore = emsmdbp_is_mapistore(folder_object);
+	switch (mapistore) {
+	case false:
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		break;
+	case true:
+		/* mapistore implementation goes here */
+		message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, messageID, folder_object);
+		if (mapistore_openmessage(emsmdbp_ctx->mstore_ctx, folder_object->object.folder->contextID,
+					  folderID, messageID, msgp) == 0) {
+			(void) talloc_reference(message_object, folder_object);
+		}
+		else {
+			talloc_free(message_object);
+			message_object = NULL;
+		}
+	}
+
+	return message_object;
+}
 
 /**
    \details Initialize a stream object

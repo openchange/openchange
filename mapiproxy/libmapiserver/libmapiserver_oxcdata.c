@@ -156,3 +156,23 @@ _PUBLIC_ uint16_t libmapiserver_LongTermId_size(void)
 {
 	return SIZE_DFLT_LONGTERMID;
 }
+
+/**
+   \details Calculate the size of a PropertyName structure
+
+   \return Size of PropertyName structure
+ */
+_PUBLIC_ uint16_t libmapiserver_PropertyName_size(struct MAPINAMEID *property_name)
+{
+	int16_t size = SIZE_DFLT_PROPERTYNAME;
+
+	if (property_name->ulKind == MNID_ID) {
+		size += 4; /* LID */
+	}
+	else if (property_name->ulKind == MNID_STRING) { /* MNID_STRING */
+		size += 1; /* NameSize */
+		size += property_name->kind.lpwstr.NameSize;
+	}
+
+	return size;
+}

@@ -898,6 +898,72 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 }
 
 /**
+   \details EcDoRpc GetNamesFromIDs (0x56) Rop. This operation
+   gets property IDs for specified property names.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetNamesFromIDs
+   EcDoRpc_MAPI_REQ structure
+   \param mapi_repl pointer to the GetNamesFromIDs
+   EcDoRpc_MAPI_REPL structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+*/
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetNamesFromIDs(TALLOC_CTX *mem_ctx,
+						    struct emsmdbp_context *emsmdbp_ctx,
+						    struct EcDoRpc_MAPI_REQ *mapi_req,
+						    struct EcDoRpc_MAPI_REPL *mapi_repl,
+						    uint32_t *handles, uint16_t *size)
+{
+	uint16_t			i;
+	struct GetNamesFromIDs_req	*request;
+	struct GetNamesFromIDs_repl	*response;
+	struct MAPINAMEID		*nameid;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetNamesFromIDs (0x55)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	request = &mapi_req->u.mapi_GetNamesFromIDs;
+	response = &mapi_repl->u.mapi_GetNamesFromIDs;
+
+	response->nameid = talloc_array(mem_ctx, struct MAPINAMEID, request->PropertyIdCount);
+	response->count = request->PropertyIdCount;
+	for (i = 0; i < request->PropertyIdCount; i++) {
+		if (request->PropertyIds[i] < 0x8000) {
+			response->nameid[i].ulKind = MNID_ID;
+			GUID_from_string(PS_MAPI, &response->nameid[i].lpguid);
+			response->nameid[i].kind.lid = (uint32_t) request->PropertyIds[i] << 16 | get_property_type(request->PropertyIds[i]);
+		}
+		else if (mapistore_namedprops_get_nameid(mem_ctx, emsmdbp_ctx->mstore_ctx->nprops_ctx, request->PropertyIds[i], &nameid) == MAPISTORE_SUCCESS) {
+			response->nameid[i] = *nameid;
+			response->nameid[i].kind.lpwstr.NameSize *= 2;
+			response->nameid[i].kind.lpwstr.NameSize += 2;
+			talloc_free(nameid);
+		}
+		else {
+			response->nameid[i].ulKind = 0xff;
+		}
+	}
+
+	*size += libmapiserver_RopGetNamesFromIDs_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details EcDoRpc DeletePropertiesNoReplicate (0x7a) Rop. deletes property
    values from an object without invoking replication.
 

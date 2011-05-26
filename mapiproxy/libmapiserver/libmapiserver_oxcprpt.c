@@ -255,6 +255,31 @@ _PUBLIC_ uint16_t libmapiserver_RopSetStreamSize_size(struct EcDoRpc_MAPI_REPL *
 }
 
 /**
+   \details Calculate GetNamesFromIDs Rop size
+
+   \param response pointer to the GetNamesFromIDs
+   EcDoRpc_MAPI_REPL structure
+
+   \return Size of GetNamesFromIDs response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetNamesFromIDs_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint16_t	i;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETNAMESFROMIDS;
+	for (i = 0; i < response->u.mapi_GetNamesFromIDs.count; i++) {
+		size += libmapiserver_PropertyName_size(response->u.mapi_GetNamesFromIDs.nameid + i);
+	}
+
+	return size;
+}
+
+/**
    \details Calculate GetPropertyIdsFromNames Rop size
 
    \param response pointer to the GetPropertyIdsFromNames

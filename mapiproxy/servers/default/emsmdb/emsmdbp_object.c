@@ -1419,14 +1419,28 @@ _PUBLIC_ DATA_BLOB emsmdbp_stream_read_buffer(struct emsmdbp_stream *stream, uin
 
 _PUBLIC_ void emsmdbp_stream_write_buffer(TALLOC_CTX *mem_ctx, struct emsmdbp_stream *stream, DATA_BLOB new_buffer)
 {
-	uint32_t new_position;
+	uint32_t new_position, old_length;
+	uint8_t *old_data;
 
 	new_position = stream->position + new_buffer.length;
 	if (new_position >= stream->buffer.length) {
-		stream->buffer.length = new_position + 1;
-		stream->buffer.data = talloc_realloc(mem_ctx, stream->buffer.data, uint8_t, stream->buffer.length);
+		old_length = stream->buffer.length;
+		stream->buffer.length = new_position;
+		if (stream->buffer.data) {
+			old_data = stream->buffer.data;
+			stream->buffer.data = talloc_realloc(mem_ctx, stream->buffer.data, uint8_t, stream->buffer.length);
+			if (!stream->buffer.data) {
+				DEBUG(5, ("WARNING: [bug] lost buffer pointer (data = NULL)\n"));
+				stream->buffer.data = talloc_array(mem_ctx, uint8_t, stream->buffer.length);
+				memcpy(stream->buffer.data, old_data, old_length);
+			}
+		}
+		else {
+			stream->buffer.data = talloc_array(mem_ctx, uint8_t, stream->buffer.length);
+		}
 	}
-	memcpy(new_buffer.data, stream->buffer.data + stream->position, new_buffer.length);
+
+	memcpy(stream->buffer.data + stream->position, new_buffer.data, new_buffer.length);
 	stream->position = new_position;
 }
 

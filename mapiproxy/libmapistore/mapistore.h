@@ -276,6 +276,7 @@ int mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, uint
 int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+struct tdb_wrap *mapistore_indexing_get_tdb_wrap(struct mapistore_context *, const char *);
 
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);

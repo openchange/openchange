@@ -523,6 +523,42 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 	return object;
 }
 
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent, uint64_t folderID)
+{
+	struct emsmdbp_object	*folder_object = NULL;
+	int			retval;
+	char			*path;
+	struct backend_context	*bctx;
+
+	retval = openchangedb_get_mapistoreURI(NULL, emsmdbp_ctx->oc_ctx, folderID, &path, true);
+
+	/* TODO: OpenFolder might attempt to open a folder at the mailbox root level.. */
+	if (retval == MAPI_E_SUCCESS) {
+		talloc_free(path);
+		/* system/special folder */
+		DEBUG(0, ("Opening system/special folder\n"));
+	}
+	else {
+		/* handled by mapistore */
+		DEBUG(0, ("Opening Generic folder\n"));
+		
+		bctx = mapistore_find_container_backend(emsmdbp_ctx->mstore_ctx, folderID);
+		if (bctx) {
+			retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, bctx->context_id, folderID);
+			if (retval) {
+				goto end;
+			}
+		}
+		else {
+			goto end;
+		}
+	}
+
+	folder_object = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, folderID, parent);
+
+end:
+	return folder_object;
+}
 
 int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, uint32_t *row_countp)
 {

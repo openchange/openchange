@@ -32,61 +32,6 @@
 
 
 /**
-   \details Open a System or Special folder object.
-
-   \param mem_ctx pointer to the memory context
-   \param emsmdbp_ctx pointer to the emsmdb provider context
-   \param request OpenFolder request
-   \param response pointer to the OpenFolder response
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error
- */
-static enum MAPISTATUS RopOpenFolder_SystemSpecialFolder(TALLOC_CTX *mem_ctx, 
-							 struct emsmdbp_context *emsmdbp_ctx,
-							 struct OpenFolder_req request,
-							 struct OpenFolder_repl *response)
-{
-	/* Find parent record */
-	/* Set parent record as basedn */
-	/* Look for systemfolder given its FolderID */
-
-	return MAPI_E_SUCCESS;
-}
-
-
-static enum MAPISTATUS RopOpenFolder_GenericFolder(TALLOC_CTX *mem_ctx,
-						   struct emsmdbp_context *emsmdbp_ctx,
-						   struct OpenFolder_req request,
-						   struct OpenFolder_repl *response,
-						   struct mapi_handles *parent)
-{
-	struct emsmdbp_object	*parent_object = NULL;
-	void			*data;
-	int			retval;
-	uint32_t		context_id;
-
-	/* Step 1. Retrieve the parent fid given the handle */
-	mapi_handles_get_private_data(parent, &data);
-	parent_object = (struct emsmdbp_object *) data;
-	if (!parent_object) {
-		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] OpenFolder null object"));
-		return MAPI_E_NO_SUPPORT;
-	}
-
-	if (parent_object->type != EMSMDBP_OBJECT_FOLDER) {
-		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] OpenFolder wrong object type: 0x%x\n", parent_object->type));
-		return MAPI_E_NO_SUPPORT;
-	}
-	context_id = parent_object->object.folder->contextID;
-
-	/* Step 2. Open folder from mapistore */
-	retval = mapistore_opendir(emsmdbp_ctx->mstore_ctx, context_id, request.folder_id);
-	if (retval) return MAPI_E_NOT_FOUND;
-
-	return MAPI_E_SUCCESS;
-}
-
-/**
    \details EcDoRpc OpenFolder (0x02) Rop. This operation opens an
    existing folder.
 
@@ -113,7 +58,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
         void                            *private_data;
 	struct emsmdbp_object		*object, *parent_object;
 	uint32_t			handle;
-	bool				mapistore = false;
+	struct OpenFolder_req		*request;
+	struct OpenFolder_repl		*response;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] OpenFolder (0x02)\n"));
 
@@ -124,10 +70,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_repl->u.mapi_OpenFolder.HasRules = 0;
-	mapi_repl->u.mapi_OpenFolder.IsGhosted = 0;
 	mapi_repl->opnum = mapi_req->opnum;
-	mapi_repl->handle_idx = mapi_req->u.mapi_OpenFolder.handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
@@ -140,41 +85,32 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 
 	mapi_handles_get_private_data(parent, &private_data);
         parent_object = private_data;
-	mapistore = emsmdbp_is_mapistore(parent_object);
-	switch (mapistore) {
-	case false:
-		/* system/special folder */
-		DEBUG(0, ("Opening system/special folder\n"));
-		retval = RopOpenFolder_SystemSpecialFolder(mem_ctx, emsmdbp_ctx, 
-							   mapi_req->u.mapi_OpenFolder, 
-							   &mapi_repl->u.mapi_OpenFolder);
-		mapi_repl->error_code = retval;
-		break;
-	case true:
-		/* handled by mapistore */
-		DEBUG(0, ("Opening Generic folder\n"));
-		retval = RopOpenFolder_GenericFolder(mem_ctx, emsmdbp_ctx, 
-						     mapi_req->u.mapi_OpenFolder,
-						     &mapi_repl->u.mapi_OpenFolder, parent);
-		mapi_repl->error_code = retval;
-		break;
+	if (!parent_object || (parent_object->type != EMSMDBP_OBJECT_FOLDER && parent_object->type != EMSMDBP_OBJECT_MAILBOX)) {
+		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
 	}
 
- end:
-	*size += libmapiserver_RopOpenFolder_size(mapi_repl);
+	request = &mapi_req->u.mapi_OpenFolder;
+	response = &mapi_repl->u.mapi_OpenFolder;
 
 	/* Fill EcDoRpc_MAPI_REPL reply */
-	if (!mapi_repl->error_code) {
-		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	response->HasRules = 0;
+	response->IsGhosted = 0;
 
-		object = emsmdbp_object_folder_init((TALLOC_CTX *)emsmdbp_ctx, emsmdbp_ctx, 
-						    mapi_req->u.mapi_OpenFolder.folder_id, private_data);
-		if (object) {
-			retval = mapi_handles_set_private_data(rec, object);
-		}
-
-		handles[mapi_repl->handle_idx] = rec->handle;
+	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	object = emsmdbp_object_folder_open(rec, emsmdbp_ctx, parent_object, request->folder_id);
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
 	}
+	retval = mapi_handles_set_private_data(rec, object);
+
+	mapi_repl->handle_idx = request->handle_idx;
+	handles[mapi_repl->handle_idx] = rec->handle;
+
+end:
+	*size += libmapiserver_RopOpenFolder_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

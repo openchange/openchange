@@ -175,12 +175,12 @@ sub mapitags_header($)
 	$line =~ s/^\#+.*$//;
 	if ($line) {
 	    @prop = split(/\s+/, $line);
-	    if (!defined($prop[6])) {
-		print "prop6 not defined for line: $line\n";
-	    }
-	    elsif (!defined($oleguid{$prop[6]})) {
-		print "entry not defined for guid: $prop[6]\n";
-	    }
+	    # if (!defined($prop[6])) {
+	    #     print "prop6 not defined for line: $line\n";
+	    # }
+	    # elsif (!defined($oleguid{$prop[6]})) {
+	    #     print "entry not defined for guid: $prop[6]\n";
+	    # }
 	    $prop_type = hex $prop[0];
 	    $prop_type &= 0xFFFF;
 	    $prop_value = hex $prop[0];

@@ -99,8 +99,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	}
 	/* MAPISTORE_v2 */
 
-	mstore_ctx->lp_ctx = loadparm_init(mstore_ctx);
-	lpcfg_load_default(mstore_ctx->lp_ctx);
+	mstore_ctx->lp_ctx = loadparm_init_global(true);
 
 	return mstore_ctx;
 }

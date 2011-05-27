@@ -56,8 +56,7 @@ int main(int argc, const char *argv[])
 	};
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_test");
-	lp_ctx = loadparm_init(mem_ctx);
-	lpcfg_load_default(lp_ctx);
+	lp_ctx = loadparm_init_global(true);
 	setup_logging(NULL, DEBUG_STDOUT);
 	
 	pc = poptGetContext("mapistore_test", argc, argv, long_options, 0);

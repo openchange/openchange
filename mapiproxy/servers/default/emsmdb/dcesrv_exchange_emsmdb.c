@@ -1070,6 +1070,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		/* op_MAPI_WriteAndCommitStream: 0x90 */
 		/* op_MAPI_HardDeleteMessages: 0x91 */
 		/* op_MAPI_HardDeleteMessagesAndSubfolders: 0x92 */
+		/* op_MAPI_SetLocalReplicaMidsetDeleted: 0x93 */
 		case op_MAPI_Logon: /* 0xfe */
 			retval = EcDoRpc_RopLogon(mem_ctx, emsmdbp_ctx,
 						  &(mapi_request->mapi_req[i]),

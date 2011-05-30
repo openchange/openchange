@@ -909,6 +909,7 @@ System Attendant Private Interface
 			op_MAPI_WriteAndCommitStream		= 0x90,
 			op_MAPI_HardDeleteMessages		= 0x91,
 			op_MAPI_HardDeleteMessagesAndSubfolders	= 0x92,
+			op_MAPI_SetLocalReplicaMidsetDeleted	= 0x93,
 			op_MAPI_Logon				= 0xfe,
 			/****** custom MAPI opnum for mapiproxy ******/
 			op_MAPI_proxypack			= 0xa5
@@ -3606,6 +3607,22 @@ System Attendant Private Interface
 	} HardDeleteMessagesAndSubfolders_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x93 */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		LongTermId	MinLongTermId;
+		LongTermId	MaxLongTermId;
+	} LongTermIdRange;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint16			DataSize;
+		uint32			LongTermIdRangeCount;
+		LongTermIdRange		LongTermIdRanges[LongTermIdRangeCount];
+	} SetLocalReplicaMidsetDeleted_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} SetLocalReplicaMidsetDeleted_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0xFE */
 	typedef [public,bitmap8bit] bitmap {
 		LogonPrivate	= 0x1,
@@ -3833,6 +3850,7 @@ System Attendant Private Interface
 		[case(op_MAPI_WriteAndCommitStream)] WriteAndCommitStream_req mapi_WriteAndCommitStream;
 		[case(op_MAPI_HardDeleteMessages)] HardDeleteMessages_req mapi_HardDeleteMessages;
 		[case(op_MAPI_HardDeleteMessagesAndSubfolders)] HardDeleteMessagesAndSubfolders_req mapi_HardDeleteMessagesAndSubfolders;
+		[case(op_MAPI_SetLocalReplicaMidsetDeleted)] SetLocalReplicaMidsetDeleted_req mapi_SetLocalReplicaMidsetDeleted;
 		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
 		[case(op_MAPI_proxypack)] proxypack_req mapi_proxypack;
 	} EcDoRpc_MAPI_REQ_UNION;
@@ -3965,6 +3983,7 @@ System Attendant Private Interface
 		[case(op_MAPI_WriteAndCommitStream)] WriteAndCommitStream_repl mapi_WriteAndCommitStream;
 		[case(op_MAPI_HardDeleteMessages)] HardDeleteMessages_repl mapi_HardDeleteMessages;
 		[case(op_MAPI_HardDeleteMessagesAndSubfolders)] HardDeleteMessagesAndSubfolders_repl mapi_HardDeleteMessagesAndSubfolders;
+		[case(op_MAPI_SetLocalReplicaMidsetDeleted)] SetLocalReplicaMidsetDeleted_repl mapi_SetLocalReplicaMidsetDeleted;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;
 		[case(op_MAPI_proxypack)] proxypack_repl mapi_proxypack;
 

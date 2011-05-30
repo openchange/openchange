@@ -1945,3 +1945,43 @@ void ndr_print_GetSearchCriteria_repl(struct ndr_print *ndr, const char *name, c
 		ndr->flags = _flags_save_STRUCT;
 	}
 }
+
+enum ndr_err_code ndr_push_Backoff_req(struct ndr_push *ndr, int ndr_flags, const struct Backoff_req *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_Backoff_req(struct ndr_pull *ndr, int ndr_flags, struct Backoff_req *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_Backoff_repl(struct ndr_push *ndr, int ndr_flags, const struct Backoff_repl *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_Backoff_repl(struct ndr_pull *ndr, int ndr_flags, struct Backoff_repl *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_BufferTooSmall_req(struct ndr_push *ndr, int ndr_flags, const struct BufferTooSmall_req *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_BufferTooSmall_req(struct ndr_pull *ndr, int ndr_flags, struct BufferTooSmall_req *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_BufferTooSmall_repl(struct ndr_push *ndr, int ndr_flags, const struct BufferTooSmall_repl *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_BufferTooSmall_repl(struct ndr_pull *ndr, int ndr_flags, struct BufferTooSmall_repl *r)
+{
+	return NDR_ERR_SUCCESS;
+}

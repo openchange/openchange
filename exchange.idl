@@ -910,7 +910,9 @@ System Attendant Private Interface
 			op_MAPI_HardDeleteMessages		= 0x91,
 			op_MAPI_HardDeleteMessagesAndSubfolders	= 0x92,
 			op_MAPI_SetLocalReplicaMidsetDeleted	= 0x93,
+			op_MAPI_Backoff				= 0xf9,
 			op_MAPI_Logon				= 0xfe,
+			op_MAPI_BufferTooSmall			= 0xff,
 			/****** custom MAPI opnum for mapiproxy ******/
 			op_MAPI_proxypack			= 0xa5
 		} MAPI_OPNUM;
@@ -3622,6 +3624,14 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 	} SetLocalReplicaMidsetDeleted_repl;
 
+	/**************************/
+	/* EcDoRpc Function 0xF9   */
+	typedef [nopush,nopull,flag(NDR_NOALIGN)] struct {
+	} Backoff_req;
+
+	typedef [nopush,nopull,flag(NDR_NOALIGN)] struct {
+	} Backoff_repl;
+
 	/*************************/
 	/* EcDoRpc Function 0xFE */
 	typedef [public,bitmap8bit] bitmap {
@@ -3712,6 +3722,14 @@ System Attendant Private Interface
 		uint8		ServerNameSize;
 		astring		ServerName;
 	} Logon_redirect;
+
+	/**************************/
+	/* EcDoRpc Function 0xFF   */
+	typedef [nopush,nopull,flag(NDR_NOALIGN)] struct {
+	} BufferTooSmall_req;
+
+	typedef [nopush,nopull,flag(NDR_NOALIGN)] struct {
+	} BufferTooSmall_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0xA5 */
@@ -3851,7 +3869,9 @@ System Attendant Private Interface
 		[case(op_MAPI_HardDeleteMessages)] HardDeleteMessages_req mapi_HardDeleteMessages;
 		[case(op_MAPI_HardDeleteMessagesAndSubfolders)] HardDeleteMessagesAndSubfolders_req mapi_HardDeleteMessagesAndSubfolders;
 		[case(op_MAPI_SetLocalReplicaMidsetDeleted)] SetLocalReplicaMidsetDeleted_req mapi_SetLocalReplicaMidsetDeleted;
+		[case(op_MAPI_Backoff)] Backoff_req mapi_Backoff;
 		[case(op_MAPI_Logon)] Logon_req mapi_Logon;
+		[case(op_MAPI_BufferTooSmall)] BufferTooSmall_req mapi_BufferTooSmall;
 		[case(op_MAPI_proxypack)] proxypack_req mapi_proxypack;
 	} EcDoRpc_MAPI_REQ_UNION;
 
@@ -3984,7 +4004,9 @@ System Attendant Private Interface
 		[case(op_MAPI_HardDeleteMessages)] HardDeleteMessages_repl mapi_HardDeleteMessages;
 		[case(op_MAPI_HardDeleteMessagesAndSubfolders)] HardDeleteMessagesAndSubfolders_repl mapi_HardDeleteMessagesAndSubfolders;
 		[case(op_MAPI_SetLocalReplicaMidsetDeleted)] SetLocalReplicaMidsetDeleted_repl mapi_SetLocalReplicaMidsetDeleted;
+		[case(op_MAPI_Backoff)] Backoff_repl mapi_Backoff;
 		[case(op_MAPI_Logon)] Logon_repl mapi_Logon;
+		[case(op_MAPI_BufferTooSmall)] BufferTooSmall_repl mapi_BufferTooSmall;
 		[case(op_MAPI_proxypack)] proxypack_repl mapi_proxypack;
 
 	} EcDoRpc_MAPI_REPL_UNION;

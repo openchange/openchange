@@ -1050,7 +1050,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pulTimeStamp));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));				
 		/* Only try to fetch rgbAuxOut if pcbAuxOut is > 0 */

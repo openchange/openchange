@@ -172,7 +172,7 @@ _PUBLIC_ char *RfrGetNewDSA(struct mapi_context *mapi_ctx,
 	if ((!NT_STATUS_IS_OK(status) || !r.out.ppszServer || !*r.out.ppszServer) && server) {
 		ppszServer = talloc_strdup((TALLOC_CTX *)session, server);
 	} else {
-		ppszServer = talloc_steal((TALLOC_CTX *)session, *r.out.ppszServer);
+		ppszServer = (char *)talloc_steal((TALLOC_CTX *)session, *r.out.ppszServer);
 	}
 
 	talloc_free(mem_ctx);

@@ -1495,6 +1495,11 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_emsmdb: EcDoRpcExt2 (0xB)\n"));
 
+	r->out.rgbOut = NULL;
+	*r->out.pcbOut = 0;
+	r->out.rgbAuxOut = NULL;
+	*r->out.pcbAuxOut = 0;
+
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!NTLM_AUTH_IS_OK(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
@@ -1522,7 +1527,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 
 	/* Fill EcDoRpcExt2 reply */
 	r->out.handle = r->in.handle;
-	r->out.pulFlags = &pulFlags;
+	*r->out.pulFlags = pulFlags;
 
 	/* Push MAPI response into a DATA blob */
 	ndr_uncomp_rgbOut = ndr_push_init_ctx(mem_ctx);
@@ -1553,11 +1558,9 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 
 	/* Push MAPI response into a DATA blob */
 	r->out.rgbOut = ndr_rgbOut->data;
-	r->out.pcbOut = &ndr_rgbOut->offset;
+	*r->out.pcbOut = ndr_rgbOut->offset;
 
-	r->out.rgbAuxOut = NULL;
-	*r->out.pcbAuxOut = 0;
-	r->out.pulTransTime = &pulTransTime;
+	*r->out.pulTransTime = pulTransTime;
 
 	return MAPI_E_SUCCESS;
 }

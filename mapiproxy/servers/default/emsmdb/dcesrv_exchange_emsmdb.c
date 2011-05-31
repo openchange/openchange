@@ -1296,6 +1296,16 @@ static void dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call,
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+/* check if a client version is too low to use */
+/* TODO: this could be much more sophisticated */
+static bool clientVersionIsTooLow(const uint16_t rgwClientVersion[3])
+{
+	if (rgwClientVersion[0] < 0x000B) {
+		return true;
+	} else {
+		return false;
+	}
+}
 
 /**
    \details exchange_emsmdb EcDoConnectEx (0xA) function
@@ -1420,10 +1430,6 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	r->out.rgwServerVersion[1] = 0x82B4;
 	r->out.rgwServerVersion[2] = 0x3;
 
-	r->out.rgwBestVersion[0] = 0x8;
-	r->out.rgwBestVersion[1] = 0x82B4;
-	r->out.rgwBestVersion[2] = 0x3;
-
 	r->out.pulTimeStamp = talloc_zero(mem_ctx, uint32_t);
 	*r->out.pulTimeStamp = time(NULL);
 
@@ -1432,8 +1438,19 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 
 	r->out.rgbAuxOut = NULL;
 
-	r->out.result = MAPI_E_SUCCESS;
+	if (clientVersionIsTooLow(r->in.rgwClientVersion)) {
+		r->out.rgwBestVersion[0] = 0x000B;
+		r->out.rgwBestVersion[1] = 0x8000;
+		r->out.rgwBestVersion[2] = 0x0000;
+		
+		r->out.result = MAPI_E_VERSION;
+	} else {
+		r->out.rgwBestVersion[0] = r->in.rgwClientVersion[0];
+		r->out.rgwBestVersion[1] = r->in.rgwClientVersion[1];
+		r->out.rgwBestVersion[2] = r->in.rgwClientVersion[2];
 
+		r->out.result = MAPI_E_SUCCESS;
+	}
 	/* Search for an existing session and increment ref_count, otherwise create it */
 	for (session = emsmdb_session; session; session = session->next) {
 		if ((mpm_session_cmp(session->session, dce_call)) == true) {

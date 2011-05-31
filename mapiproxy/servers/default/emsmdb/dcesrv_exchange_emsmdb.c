@@ -1338,14 +1338,6 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 		wire_handle.handle_type = EXCHANGE_HANDLE_EMSMDB;
 		wire_handle.uuid = GUID_zero();
 		*r->out.handle = wire_handle;
-
-		r->out.pcmsPollsMax = talloc_zero(mem_ctx, uint32_t);
-		r->out.pcRetry = talloc_zero(mem_ctx, uint32_t);
-		r->out.pcmsRetryDelay = talloc_zero(mem_ctx, uint32_t);
-		r->out.picxr = talloc_zero(mem_ctx, uint32_t);
-		r->out.pulTimeStamp = talloc_zero(mem_ctx, uint32_t);
-		r->out.pcbAuxOut = talloc_zero(mem_ctx, uint32_t);
-
 		*r->out.pcmsPollsMax = 0;
 		*r->out.pcRetry = 0;
 		*r->out.pcmsRetryDelay = 0;
@@ -1361,7 +1353,6 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 		*r->out.pulTimeStamp = 0;
 		r->out.rgbAuxOut = NULL;
 		*r->out.pcbAuxOut = 0;
-
 		r->out.result = MAPI_E_LOGON_FAILED;
 		return MAPI_E_LOGON_FAILED;
 	}
@@ -1413,29 +1404,22 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	handle->data = (void *) emsmdbp_ctx;
 	*r->out.handle = handle->wire_handle;
 
-	r->out.pcmsPollsMax = talloc_zero(mem_ctx, uint32_t);
 	*r->out.pcmsPollsMax = EMSMDB_PCMSPOLLMAX;
-
-	r->out.pcRetry = talloc_zero(mem_ctx, uint32_t);
 	*r->out.pcRetry = EMSMDB_PCRETRY;
-
-	r->out.pcmsRetryDelay = talloc_zero(mem_ctx, uint32_t);
 	*r->out.pcmsRetryDelay = EMSMDB_PCRETRYDELAY;
-
-	r->out.picxr = talloc_zero(mem_ctx, uint32_t);
 	*r->out.picxr = 0;
 
 	r->out.rgwServerVersion[0] = 0x8;
 	r->out.rgwServerVersion[1] = 0x82B4;
 	r->out.rgwServerVersion[2] = 0x3;
 
-	r->out.pulTimeStamp = talloc_zero(mem_ctx, uint32_t);
 	*r->out.pulTimeStamp = time(NULL);
 
-	r->out.pcbAuxOut = talloc_zero(mem_ctx, uint32_t);
 	*r->out.pcbAuxOut = 0;
 
 	r->out.rgbAuxOut = NULL;
+
+	r->out.result = MAPI_E_SUCCESS;
 
 	if (clientVersionIsTooLow(r->in.rgwClientVersion)) {
 		r->out.rgwBestVersion[0] = 0x000B;
@@ -1450,16 +1434,15 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 
 		r->out.result = MAPI_E_SUCCESS;
 	}
+
 	/* Search for an existing session and increment ref_count, otherwise create it */
-	for (session = emsmdb_session; session; session = session->next) {
-		if ((mpm_session_cmp(session->session, dce_call)) == true) {
-			DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n",
-				  session->session->context_id));
-			mpm_session_increment_ref_count(session->session);
-			found = true;
-			break;
-		}
-	}
+        session = dcesrv_find_emsmdb_session(&handle->wire_handle.uuid);
+        if (session) {
+                DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n", 
+                          session->session->context_id));
+                mpm_session_increment_ref_count(session->session);
+                found = true;
+        }
 
 	if (found == false) {
 		/* Step 7. Associate this emsmdbp context to the session */
@@ -1470,6 +1453,8 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 		session->session = mpm_session_init((TALLOC_CTX *)emsmdb_session, dce_call);
 		OPENCHANGE_RETVAL_IF(!session->session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 		
+		session->uuid = handle->wire_handle.uuid;
+
 		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
 		mpm_session_set_destructor(session->session, emsmdbp_destructor);
 

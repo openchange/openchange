@@ -1546,15 +1546,20 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	ndr_push_mapi_response(ndr_uncomp_rgbOut, NDR_SCALARS|NDR_BUFFERS, mapi_response);
 	talloc_free(mapi_response);
 
-	/* Obfuscate content */
+	/* TODO: compress if requested */
 	ndr_comp_rgbOut = ndr_uncomp_rgbOut;
-	obfuscate_data(ndr_comp_rgbOut->data, ndr_comp_rgbOut->offset, 0xA5);
 
 	/* Build RPC_HEADER_EXT header for MAPI response DATA blob */
 	RPC_HEADER_EXT.Version = 0x0000;
-	RPC_HEADER_EXT.Flags = RHEF_XorMagic|RHEF_Last;
+	RPC_HEADER_EXT.Flags = RHEF_Last;
+	RPC_HEADER_EXT.Flags |= (mapi2k7_request.header.Flags & RHEF_XorMagic);
 	RPC_HEADER_EXT.Size = ndr_comp_rgbOut->offset;
 	RPC_HEADER_EXT.SizeActual = ndr_comp_rgbOut->offset;
+
+	/* Obfuscate content if applicable*/
+	if (RPC_HEADER_EXT.Flags & RHEF_XorMagic) {
+		obfuscate_data(ndr_comp_rgbOut->data, ndr_comp_rgbOut->offset, 0xA5);
+	}
 
 	/* Push the constructed blob */
 	ndr_rgbOut = ndr_push_init_ctx(mem_ctx);

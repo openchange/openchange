@@ -933,6 +933,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 						       mapi_req->u.mapi_GetIDsFromNames.nameid[i],
 						       &mapi_repl->u.mapi_GetIDsFromNames.propID[i])
 		    != MAPISTORE_SUCCESS) {
+			mapi_repl->u.mapi_GetIDsFromNames.propID[i] = 0x0000;
 			lpguid = &mapi_req->u.mapi_GetIDsFromNames.nameid[i].lpguid;
 			DEBUG(5, ("  no mapping for property %.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x:",
 				  lpguid->time_low, lpguid->time_mid, lpguid->time_hi_and_version,
@@ -954,6 +955,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 
 	if (mapi_repl->error_code == MAPI_W_ERRORS_RETURNED
 	    && mapi_req->u.mapi_GetIDsFromNames.ulFlags == 0x02) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		DEBUG(5, ("%s: property creation is not implemented\n", __FUNCTION__));
 	}
 
@@ -1015,8 +1017,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetNamesFromIDs(TALLOC_CTX *mem_ctx,
 		else if (mapistore_namedprops_get_nameid(mem_ctx, emsmdbp_ctx->mstore_ctx->nprops_ctx, request->PropertyIds[i], &nameid) == MAPISTORE_SUCCESS) {
 			response->nameid[i] = *nameid;
 			response->nameid[i].kind.lpwstr.NameSize *= 2;
-			response->nameid[i].kind.lpwstr.NameSize += 2;
-			talloc_free(nameid);
+			/* talloc_free(nameid); */
 		}
 		else {
 			response->nameid[i].ulKind = 0xff;

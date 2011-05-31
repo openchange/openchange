@@ -687,6 +687,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoRpc_MAPI_REPL(struct ndr_push *ndr, int 
 							NDR_CHECK(ndr_push_Logon_redirect(ndr, NDR_SCALARS, &(r->us.mapi_Logon)));
 						}
 						break; }
+					case op_MAPI_GetIDsFromNames: {
+						/* MAPI_W_ERRORS_RETURNED still enables the final array to be passed */
+						if (r->error_code == MAPI_W_ERRORS_RETURNED) {
+							NDR_CHECK(ndr_push_set_switch_value(ndr, &r->u, r->opnum));
+							NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
+						}
+						break; }
 					default:
 						break;
 					}
@@ -725,6 +732,13 @@ enum ndr_err_code ndr_pull_EcDoRpc_MAPI_REPL(struct ndr_pull *ndr, int ndr_flags
 							NDR_CHECK(ndr_pull_Logon_redirect(ndr, NDR_SCALARS, &(r->us.mapi_Logon)));
 						}
 						break;}
+					case op_MAPI_GetIDsFromNames: {
+						/* MAPI_W_ERRORS_RETURNED still enables the final array to be passed */
+						if (r->error_code == MAPI_W_ERRORS_RETURNED) {
+							NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->u, r->opnum));
+							NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
+						}
+						break;}
 					default:
 						break;
 					}
@@ -760,6 +774,13 @@ void ndr_print_EcDoRpc_MAPI_REPL(struct ndr_print *ndr, const char *name, const 
 						ndr_print_EcDoRpc_MAPI_REPL_UNION_SPECIAL(ndr, "us", &r->us);
 					}
 					break;}
+				case op_MAPI_GetIDsFromNames: {
+					/* MAPI_W_ERRORS_RETURNED still enables the final array to be passed */
+					if (r->error_code == MAPI_W_ERRORS_RETURNED) {
+						ndr_print_set_switch_value(ndr, &r->u, r->opnum);
+						ndr_print_EcDoRpc_MAPI_REPL_UNION(ndr, "u", &r->u);
+					}
+					break; }
 				default:
 					break;
 				}

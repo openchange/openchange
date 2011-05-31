@@ -304,7 +304,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_M
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response || response->error_code) {
+	if (!response || (response->error_code && response->error_code != MAPI_W_ERRORS_RETURNED)) {
 		return size;
 	}
 
@@ -316,7 +316,6 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_M
 
 	return size;
 }
-
 
 /**
    \details Calculate DeletePropertiesNoReplicate Rop size

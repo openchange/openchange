@@ -262,7 +262,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_response(struct ndr_pull *ndr, int n
 					NDR_PULL_ALLOC(ndr, r->mapi_response);
 				}
 				
-				NDR_CHECK((ndr_pull_subcontext_start(ndr, &_ndr_buffer, 0, -1)));
+				NDR_CHECK((ndr_pull_subcontext_start(ndr, &_ndr_buffer, 0, r->header.Size)));
 				{
 					if (r->header.Flags & RHEF_Compressed) {
 						struct ndr_pull *_ndr_data_compressed = NULL;
@@ -276,7 +276,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_response(struct ndr_pull *ndr, int n
 						NDR_CHECK(ndr_pull_mapi_response(_ndr_buffer, NDR_SCALARS|NDR_BUFFERS, r->mapi_response));			
 					}
 				}
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_buffer, 0, -1));
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_buffer, 0, r->header.Size));
 			}
 			ndr->flags = _flags_save_mapi_response;
 		}
@@ -1484,15 +1484,16 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 			rgbOut.length = *r->out.pcbOut;
 			ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
 			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
-			mapi_response = talloc_zero(mem_ctx, struct mapi2k7_response);
-			mapi_response->mapi_response = talloc_zero(mapi_response, struct mapi_response);
-			ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_response);
-			ndr_print_mapi2k7_response(ndr, "mapi_response", 
+			while (ndr_pull->offset < ndr_pull->data_size) {
+				mapi_response = talloc_zero(NULL, struct mapi2k7_response);
+				mapi_response->mapi_response = talloc_zero(mapi_response, struct mapi_response);
+				ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_response);
+				ndr_print_mapi2k7_response(ndr, "mapi_response", 
 						   (const struct mapi2k7_response *)mapi_response);
+				talloc_free(mapi_response);
+			}
 			talloc_free(ndr_pull);
 			talloc_free(rgbOut.data);
-			talloc_free(mapi_response->mapi_response);
-			talloc_free(mapi_response);
 		}
 		/* ndr_print_array_uint8(ndr, "rgbOut", r->out.rgbOut, *r->out.pcbOut); */
 		ndr_print_ptr(ndr, "pcbOut", r->out.pcbOut);

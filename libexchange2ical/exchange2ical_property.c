@@ -115,7 +115,7 @@ void ical_property_ATTACH(struct exchange2ical *exchange2ical)
 					attachMethod	 = octool_get_propval(&aRow2, PR_ATTACH_METHOD);
 					attachmentHidden = octool_get_propval(&aRow2, PR_ATTACHMENT_HIDDEN);
 
-					if(!(*attachmentFlags & 0x00000007) 
+					if(attachmentFlags && !(*attachmentFlags & 0x00000007) 
 						&& (*attachMethod == 0x00000001) 
 						&& (!attachmentHidden || !(*attachmentHidden))) {
 

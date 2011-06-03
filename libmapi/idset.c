@@ -25,8 +25,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
-
-/* TODO: we only handle one GUID per idset */
+#include "gen_ndr/ndr_exchange.h"
 
 struct uint32_array {
 	uint32_t	*data;
@@ -221,7 +220,7 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 /**
   \details deserialize a GLOBSET following the format described in [OXCFXICS - 2.2.2.5]
 */
-_PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, uint32_t *countP)
+_PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer, uint32_t *countP, uint32_t *byte_countP)
 {
 	struct GLOBSET_parser *parser;
 	struct globset_range *ranges, *range;
@@ -278,6 +277,9 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 		if (countP) {
 			*countP = parser->range_count;
 		}
+		if (byte_countP) {
+			*byte_countP = parser->buffer_position;
+		}
 		if (ranges) {
 			range = ranges;
 			while (range) {
@@ -292,38 +294,42 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 }
 
 #if 0 /* IDSET debugging */
-static void check_idset(struct idset *idset)
+static void check_idset(const struct idset *idset)
 {
-	uint32_t i = 0;
+	uint32_t i;
 	struct globset_range *range, *last_range;
 
-	if (GUID_all_zero(&idset->guid)) {
-		DEBUG(5, ("idset: invalid guid\n"));
-		abort();
-	}
-
-	if (idset->ranges) {
-		range = idset->ranges;
-		while (range) {
-			/* DEBUG(5, ("range %d: [%.16Lx:%.16Lx] prev: %p; next: %p\n", i, range->low, range->high, range->prev, range->next)); */
-			if (range->prev == NULL) {
-				DEBUG(5, ("range %d has a NULL prev\n", i));
-				abort();
-			}
-			i++;
-			last_range = range;
-			range = range->next;
-		}
-
-		if (idset->ranges->prev != last_range) {
-			DEBUG(5, ("idset: last element of linked list is not the expected one\n"));
+	while (idset) {
+		if (GUID_all_zero(&idset->guid)) {
+			DEBUG(5, ("idset: invalid guid\n"));
 			abort();
 		}
-	}
 
-	if (i != idset->range_count) {
-		DEBUG(5, ("idset: elements count does not match the reported value (%d and %d)\n", i, idset->range_count));
-		abort();
+		i = 0;
+		if (idset->ranges) {
+			range = idset->ranges;
+			while (range) {
+				/* DEBUG(5, ("range %d: [%.16Lx:%.16Lx] prev: %p; next: %p\n", i, range->low, range->high, range->prev, range->next)); */
+				if (range->prev == NULL) {
+					DEBUG(5, ("range %d has a NULL prev\n", i));
+					abort();
+				}
+				i++;
+				last_range = range;
+				range = range->next;
+			}
+			
+			if (idset->ranges->prev != last_range) {
+				DEBUG(5, ("idset: last element of linked list is not the expected one\n"));
+				abort();
+			}
+		}
+
+		if (i != idset->range_count) {
+			DEBUG(5, ("idset: elements count does not match the reported value (%d and %d)\n", i, idset->range_count));
+			abort();
+		}
+		idset = idset->next;
 	}
 }
 #else /* IDSET debugging */
@@ -335,40 +341,62 @@ static void check_idset(struct idset *idset)
 */
 _PUBLIC_ struct idset *IDSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buffer)
 {
-	struct idset		*idset;
-        DATA_BLOB			guid_blob, globset;
+	struct idset		*idset, *prev_idset = NULL;
+        DATA_BLOB		guid_blob, globset;
+	uint32_t		total_bytes, byte_count;
 
 	if (buffer.length < 17) return NULL;
 
-	idset = talloc_zero(mem_ctx, struct idset);
+	total_bytes = 0;
+	while (total_bytes < buffer.length) {
+		idset = talloc_zero(mem_ctx, struct idset);
+		if (prev_idset) {
+			prev_idset->next = idset;
+		}
 
-	guid_blob.data = buffer.data;
-	guid_blob.length = 16;
-	GUID_from_data_blob(&guid_blob, &idset->guid);
+		guid_blob.data = buffer.data;
+		guid_blob.length = 16;
+		GUID_from_data_blob(&guid_blob, &idset->guid);
+		total_bytes += 16;
 
-	globset.length = buffer.length - 16;
-	globset.data = (uint8_t *) buffer.data + 16;
-	idset->ranges = GLOBSET_parse(idset, globset, &idset->range_count);
+		globset.length = buffer.length - 16;
+		globset.data = (uint8_t *) buffer.data + 16;
+		idset->ranges = GLOBSET_parse(idset, globset, &idset->range_count, &byte_count);
+		
+		total_bytes += byte_count;
+
+		check_idset(idset);
+
+		prev_idset = idset;
+	}
 
 	IDSET_dump(idset, "freshly parsed");
-
-	check_idset(idset);
 
 	return idset;
 }
 
-static int IDSET_uint64_compar(const void *vap, const void *vbp)
+static int IDSET_GUID_compar(const void *vap, const void *vbp)
+{
+	const struct idset *ap, *bp;
+
+	ap = *(const struct idset **) vap;
+	bp = *(const struct idset **) vbp;
+	
+	return GUID_compare(&ap->guid, &bp->guid);
+}
+
+static int IDSET_globcnt_compar(const void *vap, const void *vbp)
 {
 	int retval;
-	const uint64_t *ap, *bp;
+	uint64_t a, b;
 
-	ap = vap;
-	bp = vbp;
+	a = *(uint64_t *) vap;
+	b = *(uint64_t *) vbp;
 
-	if ((*ap) < (*bp)) {
+	if (a < b) {
 		retval = -1;
 	}
-	else if ((*ap) == (*bp)) {
+	else if (a == b) {
 		retval = 0;
 	}
 	else {
@@ -378,10 +406,17 @@ static int IDSET_uint64_compar(const void *vap, const void *vbp)
 	return retval;
 }
 
-/**
-  \details creates an idset structure based on an array of ids
-*/
-_PUBLIC_ struct idset *IDSET_make(TALLOC_CTX *mem_ctx, struct GUID *base_guid, const uint64_t *array, uint32_t length, bool can_skip)
+static int IDSET_range_compar(const void *vap, const void *vbp)
+{
+	const struct globset_range *ap, *bp;
+
+	ap = *(const struct globset_range **) vap;
+	bp = *(const struct globset_range **) vbp;
+
+	return IDSET_globcnt_compar(&ap->low, &bp->low);
+}
+
+static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, const struct GUID *base_guid, const uint64_t *array, uint32_t length, bool single)
 {
 	struct idset *idset;
 	struct globset_range *current_globset;
@@ -395,6 +430,7 @@ _PUBLIC_ struct idset *IDSET_make(TALLOC_CTX *mem_ctx, struct GUID *base_guid, c
 
 	idset = talloc_zero(mem_ctx, struct idset);
 	idset->guid = *base_guid;
+	idset->single = single;
 
 	current_globset = talloc_zero(idset, struct globset_range);
 	DLIST_ADD_END(idset->ranges, current_globset, end);
@@ -405,7 +441,7 @@ _PUBLIC_ struct idset *IDSET_make(TALLOC_CTX *mem_ctx, struct GUID *base_guid, c
 	}
 
 	work_array = talloc_memdup(NULL, array, sizeof(uint64_t) * length);
-	qsort(work_array, length, sizeof(uint64_t), IDSET_uint64_compar);
+	qsort(work_array, length, sizeof(uint64_t), IDSET_globcnt_compar);
 
 	if (length == 2) {
 		DEBUG(5, ("work_array[0]: %.16Lx, %.16Lx\n", (unsigned long long) work_array[0], (unsigned long long) work_array[1]));
@@ -416,7 +452,7 @@ _PUBLIC_ struct idset *IDSET_make(TALLOC_CTX *mem_ctx, struct GUID *base_guid, c
 
 	current_globset->low = work_array[0];
 
-	if (can_skip || length < 3) {
+	if (single || length < 3) {
 		current_globset->high = work_array[length-1];
 	}
 	else {
@@ -493,31 +529,55 @@ static void GLOBSET_ndr_push_globset_range(struct ndr_push *ndr, struct globset_
 	}
 }
 
-static int IDSET_range_compar(const void *vap, const void *vbp)
+static int IDSET_count(const struct idset *idset)
 {
-	int retval;
-	const struct globset_range *ap, *bp;
+	int	max = 0;
 
-	ap = *(const struct globset_range **) vap;
-	bp = *(const struct globset_range **) vbp;
-
-	if (ap->low == bp->low) {
-		retval = 0;
-	}
-	else if (ap->low < bp->low) {
-		retval = -1;
-	}
-	else {
-		retval = 1;
+	while (idset) {
+		max++;
+		idset = idset->next;
 	}
 
-	return retval;
+	return max;
 }
 
-/**
-  \details reorder the ranges of an idset structure in ascending order
-*/
-_PUBLIC_ void IDSET_reorder(struct idset *idset)
+static void IDSET_reorder_idset(struct idset **idsetP)
+{
+	int		i, max = 0;
+	struct idset	**idsets;
+	struct idset	*idset, *current_idset, *last_idset;
+
+	if (!idsetP) return;
+	idset = *idsetP;
+	if (!idset || !idset->next) return;
+
+	check_idset(idset);
+
+	max = IDSET_count(idset);
+	idsets = talloc_array(NULL, struct idset *, max);
+
+	current_idset = idset;
+	for (i = 0; i < max; i++) {
+		idsets[i] = current_idset;
+		current_idset = current_idset->next;
+	}
+
+	qsort(idsets, max, sizeof(struct idset *), IDSET_GUID_compar);
+
+	current_idset = idsets[0];
+	for (i = 1; i < max; i++) {
+		last_idset = current_idset;
+		current_idset = idsets[i];
+		last_idset->next = current_idset;
+	}
+	current_idset->next = NULL;
+
+	*idsetP = idsets[0];
+
+	talloc_free(idsets);
+}
+
+static void IDSET_reorder_ranges(struct idset *idset)
 {
 	struct globset_range *range;
 	struct globset_range **ranges;
@@ -526,8 +586,10 @@ _PUBLIC_ void IDSET_reorder(struct idset *idset)
 	if (!idset || idset->range_count < 2) return;
 
 	ranges = talloc_array(NULL, struct globset_range *, idset->range_count);
-	for (range = idset->ranges, i = 0; i < idset->range_count; i++, range = range->next) {
+	range = idset->ranges;
+	for (i = 0; i < idset->range_count; i++) {
 		ranges[i] = range;
+		range = range->next;
 	}
 
 	qsort(ranges, idset->range_count, sizeof(struct globset_range *), IDSET_range_compar);
@@ -545,30 +607,26 @@ _PUBLIC_ void IDSET_reorder(struct idset *idset)
 	talloc_free(ranges);
 }
 
-/**
-  \details compact the ranges of an idset structure (note: the idset must be pre-ordered, otherwise information will be lost)
-*/
-_PUBLIC_ void IDSET_compact(struct idset *idset, bool can_skip)
+static void IDSET_compact_ranges(struct idset *idset)
 {
-	struct globset_range *range, *next_range;
+	struct globset_range *range, *next_range, *prev_range;
 
 	if (!idset || idset->range_count < 2) return;
 
-	if (can_skip) {
+	if (idset->single) {
 		range = idset->ranges;
-		next_range = range->prev;
-		if (next_range->low < range->low) {
-			range->low = next_range->low;
+		next_range = range->next;
+		while (next_range) {
+			if (next_range->low < range->low) {
+				range->low = next_range->low;
+			}
+			if (next_range->high > range->high) {
+				range->high = next_range->high;
+			}
+			prev_range = next_range;
+			next_range = next_range->next;
+			talloc_free(prev_range);
 		}
-		if (next_range->high > range->high) {
-			range->high = next_range->high;
-		}
-
-		while ((range = range->next)) {
-			talloc_free(range);
-		}
-
-		range = idset->ranges;
 		range->next = NULL;
 		range->prev = range;
 		idset->range_count = 1;
@@ -579,8 +637,8 @@ _PUBLIC_ void IDSET_compact(struct idset *idset, bool can_skip)
 			next_range = range->next;
 			while (next_range) {
 				if (next_range->low >= range->low
-				    && next_range->low <= range->high) {	/* A[  B[...  ]A */
-					if (next_range->high > range->high) {		/* A[  B[  ]A  ]B -> A[  B[  ]AB */
+				    && next_range->low <= range->high) {		/* A[  B[...  ]A */
+					if (next_range->high > range->high) {	/* A[  B[  ]A  ]B -> A[  B[  ]AB */
 						range->high = next_range->high;
 					}
 					range->next = next_range->next;
@@ -608,70 +666,98 @@ _PUBLIC_ void IDSET_compact(struct idset *idset, bool can_skip)
 /**
   \details returns an exact but totally distinct copy of an idset structure
 */
-_PUBLIC_ struct idset *IDSET_clone(TALLOC_CTX *mem_ctx, struct idset *source_idset)
+static struct idset *IDSET_clone(TALLOC_CTX *mem_ctx, const struct idset *source_idset)
 {
 	struct globset_range *range, *clone;
-	struct idset *idset;
+	struct idset *idset = NULL, *head_idset = NULL, *tail_idset;
 
 	if (!source_idset) return NULL;
 
 	check_idset(source_idset);
 
-	idset = talloc_zero(mem_ctx, struct idset);
-	idset->guid = source_idset->guid;
-	idset->range_count = source_idset->range_count;
+	while (source_idset) {
+		tail_idset = idset;
+		idset = talloc_zero(mem_ctx, struct idset);
+		idset->single = source_idset->single;
+		idset->guid = source_idset->guid;
+		idset->range_count = source_idset->range_count;
 
-	range = source_idset->ranges;
-	while (range) {
-		clone = talloc_zero(idset, struct globset_range);
-		clone->low = range->low;
-		clone->high = range->high;
-		DLIST_ADD_END(idset->ranges, clone, void);
-		range = range->next;
+		range = source_idset->ranges;
+		while (range) {
+			clone = talloc_zero(idset, struct globset_range);
+			clone->low = range->low;
+			clone->high = range->high;
+			DLIST_ADD_END(idset->ranges, clone, void);
+			range = range->next;
+		}
+
+		if (!head_idset) {
+			head_idset = idset;
+		}
+		if (tail_idset) {
+			tail_idset->next = idset;
+		}
+		source_idset = source_idset->next;
 	}
 
-	check_idset(idset);
+	check_idset(head_idset);
 
-	return idset;
+	return head_idset;
 }
 
 /**
-  \details merge two idsets structures into a third one, by merging intersecting ranges
+  \details merge two idsets structures into a third one
 */
-_PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, struct idset *left, struct idset *right)
+_PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idset *left, const struct idset *right)
 {
-	struct idset		*merged_idset = NULL, *clone = NULL;
-	struct globset_range	*range, *firstLeft, *lastLeft, *firstRight, *lastRight;
+	struct idset *merged_idset, *clone_right, *current, *next;
+	struct GUID *current_guid, *next_guid;
+	bool added_ranges = false;
+	struct globset_range *range;
 
-	if (!left && !right) return NULL;
+	if (!left) return IDSET_clone(mem_ctx, right);
+	if (!right) return IDSET_clone(mem_ctx, left);
 
-	if (left) {
-		merged_idset = IDSET_clone(mem_ctx, left);
-		if (right && right->range_count) {
-			clone = IDSET_clone(NULL, right);
-			range = clone->ranges;
+	merged_idset = IDSET_clone(mem_ctx, left);
+	clone_right = IDSET_clone(mem_ctx, right);
+
+	current = merged_idset;
+	while (current->next) {
+		current = current->next;
+	}
+	current->next = clone_right;
+
+	IDSET_reorder_idset(&merged_idset);
+
+	current = merged_idset;
+	current_guid = &current->guid;
+	while (current->next) {
+		next = current->next;
+		next_guid = &next->guid;
+		if (GUID_equal(current_guid, next_guid)) {
+			added_ranges = true;
+			current->range_count += next->range_count;
+			range = next->ranges;
+			current->ranges->prev->next = range;
 			while (range) {
-				(void) talloc_reference(merged_idset, range);
+				(void) talloc_reference(current, range);
 				range = range->next;
 			}
-
-			firstLeft = merged_idset->ranges;
-			lastLeft = firstLeft->prev;
-			firstRight = clone->ranges;
-			lastRight = firstRight->prev;
-
-			lastLeft->next = firstRight;
-			lastRight->prev = lastLeft;
-			firstLeft->prev = lastRight;
-
-			merged_idset->range_count += clone->range_count;
-			talloc_free(clone);
-
-			check_idset(merged_idset);
+			current->next = next->next;
+			talloc_free(next);
+		}
+		else {
+			current = next;
 		}
 	}
-	else {
-		merged_idset = IDSET_clone(mem_ctx, right);
+
+	if (added_ranges) {
+		current = merged_idset;
+		while (current) {
+			IDSET_reorder_ranges(current);
+			IDSET_compact_ranges(current);
+			current = current->next;
+		}
 	}
 
 	return merged_idset;
@@ -680,13 +766,11 @@ _PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, struct idset *lef
 /**
   \details serialize an idset structure in a struct SBinary_r
 */
-_PUBLIC_ struct Binary_r *IDSET_serialize(TALLOC_CTX *mem_ctx, struct idset *idset)
+_PUBLIC_ struct Binary_r *IDSET_serialize(TALLOC_CTX *mem_ctx, const struct idset *idset)
 {
 	struct ndr_push	*ndr;
 	struct globset_range *current_range;
 	struct Binary_r *data;
-
-	if (!mem_ctx || !idset) return NULL;
 
 	check_idset(idset);
 
@@ -694,14 +778,17 @@ _PUBLIC_ struct Binary_r *IDSET_serialize(TALLOC_CTX *mem_ctx, struct idset *ids
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	ndr->offset = 0;
 
-	ndr_push_GUID(ndr, NDR_SCALARS, &idset->guid);
+	while (idset) {
+		ndr_push_GUID(ndr, NDR_SCALARS, &idset->guid);
 
-	current_range = idset->ranges;
-	while (current_range) {
-		GLOBSET_ndr_push_globset_range(ndr, current_range);
-		current_range = current_range->next;
+		current_range = idset->ranges;
+		while (current_range) {
+			GLOBSET_ndr_push_globset_range(ndr, current_range);
+			current_range = current_range->next;
+		}
+		ndr_push_uint8(ndr, NDR_SCALARS, 0x00); /* end */
+		idset = idset->next;
 	}
-	ndr_push_uint8(ndr, NDR_SCALARS, 0x00); /* end */
 
 	data = talloc_zero(mem_ctx, struct Binary_r);
 	data->cb = ndr->offset;
@@ -715,7 +802,7 @@ _PUBLIC_ struct Binary_r *IDSET_serialize(TALLOC_CTX *mem_ctx, struct idset *ids
 /**
   \details tests the presence of a specific id in the ranges of an idset structure
 */
-_PUBLIC_ bool IDSET_includes_id(struct idset *idset, struct GUID *replica_guid, uint64_t id)
+_PUBLIC_ bool IDSET_includes_id(const struct idset *idset, struct GUID *replica_guid, uint64_t id)
 {
 	struct globset_range *range;
 
@@ -726,14 +813,17 @@ _PUBLIC_ bool IDSET_includes_id(struct idset *idset, struct GUID *replica_guid, 
 		return false;
 	}
 
-	if (GUID_equal(&idset->guid, replica_guid)) {
-		range = idset->ranges;
-		while (range) {
-			if (range->low <= id && range->high >= id) {
-				return true;
+	while (idset) {
+		if (GUID_equal(&idset->guid, replica_guid)) {
+			range = idset->ranges;
+			while (range) {
+				if (range->low <= id && range->high >= id) {
+					return true;
+				}
+				range = range->next;
 			}
-			range = range->next;
 		}
+		idset = idset->next;
 	}
 
 	return false;
@@ -742,20 +832,130 @@ _PUBLIC_ bool IDSET_includes_id(struct idset *idset, struct GUID *replica_guid, 
 /**
   \details dump an idset structure
 */
-_PUBLIC_ void IDSET_dump(struct idset *idset, const char *label)
+_PUBLIC_ void IDSET_dump(const struct idset *idset, const char *label)
 {
 	struct globset_range *range;
 	uint32_t i;
+	char *guid_str;
 
-	if (!idset) return;
+	DEBUG(0, ("[%s] Dump of idset\n", label));
+	while (idset) {
+		guid_str = GUID_string(NULL, &idset->guid);
+		DEBUG(0, ("  %s: %d elements\n", guid_str, idset->range_count));
+		talloc_free(guid_str);
 
-	DEBUG(0, ("[%s] Dump of idset: %d elements\n", label, idset->range_count));
-	range = idset->ranges;
-	for (i = 0; i < idset->range_count; i++) {
-		if (range->low > range->high) {
-			abort();
+		range = idset->ranges;
+		for (i = 0; i < idset->range_count; i++) {
+			if (range->low > range->high) {
+				abort();
+			}
+			DEBUG(0, ("  [0x%." PRIx64 ":0x%." PRIx64 "]\n", range->low, range->high));
+			range = range->next;
 		}
-		DEBUG(0, ("  [0x%." PRIx64 ":0x%." PRIx64 "]\n", range->low, range->high));
-		range = range->next;
+
+		idset = idset->next;
 	}
+}
+
+/**
+  \details push an idset on an ndr stream
+*/
+
+_PUBLIC_ void ndr_push_idset(struct ndr_push *ndr, struct idset *idset)
+{
+	struct Binary_r *bin_data;
+
+	bin_data = IDSET_serialize(NULL, idset);
+	ndr_push_Binary_r(ndr, NDR_BUFFERS, bin_data);
+	talloc_free(bin_data);
+}
+
+_PUBLIC_ struct rawidset *RAWIDSET_make(TALLOC_CTX *mem_ctx, bool single)
+{
+	struct rawidset *rawidset;
+
+	rawidset = talloc_zero(mem_ctx, struct rawidset);
+	rawidset->mem_ctx = mem_ctx;
+	rawidset->single = single;
+	rawidset->globcnts = talloc_zero(rawidset, uint64_t);
+	rawidset->count = 0;
+	rawidset->max_count = 0;
+	rawidset->next = NULL;
+
+	return rawidset;
+}
+
+static struct rawidset *RAWIDSET_find(struct rawidset *rawidset, const struct GUID *guid, struct rawidset **rawidset_last)
+{
+	static struct rawidset *current;
+
+	current = rawidset;
+	if (rawidset_last)
+		*rawidset_last = current;
+	while (current) {
+		if (GUID_equal(&current->guid, guid)) {
+			return current;
+		}
+		else {
+			current = current->next;
+			if (rawidset_last && current)
+				*rawidset_last = current;
+		}
+	}
+
+	return NULL;
+}
+
+_PUBLIC_ void RAWIDSET_push_glob(struct rawidset *rawidset, const struct GUID *guid, uint64_t globcnt)
+{
+	struct rawidset *glob_idset, *last_glob_idset;
+	static struct GUID *zero_guid = NULL;
+
+	if (!rawidset) return;
+
+	glob_idset = RAWIDSET_find(rawidset, guid, &last_glob_idset);
+	if (!glob_idset) {
+		if (!zero_guid) {
+			zero_guid = talloc_zero(NULL, struct GUID);
+		}
+
+		glob_idset = RAWIDSET_find(rawidset, zero_guid, NULL);
+		if (!glob_idset) {
+			glob_idset = RAWIDSET_make(rawidset->mem_ctx, rawidset->single);
+			last_glob_idset->next = glob_idset;
+		}
+		glob_idset->guid = *guid;
+	}
+
+	if (glob_idset->count + 1 > glob_idset->max_count) {
+		glob_idset->max_count += 256;
+		glob_idset->globcnts = talloc_realloc(glob_idset, glob_idset->globcnts, uint64_t, glob_idset->max_count);
+	}
+	glob_idset->globcnts[glob_idset->count] = globcnt;
+	glob_idset->count++;
+}
+
+_PUBLIC_ struct idset *RAWIDSET_convert_to_idset(TALLOC_CTX *mem_ctx, const struct rawidset *rawidset)
+{
+	struct idset *head_idset = NULL, *last_idset = NULL, *new_idset;
+	const struct rawidset *current;
+
+	current = rawidset;
+	while (current) {
+		if (!GUID_all_zero(&current->guid) && current->count > 0) {
+			new_idset = IDSET_make(mem_ctx, &current->guid, current->globcnts, current->count, current->single);
+			if (!head_idset) {
+				head_idset = new_idset;
+			}
+			if (last_idset) {
+				last_idset->next = new_idset;
+			}
+			last_idset = new_idset;
+		}
+		current = current->next;
+	}
+
+	check_idset(head_idset);
+
+	return head_idset;
 }

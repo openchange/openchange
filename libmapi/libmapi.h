@@ -486,24 +486,26 @@ typedef enum MAPISTATUS (*fxparser_delprop_callback_t)(uint32_t, void *);
 typedef enum MAPISTATUS (*fxparser_namedprop_callback_t)(uint32_t, struct MAPINAMEID, void *);
 typedef enum MAPISTATUS (*fxparser_property_callback_t)(struct SPropValue, void *);
 
-/* The following public definitions come from libmapi/idset.c */
-struct globset_range *GLOBSET_parse(TALLOC_CTX *, DATA_BLOB, uint32_t *);
-struct idset *IDSET_parse(TALLOC_CTX *, DATA_BLOB);
-struct idset *IDSET_make(TALLOC_CTX *, struct GUID *, const uint64_t *, uint32_t, bool);
-void IDSET_reorder(struct idset *);
-void IDSET_compact(struct idset *, bool);
-struct idset *IDSET_clone(TALLOC_CTX *, struct idset *);
-struct idset *IDSET_merge_idsets(TALLOC_CTX *, struct idset *, struct idset *);
-struct Binary_r *IDSET_serialize(TALLOC_CTX *, struct idset *);
-bool IDSET_includes_id(struct idset *, struct GUID *, uint64_t);
-void IDSET_dump(struct idset *, const char *);
-
 struct fx_parser_context *fxparser_init(TALLOC_CTX *, void *);
-void 			 fxparser_set_marker_callback(struct fx_parser_context *, fxparser_marker_callback_t);
-void 			 fxparser_set_delprop_callback(struct fx_parser_context *, fxparser_delprop_callback_t);
-void 			 fxparser_set_namedprop_callback(struct fx_parser_context *, fxparser_namedprop_callback_t);
-void 			 fxparser_set_property_callback(struct fx_parser_context *, fxparser_property_callback_t);
-void			 fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
+void 			fxparser_set_marker_callback(struct fx_parser_context *, fxparser_marker_callback_t);
+void 			fxparser_set_delprop_callback(struct fx_parser_context *, fxparser_delprop_callback_t);
+void 			fxparser_set_namedprop_callback(struct fx_parser_context *, fxparser_namedprop_callback_t);
+void 			fxparser_set_property_callback(struct fx_parser_context *, fxparser_property_callback_t);
+void			fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
+
+/* The following public definitions come from libmapi/idset.c */
+struct rawidset *	RAWIDSET_make(TALLOC_CTX *, bool);
+void			RAWIDSET_push_glob(struct rawidset *, const struct GUID *, uint64_t);
+struct idset *		RAWIDSET_convert_to_idset(TALLOC_CTX *, const struct rawidset *);
+
+struct idset *		IDSET_parse(TALLOC_CTX *, DATA_BLOB);
+struct idset *		IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idset *, const struct idset *);
+struct Binary_r *	IDSET_serialize(TALLOC_CTX *, const struct idset *);
+bool			IDSET_includes_id(const struct idset *, struct GUID *, uint64_t);
+void			IDSET_dump(const struct idset *, const char *);
+void			ndr_push_idset(struct ndr_push *, struct idset *);
+
+struct globset_range *	GLOBSET_parse(TALLOC_CTX *, DATA_BLOB, uint32_t *, uint32_t *);
 
 /* Size functions */
 

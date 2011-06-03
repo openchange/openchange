@@ -24,8 +24,10 @@
 
 struct idset {
 	struct GUID		guid;
+	bool			single; /* single range */
 	uint32_t		range_count;
 	struct globset_range	*ranges;
+	struct idset		*next;
 };
 
 struct globset_range {
@@ -33,6 +35,16 @@ struct globset_range {
 	uint64_t		high;
 	struct globset_range	*prev;
 	struct globset_range	*next;
+};
+
+struct rawidset {
+	TALLOC_CTX	*mem_ctx;
+	struct GUID	guid;
+	bool		single; /* single range */
+	uint64_t	*globcnts;
+	int		count;
+	int		max_count;
+	struct rawidset	*next;
 };
 
 #endif /* __LIBMAPI_IDSET_H_ */

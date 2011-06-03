@@ -43,6 +43,19 @@ struct GLOBSET_parser {
 	struct globset_range	*ranges;
 };
 
+/**
+  \details Inverts the bytes of a globcnt, such as for the ids returned by Exchange
+*/
+_PUBLIC_ uint64_t exchange_globcnt(uint64_t globcnt)
+{
+	return ((globcnt & 0x00000000000000ff)		<< 40
+		| (globcnt & 0x000000000000ff00)	<< 24
+		| (globcnt & 0x0000000000ff0000)	<< 8
+		| (globcnt & 0x00000000ff000000)	>> 8
+		| (globcnt & 0x000000ff00000000)	>> 24
+		| (globcnt & 0x0000ff0000000000)	>> 40);
+}
+
 static inline void GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t count);
 static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser);
 static void GLOBSET_parser_do_pop(struct GLOBSET_parser *parser);
@@ -390,8 +403,8 @@ static int IDSET_globcnt_compar(const void *vap, const void *vbp)
 	int retval;
 	uint64_t a, b;
 
-	a = *(uint64_t *) vap;
-	b = *(uint64_t *) vbp;
+	a = exchange_globcnt(*(uint64_t *) vap);
+	b = exchange_globcnt(*(uint64_t *) vbp);
 
 	if (a < b) {
 		retval = -1;
@@ -456,18 +469,18 @@ static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, const struct GUID *base_gui
 		current_globset->high = work_array[length-1];
 	}
 	else {
-		last_consequent = current_globset->low;
+		last_consequent = exchange_globcnt(current_globset->low);
 		for (i = 1; i < length; i++) {
-			if ((work_array[i] != last_consequent) && (work_array[i] != (last_consequent + 1))) {
-				current_globset->high = last_consequent;
+			if ((exchange_globcnt(work_array[i]) != last_consequent) && (exchange_globcnt(work_array[i]) != (last_consequent + 1))) {
+				current_globset->high = exchange_globcnt(last_consequent);
 				current_globset = talloc_zero(idset, struct globset_range);
 				DLIST_ADD_END(idset->ranges, current_globset, void);
 				idset->range_count++;
 				current_globset->low = work_array[i];
 			}
-			last_consequent = work_array[i];
+			last_consequent = exchange_globcnt(work_array[i]);
 		}
-		current_globset->high = last_consequent;
+		current_globset->high = exchange_globcnt(last_consequent);
 	}
 
 	talloc_free(work_array);
@@ -617,10 +630,10 @@ static void IDSET_compact_ranges(struct idset *idset)
 		range = idset->ranges;
 		next_range = range->next;
 		while (next_range) {
-			if (next_range->low < range->low) {
+			if (exchange_globcnt(next_range->low) < exchange_globcnt(range->low)) {
 				range->low = next_range->low;
 			}
-			if (next_range->high > range->high) {
+			if (exchange_globcnt(next_range->high) > exchange_globcnt(range->high)) {
 				range->high = next_range->high;
 			}
 			prev_range = next_range;
@@ -636,9 +649,9 @@ static void IDSET_compact_ranges(struct idset *idset)
 		while (range) {
 			next_range = range->next;
 			while (next_range) {
-				if (next_range->low >= range->low
-				    && next_range->low <= range->high) {		/* A[  B[...  ]A */
-					if (next_range->high > range->high) {	/* A[  B[  ]A  ]B -> A[  B[  ]AB */
+				if (exchange_globcnt(next_range->low) >= exchange_globcnt(range->low)
+				    && exchange_globcnt(next_range->low) <= exchange_globcnt(range->high)) {		/* A[  B[...  ]A */
+					if (exchange_globcnt(next_range->high) > exchange_globcnt(range->high)) {	/* A[  B[  ]A  ]B -> A[  B[  ]AB */
 						range->high = next_range->high;
 					}
 					range->next = next_range->next;
@@ -817,7 +830,7 @@ _PUBLIC_ bool IDSET_includes_id(const struct idset *idset, struct GUID *replica_
 		if (GUID_equal(&idset->guid, replica_guid)) {
 			range = idset->ranges;
 			while (range) {
-				if (range->low <= id && range->high >= id) {
+				if (exchange_globcnt(range->low) <= exchange_globcnt(id) && exchange_globcnt(range->high) >= exchange_globcnt(id)) {
 					return true;
 				}
 				range = range->next;
@@ -846,7 +859,7 @@ _PUBLIC_ void IDSET_dump(const struct idset *idset, const char *label)
 
 		range = idset->ranges;
 		for (i = 0; i < idset->range_count; i++) {
-			if (range->low > range->high) {
+			if (exchange_globcnt(range->low) > exchange_globcnt(range->high)) {
 				abort();
 			}
 			DEBUG(0, ("  [0x%." PRIx64 ":0x%." PRIx64 "]\n", range->low, range->high));

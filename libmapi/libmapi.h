@@ -494,6 +494,8 @@ void 			fxparser_set_property_callback(struct fx_parser_context *, fxparser_prop
 void			fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
 
 /* The following public definitions come from libmapi/idset.c */
+uint64_t		exchange_globcnt(uint64_t);
+
 struct rawidset *	RAWIDSET_make(TALLOC_CTX *, bool);
 void			RAWIDSET_push_glob(struct rawidset *, const struct GUID *, uint64_t);
 struct idset *		RAWIDSET_convert_to_idset(TALLOC_CTX *, const struct rawidset *);

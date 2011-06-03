@@ -802,7 +802,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *ldb_ctx,
 
 	talloc_free(mem_ctx);
 
-	*fid = (*fid << 16) + 1;
+	*fid = (exchange_globcnt(*fid) << 16) | 0x0001;
 
 	return MAPI_E_SUCCESS;
 }

@@ -458,7 +458,6 @@ GlobalCount: 0x%x
         m["PidTagMessageClass"] = ldb.MessageElement([messageclass], ldb.CHANGETYPE_ADD, "PidTagMessageClass")
         self.ldb.modify(m)
 
-
 def gen_mailbox_folder_fid(GlobalCount, ReplicaID):
     """Generates a Folder ID from index.
 
@@ -466,6 +465,12 @@ def gen_mailbox_folder_fid(GlobalCount, ReplicaID):
     :param ReplicaID: Message database replica identifier
     """
 
-    folder = "0x%.12x%.4x" % (GlobalCount, ReplicaID)
+    reverseId = ReplicaID
+    for x in xrange(6):
+        sh = x * 8
+        unsh = (7-x) * 8
+        reverseId = reverseId | (((GlobalCount >> sh) & 0xff) << unsh)
+
+    folder = "0x%.16x" % reverseId
 
     return folder

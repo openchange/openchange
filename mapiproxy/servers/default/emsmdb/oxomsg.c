@@ -323,7 +323,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetTransportFolder(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
 
-	DEBUG(4, ("exchange_emsmdb: [OXOMSG] GetTransportFolder (0x6d)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXOMSG] GetTransportFolder (0x6d) -- hack\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -337,7 +337,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetTransportFolder(TALLOC_CTX *mem_ctx,
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = retval;
 	/* TODO: find the real FID */
-	mapi_repl->u.mapi_GetTransportFolder.FolderId = 0x150001;
+	mapi_repl->u.mapi_GetTransportFolder.FolderId = 0x1500000000000001;
 	/* mapi_repl->u.mapi_GetTransportFolder.FolderId = 0x12345678; */
 
 	*size += libmapiserver_RopGetTransportFolder_size(mapi_repl);
@@ -346,4 +346,3 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetTransportFolder(TALLOC_CTX *mem_ctx,
 
 	return retval;
 }
-

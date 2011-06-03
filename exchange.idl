@@ -3382,8 +3382,13 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x74 */
+	typedef [bitmap8bit] bitmap {
+		SyncImportDeletes_Hierarchy	= 0x01,
+		SyncImportDeletes_HardDelete	= 0x02
+	} SyncImportDeletesFlags;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		boolean8		IsHierarchy;
+		SyncImportDeletesFlags	Flags;
 		mapi_SPropValue_array	PropertyValues;
 	} SyncImportDeletes_req;
 

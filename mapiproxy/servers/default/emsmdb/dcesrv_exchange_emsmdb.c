@@ -909,7 +909,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							    &(mapi_response->mapi_repl[idx]),
 							    mapi_response->handles, &size);
 			break;
-		/* op_MAPI_TransportSend: 0x4a */
+		case op_MAPI_TransportSend: /* 0x4a */
+			retval = EcDoRpc_RopTransportSend(mem_ctx, emsmdbp_ctx,
+							  &(mapi_request->mapi_req[i]),
+							  &(mapi_response->mapi_repl[idx]),
+							  mapi_response->handles, &size);
+			break;
 		/* op_MAPI_FastTransferSourceCopyMessages: 0x4b */
 		/* op_MAPI_FastTransferSourceCopyFolder: 0x4c */
 		case op_MAPI_FastTransferSourceCopyTo: /* 0x4d */

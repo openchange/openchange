@@ -255,6 +255,87 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAddressTypes(TALLOC_CTX *mem_ctx,
 	return retval;
 }
 
+/**
+   \details EcDoRpc TransportSend (0x4a) Rop. This operation sends a message.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the TransportSend EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the TransportSend EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
+						  struct emsmdbp_context *emsmdbp_ctx,
+						  struct EcDoRpc_MAPI_REQ *mapi_req,
+						  struct EcDoRpc_MAPI_REPL *mapi_repl,
+						  uint32_t *handles, uint16_t *size)
+{
+	struct TransportSend_req	 *request;
+	struct TransportSend_repl	 *response;
+	enum MAPISTATUS			retval;
+	uint32_t			handle;
+	struct mapi_handles		*rec = NULL;
+	void				*private_data;
+	bool				mapistore = false;
+	struct emsmdbp_object		*object;
+	uint64_t			messageID;
+	uint32_t			contextID;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] TransportSend (0x4a)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+	object = (struct emsmdbp_object *)private_data;
+	if (!object || object->type != EMSMDBP_OBJECT_MESSAGE) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	request = &mapi_req->u.mapi_TransportSend;
+	response = &mapi_repl->u.mapi_TransportSend;
+
+	mapistore = emsmdbp_is_mapistore(object);
+	switch (mapistore) {
+	case false:
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		break;
+	case true:
+		messageID = object->object.message->messageID;
+		contextID = object->object.message->contextID;
+		mapistore_submitmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, 0);
+		/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID); */
+		break;
+	}
+
+	response->NoPropertiesReturned = 1;
+
+ end:
+	*size += libmapiserver_RopTransportSend_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
 
 /**
    \details EcDoRpc OptionsData (0x6f) Rop. This doesn't really do anything,

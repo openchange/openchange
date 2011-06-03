@@ -245,6 +245,12 @@
 #define	SIZE_DFLT_ROPGETADDRESSTYPES		4
 
 /**
+   \details TransportSend  has fixed response size for:
+   -# NoPropertiesReturned: uint8_t
+ */
+#define	SIZE_DFLT_ROPTRANSPORTSEND		1
+
+/**
    \details GetTransportFolder has fixed response size for:
    -# FolderId: uint64_t
  */
@@ -484,6 +490,7 @@ uint16_t libmapiserver_RopResetTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSubmitMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSetSpooler_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetAddressTypes_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopTransportSend_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetTransportFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOptionsData_size(struct EcDoRpc_MAPI_REPL *);
 

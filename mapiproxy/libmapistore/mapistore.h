@@ -196,6 +196,7 @@ struct mapistore_context {
 	struct indexing_context_list	*indexing_list;
         struct mapistore_subscription_list *subscriptions;
 	struct mapistore_notification_list *notifications;
+	struct tdb_wrap			*replica_mapping_ctx;
 	void				*nprops_ctx;
 };
 
@@ -284,6 +285,11 @@ int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint
 int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 struct tdb_wrap *mapistore_indexing_get_tdb_wrap(struct mapistore_context *, const char *);
+
+/* definitions from mapistore_replica_mapping.c */
+_PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *, const char *);
+_PUBLIC_ int mapistore_replica_mapping_guid_to_replid(struct mapistore_context *, const struct GUID *, uint16_t *);
+_PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *, uint16_t, struct GUID *);
 
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);

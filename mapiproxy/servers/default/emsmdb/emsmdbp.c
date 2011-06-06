@@ -137,6 +137,14 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		return NULL;
 	}
 
+	/* Initialize the mapistore user's replica mapping database */
+	ret = mapistore_replica_mapping_add(emsmdbp_ctx->mstore_ctx, username);
+	if (ret != MAPI_E_SUCCESS) {
+		DEBUG(0, ("[%s:%d]: MAPISTORE replica mapping database initialization failed\n", __FUNCTION__, __LINE__));
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
 	/* Initialize MAPI handles context */
 	emsmdbp_ctx->handles_ctx = mapi_handles_init(mem_ctx);
 	if (!emsmdbp_ctx->handles_ctx) {

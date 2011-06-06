@@ -412,10 +412,22 @@
 #define SIZE_DFLT_ROPFASTTRANSFERSOURCEGETBUFFER 9
 
 /**
+   \details SyncImportMessageChange has a fixed size for:
+   -# FolderId: uint64_t
+*/
+#define SIZE_DFLT_ROPSYNCIMPORTMESSAGECHANGE 8
+
+/**
    \details SyncImportHierarchyChange has a fixed size for:
    -# FolderId: uint64_t
 */
 #define SIZE_DFLT_ROPSYNCIMPORTHIERARCHYCHANGE 8
+
+/**
+   \details SyncImportMessageMove has a fixed size for:
+   -# MessageId: uint64_t
+*/
+#define SIZE_DFLT_ROPSYNCIMPORTMESSAGEMOVE 8
 
 /**
    \details GetLocalReplicaIds has a fixed size for:
@@ -518,15 +530,21 @@ uint16_t libmapiserver_RopModifyRules_size(void);
 uint16_t libmapiserver_RopGetPermissionsTable_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcfxics.c */
-uint16_t libmapiserver_RopFastTransferSourceCopyTo_size(struct EcDoRpc_MAPI_REPL *response);
-uint16_t libmapiserver_RopFastTransferSourceGetBuffer_size(struct EcDoRpc_MAPI_REPL *response);
-uint16_t libmapiserver_RopSyncConfigure_size(struct EcDoRpc_MAPI_REPL *response);
-uint16_t libmapiserver_RopSyncImportHierarchyChange_size(struct EcDoRpc_MAPI_REPL *response);
-uint16_t libmapiserver_RopSyncUploadStateStreamBegin_size(struct EcDoRpc_MAPI_REPL *response);
-uint16_t libmapiserver_RopSyncUploadStateStreamEnd_size(struct EcDoRpc_MAPI_REPL *response);
-uint16_t libmapiserver_RopSyncOpenCollector_size(struct EcDoRpc_MAPI_REPL *response);
-uint16_t libmapiserver_RopGetLocalReplicaIds_size(struct EcDoRpc_MAPI_REPL *response);
-uint16_t libmapiserver_RopSyncGetTransferState_size(struct EcDoRpc_MAPI_REPL *response);
+uint16_t libmapiserver_RopFastTransferSourceCopyTo_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopFastTransferSourceGetBuffer_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncConfigure_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncImportMessageChange_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncImportHierarchyChange_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncImportDeletes_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncUploadStateStreamBegin_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncUploadStateStreamContinue_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncUploadStateStreamEnd_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncImportMessageMove_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncOpenCollector_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetLocalReplicaIds_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncImportReadStateChanges_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncGetTransferState_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSetLocalReplicaMidsetDeleted_size(struct EcDoRpc_MAPI_REPL *response);
 
 __END_DECLS
 

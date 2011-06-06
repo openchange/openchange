@@ -79,6 +79,27 @@ _PUBLIC_ uint16_t libmapiserver_RopSyncConfigure_size(struct EcDoRpc_MAPI_REPL *
 }
 
 /**
+   \details Calculate SyncImportMessageChange (0x73) Rop size
+
+   \param response pointer to the SyncImportMessageChange EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncImportMessageChange response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncImportMessageChange_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPSYNCIMPORTMESSAGECHANGE;
+
+	return size;
+}
+
+/**
    \details Calculate SyncImportHierarchyChange (0x73) Rop size
 
    \param response pointer to the SyncImportHierarchyChange EcDoRpc_MAPI_REPL
@@ -100,6 +121,19 @@ _PUBLIC_ uint16_t libmapiserver_RopSyncImportHierarchyChange_size(struct EcDoRpc
 }
 
 /**
+   \details Calculate SyncImportDeletes (0x74) Rop size
+
+   \param response pointer to the SyncImportDeletes EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncImportDeletes response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncImportDeletes_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
    \details Calculate SyncUploadStateStreamBegin (0x75) Rop size
 
    \param response pointer to the SyncUploadStateStreamBegin EcDoRpc_MAPI_REPL
@@ -108,6 +142,19 @@ _PUBLIC_ uint16_t libmapiserver_RopSyncImportHierarchyChange_size(struct EcDoRpc
    \return Size of SyncUploadStateStreamBegin response
  */
 _PUBLIC_ uint16_t libmapiserver_RopSyncUploadStateStreamBegin_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate SyncUploadStateStreamContinue (0x76) Rop size
+
+   \param response pointer to the SyncUploadStateStreamContinue EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncUploadStateStreamContinue response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncUploadStateStreamContinue_size(struct EcDoRpc_MAPI_REPL *response)
 {
 	return SIZE_DFLT_MAPI_RESPONSE;
 }
@@ -123,6 +170,27 @@ _PUBLIC_ uint16_t libmapiserver_RopSyncUploadStateStreamBegin_size(struct EcDoRp
 _PUBLIC_ uint16_t libmapiserver_RopSyncUploadStateStreamEnd_size(struct EcDoRpc_MAPI_REPL *response)
 {
 	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate SyncImportMessageMove (0x78) Rop size
+
+   \param response pointer to the SyncImportMessageMove EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncImportMessageMove response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncImportMessageMove_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPSYNCIMPORTMESSAGEMOVE;
+
+	return size;
 }
 
 /**
@@ -160,6 +228,19 @@ _PUBLIC_ uint16_t libmapiserver_RopGetLocalReplicaIds_size(struct EcDoRpc_MAPI_R
 }
 
 /**
+   \details Calculate SyncImportReadStateChanges (0x80) Rop size
+
+   \param response pointer to the SyncImportReadStateChanges EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SyncImportReadStateChanges response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSyncImportReadStateChanges_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
    \details Calculate SyncGetTransferState (0x82) Rop size
 
    \param response pointer to the SyncGetTransferState EcDoRpc_MAPI_REPL
@@ -168,6 +249,19 @@ _PUBLIC_ uint16_t libmapiserver_RopGetLocalReplicaIds_size(struct EcDoRpc_MAPI_R
    \return Size of SyncGetTransferState response
  */
 _PUBLIC_ uint16_t libmapiserver_RopSyncGetTransferState_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate SetLocalReplicaMidsetDeleted (0x93) Rop size
+
+   \param response pointer to the SetLocalReplicaMidsetDeleted EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SetLocalReplicaMidsetDeleted response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSetLocalReplicaMidsetDeleted_size(struct EcDoRpc_MAPI_REPL *response)
 {
 	return SIZE_DFLT_MAPI_RESPONSE;
 }

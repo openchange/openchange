@@ -25,6 +25,8 @@
    \brief OpenChange EMSMDB Server implementation
  */
 
+#include <sys/time.h>
+
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
@@ -570,7 +572,7 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
         }
 
 end:
-        *sizep += libmapiserver_RopNotify_size(mapi_repl);
+	*sizep += libmapiserver_RopNotify_size(mapi_repl);
 }
 
 static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx, 
@@ -1024,28 +1026,48 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							  &(mapi_response->mapi_repl[idx]),
 							  mapi_response->handles, &size);
 			break;
-		/* op_MAPI_SyncImportMessageChange: 0x72 */
+		case op_MAPI_SyncImportMessageChange: /* 0x72 */
+			retval = EcDoRpc_RopSyncImportMessageChange(mem_ctx, emsmdbp_ctx,
+								    &(mapi_request->mapi_req[i]),
+								    &(mapi_response->mapi_repl[idx]),
+								    mapi_response->handles, &size);
+			break;
 		case op_MAPI_SyncImportHierarchyChange: /* 0x73 */
 			retval = EcDoRpc_RopSyncImportHierarchyChange(mem_ctx, emsmdbp_ctx,
 								      &(mapi_request->mapi_req[i]),
 								      &(mapi_response->mapi_repl[idx]),
 								      mapi_response->handles, &size);
 			break;
-		/* op_MAPI_SyncImportDeletes: 0x74 */
+		case op_MAPI_SyncImportDeletes: /* 0x74 */
+			retval = EcDoRpc_RopSyncImportDeletes(mem_ctx, emsmdbp_ctx,
+							      &(mapi_request->mapi_req[i]),
+							      &(mapi_response->mapi_repl[idx]),
+							      mapi_response->handles, &size);
+			break;
                 case op_MAPI_SyncUploadStateStreamBegin: /* 0x75 */
 			retval = EcDoRpc_RopSyncUploadStateStreamBegin(mem_ctx, emsmdbp_ctx,
 								       &(mapi_request->mapi_req[i]),
 								       &(mapi_response->mapi_repl[idx]),
 								       mapi_response->handles, &size);
 			break;
-		/* op_MAPI_SyncUploadStateStreamContinue: 0x76 */
-		case  op_MAPI_SyncUploadStateStreamEnd: /* 0x77 */
+                case op_MAPI_SyncUploadStateStreamContinue: /* 0x76 */
+			retval = EcDoRpc_RopSyncUploadStateStreamContinue(mem_ctx, emsmdbp_ctx,
+									  &(mapi_request->mapi_req[i]),
+									  &(mapi_response->mapi_repl[idx]),
+									  mapi_response->handles, &size);
+			break;
+		case op_MAPI_SyncUploadStateStreamEnd: /* 0x77 */
 			retval = EcDoRpc_RopSyncUploadStateStreamEnd(mem_ctx, emsmdbp_ctx,
 								     &(mapi_request->mapi_req[i]),
 								     &(mapi_response->mapi_repl[idx]),
 								     mapi_response->handles, &size);
 			break;
-		/* op_MAPI_SyncImportMessageMove: 0x78 */
+		case op_MAPI_SyncImportMessageMove: /* 0x78 */
+			retval = EcDoRpc_RopSyncImportMessageMove(mem_ctx, emsmdbp_ctx,
+								  &(mapi_request->mapi_req[i]),
+								  &(mapi_response->mapi_repl[idx]),
+								  mapi_response->handles, &size);
+			break;
 		/* op_MAPI_SetPropertiesNoReplicate: 0x79 */
 		case op_MAPI_DeletePropertiesNoReplicate: /* 0x7a */
 			retval = EcDoRpc_RopDeletePropertiesNoReplicate(mem_ctx, emsmdbp_ctx,
@@ -1066,7 +1088,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
                                                                &(mapi_response->mapi_repl[idx]),
                                                                mapi_response->handles, &size);
 			break;
-		/* op_MAPI_SyncImportReadStateChanges: 0x80 */
+		case op_MAPI_SyncImportReadStateChanges: /* 0x80 */
+			retval = EcDoRpc_RopSyncImportReadStateChanges(mem_ctx, emsmdbp_ctx,
+								       &(mapi_request->mapi_req[i]),
+								       &(mapi_response->mapi_repl[idx]),
+								       mapi_response->handles, &size);
+			break;
 		case op_MAPI_ResetTable: /* 0x81 */
 			retval = EcDoRpc_RopResetTable(mem_ctx, emsmdbp_ctx,
 						       &(mapi_request->mapi_req[i]),
@@ -1085,7 +1112,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		/* op_MAPI_WriteAndCommitStream: 0x90 */
 		/* op_MAPI_HardDeleteMessages: 0x91 */
 		/* op_MAPI_HardDeleteMessagesAndSubfolders: 0x92 */
-		/* op_MAPI_SetLocalReplicaMidsetDeleted: 0x93 */
+		case op_MAPI_SetLocalReplicaMidsetDeleted: /* 0x93 */
+			retval = EcDoRpc_RopSetLocalReplicaMidsetDeleted(mem_ctx, emsmdbp_ctx,
+									 &(mapi_request->mapi_req[i]),
+									 &(mapi_response->mapi_repl[idx]),
+									 mapi_response->handles, &size);
+			break;
 		case op_MAPI_Logon: /* 0xfe */
 			retval = EcDoRpc_RopLogon(mem_ctx, emsmdbp_ctx,
 						  &(mapi_request->mapi_req[i]),
@@ -1103,6 +1135,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Step 3. Notifications/Pending calls should be processed here */
+	/* Note: GetProps and GetRows are filled with flag NDR_REMAINING, which may hide the content of the following replies. */
         while ((notification_holder = emsmdbp_ctx->mstore_ctx->notifications)) {
                 subscription_list = mapistore_find_matching_subscriptions(emsmdbp_ctx->mstore_ctx, notification_holder->notification);
                 while ((subscription_holder = subscription_list)) {
@@ -1126,7 +1159,6 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 
 	return mapi_response;
 }
-
 
 /**
    \details exchange_emsmdb EcDoRpc (0x2) function

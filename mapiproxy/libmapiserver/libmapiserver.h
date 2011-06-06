@@ -320,6 +320,20 @@
 #define	SIZE_DFLT_ROPGETSEARCHCRITERIA		9
 
 /**
+   \details LongTermIdFromId Rop has fixed response size for:
+   -# DatabaseGuid: 16 * uint8_t
+   -# LongTermId: 6 * uint8_t
+   -# Padding: uint16_t
+*/
+#define SIZE_DFLT_ROPLONGTERMIDFROMID		24;
+
+/**
+   \details IdFromLongTermId Rop has fixed response size for:
+   -# Id: 8 * uint8_t
+*/
+#define SIZE_DFLT_ROPIDFROMLONGTERMID		8;
+
+/**
    \details GetPerUserLongTermIds has fixed response size for:
    -# LongTermIdCount: uint16_t
  */
@@ -471,6 +485,8 @@ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_M
 uint16_t libmapiserver_RopRelease_size(void);
 uint16_t libmapiserver_RopSetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopLongTermIdFromId_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopIdFromLongTermId_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserLongTermIds_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopReadPerUserInformation_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL *);

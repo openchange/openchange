@@ -95,6 +95,45 @@ _PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REP
 	return size;
 }
 
+/**
+   \details Calculate LongTermIdFromId Rop size
+
+   \param response pointer to the LongTermIdFromId EcDoRpc_MAPI_REPL structure
+
+   \return Size of LongTermIdFromId response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopLongTermIdFromId_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPLONGTERMIDFROMID;
+
+	return size;
+}
+
+/**
+   \details Calculate IdFromLongTermId Rop size
+
+   \param response pointer to the IdFromLongTermId EcDoRpc_MAPI_REPL structure
+
+   \return Size of IdFromLongTermId response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopIdFromLongTermId_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPIDFROMLONGTERMID;
+
+	return size;	
+}
 
 /**
    \details Calculate GetPerUserLongTermIds Rop size

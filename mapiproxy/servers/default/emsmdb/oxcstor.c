@@ -504,6 +504,149 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	return retval;
 }
 
+/**
+   \details EcDoRpc EcDoRpc_RopLongTermIdFromId (0x43) Rop.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the LongTermIdFromId EcDoRpc_MAPI_REQ structure
+   \param mapi_repl pointer to the LongTermIdFromId EcDoRpc_MAPI_REPL structure
+
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopLongTermIdFromId(TALLOC_CTX *mem_ctx,
+						     struct emsmdbp_context *emsmdbp_ctx,
+						     struct EcDoRpc_MAPI_REQ *mapi_req,
+						     struct EcDoRpc_MAPI_REPL *mapi_repl,
+						     uint32_t *handles, uint16_t *size)
+{
+	struct LongTermIdFromId_req	*request;
+	struct LongTermIdFromId_repl	*response;
+	uint16_t			req_repl_id;
+	uint64_t			id;
+	uint8_t				i;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] LongTermIdFromId (0x43)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	request = &mapi_req->u.mapi_LongTermIdFromId;
+	response = &mapi_repl->u.mapi_LongTermIdFromId;
+
+	req_repl_id = request->Id & 0xffff;
+
+	if (emsmdbp_replid_to_guid(emsmdbp_ctx, req_repl_id, &response->LongTermId.DatabaseGuid)) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	/* openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &response->LongTermId.DatabaseGuid); */
+
+	id = request->Id >> 16;
+	for (i = 0; i < 6; i++) {
+		response->LongTermId.GlobalCounter[i] = id & 0xff;
+		id >>= 8;
+	}
+	response->LongTermId.padding = 0;
+
+end:
+	*size += libmapiserver_RopLongTermIdFromId_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+/* NEW and cleaner version that does not work: */
+
+/**
+   \details EcDoRpc  (0x44) Rop. This operation sets
+   or clears the message read flag.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the SetMessageReadFlag EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the SetMessageReadFlag
+   EcDoRpc_MAPI_REPL structure
+
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopIdFromLongTermId(TALLOC_CTX *mem_ctx,
+						     struct emsmdbp_context *emsmdbp_ctx,
+						     struct EcDoRpc_MAPI_REQ *mapi_req,
+						     struct EcDoRpc_MAPI_REPL *mapi_repl,
+						     uint32_t *handles, uint16_t *size)
+{
+	struct IdFromLongTermId_req	*request;
+	struct IdFromLongTermId_repl	*response;
+	uint16_t			repl_id;
+	uint64_t			fmid, base;
+	uint8_t				i, ctr_byte;
+	/* struct GUID			replica_guid; */
+
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] RopIdFromLongTermId (0x44)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	request = &mapi_req->u.mapi_IdFromLongTermId;
+	response = &mapi_repl->u.mapi_IdFromLongTermId;
+
+	if (GUID_all_zero(&request->LongTermId.DatabaseGuid)) {
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
+
+	ctr_byte = 0;
+	for (i = 0; i < 6; i++) {
+		ctr_byte = request->LongTermId.GlobalCounter[i];
+		if (ctr_byte) break;
+	}
+	if (ctr_byte == 0) {
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
+
+	if (emsmdbp_guid_to_replid(emsmdbp_ctx, &request->LongTermId.DatabaseGuid, &repl_id)) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	fmid = 0;
+	base = 1;
+	for (i = 0; i < 6; i++) {
+		fmid |= (uint64_t) request->LongTermId.GlobalCounter[i] * base;
+		base <<= 8;
+	}
+	response->Id = fmid << 16 | repl_id;
+
+end:
+	*size += libmapiserver_RopIdFromLongTermId_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
 
 /**
    \details EcDoRpc GetPerUserLongTermIds (0x60) Rop. This operations

@@ -1315,8 +1315,6 @@ static void emsmdbp_object_get_properties_mailbox(TALLOC_CTX *mem_ctx, struct em
 	uint32_t			i;
 	struct SBinary_short		*bin;
 
-        DEBUG(5, ("%s\n", __PRETTY_FUNCTION__));
-
 	for (i = 0; i < properties->cValues; i++) {
 		switch (properties->aulPropTag[i]) {
 		case PR_MAPPING_SIGNATURE:
@@ -1632,8 +1630,6 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmd
 			return current_data;
 		}
 	}
-
-	DEBUG(5, ("[%s]: found no data for tag %.8x\n", __FUNCTION__, prop_tag));
 
 	return NULL;
 }

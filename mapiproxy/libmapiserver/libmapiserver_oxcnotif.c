@@ -46,9 +46,8 @@ _PUBLIC_ uint16_t libmapiserver_RopRegisterNotification_size(void)
  */
 _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *response)
 {
-        union NotificationData *NotificationData;
-
         uint16_t size = SIZE_DFLT_ROPNOTIFY;
+        union NotificationData *NotificationData;
 
         /* TODO: to be completed... */
 

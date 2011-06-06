@@ -1072,7 +1072,6 @@ _PUBLIC_ struct backend_context *mapistore_find_container_backend(struct mapisto
                             || (mapistore_get_path (el->ctx, fmid, MAPISTORE_FOLDER, &path)
                                 == MAPISTORE_SUCCESS)) {
 				bctx = el->ctx;
-				talloc_free(path);
 				return bctx;
 				break;
 			}

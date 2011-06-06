@@ -59,6 +59,8 @@ const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 		return "subscription";
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
 		return "synccontext";
+	case EMSMDBP_OBJECT_FTCONTEXT:
+		return "ftcontext";
 	default:
 		return "unknown";
 	}
@@ -317,6 +319,7 @@ static int emsmdbp_object_destructor(void *data)
 		DEBUG(4, ("[%s:%d] mapistore subscription context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
         case EMSMDBP_OBJECT_SYNCCONTEXT:
+        case EMSMDBP_OBJECT_FTCONTEXT:
 		break;
 	default:
 		DEBUG(4, ("[%s:%d] destroying unhandled object type: %d\n", __FUNCTION__, __LINE__, object->type));

@@ -723,9 +723,13 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
         enum MAPISTATUS retval;
         uint32_t *retvals;
         struct emsmdbp_object_table *table;
+        struct emsmdbp_object *rowFolder;
         struct mapistore_property_data *properties;
-        uint32_t i, num_props;
+        uint32_t i, num_props, *obj_count;
+	uint64_t *rowFolderID;
+	uint8_t *has_subobj;
 	char *table_filter;
+	void *odb_ctx;
 
         table = table_object->object.table;
         num_props = table_object->object.table->prop_count;
@@ -760,7 +764,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 							retvals[i] = MAPI_E_NOT_FOUND;
 						}
 						else {
-							talloc_steal(data_pointers, properties[i].data);
+							(void) talloc_reference(data_pointers, properties[i].data);
 						}
 					}
 				}
@@ -797,15 +801,55 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		}
 	}
 	else {
-		table_filter = talloc_asprintf(NULL, "(&(PidTagParentFolderId=0x%.16"PRIx64")(PidTagFolderId=*))", table->folderID);
+		odb_ctx = talloc_zero(NULL, void);
+
+		table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=0x%.16"PRIx64")(PidTagFolderId=*))", table->folderID);
+		retval = openchangedb_get_table_property(odb_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+							 table_filter, PR_FID, row_id, (void **) &rowFolderID);
+		/* it's a hack to pass a table object as parent here... */
+		rowFolder = emsmdbp_object_folder_init(odb_ctx, emsmdbp_ctx, *rowFolderID, table_object);
 
 		/* Lookup for flagged property row */
                 retval = MAPI_E_SUCCESS;
 		for (i = 0; retval != MAPI_E_INVALID_OBJECT && i < num_props; i++) {
-			retval = openchangedb_get_table_property(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->oc_ctx, 
-								 emsmdbp_ctx->szDisplayName,
-								 table_filter, table->properties[i], 
-								 table->numerator, data_pointers + i);
+			if (table->properties[i] == PR_CONTENT_COUNT) {
+				/* a hack to avoid fetching dynamic fields from openchange.ldb */
+				obj_count = talloc_zero(data_pointers, uint32_t);
+				retval = mapistore_get_message_count(emsmdbp_ctx->mstore_ctx, rowFolder->object.folder->contextID, rowFolder->object.folder->folderID,
+								     MAPISTORE_MESSAGE_TABLE, obj_count);
+				data_pointers[i] = obj_count;
+			}
+			else if (table->properties[i] == PR_ASSOC_CONTENT_COUNT) {
+				obj_count = talloc_zero(data_pointers, uint32_t);
+				retval = mapistore_get_message_count(emsmdbp_ctx->mstore_ctx, rowFolder->object.folder->contextID, rowFolder->object.folder->folderID,
+								     MAPISTORE_FAI_TABLE, obj_count);
+				data_pointers[i] = obj_count;
+			}
+			else if (table->properties[i] == PR_FOLDER_CHILD_COUNT) {
+				obj_count = talloc_zero(data_pointers, uint32_t);
+				retval = mapistore_get_folder_count(emsmdbp_ctx->mstore_ctx, rowFolder->object.folder->contextID, rowFolder->object.folder->folderID, obj_count);
+				data_pointers[i] = obj_count;
+			}
+			else if (table->properties[i] == PR_SUBFOLDERS) {
+				obj_count = talloc_zero(NULL, uint32_t);
+				retval = mapistore_get_folder_count(emsmdbp_ctx->mstore_ctx, rowFolder->object.folder->contextID, rowFolder->object.folder->folderID, obj_count);
+				has_subobj = talloc_zero(data_pointers, uint8_t);
+				*has_subobj = (*obj_count > 0) ? 1 : 0;
+				data_pointers[i] = has_subobj;
+				talloc_free(obj_count);
+			}
+			else if (table->properties[i] == PR_CONTENT_UNREAD || table->properties[i] == PR_DELETED_COUNT_TOTAL) {
+				/* TODO: temporary */
+				obj_count = talloc_zero(NULL, uint32_t);
+				data_pointers[i] = obj_count;
+				retval = MAPI_E_SUCCESS;
+			}
+			else {
+				retval = openchangedb_get_table_property(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->oc_ctx, 
+									 emsmdbp_ctx->username,
+									 table_filter, table->properties[i], 
+									 row_id, data_pointers + i);
+			}
 			/* DEBUG(5, ("  %.8x: %d", table->properties[j], retval)); */
 			if (retval == MAPI_E_INVALID_OBJECT) {
 				DEBUG(5, ("%s: invalid object in non-mapistore folder, count set to 0\n", __location__));
@@ -818,7 +862,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				retvals[i] = retval;
 			}
 		}
-		talloc_free(table_filter);
+		talloc_free(odb_ctx);
 	}
 
         if (retvalsp) {

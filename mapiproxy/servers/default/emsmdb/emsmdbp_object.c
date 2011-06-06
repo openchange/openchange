@@ -507,7 +507,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 			if (ret == MAPISTORE_SUCCESS) {
 				ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, context_id);
 			} else {
-				conn_info = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_connection_info);
+				conn_info = talloc_zero(emsmdbp_ctx, struct mapistore_connection_info);
 				conn_info->mstore_ctx = emsmdbp_ctx->mstore_ctx;
 				conn_info->username = emsmdbp_ctx->username;
 				openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &conn_info->repl_id, &conn_info->replica_guid);

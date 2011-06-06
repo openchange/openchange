@@ -86,9 +86,9 @@ struct emsmdbp_object_mailbox {
 	char				*owner_Name;
 	char				*owner_EssDN;
 	char				*szUserDN;
+	char				*owner_username;
 	bool				mailboxstore;
 };
-
 
 struct emsmdbp_object_folder {
 	uint64_t			folderID;

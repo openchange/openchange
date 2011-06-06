@@ -369,10 +369,8 @@ struct mapistore_notification {
         } parameters;
 };
 
-void mapistore_notification_set_context(struct mapistore_context *);
 struct mapistore_subscription_list *mapistore_find_matching_subscriptions(struct mapistore_context *, struct mapistore_notification *);
-
-void mapistore_push_notification(uint8_t, enum mapistore_notification_type, void *);
+void mapistore_push_notification(struct mapistore_context *, uint8_t, enum mapistore_notification_type, void *);
 
 __END_DECLS
 

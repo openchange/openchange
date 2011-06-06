@@ -24,8 +24,6 @@
 
 #include "mapistore.h"
 
-static struct mapistore_context *active_context = NULL;
-
 struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx, uint32_t handle,
                                                           uint16_t notification_types,
                                                           void *notification_parameters)
@@ -49,43 +47,35 @@ struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx, u
         return new_subscription;
 }
 
-void mapistore_notification_set_context(struct mapistore_context *new_context)
-{
-        active_context = new_context;
-}
-
-void mapistore_push_notification(uint8_t object_type, enum mapistore_notification_type event, void *parameters)
+_PUBLIC_ void mapistore_push_notification(struct mapistore_context *mstore_ctx, uint8_t object_type, enum mapistore_notification_type event, void *parameters)
 {
         struct mapistore_notification *new_notification;
         struct mapistore_notification_list *new_list;
         struct mapistore_table_notification_parameters *table_parameters;
         struct mapistore_object_notification_parameters *object_parameters;
 
-        if (active_context) {
-                new_list = talloc_zero(active_context, struct mapistore_notification_list);
-                new_notification = talloc_zero(new_list, struct mapistore_notification);
-                new_list->notification = new_notification;
-                new_notification->object_type = object_type;
-                new_notification->event = event;
-                if (object_type == MAPISTORE_TABLE) {
-                        table_parameters = parameters;
-                        new_notification->parameters.table_parameters = *table_parameters;
-                }
-                else {
-                        object_parameters = parameters;
-                        new_notification->parameters.object_parameters = *object_parameters;
-                        if (new_notification->parameters.object_parameters.tag_count > 0
-                            && new_notification->parameters.object_parameters.tag_count != 0xffff) {
-                                new_notification->parameters.object_parameters.tags
-                                        = talloc_memdup(new_notification, new_notification->parameters.object_parameters.tags,
-                                                        sizeof(enum MAPITAGS) * new_notification->parameters.object_parameters.tag_count);
-                        }
-                }
-                DLIST_ADD_END(active_context->notifications, new_list, void);
-        }
-        else {
-                DEBUG(0, ("cannot push notification when no context is active\n"));
-        }
+        if (!mstore_ctx) return;
+
+	new_list = talloc_zero(mstore_ctx, struct mapistore_notification_list);
+	new_notification = talloc_zero(new_list, struct mapistore_notification);
+	new_list->notification = new_notification;
+	new_notification->object_type = object_type;
+	new_notification->event = event;
+	if (object_type == MAPISTORE_TABLE) {
+		table_parameters = parameters;
+		new_notification->parameters.table_parameters = *table_parameters;
+	}
+	else {
+		object_parameters = parameters;
+		new_notification->parameters.object_parameters = *object_parameters;
+		if (new_notification->parameters.object_parameters.tag_count > 0
+		    && new_notification->parameters.object_parameters.tag_count != 0xffff) {
+			new_notification->parameters.object_parameters.tags
+				= talloc_memdup(new_notification, new_notification->parameters.object_parameters.tags,
+						sizeof(enum MAPITAGS) * new_notification->parameters.object_parameters.tag_count);
+		}
+	}
+	DLIST_ADD_END(mstore_ctx->notifications, new_list, void);
 }
 
 static bool notification_matches_subscription(struct mapistore_notification *notification, struct mapistore_subscription *subscription)
@@ -139,9 +129,11 @@ static bool notification_matches_subscription(struct mapistore_notification *not
         return result;
 }
 
-struct mapistore_subscription_list *mapistore_find_matching_subscriptions(struct mapistore_context *mstore_ctx, struct mapistore_notification *notification)
+_PUBLIC_ struct mapistore_subscription_list *mapistore_find_matching_subscriptions(struct mapistore_context *mstore_ctx, struct mapistore_notification *notification)
 {
         struct mapistore_subscription_list *matching_subscriptions, *new_element, *current_element;
+
+	if (!mstore_ctx) return NULL;
 
         matching_subscriptions = NULL;
 

@@ -600,9 +600,6 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		return mapi_response;
 	}
 
-        /* prepare notification context (TODO: will not work with multi-threading) */
-        mapistore_notification_set_context(emsmdbp_ctx->mstore_ctx);
-
 	/* Step 2. Process serialized MAPI requests */
 	mapi_response->mapi_repl = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REPL);
 	for (i = 0, idx = 0, size = 0; mapi_request->mapi_req[i].opnum != 0; i++) {
@@ -1119,7 +1116,6 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
                 DLIST_REMOVE(emsmdbp_ctx->mstore_ctx->notifications, notification_holder);
                 talloc_free(notification_holder);
         }
-        mapistore_notification_set_context(NULL);
 
         mapi_response->mapi_repl[idx].opnum = 0;
 

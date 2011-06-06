@@ -326,9 +326,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
  
- 	/* If parent folder has a mapistore context */
- 	if (table->mapistore) {
-
 	/* If parent folder has a mapistore context */
 	if (table->mapistore) {
 		status = TBLSTAT_COMPLETE;

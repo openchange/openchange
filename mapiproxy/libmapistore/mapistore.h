@@ -87,10 +87,11 @@ struct mapistore_property_data {
 };
 
 struct mapistore_connection_info {
-	char *username;
-	struct GUID replica_guid;
-	uint16_t repl_id;
-	struct tdb_wrap *indexing;
+	char				*username;
+	struct GUID			replica_guid;
+	uint16_t			repl_id;
+	struct mapistore_context	*mstore_ctx;
+	struct tdb_wrap			*indexing;
 };
 
 struct mapistore_backend {

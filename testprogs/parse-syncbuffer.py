@@ -254,6 +254,9 @@ class SyncBufferParser:
 
         return self.pos
 
+    def force(self):
+        self.buffer = ''.join(self.bufferLines)
+
     def _doParserStart(self, line):
         if line.find("mapi_FastTransferSourceGetBuffer: struct FastTransferSourceGetBuffer_repl") > -1:
             self.state = PARSER_PRERESPONSE
@@ -605,6 +608,11 @@ if __name__ == "__main__":
         while pos < len(lines) and pos != -1:
             parser = SyncBufferParser(lines, pos)
             pos = parser.run()
+            if pos == -1 and len(parser.bufferLines) > 0:
+                parser.force()
+                pos = 0xffffffff
+                print "(forced parser)"
+
             if pos != -1:
                 p = SyncBufferPrinter(parser.buffer)
                 p.run()

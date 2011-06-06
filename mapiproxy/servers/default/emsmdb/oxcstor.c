@@ -32,7 +32,6 @@
 
 #include <string.h>
 
-
 /**
    \details Logs on a private mailbox
 
@@ -263,7 +262,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 	handle = handles[request->handle_idx];
 	retval = mapi_handles_delete(emsmdbp_ctx->handles_ctx, handle);
 	OPENCHANGE_RETVAL_IF(retval && retval != MAPI_E_NOT_FOUND, retval, NULL);
-	handles[request->handle_idx] = 0xffffffff;
 
 	return MAPI_E_SUCCESS;
 }
@@ -668,7 +666,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserLongTermIds(TALLOC_CTX *mem_ctx,
 							  struct EcDoRpc_MAPI_REPL *mapi_repl,
 							  uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetPerUserLongTermIds (0x60)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetPerUserLongTermIds (0x60) - valid stub\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -717,7 +715,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserGuid(TALLOC_CTX *mem_ctx,
 						   struct EcDoRpc_MAPI_REPL *mapi_repl,
 						   uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetPerUserGuid (0x61)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetPerUserGuid (0x61) - stub\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -762,7 +760,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadPerUserInformation(TALLOC_CTX *mem_ctx,
 							   struct EcDoRpc_MAPI_REPL *mapi_repl,
 							   uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] ReadPerUserInformation (0x63)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] ReadPerUserInformation (0x63) - stub\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

@@ -53,10 +53,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 							uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
-	struct mapi_handles	*rec = NULL;
+	struct mapi_handles	*parent;
+	struct mapi_handles	*rec;
+	struct emsmdbp_object	*object;
+	void			*data = NULL;
 	uint32_t		handle;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCPERM] GetPermissionsTable (0x3e)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCPERM] GetPermissionsTable (0x3e) -- stub\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -69,11 +72,44 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 	mapi_repl->handle_idx = mapi_req->u.mapi_GetPermissionsTable.handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
-	*size += libmapiserver_RopGetPermissionsTable_size(mapi_repl);
+	/* Ensure parent handle references a folder object */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
 
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+
+	object = (struct emsmdbp_object *) data;
+	if (object->type != EMSMDBP_OBJECT_FOLDER) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  unhandled object type: %d\n", object->type));
+		goto end;
+	}
+
+	/* Initialize Table object */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
+
+	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, object);
+	if (object) {
+		retval = mapi_handles_set_private_data(rec, object);
+		/* permissions tables are stub objects for now */
+		object->object.table->denominator = 0;
+		object->object.table->ulType = EMSMDBP_TABLE_PERMISSIONS_TYPE;
+	}
+
+end:
+	*size += libmapiserver_RopGetPermissionsTable_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

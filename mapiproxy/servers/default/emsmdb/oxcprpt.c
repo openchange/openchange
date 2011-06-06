@@ -437,22 +437,23 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 
 	/* TODO: implementation status:
 	   - OpenStream_ReadOnly (supported)
-	   - OpenStream_ReadWrite
+	   - OpenStream_ReadWrite (supported)
 	   - OpenStream_Create (supported)
 	   - OpenStream_BestAccess
 	*/
 
-	object = emsmdbp_object_stream_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent_object);
+	object = emsmdbp_object_stream_init(NULL, emsmdbp_ctx, parent_object);
 	object->object.stream->objectID = objectID;
 	object->object.stream->objectType = objectType;
 	object->object.stream->property = request->PropertyTag;
+	object->object.stream->stream.position = 0;
+	object->object.stream->stream.buffer.length = 0;
 
 	if (request->OpenModeFlags == OpenStream_ReadOnly || request->OpenModeFlags == OpenStream_ReadWrite) {
-		object->object.stream->stream.position = 0;
-
 		stream_data = emsmdbp_object_get_stream_data(parent_object, object->object.stream->property);
 		if (stream_data) {
-			talloc_steal(object, stream_data);
+			object->object.stream->stream.buffer = stream_data->data;
+			(void) talloc_reference(object->object.stream, object->object.stream->stream.buffer.data);
 			DLIST_REMOVE(parent_object->stream_data, stream_data);
 		}
 		else {
@@ -465,27 +466,39 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 				talloc_free(object);
 				goto end;
 			}
-			if (retvals[0] != MAPI_E_SUCCESS) {
-				mapi_repl->error_code = retvals[0];
-				talloc_free(object);
+			if (retvals[0] == MAPI_E_SUCCESS) {
+				stream_data = emsmdbp_stream_data_from_value(data_pointers, request->PropertyTag, data_pointers[0]);
+				object->object.stream->stream.buffer = stream_data->data;
+				(void) talloc_reference(object->object.stream, object->object.stream->stream.buffer.data);
 				talloc_free(data_pointers);
 				talloc_free(retvals);
-				goto end;
 			}
-			stream_data = emsmdbp_stream_data_from_value(object, request->PropertyTag, data_pointers[0]);
+			else {
+				talloc_free(data_pointers);
+				talloc_free(retvals);
+				if (request->OpenModeFlags == OpenStream_ReadWrite) {
+					object->object.stream->stream.buffer.data = talloc_zero(object->object.stream, uint8_t);
+					object->object.stream->stream.buffer.length = 0;
+				}
+				else {
+					mapi_repl->error_code = retvals[0];
+					talloc_free(object);
+					goto end;
+				}
+			}
 		}
-
-		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-		handles[mapi_repl->handle_idx] = rec->handle;
-		mapi_handles_set_private_data(rec, object);
-
-		object->object.stream->stream.buffer = stream_data->data;
-		mapi_repl->u.mapi_OpenStream.StreamSize = object->object.stream->stream.buffer.length;
 	}
 	else { /* OpenStream_Create */
 		object->object.stream->stream.buffer.data = talloc_zero(object->object.stream, uint8_t);
 		object->object.stream->stream.buffer.length = 0;
 	}
+
+	mapi_repl->u.mapi_OpenStream.StreamSize = object->object.stream->stream.buffer.length;
+
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	(void) talloc_reference(rec, object);
+	handles[mapi_repl->handle_idx] = rec->handle;
+	mapi_handles_set_private_data(rec, object);
 
 end:
 	*size += libmapiserver_RopOpenStream_size(mapi_repl);

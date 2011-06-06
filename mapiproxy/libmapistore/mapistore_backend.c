@@ -476,9 +476,9 @@ int mapistore_backend_get_table_property(struct backend_context *bctx, uint64_t 
 	return bctx->backend->op_get_table_property(bctx->private_data, fid, table_type, query_type, pos, proptag, data);
 }
 
-int mapistore_backend_get_available_table_properties(struct backend_context *bctx, uint8_t table_type, struct SPropTagArray *properties)
+int mapistore_backend_get_available_table_properties(struct backend_context *bctx, uint8_t table_type, struct SPropTagArray **propertiesp)
 {
-	return bctx->backend->op_get_available_table_properties(bctx->private_data, table_type, properties);
+	return bctx->backend->op_get_available_table_properties(bctx->private_data, table_type, propertiesp);
 }
 
 int mapistore_backend_openmessage(struct backend_context *bctx, uint64_t parent_fid, uint64_t mid, 
@@ -583,9 +583,9 @@ int mapistore_backend_pocop_open_embedded_message(struct backend_context *bctx, 
         return bctx->backend->message.open_embedded_message(object, mid, flags, msg, message);
 }
 
-int mapistore_backend_pocop_get_available_table_properties(struct backend_context *bctx, void *table, struct SPropTagArray *properties)
+int mapistore_backend_pocop_get_available_table_properties(struct backend_context *bctx, void *table, struct SPropTagArray **propertiesp)
 {
-        return bctx->backend->table.get_available_properties(table, properties);
+        return bctx->backend->table.get_available_properties(table, propertiesp);
 }
 
 int mapistore_backend_pocop_set_table_columns(struct backend_context *bctx, void *table,
@@ -613,9 +613,9 @@ int mapistore_backend_pocop_get_table_row(struct backend_context *bctx, void *ta
         return bctx->backend->table.get_row(table, query_type, rowid, data);
 }
 
-int mapistore_backend_pocop_get_available_properties(struct backend_context *bctx, void *object, struct SPropTagArray *properties)
+int mapistore_backend_pocop_get_available_properties(struct backend_context *bctx, void *object, struct SPropTagArray **propertiesp)
 {
-        return bctx->backend->properties.get_available_properties(object, properties);
+        return bctx->backend->properties.get_available_properties(object, propertiesp);
 }
 
 int mapistore_backend_pocop_get_properties(struct backend_context *bctx,

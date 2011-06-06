@@ -666,7 +666,7 @@ _PUBLIC_ int mapistore_get_table_property(struct mapistore_context *mstore_ctx,
 	return ret;
 }
 
-_PUBLIC_ int mapistore_get_available_table_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, uint8_t table_type, struct SPropTagArray *properties)
+_PUBLIC_ int mapistore_get_available_table_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, uint8_t table_type, struct SPropTagArray **propertiesp)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -679,7 +679,7 @@ _PUBLIC_ int mapistore_get_available_table_properties(struct mapistore_context *
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend readdir */
-	ret = mapistore_backend_get_available_table_properties(backend_ctx, table_type, properties);
+	ret = mapistore_backend_get_available_table_properties(backend_ctx, table_type, propertiesp);
 
 	return ret;
 }
@@ -1274,7 +1274,7 @@ _PUBLIC_ int mapistore_pocop_open_embedded_message(struct mapistore_context *mst
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_get_available_table_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, struct SPropTagArray *properties)
+_PUBLIC_ int mapistore_pocop_get_available_table_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, struct SPropTagArray **propertiesp)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1287,7 +1287,7 @@ _PUBLIC_ int mapistore_pocop_get_available_table_properties(struct mapistore_con
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_get_available_table_properties(backend_ctx, table, properties);
+	ret = mapistore_backend_pocop_get_available_table_properties(backend_ctx, table, propertiesp);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
@@ -1365,7 +1365,7 @@ _PUBLIC_ int mapistore_pocop_get_table_row(struct mapistore_context *mstore_ctx,
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_get_available_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, struct SPropTagArray *properties)
+_PUBLIC_ int mapistore_pocop_get_available_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, struct SPropTagArray **propertiesp)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1378,7 +1378,7 @@ _PUBLIC_ int mapistore_pocop_get_available_properties(struct mapistore_context *
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_get_available_properties(backend_ctx, object, properties);
+	ret = mapistore_backend_pocop_get_available_properties(backend_ctx, object, propertiesp);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

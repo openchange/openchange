@@ -111,7 +111,7 @@ struct mapistore_backend {
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
 	int (*op_get_table_property)(void *, uint64_t, uint8_t, enum table_query_type, uint32_t, uint32_t, void **);
-        int (*op_get_available_table_properties)(void *, uint8_t, struct SPropTagArray *);
+        int (*op_get_available_table_properties)(void *, uint8_t, struct SPropTagArray **);
 	/* message semantics */
 	int (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
 	int (*op_createmessage)(void *, uint64_t, uint64_t, uint8_t);
@@ -157,7 +157,7 @@ struct mapistore_backend {
 
         /** oxctabl operations */
         struct {
-                int (*get_available_properties)(void *, struct SPropTagArray *);
+                int (*get_available_properties)(void *, struct SPropTagArray **);
                 int (*set_columns)(void *, uint16_t, enum MAPITAGS *);
                 int (*set_restrictions)(void *, struct mapi_SRestriction *, uint8_t *);
                 int (*set_sort_order)(void *, struct SSortOrderSet *, uint8_t *);
@@ -166,7 +166,7 @@ struct mapistore_backend {
 
         /** oxcprpt operations */
         struct {
-                int (*get_available_properties)(void *, struct SPropTagArray *);
+                int (*get_available_properties)(void *, struct SPropTagArray **);
                 int (*get_properties)(void *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
                 int (*set_properties)(void *, struct SRow *);
         } properties;
@@ -230,7 +230,7 @@ int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, ui
 int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 int mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint8_t, uint32_t *);
 int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, enum table_query_type, uint64_t, uint32_t, uint32_t, void **);
-int mapistore_get_available_table_properties(struct mapistore_context *, uint32_t, uint8_t, struct SPropTagArray *);
+int mapistore_get_available_table_properties(struct mapistore_context *, uint32_t, uint8_t, struct SPropTagArray **);
 int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
 int mapistore_createmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 int mapistore_savechangesmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
@@ -254,13 +254,13 @@ int mapistore_pocop_get_attachment(struct mapistore_context *, uint32_t, uint64_
 int mapistore_pocop_create_attachment(struct mapistore_context *, uint32_t, uint64_t, uint32_t *, void **);
 int mapistore_pocop_open_embedded_message(struct mapistore_context *, uint32_t, void *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *msg, void **);
 
-int mapistore_pocop_get_available_table_properties(struct mapistore_context *, uint32_t, void *, struct SPropTagArray *);
+int mapistore_pocop_get_available_table_properties(struct mapistore_context *, uint32_t, void *, struct SPropTagArray **);
 int mapistore_pocop_set_table_columns(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *);
 int mapistore_pocop_set_restrictions(struct mapistore_context *, uint32_t, void *, struct mapi_SRestriction *, uint8_t *);
 int mapistore_pocop_set_sort_order(struct mapistore_context *, uint32_t, void *, struct SSortOrderSet *, uint8_t *);
 int mapistore_pocop_get_table_row(struct mapistore_context *, uint32_t, void *, enum table_query_type, uint32_t, struct mapistore_property_data *);
 
-int mapistore_pocop_get_available_properties(struct mapistore_context *, uint32_t, void *, struct SPropTagArray *);
+int mapistore_pocop_get_available_properties(struct mapistore_context *, uint32_t, void *, struct SPropTagArray **);
 int mapistore_pocop_get_properties(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 int mapistore_pocop_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
 

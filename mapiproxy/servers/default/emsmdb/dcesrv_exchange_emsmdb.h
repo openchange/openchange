@@ -227,6 +227,10 @@ bool			emsmdbp_verify_user(struct dcesrv_call_state *, struct emsmdbp_context *)
 bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context *, const char *, struct ldb_message **);
 enum MAPISTATUS		emsmdbp_resolve_recipient(TALLOC_CTX *, struct emsmdbp_context *, char *, struct mapi_SPropTagArray *, struct RecipientRow *);
 
+const struct GUID *const	MagicGUIDp;
+int				emsmdbp_guid_to_replid(struct emsmdbp_context *, const struct GUID *, uint16_t *);
+int				emsmdbp_replid_to_guid(struct emsmdbp_context *, const uint16_t, struct GUID *);
+
 /* definitions from emsmdbp_object.c */
 const char	      *emsmdbp_getstr_type(struct emsmdbp_object *);
 bool		      emsmdbp_is_mapistore(struct emsmdbp_object *);

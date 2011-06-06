@@ -29,6 +29,17 @@
 #include "dcesrv_exchange_emsmdb.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 
+#include <ldap_ndr.h>
+
+static struct GUID MagicGUID = {
+	.time_low = 0xbeefface,
+	.time_mid = 0xcafe,
+	.time_hi_and_version = 0xbabe,
+	.clock_seq = { 0x12, 0x34 },
+	.node = { 0xde, 0xad, 0xfa, 0xce, 0xca, 0xfe }
+};
+const struct GUID *const MagicGUIDp = &MagicGUID;
+
 /**
    \details Release the MAPISTORE context used by EMSMDB provider
    context
@@ -443,4 +454,52 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 	}
 
 	return MAPI_E_SUCCESS;
+}
+
+_PUBLIC_ int emsmdbp_guid_to_replid(struct emsmdbp_context *emsmdbp_ctx, const struct GUID *guidP, uint16_t *replidP)
+{
+	uint16_t	replid;
+	struct GUID	guid;
+
+	if (GUID_equal(guidP, MagicGUIDp)) {
+		*replidP = 2;
+		return MAPI_E_SUCCESS;
+	}
+
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &replid, &guid);
+	if (GUID_equal(guidP, &guid)) {
+		*replidP = replid;
+		return MAPI_E_SUCCESS;
+	}
+
+	if (mapistore_replica_mapping_guid_to_replid(emsmdbp_ctx->mstore_ctx, guidP, &replid) == MAPISTORE_SUCCESS) {
+		*replidP = replid;
+		return MAPI_E_SUCCESS;
+	}
+
+	return MAPI_E_NOT_FOUND;
+}
+
+_PUBLIC_ int emsmdbp_replid_to_guid(struct emsmdbp_context *emsmdbp_ctx, const uint16_t replid, struct GUID *guidP)
+{
+	uint16_t	db_replid;
+	struct GUID	guid;
+
+	if (replid == 2) {
+		*guidP = MagicGUID;
+		return MAPI_E_SUCCESS;
+	}
+
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &db_replid, &guid);
+	if (replid == db_replid) {
+		*guidP = guid;
+		return MAPI_E_SUCCESS;
+	}
+
+	if (mapistore_replica_mapping_replid_to_guid(emsmdbp_ctx->mstore_ctx, replid, &guid) == MAPISTORE_SUCCESS) {
+		*guidP = guid;
+		return MAPI_E_SUCCESS;
+	}
+
+	return MAPI_E_NOT_FOUND;
 }

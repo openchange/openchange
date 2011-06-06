@@ -1544,61 +1544,6 @@ _PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
         }
 }
 
-static void emsmdbp_ndr_push_simple_data(struct ndr_push *ndr, uint16_t data_type, const void *value)
-{
-	uint32_t		string_len;
-
-	switch (data_type) {
-	case PT_I2:
-		ndr_push_uint16(ndr, NDR_SCALARS, *(uint16_t *) value);
-		break;
-	case PT_LONG:
-	case PT_ERROR:
-	case PT_OBJECT:
-		ndr_push_uint32(ndr, NDR_SCALARS, *(uint32_t *) value);
-		break;
-	case PT_DOUBLE:
-		ndr_push_double(ndr, NDR_SCALARS, *(double *) value);
-		break;
-	case PT_I8:
-		ndr_push_dlong(ndr, NDR_SCALARS, *(uint64_t *) value);
-		break;
-	case PT_BOOLEAN:
-		if (*(uint8_t *) value) {
-			ndr_push_uint16(ndr, NDR_SCALARS, 1);
-		}
-		else {
-			ndr_push_uint16(ndr, NDR_SCALARS, 0);
-		}
-		break;
-	case PT_STRING8:
-		string_len = strlen(value) + 1;
-		ndr_push_uint32(ndr, NDR_SCALARS, string_len);
-		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_STR_ASCII);
-		ndr_push_string(ndr, NDR_SCALARS, (char *) value);
-		break;
-	case PT_UNICODE:
-		string_len = strlen_m_ext((char *) value, CH_UTF8, CH_UTF16LE) * 2 + 2;
-		ndr_push_uint32(ndr, NDR_SCALARS, string_len);
-		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-		ndr_push_string(ndr, NDR_SCALARS, (char *) value);
-		break;
-	case PT_SVREID:
-	case PT_BINARY:
-		ndr_push_Binary_r(ndr, NDR_BUFFERS, (struct Binary_r *) value);
-		break;
-	case PT_CLSID:
-		ndr_push_GUID(ndr, NDR_SCALARS, (struct GUID *) value);
-		break;
-	case PT_SYSTIME:
-		ndr_push_FILETIME(ndr, NDR_SCALARS, (struct FILETIME *) value);
-		break;
-	default:
-		DEBUG(5, ("%s: unsupported property type: %.4x\n", __FUNCTION__, data_type));
-		abort();
-	}
-}
-
 _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *mem_ctx, enum MAPITAGS prop_tag, void *value)
 {
 	uint16_t prop_type;

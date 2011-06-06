@@ -818,7 +818,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
                                 memset(properties, 0, sizeof(struct mapistore_property_data) * table->prop_count);
                                 retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, table->contextID,
                                                                        object->poc_backend_object,
-                                                                       MAPISTORE_PREFILTERED_QUERY,
+                                                                       MAPISTORE_LIVEFILTERED_QUERY,
                                                                        table->numerator,
                                                                        properties);
                                 if (retval) {

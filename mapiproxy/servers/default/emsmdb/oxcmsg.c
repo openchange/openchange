@@ -814,38 +814,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAttachmentTable(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	switch (emsmdbp_is_mapistore(message_object)) {
-	case false:
-		/* system/special folder */
-		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
-		break;
-	case true:
-                messageID = message_object->object.message->messageID;
-                contextID = message_object->object.message->contextID;
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &table_rec);
+	handles[mapi_repl->handle_idx] = table_rec->handle;
 
-                retval = mapistore_pocop_get_attachment_table(emsmdbp_ctx->mstore_ctx,
-                                                              contextID, messageID,
-                                                              &backend_attachment_table,
-                                                              &row_count);
-                if (retval) {
-                        mapi_repl->error_code = MAPI_E_NOT_FOUND;
-                }
-                else {
-                        retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &table_rec);
-                        handles[mapi_repl->handle_idx] = table_rec->handle;
-
-                        table_object = emsmdbp_object_table_init((TALLOC_CTX *)table_rec, emsmdbp_ctx, message_object);
-                        if (table_object) {
-                                retval = mapi_handles_set_private_data(table_rec, table_object);
-                                table_object->poc_api = true;
-                                table_object->poc_backend_object = backend_attachment_table;
-                                table_object->object.table->denominator = row_count;
-                                table_object->object.table->ulType = EMSMDBP_TABLE_ATTACHMENT_TYPE;
-                                table_object->object.table->contextID = contextID;
-                        }
-                }
-        }
-
+	table_object = emsmdbp_object_message_open_attachment_table(table_rec, emsmdbp_ctx, message_object);
+	if (!table_object) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+	mapi_handles_set_private_data(table_rec, table_object);
+	
  end:
 	*size += libmapiserver_RopGetAttachmentTable_size(mapi_repl);
 

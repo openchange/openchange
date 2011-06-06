@@ -959,6 +959,43 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 	return message_object;
 }
 
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *message_object)
+{
+	struct emsmdbp_object	*table_object;
+	void			*backend_attachment_table;
+	uint32_t		row_count, contextID;
+	int			retval;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+        if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) return NULL;
+
+	switch (emsmdbp_is_mapistore(message_object)) {
+	case false:
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		break;
+	case true:
+                contextID = message_object->object.message->contextID;
+                retval = mapistore_pocop_get_attachment_table(emsmdbp_ctx->mstore_ctx, contextID,
+							      message_object->object.message->messageID,
+                                                              &backend_attachment_table,
+                                                              &row_count);
+                if (retval) return NULL;
+
+		table_object = emsmdbp_object_table_init(mem_ctx, emsmdbp_ctx, message_object);
+		if (table_object) {
+			table_object->poc_api = true;
+			table_object->poc_backend_object = backend_attachment_table;
+			table_object->object.table->denominator = row_count;
+			table_object->object.table->ulType = EMSMDBP_TABLE_ATTACHMENT_TYPE;
+			table_object->object.table->contextID = contextID;
+                }
+        }
+
+	return table_object;
+}
+
 /**
    \details Initialize a stream object
 

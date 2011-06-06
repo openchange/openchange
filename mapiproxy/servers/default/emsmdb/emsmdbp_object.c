@@ -615,7 +615,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 {
 	struct emsmdbp_object	*object;
 	bool			mapistore = false;
-	int			ret;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;

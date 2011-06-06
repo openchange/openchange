@@ -109,6 +109,7 @@ struct emsmdbp_object_table {
 	uint64_t			folderID;
 	uint8_t				ulType;
 	uint32_t			contextID;
+	bool				restricted;
 	bool				IsSystemTable;
 	uint16_t			prop_count;
 	enum MAPITAGS			*properties;

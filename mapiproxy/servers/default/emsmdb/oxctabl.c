@@ -317,6 +317,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	table = object->object.table;
 	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
 
+	table->restricted = true;
 	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto end;
@@ -485,7 +486,13 @@ finish:
 	} else {
 		/* useless code for the moment */
 		mapi_repl->error_code = MAPI_E_SUCCESS;
-		mapi_repl->u.mapi_QueryRows.Origin = 2;
+		
+		if (table->restricted) {
+			mapi_repl->u.mapi_QueryRows.Origin = 0;
+		}
+		else {
+			mapi_repl->u.mapi_QueryRows.Origin = 2;
+		}
 		mapi_repl->u.mapi_QueryRows.RowCount = 0;
 		mapi_repl->u.mapi_QueryRows.RowData.length = 0;
 		mapi_repl->u.mapi_QueryRows.RowData.data = NULL;

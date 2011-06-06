@@ -607,8 +607,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS			retval;
 	struct mapi_handles		*parent = NULL;
 	void				*private_data;
-	struct emsmdbp_object		*object = NULL;
-	struct emsmdbp_object_stream	*stream;
+	struct emsmdbp_object		*object;
 	uint32_t			handle;
 	struct WriteStream_req		*request;
 
@@ -645,8 +644,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopWriteStream(TALLOC_CTX *mem_ctx,
 
 	request = &mapi_req->u.mapi_WriteStream;
 	if (request->data.length > 0) {
-		stream = object->object.stream;
-                emsmdbp_stream_write_buffer(stream, &stream->stream, request->data);
+                emsmdbp_stream_write_buffer(object->object.stream, &object->object.stream->stream, request->data);
 		mapi_repl->u.mapi_WriteStream.WrittenSize = request->data.length;
 	}
 
@@ -793,9 +791,9 @@ end:
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
-   \param mapi_req pointer to the SeekStream EcDoRpc_MAPI_REQ
+   \param mapi_req pointer to the WriteStream EcDoRpc_MAPI_REQ
    structure
-   \param mapi_repl pointer to the SeekStream EcDoRpc_MAPI_REPL
+   \param mapi_repl pointer to the WriteStream EcDoRpc_MAPI_REPL
    structure
    \param handles pointer to the MAPI handles array
    \param size pointer to the mapi response size to update

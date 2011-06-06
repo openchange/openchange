@@ -227,6 +227,7 @@ union emsmdbp_objects {
 struct emsmdbp_object {
 	enum emsmdbp_object_type	type;
 	union emsmdbp_objects		object;
+	struct emsmdbp_context		*emsmdbp_ctx;
 	struct mapistore_context	*mstore_ctx;
 	void				*private_data;
         bool                            poc_api;

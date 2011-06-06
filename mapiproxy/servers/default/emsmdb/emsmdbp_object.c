@@ -349,6 +349,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
 	talloc_set_destructor((void *)object, (int (*)(void *))emsmdbp_object_destructor);
 
 	object->type = EMSMDBP_OBJECT_UNDEF;
+	object->emsmdbp_ctx = emsmdbp_ctx;
 	object->mstore_ctx = emsmdbp_ctx->mstore_ctx;
 	object->object.mailbox = NULL;
 	object->object.folder = NULL;

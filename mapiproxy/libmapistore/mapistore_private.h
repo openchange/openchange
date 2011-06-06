@@ -132,6 +132,8 @@ struct indexing_context_list {
 #define	MAPISTORE_DB_INDEXING		"indexing.tdb"
 #define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
 
+#define	MAPISTORE_DB_REPLICA_MAPPING	"replica_mapping.tdb"
+
 /**
    The database name where in use ID mappings are stored
  */

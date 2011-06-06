@@ -550,6 +550,7 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	struct emsabp_context		*emsabp_ctx = NULL;
 	uint32_t			MId;
 	int				i;
+	struct SPropTagArray		*pPropTags;
 
 	DEBUG(3, ("exchange_nsp: NspiGetProps (0x9)\n"));
 
@@ -575,6 +576,22 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	r->out.ppRows = talloc_array(mem_ctx, struct SRow *, 2);
 	r->out.ppRows[0] = talloc_zero(r->out.ppRows, struct SRow);
 	r->out.ppRows[0]->ulAdrEntryPad = 0;
+
+	pPropTags = r->in.pPropTags;
+	if (!pPropTags) {
+		pPropTags = talloc_zero(r, struct SPropTagArray);
+		pPropTags->cValues = 8;
+		pPropTags->aulPropTag = talloc_array(pPropTags, enum MAPITAGS, pPropTags->cValues + 1);
+		pPropTags->aulPropTag[0] = PR_ADDRTYPE_UNICODE;
+		pPropTags->aulPropTag[1] = PR_SMTP_ADDRESS_UNICODE;
+		pPropTags->aulPropTag[2] = PR_OBJECT_TYPE;
+		pPropTags->aulPropTag[3] = PR_DISPLAY_TYPE;
+		pPropTags->aulPropTag[4] = PR_ENTRYID;
+		pPropTags->aulPropTag[5] = PR_ORIGINAL_ENTRYID;
+		pPropTags->aulPropTag[6] = PR_SEARCH_KEY;
+		pPropTags->aulPropTag[7] = PR_INSTANCE_KEY;
+		pPropTags->aulPropTag[pPropTags->cValues] = 0;
+	}
 
 	retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, r->out.ppRows[0], MId, r->in.dwFlags, r->in.pPropTags);
 	if (retval != MAPI_E_SUCCESS) {

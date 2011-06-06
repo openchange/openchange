@@ -142,6 +142,7 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
 		if (!backend_ctx) {
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
+		(void) talloc_reference(backend_ctx, conn_info);
 
 		backend_list = talloc_zero((TALLOC_CTX *) mstore_ctx, struct backend_context_list);
 		talloc_steal(backend_list, backend_ctx);

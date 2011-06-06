@@ -57,6 +57,8 @@ const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 		return "stream";
 	case EMSMDBP_OBJECT_SUBSCRIPTION:
 		return "subscription";
+	case EMSMDBP_OBJECT_SYNCCONTEXT:
+		return "synccontext";
 	default:
 		return "unknown";
 	}
@@ -313,6 +315,8 @@ static int emsmdbp_object_destructor(void *data)
                 }
 		ret = mapistore_del_context(object->mstore_ctx, object->object.folder->contextID);
 		DEBUG(4, ("[%s:%d] mapistore subscription context retval = %d\n", __FUNCTION__, __LINE__, ret));
+		break;
+        case EMSMDBP_OBJECT_SYNCCONTEXT:
 		break;
 	default:
 		DEBUG(4, ("[%s:%d] destroying unhandled object type: %d\n", __FUNCTION__, __LINE__, object->type));
@@ -1671,6 +1675,61 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmd
 	DEBUG(5, ("[%s]: found no data for tag %.8x\n", __FUNCTION__, prop_tag));
 
 	return NULL;
+}
+
+/**
+   \details Initialize a synccontext object
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider cotnext
+   \param whole_store whether the subscription applies to the specified change on the entire store or stricly on the specified folder/message
+   \param folderID the folder identifier
+   \param messageID the message identifier
+   \param parent emsmdbp object of the parent
+ */
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_synccontext_init(TALLOC_CTX *mem_ctx,
+								struct emsmdbp_context *emsmdbp_ctx,
+								struct emsmdbp_object *parent)
+{
+	struct emsmdbp_object	*synccontext_object;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+	if (!parent) return NULL;
+	if (parent->type != EMSMDBP_OBJECT_FOLDER) return NULL;
+
+	synccontext_object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx);
+	if (!synccontext_object) return NULL;
+
+	synccontext_object->object.synccontext = talloc_zero(synccontext_object, struct emsmdbp_object_synccontext);
+	if (!synccontext_object->object.synccontext) {
+		talloc_free(synccontext_object);
+		return NULL;
+	}
+
+	synccontext_object->type = EMSMDBP_OBJECT_SYNCCONTEXT;
+
+	synccontext_object->object.synccontext->folder = parent;
+	(void) talloc_reference(synccontext_object->object.synccontext, parent);
+        synccontext_object->object.synccontext->state_property = 0;
+        synccontext_object->object.synccontext->state_stream.buffer.length = 0;
+        synccontext_object->object.synccontext->state_stream.buffer.data = talloc_zero(synccontext_object->object.synccontext, uint8_t);
+        synccontext_object->object.synccontext->stream.buffer.length = 0;
+        synccontext_object->object.synccontext->stream.buffer.data = NULL;
+
+	synccontext_object->object.synccontext->cnset_seen = talloc_zero(emsmdbp_ctx, struct idset);
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &synccontext_object->object.synccontext->cnset_seen->guid);
+	synccontext_object->object.synccontext->cnset_seen->ranges = talloc_zero(synccontext_object->object.synccontext->cnset_seen, struct globset_range);
+	synccontext_object->object.synccontext->cnset_seen->range_count = 1;
+	synccontext_object->object.synccontext->cnset_seen->ranges->next = NULL;
+	synccontext_object->object.synccontext->cnset_seen->ranges->prev = synccontext_object->object.synccontext->cnset_seen->ranges;
+	synccontext_object->object.synccontext->cnset_seen->ranges->low = 0xffffffffffffffff;
+	synccontext_object->object.synccontext->cnset_seen->ranges->high = 0x0;
+
+        /* synccontext_object->object.synccontext->property_tags.cValues = 0; */
+        /* synccontext_object->object.synccontext->property_tags.aulPropTag = NULL; */
+
+	return synccontext_object;
 }
 
 /**

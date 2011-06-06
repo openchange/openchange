@@ -69,6 +69,37 @@ struct emsmdbp_stream {
 	DATA_BLOB		buffer;
 };
 
+struct emsmdbp_syncconfigure_request {
+	bool contents_mode;
+
+	bool unicode;
+	bool use_cpid;
+	bool recover_mode;
+	bool force_unicode;
+
+	bool no_deletions;
+	bool no_soft_deletions;
+	bool no_foreign_identifiers;
+
+	bool request_eid;
+
+	/* contents only */
+	bool partial_item;
+	bool fai;
+	bool normal;
+	bool ignored_specified_on_fai;
+	bool best_body;
+	bool ignore_no_longer_in_scope;
+	bool read_state;
+	bool progress;
+
+	bool request_message_size;
+	bool request_cn;
+	bool order_by_delivery_time;
+
+	DATA_BLOB restriction;
+};
+
 enum emsmdbp_object_type {
 	EMSMDBP_OBJECT_UNDEF		= 0x0,
 	EMSMDBP_OBJECT_MAILBOX		= 0x1,
@@ -78,7 +109,8 @@ enum emsmdbp_object_type {
 	EMSMDBP_OBJECT_STREAM		= 0x5,
 	EMSMDBP_OBJECT_ATTACHMENT	= 0x6,
         EMSMDBP_OBJECT_SUBSCRIPTION     = 0x7,
-	EMSMDBP_OBJECT_FTCONTEXT	= 0x8 /* Fast Transfer */
+	EMSMDBP_OBJECT_FTCONTEXT	= 0x8, /* Fast Transfer */
+	EMSMDBP_OBJECT_SYNCCONTEXT	= 0x9
 };
 
 struct emsmdbp_object_mailbox {
@@ -152,6 +184,27 @@ struct emsmdbp_object_subscription {
 	bool				mapistore;
 };
 
+struct emsmdbp_object_synccontext {
+	struct emsmdbp_object	*folder; /* source folder */
+
+	bool			is_collector;
+
+	struct emsmdbp_syncconfigure_request	request;
+	struct SPropTagArray	properties;
+
+	/* idsets */
+	enum StateProperty	state_property;
+	struct emsmdbp_stream	state_stream;
+	struct idset		*idset_given;
+	struct idset		*cnset_seen;
+
+	struct emsmdbp_stream	stream;
+	uint16_t		steps;
+	uint16_t		total_steps;
+	uint32_t		*cutmarks;
+	uint32_t		next_cutmark_ptr;
+};
+
 struct emsmdbp_object_ftcontext {
 	struct emsmdbp_stream	stream;
 	uint16_t		steps;
@@ -166,6 +219,7 @@ union emsmdbp_objects {
 	struct emsmdbp_object_stream	*stream;
 	struct emsmdbp_object_attachment *attachment;
 	struct emsmdbp_object_subscription *subscription;
+	struct emsmdbp_object_synccontext *synccontext;
 	struct emsmdbp_object_ftcontext *ftcontext;
 };
 
@@ -256,6 +310,7 @@ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmd
 struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);
 void **emsmdbp_object_get_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray *, enum MAPISTATUS **);
+struct emsmdbp_object *emsmdbp_object_synccontext_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_ftcontext_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *, enum MAPITAGS, void *value);
 struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *, enum MAPITAGS);

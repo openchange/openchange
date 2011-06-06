@@ -642,6 +642,77 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	return object;
 }
 
+_PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, struct SPropTagArray **propertiesp)
+{
+	int retval;
+	struct emsmdbp_object_table *table;
+	struct SPropTagArray *properties;
+
+	if (!table_object->type == EMSMDBP_OBJECT_TABLE)
+		return MAPISTORE_ERROR;
+
+	table = table_object->object.table;
+	if (table->mapistore) {
+		if (table_object->poc_api) {
+			retval = mapistore_pocop_get_available_table_properties(emsmdbp_ctx->mstore_ctx, table->contextID, table_object->poc_backend_object, propertiesp);
+		}
+		else {
+			retval = mapistore_get_available_table_properties(emsmdbp_ctx->mstore_ctx, table->contextID, table->ulType, propertiesp);
+		}
+		if (retval == MAPISTORE_SUCCESS) {
+			talloc_steal(mem_ctx, *propertiesp);
+			talloc_steal(mem_ctx, (*propertiesp)->aulPropTag);
+		}
+	}
+	else {
+		properties = talloc_zero(mem_ctx, struct SPropTagArray);
+		properties->aulPropTag = talloc_zero(properties, enum MAPITAGS);
+		/* TODO: this list might not be complete */
+		SPropTagArray_add(properties, properties, PR_FID);
+		SPropTagArray_add(properties, properties, PR_PARENT_FID);
+		SPropTagArray_add(properties, properties, PR_DISPLAY_NAME_UNICODE);
+		SPropTagArray_add(properties, properties, PR_COMMENT_UNICODE);
+		SPropTagArray_add(properties, properties, PR_ACCESS);
+		SPropTagArray_add(properties, properties, PR_CREATION_TIME);
+		SPropTagArray_add(properties, properties, PR_NTSD_MODIFICATION_TIME);
+		SPropTagArray_add(properties, properties, PR_LAST_MODIFICATION_TIME);
+		SPropTagArray_add(properties, properties, PR_ADDITIONAL_REN_ENTRYIDS);
+		SPropTagArray_add(properties, properties, PR_ADDITIONAL_REN_ENTRYIDS_EX);
+		SPropTagArray_add(properties, properties, PR_CREATOR_SID);
+		SPropTagArray_add(properties, properties, PR_LAST_MODIFIER_SID);
+		SPropTagArray_add(properties, properties, PR_ATTR_HIDDEN);
+		SPropTagArray_add(properties, properties, PR_ATTR_SYSTEM);
+		SPropTagArray_add(properties, properties, PR_ATTR_READONLY);
+		SPropTagArray_add(properties, properties, PR_EXTENDED_ACL_DATA);
+		SPropTagArray_add(properties, properties, PR_CONTAINER_CLASS_UNICODE);
+		SPropTagArray_add(properties, properties, PR_MESSAGE_CLASS_UNICODE);
+		SPropTagArray_add(properties, properties, PR_RIGHTS);
+		SPropTagArray_add(properties, properties, PR_CONTENT_COUNT);
+		SPropTagArray_add(properties, properties, PR_ASSOC_CONTENT_COUNT);
+		SPropTagArray_add(properties, properties, PR_SUBFOLDERS);
+		SPropTagArray_add(properties, properties, PR_MAPPING_SIGNATURE);
+		SPropTagArray_add(properties, properties, PR_USER_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_MAILBOX_OWNER_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_MAILBOX_OWNER_NAME_UNICODE);
+		SPropTagArray_add(properties, properties, PR_IPM_APPOINTMENT_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_IPM_CONTACT_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_IPM_JOURNAL_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_IPM_NOTE_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_IPM_TASK_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_IPM_DRAFTS_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_REMINDERS_ONLINE_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_IPM_PUBLIC_FOLDERS_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_FOLDER_XVIEWINFO_E);
+		SPropTagArray_add(properties, properties, PR_FOLDER_VIEWLIST);
+		SPropTagArray_add(properties, properties, PR_FREEBUSY_ENTRYIDS);
+		*propertiesp = properties;
+
+		retval = MAPISTORE_SUCCESS;
+	}
+
+	return retval;
+}
+
 _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, uint32_t row_id, uint32_t **retvalsp)
 {
         void **data_pointers;

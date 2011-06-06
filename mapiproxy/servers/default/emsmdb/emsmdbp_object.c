@@ -1421,25 +1421,29 @@ static void emsmdbp_object_get_properties_mapistore(TALLOC_CTX *mem_ctx, struct 
                 }
                 else {
 			aRow = talloc_zero(NULL, struct SRow);
-                        mapistore_getprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, type, properties, aRow);
-			talloc_steal(data_pointers, aRow->lpProps);
-                        for (i = 0; i < properties->cValues; i++) {
-				propType = aRow->lpProps[i].ulPropTag & 0xffff;
-				if (propType == PT_ERROR) {
-					retvals[i] = aRow->lpProps[i].value.err;
-				}
-				else {
-					if (((propType == PT_STRING8
-					      || propType == PT_UNICODE)
-					     && aRow->lpProps[i].value.lpszW == NULL)
-					    || (propType == PT_BINARY
-						&& aRow->lpProps[i].value.bin.lpb == NULL)) {
-						retvals[i] = MAPI_E_NOT_FOUND;
+                        if (mapistore_getprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, type, properties, aRow) == MAPISTORE_SUCCESS) {
+				talloc_steal(data_pointers, aRow->lpProps);
+				for (i = 0; i < properties->cValues; i++) {
+					propType = aRow->lpProps[i].ulPropTag & 0xffff;
+					if (propType == PT_ERROR) {
+						retvals[i] = aRow->lpProps[i].value.err;
 					}
 					else {
-						data_pointers[i] = (void *) get_SPropValue_data(&aRow->lpProps[i]);
+						if (((propType == PT_STRING8
+						      || propType == PT_UNICODE)
+						     && aRow->lpProps[i].value.lpszW == NULL)
+						    || (propType == PT_BINARY
+							&& aRow->lpProps[i].value.bin.lpb == NULL)) {
+							retvals[i] = MAPI_E_NOT_FOUND;
+						}
+						else {
+							data_pointers[i] = (void *) get_SPropValue_data(&aRow->lpProps[i]);
+						}
 					}
 				}
+			}
+			else {
+				*data_pointers = NULL;
 			}
 			talloc_free(aRow);
                 }

@@ -922,9 +922,10 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	return object;
 }
 
-_PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_object, uint64_t folderID, uint64_t messageID, struct mapistore_message *msgp)
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_object, uint64_t folderID, uint64_t messageID, struct mapistore_message **msgp)
 {
 	struct emsmdbp_object *folder_object, *message_object;
+	struct mapistore_message *msg;
 	bool mapistore;
 
 	if (!parent_object) return NULL;
@@ -946,9 +947,11 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 	case true:
 		/* mapistore implementation goes here */
 		message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, messageID, folder_object);
+		msg = talloc_zero(message_object, struct mapistore_message);
 		if (mapistore_openmessage(emsmdbp_ctx->mstore_ctx, folder_object->object.folder->contextID,
-					  folderID, messageID, msgp) == 0) {
+					  folderID, messageID, msg) == 0) {
 			(void) talloc_reference(message_object, folder_object);
+			*msgp = msg;
 		}
 		else {
 			talloc_free(message_object);

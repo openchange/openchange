@@ -63,7 +63,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*parent_object_handle = NULL;
 	struct emsmdbp_object		*object = NULL;
 	struct emsmdbp_object		*parent_object = NULL;
-	struct mapistore_message	msg;
+	struct mapistore_message	*msg;
 	void				*data;
 	uint64_t			folderID;
 	uint64_t			messageID = 0;
@@ -116,8 +116,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	folderID = request->FolderId;
 
 	/* Initialize Message object */
-	memset (&msg, 0, sizeof (msg));
-
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &object_handle);
 	object = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, parent_object, folderID, messageID, &msg);
@@ -131,7 +129,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	/* Build the OpenMessage reply */
 	response->HasNamedProperties = false;
 				
-	subject_prefix = (char *) find_SPropValue_data(msg.properties, PR_SUBJECT_PREFIX_UNICODE);
+	subject_prefix = (char *) find_SPropValue_data(msg->properties, PR_SUBJECT_PREFIX_UNICODE);
 	if (subject_prefix && strlen(subject_prefix) > 0) {
 		response->SubjectPrefix.StringType = StringType_UNICODE;
 		response->SubjectPrefix.String.lpszW = talloc_strdup(mem_ctx, subject_prefix);
@@ -140,7 +138,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		response->SubjectPrefix.StringType = StringType_EMPTY;
 	}
 	
-	subject = (char *) find_SPropValue_data(msg.properties, PR_NORMALIZED_SUBJECT_UNICODE);
+	subject = (char *) find_SPropValue_data(msg->properties, PR_NORMALIZED_SUBJECT_UNICODE);
 	if (subject && strlen(subject) > 0) {
 		response->NormalizedSubject.StringType = StringType_UNICODE;
 		response->NormalizedSubject.String.lpszW = talloc_strdup(mem_ctx, subject);
@@ -152,17 +150,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x4, PR_DISPLAY_TYPE, PR_OBJECT_TYPE, PR_7BIT_DISPLAY_NAME_UNICODE, PR_SMTP_ADDRESS_UNICODE);
 	response->RecipientColumns.cValues = SPropTagArray->cValues;
 	response->RecipientColumns.aulPropTag = SPropTagArray->aulPropTag;
-	if (msg.recipients) {
-		response->RecipientCount = msg.recipients->cRows;
+	if (msg->recipients) {
+		response->RecipientCount = msg->recipients->cRows;
 		response->recipients = talloc_array(mem_ctx,
 						    struct OpenMessage_recipients,
-						    msg.recipients->cRows + 1);
-		for (i = 0; i < msg.recipients->cRows; i++) {
-			response->recipients[i].RecipClass = msg.recipients->aRow[i].lpProps[0].value.l;
+						    msg->recipients->cRows + 1);
+		for (i = 0; i < msg->recipients->cRows; i++) {
+			response->recipients[i].RecipClass = msg->recipients->aRow[i].lpProps[0].value.l;
 			response->recipients[i].codepage = CP_USASCII;
 			response->recipients[i].Reserved = 0;
 			emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx,
-						  (char *)msg.recipients->aRow[i].lpProps[1].value.lpszA,
+						  (char *)msg->recipients->aRow[i].lpProps[2].value.lpszA,
 						  &(response->RecipientColumns),
 						  &(response->recipients[i].RecipientRow));
 		}

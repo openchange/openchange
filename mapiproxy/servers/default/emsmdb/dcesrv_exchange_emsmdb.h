@@ -210,6 +210,8 @@ struct emsmdbp_object_ftcontext {
 	struct emsmdbp_stream	stream;
 	uint16_t		steps;
 	uint16_t		total_steps;
+	uint32_t		*cutmarks;
+	uint32_t		next_cutmark_ptr;
 };
 
 union emsmdbp_objects {

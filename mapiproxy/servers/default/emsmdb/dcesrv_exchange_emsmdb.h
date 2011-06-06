@@ -148,6 +148,7 @@ struct emsmdbp_object_table {
 	uint32_t			numerator;
 	uint32_t			denominator;
 	bool				mapistore;
+	bool				mapistore_root;
         struct mapistore_subscription_list   *subscription_list;
 };
 

@@ -642,13 +642,15 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->mapistore = false;
 	object->object.table->contextID = -1;
 	object->object.table->subscription_list = NULL;
+	object->object.table->mapistore_root = false;
 
 	mapistore = emsmdbp_is_mapistore(parent);
 	if (mapistore == true) {
 		object->object.table->mapistore = true;
+		if (parent->type == EMSMDBP_OBJECT_FOLDER) {
+			object->object.table->mapistore_root = parent->object.folder->mapistore_root;
+		}
 		object->object.table->contextID = parent->object.folder->contextID;		
-		ret = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, 
-						      parent->object.folder->contextID);
 	}
 
 	return object;

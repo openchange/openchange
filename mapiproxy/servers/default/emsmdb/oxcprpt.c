@@ -123,7 +123,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
                 }
         }
 
-        data_pointers = emsmdbp_object_get_properties(emsmdbp_ctx, object, properties, &retvals);
+        data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, object, properties, &retvals);
         if (data_pointers) {
 		for (i = 0; i < request->prop_count; i++) {
 			if (retvals[i] == MAPI_E_SUCCESS) {
@@ -446,7 +446,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 			properties.cValues = 1;
 			properties.aulPropTag = &request->PropertyTag;
 
-			data_pointers = emsmdbp_object_get_properties(emsmdbp_ctx, parent_object, &properties, &retvals);
+			data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, parent_object, &properties, &retvals);
 			if (data_pointers == NULL) {
 				mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 				talloc_free(object);

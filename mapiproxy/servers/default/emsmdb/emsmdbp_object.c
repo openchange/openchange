@@ -1183,7 +1183,7 @@ _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct
 	return retval;
 }
 
-static void emsmdbp_object_get_properties_systemspecialfolder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
+static void emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
 	enum MAPISTATUS			retval;
 	struct emsmdbp_object_folder	*folder;
@@ -1216,7 +1216,7 @@ static void emsmdbp_object_get_properties_systemspecialfolder(struct emsmdbp_con
         }
 }
 
-static void emsmdbp_object_get_properties_mailbox(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
+static void emsmdbp_object_get_properties_mailbox(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
 	uint32_t			i;
 	struct SBinary_short		*bin;
@@ -1261,7 +1261,7 @@ static void emsmdbp_object_get_properties_mailbox(struct emsmdbp_context *emsmdb
 	}
 }
 
-static void emsmdbp_object_get_properties_mapistore(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
+static void emsmdbp_object_get_properties_mapistore(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
 	uint32_t		contextID = -1;
 	uint64_t		fmid = 0;
@@ -1270,8 +1270,6 @@ static void emsmdbp_object_get_properties_mapistore(struct emsmdbp_context *emsm
 	int			i;
 	uint8_t			type;
 	uint16_t		propType;
-
-        DEBUG(5, ("%s\n", __PRETTY_FUNCTION__));
 
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FOLDER:
@@ -1356,16 +1354,16 @@ static void emsmdbp_object_get_properties_mapistore(struct emsmdbp_context *emsm
 	}
 }
 
-_PUBLIC_ void **emsmdbp_object_get_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, enum MAPISTATUS **retvalsp)
+_PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, enum MAPISTATUS **retvalsp)
 {
         void **data_pointers;
         enum MAPISTATUS *retvals;
 	bool mapistore;
 
-        data_pointers = talloc_array(object, void *, properties->cValues);
+        data_pointers = talloc_array(mem_ctx, void *, properties->cValues);
         memset(data_pointers, 0, sizeof(void *) * properties->cValues);
 
-        retvals = talloc_array(object, enum MAPISTATUS, properties->cValues);
+        retvals = talloc_array(mem_ctx, enum MAPISTATUS, properties->cValues);
         memset(retvals, 0, sizeof(enum MAPISTATUS) * properties->cValues);
 
 	/* Temporary hack: If this is a mapistore root container
@@ -1374,7 +1372,7 @@ _PUBLIC_ void **emsmdbp_object_get_properties(struct emsmdbp_context *emsmdbp_ct
 	 * dispatcher db, not mapistore */
 	if (object && object->type == EMSMDBP_OBJECT_FOLDER &&
 	    object->object.folder->mapistore_root == true) {
-		emsmdbp_object_get_properties_systemspecialfolder(emsmdbp_ctx, object, properties, data_pointers, retvals);
+		emsmdbp_object_get_properties_systemspecialfolder(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
 	} else {
 		mapistore = emsmdbp_is_mapistore(object);
 		/* Nasty hack */
@@ -1386,10 +1384,10 @@ _PUBLIC_ void **emsmdbp_object_get_properties(struct emsmdbp_context *emsmdbp_ct
 		case false:
 			switch (object->type) {
 			case EMSMDBP_OBJECT_MAILBOX:
-				emsmdbp_object_get_properties_mailbox(emsmdbp_ctx, object, properties, data_pointers, retvals);
+				emsmdbp_object_get_properties_mailbox(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
 				break;
 			case EMSMDBP_OBJECT_FOLDER:
-				emsmdbp_object_get_properties_systemspecialfolder(emsmdbp_ctx, object, properties, data_pointers, retvals);
+				emsmdbp_object_get_properties_systemspecialfolder(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
 				break;
 			default:
 				break;
@@ -1397,7 +1395,7 @@ _PUBLIC_ void **emsmdbp_object_get_properties(struct emsmdbp_context *emsmdbp_ct
 			break;
 		case true:
 			/* folder or messages handled by mapistore */
-			emsmdbp_object_get_properties_mapistore(emsmdbp_ctx, object, properties, data_pointers, retvals);
+			emsmdbp_object_get_properties_mapistore(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
 			break;
 		}
 	}
@@ -1424,7 +1422,6 @@ _PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
         void *data;
         uint32_t retval;
 
-        DEBUG(5, ("%s\n", __PRETTY_FUNCTION__));
         flagged = 0;
         for (i = 0; !flagged && i < properties->cValues; i++) {
                 if (retvals[i] != MAPI_E_SUCCESS || untyped_status[i] || !data_pointers[i]) {

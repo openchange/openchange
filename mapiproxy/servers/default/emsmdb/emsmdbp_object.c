@@ -1245,19 +1245,56 @@ static void emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ct
 	enum MAPISTATUS			retval;
 	struct emsmdbp_object_folder	*folder;
 	int				i;
-        uint32_t                        *msg_count;
-
-        DEBUG(5, ("%s\n", __PRETTY_FUNCTION__));
+        uint32_t                        *obj_count;
+	uint8_t				*has_subobj;
+	time_t				unix_time;
+	NTTIME				nt_time;
+	struct FILETIME			*ft;
 
 	folder = (struct emsmdbp_object_folder *) object->object.folder;
         for (i = 0; i < properties->cValues; i++) {
                 if (properties->aulPropTag[i] == PR_CONTENT_COUNT) {
-                        /* a hack to avoid fetching dynamic fields from openchange.tdb */
-                        msg_count = talloc_zero(data_pointers, uint32_t);
+                        /* a hack to avoid fetching dynamic fields from openchange.ldb */
+                        obj_count = talloc_zero(data_pointers, uint32_t);
                         retval = mapistore_get_message_count(emsmdbp_ctx->mstore_ctx, folder->contextID, folder->folderID,
-                                                             MAPISTORE_MESSAGE_TABLE, msg_count);
-                        data_pointers[i] = msg_count;
+                                                             MAPISTORE_MESSAGE_TABLE, obj_count);
+                        data_pointers[i] = obj_count;
                 }
+                else if (properties->aulPropTag[i] == PR_ASSOC_CONTENT_COUNT) {
+                        obj_count = talloc_zero(data_pointers, uint32_t);
+                        retval = mapistore_get_message_count(emsmdbp_ctx->mstore_ctx, folder->contextID, folder->folderID,
+                                                             MAPISTORE_FAI_TABLE, obj_count);
+                        data_pointers[i] = obj_count;
+                }
+                else if (properties->aulPropTag[i] == PR_FOLDER_CHILD_COUNT) {
+                        obj_count = talloc_zero(data_pointers, uint32_t);
+                        retval = mapistore_get_folder_count(emsmdbp_ctx->mstore_ctx, folder->contextID, folder->folderID, obj_count);
+                        data_pointers[i] = obj_count;
+                }
+		else if (properties->aulPropTag[i] == PR_SUBFOLDERS) {
+			obj_count = talloc_zero(NULL, uint32_t);
+			retval = mapistore_get_folder_count(emsmdbp_ctx->mstore_ctx, folder->contextID, folder->folderID, obj_count);
+			has_subobj = talloc_zero(data_pointers, uint8_t);
+			*has_subobj = (*obj_count > 0) ? 1 : 0;
+			data_pointers[i] = has_subobj;
+			talloc_free(obj_count);
+		}
+		else if (properties->aulPropTag[i] == PR_CONTENT_UNREAD || properties->aulPropTag[i] == PR_DELETED_COUNT_TOTAL) {
+			/* TODO: temporary hack */
+			obj_count = talloc_zero(NULL, uint32_t);
+			data_pointers[i] = obj_count;
+			retval = MAPI_E_SUCCESS;
+		}
+		else if (properties->aulPropTag[i] == PR_LOCAL_COMMIT_TIME_MAX) {
+			/* TODO: temporary hack */
+			unix_time = time(NULL) & 0xffffff00;
+			unix_to_nt_time(&nt_time, unix_time);
+			ft = talloc_zero(data_pointers, struct FILETIME);
+			ft->dwLowDateTime = (nt_time & 0xffffffff);
+			ft->dwHighDateTime = nt_time >> 32;
+			data_pointers[i] = ft;
+			retval = MAPI_E_SUCCESS;
+		}
                 else {
 			if (openchangedb_lookup_folder_property(emsmdbp_ctx->oc_ctx, properties->aulPropTag[i], 
 								folder->folderID)) {
@@ -1265,7 +1302,7 @@ static void emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ct
 			}
 			else {
 				retval = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, 
-									  emsmdbp_ctx->szDisplayName, properties->aulPropTag[i],
+									  emsmdbp_ctx->username, properties->aulPropTag[i],
 									  folder->folderID, data_pointers + i);
 			}
                 }

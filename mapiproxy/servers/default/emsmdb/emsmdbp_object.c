@@ -1553,13 +1553,13 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *
         stream_data->prop_tag = prop_tag;
 	prop_type = prop_tag & 0xffff;
 	if (prop_type == PT_STRING8) {
-		stream_data->data.length = strlen((const char *) stream_data) + 1;
+		stream_data->data.length = strlen(value) + 1;
 		stream_data->data.data = value;
-                talloc_reference(stream_data, stream_data->data.data);
+                (void) talloc_reference(stream_data, stream_data->data.data);
 	}
 	else if (prop_type == PT_UNICODE) {
 		stream_data->data.length = strlen_m_ext((char *) value, CH_UTF8, CH_UTF16LE) * 2 + 2;
-		stream_data->data.data = talloc_array(mem_ctx, uint8_t, stream_data->data.length);
+		stream_data->data.data = talloc_array(stream_data, uint8_t, stream_data->data.length);
 		convert_string(CH_UTF8, CH_UTF16LE,
 			       value, strlen(value),
 			       stream_data->data.data, stream_data->data.length,
@@ -1569,7 +1569,7 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *
 	else if (prop_type == PT_BINARY) {
 		stream_data->data.length = ((struct Binary_r *) value)->cb;
 		stream_data->data.data = ((struct Binary_r *) value)->lpb;
-                talloc_reference(stream_data, stream_data->data.data);
+                (void) talloc_reference(stream_data, stream_data->data.data);
 	}
 	else {
 		talloc_free(stream_data);

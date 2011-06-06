@@ -767,9 +767,9 @@ end:
 
    \param mem_ctx pointer to the memory context
    \param emsmdbp_ctx pointer to the emsmdb provider context
-   \param mapi_req pointer to the WriteStream EcDoRpc_MAPI_REQ
+   \param mapi_req pointer to the SeekStream EcDoRpc_MAPI_REQ
    structure
-   \param mapi_repl pointer to the WriteStream EcDoRpc_MAPI_REPL
+   \param mapi_repl pointer to the SeekStream EcDoRpc_MAPI_REPL
    structure
    \param handles pointer to the MAPI handles array
    \param size pointer to the mapi response size to update
@@ -843,7 +843,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekStream(TALLOC_CTX *mem_ctx,
 	}
 
 end:
-	*size += libmapiserver_RopGetStreamSize_size(mapi_repl);
+	*size += libmapiserver_RopSeekStream_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

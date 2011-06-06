@@ -235,7 +235,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 		mapi_repl->u.mapi_SortTable.TableStatus = status;
 	} else {
 		/* Parent folder doesn't have any mapistore context associated */
-		DEBUG(0, ("not mapistore Restrict: Not implemented yet\n"));
+		DEBUG(0, ("non-mapistore SortTable not implemented yet\n"));
 		goto end;
 	}
         
@@ -455,7 +455,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 
         /* Lookup the properties */
         for (i = 0; i < request.RowCount; i++, count++) {
-		data_pointers = emsmdbp_object_table_get_row_props(emsmdbp_ctx, object, i, &mapistore_retvals);
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, &mapistore_retvals);
 		if (data_pointers) {
 			emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx,
 						    &response.RowData, table->prop_count,

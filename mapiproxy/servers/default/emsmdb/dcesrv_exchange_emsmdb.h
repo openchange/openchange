@@ -245,7 +245,7 @@ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_c
 struct emsmdbp_object *emsmdbp_object_folder_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);
 int emsmdbp_folder_get_folder_count(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t *);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
-void **emsmdbp_object_table_get_row_props(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, uint32_t **);
+void **emsmdbp_object_table_get_row_props(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, uint32_t **);
 struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint64_t, struct mapistore_message *);
 struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);

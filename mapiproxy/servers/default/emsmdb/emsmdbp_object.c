@@ -1138,10 +1138,11 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 	return object;
 }
 
-_PUBLIC_ void emsmdbp_object_get_available_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties)
+_PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray **propertiesp)
 {
 	uint32_t contextID;
 	uint8_t table_type;
+	int retval;
 
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FOLDER:
@@ -1163,16 +1164,23 @@ _PUBLIC_ void emsmdbp_object_get_available_properties(struct emsmdbp_context *em
 
 	if (emsmdbp_is_mapistore(object)) {
 		if (object->poc_api) {
-			mapistore_pocop_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object, properties);
+			retval = mapistore_pocop_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object, propertiesp);
 		}
 		else {
-			mapistore_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, table_type, properties);
+			retval = mapistore_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, table_type, propertiesp);
+		}
+		if (retval == MAPISTORE_SUCCESS) {
+			talloc_steal(mem_ctx, *propertiesp);
+			talloc_steal(mem_ctx, (*propertiesp)->aulPropTag);
 		}
 	}
 	else {
+		retval = MAPISTORE_ERROR;
 		DEBUG(5, ("only mapistore is supported at this time\n"));
 		abort();
 	}
+
+	return retval;
 }
 
 static void emsmdbp_object_get_properties_systemspecialfolder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)

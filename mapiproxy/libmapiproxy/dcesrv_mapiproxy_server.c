@@ -233,7 +233,7 @@ _PUBLIC_ NTSTATUS mapiproxy_server_init(struct dcesrv_context *dce_ctx)
 	init_module_fn		*servers;
 	NTSTATUS		ret;
 
-	servers = load_samba_modules(NULL, dce_ctx->lp_ctx, "dcerpc_mapiproxy_server");
+	servers = load_samba_modules(NULL, "dcerpc_mapiproxy_server");
 
 	run_init_functions(servers);
 	talloc_free(servers);

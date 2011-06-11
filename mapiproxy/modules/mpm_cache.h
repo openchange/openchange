@@ -119,6 +119,5 @@ __END_DECLS
 #define	MPM_DB_STORAGE	"data"
 
 #define	MPM_LOCATION	__FUNCTION__, __LINE__
-#define	MPM_SESSION(x)	x->session->server_id.pid, x->session->server_id.id2, x->session->server_id.vnn, x->session->context_id
 
 #endif /* __MPM_CACHE_H */

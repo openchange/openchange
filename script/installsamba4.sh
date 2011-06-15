@@ -22,6 +22,8 @@ if test x"$SAMBA_PREFIX" = x""; then
     SAMBA_PREFIX="/usr/local/samba"
 fi
 
+export CPPFLAGS="-I${SAMBA_PREFIX}/include"
+
 # use ccache for faster rebuild, where available
 if which ccache 2>/dev/null; then
 	export CC="ccache gcc"

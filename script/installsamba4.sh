@@ -35,8 +35,10 @@ export PKG_CONFIG_PATH=$SAMBA_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
 pythondir=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,'/')"`
 export PYTHONPATH=$SAMBA_PREFIX$pythondir:$PYTHONPATH
 
-RUNDIR=`dirname $0`
+RUNDIR=$(readlink -f $(dirname $0))
 HOST_OS=`$RUNDIR/../config.guess`
+
+BUILDTOOLS=$RUNDIR/../samba4/buildtools/
 
 #
 # Error check
@@ -252,7 +254,7 @@ packages() {
 	pushd samba4/$lib
 	error_check $? "$lib setup"
 
-	./autogen-waf.sh
+	$BUILDTOOLS/scripts/autogen-waf.sh
 	error_check $? "$lib autogen"
 	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
 	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE

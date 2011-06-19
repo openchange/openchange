@@ -91,7 +91,7 @@ void ical_property_ATTACH(struct exchange2ical *exchange2ical)
 									  );
 									  
 				lpProps = talloc_zero(exchange2ical->mem_ctx, struct SPropValue);
-				retval = GetProps(&obj_attach, SPropTagArray, &lpProps, &count);
+				retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
 				if (retval == MAPI_E_SUCCESS) {
 

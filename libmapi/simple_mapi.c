@@ -141,7 +141,7 @@ static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
 					  PR_IPM_TASK_ENTRYID,
 					  PR_IPM_DRAFTS_ENTRYID);
 	
-	retval = GetProps(&obj_inbox, SPropTagArray, &lpProps, &count);
+	retval = GetProps(&obj_inbox, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	
@@ -436,7 +436,7 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 					  PR_CONTENT_UNREAD,
 					  PR_CONTENT_COUNT);
 
-	retval = GetProps(obj_folder, SPropTagArray, &lpProps, &count);
+	retval = GetProps(obj_folder, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
@@ -812,7 +812,7 @@ _PUBLIC_ enum MAPISTATUS GetBestBody(mapi_object_t *obj_message,
 					  PR_RTF_COMPRESSED,
 					  PR_HTML,
 					  PR_RTF_IN_SYNC);
-	retval = GetProps(obj_message, SPropTagArray, &lpProps, &count);
+	retval = GetProps(obj_message, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) {
 		*format = 0;

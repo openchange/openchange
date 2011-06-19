@@ -224,7 +224,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 					  PR_FREEBUSY_BUSY_EVENTS,
 					  PR_FREEBUSY_OOF_MONTHS,
 					  PR_FREEBUSY_OOF_EVENTS);
-	retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
+	retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 

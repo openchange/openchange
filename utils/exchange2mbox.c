@@ -838,7 +838,7 @@ old_code:
 									  PR_ATTACH_MIME_TAG,
 									  PR_ATTACH_METHOD);
 					lpProps = talloc_zero(mem_ctx, struct SPropValue);
-					retval = GetProps(&obj_attach, SPropTagArray, &lpProps, &count);
+					retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 					MAPIFreeBuffer(SPropTagArray);
 					if (retval == MAPI_E_SUCCESS) {
 						uint32_t *mp, method = -1;
@@ -929,7 +929,7 @@ old_code:
 											PR_DISPLAY_BCC_UNICODE,
 											PR_HASATTACH,
 											PR_TRANSPORT_MESSAGE_HEADERS);
-							retval = GetProps(&obj_embeddedmsg, embTagArray,
+							retval = GetProps(&obj_embeddedmsg, MAPI_UNICODE, embTagArray,
 									&embProps, &emb_count);
 							MAPIFreeBuffer(embTagArray);
 
@@ -1201,7 +1201,7 @@ int main(int argc, const char *argv[])
 								  PR_NORMALIZED_SUBJECT_UNICODE,
 								  PR_SUBJECT,
 								  PR_SUBJECT_UNICODE);
-				retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
+				retval = GetProps(&obj_message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
 				if (retval != MAPI_E_SUCCESS) {
 					fprintf(stderr, "Badness getting row %d attrs\n", i);

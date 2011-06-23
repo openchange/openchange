@@ -893,34 +893,6 @@ setup/mapistore/mapistore_namedprops.ldif: 	\
 # mapistore backends
 #####################
 
-mapistore_sqlite3: mapiproxy/libmapistore/backends/mapistore_sqlite3.$(SHLIBEXT)
-
-mapistore_sqlite3-install:
-	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
-	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_sqlite3.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
-
-mapistore_sqlite3-uninstall:
-	rm -rf $(DESTDIR)$(libdir)/mapistore_backends
-
-mapistore_sqlite3-clean:
-	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.o
-	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.po
-	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.gcno
-	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.gcda
-	rm -f mapiproxy/libmapistore/backends/mapistore_sqlite3.so
-
-clean:: mapistore_sqlite3-clean
-
-mapistore_sqlite3-distclean: mapistore_sqlite3-clean
-
-distclean:: mapistore_sqlite3-distclean
-
-mapiproxy/libmapistore/backends/mapistore_sqlite3.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_sqlite3.po
-	@echo "Linking mapistore module $@"
-	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(SQLITE_LIBS) 	\
-	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			
-
-
 # mapistore_fsocpf: mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT)
 
 # mapistore_fsocpf-install:

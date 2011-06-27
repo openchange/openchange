@@ -353,7 +353,7 @@ _PUBLIC_ bool mapitest_oxcfold_CreateFolder(struct mapitest *mt)
 		}
 		/* Step 4.2. Set its container class */
 		set_SPropValue_proptag(&lpProp[0], PR_CONTAINER_CLASS, (const void *) subfolders[i].class);
-		retval = SetProps(&obj_child, lpProp, 1);
+		retval = SetProps(&obj_child, 0, lpProp, 1);
 		mapitest_print_retval_fmt(mt, "SetProps", "(%s)", subfolders[i].name);		
 		if (retval != MAPI_E_SUCCESS) {
 			mapitest_deindent();
@@ -751,7 +751,7 @@ _PUBLIC_ bool mapitest_oxcfold_SetSearchCriteria(struct mapitest *mt)
 	/* Step 5. Set properties on this search folder */
 	lpProps[0].ulPropTag = PR_CONTAINER_CLASS;
 	lpProps[0].value.lpszA = IPF_NOTE;
-	retval = SetProps(&obj_searchdir, lpProps, 1);
+	retval = SetProps(&obj_searchdir, 0, lpProps, 1);
 	mapitest_print_retval(mt, "SetProps");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -863,7 +863,7 @@ _PUBLIC_ bool mapitest_oxcfold_GetSearchCriteria(struct mapitest *mt)
 	/* Step 5. Set properties on this search folder */
 	lpProps[0].ulPropTag = PR_CONTAINER_CLASS;
 	lpProps[0].value.lpszA = IPF_NOTE;
-	retval = SetProps(&obj_searchdir, lpProps, 1);
+	retval = SetProps(&obj_searchdir, 0, lpProps, 1);
 	mapitest_print_retval(mt, "SetProps");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;

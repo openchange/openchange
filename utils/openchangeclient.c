@@ -293,14 +293,14 @@ static char *build_uniqueID(TALLOC_CTX *mem_ctx, mapi_object_t *obj_folder,
 
 	/* retrieve the folder ID */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_FID);
-	retval = GetProps(obj_folder, SPropTagArray, &lpProps, &count);
+	retval = GetProps(obj_folder, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) return NULL;
 	fid = (const uint64_t *)get_SPropValue_data(lpProps);
 
 	/* retrieve the message ID */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_MID);
-	retval = GetProps(obj_message, SPropTagArray, &lpProps, &count);
+	retval = GetProps(obj_message, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) return NULL;
 	mid = (const uint64_t *)get_SPropValue_data(lpProps);
@@ -454,7 +454,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 					
 					SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_HASATTACH);
 					lpProps = talloc_zero(mem_ctx, struct SPropValue);
-					retval = GetProps(&obj_message, SPropTagArray, &lpProps, &count);
+					retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &count);
 					MAPIFreeBuffer(SPropTagArray);
 					if (retval != MAPI_E_SUCCESS) return retval;
 					
@@ -492,7 +492,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 													  PR_ATTACH_SIZE,
 													  PR_ATTACH_CONTENT_ID);
 									lpProps2 = talloc_zero(mem_ctx, struct SPropValue);
-									retval = GetProps(&obj_attach, SPropTagArray, &lpProps2, &count2);
+									retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps2, &count2);
 									MAPIFreeBuffer(SPropTagArray);
 									if (retval != MAPI_E_SUCCESS) return retval;
 									
@@ -888,7 +888,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	retval = SetProps(&obj_message, props, prop_count);
+	retval = SetProps(&obj_message, 0, props, prop_count);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
 	/* attachment related code */
@@ -918,7 +918,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			count_props_attach = 4;
 
 			/* SetProps */
-			retval = SetProps(&obj_attach, props_attach, count_props_attach);
+			retval = SetProps(&obj_attach, 0, props_attach, count_props_attach);
 			if (retval != MAPI_E_SUCCESS) return retval;
 
 			/* Stream operations */
@@ -1161,7 +1161,7 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 	flag = (oclient->private == true) ? 2 : 0;
 	lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_SENSITIVITY, (const void *)&flag);
 	
-	retval = SetProps(obj_message, lpProps, cValues);
+	retval = SetProps(obj_message, 0, lpProps, cValues);
 	MAPIFreeBuffer(lpProps);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
@@ -1266,7 +1266,7 @@ static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
 	if (!oclient->update) {
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.Contact");
 	}
-	retval = SetProps(obj_message, lpProps, cValues);
+	retval = SetProps(obj_message, 0, lpProps, cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(lpProps);
 	MAPI_RETVAL_IF(retval, retval, NULL);
@@ -1386,7 +1386,7 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	retval = SetProps(obj_message, lpProps, cValues);
+	retval = SetProps(obj_message, 0, lpProps, cValues);
 	MAPIFreeBuffer(lpProps);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
@@ -1495,7 +1495,7 @@ static enum MAPISTATUS note_SetProps(TALLOC_CTX *mem_ctx,
 	}
 
 	
-	retval = SetProps(obj_message, lpProps, cValues);
+	retval = SetProps(obj_message, 0, lpProps, cValues);
 	MAPIFreeBuffer(lpProps);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 	
@@ -1562,7 +1562,7 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_CONTAINER_CLASS);
-	retval = GetProps(&obj_folder, SPropTagArray, &lpProps, &count);
+	retval = GetProps(&obj_folder, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	mapi_object_release(&obj_folder);
 	if ((lpProps[0].ulPropTag != PR_CONTAINER_CLASS) || (retval != MAPI_E_SUCCESS)) {
@@ -1711,7 +1711,7 @@ static bool openchangeclient_mailbox(TALLOC_CTX *mem_ctx,
 
 	/* Retrieve the mailbox folder name */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
-	retval = GetProps(obj_store, SPropTagArray, &lpProps, &cValues);
+	retval = GetProps(obj_store, MAPI_UNICODE, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -1821,7 +1821,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 				if (oclient->summary) {
 					mapidump_message_summary(&obj_message);
 				} else {
-					retval = GetPropsAll(&obj_message, &properties_array);
+					retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
 					if (retval == MAPI_E_SUCCESS) {
 						id = talloc_asprintf(mem_ctx, ": %"PRIX64"/%"PRIX64,
 								     SRowSet.aRow[i].lpProps[0].value.d,
@@ -2152,7 +2152,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 							     SRowSet.aRow[i].lpProps[1].value.d,
 							     &obj_message, 0);
 					if (GetLastError() == MAPI_E_SUCCESS) {
-						retval = GetPropsAll(&obj_message, &properties_array);
+						retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
 						if (retval != MAPI_E_SUCCESS) return retval;
 						id = talloc_asprintf(mem_ctx, ": %"PRIX64"/%"PRIX64,
 								     SRowSet.aRow[i].lpProps[0].value.d,
@@ -2617,7 +2617,7 @@ static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	/* Step7. Set message properties */
 	lpProps = ocpf_get_SPropValue(context_id, &cValues);
 
-	retval = SetProps(&obj_message, lpProps, cValues);
+	retval = SetProps(&obj_message, 0, lpProps, cValues);
 	MAPIFreeBuffer(lpProps);
 	if (retval != MAPI_E_SUCCESS) return false;
 
@@ -2677,7 +2677,7 @@ static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_s
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* Step 3. retrieve all message properties */
-	retval = GetPropsAll(&obj_message, &lpProps);
+	retval = GetPropsAll(&obj_message, MAPI_UNICODE, &lpProps);
 
 	/* Step 4. save the message */
 	ret = ocpf_init();

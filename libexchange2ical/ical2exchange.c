@@ -362,7 +362,7 @@ void _IcalEvent2Exchange(mapi_object_t *obj_folder, icalcomponent *vevent)
 	if (retval != MAPI_E_SUCCESS){
 		mapi_errstr("CreateMessage", GetLastError());
 	} else {
-		retval = SetProps(&obj_message, ical2exchange.lpProps, ical2exchange.cValues);
+		retval = SetProps(&obj_message, 0, ical2exchange.lpProps, ical2exchange.cValues);
 		if (retval != MAPI_E_SUCCESS){
 			mapi_errstr("SetProps", GetLastError());
 		} else {

@@ -27,6 +27,9 @@
 /* UNICODE flags */
 #define	MAPI_UNICODE		0x80000000
 
+/* Other GetProps/SetProps flags */
+#define	MAPI_PROPS_SKIP_NAMEDID_CHECK	0x00000001
+
 /* Property types */
 #define	PT_UNSPECIFIED		0x0
 #define	PT_NULL			0x1

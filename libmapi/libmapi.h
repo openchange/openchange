@@ -327,13 +327,13 @@ enum MAPISTATUS		SetReadFlags(mapi_object_t *, uint8_t, uint16_t, uint64_t *);
 enum MAPISTATUS		HardDeleteMessagesAndSubfolders(mapi_object_t *);
 
 /* The following public definitions come from libmapi/IMAPIProp.c */
-enum MAPISTATUS		GetProps(mapi_object_t *, struct SPropTagArray *, struct SPropValue **, uint32_t *);
-enum MAPISTATUS		SetProps(mapi_object_t *, struct SPropValue *, unsigned long);
+enum MAPISTATUS		GetProps(mapi_object_t *, uint32_t, struct SPropTagArray *, struct SPropValue **, uint32_t *);
+enum MAPISTATUS		SetProps(mapi_object_t *, uint32_t, struct SPropValue *, unsigned long);
 enum MAPISTATUS		SaveChangesAttachment(mapi_object_t *, mapi_object_t *, enum SaveFlags);
 enum MAPISTATUS		GetPropList(mapi_object_t *, struct SPropTagArray *);
-enum MAPISTATUS		GetPropsAll(mapi_object_t *, struct mapi_SPropValue_array *);
+enum MAPISTATUS		GetPropsAll(mapi_object_t *, uint32_t, struct mapi_SPropValue_array *);
 enum MAPISTATUS		DeleteProps(mapi_object_t *, struct SPropTagArray *);
-enum MAPISTATUS		SetPropertiesNoReplicate(mapi_object_t *, struct SPropValue *, unsigned long);
+enum MAPISTATUS		SetPropertiesNoReplicate(mapi_object_t *, uint32_t, struct SPropValue *, unsigned long);
 enum MAPISTATUS		DeletePropertiesNoReplicate(mapi_object_t *, struct SPropTagArray *);
 enum MAPISTATUS		GetNamesFromIDs(mapi_object_t *, enum MAPITAGS, uint16_t *, struct MAPINAMEID **);
 enum MAPISTATUS		GetIDsFromNames(mapi_object_t *, uint16_t, struct MAPINAMEID *, uint32_t, struct SPropTagArray **);

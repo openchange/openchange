@@ -400,19 +400,31 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	const uint32_t       		*cp;
 	ssize_t				len;
 
-	msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
-	subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY);
+	msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID_UNICODE);
+	if (!msgid)
+		msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
+	subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC_UNICODE);
+	if (!subject)
+		subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY_UNICODE);
 	if (!body) {
-		body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY_UNICODE);
+		body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY);
 		if (!body) {
 			html = (const struct SBinary_short *) find_mapi_SPropValue_data(properties, PR_HTML);
 		}
 	}
-	from = (const char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME);
-	to = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO);
-	cc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC);
-	bcc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC);
+	from = (const char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME_UNICODE);
+	if (!from)
+		from = (const char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME);
+	to = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO_UNICODE);
+	if (!to)
+		to = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO);
+	cc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC_UNICODE);
+	if (!cc)
+		cc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC);
+	bcc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC_UNICODE);
+	if (!bcc)
+		bcc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC);
 
 	has_attach = (const uint8_t *)find_mapi_SPropValue_data(properties, PR_HASATTACH);
 

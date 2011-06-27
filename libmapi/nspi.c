@@ -933,7 +933,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryColumns(struct nspi_context *nspi_ctx,
 
 	r.in.handle = &nspi_ctx->handle;
 	r.in.Reserved = 0x0;
-	r.in.dwFlags = (WantUnicode == true) ? NspiUnicodeProptypes : 0x0;
+	r.in.dwFlags = (WantUnicode != false) ? NspiUnicodeProptypes : 0x0;
 	
 	r.out.ppColumns = ppColumns;
 

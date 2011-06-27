@@ -291,7 +291,7 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 	format = EDITOR_FORMAT_PLAINTEXT;
 	set_SPropValue_proptag(&lpProps[3], PR_MSG_EDITOR_FORMAT, (const void *)&format);
 
-	retval = SetProps(obj_message, lpProps, 4);
+	retval = SetProps(obj_message, 0, lpProps, 4);
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "(Common) SetProps");
 		return false;
@@ -400,7 +400,7 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 		set_SPropValue_proptag(&lpProp[1], PR_BODY, (const void *)body);
 		format = EDITOR_FORMAT_PLAINTEXT;
 		set_SPropValue_proptag(&lpProp[2], PR_MSG_EDITOR_FORMAT, (const void *)&format);
-		retval = SetProps(&(context->obj_test_msg[i]), lpProp, 3);
+		retval = SetProps(&(context->obj_test_msg[i]), 0, lpProp, 3);
 		MAPIFreeBuffer((void *)from);
 		MAPIFreeBuffer((void *)body);
 		if (retval != MAPI_E_SUCCESS) {
@@ -431,7 +431,7 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 		set_SPropValue_proptag(&lpProp[1], PR_BODY, (const void *)body);
 		format = EDITOR_FORMAT_PLAINTEXT;
 		set_SPropValue_proptag(&lpProp[2], PR_MSG_EDITOR_FORMAT, (const void *)&format);
-		retval = SetProps(&(context->obj_test_msg[i]), lpProp, 3);
+		retval = SetProps(&(context->obj_test_msg[i]), 0, lpProp, 3);
 		MAPIFreeBuffer((void *)from);
 		MAPIFreeBuffer((void *)body);
 		if (retval != MAPI_E_SUCCESS) {

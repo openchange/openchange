@@ -151,7 +151,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageReadFlag(struct mapitest *mt)
 	ret = true;
 
 	/* 1. Retrieve and Save the original PR_MESSAGE_FLAGS value */
-	retval = GetProps(&obj_message, SPropTagArray, &lpProps, &cValues);
+	retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &cValues);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -166,7 +166,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageReadFlag(struct mapitest *mt)
 	mapitest_print_retval_fmt(mt, "SetMessageReadFlag", "(%s)", "MSGFLAG_READ");
 
 	/* Check if the operation was successful */
-	retval = GetProps(&obj_message, SPropTagArray, &lpProps, &cValues);
+	retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &cValues);
 	mapitest_print_retval(mt, "GetProps");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -186,7 +186,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageReadFlag(struct mapitest *mt)
 	mapitest_print_retval_fmt(mt, "SetMessageReadFlag", "(%s)", "MSGFLAG_SUBMIT");
 	
 	/* Check if the operation was successful */
-	retval = GetProps(&obj_message, SPropTagArray, &lpProps, &cValues);
+	retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &cValues);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -1266,7 +1266,7 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 	attach[0].value.l = ATTACH_EMBEDDED_MSG;
 	attach[1].ulPropTag = PR_RENDERING_POSITION;
 	attach[1].value.l = 0;
-	retval = SetProps(&obj_attach, attach, 2);
+	retval = SetProps(&obj_attach, 0, attach, 2);
 	mapitest_print(mt, "* %-35s: 0x%.8x\n", "SetProps", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_object_release(&obj_attach);
@@ -1479,7 +1479,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetValidAttachments(struct mapitest *mt)
 	attach[1].value.l = 0;
 	attach[2].ulPropTag = PR_ATTACH_FILENAME;
 	attach[2].value.lpszA = "Attachment 0";
-	retval = SetProps(&obj_attach0, attach, 3);
+	retval = SetProps(&obj_attach0, 0, attach, 3);
 	mapitest_print_retval_clean(mt, "SetProps", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -1508,7 +1508,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetValidAttachments(struct mapitest *mt)
 	attach[1].value.l = 0;
 	attach[2].ulPropTag = PR_ATTACH_FILENAME;
 	attach[2].value.lpszA = "Attachment 1";
-	retval = SetProps(&obj_attach1, attach, 3);
+	retval = SetProps(&obj_attach1, 0, attach, 3);
 	mapitest_print_retval_clean(mt, "SetProps", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;

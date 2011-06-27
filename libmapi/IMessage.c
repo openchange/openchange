@@ -1571,7 +1571,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
 	attach[0].value.l = ATTACH_EMBEDDED_MSG;
 	attach[1].ulPropTag = PR_RENDERING_POSITION;
 	attach[1].value.l = 0;
-	retval = SetProps(&obj_attach, attach, 2);
+	retval = SetProps(&obj_attach, 0, attach, 2);
 	... check the return value ...
 
         // Initialise the embedded message object

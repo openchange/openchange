@@ -110,7 +110,7 @@ struct EphemeralEntryID {
 __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);
-struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *);
+struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, int);
 const struct GUID *samdb_ntds_objectGUID(struct ldb_context *);
 
 /* definitions from emsabp.c */

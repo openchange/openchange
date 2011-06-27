@@ -85,7 +85,7 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	DEBUG(5, ("exchange_nsp: NspiBind (0x0)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 
 		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
@@ -194,7 +194,7 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 	DEBUG(5, ("exchange_nsp: NspiUnbind (0x1)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
@@ -264,7 +264,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
@@ -387,7 +387,7 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	DEBUG(3, ("exchange_nsp: NspiGetMatches (0x5)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
@@ -479,7 +479,7 @@ static void dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 	DEBUG(3, ("exchange_nsp: NspiDNToMId (0x7)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
@@ -555,7 +555,7 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	DEBUG(3, ("exchange_nsp: NspiGetProps (0x9)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
@@ -694,7 +694,7 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 	DEBUG(3, ("exchange_nsp: NspiGetSpecialTable (0xC)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
@@ -904,7 +904,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	DEBUG(3, ("exchange_nsp: NspiResolveNamesW (0x14)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}

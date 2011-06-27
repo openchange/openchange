@@ -305,7 +305,7 @@ static NTSTATUS mapiproxy_op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC
 
 	dce_call->fault_code = 0;
 
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(0, ("User is not authenticated, cannot process\n"));
 		dce_call->fault_code = DCERPC_FAULT_OP_RNG_ERROR;
 		return NT_STATUS_NET_WRITE_FAULT;

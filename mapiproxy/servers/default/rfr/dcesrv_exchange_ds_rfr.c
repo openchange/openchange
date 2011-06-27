@@ -51,7 +51,7 @@ static enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call,
 	DEBUG(5, ("exchange_ds_rfr: RfrGetNewDSA (0x0)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 
 		r->out.ppszUnused = NULL;
@@ -100,7 +100,7 @@ static enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *d
 
 	DEBUG(3, ("exchange_ds_rfr: RfrGetFQDNFromLegacyDN (0x1)\n"));
 
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 
 	failure:

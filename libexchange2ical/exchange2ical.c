@@ -443,7 +443,7 @@ static uint8_t exchange2ical_exception_from_EmbeddedObj(struct exchange2ical *ex
 					attachMethod	 = (uint32_t *) octool_get_propval(&aRow2, PR_ATTACH_METHOD);
 					attachmentHidden = (uint8_t *) octool_get_propval(&aRow2, PR_ATTACHMENT_HIDDEN);
 
-					if((*attachmentFlags & 0x00000002) 
+					if(attachmentFlags && (*attachmentFlags & 0x00000002) 
 						&& (*attachMethod == 0x00000005) 
 						&& (attachmentHidden && (*attachmentHidden))) {
 					

@@ -511,7 +511,7 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 		
 		private->c_pipe->last_fault_code = 0;
 		if (mapiproxy.norelay == false) {
-			status = dcerpc_ndr_request(private->c_pipe, NULL, table, opnum, mem_ctx, r);
+			status = dcerpc_binding_handle_call(private_data->c_pipe->binding_handle, NULL, table, opnum, mem_ctx, r);
 		}
 		
 		dce_call->fault_code = private->c_pipe->last_fault_code;

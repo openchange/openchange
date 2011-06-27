@@ -192,7 +192,7 @@ static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, cons
 	}
 
 	if (dcesrv_call_credentials(dce_call)) {
-		private_data->credentials = dcesrv_call_credentials(dce_call);
+		private->credentials = dcesrv_call_credentials(dce_call);
 		DEBUG(5, ("dcerpc_mapiproxy: Delegated credentials acquired\n"));
 	}
 
@@ -511,7 +511,7 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 		
 		private->c_pipe->last_fault_code = 0;
 		if (mapiproxy.norelay == false) {
-			status = dcerpc_binding_handle_call(private_data->c_pipe->binding_handle, NULL, table, opnum, mem_ctx, r);
+			status = dcerpc_binding_handle_call(private->c_pipe->binding_handle, NULL, table, opnum, mem_ctx, r);
 		}
 		
 		dce_call->fault_code = private->c_pipe->last_fault_code;

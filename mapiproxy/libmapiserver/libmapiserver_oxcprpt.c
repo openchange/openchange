@@ -364,7 +364,6 @@ _PUBLIC_ uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoR
    \return 0 on success;
  */
 _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
-					 struct smb_iconv_convenience *iconv_convenience,
 					 uint32_t property, 
 					 const void *value, 
 					 DATA_BLOB *blob,

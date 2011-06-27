@@ -902,13 +902,11 @@ _PUBLIC_ void emsmdbp_fill_table_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_co
 
         if (flagged) {
                 libmapiserver_push_property(mem_ctx,
-                                            lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
                                             0x0000000b, (const void *)&flagged,
                                             table_row, 0, 0, 0);
         }
         else {
                 libmapiserver_push_property(mem_ctx,
-                                            lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
                                             0x00000000, (const void *)&flagged,
                                             table_row, 0, 1, 0);
         }
@@ -924,7 +922,7 @@ _PUBLIC_ void emsmdbp_fill_table_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_co
                         data = data_pointers[i];
                 }
 
-                libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                libmapiserver_push_property(mem_ctx,
                                             property, data, table_row,
                                             flagged?PT_ERROR:0, flagged, 0);
         }
@@ -1536,7 +1534,7 @@ _PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
                         property = properties->aulPropTag[i];
                         data = data_pointers[i];
                 }
-                libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+                libmapiserver_push_property(mem_ctx,
                                             property, data, property_row,
                                             flagged ? PT_ERROR : 0, flagged, untyped_status[i]);
         }

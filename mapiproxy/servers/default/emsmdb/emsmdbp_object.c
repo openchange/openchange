@@ -36,10 +36,6 @@ struct DataArray_r {
 	const void *values;
 };
 
-extern size_t convert_string(charset_t from, charset_t to,
-			     void const *src, size_t srclen, 
-			     void *dest, size_t destlen, bool allow_badcharcnv);
-
 const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 {
 	switch (object->type) {

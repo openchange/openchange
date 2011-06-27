@@ -514,6 +514,8 @@ dnl --------------------------------------------------------------------------
 PKG_CHECK_MODULES([ICAL], [libical], [have_libical="yes"], [have_libical="no"])
 AC_SUBST(ICAL_CFLAGS)
 AC_SUBST(ICAL_LIBS)
+PKG_CHECK_MODULES([ICAL_0_46], [libical >= 0.46], [have_libical_0_46="1"], [have_libical_0_46="0"])
+AC_SUBST(have_libical_0_46)
 
 dnl --------------------------------------------------------------------------
 dnl Check for popt

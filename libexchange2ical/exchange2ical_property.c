@@ -125,8 +125,13 @@ void ical_property_ATTACH(struct exchange2ical *exchange2ical)
 						data=ldb_base64_encode(exchange2ical->mem_ctx, (const char *)body.data, body.length);
 						
 						/*Create a new icalattach from above data*/
+#if HAVE_ICAL_0_46
+						/* the function signature for icalattach_new_from_data() changed in 0.46, released 2010-08-30 */
+						/* we can switch to just using the new signature after everyone has had a reasonable chance to update (say end of 2011) */
+						icalattach = icalattach_new_from_data(data, 0, 0);
+#else
 						icalattach = icalattach_new_from_data((unsigned char *)data,0,0);
-						
+#endif
 						/*Add attach property to vevent component*/
 						prop = icalproperty_new_attach(icalattach);
 						icalcomponent_add_property(exchange2ical->vevent, prop);

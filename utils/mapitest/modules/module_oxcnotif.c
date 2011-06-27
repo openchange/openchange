@@ -100,11 +100,13 @@ _PUBLIC_ bool mapitest_oxcnotif_RegisterNotification(struct mapitest *mt)
 }
 
 /**
-   \details Test the SyncOpenAdvisor (0x83) operation
+   \details Test the SyncOpenAdvisor (0x83) and SetSyncNotificationGuid (0x88)
+   operations
 
    This function:
    -# logs on
    -# creates a notification advisor
+   -# sets a GUID on the advisor
    -# cleans up
 
    \param mt pointer on the top-level mapitest structure
@@ -132,6 +134,14 @@ _PUBLIC_ bool mapitest_oxcnotif_SyncOpenAdvisor(struct mapitest *mt)
 	/* Create advisor */
 	retval = SyncOpenAdvisor(&obj_store, &obj_notifier);
 	mapitest_print_retval_clean(mt, "SyncOpenAdvisor", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Set GUID */
+	retval = SetSyncNotificationGuid(&obj_notifier, GUID_random());
+	mapitest_print_retval_clean(mt, "SetSyncNotificationGuid", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;

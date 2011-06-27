@@ -298,6 +298,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/freebusy.po				\
 	libmapi/x500.po 				\
 	libmapi/fxparser.po				\
+	libmapi/notif.po				\
 	libmapi/idset.po				\
 	ndr_mapi.po					\
 	gen_ndr/ndr_exchange.po				\

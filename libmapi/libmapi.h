@@ -475,6 +475,9 @@ char			*guid_delete_dash(TALLOC_CTX *, const char *);
 struct Binary_r		*generate_recipient_entryid(TALLOC_CTX *, const char *);
 enum MAPISTATUS		GetFIDFromEntryID(uint16_t, uint8_t *, uint64_t, uint64_t *);
 
+/* The following public definition comes from libmapi/notif.c */
+enum MAPISTATUS		SyncOpenAdvisor(mapi_object_t *, mapi_object_t *);
+
 /* The following public definitions come from libmapi/socket/netif.c */
 int			get_interfaces_oc(struct iface_struct *, int);
 

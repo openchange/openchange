@@ -902,6 +902,7 @@ System Attendant Private Interface
 			op_MAPI_SyncImportReadStateChanges	= 0x80,
 			op_MAPI_ResetTable			= 0x81,
 			op_MAPI_SyncGetTransferState		= 0x82,
+			op_MAPI_SyncOpenAdvisor			= 0x83,
 			op_MAPI_TellVersion			= 0x86,
 			op_MAPI_OpenPublicFolderByName		= 0x87,
 			op_MAPI_SetSyncNotificationGuid		= 0x88,
@@ -3539,6 +3540,15 @@ System Attendant Private Interface
 	} SyncGetTransferState_repl;
 
 	/*************************/
+	/* EcDoRpc Function 0x83 */
+	typedef [flag(NDR_NOALIGN)] struct {
+		uint8		handle_idx;
+	} SyncOpenAdvisor_req;
+
+	typedef [flag(NDR_NOALIGN)] struct {
+	} SyncOpenAdvisor_repl;
+
+	/*************************/
 	/* EcDoRpc Function 0x86 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		version[3];
@@ -3866,6 +3876,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncImportReadStateChanges)] SyncImportReadStateChanges_req mapi_SyncImportReadStateChanges;
 		[case(op_MAPI_ResetTable)] ResetTable_req mapi_ResetTable;
 		[case(op_MAPI_SyncGetTransferState)] SyncGetTransferState_req mapi_SyncGetTransferState;
+		[case(op_MAPI_SyncOpenAdvisor)] SyncOpenAdvisor_req mapi_SyncOpenAdvisor;
 		[case(op_MAPI_TellVersion)] TellVersion_req mapi_TellVersion;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_req mapi_OpenPublicFolderByName;
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_req mapi_SetSyncNotificationGuid;
@@ -4001,6 +4012,7 @@ System Attendant Private Interface
 		[case(op_MAPI_SyncImportReadStateChanges)] SyncImportReadStateChanges_repl mapi_SyncImportReadStateChanges;
 		[case(op_MAPI_ResetTable)] ResetTable_repl mapi_ResetTable;
 		[case(op_MAPI_SyncGetTransferState)] SyncGetTransferState_repl mapi_SyncGetTransferState;
+		[case(op_MAPI_SyncOpenAdvisor)] SyncOpenAdvisor_repl mapi_SyncOpenAdvisor;
 		[case(op_MAPI_TellVersion)] TellVersion_repl mapi_TellVersion;
 		[case(op_MAPI_OpenPublicFolderByName)] OpenPublicFolderByName_repl mapi_OpenPublicFolderByName;
 		[case(op_MAPI_SetSyncNotificationGuid)] SetSyncNotificationGuid_repl mapi_SetSyncNotificationGuid;

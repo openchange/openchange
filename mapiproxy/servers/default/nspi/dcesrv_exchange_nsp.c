@@ -866,7 +866,7 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 				    struct NspiResolveNames *r)
 {
 	DEBUG(3, ("exchange_nsp: NspiResolveNames (0x13) not implemented\n"));
-	if (!NTLM_AUTH_IS_OK(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 	}
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);

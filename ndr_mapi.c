@@ -429,7 +429,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_AuxInfo(struct ndr_pull *ndr, int nd
 					}
 				}
 				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_buffer, 0, -1));
-			} 
+			} else {
+				r->AUX_HEADER = NULL;
+			}
 			ndr->flags = _flags_save_DATA_BLOB;
 		}
 	}

@@ -454,9 +454,9 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
    \param mem_ctx pointer to the memory context
    \param SortType the table sort order to use
    \param pInMIds pointer on a list of MIds that comprise a
-   restricted addess book container
+   restricted address book container
    \param ppMIds pointer on pointer to the returned list of MIds that
-   comprise a restricted addess book container.
+   comprise a restricted address book container.
 
    SortType can take the following values:
    -# SortTypeDisplayName

@@ -678,7 +678,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyProperties(mapi_object_t *obj, uint8_t level, uin
 	mem_ctx = talloc_named(NULL, 0, "FXCopyProperties");
 	size = 0;
 
-	/* Fill the CopyTo operation */
+	/* Fill the CopyProperties operation */
 	request.handle_idx = 0x01;
 	size += sizeof(uint8_t);
 	request.Level = level;

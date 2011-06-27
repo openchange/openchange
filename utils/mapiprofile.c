@@ -135,8 +135,8 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	TALLOC_CTX		*mem_ctx;
 	struct mapi_profile	profile;
 	const char		*locale;
-	uint32_t		cpid;
-	uint32_t		lcid;
+	uint32_t		cpid = 0;
+	uint32_t		lcid = 0;
 	char			*exchange_version_str;
 	char			*cpid_str;
 	char			*lcid_str;

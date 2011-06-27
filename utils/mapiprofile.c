@@ -216,7 +216,7 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	}
 
 	cpid_str = talloc_asprintf(mem_ctx, "%d", cpid);
-	lcid_str = talloc_asprintf(mem_ctx, "0x%.4x", lcid);
+	lcid_str = talloc_asprintf(mem_ctx, "%d", lcid);
 
 	mapi_profile_add_string_attr(mapi_ctx, profname, "codepage", cpid_str);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "language", lcid_str);

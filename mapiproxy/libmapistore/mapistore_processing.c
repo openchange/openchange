@@ -63,6 +63,7 @@ _PUBLIC_ int mapistore_set_mapping_path(const char *path)
 
 	if (mapping_path) {
 		talloc_free(mapping_path);
+		mapping_path = NULL;
 	}
 
 	/* Case 2. path is initialized */

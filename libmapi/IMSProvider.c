@@ -348,6 +348,7 @@ _PUBLIC_ enum MAPISTATUS Logoff(mapi_object_t *obj_store)
 			found = true;
 			mapi_object_release(obj_store);
 			DLIST_REMOVE(mapi_ctx->session, el);
+			MAPIFreeBuffer(session);
 			break;
 		}
 	}

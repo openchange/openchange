@@ -199,7 +199,7 @@ void load_interfaces(TALLOC_CTX *mem_ctx, const char **interfaces, struct interf
 	loopback_ip = interpret_addr2("127.0.0.1");
 
 	/* probe the kernel for interfaces */
-	total_probed = get_interfaces(ifaces, MAX_INTERFACES);
+	total_probed = get_interfaces_oc(ifaces, MAX_INTERFACES);
 
 	/* if we don't have a interfaces line then use all interfaces
 	   except loopback */

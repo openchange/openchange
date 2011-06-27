@@ -101,9 +101,9 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-	} else if (dce_call->conn->auth_state.session_info->credentials) {
+	} else if (dcesrv_call_credentials(dce_call)) {
 		DEBUG(5, ("dcerpc_mapiproxy: RPC proxy: Using delegated credentials\n"));
-		credentials = dce_call->conn->auth_state.session_info->credentials;
+		credentials = dcesrv_call_credentials(dce_call);
 		acquired_creds = true;
 	} else if (private->credentials) {
 		DEBUG(5, ("dcerpc_mapiproxy: RPC proxy: Using acquired deletegated credentials\n"));
@@ -191,8 +191,8 @@ static NTSTATUS mapiproxy_op_bind_proxy(struct dcesrv_call_state *dce_call, cons
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 
-	if (dce_call->conn->auth_state.session_info->credentials) {
-		private->credentials = dce_call->conn->auth_state.session_info->credentials;
+	if (dcesrv_call_credentials(dce_call)) {
+		private_data->credentials = dcesrv_call_credentials(dce_call);
 		DEBUG(5, ("dcerpc_mapiproxy: Delegated credentials acquired\n"));
 	}
 

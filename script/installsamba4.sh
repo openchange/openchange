@@ -238,12 +238,6 @@ patch() {
 	    popd
 	    ;;
     esac
-
-    echo "[+] Patching Samba build system for ugly header installation hack (http://tracker.openchange.org/issues/350)"
-    sed -i "s/deps='talloc ndr NDR_SECURITY'/deps='talloc ndr NDR_SECURITY',\\
-                  public_headers='dom_sid.h secace.h secacl.h security_descriptor.h security_token.h security.h session.h sddl.h privileges.h access_check.h',\\
-                  header_path='samba\/security'/g" samba4/libcli/security/wscript_build
-
     return $?
 }
 

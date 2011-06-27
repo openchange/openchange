@@ -107,7 +107,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 
 	/* Step 1. Initialize the emsmdbp context */
 	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx, 
-				   dce_call->context->conn->auth_state.session_info->server_info->account_name,
+				   dcesrv_call_account_name(dce_call),
 				   openchange_ldb_ctx);
 	if (!emsmdbp_ctx) {
 		smb_panic("unable to initialize emsmdbp context");
@@ -1402,7 +1402,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 
 	/* Step 1. Initialize the emsmdbp context */
 	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx,
-				   dce_call->context->conn->auth_state.session_info->server_info->account_name,
+				   dcesrv_call_account_name(dce_call),
 				   openchange_ldb_ctx);
 	if (!emsmdbp_ctx) {
 		smb_panic("Unable to initialize emsmdbp context");

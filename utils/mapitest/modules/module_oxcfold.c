@@ -985,7 +985,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 		mapi_object_init(&obj_message);
 		common_result = mapitest_common_message_create(mt, &obj_folder_src, &obj_message, MT_MAIL_SUBJECT);
 		if (!common_result) {
-			mapitest_print(mt, "* mapitest_common_message_create() failed");
+			mapitest_print(mt, "* mapitest_common_message_create() failed\n");
 			ret = false;
 			goto release;
 		}

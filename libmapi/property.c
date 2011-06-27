@@ -234,6 +234,10 @@ _PUBLIC_ struct SPropValue *get_SPropValue_SRow(struct SRow *aRow,
 {
 	uint32_t	i;
 
+	if ( ! aRow) {
+		return NULL;
+	}
+
 	for (i = 0; i < aRow->cValues; i++) {
 		if (ulPropTag == aRow->lpProps[i].ulPropTag) {
 			return (&aRow->lpProps[i]);
@@ -324,6 +328,10 @@ _PUBLIC_ const void *find_mapi_SPropValue_data(
 {
 	uint32_t i;
 
+	if ( ! properties) {
+		return NULL;
+	}
+
 	for (i = 0; i < properties->cValues; i++) {
 		if (properties->lpProps[i].ulPropTag == mapitag) {
 			return get_mapi_SPropValue_data(&properties->lpProps[i]);
@@ -334,6 +342,9 @@ _PUBLIC_ const void *find_mapi_SPropValue_data(
 
 _PUBLIC_ const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 {
+	if ( ! lpProp) {
+		return NULL;
+	}
 	if (lpProp->ulPropTag == 0) {
 		return NULL;
 	}

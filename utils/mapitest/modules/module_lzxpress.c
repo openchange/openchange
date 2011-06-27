@@ -30,32 +30,6 @@
    \brief LZXPRESS compression and decompression test suite
  */
 
-/* temporary hack until linker problems with ndr_map_error2ntstatus() are worked out */
-NTSTATUS static mt_ndr_map_error2ntstatus(enum ndr_err_code ndr_err)
-{
-        switch (ndr_err) {
-        case NDR_ERR_SUCCESS:
-                return NT_STATUS_OK;
-        case NDR_ERR_BUFSIZE:
-                return NT_STATUS_BUFFER_TOO_SMALL;
-        case NDR_ERR_TOKEN:
-                return NT_STATUS_INTERNAL_ERROR;
-        case NDR_ERR_ALLOC:
-                return NT_STATUS_NO_MEMORY;
-        case NDR_ERR_ARRAY_SIZE:
-                return NT_STATUS_ARRAY_BOUNDS_EXCEEDED;
-        case NDR_ERR_INVALID_POINTER:
-                return NT_STATUS_INVALID_PARAMETER_MIX;
-        case NDR_ERR_UNREAD_BYTES:
-                return NT_STATUS_PORT_MESSAGE_TOO_LONG;
-        default:
-                break;
-        }
-
-        /* we should map all error codes to different status codes */
-        return NT_STATUS_INVALID_PARAMETER;
-}
-
 _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 {
 	bool			ret = false;
@@ -98,7 +72,7 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 
 	ndr_err = ndr_pull_EcDoRpcExt2(ndr_pull, NDR_IN, &r);
 	talloc_free(ndr_pull);
-	status = mt_ndr_map_error2ntstatus(ndr_err);
+	status = ndr_map_error2ntstatus(ndr_err);
 	if (NT_STATUS_IS_OK(status)) {
 		mapitest_print_retval_step(mt, "2", "001_Outlook_2007_in_ModifyRecipients_comp.dat", 
 					   MAPI_E_SUCCESS);
@@ -116,7 +90,7 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 	ndr_err = ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &request);
 	talloc_free(blob.data);
 	talloc_free(ndr_pull);
-	status = mt_ndr_map_error2ntstatus(ndr_err);
+	status = ndr_map_error2ntstatus(ndr_err);
 	if (NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Success\n"));
 	}

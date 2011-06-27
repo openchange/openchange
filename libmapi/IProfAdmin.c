@@ -637,7 +637,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
 		struct ldb_message *normalized_msg;
 		ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &normalized_msg);
-		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_ACCESS, NULL);
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_ACCESS, mem_ctx);
 		ret = ldb_add(ldb_ctx, normalized_msg);
 		if (ret != LDB_SUCCESS) {
 			fclose(f);
@@ -656,7 +656,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
 		struct ldb_message *normalized_msg;
 		ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &normalized_msg);
-		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_ACCESS, NULL);
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_ACCESS, mem_ctx);
 		ret = ldb_add(ldb_ctx, normalized_msg);
 		if (ret != LDB_SUCCESS) {
 			fclose(f);

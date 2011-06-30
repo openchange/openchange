@@ -812,7 +812,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 	else {
 		odb_ctx = talloc_zero(NULL, void);
 
-		table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=0x%.16"PRIx64")(PidTagFolderId=*))", table->folderID);
+		table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRId64")(PidTagFolderId=*))", table->folderID);
 		retval = openchangedb_get_table_property(odb_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
 							 table_filter, PR_FID, row_id, (void **) &rowFolderID);
 		/* it's a hack to pass a table object as parent here... */

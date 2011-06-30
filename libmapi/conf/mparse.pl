@@ -1316,8 +1316,8 @@ sub mapistore_namedprops($)
 		mparse sprintf "cn: %s", $prop[2];
 		mparse sprintf "canonical: %s", $prop[0];
 		mparse sprintf "oleguid: %s", $oleguid{$prop[6]};
-		mparse sprintf "mappedId: %s", $prop[7];
-		mparse sprintf "propId: %s", $prop[2];
+		mparse sprintf "mappedId: %d", hex($prop[7]);
+		mparse sprintf "propId: %d", hex($prop[2]);
 		mparse sprintf "propType: %s", $prop_names{$prop[4]};
 		mparse sprintf "oom: %s", $prop[1];
 		mparse sprintf "";
@@ -1327,8 +1327,8 @@ sub mapistore_namedprops($)
 		mparse sprintf "cn: %s", $prop[3];
 		mparse sprintf "canonical: %s", $prop[0];
 		mparse sprintf "oleguid: %s", $oleguid{$prop[6]};
-		mparse sprintf "mappedId: %s", $prop[7];
-		mparse sprintf "propId: 0x0";
+		mparse sprintf "mappedId: %d", hex($prop[7]);
+		mparse sprintf "propId: 0";
 		mparse sprintf "propType: %s", $prop[4];
 		mparse sprintf "propName: %s", $prop[3];
 		mparse sprintf "";

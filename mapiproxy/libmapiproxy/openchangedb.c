@@ -25,6 +25,8 @@
    \brief OpenChange Dispatcher database routines
  */
 
+#include <inttypes.h>
+
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "libmapiproxy.h"
 #include "libmapi/libmapi.h"
@@ -159,7 +161,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *parent_c
 	mem_ctx = talloc_named(NULL, 0, "get_distinguishedName");
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRId64")", fid);
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
@@ -343,10 +345,10 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 
 	if (mailboxstore == true) {
 		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRId64")", fid);
 	} else {
 		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
-				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRId64")", fid);
 	}
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
@@ -416,7 +418,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || (res->count != 1), MAPI_E_NOT_FOUND, mem_ctx);
 	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
 	*ExplicitMessageClass = "";
-	DEBUG(5, ("openchangedb_get_ReceiveFolder (All target), class: %s, fid: 0x%016"PRIx64"\n",
+	DEBUG(5, ("openchangedb_get_ReceiveFolder (All target), class: %s, fid: %.16"PRIx64"\n",
 		  *ExplicitMessageClass, *fid));
 	if (strcmp(MessageClass, "All") == 0) {
 		/* we're done here */
@@ -434,7 +436,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	/* Step 3. Find the message class that has the longest matching string entry */
 	for (j = 0; j < res->count; ++j) {
 		ldb_element = ldb_msg_find_element(res->msgs[j], "PidTagMessageClass");
-		DEBUG(6, ("openchangedb_get_ReceiveFolder, checking fid: 0x%016"PRIx64"\n",
+		DEBUG(6, ("openchangedb_get_ReceiveFolder, checking fid: %.16"PRIx64"\n",
 			  ldb_msg_find_attr_as_uint64(res->msgs[j], "PidTagFolderId", 0x0)));
 		for (i = 0, length = 0; i < ldb_element[j].num_values; i++) {
 			DEBUG(6, ("openchangedb_get_ReceiveFolder, element %i, data: %s\n", i, (char *)ldb_element->values[i].data));
@@ -457,7 +459,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 		}
 	}
 	OPENCHANGE_RETVAL_IF(!*ExplicitMessageClass, MAPI_E_NOT_FOUND, mem_ctx);
-	DEBUG(5, ("openchangedb_get_ReceiveFolder, fid: 0x%016"PRIx64"\n", *fid));
+	DEBUG(5, ("openchangedb_get_ReceiveFolder, fid: %.16"PRIx64"\n", *fid));
 
 	talloc_free(mem_ctx);
 
@@ -488,7 +490,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(void *ldb_ctx,
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, 
-			 "(PidTagParentFolderId=0x%.16"PRIx64")(PidTagFolderId=*)", fid);
+			 "(PidTagParentFolderId=%"PRId64")(PidTagFolderId=*)", fid);
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
 
@@ -524,7 +526,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *ldb_ctx,
 
 	/* Step 1. Find PidTagFolderId record */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRId64")", fid);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 2. Convert proptag into PidTag attribute */
@@ -637,7 +639,7 @@ static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
 {
 	void			*data;
 	const char     		*str;
-	uint64_t		*d;
+	uint64_t		*ll;
 	uint32_t		*l;
 	int			*b;
 	struct FILETIME		*ft;
@@ -652,14 +654,13 @@ static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
 		break;
 	case PT_LONG:
 		l = talloc_zero(mem_ctx, uint32_t);
-		*l = ldb_msg_find_attr_as_int(res->msgs[pos], PidTagAttr, 0x0);
+		*l = ldb_msg_find_attr_as_uint(res->msgs[pos], PidTagAttr, 0x0);
 		data = (void *)l;
 		break;
 	case PT_I8:
-		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, 0x0);
-		d = talloc_zero(mem_ctx, uint64_t);
-		*d = strtoull(str, NULL, 16);
-		data = (void *)d;
+		ll = talloc_zero(mem_ctx, uint64_t);
+		*ll = ldb_msg_find_attr_as_uint64(res->msgs[pos], PidTagAttr, 0x0);
+		data = (void *)ll;
 		break;
 	case PT_STRING8:
 	case PT_UNICODE:
@@ -667,14 +668,13 @@ static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
 		data = (char *) talloc_strdup(mem_ctx, str);
 		break;
 	case PT_SYSTIME:
-		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, 0x0);
 		ft = talloc_zero(mem_ctx, struct FILETIME);
-		d = talloc_zero(NULL, uint64_t);
-		*d = strtoull(str, NULL, 16);
-		ft->dwLowDateTime = (*d & 0xffffffff);
-		ft->dwHighDateTime = *d >> 32;
+		ll = talloc_zero(mem_ctx, uint64_t);
+		*ll = ldb_msg_find_attr_as_uint64(res->msgs[pos], PidTagAttr, 0x0);
+		ft->dwLowDateTime = (*ll & 0xffffffff);
+		ft->dwHighDateTime = *ll >> 32;
 		data = (void *)ft;
-		talloc_free(d);
+		talloc_free(ll);
 		break;
 	case PT_BINARY:
 		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, 0x0);
@@ -722,7 +722,7 @@ static char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx, struct S
 		data = talloc_asprintf(mem_ctx, "%d", value->value.l);
 		break;
 	case PT_I8:
-		data = talloc_asprintf(mem_ctx, "0x%.16"PRIx64, value->value.d);
+		data = talloc_asprintf(mem_ctx, "%"PRId64, value->value.d);
 		break;
 	case PT_STRING8:
 		data = ldb_binary_encode_string(mem_ctx, value->value.lpszA);
@@ -732,7 +732,7 @@ static char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx, struct S
 		break;
 	case PT_SYSTIME:
 		nt_time = ((uint64_t) value->value.ft.dwHighDateTime << 32) | value->value.ft.dwLowDateTime;
-		data = talloc_asprintf(mem_ctx, "0x%.16"PRIx64, nt_time);
+		data = talloc_asprintf(mem_ctx, "%"PRId64, nt_time);
 		break;
 	case PT_BINARY:
 		data = ldb_base64_encode(mem_ctx, (char *) value->value.bin.lpb, value->value.bin.cb);
@@ -792,10 +792,13 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *ldb_ctx,
 
 	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
 
+	DEBUG(5, ("new_folderid: Current GlobalCount: %.16x\n", *fid));
+
 	/* Step 2. Update GlobalCount value */
 	msg = ldb_msg_new(mem_ctx);
 	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
-	ldb_msg_add_fmt(msg, "GlobalCount", "0x%"PRIx64, ((*fid) + 1));
+	ldb_msg_add_fmt(msg, "GlobalCount", "%"PRId64, ((*fid) + 1));
+	DEBUG(5, ("  New GlobalCount: %.16x\n", (*fid + 1)));
 	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 	ret = ldb_modify(ldb_ctx, msg);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
@@ -836,10 +839,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(void *ldb_ctx,
 
 	fmid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
 
+	DEBUG(5, ("reserve: Current GlobalCount: %.16x\n", fmid));
 	/* Step 2. Update GlobalCount value */
 	msg = ldb_msg_new(mem_ctx);
 	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
-	ldb_msg_add_fmt(msg, "GlobalCount", "0x%"PRIx64, (fmid + range_len));
+	ldb_msg_add_fmt(msg, "GlobalCount", "%"PRId64, (fmid + range_len));
+	DEBUG(5, ("  New GlobalCount: %.16x\n", (fmid + range_len)));
 	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 	ret = ldb_modify(ldb_ctx, msg);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
@@ -881,7 +886,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 
 	/* Step 1. Find PidTagFolderId record */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRId64")", fid);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 2. Convert proptag into PidTag attribute */
@@ -924,7 +929,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(TALLOC_CTX *parent_c
 
 	/* Step 1. Find PidTagFolderId record */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=0x%.16"PRIx64")", fid);
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRId64")", fid);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 2. Update GlobalCount value */
@@ -1069,7 +1074,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(void *ldb_ctx,
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs,
-			 "(&(PidTagParentFolderId=0x%.16"PRIx64")(PidTagDisplayName=%s))",
+			 "(&(PidTagParentFolderId=%"PRId64")(PidTagDisplayName=%s))",
 			 parent_fid, foldername);
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
@@ -1114,7 +1119,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 
 	DEBUG(5, ("openchangedb_set_ReceiveFolder, recipient: %s\n", recipient));
 	DEBUG(5, ("openchangedb_set_ReceiveFolder, MessageClass: %s\n", MessageClass));
-	DEBUG(5, ("openchangedb_set_ReceiveFolder, fid: 0x%016"PRIx64"\n", fid));
+	DEBUG(5, ("openchangedb_set_ReceiveFolder, fid: 0x%.16"PRIx64"\n", fid));
 	
 	/* Step 1. Find mailbox DN for the recipient */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
@@ -1147,7 +1152,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 		struct ldb_message	*msg;
 
 		uint64_t folderid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
-		DEBUG(6, ("openchangedb_set_ReceiveFolder, fid to delete from: 0x%016"PRIx64"\n", folderid));
+		DEBUG(6, ("openchangedb_set_ReceiveFolder, fid to delete from: 0x%.16"PRIx64"\n", folderid));
 
 		retval = openchangedb_get_distinguishedName(parent_ctx, ldb_ctx, folderid, &distinguishedName);
 		DEBUG(6, ("openchangedb_set_ReceiveFolder, dn to delete from: %s\n", distinguishedName));

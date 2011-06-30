@@ -188,7 +188,7 @@ uint32_t ocb_record_add_property(struct ocb_context *ocb_ctx,
 				((lpProp->value.b == true) ? "true" : "false"));
 		break;
 	case PT_I8:
-		ldb_msg_add_fmt(ocb_ctx->msg, attr, "%16"PRIx64, lpProp->value.d);
+		ldb_msg_add_fmt(ocb_ctx->msg, attr, "%"PRId64, lpProp->value.d);
 		break;
 	case PT_SYSTIME:
 		value = ocb_ldb_timestring(mem_ctx, &lpProp->value.ft);

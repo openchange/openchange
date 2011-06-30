@@ -31,6 +31,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 /* Samba4 includes */
 #include <util.h>

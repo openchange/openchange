@@ -434,7 +434,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_conte
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Step 2. Create the folder LDB record for openchange.ldb */
-	dn = talloc_asprintf(mem_ctx, "CN=0x%016"PRIx64",%s", response->folder_id, parentfid);
+	dn = talloc_asprintf(mem_ctx, "CN=%"PRId64",%s", response->folder_id, parentfid);
 
 	/* Ensure dn is within user mailbox / prevent from creating
 	 * folders in other mailboxes: check dn vs emsmdbp_ctx->username */
@@ -446,7 +446,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_conte
 	msg = ldb_msg_new(mem_ctx);
 	msg->dn = ldb_dn_copy(mem_ctx, basedn);
 	ldb_msg_add_string(msg, "objectClass", "systemfolder");
-	ldb_msg_add_fmt(msg, "cn", "0x%.16"PRIx64, response->folder_id);
+	ldb_msg_add_fmt(msg, "cn", "%"PRId64, response->folder_id);
 	ldb_msg_add_string(msg, "PidTagContentUnreadCount", "0");
 	ldb_msg_add_string(msg, "PidTagContentCount", "0");
 	ldb_msg_add_string(msg, "PidTagContainerClass", "IPF.Note");
@@ -466,16 +466,16 @@ static enum MAPISTATUS EcDoRpc_RopCreateSystemSpecialFolder(struct emsmdbp_conte
 	}
 	ldb_msg_add_string(msg, "PidTagComment", comment);
 
-	ldb_msg_add_fmt(msg, "PidTagParentFolderId", "0x%.16"PRIx64, parentFolder);
-	ldb_msg_add_fmt(msg, "PidTagFolderId", "0x%.16"PRIx64, response->folder_id);
+	ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRId64, parentFolder);
+	ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRId64, response->folder_id);
 	ldb_msg_add_fmt(msg, "mapistore_uri", "sogo://%s:%s@fallback/0x%.16"PRIx64, 
 			emsmdbp_ctx->username, emsmdbp_ctx->username, response->folder_id);
 	ldb_msg_add_string(msg, "PidTagSubFolders", "0");
 
 	unix_to_nt_time(&nt_time, time(NULL));
-	ldb_msg_add_fmt(msg, "PidTagCreationTime", "0x%.16"PRIx64, nt_time);
-	ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "0x%.16"PRIx64, nt_time);
-	ldb_msg_add_fmt(msg, "PidTagLastModificationTime", "0x%.16"PRIx64, nt_time);
+	ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRId64, nt_time);
+	ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRId64, nt_time);
+	ldb_msg_add_fmt(msg, "PidTagLastModificationTime", "%"PRId64, nt_time);
 
 	ldb_msg_add_string(msg, "FolderType", "1");
 	ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
@@ -570,7 +570,7 @@ static enum MAPISTATUS EcDoRpc_RopCreateGenericFolder(struct emsmdbp_context *em
 
 		/* Retrieve previous value */
 		ret = ldb_search(emsmdbp_ctx->oc_ctx, mem_ctx, &res, ldb_get_default_basedn(emsmdbp_ctx->oc_ctx),
-				 LDB_SCOPE_SUBTREE, attrs, "PidTagFolderId=0x%.16"PRIx64, parent_fid);
+				 LDB_SCOPE_SUBTREE, attrs, "PidTagFolderId=%"PRId64, parent_fid);
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 		count = ldb_msg_find_attr_as_int(res->msgs[0], "PidTagFolderChildCount", 0);
@@ -666,7 +666,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		return MAPI_E_SUCCESS;
 	}
 	parent_fid = parent_object->object.folder->folderID;
-	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder parent: 0x%"PRIx64"\n", parent_fid));
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder parent: 0x%.16"PRIx64"\n", parent_fid));
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Creating %s\n", mapi_req->u.mapi_CreateFolder.FolderName.lpszA));
 	
 	/* Step 3. Turn CreateFolder parameters into MAPI property array */
@@ -752,7 +752,7 @@ static enum MAPISTATUS DoDeleteSystemFolder(struct emsmdbp_context *emsmdbp_ctx,
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Create the folder dn record for openchange.ldb */
-	dn_str = talloc_asprintf(mem_ctx, "CN=0x%016"PRIx64",%s", fid, parentdn);
+	dn_str = talloc_asprintf(mem_ctx, "CN=%"PRId64",%s", fid, parentdn);
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder target DN: %s\n", dn_str));
 	dn = ldb_dn_new(mem_ctx, emsmdbp_ctx->oc_ctx, dn_str);
 	talloc_free(dn_str);
@@ -852,7 +852,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 					 mapi_req->u.mapi_DeleteFolder.FolderId,
 					 mapi_req->u.mapi_DeleteFolder.DeleteFolderFlags);
 		if (retval) {
-			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder failed to delete fid 0x%"PRIx64" (0x%x)",
+			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder failed to delete fid 0x%.16"PRIx64" (0x%x)",
 				    mapi_req->u.mapi_DeleteFolder.FolderId, retval));
 			  mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		} else {
@@ -936,7 +936,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < mapi_req->u.mapi_DeleteMessages.cn_ids; ++i) {
 		int ret;
 		uint64_t mid = mapi_req->u.mapi_DeleteMessages.message_ids[i];
-		DEBUG(0, ("MID %i to delete: 0x%016"PRIx64"\n", i, mid));
+		DEBUG(0, ("MID %i to delete: 0x%.16"PRIx64"\n", i, mid));
 		ret = mapistore_deletemessage(emsmdbp_ctx->mstore_ctx, contextID, parent_folderID, mid, MAPISTORE_SOFT_DELETE);
 		if (ret != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_CALL_FAILED;
@@ -1081,7 +1081,7 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 
 	retval = mapistore_get_child_fids(emsmdbp_ctx->mstore_ctx, context_id, fid,
 					  &childFolders, &childFolderCount);
-	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder fid: 0x%"PRIx64", count: %d\n", fid, childFolderCount));
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder fid: 0x%.16"PRIx64", count: %d\n", fid, childFolderCount));
 	if (retval) {
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder bad retval: 0x%x", retval));
 		return MAPI_E_NOT_FOUND;
@@ -1092,7 +1092,7 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 		retval = mapistore_rmdir(emsmdbp_ctx->mstore_ctx, context_id, fid, childFolders[i],
 					 flags);
 		if (retval) {
-			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete fid 0x%"PRIx64" (0x%x)", childFolders[i], retval));
+			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete fid 0x%.16"PRIx64" (0x%x)", childFolders[i], retval));
 			  talloc_free(childFolders);
 			  return MAPI_E_NOT_FOUND;
 		}

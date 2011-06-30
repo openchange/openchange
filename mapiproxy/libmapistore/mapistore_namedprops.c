@@ -183,7 +183,7 @@ _PUBLIC_ int mapistore_namedprops_get_nameid(TALLOC_CTX *mem_ctx,
 	MAPISTORE_RETVAL_IF(!nameidp, MAPISTORE_ERROR, NULL);
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(mappedId=0x%.4x)", propID);
+			 LDB_SCOPE_SUBTREE, attrs, "(mappedId=%d)", propID);
 	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERROR, NULL);
 
 	guid = ldb_msg_find_attr_as_string(res->msgs[0], "oleguid", 0);

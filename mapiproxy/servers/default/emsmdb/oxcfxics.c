@@ -1650,7 +1650,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 		}
 		else {
 			retval = openchangedb_get_distinguishedName(mem_ctx, emsmdbp_ctx->oc_ctx, parentFolderID, &parentDN);
-			dn = talloc_asprintf(mem_ctx, "CN=0x%016"PRIx64",%s", folderID, parentDN);
+			dn = talloc_asprintf(mem_ctx, "CN=%"PRId64",%s", folderID, parentDN);
 			basedn = ldb_dn_new(mem_ctx, emsmdbp_ctx->oc_ctx, dn);
 			talloc_free(dn);
 			OPENCHANGE_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, NULL);
@@ -1658,7 +1658,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 			msg = ldb_msg_new(mem_ctx);
 			msg->dn = ldb_dn_copy(mem_ctx, basedn);
 			ldb_msg_add_string(msg, "objectClass", "systemfolder");
-			ldb_msg_add_fmt(msg, "cn", "0x%.16"PRIx64, folderID);
+			ldb_msg_add_fmt(msg, "cn", "%"PRId64, folderID);
 			ldb_msg_add_string(msg, "PidTagContentUnreadCount", "0");
 			ldb_msg_add_string(msg, "PidTagContentCount", "0");
 			ldb_msg_add_string(msg, "PidTagContainerClass", "IPF.Note");
@@ -1668,15 +1668,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 			ldb_msg_add_string(msg, "PidTagAccess", "63");
 			ldb_msg_add_string(msg, "PidTagRights", "2043");
 			ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
-			ldb_msg_add_fmt(msg, "PidTagParentFolderId", "0x%.16"PRIx64, parentFolderID);
-			ldb_msg_add_fmt(msg, "PidTagFolderId", "0x%.16"PRIx64, folderID);
+			ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRId64, parentFolderID);
+			ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRId64, folderID);
 			ldb_msg_add_fmt(msg, "mapistore_uri", "sogo://%s:%s@fallback/0x%.16"PRIx64, 
 					emsmdbp_ctx->username, emsmdbp_ctx->username, folderID);
 			ldb_msg_add_string(msg, "PidTagSubFolders", "FALSE");
 			nt_time = ((NTTIME) request->HierarchyValues.lpProps[2].value.ft.dwHighDateTime << 32 
 				   | request->HierarchyValues.lpProps[2].value.ft.dwLowDateTime);
-			ldb_msg_add_fmt(msg, "PidTagCreationTime", "0x%.16"PRIx64, nt_time);
-			ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "0x%.16"PRIx64, nt_time);
+			ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRId64, nt_time);
+			ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRId64, nt_time);
 			ldb_msg_add_string(msg, "FolderType", "1");
 			ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
 
@@ -1796,11 +1796,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 		if (ret == MAPISTORE_SUCCESS) {
 			ret = mapistore_deletemessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, objectID, delete_type);
 			if (ret != MAPISTORE_SUCCESS) {
-				DEBUG(5, ("message deletion failed for fmid: %.16"PRIx64"\n", objectID));
+				DEBUG(5, ("message deletion failed for fmid: 0x%.16"PRIx64"\n", objectID));
 			}
 			ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, objectID, delete_type);
 			if (ret != MAPISTORE_SUCCESS) {
-				DEBUG(5, ("message deletion of index record failed for fmid: %.16"PRIx64"\n", objectID));
+				DEBUG(5, ("message deletion of index record failed for fmid: 0x%.16"PRIx64"\n", objectID));
 			}
 		}
 	}

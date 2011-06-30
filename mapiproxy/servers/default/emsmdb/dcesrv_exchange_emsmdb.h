@@ -31,6 +31,7 @@
 #include <ldb_errors.h>
 #include <util/debug.h>
 #include <time.h>
+#include <inttypes.h>
 
 #ifndef	__BEGIN_DECLS
 #ifdef	__cplusplus

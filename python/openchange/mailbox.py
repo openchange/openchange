@@ -85,8 +85,8 @@ dn: CASE_INSENSITIVE
                       "cn": fid,
                       "PidTagFolderId": fid,
                       "PidTagDisplayName": "Public Folder Root",
-                      "PidTagCreationTime": "0x%.16x" % self.nttime,
-                      "PidTagLastModificationTime": "0x%.16x" % self.nttime,
+                      "PidTagCreationTime": "%d" % self.nttime,
+                      "PidTagLastModificationTime": "%d" % self.nttime,
                       "PidTagSubFolders": "TRUE" if (childcount != 0) else "FALSE",
                       "PidTagFolderChildCount": str(childcount),
                       "SystemIdx": str(SystemIdx)})
@@ -99,8 +99,8 @@ dn: CASE_INSENSITIVE
                       "PidTagParentFolderId": parentfid,
                       "PidTagFolderId": fid,
                       "PidTagDisplayName": name,
-                      "PidTagCreationTime": "0x%.16x" % self.nttime,
-                      "PidTagLastModificationTime": "0x%.16x" % self.nttime,
+                      "PidTagCreationTime": "%d" % self.nttime,
+                      "PidTagLastModificationTime": "%d" % self.nttime,
                       "PidTagAttributeHidden": str(0),
                       "PidTagAttributeReadOnly": str(0),
                       "PidTagAttributeSystem": str(0),
@@ -197,7 +197,7 @@ dn: CASE_INSENSITIVE
 
         :param server: Server object name
         """
-        return int(self.lookup_server(server, [attribute])[attribute][0], 16)
+        return int(self.lookup_server(server, [attribute])[attribute][0], 10)
 
     def get_message_ReplicaID(self, server):
         """Retrieve current mailbox Replica ID for given message database (server).
@@ -226,7 +226,7 @@ dn: CASE_INSENSITIVE
 dn: %s
 changetype: modify
 replace: GlobalCount
-GlobalCount: 0x%x
+GlobalCount: %d
 """ % (server_dn, GlobalCount)
 
         self.ldb.transaction_start()
@@ -264,9 +264,9 @@ GlobalCount: 0x%x
         self.ldb.add({"dn": retdn,
                   "objectClass": ["mailbox", "container"],
                   "PidTagDisplayName": "OpenChange Mailbox: %s" % (username),
-                  "PidTagCreationTime": "0x%.16x" % self.nttime,
-                  "PidTagLastModificationTime": "0x%.16x" % self.nttime,
-                  "PidTagParentFolderId": "0x0000000000000000",
+                  "PidTagCreationTime": "%d" % self.nttime,
+                  "PidTagLastModificationTime": "%d" % self.nttime,
+                  "PidTagParentFolderId": "0",
                   "PidTagSubFolders": "TRUE",
                   "cn": username,
                   "MailboxGUID": mailboxGUID,
@@ -345,8 +345,8 @@ GlobalCount: 0x%x
                           "PidTagParentFolderId": parentfolder,
                           "PidTagFolderId": FID,
                           "PidTagDisplayName": foldername,
-                          "PidTagCreationTime": "0x%.16x" % self.nttime,
-                          "PidTagLastModificationTime": "0x%.16x" % self.nttime,
+                          "PidTagCreationTime": "%d" % self.nttime,
+                          "PidTagLastModificationTime": "%d" % self.nttime,
                           "PidTagAttributeHidden": str(0),
                           "PidTagAttributeReadOnly": str(0),
                           "PidTagAttributeSystem": str(0),
@@ -361,8 +361,8 @@ GlobalCount: 0x%x
                           "PidTagParentFolderId": parentfolder,
                           "PidTagFolderId": FID,
                           "PidTagDisplayName": foldername,
-                          "PidTagCreationTime": "0x%.16x" % self.nttime,
-                          "PidTagLastModificationTime": "0x%.16x" % self.nttime,
+                          "PidTagCreationTime": "%d" % self.nttime,
+                          "PidTagLastModificationTime": "%d" % self.nttime,
                           "PidTagAttributeHidden": str(0),
                           "PidTagAttributeReadOnly": str(0),
                           "PidTagAttributeSystem": str(0),
@@ -377,8 +377,8 @@ GlobalCount: 0x%x
                           "PidTagParentFolderId": parentfolder,
                           "PidTagFolderId": FID,
                           "PidTagDisplayName": foldername,
-                          "PidTagCreationTime": "0x%.16x" % self.nttime,
-                          "PidTagLastModificationTime": "0x%.16x" % self.nttime,
+                          "PidTagCreationTime": "%d" % self.nttime,
+                          "PidTagLastModificationTime": "%d" % self.nttime,
                           "PidTagAttributeHidden": str(0),
                           "PidTagAttributeReadOnly": str(0),
                           "PidTagAttributeSystem": str(0),
@@ -423,8 +423,8 @@ GlobalCount: 0x%x
                       "PidTagParentFolderId": parentfolder,
                       "PidTagFolderId": FID,
                       "PidTagDisplayName": foldername,
-                      "PidTagCreationTime": "0x%.16x" % self.nttime,
-                      "PidTagLastModificationTime": "0x%.16x" % self.nttime,
+                      "PidTagCreationTime": "%d" % self.nttime,
+                      "PidTagLastModificationTime": "%d" % self.nttime,
                       "PidTagContainerClass": containerclass,
                       "mapistore_uri": "sogo://%s:%s@%s/" % (username, username, foldername.replace(" ", "-").lower()),
                       "PidTagContentCount": str(0),
@@ -432,7 +432,7 @@ GlobalCount: 0x%x
                       "PidTagAttributeReadOnly": str(0),
                       "PidTagAttributeSystem": str(0),
                       "PidTagAccess": str(63),
-                      "PidTagRights":str(2043),
+                      "PidTagRights": str(2043),
                       "PidTagContentUnreadCount": str(0),
                       "PidTagSubFolders": str(0),
                       "FolderType": str(1)})
@@ -471,6 +471,6 @@ def gen_mailbox_folder_fid(GlobalCount, ReplicaID):
         unsh = (7-x) * 8
         reverseId = reverseId | (((GlobalCount >> sh) & 0xff) << unsh)
 
-    folder = "0x%.16x" % reverseId
+    folder = "%d" % reverseId
 
     return folder

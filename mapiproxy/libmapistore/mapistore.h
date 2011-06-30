@@ -91,6 +91,7 @@ struct mapistore_connection_info {
 	struct GUID			replica_guid;
 	uint16_t			repl_id;
 	struct mapistore_context	*mstore_ctx;
+	void				*oc_ctx;
 	struct tdb_wrap			*indexing;
 };
 

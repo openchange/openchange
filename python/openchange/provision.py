@@ -411,7 +411,7 @@ def newmailbox(lp, username, firstorg, firstou, backend):
     db.add_folder_property(fid_inbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
     db.add_folder_property(fid_mailbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
-    print "* GlobalCount (0x%.6x)" % GlobalCount
+    print "* GlobalCount (0x%.12x)" % GlobalCount
 
 
 def newuser(lp, creds, username=None):

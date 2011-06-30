@@ -276,7 +276,7 @@ def newmailbox(lp, username, firstorg, firstou, backend):
                    + provider_uid
                    + struct.pack("<H", folder_type)
                    + database_guid
-                   + struct.pack(">LH", (counter >> 16), (counter & 0xffff))
+                   + struct.pack(">LH", (counter >> 16) & 0xffffffff, (counter & 0xffff))
                    + 2 * chr(0)) # padding
 
         return entryid
@@ -334,11 +334,11 @@ def newmailbox(lp, username, firstorg, firstou, backend):
         url = openchangedb_mapistore_url(lp, backend)
 
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
-            username=username, foldername=name,
-            parentfolder=parent_fid, GlobalCount=GlobalCount, 
-            ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
-            mapistoreURL=url,
-            mapistoreSuffix=openchangedb_suffix_for_mapistore_url(url))
+                                         username=username, foldername=name,
+                                         parentfolder=parent_fid, GlobalCount=GlobalCount, 
+                                         ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
+                                         mapistoreURL=url,
+                                         mapistoreSuffix=openchangedb_suffix_for_mapistore_url(url))
 
         GlobalCount += 1
         db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
@@ -411,7 +411,7 @@ def newmailbox(lp, username, firstorg, firstou, backend):
     db.add_folder_property(fid_inbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
     db.add_folder_property(fid_mailbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
-    print "* GlobalCount (0x%x)" % GlobalCount
+    print "* GlobalCount (0x%.6x)" % GlobalCount
 
 
 def newuser(lp, creds, username=None):

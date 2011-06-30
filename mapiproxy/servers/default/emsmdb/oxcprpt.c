@@ -129,7 +129,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 			if (retvals[i] == MAPI_E_SUCCESS) {
 				propType = properties->aulPropTag[i] & 0xffff;
 				if (propType == PT_STRING8) {
-					stream_size = strlen((const char *) stream_data) + 1;
+					stream_size = strlen((const char *) data_pointers[i]) + 1;
 				}
 				else if (propType == PT_UNICODE) {
 					stream_size = strlen_m_ext((char *) data_pointers[i], CH_UTF8, CH_UTF16LE) * 2 + 2;

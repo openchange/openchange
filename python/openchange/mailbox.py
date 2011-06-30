@@ -68,16 +68,16 @@ dn: CASE_INSENSITIVE
 
     def add_server(self, ocserverdn, netbiosname, firstorg, firstou):
         self.ldb.add({"dn": ocserverdn,
-                  "objectClass": ["top", "server"],
-                  "cn": netbiosname,
-                  "GlobalCount": "0x1",
-                  "ReplicaID": "0x1"})
+                      "objectClass": ["top", "server"],
+                      "cn": netbiosname,
+                      "GlobalCount": "1",
+                      "ReplicaID": "1"})
         self.ldb.add({"dn": "CN=%s,%s" % (firstorg, ocserverdn),
-                  "objectClass": ["top", "org"],
-                  "cn": firstorg})
+                      "objectClass": ["top", "org"],
+                      "cn": firstorg})
         self.ldb.add({"dn": "CN=%s,CN=%s,%s" % (firstou, firstorg, ocserverdn),
-                  "objectClass": ["top", "ou"],
-                  "cn": firstou})
+                      "objectClass": ["top", "ou"],
+                      "cn": firstou})
 
     def add_root_public_folder(self, pfdn, fid, SystemIdx, childcount, mapistoreURL):
         self.ldb.add({"dn": "CN=%s,%s" % (fid, pfdn),

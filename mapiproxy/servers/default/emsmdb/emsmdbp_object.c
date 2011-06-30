@@ -999,6 +999,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 	case false:
 		/* system/special folder */
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		message_object = NULL;
 		break;
 	case true:
 		/* mapistore implementation goes here */
@@ -1033,6 +1034,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TAL
 	case false:
 		/* system/special folder */
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		table_object = NULL;
 		break;
 	case true:
                 contextID = message_object->object.message->contextID;

@@ -25,14 +25,7 @@
 #include <samba/popt.h>
 #include <ldb.h>
 #include <talloc.h>
-
-#ifndef PRIx64
-#if __WORDSIZE == 64
-  #define PRIx64        "lx"
-#else
-  #define PRIx64        "llx"
-#endif
-#endif
+#include <inttypes.h>
 
 static void popt_openchange_version_callback(poptContext con,
                                              enum poptCallbackReason reason,

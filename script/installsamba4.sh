@@ -189,7 +189,7 @@ download() {
 	case "$answer" in
 	    Y|y|yes)
 		echo "Step0: removing previous samba4 directory"
-		rm -rf samba4
+		sudo rm -rf samba4
 		;;
 	    N|n|no)
 		echo "Step0: Keep existing directory"
@@ -198,14 +198,14 @@ download() {
 	esac
     fi
 
-    echo "Step2: Fetching samba-$SAMBA4_RELEASE tarball"
+    echo "Step1: Fetching samba-$SAMBA4_RELEASE tarball"
     if ! test -e samba-$SAMBA4_RELEASE.tar.gz; then
 	rm -rf samba-$SAMBA4_RELEASE.tar.gz
 	wget http://us1.samba.org/samba/ftp/samba4/samba-$SAMBA4_RELEASE.tar.gz
 	error_check $? "Step1"
     fi     
 
-    echo "Step3: Extracting $SAMBA4_RELEASE"
+    echo "Step2: Extracting $SAMBA4_RELEASE"
     tar xzvf samba-$SAMBA4_RELEASE.tar.gz
     error_check $? "Step2"
     mv samba-$SAMBA4_RELEASE samba4

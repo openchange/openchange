@@ -314,6 +314,7 @@ int emsmdbp_object_stream_commit(struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);
+int emsmdbp_object_set_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct SRow *);
 void **emsmdbp_object_get_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray *, enum MAPISTATUS **);
 struct emsmdbp_object *emsmdbp_object_synccontext_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_ftcontext_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);

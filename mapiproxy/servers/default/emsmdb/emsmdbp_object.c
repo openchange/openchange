@@ -1504,6 +1504,72 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
         return data_pointers;
 }
 
+/* TODO: handling of "property problems" */
+_PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SRow *rowp)
+{
+	uint32_t contextID;
+	uint64_t fmid;
+	bool mapistore;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return MAPI_E_CALL_FAILED;
+	if (!object) return MAPI_E_CALL_FAILED;
+	if (!rowp) return MAPI_E_CALL_FAILED;
+	if (object->type != EMSMDBP_OBJECT_MESSAGE
+	    && object->type != EMSMDBP_OBJECT_FOLDER
+	    && object->type != EMSMDBP_OBJECT_ATTACHMENT) {
+		DEBUG(5, ("  object type %d not implemented\n", object->type));
+		return MAPI_E_NO_SUPPORT;
+	}
+
+	/* Temporary hack: If this is a mapistore root container
+	 * (e.g. Inbox, Calendar etc.), directly stored under
+	 * IPM.Subtree, then set properties from openchange
+	 * dispatcher db, not mapistore */
+	if (object->type == EMSMDBP_OBJECT_FOLDER
+	    && object->object.folder->mapistore_root == true) {
+		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, object->object.folder->folderID, rowp);
+	}
+	else {
+		contextID = emsmdbp_get_contextID(object);
+		mapistore = emsmdbp_is_mapistore(object);
+		switch (mapistore) {
+		case false:
+			if (object->type == EMSMDBP_OBJECT_FOLDER) {
+				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, object->object.folder->folderID, rowp);
+			}
+			else {
+				DEBUG(0, ("Setting properties on openchangedb not implemented yet for non-folder object type\n"));
+				return MAPI_E_NO_SUPPORT;
+			}
+			break;
+		case true:
+			if (object->poc_api) {
+				mapistore_pocop_set_properties(emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object, rowp);
+			}
+			else {
+				if (object->type == EMSMDBP_OBJECT_MESSAGE) {
+					fmid = object->object.message->messageID;
+					mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, 
+							   MAPISTORE_MESSAGE, rowp);
+				}
+				else if (object->type == EMSMDBP_OBJECT_FOLDER) {
+					fmid = object->object.folder->folderID;
+					mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, 
+							   MAPISTORE_FOLDER, rowp);
+				}
+				else {
+					DEBUG(5, ("  object type %d not implemented\n", object->type));
+					return MAPI_E_NO_SUPPORT;
+				}
+			}
+			break;
+		}
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
 _PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
 				    struct emsmdbp_context *emsmdbp_ctx,
 				    uint8_t *layout,

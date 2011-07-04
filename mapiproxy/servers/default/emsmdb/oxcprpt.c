@@ -197,10 +197,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 	uint32_t		handle;
 	struct mapi_handles	*rec = NULL;
 	void			*private_data = NULL;
-	bool			mapistore = false;
 	struct emsmdbp_object	*object;
-	uint64_t		fmid;
-	uint32_t		contextID;
 	uint16_t		i;
 	struct SRow		aRow;
 
@@ -242,62 +239,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 				&(aRow.lpProps[i]));
 	}
 
-	/* Temporary hack: If this is a mapistore root container
-	 * (e.g. Inbox, Calendar etc.), directly stored under
-	 * IPM.Subtree, then set properties from openchange
-	 * dispatcher db, not mapistore */
-	if (object && object->type == EMSMDBP_OBJECT_FOLDER &&
-	    object->object.folder->mapistore_root == true) {
-		openchangedb_set_folder_properties(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.folder->folderID, &aRow);
-	} else {
-		mapistore = emsmdbp_is_mapistore(object);
-		switch (mapistore) {
-		case false:
-			if (object->type == EMSMDBP_OBJECT_FOLDER) {
-				openchangedb_set_folder_properties(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.folder->folderID, &aRow);
-			}
-			else {
-				DEBUG(0, ("SetProps on openchangedb not implemented yet for object type %.2x\n", object->type));
-			}
-			break;
-		case true:
-			if (object->type == EMSMDBP_OBJECT_MESSAGE) {
-				contextID = object->object.message->contextID;
-			}
-			else if (object->type == EMSMDBP_OBJECT_FOLDER) {
-				contextID = object->object.folder->contextID;
-			}
-			else if (object->type == EMSMDBP_OBJECT_ATTACHMENT) {
-				contextID = object->object.attachment->contextID;
-			}
-			else {
-				DEBUG(5, ("  object type %d not implemented\n", object->type));
-				mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-				goto end;
-			}
-
-			if (object->poc_api) {
-				mapistore_pocop_set_properties(emsmdbp_ctx->mstore_ctx, contextID,
-							       object->poc_backend_object,
-							       &aRow);
-			}
-			else {
-				if (object->type == EMSMDBP_OBJECT_MESSAGE) {
-					fmid = object->object.message->messageID;
-					mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, 
-							   MAPISTORE_MESSAGE, &aRow);
-				}
-				else if (object->type == EMSMDBP_OBJECT_FOLDER) {
-					fmid = object->object.folder->folderID;
-					mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, 
-							   MAPISTORE_FOLDER, &aRow);
-				}
-				else {
-					DEBUG(5, ("  object type %d not implemented\n", object->type));
-				}
-			}
-			break;
-		}
+	retval = emsmdbp_object_set_properties(emsmdbp_ctx->oc_ctx, object, &aRow);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
 	}
 
 end:

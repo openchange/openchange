@@ -765,7 +765,36 @@ static char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx, struct S
 
 
 /**
-   \details Return the next available FolderID
+   \details Return the next available FolderID without allocating it
+   
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid pointer to the fid value the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_next_folderID(void *ldb_ctx,
+							uint64_t *fid)
+{
+	TALLOC_CTX		*mem_ctx;
+	int			ret;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "*", NULL };
+
+	*fid = 0;
+
+	/* Get the current GlobalCount */
+	mem_ctx = talloc_named(NULL, 0, "get_next_folderID");
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Allocates a new FolderID and returns it
    
    \param ldb_ctx pointer to the openchange LDB context
    \param fid pointer to the fid value the function returns
@@ -777,28 +806,23 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *ldb_ctx,
 {
 	TALLOC_CTX		*mem_ctx;
 	int			ret;
-	struct ldb_result	*res = NULL;
+	struct ldb_result	*res;
 	struct ldb_message	*msg;
 	const char * const	attrs[] = { "*", NULL };
 
-	*fid = 0;
-
-	mem_ctx = talloc_named(NULL, 0, "get_new_folderID");
-
-	/* Step 1. Get the current GlobalCount */
+	/* Get the current GlobalCount */
+	mem_ctx = talloc_named(NULL, 0, "get_next_folderID");
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
 
-	DEBUG(5, ("new_folderid: Current GlobalCount: %.16x\n", *fid));
-
-	/* Step 2. Update GlobalCount value */
+	/* Update GlobalCount value */
+	mem_ctx = talloc_named(NULL, 0, "get_next_folderID");
 	msg = ldb_msg_new(mem_ctx);
 	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
 	ldb_msg_add_fmt(msg, "GlobalCount", "%"PRId64, ((*fid) + 1));
-	DEBUG(5, ("  New GlobalCount: %.16x\n", (*fid + 1)));
 	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 	ret = ldb_modify(ldb_ctx, msg);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
@@ -825,26 +849,25 @@ _PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(void *ldb_ctx,
 {
 	TALLOC_CTX		*mem_ctx;
 	int			ret;
-	struct ldb_result	*res = NULL;
+	struct ldb_result	*res;
 	struct ldb_message	*msg;
-	const char * const	attrs[] = { "*", NULL };
 	uint64_t		fmid;
-
-	mem_ctx = talloc_zero(NULL, void);
+	const char * const	attrs[] = { "*", NULL };
 
 	/* Step 1. Get the current GlobalCount */
+	mem_ctx = talloc_named(NULL, 0, "get_next_folderID");
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	fmid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
 
-	DEBUG(5, ("reserve: Current GlobalCount: %.16x\n", fmid));
 	/* Step 2. Update GlobalCount value */
+	mem_ctx = talloc_zero(NULL, void);
+
 	msg = ldb_msg_new(mem_ctx);
 	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
 	ldb_msg_add_fmt(msg, "GlobalCount", "%"PRId64, (fmid + range_len));
-	DEBUG(5, ("  New GlobalCount: %.16x\n", (fmid + range_len)));
 	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 	ret = ldb_modify(ldb_ctx, msg);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
@@ -855,7 +878,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(void *ldb_ctx,
 
 	return MAPI_E_SUCCESS;
 }
-
 
 /**
    \details Retrieve a MAPI property value from a folder record
@@ -909,7 +931,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	return MAPI_E_NOT_FOUND;
 }
 
-_PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(TALLOC_CTX *parent_ctx, void *ldb_ctx, uint64_t fid, struct SRow *row)
+_PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(void *ldb_ctx, uint64_t fid, struct SRow *row)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;

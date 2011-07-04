@@ -128,8 +128,6 @@ struct mapistore_backend {
         /* sort order */
 	int (*op_set_sort_order)(void *, uint64_t, uint8_t, struct SSortOrderSet *, uint8_t *);
 
-	int (*op_get_folders_list)(void *, uint64_t, struct indexing_folders_list **folders_list);
-
         /***
             proof of concept
         */
@@ -281,11 +279,11 @@ bool		mapistore_backend_run_init(init_backend_fn *);
 /* definitions from mapistore_indexing.c */
 int mapistore_indexing_add(struct mapistore_context *, const char *);
 int mapistore_indexing_del(struct mapistore_context *, const char *);
-int mapistore_indexing_get_folder_list(struct mapistore_context *, const char *, uint64_t, struct indexing_folders_list **);
 int mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+int mapistore_indexing_record_get_uri(struct mapistore_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
 struct tdb_wrap *mapistore_indexing_get_tdb_wrap(struct mapistore_context *, const char *);
 
 /* definitions from mapistore_replica_mapping.c */

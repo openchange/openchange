@@ -1084,42 +1084,6 @@ _PUBLIC_ struct backend_context *mapistore_find_container_backend(struct mapisto
 }
 
 /**
-   \details Does something
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   where the message's to be located is stored
-   \param fmid the folder/message identifier at the end of the list
-   \param folder_list the destination of the list
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-_PUBLIC_ int mapistore_get_folders_list(struct mapistore_context *mstore_ctx,
-                                        uint64_t fmid,
-                                        struct indexing_folders_list **folders_list)
-{
-	int			ret;
-	struct backend_context	*bctx;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 1. Search the context */
-	bctx = mapistore_find_container_backend(mstore_ctx, fmid);
-	if (!bctx) return MAPISTORE_ERROR;
-	
-	/* Step 2. Call backend operation */
-	ret = mapistore_backend_get_folders_list(bctx, fmid, folders_list);
-        if ((*folders_list)->count == 0) {
-                DEBUG(5, ("[%s:%d] list empty\n", __FUNCTION__, __LINE__));
-                return MAPISTORE_ERROR;
-        }
-
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
-}
-
-
-/**
    \details Apply restrictions on a mapistore table
 
    \param mstore_ctx pointer to the mapistore context

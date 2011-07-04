@@ -135,7 +135,6 @@ _PUBLIC_ int mapistore_indexing_del(struct mapistore_context *mstore_ctx,
 	return MAPISTORE_SUCCESS;
 }
 
-
 /**
    \details Increase the ref count associated to a given indexing context
 
@@ -357,111 +356,65 @@ int mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
 	return MAPISTORE_SUCCESS;
 }
 
-
 /**
-   \details Retrieve the list of parent folder identifiers until we
-   reach the expected item
+   \details Returns record data
 
    \param mstore_ctx pointer to the mapistore context
-   \param username the name of the account where to look for the
-   indexing database
-   \param fmid the folder/message ID to search
-   \param parents pointer to an array of elements that subsequently
-   leads to fmid returned by the function
-   \param count pointer to the number of parents the function returns
+   \param mem_ctx pointer to the talloc context
+   \param fmid the fmid/key to the record
+   \param urip pointer to the uri pointer
+   \param soft_deletedp pointer to the soft deleted pointer
 
-   \note This function is useful for the emsmdb provider when we are
-   trying to open a folder/message using an InputHandleIdx referencing
-   the store object. In such situation, no context ID is available
-   since the store object access openchange.ldb.
-
-   It means we need to retrieve the list of folders to the item within
-   the mapistore context and rely on an existing parent (if opened) or
-   opens everything from the top parent if none is available.
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
-
-   \sa mapistore_indexing_record_open_fmid
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_get_folder_list(struct mapistore_context *mstore_ctx,
-						const char *username, uint64_t fmid,
-						struct indexing_folders_list **_flist)
+_PUBLIC_ int mapistore_indexing_record_get_uri(struct mapistore_context *mstore_ctx, const char *username, TALLOC_CTX *mem_ctx, uint64_t fmid, char **urip, bool *soft_deletedp)
 {
-	int				ret;
 	struct indexing_context_list	*ictx;
-        struct indexing_folders_list	*flist = NULL;
-	TDB_DATA			key;
-	TDB_DATA			dbuf;
-	bool				IsSoftDeleted = false;
-	char				*uri = NULL;
-	/* char				*tmp_uri; */
-	/* char				*substr; */
-	/* char				*folder; */
-
+	TDB_DATA			key, dbuf;
+	int				ret;
+	
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!_flist, MAPISTORE_ERROR, NULL);
-	/* MAPISTORE_RETVAL_IF(!parents, MAPISTORE_ERROR, NULL); */
-	/* MAPISTORE_RETVAL_IF(!count, MAPISTORE_ERROR, NULL); */
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!urip, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
-	/* 1. Search for an existing indexing context */
+	/* Check if the fmid exists within the database */
+	ret = mapistore_indexing_add(mstore_ctx, username);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
 	ictx = mapistore_indexing_search(mstore_ctx, username);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
-	/* 2. Ensure the fid/mid exist within the indexing database */
-	ret = mapistore_indexing_search_existing_fmid(ictx, fmid, &IsSoftDeleted);
-	DEBUG(0, ("ret = %d\n", ret));
-	MAPISTORE_RETVAL_IF(!ret, MAPISTORE_ERROR, NULL);
-
-	/* 3. Retrieve the mapistore_uri */
-	if (IsSoftDeleted == true) {
-		key.dptr = (unsigned char *) talloc_asprintf(mstore_ctx, "%s0x%.16"PRIx64,
-							     MAPISTORE_SOFT_DELETED_TAG, fmid);
-	} else {
-		key.dptr = (unsigned char *) talloc_asprintf(mstore_ctx, "0x%.16"PRIx64, fmid);
-		DEBUG(0, ("Search for record 0x%.16"PRIx64"\n", fmid));
-	}
+	key.dptr = (unsigned char *) talloc_asprintf(mstore_ctx, "0x%.16"PRIx64, fmid);
 	key.dsize = strlen((const char *) key.dptr);
 
+	ret = tdb_exists(ictx->index_ctx->tdb, key);
+	if (ret) {
+		*soft_deletedp = false;
+	}
+	else {
+		talloc_free(key.dptr);
+		key.dptr = (unsigned char *) talloc_asprintf(ictx, "%s0x%.16"PRIx64,
+							     MAPISTORE_SOFT_DELETED_TAG,
+							     fmid);
+		key.dsize = strlen((const char *)key.dptr);
+		ret = tdb_exists(ictx->index_ctx->tdb, key);
+		if (ret) {
+			*soft_deletedp = true;
+		}
+		else {
+			talloc_free(key.dptr);
+			*urip = NULL;
+			return MAPISTORE_SUCCESS;
+		}
+	}
 	dbuf = tdb_fetch(ictx->index_ctx->tdb, key);
+	*urip = talloc_memdup(mem_ctx, dbuf.dptr, dbuf.dsize);
 	talloc_free(key.dptr);
-
-	uri = talloc_strndup(mstore_ctx, (const char *)dbuf.dptr, dbuf.dsize);
-	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERROR, NULL);
-	DEBUG(0, ("uri = %s\n", uri));
-
-	/* FIXME: Look for folders starting with 0x ... nasty but will do the trick for now */
-
-        flist = talloc_zero(mstore_ctx, struct indexing_folders_list);
-        flist->folderID = talloc_array(flist, uint64_t, 2);
-        flist->count = 0;
-
-        ret = mapistore_get_folders_list(mstore_ctx, fmid, &flist);
-        *_flist = flist;
-
-        return ret;
-
-	/* tmp_uri = uri; */
-	/* while ((substr = strcasestr(uri, "0x")) != NULL) { */
-	/* 	folder = talloc_strndup(mstore_ctx, substr, 18); */
-	/* 	flist->folderID[flist->count] = strtoull(folder, NULL, 16); */
-	/* 	if (flist->folderID[flist->count] != fmid) { */
-	/* 		flist->count += 1; */
-	/* 		flist->folderID = talloc_realloc(flist, flist->folderID, uint64_t, flist->count + 1); */
-	/* 	} else { */
-	/* 		flist->folderID[flist->count] = 0; */
-	/* 	} */
-	/* 	talloc_free(folder); */
-	/* 	uri = substr + 18; */
-	/* } */
-
-	/* talloc_free(tmp_uri); */
-
-	/* *_flist = flist; */
-
-	/* return MAPISTORE_SUCCESS; */
+	
+	return MAPISTORE_SUCCESS;
 }
+
 
 /**
    \details Add a fid record to the indexing database

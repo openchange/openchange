@@ -286,6 +286,7 @@ compile() {
     pushd samba4/source4
     error_check $? "samba4 setup"
 
+    cd $RUNDIR/../samba4
     ./configure.developer -C --prefix=$SAMBA_PREFIX
     error_check $? "samba4 configure"
 
@@ -345,6 +346,7 @@ install() {
     pushd samba4/source4
     error_check $? "samba4 setup"
 
+    cd $RUNDIR/../samba4
     if test -w `dirname $SAMBA_PREFIX`; then
 	$MAKE install
 	error_check $? "samba4 install"

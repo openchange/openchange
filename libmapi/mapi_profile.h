@@ -53,6 +53,7 @@ struct mapi_profile
 	uint32_t		language;
 	uint32_t		method;
 	uint32_t		exchange_version;
+	const char		*kerberos;
 };
 
 typedef int (*mapi_profile_callback_t)(struct SRowSet *, const void *);

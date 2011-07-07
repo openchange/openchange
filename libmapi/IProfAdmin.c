@@ -64,7 +64,7 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	msg = res->msgs[0];
 
 	profile->username = ldb_msg_find_attr_as_string(msg, "username", NULL);
-	profile->password = password ? password : ldb_msg_find_attr_as_string(msg, "password", "");
+	profile->password = password ? password : ldb_msg_find_attr_as_string(msg, "password", NULL);
 	profile->workstation = ldb_msg_find_attr_as_string(msg, "workstation", NULL);
 	profile->realm = ldb_msg_find_attr_as_string(msg, "realm", NULL);
 	profile->domain = ldb_msg_find_attr_as_string(msg, "domain", NULL);
@@ -79,8 +79,7 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	profile->language = ldb_msg_find_attr_as_int(msg, "language", 0);
 	profile->method = ldb_msg_find_attr_as_int(msg, "method", 0);
 	profile->exchange_version = ldb_msg_find_attr_as_int(msg, "exchange_version", 0);
-
-	if (!profile->password) return MAPI_E_INVALID_PARAMETER;
+	profile->kerberos = ldb_msg_find_attr_as_string(msg, "kerberos", NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -741,6 +740,7 @@ _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_context *mapi_ctx,
 _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_context *mapi_ctx, 
 				     struct mapi_profile *profile)
 {
+	enum credentials_use_kerberos use_krb = CRED_AUTO_USE_KERBEROS;
 	TALLOC_CTX *mem_ctx;
 
 	/* Sanity checks */
@@ -752,11 +752,40 @@ _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_context *mapi_ctx,
 
 	profile->credentials = cli_credentials_init(mem_ctx);
 	OPENCHANGE_RETVAL_IF(!profile->credentials, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
-	cli_credentials_set_username(profile->credentials, profile->username, CRED_SPECIFIED);
-	cli_credentials_set_password(profile->credentials, profile->password, CRED_SPECIFIED);
-	cli_credentials_set_workstation(profile->credentials, profile->workstation, CRED_SPECIFIED);
-	cli_credentials_set_realm(profile->credentials, profile->realm, CRED_SPECIFIED);
-	cli_credentials_set_domain(profile->credentials, profile->domain, CRED_SPECIFIED);
+	cli_credentials_guess(profile->credentials, mapi_ctx->lp_ctx);
+	if (profile->workstation && *(profile->workstation)) {
+		cli_credentials_set_workstation(profile->credentials, profile->workstation, CRED_SPECIFIED);
+	}
+	if (profile->realm && *(profile->realm)) {
+		cli_credentials_set_realm(profile->credentials, profile->realm, CRED_SPECIFIED);
+	}
+	if (profile->domain && *(profile->domain)) {
+		cli_credentials_set_domain(profile->credentials, profile->domain, CRED_SPECIFIED);
+	}
+	/* we keep the krb value literal as on/off and set the appropriate
+	 * flags at profile load time, to avoid embedding the bits of
+	 * another API in the profile */
+	if (profile->kerberos) {
+		if (!strncmp(profile->kerberos, "yes", 3)) {
+			use_krb = CRED_MUST_USE_KERBEROS;
+		} else {
+			use_krb = CRED_DONT_USE_KERBEROS;
+		}
+	}
+	/* additionally, don't set the username in the ccache if kerberos
+	 * is forced, it causes the samba API to ignore existing kerberos
+	 * credentials.  cli_credentials_guess probably gets the right
+	 * thing anyway in the situations where kerberos is in use */
+	if (profile->username && *(profile->username)
+	    && use_krb != CRED_MUST_USE_KERBEROS) {
+		cli_credentials_set_username(profile->credentials, profile->username, CRED_SPECIFIED);
+	}
+	if (profile->password && *(profile->password)) {
+		cli_credentials_set_password(profile->credentials, profile->password, CRED_SPECIFIED);
+	}
+	if (use_krb != CRED_AUTO_USE_KERBEROS) {
+		cli_credentials_set_kerberos_state(profile->credentials, use_krb);
+	}
 
 	return MAPI_E_SUCCESS;
 }

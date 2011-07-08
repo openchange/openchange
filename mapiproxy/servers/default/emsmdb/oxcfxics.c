@@ -342,9 +342,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceCopyTo(TALLOC_CTX *mem_ctx
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	request = &mapi_req->u.mapi_FastTransferSourceCopyTo;
+
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->handle_idx = request->handle_idx;
 
 	/* Step 1. Retrieve object handle */
 	parent_handle_id = handles[mapi_req->handle_idx];
@@ -358,8 +360,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceCopyTo(TALLOC_CTX *mem_ctx
 	/* Step 2. Check whether the parent object supports fetching properties */
 	mapi_handles_get_private_data(parent_object_handle, &data);
 	parent_object = (struct emsmdbp_object *) data;
-
-	request = &mapi_req->u.mapi_FastTransferSourceCopyTo;
 
 	if (request->Level > 0) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;	
@@ -410,7 +410,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceCopyTo(TALLOC_CTX *mem_ctx
 			talloc_free(ndr);
 
 			mapi_handles_set_private_data(object_handle, object);
-			mapi_repl->handle_idx = request->handle_idx;
 			handles[mapi_repl->handle_idx] = object_handle->handle;
 
 			talloc_free(data_pointers);
@@ -1220,9 +1219,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	request = &mapi_req->u.mapi_SyncConfigure;
+
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
+        mapi_repl->handle_idx = request->handle_idx;
 
 	folder_handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, folder_handle, &folder_rec);
@@ -1239,8 +1240,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
 	}
-
-	request = &mapi_req->u.mapi_SyncConfigure;
 
         synccontext_object = emsmdbp_object_synccontext_init(NULL, emsmdbp_ctx, folder_object);
         synccontext = synccontext_object->object.synccontext;
@@ -1391,7 +1390,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
         retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, folder_handle, &synccontext_rec);
 	(void) talloc_reference(synccontext_rec, synccontext_object);
         mapi_handles_set_private_data(synccontext_rec, synccontext_object);
-        mapi_repl->handle_idx = request->handle_idx;
         handles[mapi_repl->handle_idx] = synccontext_rec->handle;
 end:
 	*size += libmapiserver_RopSyncConfigure_size(mapi_repl);
@@ -1441,9 +1439,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	request = &mapi_req->u.mapi_SyncImportMessageChange;
+	response = &mapi_repl->u.mapi_SyncImportMessageChange;
+
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->handle_idx = request->handle_idx;
 
 	/* Step 1. Retrieve object handle */
 	synccontext_handle_id = handles[mapi_req->handle_idx];
@@ -1463,11 +1464,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	}
 
         synccontext = synccontext_object->object.synccontext;
-
-	request = &mapi_req->u.mapi_SyncImportMessageChange;
-	response = &mapi_repl->u.mapi_SyncImportMessageChange;
-
-	mapi_repl->handle_idx = request->handle_idx;
 
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &repl_id, &replica_guid);
 	if (oxcfxics_fmid_from_source_key(emsmdbp_ctx, &request->PropertyValues.lpProps[0].value.bin, &messageID)) {
@@ -2154,7 +2150,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncOpenCollector(TALLOC_CTX *mem_ctx,
 
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->handle_idx = mapi_req->u.mapi_SyncOpenCollector.handle_idx;
 
 	folder_handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, folder_handle, &folder_rec);
@@ -2180,7 +2176,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncOpenCollector(TALLOC_CTX *mem_ctx,
 	talloc_steal(synccontext_rec, synccontext_object);
 	retval = mapi_handles_set_private_data(synccontext_rec, synccontext_object);
 	synccontext_object->object.synccontext->request.contents_mode = (mapi_req->u.mapi_SyncOpenCollector.IsContentsCollector != 0);
-	mapi_repl->handle_idx = mapi_req->u.mapi_SyncOpenCollector.handle_idx;
 	handles[mapi_repl->handle_idx] = synccontext_rec->handle;
 
 end:
@@ -2504,7 +2499,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncGetTransferState(TALLOC_CTX *mem_ctx,
 
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->handle_idx = mapi_req->u.mapi_SyncGetTransferState.handle_idx;
 
 	synccontext_handle_id = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle_id, &synccontext_handle);
@@ -2533,7 +2528,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncGetTransferState(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, synccontext_handle_id, &ftcontext_handle);
 	ftcontext_object = emsmdbp_object_ftcontext_init((TALLOC_CTX *)ftcontext_handle, emsmdbp_ctx, synccontext_object);
 	mapi_handles_set_private_data(ftcontext_handle, ftcontext_object);
-	mapi_repl->handle_idx = mapi_req->u.mapi_SyncGetTransferState.handle_idx;
 	handles[mapi_repl->handle_idx] = ftcontext_handle->handle;
 
 	ftcontext = ftcontext_object->object.ftcontext;

@@ -84,9 +84,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	request = &mapi_req->u.mapi_OpenMessage;
+	response = &mapi_repl->u.mapi_OpenMessage;
+
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->handle_idx = request->handle_idx;
 
 	parent_handle_id = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, parent_handle_id, &parent_object_handle);
@@ -106,11 +109,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		*size += libmapiserver_RopOpenMessage_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
-
-	request = &mapi_req->u.mapi_OpenMessage;
-	response = &mapi_repl->u.mapi_OpenMessage;
-
-	mapi_repl->handle_idx = request->handle_idx;
 
 	messageID = request->MessageId;
 	folderID = request->FolderId;

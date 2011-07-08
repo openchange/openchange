@@ -70,9 +70,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	request = &mapi_req->u.mapi_OpenFolder;
+	response = &mapi_repl->u.mapi_OpenFolder;
+
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->handle_idx = request->handle_idx;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
@@ -91,9 +94,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	request = &mapi_req->u.mapi_OpenFolder;
-	response = &mapi_repl->u.mapi_OpenFolder;
-
 	/* Fill EcDoRpc_MAPI_REPL reply */
 	response->HasRules = 0;
 	response->IsGhosted = 0;
@@ -105,8 +105,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 	retval = mapi_handles_set_private_data(rec, object);
-
-	mapi_repl->handle_idx = request->handle_idx;
 	handles[mapi_repl->handle_idx] = rec->handle;
 
 end:

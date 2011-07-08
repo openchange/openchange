@@ -138,6 +138,12 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		talloc_free(mem_ctx);
 		return NULL;
 	}
+	emsmdbp_ctx->mstore_ctx->conn_info = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_connection_info);
+	emsmdbp_ctx->mstore_ctx->conn_info->mstore_ctx = emsmdbp_ctx->mstore_ctx;
+	emsmdbp_ctx->mstore_ctx->conn_info->oc_ctx = emsmdbp_ctx->oc_ctx;
+	talloc_reference(emsmdbp_ctx->mstore_ctx->conn_info, emsmdbp_ctx->mstore_ctx->conn_info->oc_ctx);
+	emsmdbp_ctx->mstore_ctx->conn_info->username = talloc_strdup(emsmdbp_ctx->mstore_ctx->conn_info, username);
+
 	talloc_set_destructor((void *)emsmdbp_ctx->mstore_ctx, (int (*)(void *))emsmdbp_mapi_store_destructor);
 
 	/* Initialize the mapistore user's indexing database */
@@ -241,8 +247,9 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 		return false;
 	}
 
-	/* Get a copy of the username for later use */
+	/* Get a copy of the username for later use and setup missing conn_info components */
 	emsmdbp_ctx->username = talloc_strdup(emsmdbp_ctx, username);
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &emsmdbp_ctx->mstore_ctx->conn_info->repl_id, &emsmdbp_ctx->mstore_ctx->conn_info->replica_guid);
 
 	return true;
 }

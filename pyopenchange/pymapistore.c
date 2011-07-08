@@ -77,7 +77,7 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 		return NULL;
 	}
 	/* TODO: conn_info should be provided here */
-	ret = mapistore_add_context(self->mstore_ctx, NULL, uri, fid, &context_id);
+	ret = mapistore_add_context(self->mstore_ctx, uri, fid, &context_id);
 	if (ret != MAPISTORE_SUCCESS) {
 		return NULL;
 	}

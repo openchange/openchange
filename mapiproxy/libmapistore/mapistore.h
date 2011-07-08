@@ -191,13 +191,14 @@ struct backend_context_list {
 struct processing_context;
 
 struct mapistore_context {
-	struct processing_context	*processing_ctx;
-	struct backend_context_list    	*context_list;
-	struct indexing_context_list	*indexing_list;
-        struct mapistore_subscription_list *subscriptions;
-	struct mapistore_notification_list *notifications;
-	struct tdb_wrap			*replica_mapping_ctx;
-	void				*nprops_ctx;
+	struct processing_context		*processing_ctx;
+	struct backend_context_list		*context_list;
+	struct indexing_context_list		*indexing_list;
+	struct mapistore_subscription_list	*subscriptions;
+	struct mapistore_notification_list	*notifications;
+	struct tdb_wrap				*replica_mapping_ctx;
+	void					*nprops_ctx;
+	struct mapistore_connection_info	*conn_info;
 };
 
 #ifndef __BEGIN_DECLS
@@ -215,7 +216,7 @@ __BEGIN_DECLS
 /* definitions from mapistore_interface.c */
 struct mapistore_context *mapistore_init(TALLOC_CTX *, const char *);
 int mapistore_release(struct mapistore_context *);
-int mapistore_add_context(struct mapistore_context *, struct mapistore_connection_info *, const char *, uint64_t, uint32_t *);
+int mapistore_add_context(struct mapistore_context *, const char *, uint64_t, uint32_t *);
 int mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
 int mapistore_release_record(struct mapistore_context *, uint32_t, uint64_t, uint8_t);

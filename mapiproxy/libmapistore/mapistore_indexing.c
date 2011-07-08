@@ -96,6 +96,7 @@ _PUBLIC_ int mapistore_indexing_add(struct mapistore_context *mstore_ctx,
 	ictx->username = talloc_strdup(ictx, username);
 	ictx->ref_count = 0;
 	DLIST_ADD_END(mstore_ctx->indexing_list, ictx, struct indexing_context_list *);
+	mstore_ctx->conn_info->indexing = ictx->index_ctx;
 
 	talloc_free(mem_ctx);
 

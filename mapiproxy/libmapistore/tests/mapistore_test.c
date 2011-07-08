@@ -45,7 +45,6 @@ int main(int argc, const char *argv[])
 	uint32_t			context_id = 0;
 	uint32_t			context_id2 = 0;
 	uint32_t			context_id3 = 0;
-	struct mapistore_connection_info	conn_info;
 
 	enum { OPT_DEBUG=1000 };
 
@@ -87,16 +86,13 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
-	memset(&conn_info, 0, sizeof(struct mapistore_connection_info));
-	conn_info.username = "test";
-
-	retval = mapistore_add_context(mstore_ctx, &conn_info, "sqlite:///tmp/test.db", -1, &context_id);
+	retval = mapistore_add_context(mstore_ctx, "sqlite:///tmp/test.db", -1, &context_id);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);
 	}
 
-	retval = mapistore_add_context(mstore_ctx, &conn_info, "sqlite:///tmp/test2.db", -1, &context_id2);
+	retval = mapistore_add_context(mstore_ctx, "sqlite:///tmp/test2.db", -1, &context_id2);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);
@@ -105,7 +101,7 @@ int main(int argc, const char *argv[])
 	DEBUG(0, ("Context ID: [1] = %d and [2] = %d\n", context_id, context_id2));
 
 
-	retval = mapistore_add_context(mstore_ctx, &conn_info, "fsocpf:///tmp/fsocpf", -1, &context_id3);
+	retval = mapistore_add_context(mstore_ctx, "fsocpf:///tmp/fsocpf", -1, &context_id3);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);

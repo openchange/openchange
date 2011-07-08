@@ -243,8 +243,6 @@ int main(int argc, const char *argv[])
 	bool				opt_dumpdata = false;
 	const char			*opt_debug = NULL;
 
-	struct mapistore_connection_info conn_info;
-
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_MAXDATA, OPT_SHOWPROGRESS, OPT_MAPISTORE, OPT_DEBUG, OPT_DUMPDATA};
 
 	struct poptOption long_options[] = {
@@ -387,9 +385,7 @@ int main(int argc, const char *argv[])
 			exit (1);
 		}
 
-		memset(&conn_info, 0, sizeof(struct mapistore_connection_info));
-		conn_info.username = opt_profname;
-		retval = mapistore_add_context(output_ctx.mstore_ctx, &conn_info, root_folder, output_ctx.root_fid, &(output_ctx.mapistore_context_id));
+		retval = mapistore_add_context(output_ctx.mstore_ctx, root_folder, output_ctx.root_fid, &(output_ctx.mapistore_context_id));
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 			exit (1);

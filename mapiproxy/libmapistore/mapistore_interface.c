@@ -106,7 +106,6 @@ _PUBLIC_ int mapistore_release(struct mapistore_context *mstore_ctx)
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
-				   struct mapistore_connection_info *conn_info,
 				   const char *uri, uint64_t fid,
                                    uint32_t *context_id)
 {
@@ -138,11 +137,10 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
 	    namespace[3]) {
 		backend_uri = talloc_strdup(mem_ctx, &namespace[3]);
 		namespace[3] = '\0';
-		backend_ctx = mapistore_backend_create_context(mstore_ctx, conn_info, namespace_start, backend_uri, fid);
+		backend_ctx = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, namespace_start, backend_uri, fid);
 		if (!backend_ctx) {
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
-		(void) talloc_reference(backend_ctx, conn_info);
 
 		backend_list = talloc_zero((TALLOC_CTX *) mstore_ctx, struct backend_context_list);
 		talloc_steal(backend_list, backend_ctx);

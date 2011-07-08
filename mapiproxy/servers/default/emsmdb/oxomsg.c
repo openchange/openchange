@@ -93,7 +93,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 		break;
 	case true:
 		messageID = object->object.message->messageID;
-		contextID = object->object.message->contextID;
+		contextID = emsmdbp_get_contextID(object);
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
 		mapistore_submitmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags);
 		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
@@ -283,8 +283,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 	void				*private_data;
 	bool				mapistore = false;
 	struct emsmdbp_object		*object;
-	uint64_t			messageID;
-	uint32_t			contextID;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] TransportSend (0x4a)\n"));
 
@@ -322,9 +320,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;
 	case true:
-		messageID = object->object.message->messageID;
-		contextID = object->object.message->contextID;
-		mapistore_submitmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, 0);
+		mapistore_submitmessage(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->object.message->messageID, 0);
 		/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID); */
 		break;
 	}

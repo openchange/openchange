@@ -106,7 +106,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 
         /* we attach the subscription to the session object.
            note: a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
-        subscription_list = talloc_zero(subscription_object, struct mapistore_subscription_list);
+        subscription_list = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_subscription_list);
         DLIST_ADD(emsmdbp_ctx->mstore_ctx->subscriptions, subscription_list);
 
         subscription_parameters.folder_id = mapi_req->u.mapi_RegisterNotification.FolderId.ID;
@@ -114,8 +114,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
         subscription_parameters.whole_store = mapi_req->u.mapi_RegisterNotification.WantWholeStore;
 
         subscription = mapistore_new_subscription(subscription_list, subscription_rec->handle,
-                                                  mapi_req->u.mapi_RegisterNotification.NotificationFlags,
-                                                  &subscription_parameters);
+						  mapi_req->u.mapi_RegisterNotification.NotificationFlags,
+						  &subscription_parameters);
         subscription_list->subscription = subscription;
 
         subscription_object->object.subscription->subscription_list = subscription_list;

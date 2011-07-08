@@ -44,17 +44,17 @@
 #endif
 
 struct emsmdbp_context {
-	char				*szUserDN;
-	char				*szDisplayName;
-	uint32_t			userLanguage;
-	char				*username;
-	struct loadparm_context		*lp_ctx;
-	void				*oc_ctx;
-	struct ldb_context		*samdb_ctx;
-	struct mapistore_context	*mstore_ctx;
-	struct mapi_handles_context	*handles_ctx;
+	char					*szUserDN;
+	char					*szDisplayName;
+	uint32_t				userLanguage;
+	char					*username;
+	struct loadparm_context			*lp_ctx;
+	void					*oc_ctx;
+	struct ldb_context			*samdb_ctx;
+	struct mapistore_context		*mstore_ctx;
+	struct mapi_handles_context		*handles_ctx;
 
-	TALLOC_CTX			*mem_ctx;
+	TALLOC_CTX				*mem_ctx;
 };
 
 struct exchange_emsmdb_session {
@@ -125,42 +125,27 @@ struct emsmdbp_object_mailbox {
 
 struct emsmdbp_object_folder {
 	uint64_t			folderID;
-	uint32_t			contextID;
-	bool				mapistore;
+	uint32_t			contextID; /* requires mapistore_root == true, undefined otherwise */
 	bool				mapistore_root; /* root mapistore container or not */
-	bool				mailboxstore;
 };
 
 struct emsmdbp_object_message {
 	uint64_t			folderID;
 	uint64_t			messageID;
-	uint32_t			contextID;
-	bool				mapistore;
 };
 
 struct emsmdbp_object_table {
-	uint64_t			folderID;
-	uint8_t				ulType;
-	uint32_t			contextID;
-	bool				restricted;
-	bool				IsSystemTable;
-	uint16_t			prop_count;
-	enum MAPITAGS			*properties;
-	uint32_t			numerator;
-	uint32_t			denominator;
-	bool				mapistore;
-	bool				mapistore_root;
-        struct mapistore_subscription_list   *subscription_list;
+	uint8_t					ulType;
+	bool					restricted;
+	uint16_t				prop_count;
+	enum MAPITAGS				*properties;
+	uint32_t				numerator;
+	uint32_t				denominator;
+        struct mapistore_subscription_list	*subscription_list;
 };
 
 struct emsmdbp_object_stream {
-	uint32_t			contextID;
-	uint64_t			objectID;
-	uint8_t				objectType;
 	bool				needs_commit;
-	bool				mapistore;
-        bool                            parent_poc_api;
-        void                            *parent_poc_backend_object;
 	enum MAPITAGS			property;
 	struct emsmdbp_stream		stream;
 };
@@ -173,22 +158,15 @@ struct emsmdbp_stream_data {
 };
 
 struct emsmdbp_object_attachment {
-	uint64_t			messageID;
 	uint32_t			attachmentID;
-	uint32_t			contextID;
-	bool				mapistore;
 };
 
 struct emsmdbp_object_subscription {
-	uint32_t			handle;
-	uint32_t			contextID;
-        struct mapistore_subscription_list *subscription_list;
-	bool				mapistore;
+	uint32_t				handle;
+        struct mapistore_subscription_list	*subscription_list;
 };
 
 struct emsmdbp_object_synccontext {
-	struct emsmdbp_object	*folder; /* source folder */
-
 	bool			is_collector;
 
 	struct emsmdbp_syncconfigure_request	request;
@@ -228,10 +206,10 @@ union emsmdbp_objects {
 };
 
 struct emsmdbp_object {
+	struct emsmdbp_object		*parent_object;
 	enum emsmdbp_object_type	type;
 	union emsmdbp_objects		object;
 	struct emsmdbp_context		*emsmdbp_ctx;
-	struct mapistore_context	*mstore_ctx;
 	void				*private_data;
         bool                            poc_api;
         void                            *poc_backend_object; /* private_data ? */
@@ -296,12 +274,18 @@ int				emsmdbp_replid_to_guid(struct emsmdbp_context *, const uint16_t, struct G
 const char	      *emsmdbp_getstr_type(struct emsmdbp_object *);
 bool		      emsmdbp_is_mapistore(struct emsmdbp_object *);
 bool		      emsmdbp_is_mailboxstore(struct emsmdbp_object *);
+int		      emsmdbp_get_uri_from_fid(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, char **);
+int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, uint64_t *);
 uint32_t	      emsmdbp_get_contextID(struct emsmdbp_object *);
-struct mapi_handles   *emsmdbp_object_get_folder_handle_by_fid(struct mapi_handles_context *, uint64_t);
-struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *);
+bool		      emsmdbp_object_fmid_is_available(struct emsmdbp_context *, uint64_t);
+/* With emsmdbp_object_create_folder and emsmdbp_object_open_folder, the parent object IS the direct parent */
+enum MAPISTATUS	      emsmdbp_object_create_folder(struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct SRow *);
+struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);
+struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);
+
+struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *parent_object);
 struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, bool);
 struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
-struct emsmdbp_object *emsmdbp_object_folder_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);
 int emsmdbp_folder_get_folder_count(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t *);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_table_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);

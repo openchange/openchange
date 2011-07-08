@@ -239,7 +239,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetProperties(TALLOC_CTX *mem_ctx,
 				&(aRow.lpProps[i]));
 	}
 
-	retval = emsmdbp_object_set_properties(emsmdbp_ctx->oc_ctx, object, &aRow);
+	retval = emsmdbp_object_set_properties(emsmdbp_ctx, object, &aRow);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
@@ -323,9 +323,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*parent_object = NULL;
 	struct OpenStream_req		*request;
 	struct OpenStream_repl		*response;
-	uint32_t			handle, contextID;
-	uint64_t			objectID;
-	uint8_t				objectType;
+	uint32_t			handle;
 	void				*data;
         struct SPropTagArray		properties;
 	void				**data_pointers;
@@ -357,25 +355,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 
 	mapi_handles_get_private_data(parent, &data);
 	parent_object = (struct emsmdbp_object *) data;
-	if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
-                contextID = parent_object->object.folder->contextID;
-		objectID = parent_object->object.folder->folderID;
-		objectType = MAPISTORE_FOLDER;
-	}
-	else if (parent_object->type == EMSMDBP_OBJECT_MESSAGE) {
-                contextID = parent_object->object.message->contextID;
-                objectID = parent_object->object.message->messageID;
-		objectType = MAPISTORE_MESSAGE;
-	}
-	else if (parent_object->type == EMSMDBP_OBJECT_ATTACHMENT) {
-                contextID = parent_object->object.attachment->contextID;
-                objectID = parent_object->object.attachment->attachmentID;
-		objectType = MAPISTORE_ATTACHMENT; // useless with poc
-        }
-        else {
+	if (!(parent_object->type == EMSMDBP_OBJECT_FOLDER
+	      || parent_object->type == EMSMDBP_OBJECT_MESSAGE
+	      || parent_object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
                 goto end;
-	}
+        }
 
 	request = &mapi_req->u.mapi_OpenStream;
 	response = &mapi_repl->u.mapi_OpenStream;
@@ -388,8 +373,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	*/
 
 	object = emsmdbp_object_stream_init(NULL, emsmdbp_ctx, parent_object);
-	object->object.stream->objectID = objectID;
-	object->object.stream->objectType = objectType;
 	object->object.stream->property = request->PropertyTag;
 	object->object.stream->stream.position = 0;
 	object->object.stream->stream.buffer.length = 0;

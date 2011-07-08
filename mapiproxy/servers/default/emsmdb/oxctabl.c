@@ -58,7 +58,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object_table	*table;
 	struct SetColumns_req		request;
 	void				*data = NULL;
-	uint32_t			handle, i;
+	uint32_t			handle;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCTABL] SetColumns (0x12)\n"));
 
@@ -100,19 +100,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *mem_ctx,
 
 		request = mapi_req->u.mapi_SetColumns;
 
-		DEBUG(5, ("  handle_idx: %.8x, folder_id: %.16lx; properties (%d):", mapi_req->handle_idx, table->folderID, request.prop_count));
-		for (i = 0; i < request.prop_count; i++) {
-		    DEBUG(5, (" %.8x", request.properties[i]));
-		}
-		DEBUG(5, ("\n"));
-
 		if (request.prop_count) {
 			table->prop_count = request.prop_count;
 			table->properties = talloc_memdup(table, request.properties, 
 							  request.prop_count * sizeof (uint32_t));
-                        if (table->mapistore) {
+                        if (emsmdbp_is_mapistore(object)) {
                                 if (object->poc_api) {
-                                        mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, table->contextID, 
+                                        mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
                                                                           object->poc_backend_object,
                                                                           request.prop_count,
                                                                           request.properties);
@@ -217,16 +211,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
         /* TODO: we should invalidate current bookmarks on the table */
 
 	/* If parent folder has a mapistore context */
-	if (table->mapistore) {
+	if (emsmdbp_is_mapistore(object)) {
 		status = TBLSTAT_COMPLETE;
                 request = mapi_req->u.mapi_SortTable;
                 if (object->poc_api) {
-                        retval = mapistore_pocop_set_sort_order(emsmdbp_ctx->mstore_ctx, table->contextID,
+                        retval = mapistore_pocop_set_sort_order(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
                                                                 object->poc_backend_object, &request.lpSortCriteria, &status);
                 }
                 else {
-                        retval = mapistore_set_sort_order(emsmdbp_ctx->mstore_ctx, table->contextID, 
-                                                          table->folderID, table->ulType, &request.lpSortCriteria, &status);
+                        retval = mapistore_set_sort_order(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), 
+                                                          object->parent_object->object.folder->folderID, table->ulType,
+							  &request.lpSortCriteria, &status);
                 }
                 if (retval) {
 			mapi_repl->error_code = retval;
@@ -328,15 +323,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	}
  
 	/* If parent folder has a mapistore context */
-	if (table->mapistore) {
+	if (emsmdbp_is_mapistore(object)) {
 		status = TBLSTAT_COMPLETE;
                 if (object->poc_api) {
-                        retval = mapistore_pocop_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
+                        retval = mapistore_pocop_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
                                                                   object->poc_backend_object, &request.restrictions, &status);
                 }
                 else {
-                        retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID, 
-                                                            table->folderID, table->ulType, &request.restrictions, &status);
+                        retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), 
+                                                            object->parent_object->object.folder->folderID, table->ulType,
+							    &request.restrictions, &status);
                 }
                 if (retval) {
                         mapi_repl->error_code = retval;
@@ -433,9 +429,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	}
 
 	table = object->object.table;
-	if (!table->folderID) {
-		goto end;
-	}
 
 	count = 0;
 	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
@@ -450,8 +443,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	if ((request.RowCount + table->numerator) > table->denominator) {
 		request.RowCount = table->denominator - table->numerator;
 	}
-
-	DEBUG (5, ("  folderID: %.16lx\n", table->folderID));
 
         /* Lookup the properties */
         for (i = 0; i < request.RowCount; i++, count++) {
@@ -567,7 +558,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryPosition(TALLOC_CTX *mem_ctx,
 	}
 
 	table = object->object.table;
-	if (!table->folderID) goto end;
 
         mapi_repl->u.mapi_QueryPosition.Numerator = table->numerator;
 	mapi_repl->u.mapi_QueryPosition.Denominator = table->denominator;
@@ -649,7 +639,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekRow(TALLOC_CTX *mem_ctx,
 	 * entire table, nor do we handle bookmarks */
 
 	table = object->object.table;
-	DEBUG(5, ("  handle_idx: %.8x, folder_id: %.16lx\n", mapi_req->handle_idx, table->folderID));
 	if (mapi_req->u.mapi_SeekRow.origin == BOOKMARK_BEGINNING) {
                 next_position = mapi_req->u.mapi_SeekRow.offset;
 	}
@@ -772,10 +761,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	 * entire table, nor do we handle bookmarks */
 
 	table = object->object.table;
-	if (!table->folderID) {
-		DEBUG(5, ("  no folderID\n"));
-		goto end;
-	}
 	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto end;
@@ -785,8 +770,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	DEBUG(5, ("  handle_idx: %.8x, folder_id: %.16lx\n", mapi_req->handle_idx, table->folderID));
-
 	if (mapi_req->u.mapi_FindRow.origin == BOOKMARK_BEGINNING) {
 		table->numerator = 0;
 	}
@@ -795,18 +778,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		table->numerator = 0;
 	}
 
-	switch (table->mapistore) {
+	switch (emsmdbp_is_mapistore(object)) {
 	case true:
 		memset (&row, 0, sizeof(DATA_BLOB));
 
 		/* Restrict rows to be fetched */
                 if (object->poc_api) {
-                        retval = mapistore_pocop_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
+                        retval = mapistore_pocop_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
                                                                   object->poc_backend_object, &request.res, &status);
                 }
                 else {
-                        retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
-                                                            table->folderID,
+                        retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+                                                            object->parent_object->object.folder->folderID,
                                                             table->ulType,
                                                             &request.res, &status);
                 }
@@ -823,7 +806,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 
                         if (object->poc_api) {
                                 memset(properties, 0, sizeof(struct mapistore_property_data) * table->prop_count);
-                                retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
                                                                        object->poc_backend_object,
                                                                        MAPISTORE_LIVEFILTERED_QUERY,
                                                                        table->numerator,
@@ -860,10 +843,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
                                 }
                         }
                         else {
-                                retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
                                                                       table->ulType,
                                                                       MAPISTORE_LIVEFILTERED_QUERY,
-                                                                      table->folderID,
+                                                                      object->parent_object->object.folder->folderID,
                                                                       (table->ulType == MAPISTORE_MESSAGE_TABLE) ? PR_MID : PR_FID,
                                                                       table->numerator, &data);
 
@@ -876,10 +859,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
                                         flagged = 0;
                                         
                                         for (j = 0; j < table->prop_count; j++) {
-                                                retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, table->contextID,
+                                                retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
                                                                                       table->ulType,
                                                                                       MAPISTORE_LIVEFILTERED_QUERY,
-                                                                                      table->folderID, 
+                                                                                      object->parent_object->object.folder->folderID, 
                                                                                       table->properties[j],
                                                                                       table->numerator, data_pointers + j);
                                                 retvals[j] = retval;
@@ -924,12 +907,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
                 talloc_free(properties);
 
                 if (object->poc_api) {
-                        retval = mapistore_pocop_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
+                        retval = mapistore_pocop_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
                                                                   object->poc_backend_object, NULL, &status);
                 }
                 else {
-                        retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID,
-                                                            table->folderID,
+                        retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+                                                            object->parent_object->object.folder->folderID,
                                                             table->ulType,
                                                             NULL, &status);
                 }
@@ -1043,9 +1026,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
 		}
 
 		/* 1.2. empty restrictions */
-		if (table->mapistore) {
-			retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, table->contextID, 
-							    table->folderID, table->ulType, NULL, &status);
+		if (emsmdbp_is_mapistore(object)) {
+			if (object->poc_api) {
+				retval = mapistore_pocop_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+									  object->poc_backend_object, NULL, &status);
+			}
+			else {
+				retval = mapistore_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), 
+								    object->parent_object->object.folder->folderID, table->ulType, NULL, &status);
+			}
 		} else {
 			DEBUG(0, ("  mapistore Restrict: Not implemented yet\n"));
 			goto end;

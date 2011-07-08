@@ -95,7 +95,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	TALLOC_CTX		*mem_ctx;
 	struct emsmdbp_context	*emsmdbp_ctx;
 	struct tevent_context	*ev;
-	int			ret;
+	int					ret;
 
 	/* Sanity Checks */
 	if (!lp_ctx) return NULL;
@@ -108,6 +108,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		return NULL;
 	}
 
+	DEBUG(5, ("emsmdbp_ctx ref: %p\n", emsmdbp_ctx));
 	emsmdbp_ctx->mem_ctx = mem_ctx;
 
 	ev = tevent_context_init(mem_ctx);
@@ -200,7 +201,8 @@ _PUBLIC_ bool emsmdbp_destructor(void *data)
 
 	if (!emsmdbp_ctx) return false;
 
-	talloc_free(emsmdbp_ctx);
+	talloc_unlink(emsmdbp_ctx, emsmdbp_ctx->oc_ctx);
+
 	DEBUG(0, ("[%s:%d]: emsmdbp_ctx found and released\n", __FUNCTION__, __LINE__));
 
 	return true;

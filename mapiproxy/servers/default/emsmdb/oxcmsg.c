@@ -60,9 +60,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS			retval;
 	uint32_t			parent_handle_id;
 	struct mapi_handles		*object_handle = NULL;
-	struct mapi_handles		*parent_object_handle = NULL;
+	struct mapi_handles		*context_object_handle = NULL;
 	struct emsmdbp_object		*object = NULL;
-	struct emsmdbp_object		*parent_object = NULL;
+	struct emsmdbp_object		*context_object = NULL;
 	struct mapistore_message	*msg;
 	void				*data;
 	uint64_t			folderID;
@@ -92,19 +92,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	mapi_repl->handle_idx = request->handle_idx;
 
 	parent_handle_id = handles[mapi_req->handle_idx];
-	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, parent_handle_id, &parent_object_handle);
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, parent_handle_id, &context_object_handle);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
-	mapi_handles_get_private_data(parent_object_handle, &data);
-	parent_object = (struct emsmdbp_object *)data;
-	if (!parent_object) {
+	/* With OpenMessage, the parent object may NOT BE the direct parent folder of the message */
+	mapi_handles_get_private_data(context_object_handle, &data);
+	context_object = (struct emsmdbp_object *)data;
+	if (!context_object) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		*size += libmapiserver_RopOpenMessage_size(NULL);
 		return MAPI_E_SUCCESS;
 	}
 
 	/* OpenMessage can only be called for mailbox/folder objects */
-	if (!(parent_object->type == EMSMDBP_OBJECT_MAILBOX || parent_object->type == EMSMDBP_OBJECT_FOLDER)) {
+	if (!(context_object->type == EMSMDBP_OBJECT_MAILBOX || context_object->type == EMSMDBP_OBJECT_FOLDER)) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		*size += libmapiserver_RopOpenMessage_size(NULL);
 		return MAPI_E_SUCCESS;
@@ -116,7 +117,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	/* Initialize Message object */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &object_handle);
-	object = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, parent_object, folderID, messageID, &msg);
+	object = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, &msg);
 	if (!object) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		goto end;
@@ -198,7 +199,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS			retval;
 	struct mapi_handles		*context_handle = NULL;
-	struct mapi_handles		*folder_handle = NULL;
 	struct mapi_handles		*message_handle = NULL;
 	struct emsmdbp_object		*context_object = NULL;
 	struct emsmdbp_object		*folder_object = NULL;
@@ -237,6 +237,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		goto end;
 	}
+	/* With CreateMessage, the parent object may NOT BE the direct parent folder of the message */
 	retval = mapi_handles_get_private_data(context_handle, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
@@ -248,35 +249,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	folderID = mapi_req->u.mapi_CreateMessage.FolderId;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
-	folder_handle = emsmdbp_object_get_folder_handle_by_fid(emsmdbp_ctx->handles_ctx, folderID);
-	if (folder_handle) {
-		DEBUG(5, ("  folder_handle found, everything ok\n"));
-
-		/* CreateMessage can only be called for a mailbox/folder object */
-		mapi_handles_get_private_data(folder_handle, &data);
-		folder_object = (struct emsmdbp_object *)data;
-		if (!folder_object) {
-			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-			goto end;
-		}
-	}
-	else {
-		DEBUG(5, ("  folder_handle NOT found, instantiating one...\n"));
-
-		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &folder_handle);
-		folder_object = emsmdbp_object_folder_init(folder_handle, emsmdbp_ctx, folderID,
-                                                           context_object);
-		if (folder_object) {
-                        DEBUG(5, ("  success\n"));
-                        mapi_handles_set_private_data(folder_handle, folder_object);
-		}
-		else {
-			DEBUG(5, ("  failure, returning MAPI_E_NOT_FOUND\n"));
-			mapi_repl->error_code = MAPI_E_NOT_FOUND;
-			goto end;
-		}
-	}
-
+	folder_object = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, context_object, folderID);
 	contextID = emsmdbp_get_contextID(folder_object);
 	mapistore = emsmdbp_is_mapistore(folder_object);
 
@@ -326,29 +299,29 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 
 		/* TODO: some required properties are not set: PidTagSearchKey, PidTagCreatorName, ... */
 		mapistore_setprops(emsmdbp_ctx->mstore_ctx, contextID, messageID, MAPISTORE_MESSAGE, &aRow);
+
+		/* Initialize Message object */
+		handle = handles[mapi_req->handle_idx];
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &message_handle);
+		handles[mapi_repl->handle_idx] = message_handle->handle;
+
+		message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
+		/* Add default properties to message MS-OXCMSG 3.2.5.2 */
+		retval = mapi_handles_set_private_data(message_handle, message_object);
 	}
 	else {
 		/* system/special folder */
-		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		DEBUG(0, ("[%s] - not implemented yet - shouldn't occur\n", __location__));
+		talloc_free(folder_object);
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
 	}
 
 	DEBUG(0, ("CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, 
 		  emsmdbp_is_mapistore(folder_object) == true ? "true" : "false"));
 
-	/* Initialize Message object */
-	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &message_handle);
-	handles[mapi_repl->handle_idx] = message_handle->handle;
-
-	if (messageID) {
-		message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
-		if (message_object) {
-			/* Add default properties to message MS-OXCMSG 3.2.5.2 */
-			retval = mapi_handles_set_private_data(message_handle, message_object);
-		}
-	}
-
 end:
+
 	*size += libmapiserver_RopCreateMessage_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
@@ -421,7 +394,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 		break;
 	case true:
 		messageID = object->object.message->messageID;
-		contextID = object->object.message->contextID;
+		contextID = emsmdbp_get_contextID(object);
 		flags = mapi_req->u.mapi_SaveChangesMessage.SaveFlags;
                 mapistore_savechangesmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags);
                 mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
@@ -498,7 +471,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(object);
 	if (mapistore) {
 		messageID = object->object.message->messageID;
-		contextID = object->object.message->contextID;
+		contextID = emsmdbp_get_contextID(object);
 		mapistore_modifyrecipients(emsmdbp_ctx->mstore_ctx, contextID,
 					   messageID,
 					   NULL, 0);
@@ -574,7 +547,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(object);
 	if (mapistore) {
 		messageID = object->object.message->messageID;
-		contextID = object->object.message->contextID;
+		contextID = emsmdbp_get_contextID(object);
 		mapistore_modifyrecipients(emsmdbp_ctx->mstore_ctx, contextID,
 					   messageID,
 					   mapi_req->u.mapi_ModifyRecipients.RecipientRow,
@@ -662,7 +635,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 	case true:
 		folderID = object->object.message->folderID;
 		messageID = object->object.message->messageID;
-		contextID = object->object.message->contextID;
+		contextID = emsmdbp_get_contextID(object);
 
 		msg = talloc_zero(mem_ctx, struct mapistore_message);
 		mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, messageID, msg);
@@ -914,7 +887,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
 		break;
 	case true:
                 messageID = message_object->object.message->messageID;
-                contextID = message_object->object.message->contextID;
+                contextID = emsmdbp_get_contextID(message_object);
                 attachmentID = mapi_req->u.mapi_OpenAttach.AttachmentID;
 
                 retval = mapistore_pocop_get_attachment(emsmdbp_ctx->mstore_ctx, contextID,
@@ -1018,7 +991,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 		break;
 	case true:
                 messageID = message_object->object.message->messageID;
-                contextID = message_object->object.message->contextID;
+                contextID = emsmdbp_get_contextID(message_object);
 
                 retval = mapistore_pocop_create_attachment(emsmdbp_ctx->mstore_ctx, contextID,
                                                            messageID, &attachmentID,
@@ -1167,7 +1140,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
                 }
 
 		msg = talloc_zero(mem_ctx, struct mapistore_message);
-		contextID = attachment_object->object.attachment->contextID;
+		contextID = emsmdbp_get_contextID(attachment_object);
 		retval = mapistore_pocop_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->poc_backend_object,
                                                                &messageID, mapi_req->u.mapi_OpenEmbeddedMessage.OpenModeFlags,
                                                                msg, &backend_attachment_message);

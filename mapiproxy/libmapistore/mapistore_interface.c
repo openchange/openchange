@@ -62,11 +62,14 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 
 	mstore_ctx->context_list = NULL;
 	mstore_ctx->indexing_list = talloc_zero(mstore_ctx, struct indexing_context_list);
-	mstore_ctx->subscriptions = NULL;
 	mstore_ctx->replica_mapping_ctx = NULL;
+	mstore_ctx->notifications = NULL;
+	mstore_ctx->subscriptions = NULL;
 
 	mstore_ctx->nprops_ctx = NULL;
 	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
+
+	DEBUG(5, ("initted mstore_ctx ref: %p\n", mstore_ctx));
 
 	return mstore_ctx;
 }
@@ -86,6 +89,8 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 _PUBLIC_ int mapistore_release(struct mapistore_context *mstore_ctx)
 {
 	if (!mstore_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+
+	DEBUG(5, ("freeing up mstore_ctx ref: %p\n", mstore_ctx));
 
 	talloc_free(mstore_ctx->nprops_ctx);
 	talloc_free(mstore_ctx->processing_ctx);

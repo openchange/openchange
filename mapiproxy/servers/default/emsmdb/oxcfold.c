@@ -193,8 +193,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		return MAPI_E_SUCCESS;
 	}
 
-	DEBUG(5, ("  folderID: %.16lx\n", folderID));
-
 	retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, parent_object, &mapi_repl->u.mapi_GetHierarchyTable.RowCount);
 
 	/* Initialize Table object */

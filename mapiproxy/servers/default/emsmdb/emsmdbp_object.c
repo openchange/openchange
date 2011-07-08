@@ -304,7 +304,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, 
 				if (retval != MAPISTORE_SUCCESS) {
 					abort();
 				}
-				DEBUG(5, ("context successfully instantiated\n"));
 				mapistore_add_context_indexing(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, contextID);
 				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, fid);
 			}
@@ -544,7 +543,6 @@ static int emsmdbp_object_destructor(void *data)
 		break;
         case EMSMDBP_OBJECT_SUBSCRIPTION:
                 if (object->object.subscription->subscription_list) {
-                        DEBUG(5, ("  subscription object: removing subscription from context list\n"));
                         DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.subscription->subscription_list);
 			talloc_free(object->object.subscription->subscription_list);
                 }
@@ -1360,8 +1358,6 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 	NTTIME				nt_time;
 	struct FILETIME			*ft;
 
-	DEBUG(5, ("get_properties_systemspecialfolder\n"));
-
 	folder = (struct emsmdbp_object_folder *) object->object.folder;
         for (i = 0; i < properties->cValues; i++) {
                 if (properties->aulPropTag[i] == PR_FOLDER_CHILD_COUNT) {
@@ -1415,8 +1411,6 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 	time_t				unix_time;
 	NTTIME				nt_time;
 	struct FILETIME			*ft;
-
-	DEBUG(5, ("get_properties_mapistore_root\n"));
 
 	folder = (struct emsmdbp_object_folder *) object->object.folder;
         for (i = 0; i < properties->cValues; i++) {
@@ -1536,8 +1530,6 @@ static int emsmdbp_object_get_properties_mapistore(TALLOC_CTX *mem_ctx, struct e
 	uint8_t			type;
 	uint16_t		propType;
 
-	DEBUG(5, ("get_properties_mapistore\n"));
-
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FOLDER:
 		if (!object->poc_api) {
@@ -1562,7 +1554,6 @@ static int emsmdbp_object_get_properties_mapistore(TALLOC_CTX *mem_ctx, struct e
 	contextID = emsmdbp_get_contextID(object);
 	if (contextID != -1) {
                 if (object->poc_api) {
-			DEBUG(5, ("  using poc api\n"));
                         prop_data = talloc_array(NULL, struct mapistore_property_data, properties->cValues);
                         memset(prop_data, 0, sizeof(struct mapistore_property_data) * properties->cValues);
 

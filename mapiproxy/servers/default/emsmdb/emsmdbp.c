@@ -108,7 +108,6 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		return NULL;
 	}
 
-	DEBUG(5, ("emsmdbp_ctx ref: %p\n", emsmdbp_ctx));
 	emsmdbp_ctx->mem_ctx = mem_ctx;
 
 	ev = tevent_context_init(mem_ctx);

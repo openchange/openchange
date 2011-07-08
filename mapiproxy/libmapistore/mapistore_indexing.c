@@ -405,16 +405,103 @@ _PUBLIC_ int mapistore_indexing_record_get_uri(struct mapistore_context *mstore_
 		else {
 			talloc_free(key.dptr);
 			*urip = NULL;
-			return MAPISTORE_SUCCESS;
+			return MAPISTORE_ERR_NOT_FOUND;
 		}
 	}
 	dbuf = tdb_fetch(ictx->index_ctx->tdb, key);
-	*urip = talloc_memdup(mem_ctx, dbuf.dptr, dbuf.dsize);
+	*urip = talloc_strndup(mem_ctx, (const char *) dbuf.dptr, dbuf.dsize);
 	talloc_free(key.dptr);
 	
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+   \details A slow but effective way to retrieve an fmid from a uri
+
+   \param mstore_ctx pointer to the mapistore context
+   \param mem_ctx pointer to the talloc context
+   \param fmid the fmid/key to the record
+   \param urip pointer to the uri pointer
+   \param soft_deletedp pointer to the soft deleted pointer
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+struct tdb_get_fid_data {
+	bool		found;
+	uint64_t	fmid;
+	char		*uri;
+	size_t		uri_len;
+};
+
+static int tdb_get_fid_traverse(struct tdb_context *tdb_ctx, TDB_DATA key, TDB_DATA value, void *data)
+{
+	struct tdb_get_fid_data	*tdb_data;
+	char			*key_str, *cmp_uri, *slash_ptr;
+	TALLOC_CTX		*mem_ctx;
+	int			ret = 0;
+
+	mem_ctx = talloc_zero(NULL, void);
+	tdb_data = data;
+	cmp_uri = talloc_array(mem_ctx, char, value.dsize + 1);
+	memcpy(cmp_uri, value.dptr, value.dsize);
+	*(cmp_uri + value.dsize) = 0;
+	slash_ptr = cmp_uri + value.dsize - 1;
+	if (*slash_ptr == '/') {
+		*slash_ptr = 0;
+	}
+	if (strcmp(cmp_uri, tdb_data->uri) == 0) {
+		key_str = talloc_strndup(mem_ctx, (char *) key.dptr, key.dsize);
+		tdb_data->fmid = strtoull(key_str, NULL, 16);
+		tdb_data->found = true;
+		ret = 1;
+	}
+	
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+_PUBLIC_ int mapistore_indexing_record_get_fmid(struct mapistore_context *mstore_ctx, const char *username, const char *uri, uint64_t *fmidp, bool *soft_deletedp)
+{
+	struct indexing_context_list	*ictx;
+	int				ret;
+	struct tdb_get_fid_data		tdb_data;
+	char				*slash_ptr;
+	
+	/* SANITY checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+
+	/* Check if the fmid exists within the database */
+	ret = mapistore_indexing_add(mstore_ctx, username);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
+	ictx = mapistore_indexing_search(mstore_ctx, username);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
+
+	tdb_data.found = false;
+	tdb_data.uri = talloc_strdup(NULL, uri);
+	tdb_data.uri_len = strlen(uri);
+	slash_ptr = tdb_data.uri + tdb_data.uri_len - 1;
+	if (*slash_ptr == '/') {
+		*slash_ptr = 0;
+		tdb_data.uri_len--;
+	}
+	tdb_traverse_read(ictx->index_ctx->tdb, tdb_get_fid_traverse, &tdb_data);
+
+	talloc_free(tdb_data.uri);
+	if (tdb_data.found) {
+		*fmidp = tdb_data.fmid;
+		*soft_deletedp = false; /* TODO: implement the feature */
+		ret = MAPISTORE_SUCCESS;
+	}
+	else {
+		ret = MAPISTORE_ERR_NOT_FOUND;
+	}
+
+	return ret;
+}
 
 /**
    \details Add a fid record to the indexing database

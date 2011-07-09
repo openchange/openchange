@@ -68,7 +68,7 @@ cleanup_tdb() {
 }
 
 cleanup_ldb() {
-    cleanup_lib "source4/lib/ldb"
+    cleanup_lib "lib/ldb"
 }
 
 delete_install() {
@@ -244,7 +244,7 @@ patch() {
 packages() {
     delete_install
 
-    for lib in lib/talloc lib/tdb lib/tevent source4/lib/ldb; do
+    for lib in lib/talloc lib/tdb lib/tevent lib/ldb; do
 	echo "Building and installing $lib library"
 	pushd samba4/$lib
 	error_check $? "$lib setup"

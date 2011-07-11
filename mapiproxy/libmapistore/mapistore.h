@@ -108,21 +108,21 @@ struct mapistore_backend {
         int (*create_context)(TALLOC_CTX *, struct mapistore_connection_info *, const char *, uint64_t, void **);
 	int (*delete_context)(void *);
 	int (*release_record)(void *, uint64_t, uint8_t);
-	int (*get_path)(void *, uint64_t, uint8_t, char **);
+	int (*get_path)(void *, TALLOC_CTX *, uint64_t, uint8_t, char **);
 	/* folders semantic */
 	int (*op_mkdir)(void *, uint64_t, uint64_t, struct SRow *);
 	int (*op_rmdir)(void *, uint64_t, uint64_t);
 	int (*op_opendir)(void *, uint64_t);
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
-	int (*op_get_table_property)(void *, uint64_t, uint8_t, enum table_query_type, uint32_t, uint32_t, void **);
-        int (*op_get_available_table_properties)(void *, uint8_t, struct SPropTagArray **);
+	int (*op_get_table_property)(void *, TALLOC_CTX *, uint64_t, uint8_t, enum table_query_type, uint32_t, uint32_t, void **);
+        int (*op_get_available_table_properties)(void *, TALLOC_CTX *, uint8_t, struct SPropTagArray **);
 	/* message semantics */
-	int (*op_openmessage)(void *, uint64_t, uint64_t, struct mapistore_message *);
+	int (*op_openmessage)(void *, TALLOC_CTX *, uint64_t, uint64_t, struct mapistore_message *);
 	int (*op_createmessage)(void *, uint64_t, uint64_t, uint8_t);
 	int (*op_savechangesmessage)(void *, uint64_t, uint8_t);
 	int (*op_submitmessage)(void *, uint64_t, uint8_t);
-	int (*op_getprops)(void *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
+	int (*op_getprops)(void *, TALLOC_CTX *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 	int (*op_get_fid_by_name)(void *, uint64_t, const char *, uint64_t *);
 	int (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
 	int (*op_modifyrecipients)(void *, uint64_t, struct ModifyRecipientRow *, uint16_t);
@@ -136,15 +136,10 @@ struct mapistore_backend {
             proof of concept
         */
 
-        /** oxcstor operations */
-        struct {
-                int (*release)(void *);
-        } store;
-
         /** oxcfold operations */
         struct {
 		/* constructor: open_folder */
-                int (*open_table)(void *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
+                int (*open_table)(void *, TALLOC_CTX *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
         } folder;
 
         /** oxcmsg operations */
@@ -152,25 +147,25 @@ struct mapistore_backend {
         struct {
 		/* constructor: open_message */
 		/* constructor: create_message */
-                int (*get_attachment_table)(void *, uint64_t, void **, uint32_t *);
-                int (*get_attachment)(void *, uint64_t, uint32_t, void **);
-                int (*create_attachment)(void *, uint64_t, uint32_t *, void **);
-                int (*open_embedded_message)(void *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *, void **);
+                int (*get_attachment_table)(void *, TALLOC_CTX *, uint64_t, void **, uint32_t *);
+                int (*get_attachment)(void *, TALLOC_CTX *, uint64_t, uint32_t, void **);
+                int (*create_attachment)(void *, TALLOC_CTX *, uint64_t, uint32_t *, void **);
+                int (*open_embedded_message)(void *, TALLOC_CTX *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *, void **);
         } message;
 
         /** oxctabl operations */
         struct {
-                int (*get_available_properties)(void *, struct SPropTagArray **);
+                int (*get_available_properties)(void *, TALLOC_CTX *, struct SPropTagArray **);
                 int (*set_columns)(void *, uint16_t, enum MAPITAGS *);
                 int (*set_restrictions)(void *, struct mapi_SRestriction *, uint8_t *);
                 int (*set_sort_order)(void *, struct SSortOrderSet *, uint8_t *);
-                int (*get_row)(void *, enum table_query_type, uint32_t, struct mapistore_property_data *);
+                int (*get_row)(void *, TALLOC_CTX *, enum table_query_type, uint32_t, struct mapistore_property_data *);
         } table;
 
         /** oxcprpt operations */
         struct {
-                int (*get_available_properties)(void *, struct SPropTagArray **);
-                int (*get_properties)(void *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
+                int (*get_available_properties)(void *, TALLOC_CTX *, struct SPropTagArray **);
+                int (*get_properties)(void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
                 int (*set_properties)(void *, struct SRow *);
         } properties;
 };
@@ -233,17 +228,17 @@ int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, st
 int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 int mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint8_t, uint32_t *);
-int mapistore_get_table_property(struct mapistore_context *, uint32_t, uint8_t, enum table_query_type, uint64_t, uint32_t, uint32_t, void **);
-int mapistore_get_available_table_properties(struct mapistore_context *, uint32_t, uint8_t, struct SPropTagArray **);
-int mapistore_openmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, struct mapistore_message *);
+int mapistore_get_table_property(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint8_t, enum table_query_type, uint64_t, uint32_t, uint32_t, void **);
+int mapistore_get_available_table_properties(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint8_t, struct SPropTagArray **);
+int mapistore_openmessage(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint64_t, struct mapistore_message *);
 int mapistore_createmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 int mapistore_savechangesmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_submitmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
-int mapistore_getprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
+int mapistore_getprops(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 int mapistore_get_fid_by_name(struct mapistore_context *, uint32_t, uint64_t, const char *, uint64_t*);
 int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SRow *);
 int mapistore_modifyrecipients(struct mapistore_context *, uint32_t, uint64_t, struct ModifyRecipientRow*, uint16_t);
-int mapistore_get_child_fids(struct mapistore_context *, uint32_t, uint64_t, uint64_t **, uint32_t *);
+int mapistore_get_child_fids(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint64_t **, uint32_t *);
 int mapistore_deletemessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 struct backend_context *mapistore_find_container_backend(struct mapistore_context *, uint64_t);
 int mapistore_get_folders_list(struct mapistore_context *, uint64_t, struct indexing_folders_list **);
@@ -251,24 +246,22 @@ int mapistore_set_restrictions(struct mapistore_context *, uint32_t, uint64_t, u
 int mapistore_set_sort_order(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SSortOrderSet *, uint8_t *);
 
 /* proof of concept */
-int mapistore_pocop_open_table(struct mapistore_context *, uint32_t, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
+int mapistore_pocop_open_table(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
 
-int mapistore_pocop_get_attachment_table(struct mapistore_context *, uint32_t, uint64_t, void **, uint32_t *);
-int mapistore_pocop_get_attachment(struct mapistore_context *, uint32_t, uint64_t, uint32_t, void **);
-int mapistore_pocop_create_attachment(struct mapistore_context *, uint32_t, uint64_t, uint32_t *, void **);
-int mapistore_pocop_open_embedded_message(struct mapistore_context *, uint32_t, void *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *msg, void **);
+int mapistore_pocop_get_attachment_table(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, void **, uint32_t *);
+int mapistore_pocop_get_attachment(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint32_t, void **);
+int mapistore_pocop_create_attachment(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint32_t *, void **);
+int mapistore_pocop_open_embedded_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *msg, void **);
 
-int mapistore_pocop_get_available_table_properties(struct mapistore_context *, uint32_t, void *, struct SPropTagArray **);
+int mapistore_pocop_get_available_table_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 int mapistore_pocop_set_table_columns(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *);
 int mapistore_pocop_set_restrictions(struct mapistore_context *, uint32_t, void *, struct mapi_SRestriction *, uint8_t *);
 int mapistore_pocop_set_sort_order(struct mapistore_context *, uint32_t, void *, struct SSortOrderSet *, uint8_t *);
-int mapistore_pocop_get_table_row(struct mapistore_context *, uint32_t, void *, enum table_query_type, uint32_t, struct mapistore_property_data *);
+int mapistore_pocop_get_table_row(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, enum table_query_type, uint32_t, struct mapistore_property_data *);
 
-int mapistore_pocop_get_available_properties(struct mapistore_context *, uint32_t, void *, struct SPropTagArray **);
-int mapistore_pocop_get_properties(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
+int mapistore_pocop_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
+int mapistore_pocop_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 int mapistore_pocop_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
-
-int mapistore_pocop_release(struct mapistore_context *, uint32_t, void *);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

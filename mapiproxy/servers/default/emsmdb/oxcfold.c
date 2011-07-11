@@ -345,7 +345,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
                         break;
                 case true:
                         object->poc_api = true;
-                        retval = mapistore_pocop_open_table(emsmdbp_ctx->mstore_ctx, contextID, folderID, table_type, rec->handle,
+                        retval = mapistore_pocop_open_table(emsmdbp_ctx->mstore_ctx, contextID, object, folderID, table_type, rec->handle,
                                                             &object->poc_backend_object, &mapi_repl->u.mapi_GetContentsTable.RowCount);
                         break;
                 }
@@ -846,6 +846,7 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 	uint32_t		childFolderCount;
 	uint32_t		i;
 	uint8_t			flags = DELETE_HARD_DELETE| DEL_MESSAGES | DEL_FOLDERS;
+	TALLOC_CTX		*local_mem_ctx;
 
 	/* Step 1. Retrieve the fid for the folder, given the handle */
 	mapi_handles_get_private_data(folder, &folder_priv);
@@ -862,7 +863,9 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 	fid = folder_object->object.folder->folderID;
 	context_id = emsmdbp_get_contextID(folder_object);
 
-	retval = mapistore_get_child_fids(emsmdbp_ctx->mstore_ctx, context_id, fid,
+	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	retval = mapistore_get_child_fids(emsmdbp_ctx->mstore_ctx, context_id, local_mem_ctx, fid,
 					  &childFolders, &childFolderCount);
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder fid: 0x%.16"PRIx64", count: %d\n", fid, childFolderCount));
 	if (retval) {
@@ -876,10 +879,12 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 					 flags);
 		if (retval) {
 			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete fid 0x%.16"PRIx64" (0x%x)", childFolders[i], retval));
-			  talloc_free(childFolders);
+			  talloc_free(local_mem_ctx);
 			  return MAPI_E_NOT_FOUND;
 		}
 	}
+	talloc_free(local_mem_ctx);
+
 	return MAPI_E_SUCCESS;
 }
 

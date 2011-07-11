@@ -258,7 +258,7 @@ int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 
 	/* Retrieve the mapistore URI given context_id and fmid */
-	mapistore_get_path(backend_ctx, fmid, type, &mapistore_URI);
+	mapistore_get_path(backend_ctx, NULL, fmid, type, &mapistore_URI);
 	DEBUG(0, ("mapistore_URI = %s\n", mapistore_URI));
 	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERROR, NULL);
 

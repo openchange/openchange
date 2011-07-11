@@ -106,6 +106,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *mem_ctx,
 							  request.prop_count * sizeof (uint32_t));
                         if (emsmdbp_is_mapistore(object)) {
                                 if (object->poc_api) {
+					DEBUG(5, ("[%s] object: %p, backend_object: %p\n", __FUNCTION__, object, object->poc_backend_object));
                                         mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
                                                                           object->poc_backend_object,
                                                                           request.prop_count,
@@ -807,7 +808,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
                         if (object->poc_api) {
                                 memset(properties, 0, sizeof(struct mapistore_property_data) * table->prop_count);
                                 retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
-                                                                       object->poc_backend_object,
+                                                                       object->poc_backend_object, properties,
                                                                        MAPISTORE_LIVEFILTERED_QUERY,
                                                                        table->numerator,
                                                                        properties);
@@ -844,6 +845,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
                         }
                         else {
                                 retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+								      data_pointers,
                                                                       table->ulType,
                                                                       MAPISTORE_LIVEFILTERED_QUERY,
                                                                       object->parent_object->object.folder->folderID,
@@ -860,6 +862,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
                                         
                                         for (j = 0; j < table->prop_count; j++) {
                                                 retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+										      data_pointers,
                                                                                       table->ulType,
                                                                                       MAPISTORE_LIVEFILTERED_QUERY,
                                                                                       object->parent_object->object.folder->folderID, 

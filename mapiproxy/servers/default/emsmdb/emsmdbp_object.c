@@ -506,9 +506,6 @@ static int emsmdbp_object_destructor(void *data)
 	contextID = emsmdbp_get_contextID(object);
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FOLDER:
-                if (object->poc_api) {
-			mapistore_pocop_release(object->emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object);
-                }
 		if (object->object.folder->mapistore_root) {
 			ret = mapistore_del_context(object->emsmdbp_ctx->mstore_ctx, contextID);
 		}
@@ -516,14 +513,8 @@ static int emsmdbp_object_destructor(void *data)
 		break;
 	case EMSMDBP_OBJECT_MESSAGE:
 		ret = mapistore_release_record(object->emsmdbp_ctx->mstore_ctx, contextID, object->object.message->messageID, MAPISTORE_MESSAGE);
-                if (object->poc_api) {
-			mapistore_pocop_release(object->emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object);
-                }
 		break;
 	case EMSMDBP_OBJECT_TABLE:
-                if (object->poc_api) {
-			mapistore_pocop_release(object->emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object);
-                }
                 if (object->object.table->subscription_list) {
                         DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.table->subscription_list);
 			talloc_free(object->object.table->subscription_list);
@@ -532,14 +523,8 @@ static int emsmdbp_object_destructor(void *data)
 		break;
 	case EMSMDBP_OBJECT_STREAM:
 		emsmdbp_object_stream_commit(object);
-                if (object->poc_api) {
-			mapistore_pocop_release(object->emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object);
-                }
 		break;
 	case EMSMDBP_OBJECT_ATTACHMENT:
-                if (object->poc_api) {
-			mapistore_pocop_release(object->emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object);
-                }
 		break;
         case EMSMDBP_OBJECT_SUBSCRIPTION:
                 if (object->object.subscription->subscription_list) {
@@ -799,14 +784,10 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 	if (emsmdbp_is_mapistore(table_object)) {
 		contextID = emsmdbp_get_contextID(table_object);
 		if (table_object->poc_api) {
-			retval = mapistore_pocop_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, table_object->poc_backend_object, propertiesp);
+			retval = mapistore_pocop_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, table_object->poc_backend_object, mem_ctx, propertiesp);
 		}
 		else {
-			retval = mapistore_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, table->ulType, propertiesp);
-		}
-		if (retval == MAPISTORE_SUCCESS) {
-			talloc_steal(mem_ctx, *propertiesp);
-			talloc_steal(mem_ctx, (*propertiesp)->aulPropTag);
+			retval = mapistore_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, mem_ctx, table->ulType, propertiesp);
 		}
 	}
 	else {
@@ -875,9 +856,9 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
         table = table_object->object.table;
         num_props = table_object->object.table->prop_count;
 
-        data_pointers = talloc_array(table_object, void *, num_props);
+        data_pointers = talloc_array(mem_ctx, void *, num_props);
         memset(data_pointers, 0, sizeof(void *) * num_props);
-        retvals = talloc_array(table_object, uint32_t, num_props);
+        retvals = talloc_array(mem_ctx, uint32_t, num_props);
         memset(retvals, 0, sizeof(uint32_t) * num_props);
 
 	contextID = emsmdbp_get_contextID(table_object);
@@ -886,7 +867,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			properties = talloc_array(NULL, struct mapistore_property_data, num_props);
 			memset(properties, 0, sizeof(struct mapistore_property_data) * num_props);
 			retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, contextID,
-							       table_object->poc_backend_object,
+							       table_object->poc_backend_object, data_pointers,
 							       MAPISTORE_PREFILTERED_QUERY, row_id, properties);
 			if (retval == MAPI_E_SUCCESS) {
 				for (i = 0; i < num_props; i++) {
@@ -934,6 +915,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			retval = MAPI_E_SUCCESS;
 			for (i = 0; retval != MAPI_E_INVALID_OBJECT && i < num_props; i++) {
 				retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, contextID,
+								      data_pointers,
 								      table->ulType,
 								      MAPISTORE_PREFILTERED_QUERY,
 								      folderID, 
@@ -1145,7 +1127,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 		/* mapistore implementation goes here */
 		message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, messageID, folder_object);
 		msg = talloc_zero(message_object, struct mapistore_message);
-		if (mapistore_openmessage(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object),
+		if (mapistore_openmessage(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), message_object,
 					  folderID, messageID, msg) == 0) {
 			(void) talloc_reference(message_object, folder_object);
 			*msgp = msg;
@@ -1178,19 +1160,23 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TAL
 		break;
 	case true:
                 contextID = emsmdbp_get_contextID(message_object);
-                retval = mapistore_pocop_get_attachment_table(emsmdbp_ctx->mstore_ctx, contextID,
+
+                retval = mapistore_pocop_get_attachment_table(emsmdbp_ctx->mstore_ctx, contextID, 
+							      NULL,
 							      message_object->object.message->messageID,
                                                               &backend_attachment_table,
                                                               &row_count);
-                if (retval) return NULL;
-
-		table_object = emsmdbp_object_table_init(mem_ctx, emsmdbp_ctx, message_object);
-		if (table_object) {
-			table_object->poc_api = true;
-			table_object->poc_backend_object = backend_attachment_table;
-			table_object->object.table->denominator = row_count;
-			table_object->object.table->ulType = EMSMDBP_TABLE_ATTACHMENT_TYPE;
-                }
+                if (retval == MAPISTORE_SUCCESS) {
+			table_object = emsmdbp_object_table_init(mem_ctx, emsmdbp_ctx, message_object);
+			if (table_object) {
+				table_object->poc_api = true;
+				table_object->poc_backend_object = backend_attachment_table;
+				talloc_reference(table_object, table_object->poc_backend_object);
+				table_object->object.table->denominator = row_count;
+				table_object->object.table->ulType = EMSMDBP_TABLE_ATTACHMENT_TYPE;
+			}
+			talloc_free(backend_attachment_table);
+		}
         }
 
 	return table_object;
@@ -1328,14 +1314,10 @@ _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct
 
 	if (emsmdbp_is_mapistore(object)) {
 		if (object->poc_api) {
-			retval = mapistore_pocop_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object, propertiesp);
+			retval = mapistore_pocop_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object, mem_ctx, propertiesp);
 		}
 		else {
-			retval = mapistore_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, table_type, propertiesp);
-		}
-		if (retval == MAPISTORE_SUCCESS) {
-			talloc_steal(mem_ctx, *propertiesp);
-			talloc_steal(mem_ctx, (*propertiesp)->aulPropTag);
+			retval = mapistore_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, mem_ctx, table_type, propertiesp);
 		}
 	}
 	else {
@@ -1559,6 +1541,7 @@ static int emsmdbp_object_get_properties_mapistore(TALLOC_CTX *mem_ctx, struct e
 
                         ret = mapistore_pocop_get_properties(emsmdbp_ctx->mstore_ctx, contextID,
 							     object->poc_backend_object,
+							     prop_data,
 							     properties->cValues,
 							     properties->aulPropTag,
 							     prop_data);
@@ -1588,7 +1571,7 @@ static int emsmdbp_object_get_properties_mapistore(TALLOC_CTX *mem_ctx, struct e
                 }
                 else {
 			aRow = talloc_zero(NULL, struct SRow);
-			ret = mapistore_getprops(emsmdbp_ctx->mstore_ctx, contextID, fmid, type, properties, aRow);
+			ret = mapistore_getprops(emsmdbp_ctx->mstore_ctx, contextID, data_pointers, fmid, type, properties, aRow);
 			if (ret == MAPISTORE_SUCCESS) {
 				talloc_steal(data_pointers, aRow->lpProps);
 				for (i = 0; i < properties->cValues; i++) {

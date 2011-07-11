@@ -147,7 +147,7 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
     session_info = system_session()
 
-    db = SamDB(url=lp.get("sam database"), session_info=session_info, 
+    db = SamDB(url=lp.samdb_url(), session_info=session_info, 
                credentials=creds, lp=lp)
 
     db.transaction_start()
@@ -185,7 +185,7 @@ def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
     session_info = system_session()
 
-    db = SamDB(url=lp.get("sam database"), session_info=session_info, 
+    db = SamDB(url=lp.samdb_url(), session_info=session_info, 
                credentials=creds, lp=lp)
 
     db.transaction_start()
@@ -214,7 +214,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     session_info = system_session()
 
     # Step 1. Extending the prefixmap attribute of the schema DN record
-    db = SamDB(url=lp.get("sam database"), session_info=session_info,
+    db = SamDB(url=lp.samdb_url(), session_info=session_info,
                   credentials=creds, lp=lp)
 
     prefixmap = open(setup_path("AD/prefixMap.txt"), 'r').read()
@@ -389,8 +389,8 @@ def newuser(lp, creds, username=None):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    db = Ldb(url=os.path.join(lp.get("private dir"), lp.get("sam database")), 
-             session_info=system_session(), credentials=creds, lp=lp)
+    db = Ldb(url=lp.samdb_url(), session_info=system_session(), 
+             credentials=creds, lp=lp)
 
     user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
 
@@ -430,7 +430,7 @@ def accountcontrol(lp, creds, username=None, value=0):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    db = Ldb(url=os.path.join(lp.get("private dir"), lp.get("sam database")), 
+    db = Ldb(url=os.path.join(lp.get("private dir"), lp.samdb_url()), 
              session_info=system_session(), credentials=creds, lp=lp)
 
     user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)

@@ -60,7 +60,7 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	DEBUG(5, ("exchange_nsp: NspiBind (0x0)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!dcesrv_call_authenticated(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call) && (r->in.dwFlags & fAnonymousLogin)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 
 		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
@@ -69,7 +69,7 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 
 		r->out.mapiuid = r->in.mapiuid;
 		r->out.result = MAPI_E_LOGON_FAILED;
-		return MAPI_E_LOGON_FAILED;		
+		return MAPI_E_LOGON_FAILED;
 	}
 
 	/* Step 1. Initialize the emsabp context */
@@ -80,7 +80,7 @@ static enum MAPISTATUS dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
-	if (emsabp_verify_user(dce_call, emsabp_ctx) == false) {
+	if (emsabp_verify_user(dce_call, emsabp_ctx) == false && (r->in.dwFlags & fAnonymousLogin)) {
 		talloc_free(emsabp_ctx);
 
 		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;

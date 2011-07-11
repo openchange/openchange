@@ -1009,11 +1009,13 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 	enum MAPISTATUS			retval;
 	struct ldb_result		*res = NULL;
 	struct PropertyRestriction_r	*res_prop = NULL;
-	const char			*recipient = NULL;
 	const char * const		recipient_attrs[] = { "*", NULL };
 	int				ret;
 	uint32_t			i;
 	const char			*dn;
+	char				*fmt_str;
+	const char			*fmt_attr;
+	char				*attr;
 
 	/* Step 0. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (pStat->SortType == SortTypePhoneticDisplayName) {
@@ -1037,21 +1039,28 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 			return MAPI_E_TOO_COMPLEX;
 		}
 
-		/* FIXME: We only support PR_ANR */
 		res_prop = (struct PropertyRestriction_r *)&(restriction->res.resProperty);
-		if ((res_prop->ulPropTag != PR_ANR) && (res_prop->ulPropTag != PR_ANR_UNICODE)) {
+		fmt_attr = emsabp_property_get_attribute(res_prop->ulPropTag);
+		if (fmt_attr == NULL) {
+			return MAPI_E_NO_SUPPORT;
+		} 
+
+		attr = (char *)get_SPropValue_data(res_prop->lpProp);
+		if (attr == NULL) {
 			return MAPI_E_NO_SUPPORT;
 		}
-		
-		recipient = (res_prop->ulPropTag == PR_ANR) ?
-			res_prop->lpProp->value.lpszA :
-			res_prop->lpProp->value.lpszW;
 
-		ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
-				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-				 LDB_SCOPE_SUBTREE, recipient_attrs,
-				 "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
-				 recipient);
+		/* Special case: anr doesn't return correct result with partial search */
+		if (!strcmp(fmt_attr, "anr")) {
+			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(%s=%s)(!(objectClass=computer)))", fmt_attr, "%s");
+		} else {
+			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(%s=*%s*)(!(objectClass=computer)))", fmt_attr, "%s");
+		}
+
+		ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx, &res,
+				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx), 
+				 LDB_SCOPE_SUBTREE, recipient_attrs, fmt_str, attr);
+		talloc_free(fmt_str);
 
 		if (ret != LDB_SUCCESS) {
 			return MAPI_E_NOT_FOUND;

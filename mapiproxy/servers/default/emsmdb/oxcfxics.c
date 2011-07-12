@@ -498,13 +498,12 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 				query_props.aulPropTag = prop_tags;
 				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers, (enum MAPISTATUS *) retvals);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_END_ATTACH);
-				talloc_free(local_mem_ctx);
-				talloc_free(retvals);
 			}
 			else {
 				DEBUG(5, ("no data returned for attachment row %d\n", i));
 				abort();
 			}
+			talloc_free(local_mem_ctx);
 		}
 	}
 
@@ -514,8 +513,7 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *folder_object)
 {
 	struct emsmdbp_object		*table_object, *message_object;
-	struct SPropTagArray		*count_query_props;
-	uint32_t			i, j, row_count;
+	uint32_t			i, j;
 	uint32_t			*retvals, *header_retvals;
 	void				**data_pointers, **header_data_pointers;
 	struct FILETIME			*lm_time;
@@ -534,175 +532,152 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 
 	local_mem_ctx = talloc_zero(NULL, void);
 
-	/* Query the amount of rows and update sync_data structure */
-	count_query_props = talloc_zero(local_mem_ctx, struct SPropTagArray);
-	count_query_props->cValues = 1;
-	count_query_props->aulPropTag = talloc_zero(count_query_props, enum MAPITAGS);
-	switch (sync_data->table_type) {
-	case EMSMDBP_TABLE_MESSAGE_TYPE:
-		count_query_props->aulPropTag[0] = PR_CONTENT_COUNT;
-		break;
-	case EMSMDBP_TABLE_FAI_TYPE:
-		count_query_props->aulPropTag[0] = PR_ASSOC_CONTENT_COUNT;
-		break;
-	default:
+ 	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, sync_data->table_type, 0); 
+	if (!table_object) {
+		DEBUG(5, ("could not open folder table\n"));
 		abort();
 	}
-	data_pointers = emsmdbp_object_get_properties(local_mem_ctx, emsmdbp_ctx, folder_object, count_query_props, (enum MAPISTATUS **) &retvals);
-	if (data_pointers && !retvals[0]) {
-		row_count = *(uint32_t *) data_pointers[0];
+	table_object->object.table->prop_count = sync_data->properties.cValues;
+	table_object->object.table->properties = sync_data->properties.aulPropTag;
+	if (table_object->poc_api) {
+		mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->poc_backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
 	}
-	else {
-		DEBUG(5, ("could not retrieve number of rows in table\n"));
-		abort();
-	}
+	for (i = 0; i < table_object->object.table->denominator; i++) {
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
+		if (data_pointers) {
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
-	if (row_count > 0) {
-		table_object = emsmdbp_object_table_init(local_mem_ctx, emsmdbp_ctx, folder_object);
-		table_object->object.table->ulType = sync_data->table_type;
-		table_object->object.table->prop_count = sync_data->properties.cValues;
-		table_object->object.table->properties = sync_data->properties.aulPropTag;
-		table_object->object.table->denominator = row_count;
-		if (table_object->poc_api) {
-			mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->poc_backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
-		}
-		for (i = 0; i < row_count; i++) {
-			data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
-			if (data_pointers) {
-				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
-
-				/** fixed header props */
-				header_data_pointers = talloc_array(NULL, void *, 8);
-				header_retvals = talloc_array(header_data_pointers, uint32_t, 8);
-				memset(header_retvals, 0, 8 * sizeof(uint32_t));
-				query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 8);
+			/** fixed header props */
+			header_data_pointers = talloc_array(NULL, void *, 8);
+			header_retvals = talloc_array(header_data_pointers, uint32_t, 8);
+			memset(header_retvals, 0, 8 * sizeof(uint32_t));
+			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 8);
 				
-				j = 0;
+			j = 0;
 
-				/* source key */
-				eid = *(uint64_t *) data_pointers[sync_data->prop_index.eid];
-				emsmdbp_replid_to_guid(emsmdbp_ctx, eid & 0xffff, &replica_guid);
-				RAWIDSET_push_glob(sync_data->eid_set, &replica_guid, eid >> 16);
+			/* source key */
+			eid = *(uint64_t *) data_pointers[sync_data->prop_index.eid];
+			emsmdbp_replid_to_guid(emsmdbp_ctx, eid & 0xffff, &replica_guid);
+			RAWIDSET_push_glob(sync_data->eid_set, &replica_guid, eid >> 16);
 
-				/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
-				oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, eid, &bin_data);
-				query_props.aulPropTag[j] = PR_SOURCE_KEY;
-				header_data_pointers[j] = bin_data;
-				j++;
+			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
+			oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, eid, &bin_data);
+			query_props.aulPropTag[j] = PR_SOURCE_KEY;
+			header_data_pointers[j] = bin_data;
+			j++;
 
-				/* last modification time */
-				if (retvals[sync_data->prop_index.last_modification_time]) {
-					unix_time = oc_version_time;
-					unix_to_nt_time(&nt_time, unix_time);
-					lm_time = talloc_zero(data_pointers, struct FILETIME);
-					lm_time->dwLowDateTime = (nt_time & 0xffffffff);
-					lm_time->dwHighDateTime = nt_time >> 32;
-				}
-				else {
-					lm_time = (struct FILETIME *) data_pointers[sync_data->prop_index.last_modification_time];
-					nt_time = ((uint64_t) lm_time->dwHighDateTime << 32) | lm_time->dwLowDateTime;
-					unix_time = nt_time_to_unix(nt_time);
-				}
-				query_props.aulPropTag[j] = PR_LAST_MODIFICATION_TIME;
-				header_data_pointers[j] = lm_time;
-				j++;
-
-				if (unix_time < oc_version_time) {
-					unix_time = oc_version_time;
-				}
-				cn = ((eid & 0xffff000000000000) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
-				if (IDSET_includes_id(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
-					DEBUG(5, ("WARNING: cn %.16"PRIx64" already present\n", cn));
-					goto end_row;
-				}
-				/* The "cnset_seen" range is going to be merged later with the one from emsmdb_ctx since the ids are not sorted */
-				RAWIDSET_push_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
-
-				/* change key */
-				bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
-				query_props.aulPropTag[j] = PR_CHANGE_KEY;
-				header_data_pointers[j] = bin_data;
-				j++;
-				
-				/* predecessor... (already computed) */
-				predecessors_data.cb = bin_data->cb + 1;
-				predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
-				*predecessors_data.lpb = bin_data->cb & 0xff;
-				memcpy(predecessors_data.lpb + 1, bin_data->lpb, bin_data->cb);
-				query_props.aulPropTag[j] = PR_PREDECESSOR_CHANGE_LIST;
-				header_data_pointers[j] = &predecessors_data;
-				j++;
-
-				/* associated (could be based on table type ) */
-				query_props.aulPropTag[j] = PR_ASSOCIATED;
-				if (retvals[sync_data->prop_index.associated]) {
-					header_data_pointers[j] = talloc_zero(header_data_pointers, uint8_t);
-				}
-				else {
-					header_data_pointers[j] = data_pointers[sync_data->prop_index.associated];
-				}
-				j++;
-
-				/* message id (conditional) */
-				if (synccontext->request.request_eid) {
-					query_props.aulPropTag[j] = PR_MID;
-					header_data_pointers[j] = &eid;
-					j++;
-				}
-
-				/* message size (conditional) */
-				if (synccontext->request.request_message_size) {
-					query_props.aulPropTag[j] = PR_MESSAGE_SIZE;
-					header_data_pointers[j] = data_pointers[sync_data->prop_index.message_size];
-					if (retvals[sync_data->prop_index.parent_fid]) {
-						header_data_pointers[j] = talloc_zero(header_data_pointers, uint32_t);
-					}
-					else {
-						header_data_pointers[j] = data_pointers[sync_data->prop_index.message_size];
-					}
-					j++;
-				}
-
-				/* cn (conditional) */
-				if (synccontext->request.request_cn) {
-					query_props.aulPropTag[j] = PR_CHANGE_NUM;
-					header_data_pointers[j] = talloc_zero(header_data_pointers, uint64_t);
-					*(uint64_t *) header_data_pointers[j] = (cn << 16) | (eid & 0xffff);
-					j++;
-				}
-
-				query_props.cValues = j;
-
-				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_CHG);
-				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
-				/** remaining props */
-				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_MSG);
-
-				if (table_object->object.table->prop_count > 7) {
-					query_props.cValues = table_object->object.table->prop_count - 7;
-					query_props.aulPropTag = table_object->object.table->properties + 7;
-					oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + 7, (enum MAPISTATUS *) retvals + 7);
-				}
-
-				/* messageChildren:
-				   [ PidTagFXDelProp ] [ *(StartRecip propList EndToRecip) ] [ PidTagFXDelProp ] [ *(NewAttach propList [embeddedMessage] EndAttach) ]
-				   embeddedMessage:
-				   StartEmbed messageContent EndEmbed */
-
-				message_object = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, &msg);
-				oxcfxics_push_messageChange_recipients(mem_ctx, emsmdbp_ctx, sync_data, message_object, msg);
-				oxcfxics_push_messageChange_attachments(mem_ctx, emsmdbp_ctx, sync_data, message_object);
-				talloc_free(message_object);
-
-			end_row:
-				talloc_free(header_data_pointers);
-				talloc_free(retvals);
-				talloc_free(data_pointers);
+			/* last modification time */
+			if (retvals[sync_data->prop_index.last_modification_time]) {
+				unix_time = oc_version_time;
+				unix_to_nt_time(&nt_time, unix_time);
+				lm_time = talloc_zero(data_pointers, struct FILETIME);
+				lm_time->dwLowDateTime = (nt_time & 0xffffffff);
+				lm_time->dwHighDateTime = nt_time >> 32;
 			}
 			else {
-				DEBUG(5, ("no data returned for message row %d\n", i));
-				abort();
+				lm_time = (struct FILETIME *) data_pointers[sync_data->prop_index.last_modification_time];
+				nt_time = ((uint64_t) lm_time->dwHighDateTime << 32) | lm_time->dwLowDateTime;
+				unix_time = nt_time_to_unix(nt_time);
 			}
+			query_props.aulPropTag[j] = PR_LAST_MODIFICATION_TIME;
+			header_data_pointers[j] = lm_time;
+			j++;
+
+			if (unix_time < oc_version_time) {
+				unix_time = oc_version_time;
+			}
+			cn = ((eid & 0xffff000000000000) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
+			if (IDSET_includes_id(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
+				DEBUG(5, ("WARNING: cn %.16"PRIx64" already present\n", cn));
+				goto end_row;
+			}
+			/* The "cnset_seen" range is going to be merged later with the one from emsmdb_ctx since the ids are not sorted */
+			RAWIDSET_push_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
+
+			/* change key */
+			bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
+			query_props.aulPropTag[j] = PR_CHANGE_KEY;
+			header_data_pointers[j] = bin_data;
+			j++;
+				
+			/* predecessor... (already computed) */
+			predecessors_data.cb = bin_data->cb + 1;
+			predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
+			*predecessors_data.lpb = bin_data->cb & 0xff;
+			memcpy(predecessors_data.lpb + 1, bin_data->lpb, bin_data->cb);
+			query_props.aulPropTag[j] = PR_PREDECESSOR_CHANGE_LIST;
+			header_data_pointers[j] = &predecessors_data;
+			j++;
+
+			/* associated (could be based on table type ) */
+			query_props.aulPropTag[j] = PR_ASSOCIATED;
+			if (retvals[sync_data->prop_index.associated]) {
+				header_data_pointers[j] = talloc_zero(header_data_pointers, uint8_t);
+			}
+			else {
+				header_data_pointers[j] = data_pointers[sync_data->prop_index.associated];
+			}
+			j++;
+
+			/* message id (conditional) */
+			if (synccontext->request.request_eid) {
+				query_props.aulPropTag[j] = PR_MID;
+				header_data_pointers[j] = &eid;
+				j++;
+			}
+
+			/* message size (conditional) */
+			if (synccontext->request.request_message_size) {
+				query_props.aulPropTag[j] = PR_MESSAGE_SIZE;
+				header_data_pointers[j] = data_pointers[sync_data->prop_index.message_size];
+				if (retvals[sync_data->prop_index.parent_fid]) {
+					header_data_pointers[j] = talloc_zero(header_data_pointers, uint32_t);
+				}
+				else {
+					header_data_pointers[j] = data_pointers[sync_data->prop_index.message_size];
+				}
+				j++;
+			}
+
+			/* cn (conditional) */
+			if (synccontext->request.request_cn) {
+				query_props.aulPropTag[j] = PR_CHANGE_NUM;
+				header_data_pointers[j] = talloc_zero(header_data_pointers, uint64_t);
+				*(uint64_t *) header_data_pointers[j] = (cn << 16) | (eid & 0xffff);
+				j++;
+			}
+
+			query_props.cValues = j;
+
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_CHG);
+			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
+			/** remaining props */
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_MSG);
+
+			if (table_object->object.table->prop_count > 7) {
+				query_props.cValues = table_object->object.table->prop_count - 7;
+				query_props.aulPropTag = table_object->object.table->properties + 7;
+				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + 7, (enum MAPISTATUS *) retvals + 7);
+			}
+
+			/* messageChildren:
+			   [ PidTagFXDelProp ] [ *(StartRecip propList EndToRecip) ] [ PidTagFXDelProp ] [ *(NewAttach propList [embeddedMessage] EndAttach) ]
+			   embeddedMessage:
+			   StartEmbed messageContent EndEmbed */
+
+			message_object = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, &msg);
+			oxcfxics_push_messageChange_recipients(mem_ctx, emsmdbp_ctx, sync_data, message_object, msg);
+			oxcfxics_push_messageChange_attachments(mem_ctx, emsmdbp_ctx, sync_data, message_object);
+			talloc_free(message_object);
+
+		end_row:
+			talloc_free(header_data_pointers);
+			talloc_free(retvals);
+			talloc_free(data_pointers);
+		}
+		else {
+			DEBUG(5, ("no data returned for message row %d\n", i));
+			abort();
 		}
 	}
 
@@ -802,166 +777,165 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	struct FILETIME		*lm_time;
 	NTTIME			nt_time;
 	int32_t			unix_time;
-	uint32_t		i, j, row_count;
+	uint32_t		i, j;
 	uint32_t		*retvals, *header_retvals;
 	void			**data_pointers, **header_data_pointers;
 	struct SPropTagArray	query_props;
 	TALLOC_CTX		*local_mem_ctx;
 	struct GUID		replica_guid;
-	int			retval;
 
 	local_mem_ctx = talloc_zero(NULL, void);
 
 	/* 2b. we build the stream */
-	retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, folder_object, &row_count);
-	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(5, ("could not retrieve number of rows in table\n"));
+	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, MAPISTORE_FOLDER_TABLE, 0); 
+	if (!table_object) {
+		DEBUG(5, ("could not open folder table\n"));
 		abort();
 	}
-	if (row_count > 0) {
-		table_object = emsmdbp_object_table_init(local_mem_ctx, emsmdbp_ctx, folder_object);
-		table_object->object.table->ulType = EMSMDBP_TABLE_FOLDER_TYPE;
-		table_object->object.table->prop_count = sync_data->properties.cValues;
-		table_object->object.table->properties = sync_data->properties.aulPropTag;
-		table_object->object.table->denominator = row_count;
-		if (table_object->poc_api) {
-			mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->poc_backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
-		}
-		for (i = 0; i < row_count; i++) {
-			data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
-			if (data_pointers) {
-				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
-				/** fixed header props */
-				header_data_pointers = talloc_array(NULL, void *, 8);
-				header_retvals = talloc_array(NULL, uint32_t, 8);
-				memset(header_retvals, 0, 8 * sizeof(uint32_t));
-				query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 8);
+	if (table_object->poc_api) {
+		mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object),
+						  table_object->poc_backend_object,
+						  sync_data->properties.cValues,
+						  sync_data->properties.aulPropTag);
+	}
+	table_object->object.table->prop_count = sync_data->properties.cValues;
+	table_object->object.table->properties = sync_data->properties.aulPropTag;
+
+	for (i = 0; i < table_object->object.table->denominator; i++) {
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
+		if (data_pointers) {
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+
+			/** fixed header props */
+			header_data_pointers = talloc_array(NULL, void *, 8);
+			header_retvals = talloc_array(NULL, uint32_t, 8);
+			memset(header_retvals, 0, 8 * sizeof(uint32_t));
+			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 8);
 				
-				j = 0;
+			j = 0;
 
-				/* parent source key */
-				if (folder_object == topmost_folder_object) {
-					/* No parent source key at the first hierarchy level */
-					bin_data = talloc_zero(header_data_pointers, struct Binary_r);
-					bin_data->lpb = (uint8_t *) "";
-				}
-				else {
-					oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, *(uint64_t *) data_pointers[sync_data->prop_index.parent_fid], &bin_data);
-				}
-				query_props.aulPropTag[j] = PR_PARENT_SOURCE_KEY;
-				header_data_pointers[j] = bin_data;
-				j++;
-				
-				/* source key */
-				eid = *(uint64_t *) data_pointers[sync_data->prop_index.eid];
-				emsmdbp_replid_to_guid(emsmdbp_ctx, eid & 0xffff, &replica_guid);
-				RAWIDSET_push_glob(sync_data->eid_set, &replica_guid, eid >> 16);
-
-				/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
-				oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, eid, &bin_data);
-				query_props.aulPropTag[j] = PR_SOURCE_KEY;
-				header_data_pointers[j] = bin_data;
-				j++;
-				
-				/* last modification time */
-				if (retvals[sync_data->prop_index.last_modification_time]) {
-					unix_time = oc_version_time;
-					unix_to_nt_time(&nt_time, unix_time);
-					lm_time = talloc_zero(data_pointers, struct FILETIME);
-					lm_time->dwLowDateTime = (nt_time & 0xffffffff);
-					lm_time->dwHighDateTime = nt_time >> 32;
-				}
-				else {
-					lm_time = (struct FILETIME *) data_pointers[sync_data->prop_index.last_modification_time];
-					nt_time = ((uint64_t) lm_time->dwHighDateTime << 32) | lm_time->dwLowDateTime;
-					unix_time = nt_time_to_unix(nt_time);
-				}
-				query_props.aulPropTag[j] = PR_LAST_MODIFICATION_TIME;
-				header_data_pointers[j] = lm_time;
-				j++;
-
-				if (unix_time < oc_version_time) {
-					unix_time = oc_version_time;
-				}
-				cn = ((eid & 0xffff000000000000) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
-				if (IDSET_includes_id(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
-					DEBUG(5, ("WARNING: cn %.16"PRIx64" already present\n", cn));
-					goto end_row;
-				}
-				RAWIDSET_push_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
-
-				/* change key */
-				bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
-				query_props.aulPropTag[j] = PR_CHANGE_KEY;
-				header_data_pointers[j] = bin_data;
-				j++;
-				
-				/* predecessor... (already computed) */
-				predecessors_data.cb = bin_data->cb + 1;
-				predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
-				*predecessors_data.lpb = bin_data->cb & 0xff;
-				memcpy(predecessors_data.lpb + 1, bin_data->lpb, bin_data->cb);
-				query_props.aulPropTag[j] = PR_PREDECESSOR_CHANGE_LIST;
-				header_data_pointers[j] = &predecessors_data;
-				j++;
-					
-				/* display name */
-				query_props.aulPropTag[j] = PR_DISPLAY_NAME_UNICODE;
-				if (retvals[sync_data->prop_index.display_name]) {
-					header_data_pointers[j] = "";
-				}
-				else {
-					header_data_pointers[j] = data_pointers[sync_data->prop_index.display_name];
-				}
-				j++;
-
-				/* folder id (conditional) */
-				if (synccontext->request.request_eid) {
-					query_props.aulPropTag[j] = PR_FID;
-					header_data_pointers[j] = data_pointers[sync_data->prop_index.eid];
-					j++;
-				}
-
-				/* parent folder id (conditional) */
-				if (synccontext->request.no_foreign_identifiers) {
-					query_props.aulPropTag[j] = PR_PARENT_FID;
-					header_data_pointers[j] = data_pointers[sync_data->prop_index.parent_fid];
-					if (retvals[sync_data->prop_index.parent_fid]) {
-						header_data_pointers[j] = talloc_zero(header_data_pointers, uint64_t);
-					}
-					else {
-						header_data_pointers[j] = data_pointers[sync_data->prop_index.parent_fid];
-					}
-					j++;
-				}
-
-				query_props.cValues = j;
-
-				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_CHG);
-				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
-
-				/** remaining props */
-				if (table_object->object.table->prop_count > 5) {
-					query_props.cValues = table_object->object.table->prop_count - 5;
-					query_props.aulPropTag = table_object->object.table->properties + 5;
-					oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + 5, (enum MAPISTATUS *) retvals + 5);
-				}
-
-			end_row:
-				talloc_free(header_data_pointers);
-				talloc_free(header_retvals);
-				talloc_free(data_pointers);
-				talloc_free(retvals);
-
-				subfolder_object = emsmdbp_object_open_folder(NULL, emsmdbp_ctx, folder_object, eid);
-				oxcfxics_push_folderChange(mem_ctx, emsmdbp_ctx, synccontext, topmost_folder_object, sync_data, subfolder_object);
-				talloc_free(subfolder_object);
+			/* parent source key */
+			if (folder_object == topmost_folder_object) {
+				/* No parent source key at the first hierarchy level */
+				bin_data = talloc_zero(header_data_pointers, struct Binary_r);
+				bin_data->lpb = (uint8_t *) "";
 			}
 			else {
-				DEBUG(5, ("no data returned for folder row %d\n", i));
-				abort();
+				oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, *(uint64_t *) data_pointers[sync_data->prop_index.parent_fid], &bin_data);
 			}
+			query_props.aulPropTag[j] = PR_PARENT_SOURCE_KEY;
+			header_data_pointers[j] = bin_data;
+			j++;
+			
+			/* source key */
+			eid = *(uint64_t *) data_pointers[sync_data->prop_index.eid];
+			emsmdbp_replid_to_guid(emsmdbp_ctx, eid & 0xffff, &replica_guid);
+			RAWIDSET_push_glob(sync_data->eid_set, &replica_guid, eid >> 16);
+
+			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
+			oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, eid, &bin_data);
+			query_props.aulPropTag[j] = PR_SOURCE_KEY;
+			header_data_pointers[j] = bin_data;
+			j++;
+				
+			/* last modification time */
+			if (retvals[sync_data->prop_index.last_modification_time]) {
+				unix_time = oc_version_time;
+				unix_to_nt_time(&nt_time, unix_time);
+				lm_time = talloc_zero(data_pointers, struct FILETIME);
+				lm_time->dwLowDateTime = (nt_time & 0xffffffff);
+				lm_time->dwHighDateTime = nt_time >> 32;
+			}
+			else {
+				lm_time = (struct FILETIME *) data_pointers[sync_data->prop_index.last_modification_time];
+				nt_time = ((uint64_t) lm_time->dwHighDateTime << 32) | lm_time->dwLowDateTime;
+				unix_time = nt_time_to_unix(nt_time);
+			}
+			query_props.aulPropTag[j] = PR_LAST_MODIFICATION_TIME;
+			header_data_pointers[j] = lm_time;
+			j++;
+
+			if (unix_time < oc_version_time) {
+				unix_time = oc_version_time;
+			}
+			cn = ((eid & 0xffff000000000000) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
+			if (IDSET_includes_id(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
+				DEBUG(5, ("WARNING: cn %.16"PRIx64" already present\n", cn));
+				goto end_row;
+			}
+			RAWIDSET_push_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
+
+			/* change key */
+			bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
+			query_props.aulPropTag[j] = PR_CHANGE_KEY;
+			header_data_pointers[j] = bin_data;
+			j++;
+				
+			/* predecessor... (already computed) */
+			predecessors_data.cb = bin_data->cb + 1;
+			predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
+			*predecessors_data.lpb = bin_data->cb & 0xff;
+			memcpy(predecessors_data.lpb + 1, bin_data->lpb, bin_data->cb);
+			query_props.aulPropTag[j] = PR_PREDECESSOR_CHANGE_LIST;
+			header_data_pointers[j] = &predecessors_data;
+			j++;
+					
+			/* display name */
+			query_props.aulPropTag[j] = PR_DISPLAY_NAME_UNICODE;
+			if (retvals[sync_data->prop_index.display_name]) {
+				header_data_pointers[j] = "";
+			}
+			else {
+				header_data_pointers[j] = data_pointers[sync_data->prop_index.display_name];
+			}
+			j++;
+			
+			/* folder id (conditional) */
+			if (synccontext->request.request_eid) {
+				query_props.aulPropTag[j] = PR_FID;
+				header_data_pointers[j] = data_pointers[sync_data->prop_index.eid];
+				j++;
+			}
+
+			/* parent folder id (conditional) */
+			if (synccontext->request.no_foreign_identifiers) {
+				query_props.aulPropTag[j] = PR_PARENT_FID;
+				header_data_pointers[j] = data_pointers[sync_data->prop_index.parent_fid];
+				if (retvals[sync_data->prop_index.parent_fid]) {
+					header_data_pointers[j] = talloc_zero(header_data_pointers, uint64_t);
+				}
+				else {
+					header_data_pointers[j] = data_pointers[sync_data->prop_index.parent_fid];
+				}
+				j++;
+			}
+			
+			query_props.cValues = j;
+
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_CHG);
+			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
+
+			/** remaining props */
+			if (table_object->object.table->prop_count > 5) {
+				query_props.cValues = table_object->object.table->prop_count - 5;
+				query_props.aulPropTag = table_object->object.table->properties + 5;
+				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + 5, (enum MAPISTATUS *) retvals + 5);
+			}
+
+		end_row:
+			talloc_free(header_data_pointers);
+			talloc_free(header_retvals);
+			talloc_free(data_pointers);
+			talloc_free(retvals);
+
+			subfolder_object = emsmdbp_object_open_folder(NULL, emsmdbp_ctx, folder_object, eid);
+			oxcfxics_push_folderChange(mem_ctx, emsmdbp_ctx, synccontext, topmost_folder_object, sync_data, subfolder_object);
+			talloc_free(subfolder_object);
+		}
+		else {
+			DEBUG(5, ("no data returned for folder row %d\n", i));
+			abort();
 		}
 	}
 
@@ -1347,10 +1321,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 
 	/* we instantiate a table object that will help us retrieve the list of available properties */
 	if (!include_props) {
-		table_object = emsmdbp_object_table_init(NULL, emsmdbp_ctx, folder_object);
 		if (synccontext->request.contents_mode) {
 			if (synccontext->request.normal) {
-				table_object->object.table->ulType = EMSMDBP_TABLE_MESSAGE_TYPE;
+				table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_MESSAGE_TYPE, 0);
+				if (!table_object) {
+					DEBUG(5, ("could not open folder table\n"));
+					abort();
+				}
 				if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
 					for (j = 0; j < available_properties->cValues; j++) {
 						i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
@@ -1362,10 +1339,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 					talloc_free(available_properties->aulPropTag);
 					talloc_free(available_properties);
 				}
+				talloc_free(table_object);
 			}
 
 			if (synccontext->request.fai) {
-				table_object->object.table->ulType = EMSMDBP_TABLE_FAI_TYPE;
+				table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_FAI_TYPE, 0);
+				if (!table_object) {
+					DEBUG(5, ("could not open folder table\n"));
+					abort();
+				}
 				if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
 					for (j = 0; j < available_properties->cValues; j++) {
 						i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
@@ -1377,10 +1359,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 					talloc_free(available_properties->aulPropTag);
 					talloc_free(available_properties);
 				}
+				talloc_free(table_object);
 			}
 		}
 		else {
-			table_object->object.table->ulType = EMSMDBP_TABLE_FOLDER_TYPE;
+			table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_FOLDER_TYPE, 0);
+			if (!table_object) {
+				DEBUG(5, ("could not open folder table\n"));
+				abort();
+			}
 			if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
 				for (j = 0; j < available_properties->cValues; j++) {
 					i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
@@ -1392,8 +1379,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 				talloc_free(available_properties->aulPropTag);
 				talloc_free(available_properties);
 			}
+			talloc_free(table_object);
 		}
-		talloc_free(table_object);
 	}
 	talloc_free(properties_exclusion);
 
@@ -2279,15 +2266,16 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	}
 
 	/* Fetch the actual table data */
-	table_object = emsmdbp_object_table_init(local_mem_ctx, emsmdbp_ctx, folder_object);
+ 	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, sync_data->table_type, 0); 
+	if (!table_object) {
+		DEBUG(5, ("could not open folder table\n"));
+		abort();
+	}
 	table_object->object.table->prop_count = sync_data->properties.cValues;
 	table_object->object.table->properties = sync_data->properties.aulPropTag;
-	table_object->object.table->ulType = sync_data->table_type;
-	table_object->object.table->denominator = nr_eid;
 	if (table_object->poc_api) {
 		mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->poc_backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
 	}
-
 	table = table_object->object.table;
 	for (i = 0; i < table->denominator; i++) {
 		data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, table_object, i, &retvals);

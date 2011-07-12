@@ -726,6 +726,59 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 	return retval;
 }
 
+_PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, struct emsmdbp_object *parent_object, uint32_t table_type, uint32_t handle_id)
+{
+	struct emsmdbp_object	*table_object;
+	uint64_t		folderID;
+	uint8_t			mstore_type;
+
+	if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
+		folderID = parent_object->object.folder->folderID;
+	}
+	else if (parent_object->type == EMSMDBP_OBJECT_MAILBOX) {
+		folderID = parent_object->object.mailbox->folderID;
+	}
+	else {
+		DEBUG(5, ("[%s:%d] unhandled object type: %d\n", __FUNCTION__, __LINE__, parent_object->type));
+		return NULL;
+	}
+
+	table_object = emsmdbp_object_table_init(mem_ctx, parent_object->emsmdbp_ctx, parent_object);
+	if (table_object) {
+		table_object->object.table->ulType = table_type;
+		if (emsmdbp_is_mapistore(parent_object)) {
+			switch (table_type) {
+			case EMSMDBP_TABLE_MESSAGE_TYPE:
+				mstore_type = MAPISTORE_MESSAGE_TABLE;
+				break;
+			case EMSMDBP_TABLE_FAI_TYPE:
+				mstore_type = MAPISTORE_FAI_TABLE;
+				break;
+			case EMSMDBP_TABLE_FOLDER_TYPE:
+				mstore_type = MAPISTORE_FOLDER_TABLE;
+				break;
+			default:
+				DEBUG(5, ("Unhandled table type for folders: %d\n", table_type));
+				abort();
+			}
+
+                        table_object->poc_api = true;
+			mapistore_pocop_open_table(parent_object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent_object), table_object, folderID, mstore_type, handle_id,
+						   &table_object->poc_backend_object, &table_object->object.table->denominator);
+		}
+		else {
+			if (table_type == EMSMDBP_TABLE_FOLDER_TYPE) {
+				emsmdbp_folder_get_folder_count(parent_object->emsmdbp_ctx, parent_object, &table_object->object.table->denominator);
+			}
+			else {
+				/* Non-mapistore message tables are always empty */
+				table_object->object.table->denominator = 0;
+			}
+		}
+	}
+
+	return table_object;	
+}
 
 /**
    \details Initialize a table object

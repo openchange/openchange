@@ -1315,7 +1315,7 @@ _PUBLIC_ int mapistore_pocop_set_sort_order(struct mapistore_context *mstore_ctx
 }
 
 _PUBLIC_ int mapistore_pocop_get_table_row(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, TALLOC_CTX *mem_ctx,
-                                           enum table_query_type query_type, uint32_t rowid, struct mapistore_property_data *data)
+                                           enum table_query_type query_type, uint32_t rowid, struct mapistore_property_data **data)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;

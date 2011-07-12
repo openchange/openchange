@@ -159,7 +159,7 @@ struct mapistore_backend {
                 int (*set_columns)(void *, uint16_t, enum MAPITAGS *);
                 int (*set_restrictions)(void *, struct mapi_SRestriction *, uint8_t *);
                 int (*set_sort_order)(void *, struct SSortOrderSet *, uint8_t *);
-                int (*get_row)(void *, TALLOC_CTX *, enum table_query_type, uint32_t, struct mapistore_property_data *);
+                int (*get_row)(void *, TALLOC_CTX *, enum table_query_type, uint32_t, struct mapistore_property_data **);
         } table;
 
         /** oxcprpt operations */
@@ -257,7 +257,7 @@ int mapistore_pocop_get_available_table_properties(struct mapistore_context *, u
 int mapistore_pocop_set_table_columns(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *);
 int mapistore_pocop_set_restrictions(struct mapistore_context *, uint32_t, void *, struct mapi_SRestriction *, uint8_t *);
 int mapistore_pocop_set_sort_order(struct mapistore_context *, uint32_t, void *, struct SSortOrderSet *, uint8_t *);
-int mapistore_pocop_get_table_row(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, enum table_query_type, uint32_t, struct mapistore_property_data *);
+int mapistore_pocop_get_table_row(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, enum table_query_type, uint32_t, struct mapistore_property_data **);
 
 int mapistore_pocop_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 int mapistore_pocop_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);

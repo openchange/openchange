@@ -601,7 +601,7 @@ int mapistore_backend_pocop_set_table_sort_order(struct backend_context *bctx, v
 
 int mapistore_backend_pocop_get_table_row(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx,
                                           enum table_query_type query_type, uint32_t rowid,
-                                          struct mapistore_property_data *data)
+                                          struct mapistore_property_data **data)
 {
         return bctx->backend->table.get_row(table, mem_ctx, query_type, rowid, data);
 }

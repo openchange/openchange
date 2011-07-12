@@ -864,11 +864,9 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 	contextID = emsmdbp_get_contextID(table_object);
 	if (emsmdbp_is_mapistore(table_object)) {
 		if (table_object->poc_api) {
-			properties = talloc_array(NULL, struct mapistore_property_data, num_props);
-			memset(properties, 0, sizeof(struct mapistore_property_data) * num_props);
 			retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, contextID,
 							       table_object->poc_backend_object, data_pointers,
-							       MAPISTORE_PREFILTERED_QUERY, row_id, properties);
+							       MAPISTORE_PREFILTERED_QUERY, row_id, &properties);
 			if (retval == MAPI_E_SUCCESS) {
 				for (i = 0; i < num_props; i++) {
 					data_pointers[i] = properties[i].data;
@@ -886,9 +884,6 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 						if (properties[i].data == NULL) {
 							retvals[i] = MAPI_E_NOT_FOUND;
 						}
-						else {
-							(void) talloc_reference(data_pointers, properties[i].data);
-						}
 					}
 				}
 			}
@@ -899,7 +894,6 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				talloc_free(data_pointers);
 				data_pointers = NULL;
 			}
-			talloc_free(properties);
 		}
 		else {
 			if (table_object->parent_object->type == EMSMDBP_OBJECT_FOLDER) {

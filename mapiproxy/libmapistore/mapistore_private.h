@@ -190,7 +190,7 @@ int mapistore_backend_pocop_get_available_table_properties(struct backend_contex
 int mapistore_backend_pocop_set_table_columns(struct backend_context *, void *, uint16_t, enum MAPITAGS *);
 int mapistore_backend_pocop_set_table_restrictions(struct backend_context *, void *, struct mapi_SRestriction *, uint8_t *);
 int mapistore_backend_pocop_set_table_sort_order(struct backend_context *, void *, struct SSortOrderSet *, uint8_t *);
-int mapistore_backend_pocop_get_table_row(struct backend_context *, void *, TALLOC_CTX *, enum table_query_type, uint32_t, struct mapistore_property_data *);
+int mapistore_backend_pocop_get_table_row(struct backend_context *, void *, TALLOC_CTX *, enum table_query_type, uint32_t, struct mapistore_property_data **);
 
 int mapistore_backend_pocop_get_available_properties(struct backend_context *, void *, TALLOC_CTX *, struct SPropTagArray **);
 int mapistore_backend_pocop_get_properties(struct backend_context *, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);

@@ -890,9 +890,8 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			else {
 				DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
 				talloc_free(retvals);
-				retvals = NULL;
 				talloc_free(data_pointers);
-				data_pointers = NULL;
+				return NULL;
 			}
 		}
 		else {
@@ -918,9 +917,8 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				if (retval == MAPI_E_INVALID_OBJECT) {
 					DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
 					talloc_free(retvals);
-					retvals = NULL;
 					talloc_free(data_pointers);
-					data_pointers = NULL;
+					return NULL;
 				}
 				else {
 					retvals[i] = retval;
@@ -993,9 +991,8 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			if (retval == MAPI_E_INVALID_OBJECT) {
 				DEBUG(5, ("%s: invalid object in non-mapistore folder, count set to 0\n", __location__));
 				talloc_free(retvals);
-				retvals = NULL;
 				talloc_free(data_pointers);
-				data_pointers = NULL;
+				return NULL;
 			}
 			else {
 				retvals[i] = retval;

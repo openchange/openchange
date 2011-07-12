@@ -1136,7 +1136,7 @@ _PUBLIC_ struct Binary_r *set_RecurrencePattern(TALLOC_CTX *mem_ctx, const struc
 }
 
 _PUBLIC_ struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, 
-							 struct Binary_r *bin)
+									       struct Binary_r *bin)
 {
         struct AppointmentRecurrencePattern		*arp = NULL;
         struct ndr_pull					*ndr;

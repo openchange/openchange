@@ -637,64 +637,6 @@ _PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
 	return ret;
 }
 
-
-/**
-   \details Retrieve a MAPI property from a table
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   \param table_type the type of table (folders, messages, ...)
-   \param fid the folder identifier where the search takes place
-   \param proptag the MAPI property tag to retrieve value for
-   \param pos the record position in search results
-   \param data pointer on pointer to the data the function returns
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-_PUBLIC_ int mapistore_get_table_property(struct mapistore_context *mstore_ctx,
-					  uint32_t context_id,
-					  TALLOC_CTX *mem_ctx,
-					  uint8_t table_type,
-					  enum table_query_type query_type,
-					  uint64_t fid,
-					  uint32_t proptag,
-					  uint32_t pos,
-					  void **data)
-{
-	struct backend_context		*backend_ctx;
-	int				ret;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 1. Ensure the context exists */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 2. Call backend readdir */
-	ret = mapistore_backend_get_table_property(backend_ctx, mem_ctx, fid, table_type, query_type, pos, proptag, data);
-
-	return ret;
-}
-
-_PUBLIC_ int mapistore_get_available_table_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, TALLOC_CTX *mem_ctx, uint8_t table_type, struct SPropTagArray **propertiesp)
-{
-	struct backend_context		*backend_ctx;
-	int				ret;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 1. Ensure the context exists */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 2. Call backend readdir */
-	ret = mapistore_backend_get_available_table_properties(backend_ctx, mem_ctx, table_type, propertiesp);
-
-	return ret;
-}
-
 /**
    \details Open a message in mapistore
 
@@ -982,33 +924,10 @@ _PUBLIC_ int mapistore_get_child_fids(struct mapistore_context *mstore_ctx,
 				      uint64_t *child_fids[],
 				      uint32_t *child_fid_count)
 {
-	struct backend_context		*backend_ctx;
-	uint32_t			i;
-	void				*data;
-	int				ret;
+	DEBUG(0, ("unimplemented\n"));
+	abort();
 
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 0. Ensure the context exists */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 1. Call backend readdir to get the folder count */
-	ret = mapistore_backend_readdir_count(backend_ctx, fid, MAPISTORE_FOLDER_TABLE, child_fid_count);
-	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_NO_DIRECTORY, NULL);
-	
-	/* Step 2. Create a suitable sized array for the fids */
-	*child_fids = talloc_zero_array(mem_ctx, uint64_t, *child_fid_count);
-
-	/* Step 3. Fill the array */
-	for (i = 0; i < *child_fid_count; ++i) {
-		// TODO: add error checking for this call
-		ret = mapistore_get_table_property(mstore_ctx, context_id, child_fids, MAPISTORE_FOLDER_TABLE, MAPISTORE_PREFILTERED_QUERY, fid, PR_FID, i, &data);
-		(*child_fids)[i] = *((uint64_t*)(data));
-	}
-
-	return MAPISTORE_SUCCESS;
+	return 0;
 }
 
 /**

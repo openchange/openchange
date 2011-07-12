@@ -836,12 +836,11 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 	table = table_object->object.table;
 	if (emsmdbp_is_mapistore(table_object)) {
 		contextID = emsmdbp_get_contextID(table_object);
-		if (table_object->poc_api) {
-			retval = mapistore_pocop_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, table_object->poc_backend_object, mem_ctx, propertiesp);
+		if (!table_object->poc_api) {
+			DEBUG(5, ("mapistore tables are all expected to use the new 'POC' api\n"));
+			abort();
 		}
-		else {
-			retval = mapistore_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, mem_ctx, table->ulType, propertiesp);
-		}
+		retval = mapistore_pocop_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, table_object->poc_backend_object, mem_ctx, propertiesp);
 	}
 	else {
 		properties = talloc_zero(mem_ctx, struct SPropTagArray);
@@ -916,67 +915,38 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
 	contextID = emsmdbp_get_contextID(table_object);
 	if (emsmdbp_is_mapistore(table_object)) {
-		if (table_object->poc_api) {
-			retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, contextID,
-							       table_object->poc_backend_object, data_pointers,
-							       MAPISTORE_PREFILTERED_QUERY, row_id, &properties);
-			if (retval == MAPI_E_SUCCESS) {
-				for (i = 0; i < num_props; i++) {
-					data_pointers[i] = properties[i].data;
+		if (!table_object->poc_api) {
+			DEBUG(5, ("mapistore tables are all expected to use the new 'POC' api\n"));
+			abort();
+		}
+		retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, contextID,
+						       table_object->poc_backend_object, data_pointers,
+						       MAPISTORE_PREFILTERED_QUERY, row_id, &properties);
+		if (retval == MAPI_E_SUCCESS) {
+			for (i = 0; i < num_props; i++) {
+				data_pointers[i] = properties[i].data;
                                         
-					if (properties[i].error) {
-						if (properties[i].error == MAPISTORE_ERR_NOT_FOUND)
-							retvals[i] = MAPI_E_NOT_FOUND;
-						else if (properties[i].error == MAPISTORE_ERR_NO_MEMORY)
-							retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
-						else {
-							DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[i].error));
-						}
-					}
+				if (properties[i].error) {
+					if (properties[i].error == MAPISTORE_ERR_NOT_FOUND)
+						retvals[i] = MAPI_E_NOT_FOUND;
+					else if (properties[i].error == MAPISTORE_ERR_NO_MEMORY)
+						retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
 					else {
-						if (properties[i].data == NULL) {
-							retvals[i] = MAPI_E_NOT_FOUND;
-						}
+						DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[i].error));
 					}
 				}
-			}
-			else {
-				DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
-				talloc_free(retvals);
-				talloc_free(data_pointers);
-				return NULL;
+				else {
+					if (properties[i].data == NULL) {
+						retvals[i] = MAPI_E_NOT_FOUND;
+					}
+				}
 			}
 		}
 		else {
-			if (table_object->parent_object->type == EMSMDBP_OBJECT_FOLDER) {
-				folderID = table_object->parent_object->object.folder->folderID;
-			}
-			else {
-				DEBUG(5, ("%s: non-poc tables can only be client of folder objects\n", __location__));
-				talloc_free(retvals);
-				talloc_free(data_pointers);
-				return NULL;
-			}
-
-			retval = MAPI_E_SUCCESS;
-			for (i = 0; retval != MAPI_E_INVALID_OBJECT && i < num_props; i++) {
-				retval = mapistore_get_table_property(emsmdbp_ctx->mstore_ctx, contextID,
-								      data_pointers,
-								      table->ulType,
-								      MAPISTORE_PREFILTERED_QUERY,
-								      folderID, 
-								      table->properties[i],
-								      row_id, data_pointers + i);
-				if (retval == MAPI_E_INVALID_OBJECT) {
-					DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
-					talloc_free(retvals);
-					talloc_free(data_pointers);
-					return NULL;
-				}
-				else {
-					retvals[i] = retval;
-				}
-			}
+			DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
+			talloc_free(retvals);
+			talloc_free(data_pointers);
+			return NULL;
 		}
 	}
 	else {
@@ -1357,12 +1327,11 @@ _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct
 	contextID = emsmdbp_get_contextID(object);
 
 	if (emsmdbp_is_mapistore(object)) {
-		if (object->poc_api) {
-			retval = mapistore_pocop_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object, mem_ctx, propertiesp);
+		if (!object->poc_api) {
+			DEBUG(5, ("mapistore tables are all expected to use the new 'POC' api\n"));
+			abort();
 		}
-		else {
-			retval = mapistore_get_available_table_properties(emsmdbp_ctx->mstore_ctx, contextID, mem_ctx, table_type, propertiesp);
-		}
+		retval = mapistore_pocop_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object, mem_ctx, propertiesp);
 	}
 	else {
 		retval = MAPISTORE_ERROR;

@@ -800,18 +800,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
                 retvals = talloc_array(mem_ctx, enum MAPISTATUS, table->prop_count);
                 memset(data_pointers, 0, sizeof(void *) * table->prop_count);
                 memset(retvals, 0, sizeof(uint32_t) * table->prop_count);
-                properties = talloc_array(mem_ctx, struct mapistore_property_data, table->prop_count);
 
 		for (i = 0; !found && table->numerator < table->denominator; i++) {
                         flagged = 0;
 
                         if (object->poc_api) {
-                                memset(properties, 0, sizeof(struct mapistore_property_data) * table->prop_count);
                                 retval = mapistore_pocop_get_table_row(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
                                                                        object->poc_backend_object, properties,
                                                                        MAPISTORE_LIVEFILTERED_QUERY,
                                                                        table->numerator,
-                                                                       properties);
+                                                                       &properties);
                                 if (retval) {
                                         table->numerator++;
                                         continue;

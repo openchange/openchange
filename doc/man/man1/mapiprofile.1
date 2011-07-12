@@ -1,7 +1,7 @@
 .\" OpenChange Project Tools Man Pages
 .\"
 .\" This manpage is Copyright (C) 2007-2010 Julien Kerihuel;
-.\" This manpage is Copyright (C) 2008-2010 Brad Hards;
+.\" This manpage is Copyright (C) 2008-2011 Brad Hards;
 .\"
 .\" Permission is granted to make and distribute verbatim copies of this
 .\" manual provided the copyright notice and this permission notice are
@@ -26,20 +26,20 @@
 .\" Process this file with
 .\" groff -man -Tascii mapiprofile.1
 .\"
-.TH MAPIPROFILE 1 2010-02-27 "OpenChange libmapi 0.10" "OpenChange Users' Manual"
+.TH MAPIPROFILE 1 2011-07-12 "OpenChange libmapi 0.11" "OpenChange Users' Manual"
 
 .SH NAME
 mapiprofile \- administer OpenChange MAPI Profiles databases
 
 .SH SYNOPSIS
 .nf
-mapiprofile [-?GSnEcrlV] [-?|--help] [--usage] [-L|--ldif PATH] [-G|--getdefault] [-S|--default]
-	[-n|--newdb] [-f|--database PATH] [-P|--profile PROFILE] [-I|--address xxx.xxx.xxx.xxx]
-	[-M|--workstation WORKSTATION_NAME] [-D|--domain DOMAIN] [-R|--realm REALM] [-E|--encrypt]
-	[-u|--username USERNAME] [-C|--language LANGUAGE] [-s|--pattern USERNAME]
-	[-p|--password PASSWORD] [--nopass] [-c|--create] [-r|--delete] [-R|--rename STRING]
-	[-l|--list] [--listlangs] [--dump] [-a|--attr VALUE] [--dump-data] [-d|--debuglevel LEVEL]
-	[--getfqdn] [-V|--version]
+mapiprofile [-?GSnEcrlV] [-?|--help] [--usage] [-L|--ldif=PATH] [-G|--getdefault] [-S|--default]
+	[-n|--newdb] [-f|--database=PATH] [-P|--profile=PROFILE] [-I|--address=xxx.xxx.xxx.xxx]
+	[-M|--workstation=WORKSTATION_NAME] [-D|--domain=DOMAIN] [-R|--realm=REALM] [-E|--encrypt]
+	[-v|--exchange-version=2000] [-u|--username=USERNAME] [-C|--language=LANGUAGE]
+	[-s|--pattern=USERNAME] [-p|--password=PASSWORD] [--nopass] [-c|--create] [-r|--delete]
+	[-R|--rename=STRING] [-l|--list] [--listlangs] [--dump] [-a|--attr=VALUE] [--dump-data]
+	[-d|--debuglevel=LEVEL] [--getfqdn] [-k|--kerberos={yes|no}] [-V|--version]
 .fi
 
 .SH DESCRIPTION
@@ -106,8 +106,6 @@ List existing profiles in the database.
 
 .TP
 .B --listlangs
-.TP
-.B -l
 List the available languages. These can be used to specify the
 language name (--language) when creating a profile.
 
@@ -126,7 +124,7 @@ Path to the profile database. If no path database is specified then the default 
 .B --ldif LDIF
 .TP
 .B -L
-Path to the ldif files. If no ldif directory is specified then the default one set at compilation time will be used. This option is only used when creating a new profile database.
+Path to the LDIF files. If no LDIF directory is specified then the default one set at compilation time will be used. This option is only used when creating a new profile database.
 
 .TP
 .B --profile PROFILE
@@ -159,6 +157,22 @@ Set the Windows domain name.
 Require the connection to be encrypted. This is normally required only on Exchange 2010
 (and will presumably also be required on future versions), but may be used on Exchange 2003
 and Exchange 2007.
+
+.TP
+.B --exchange-version
+.TP
+.B -v
+Specify which version of the protocol to use. The reasonable options are 2000, 2003/2007 and 2010.
+2000 means use EcDoConnect (0x0) / EcDoRpc (0x2) RPC calls, 2003 or 2007 means use
+EcDoConnectEx (0xA) / EcDoRpcExt2 (0xB) RPC calls, and 2010 means use EcDoConnectEx (0xA) / EcDoRpcExt2
+(0xB) RPC calls over a sealed pipe.
+
+.TP
+.B --kerberos
+.TP
+.B -k
+Specify whether to force Kerberos (set to yes), not use Kerberos (set to no). If you omit this option,
+Kerberos will be used where practical.
 
 .TP
 .B --realm REALM

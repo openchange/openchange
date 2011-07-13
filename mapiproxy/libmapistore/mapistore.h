@@ -115,15 +115,15 @@ struct mapistore_backend {
 	int (*op_opendir)(void *, uint64_t);
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
-	/* message semantics */
 	int (*op_openmessage)(void *, TALLOC_CTX *, uint64_t, uint64_t, struct mapistore_message *);
 	int (*op_createmessage)(void *, uint64_t, uint64_t, uint8_t);
+        int (*op_deletemessage)(void *, uint64_t, uint64_t, uint8_t flags);
+	/* message semantics */
 	int (*op_savechangesmessage)(void *, uint64_t, uint8_t);
 	int (*op_submitmessage)(void *, uint64_t, uint8_t);
 	int (*op_getprops)(void *, TALLOC_CTX *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 	int (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
 	int (*op_modifyrecipients)(void *, uint64_t, struct ModifyRecipientRow *, uint16_t);
-        int (*op_deletemessage)(void *, uint64_t, uint64_t, uint8_t flags);
 
         /***
             proof of concept
@@ -133,6 +133,8 @@ struct mapistore_backend {
         struct {
 		/* constructor: open_folder */
                 int (*open_table)(void *, TALLOC_CTX *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
+		// int (*open_message)(void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
+		// int (*create_message)(void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
         } folder;
 
         /** oxcmsg operations */

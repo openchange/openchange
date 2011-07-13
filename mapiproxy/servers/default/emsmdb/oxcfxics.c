@@ -252,6 +252,7 @@ static int oxcfxics_source_key_from_fmid(TALLOC_CTX *mem_ctx, struct emsmdbp_con
 	}
 
 	(void) talloc_reference(mem_ctx, source_key);
+	talloc_free(source_key);
 
 	gc = fmid >> 16;
 
@@ -408,6 +409,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceCopyTo(TALLOC_CTX *mem_ctx
 			object->object.ftcontext->stream.buffer.length = ndr->offset;
 
 			talloc_free(ndr);
+			talloc_free(cutmarks_ndr);
 
 			mapi_handles_set_private_data(object_handle, object);
 			handles[mapi_repl->handle_idx] = object_handle->handle;
@@ -1391,6 +1393,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
         retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, folder_handle, &synccontext_rec);
 	(void) talloc_reference(synccontext_rec, synccontext_object);
         mapi_handles_set_private_data(synccontext_rec, synccontext_object);
+	talloc_free(synccontext_object);
         handles[mapi_repl->handle_idx] = synccontext_rec->handle;
 end:
 	*size += libmapiserver_RopSyncConfigure_size(mapi_repl);

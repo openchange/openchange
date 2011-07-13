@@ -383,6 +383,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 			object->object.stream->stream.buffer = stream_data->data;
 			(void) talloc_reference(object->object.stream, object->object.stream->stream.buffer.data);
 			DLIST_REMOVE(parent_object->stream_data, stream_data);
+			talloc_free(stream_data);
 		}
 		else {
 			properties.cValues = 1;
@@ -427,6 +428,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	(void) talloc_reference(rec, object);
 	handles[mapi_repl->handle_idx] = rec->handle;
 	mapi_handles_set_private_data(rec, object);
+	talloc_free(object);
 
 end:
 	*size += libmapiserver_RopOpenStream_size(mapi_repl);

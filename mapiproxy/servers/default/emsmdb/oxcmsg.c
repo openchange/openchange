@@ -1217,6 +1217,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
                 message_object->poc_backend_object = backend_attachment_message;
 		talloc_reference(message_object, backend_attachment_message);
 		talloc_free(backend_attachment_message);
+		talloc_free(msg);
                 retval = mapi_handles_set_private_data(message_rec, message_object);
 
 		break;

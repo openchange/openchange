@@ -125,10 +125,6 @@ struct mapistore_backend {
 	int (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
 	int (*op_modifyrecipients)(void *, uint64_t, struct ModifyRecipientRow *, uint16_t);
         int (*op_deletemessage)(void *, uint64_t, uint64_t, uint8_t flags);
-	/* restriction semantics */
-	int (*op_set_restrictions)(void *, uint64_t, uint8_t, struct mapi_SRestriction *, uint8_t *);
-        /* sort order */
-	int (*op_set_sort_order)(void *, uint64_t, uint8_t, struct SSortOrderSet *, uint8_t *);
 
         /***
             proof of concept
@@ -238,8 +234,6 @@ int mapistore_get_child_fids(struct mapistore_context *, uint32_t, TALLOC_CTX *,
 int mapistore_deletemessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 struct backend_context *mapistore_find_container_backend(struct mapistore_context *, uint64_t);
 int mapistore_get_folders_list(struct mapistore_context *, uint64_t, struct indexing_folders_list **);
-int mapistore_set_restrictions(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct mapi_SRestriction *, uint8_t *);
-int mapistore_set_sort_order(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SSortOrderSet *, uint8_t *);
 
 /* proof of concept */
 int mapistore_pocop_open_table(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);

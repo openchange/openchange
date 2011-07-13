@@ -175,8 +175,6 @@ int mapistore_backend_modifyrecipients(struct backend_context *, uint64_t, struc
 int mapistore_backend_get_fid_by_name(struct backend_context *, uint64_t, const char *, uint64_t *);
 int mapistore_backend_deletemessage(struct backend_context *, uint64_t, uint64_t, uint8_t);
 int mapistore_backend_get_folders_list(struct backend_context *, uint64_t, struct indexing_folders_list **);
-int mapistore_backend_set_restrictions(struct backend_context *, uint64_t, uint8_t, struct mapi_SRestriction *, uint8_t *);
-int mapistore_backend_set_sort_order(struct backend_context *, uint64_t, uint8_t, struct SSortOrderSet *, uint8_t *);
 
 /* proof of concept */
 int mapistore_backend_pocop_open_table(struct backend_context *, TALLOC_CTX *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);

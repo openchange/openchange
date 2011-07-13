@@ -526,19 +526,6 @@ int mapistore_backend_deletemessage(struct backend_context *bctx, uint64_t fid, 
         return bctx->backend->op_deletemessage(bctx->private_data, fid, mid, flags);
 }
 
-int mapistore_backend_set_restrictions(struct backend_context *bctx, uint64_t fmid, uint8_t type,
-				       struct mapi_SRestriction *res, uint8_t *table_status)
-{
-	return bctx->backend->op_set_restrictions(bctx->private_data, fmid, type, res, table_status);
-}
-
-int mapistore_backend_set_sort_order(struct backend_context *bctx, uint64_t fid, uint8_t type,
-                                     struct SSortOrderSet *set, uint8_t *table_status)
-{
-        return bctx->backend->op_set_sort_order(bctx->private_data, fid, type, set, table_status);
-}
-
-
 /* proof of concept */
 int mapistore_backend_pocop_open_table(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t fid, uint8_t table_type,
                                        uint32_t handle_id, void **table, uint32_t *row_count)

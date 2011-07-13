@@ -68,7 +68,9 @@ struct mapistore_output_ctx {
 
 static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 {
-	struct mapistore_output_ctx *mapistore = priv;
+	struct mapistore_output_ctx	*mapistore = priv;
+	TALLOC_CTX			*mem_ctx;
+	void				*message;
 
 	if (mapistore->proplist) {
 		struct parent_fid *it;
@@ -90,13 +92,15 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
                         element->fid = mapistore->current_id;
 			DLIST_ADD(mapistore->parent_fids, element);
 		} else {
+			mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 			mapistore_createmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					        mapistore->parent_fids->fid, mapistore->current_id, false);
-			mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					   mapistore->current_id, mapistore->current_output_type,
-					   mapistore->proplist);
-			mapistore_savechangesmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-						     mapistore->current_id, 0);
+						mem_ctx, mapistore->parent_fids->fid, mapistore->current_id, false,
+						&message);
+			mapistore_pocop_set_properties(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+						       message, mapistore->proplist);
+			mapistore_pocop_message_save(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+						     message);
+			talloc_free(mem_ctx);
 		}
 		talloc_free(mapistore->proplist);
 		mapistore->proplist = 0;

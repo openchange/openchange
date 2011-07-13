@@ -165,23 +165,24 @@ int mapistore_backend_readdir_count(struct backend_context *, uint64_t, uint8_t,
 int mapistore_backend_rmdir(struct backend_context *, uint64_t, uint64_t);
 int mapistore_backend_get_table_property(struct backend_context *, TALLOC_CTX *, uint64_t, uint8_t, enum table_query_type, uint32_t, uint32_t, void **);
 int mapistore_backend_get_available_table_properties(struct backend_context *, TALLOC_CTX *, uint8_t, struct SPropTagArray **);
-int mapistore_backend_openmessage(struct backend_context *, TALLOC_CTX *, uint64_t, uint64_t, struct mapistore_message *);
-int mapistore_backend_createmessage(struct backend_context *, uint64_t, uint64_t, uint8_t);
-int mapistore_backend_savechangesmessage(struct backend_context *, uint64_t, uint8_t);
-int mapistore_backend_submitmessage(struct backend_context *, uint64_t, uint8_t);
+int mapistore_backend_openmessage(struct backend_context *, TALLOC_CTX *, uint64_t, uint64_t, void **, struct mapistore_message **);
+int mapistore_backend_createmessage(struct backend_context *, TALLOC_CTX *, uint64_t, uint64_t, uint8_t, void **);
 int mapistore_backend_getprops(struct backend_context *, TALLOC_CTX *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 int mapistore_backend_setprops(struct backend_context *, uint64_t, uint8_t, struct SRow *);
-int mapistore_backend_modifyrecipients(struct backend_context *, uint64_t, struct ModifyRecipientRow *, uint16_t);
 int mapistore_backend_deletemessage(struct backend_context *, uint64_t, uint64_t, uint8_t);
 int mapistore_backend_get_folders_list(struct backend_context *, uint64_t, struct indexing_folders_list **);
 
 /* proof of concept */
 int mapistore_backend_pocop_open_table(struct backend_context *, TALLOC_CTX *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
 
-int mapistore_backend_pocop_get_attachment_table(struct backend_context *, TALLOC_CTX *, uint64_t, void **, uint32_t *);
-int mapistore_backend_pocop_get_attachment(struct backend_context *, TALLOC_CTX *, uint64_t, uint32_t, void **);
-int mapistore_backend_pocop_create_attachment(struct backend_context *, TALLOC_CTX *, uint64_t, uint32_t *, void **);
-int mapistore_backend_pocop_open_embedded_message(struct backend_context *, void *, TALLOC_CTX *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *msg, void **);
+int mapistore_backend_pocop_message_modify_recipients(struct backend_context *, void *, struct ModifyRecipientRow *, uint16_t);
+int mapistore_backend_pocop_message_save(struct backend_context *, void *);
+int mapistore_backend_pocop_message_submit(struct backend_context *, void *, enum SubmitFlags);
+
+int mapistore_backend_pocop_get_attachment_table(struct backend_context *, void *, TALLOC_CTX *, void **, uint32_t *);
+int mapistore_backend_pocop_get_attachment(struct backend_context *, void *, TALLOC_CTX *, uint32_t, void **);
+int mapistore_backend_pocop_create_attachment(struct backend_context *, void *, TALLOC_CTX *, void **, uint32_t *);
+int mapistore_backend_pocop_open_embedded_message(struct backend_context *, void *, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **msg);
 
 int mapistore_backend_pocop_get_available_table_properties(struct backend_context *, void *, TALLOC_CTX *, struct SPropTagArray **);
 int mapistore_backend_pocop_set_table_columns(struct backend_context *, void *, uint16_t, enum MAPITAGS *);

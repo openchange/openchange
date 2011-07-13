@@ -511,9 +511,6 @@ static int emsmdbp_object_destructor(void *data)
 		}
 		DEBUG(4, ("[%s:%d] mapistore folder context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
-	case EMSMDBP_OBJECT_MESSAGE:
-		ret = mapistore_release_record(object->emsmdbp_ctx->mstore_ctx, contextID, object->object.message->messageID, MAPISTORE_MESSAGE);
-		break;
 	case EMSMDBP_OBJECT_TABLE:
                 if (object->object.table->subscription_list) {
                         DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.table->subscription_list);
@@ -524,19 +521,11 @@ static int emsmdbp_object_destructor(void *data)
 	case EMSMDBP_OBJECT_STREAM:
 		emsmdbp_object_stream_commit(object);
 		break;
-	case EMSMDBP_OBJECT_ATTACHMENT:
-		break;
         case EMSMDBP_OBJECT_SUBSCRIPTION:
                 if (object->object.subscription->subscription_list) {
                         DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.subscription->subscription_list);
 			talloc_free(object->object.subscription->subscription_list);
                 }
-		break;
-        case EMSMDBP_OBJECT_SYNCCONTEXT:
-        case EMSMDBP_OBJECT_FTCONTEXT:
-		break;
-	default:
-		DEBUG(4, ("[%s:%d] destroying unhandled object type: %d\n", __FUNCTION__, __LINE__, object->type));
 		break;
 	}
 	
@@ -1122,7 +1111,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_object, uint64_t folderID, uint64_t messageID, struct mapistore_message **msgp)
 {
 	struct emsmdbp_object *folder_object, *message_object;
-	struct mapistore_message *msg;
 	bool mapistore;
 
 	if (!parent_object) return NULL;
@@ -1140,11 +1128,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 	case true:
 		/* mapistore implementation goes here */
 		message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, messageID, folder_object);
-		msg = talloc_zero(message_object, struct mapistore_message);
 		if (mapistore_openmessage(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), message_object,
-					  folderID, messageID, msg) == 0) {
-			(void) talloc_reference(message_object, folder_object);
-			*msgp = msg;
+					  folderID, messageID, &message_object->poc_backend_object, msgp) == 0) {
+			message_object->poc_api = true;
 		}
 		else {
 			talloc_free(message_object);
@@ -1158,9 +1144,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *message_object)
 {
 	struct emsmdbp_object	*table_object;
-	void			*backend_attachment_table;
-	uint32_t		row_count, contextID;
-	int			retval;
+	uint32_t		contextID;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
@@ -1173,23 +1157,20 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TAL
 		table_object = NULL;
 		break;
 	case true:
+		if (!message_object->poc_api) {
+			DEBUG(5, ("mapistore message are all expected to use the new 'POC' api\n"));
+			abort();
+		}
                 contextID = emsmdbp_get_contextID(message_object);
 
-                retval = mapistore_pocop_get_attachment_table(emsmdbp_ctx->mstore_ctx, contextID, 
-							      NULL,
-							      message_object->object.message->messageID,
-                                                              &backend_attachment_table,
-                                                              &row_count);
-                if (retval == MAPISTORE_SUCCESS) {
-			table_object = emsmdbp_object_table_init(mem_ctx, emsmdbp_ctx, message_object);
-			if (table_object) {
-				table_object->poc_api = true;
-				table_object->poc_backend_object = backend_attachment_table;
-				talloc_reference(table_object, table_object->poc_backend_object);
-				table_object->object.table->denominator = row_count;
-				table_object->object.table->ulType = EMSMDBP_TABLE_ATTACHMENT_TYPE;
-			}
-			talloc_free(backend_attachment_table);
+		table_object = emsmdbp_object_table_init(mem_ctx, emsmdbp_ctx, message_object);
+		if (table_object) {
+			table_object->poc_api = true;
+			table_object->object.table->ulType = EMSMDBP_TABLE_ATTACHMENT_TYPE;
+			mapistore_pocop_get_attachment_table(emsmdbp_ctx->mstore_ctx, contextID,
+							     message_object->poc_backend_object,
+							     table_object, &table_object->poc_backend_object,
+							     &table_object->object.table->denominator);
 		}
         }
 

@@ -115,15 +115,12 @@ struct mapistore_backend {
 	int (*op_opendir)(void *, uint64_t);
 	int (*op_closedir)(void *);
 	int (*op_readdir_count)(void *, uint64_t, uint8_t, uint32_t *);
-	int (*op_openmessage)(void *, TALLOC_CTX *, uint64_t, uint64_t, struct mapistore_message *);
-	int (*op_createmessage)(void *, uint64_t, uint64_t, uint8_t);
+	int (*op_openmessage)(void *, TALLOC_CTX *, uint64_t, uint64_t, void **, struct mapistore_message **);
+	int (*op_createmessage)(void *, TALLOC_CTX *, uint64_t, uint64_t, uint8_t, void **);
         int (*op_deletemessage)(void *, uint64_t, uint64_t, uint8_t flags);
 	/* message semantics */
-	int (*op_savechangesmessage)(void *, uint64_t, uint8_t);
-	int (*op_submitmessage)(void *, uint64_t, uint8_t);
 	int (*op_getprops)(void *, TALLOC_CTX *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 	int (*op_setprops)(void *, uint64_t, uint8_t, struct SRow *);
-	int (*op_modifyrecipients)(void *, uint64_t, struct ModifyRecipientRow *, uint16_t);
 
         /***
             proof of concept
@@ -142,10 +139,14 @@ struct mapistore_backend {
         struct {
 		/* constructor: open_message */
 		/* constructor: create_message */
-                int (*get_attachment_table)(void *, TALLOC_CTX *, uint64_t, void **, uint32_t *);
-                int (*get_attachment)(void *, TALLOC_CTX *, uint64_t, uint32_t, void **);
-                int (*create_attachment)(void *, TALLOC_CTX *, uint64_t, uint32_t *, void **);
-                int (*open_embedded_message)(void *, TALLOC_CTX *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *, void **);
+                int (*create_attachment)(void *, TALLOC_CTX *, void **, uint32_t *);
+                int (*get_attachment_table)(void *, TALLOC_CTX *, void **, uint32_t *);
+                int (*get_attachment)(void *, TALLOC_CTX *, uint32_t, void **);
+		int (*modify_recipients)(void *, struct ModifyRecipientRow *, uint16_t);
+		int (*save)(void *);
+		int (*submit)(void *, enum SubmitFlags);
+
+                int (*open_embedded_message)(void *, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **);
         } message;
 
         /** oxctabl operations */
@@ -223,13 +224,10 @@ int mapistore_mkdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, st
 int mapistore_rmdir(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 int mapistore_get_folder_count(struct mapistore_context *, uint32_t, uint64_t, uint32_t *);
 int mapistore_get_message_count(struct mapistore_context *, uint32_t, uint64_t, uint8_t, uint32_t *);
-int mapistore_openmessage(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint64_t, struct mapistore_message *);
-int mapistore_createmessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
-int mapistore_savechangesmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
-int mapistore_submitmessage(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+int mapistore_openmessage(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint64_t, void **, struct mapistore_message **);
+int mapistore_createmessage(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint64_t, uint8_t, void **);
 int mapistore_getprops(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
 int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, struct SRow *);
-int mapistore_modifyrecipients(struct mapistore_context *, uint32_t, uint64_t, struct ModifyRecipientRow*, uint16_t);
 int mapistore_get_child_fids(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint64_t **, uint32_t *);
 int mapistore_deletemessage(struct mapistore_context *, uint32_t, uint64_t, uint64_t, uint8_t);
 struct backend_context *mapistore_find_container_backend(struct mapistore_context *, uint64_t);
@@ -238,10 +236,14 @@ int mapistore_get_folders_list(struct mapistore_context *, uint64_t, struct inde
 /* proof of concept */
 int mapistore_pocop_open_table(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
 
-int mapistore_pocop_get_attachment_table(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, void **, uint32_t *);
-int mapistore_pocop_get_attachment(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint32_t, void **);
-int mapistore_pocop_create_attachment(struct mapistore_context *, uint32_t, TALLOC_CTX *, uint64_t, uint32_t *, void **);
-int mapistore_pocop_open_embedded_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t *, enum OpenEmbeddedMessage_OpenModeFlags, struct mapistore_message *msg, void **);
+int mapistore_pocop_message_modify_recipients(struct mapistore_context *, uint32_t, void *, struct ModifyRecipientRow *, uint16_t);
+int mapistore_pocop_message_save(struct mapistore_context *, uint32_t, void *);
+int mapistore_pocop_message_submit(struct mapistore_context *, uint32_t, void *, enum SubmitFlags);
+
+int mapistore_pocop_get_attachment_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, uint32_t *);
+int mapistore_pocop_get_attachment(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint32_t, void **);
+int mapistore_pocop_create_attachment(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, uint32_t *);
+int mapistore_pocop_open_embedded_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **msg);
 
 int mapistore_pocop_get_available_table_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 int mapistore_pocop_set_table_columns(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *);

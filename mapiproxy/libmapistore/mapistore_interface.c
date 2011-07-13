@@ -651,7 +651,7 @@ _PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
  */
 _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx, uint32_t context_id, TALLOC_CTX *mem_ctx, 
 				   uint64_t parent_fid, uint64_t mid,
-				   struct mapistore_message *msg)
+				   void **messagep, struct mapistore_message **msg)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -664,7 +664,7 @@ _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx, uint32_
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend openmessage */
-	ret = mapistore_backend_openmessage(backend_ctx, mem_ctx, parent_fid, mid, msg);
+	ret = mapistore_backend_openmessage(backend_ctx, mem_ctx, parent_fid, mid, messagep, msg);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
@@ -683,7 +683,7 @@ _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx, uint32_
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ int mapistore_createmessage(struct mapistore_context *mstore_ctx, uint32_t context_id, 
-				     uint64_t parent_fid, uint64_t mid, uint8_t associated)
+				     TALLOC_CTX *mem_ctx, uint64_t parent_fid, uint64_t mid, uint8_t associated, void **messagep)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -696,77 +696,10 @@ _PUBLIC_ int mapistore_createmessage(struct mapistore_context *mstore_ctx, uint3
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	
 	/* Step 2. Call backend createmessage */
-	ret = mapistore_backend_createmessage(backend_ctx, parent_fid, mid, associated);
+	ret = mapistore_backend_createmessage(backend_ctx, mem_ctx, parent_fid, mid, associated, messagep);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
-
-
-/**
-   \details Commit the changes made to a message in mapistore
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   where the message's changes will be saved
-   \param mid the message identifier to save
-   \param flags flags associated to the commit operation
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-_PUBLIC_ int mapistore_savechangesmessage(struct mapistore_context *mstore_ctx,
-					  uint32_t context_id,
-					  uint64_t mid,
-					  uint8_t flags)
-{
-	struct backend_context	*backend_ctx;
-	int			ret;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 1. Search the context */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 2. Call backend savechangesmessage */
-	ret = mapistore_backend_savechangesmessage(backend_ctx, mid, flags);
-
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
-}
-
-
-/**
-   \details Submits a message for sending.
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   where the message will be submitted
-   \param mid the message identifier representing the message to submit
-   \param flags flags associated to the submit operation
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-_PUBLIC_ int mapistore_submitmessage(struct mapistore_context *mstore_ctx,
-				     uint32_t context_id,
-				     uint64_t mid,
-				     uint8_t flags)
-{
-	struct backend_context	*backend_ctx;
-	int			ret;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 1. Search the context */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 2. Call backend submitmessage */
-	ret = mapistore_backend_submitmessage(backend_ctx, mid, flags);
-
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
-}
-
 
 /**
    \details Get properties of a message/folder in mapistore
@@ -833,36 +766,6 @@ _PUBLIC_ int mapistore_setprops(struct mapistore_context *mstore_ctx,
 
 	/* Step 2. Call backend setprops */
 	ret = mapistore_backend_setprops(backend_ctx, fmid, type, aRow);
-
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
-}
-
-/**
-   \details Modify recipients of a message in mapistore
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   where properties will be stored
-   \param mid the identifier referencing the message
-   \rows the array of recipient rows
-   \count the number of elements in the array
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-int mapistore_modifyrecipients(struct mapistore_context *mstore_ctx, uint32_t context_id, uint64_t mid, struct ModifyRecipientRow *rows, uint16_t count)
-{
-	struct backend_context	*backend_ctx;
-	int			ret;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 1. Search the context */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 2. Call backend modifyrecipients */
-	ret = mapistore_backend_modifyrecipients(backend_ctx, mid, rows, count);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
@@ -992,8 +895,19 @@ int mapistore_pocop_open_table(struct mapistore_context *mstore_ctx, uint32_t co
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_get_attachment_table(struct mapistore_context *mstore_ctx, uint32_t context_id, TALLOC_CTX *mem_ctx,
-						  uint64_t mid, void **table, uint32_t *row_count)
+/**
+   \details Modify recipients of a message in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where properties will be stored
+   \param mid the identifier referencing the message
+   \rows the array of recipient rows
+   \count the number of elements in the array
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+int mapistore_pocop_message_modify_recipients(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, struct ModifyRecipientRow *rows, uint16_t count)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1005,14 +919,25 @@ _PUBLIC_ int mapistore_pocop_get_attachment_table(struct mapistore_context *msto
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_get_attachment_table(backend_ctx, mem_ctx, mid, table, row_count);
+	/* Step 2. Call backend modifyrecipients */
+	ret = mapistore_backend_pocop_message_modify_recipients(backend_ctx, message, rows, count);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_get_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id, TALLOC_CTX *mem_ctx,
-                                            uint64_t mid, uint32_t aid, void **attachment)
+/**
+   \details Commit the changes made to a message in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where the message's changes will be saved
+   \param mid the message identifier to save
+   \param flags flags associated to the commit operation
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_pocop_message_save(struct mapistore_context *mstore_ctx, uint32_t context_id,
+					  void *message)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1024,14 +949,26 @@ _PUBLIC_ int mapistore_pocop_get_attachment(struct mapistore_context *mstore_ctx
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_get_attachment(backend_ctx, mem_ctx, mid, aid, attachment);
+	/* Step 2. Call backend savechangesmessage */
+	ret = mapistore_backend_pocop_message_save(backend_ctx, message);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_create_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id, TALLOC_CTX *mem_ctx,
-                                               uint64_t mid, uint32_t *aid, void **attachment)
+
+/**
+   \details Submits a message for sending.
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where the message will be submitted
+   \param mid the message identifier representing the message to submit
+   \param flags flags associated to the submit operation
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_pocop_message_submit(struct mapistore_context *mstore_ctx, uint32_t context_id,
+					    void *message, enum SubmitFlags flags)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1043,13 +980,14 @@ _PUBLIC_ int mapistore_pocop_create_attachment(struct mapistore_context *mstore_
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_create_attachment(backend_ctx, mem_ctx, mid, aid, attachment);
+	/* Step 2. Call backend submitmessage */
+	ret = mapistore_backend_pocop_message_submit(backend_ctx, message, flags);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, TALLOC_CTX *mem_ctx, uint64_t *mid, enum OpenEmbeddedMessage_OpenModeFlags flags, struct mapistore_message *msg, void **message)
+_PUBLIC_ int mapistore_pocop_get_attachment_table(struct mapistore_context *mstore_ctx, uint32_t context_id,
+						  void *message, TALLOC_CTX *mem_ctx, void **table, uint32_t *row_count)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1062,7 +1000,63 @@ _PUBLIC_ int mapistore_pocop_open_embedded_message(struct mapistore_context *mst
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_open_embedded_message(backend_ctx, object, mem_ctx, mid, flags, msg, message);
+	ret = mapistore_backend_pocop_get_attachment_table(backend_ctx, message, mem_ctx, table, row_count);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_get_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
+                                            void *message, TALLOC_CTX *mem_ctx, uint32_t aid, void **attachment)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_get_attachment(backend_ctx, message, mem_ctx, aid, attachment);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_create_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
+					       void *message, TALLOC_CTX *mem_ctx, void **attachment, uint32_t *aid)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_create_attachment(backend_ctx, message, mem_ctx, attachment, aid);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_pocop_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_pocop_open_embedded_message(backend_ctx, message, mem_ctx, embedded_message, mid, msg);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

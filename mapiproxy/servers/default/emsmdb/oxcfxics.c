@@ -1477,14 +1477,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 
 	message_object = emsmdbp_object_message_open(message_object_handle, emsmdbp_ctx, synccontext_object->parent_object, folderID, messageID, &msg);
 	if (!message_object) {
-		if (mapistore_createmessage(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(synccontext_object),
-					    folderID, messageID, (request->ImportFlag & ImportFlag_Associated)) != MAPISTORE_SUCCESS) {
+		message_object = emsmdbp_object_message_init(message_object_handle, emsmdbp_ctx, messageID, synccontext_object->parent_object);
+		if (mapistore_createmessage(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(synccontext_object->parent_object), message_object,
+					    folderID, messageID, (request->ImportFlag & ImportFlag_Associated), &message_object->poc_backend_object)) {
 			mapi_handles_delete(emsmdbp_ctx->handles_ctx, message_object_handle->handle);
+			talloc_free(message_object);
 			DEBUG(5, ("could not open nor create mapistore message\n"));
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			goto end;
 		}
-		message_object = emsmdbp_object_message_open(message_object_handle, emsmdbp_ctx, synccontext_object->parent_object, folderID, messageID, &msg);
+		message_object->poc_api = true;
 	}
 	mapi_handles_set_private_data(message_object_handle, message_object);
 

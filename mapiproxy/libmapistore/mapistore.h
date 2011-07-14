@@ -107,7 +107,6 @@ struct mapistore_backend {
 	int (*init)(void);
         int (*create_context)(TALLOC_CTX *, struct mapistore_connection_info *, const char *, uint64_t, void **);
 	int (*delete_context)(void *);
-	int (*release_record)(void *, uint64_t, uint8_t);
 	int (*get_path)(void *, TALLOC_CTX *, uint64_t, uint8_t, char **);
 	/* folders semantic */
 	int (*op_mkdir)(void *, uint64_t, uint64_t, struct SRow *);
@@ -214,7 +213,6 @@ int mapistore_release(struct mapistore_context *);
 int mapistore_add_context(struct mapistore_context *, const char *, uint64_t, uint32_t *);
 int mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
-int mapistore_release_record(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_search_context_by_uri(struct mapistore_context *, const char *, uint32_t *);
 const char *mapistore_errstr(int);
 int mapistore_add_context_indexing(struct mapistore_context *, const char *, uint32_t);

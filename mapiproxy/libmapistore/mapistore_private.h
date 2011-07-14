@@ -157,7 +157,6 @@ int mapistore_backend_init(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, struct mapistore_connection_info *, const char *, const char *, uint64_t);
 int mapistore_backend_add_ref_count(struct backend_context *);
 int mapistore_backend_delete_context(struct backend_context *);
-int mapistore_backend_release_record(struct backend_context *, uint64_t, uint8_t);
 int mapistore_get_path(struct backend_context *, TALLOC_CTX *, uint64_t, uint8_t, char **);
 int mapistore_backend_opendir(struct backend_context *, uint64_t);
 int mapistore_backend_mkdir(struct backend_context *, uint64_t, uint64_t, struct SRow *);

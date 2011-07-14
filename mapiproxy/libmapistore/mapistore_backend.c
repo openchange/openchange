@@ -426,7 +426,7 @@ int mapistore_get_path(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64
 	ret = bctx->backend->get_path(bctx->private_data, mem_ctx, fmid, type, &bpath);
 
 	if (!ret) {
-		*path = talloc_asprintf(bctx, "%s%s", bctx->backend->namespace, bpath);
+		*path = talloc_asprintf(mem_ctx, "%s%s", bctx->backend->namespace, bpath);
 	} else {
 		*path = NULL;
 	}

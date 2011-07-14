@@ -92,14 +92,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;
 	case true:
-		if (!object->poc_api) {
-			DEBUG(5, ("mapistore message are all expected to use the new 'POC' api\n"));
-			abort();
-		}
 		messageID = object->object.message->messageID;
 		contextID = emsmdbp_get_contextID(object);
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
-		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->poc_backend_object, flags);
+		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, flags);
 		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
 		break;
 	}
@@ -324,11 +320,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;
 	case true:
-		if (!object->poc_api) {
-			DEBUG(5, ("mapistore message are all expected to use the new 'POC' api\n"));
-			abort();
-		}
-		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->poc_backend_object, 0);
+		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, 0);
 		/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID); */
 		break;
 	}

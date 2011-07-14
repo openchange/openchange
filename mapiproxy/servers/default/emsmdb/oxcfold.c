@@ -453,33 +453,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues), PR_PARENT_FID, (void *)(&parent_fid));
 
 	/* Step 4. Do effective work here */
-	retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_object, fid, aRow);
+	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	handles[mapi_repl->handle_idx] = rec->handle;
+
+	retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_object, rec, fid, aRow, &object);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Failure to create new folder\n"));
+		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
 		mapi_repl->error_code = retval;
 		goto end;
 	}
+	mapi_handles_set_private_data(rec, object);
 
 	mapi_repl->u.mapi_CreateFolder.folder_id = fid;
 
 	if (mapi_repl->u.mapi_CreateFolder.IsExistingFolder == true) {
 		mapi_repl->u.mapi_CreateFolder.GhostUnion.GhostInfo.HasRules = false;
 		mapi_repl->u.mapi_CreateFolder.GhostUnion.GhostInfo.IsGhosted = false;
-	}
-
-	if (!mapi_repl->error_code) {
-		mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-		object = emsmdbp_object_open_folder(rec, emsmdbp_ctx, parent_object, fid);
-		if (object) {
-			retval = mapi_handles_set_private_data(rec, object);
-		}
-		else {
-			mapi_repl->error_code = MAPI_E_NOT_FOUND;
-			goto end;
-		}
-
-
-		handles[mapi_repl->handle_idx] = rec->handle;
 	}
 
 end:
@@ -597,23 +586,23 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		return MAPI_E_SUCCESS;
 	}
-	parent_fid = handle_object->object.folder->folderID;
-	context_id = emsmdbp_get_contextID(handle_object);
 
 	mapistore = emsmdbp_is_mapistore(handle_object);
 	switch (mapistore) {
 	case false:
 		/* system/special folder */
 		DEBUG(0, ("Deleting system/special folder\n"));
+		parent_fid = handle_object->object.folder->folderID;
 		mapi_repl->error_code = DoDeleteSystemFolder(emsmdbp_ctx, parent_fid,
 							     mapi_req->u.mapi_DeleteFolder.FolderId,
 							     mapi_req->u.mapi_DeleteFolder.DeleteFolderFlags);
 
 		break;
 	case true:
-		/* handled by mapistore */
 		DEBUG(0, ("Deleting mapistore folder\n"));
-		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, parent_fid,
+		/* handled by mapistore */
+		context_id = emsmdbp_get_contextID(handle_object);
+		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, handle_object,
 							mapi_req->u.mapi_DeleteFolder.FolderId,
 							mapi_req->u.mapi_DeleteFolder.DeleteFolderFlags);
 		if (retval) {
@@ -658,7 +647,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 	void			*parent_folder_private_data;
 	struct emsmdbp_object	*parent_object;
 	enum MAPISTATUS		retval;
-	uint64_t		parent_folderID;
 	uint32_t		contextID;
 	int 			i;
 
@@ -689,20 +677,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 		goto delete_message_response;
 	}
 
-	if (! emsmdbp_is_mapistore(parent_object) ) {
+	if (!emsmdbp_is_mapistore(parent_object) ) {
 		DEBUG(0, ("Got parent folder not in mapistore\n"));
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto delete_message_response;
 	}
 
-	parent_folderID = parent_object->object.folder->folderID;
 	contextID = emsmdbp_get_contextID(parent_object);
 
 	for (i = 0; i < mapi_req->u.mapi_DeleteMessages.cn_ids; ++i) {
 		int ret;
 		uint64_t mid = mapi_req->u.mapi_DeleteMessages.message_ids[i];
 		DEBUG(0, ("MID %i to delete: 0x%.16"PRIx64"\n", i, mid));
-		ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, parent_folderID, mid, MAPISTORE_SOFT_DELETE);
+		ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, parent_object->backend_object, mid, MAPISTORE_SOFT_DELETE);
 		if (ret != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_CALL_FAILED;
 			goto delete_message_response;
@@ -821,7 +808,6 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 {
 	void                    *folder_priv;
 	struct emsmdbp_object   *folder_object = NULL;
-	uint64_t                fid;
 	uint32_t                context_id;
 	int                     retval;
 	uint64_t		*childFolders;
@@ -842,14 +828,12 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder wrong object type: 0x%x\n", folder_object->type));
 		return MAPI_E_NO_SUPPORT;
 	}
-	fid = folder_object->object.folder->folderID;
 	context_id = emsmdbp_get_contextID(folder_object);
 
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	retval = mapistore_folder_get_child_fids(emsmdbp_ctx->mstore_ctx, context_id, local_mem_ctx, fid,
+	retval = mapistore_folder_get_child_fids(emsmdbp_ctx->mstore_ctx, context_id, folder_object, local_mem_ctx,
 						 &childFolders, &childFolderCount);
-	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder fid: 0x%.16"PRIx64", count: %d\n", fid, childFolderCount));
 	if (retval) {
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder bad retval: 0x%x", retval));
 		return MAPI_E_NOT_FOUND;
@@ -857,7 +841,7 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 
 	/* Step 3. Delete contents of the folder in mapistore */
 	for (i = 0; i < childFolderCount; ++i) {
-		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, fid, childFolders[i],
+		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, folder_object, childFolders[i],
 							flags);
 		if (retval) {
 			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete fid 0x%.16"PRIx64" (0x%x)", childFolders[i], retval));

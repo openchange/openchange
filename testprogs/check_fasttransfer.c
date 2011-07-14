@@ -60,6 +60,7 @@ struct mapistore_output_ctx {
 	struct mapistore_context	*mstore_ctx;
 	uint32_t			mapistore_context_id;
 	uint64_t			root_fid;
+	void				*root_folder;
 	struct parent_fid		*parent_fids; /* stack */
 	uint64_t			current_id;
 	uint8_t				current_output_type;
@@ -81,26 +82,32 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 		printf("\n");
 		if (mapistore->current_id == mapistore->root_fid) {
 			/* This is the top level folder */
-			mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					   mapistore->root_fid, mapistore->current_output_type,
-					   mapistore->proplist);
+			abort();
+			/* obsolete code: */
+			/* mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 		   mapistore->root_fid, mapistore->current_output_type, */
+			/* 		   mapistore->proplist); */
 		} else if (mapistore->current_output_type == MAPISTORE_FOLDER) {
-                        struct parent_fid *element = talloc_zero(mapistore->mstore_ctx, struct parent_fid);
-			mapistore_folder_create_folder(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-						       mapistore->parent_fids->fid, mapistore->current_id,
-						       mapistore->proplist);
-                        element->fid = mapistore->current_id;
-			DLIST_ADD(mapistore->parent_fids, element);
+			abort();
+			/* obsolete code: */
+                        /* struct parent_fid *element = talloc_zero(mapistore->mstore_ctx, struct parent_fid); */
+			/* mapistore_folder_create_folder(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 			       mapistore->parent_fids->fid, mapistore->current_id, */
+			/* 			       mapistore->proplist); */
+                        /* element->fid = mapistore->current_id; */
+			/* DLIST_ADD(mapistore->parent_fids, element); */
 		} else {
-			mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-			mapistore_folder_create_message(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-							mem_ctx, mapistore->parent_fids->fid, mapistore->current_id, false,
-							&message);
-			mapistore_properties_set_properties(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-							    message, mapistore->proplist);
-			mapistore_message_save(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					       message);
-			talloc_free(mem_ctx);
+			abort();
+			/* obsolete code: */
+			/* mem_ctx = talloc_zero(NULL, TALLOC_CTX); */
+			/* mapistore_folder_create_message(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 				mem_ctx, mapistore->parent_fids->fid, mapistore->current_id, false, */
+			/* 				&message); */
+			/* mapistore_properties_set_properties(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 				    message, mapistore->proplist); */
+			/* mapistore_message_save(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 		       message); */
+			/* talloc_free(mem_ctx); */
 		}
 		talloc_free(mapistore->proplist);
 		mapistore->proplist = 0;
@@ -371,6 +378,7 @@ int main(int argc, const char *argv[])
 
 	if (opt_mapistore) {
 		char *root_folder;
+
 		// TODO: check the path is valid / exists / can be opened, etc.
 		// TODO: maybe allow a URI instead of path.
 		output_ctx.root_fid = 0x0000000000010001;
@@ -389,7 +397,7 @@ int main(int argc, const char *argv[])
 			exit (1);
 		}
 
-		retval = mapistore_add_context(output_ctx.mstore_ctx, root_folder, output_ctx.root_fid, &(output_ctx.mapistore_context_id));
+		retval = mapistore_add_context(output_ctx.mstore_ctx, root_folder, output_ctx.root_fid, &(output_ctx.mapistore_context_id), &output_ctx.root_folder);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 			exit (1);

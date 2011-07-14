@@ -105,13 +105,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *mem_ctx,
 			table->properties = talloc_memdup(table, request.properties, 
 							  request.prop_count * sizeof (uint32_t));
                         if (emsmdbp_is_mapistore(object)) {
-                                if (object->poc_api) {
-					DEBUG(5, ("[%s] object: %p, backend_object: %p\n", __FUNCTION__, object, object->poc_backend_object));
-                                        mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
-								    object->poc_backend_object,
-								    request.prop_count,
-								    request.properties);
-                                }
+				DEBUG(5, ("[%s] object: %p, backend_object: %p\n", __FUNCTION__, object, object->backend_object));
+				mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+							    object->backend_object, request.prop_count, request.properties);
                         }
 		}
 	}
@@ -215,11 +211,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 	if (emsmdbp_is_mapistore(object)) {
 		status = TBLSTAT_COMPLETE;
                 request = mapi_req->u.mapi_SortTable;
-		if (!object->poc_api) {
-			DEBUG(5, ("mapistore tables are all expected to use the new 'POC' api\n"));
-			abort();
-		}
-		retval = mapistore_table_set_sort_order(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->poc_backend_object, &request.lpSortCriteria, &status);
+		retval = mapistore_table_set_sort_order(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.lpSortCriteria, &status);
                 if (retval) {
 			mapi_repl->error_code = retval;
 			goto end;
@@ -322,11 +314,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	/* If parent folder has a mapistore context */
 	if (emsmdbp_is_mapistore(object)) {
 		status = TBLSTAT_COMPLETE;
-		if (!object->poc_api) {
-			DEBUG(5, ("mapistore tables are all expected to use the new 'POC' api\n"));
-			abort();
-		}
-		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->poc_backend_object, &request.restrictions, &status);
+		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.restrictions, &status);
                 if (retval) {
                         mapi_repl->error_code = retval;
 			goto end;
@@ -775,11 +763,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		memset (&row, 0, sizeof(DATA_BLOB));
 
 		/* Restrict rows to be fetched */
-		if (!object->poc_api) {
-			DEBUG(5, ("mapistore tables are all expected to use the new 'POC' api\n"));
-			abort();
-		}
-		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->poc_backend_object, &request.res, &status);
+		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.res, &status);
 		/* Then fetch rows */
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 
@@ -830,11 +814,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		if (!object->poc_api) {
-			DEBUG(5, ("mapistore tables are all expected to use the new 'POC' api\n"));
-			abort();
-		}
-		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->poc_backend_object, NULL, &status);
+		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, NULL, &status);
 
 		/* Adjust parameters */
 		if (found) {
@@ -946,11 +926,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
 
 		/* 1.2. empty restrictions */
 		if (emsmdbp_is_mapistore(object)) {
-			if (!object->poc_api) {
-				DEBUG(5, ("mapistore tables are all expected to use the new 'POC' api\n"));
-				abort();
-			}
-			retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->poc_backend_object, NULL, &status);
+			retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, NULL, &status);
 		} else {
 			DEBUG(0, ("  mapistore Restrict: Not implemented yet\n"));
 			goto end;

@@ -356,9 +356,7 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                         table->properties = previous_row_properties;
                                         table->prop_count = 1;
 					contextID = emsmdbp_get_contextID(handle_object);
-                                        if (handle_object->poc_api) {
-                                                mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, handle_object->poc_backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
-                                        }
+					mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, handle_object->backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
                                         data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, handle_object,
                                                                                            notification->parameters.table_parameters.row_id - 1,
                                                                                            &retvals);
@@ -373,9 +371,7 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                         table->prop_count = saved_prop_count;
                                         table->properties = saved_properties;
                                         talloc_free(previous_row_properties);
-                                        if (handle_object->poc_api) {
-                                                mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, handle_object->poc_backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
-                                        }
+					mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, handle_object->backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
                                 }
                                 else {
                                         prev_fid = 0;
@@ -423,9 +419,7 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                         table->properties = previous_row_properties;
                                         table->prop_count = 3;
 					contextID = emsmdbp_get_contextID(handle_object);
-                                        if (handle_object->poc_api) {
-                                                mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, handle_object->poc_backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
-                                        }
+					mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, handle_object->backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
                                         data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, handle_object, notification->parameters.table_parameters.row_id - 1, NULL);
                                         if (data_pointers) {
                                                 prev_fid = *(uint64_t *) data_pointers[0];
@@ -442,9 +436,7 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                         table->prop_count = saved_prop_count;
                                         table->properties = saved_properties;
                                         talloc_free(previous_row_properties);
-                                        if (handle_object->poc_api) {
-                                                mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, handle_object->poc_backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
-                                        }
+					mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, handle_object->backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
                                 }
                                 else {
                                         prev_fid = 0;

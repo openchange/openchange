@@ -231,8 +231,7 @@ int mapistore_indexing_search_existing_fmid(struct indexing_context_list *ictx,
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
-				       uint32_t context_id,  uint64_t fmid, 
-				       uint8_t type)
+				       uint32_t context_id,  uint64_t fmid)
 {
 	int				ret;
 	struct backend_context		*backend_ctx;
@@ -258,7 +257,7 @@ int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 
 	/* Retrieve the mapistore URI given context_id and fmid */
-	mapistore_backend_get_path(backend_ctx, NULL, fmid, type, &mapistore_URI);
+	mapistore_backend_get_path(backend_ctx, NULL, fmid, &mapistore_URI);
 	DEBUG(0, ("mapistore_URI = %s\n", mapistore_URI));
 	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERROR, NULL);
 
@@ -520,7 +519,7 @@ _PUBLIC_ int mapistore_indexing_record_get_fmid(struct mapistore_context *mstore
 _PUBLIC_ int mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
 					       uint32_t context_id, uint64_t fid)
 {
-	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, fid, MAPISTORE_FOLDER);
+	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, fid);
 }
 
 
@@ -560,7 +559,7 @@ _PUBLIC_ int mapistore_indexing_record_del_fid(struct mapistore_context *mstore_
 _PUBLIC_ int mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
 					       uint32_t context_id, uint64_t mid)
 {
-	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, mid, MAPISTORE_MESSAGE);
+	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, mid);
 }
 
 

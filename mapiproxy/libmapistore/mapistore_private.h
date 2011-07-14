@@ -157,19 +157,16 @@ int mapistore_backend_init(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, struct mapistore_connection_info *, const char *, const char *, uint64_t);
 int mapistore_backend_add_ref_count(struct backend_context *);
 int mapistore_backend_delete_context(struct backend_context *);
-int mapistore_backend_get_path(struct backend_context *, TALLOC_CTX *, uint64_t, uint8_t, char **);
+int mapistore_backend_get_path(struct backend_context *, TALLOC_CTX *, uint64_t, char **);
 
-int mapistore_backend_getprops(struct backend_context *, TALLOC_CTX *, uint64_t, uint8_t, struct SPropTagArray *, struct SRow *);
-int mapistore_backend_setprops(struct backend_context *, uint64_t, uint8_t, struct SRow *);
-
-int mapistore_backend_folder_open_folder(struct backend_context *, uint64_t);
-int mapistore_backend_folder_create_folder(struct backend_context *, uint64_t, uint64_t, struct SRow *);
-int mapistore_backend_folder_delete_folder(struct backend_context *, uint64_t, uint64_t);
-int mapistore_backend_folder_open_message(struct backend_context *, TALLOC_CTX *, uint64_t, uint64_t, void **, struct mapistore_message **);
-int mapistore_backend_folder_create_message(struct backend_context *, TALLOC_CTX *, uint64_t, uint64_t, uint8_t, void **);
-int mapistore_backend_folder_delete_message(struct backend_context *, uint64_t, uint64_t, uint8_t);
-int mapistore_backend_folder_get_child_count(struct backend_context *, uint64_t, uint8_t, uint32_t *);
-int mapistore_backend_folder_open_table(struct backend_context *, TALLOC_CTX *, uint64_t, uint8_t, uint32_t, void **, uint32_t *);
+int mapistore_backend_folder_open_folder(struct backend_context *, void *, TALLOC_CTX *, uint64_t, void **);
+int mapistore_backend_folder_create_folder(struct backend_context *, void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
+int mapistore_backend_folder_delete_folder(struct backend_context *, void *, uint64_t);
+int mapistore_backend_folder_open_message(struct backend_context *, void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
+int mapistore_backend_folder_create_message(struct backend_context *, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
+int mapistore_backend_folder_delete_message(struct backend_context *, void *, uint64_t, uint8_t);
+int mapistore_backend_folder_get_child_count(struct backend_context *, void *, uint8_t, uint32_t *);
+int mapistore_backend_folder_open_table(struct backend_context *, void *, TALLOC_CTX *, uint8_t, uint32_t, void **, uint32_t *);
 
 int mapistore_backend_message_modify_recipients(struct backend_context *, void *, struct ModifyRecipientRow *, uint16_t);
 int mapistore_backend_message_save(struct backend_context *, void *);
@@ -198,7 +195,7 @@ struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_conte
 /* definitions from mapistore_indexing.c */
 struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
 int mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
-int mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+int mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_indexing_add_ref_count(struct indexing_context_list *);
 int mapistore_indexing_del_ref_count(struct indexing_context_list *);

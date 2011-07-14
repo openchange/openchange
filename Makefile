@@ -1497,7 +1497,7 @@ clean-python:
 
 clean:: clean-python
 
-# pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)	\
+pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
 #		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)	\
 #		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
 
@@ -1507,11 +1507,11 @@ $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
 
-$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
-						libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
+# $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
+#						libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+#						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+#	@echo "Linking $@"
+#	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
 
 # $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/pymapistore.c				\
 #							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
@@ -1526,8 +1526,8 @@ pyopenchange/pymapi_properties.c:		\
 pyopenchange-clean:
 	rm -f pyopenchange/*.o
 	rm -f pyopenchange/*.pyc
-	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
-	rm -f $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)
+#	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
+#	rm -f $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
 	rm -f pyopenchange/pymapi_properties.c
 
@@ -1536,8 +1536,8 @@ clean:: pyopenchange-clean
 pyopenchange-install:
 	$(INSTALL) -d $(DESTDIR)$(PYCDIR)/openchange
 	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
-	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
-	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
+#	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
+#	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
 
 pyopenchange-uninstall:
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapi.$(SHLIBEXT)

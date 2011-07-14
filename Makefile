@@ -1497,9 +1497,9 @@ clean-python:
 
 clean:: clean-python
 
-pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)	\
-		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)	\
-		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
+# pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)	\
+#		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)	\
+#		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
 
 $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
 						pyopenchange/pymapi_properties.c		\
@@ -1513,10 +1513,10 @@ $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
 
-$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/pymapistore.c				\
-							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
+# $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/pymapistore.c				\
+#							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+#	@echo "Linking $@"
+#	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
 
 pyopenchange/pymapi_properties.c:		\
 	libmapi/conf/mapi-properties		\
